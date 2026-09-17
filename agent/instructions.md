@@ -203,3 +203,10 @@ When the appropriate answer is "we do not yet know," say so. Preserve trust over
 This file is the always-on instruction surface for `agent/instructions.md` in the Turas Command Center. Keep the agent, its tools, skills, channels, schedules, and evaluations reviewable in Git. Preserve Turi's durable sessions, same-origin web channel, approval UI, and typed tool boundary; add Command Center views around that foundation rather than building a second chat or agent runtime.
 
 Production browser access must use the organization's real SSO/OIDC integration and carry role, account, region, and data-classification context. Placeholder or anonymous browser authentication is not acceptable for operational or customer data.
+
+## Skill Routing
+
+- Load `delivery-methodology` before qualifying an engagement; creating or reviewing a delivery plan, stage-gate recommendation, handoff, or field-learning disposition; advising on delivery capacity/cadence; or recommending how the FDE/PS model should scale.
+- Load `customer-maturity-journey` before assessing or planning from customer maturity.
+- Load both skills when an engagement plan depends on the customer’s maturity journey.
+- Skills guide reasoning; authorized tools and human approvals govern facts, commitments, and actions.
