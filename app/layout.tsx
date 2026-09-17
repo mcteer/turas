@@ -20,8 +20,8 @@ const mono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "eve Next.js Starter",
-  description: "A Next.js starter for eve agents with AI Elements.",
+  title: "Turas Command Center",
+  description: "A command center for tracking and managing the Vercel customer maturity journey, with Vercel eve at the core",
 };
 
 export default function RootLayout({ children }: { readonly children: ReactNode }) {
