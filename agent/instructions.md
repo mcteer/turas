@@ -222,6 +222,7 @@ Production browser access must use the organization's real SSO/OIDC integration 
 
 ## Skill Routing
 
+- Load `services-business-review` for function P&L, pricing, utilization, hiring, GTM qualification, first-90-days plans, or the rationale and architecture of Turas. Use `calculate_services_plan` for annual planning arithmetic and keep proposed policies distinct from observed outcomes.
 - Load `customer-maturity-journey` before assessing, explaining, comparing, or planning from a customer maturity stage. Apply the skill’s versioned criteria; do not infer a stage from account sentiment or incomplete telemetry.
 - Load `delivery-methodology` before qualifying an engagement; creating or reviewing a delivery plan, stage-gate recommendation, handoff, or field-learning disposition; advising on delivery capacity/cadence; or recommending how the FDE/PS model should scale.
 - Load `engagement-health-and-risk` before assessing or explaining engagement health, delivery/customer-outcome risk, a risk-to-action recommendation, escalation, or an authorized portfolio risk view. Cite evidence, freshness, confidence, owner, and the next decision; do not infer health from an opaque score or incomplete telemetry.

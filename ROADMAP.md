@@ -124,7 +124,7 @@ The evidence supports “working assistant foundation with authored operating me
 
 All items in this section are pre-demo work unless explicitly marked optional. P0 items are blockers; P1 items complete the review experience. The login page, history sidebar, and Preview configuration are required, even if other presentation scope is reduced.
 
-**Completion status: implementation is complete for the interview slice; hosted end-to-end sign-in, persistence, and decision validation remain blocked on Preview-only credentials, a session secret, and the Turas database connection.** The current Preview build is ready, isolated from Production Hindsight memory, and protected by Vercel. The deployment does not yet receive `DATABASE_URL` or the demo login/session variables, so it cannot truthfully be marked as an end-to-end rehearsal.
+**Completion status: interview views are implemented, but D2/D3/D7 are not complete.** The interview-readiness review found that client-supplied Eve session binding remains possible, decision deduplication is not atomically scoped, and the durable approval/history path still needs a hosted rehearsal. These are implementation gaps as well as configuration gaps; the earlier “implementation complete” label was too broad. The Turas Preview environment still lacks `DATABASE_URL` and demo login/session variables at the latest configuration check. See `docs/INTERVIEW_PREP.md` for precise demonstration and production boundaries.
 
 ### Delivery order and effort
 
@@ -134,13 +134,13 @@ Estimates assume one experienced implementer, existing accounts, small synthetic
 | --- | --- | --- | --- | --- | --- |
 | D0 | Lock demo narrative, acceptance checklist, and runtime allowlist | **IMPLEMENTED** — synthetic scenario, demo guide, and narrowly discovered Eve tools; unused Slack channel removed | P0 | Audit | 0.5–1 day |
 | D1 | Preview environment and isolated persistent storage | **PARTIALLY VERIFIED** — Preview is deployed and build-ready; Hindsight is isolated. Preview database and login/session configuration are still absent. | P0 | D0 | 0.5–1.5 days plus provisioning |
-| D2 | Login page, session verification, and ownership foundation | **IMPLEMENTED / HOSTED VERIFICATION PENDING** — signed, revocable sessions and Next/Eve/page ownership checks are in code. | P0 | D1 | 1.5–3 days |
-| D3 | Persistent chat history sidebar | **IMPLEMENTED / HOSTED VERIFICATION PENDING** — scoped list, search, rename, archive, and session-resume checks are in code. | P0 | D2 | 1.5–3 days |
+| D2 | Login page, session verification, and ownership foundation | **PARTIAL** — signed sessions and route checks exist; server-owned first-send binding is still required. | P0 | D1 | 1.5–3 days |
+| D3 | Persistent chat history sidebar | **PARTIAL** — list/search/rename/archive exist; secure initial session binding and hosted persistence need completion. | P0 | D2 | 1.5–3 days |
 | D4 | Synthetic operating model, account resolver, and evidence | **IMPLEMENTED** — fictional accounts, engagements, and canonical resolver are local fixtures. | P0 | D0, D1 | 1–2 days |
 | D5 | Deterministic economics and capacity calculations | **IMPLEMENTED** — fixed-date contribution and capacity scenarios have unit coverage. | P0 | D4 | 1–2 days |
 | D6 | Portfolio/engagement experience and grounded Turi workflow | **IMPLEMENTED / HOSTED VERIFICATION PENDING** — portfolio, engagement evidence, what-if controls, and bounded domain tools are in the branch. | P0 | D2, D4, D5 | 2–3 days |
 | D6R | Implementation and value-realization research specialist | **IMPLEMENTED** — declared subagent uses a reviewed source pack. | P1 | D0, D2, D4; integrate with D6 | 1–2 days |
-| D7 | One durable, approved synthetic decision | **IMPLEMENTED / HOSTED VERIFICATION PENDING** — owner-only intervention record supports approve, reject, and defer with a rationale. | P0 | D6 | 0.5–1.5 days |
+| D7 | One durable, approved synthetic decision | **PARTIAL** — owner-approved decision tool exists; atomic scoped idempotency and hosted replay verification remain. | P0 | D6 | 0.5–1.5 days |
 | D8 | Memo, architecture explanation, demo script, reviewer handoff | **IMPLEMENTED** — in-app memo, architecture explanation, and `docs/DEMO.md` are present. | P1 | Draft after D0; finalize after D6R/D7 | 0.5–1 day |
 | D9 | Preview regression checks, rehearsal, and submission | **PARTIALLY VERIFIED** — local type/unit/UI/build checks and hosted Preview build pass. The credentials/database-dependent rehearsal remains. | P0 | D1–D8, including D6R | 1–2 days |
 

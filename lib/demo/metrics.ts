@@ -3,10 +3,12 @@ import type { Engagement, TeamMember } from "./types";
 export const METRIC_VERSION = "demo-metrics-1";
 const round = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 
-export function engagementMetrics(engagement: Engagement, overrides: Partial<Pick<Engagement, "remainingHours" | "fee">> = {}) {
+export type EngagementEconomics = Pick<Engagement, "fee" | "remainingHours" | "actualHours" | "loadedHourlyCost" | "nonLaborCost">;
+
+export function engagementMetrics(engagement: EngagementEconomics, overrides: Partial<Pick<Engagement, "remainingHours" | "fee">> = {}) {
   const fee = overrides.fee ?? engagement.fee;
   const remainingHours = overrides.remainingHours ?? engagement.remainingHours;
-  if (fee <= 0 || remainingHours < 0) return { status: "invalid" as const, reason: "Fee must be positive and remaining effort cannot be negative." };
+  if (![fee, remainingHours, engagement.actualHours, engagement.loadedHourlyCost, engagement.nonLaborCost].every(Number.isFinite) || fee <= 0 || Math.min(remainingHours, engagement.actualHours, engagement.loadedHourlyCost, engagement.nonLaborCost) < 0) return { status: "invalid" as const, reason: "All inputs must be finite; fee must be positive and effort/costs cannot be negative." };
   const effortAtCompletion = engagement.actualHours + remainingHours;
   const allocatedDeliveryCost = effortAtCompletion * engagement.loadedHourlyCost + engagement.nonLaborCost;
   const contribution = fee - allocatedDeliveryCost;
