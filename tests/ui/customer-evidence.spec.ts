@@ -52,6 +52,9 @@ test("directory-only, empty, invalid and anonymous results cannot imply a maturi
   for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    const search = await page.getByRole("searchbox").boundingBox();
+    expect(search?.width).toBeGreaterThanOrEqual(240);
+    await page.getByRole("searchbox").scrollIntoViewIfNeeded();
     await page.screenshot({ path: `/tmp/turas-customer-inventory-${width}.png`, fullPage: false });
   }
 });

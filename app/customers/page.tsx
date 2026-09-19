@@ -27,9 +27,9 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
       <p className="mt-2 text-muted-foreground">These public records are separate from the <Link className="underline" href="/portfolio">fictional financial scenarios</Link>. No customer fees, staffing, internal risks or decisions have been inferred.</p>
       <p className="mt-2"><a className="underline" href={snapshot.directoryUrl} target="_blank" rel="noreferrer">Official directory</a> · <a className="underline" href={snapshot.archiveUrls[0]} target="_blank" rel="noreferrer">Customer story archive</a></p>
     </details>
-    <form className="mt-7 flex flex-wrap items-end gap-3" action="/customers">
-      <label className="min-w-0 flex-1 text-sm font-medium">Search customers, workloads or products<input className="mt-2 block h-10 w-full rounded-md border bg-background px-3 font-normal" defaultValue={query} maxLength={160} name="query" placeholder="e.g. Notion, Sandbox, ecommerce" type="search" /></label>
-      <label className="text-sm font-medium">Documented signal<select className="mt-2 block h-10 max-w-full rounded-md border bg-background px-3 font-normal" defaultValue={signal} name="signal"><option value="">All signals</option>{maturitySignals.map((item) => <option key={item}>{item}</option>)}</select></label>
+    <form className="mt-7 grid items-end gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto]" action="/customers">
+      <label className="min-w-0 text-sm font-medium">Search customers, workloads or products<input className="mt-2 block h-10 w-full rounded-md border bg-background px-3 font-normal" defaultValue={query} maxLength={160} name="query" placeholder="e.g. Notion, Sandbox, ecommerce" type="search" /></label>
+      <label className="min-w-0 text-sm font-medium">Documented signal<select className="mt-2 block h-10 w-full rounded-md border bg-background px-3 font-normal" defaultValue={signal} name="signal"><option value="">All signals</option>{maturitySignals.map((item) => <option key={item}>{item}</option>)}</select></label>
       <button className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground" type="submit">Search</button>
     </form>
     {!filters.success && <p role="alert" className="mt-3 text-sm text-destructive">Invalid search filters. Showing the full inventory; enter a shorter query or choose a listed signal.</p>}
