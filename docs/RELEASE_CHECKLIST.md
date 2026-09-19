@@ -26,3 +26,9 @@ Preview intentionally disables Hindsight-backed recall unless it receives its ow
 | Commit | URL | Tested at | Owner | Result |
 | --- | --- | --- | --- | --- |
 | _pending_ | _pending_ | _pending_ | _pending_ | _pending_ |
+
+## Preview validation record
+
+| Commit | URL | Tested at | Result |
+| --- | --- | --- | --- |
+| `2ea923e` | `https://turas-849rt8r9j-turas-6e414af3.vercel.app` | 2026-09-19 | Hosted build ready; protected `/login` returned 200 through Vercel's scoped bypass; Analytics runtime rendered. Full login, persistence, and decision rehearsal await Preview-only demo credentials, `TURAS_SESSION_SECRET`, and `DATABASE_URL`. |
