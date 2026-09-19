@@ -45,6 +45,8 @@ Preview intentionally disables Hindsight-backed recall unless it receives its ow
 ## Public customer evidence audit (19 September 2026)
 
 - Reviewed snapshot: 147 organization records, 114 published stories, 60 directory-listed organizations; formal maturity remains unknown. See `CUSTOMER_EVIDENCE.md` for coverage and limitations.
-- Local validation: 16 unit tests; 17 passing Playwright checks (the isolated unavailable-database case is skipped in this healthy-server run); typecheck and Webpack build pass. Desktop/mobile screenshots inspected.
+- Local validation: 18 unit tests; 17 passing healthy-server Playwright checks plus the isolated unavailable-database case passing separately; typecheck and Webpack build pass. Desktop/mobile screenshots inspected.
 - Final live local evaluations: 10 pass, 66 gates, with production Hindsight disabled. Includes real Notion routing and citations, directory-only uncertainty, refusal to assign a company-wide stage, and the four-hour capacity constraint.
-- Hosted evidence validation pending the Turas branch Preview. No production promotion is implied by these local checks.
+- Hosted Preview `2b55b9d` is Ready at `https://turas-jhb6w626k-turas-6e414af3.vercel.app` (deployment `dpl_4gXyLUc1MVpYejdQuWxz5QkGj3KN`). Authentication remains fail-closed: valid reviewer credentials reach session registration, where the configured database credentials are rejected. Logs record `phase=register_session`, `reason=database_authentication`. The previously verified `a844b51` Preview now fails the same way.
+- Hosted customer screens, sourced chat and reload could not be verified in this run because sign-in is blocked. This supersedes the earlier successful login evidence as a statement of current service availability. No production promotion occurred.
+- Recovery: update only Turas’s Preview `DATABASE_URL` with the current connection string for the intended preview database and role, deploy a new Turas Preview, and repeat reviewer login, customer evidence, live Notion citations, transcript reload and logout-isolation checks. Do not copy Production credentials or silently replace the database.

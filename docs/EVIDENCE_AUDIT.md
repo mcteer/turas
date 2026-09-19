@@ -16,6 +16,7 @@
 | A completed tool label could say a decision was recorded after denial or conflict. | An explicit output schema and outcome-dependent label distinguish recorded, denied, conflict and not-found results. |
 | One research citation did not resolve. | The Eve approval reference now points to the verified primary repository documentation. The source pack remains a limited reviewed reference set, not live research. |
 | Pricing-floor calculations accepted non-finite inputs. | NaN and infinities are rejected, with regression coverage. |
+| Session failure logs hid the diagnostic category. | Login logs now include a controlled error category, execution phase and SQLSTATE when available, without messages, stacks, credentials or connection strings. |
 | Release docs described already-completed login and Preview work as missing. | Current validation records and historical-baseline notices replace those misleading status claims. |
 
 ## Data boundaries and rollback
@@ -26,10 +27,10 @@ For rollback, retain corrected fictional names and real-customer evidence bounda
 
 ## Validation
 
-- Unit suite: 16 checks pass, including source-count reconciliation, aliases, unknown states, Notion's separate workloads, explicit conflicts, stable fictional IDs, financial arithmetic and non-finite inputs.
-- Playwright: 17 checks pass; the unavailable-database test is intentionally skipped in the normal healthy-server run. Desktop/mobile screenshots were inspected for customer inventory, Notion details, fictional engagement and memo. Browser checks cover protected routes, search, empty/invalid filters, source links and unsent chat context.
+- Unit suite: 18 checks pass, including source-count reconciliation, aliases, unknown states, Notion's separate workloads, explicit conflicts, stable fictional IDs, financial arithmetic and non-finite inputs.
+- Playwright: 17 checks pass; the unavailable-database check also passes in a separate deliberately invalid-configuration run. Desktop/mobile screenshots were inspected for customer inventory, Notion details, fictional engagement and memo. Browser checks cover protected routes, search, empty/invalid filters, source links and unsent chat context.
 - TypeScript and Webpack production build pass.
-- Live evaluation and hosted Preview results are recorded in `RELEASE_CHECKLIST.md` after execution. Local checks do not establish hosted persistence or approval behavior.
+- Live evaluations: all 10 pass, with 66 gates. Hosted Preview build is Ready, but sign-in verification is blocked: Neon rejects the configured Preview database credentials during session registration. The previously verified `a844b51` Preview now fails the same way. No credential or environment changes were made by this release. See `RELEASE_CHECKLIST.md` for deployment evidence.
 
 ## Remaining production work
 
