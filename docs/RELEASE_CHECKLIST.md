@@ -10,6 +10,8 @@
 
 Do not reuse Preview credentials, database, memory resource, or external grants in Production. Do not enable `TURAS_ENABLE_CONNECTORS` for the interview runtime.
 
+Preview intentionally disables Hindsight-backed recall unless it receives its own approved, isolated memory configuration. Do not copy the Production Hindsight credentials or bank into Preview.
+
 ## Smoke test after deployment
 
 1. Visit `/login` in a clean browser and verify an invalid password remains on login.
