@@ -1,5 +1,8 @@
 import { AgentChat } from "@/app/_components/agent-chat";
-import { ProtectedShell } from "@/app/_components/protected-shell";
+import { AppShell } from "@/app/_components/app-shell";
+import { requirePageIdentity } from "@/lib/auth/next";
+import { getConversationBySession } from "@/lib/conversations/repository";
+import { notFound } from "next/navigation";
 
 export default async function SessionPage({
   params,
@@ -7,5 +10,13 @@ export default async function SessionPage({
   readonly params: Promise<{ readonly sessionId: string }>;
 }) {
   const { sessionId } = await params;
-  return <ProtectedShell returnTo={`/s/${encodeURIComponent(sessionId)}`}><AgentChat sessionId={sessionId} /></ProtectedShell>;
+  const returnTo = `/s/${encodeURIComponent(sessionId)}`;
+  const identity = await requirePageIdentity(returnTo);
+  if (!(await getConversationBySession(identity, sessionId))) notFound();
+
+  return (
+    <AppShell role={identity.role} username={identity.username}>
+      <AgentChat sessionId={sessionId} />
+    </AppShell>
+  );
 }
