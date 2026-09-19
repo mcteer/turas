@@ -34,6 +34,6 @@ export function capacityMetrics(member: TeamMember) {
 }
 
 export function pricingFloor(cost: number, targetMarginPercent: number) {
-  if (cost < 0 || targetMarginPercent < 0 || targetMarginPercent >= 100) return { status: "invalid" as const };
+  if (![cost, targetMarginPercent].every(Number.isFinite) || cost < 0 || targetMarginPercent < 0 || targetMarginPercent >= 100) return { status: "invalid" as const };
   return { status: "known" as const, amount: round(cost / (1 - targetMarginPercent / 100)) };
 }

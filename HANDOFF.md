@@ -1,5 +1,9 @@
 # Turas implementation handoff
 
+> Current status (19 September 2026): login, conversation history, fictional financial scenarios, annual services planning, public customer evidence and Preview deployment now exist. See [the evidence audit](docs/EVIDENCE_AUDIT.md) and [release validation](docs/RELEASE_CHECKLIST.md) for current behavior, tests and remaining production gates. The baseline below is historical and must not be read as the current implementation state.
+
+## Historical baseline
+
 Status recorded: 19 September 2026. Read [AGENTS.md](AGENTS.md) before implementation and [ROADMAP.md](ROADMAP.md) for scope, dependencies, and acceptance criteria.
 
 ## Workspace and transfer

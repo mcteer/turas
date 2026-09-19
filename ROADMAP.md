@@ -1,5 +1,9 @@
 # Turas roadmap: interview demo and production evolution
 
+> Current status (19 September 2026): login, conversation history, fictional financial scenarios, annual services planning, public customer evidence and Preview deployment now exist. See [the evidence audit](docs/EVIDENCE_AUDIT.md) and [release validation](docs/RELEASE_CHECKLIST.md) for current behavior, tests and remaining production gates. The baseline below is historical and must not be read as the current implementation state.
+
+## Historical baseline
+
 Status: planning complete; implementation incomplete. The status tables below distinguish existing code, completed local fixes, unbuilt demo features, and deferred production work. No D0–D9 deliverable has met its full acceptance criteria yet.
 
 Assessment date: 19 September 2026. Repository baseline: `2c7a076`. Interview date and available build time have not yet been supplied. Estimates are implementation ranges, not delivery commitments.

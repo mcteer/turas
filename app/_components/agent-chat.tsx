@@ -33,9 +33,11 @@ const AGENT_NAME = "Turi";
 export function AgentChat({
   sessionId,
   sessionless = false,
+  initialPrompt = "",
 }: {
   readonly sessionId?: string;
   readonly sessionless?: boolean;
+  readonly initialPrompt?: string;
 }) {
   const [cancellationError, setCancellationError] = useState<string>();
   const firstMessageRef = useRef<string | undefined>(undefined);
@@ -143,7 +145,7 @@ export function AgentChat({
   };
 
   const composer = (
-    <PromptInputProvider>
+    <PromptInputProvider initialInput={initialPrompt}>
       <PromptInput multiple onError={(error) => setCancellationError(error.message)} onSubmit={handleSubmit}>
         <ComposerAttachments />
         <PromptInputTextarea

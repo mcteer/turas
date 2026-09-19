@@ -33,10 +33,18 @@ Preview intentionally disables Hindsight-backed recall unless it receives its ow
 - Local unit checks: ten pass, including annual cost coverage, utilization losses, zero denominators, capacity feasibility, and per-engagement cost regression.
 - Live local Eve evaluations: seven pass, 39 gates; production Hindsight disabled for the run. These cover customer/provider routing plus annual economics, protected capacity, and additive intervention effort. They do not prove hosted approval or persistence.
 - Typecheck and Webpack production build pass. Browser checks cover login title fit at 320/390/768/1440px, protected operating-plan navigation, scenarios and invalid inputs, non-pilot economics, and mobile/desktop layouts. Screenshots are inspected with Playwright.
-- Hosted Preview still lacks database/login/session configuration at the configuration check. Keep production promotion gated on the full rehearsal and the ownership/idempotency hardening identified in `ROADMAP.md`.
+- Historical configuration check: the early Preview lacked database/login/session configuration. This was subsequently supplied and reviewer login, persisted conversation ownership, streamed chat, follow-up and reload were verified on `a844b51`. Keep production promotion gated on the full rehearsal and the ownership/idempotency hardening identified in `ROADMAP.md`.
 
 ## Preview validation record
 
 | Commit | URL | Tested at | Result |
 | --- | --- | --- | --- |
 | `2ea923e` | `https://turas-849rt8r9j-turas-6e414af3.vercel.app` | 2026-09-19 | Hosted build ready; protected `/login` returned 200 through Vercel's scoped bypass; Analytics runtime rendered. Full login, persistence, and decision rehearsal await Preview-only demo credentials, `TURAS_SESSION_SECRET`, and `DATABASE_URL`. |
+| `a844b51` | `https://turas-5pnuksem0-turas-6e414af3.vercel.app` | 2026-09-19 | Reviewer login, delayed ownership-save/stream ordering, live streamed response, follow-up and transcript reload passed. Unowned and logged-out streams returned 401. Only the test-created conversation was archived. |
+
+## Public customer evidence audit (19 September 2026)
+
+- Reviewed snapshot: 147 organization records, 114 published stories, 60 directory-listed organizations; formal maturity remains unknown. See `CUSTOMER_EVIDENCE.md` for coverage and limitations.
+- Local validation: 16 unit tests; 17 passing Playwright checks (the isolated unavailable-database case is skipped in this healthy-server run); typecheck and Webpack build pass. Desktop/mobile screenshots inspected.
+- Final live local evaluations: 10 pass, 66 gates, with production Hindsight disabled. Includes real Notion routing and citations, directory-only uncertainty, refusal to assign a company-wide stage, and the four-hour capacity constraint.
+- Hosted evidence validation pending the Turas branch Preview. No production promotion is implied by these local checks.

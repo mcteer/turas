@@ -2,7 +2,7 @@
 
 This is an [eve](https://eve.dev) agent bootstrapped with [`eve init`](https://eve.dev/docs/reference/cli#eve-init).
 
-For current implementation status, read [HANDOFF.md](HANDOFF.md), then [ROADMAP.md](ROADMAP.md). They distinguish existing functionality, tested local fixes, remaining demo work, and deferred production work.
+For current implementation status, read [the evidence audit](docs/EVIDENCE_AUDIT.md) and [release validation](docs/RELEASE_CHECKLIST.md). [HANDOFF.md](HANDOFF.md) and [ROADMAP.md](ROADMAP.md) preserve the original planning baseline and deferred production scope.
 
 The presentation scenario, fixed synthetic data contract, and walkthrough are in [docs/DEMO.md](docs/DEMO.md). Use [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) before a hosted release.
 
@@ -28,7 +28,9 @@ The UI suite uses Playwright WebKit and starts or reuses the app at `http://127.
 
 UI tests intercept Eve requests: they exercise attachments and error handling without calling a model or writing memories. They do not change `HINDSIGHT_BANK_ID`. Live routing evaluations are separate (`npm run eval -- --tag customer-routing`) and use the configured environment and memory bank; run those only against the intended target.
 
-Customer-engagement chat does not initiate connector onboarding. `agent/tools/connection_search.ts` guards generic provider discovery until an authorized customer-source resolver exists. Existing connection grants retain user scope, but missing grants do not launch a sign-in flow. Account-source integration is scoped in `ROADMAP.md` (D4); provider names are not customer records.
+Customer evidence at `/customers` and Turi share a [reviewed public snapshot](docs/CUSTOMER_EVIDENCE.md), separate from the fictional financial portfolio. Public sources do not establish formal maturity or internal engagement state.
+
+Customer-engagement chat does not initiate connector onboarding. `agent/tools/connection_search.ts` guards generic provider discovery; the account resolver separates public evidence from fictional scenarios and is not a CRM integration. Existing connection grants retain user scope, but missing grants do not launch a sign-in flow. Account-source integration is scoped in `ROADMAP.md` (D4); provider names are not customer records.
 
 ## Eve resources
 

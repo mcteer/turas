@@ -1,28 +1,28 @@
 import type { DemoData } from "./types";
 
 export const DEMO_DATA: DemoData = {
-  version: "2026-09-19.1",
+  version: "2026-09-19.2",
   reportingDate: "2026-09-18",
   workspaceId: "synthetic-interview-demo",
   customers: [
     {
       id: "acct-notion-labs",
-      name: "Notion Labs (fictional engagement)",
-      aliases: ["Notion", "Notion Labs"],
+      name: "Alderwick Labs (fictional company)",
+      aliases: ["Alderwick", "Alderwick Labs"],
       objective: "Help workspace administrators reach a reliable pilot launch with named operating ownership.",
       workspaceId: "synthetic-interview-demo",
     },
     {
       id: "acct-linearworks",
-      name: "LinearWorks (fictional engagement)",
-      aliases: ["Linear", "LinearWorks"],
+      name: "Brindlepath Software (fictional company)",
+      aliases: ["Brindlepath", "Brindlepath Software"],
       objective: "Reduce release-review friction for the first two product teams.",
       workspaceId: "synthetic-interview-demo",
     },
     {
       id: "acct-coda-collective",
-      name: "Coda Collective (fictional engagement)",
-      aliases: ["Coda", "Coda Collective"],
+      name: "Morrowfen Media (fictional company)",
+      aliases: ["Morrowfen", "Morrowfen Media"],
       objective: "Establish a repeatable content publishing workflow with measurable adoption.",
       workspaceId: "synthetic-interview-demo",
     },
