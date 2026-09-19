@@ -39,7 +39,16 @@ export function AgentChat({
 }) {
   const [cancellationError, setCancellationError] = useState<string>();
   const firstMessageRef = useRef<string | undefined>(undefined);
+  const ownershipSaveRef = useRef<Promise<Error | undefined> | undefined>(undefined);
   const agent = useEveAgent({
+    // Eve's session callback is observe-only. Its async headers hook is awaited
+    // before every stream, follow-up, and control request, so ownership must be
+    // durable here before the protected session route can be called.
+    headers: async () => {
+      const failure = await ownershipSaveRef.current;
+      if (failure) throw failure;
+      return {};
+    },
     initialSession:
       sessionId === undefined
         ? undefined
@@ -52,20 +61,30 @@ export function AgentChat({
       if (sessionId === undefined && session !== undefined) {
         const firstMessage = firstMessageRef.current;
         if (firstMessage) {
-          void fetch("/api/conversations", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ firstMessage, eveSessionId: session.sessionId }),
-          });
           firstMessageRef.current = undefined;
+          ownershipSaveRef.current = (async () => {
+            try {
+              const response = await fetch("/api/conversations", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ firstMessage, eveSessionId: session.sessionId }),
+                signal: AbortSignal.timeout(15_000),
+              });
+              if (!response.ok) throw new Error("Conversation save failed");
+              // Publish the durable URL only after it can pass page ownership checks.
+              // Next patches history to navigate, which would detach the active stream.
+              History.prototype.replaceState.call(
+                window.history,
+                window.history.state,
+                "",
+                `/s/${encodeURIComponent(session.sessionId)}`,
+              );
+              return undefined;
+            } catch {
+              return new Error("Unable to save this chat. Start a new chat and try again.");
+            }
+          })();
         }
-        // Next patches window.history to navigate, which would detach the active stream.
-        History.prototype.replaceState.call(
-          window.history,
-          window.history.state,
-          "",
-          `/s/${encodeURIComponent(session.sessionId)}`,
-        );
       }
     },
   });
