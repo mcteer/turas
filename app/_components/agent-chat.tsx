@@ -3,7 +3,7 @@
 import type { UserContent } from "ai";
 import { useEveAgent } from "eve/react";
 import { AlertCircleIcon, BrainIcon, PlusIcon, SquareIcon } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Conversation,
   ConversationContent,
@@ -14,15 +14,19 @@ import { Message, MessageContent } from "@/components/ai-elements/message";
 import {
   PromptInput,
   PromptInputButton,
+  PromptInputFooter,
   type PromptInputMessage,
+  PromptInputProvider,
   PromptInputSubmit,
   PromptInputTextarea,
   usePromptInputAttachments,
+  usePromptInputController,
 } from "@/components/ai-elements/prompt-input";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AgentMessage } from "./agent-message";
+import { ComposerAttachments, ComposerAttachMenu } from "./composer-attachments";
 
 const AGENT_NAME = "Turi";
 
@@ -34,7 +38,7 @@ export function AgentChat({
   readonly sessionless?: boolean;
 }) {
   const [cancellationError, setCancellationError] = useState<string>();
-  const [hasInputText, setHasInputText] = useState(false);
+  const firstMessageRef = useRef<string | undefined>(undefined);
   const agent = useEveAgent({
     initialSession:
       sessionId === undefined
@@ -46,6 +50,15 @@ export function AgentChat({
     resume: sessionId !== undefined,
     onSessionChange(session) {
       if (sessionId === undefined && session !== undefined) {
+        const firstMessage = firstMessageRef.current;
+        if (firstMessage) {
+          void fetch("/api/conversations", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ firstMessage, eveSessionId: session.sessionId }),
+          });
+          firstMessageRef.current = undefined;
+        }
         // Next patches window.history to navigate, which would detach the active stream.
         History.prototype.replaceState.call(
           window.history,
@@ -80,16 +93,16 @@ export function AgentChat({
     });
   };
 
-  const handleSubmit = async (message: PromptInputMessage) => {
+  const handleSubmit = (message: PromptInputMessage) => {
     const text = message.text.trim();
     if ((text.length === 0 && message.files.length === 0) || isResuming) return;
 
-    setHasInputText(false);
     setCancellationError(undefined);
+    if (sessionId === undefined && agent.session === undefined) firstMessageRef.current = text || "Attachment shared";
     const options = isBusy ? { turnPolicy: "steer" as const } : undefined;
 
     if (message.files.length === 0) {
-      await agent.send(text, options);
+      void agent.send(text, options).catch((error: unknown) => setCancellationError(toErrorMessage(error)));
       return;
     }
 
@@ -106,23 +119,29 @@ export function AgentChat({
       });
     }
 
-    await agent.send(parts, options);
+    // send() settles after the full turn; release the composer as soon as it is dispatched.
+    void agent.send(parts, options).catch((error: unknown) => setCancellationError(toErrorMessage(error)));
   };
 
   const composer = (
-    <PromptInput onSubmit={handleSubmit}>
-      <PromptInputTextarea
-        disabled={isResuming}
-        onChange={(event) => setHasInputText(event.currentTarget.value.trim().length > 0)}
-        placeholder="Send a message…"
-      />
-      <ComposerAction
-        hasInputText={hasInputText}
-        isBusy={isBusy}
-        isResuming={isResuming}
-        onCancel={requestCancellation}
-      />
-    </PromptInput>
+    <PromptInputProvider>
+      <PromptInput multiple onError={(error) => setCancellationError(error.message)} onSubmit={handleSubmit}>
+        <ComposerAttachments />
+        <PromptInputTextarea
+          aria-label="Message Turi"
+          disabled={isResuming}
+          placeholder="Message Turi…"
+        />
+        <PromptInputFooter>
+          <ComposerAttachMenu disabled={isResuming} />
+          <ComposerAction
+            isBusy={isBusy}
+            isResuming={isResuming}
+            onCancel={requestCancellation}
+          />
+        </PromptInputFooter>
+      </PromptInput>
+    </PromptInputProvider>
   );
 
   return (
@@ -143,7 +162,7 @@ export function AgentChat({
           }
         >
           <ConversationTopFade className="top-14" />
-          <ConversationContent className="mx-auto w-full max-w-3xl gap-6 px-4 pt-20 pb-36 sm:px-6">
+          <ConversationContent className="mx-auto w-full max-w-3xl gap-6 px-4 pt-20 pb-6 sm:px-6">
             {agent.data.messages.map((message, index) =>
               showPendingThinking &&
               isPendingAssistantShell &&
@@ -173,7 +192,7 @@ export function AgentChat({
         className={cn(
           "mx-auto w-full px-4 sm:px-6",
           showConversationLayout
-            ? "fixed bottom-0 left-1/2 z-20 max-w-3xl -translate-x-1/2 bg-gradient-to-t from-background via-background to-transparent pt-4 pb-6"
+            ? "shrink-0 max-w-3xl bg-background pt-3 pb-6"
             : "flex max-w-xl flex-1 flex-col items-center justify-center gap-8 pb-[10vh]",
         )}
       >
@@ -189,27 +208,25 @@ export function AgentChat({
 }
 
 function ComposerAction({
-  hasInputText,
   isBusy,
   isResuming,
   onCancel,
 }: {
-  readonly hasInputText: boolean;
   readonly isBusy: boolean;
   readonly isResuming: boolean;
   readonly onCancel: () => void;
 }) {
   const attachments = usePromptInputAttachments();
-  const canSubmit = hasInputText || attachments.files.length > 0;
+  const { textInput } = usePromptInputController();
+  const canSubmit = textInput.value.trim().length > 0 || attachments.files.length > 0;
 
   if (!isBusy || canSubmit) {
-    return <PromptInputSubmit disabled={isResuming} />;
+    return <PromptInputSubmit aria-label="Send message" className="static" disabled={isResuming || !canSubmit} />;
   }
 
   return (
     <PromptInputButton
       aria-label="Stop"
-      className="absolute right-2.5 bottom-2.5"
       onClick={onCancel}
       variant="outline"
     >

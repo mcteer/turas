@@ -1,10 +1,11 @@
 import { connect } from "@vercel/connect/eve";
-import { defineMcpClientConnection } from "eve/connections";
+import { defineDynamic, defineMcpClientConnection } from "eve/connections";
+import { existingGrantOnly } from "../lib/existing-grant-auth";
 
-export default defineMcpClientConnection({
+const connection = defineMcpClientConnection({
   url: "https://mcp.notion.com/mcp",
-  description: "Notion workspace: search and edit pages and databases.",
-  auth: connect("mcp.notion.com/notion"),
+  description: "Approved delivery records stored in Notion pages and databases. This is a storage provider, not the Notion customer account. Use only when the engagement's known source is a Notion workspace; never select it just because the customer is named Notion.",
+  auth: existingGrantOnly(connect("mcp.notion.com/notion")),
 
   // For app-scoped authentication, replace the auth block above with:
   // auth: connect({ connector: "notion", principalType: "app" }),
@@ -23,3 +24,4 @@ export default defineMcpClientConnection({
 
   // Notion also supports OpenAPI. See https://eve.dev/integrations/notion for that scaffold.
 });
+export default defineDynamic({ events: { "session.started": () => process.env.TURAS_ENABLE_CONNECTORS === "true" ? connection : null } });

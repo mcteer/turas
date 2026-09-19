@@ -464,7 +464,7 @@ export type PromptInputProps = Omit<HTMLAttributes<HTMLFormElement>, "onSubmit" 
   maxFiles?: number;
   // bytes
   maxFileSize?: number;
-  onError?: (err: { code: "max_files" | "max_file_size" | "accept"; message: string }) => void;
+  onError?: (err: { code: "max_files" | "max_file_size" | "accept" | "attachment_read"; message: string }) => void;
   onSubmit: (
     message: PromptInputMessage,
     event: FormEvent<HTMLFormElement>,
@@ -491,6 +491,8 @@ export const PromptInput = ({
   // Refs
   const inputRef = useRef<HTMLInputElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
+  const preparingRef = useRef(false);
+  const [isPreparing, setIsPreparing] = useState(false);
 
   // ----- Local attachments (only used when no provider)
   const [items, setItems] = useState<(FileUIPart & { id: string })[]>([]);
@@ -790,6 +792,9 @@ export const PromptInput = ({
   const handleSubmit: FormEventHandler<HTMLFormElement> = useCallback(
     async (event) => {
       event.preventDefault();
+      if (preparingRef.current) return;
+      preparingRef.current = true;
+      setIsPreparing(true);
 
       const form = event.currentTarget;
       const text = usingProvider
@@ -811,10 +816,12 @@ export const PromptInput = ({
           files.map(async ({ id: _id, ...item }) => {
             if (item.url?.startsWith("blob:")) {
               const dataUrl = await convertBlobUrlToDataUrl(item.url);
-              // If conversion failed, keep the original blob URL
+              if (dataUrl === null) {
+                throw new Error(`Could not read ${item.filename || "the attached file"}. Remove it and attach it again.`);
+              }
               return {
                 ...item,
-                url: dataUrl ?? item.url,
+                url: dataUrl,
               };
             }
             return item;
@@ -841,11 +848,17 @@ export const PromptInput = ({
             controller.textInput.clear();
           }
         }
-      } catch {
-        // Don't clear on error - user may want to retry
+      } catch (error) {
+        onError?.({
+          code: "attachment_read",
+          message: error instanceof Error ? error.message : "Could not prepare the attachments. Please try again.",
+        });
+      } finally {
+        preparingRef.current = false;
+        setIsPreparing(false);
       }
     },
-    [usingProvider, controller, files, onSubmit, clear],
+    [usingProvider, controller, files, onSubmit, clear, onError],
   );
 
   // Render with or without local provider
@@ -861,16 +874,19 @@ export const PromptInput = ({
         title="Upload files"
         type="file"
       />
-      <form className="w-full" onSubmit={handleSubmit} ref={formRef} {...props}>
-        <InputGroup
-          className={cn(
-            "overflow-hidden rounded-2xl bg-card/80 shadow-sm backdrop-blur-md",
-            "focus-within:border-foreground! has-[[data-slot=input-group-control]:focus-visible]:border-foreground!",
-            className,
-          )}
-        >
-          {children}
-        </InputGroup>
+      <form aria-busy={isPreparing} className="w-full" onSubmit={handleSubmit} ref={formRef} {...props}>
+        <fieldset className="contents" disabled={isPreparing}>
+          <InputGroup
+            className={cn(
+              "overflow-hidden rounded-2xl bg-card/80 shadow-sm backdrop-blur-md",
+              "focus-within:border-foreground! has-[[data-slot=input-group-control]:focus-visible]:border-foreground!",
+              className,
+            )}
+          >
+            {children}
+          </InputGroup>
+        </fieldset>
+        {isPreparing ? <p className="mt-2 text-xs text-muted-foreground" role="status">Preparing message…</p> : null}
       </form>
     </>
   );
