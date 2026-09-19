@@ -30,7 +30,7 @@ For rollback, retain corrected fictional names and real-customer evidence bounda
 - Unit suite: 18 checks pass, including source-count reconciliation, aliases, unknown states, Notion's separate workloads, explicit conflicts, stable fictional IDs, financial arithmetic and non-finite inputs.
 - Playwright: 17 checks pass; the unavailable-database check also passes in a separate deliberately invalid-configuration run. Desktop/mobile screenshots were inspected for customer inventory, Notion details, fictional engagement and memo. Browser checks cover protected routes, search, empty/invalid filters, source links and unsent chat context.
 - TypeScript and Webpack production build pass.
-- Live evaluations: all 10 pass, with 66 gates. Hosted Preview build is Ready, but sign-in verification is blocked: Neon rejects the configured Preview database credentials during session registration. The previously verified `a844b51` Preview now fails the same way. No credential or environment changes were made by this release. See `RELEASE_CHECKLIST.md` for deployment evidence.
+- Live evaluations: all 10 pass, with 66 gates. After the owner replaced the expired Preview database connection string, hosted Preview `57a4f94` passed reviewer login, public customer screens, responsive/empty/directory-only states, live Notion evidence boundaries, transcript reload, test-chat archival and logged-out access denial. No Production environment changes or promotion occurred. See `RELEASE_CHECKLIST.md` for deployment evidence.
 
 ## Remaining production work
 
