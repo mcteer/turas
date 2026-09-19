@@ -3,7 +3,7 @@
 ## Required production configuration
 
 - `TURAS_DEMO_USERNAME` and `TURAS_DEMO_PASSWORD`: owner credentials.
-- `TURAS_DEMO_REVIEWER_USERNAME` and `TURAS_DEMO_REVIEWER_PASSWORD`: reviewer credentials.
+- `PANEL_USERNAME` and `PANEL_PASSWORD`: reviewer credentials. If neither is configured, the legacy `TURAS_DEMO_REVIEWER_USERNAME` / `TURAS_DEMO_REVIEWER_PASSWORD` pair is supported. If either panel variable is configured, both must be supplied; the two naming schemes are never mixed. Use a different username from the owner account.
 - `TURAS_SESSION_SECRET`: unique high-entropy production signing secret.
 - `DATABASE_URL`: pooled Neon connection for the isolated database containing only synthetic records and metadata. The app applies its versioned `turas_schema_migrations` records on first use; use the direct Neon URL for any future operator-run migrations.
 - AI Gateway and Eve runtime configuration required by the existing deployment.

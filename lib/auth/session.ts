@@ -30,8 +30,10 @@ function sessionSecret() {
 export function configuredIdentity(username: string, password: string): AppIdentity | null {
   const ownerUsername = process.env.TURAS_DEMO_USERNAME;
   const ownerPassword = process.env.TURAS_DEMO_PASSWORD;
-  const reviewerUsername = process.env.TURAS_DEMO_REVIEWER_USERNAME;
-  const reviewerPassword = process.env.TURAS_DEMO_REVIEWER_PASSWORD;
+  // Select a complete namespace; never combine a panel username with a legacy password.
+  const panelConfigured = process.env.PANEL_USERNAME !== undefined || process.env.PANEL_PASSWORD !== undefined;
+  const reviewerUsername = panelConfigured ? process.env.PANEL_USERNAME : process.env.TURAS_DEMO_REVIEWER_USERNAME;
+  const reviewerPassword = panelConfigured ? process.env.PANEL_PASSWORD : process.env.TURAS_DEMO_REVIEWER_PASSWORD;
   const matchedOwner = ownerUsername && ownerPassword && username === ownerUsername && password === ownerPassword;
   const matchedReviewer = reviewerUsername && reviewerPassword && username === reviewerUsername && password === reviewerPassword;
   if (!matchedOwner && !matchedReviewer) return null;
