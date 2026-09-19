@@ -124,7 +124,7 @@ The evidence supports “working assistant foundation with authored operating me
 
 All items in this section are pre-demo work unless explicitly marked optional. P0 items are blockers; P1 items complete the review experience. The login page, history sidebar, and Preview configuration are required, even if other presentation scope is reduced.
 
-**Completion status: interview views are implemented, but D2/D3/D7 are not complete.** The interview-readiness review found that client-supplied Eve session binding remains possible, decision deduplication is not atomically scoped, and the durable approval/history path still needs a hosted rehearsal. These are implementation gaps as well as configuration gaps; the earlier “implementation complete” label was too broad. The Turas Preview environment still lacks `DATABASE_URL` and demo login/session variables at the latest configuration check. See `docs/INTERVIEW_PREP.md` for precise demonstration and production boundaries.
+**Completion status: interview views are implemented, but D2/D3/D7 are not complete.** The interview-readiness review found that client-supplied Eve session binding remains possible, decision deduplication is not atomically scoped, and the durable approval/history path still needs a hosted rehearsal. These are implementation gaps as well as configuration gaps; the earlier “implementation complete” label was too broad. The Turas Preview environment still lacks `DATABASE_URL` and demo login/session variables at the latest configuration check.
 
 ### Delivery order and effort
 

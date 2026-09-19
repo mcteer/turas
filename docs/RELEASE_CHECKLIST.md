@@ -33,7 +33,7 @@ Preview intentionally disables Hindsight-backed recall unless it receives its ow
 - Local unit checks: ten pass, including annual cost coverage, utilization losses, zero denominators, capacity feasibility, and per-engagement cost regression.
 - Live local Eve evaluations: seven pass, 39 gates; production Hindsight disabled for the run. These cover customer/provider routing plus annual economics, protected capacity, and additive intervention effort. They do not prove hosted approval or persistence.
 - Typecheck and Webpack production build pass. Browser checks cover login title fit at 320/390/768/1440px, protected operating-plan navigation, scenarios and invalid inputs, non-pilot economics, and mobile/desktop layouts. Screenshots are inspected with Playwright.
-- Hosted Preview still lacks database/login/session configuration at the configuration check. Keep production promotion gated on the full rehearsal and the ownership/idempotency hardening identified in `INTERVIEW_PREP.md`.
+- Hosted Preview still lacks database/login/session configuration at the configuration check. Keep production promotion gated on the full rehearsal and the ownership/idempotency hardening identified in `ROADMAP.md`.
 
 ## Preview validation record
 

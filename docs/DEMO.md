@@ -33,7 +33,7 @@ node --env-file=.env.local node_modules/eve/bin/eve.js info --json
 
 ## Presentation flow
 
-For the ten likely panel questions, defensible numbers, follow-up challenges, and a timed walkthrough, use [Interview preparation](./INTERVIEW_PREP.md). The Services operating plan page (`/operating-model`) adds annual payroll, overhead, pricing, and utilization sensitivities; these are independent proposed assumptions, not an annualization of the engagement fixtures.
+The Services operating plan page (`/operating-model`) adds annual payroll, overhead, pricing, and utilization sensitivities; these are independent proposed assumptions, not an annualization of the engagement fixtures.
 
 1. Sign in and frame the weekly P&L decision.
 2. Show the portfolio exception and the engagement evidence.
