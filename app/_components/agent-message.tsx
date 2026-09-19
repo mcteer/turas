@@ -13,8 +13,6 @@ import {
   CheckCircleIcon,
   CheckIcon,
   ExternalLinkIcon,
-  FileIcon,
-  ImageIcon,
   KeyRoundIcon,
   XCircleIcon,
 } from "lucide-react";
@@ -40,6 +38,8 @@ import {
 } from "@/components/ai-elements/tool";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { getMessageLinks } from "@/lib/chat-attachments";
+import { ChatAttachment } from "./chat-attachment";
 
 export type AgentInputResponse = {
   readonly optionId?: string;
@@ -67,15 +67,28 @@ export function AgentMessage({
   const hasAssistantText =
     message.role === "assistant" &&
     message.parts.some((part) => part.type === "text" && part.text.length > 0);
+  const links = message.role === "user"
+    ? getMessageLinks(message.parts.flatMap((part) => part.type === "text" ? [part.text] : []).join("\n"))
+    : [];
+  const files = message.role === "user" ? message.parts.filter((part) => part.type === "file") : [];
+  const hasMessageBody = message.role !== "user" || message.parts.some((part) =>
+    part.type !== "file" && part.type !== "step-start" && (part.type !== "text" || part.text.trim().length > 0),
+  );
 
   return (
     <Message
       data-optimistic={message.metadata?.optimistic ? "true" : undefined}
       from={message.role}
     >
-      <MessageContent>
+      {files.length > 0 || links.length > 0 ? (
+        <div aria-label="Sent attachments" className="ml-auto flex w-full max-w-sm flex-col items-end gap-2">
+          {files.map((file, index) => <ChatAttachment key={partKey(file, index)} {...file} />)}
+          {links.map((url) => <ChatAttachment key={url} kind="link" url={url} />)}
+        </div>
+      ) : null}
+      {hasMessageBody ? <MessageContent>
         {message.parts.map((part, index) =>
-          hasAssistantText && part.type === "reasoning" ? null : (
+          (hasAssistantText && part.type === "reasoning") || (message.role === "user" && part.type === "file") ? null : (
             <AgentMessagePart
               canRespond={canRespond}
               key={partKey(part, index)}
@@ -85,7 +98,7 @@ export function AgentMessage({
             />
           ),
         )}
-      </MessageContent>
+      </MessageContent> : null}
     </Message>
   );
 }
@@ -264,34 +277,7 @@ function QuestionRequest({
 }
 
 function AttachmentPart({ part }: { readonly part: EveFilePart }) {
-  const label = part.filename ?? "Attachment";
-  const detail = [part.mediaType, formatBytes(part.size)].filter(Boolean).join(" - ");
-  const isImage = part.mediaType.startsWith("image/") && part.url !== undefined;
-  const Icon = isImage ? ImageIcon : FileIcon;
-  const body = (
-    <span className="flex max-w-sm items-center gap-3 rounded-md border bg-background/60 p-2 text-sm">
-      {isImage ? (
-        <img alt={label} className="size-12 shrink-0 rounded-sm object-cover" src={part.url} />
-      ) : (
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-sm bg-muted text-muted-foreground">
-          <Icon className="size-4" />
-        </span>
-      )}
-      <span className="min-w-0 flex-1">
-        <span className="block truncate font-medium">{label}</span>
-        {detail ? <span className="block truncate text-muted-foreground">{detail}</span> : null}
-      </span>
-      {part.url ? <ExternalLinkIcon className="size-4 shrink-0 text-muted-foreground" /> : null}
-    </span>
-  );
-
-  return part.url ? (
-    <a href={part.url} rel="noreferrer" target="_blank">
-      {body}
-    </a>
-  ) : (
-    body
-  );
+  return <ChatAttachment {...part} />;
 }
 
 function AuthorizationPrompt({ part }: { readonly part: EveAuthorizationPart }) {
@@ -385,19 +371,6 @@ function formatAuthorizationOutcome(outcome: NonNullable<EveAuthorizationPart["o
     case "timed-out":
       return "timed out";
   }
-}
-
-function formatBytes(size: number | undefined): string | undefined {
-  if (size === undefined) {
-    return undefined;
-  }
-  if (size < 1024) {
-    return `${size} B`;
-  }
-  if (size < 1024 * 1024) {
-    return `${(size / 1024).toFixed(1)} KB`;
-  }
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function InputRequestActions({

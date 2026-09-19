@@ -1,0 +1,3005 @@
+{
+  "version": "public-evidence-2026-09-19.1",
+  "reviewedAt": "2026-09-19",
+  "directoryUrl": "https://vercel.com/customers",
+  "archiveUrls": [
+    "https://vercel.com/blog/category/customers",
+    "https://vercel.com/blog/category/customers/page/2",
+    "https://vercel.com/blog/category/customers/page/3",
+    "https://vercel.com/blog/category/customers/page/4",
+    "https://vercel.com/blog/category/customers/page/5",
+    "https://vercel.com/blog/category/customers/page/6",
+    "https://vercel.com/blog/category/customers/page/7",
+    "https://vercel.com/blog/category/customers/page/8",
+    "https://vercel.com/blog/category/customers/page/9",
+    "https://vercel.com/blog/category/customers/page/10"
+  ],
+  "coverage": {
+    "storyCount": 114,
+    "directoryCustomers": 60,
+    "excludedDirectoryEntries": [
+      "Vercel (publisher self-logo)"
+    ],
+    "definition": "All customer stories linked from the ten-page official customer archive and the customer directory at review time, plus the directory logo roster. This is a bounded public-source inventory, not Vercel’s complete customer list or a current CRM export."
+  },
+  "accounts": [
+    {
+      "id": "public-1password",
+      "name": "1Password",
+      "aliases": [
+        "OnePassword"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-ace-southern",
+      "name": "ACE SOUTHERN",
+      "aliases": [
+        "AceSouthern"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-american-bath-group",
+      "name": "American Bath Group",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/konobos-empowers-industry-giant-to-deploy-50-faster",
+          "title": "Konabos empowers an industry giant to deploy 50% faster with a composable stack ",
+          "publishedAt": "2023-08-15",
+          "scope": "Composable web delivery",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "American Bath Group and Konabos describe shorter review and release cycles after replacing a monolithic web setup.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-avalara",
+      "name": "Avalara",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-avalara-turns-pipedreams-into-patent-pending-with-v0",
+          "title": "How Avalara turns pipe dreams into patent-pending with v0",
+          "publishedAt": "2026-02-28",
+          "scope": "Internal prototyping",
+          "signal": "Delivery collaboration",
+          "products": [
+            "v0"
+          ],
+          "summary": "Avalara describes using v0 to turn ideas into working prototypes. This is evidence of a prototyping practice, not a company-wide production maturity grade.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-avanade",
+      "name": "Avanade",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/integrating-vercel-and-sitecore-for-2x-faster-development-times-and-111",
+          "title": "Avanade leverages Vercel and Next.js to accelerate development and deliver high-performance experiences",
+          "publishedAt": "2025-02-24",
+          "scope": "Composable web experiences",
+          "signal": "Product adoption",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Avanade describes moving to a composable Sitecore and Vercel architecture. Lighthouse scores alone do not establish sustained real-user optimization.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-baggu",
+      "name": "Baggu",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-benchling",
+      "name": "Benchling",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-beyerdynamic",
+      "name": "Beyerdynamic",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-beyond-menu",
+      "name": "Beyond Menu",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/beyond-menu-scaling-with-hypertune-and-vercel",
+          "title": "How Beyond Menu Achieved Seamless A/B Testing with Vercel’s Edge Config",
+          "publishedAt": "2024-08-01",
+          "scope": "Experimentation and gradual releases",
+          "signal": "Measurement and learning",
+          "products": [
+            "Next.js",
+            "Edge Config",
+            "Vercel"
+          ],
+          "summary": "Beyond Menu combines feature management with Edge Config for experiments, gradual rollout and rollback in its application.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-bitpanda",
+      "name": "Bitpanda",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-black-forest-labs",
+      "name": "Black Forest Labs",
+      "aliases": [
+        "BlackForestLabs"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-blackbox",
+      "name": "Blackbox",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-bnp-paribas-open",
+      "name": "BNP Paribas Open",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/bnp-paribas-open-serving-up-scores-and-experiences-in-real-time-with-work",
+          "title": "BNP Paribas Open: Serving up scores and experiences in real time with Work & Co and Vercel",
+          "publishedAt": "2024-10-22",
+          "scope": "Tournament web and mobile experience",
+          "signal": "Product adoption",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "The tournament and Work & Co describe launching a unified experience for real-time scores and fan accounts.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-browserbase",
+      "name": "Browserbase",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-canadian-national-railway",
+      "name": "Canadian National Railway",
+      "aliases": [
+        "CanadianNationalRailway"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-carhartt",
+      "name": "Carhartt",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-charles-schwab",
+      "name": "Charles Schwab",
+      "aliases": [
+        "CharlesSchwab"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-chatbase",
+      "name": "Chatbase",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-chatbase-scaled-rapidly-with-vercels-developer-experience-and-ai-sdk",
+          "title": "How Chatbase scaled rapidly with Vercel's developer experience and AI SDK",
+          "publishedAt": "2024-10-09",
+          "scope": "Customer-facing AI platform",
+          "signal": "Product adoption",
+          "products": [
+            "Next.js",
+            "AI SDK",
+            "Vercel"
+          ],
+          "summary": "Chatbase describes growing its AI-agent product using caching, model interfaces and a repeatable development workflow.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-chatprd",
+      "name": "ChatPRD",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/leveraging-vercel-and-the-ai-sdk-to-deliver-a-seamless-ai-powered-experience",
+          "title": "Leveraging Vercel and the AI SDK to deliver a seamless, AI-powered experience as a solo founder",
+          "publishedAt": "2024-10-09",
+          "scope": "Product-management assistant",
+          "signal": "Product adoption",
+          "products": [
+            "AI SDK",
+            "Vercel"
+          ],
+          "summary": "ChatPRD describes launching and growing an AI product with a solo founder, using AI SDK and Vercel for application delivery.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-chipotle",
+      "name": "Chipotle",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-clickhouse",
+      "name": "ClickHouse",
+      "aliases": [
+        "Clickhouse"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-cline",
+      "name": "Cline",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-code-and-theory",
+      "name": "Code and Theory",
+      "aliases": [
+        "CodeAndTheory",
+        "Code & Theory"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-code-and-theory-cut-time-to-prototype-75-with-v0",
+          "title": "How Code and Theory cut time-to-prototype 75% with v0",
+          "publishedAt": "2026-06-09",
+          "scope": "Agency prototyping and delivery",
+          "signal": "Delivery collaboration",
+          "products": [
+            "v0"
+          ],
+          "summary": "The agency reports replacing static planning artifacts with interactive prototypes and reducing the time needed to reach a working prototype.",
+          "cautions": []
+        },
+        {
+          "url": "https://vercel.com/customers/rethinking-prototyping-requirements-and-project-delivery-at-code-and-theory",
+          "title": "Rethinking prototyping, requirements, and project delivery at Code and Theory",
+          "publishedAt": "2025-08-20",
+          "scope": "Agency requirements and prototypes",
+          "signal": "Delivery collaboration",
+          "products": [
+            "v0"
+          ],
+          "summary": "The agency describes using working prototypes to clarify requirements and accelerate collaboration between creative and engineering teams.",
+          "cautions": []
+        },
+        {
+          "url": "https://vercel.com/customers/break-the-news-not-the-site",
+          "title": "How Code and Theory and Vercel ensure speed and reliability for news organizations and publishers",
+          "publishedAt": "2024-10-31",
+          "scope": "Publisher client delivery",
+          "signal": "Operational trust",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "The agency describes Vercel work for RealClearPolitics and the Minnesota Star Tribune focused on publishing reliability during news-driven traffic surges.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-coderabbit",
+      "name": "CodeRabbit",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-commerce-ui",
+      "name": "Commerce-UI",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/commerceui-headless-shopify-nextjs",
+          "title": "The power of headless: Ecommerce success with Next.js, Vercel, and Shopify",
+          "publishedAt": "2023-11-28",
+          "scope": "Client ecommerce delivery",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Next.js",
+            "Preview Deployments",
+            "Vercel"
+          ],
+          "summary": "Commerce-UI describes using a headless stack for customized client storefronts and collaborative review.",
+          "cautions": []
+        },
+        {
+          "url": "https://vercel.com/customers/making-commerce-ui-a-trusted-partner-for-global-ecommerce-brands",
+          "title": "Making Commerce-UI a trusted partner for global ecommerce brands",
+          "publishedAt": "2023-04-14",
+          "scope": "Design-focused ecommerce projects",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Commerce-UI describes a reusable approach to delivering customized storefronts for client brands.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-conductor",
+      "name": "Conductor",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-conductor-moved-parallel-coding-agents-from-the-laptop-to-the-cloud-with-vercel-sandbox",
+          "title": "How Conductor moved parallel coding agents from the laptop to the cloud with Vercel Sandbox",
+          "publishedAt": "2026-05-28",
+          "scope": "Cloud coding workspaces",
+          "signal": "Operational trust",
+          "products": [
+            "Sandbox"
+          ],
+          "summary": "Conductor uses cloud workspaces to keep parallel coding agents running independently of a developer's laptop.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-consensys",
+      "name": "Consensys",
+      "aliases": [
+        "MetaMask"
+      ],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-consensys-rebuilt-metamask-io-with-vercel-and-next-js",
+          "title": "How Consensys rebuilt MetaMask.io with Vercel and Next.js",
+          "publishedAt": "2025-05-14",
+          "scope": "MetaMask.io publishing",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Consensys migrated the MetaMask website to support dynamic content and faster collaboration. The evidence does not describe wallet transaction infrastructure.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-core-construction",
+      "name": "CORE Construction",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/core-construction",
+          "title": "CORE Construction builds excellence with Vercel",
+          "publishedAt": "2023-04-18",
+          "scope": "Internal operational applications",
+          "signal": "Product adoption",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "CORE Construction describes using web applications to support its operational-excellence program and data-informed internal decisions.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-coxwave",
+      "name": "Coxwave",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-coxwave-delivers-genai-value-faster-with-vercel",
+          "title": "How Coxwave delivers GenAI value faster with Vercel",
+          "publishedAt": "2025-08-13",
+          "scope": "GenAI application delivery",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "Coxwave describes shorter deployment cycles for its GenAI consulting and analytics work after changing its application-delivery approach.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-cruise-critic",
+      "name": "Cruise Critic",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/a-better-developer-experience-makes-building-cruise-critic-more-efficient",
+          "title": "Optimizing performance for over 6M monthly visitors at CruiseCritic ",
+          "publishedAt": "2023-02-24",
+          "scope": "Travel-review website",
+          "signal": "Measurement and learning",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Cruise Critic describes modernizing its web stack to improve delivery and the experience of a large visitor base.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-datocms",
+      "name": "DatoCMS",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/datocms-builds-60-faster-with-a-streamlined-workflow",
+          "title": "DatoCMS builds 60% faster with a streamlined workflow",
+          "publishedAt": "2022-11-30",
+          "scope": "Website build and release workflow",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "DatoCMS reports shorter builds and simpler delivery infrastructure after moving its web workflow to Next.js on Vercel.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-decagon",
+      "name": "Decagon",
+      "aliases": [
+        "DecagonAi"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-delphi",
+      "name": "Delphi",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-delphi-ships-100-times-a-day-with-its-python-backend-on-vercel",
+          "title": "How Delphi ships 100 times a day with its Python backend on Vercel",
+          "publishedAt": "2026-09-15",
+          "scope": "Digital-mind product delivery",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Vercel",
+            "AI Gateway",
+            "Workflows"
+          ],
+          "summary": "A small cross-functional team releases frequently behind feature flags after moving its Python backend to Vercel.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-demant",
+      "name": "Demant",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/demant-achieves-global-scalability-and-30x-faster-response-times-with-vercel",
+          "title": "Demant achieves global scalability and 30x faster response times with Vercel",
+          "publishedAt": "2024-03-29",
+          "scope": "Global healthcare web estate",
+          "signal": "Platform reuse",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "Demant describes a frontend architecture supporting international delivery with reported response-time and infrastructure-cost improvements.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-desenio",
+      "name": "Desenio",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-vercel-helped-desenio-future-proof-their-business",
+          "title": "How Vercel helped Desenio future-proof their business",
+          "publishedAt": "2024-05-09",
+          "scope": "Merged-brand ecommerce workflow",
+          "signal": "Measurement and learning",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "Desenio describes consolidating duplicated delivery pipelines and reports changes in bounce rate, session duration and conversion.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-devolver",
+      "name": "Devolver",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/devolver-ships-game-websites-73-faster-with-vercel",
+          "title": "Devolver ships game websites 73% faster with Vercel",
+          "publishedAt": "2024-08-21",
+          "scope": "Game-site delivery",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Preview Deployments",
+            "Vercel"
+          ],
+          "summary": "Devolver describes shorter game-site delivery cycles after reducing configuration work and adding preview-based feedback.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-doordash",
+      "name": "DoorDash",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-dub",
+      "name": "Dub",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-dub-grew-to-3000-active-domains-with-vercels-multi-tenant-saas-toolkit",
+          "title": "How Dub grew to 3,000 active domains with Vercel",
+          "publishedAt": "2024-05-03",
+          "scope": "Link-management platform",
+          "signal": "Platform reuse",
+          "products": [
+            "Next.js",
+            "Web Analytics",
+            "Vercel"
+          ],
+          "summary": "Dub uses a multi-tenant application to serve many customer domains and link redirects from shared infrastructure.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-durable",
+      "name": "Durable",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/360-billion-tokens-3-million-customers-6-engineers",
+          "title": "360 billion tokens, 3 million customers, 6 engineers",
+          "publishedAt": "2026-03-18",
+          "scope": "Small-business AI platform",
+          "signal": "Platform reuse",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "Durable reports operating a multi-tenant AI platform with a small engineering team and reduced infrastructure costs after migration.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-ebay",
+      "name": "eBay",
+      "aliases": [
+        "Ebay"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-elkjp",
+      "name": "Elkjøp",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/elkjops-digital-transformation-with-next-js-and-vercel",
+          "title": "How Elkjøp Transformed Retail with Next.js and Vercel",
+          "publishedAt": "2024-07-24",
+          "scope": "Retail digital properties",
+          "signal": "Measurement and learning",
+          "products": [
+            "Next.js",
+            "Preview Deployments",
+            "Vercel"
+          ],
+          "summary": "Elkjøp reports improvements in release cycles and layout stability across its retail digital experience.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-emburse",
+      "name": "Emburse",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-emburse-increased-site-performance-by-4x-with-vercel",
+          "title": "How Emburse increased site performance by 4x with Vercel",
+          "publishedAt": "2024-10-10",
+          "scope": "Localized marketing website",
+          "signal": "Measurement and learning",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Emburse reports performance improvements and a publishing workflow that supports marketing content and localization.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-engel-volkers",
+      "name": "Engel & Völkers",
+      "aliases": [
+        "EngelUndVoelkers"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-examine",
+      "name": "Examine",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/examine",
+          "title": "How Vercel helped this popular health database increase free trials by 284%",
+          "publishedAt": "2023-07-25",
+          "scope": "Research-content website",
+          "signal": "Measurement and learning",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Examine reports faster page delivery and builds, alongside a change in trial creation after modernizing its website.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-extra-space-storage",
+      "name": "Extra Space Storage",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/extra-space-storages-build-times-became-17x-faster-with-vercel",
+          "title": "Extra Space Storage's build times became 17x faster with Vercel",
+          "publishedAt": "2024-12-11",
+          "scope": "Public websites and kiosks",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Next.js",
+            "ISR"
+          ],
+          "summary": "The company describes shorter builds and branch environments that improve release confidence for acquisition channels.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-factory",
+      "name": "Factory",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-factory-scaled-its-cloud-backend-to-one-billion-monthly-requests-on-vercel",
+          "title": "How Factory scaled its cloud backend to one billion monthly requests on Vercel",
+          "publishedAt": "2026-08-03",
+          "scope": "Cloud backend and internal tooling",
+          "signal": "Operational trust",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "The case study describes a production backend, internal tools and abuse controls running on Vercel. Request-volume units conflict between the headline and body; no volume is treated as settled.",
+          "cautions": [
+            "The source contains inconsistent metric labels or figures. Do not quote an unqualified number; the summary identifies the conflict."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "public-featured",
+      "name": "Featured",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-featureds-users-make-100k-media-pitches-per-month-on-vercel",
+          "title": "How Featured's users make 100K media pitches per month on Vercel",
+          "publishedAt": "2026-09-11",
+          "scope": "PR platform and brand sites",
+          "signal": "Platform reuse",
+          "products": [
+            "AI SDK",
+            "AI Gateway",
+            "Workflows"
+          ],
+          "summary": "Featured consolidated hundreds of sites and uses model routing and durable workflows for its PR product.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-fern",
+      "name": "Fern",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-fern-runs-multi-tenant-docs-for-webflow-and-elevenlabs-on-vercel",
+          "title": "How Fern runs multi-tenant docs for Webflow and ElevenLabs on Vercel ",
+          "publishedAt": "2026-06-09",
+          "scope": "Multi-tenant documentation delivery",
+          "signal": "Platform reuse",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Fern serves customer documentation across custom domains from a shared application and reports faster loading and frequent deployment.",
+          "cautions": []
+        },
+        {
+          "url": "https://vercel.com/customers/how-fern-delivers-6m-monthly-views-and-80-faster-docs-with-vercel",
+          "title": "How Fern delivers 6M+ monthly views and 80% faster docs with Vercel",
+          "publishedAt": "2025-05-15",
+          "scope": "Customer documentation platform",
+          "signal": "Platform reuse",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Fern describes serving customer documentation across multiple domains from a shared application, with reported loading and deployment improvements.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-figma",
+      "name": "Figma",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-flaconi",
+      "name": "Flaconi",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-flora",
+      "name": "FLORA",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-flora-shipped-a-creative-agent-on-vercels-ai-stack",
+          "title": "How FLORA shipped a creative agent on Vercel's AI stack",
+          "publishedAt": "2026-03-31",
+          "scope": "FAUNA creative generation workflows",
+          "signal": "Product adoption",
+          "products": [
+            "AI SDK",
+            "Workflows",
+            "Fluid Compute"
+          ],
+          "summary": "FLORA uses durable orchestration for a creative agent that coordinates multiple image models on a visual canvas.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-frame-io",
+      "name": "Frame.io",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/frameio-never-drop-the-illusion",
+          "title": "How Frame.io builds fluid UI for a seamless user experience",
+          "publishedAt": "2024-06-11",
+          "scope": "Video-collaboration web interface",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Preview Deployments",
+            "Vercel"
+          ],
+          "summary": "Frame.io describes faster preview builds and attention to interface responsiveness for video professionals. Expected user counts are not observed adoption.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-fujifilm",
+      "name": "Fujifilm",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-gamma",
+      "name": "Gamma",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/gamma-builds-design-first-agents-with-vercel",
+          "title": "Gamma builds design-first agents with Vercel",
+          "publishedAt": "2026-02-28",
+          "scope": "Presentation-generation product",
+          "signal": "Product adoption",
+          "products": [
+            "AI SDK",
+            "Vercel Functions"
+          ],
+          "summary": "Gamma combines design-oriented interfaces with agent generation, using AI SDK and Vercel infrastructure for its presentation product.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-gearbox",
+      "name": "Gearbox",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/incremental-migration-from-wordpress-for-a-dev-first-approach",
+          "title": "Incremental migration from WordPress for a dev-first approach",
+          "publishedAt": "2023-04-14",
+          "scope": "Agency web delivery",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Gearbox describes incremental migration and a developer-oriented approach to giving clients control of their websites.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-general-intelligence",
+      "name": "General Intelligence",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-general-intelligence-used-agents-to-build-an-agent-platform-on-vercel",
+          "title": "How General Intelligence used agents to build an agent platform on Vercel",
+          "publishedAt": "2026-05-04",
+          "scope": "Cofounder application platform",
+          "signal": "Platform reuse",
+          "products": [
+            "Vercel",
+            "Preview Deployments"
+          ],
+          "summary": "Cofounder provisions a managed Vercel account for each customer and uses parallel preview environments in its own development workflow.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-gitbook",
+      "name": "GitBook",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-gitbook-serves-30000-sites-with-sub-second-content-updates",
+          "title": "How GitBook serves 30,000 sites with sub-second content updates",
+          "publishedAt": "2026-05-01",
+          "scope": "Hosted documentation platform",
+          "signal": "Platform reuse",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "GitBook operates thousands of documentation sites through one deployment, with cache invalidation supporting frequent content changes.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-globacore",
+      "name": "Globacore",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-a-global-agency-built-a-web-innovation-engine-in-two-months",
+          "title": "How a global agency built a web innovation engine in two months ",
+          "publishedAt": "2023-02-22",
+          "scope": "Interactive web project delivery",
+          "signal": "Product adoption",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "Globacore describes extending its interactive-experience practice into web delivery for client projects.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-global-retail-brands",
+      "name": "Global Retail Brands",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-global-retail-brands-cut-development-time-from-months-to-1-week",
+          "title": "How Global Retail Brands cut development time from months to 1 week with Vercel",
+          "publishedAt": "2024-04-18",
+          "scope": "Multi-brand ecommerce",
+          "signal": "Platform reuse",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "Global Retail Brands describes reducing fragmentation across retail brands and shortening implementation and deployment cycles.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-guinness",
+      "name": "Guinness",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-hashnode",
+      "name": "Hashnode",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/hashnode-runs-the-fastest-blogs-on-the-web-with-vercel",
+          "title": "Hashnode runs the fastest blogs on the web with Vercel",
+          "publishedAt": "2023-01-13",
+          "scope": "Custom-domain blogging platform",
+          "signal": "Platform reuse",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Hashnode describes managing many custom-domain blogs through a shared platform rather than maintaining that infrastructure itself.",
+          "cautions": []
+        },
+        {
+          "url": "https://vercel.com/customers/hashnode-runs-faster-blogs-on-the-web-with-vercel",
+          "title": "Hashnode runs the fastest blogs on the web with Vercel",
+          "publishedAt": "2022-08-03",
+          "scope": "Blog platform performance",
+          "signal": "Platform reuse",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Hashnode describes custom-domain management and frontend performance for its blogging platform in an earlier case study.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-helly-hansen",
+      "name": "Helly Hansen",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-helly-hansen-migrated-to-vercel-and-drove-80-black-friday-growth",
+          "title": "Helly Hansen migrated to Vercel and drove 80% Black Friday growth ",
+          "publishedAt": "2025-09-15",
+          "scope": "Multi-market ecommerce migration",
+          "signal": "Measurement and learning",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Helly Hansen reports improved web performance and conversion after an incremental migration. Black Friday growth figures differ across the source's headline and description.",
+          "cautions": [
+            "The source contains inconsistent metric labels or figures. Do not quote an unqualified number; the summary identifies the conflict."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "public-herman-miller",
+      "name": "Herman Miller",
+      "aliases": [
+        "HermanMiller"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-hydrow",
+      "name": "Hydrow",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/hydrow",
+          "title": "How the at-home workout sensation, Hydrow, cut authoring times from weeks to minutes",
+          "publishedAt": "2023-09-11",
+          "scope": "Ecommerce content publishing",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "Hydrow describes reducing content-authoring delays and improving its publishing workflow through a composable architecture.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-iconiq",
+      "name": "Iconiq",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-indent",
+      "name": "Indent",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-indent-delivers-secure-access-with-next.js-and-vercel",
+          "title": "How Indent delivers secure access with Next.js and Vercel",
+          "publishedAt": "2023-02-17",
+          "scope": "Access-management web application",
+          "signal": "Product adoption",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Indent describes using Next.js and Vercel for the interface of its access-management product. No independent security assurance is implied.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-johnson-johnson",
+      "name": "Johnson & Johnson",
+      "aliases": [
+        "JohnsonJohnson"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-joyn",
+      "name": "Joyn",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/deploying-at-the-speed-of-on-demand-streaming",
+          "title": "Deploying at the speed of on-demand streaming",
+          "publishedAt": "2023-08-23",
+          "scope": "Streaming-service web frontend",
+          "signal": "Measurement and learning",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Joyn reports page-performance improvements and a streamlined deployment process for its streaming-service interface.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-justincase-technologies",
+      "name": "justInCase Technologies",
+      "aliases": [
+        "justInCase"
+      ],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-vercel-helped-justincase-technologies-cut-their-build-time-in-half",
+          "title": "How Vercel helped justInCase Technologies cut their build time in half",
+          "publishedAt": "2022-11-30",
+          "scope": "Insurance web delivery",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Vercel",
+            "Preview Deployments"
+          ],
+          "summary": "The team reports more reliable previews and shorter builds after changing its application-delivery platform.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-kiko-milano",
+      "name": "KIKO Milano",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-kiko-milano-scales-for-black-friday",
+          "title": "How KIKO Milano scales for Black Friday",
+          "publishedAt": "2026-05-05",
+          "scope": "Ecommerce peak-season operations",
+          "signal": "Operational trust",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "KIKO Milano reports reducing manual peak-traffic preparation and moving to a more frequent release cadence after migration.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-ledger",
+      "name": "Ledger",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/ledgers-solution-to-traffic-spike-stability-with-vercel",
+          "title": "Navigating Web3 dynamism: Ledger's solution to traffic spike stability with Vercel",
+          "publishedAt": "2024-10-04",
+          "scope": "Marketing-site traffic and releases",
+          "signal": "Operational trust",
+          "products": [
+            "Next.js",
+            "Preview Deployments",
+            "Vercel"
+          ],
+          "summary": "Ledger describes adapting its web architecture to unpredictable traffic and faster release cycles. Release-frequency multipliers differ within the source.",
+          "cautions": [
+            "The source contains inconsistent metric labels or figures. Do not quote an unqualified number; the summary identifies the conflict."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "public-leonardo-ai",
+      "name": "Leonardo.Ai",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/leonardo-ai-performantly-generates-4-5-million-images-daily-with-next-js-and-vercel",
+          "title": "Leonardo generates 4.5M images daily with Next.js and Vercel",
+          "publishedAt": "2024-03-18",
+          "scope": "Image-generation application frontend",
+          "signal": "Measurement and learning",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "Leonardo.Ai reports shorter page loads and builds while supporting growth of its image-generation product.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-lofficiel",
+      "name": "L’Officiel",
+      "aliases": [
+        "L'Officiel"
+      ],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/why-vercel-and-next-js-are-the-perfect-fit-for-this-global-fashion-media",
+          "title": "Why Vercel and Next.js are the perfect fit for this global fashion media group",
+          "publishedAt": "2023-09-21",
+          "scope": "Multi-publication web estate",
+          "signal": "Platform reuse",
+          "products": [
+            "Next.js",
+            "ISR",
+            "Vercel"
+          ],
+          "summary": "L’Officiel describes maintaining multiple publication websites with a small team following a migration from Ruby on Rails.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-makeswift",
+      "name": "Makeswift",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-makeswift-improved-ci-speed-by-65-with-turborepo",
+          "title": "How Makeswift improved CI speed by 65% with Turborepo",
+          "publishedAt": "2023-02-22",
+          "scope": "CI and monorepo workflow",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Turborepo"
+          ],
+          "summary": "Makeswift reports reducing CI time by adopting Turborepo. Open-source tooling use alone does not establish a paid hosting relationship.",
+          "cautions": [
+            "Turborepo adoption does not establish a paid Vercel hosting relationship."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "public-mecum-auction-company",
+      "name": "Mecum Auction Company",
+      "aliases": [
+        "Mecum"
+      ],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/managing-275-thousand-pages-and-8-million-assets-with-isr",
+          "title": "Mecum Auction Company manages 275K pages and 8M assets with ISR",
+          "publishedAt": "2024-09-17",
+          "scope": "Auction listings and media publishing",
+          "signal": "Platform reuse",
+          "products": [
+            "ISR",
+            "Vercel"
+          ],
+          "summary": "Mecum and its partner use incremental regeneration to maintain a large collection of listing pages and media assets.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-meter",
+      "name": "Meter",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/from-minutes-to-seconds-how-meter-accelerates-delivery-with-vercel-and-next",
+          "title": "From minutes to seconds: How Meter accelerates delivery with Vercel and Next.js",
+          "publishedAt": "2024-11-26",
+          "scope": "Network-management web applications",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Meter reports consolidating application delivery and shortening builds for its network dashboard and AI-assisted interface.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-mintlify",
+      "name": "Mintlify",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/mintlify-scaling-a-powerful-documentation-platform-with-vercel",
+          "title": "Building multi-tenant platforms at scale with thousands of custom domains",
+          "publishedAt": "2024-06-03",
+          "scope": "Hosted documentation platform",
+          "signal": "Platform reuse",
+          "products": [
+            "Next.js",
+            "ISR",
+            "Vercel"
+          ],
+          "summary": "Mintlify uses a shared documentation platform with many custom domains rather than a separate application deployment for each customer.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-mmm-page",
+      "name": "mmm.page",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-vercel-helps-mmm-page-manage-over-30-000-custom-domains",
+          "title": "How Vercel helps mmm.page manage over 30,000 sites",
+          "publishedAt": "2023-04-07",
+          "scope": "Website-building platform",
+          "signal": "Platform reuse",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "mmm.page describes serving a growing collection of user-created websites with server rendering and custom-domain support.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-morning-brew",
+      "name": "Morning Brew",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/from-newsletter-to-global-media-brand-with-a-headless-frontend",
+          "title": "From newsletter to global media brand with a frontend cloud and headless stack",
+          "publishedAt": "2023-02-09",
+          "scope": "Multi-brand media publishing",
+          "signal": "Platform reuse",
+          "products": [
+            "Next.js",
+            "ISR",
+            "Vercel"
+          ],
+          "summary": "Morning Brew describes expanding its publishing architecture across media brands. Revenue growth is reported context, not proof of a hosting-caused increase.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-motortrend",
+      "name": "MotorTrend",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/motortrend-shifting-into-overdrive-with-vercel",
+          "title": "MotorTrend: Shifting into overdrive with Vercel",
+          "publishedAt": "2024-11-07",
+          "scope": "Publishing release workflow",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "MotorTrend reports a shorter feature-release cycle after a platform migration, alongside changes in advertising impressions.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-neo-financial",
+      "name": "Neo Financial",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/neo-financial",
+          "title": "How Neo Financial cut time spent on infrastructure admin by 50%",
+          "publishedAt": "2023-06-22",
+          "scope": "Financial-services web frontend",
+          "signal": "Operational trust",
+          "products": [
+            "Next.js",
+            "Preview Deployments",
+            "Vercel"
+          ],
+          "summary": "Neo Financial describes improving frontend delivery while addressing security requirements. This does not establish the maturity of its banking systems as a whole.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-neon",
+      "name": "Neon",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-notion",
+      "name": "Notion",
+      "aliases": [
+        "Notion Labs"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/notion-workers-vercel-sandbox",
+          "title": "How Notion Workers run untrusted code at scale with Vercel Sandbox",
+          "publishedAt": "2026-03-12",
+          "scope": "Notion Workers",
+          "signal": "Operational trust",
+          "products": [
+            "Sandbox"
+          ],
+          "summary": "Notion Workers use Sandbox isolation, credential injection and network policies to run externally supplied code. The article describes a developer-platform capability, not an FDE handoff.",
+          "cautions": [
+            "The embedded launch announcement describes Workers as pre-alpha. Do not infer general availability or company-wide operational maturity."
+          ]
+        },
+        {
+          "url": "https://vercel.com/customers/how-notion-powers-rapid-and-performant-experimentation",
+          "title": "How Notion powers rapid and performant experimentation",
+          "publishedAt": "2024-11-25",
+          "scope": "Marketing-site experimentation",
+          "signal": "Measurement and learning",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Notion describes repeated content experiments with Statsig while monitoring web performance. This is marketing-site evidence dated 2024, not a current services engagement.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-nous-research",
+      "name": "Nous Research",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-nous-research-used-botid-to-block-automated-abuse-at-scale",
+          "title": "How Nous Research used BotID to block automated abuse at scale",
+          "publishedAt": "2025-11-07",
+          "scope": "Automated-abuse prevention",
+          "signal": "Operational trust",
+          "products": [
+            "BotID"
+          ],
+          "summary": "Nous Research added bot detection after automated account abuse increased inference and identity costs during a free-model promotion.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-okara",
+      "name": "Okara",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-okara-runs-cmo-agents-for-120000-companies-on-vercel",
+          "title": "How Okara runs CMO agents for 120,000 companies on Vercel",
+          "publishedAt": "2026-06-11",
+          "scope": "Marketing agent product",
+          "signal": "Product adoption",
+          "products": [
+            "AI Gateway",
+            "Sandbox"
+          ],
+          "summary": "Okara describes a live marketing-agent product coordinating specialized agents across several marketing channels.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-okta",
+      "name": "Okta",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-opencode",
+      "name": "OpenCode",
+      "aliases": [
+        "Opencode"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-openevidence",
+      "name": "OpenEvidence",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-openevidence-built-a-healthcare-ai-that-physicians-can-trust",
+          "title": "How OpenEvidence built a healthcare AI that physicians actually trust",
+          "publishedAt": "2026-02-25",
+          "scope": "Clinical decision-support application",
+          "signal": "Operational trust",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "The case study describes handling a sudden traffic increase while monitoring response times and errors. It does not establish clinical effectiveness from hosting performance.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-opensea",
+      "name": "OpenSea",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-ora",
+      "name": "Ora",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-ora-benchmarks-every-major-ai-agent-on-vercel",
+          "title": "How Ora benchmarks every major AI agent on Vercel",
+          "publishedAt": "2026-08-21",
+          "scope": "Agent benchmarking platform",
+          "signal": "Measurement and learning",
+          "products": [
+            "Vercel",
+            "eve"
+          ],
+          "summary": "Ora runs comparative agent tasks against websites to identify failures. The reported capability is a benchmarking product, not a maturity score for its customers.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-ozone",
+      "name": "Ozone",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/revolutionizing-video-editing-on-the-web-with-next-js-and-vercel",
+          "title": "Revolutionizing video editing on the web with Next.js and Vercel",
+          "publishedAt": "2024-03-20",
+          "scope": "Web video-editing product",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Ozone describes faster development and builds after moving its collaborative video-editing application to Next.js and Vercel.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-paige",
+      "name": "PAIGE",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-paige-grew-revenue-by-22-with-shopify-next-js-and-vercel",
+          "title": "How PAIGE grew revenue by 22% with Shopify, Next.js, and Vercel",
+          "publishedAt": "2025-04-03",
+          "scope": "Headless ecommerce storefront",
+          "signal": "Measurement and learning",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "PAIGE reports simplifying its storefront architecture and measuring conversion and revenue changes. A headline statistic is inconsistently labeled as traffic versus revenue in the body.",
+          "cautions": [
+            "The source contains inconsistent metric labels or figures. Do not quote an unqualified number; the summary identifies the conflict."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "public-paul-smith",
+      "name": "Paul Smith",
+      "aliases": [
+        "PaulSmith"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-personio",
+      "name": "Personio",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/from-wordpress-monolith-to-vercel-personio-elevates-site-performance",
+          "title": "WordPress monolith to Vercel: How Personio elevated performance and DX",
+          "publishedAt": "2024-03-18",
+          "scope": "Marketing website",
+          "signal": "Measurement and learning",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Personio describes replacing a WordPress monolith with a composable website and reports changes in web performance and uptime.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-plenti",
+      "name": "Plenti",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/from-monolith-to-composable-equipping-a-financial-services-ipo",
+          "title": "Moving from monolithic WordPress to composable gives Plenti total freedom",
+          "publishedAt": "2023-02-23",
+          "scope": "Brand website migration",
+          "signal": "Product adoption",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Plenti describes launching a composable website around a rebrand and IPO. The evidence concerns its frontend, not lending operations.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-plex",
+      "name": "Plex",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-plex-6x-their-impressions-deploying-next-js-on-vercel",
+          "title": "How Plex 6x their impressions deploying Next.js on Vercel",
+          "publishedAt": "2023-01-26",
+          "scope": "Web experience and performance",
+          "signal": "Measurement and learning",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Plex describes frontend optimization and improvements in a real-user experience score. This does not describe its full streaming infrastructure.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-poke",
+      "name": "Poke",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-potion-so",
+      "name": "Potion.so",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/from-idea-to-acqusition-how-potion-shipped-4k-sites-on-vercel",
+          "title": "From idea to acquisition: How Potion.so shipped 4,000+ sites on Vercel",
+          "publishedAt": "2023-06-15",
+          "scope": "Notion-to-website platform",
+          "signal": "Platform reuse",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Potion served many custom-domain websites through a shared platform. The story also reports an acquisition, so it must be treated as historical evidence.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-ramp",
+      "name": "Ramp",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-ramp-kept-100-uptime-through-100x-traffic-surges-on-vercel",
+          "title": "How Ramp kept 100% uptime through 100x traffic surges on Vercel ",
+          "publishedAt": "2026-02-17",
+          "scope": "Marketing website and internal search",
+          "signal": "Measurement and learning",
+          "products": [
+            "Next.js",
+            "AI SDK",
+            "Vercel"
+          ],
+          "summary": "Ramp tested migrated marketing pages against web-performance measures and reports stable service during large traffic surges.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-read-cv",
+      "name": "Read.cv",
+      "aliases": [
+        "Read CV"
+      ],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/edge-functions-enable-read-cv-to-deliver-profiles-globally-with-near-zero",
+          "title": "Near-zero latency using Vercel Edge Functions",
+          "publishedAt": "2023-01-13",
+          "scope": "Profile pages and custom domains",
+          "signal": "Product adoption",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "The historical story describes low-latency profile delivery and custom-domain support. It does not establish the company's current operating or customer status.",
+          "cautions": [
+            "Historical case study; current operating and customer status have not been verified."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "public-ready-net",
+      "name": "Ready.net",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/cutting-delivery-times-in-half-with-v0",
+          "title": "Cutting delivery times in half with v0",
+          "publishedAt": "2025-08-12",
+          "scope": "Product requirements and feedback",
+          "signal": "Delivery collaboration",
+          "products": [
+            "v0"
+          ],
+          "summary": "Ready.net uses prototypes to clarify incoming requirements and shorten feedback loops across its product teams.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-remarkable",
+      "name": "reMarkable",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/incrementally-adopting-next-js-at-one-of-europes-fastest-growing-brands",
+          "title": "Incrementally adopting Next.js at one of Europe's fastest growing brands",
+          "publishedAt": "2023-06-23",
+          "scope": "Composable web delivery",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Next.js",
+            "Preview Deployments",
+            "Vercel"
+          ],
+          "summary": "reMarkable describes incremental frontend adoption intended to improve both development workflows and the customer experience.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-rippling",
+      "name": "Rippling",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-vercel-and-next-js-keep-rippling-on-their-rising-path-to-success",
+          "title": "How Vercel and Next.js keep Rippling on their rising path to success",
+          "publishedAt": "2023-02-22",
+          "scope": "Marketing-site content delivery",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Rippling describes combining a headless WordPress CMS with Next.js and Vercel to support faster stakeholder-driven content changes.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-rox",
+      "name": "Rox",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/ai-agents-at-scale-roxs-vercel-powered-revenue-operating-system",
+          "title": "AI agents at scale: Rox’s Vercel-powered revenue operating system",
+          "publishedAt": "2025-09-16",
+          "scope": "Revenue-agent web application",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "Rox describes recurring feature delivery and global web infrastructure for its sales-agent product.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-ruggable",
+      "name": "Ruggable",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-ruggable-saw-more-organic-clicks-by-optimizing-their-frontend",
+          "title": "How Ruggable optimized their frontend architecture",
+          "publishedAt": "2024-04-08",
+          "scope": "Ecommerce frontend",
+          "signal": "Measurement and learning",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Ruggable reports improved storefront speed and search performance after adopting a headless frontend.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-runway",
+      "name": "Runway",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/runway-enables-next-generation-content-creation-with-ai-and-vercel",
+          "title": "Runway enables next-generation content creation with AI and Vercel",
+          "publishedAt": "2023-02-10",
+          "scope": "Web development and review",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "Runway describes shorter builds and review cycles after consolidating website deployment on Vercel.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-sandstone",
+      "name": "Sandstone",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-sandstone-grew-40x-in-147-days-on-vercel",
+          "title": "How Sandstone grew 40x in 147 days on Vercel",
+          "publishedAt": "2026-07-28",
+          "scope": "Legal request workflows",
+          "signal": "Platform reuse",
+          "products": [
+            "AI SDK",
+            "Turborepo",
+            "Vercel"
+          ],
+          "summary": "Sandstone uses a shared application codebase and agent workflows to assemble information for legal requests across customer teams.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-sanity",
+      "name": "Sanity",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/sanity-edge-middleware",
+          "title": "Sanity balances experimentation and performance with Vercel Edge Middleware ",
+          "publishedAt": "2023-01-13",
+          "scope": "Marketing-site experimentation",
+          "signal": "Measurement and learning",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Sanity describes experiments and cross-team collaboration on its own marketing website using Vercel runtime capabilities.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-scale-ai",
+      "name": "Scale AI",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/scale-unifies-design-and-performance-with-next-js-and-vercel",
+          "title": "How Scale AI unifies design and performance with Next.js and Vercel",
+          "publishedAt": "2022-11-30",
+          "scope": "Design and frontend delivery",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Scale AI describes using Next.js and Vercel to support a small design team's frontend work. This is not an assessment of its data-labeling operations.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-searchable",
+      "name": "Searchable",
+      "aliases": [
+        "SearchableLogotype"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-searchable-ships-customer-requested-features-in-30-minutes-on-vercel",
+          "title": "How Searchable ships customer-requested features in 30 minutes on Vercel ",
+          "publishedAt": "2026-07-21",
+          "scope": "AI visibility product delivery",
+          "signal": "Delivery collaboration",
+          "products": [
+            "AI SDK",
+            "AI Gateway"
+          ],
+          "summary": "Searchable reports faster feature delivery using shared model interfaces and centralized routing instead of separate provider integrations.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-sensay",
+      "name": "Sensay",
+      "aliases": [
+        "SensaySentinelOne"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-sensay-went-from-zero-to-product-in-six-weeks",
+          "title": "How Sensay went from zero to product in six weeks",
+          "publishedAt": "2026-01-27",
+          "scope": "Initial MVP launch",
+          "signal": "Product adoption",
+          "products": [
+            "Preview Deployments",
+            "Instant Rollbacks",
+            "Vercel"
+          ],
+          "summary": "Sensay describes reaching an MVP launch with previews, feature flags and rollback controls. The story does not establish broad enterprise maturity.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-sentry",
+      "name": "Sentry",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-serhant",
+      "name": "SERHANT.",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/serhants-playbook-for-rapid-ai-iteration",
+          "title": "SERHANT.'s playbook for rapid AI iteration",
+          "publishedAt": "2026-03-23",
+          "scope": "S.MPLE real-estate assistant",
+          "signal": "Product adoption",
+          "products": [
+            "Next.js",
+            "AI SDK",
+            "Vercel"
+          ],
+          "summary": "The story describes expanding an internal assistant pilot to a larger real-estate-agent user group without rebuilding its backend.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-shein",
+      "name": "Shein",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-shopify",
+      "name": "Shopify",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/shopify-and-vercel-are-rebuilding-hydrogen-for-faster-storefronts",
+          "title": "Shopify and Vercel are rebuilding Hydrogen for faster storefronts",
+          "publishedAt": "2026-07-30",
+          "scope": "Hydrogen framework collaboration",
+          "signal": "Platform reuse",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "Shopify and Vercel describe a runtime-agnostic Hydrogen rebuild. This partnership does not establish that Shopify's entire commerce platform is hosted on Vercel.",
+          "cautions": [
+            "Framework partnership; no claim that the entire Shopify platform runs on Vercel."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "public-shotgun",
+      "name": "Shotgun",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/managing-major-traffic-spikes-during-ticket-drops-with-vercel",
+          "title": "Managing major traffic spikes during ticket drops with Vercel",
+          "publishedAt": "2023-03-31",
+          "scope": "Ticket-release operations",
+          "signal": "Operational trust",
+          "products": [
+            "Vercel",
+            "Instant Rollbacks"
+          ],
+          "summary": "Shotgun describes managing traffic bursts during ticket launches with scalable delivery and rollback controls.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-sitecore",
+      "name": "Sitecore",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/using-the-ai-sdk-to-build-sitecore-streams-ai-powered-brand-aware-assistant",
+          "title": "Using the AI SDK to build Sitecore Stream's AI-powered brand aware assistant",
+          "publishedAt": "2025-03-03",
+          "scope": "Stream brand assistant",
+          "signal": "Product adoption",
+          "products": [
+            "AI SDK"
+          ],
+          "summary": "Sitecore uses AI SDK for a conversational assistant that helps marketers work with brand content.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-softbank",
+      "name": "SoftBank",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-sonos",
+      "name": "Sonos",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-sonos-amplified-their-devex",
+          "title": "Sonos migrated to Vercel to unlock new levels of efficiency and confidence for their developers.",
+          "publishedAt": "2023-08-17",
+          "scope": "Headless web delivery",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Next.js",
+            "Preview Deployments",
+            "Vercel"
+          ],
+          "summary": "Sonos describes faster builds and improved developer confidence after migrating its web delivery to Vercel.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-speakeasy",
+      "name": "Speakeasy",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/bridging-the-gap-between-design-and-code-with-v0",
+          "title": "Bridging the gap between design and code with v0",
+          "publishedAt": "2025-02-12",
+          "scope": "Design-to-code workflow",
+          "signal": "Delivery collaboration",
+          "products": [
+            "v0"
+          ],
+          "summary": "Speakeasy uses v0 to bridge design exploration and implementation, reducing friction in prototyping technical product interfaces.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-speechify",
+      "name": "Speechify",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-speechify-serves-50000-dynamic-pages-to-60-million-users-on-vercel",
+          "title": "How Speechify serves 500,000 dynamic pages to 60 million users on Vercel",
+          "publishedAt": "2026-07-15",
+          "scope": "Multilingual growth website",
+          "signal": "Operational trust",
+          "products": [
+            "Fluid Compute",
+            "Next.js",
+            "ISR",
+            "Instant Rollbacks"
+          ],
+          "summary": "Speechify reports serving a large multilingual page estate with caching and rollback controls. The evidence concerns its growth website, not every product workload.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-stably",
+      "name": "Stably",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-stably-ships-ai-testing-agents-in-hours-not-weeks",
+          "title": "How Stably ships AI testing agents in hours, not weeks",
+          "publishedAt": "2026-02-17",
+          "scope": "AI testing-agent delivery",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Vercel",
+            "Preview Deployments"
+          ],
+          "summary": "Stably reports shortening the delivery cycle for agents that test preview applications and inspect code changes.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-stripe",
+      "name": "Stripe",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-stripe-built-a-game-changing-app-in-a-single-flight-with-v0",
+          "title": "How Stripe built a game-changing app in a single flight with v0",
+          "publishedAt": "2026-01-28",
+          "scope": "Internal GTM value calculator",
+          "signal": "Product adoption",
+          "products": [
+            "v0"
+          ],
+          "summary": "Stripe describes building a self-service value calculator and tracking its adoption and analysis time. This scope is an internal GTM tool.",
+          "cautions": []
+        },
+        {
+          "url": "https://vercel.com/customers/architecting-reliability-stripes-black-friday-site",
+          "title": "Architecting a live look at reliability: Stripe's viral Black Friday site",
+          "publishedAt": "2024-01-16",
+          "scope": "Black Friday metrics microsite",
+          "signal": "Operational trust",
+          "products": [
+            "Next.js",
+            "ISR",
+            "Vercel"
+          ],
+          "summary": "Stripe describes a time-bounded public metrics site built for a major traffic event. Payment-platform uptime must not be attributed to this microsite's hosting.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-supabase",
+      "name": "Supabase",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-supabase-elevated-their-developer-experience-with-turborepo",
+          "title": "Supabase improves their DX with Turborepo",
+          "publishedAt": "2023-01-24",
+          "scope": "Shared frontend development",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Turborepo",
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Supabase describes improving shared UI development across its documentation, marketing site and dashboard with Turborepo.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-super",
+      "name": "Super",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/super-serves-thousands-of-domains-on-one-project-with-next-js-and-vercel",
+          "title": "Super serves thousands of domains from a single codebase with Next.js and Vercel",
+          "publishedAt": "2023-02-01",
+          "scope": "Notion-to-website platform",
+          "signal": "Platform reuse",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Super describes serving customer websites and custom domains from a shared application.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-superset",
+      "name": "Superset",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-superset-built-the-ide-for-ai-agents-on-vercel",
+          "title": "How Superset built the IDE for AI agents on Vercel",
+          "publishedAt": "2026-05-11",
+          "scope": "Coding-agent IDE delivery",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Vercel",
+            "Preview Deployments"
+          ],
+          "summary": "Superset reports frequent preview environments and fast builds supporting development of its multi-agent IDE.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-supreme",
+      "name": "Supreme",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-swell",
+      "name": "Swell",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/helping-swells-merchants-provide-unparalleled-ecommerce-experiences",
+          "title": "Helping Swell’s merchants provide unparalleled ecommerce experiences",
+          "publishedAt": "2023-01-13",
+          "scope": "Merchant storefront platform",
+          "signal": "Platform reuse",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Swell describes supporting merchant storefronts through a common headless commerce and frontend platform.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-tailscale",
+      "name": "Tailscale",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-tailscale-built-a-customer-facing-model-router-on-ai-gateway",
+          "title": "How Tailscale built a customer-facing model router on AI Gateway",
+          "publishedAt": "2026-09-11",
+          "scope": "Aperture model access",
+          "signal": "Operational trust",
+          "products": [
+            "AI Gateway"
+          ],
+          "summary": "Aperture provides model access governed by tailnet identity. The story describes the progression from a prototype to paying customers.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-tekla",
+      "name": "Tekla",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/teklas-ecommerce-evolution-harnessing-flexibility-with-vercel-and-medusa",
+          "title": "Tekla's ecommerce evolution: harnessing flexibility with Vercel and Medusa",
+          "publishedAt": "2023-10-11",
+          "scope": "Ecommerce storefront",
+          "signal": "Product adoption",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "Tekla and its agency describe a composable storefront using Medusa and Vercel for responsive, personalized shopping experiences.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-teleport",
+      "name": "Teleport",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/creating-a-robust-platform-for-documentation-with-next-js-and-vercel",
+          "title": "How Teleport overhauled their docs with Next.js and Vercel",
+          "publishedAt": "2024-04-10",
+          "scope": "Website and documentation",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Teleport unified its website and documentation delivery, reporting shorter builds and more concurrent build capacity.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-the-washington-post",
+      "name": "The Washington Post",
+      "aliases": [
+        "Washington Post"
+      ],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/washington-post-next.js-vercel-engineering-at-the-speed-of-breaking-news",
+          "title": "Engineering a site at the speed of breaking news",
+          "publishedAt": "2023-07-27",
+          "scope": "Election-results web experience",
+          "signal": "Operational trust",
+          "products": [
+            "Next.js",
+            "ISR",
+            "Vercel"
+          ],
+          "summary": "The elections engineering team describes migrating a rapidly changing results experience ahead of the 2022 midterm elections.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-the-weather-company",
+      "name": "The Weather Company",
+      "aliases": [
+        "TheWeatherCompany",
+        "Weather Company"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-the-weather-company-serves-real-time-forecasts-to-350-million-daily-active-users-on-vercel",
+          "title": "How the Weather Company serves real-time forecasts to 350 million daily active users on Vercel",
+          "publishedAt": "2026-06-09",
+          "scope": "Weather web publishing and CMS",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Vercel",
+            "v0"
+          ],
+          "summary": "The company reports rebuilding web delivery and its CMS to shorten publishing cycles. The headline and body disagree on daily versus monthly audience units.",
+          "cautions": [
+            "The source contains inconsistent metric labels or figures. Do not quote an unqualified number; the summary identifies the conflict."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "public-tonies",
+      "name": "Tonies",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-vercel-helped-tonies-expand-into-new-markets",
+          "title": "How Vercel helped Tonies expand into new markets",
+          "publishedAt": "2024-04-26",
+          "scope": "International ecommerce expansion",
+          "signal": "Platform reuse",
+          "products": [
+            "Next.js",
+            "Preview Deployments",
+            "Vercel"
+          ],
+          "summary": "Tonies describes moving to a headless frontend to support new markets and a more consistent publishing workflow.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-tray-ai",
+      "name": "Tray.ai",
+      "aliases": [
+        "TrayAi"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/tray-ai-cut-build-times-from-a-day-to-minutes-with-vercel",
+          "title": "Tray.ai cut build times from a day to minutes with Vercel",
+          "publishedAt": "2025-06-16",
+          "scope": "Marketing-site consolidation",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Tray.ai and its delivery partner consolidated repositories and modernized the marketing site, reporting substantially shorter builds.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-tripadvisor",
+      "name": "Tripadvisor",
+      "aliases": [
+        "TripAdvisor"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-united-airlines",
+      "name": "United Airlines",
+      "aliases": [
+        "UnitedAirlines"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-unnamed-sportswear-retailer",
+      "name": "Unnamed sportswear retailer",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/retailer-sees-10m-increase-in-sales-on-vercel",
+          "title": "Retailer sees $10M increase in sales on Vercel",
+          "publishedAt": "2024-11-27",
+          "scope": "Peak-season ecommerce",
+          "signal": "Measurement and learning",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "An unnamed retailer reports improved order throughput, response time and conversions during a holiday period. Its identity is not disclosed and must not be guessed.",
+          "cautions": [
+            "Customer identity is undisclosed. Do not resolve this record to a named retailer."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "public-vapi",
+      "name": "Vapi",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/vapi-mcp-server-on-vercel",
+          "title": "Vapi MCP server hosted on Vercel",
+          "publishedAt": "2025-05-21",
+          "scope": "Hosted MCP server",
+          "signal": "Product adoption",
+          "products": [
+            "Fluid Compute",
+            "Vercel"
+          ],
+          "summary": "Vapi rebuilt its MCP server on Vercel to expose voice-agent operations through a model-accessible interface.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-viable",
+      "name": "Viable",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/delivering-ai-analysis-faster-with-the-vercel-workflow",
+          "title": "Deliver AI analysis faster with the Vercel workflow",
+          "publishedAt": "2023-01-17",
+          "scope": "AI-product review workflow",
+          "signal": "Delivery collaboration",
+          "products": [
+            "Next.js",
+            "Preview Deployments",
+            "Vercel"
+          ],
+          "summary": "Viable describes reducing review back-and-forth by collecting feedback in preview environments for its feedback-analysis product.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-waldium",
+      "name": "Waldium",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-waldium-made-a-blog-platform-work-for-humans-and-ai-alike",
+          "title": "How Waldium made a blog platform work for humans and AI alike",
+          "publishedAt": "2026-04-01",
+          "scope": "Agent-accessible blog platform",
+          "signal": "Platform reuse",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Waldium hosts customer blogs through a shared deployment and exposes content through per-blog MCP endpoints.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-whop",
+      "name": "Whop",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-whop-improved-their-real-experience-score-by-200-with-the-next-js-app",
+          "title": "How Whop improved their Real Experience Score by 200% with the Next.js App Router",
+          "publishedAt": "2023-09-21",
+          "scope": "Marketplace frontend",
+          "signal": "Measurement and learning",
+          "products": [
+            "Next.js",
+            "Vercel"
+          ],
+          "summary": "Whop reports improvements in real-user web-performance measures following incremental frontend and App Router adoption.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-wiz",
+      "name": "Wiz",
+      "aliases": [],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-wpp",
+      "name": "WPP",
+      "aliases": [
+        "Wpp"
+      ],
+      "directoryListed": true,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": []
+    },
+    {
+      "id": "public-wunderman-thompson",
+      "name": "Wunderman Thompson",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/wunderman-thompson-composable-workflow",
+          "title": "Containing multi-site management within a single codebase",
+          "publishedAt": "2023-04-12",
+          "scope": "Multi-brand site management",
+          "signal": "Platform reuse",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "The agency describes shared design components, a headless CMS and a monorepo for managing multiple brands and languages.",
+          "cautions": []
+        },
+        {
+          "url": "https://vercel.com/customers/how-vercel-enables-wunderman-thompson-to-launch-global-brands",
+          "title": "How Vercel enables Wunderman Thompson to launch global brands",
+          "publishedAt": "2023-01-17",
+          "scope": "International client-site delivery",
+          "signal": "Platform reuse",
+          "products": [
+            "Vercel"
+          ],
+          "summary": "The agency describes using shared deployment infrastructure and collaboration practices to launch websites for international brands.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-zapier",
+      "name": "Zapier",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-zapier-scales-product-partnerships-with-v0",
+          "title": "How Zapier scales product partnerships with v0",
+          "publishedAt": "2025-08-08",
+          "scope": "Embedded-partner demonstrations",
+          "signal": "Delivery collaboration",
+          "products": [
+            "v0"
+          ],
+          "summary": "The embedded-platform team uses v0 prototypes to demonstrate possible partner integrations more quickly. Demonstrations are not evidence of completed production integrations.",
+          "cautions": []
+        }
+      ]
+    },
+    {
+      "id": "public-zo-computer",
+      "name": "Zo Computer",
+      "aliases": [],
+      "directoryListed": false,
+      "formalMaturity": "unknown",
+      "internalEngagement": "not_available",
+      "evidence": [
+        {
+          "url": "https://vercel.com/customers/how-zo-computer-improved-ai-reliability-20x-on-vercel",
+          "title": "How Zo Computer improved AI reliability 20x on Vercel",
+          "publishedAt": "2026-04-17",
+          "scope": "Personal AI service reliability",
+          "signal": "Measurement and learning",
+          "products": [
+            "AI Gateway",
+            "AI SDK"
+          ],
+          "summary": "Zo Computer reports before-and-after improvements in retries, chat success and tail latency following changes to its AI infrastructure.",
+          "cautions": []
+        }
+      ]
+    }
+  ]
+}

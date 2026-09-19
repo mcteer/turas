@@ -1,8 +1,10 @@
 import { connect } from "@vercel/connect/eve";
-import { defineMcpClientConnection } from "eve/connections";
+import { defineDynamic, defineMcpClientConnection } from "eve/connections";
+import { existingGrantOnly } from "../lib/existing-grant-auth";
 
-export default defineMcpClientConnection({
+const connection = defineMcpClientConnection({
   url: "https://mcp.vercel.com",
   description: "Vercel: manage projects and deployments, inspect logs, and search documentation.",
-  auth: connect("vercel/vercel"),
+  auth: existingGrantOnly(connect("vercel/vercel")),
 });
+export default defineDynamic({ events: { "session.started": () => process.env.TURAS_ENABLE_CONNECTORS === "true" ? connection : null } });

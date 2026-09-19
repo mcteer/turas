@@ -1,1 +1,2 @@
-export { default } from "eve/tools/write_file";
+import { disableTool } from "eve/tools";
+export default disableTool();

@@ -1,1 +1,2 @@
-export { default } from "eve/tools/web_search";
+import { disableTool } from "eve/tools";
+export default disableTool();
