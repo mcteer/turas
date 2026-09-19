@@ -61,7 +61,7 @@ State the engagement/workflow/milestone or portfolio slice, intended audience, d
 - “Should the customer support agent proceed from Prove to Promote?”
 - “What requires leadership attention across EMEA engagements this week?”
 - “Is the first production slice at risk of missing its agreed launch-readiness gate?”
-- “What evidence is still needed to decide whether this engagement can move from Shape to Prove?"
+- “What evidence is still needed to decide whether this engagement can move from Shape to Prove?”
 - “Which dependency is most likely to prevent production readiness for the support-agent workflow?”
 - “Which leading indicators suggest that the workflow is unlikely to achieve its adoption target?”
 - “Has the customer’s business priority changed enough that we should revisit the engagement outcome?”
