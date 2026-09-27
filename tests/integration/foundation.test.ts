@@ -6,11 +6,15 @@ import { assertDatabaseEnvironment } from "../../lib/server/db/readiness";
 import { withTestDatabase } from "../fixtures/database";
 import { BOUNDARY_IDS, DEMO_IDS } from "../fixtures/identities";
 import { GET } from "../../app/api/health/ready/route";
+import { heartbeatWorker } from "../../lib/server/conversations/watchdog";
 
 const runFile = promisify(execFile);
 
 describe("foundation database boundaries", () => {
   it("recognizes the initialized local environment through readiness", async () => {
+    // CI does not start root dev; explicitly record the worker heartbeat that
+    // readiness requires, rather than depending on another process on the host.
+    await heartbeatWorker("foundation-readiness-fixture");
     const response = await GET();
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ data: { ready: true } });
