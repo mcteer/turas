@@ -7,3 +7,5 @@
 @media(max-width:767px){.desktop-sidebar{display:none}.mobile-trigger{display:block;position:fixed;top:.75rem;left:.75rem;z-index:10;border:1px solid var(--border);border-radius:.5rem;background:var(--surface);color:var(--foreground);padding:.5rem}.chat-page,.content-page{padding:4rem 1rem 1rem}.chat-center{margin:auto 0}.mobile-panel .sidebar{border-right:0}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 .nav-bottom{padding-bottom:2.5rem}
+.sign-out-button{display:block;width:100%;border:0;border-radius:var(--radius);padding:.55rem .65rem;text-align:left;background:transparent;color:var(--foreground)}
+.sign-out-button:hover{background:var(--hover)}

@@ -22,5 +22,5 @@ export function SignOutButton({ csrfToken }: { csrfToken: string }) {
       setBusy(false);
     }
   }
-  return <><button type="button" disabled={busy} onClick={signOut}>Sign out</button>{error && <span role="alert">{error}</span>}</>;
+  return <><button className="sign-out-button" type="button" disabled={busy} onClick={signOut}>Sign out</button>{error && <span role="alert">{error}</span>}</>;
 }
