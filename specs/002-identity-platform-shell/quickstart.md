@@ -2,8 +2,9 @@
 
 This is the local implementation runbook. Root `npm run dev` supervises Next.js,
 eve and the Postgres maintenance worker. It does not connect to or deploy on
-Vercel. Feature 002 remains an unmerged local build until its required checks
-and review are complete.
+Vercel. Feature 002 was merged in
+[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI checks; hosted
+application verification remains deferred.
 
 ## Prerequisites and configuration
 

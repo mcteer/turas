@@ -203,6 +203,6 @@ application verification.
 | SC-008 real local turn | One persisted turn per account, 208 smoke output tokens | Local pass |
 | SC-009 data notice | All three account journeys and synthetic fixture checks | Local pass |
 
-Local acceptance, constitution review and PR CI are complete; repository review
-remains pending. Hosted application acceptance stays deferred by the deployment
-hold.
+Local acceptance, constitution review and PR CI completed before
+[PR 2 merged](https://github.com/mcteer/turas/pull/2) on 2026-09-27. Hosted
+application acceptance stays deferred by the deployment hold.

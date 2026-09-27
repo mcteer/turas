@@ -3,7 +3,8 @@
 **Input**: [spec.md](spec.md), [plan.md](plan.md), [research.md](research.md),
 [data-model.md](data-model.md), [application contract](contracts/application.md),
 [eve contract](contracts/eve-session.md), [recovery and validation contract](contracts/recovery-and-validation.md), [quickstart](quickstart.md).
-**Status**: Locally implemented and validated; hosted checks and PR review are tracked in validation.md.
+**Status**: All tasks completed; merged in PR 2 after local and CI validation.
+Hosted application checks remain deferred in validation.md.
 **Tests**: Explicitly required by the specification's acceptance scenarios and SC-001
 through SC-009. Write the listed behavior tests before their implementation and
 confirm a meaningful failure; rerun to green at the story checkpoint.
