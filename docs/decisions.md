@@ -22,6 +22,7 @@ configuration. Owners below are roles to assign, not invented named approvals.
 | D15 | Migration from demo | No bulk migration planned; explicit later spec if needed | Product owner |
 | D16 | Integrations are added only when actively used and tested | Explicit user requirement | Every feature |
 | D17 | No coding-harness authorship attribution in commits, PRs or authored artifacts | Explicit user requirement | Every contribution |
+| D18 | Align the existing Git-connected Vercel project's Next.js expectation with the actual new web app; confirm target project/domains before release | Observed automatic preview failure; no settings changed | 002 / platform owner |
 
 None of the open choices prevents review of the foundation. Resolve the relevant
 entry at the feature's planning gate, record alternatives and rationale, and add

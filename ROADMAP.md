@@ -90,6 +90,9 @@ its registry scaffold may select preview dependencies. Define owned session
 authorization, initial migration and synthetic fixtures, then implement a thin
 authenticated shell. Bring the demo's visual system forward without its shared
 demo credentials, static customer catalog or request-time schema creation.
+Confirm the target Vercel project/domains and align its existing Next.js framework
+expectation with this new shell (D18). The foundation's automatic preview currently
+fails before build because Next.js is not installed; no unused integration was added.
 
 ## Updating this roadmap
 

@@ -87,5 +87,11 @@ foundation PR is reviewed and merged. Add an eve integration only when an active
 feature uses it and verifies it. No speculative connector installation.
 
 Deployment is a future feature action using `eve link` and `eve deploy`, as required
-by [AGENTS](AGENTS.md). This PR does not provision or deploy resources. Every relevant
+by [AGENTS](AGENTS.md). No manual provisioning or deployment is part of 001. Every relevant
 PR updates README in the same change; maintainers verify freshness after merge.
+
+The existing Git-connected Vercel project attempts previews automatically and currently
+expects Next.js. Its preview fails for this eve-only foundation with “No Next.js version
+detected.” Feature 002 introduces the actual web shell and aligns that configuration;
+see the [validation record](specs/001-platform-foundation/validation.md). Foundation
+GitHub Actions checks are separate from hosted preview status.

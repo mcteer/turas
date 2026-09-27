@@ -46,7 +46,7 @@ Independent check: audit maps source paths to feature slices and names gaps.
 
 - [x] T015 Run `quickstart.md` checks on Node 24, inspect staged paths and record results in `validation.md`.
 - [x] T016 Check requirements and cross-artifact consistency in `checklists/requirements.md` and `analysis.md`.
-- [ ] T017 Submit the foundation PR using `.github/pull_request_template.md` and record its URL in `validation.md`.
+- [x] T017 Submit the foundation PR using `.github/pull_request_template.md` and record its URL in `validation.md`.
 
 ## Dependencies and implementation strategy
 
