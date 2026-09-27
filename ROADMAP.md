@@ -103,8 +103,9 @@ The foundation's earlier preview failure is historical; the repo is now disconne
 
 The [003 specification](specs/003-customer-profile-review/spec.md) defines rich
 customer/workload profiles, independent maturity assessments, governed context
-review, evidence quality and partner delivery-only projections. Clarification,
-planning, task breakdown, implementation and validation remain open.
+review, evidence quality and partner delivery-only projections. Clarification is
+recorded in the spec; planning, task breakdown, implementation and validation
+remain open.
 
 ## Updating this roadmap
 

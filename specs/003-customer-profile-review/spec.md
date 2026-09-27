@@ -2,7 +2,7 @@
 
 **Feature Branch**: `003-customer-profile-review`
 **Created**: 2026-09-27
-**Status**: Draft
+**Status**: Clarified — planning pending
 **Input**: Roadmap slice 003 and the platform brief: rich customer profiles, maturity history, governed context review, and partner delivery-only visibility.
 
 ## Scope
@@ -10,6 +10,14 @@
 Build the canonical customer profile on the identity and grants established in 002. It records scoped product use, maturity, research, risks, engagement references, decisions, outcomes and review dates. Manual context requires review before factual use. Independently discovered research has distinct provenance and quality labels. Only synthetic customers and public research are permitted in this slice.
 
 File attachment/extraction is 004; research discovery, retrieval and publication of sanitized cross-customer learnings are 005; delivery plans and execution are 006–008. 003 may display engagement references but does not run engagements. No new unused eve integration, private real-customer data or deployment is required.
+
+## Clarifications
+
+### Session 2026-09-27
+
+- Q: When someone manually edits a customer’s product use, maturity assessment, risk, or other profile fact, should that edit require a steward’s approval before guidance treats it as fact? → A: Yes. Every manually entered factual profile change requires steward approval before it becomes accepted guidance context.
+- Q: For an assigned customer, should a partner see pending or rejected submissions made by other contributors? → A: No. Partners see only their own pending or rejected submissions, plus all accepted facts relevant to delivering that customer's engagement regardless of source or contributor. Internal staffing, utilization, reporting metrics and other operational data remain hidden.
+- Q: Who should be allowed to retract an accepted customer fact so future guidance stops using it immediately? → A: The assigned customer steward or `mcteer` administrator may retract it. Other contributors may request retraction but cannot withdraw accepted context themselves.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -25,7 +33,7 @@ As an internal employee, I can open any customer in my workspace and distinguish
 
 1. **Given** a customer with two workloads, **When** an internal user opens the profile, **Then** customer-level and workload-specific identity, product use, maturity, risks, research, engagement references, decisions, outcomes and next reviews are distinct.
 2. **Given** a sparse new customer, **When** its profile opens, **Then** missing fields show Unknown or empty, without inferred maturity or adoption.
-3. **Given** a revised product-use or risk record, **When** history is opened, **Then** the old and new values, scope, source, dates and actor remain inspectable.
+3. **Given** a manually revised product-use or risk record, **When** it is submitted and history is opened, **Then** the old accepted value remains current until the new revision is approved, while both values, scope, source, dates, actor and review state remain inspectable.
 4. **Given** a new customer in the workspace, **When** `panel` or `mcteer` opens the directory, **Then** that profile is available without a delivery assignment; another workspace remains inaccessible.
 
 ---
@@ -40,7 +48,7 @@ As an internal practitioner, I can assess a customer's or workload's maturity wi
 
 **Acceptance Scenarios**:
 
-1. **Given** a workload, **When** an authorized user records an assessment, **Then** each assessed dimension has its own state, rationale, observation window, assessor, rubric version, eligible evidence, next capability and review date.
+1. **Given** a workload, **When** an authorized user submits an assessment, **Then** each assessed dimension has its own state, rationale, observation window, assessor, rubric version, eligible evidence, next capability and review date; the assessment remains Pending until steward approval.
 2. **Given** only some dimensions assessed, **When** the summary opens, **Then** the others remain Unknown and no average or product-count proxy appears.
 3. **Given** a revised assessment, **When** history opens, **Then** the prior revision remains inspectable and the current revision is clear.
 4. **Given** an engagement reference in a delivery phase, **When** maturity is viewed, **Then** the phase has not automatically changed a journey stage or dimension.
@@ -58,9 +66,10 @@ As a customer steward, I can accept or reject an exact version of a manually sub
 **Acceptance Scenarios**:
 
 1. **Given** an authorized contributor submits a claim, pasted text or user URL, **When** it is saved, **Then** its exact content, source, submitter, customer/workload scope and time are Pending.
-2. **Given** a pending revision, **When** its authorized steward accepts or rejects it with a rationale, **Then** that exact revision receives one attributed decision and only acceptance makes it eligible factual context.
-3. **Given** an accepted claim, **When** it is corrected or retracted, **Then** the former revision is no longer current fact; a correction requires its own review and history remains.
-4. **Given** a retried or stale decision, **When** it is processed, **Then** no duplicate or conflicting effective decision occurs and the reviewer receives the current outcome.
+2. **Given** a pending claim or structured profile edit, **When** its authorized steward accepts or rejects it with a rationale, **Then** that exact revision receives one attributed decision and only acceptance makes it eligible factual context.
+3. **Given** an accepted claim, **When** a contributor proposes a correction or requests retraction, **Then** accepted context does not change until an authorized steward or administrator decides; a proposed correction requires separate approval and prior history remains.
+4. **Given** an accepted fact, **When** its assigned steward or `mcteer` retracts it with a rationale, **Then** it immediately becomes ineligible for future factual guidance while the retraction decision and prior revision remain auditable.
+5. **Given** a retried or stale decision, **When** it is processed, **Then** no duplicate or conflicting effective decision occurs and the reviewer receives the current outcome.
 
 ---
 
@@ -91,10 +100,11 @@ As a partner assigned to one customer, I can see the context relevant to that de
 
 **Acceptance Scenarios**:
 
-1. **Given** a current grant to customer A, **When** `partner` opens A, **Then** only delivery-relevant identity, workloads, maturity, product use, approved context, delivery risks and engagement references are shown.
+1. **Given** a current grant to customer A, **When** `partner` opens A, **Then** delivery-relevant identity, workloads, maturity, product use, accepted context, delivery risks and engagement references are shown regardless of which contributor or eligible source supplied each accepted fact.
 2. **Given** no grant to customer B, **When** `partner` searches or requests B or its related records directly, **Then** no content, count, snippet or existence detail is disclosed.
-3. **Given** A has commercial, cost, personnel or unrelated internal notes, **When** `partner` views A or asks the assistant, **Then** those fields and facts derived from them are withheld.
+3. **Given** A has internal staffing, utilization, reporting metrics, commercial, cost, personnel or unrelated account notes, **When** `partner` views A or asks the assistant, **Then** those fields and facts derived from them are withheld.
 4. **Given** the grant is revoked, **When** `partner` next reads or submits, **Then** current authorization denies the operation.
+5. **Given** several contributors have pending, rejected and accepted submissions for A, **When** `partner` opens submission history, **Then** it sees its own pending/rejected content and status, every delivery-relevant accepted fact regardless of origin, and no other contributor's unaccepted content, count or decision detail.
 
 ### Edge Cases
 
@@ -103,6 +113,7 @@ As a partner assigned to one customer, I can see the context relevant to that de
 - Missing trustworthy dates, future evidence dates and elapsed review windows yield Unknown, invalid or Stale labels; retrieval alone never refreshes age.
 - Public research repeating a user claim retains separate origins and cannot launder the manual claim into accepted status.
 - A strong quality score cannot override pending/retracted state or access restrictions.
+- An accepted record classified as internal-only remains hidden from partners, including its source and review history; approval does not widen its audience.
 - Contradictory accepted evidence is flagged; no unqualified settled summary is presented until resolved.
 - Retries and concurrent updates yield one logical change, without duplicate audit decisions.
 - Revoking a partner grant while a view or assistant response is open denies subsequent protected actions; already displayed information cannot be recalled.
@@ -119,24 +130,24 @@ As a partner assigned to one customer, I can see the context relevant to that de
 - **FR-005**: Preserve assessment scope, observation window, assessor, rubric version, rationale, eligible evidence references, next measurable capability, review date and revision history.
 - **FR-006**: Keep engagement delivery phase separate from journey stage, maturity dimensions and plan administrative state. 003 shows engagement references, not an execution workflow.
 - **FR-007**: Record risks with scope, category, likelihood, impact, severity, owner, mitigation, status, evidence, dates and history; distinguish delivery-relevant risks from internal account concerns.
-- **FR-008**: Save manual customer claims from profile entry or customer-bound chat as Pending exact revisions with source type, submitter, scope and time. User-provided URLs remain manual even if later fetched or summarized.
+- **FR-008**: Save every manually entered factual profile change—including customer/workload details, product use, maturity, risks, stakeholders, engagement references, decisions and outcomes—and customer claims from profile entry or customer-bound chat as Pending exact revisions with source type, submitter, scope and time. The prior accepted revision remains current until a replacement is approved. User-provided URLs remain manual even if later fetched or summarized.
 - **FR-009**: Permit assigned customer stewards to accept or reject exact pending revisions with actor, time and rationale. `mcteer` can assign stewards and act as one; `panel` can review only assigned customers; `partner` can propose only for granted customers and never approve. Stewardship changes are auditable.
-- **FR-010**: Allow correction, supersession and retraction. Corrections start Pending; superseded/retracted revisions remain in history but are ineligible as current facts. Reject stale decisions and reconcile repeat requests to at most one effective decision per revision.
-- **FR-011**: Show contributors submission status and stewards a review queue with source, scope, submitter, age, conflicts and history. Saving a draft or extraction is not approval.
+- **FR-010**: Allow contributors to propose corrections and request retractions without changing current accepted context. Corrections start Pending and require steward approval. Only the assigned customer steward or `mcteer` may retract an accepted revision, with recorded actor, time and rationale; that revision immediately becomes ineligible for future factual use. Superseded/retracted revisions remain in history. Reject stale decisions and reconcile repeat requests to at most one effective decision per revision.
+- **FR-011**: Show contributors their submission status and stewards a review queue with source, scope, submitter, age, conflicts and history. Partners may see only their own pending/rejected submissions and associated decisions; other contributors' unaccepted submissions, counts and decision details are hidden from them. Saving a draft or extraction is not approval.
 - **FR-012**: Attach independently discovered public research after identity, source-integrity, scope and content checks. Preserve origin, source location, researcher, supported claim and publication, observation, event and retrieval dates. Label it attributed Research, not a customer-approved private fact. Discovery tooling belongs to 005.
 - **FR-013**: Rate evidence using versioned, claim-specific reliability (40%), freshness (30%), directness (20%) and corroboration (10%), each 0–4, producing a rounded 0–100 score according to the [evidence policy](../../docs/evidence-policy.md). Label 80–100 Strong, 60–79 Usable, 40–59 Weak, 0–39 Insufficient. Preserve component ratings, rationale, version and assessment date; score never grants approval, access or truth.
 - **FR-014**: Use review windows of 7 days for account status/blockers/staffing; 14 for product availability/limits/pricing; 30 for product capabilities/practices; 90 for adoption/process/competency; 180 for architecture. Label Recent through one window, Aging through two, Stale beyond two, Unknown without a trustworthy evidence date. Apply the policy's freshness component bands and overdue-review cap. Retrieval/review does not reset age; future evidence dates are invalid and future events distinct.
 - **FR-015**: Preserve provenance, classification, revisions, quality history, conflicts and decisions. Distinguish accepted context, attributed research, estimates, assumptions, pending, rejected, superseded and retracted content wherever a profile or assistant could treat it as evidence. Unresolved contradictions cannot be presented as settled.
-- **FR-016**: Enforce active workspace/customer authorization on every profile, field, search, history, review, research and assistant-context read/write. `panel` and `mcteer` can view every workspace profile, but only `mcteer` administers access and neither gains another user's private chat. Partners require current explicit customer grants and receive delivery-relevant projections without internal commercial, cost, personnel or unrelated account notes.
+- **FR-016**: Enforce active workspace/customer authorization on every profile, field, search, history, review, research and assistant-context read/write. `panel` and `mcteer` can view every workspace profile, but only `mcteer` administers access and neither gains another user's private chat. Partners require current explicit customer grants and receive all accepted facts and eligible, attributed public research relevant to delivering their assigned engagement, regardless of source or contributor. Exclude internal staffing, utilization, reporting metrics, commercial, cost, personnel and unrelated account notes. Each profile record has an audience classification; acceptance alone does not authorize a field for partner delivery views.
 - **FR-017**: Apply partner projections to derived results, counts, snippets, assistant responses and direct record requests. Denials cannot reveal ungranted customers' existence. Recheck grants on every protected operation.
-- **FR-018**: Supply downstream customer context only from current accepted manual claims and eligible, explicitly attributed research within requester scope. Pending/rejected/superseded/retracted content is never presented as accepted fact; chat text alone never updates a profile fact.
+- **FR-018**: Supply downstream customer context only from current accepted manual profile facts and claims, plus eligible, explicitly attributed research within requester scope. Pending/rejected/superseded/retracted content is never presented as accepted fact; chat text alone never updates a profile fact.
 - **FR-019**: Provide empty, loading, denied, conflict and unavailable states in the reference visual style at mobile and desktop widths in both themes. Review controls and provenance labels are keyboard accessible and distinguishable without color.
 - **FR-020**: Restrict the demo to synthetic customer content and public research; visibly identify fixtures. No real private-customer ingestion, new external service or deployment is required for 003.
 
 ### Key Entities *(include if feature involves data)*
 
 - **Customer / Workload**: Stable workspace-scoped identities with name and scope history.
-- **Profile record**: Scoped, versioned product-use, stakeholder, decision, outcome, engagement reference or next-review item with author, dates and provenance.
+- **Profile record**: Scoped, versioned product-use, stakeholder, decision, outcome, engagement reference or next-review item with author, dates, provenance and audience classification.
 - **Maturity assessment**: Versioned journey statement and independent dimension states with evidence, rationale, assessor, rubric and next capability.
 - **Risk**: Scoped concern, likelihood/impact, mitigation, owner, state, evidence and history with audience classification.
 - **Context claim / evidence source**: Exact statement, origin, location, dates, scope, revisions, classification, quality and conflict links.
@@ -147,7 +158,7 @@ As a partner assigned to one customer, I can see the context relevant to that de
 ### Measurable Outcomes
 
 - **SC-001**: With two workloads and 25 mixed records, at least 90% of internal reviewers identify current product use, known maturity states, the top open delivery risk and next review action within three minutes without confusing Unknown with negative.
-- **SC-002**: In scripted internal, assigned-partner, unassigned-partner and revoked-grant journeys, 100% of ungranted customer and internal-only field attempts are denied across directory, profile, history, search, review and assistant paths without identifying metadata.
+- **SC-002**: In scripted internal, assigned-partner, unassigned-partner and revoked-grant journeys, 100% of ungranted customer, other-contributor unaccepted context and internal-only field attempts are denied across directory, profile, history, search, review and assistant paths without identifying metadata; accepted delivery facts remain visible to the assigned partner regardless of contributor.
 - **SC-003**: Across submission, accept, reject, correct, retract, retry and concurrent-decision journeys, 100% of pending/rejected/superseded/retracted revisions are absent from accepted-fact context, with at most one effective decision per revision.
 - **SC-004**: Every displayed maturity assessment exposes scope, window, assessor, rubric, evidence, rationale and next capability; no dimension is inferred from product count or delivery phase.
 - **SC-005**: For a fixed synthetic dated-source set, all quality bands and freshness labels match the published rubric, including future/unknown dates; scores never bypass approval or visibility.
