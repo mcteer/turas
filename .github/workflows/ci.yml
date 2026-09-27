@@ -42,21 +42,28 @@ jobs:
           psql -h 127.0.0.1 -U postgres -c 'CREATE DATABASE turas_ci'
           psql -h 127.0.0.1 -U postgres -c 'CREATE DATABASE turas_test'
           runtime_password="$(openssl rand -hex 24)"
+          demo_password="$(openssl rand -hex 20)"
+          panel_password="$(openssl rand -hex 20)"
+          partner_password="$(openssl rand -hex 20)"
+          maintenance_secret="$(openssl rand -hex 32)"
+          for value in "$runtime_password" "$demo_password" "$panel_password" "$partner_password" "$maintenance_secret"; do
+            echo "::add-mask::$value"
+          done
           psql -h 127.0.0.1 -U postgres -c "CREATE ROLE turas_runtime LOGIN PASSWORD '${runtime_password}'"
           {
             echo "DATABASE_URL=postgres://turas_runtime:${runtime_password}@127.0.0.1:5432/turas_ci"
             echo 'DATABASE_URL_UNPOOLED=postgres://postgres:postgres@127.0.0.1:5432/turas_ci'
             echo 'TURAS_TEST_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/turas_test'
             echo 'TURAS_ENVIRONMENT_ID=ci-002'
-            echo 'TURAS_TEST_ENVIRONMENT_ID=ci-test-002'
+            echo 'TURAS_TEST_ENVIRONMENT_ID=test-ci-002'
             echo 'TURAS_APP_ORIGIN=http://127.0.0.1:3000'
             echo 'TURAS_DEMO_USERNAME=mcteer'
             echo 'PANEL_USERNAME=panel'
             echo 'PARTNER_USERNAME=partner'
-            echo "TURAS_DEMO_PASSWORD=$(openssl rand -hex 20)"
-            echo "PANEL_PASSWORD=$(openssl rand -hex 20)"
-            echo "PARTNER_PASSWORD=$(openssl rand -hex 20)"
-            echo "TURAS_MAINTENANCE_SECRET=$(openssl rand -hex 32)"
+            echo "TURAS_DEMO_PASSWORD=$demo_password"
+            echo "PANEL_PASSWORD=$panel_password"
+            echo "PARTNER_PASSWORD=$partner_password"
+            echo "TURAS_MAINTENANCE_SECRET=$maintenance_secret"
           } >> "$GITHUB_ENV"
       - name: Initialize disposable databases
         run: |
