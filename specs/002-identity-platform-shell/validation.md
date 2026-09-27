@@ -181,10 +181,16 @@ only.
 The final local check passed 22 unit, 21 contract, 33 integration, 58 WebKit UI
 cases, TypeScript, authored-doc hygiene, whitespace and both local compile
 targets. One opt-in restart integration case was skipped by the ordinary suite
-and run separately after the real completed-turn restart. The CI workflow
-declares Node 24, disposable Postgres 17 and CLI WebKit; its YAML parsed locally
-but it has not run on GitHub. The repository remains disconnected from Vercel;
-there has been no deployment or hosted verification.
+and run separately after the real completed-turn restart. GitHub Actions
+[run 36334992508](https://github.com/mcteer/turas/actions/runs/36334992508)
+passed the Node 24, disposable Postgres 17, WebKit, Spec Kit, documentation and
+both compile-target checks for PR 2. The first CI attempt exposed an invalid
+test-environment marker; the next exposed a readiness fixture that relied on a
+local worker. Once those were fixed, Linux WebKit identified a dark-theme
+sign-out contrast failure that was also corrected before the passing run.
+CI used generated disposable credentials and made no model call. The repository
+remains disconnected from Vercel; there has been no deployment or hosted
+application verification.
 
 | Outcome | Current evidence | Status |
 | --- | --- | --- |
@@ -197,6 +203,6 @@ there has been no deployment or hosted verification.
 | SC-008 real local turn | One persisted turn per account, 208 smoke output tokens | Local pass |
 | SC-009 data notice | All three account journeys and synthetic fixture checks | Local pass |
 
-Local acceptance and constitution review are complete; repository PR review and
-hosted CI remain pending. Hosted application acceptance stays deferred by the
-deployment hold.
+Local acceptance, constitution review and PR CI are complete; repository review
+remains pending. Hosted application acceptance stays deferred by the deployment
+hold.
