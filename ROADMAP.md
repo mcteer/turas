@@ -1,7 +1,7 @@
 # Turas delivery roadmap
 
-Baseline: 2026-09-26; updated 2026-09-27. **001 merged in PR 1; 002 is in local
-implementation and validation, with no merged or hosted release. 003–016 remain planned.**
+Baseline: 2026-09-26; updated 2026-09-27. **001 merged in PR 1; 002 merged in
+[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003–016 remain planned.**
 
 The user disconnected the repository from Vercel. Use local `npm run dev` testing;
 no reconnection or deployment until replacement readiness. Hosted acceptance for
@@ -92,10 +92,10 @@ Use `panel`, `mcteer` and `partner` demo login for 002, per the 2026-09-27 clari
 full authentication and partner federation are deferred until explicitly resumed
 following hiring. Preserve authorization boundaries and partner fixture tests.
 Account roles and grants, isolated Postgres migrations, the private conversation
-path, the reference-style shell and local worker are built on the 002 branch.
-Complete the remaining recovery, limit, accessibility and documentation checks
-in [002 tasks](specs/002-identity-platform-shell/tasks.md) before claiming the
-slice complete. Confirm the target Vercel project/domains, align the
+path, the reference-style shell and local worker are merged, with completed
+[002 tasks](specs/002-identity-platform-shell/tasks.md) and
+[validation evidence](specs/002-identity-platform-shell/validation.md).
+Confirm the target Vercel project/domains, align the
 Next.js build and validate hosted behavior only at replacement readiness (D18).
 The foundation's earlier preview failure is historical; the repo is now disconnected.
 

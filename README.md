@@ -7,14 +7,14 @@ execution, reporting and learning.
 
 ## Current state
 
-Feature 002 is **implemented locally and under validation**. The current build has
+Feature 002 was **merged in [PR 2](https://github.com/mcteer/turas/pull/2)** after local and CI validation. The current build has
 explicit Postgres migrations, the three temporary demo logins, customer grants,
 private owned conversations, guarded eve routes, durable response history, a
 maintenance worker and a responsive web shell. Customer references are synthetic
 and limited to identity and display name. Full customer profiles, attachments,
 accepted context, RAG, delivery plans, staffing, reports and MCP remain planned.
 No speculative eve integrations have been installed. The configured model is
-unchanged, and this work is not yet merged or hosted.
+unchanged. The application has not been deployed or validated on hosted infrastructure.
 
 The old demo at `../turas-back` was reviewed as a reference only. Its fixtures,
 credentials, data and unused integrations are not the new platform. See the
