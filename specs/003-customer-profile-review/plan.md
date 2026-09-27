@@ -3,7 +3,7 @@
 **Branch**: `003-customer-profile-review` | **Date**: 2026-09-27 | **Spec**: [spec.md](spec.md)
 
 **Input**: Clarified feature specification in `specs/003-customer-profile-review/spec.md`.
-**Status**: Phase 0 research and Phase 1 design complete; tasks and implementation pending.
+**Status**: Research, design and [task breakdown](tasks.md) complete; analysis and implementation pending.
 
 ## Summary
 
@@ -95,7 +95,8 @@ specs/003-customer-profile-review/
 └── checklists/requirements.md
 ```
 
-`tasks.md` and implementation validation records are later workflow artifacts.
+The [task breakdown](tasks.md) is generated. Implementation validation records are
+created as actual work and checks proceed.
 
 ### Source Code (repository root)
 

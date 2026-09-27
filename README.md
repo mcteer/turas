@@ -33,7 +33,8 @@ credentials, data and unused integrations are not the new platform. See the
   [implementation tasks](specs/002-identity-platform-shell/tasks.md) and
   [local validation](specs/002-identity-platform-shell/validation.md)
 - [Feature 003 specification](specs/003-customer-profile-review/spec.md) and
-  [implementation plan](specs/003-customer-profile-review/plan.md) — planning complete;
+  [implementation plan](specs/003-customer-profile-review/plan.md), with
+  [implementation tasks](specs/003-customer-profile-review/tasks.md) — analysis and
   implementation pending
 - [Contributing](CONTRIBUTING.md), [coding-agent instructions](AGENTS.md), and
   [constitution](.specify/memory/constitution.md)
@@ -121,7 +122,7 @@ procedure and generated changes while preserving the constitution and authored d
 
 The foundation merged in [PR 1](https://github.com/mcteer/turas/pull/1). The active
 slice is **003: customer profiles, maturity and context review**, with its spec
-clarified and implementation planned. Task breakdown and implementation are next.
+clarified, implementation planned and tasks generated. Analysis and implementation are next.
 The merged 002 application provides the demo identities and shell. Its demo scope uses
 `mcteer` for internal Vercel administrators/FDE/PS leadership, `panel` for internal
 Vercel employees and `partner` for external partners. Internal users see all workspace

@@ -106,7 +106,8 @@ customer/workload profiles, independent maturity assessments, governed context
 review, evidence quality and partner delivery-only projections. Clarification is
 recorded in the spec. The [implementation plan](specs/003-customer-profile-review/plan.md),
 research, data model, interface contracts and validation guide are complete.
-Task breakdown, implementation and validation remain open.
+The [task breakdown](specs/003-customer-profile-review/tasks.md) is generated;
+analysis, implementation and validation remain open.
 
 ## Updating this roadmap
 
