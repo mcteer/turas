@@ -1,7 +1,7 @@
 # Turas delivery roadmap
 
 Baseline: 2026-09-26; updated 2026-09-27. **001 merged in PR 1; 002 merged in
-[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003–016 remain planned.**
+[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 is specified; 004–016 remain planned.**
 
 The user disconnected the repository from Vercel. Use local `npm run dev` testing;
 no reconnection or deployment until replacement readiness. Hosted acceptance for
@@ -98,6 +98,13 @@ path, the reference-style shell and local worker are merged, with completed
 Confirm the target Vercel project/domains, align the
 Next.js build and validate hosted behavior only at replacement readiness (D18).
 The foundation's earlier preview failure is historical; the repo is now disconnected.
+
+## Current 003 work
+
+The [003 specification](specs/003-customer-profile-review/spec.md) defines rich
+customer/workload profiles, independent maturity assessments, governed context
+review, evidence quality and partner delivery-only projections. Clarification,
+planning, task breakdown, implementation and validation remain open.
 
 ## Updating this roadmap
 
