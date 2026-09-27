@@ -1,7 +1,7 @@
 # Turas delivery roadmap
 
 Baseline: 2026-09-26; updated 2026-09-27. **001 merged in PR 1; 002 merged in
-[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 is specified; 004–016 remain planned.**
+[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 design is complete; implementation is pending. 004–016 remain planned.**
 
 The user disconnected the repository from Vercel. Use local `npm run dev` testing;
 no reconnection or deployment until replacement readiness. Hosted acceptance for
@@ -104,8 +104,9 @@ The foundation's earlier preview failure is historical; the repo is now disconne
 The [003 specification](specs/003-customer-profile-review/spec.md) defines rich
 customer/workload profiles, independent maturity assessments, governed context
 review, evidence quality and partner delivery-only projections. Clarification is
-recorded in the spec; planning, task breakdown, implementation and validation
-remain open.
+recorded in the spec. The [implementation plan](specs/003-customer-profile-review/plan.md),
+research, data model, interface contracts and validation guide are complete.
+Task breakdown, implementation and validation remain open.
 
 ## Updating this roadmap
 
