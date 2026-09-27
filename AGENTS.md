@@ -23,6 +23,13 @@ upgrade. Review installed version and manifest changes in their own PR.
 - Keep `.env.local`, `.eve`, credentials, private artifacts, and customer data out
   of commits and tool output. Use `.env.example` for documented variable names.
 - Preserve `agent/agent.ts` model selection unless explicitly asked to change it.
+- For feature 002, root `npm run dev` supervises the local Next.js app, eve and
+  the Postgres maintenance worker. Preserve both the selected database and
+  `.eve/.workflow-data` across restart/recovery checks. The repo is disconnected
+  from Vercel; do not link, reconnect or deploy during this slice.
+- `mcteer` and `panel` are temporary internal logins that can read every workspace
+  customer reference, while `partner` is limited to explicitly assigned customer
+  delivery data. Conversations remain private to their owner for every role.
 - Do not install speculative eve integrations. Search the registry when an active
   feature needs one; install only what that feature actually uses and verifies.
   Do not carry over unused demo connectors, channels, memory backends or tools.
@@ -40,6 +47,8 @@ upgrade. Review installed version and manifest changes in their own PR.
   idempotent writes. Never initialize or migrate schemas inside request handlers.
 - Do not claim a planned feature, local check, or mock proves hosted behavior.
 - Update README and relevant spec/roadmap status in the PR that changes them.
+- After a successful merge, leave the merged PR closed and delete its associated
+  local and remote feature branch; verify README on `main` afterward.
 - Never add coding-harness authorship attribution to commits, PRs or authored
   artifacts: no co-author trailers, bylines or generated-by notices for any harness.
   Technical tool names in setup/configuration are not authorship credits. Preserve
@@ -100,3 +109,13 @@ A setup may report `eve link` as a prerequisite; run it, then retry the continua
 ## Validate the change
 
 Run the validation the task requests. When it does not establish the behavior you changed, run the narrowest relevant check.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

@@ -8,26 +8,58 @@
   },
   "scripts": {
     "build": "eve build",
-    "build:check": "eve build --skip-sandbox-prewarm",
+    "build:check": "node scripts/build-check.mjs",
+    "build:eve:check": "eve build --skip-sandbox-prewarm",
+    "build:web:check": "next build",
     "check:docs": "node scripts/check-docs.mjs",
     "deploy": "eve deploy",
-    "dev": "eve dev",
+    "dev": "node --env-file-if-exists=.env.local scripts/dev.mjs",
+    "dev:eve": "eve dev",
+    "db:init": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/db-migrate.ts --init",
+    "db:migrate": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/db-migrate.ts",
+    "db:roles": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/db-roles.ts",
+    "db:bootstrap-demo": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/bootstrap-demo.ts",
+    "auth:maintenance": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/auth-maintenance.ts",
+    "conversations:reconcile": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/reconcile-conversations.ts",
+    "db:create-demo-customer": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/create-demo-customer.ts",
+    "restore:demo:check": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/restore-demo-check.ts",
+    "restart:synthetic:seed": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/restart-synthetic-check.ts --seed",
+    "restart:synthetic:verify": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/restart-synthetic-check.ts --verify",
     "eval": "eve eval",
     "start": "eve start",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run tests/integration",
+    "test:performance": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/benchmark-shell.ts",
+    "smoke:local:live": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/smoke-local-live.ts",
+    "eval:behavior:local": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/eval-behavior-local.ts",
+    "eval:behavior:verify": "node node_modules/tsx/dist/cli.mjs scripts/verify-behavior-review.ts",
+    "test:contracts": "node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run tests/contracts",
+    "test:ui": "node --env-file-if-exists=.env.local node_modules/@playwright/test/cli.js test"
   },
   "dependencies": {
     "@vercel/connect": "2.2.0",
     "ai": "^7.0.105",
     "eve": "^0.67.1",
+    "next": "16.3.4",
+    "node-pg-migrate": "9.0.0",
+    "pg": "8.23.0",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
     "zod": "4.5.4"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
     "@types/node": "24.x",
-    "typescript": "7.0.2"
+    "@types/pg": "8.23.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vitest": "5.0.2"
   },
   "engines": {
     "node": "24.x"
   }
-
 }

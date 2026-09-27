@@ -35,8 +35,8 @@ See installed `guides/frontend/nextjs.mdx` and `guides/frontend/overview.mdx`.
 | --- | --- | --- |
 | Agent core | Existing eve runtime, AI SDK and AI Gateway | Scaffold exists; no model changes in 001 |
 | Web app and previews | Next.js + Vercel hosting through eve | 002, after compatibility review of `channel/web` |
-| Identity | Approved internal/partner identity provider | Decide in 002; Vercel platform protection is not application authorization |
-| Authoritative records | Managed Postgres via Vercel Marketplace; Neon is a candidate | 002, explicit provider/region and isolated resources |
+| Identity | Three demo logins with shared server authorization; full provider integration deferred | 002 uses mcteer (internal admin), panel (internal employee) and partner (external member) per user clarification; platform protection is not app authorization |
+| Authoritative records | Local Postgres 17 for 002; Neon selected for future hosted storage | Explicit migrations and isolated resources; no hosted provisioning in planning |
 | Semantic search | Postgres pgvector plus full-text retrieval | 005, only after scoped evidence contracts exist |
 | Private artifacts | Vercel Blob | 004, authorized upload/read and ingestion flow |
 | Durable execution | eve's Workflow-backed execution | Per active multi-step feature; no duplicate orchestration framework |
@@ -71,6 +71,21 @@ do not rely on a stale serialized job identity. Establish field-level policies f
 commercial data, personnel costs, internal notes and customer-approved reports.
 Denial must not leak existence, counts, signed Blob URLs or citations for hidden data.
 Search, embeddings, caches and exports follow the same policy as primary records.
+
+Internal profile visibility spans all customers in the user's workspace, including
+non-delivery use; chat ownership remains separate. Partner customer assignments
+permit only delivery-relevant projections, not whole internal profiles. Enforce
+field projection before retrieval, serialization and agent context construction.
+
+Shared product knowledge has its own reviewed publication scope, readable by all
+active platform users including partners. Store sanitized, versioned knowledge
+separately from restricted source lineage; index only the published representation
+for platform-wide retrieval. A shared citation resolves to that representation and
+does not expose a source customer's identifiers or artifacts. Combine eligible shared
+knowledge with authorized customer-delivery context when proposing guidance. The
+[evidence policy](evidence-policy.md#shared-product-knowledge) defines publication
+and correction/withdrawal behavior; 005 introduces this path and 014 automates its
+improvement. No raw cross-customer retrieval followed by output-only redaction.
 
 ## Authoritative records and artifacts
 

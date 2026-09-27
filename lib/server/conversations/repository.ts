@@ -1,0 +1,235 @@
+import { randomUUID } from "node:crypto";
+import type { PoolClient } from "pg";
+import { z } from "zod";
+import type { CurrentSession } from "../auth/sessions";
+import { getServerConfig } from "../config";
+import { query, withTransaction } from "../db/client";
+import { hiddenRecord, HttpFailure } from "../../contracts/http";
+import type { ConversationReference } from "../../contracts/conversations";
+
+type ConversationRow = {
+  id: string;
+  customer_id: string;
+  owner_principal_id: string;
+  title: string;
+  binding_state: ConversationReference["bindingState"];
+  eve_session_id: string | null;
+  created_at: Date;
+  updated_at: Date;
+};
+
+const scopedCustomer = `
+  EXISTS (
+    SELECT 1 FROM login_sessions ls
+    JOIN principals p ON p.id = ls.principal_id
+    JOIN memberships m ON m.id = $1 AND m.principal_id = p.id
+    JOIN workspaces w ON w.id = m.workspace_id
+    LEFT JOIN partner_organizations o ON o.id = m.partner_org_id AND o.workspace_id = m.workspace_id
+    WHERE ls.id = $2 AND ls.revoked_at IS NULL AND ls.expires_at > now()
+      AND p.id = $3 AND p.active AND m.active AND w.active
+      AND m.workspace_id = customer.workspace_id
+      AND (m.kind = 'internal' OR (o.active AND EXISTS (
+        SELECT 1 FROM customer_grants g WHERE g.customer_id = customer.id
+          AND g.membership_id = m.id AND g.state = 'active'
+      )))
+  )`;
+
+function toReference(row: ConversationRow): ConversationReference {
+  return {
+    id: row.id,
+    customerId: row.customer_id,
+    ownerPrincipalId: row.owner_principal_id,
+    title: row.title,
+    bindingState: row.binding_state,
+    eveSessionId: row.binding_state === "bound" ? row.eve_session_id : null,
+    createdAt: row.created_at.toISOString(),
+    updatedAt: row.updated_at.toISOString(),
+  };
+}
+
+function values(session: CurrentSession): string[] {
+  return [session.membershipId, session.sessionId, session.principalId];
+}
+
+export async function createOwnedConversation(
+  session: CurrentSession,
+  input: { customerId: string; requestKey: string; title?: string },
+): Promise<{ conversation: ConversationReference; created: boolean }> {
+  const title = input.title ?? "New conversation";
+  return withTransaction(async (client: PoolClient) => {
+    const allowed = await client.query(`
+      SELECT customer.id FROM customer_references customer
+      WHERE customer.id = $4 AND customer.workspace_id = $5 AND ${scopedCustomer}
+    `, [...values(session), input.customerId, session.workspaceId]);
+    if (!allowed.rowCount) throw hiddenRecord();
+    const id = randomUUID();
+    const inserted = await client.query<ConversationRow>(`
+      INSERT INTO conversations
+        (id, environment_id, workspace_id, customer_id, owner_principal_id,
+         creation_operation_id, binding_state, title)
+      VALUES ($1,$2,$3,$4,$5,$6,'unbound',$7)
+      ON CONFLICT (creation_operation_id) DO NOTHING
+      RETURNING *
+    `, [id, getServerConfig().TURAS_ENVIRONMENT_ID, session.workspaceId,
+      input.customerId, session.principalId, input.requestKey, title]);
+    if (inserted.rows[0]) return { conversation: toReference(inserted.rows[0]), created: true };
+    const previous = await client.query<ConversationRow>(
+      "SELECT * FROM conversations WHERE creation_operation_id = $1", [input.requestKey],
+    );
+    const row = previous.rows[0];
+    if (!row || row.owner_principal_id !== session.principalId ||
+        row.customer_id !== input.customerId || row.title !== title) {
+      throw new HttpFailure(409, "request_key_conflict", "Request key already used");
+    }
+    return { conversation: toReference(row), created: false };
+  });
+}
+
+export async function getOwnedConversation(
+  session: CurrentSession, id: string,
+): Promise<ConversationReference> {
+  const result = await query<ConversationRow>(`
+    SELECT c.* FROM conversations c
+    JOIN customer_references customer ON customer.id = c.customer_id
+    WHERE c.id = $4 AND c.owner_principal_id = $3 AND c.environment_id = $5
+      AND ${scopedCustomer}
+    LIMIT 1
+  `, [...values(session), id, getServerConfig().TURAS_ENVIRONMENT_ID]);
+  if (!result.rows[0]) throw hiddenRecord();
+  return toReference(result.rows[0]);
+}
+
+const cursorSchema = z.object({ t: z.iso.datetime(), id: z.uuid() }).strict();
+function decodeCursor(encoded?: string): { t: string; id: string } | null {
+  if (!encoded) return null;
+  try {
+    const parsed = cursorSchema.safeParse(JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")));
+    if (parsed.success) return parsed.data;
+  } catch { /* invalid cursor */ }
+  throw new HttpFailure(422, "invalid_cursor", "Invalid cursor");
+}
+
+export async function listOwnedConversations(
+  session: CurrentSession,
+  options: { customerId?: string; title?: string; cursor?: string; limit: number },
+): Promise<{ items: ConversationReference[]; nextCursor: string | null }> {
+  const cursor = decodeCursor(options.cursor);
+  const escapedTitle = options.title?.replace(/[\\%_]/g, "\\$&") ?? null;
+  const result = await query<ConversationRow>(`
+    SELECT c.* FROM conversations c
+    JOIN customer_references customer ON customer.id = c.customer_id
+    WHERE c.owner_principal_id = $3 AND c.environment_id = $4
+      AND ${scopedCustomer}
+      AND ($5::uuid IS NULL OR c.customer_id = $5)
+      AND ($6::text IS NULL OR c.title ILIKE '%' || $6 || '%' ESCAPE '\\')
+      AND ($7::timestamptz IS NULL OR (c.updated_at, c.id) < ($7, $8::uuid))
+    ORDER BY c.updated_at DESC, c.id DESC LIMIT $9
+  `, [...values(session), getServerConfig().TURAS_ENVIRONMENT_ID, options.customerId ?? null,
+    escapedTitle, cursor?.t ?? null, cursor?.id ?? null, options.limit + 1]);
+  const rows = result.rows.slice(0, options.limit);
+  const last = rows.at(-1);
+  return {
+    items: rows.map(toReference),
+    nextCursor: result.rows.length > options.limit && last
+      ? Buffer.from(JSON.stringify({ t: last.updated_at.toISOString(), id: last.id })).toString("base64url")
+      : null,
+  };
+}
+
+export async function getOwnedConversationByNativeSession(
+  session: CurrentSession, nativeSessionId: string,
+): Promise<ConversationReference> {
+  const result = await query<{ id: string }>(`
+    SELECT id FROM conversations WHERE eve_session_id = $1
+      AND owner_principal_id = $2 AND environment_id = $3 LIMIT 1
+  `, [nativeSessionId, session.principalId, getServerConfig().TURAS_ENVIRONMENT_ID]);
+  if (!result.rows[0]) throw hiddenRecord();
+  return getOwnedConversation(session, result.rows[0].id);
+}
+
+export async function getOwnedAttemptStatus(
+  session: CurrentSession, conversationId: string, requestKey: string,
+): Promise<{
+  dispatchState: string; responseState: string; nativeTurnId: string | null;
+  deadlineAt: string | null; lastErrorCode: string | null; outputTokens: number;
+  watchdogState: string | null;
+}> {
+  await getOwnedConversation(session, conversationId);
+  const result = await query<{
+    dispatch_state: string; response_state: string; native_turn_id: string | null;
+    deadline_at: Date | null; last_error_code: string | null; output_tokens: number;
+    watchdog_state: string | null;
+  }>(`SELECT a.dispatch_state, a.response_state, a.native_turn_id,
+    a.deadline_at, a.last_error_code, a.output_tokens, j.state AS watchdog_state
+    FROM response_attempts a JOIN submitted_messages sm ON sm.id = a.message_id
+    LEFT JOIN watchdog_jobs j ON j.attempt_id = a.id
+    WHERE a.conversation_id = $1 AND sm.request_key = $2 LIMIT 1`,
+  [conversationId, requestKey]);
+  const row = result.rows[0];
+  if (!row) throw hiddenRecord();
+  return {
+    dispatchState: row.dispatch_state,
+    responseState: row.response_state,
+    nativeTurnId: row.native_turn_id,
+    deadlineAt: row.deadline_at?.toISOString() ?? null,
+    lastErrorCode: row.last_error_code,
+    outputTokens: row.output_tokens,
+    watchdogState: row.watchdog_state,
+  };
+}
+
+export async function getOwnedConversationDetail(session: CurrentSession, id: string) {
+  const conversation = await getOwnedConversation(session, id);
+  const [events, partials, attempts] = await Promise.all([
+    query<{
+      native_event_id: string; event_type: string; visible_payload: Record<string, unknown>;
+      stream_index: string | null; emitted_at: Date;
+    }>(`SELECT native_event_id, event_type, visible_payload, stream_index, emitted_at
+      FROM event_projections WHERE conversation_id = $1
+        AND event_type <> 'message.appended'
+      ORDER BY emitted_at, native_event_id LIMIT 501`, [id]),
+    query<{ turn_id: string; message: string; emitted_at: Date }>(`
+      SELECT e.turn_id, string_agg(e.visible_payload->>'messageDelta', ''
+        ORDER BY e.emitted_at, e.native_event_id) AS message, max(e.emitted_at) AS emitted_at
+      FROM event_projections e WHERE e.conversation_id = $1
+        AND e.event_type = 'message.appended' AND e.turn_id IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM event_projections completed
+          WHERE completed.conversation_id = e.conversation_id
+            AND completed.turn_id = e.turn_id AND completed.event_type = 'message.completed')
+      GROUP BY e.turn_id ORDER BY max(e.emitted_at) DESC LIMIT 5`, [id]),
+    query<{
+      request_key: string; dispatch_state: string; response_state: string;
+      watchdog_state: string | null; created_at: Date;
+    }>(`SELECT sm.request_key, a.dispatch_state, a.response_state,
+      j.state AS watchdog_state, a.created_at
+      FROM response_attempts a JOIN submitted_messages sm ON sm.id = a.message_id
+      LEFT JOIN watchdog_jobs j ON j.attempt_id = a.id
+      WHERE a.conversation_id = $1 ORDER BY a.created_at, a.id LIMIT 101`, [id]),
+  ]);
+  // Recheck after potentially long history reads so a concurrent grant change
+  // cannot return a completed payload under the authorization observed earlier.
+  await getOwnedConversation(session, id);
+  return {
+    ...conversation,
+    history: [...events.rows.slice(0, 500).map((row) => ({
+      eventId: row.native_event_id,
+      eventType: row.event_type,
+      payload: row.visible_payload,
+      streamIndex: row.stream_index === null ? null : Number(row.stream_index),
+      emittedAt: row.emitted_at.toISOString(),
+    })), ...partials.rows.map((row) => ({
+      eventId: `partial_${row.turn_id}`, eventType: "message.appended",
+      payload: { messageDelta: row.message, partial: true }, streamIndex: null,
+      emittedAt: row.emitted_at.toISOString(),
+    }))].sort((a, b) => a.emittedAt.localeCompare(b.emittedAt)),
+    historyTruncated: events.rows.length > 500,
+    attempts: attempts.rows.slice(0, 100).map((row) => ({
+      requestKey: row.request_key,
+      dispatchState: row.dispatch_state,
+      responseState: row.response_state,
+      watchdogState: row.watchdog_state,
+      createdAt: row.created_at.toISOString(),
+    })),
+    attemptsTruncated: attempts.rows.length > 100,
+  };
+}

@@ -1,7 +1,8 @@
 # Evidence, context approval and learning policy
 
 Proposed policy `evidence-quality-v1`. Implement and calibrate in 003–005; extended
-practice-learning publication is 014. This is a defined starting rubric, not a
+practice-learning automation is 014. Reviewed shared knowledge is introduced with
+retrieval in 005 and used in delivery guidance in 006. This is a defined starting rubric, not a
 claim that its thresholds have been validated against Turas customers.
 
 ## Provenance and acceptance are distinct
@@ -98,6 +99,44 @@ invalidate chunks, summaries, cached answers, report/plan dependencies and share
 pattern eligibility. Keep already-sent report history with an explicit correction
 process; do not silently rewrite it.
 
+## Shared product knowledge
+
+Published shared product learnings are available to every authenticated, active
+platform member, including partners, regardless of which customers they can access.
+They may describe a best practice or reusable solution learned from a different
+customer. Access to a shared learning never grants access to its source customer.
+
+Maintain three separate scopes: customer-specific evidence, a private contribution
+candidate, and a published shared knowledge revision. Publication requires an
+authorized review of the exact revision, reuse rights and removal of customer
+identifiers and confidential details. This includes names, domains, screenshots,
+repository links, unique configuration details and outcome measurements that could
+identify a customer indirectly. Removing the customer name alone is insufficient.
+Do not publish or retrieve unreviewed customer material as shared knowledge.
+
+A shared entry describes the product/version, problem pattern, prerequisites,
+solution, why it works, applicability, limitations, validation and evidence-quality
+dates/rating. It can originate from one reviewed engagement; it need not imply broad
+adoption or disclose where it was used. Both humans and the agent can find and cite
+the published shared entry by its own stable ID/version. Partners receive that
+sanitized entry and citation, not private lineage, customer counts or original links.
+
+Keep source lineage separately restricted for authorized reviewers, corrections and
+withdrawal. Shared retrieval evaluates publication/eligibility independently of raw
+customer grants. Combine eligible shared entries with delivery-visible evidence for
+the assigned customer, never by searching unauthorized customer records and redacting
+afterward. Manual submissions still require factual approval; a high quality score
+does not authorize sharing. A source correction triggers review/invalidation of
+dependent shared revisions and derived guidance. Withdrawal removes the entry from
+current search, cached context and recommendations, preserving a permitted audit.
+
+Acceptance in 005/006: a partner assigned customer A can use a published learning
+derived from customer B without seeing B's identity, profile, source artifacts or
+private lineage; draft/rejected/withdrawn entries are unavailable. Internal and
+partner users receive the same published shared knowledge. Partner delivery views
+of A also exclude material outside their delivery scope, such as internal commercial
+notes or personnel costs. Feature 003 defines those profile fields before exposure.
+
 ## Learning release loop
 
 New evidence → score and conflict analysis → candidate change to a practice/template
@@ -105,8 +144,10 @@ New evidence → score and conflict analysis → candidate change to a practice/
 Feedback and measured outcomes improve retrieval and guidance through reviewed
 records, not self-modifying prompts or automatic model training. Retain rollback.
 
-Customer-specific learning stays scoped. Cross-customer patterns require explicit
-reuse authority, minimized comparable measurements, provenance and a minimum cohort
-policy. Start with the demo's five-independent-customer suppression proposal, then
-review privacy and differencing risks in 014. Product-gap counts in 012 use their own
-role-scoped authorization; partners must not infer hidden customer identities/counts.
+Customer-specific learning stays scoped. Shared reusable solutions follow the
+publication policy above. Cross-customer statistical claims and impact aggregates
+separately require comparable measurements and a cohort suppression policy; the
+demo's five-independent-customer threshold is a proposal for those aggregates, not
+a prerequisite for publishing an individually reviewed reusable solution. Review
+privacy and differencing risks in 012/014. Product-gap counts use their own role-scoped
+authorization; shared-knowledge access never reveals hidden customer identities/counts.

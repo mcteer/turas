@@ -7,11 +7,14 @@ execution, reporting and learning.
 
 ## Current state
 
-This is a fresh build at the **planning foundation** stage. The repository contains
-the eve scaffold, GitHub Spec Kit 1.0.12, project governance, product/architecture
-plans, artifact templates and foundation checks. The existing model configuration
-is preserved. Customer workflows, a web UI, database, RAG, reports and MCP are
-planned; they are not implemented here. No new eve integrations have been installed.
+Feature 002 is **implemented locally and under validation**. The current build has
+explicit Postgres migrations, the three temporary demo logins, customer grants,
+private owned conversations, guarded eve routes, durable response history, a
+maintenance worker and a responsive web shell. Customer references are synthetic
+and limited to identity and display name. Full customer profiles, attachments,
+accepted context, RAG, delivery plans, staffing, reports and MCP remain planned.
+No speculative eve integrations have been installed. The configured model is
+unchanged, and this work is not yet merged or hosted.
 
 The old demo at `../turas-back` was reviewed as a reference only. Its fixtures,
 credentials, data and unused integrations are not the new platform. See the
@@ -25,32 +28,63 @@ credentials, data and unused integrations are not the new platform. See the
 - [Evidence, quality scoring and approval policy](docs/evidence-policy.md)
 - [Plan and report templates](docs/templates/README.md)
 - [Foundation spec and plan](specs/001-platform-foundation/spec.md)
+- [Feature 002 specification](specs/002-identity-platform-shell/spec.md) and
+  [implementation plan](specs/002-identity-platform-shell/plan.md), with
+  [implementation tasks](specs/002-identity-platform-shell/tasks.md) and
+  [local validation](specs/002-identity-platform-shell/validation.md)
 - [Contributing](CONTRIBUTING.md), [coding-agent instructions](AGENTS.md), and
   [constitution](.specify/memory/constitution.md)
 
 ## Local setup
 
-Use Node **24** (`.node-version`) and npm. Install locked dependencies:
+Use Node **24** (`.node-version`), npm, local Postgres **17**, and CLI
+Playwright/WebKit. Install locked dependencies, configure ignored `.env.local`
+using [.env.example](.env.example), then explicitly initialize an empty local
+database with the configured environment marker. Provision a separate
+`turas_runtime` login and run the role grants after migrations. Keep a distinct
+disposable test database; the [002 runbook](specs/002-identity-platform-shell/quickstart.md)
+has the setup and recovery details.
 
 ```sh
 npm ci
-npm run check:docs
-npm run typecheck
-npm run build:check
+npm run db:init
+npm run db:roles
+npm run db:bootstrap-demo
+npm run dev
 ```
 
-Checks compile the scaffold and validate authored documentation without live model
-calls, sandbox preparation or a customer database. `build:check` skips sandbox
-prewarming; its output is not a validated deployable build. `npm run build` performs
-the full build and may need configured sandbox infrastructure. `npm run dev` starts eve's agent development TUI;
-it is not yet the planned web application. Live model calls need appropriate
-AI Gateway access and may incur usage. `.env.example` documents the current
-optional variable name. Keep real credentials in ignored `.env.local`.
+`npm run dev` supervises Next.js, eve and the Postgres-backed maintenance worker.
+The web app is available at the configured `TURAS_APP_ORIGIN`. The `mcteer` login
+is an internal administrator, `panel` an internal employee, and `partner` an
+external member assigned only Cedar in the synthetic demo. Internal members can
+see every customer reference, including new ones; each account sees only its
+own chats. Claims typed into chat remain unverified and cannot update profiles.
+The app does not yet accept attachments.
+After a local eve dev restart, an in-flight run from an older development
+generation may be quarantined. Its stored message and deadline remain visible;
+the worker flags an unconfirmed overdue turn for operator review without
+starting another model turn. See the [restart evidence](specs/002-identity-platform-shell/validation.md).
 
-`agent/channels/eve.ts` retains the scaffold's local/Vercel authentication and
-browser placeholder. It is not production user/partner authentication. Feature 002
-adds the application identity, authorization and UI. Do not expose private data
-through this scaffold or reuse the demo database for new development.
+For local checks, use:
+
+```sh
+npm run check:docs
+npm run typecheck
+npm run test:unit
+npm run test:integration
+npm run test:contracts
+npm run build:check
+npm run test:ui
+npm run test:performance
+```
+
+The database tests require the disposable test environment variables in the
+runbook. UI checks use WebKit from the command line and synthetic data. Both
+compile targets are included in `build:check`; it skips eve sandbox prewarming
+and does not establish hosted readiness. Optional `smoke:local:live` and
+`eval:behavior:local` commands require an explicit `--live` flag and use the
+configured model. Keep all real credentials in ignored `.env.local`. Full
+authentication is deferred until explicitly resumed following hiring.
 
 ## Spec Kit workflow
 
@@ -82,16 +116,25 @@ procedure and generated changes while preserving the constitution and authored d
 
 ## Delivery and documentation
 
-The next slice is **002: identity, persistence and application shell**, after the
-foundation PR is reviewed and merged. Add an eve integration only when an active
+The foundation merged in [PR 1](https://github.com/mcteer/turas/pull/1). The active
+slice is **002: identity, persistence and application shell**, under local
+implementation and review. Its demo scope uses
+`mcteer` for internal Vercel administrators/FDE/PS leadership, `panel` for internal
+Vercel employees and `partner` for external partners. Internal users see all workspace
+customer profiles; partners see only delivery-relevant information for assigned
+customers. Accounts have separate chat histories and synthetic customer data or public research only.
+The roadmap also includes reviewed shared product learnings available to all active
+users, including partners, without exposing the originating customer. Shared retrieval
+starts in 005; it is not implemented in 002.
+Add an eve integration only when an active
 feature uses it and verifies it. No speculative connector installation.
 
 Deployment is a future feature action using `eve link` and `eve deploy`, as required
 by [AGENTS](AGENTS.md). No manual provisioning or deployment is part of 001. Every relevant
 PR updates README in the same change; maintainers verify freshness after merge.
 
-The existing Git-connected Vercel project attempts previews automatically and currently
-expects Next.js. Its preview fails for this eve-only foundation with “No Next.js version
-detected.” Feature 002 introduces the actual web shell and aligns that configuration;
-see the [validation record](specs/001-platform-foundation/validation.md). Foundation
-GitHub Actions checks are separate from hosted preview status.
+The repository was disconnected from Vercel on 2026-09-27 to prevent automatic
+deployments until Turas can replace the existing application. Do not reconnect
+or deploy as part of 002. Hosted validation and project
+alignment are deferred to replacement readiness. The earlier Next.js preview failure
+is recorded historically in the [foundation validation record](specs/001-platform-foundation/validation.md).
