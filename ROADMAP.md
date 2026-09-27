@@ -1,6 +1,11 @@
 # Turas delivery roadmap
 
-Baseline: 2026-09-26. **001 is the foundation PR; 002–016 are planned, not built.**
+Baseline: 2026-09-26; updated 2026-09-27. **001 merged in PR 1; 002 is in local
+implementation and validation, with no merged or hosted release. 003–016 remain planned.**
+
+The user disconnected the repository from Vercel. Use local `npm run dev` testing;
+no reconnection or deployment until replacement readiness. Hosted acceptance for
+002 is deferred to that release gate. See the [002 plan](specs/002-identity-platform-shell/plan.md).
 Numbers reserve the intended sequence. Create detailed Spec Kit artifacts only
 when starting a slice; do not turn the entire product into one implementation PR.
 Each slice may need several PRs. No calendar dates are promised before team
@@ -12,18 +17,18 @@ capacity, identity/resource choices and initial delivery velocity are known.
 | --- | --- | --- | --- |
 | 001 | Platform foundation | None | Spec Kit, governance, reference audit, blueprint, architecture, templates and roadmap; reproducible checks; reviewed foundation PR |
 | 002 | Identity, persistence and application shell | 001 | Next.js/eve shell matching reference; explicit migrations; internal/partner principals and customer grants; owned chat sessions; deny unauthorized stream/resume/control and cross-tenant access |
-| 003 | Customer profiles, maturity and context review | 002 | Rich canonical profiles, separate maturity/delivery models, product-use records, research/risk history; pending → approve/reject/correct/retract lifecycle; accepted-only context tests |
+| 003 | Customer profiles, maturity and context review | 002 | Rich canonical profiles with internal-wide visibility and partner delivery-only projections, separate maturity/delivery models, product-use records, research/risk history; pending → approve/reject/correct/retract lifecycle; accepted-only context tests |
 | 004 | Chat attachments and artifact ingestion | 003 | Private original files, explicit customer binding, PDF/DOCX/PPTX/XLSX/CSV/text and image paths, extraction status and review queue; retry/idempotency, deletion and malicious-file tests |
-| 005 | Governed RAG, research and evidence quality | 004 | Hybrid scoped retrieval with page/sheet/cell citations, quality rubric v1, recon/practices/implementation research boundaries, refresh and contradiction handling; retrieval and citation evals |
-| 006 | Delivery plans and technical designs | 005 | Versioned template, context snapshot, architecture artifacts and rationale; accept exact version into customer, milestone baseline and revisions; no duplicate engagement on retry |
+| 005 | Governed RAG, research and evidence quality | 004 | Hybrid scoped retrieval with page/sheet/cell citations, reviewed sanitized shared practices/solutions available to all active users, private source lineage, quality rubric v1, recon/practices/implementation research boundaries, refresh and contradiction handling; retrieval and citation evals |
+| 006 | Delivery plans and technical designs | 005 | Versioned template, authorized customer context plus eligible shared practices, architecture artifacts and rationale; accept exact version into customer, milestone baseline and revisions; no duplicate engagement on retry |
 | 007 | Skills, staffing and services operations | 006 | Approved structured competency import, availability and constraints, explained matches, manager-confirmed allocations, deterministic utilization/economics; overload and stale-competency tests |
 | 008 | Engagement execution and delivery logs | 006, 007 | Milestones, activity/time approval, RAID, scope changes, decision/acceptance/handoff records and outcomes; logs drive status without inventing progress |
 | 009 | Weekly and executive reporting | 008 | Reviewed weekly report and recipient policy; monthly/quarterly executive PDF and editable QBR slides; brand/template validation, audience redaction, durable send/retry receipts |
 | 010 | TAM and support guidance | 005, 008 | Customer-scoped support readiness, recommended actions, evidence, owner and escalation boundaries; track disposition without pretending to resolve tickets |
 | 011 | Product expansion opportunities | 006, 008 | Explainable new-product/usage-expansion hypotheses, prerequisites and proposed engagement; account-owner qualification, dismiss/defer tracking; evidence of customer benefit |
 | 012 | Product gaps and engineering feedback | 005, 008, 009 | Canonical gap records, deduplication and unique-customer impact; detailed and summary report templates; restricted aggregates and engineering handoff receipts |
-| 013 | Partner delivery and enablement | 006, 008, 010 | Partner workspace for granted accounts, same plan method plus what/how/why lessons and checkpoints; no internal margins or ungranted customer leakage |
-| 014 | Governed adaptive learning | 005, 009, 012, 013 | Feedback → reviewed practice candidate → evaluated version → publication/rollback; refresh jobs, cohort privacy, lineage-based invalidation and quality dashboards |
+| 013 | Partner delivery and enablement | 006, 008, 010 | Partner workspace for assigned-customer delivery data plus platform-wide published shared knowledge, same plan method plus what/how/why lessons and checkpoints; no internal margins or ungranted customer leakage |
+| 014 | Governed adaptive learning | 005, 009, 012, 013 | Extend the 005 shared-knowledge publication path: feedback → reviewed practice candidate → evaluated version → publication/rollback; refresh jobs, cohort privacy, lineage-based invalidation and quality dashboards |
 | 015 | Read-only MCP service | 003, 005, 006, 009 | Versioned profile/evidence/plan/report reads through shared policy; scopes, pagination, current authorization, rate limits and consumer contract tests |
 | 016 | Pilot hardening and launch readiness | 002–015 | Restore/recovery, retention/deletion, security/access review, scale/cost tests, operational runbooks, pilot feedback and approved release |
 
@@ -81,18 +86,18 @@ start after 009 without waiting for adaptive learning. Partner access enforcemen
 audit, telemetry, testing and recovery are developed throughout; 016 verifies them
 under pilot conditions rather than introducing them at the end.
 
-## Immediate 002 handoff
+## Current 002 work
 
-Resolve the blocking decisions in [decision register](docs/decisions.md): identity
-provider and partner federation, workspace/customer grants and approvers, isolated
-database/Blob resources and region. Verify `channel/web` against installed eve;
-its registry scaffold may select preview dependencies. Define owned session
-authorization, initial migration and synthetic fixtures, then implement a thin
-authenticated shell. Bring the demo's visual system forward without its shared
-demo credentials, static customer catalog or request-time schema creation.
-Confirm the target Vercel project/domains and align its existing Next.js framework
-expectation with this new shell (D18). The foundation's automatic preview currently
-fails before build because Next.js is not installed; no unused integration was added.
+Use `panel`, `mcteer` and `partner` demo login for 002, per the 2026-09-27 clarification;
+full authentication and partner federation are deferred until explicitly resumed
+following hiring. Preserve authorization boundaries and partner fixture tests.
+Account roles and grants, isolated Postgres migrations, the private conversation
+path, the reference-style shell and local worker are built on the 002 branch.
+Complete the remaining recovery, limit, accessibility and documentation checks
+in [002 tasks](specs/002-identity-platform-shell/tasks.md) before claiming the
+slice complete. Confirm the target Vercel project/domains, align the
+Next.js build and validate hosted behavior only at replacement readiness (D18).
+The foundation's earlier preview failure is historical; the repo is now disconnected.
 
 ## Updating this roadmap
 

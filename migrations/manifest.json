@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "migrations": [
+    {
+      "file": "001-identity-foundation.cjs",
+      "sha256": "fab03c5089365ba858dcba2c29808459b58847c01408b091e0506da374c2aaae"
+    },
+    {
+      "file": "002-login-sessions.cjs",
+      "sha256": "81f60a1b52432d2d8e49e51ca4470c2215a2a5b26d233daf22934fae7da60a0c"
+    },
+    {
+      "file": "003-customer-access.cjs",
+      "sha256": "8af0da76d1071cce25d801b3eaa5cc36d1e169dcb8046d434e565e6e7f7477cc"
+    },
+    {
+      "file": "004-conversations.cjs",
+      "sha256": "1748b6def88da03776805fcd469ce159913f2f1edbc1959db6c4f6f7f7954f32"
+    },
+    {
+      "file": "005-conversation-invariants.cjs",
+      "sha256": "404c14b8e648ee5af6d6562be78c30a35d6dfb6ab99daee40b2cf7670595c5e8"
+    },
+    {
+      "file": "006-native-receipts.cjs",
+      "sha256": "fe686616219435a670de4deecc50df132cbb37ff3e3b704e65c6db3d8ff8fac0"
+    }
+  ]
+}

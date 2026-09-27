@@ -82,9 +82,10 @@ upstream tooling's required license and provenance metadata.
 | Agent instructions/tools/retrieval | Representative evals, source fidelity, failure behavior, cost/latency limits |
 | Database/deployment | Disposable migration validation, preview verification, recovery procedure |
 
-Only foundation checks exist today. Add missing test commands with the first
-feature that needs them; do not report planned suites as passing. Live evals require
-an intended environment, budget, and approved data; deterministic CI needs no secrets.
+Feature 002 adds unit, integration, contract, WebKit UI, local performance, and
+opt-in live evaluation commands. Report only checks actually run for the change.
+CI uses generated disposable credentials and no model key. Live evals require an
+explicit `--live` flag, a local environment, and a recorded budget.
 
 ## Documentation and merge hygiene
 
@@ -93,6 +94,8 @@ capabilities, commands, configuration, limitations, and links in that PR. Update
 the roadmap only when exit criteria have evidence. After merge, check README on
 `main` matches delivered behavior; submit a corrective docs PR if it does not.
 Do not create an automatic bot that rewrites README after every merge.
+After a PR merges successfully, leave the merged PR closed and delete its
+associated local and remote branch. Verify README on `main` after that cleanup.
 
 Use the [PR template](.github/pull_request_template.md). Preserve decisions in the
 spec or an architecture decision. Branch protection and required reviewers must be

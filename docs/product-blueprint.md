@@ -25,16 +25,26 @@ Turi is the eve assistant. The primary loop is:
 
 | Role | Primary work | Boundary |
 | --- | --- | --- |
-| Platform administrator | Identity, workspaces, policy and integrations | Administration is not blanket access to customer content |
+| Platform administrator | Identity, workspaces, policy and integrations; internal FDE/PS leadership | Internal customer visibility spans the workspace; administrative actions remain restricted |
 | Customer context steward | Review claims, reconcile conflicts and corrections | Review only assigned customer scopes; record rationale |
 | FDE/PS lead or engineer | Plan and deliver; log work; propose staffing | No implicit commercial or staffing approval |
 | Resource manager | Skills, allocations, utilization and forecasts | Restricted cost/rate and personnel visibility |
-| Account team / TAM | Outcomes, support readiness, risk, expansion | Customer grants and audience-specific fields |
+| Account team / TAM | Outcomes, support readiness, risk, expansion | Internal employees can view all workspace customer records; partner access remains assignment-scoped |
 | Executive / delivery leader | Authorized portfolio and status review | Aggregates must not leak restricted accounts |
 | Partner lead / engineer | Assigned customer planning, execution, enablement | Explicit customer/project grants; internal notes and margins hidden |
 | MCP consumer | Query authorized structured context | Read-only scopes; same domain policy as the application |
 
-Exact identity provider and permission matrix are resolved in feature 002. Customer
+Feature 002 uses three demo logins: `mcteer` for internal Vercel administrators,
+`panel` for internal Vercel employees, and `partner` for an external partner member.
+Internal users can access every current and future customer profile in their workspace,
+including for purposes beyond delivery; this does not make private chats shared.
+Partners access only delivery-relevant information for customers they are assigned
+to help. A customer assignment is not permission to read every internal field.
+All active platform members can access reviewed, published shared product learnings:
+best practices and reusable solutions generalized from any customer, without exposing
+the originating customer's identity or private context. See the
+[shared knowledge policy](evidence-policy.md#shared-product-knowledge).
+Full identity-provider integration remains deferred. Customer
 recipients initially receive authorized reports; customer self-service login is a
 separate future scope, not an assumption of the partner portal.
 
@@ -57,6 +67,7 @@ separate future scope, not an assumption of the partner portal.
 | TR-13 | Development: GitHub Spec Kit, constitution, AGENTS, contribution guide, PR template, README freshness and reviewable feature increments | 001 |
 | TR-14 | Chat: durable conversations, customer selection, resumable streams, artifact attachments, ingestion status and visible pending/accepted context | 002, 004 |
 | TR-15 | Visual continuity: retain the demo's restrained Geist-based interface, sidebar, chat composition, cards and evidence tables; accessible light/dark responsive views | 002 and every UI slice |
+| TR-16 | Shared product knowledge: all active users, including partners, can find and use reviewed reusable practices/solutions without source-customer access; sanitized publication, private lineage, applicability/quality and withdrawal checks | 005, 006, 013, 014 |
 
 ## Customer maturity model v1 — proposed
 

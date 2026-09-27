@@ -1,4 +1,4 @@
-name: Foundation checks
+name: Turas checks
 
 on:
   pull_request:
@@ -9,13 +9,25 @@ permissions:
   contents: read
 
 concurrency:
-  group: foundation-${{ github.workflow }}-${{ github.ref }}
+  group: turas-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  foundation:
+  verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -23,12 +35,59 @@ jobs:
           node-version-file: .node-version
           cache: npm
       - run: npm ci
+      - name: Create isolated test configuration
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h 127.0.0.1 -U postgres -c 'CREATE DATABASE turas_ci'
+          psql -h 127.0.0.1 -U postgres -c 'CREATE DATABASE turas_test'
+          runtime_password="$(openssl rand -hex 24)"
+          demo_password="$(openssl rand -hex 20)"
+          panel_password="$(openssl rand -hex 20)"
+          partner_password="$(openssl rand -hex 20)"
+          maintenance_secret="$(openssl rand -hex 32)"
+          for value in "$runtime_password" "$demo_password" "$panel_password" "$partner_password" "$maintenance_secret"; do
+            echo "::add-mask::$value"
+          done
+          psql -h 127.0.0.1 -U postgres -c "CREATE ROLE turas_runtime LOGIN PASSWORD '${runtime_password}'"
+          {
+            echo "DATABASE_URL=postgres://turas_runtime:${runtime_password}@127.0.0.1:5432/turas_ci"
+            echo 'DATABASE_URL_UNPOOLED=postgres://postgres:postgres@127.0.0.1:5432/turas_ci'
+            echo 'TURAS_TEST_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/turas_test'
+            echo 'TURAS_ENVIRONMENT_ID=ci-002'
+            echo 'TURAS_TEST_ENVIRONMENT_ID=test-ci-002'
+            echo 'TURAS_APP_ORIGIN=http://127.0.0.1:3000'
+            echo 'TURAS_DEMO_USERNAME=mcteer'
+            echo 'PANEL_USERNAME=panel'
+            echo 'PARTNER_USERNAME=partner'
+            echo "TURAS_DEMO_PASSWORD=$demo_password"
+            echo "PANEL_PASSWORD=$panel_password"
+            echo "PARTNER_PASSWORD=$partner_password"
+            echo "TURAS_MAINTENANCE_SECRET=$maintenance_secret"
+          } >> "$GITHUB_ENV"
+      - name: Initialize disposable databases
+        run: |
+          npm run db:init
+          npm run db:roles
+          npm run db:bootstrap-demo
+          DATABASE_URL_UNPOOLED="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:init
+          DATABASE_URL_UNPOOLED="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:roles
+          DATABASE_URL="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:bootstrap-demo
       - run: npm run check:docs
       - run: npm run typecheck
+      - run: npm run test:unit
+      - name: Discover versioned behavior cases without model calls
+        run: npx eve eval --list
+      - run: npm run test:integration
+      - run: npm run test:contracts
       - name: Compile without sandbox preparation
         run: npm run build:check
       - name: Validate Spec Kit feature artifacts
         env:
-          SPECIFY_FEATURE_DIRECTORY: specs/001-platform-foundation
+          SPECIFY_FEATURE_DIRECTORY: specs/002-identity-platform-shell
           SPECIFY_FEATURE_NO_PERSIST: '1'
         run: .specify/scripts/bash/check-prerequisites.sh --json --require-spec --require-tasks
+      - name: Install WebKit
+        run: npx playwright install --with-deps webkit
+      - name: Exercise the local UI in WebKit
+        run: npm run test:ui -- --workers=2
