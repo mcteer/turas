@@ -26,6 +26,49 @@ const fixture = {
 } as const;
 
 describe("trusted research ingestion", () => {
+  it("projects a dated synthetic source matrix with every quality band and freshness label", async () => {
+    const previousEnvironment = process.env.TURAS_ENVIRONMENT_ID;
+    process.env.TURAS_ENVIRONMENT_ID = process.env.TURAS_TEST_ENVIRONMENT_ID;
+    try {
+      await withTestDatabase(async (client) => {
+        await client.query("BEGIN");
+        try {
+          const admin = await createProfileTestSession(client, "mcteer");
+          const now = Date.now();
+          const dated = (days: number) => new Date(now - days * 86_400_000).toISOString();
+          const cases = [
+            { label: "strong-recent", days: 1, R: 4, D: 4, C: 4, band: "strong", freshness: "Recent" },
+            { label: "usable-recent", days: 1, R: 2, D: 4, C: 1, band: "usable", freshness: "Recent" },
+            { label: "weak-unknown", days: null, R: 4, D: 0, C: 0, band: "weak", freshness: "Unknown" },
+            { label: "insufficient-unknown", days: null, R: 0, D: 0, C: 0, band: "insufficient", freshness: "Unknown" },
+            { label: "strong-aging", days: 45, R: 4, D: 4, C: 4, band: "strong", freshness: "Aging" },
+            { label: "usable-stale", days: 70, R: 4, D: 4, C: 4, band: "usable", freshness: "Stale" },
+          ] as const;
+          const marker = randomUUID();
+          for (const item of cases) {
+            const source = await ingestVerifiedResearch({ ...fixture,
+              location: `https://example.com/quality-${item.label}-${marker}`,
+              passage: `Synthetic dated passage for ${item.label}`,
+              publicationAt: item.days === null ? undefined : dated(item.days),
+              retrievalAt: new Date(now).toISOString(),
+              qualityInput: { ...fixture.qualityInput, R: item.R, D: item.D, C: item.C,
+                dateBasis: item.days === null ? "unknown" : "publication" },
+            }, client);
+            const detail = await readProfileSource(admin, fixture.customerId, source.sourceRevisionId, client) as {
+              quality: { band: string; freshness: string } };
+            expect(detail.quality, item.label).toMatchObject({ band: item.band,
+              freshness: item.freshness });
+          }
+          await expect(ingestVerifiedResearch({ ...fixture,
+            location: `https://example.com/quality-future-${marker}`,
+            publicationAt: new Date(now + 86_400_000).toISOString(),
+            retrievalAt: new Date(now).toISOString(),
+          }, client)).rejects.toMatchObject({ status: 422, code: "invalid_date" });
+        } finally { await client.query("ROLLBACK"); }
+      });
+    } finally { process.env.TURAS_ENVIRONMENT_ID = previousEnvironment; }
+  });
+
   it("keeps checked public evidence attributed, immutable and idempotent", async () => {
     const oldMarker = process.env.TURAS_ENVIRONMENT_ID;
     process.env.TURAS_ENVIRONMENT_ID = process.env.TURAS_TEST_ENVIRONMENT_ID;
