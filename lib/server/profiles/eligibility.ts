@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { PoolClient } from "pg";
 import type { ProfilePayload } from "../../contracts/profile-payloads";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
@@ -15,6 +16,22 @@ export function evidenceIds(payload: ProfilePayload, separate: readonly string[]
 export async function unsupportedProfileRevisionIds(client: PoolClient, ids: readonly string[],
   includeRootCurrent = false, ignoringConflictId: string | null = null): Promise<Set<string>> {
   if (!ids.length) return new Set();
+  const marker = await client.query<{ schema_version: number }>(
+    "SELECT schema_version FROM turas_environment LIMIT 1");
+  const artifactUnion = (marker.rows[0]?.schema_version ?? 0) >= 15 ? `
+  UNION
+  SELECT DISTINCT chain.root_id AS id FROM support_chain chain
+  JOIN profile_evidence_links l ON l.profile_revision_id=chain.revision_id
+  JOIN artifact_evidence_selections s ON s.id=l.artifact_selection_id
+  JOIN artifact_versions av ON av.id=s.version_id
+  JOIN artifact_extraction_runs ar ON ar.id=s.run_id
+  LEFT JOIN artifact_evidence_payloads ep ON ep.selection_id=s.id
+  WHERE av.state NOT IN ('ready','partial')
+     OR av.lifecycle_generation<>s.lifecycle_generation
+     OR av.sha256_digest<>s.original_digest
+     OR ar.state<>'published'
+     OR ep.selection_id IS NULL
+     OR s.profile_revision_id IS DISTINCT FROM chain.revision_id` : "";
   const result = await client.query<{ id: string }>(`WITH RECURSIVE support_chain(root_id,revision_id,path) AS (
     SELECT id,id,ARRAY[id] FROM unnest($1::uuid[]) AS roots(id)
     UNION ALL
@@ -36,9 +53,49 @@ export async function unsupportedProfileRevisionIds(client: PoolClient, ids: rea
   SELECT DISTINCT chain.root_id AS id FROM support_chain chain
   JOIN profile_evidence_links l ON l.profile_revision_id=chain.revision_id
   JOIN evidence_source_events e ON e.source_revision_id=l.source_revision_id
-    AND e.event_type IN ('withdraw','supersede')`,
+    AND e.event_type IN ('withdraw','supersede')
+  ${artifactUnion}`,
   [ids, includeRootCurrent, ignoringConflictId]);
   return new Set(result.rows.map((row) => row.id));
+}
+
+/** Lock source versions before the profile record so review cannot race tombstones. */
+export async function validateArtifactReviewSupport(client: PoolClient, revisionId: string,
+  workspaceId: string, customerId: string): Promise<void> {
+  const channel = await client.query<{ submission_channel: string }>(
+    "SELECT submission_channel FROM profile_revisions WHERE id=$1 AND workspace_id=$2 AND customer_id=$3",
+    [revisionId,workspaceId,customerId]);
+  if (!channel.rows[0]) throw hiddenRecord();
+  if (channel.rows[0].submission_channel !== "artifact_share") return;
+  const selections = await client.query<{ id: string; version_id: string; run_id: string;
+    lifecycle_generation: string; original_digest: string; excerpt_digest: string;
+    profile_revision_id: string | null; audience: string; data_category: string }>(`
+    SELECT s.id,s.version_id,s.run_id,s.lifecycle_generation,s.original_digest,
+      s.excerpt_digest,s.profile_revision_id,s.audience,s.data_category
+    FROM profile_evidence_links l JOIN artifact_evidence_selections s ON s.id=l.artifact_selection_id
+    WHERE l.profile_revision_id=$1 AND l.workspace_id=$2 AND l.customer_id=$3
+    ORDER BY s.version_id,s.id
+  `, [revisionId,workspaceId,customerId]);
+  if (channel.rows[0].submission_channel === "artifact_share" && selections.rows.length !== 1) {
+    throw new HttpFailure(409, "artifact_support_changed", "Artifact support changed; reload review");
+  }
+  for (const selection of selections.rows) {
+    const source = await client.query<{ state: string; lifecycle_generation: string;
+      sha256_digest: string; run_state: string; excerpt: string | null }>(`
+      SELECT v.state,v.lifecycle_generation,v.sha256_digest,r.state AS run_state,p.excerpt
+      FROM artifact_versions v JOIN artifact_extraction_runs r ON r.id=$2 AND r.version_id=v.id
+      LEFT JOIN artifact_evidence_payloads p ON p.selection_id=$3
+      WHERE v.id=$1 AND v.workspace_id=$4 AND v.customer_id=$5 FOR UPDATE OF v
+    `, [selection.version_id,selection.run_id,selection.id,workspaceId,customerId]);
+    const row = source.rows[0];
+    if (!row || !["ready","partial"].includes(row.state) ||
+        Number(row.lifecycle_generation) !== Number(selection.lifecycle_generation) ||
+        row.sha256_digest !== selection.original_digest || row.run_state !== "published" ||
+        selection.profile_revision_id !== revisionId || !row.excerpt ||
+        createHash("sha256").update(row.excerpt).digest("hex") !== selection.excerpt_digest) {
+      throw new HttpFailure(409, "artifact_support_changed", "Artifact support changed; reload review");
+    }
+  }
 }
 
 export async function validateMaturityEvidenceScope(client: PoolClient, workloadId: string | null,

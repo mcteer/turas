@@ -6,6 +6,8 @@ import Link from "next/link";
 import { DemoDataNotice } from "./demo-data-notice";
 import { ChatStatus } from "./chat-status";
 import { ShareChatClaim } from "./profiles/share-chat-claim";
+import { ComposerAttachments } from "./attachments/composer-attachments";
+import type { DraftSourceSelection } from "./attachments/source-viewer";
 
 export function AgentChat({ conversationId, nativeSessionId, bindingState,
   customerName, synthetic, csrfToken, customerId, contextStatus }: {
@@ -56,6 +58,9 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   const [stale, setStale] = useState(false);
   const [stopping, setStopping] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [draftSelections, setDraftSelections] = useState<DraftSourceSelection[]>([]);
+  const [selectionResetVersion, setSelectionResetVersion] = useState(0);
+  const pendingSelections = useRef<DraftSourceSelection[] | null>(null);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [dispatchState, setDispatchState] = useState<string>();
   const [responseState, setResponseState] = useState<string>();
@@ -72,6 +77,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         setStopping(false);
         setPendingKey(null);
         keyRef.current = null;
+        pendingSelections.current = null;
       }
     },
   });
@@ -170,18 +176,23 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   }, [agent, conversationId, denied, pendingKey]);
 
   async function send(retryPrepared = false) {
-    const text = draft;
+    const selections = retryPrepared ? pendingSelections.current ?? [] : draftSelections;
+    const text = draft.trim() || (selections.length ? "Please discuss the selected customer source passages." : "");
     if (!text.trim() || denied || (pendingKey && !(retryPrepared && dispatchState === "prepared")) ||
         agent.status !== "ready") return;
     const key = keyRef.current ?? crypto.randomUUID();
     keyRef.current = key;
+    if (!retryPrepared) pendingSelections.current = selections;
     setPendingKey(key);
     setDispatchState("prepared");
     setResponseState("pending");
     setNotice("Submitting message…");
     try {
-      await agent.send(text, { headers: { "x-turas-request-key": key } });
+      await agent.send(text, { headers: { "x-turas-request-key": key,
+        ...(selections.length ? { "x-turas-artifact-selections": btoa(JSON.stringify(selections)) } : {}) } });
       setDraft("");
+      setDraftSelections([]);
+      setSelectionResetVersion((value) => value + 1);
       setNotice("Message accepted. Waiting for the response…");
     } catch {
       setNotice("Dispatch outcome is being reconciled. The message was not sent again.");
@@ -217,10 +228,13 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     {shareOpen && <ShareChatClaim conversationId={conversationId} customerId={customerId}
       csrfToken={csrfToken} />}
     <form className="chat-composer" onSubmit={(event) => { event.preventDefault(); void send(); }}>
+      <ComposerAttachments conversationId={conversationId} customerId={customerId}
+        customerName={customerName} csrfToken={csrfToken}
+        onDraftSelectionsChange={setDraftSelections} resetSelectionVersion={selectionResetVersion} />
       <label className="field-label" htmlFor="chat-message">Message</label>
       <textarea id="chat-message" value={draft} onChange={(event) => setDraft(event.target.value)}
         maxLength={16_384} disabled={busy || (Boolean(pendingKey) && dispatchState !== "prepared") || agent.status === "resuming" || stopping} />
-      <div className="chat-actions"><button className="primary-button" type="submit" disabled={!draft.trim() || busy || Boolean(pendingKey) || agent.status === "resuming" || stopping}>Send</button>
+      <div className="chat-actions"><button className="primary-button" type="submit" disabled={(!draft.trim() && !draftSelections.length) || busy || Boolean(pendingKey) || agent.status === "resuming" || stopping}>Send</button>
         {busy && <button className="secondary-button" type="button" disabled={stopping} onClick={() => void cancel()}>Stop</button>}</div>
     </form>
     {draft.trim() && !pendingKey && <p className="state-message" role="status">Draft not sent.</p>}

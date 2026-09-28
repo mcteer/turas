@@ -1,8 +1,9 @@
 # 004 local validation guide
 
-This is an implementation handoff, not evidence of completed behavior. Commands
-marked **new** must be added by the task list. Do not run migrations, install parser
-dependencies or provision resources during this planning-only change.
+This is the local implementation and validation guide. The
+[validation log](validation.md) records checks actually run; this guide alone is
+not evidence of completed behavior. Run migrations only against the intended
+environment after preparing the private store and scanner/parser images.
 
 ## Prerequisites and preparation
 
@@ -11,10 +12,10 @@ dependencies or provision resources during this planning-only change.
 - Docker daemon with ≥8 GiB RAM and 2 CPUs available; CLI Playwright/WebKit installed.
 - Synthetic fixtures only. Preserve the working DB, .eve workflow data and .env.local;
   never print secrets or upload private customer files.
-- New artifact config in .env.example: TURAS_ARTIFACT_STORE_ROOT,
-  TURAS_TEST_ARTIFACT_STORE_ROOT, TURAS_ARTIFACT_PARSER_IMAGE,
-  TURAS_ARTIFACT_SCANNER_IMAGE and TURAS_ARTIFACT_SIGNATURE_ROOT. Store and signature
-  roots are ignored local directories with environment markers, outside public.
+- Artifact config in .env.example: `TURAS_ARTIFACT_STORE_ROOT` and
+  `TURAS_TEST_ARTIFACT_STORE_ROOT`. The parser/scanner image tags are pinned in
+  `infra/artifacts/images.json`; signatures and offline OCR assets live under
+  the ignored, environment-marked private store, outside `public`.
 
 After implementation, use Node24 and install the locked root/parser dependencies:
 
@@ -28,7 +29,7 @@ npm run db:roles
 npm run dev
 ```
 
-**New:** artifacts:prepare builds/resolves pinned local images, packages offline OCR
+`artifacts:prepare` builds/resolves pinned local images, packages offline OCR
 assets and refreshes signatures explicitly; it may download public dependencies,
 never link/deploy Vercel or inspect uploaded documents. Preparation records versions
 and digests without secrets. Fresh test DB initialization and roles follow existing
@@ -43,9 +44,9 @@ unavailable state. Source preparation must not happen implicitly at app startup.
 | Check | Run / expected evidence |
 | --- | --- |
 | Docs/types/domain | npm run check:docs; npm run typecheck; npm run test:unit; npm run test:contracts; npm run test:integration |
-| Real scan/extraction | **New:** npm run test:artifacts; generated valid files for every format, exact locators, offline OCR, real clean/EICAR scan, stale definitions, timeout/OOM/limits/network isolation |
-| Recovery | **New:** npm run artifacts:recovery:check; guarded schema 013 upgrade and DB/store restored clone, lost completion, kill/restart/lease reclaim, cleanup convergence and watchdog responsiveness |
-| Browser interaction | npm run test:ui -- tests/ui/artifact-upload.spec.ts tests/ui/artifact-review.spec.ts tests/ui/artifact-context.spec.ts tests/ui/artifact-lifecycle.spec.ts; all four existing WebKit projects |
+| Real scan/extraction | npm run test:artifacts; generated valid files for every format, exact locators, offline OCR, real clean/EICAR scan, stale definitions, timeout/OOM/limits/network isolation |
+| Recovery | npm run artifacts:recovery:check; guarded schema 013 upgrade and DB/store restored clone, lost completion, kill/restart/lease reclaim, cleanup convergence and watchdog responsiveness |
+| Browser interaction | npm run test:ui -- tests/ui/artifact-upload.spec.ts tests/ui/artifact-review.spec.ts tests/ui/artifact-context.spec.ts tests/ui/artifact-lifecycle.spec.ts; all four existing WebKit projects. `npm run artifacts:ui:live:check` uses an isolated app/database/store for one real WebKit upload, extraction and source inspection |
 | Regression/build | npm run test:ui; npm run build:check; npx eve eval --list |
 | Actual Turi behavior | Extend npm run eval:behavior:local -- --feature 004 --live; inspect responses and run existing eval:behavior:verify against the generated004 review record |
 
@@ -61,8 +62,11 @@ model or provider integration is installed for them.
 **US1:** As panel, bind a chat to a synthetic customer; attach a valid fixture of
 each format in separate bounded batches. Inspect exact PDF/page, DOCX/paragraph,
 PPTX/slide, spreadsheet/cell, multiline CSV/line and OCR/region locations. Lose a
-completion response and retry: one original/extraction result. Unsupported/macro/
-encrypted/unsafe inputs are useful errors, with no source text entering chat.
+completion response and retry: one original/extraction result. Pause before completion:
+the intent reports progress with no version link and no extraction work. Race cancel
+or expiry against completion; only the winning transition commits, reservations are
+released or converted once, and late bytes never create a source after cancellation.
+Unsupported, macro-enabled, encrypted or unsafe inputs are useful errors, with no source text entering chat.
 A different owner/unassigned partner gets identical denial for real/random IDs.
 A fresh owned same-customer chat explicitly reattaches an eligible prior source.
 

@@ -1,7 +1,7 @@
 # Turas delivery roadmap
 
-Baseline: 2026-09-26; updated 2026-09-27. **001 merged in PR 1; 002 merged in
-[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 is in planning with implementation not started; 005–016 remain planned.**
+Baseline: 2026-09-26; updated 2026-09-28. **001 merged in PR 1; 002 merged in
+[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 passed local validation on its feature branch and awaits review/CI; 005–016 remain planned.**
 
 The user disconnected the repository from Vercel. Use local `npm run dev` testing;
 no reconnection or deployment until replacement readiness. Hosted acceptance for
@@ -122,10 +122,12 @@ The [004 specification](specs/004-chat-artifact-ingestion/spec.md),
 [plan](specs/004-chat-artifact-ingestion/plan.md), research, data model and contracts
 are prepared. The [64-task breakdown](specs/004-chat-artifact-ingestion/tasks.md)
 orders private local intake and isolated scan/extraction, selected evidence review,
-unverified chat context, and versioned source lifecycle/cleanup. All implementation
-tasks remain unchecked. The conservative original-file visibility default is
-explicitly recorded as an unconfirmed planning assumption. No dependencies,
-integrations, migrations or runtime behavior were changed during planning.
+unverified chat context, and versioned source lifecycle/cleanup. Local
+implementation and validation passed on the feature branch; the selected
+application database remains at its prior schema until explicit migration.
+The conservative original-file visibility default remains an unconfirmed
+planning assumption. See the [validation log](specs/004-chat-artifact-ingestion/validation.md)
+for checks actually completed.
 
 Hosted Blob/Sandbox adapters, RAG and competency import remain later work. Local
 acceptance will use real synthetic scan/parser fixtures, access/race tests, CLI

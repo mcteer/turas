@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { lstatSync, readFileSync, realpathSync } from "node:fs";
+import { isAbsolute, relative, resolve, sep } from "node:path";
 
 const credential = z.string().min(1);
 const databaseUrl = z.string().url().refine((value) => {
@@ -34,4 +36,47 @@ export function parseServerConfig(environment: Record<string, string | undefined
 
 export function getServerConfig(): ServerConfig {
   return parseServerConfig(process.env);
+}
+
+const artifactRootMarker = ".turas-artifact-store.json";
+
+export type ArtifactStoreConfig = {
+  root: string;
+  environmentId: string;
+};
+
+/** A store must be explicitly marked for one environment before any artifact IO. */
+export function parseArtifactStoreConfig(
+  environment: Record<string, string | undefined>,
+  repositoryRoot = process.cwd(),
+): ArtifactStoreConfig {
+  if (typeof window !== "undefined") throw new Error("Artifact store configuration is server-only");
+  const configured = environment.TURAS_ARTIFACT_STORE_ROOT;
+  const environmentId = environment.TURAS_ENVIRONMENT_ID;
+  if (!configured || !environmentId) throw new Error("Artifact store root and environment are required");
+  if (!isAbsolute(configured)) throw new Error("Artifact store root must be absolute");
+  const root = resolve(configured);
+  const repo = realpathSync(repositoryRoot);
+  const publicRoot = resolve(repo, "public");
+  const insidePublic = relative(publicRoot, root);
+  if (!insidePublic.startsWith(`..${sep}`) && insidePublic !== "..") {
+    throw new Error("Artifact store cannot be public");
+  }
+  const rootStat = lstatSync(root);
+  if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) throw new Error("Artifact store root must be a private directory");
+  const canonical = realpathSync(root);
+  const canonicalPublic = relative(publicRoot, canonical);
+  if (!canonicalPublic.startsWith(`..${sep}`) && canonicalPublic !== "..") {
+    throw new Error("Artifact store cannot resolve into public");
+  }
+  const markerStat = lstatSync(resolve(canonical, artifactRootMarker));
+  if (!markerStat.isFile() || markerStat.isSymbolicLink()) throw new Error("Artifact store marker is invalid");
+  const marker = JSON.parse(readFileSync(resolve(canonical, artifactRootMarker), "utf8")) as unknown;
+  if (typeof marker !== "object" || marker === null || !("environmentId" in marker) || marker.environmentId !== environmentId) {
+    throw new Error("Artifact store belongs to a different environment");
+  }
+  if ((rootStat.mode & 0o077) !== 0 || (markerStat.mode & 0o077) !== 0) {
+    throw new Error("Artifact store permissions are too broad");
+  }
+  return { root: canonical, environmentId };
 }

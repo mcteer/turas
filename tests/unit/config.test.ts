@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { parseServerConfig } from "../../lib/server/config";
+import { parseArtifactStoreConfig, parseServerConfig } from "../../lib/server/config";
+import { chmodSync, mkdtempSync, mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const valid = {
   DATABASE_URL: "postgres://localhost/turas_local",
@@ -29,5 +32,33 @@ describe("server configuration", () => {
   it("rejects an alternate demo principal and unsafe origin path", () => {
     expect(() => parseServerConfig({ ...valid, PARTNER_USERNAME: "another" })).toThrow("PARTNER_USERNAME");
     expect(() => parseServerConfig({ ...valid, TURAS_APP_ORIGIN: "http://localhost:3000/path" })).toThrow("TURAS_APP_ORIGIN");
+  });
+});
+
+describe("artifact store configuration", () => {
+  it("accepts only a private root marked for the matching environment", () => {
+    const root = mkdtempSync(join(tmpdir(), "turas-artifact-config-"));
+    try {
+      chmodSync(root, 0o700);
+      const marker = join(root, ".turas-artifact-store.json");
+      writeFileSync(marker, JSON.stringify({ environmentId: "test-004" }), { mode: 0o600 });
+      const config = { TURAS_ARTIFACT_STORE_ROOT: root, TURAS_ENVIRONMENT_ID: "test-004" };
+      expect(parseArtifactStoreConfig(config).root).toBe(realpathSync(root));
+      expect(() => parseArtifactStoreConfig({ ...config, TURAS_ENVIRONMENT_ID: "other" })).toThrow("different environment");
+      chmodSync(marker, 0o644);
+      expect(() => parseArtifactStoreConfig(config)).toThrow("permissions");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects a root inside public", () => {
+    const root = join(process.cwd(), "public", "artifact-config-test");
+    mkdirSync(root, { recursive: true, mode: 0o700 });
+    try {
+      expect(() => parseArtifactStoreConfig({ TURAS_ARTIFACT_STORE_ROOT: root, TURAS_ENVIRONMENT_ID: "test-004" })).toThrow("public");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

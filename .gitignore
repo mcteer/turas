@@ -27,4 +27,5 @@ Thumbs.db
 # Private customer data and local artifacts
 demo-artifacts/
 local-artifacts/
+**/.turas-artifact-store.json
 tmp/

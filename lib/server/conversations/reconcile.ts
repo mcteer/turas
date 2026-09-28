@@ -2,6 +2,7 @@ import { withTransaction } from "../db/client";
 import { getServerConfig } from "../config";
 import { messageDigest } from "./dispatch";
 import { projectNativeEventInTransaction, type NativeEvent } from "./projection";
+import { artifactContextSchemaReady } from "../artifacts/context-fence";
 
 export type IndexedNativeEvent = { index: number; event: NativeEvent };
 export type ReconcileResult = { state: "reconciled" | "uncertain" | "ambiguous"; nextIndex: number };
@@ -24,6 +25,11 @@ export async function reconcileFromEvents(
     if (!row || row.dispatch_start_index === null) {
       throw new Error("Reserved native cursor unavailable");
     }
+    const artifact = await artifactContextSchemaReady(client)
+      ? await client.query<{ native_text_digest: string }>(
+        "SELECT native_text_digest FROM artifact_context_receipts WHERE attempt_id=$1", [attemptId])
+      : null;
+    const nativeInputDigest = artifact?.rows[0]?.native_text_digest ?? row.input_digest;
     const start = Number(row.dispatch_start_index);
     const events = inputEvents.filter(({ index }) => index >= start)
       .sort((a, b) => a.index - b.index);
@@ -52,7 +58,7 @@ export async function reconcileFromEvents(
     if (!firstInput) return uncertain();
     if (typeof firstInput.event.data?.message !== "string" ||
         typeof firstInput.event.data.turnId !== "string" ||
-        messageDigest(firstInput.event.data.message) !== row.input_digest ||
+        messageDigest(firstInput.event.data.message) !== nativeInputDigest ||
         (row.input_event_id && row.input_event_id !== firstInput.event.meta.id) ||
         (row.native_turn_id && row.native_turn_id !== firstInput.event.data.turnId)) {
       return ambiguous();

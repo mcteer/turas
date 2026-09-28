@@ -2,7 +2,7 @@
 
 **Branch**: `004-chat-artifact-ingestion` | **Date**: 2026-09-27 | **Spec**: [spec.md](spec.md)
 
-**Status:** Design complete; implementation not started.
+**Status:** Local implementation and validation passed; review and CI remain. Evidence is tracked in [tasks.md](tasks.md) and [validation.md](validation.md).
 
 ## Summary
 
@@ -81,14 +81,17 @@ specs/004-chat-artifact-ingestion/
   contracts/{artifacts-api,worker,context-ui}.md
   quickstart.md
   tasks.md
-  validation.md                    # future implementation evidence
+  validation.md                    # local implementation evidence
 ```
 
-### Source Code (repository root; additions planned)
+### Source Code (repository root; implemented locally)
 
 ```text
 migrations/014-artifact-ingestion.cjs
 migrations/015-artifact-evidence-context.cjs
+migrations/016-artifact-context-injection.cjs
+migrations/017-artifact-replacement-retirement.cjs
+migrations/018-artifact-tool-budget.cjs
 lib/contracts/artifacts.ts
 lib/server/artifacts/              # policy, intake, store, jobs, extraction,
                                   # selections, context, lifecycle, cleanup, telemetry
@@ -103,6 +106,7 @@ agent/hooks/guard-customer-context.ts
 packages/artifact-extractor/       # private package, adapters, locked dependencies
 infra/artifacts/                   # images, scan config, offline assets
 scripts/{artifact-worker,prepare-artifacts,check-artifacts,artifact-recovery-check}.ts
+scripts/{artifact-eval-environment,check-artifact-ui-live}.ts
 tests/{unit,contracts,integration,ui}/
 tests/fixtures/artifacts/          # safe corpus generators and manifest
 evals/fixtures/004-artifact-governance.json
@@ -112,6 +116,12 @@ evals/fixtures/004-artifact-governance.json
 without pretending mocks prove isolation. Use current environment markers and
 runtime-role boundaries. Extraction dependencies stay outside the web bundle.
 Preserve watchdog/native message receipts; ingestion does not dispatch agent turns.
+
+Upload progress belongs to an intent with a nullable version link and expected
+metadata. Completion atomically creates the quarantined original version with
+required verified byte metadata, queues extraction and binds the completed intent.
+No placeholder file version exists during upload. Status/cancellation before that
+boundary operate on the intent; retries reuse its completion receipt.
 
 ## Delivery phases and dependencies
 

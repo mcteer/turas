@@ -33,9 +33,11 @@ export async function readEligibleContext(actor: ProfileActor, customerId: strin
       if (fact.supportStatus !== "settled" && fact.supportStatus !== "restricted_source") continue;
       if (options.kind && fact.kind !== options.kind) continue;
       if (options.workloadId && fact.workloadId !== options.workloadId) continue;
-      if (query && !JSON.stringify(fact.payload).toLocaleLowerCase().includes(query)) continue;
+      if (query && !JSON.stringify({ payload: fact.payload,
+        approvedArtifactExcerpt: fact.approvedArtifactExcerpt }).toLocaleLowerCase().includes(query)) continue;
       entries.push({ type: "accepted_manual", citationId: fact.id, kind: fact.kind,
         workloadId: fact.workloadId, payload: fact.payload, quality: fact.quality,
+        ...(fact.approvedArtifactExcerpt ? { approvedArtifactExcerpt: fact.approvedArtifactExcerpt } : {}),
         ...(fact.supportStatus === "restricted_source" ?
           { sourceStatus: "restricted", sourceAttestation: fact.sourceAttestation } : {}) });
     }

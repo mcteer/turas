@@ -1,6 +1,7 @@
 import type { PoolClient } from "pg";
 import { withTransaction } from "../db/client";
 import { messageDigest } from "./dispatch";
+import { artifactContextSchemaReady, assertArtifactDependenciesCurrent } from "../artifacts/context-fence";
 
 export type NativeEvent = {
   type: string;
@@ -59,6 +60,14 @@ export async function projectNativeEventInTransaction(
     if (!row || !["dispatching", "admitted", "uncertain"].includes(row.dispatch_state)) {
       throw new Error("Native attempt association unavailable");
     }
+    if (event.type !== "message.received") {
+      await assertArtifactDependenciesCurrent(client,row.conversation_id);
+    }
+    const artifact = await artifactContextSchemaReady(client)
+      ? await client.query<{ native_text_digest: string }>(
+        "SELECT native_text_digest FROM artifact_context_receipts WHERE attempt_id=$1", [attemptId])
+      : null;
+    const nativeInputDigest = artifact?.rows[0]?.native_text_digest ?? row.input_digest;
     const inserted = await client.query(`INSERT INTO event_projections
       (native_event_id, conversation_id, native_session_id, stream_index,
        event_type, turn_id, step_index, visible_payload, emitted_at)
@@ -78,7 +87,7 @@ export async function projectNativeEventInTransaction(
     }
     if (event.type === "message.received") {
       if (typeof data.message !== "string" || typeof data.turnId !== "string" ||
-          messageDigest(data.message) !== row.input_digest ||
+          messageDigest(data.message) !== nativeInputDigest ||
           (row.input_event_id && row.input_event_id !== event.meta.id) ||
           (row.native_turn_id && row.native_turn_id !== data.turnId)) {
         throw new Error("Native input does not match the reserved attempt");

@@ -70,6 +70,11 @@ with no units and an explanation, never invent evidence; encrypted input fails.
 
 ## Claim, publish and revoke
 
+Only successful intent completion creates a quarantined version and its first
+queued run. Uploading/staged intents have no version link and are never claimable.
+Completion commits the version, run, quota conversion and intent receipt together;
+a finalized file without that transaction is an orphan to reconcile, not scan work.
+
 Use short SQL transactions with SKIP LOCKED to claim oldest eligible work, unique
 attempt token and renewable lease. Database timestamps determine deadline/expiry.
 Persist the authorized initiating principal at intake. Ordinary login logout/expiry

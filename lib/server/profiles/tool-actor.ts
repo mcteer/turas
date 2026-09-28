@@ -2,6 +2,7 @@ import type { PoolClient } from "pg";
 import type { CurrentSession } from "../auth/sessions";
 import { hiddenRecord } from "../../contracts/http";
 import { readCurrentAttemptContext } from "./attempt-context";
+import { readCurrentArtifactDraft } from "../artifacts/context";
 
 type ToolPrincipal = { principalId?: string; attributes?: Record<string, unknown> } | null | undefined;
 
@@ -11,6 +12,12 @@ export async function boundToolActor(client: PoolClient, principal: ToolPrincipa
   const attemptId = principal?.attributes?.turasAttemptId;
   if (!principal?.principalId || typeof attemptId !== "string") throw hiddenRecord();
   await readCurrentAttemptContext(client, attemptId, principal.principalId);
+  const artifact = await readCurrentArtifactDraft(client,attemptId,principal.principalId);
+  if (artifact) {
+    const injected = await client.query(`SELECT 1 FROM artifact_context_injection_receipts
+      WHERE attempt_id=$1 AND injection_digest=$2 LIMIT 1`, [attemptId,artifact.digest]);
+    if (!injected.rowCount) throw hiddenRecord();
+  }
   const result = await client.query<{ customer_id: string; generation: string;
     login_session_id: string; membership_id: string; workspace_id: string;
     owner_principal_id: string; expires_at: Date; login_name: string; display_name: string;

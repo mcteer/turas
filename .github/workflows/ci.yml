@@ -15,7 +15,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     services:
       postgres:
         image: postgres:17
@@ -35,6 +35,7 @@ jobs:
           node-version-file: .node-version
           cache: npm
       - run: npm ci
+      - run: npm ci --prefix packages/artifact-extractor
       - name: Create isolated test configuration
         env:
           PGPASSWORD: postgres
@@ -73,6 +74,11 @@ jobs:
           DATABASE_URL_UNPOOLED="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:init
           DATABASE_URL_UNPOOLED="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:roles
           DATABASE_URL="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:bootstrap-demo
+      - name: Prepare isolated artifact fixtures and images
+        run: |
+          echo "TURAS_ARTIFACT_STORE_ROOT=${GITHUB_WORKSPACE}/local-artifacts/004/store" >> "$GITHUB_ENV"
+          TURAS_ARTIFACT_STORE_ROOT="${GITHUB_WORKSPACE}/local-artifacts/004/store" npm run artifacts:prepare
+          npm run artifacts:fixtures
       - run: npm run check:docs
       - run: npm run typecheck
       - run: npm run test:unit
@@ -80,11 +86,12 @@ jobs:
         run: npx eve eval --list
       - run: npm run test:integration
       - run: npm run test:contracts
+      - run: npm run test:artifacts
       - name: Compile without sandbox preparation
         run: npm run build:check
       - name: Validate Spec Kit feature artifacts
         env:
-          SPECIFY_FEATURE_DIRECTORY: specs/003-customer-profile-review
+          SPECIFY_FEATURE_DIRECTORY: specs/004-chat-artifact-ingestion
           SPECIFY_FEATURE_NO_PERSIST: '1'
         run: .specify/scripts/bash/check-prerequisites.sh --json --require-spec --require-tasks
       - name: Install WebKit

@@ -1,0 +1,186 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "generator": "tests/fixtures/artifacts/generate.ts",
+  "output": "local-artifacts/004/fixtures",
+  "fixtures": [
+    {
+      "file": "simple.txt",
+      "format": "txt",
+      "expected": {
+        "lines": [
+          1,
+          2
+        ],
+        "text": "Juniper API"
+      }
+    },
+    {
+      "file": "notes.md",
+      "format": "md",
+      "expected": {
+        "lines": [
+          1,
+          3
+        ],
+        "text": "verify rollback"
+      }
+    },
+    {
+      "file": "multiline.csv",
+      "format": "csv",
+      "expected": {
+        "record": 2,
+        "column": 2,
+        "physicalLines": [
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "file": "review.pdf",
+      "format": "pdf",
+      "expected": {
+        "page": 1,
+        "text": "Juniper readiness review"
+      }
+    },
+    {
+      "file": "invoice.png",
+      "format": "png",
+      "expected": {
+        "ocr": "Synthetic invoice 42",
+        "width": 800,
+        "height": 300
+      }
+    },
+    {
+      "file": "invoice.jpg",
+      "format": "jpeg",
+      "expected": {
+        "ocr": "Synthetic invoice 42",
+        "width": 800,
+        "height": 300
+      }
+    },
+    {
+      "file": "rotated.png",
+      "format": "png",
+      "expected": {
+        "ocr": "ROTATED 42",
+        "orientation": 90
+      }
+    },
+    {
+      "file": "scanned.pdf",
+      "format": "pdf",
+      "expected": {
+        "page": 1,
+        "ocr": "Synthetic invoice 42"
+      }
+    },
+    {
+      "file": "review.docx",
+      "format": "docx",
+      "expected": {
+        "part": "word/document.xml",
+        "paragraph": 1,
+        "tableCell": "Panel"
+      }
+    },
+    {
+      "file": "milestone.pptx",
+      "format": "pptx",
+      "expected": {
+        "slide": 1,
+        "shape": "Milestone",
+        "text": "Delivery milestone one"
+      }
+    },
+    {
+      "file": "workloads.xlsx",
+      "format": "xlsx",
+      "expected": {
+        "sheet": "Summary",
+        "cell": "B2",
+        "formula": "1+1",
+        "cachedValue": 2,
+        "merged": "A4:B4",
+        "hiddenSheet": "Private",
+        "hiddenCell": "C3"
+      }
+    },
+    {
+      "file": "external.docx",
+      "format": "unsafe",
+      "expected": {
+        "reject": "external_relationship",
+        "networkCanary": "network-canary.invalid"
+      }
+    },
+    {
+      "file": "xxe.docx",
+      "format": "unsafe",
+      "expected": {
+        "reject": "xxe"
+      }
+    },
+    {
+      "file": "traversal.docx",
+      "format": "unsafe",
+      "expected": {
+        "reject": "path_traversal"
+      }
+    },
+    {
+      "file": "active.docx",
+      "format": "unsafe",
+      "expected": {
+        "reject": "active_content"
+      }
+    },
+    {
+      "file": "expansion.docx",
+      "format": "unsafe",
+      "expected": {
+        "reject": "entry_expansion_limit"
+      }
+    },
+    {
+      "file": "encrypted.pdf",
+      "format": "unsafe",
+      "expected": {
+        "reject": "encrypted"
+      }
+    },
+    {
+      "file": "corrupt.pdf",
+      "format": "unsafe",
+      "expected": {
+        "reject": "malformed"
+      }
+    },
+    {
+      "file": "spoofed.pdf",
+      "format": "unsafe",
+      "expected": {
+        "reject": "type_mismatch"
+      }
+    },
+    {
+      "file": "bad-utf8.txt",
+      "format": "unsafe",
+      "expected": {
+        "reject": "invalid_utf8"
+      }
+    },
+    {
+      "file": "eicar.txt",
+      "format": "unsafe",
+      "expected": {
+        "reject": "malware"
+      }
+    }
+  ]
+}

@@ -9,10 +9,13 @@ import { EvidenceDetail } from "./evidence-detail";
 import { RecordHistory } from "./record-history";
 import { ConflictReview } from "./conflict-review";
 
+type ApprovedExcerpt = { sourceLabel: string; excerpt: string; attestation: string;
+  citation: Record<string, string | number> };
 type Fact = { id: string; recordId: string; workloadId: string | null; kind: string;
   recordVersion: number; reviewState: string; payload: Record<string, unknown>; quality?: { band?: string; Q?: number };
   qualityInput?: Record<string, unknown>; audience?: "internal" | "delivery"; dataCategory?: string;
-  supportStatus?: string; sourceStatus?: string; sourceAttestation?: string };
+  supportStatus?: string; sourceStatus?: string; sourceAttestation?: string;
+  approvedArtifactExcerpt?: ApprovedExcerpt };
 type Profile = { customer: { id: string; displayName: string; synthetic: boolean };
   workloads: { id: string; displayName: string; lifecycle: string }[];
   canReview: boolean;
@@ -53,6 +56,11 @@ function FactCard({ fact, scope, onHistory }: { fact: Fact; scope: string; onHis
     {fact.supportStatus && fact.supportStatus !== "settled" &&
       <p className="profile-caution">Support: {fact.supportStatus.replaceAll("_", " ")}</p>}
     {fact.sourceAttestation && <p className="profile-note">{fact.sourceAttestation}</p>}
+    {fact.approvedArtifactExcerpt && <div className="profile-note" aria-label="Reviewed source excerpt">
+      <p>{fact.approvedArtifactExcerpt.sourceLabel}: {fact.approvedArtifactExcerpt.excerpt}</p>
+      <p className="muted">{Object.entries(fact.approvedArtifactExcerpt.citation).map(([key, value]) =>
+        `${key} ${value}`).join(" · ")} · {fact.approvedArtifactExcerpt.attestation}</p>
+    </div>}
     <button type="button" className="secondary-button" onClick={onHistory}>View history</button>
   </article>;
 }

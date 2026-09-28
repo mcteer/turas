@@ -4,6 +4,7 @@ import { HttpFailure, hiddenRecord } from "../../contracts/http";
 import type { CurrentSession } from "../auth/sessions";
 import { getServerConfig } from "../config";
 import { readEligibleContext } from "./context";
+import { assertArtifactDependenciesCurrent } from "../artifacts/context-fence";
 
 type Snapshot = { contractVersion: "customer-context-v1"; contextVersion: string;
   asOf: string; validUntil: string; entries: { citationId: string }[];
@@ -108,6 +109,10 @@ export async function readCurrentAttemptContext(client: PoolClient, attemptId: s
     [row.customer_id, row.workspace_id]);
   const current = row.audience === "internal" ? state.rows[0]?.internal_generation : state.rows[0]?.delivery_generation;
   if (current !== row.generation) throw hiddenRecord();
+  const attempt = await client.query<{ conversation_id: string }>(
+    "SELECT conversation_id FROM response_attempts WHERE id=$1", [attemptId]);
+  if (!attempt.rows[0]) throw hiddenRecord();
+  await assertArtifactDependenciesCurrent(client, attempt.rows[0].conversation_id);
   const digest = createHash("sha256").update(stableJson(row.snapshot)).digest("hex");
   if (digest !== row.snapshot_digest) throw hiddenRecord();
   return row.snapshot;

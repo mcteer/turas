@@ -176,6 +176,9 @@ describe("scoped canonical profile history", () => {
             workloads: { id: string; displayName: string }[] };
           expect(unnamedWorkload.workloads.find((item) => item.id === web.workloadId)?.displayName)
             .toBe("Unknown workload");
+          // This fixture deliberately submits more commands than one human rate window.
+          await client.query(`DELETE FROM rate_windows WHERE environment_id=$1
+            AND category='profile_write'`,[process.env.TURAS_TEST_ENVIRONMENT_ID]);
           const customerDetails = await submitProfileCommand(panel, customerId, {
             action: "propose_record", requestKey: randomUUID(), requestedAudience: "internal",
             dataCategory: "other_internal",

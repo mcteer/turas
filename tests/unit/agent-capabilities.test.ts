@@ -8,7 +8,9 @@ describe("Turi capability inventory", () => {
     expect(instructions).toMatch(/not accepted profile facts/i);
     expect(instructions).toMatch(/bounded customer context\s+snapshot/i);
     expect(instructions).toMatch(/cannot accept,\s+reject, or directly update customer facts/i);
-    expect(instructions).toMatch(/attachments.*not available/i);
+    expect(instructions).toMatch(/attach\s+private customer documents/i);
+    expect(instructions).toMatch(/unverified turn/i);
+    expect(instructions).toMatch(/Pending claim/i);
     expect(instructions).not.toMatch(/can generate approved delivery plans/i);
   });
 

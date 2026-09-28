@@ -29,3 +29,17 @@
 .profile-history-list { display: grid; gap: .75rem; list-style: none; padding: 0; }
 .profile-history-list time { color: var(--muted); font-size: .8rem; white-space: nowrap; }
 .profile-history-list .profile-card { width: 100%; }
+
+.composer-attachments { border-top: 1px solid var(--border); margin: .35rem .3rem 0; padding: .6rem .3rem; }
+.composer-attachments > p:first-child { margin: .15rem 0 .55rem; }
+.composer-attachments input[type=file] { max-width: 100%; color: var(--foreground); }
+.attachment-list { list-style: none; margin: .7rem 0; padding: 0; display: grid; gap: .45rem; }
+.attachment-list li { display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; border: 1px solid var(--border); border-radius: .5rem; padding: .4rem .55rem; overflow-wrap: anywhere; }
+.attachment-list li span:first-child { min-width: 0; flex: 1; }
+.source-viewer { border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin: .8rem 0; background: var(--background); max-height: 60vh; overflow: auto; }
+.source-viewer-heading { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.source-viewer-heading h2 { font-size: 1rem; margin: 0; }
+.source-units { padding-left: 1.4rem; }
+.source-units li { padding: .5rem .2rem; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.source-units li p { white-space: pre-wrap; }
+.source-viewer > a { display: inline-block; margin-top: .6rem; }

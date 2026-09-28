@@ -18,7 +18,8 @@ import { appendProfileAudit } from "./audit";
 
 export async function submitProfileCommandDetailed(actor: ProfileActor, customerId: string,
   input: unknown, existingClient?: PoolClient,
-  options: { submissionChannel?: "agent_proposal" } = {}):
+  options: { submissionChannel?: "agent_proposal" | "artifact_share";
+    artifactSelectionId?: string } = {}):
   Promise<{ data: unknown; replayed: boolean; status: number }> {
   let command: ProfileCommand;
   try { command = profileCommandSchema.parse(input); }
@@ -40,7 +41,7 @@ export async function submitProfileCommandDetailed(actor: ProfileActor, customer
       case "propose_record":
       case "propose_revision":
         result = await addProposal(client, actor, customerId, command,
-          options.submissionChannel ?? "profile_form");
+          options.submissionChannel ?? "profile_form", options.artifactSelectionId);
         break;
       case "propose_workload":
         result = await proposeWorkload(client, actor, customerId, command);

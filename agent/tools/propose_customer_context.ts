@@ -7,6 +7,8 @@ import { HttpFailure } from "../../lib/contracts/http";
 import { withTransaction } from "../../lib/server/db/client";
 import { boundToolActor } from "../../lib/server/profiles/tool-actor";
 import { submitProfileCommandDetailed } from "../../lib/server/profiles/service";
+import { readCurrentArtifactDraft } from "../../lib/server/artifacts/context";
+import { submitArtifactProposal } from "../../lib/server/artifacts/proposals";
 
 const inputSchema = z.object({
   payload: profilePayloadSchema,
@@ -16,6 +18,7 @@ const inputSchema = z.object({
   expectedAcceptedRevisionId: z.uuid().nullable().optional(),
   qualityInput: qualityInputSchema.optional(),
   evidenceRevisionIds: z.array(z.uuid()).max(20).optional(),
+  artifactSourceNumber: z.number().int().min(1).max(5).optional(),
 }).strict().superRefine((value, ctx) => {
   if (value.recordId && (value.expectedRecordVersion === undefined ||
       value.expectedAcceptedRevisionId === undefined)) {
@@ -38,11 +41,34 @@ function stableRequestKey(attemptId: string, callId: string): string {
 }
 
 export default defineTool({
-  description: "Submit an assistant-authored customer profile proposal for human review. This can only create a Pending candidate for the customer bound to this turn. A claim citing the current user's message must include that exact message ID, span and SHA-256 digest; the proposal remains labeled assistant-authored. It cannot accept facts or select a trusted origin.",
+  description: "Submit one assistant-authored Pending customer proposal for human review. For a human-requested claim from selected artifact text, input only artifactSourceNumber 1–5 and a claim payload with sourceType manual; do not pass coverage, source objects, citations or paths. Exact selected units supply the citation. A claim citing the current user's message instead needs its exact message ID, span and SHA-256 digest. This tool cannot accept facts or select a trusted origin.",
   inputSchema,
   async execute(input, ctx) {
     return withTransaction(async (client) => {
       const bound = await boundToolActor(client, ctx.session.auth.current);
+      let artifactSelection: { versionId: string; runId: string; lifecycleGeneration: number;
+        ranges: Array<{ unitId: string; start: number; end: number }>;
+        excerpt: string; excerptDigest: string; audience: "internal" | "delivery";
+        dataCategory: "other_internal" | "delivery_context" } | undefined;
+      if (input.artifactSourceNumber !== undefined) {
+        if (input.evidenceRevisionIds?.length) throw new HttpFailure(422,"mixed_evidence",
+          "Use one artifact source for this proposal");
+        const draft = await readCurrentArtifactDraft(client,bound.attemptId,bound.actor.principalId);
+        if (!draft) throw new HttpFailure(409,"artifact_context_absent","No source was selected");
+        const envelope = JSON.parse(draft.envelope) as {
+          sources: Array<{ versionId: string; runId: string; lifecycleGeneration: number;
+            ranges: Array<{ unitId: string; start: number; end: number }> }>;
+          units: Array<{ source: number; text: string }> };
+        const source = envelope.sources[input.artifactSourceNumber-1];
+        if (!source) throw new HttpFailure(422,"invalid_source_number","Selected source unavailable");
+        const excerpt = envelope.units.filter((unit) => unit.source === input.artifactSourceNumber)
+          .map((unit) => unit.text).join("\n");
+        artifactSelection = {
+          ...source,excerpt,excerptDigest: createHash("sha256").update(excerpt).digest("hex"),
+          audience: bound.actor.kind === "partner" ? "delivery" : "internal",
+          dataCategory: bound.actor.kind === "partner" ? "delivery_context" : "other_internal",
+        };
+      }
       if (input.payload.kind === "claim" && input.payload.sourceMessageId) {
         const current = await client.query<{ message_id: string }>(
           "SELECT message_id FROM response_attempts WHERE id=$1", [bound.attemptId]);
@@ -62,7 +88,10 @@ export default defineTool({
         dataCategory: bound.actor.kind === "partner" ? "delivery_context" : "other_internal",
         evidenceRevisionIds: input.evidenceRevisionIds ?? [],
       };
-      const result = await submitProfileCommandDetailed(bound.actor, bound.customerId,
+      const result = artifactSelection ? {
+        data: await submitArtifactProposal(bound.actor,{ selection: artifactSelection,
+          command },client),
+      } : await submitProfileCommandDetailed(bound.actor, bound.customerId,
         command, client, { submissionChannel: "agent_proposal" });
       const state = await client.query<{ generation: string }>(`SELECT
         CASE WHEN $2::text='internal' THEN internal_generation ELSE delivery_generation END AS generation
@@ -73,7 +102,7 @@ export default defineTool({
       }
       return { ...result.data as Record<string, unknown>, requestKey,
         customerId: bound.customerId, workloadId: input.workloadId ?? null,
-        reviewNeeded: true, submissionChannel: "agent_proposal",
+        reviewNeeded: true, submissionChannel: artifactSelection ? "artifact_share" : "agent_proposal",
         status: "Pending steward review; accepted context was not changed" };
     });
   },

@@ -95,14 +95,15 @@ explicit migration files and a controlled migration command. Avoid the demo's
 CREATE/ALTER-on-request approach. SQL/vector indexes and report snapshots are
 derived projections whose eligibility is checked against authoritative revisions.
 
-004 plans a private local ArtifactStore adapter for original versions; the proposed
+004 implements a private local ArtifactStore adapter for original versions; the proposed
 hosted design uses private Blob when it can be provisioned and verified. SQL holds
 ownership, classification, digest, ingestion status, evidence links and retention. Storage
 authentication does not replace Turas customer authorization. Authorize before
 issuing any upload token or short-lived download capability. Use separate dev,
 preview and production resources. Never reuse the demo database automatically.
-The [004 design](../specs/004-chat-artifact-ingestion/plan.md) uses isolated local
-containers and a separately supervised worker while deployment remains disabled.
+The [004 local implementation](../specs/004-chat-artifact-ingestion/plan.md) uses
+isolated scan/parser containers and a separately supervised worker while
+deployment remains disabled. Explicit migrations precede runtime use.
 Hosted Blob intake will need direct client uploads for files above the Functions
 request-body limit; local streaming uploads do not prove hosted compatibility.
 

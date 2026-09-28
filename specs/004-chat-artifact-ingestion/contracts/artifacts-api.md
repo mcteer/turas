@@ -11,8 +11,10 @@ Authenticated responses are private, no-store; nosniff; no filesystem/storage UR
 | Method / path | Request and success | Authority / conflict behavior |
 | --- | --- | --- |
 | POST /api/artifacts/intents | conversationId, customerId, optional workloadId, files[name,size,declaredType,sourceDates,rights,classification], idempotencyKey →201 batch/intents, expiry, limits | Owner of bound chat; explicit customer match; reserve file/count/byte quotas atomically |
-| PUT /api/artifacts/intents/:id/bytes | Binary body →204 staged receipt; stream to bounded private temp, server digest | Current owner session/scope, unexpired intent, exact expected bytes; no client storage key; retries with same digest reconcile |
+| GET /api/artifacts/intents/:id | Intent state/progress, expiry, safe error and nullable versionId →200 | Current creation authority; replacement reviewers receive no private chat fields; do not query a nonexistent version for upload status |
+| PUT /api/artifacts/intents/:id/bytes | Binary body →204 staged receipt; stream to bounded private temp, server digest | Current creation authority/session/scope, unexpired intent, exact expected bytes; no client storage key; retries with same digest reconcile |
 | POST /api/artifacts/intents/:id/complete | idempotencyKey →200 version and durable state | Recheck current authority and actual staged digest/type/size; atomic finalize once; same key/new data409 |
+| POST /api/artifacts/intents/:id/cancel | idempotencyKey →200 cancelled intent receipt | Current creation authority; serialize with completion/expiry, release reservation once, clean late bytes; completed intent returns409 and requires version lifecycle action |
 | GET /api/artifacts/:versionId | Metadata, progress, coverage, safe error, capabilities | Uploader or current reviewer of explicitly submitted source; no cross-owner browsing |
 | GET /api/artifacts/:versionId/units | cursor/limit → located text/value units | Same source-read authority, clean scan and ready/partial only; limit≤ 50, opaque scope-bound cursor |
 | GET /api/artifacts/:versionId/original | Original bytes with sanitized attachment filename | Uploader/current submitted-source reviewer, clean ready/partial only; never inline active Office/HTML; no partner right from claim approval |
@@ -36,7 +38,10 @@ endpoint. Existing profile validation/rate limiting remains active.
 ## Upload and idempotency protocol
 
 The UI creates a batch for the selected composer files, streams each intent, then
-completes it. Completion response loss is reconciled using the same scoped key;
+completes it. Intent creation returns versionId null; expected name/size/type and
+source metadata belong to the intent until completion. Reconnect/status reads use
+the intent endpoint before a version exists; a completed intent returns the stable
+versionId. Completion response loss is reconciled using the same scoped key;
 never create a second version speculatively. Native file upload/send routes remain
 disabled. A file-only send is permitted only after a usable bounded selection exists.
 Server-enforced batch reservations and canonical send validation independently
@@ -46,8 +51,14 @@ Idempotency scope includes environment/workspace/actor/operation/resource. Store
 canonical body digest and original receipt. Same key/same digest returns original
 result; changed scope/body returns409. A timed-out PUT with matching committed
 bytes can complete; different bytes require a new intent. Incomplete bytes are
-never parsed. Completion atomically records immutable object key/digest, artifact
-and run after the store's conditional finalize; reconcile orphan finalize safely.
+never parsed. After the store's conditional finalize, completion atomically creates
+the quarantined version with required server-verified digest/size/object key, creates
+the artifact if this is a first upload and queues its first run, converts the quota
+reservation to committed bytes, and sets the intent's unique versionId, completed
+state and receipt. A retry cannot create another version/run. Replacement intents
+use the existing artifact and allocate their new version only in this transaction.
+Expired/cancelled/failed intents have no version link. Losing the completion race
+leaves staged/finalized bytes for reconciliation; it never makes them processable.
 
 Codes: 400 malformed; 413 byte/count limit; 415 unsupported input; 409 stale or
 idempotency conflict; 429 quota/rate limit with Retry-After; 503 unavailable intake.

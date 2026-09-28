@@ -9,6 +9,7 @@ import { enforceProfileRate } from "./rate";
 import { qualityInputSchema, unknownQualityInput } from "../../contracts/profiles";
 import { rateEvidence } from "./quality";
 import { unsupportedProfileRevisionIds } from "./eligibility";
+import { approvedArtifactExcerpts, pendingArtifactReviewSources } from "./artifact-excerpts";
 
 type RecordRow = {
   id: string; record_id: string; workload_id: string | null; kind: string;
@@ -178,6 +179,7 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
     [customerId, revisionIds]) : { rows: [] as { id: string }[] };
     const conflicted = new Set(conflicts.rows.map((row) => row.id));
     const unsupportedIds = await unsupportedProfileRevisionIds(client, revisionIds);
+    const artifactExcerpts = await approvedArtifactExcerpts(client, revisionIds, actor.kind);
     const support = await supportMetadata(client, actor, accepted.rows);
     const acceptedFacts = accepted.rows.map((row) => {
       const source = support.get(row.id);
@@ -186,7 +188,9 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
       const supportStatus = conflicted.has(row.id) ? "conflicted" :
         unsupportedIds.has(row.id) ? "unsupported" :
         source?.restrictedSupport ? "restricted_source" : "settled";
-      return { ...projected, recordVersion: Number(row.record_version), supportStatus };
+      return { ...projected, recordVersion: Number(row.record_version), supportStatus,
+        ...(!unsupportedIds.has(row.id) && artifactExcerpts.has(row.id)
+          ? { approvedArtifactExcerpt: artifactExcerpts.get(row.id) } : {}) };
     }).filter((row) => row !== null);
     const research = await client.query<{
       id: string; title: string; location: string; supported_claim: string;
@@ -452,6 +456,7 @@ export async function listReviewQueue(actor: ProfileActor, customerId: string,
       ORDER BY v.created_at DESC,v.id DESC LIMIT $5`,
     [actor.workspaceId, customerId, cursor?.at ?? null, cursor?.id ?? null, limit + 1]);
     const page = pending.rows.slice(0, limit);
+    const artifactSources = await pendingArtifactReviewSources(client, page.map((row) => row.id));
     const historyRows = page.length ? await client.query<{ record_id: string; decision: string;
       decided_at: Date }>(`SELECT record_id,decision,decided_at FROM (
         SELECT v.record_id,d.decision,d.decided_at,
@@ -485,6 +490,7 @@ export async function listReviewQueue(actor: ProfileActor, customerId: string,
       currentAcceptedRevisionId: row.current_accepted_revision_id,
       acceptedPayload: stripPrivateLineage(row.accepted_payload), authorKind: row.author_kind,
       submissionChannel: row.submission_channel,
+      ...(artifactSources.has(row.id) ? { artifactSource: artifactSources.get(row.id) } : {}),
       requestedAudience: row.audience, dataCategory: row.data_category,
       scopeLabel: row.workload_id ? row.workload_name ?? "Workload-specific" : "Customer-wide",
       confirmedConflict: row.confirmed_conflict,
@@ -533,10 +539,12 @@ export async function listOwnSubmissions(actor: ProfileActor, customerId: string
       cursor?.at ?? null, cursor?.id ?? null, limit + 1]);
     const page = found.rows.slice(0, limit);
     const support = await supportMetadata(client, actor, page);
+    const artifactSources = await pendingArtifactReviewSources(client, page.map((row) => row.id));
     const items = page.map((row) => {
       const projected = projectRevision({ ...projectionRow(row), ...support.get(row.id) },
         actor.kind, actor.membershipId);
-      return projected ? { ...projected, recordVersion: Number(row.record_version) } : null;
+      return projected ? { ...projected, recordVersion: Number(row.record_version),
+        ...(artifactSources.has(row.id) ? { artifactSource: artifactSources.get(row.id) } : {}) } : null;
     })
       .filter((item): item is NonNullable<typeof item> => item !== null);
     const last = page.at(-1);

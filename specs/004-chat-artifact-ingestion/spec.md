@@ -2,7 +2,7 @@
 
 **Feature Branch**: `004-chat-artifact-ingestion`
 **Created**: 2026-09-27
-**Status**: Planned; implementation not started
+**Status**: Locally implemented and validated on the feature branch; review and CI pending
 **Input**: Roadmap 004 and the user's requirement to attach artifacts in chat, add customer context through an approval gate, preserve useful demo interaction patterns, and prepare reliable source material for later RAG.
 
 ## Scope and intent

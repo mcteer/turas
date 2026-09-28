@@ -4,7 +4,7 @@ import { HttpFailure, hiddenRecord } from "../../contracts/http";
 import type { ProfileCommand } from "../../contracts/profiles";
 import type { ProfileActor } from "./policy";
 import { requireSteward } from "./policy";
-import { validateEvidence, validateMaturityEvidenceScope } from "./eligibility";
+import { validateEvidence, validateMaturityEvidenceScope, validateArtifactReviewSupport } from "./eligibility";
 import { validateMaturityAssessment } from "./maturity";
 import type { ProfilePayload } from "../../contracts/profile-payloads";
 import { validateProfileRelationships } from "./profile-records";
@@ -22,6 +22,9 @@ type ReviewRow = {
 export async function reviewRevision(client: PoolClient, actor: ProfileActor, customerId: string,
   command: ReviewCommand, receiptId: string): Promise<{ recordId: string; revisionId: string; reviewState: "accepted" | "rejected"; recordVersion: number }> {
   await requireSteward(client, actor, customerId);
+  if (command.action === "accept_revision") {
+    await validateArtifactReviewSupport(client, command.revisionId, actor.workspaceId, customerId);
+  }
   const result = await client.query<ReviewRow>(`SELECT r.id AS record_id,r.version AS record_version,
     r.current_accepted_revision_id,r.kind,r.workload_id,v.id AS revision_id,v.payload,
     v.content_digest,v.author_membership_id,v.audience,v.data_category,v.quality_input,d.decision

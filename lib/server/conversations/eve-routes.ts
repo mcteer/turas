@@ -9,9 +9,12 @@ import { getOwnedConversationByNativeSession } from "./repository";
 import { guardNativeStream } from "./stream";
 import { requestCancellation } from "./cancel";
 import { assertNativeContextCurrent, releaseNativeChunk } from "./context-fence";
+import { artifactDraftSelectionSchema } from "../../contracts/artifacts";
+import { authorizeNativeRetirement } from "../artifacts/native-retirement";
 
 const createSchema = z.object({ operationId: z.uuid() }).strict();
-const sendSchema = z.object({ message: z.string() }).strict();
+const sendSchema = z.object({ message: z.string(),
+  artifactSelections: z.array(artifactDraftSelectionSchema).max(5).optional() }).strict();
 const nativeSessionSchema = z.object({ ok: z.literal(true), sessionId: z.string().min(1) }).passthrough();
 
 function nativeFailure(error: unknown): Response {
@@ -135,9 +138,24 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             catch { throw new HttpFailure(422, "invalid_input", "Invalid request"); }
             const parsed = sendSchema.safeParse(decoded);
             if (!parsed.success) throw new HttpFailure(422, "invalid_input", "Invalid request");
-            const text = normalizeMessageText(parsed.data.message);
+            const selectionHeader = request.headers.get("x-turas-artifact-selections");
+            if (selectionHeader && parsed.data.artifactSelections) {
+              throw new HttpFailure(422, "invalid_input", "Duplicate source selections");
+            }
+            let headerSelections: unknown = [];
+            if (selectionHeader) {
+              if (selectionHeader.length > 8_192) throw new HttpFailure(413,"too_large","Selections too large");
+              try { headerSelections = JSON.parse(Buffer.from(selectionHeader,"base64url").toString("utf8")); }
+              catch { throw new HttpFailure(422,"invalid_input","Invalid source selections"); }
+            }
+            const checkedSelections = z.array(artifactDraftSelectionSchema).max(5).safeParse(
+              selectionHeader ? headerSelections : parsed.data.artifactSelections ?? []);
+            if (!checkedSelections.success) throw new HttpFailure(422,"invalid_input","Invalid source selections");
+            const selections = checkedSelections.data;
+            const text = normalizeMessageText(parsed.data.message.trim() || (selections.length ?
+              "Please discuss the selected customer source passages." : ""));
             const prepared = await prepareAttempt(session, conversationId!, args.params.sessionId,
-              requestKey!, text);
+              requestKey!, text, selections);
             attemptId = prepared.attemptId;
             if (!prepared.created && prepared.dispatchState !== "prepared") {
               const receipt = await getAttemptReceipt(session, conversationId!, attemptId);
@@ -161,6 +179,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             dispatchClaimed = true;
             const headers = new Headers(request.headers);
             headers.delete("content-length");
+            headers.delete("x-turas-artifact-selections");
             let nativeResponse: Response | undefined;
             const started = Date.now();
             for (let retry = 0; retry < 5 && Date.now() - started < 20_000; retry++) {
@@ -250,6 +269,17 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
           } catch (error) {
             return nativeFailure(error);
           }
+        } };
+      }
+      if (route.method === "POST" && route.path === "/eve/v1/session/:sessionId/reset") {
+        const native = route.handler;
+        return { ...route, handler: async (request, args) => {
+          try {
+            const sessionId = args.params.sessionId;
+            if (!sessionId || !/^wrun_[A-Za-z0-9_-]+$/.test(sessionId) ||
+                !await authorizeNativeRetirement(request,sessionId)) return closed();
+            return native(request,args);
+          } catch (error) { return nativeFailure(error); }
         } };
       }
       return { ...route, handler: async () => closed() };
