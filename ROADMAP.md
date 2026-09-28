@@ -1,7 +1,7 @@
 # Turas delivery roadmap
 
 Baseline: 2026-09-26; updated 2026-09-27. **001 merged in PR 1; 002 merged in
-[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004–016 remain planned.**
+[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 is in planning with implementation not started; 005–016 remain planned.**
 
 The user disconnected the repository from Vercel. Use local `npm run dev` testing;
 no reconnection or deployment until replacement readiness. Hosted acceptance for
@@ -115,6 +115,21 @@ fixture is ready. The feature merged in [PR 4](https://github.com/mcteer/turas/p
 The scripted populated-profile journey passed in all four WebKit projects.
 Validation evidence is recorded in the [003 validation log](specs/003-customer-profile-review/validation.md).
 Hosted validation and release remain deferred until replacement readiness.
+
+## Current 004 work
+
+The [004 specification](specs/004-chat-artifact-ingestion/spec.md),
+[plan](specs/004-chat-artifact-ingestion/plan.md), research, data model and contracts
+are prepared. The [64-task breakdown](specs/004-chat-artifact-ingestion/tasks.md)
+orders private local intake and isolated scan/extraction, selected evidence review,
+unverified chat context, and versioned source lifecycle/cleanup. All implementation
+tasks remain unchecked. The conservative original-file visibility default is
+explicitly recorded as an unconfirmed planning assumption. No dependencies,
+integrations, migrations or runtime behavior were changed during planning.
+
+Hosted Blob/Sandbox adapters, RAG and competency import remain later work. Local
+acceptance will use real synthetic scan/parser fixtures, access/race tests, CLI
+WebKit and bounded agent evaluations, without a participant-count gate.
 
 ## Updating this roadmap
 

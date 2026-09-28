@@ -40,6 +40,9 @@ credentials, data and unused integrations are not the new platform. See the
   [implementation plan](specs/003-customer-profile-review/plan.md), with
   [implementation tasks](specs/003-customer-profile-review/tasks.md) and
   [local validation](specs/003-customer-profile-review/validation.md) — merged on `main`, no hosted release
+- [Feature 004 specification](specs/004-chat-artifact-ingestion/spec.md),
+  [implementation plan](specs/004-chat-artifact-ingestion/plan.md) and
+  [tasks](specs/004-chat-artifact-ingestion/tasks.md) — planned; implementation not started
 - [Contributing](CONTRIBUTING.md), [development instructions](AGENTS.md), and
   [constitution](.specify/memory/constitution.md)
 
@@ -130,7 +133,7 @@ directory changes are required. Use `$speckit-specify`, `$speckit-clarify`,
 Spec Kit 1.x selects features independently of the Git branch. For the active slice:
 
 ```sh
-export SPECIFY_FEATURE_DIRECTORY=specs/003-customer-profile-review
+export SPECIFY_FEATURE_DIRECTORY=specs/004-chat-artifact-ingestion
 .specify/scripts/bash/check-prerequisites.sh --json --require-spec
 ```
 
@@ -142,9 +145,11 @@ procedure and generated changes while preserving the constitution and authored d
 ## Delivery and documentation
 
 The foundation merged in [PR 1](https://github.com/mcteer/turas/pull/1). The active
-slice is **003: customer profiles, maturity and context review**. Its local
-implementation is in progress; see the task list and validation record for the
-current evidence and remaining gates.
+slice is **004: chat attachments and artifact ingestion**. Its specification,
+design contracts and implementation tasks are prepared; runtime work has not started.
+The plan uses private local storage and isolated scanning/extraction, followed by
+selected evidence review, unverified chat discussion and source lifecycle controls.
+Features 002 and 003 are merged with local and CI validation.
 The merged 002 application provides the demo identities and shell. Its demo scope uses
 `mcteer` for internal Vercel administrators/FDE/PS leadership, `panel` for internal
 Vercel employees and `partner` for external partners. Internal users see all workspace
@@ -162,6 +167,6 @@ PR updates README in the same change; maintainers verify freshness after merge.
 
 The repository was disconnected from Vercel on 2026-09-27 to prevent automatic
 deployments until Turas can replace the existing application. Do not reconnect
-or deploy as part of 003. Hosted validation and project
+or deploy as part of 004. Hosted validation and project
 alignment are deferred to replacement readiness. The earlier Next.js preview failure
 is recorded historically in the [foundation validation record](specs/001-platform-foundation/validation.md).
