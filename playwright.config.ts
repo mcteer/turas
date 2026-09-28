@@ -9,6 +9,8 @@ if (!["localhost", "127.0.0.1", "[::1]"].includes(hostname)) {
 export default defineConfig({
   testDir: "./tests/ui",
   timeout: 30_000,
+  // UI scenarios share the local demo database, including mutable customer grants.
+  workers: 1,
   use: { baseURL, screenshot: "off", trace: "off", video: "off" },
   projects: [
     { name: "webkit-desktop-light", use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 }, colorScheme: "light" } },

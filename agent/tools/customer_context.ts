@@ -1,0 +1,29 @@
+import { defineTool } from "eve/tools";
+import { z } from "zod";
+import { withTransaction } from "../../lib/server/db/client";
+import { readEligibleContext } from "../../lib/server/profiles/context";
+import { boundToolActor } from "../../lib/server/profiles/tool-actor";
+import { recordKindSchema } from "../../lib/contracts/profile-payloads";
+import { HttpFailure } from "../../lib/contracts/http";
+
+const inputSchema = z.object({
+  kind: recordKindSchema.optional(), workloadId: z.uuid().optional(),
+  query: z.string().max(200).optional(), page: z.number().int().min(1).max(10).default(1),
+  limit: z.number().int().min(1).max(20).default(20),
+}).strict();
+
+export default defineTool({
+  description: "Read currently authorized, cited accepted customer facts and attributed research for this bound customer. Results may be partial or expire. No pending claims are returned.",
+  inputSchema,
+  async execute(input, ctx) {
+    return withTransaction(async (client) => {
+      const bound = await boundToolActor(client, ctx.session.auth.current);
+      const result = await readEligibleContext(bound.actor, bound.customerId, input, client) as {
+        contextVersion: string; [key: string]: unknown };
+      if (result.contextVersion !== bound.generation) {
+        throw new HttpFailure(409, "context_changed", "Start a new conversation for current customer context");
+      }
+      return result;
+    });
+  },
+});

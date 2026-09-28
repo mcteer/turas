@@ -36,6 +36,7 @@ describe("conversation persistence invariants", () => {
     if (!createdIds.length) return;
     const ids = createdIds.splice(0);
     await withTestDatabase(async (client) => {
+      await client.query("TRUNCATE context_injection_receipts, context_snapshot_receipts");
       await client.query("DELETE FROM watchdog_jobs WHERE attempt_id IN (SELECT id FROM response_attempts WHERE conversation_id = ANY($1::uuid[]))", [ids]);
       await client.query("DELETE FROM event_projections WHERE conversation_id = ANY($1::uuid[])", [ids]);
       await client.query("DELETE FROM response_attempts WHERE conversation_id = ANY($1::uuid[])", [ids]);

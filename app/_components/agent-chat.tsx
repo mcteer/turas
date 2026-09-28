@@ -2,14 +2,19 @@
 
 import { useEveAgent } from "eve/react";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { DemoDataNotice } from "./demo-data-notice";
 import { ChatStatus } from "./chat-status";
+import { ShareChatClaim } from "./profiles/share-chat-claim";
 
 export function AgentChat({ conversationId, nativeSessionId, bindingState,
-  customerName, synthetic, csrfToken }: {
+  customerName, synthetic, csrfToken, customerId, contextStatus }: {
   conversationId: string; nativeSessionId: string | null; bindingState: string;
   customerName: string; synthetic: boolean; csrfToken: string;
+  customerId: string; contextStatus: "current" | "changed" | "historical";
 }) {
+  if (contextStatus !== "current") return <HistoricalChat conversationId={conversationId}
+    customerId={customerId} customerName={customerName} />;
   if (!nativeSessionId || bindingState !== "bound") {
     return <main className="chat-page">
       <h1>{customerName}</h1><p role="status">Chat binding is {bindingState}. Reload to check again.</p>
@@ -17,17 +22,40 @@ export function AgentChat({ conversationId, nativeSessionId, bindingState,
   }
   return <BoundChat key={conversationId} conversationId={conversationId}
     nativeSessionId={nativeSessionId} customerName={customerName}
-    synthetic={synthetic} csrfToken={csrfToken} />;
+    synthetic={synthetic} csrfToken={csrfToken} customerId={customerId} />;
 }
 
-function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, csrfToken }: {
+function HistoricalChat({ conversationId, customerId, customerName }: {
+  conversationId: string; customerId: string; customerName: string;
+}) {
+  const [messages, setMessages] = useState<{ eventId: string; payload: { message?: string } }[]>([]);
+  useEffect(() => {
+    let active = true;
+    void fetch(`/api/conversations/${conversationId}`, { cache: "no-store" }).then(async (response) => {
+      if (!response.ok) return;
+      const result = await response.json() as { data: { history: typeof messages } };
+      if (active) setMessages(result.data.history);
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [conversationId]);
+  return <main className="chat-page"><h1 className="chat-heading">{customerName}</h1>
+    <p role="status" className="chat-notice">Customer context has changed. Start a new conversation to use current information.</p>
+    <div className="chat-messages">{messages.map((event) => <article className="chat-message" key={event.eventId}>
+      <h2>You</h2><p>{event.payload.message}</p></article>)}</div>
+    <p><Link className="primary-button" href={`/s?customerId=${encodeURIComponent(customerId)}`}>Start a new conversation</Link></p>
+  </main>;
+}
+
+function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, csrfToken, customerId }: {
   conversationId: string; nativeSessionId: string; customerName: string;
-  synthetic: boolean; csrfToken: string;
+  synthetic: boolean; csrfToken: string; customerId: string;
 }) {
   const [draft, setDraft] = useState("");
   const [notice, setNotice] = useState("");
   const [denied, setDenied] = useState(false);
+  const [stale, setStale] = useState(false);
   const [stopping, setStopping] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [dispatchState, setDispatchState] = useState<string>();
   const [responseState, setResponseState] = useState<string>();
@@ -57,11 +85,14 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
           return;
         }
         if (!response.ok) throw new Error();
-        const detail = await response.json() as { data: { attempts: Array<{
+        const detail = await response.json() as { data: { contextStatus?: string; attempts: Array<{
           requestKey: string; dispatchState: string; responseState: string;
           watchdogState: string | null;
         }> } };
         if (!active) return;
+        if (detail.data.contextStatus !== "current") {
+          agent.reset(); setStale(true); return;
+        }
         const outstanding = [...detail.data.attempts].reverse().find((attempt) =>
           ["pending", "running", "stopping"].includes(attempt.responseState));
         if (outstanding) {
@@ -93,10 +124,15 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         if (response.status === 401 || response.status === 404) {
           agent.reset();
           setDenied(true);
+        } else if (response.ok) {
+          const detail = await response.json() as { data: { contextStatus?: string } };
+          if (detail.data.contextStatus !== "current") {
+            agent.reset(); setStale(true);
+          }
         }
       } catch { /* live stream guard also closes on authority failure */ }
     };
-    const timer = setInterval(() => { void check(); }, 10_000);
+    const timer = setInterval(() => { void check(); }, 2_000);
     return () => clearInterval(timer);
   }, [agent, conversationId]);
 
@@ -161,6 +197,8 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   if (denied) return <main className="chat-page">
     <h1>Chat unavailable</h1><p role="alert">Access to this customer or chat has changed.</p>
   </main>;
+  if (stale) return <HistoricalChat conversationId={conversationId}
+    customerId={customerId} customerName={customerName} />;
   const busy = agent.status === "submitted" || agent.status === "streaming";
   return <main className="chat-page">
     <h1 className="chat-heading">{customerName}</h1>
@@ -174,6 +212,10 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
           ? <p key={index}>{part.text}</p> : null)}
       </article>)}
     </div>
+    <button type="button" className="secondary-button" aria-expanded={shareOpen}
+      onClick={() => setShareOpen((value) => !value)}>{shareOpen ? "Close claim submission" : "Submit a message claim for review"}</button>
+    {shareOpen && <ShareChatClaim conversationId={conversationId} customerId={customerId}
+      csrfToken={csrfToken} />}
     <form className="chat-composer" onSubmit={(event) => { event.preventDefault(); void send(); }}>
       <label className="field-label" htmlFor="chat-message">Message</label>
       <textarea id="chat-message" value={draft} onChange={(event) => setDraft(event.target.value)}

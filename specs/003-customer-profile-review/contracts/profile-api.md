@@ -46,10 +46,10 @@ resubmission under a new key after ambiguous failure.
 
 | Action | Payload | Authority and result |
 | --- | --- | --- |
-| `propose_record` | Kind, workload scope, typed payload, declared manual source/excerpt, requested audience | Internal member or granted partner for delivery kinds; Pending revision, never accepted |
-| `propose_revision` | Record ID, expected version/head, replacement payload and source references | Same contributor boundary; immutable candidate; internal-only records remain hidden to partners |
+| `propose_record` | Kind, workload scope, typed payload, declared manual source/excerpt, requested audience, optional qualityInput | Internal member or granted partner for delivery kinds; Pending revision, never accepted |
+| `propose_revision` | Record ID, expected version/head, replacement payload, source references and optional qualityInput | Same contributor boundary; immutable candidate; internal-only records remain hidden to partners |
 | `propose_workload` | Details payload | Internal member; neutral anchor and Pending details; no accepted workload fact |
-| `accept_revision` | Exact revision/digest, expected version/head, rationale, partner-safe reason when needed | Assigned steward/admin; atomically supersede old head and accept candidate |
+| `accept_revision` | Exact revision/digest, expected version/head, rationale, partner-safe reason when needed, partner-safe attestation when support is restricted, acknowledgeOlderObservation when required | Assigned steward/admin; atomically supersede old head and accept candidate |
 | `reject_revision` | Exact revision, expected version, rationale, partner-safe reason for partner submitter | Assigned steward/admin; no accepted-head change |
 | `request_retraction` | Exact accepted revision, expected version, reason | Authorized contributor; opens request only |
 | `retract_revision` | Exact accepted revision, expected version, rationale, optional request ID | Assigned steward/admin; immediate ineligibility, no prior-revision resurrection |
@@ -58,6 +58,10 @@ resubmission under a new key after ambiguous failure.
 | `assign_steward` / `revoke_steward` | Internal membership ID, expected assignment version, rationale | Active internal admin role only; auditable, same-customer assignment |
 | `flag_conflict` | Two visible current revision IDs and reason | Internal contributor; records a concern for steward review; not a destructive overwrite |
 | `confirm_conflict` / `resolve_conflict` | Conflict ID/version, rationale and exact resolution references | Assigned steward/admin; only confirmed material conflicts block settled guidance; resolution cannot revive withdrawn evidence |
+
+The overview read projects at most 50 open conflict IDs, states, versions, current-side
+revision IDs and rationale to internal members for the conflict control. It omits
+`openConflicts` entirely for partners, including conflicts with a hidden counterpart.
 
 Conflict concerns appear as unverified concerns, never as accepted facts. Partners
 can submit a claim describing a possible inconsistency through their ordinary
@@ -69,6 +73,23 @@ Partner-safe decision reasons are separate from internal notes and contain no
 restricted sources or operational metrics. If a partner submission requires a
 private explanation, use a short safe reason plus internal detail. Steward review
 of their own submission is permitted and visibly attributed. No bulk approval.
+
+## Canonical proposals and quality inputs
+
+Apply the natural-key table and current-selection rules in [data-model.md](../data-model.md).
+Keyed `propose_record` resolves a root and returns only the caller's new candidate,
+never hidden-candidate existence. Acceptance uses current head/version checks;
+`acknowledgeOlderObservation: true` is required when a maturity replacement's
+observation end precedes the current assessment's. Otherwise return 409 without
+changing state. Retraction yields an empty current slot, not historical fallback.
+
+Both proposal commands accept the exact `qualityInput` envelope defined in the
+data model. Omission creates the recorded unknown defaults before computing the
+candidate digest. Reject unknown fields, client F/Q, actor overrides and unsupported
+date references. Acceptance confirms those immutable inputs; changed inputs require
+a new candidate. Include proposed/confirmed status and safe input rationales in
+revision DTOs. Trusted `ingestVerifiedResearch` requires the same envelope and
+records the ingest actor; no user endpoint may mutate research ratings in place.
 
 ## Record projection
 

@@ -21,10 +21,10 @@ No raw cross-customer evidence link is permitted in 003.
 | `customer_stewards` | Customer, internal membership ID, active state, version, assigned by/at | Unique customer/membership; active internal members only; admin role remains override; partner never steward |
 | `profile_records` | ID, scope, immutable `kind`, accepted-head `version`, private candidate sequence, `current_accepted_revision_id`, created by/at | One accepted head per record; hidden candidate submissions do not change partner-visible head versions; scope/kind changes require a new record with explicit relation |
 | `profile_revisions` | ID, record, private monotonically increasing revision number, `base_accepted_revision_id`, payload schema version, typed payload, author, origin, audience, data category, observed/effective/review dates, source references, content digest | Payload/provenance immutable; unique record/revision; manual input always pending until a decision |
-| `profile_review_decisions` | Revision, accept/reject, reviewer membership, rationale, partner-safe reason, timestamp, command receipt | Unique revision: one initial review outcome; no accepted pointer may refer to a rejected revision |
+| `profile_review_decisions` | Revision, accept/reject, reviewer membership, rationale, partner-safe reason, partner-safe restricted-source attestation, timestamp, command receipt | Unique revision: one initial review outcome; no accepted pointer may refer to a rejected revision |
 | `profile_lifecycle_events` | Record/revision, event type, previous/new head, actor, rationale, command receipt, time | Append-only supersede/retract/identity-merge events; these do not overwrite initial review decisions |
 | `profile_retraction_requests` | Accepted revision, requesting contributor, reason, state open/resolved/declined, resolving event/decision | Request does not change eligibility; exact target must still be current when resolved |
-| `profile_command_receipts` | Workspace, actor, request UUID, action, canonical payload digest, response IDs/version and status | Unique workspace/actor/request key; different digest/action is 409; authorization rechecked before replay |
+| `profile_command_receipts` | Workspace, customer, actor, request UUID, action, canonical payload digest, response IDs/version and status | Unique workspace/actor/request key; different digest/action is 409; authorization rechecked before replay |
 
 `pending`, `accepted`, `rejected`, `superseded` and `retracted` are derived from
 immutable review/lifecycle records plus the accepted head; a mutable status index
@@ -38,6 +38,44 @@ counts. `expectedRecordVersion` refers to accepted-head concurrency; candidate
 decisions also check the exact immutable candidate ID and absence of an initial
 decision. Hidden pending/rejected activity never changes partner-visible versions,
 cursor contents or stale-error details.
+
+## Canonical record identity and current selection
+
+Enforce server-derived natural keys with database unique indexes, including NULL
+workload scope as one customer-wide scope (NULLS NOT DISTINCT or equivalent):
+
+| Kind | Unique record key within workspace/customer |
+| --- | --- |
+| `customer_details` | Kind; workload must be null |
+| `workload_details` | Kind + required workload ID |
+| `product_use` | Kind + nullable workload ID + immutable product key |
+| `maturity_assessment` | Kind + nullable workload ID |
+| Other seven kinds | Independent server UUID; multiple records are intentional |
+
+Product keys are trimmed lowercase ASCII identifiers matching
+`[a-z0-9][a-z0-9._-]{0,79}`; display names are not keys. Changing product identity
+requires a new record and explicit relation, never mutating the key. Existing
+identity/bootstrap paths use these same roots. Merge preserves old workload keys
+and evidence; it does not merge or transfer product/maturity heads.
+
+`propose_record` resolves or creates the keyed root under the customer guard, then
+adds a Pending candidate even if that root already has hidden candidates. It never
+returns a duplicate-exists signal, hidden counts, or another candidate. Reuse must
+pass normal audience/category policy; it cannot widen an internal root. Hidden-only
+roots remain private until an authorized projection permits them. First acceptance
+uses explicit null head/version 0; later acceptance requires the actual current
+head/version. A race cannot create two roots or overwrite a head silently.
+
+The overview reads only each root's accepted pointer. Product state and the complete
+six-dimension maturity assessment change together by accepting a replacement
+revision; observation windows are revision data, not new record keys. The most
+recently approved replacement is current, never a timestamp-based selection or an
+average across records. Older observation windows require an explicit reviewer
+acknowledgment before replacing newer ones. Retraction leaves the slot Unknown;
+it never falls back to an older revision. Retracting details also resets the
+denormalized directory/workload label to `Unknown customer/workload` in the same
+transaction; stable IDs and grants remain intact. Other seven kinds display all authorized
+current heads as a list, not an inferred singleton.
 
 ## Typed profile payloads
 
@@ -88,13 +126,14 @@ observation is invalid.
 
 | Entity | Fields and relationships | Invariants |
 | --- | --- | --- |
-| `evidence_sources` | Stable source ID, scope, origin, creator/research actor | Origin is server-assigned and immutable |
-| `evidence_source_revisions` | Source version, location/title, retained passage, digest, publication/observation/event/retrieval dates, rights, audience, active/withdrawn state through events | Exact retained passage supports claim; no mutable URL-only proof; origin cannot be changed by fetching a manual link |
+| `evidence_sources` | Stable source ID, scope, origin, immutable canonical location, creator/research actor | Origin is server-assigned and immutable |
+| `evidence_source_revisions` | Source version, location/title, retained passage, supported claim, digest, publication/observation/event/retrieval dates, rights, audience, active/withdrawn state through events | Exact retained passage supports claim; no mutable URL-only proof; origin cannot be changed by fetching a manual link |
 | `evidence_source_events` | Exact source revision, lifecycle version, withdraw/supersede event, actor, rationale, receipt and time | Append-only; withdrawal works for research with no profile record and invalidates dependent context atomically |
 | `profile_evidence_links` | Exact profile revision → source revision or supporting profile revision; support role, scope explanation | Same authorized customer; no cycles; source revisions are pinned, not silently upgraded |
 | `research_checks` | Source revision, trusted ingest identity, check version, identity/scope/integrity/content results and rationale | All required checks pass before `researched` eligibility; no client/model origin selection |
 | `evidence_quality_snapshots` | Claim/source revision, rubric version, R/D/C, rationales, information type, date basis, `as_of`, computed F/Q/band/freshness | Append-only historical snapshot; current quality recomputed with clock, not assumed from latest stored Q |
 | `evidence_conflicts` | Exact conflicting revision pair, scope, open/resolved state via events, rationale/resolution actor | No hidden counterpart metadata in partner projection; resolution needs current steward/admin authority |
+| `evidence_conflict_events` | Conflict ID, monotonic version, flag/confirm/resolve event, actor, rationale and time | Append-only conflict decision history; the conflict row is a current-state pointer |
 | `profile_private_lineage` | Submitted claim revision → owner conversation/message ID and exact span/digest | Internal service validation only; stewardship does not grant access to another user's chat |
 | `profile_audit_events` | Actor, action, scope, opaque target IDs, receipt, state transition and time | Append-only; minimal authorized user-facing projections, no raw private chat content |
 
@@ -103,6 +142,38 @@ never relabeled `accepted` merely because checks passed. Manual changes to resea
 produce manual pending claims/corrections. Trusted fixture ingestion is a separate
 non-public domain entry point with captured checks and provenance; it cannot be
 called through an ordinary user request.
+
+### Rating input ownership and lifecycle
+
+Each claim/source revision carries immutable `qualityInput`: rubricVersion
+(`evidence-quality-v1`), R/D/C integers 0–4, a rationale (1–2,000 characters) for
+each, informationType (`account_status`, `product_availability`,
+`product_capability`, `adoption_process`, `architecture`, or `unknown`), and dateBasis
+(`observation`, `publication`, or `unknown`) with an exact supporting revision ID
+when the date comes from linked evidence. Date values must match retained evidence;
+retrieval/event dates cannot be selected. Unknown informationType or dateBasis
+produces F=0/Unknown; it cannot silently select a favorable window.
+
+Contributors, including the proposal tool, may supply tentative inputs; omitted
+inputs become R/D/C=0 with explicit missing-input rationales and unknown type/basis.
+Those defaults are persisted in the candidate and its digest, not filled after
+approval. Server provenance records proposer identity/time. Steward/admin acceptance
+confirms the exact rating inputs with the rest of the candidate; no separate
+rating-write or score-override permission exists. UI labels unaccepted ratings
+Proposed. A steward changing any rating, rationale, type or basis must create a new
+Pending revision and approve that exact revision. The old accepted input remains
+current until replacement. F/Q are server-computed and rejected as client inputs.
+
+Trusted fixture research ingestion supplies the same required input envelope with
+captured ingest identity/time and checks; it cannot inherit trust from a source
+label. Re-ingestion creates a new immutable source revision through the trusted
+path. A human correction to research ratings follows the manual Pending claim path,
+never edits the independently researched revision. Existing pinned dependents are
+not silently upgraded. Snapshots reference the exact target/input revision and its
+proposer or ingest actor, plus the acceptance decision where applicable; clock-only
+recalculation changes no R/D/C inputs. Store claim-specific ratings, not a universal
+rating for a URL. Projection recomputes from visible support and suppresses private
+rating rationales; hidden evidence cannot inflate a partner-visible score.
 
 Quality uses Q = round(25 × (0.40R + 0.30F + 0.20D + 0.10C)). R/D/C meanings and
 review windows follow `docs/evidence-policy.md`. Derive age from the retained,

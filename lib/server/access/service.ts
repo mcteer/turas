@@ -36,16 +36,40 @@ async function checkEnvironment(client: PoolClient): Promise<void> {
   }
 }
 
-async function requireAdmin(client: PoolClient, actorId: string, workspaceId: string): Promise<void> {
-  const admin = await client.query(`
-    SELECT 1 FROM principals p
-    JOIN memberships m ON m.principal_id = p.id
-    JOIN workspaces w ON w.id = m.workspace_id
-    WHERE p.id = $1 AND m.workspace_id = $2 AND p.active AND m.active
-      AND w.active AND m.kind = 'internal' AND m.role = 'admin'
-    LIMIT 1
-  `, [actorId, workspaceId]);
-  if (!admin.rowCount) throw new HttpFailure(403, "forbidden", "Action not allowed");
+async function lockAdminAuthority(client: PoolClient, actorId: string, workspaceId: string,
+  actorSessionId?: string, targetMembershipId?: string): Promise<void> {
+  await client.query("SET LOCAL lock_timeout = '3000ms'");
+  await client.query("SET LOCAL statement_timeout = '5000ms'");
+  const lookup = await client.query<{ id: string }>(
+    "SELECT id FROM memberships WHERE principal_id=$1 AND workspace_id=$2 LIMIT 1",
+    [actorId, workspaceId]);
+  const actorMembershipId = lookup.rows[0]?.id;
+  if (!actorMembershipId) throw new HttpFailure(403, "forbidden", "Action not allowed");
+  let actorMembership: { principal_id: string; workspace_id: string; kind: string;
+    role: string; active: boolean } | undefined;
+  for (const id of [...new Set([actorMembershipId, targetMembershipId].filter((value): value is string => Boolean(value)))].sort()) {
+    const locked = await client.query<{ principal_id: string; workspace_id: string; kind: string;
+      role: string; active: boolean }>(
+      "SELECT principal_id,workspace_id,kind,role,active FROM memberships WHERE id=$1 FOR UPDATE", [id]);
+    if (id === actorMembershipId) actorMembership = locked.rows[0];
+  }
+  if (!actorMembership?.active || actorMembership.principal_id !== actorId ||
+      actorMembership.workspace_id !== workspaceId || actorMembership.kind !== "internal" ||
+      actorMembership.role !== "admin") throw new HttpFailure(403, "forbidden", "Action not allowed");
+  const principal = await client.query<{ active: boolean }>(
+    "SELECT active FROM principals WHERE id=$1 FOR UPDATE", [actorId]);
+  if (!principal.rows[0]?.active) throw new HttpFailure(403, "forbidden", "Action not allowed");
+  if (actorSessionId) {
+    const session = await client.query<{ revoked_at: Date | null; expires_at: Date }>(
+      "SELECT revoked_at,expires_at FROM login_sessions WHERE id=$1 AND principal_id=$2 FOR UPDATE",
+      [actorSessionId, actorId]);
+    if (!session.rows[0] || session.rows[0].revoked_at || session.rows[0].expires_at.getTime() <= Date.now()) {
+      throw new HttpFailure(401, "unauthorized", "Sign in again");
+    }
+  }
+  const workspace = await client.query<{ active: boolean }>(
+    "SELECT active FROM workspaces WHERE id=$1 FOR UPDATE", [workspaceId]);
+  if (!workspace.rows[0]?.active) throw new HttpFailure(403, "forbidden", "Action not allowed");
 }
 
 async function reserveCommand<T>(
@@ -77,18 +101,42 @@ async function finishCommand(client: PoolClient, identity: CommandIdentity, resu
 export async function setPartnerGrant(input: GrantDecision): Promise<{ revision: number; state: GrantState }> {
   return withTransaction(async (client) => {
     await checkEnvironment(client);
-    const membership = await client.query<{ workspace_id: string; kind: string; active: boolean }>(
-      "SELECT workspace_id, kind, active FROM memberships WHERE id = $1 FOR UPDATE",
+    const membership = await client.query<{ workspace_id: string; kind: string; active: boolean; partner_org_id: string | null }>(
+      "SELECT workspace_id, kind, active, partner_org_id FROM memberships WHERE id = $1",
       [input.membershipId],
     );
     const target = membership.rows[0];
     if (!target || target.kind !== "partner") throw hiddenRecord();
-    await requireAdmin(client, input.actorPrincipalId, target.workspace_id);
-    const customer = await client.query(
-      "SELECT 1 FROM customer_references WHERE id = $1 AND workspace_id = $2",
+    await lockAdminAuthority(client, input.actorPrincipalId, target.workspace_id,
+      input.actorSessionId, input.membershipId);
+    const currentTarget = await client.query<{ active: boolean; kind: string; partner_org_id: string | null }>(
+      "SELECT active,kind,partner_org_id FROM memberships WHERE id=$1", [input.membershipId]);
+    if (currentTarget.rows[0]?.kind !== "partner") throw hiddenRecord();
+    if (input.state === "active") {
+      if (!currentTarget.rows[0].active) throw new HttpFailure(409, "membership_inactive", "Partner membership is inactive");
+      const organization = await client.query<{ active: boolean }>(
+        "SELECT active FROM partner_organizations WHERE id=$1 AND workspace_id=$2 FOR UPDATE",
+        [currentTarget.rows[0].partner_org_id, target.workspace_id]);
+      if (!organization.rows[0]?.active) throw new HttpFailure(409, "organization_inactive", "Partner organization is inactive");
+    }
+    const customer = await client.query<{ display_name: string }>(
+      "SELECT display_name FROM customer_references WHERE id = $1 AND workspace_id = $2",
       [input.customerId, target.workspace_id],
     );
     if (!customer.rowCount) throw hiddenRecord();
+    const profileVersion = await client.query<{ schema_version: number }>(
+      "SELECT schema_version FROM turas_environment LIMIT 1",
+    );
+    if ((profileVersion.rows[0]?.schema_version ?? 0) >= 7) {
+      const profileState = await client.query(
+        "SELECT customer_id FROM customer_profile_state WHERE customer_id=$1 AND workspace_id=$2 FOR UPDATE",
+        [input.customerId, target.workspace_id],
+      );
+      if (!profileState.rowCount) throw hiddenRecord();
+    }
+    if (input.state === "active" && customer.rows[0]?.display_name === "Pending customer") {
+      throw new HttpFailure(409, "identity_pending", "Customer identity must be approved before partner access");
+    }
     const bodyDigest = digest({ membershipId: input.membershipId, customerId: input.customerId,
       expectedRevision: input.expectedRevision, state: input.state });
     const prior = await reserveCommand<{ revision: number; state: GrantState }>(client, input, "grant_change", bodyDigest);
@@ -112,6 +160,11 @@ export async function setPartnerGrant(input: GrantDecision): Promise<{ revision:
       [randomUUID(), input.membershipId, target.workspace_id, input.customerId,
         input.state, nextRevision, input.actorPrincipalId]);
     }
+    if ((profileVersion.rows[0]?.schema_version ?? 0) >= 7) {
+      await client.query(`UPDATE customer_profile_state
+        SET delivery_generation=delivery_generation+1,updated_at=now()
+        WHERE customer_id=$1 AND workspace_id=$2`, [input.customerId, target.workspace_id]);
+    }
     const result = { revision: nextRevision, state: input.state };
     await appendAccessAudit(client, { actorPrincipalId: input.actorPrincipalId,
       actorSessionId: input.actorSessionId, workspaceId: target.workspace_id,
@@ -125,13 +178,20 @@ export async function setPartnerGrant(input: GrantDecision): Promise<{ revision:
 export async function setMembershipActive(input: MembershipDecision): Promise<{ revision: number; active: boolean }> {
   return withTransaction(async (client) => {
     await checkEnvironment(client);
-    const targetResult = await client.query<{ workspace_id: string; role: string; active: boolean; revision: string }>(
-      "SELECT workspace_id, role, active, revision FROM memberships WHERE id = $1 FOR UPDATE",
+    const targetResult = await client.query<{ workspace_id: string; principal_id: string;
+      role: string; active: boolean; revision: string }>(
+      "SELECT workspace_id, principal_id, role, active, revision FROM memberships WHERE id = $1",
       [input.membershipId],
     );
-    const target = targetResult.rows[0];
+    const targetScope = targetResult.rows[0];
+    if (!targetScope) throw hiddenRecord();
+    await lockAdminAuthority(client, input.actorPrincipalId, targetScope.workspace_id,
+      input.actorSessionId, input.membershipId);
+    const lockedTarget = await client.query<{ workspace_id: string; principal_id: string;
+      role: string; active: boolean; revision: string }>(
+      "SELECT workspace_id, principal_id, role, active, revision FROM memberships WHERE id = $1", [input.membershipId]);
+    const target = lockedTarget.rows[0];
     if (!target) throw hiddenRecord();
-    await requireAdmin(client, input.actorPrincipalId, target.workspace_id);
     const bodyDigest = digest({ membershipId: input.membershipId,
       expectedRevision: input.expectedRevision, active: input.active });
     const prior = await reserveCommand<{ revision: number; active: boolean }>(client, input, "membership_change", bodyDigest);
@@ -153,6 +213,10 @@ export async function setMembershipActive(input: MembershipDecision): Promise<{ 
       "UPDATE memberships SET active = $1, revision = $2 WHERE id = $3",
       [input.active, result.revision, input.membershipId],
     );
+    if (!input.active) {
+      await client.query(`UPDATE login_sessions SET revoked_at=COALESCE(revoked_at,now())
+        WHERE principal_id=$1 AND revoked_at IS NULL`, [target.principal_id]);
+    }
     await appendAccessAudit(client, { actorPrincipalId: input.actorPrincipalId,
       actorSessionId: input.actorSessionId, workspaceId: target.workspace_id,
       subjectId: input.membershipId, action: "membership_change",

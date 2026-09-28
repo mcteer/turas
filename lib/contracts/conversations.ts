@@ -22,4 +22,5 @@ export type ConversationReference = {
   eveSessionId: string | null;
   createdAt: string;
   updatedAt: string;
+  contextStatus?: "current" | "changed" | "historical";
 };

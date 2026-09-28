@@ -2,7 +2,7 @@
 
 **Feature Branch**: `003-customer-profile-review`
 **Created**: 2026-09-27
-**Status**: Clarified and planned — tasks generated; analysis and implementation pending
+**Status**: Clarified and planned — analysis findings remediated; implementation pending
 **Input**: Roadmap slice 003 and the platform brief: rich customer profiles, maturity history, governed context review, and partner delivery-only visibility.
 
 ## Scope
@@ -35,6 +35,8 @@ As an internal employee, I can open any customer in my workspace and distinguish
 2. **Given** a sparse new customer, **When** its profile opens, **Then** missing fields show Unknown or empty, without inferred maturity or adoption.
 3. **Given** a manually revised product-use or risk record, **When** it is submitted and history is opened, **Then** the old accepted value remains current until the new revision is approved, while both values, scope, source, dates, actor and review state remain inspectable.
 4. **Given** a new customer in the workspace, **When** `panel` or `mcteer` opens the directory, **Then** that profile is available without a delivery assignment; another workspace remains inaccessible.
+5. **Given** concurrent proposals for the same customer details or scoped product, **When** reviewed, **Then** they share one canonical record, only one version can replace a given accepted head, and the directory and overview agree without disclosing hidden candidates.
+6. **Given** a retracted canonical record, **When** the overview opens, **Then** the slot is Unknown until another revision is accepted; list kinds still show their other current items.
 
 ---
 
@@ -52,6 +54,7 @@ As an internal practitioner, I can assess a customer's or workload's maturity wi
 2. **Given** only some dimensions assessed, **When** the summary opens, **Then** the others remain Unknown and no average or product-count proxy appears.
 3. **Given** a revised assessment, **When** history opens, **Then** the prior revision remains inspectable and the current revision is clear.
 4. **Given** an engagement reference in a delivery phase, **When** maturity is viewed, **Then** the phase has not automatically changed a journey stage or dimension.
+5. **Given** multiple assessment proposals for one scope, **When** one is approved against the current head, **Then** its complete assessment becomes current and older windows remain historical; replacing it with an older observation window requires explicit reviewer acknowledgment.
 
 ---
 
@@ -70,6 +73,8 @@ As a customer steward, I can accept or reject an exact version of a manually sub
 3. **Given** an accepted claim, **When** a contributor proposes a correction or requests retraction, **Then** accepted context does not change until an authorized steward or administrator decides; a proposed correction requires separate approval and prior history remains.
 4. **Given** an accepted fact, **When** its assigned steward or `mcteer` retracts it with a rationale, **Then** it immediately becomes ineligible for future factual guidance while the retraction decision and prior revision remain auditable.
 5. **Given** a retried or stale decision, **When** it is processed, **Then** no duplicate or conflicting effective decision occurs and the reviewer receives the current outcome.
+6. **Given** a conversation bound to customer context, **When** relevant accepted context changes or its snapshot expires at the next freshness boundary or 24-hour cap, **Then** continuation/replay stops; subsequent app/native reads withhold stale assistant/tool bodies and generated snippets while authorized owner messages remain with a historical notice. Hidden internal-only changes do not invalidate partner context.
+7. **Given** a historical conversation, including an unbound 002 conversation, **When** its owner explicitly starts a new conversation for the still-authorized customer, **Then** fresh context is loaded without rebinding the old session or copying its generated summary. Revoked access denies both history and new conversation creation.
 
 ---
 
@@ -87,6 +92,8 @@ As an internal practitioner, I can attach independently discovered public resear
 2. **Given** a user-supplied URL, **When** fetched or summarized, **Then** its origin remains manual and still requires approval.
 3. **Given** a public source discussing a company, **When** used, **Then** it does not establish private staffing, financial, engagement or deployment facts absent direct support.
 4. **Given** stale or conflicting evidence, **When** a profile or assistant addresses the topic, **Then** age or conflict appears rather than a settled claim.
+5. **Given** manual evidence with omitted or proposed quality inputs, **When** submitted, **Then** explicit unknown defaults or supplied ratings are included in its immutable digest and labeled Proposed; accepting that version confirms them, while changing them requires a new Pending revision.
+6. **Given** trusted fixture research or a rating correction, **When** scored, **Then** the exact input revision, rating actor, rationale and date basis are traceable, F/Q are server-computed, and a correction cannot silently mutate accepted or independently researched evidence.
 
 ---
 
@@ -124,7 +131,7 @@ As a partner assigned to one customer, I can see the context relevant to that de
 ### Functional Requirements
 
 - **FR-001**: Maintain stable workspace-owned customer and optional workload identities, with name/scope history. Do not silently move evidence or engagement references when scope changes.
-- **FR-002**: Show a canonical profile of identity, relevant stakeholders, product-use records, maturity, engagement references (past/current/future), research, risks, decisions, outcomes and next review actions. Mark customer-wide versus workload-specific records and distinguish unknown from negative.
+- **FR-002**: Show a canonical profile of identity, relevant stakeholders, product-use records, maturity, engagement references (past/current/future), research, risks, decisions, outcomes and next review actions. Mark customer-wide versus workload-specific records and distinguish unknown from negative. Maintain one canonical details record per customer/workload, one product-use record per product and scope, and one maturity record per scope; other kinds may contain multiple independent items. Current values come from accepted heads, never inferred timestamp ordering or historical fallback after retraction.
 - **FR-003**: Record product use as actual, evaluating, planned, retired or unknown, with scope, time, source, owner and material usage description. Product use alone cannot determine maturity.
 - **FR-004**: Record the six journey stages Explore, Activate, Accelerate, Optimize, Scale and Transform as evidenced summaries. Assess six independent dimensions—outcome/ownership, delivery/collaboration, experience/adoption, operational trust, platform/organization, innovation/AI—using Unknown, Emerging, Established, Measured, Scaled or Adaptive. No average, purchase proxy or automatic advancement.
 - **FR-005**: Preserve assessment scope, observation window, assessor, rubric version, rationale, eligible evidence references, next measurable capability, review date and revision history.
@@ -135,12 +142,12 @@ As a partner assigned to one customer, I can see the context relevant to that de
 - **FR-010**: Allow contributors to propose corrections and request retractions without changing current accepted context. Corrections start Pending and require steward approval. Only the assigned customer steward or `mcteer` may retract an accepted revision, with recorded actor, time and rationale; that revision immediately becomes ineligible for future factual use. Superseded/retracted revisions remain in history. Reject stale decisions and reconcile repeat requests to at most one effective decision per revision.
 - **FR-011**: Show contributors their submission status and stewards a review queue with source, scope, submitter, age, conflicts and history. Partners may see only their own pending/rejected submissions and associated decisions; other contributors' unaccepted submissions, counts and decision details are hidden from them. Saving a draft or extraction is not approval.
 - **FR-012**: Attach independently discovered public research after identity, source-integrity, scope and content checks. Preserve origin, source location, researcher, supported claim and publication, observation, event and retrieval dates. Label it attributed Research, not a customer-approved private fact. Discovery tooling belongs to 005.
-- **FR-013**: Rate evidence using versioned, claim-specific reliability (40%), freshness (30%), directness (20%) and corroboration (10%), each 0–4, producing a rounded 0–100 score according to the [evidence policy](../../docs/evidence-policy.md). Label 80–100 Strong, 60–79 Usable, 40–59 Weak, 0–39 Insufficient. Preserve component ratings, rationale, version and assessment date; score never grants approval, access or truth.
+- **FR-013**: Rate evidence using versioned, claim-specific reliability (40%), freshness (30%), directness (20%) and corroboration (10%), each 0–4, producing a rounded 0–100 score according to the [evidence policy](../../docs/evidence-policy.md). Label 80–100 Strong, 60–79 Usable, 40–59 Weak, 0–39 Insufficient. Preserve component ratings, rationale, version, rating actor and assessment date; score never grants approval, access or truth. Contributors may propose immutable rating inputs; the steward confirms the exact inputs on acceptance. Missing inputs remain explicit unknown/zero defaults. Rating corrections require a new reviewed revision; trusted research ingestion records its own inputs and actor. Freshness and totals are computed server-side.
 - **FR-014**: Use review windows of 7 days for account status/blockers/staffing; 14 for product availability/limits/pricing; 30 for product capabilities/practices; 90 for adoption/process/competency; 180 for architecture. Label Recent through one window, Aging through two, Stale beyond two, Unknown without a trustworthy evidence date. Apply the policy's freshness component bands and overdue-review cap. Retrieval/review does not reset age; future evidence dates are invalid and future events distinct.
 - **FR-015**: Preserve provenance, classification, revisions, quality history, conflicts and decisions. Distinguish accepted context, attributed research, estimates, assumptions, pending, rejected, superseded and retracted content wherever a profile or assistant could treat it as evidence. Unresolved contradictions cannot be presented as settled.
 - **FR-016**: Enforce active workspace/customer authorization on every profile, field, search, history, review, research and assistant-context read/write. `panel` and `mcteer` can view every workspace profile, but only `mcteer` administers access and neither gains another user's private chat. Partners require current explicit customer grants and receive all accepted facts and eligible, attributed public research relevant to delivering their assigned engagement, regardless of source or contributor. Exclude internal staffing, utilization, reporting metrics, commercial, cost, personnel and unrelated account notes. Each profile record has an audience classification; acceptance alone does not authorize a field for partner delivery views.
 - **FR-017**: Apply partner projections to derived results, counts, snippets, assistant responses and direct record requests. Denials cannot reveal ungranted customers' existence. Recheck grants on every protected operation.
-- **FR-018**: Supply downstream customer context only from current accepted manual profile facts and claims, plus eligible, explicitly attributed research within requester scope. Pending/rejected/superseded/retracted content is never presented as accepted fact; chat text alone never updates a profile fact.
+- **FR-018**: Supply downstream customer context only from current accepted manual profile facts and claims, plus eligible, explicitly attributed research within requester scope. Pending/rejected/superseded/retracted content is never presented as accepted fact; chat text alone never updates a profile fact. Context-generation changes or expiry stop continuation and replay of the old conversation. Preserve stored history, but withhold stale assistant/tool bodies and generated titles/snippets from subsequent reads; owner messages remain accessible only under current authorization. Require explicit new conversation creation without copying a summary. Unbound 002 conversations receive the same historical treatment.
 - **FR-019**: Provide empty, loading, denied, conflict and unavailable states in the reference visual style at mobile and desktop widths in both themes. Review controls and provenance labels are keyboard accessible and distinguishable without color.
 - **FR-020**: Restrict the demo to synthetic customer content and public research; visibly identify fixtures. No real private-customer ingestion, new external service or deployment is required for 003.
 

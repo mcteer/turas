@@ -41,7 +41,9 @@ about a relevant unresolved topic. Pending submissions are not returned by this 
 ## `propose_customer_context`
 
 Input: supported record kind, workload, typed candidate payload, optional target
-record/version and source message/span or authorized evidence IDs. Never accept
+record/version and source message/span or authorized evidence IDs, plus optional
+`qualityInput` matching the shared proposal schema. Missing ratings use recorded
+unknown defaults; model suggestions remain Proposed until exact steward approval. Never accept
 approval/retraction/stewardship, origin or actor fields. Internal users may propose
 all allowed profile kinds; partners only delivery candidates for the bound customer.
 

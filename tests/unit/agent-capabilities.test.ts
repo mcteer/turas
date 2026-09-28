@@ -1,12 +1,13 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-describe("Turi foundation capability inventory", () => {
-  it("describes only live chat and refuses to promote claims to profile facts", () => {
+describe("Turi capability inventory", () => {
+  it("describes bounded accepted context and refuses to promote claims to profile facts", () => {
     const instructions = readFileSync("agent/instructions.md", "utf8");
     expect(instructions).toMatch(/private customer-scoped chat/i);
     expect(instructions).toMatch(/not accepted profile facts/i);
-    expect(instructions).toMatch(/cannot write or update\s+customer profiles/i);
+    expect(instructions).toMatch(/bounded customer context\s+snapshot/i);
+    expect(instructions).toMatch(/cannot accept,\s+reject, or directly update customer facts/i);
     expect(instructions).toMatch(/attachments.*not available/i);
     expect(instructions).not.toMatch(/can generate approved delivery plans/i);
   });

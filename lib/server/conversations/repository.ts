@@ -6,6 +6,7 @@ import { getServerConfig } from "../config";
 import { query, withTransaction } from "../db/client";
 import { hiddenRecord, HttpFailure } from "../../contracts/http";
 import type { ConversationReference } from "../../contracts/conversations";
+import { lockProfileActor } from "../profiles/policy";
 
 type ConversationRow = {
   id: string;
@@ -16,6 +17,14 @@ type ConversationRow = {
   eve_session_id: string | null;
   created_at: Date;
   updated_at: Date;
+  context_audience?: string | null;
+  context_generation?: string | null;
+  context_valid_until?: Date | null;
+  context_snapshot_schema?: string | null;
+  context_login_session_id?: string | null;
+  context_membership_id?: string | null;
+  internal_generation?: string;
+  delivery_generation?: string;
 };
 
 const scopedCustomer = `
@@ -34,16 +43,30 @@ const scopedCustomer = `
       )))
   )`;
 
-function toReference(row: ConversationRow): ConversationReference {
+function contextStatus(row: ConversationRow, session: CurrentSession): "current" | "changed" | "historical" {
+  if (row.context_snapshot_schema !== "customer-context-v1") return "historical";
+  const audience = session.kind === "internal" ? "internal" : "delivery";
+  const generation = audience === "internal" ? row.internal_generation : row.delivery_generation;
+  if (row.context_audience !== audience ||
+      row.context_login_session_id !== session.sessionId ||
+      row.context_membership_id !== session.membershipId ||
+      (generation !== undefined && row.context_generation !== generation) ||
+      (row.context_valid_until && row.context_valid_until.getTime() <= Date.now())) return "changed";
+  return "current";
+}
+
+function toReference(row: ConversationRow, session: CurrentSession): ConversationReference {
+  const status = contextStatus(row, session);
   return {
     id: row.id,
     customerId: row.customer_id,
     ownerPrincipalId: row.owner_principal_id,
-    title: row.title,
+    title: status === "current" ? row.title : "Previous conversation",
     bindingState: row.binding_state,
     eveSessionId: row.binding_state === "bound" ? row.eve_session_id : null,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
+    contextStatus: status,
   };
 }
 
@@ -57,22 +80,32 @@ export async function createOwnedConversation(
 ): Promise<{ conversation: ConversationReference; created: boolean }> {
   const title = input.title ?? "New conversation";
   return withTransaction(async (client: PoolClient) => {
+    await lockProfileActor(client, session, input.customerId);
     const allowed = await client.query(`
       SELECT customer.id FROM customer_references customer
       WHERE customer.id = $4 AND customer.workspace_id = $5 AND ${scopedCustomer}
     `, [...values(session), input.customerId, session.workspaceId]);
     if (!allowed.rowCount) throw hiddenRecord();
+    const contextState = await client.query<{ internal_generation: string; delivery_generation: string }>(
+      "SELECT internal_generation,delivery_generation FROM customer_profile_state WHERE customer_id=$1 AND workspace_id=$2",
+      [input.customerId, session.workspaceId]);
+    if (!contextState.rows[0]) throw hiddenRecord();
+    const audience = session.kind === "internal" ? "internal" : "delivery";
+    const generation = audience === "internal" ? contextState.rows[0].internal_generation :
+      contextState.rows[0].delivery_generation;
     const id = randomUUID();
     const inserted = await client.query<ConversationRow>(`
       INSERT INTO conversations
         (id, environment_id, workspace_id, customer_id, owner_principal_id,
-         creation_operation_id, binding_state, title)
-      VALUES ($1,$2,$3,$4,$5,$6,'unbound',$7)
+         creation_operation_id, binding_state, title, context_audience,
+         context_generation,context_snapshot_schema,context_login_session_id,context_membership_id)
+      VALUES ($1,$2,$3,$4,$5,$6,'unbound',$7,$8,$9,'customer-context-v1',$10,$11)
       ON CONFLICT (creation_operation_id) DO NOTHING
       RETURNING *
     `, [id, getServerConfig().TURAS_ENVIRONMENT_ID, session.workspaceId,
-      input.customerId, session.principalId, input.requestKey, title]);
-    if (inserted.rows[0]) return { conversation: toReference(inserted.rows[0]), created: true };
+      input.customerId, session.principalId, input.requestKey, title,
+      audience, generation, session.sessionId, session.membershipId]);
+    if (inserted.rows[0]) return { conversation: toReference(inserted.rows[0], session), created: true };
     const previous = await client.query<ConversationRow>(
       "SELECT * FROM conversations WHERE creation_operation_id = $1", [input.requestKey],
     );
@@ -81,7 +114,7 @@ export async function createOwnedConversation(
         row.customer_id !== input.customerId || row.title !== title) {
       throw new HttpFailure(409, "request_key_conflict", "Request key already used");
     }
-    return { conversation: toReference(row), created: false };
+    return { conversation: toReference(row, session), created: false };
   });
 }
 
@@ -89,14 +122,15 @@ export async function getOwnedConversation(
   session: CurrentSession, id: string,
 ): Promise<ConversationReference> {
   const result = await query<ConversationRow>(`
-    SELECT c.* FROM conversations c
+    SELECT c.*,state.internal_generation,state.delivery_generation FROM conversations c
     JOIN customer_references customer ON customer.id = c.customer_id
+    JOIN customer_profile_state state ON state.customer_id=c.customer_id
     WHERE c.id = $4 AND c.owner_principal_id = $3 AND c.environment_id = $5
       AND ${scopedCustomer}
     LIMIT 1
   `, [...values(session), id, getServerConfig().TURAS_ENVIRONMENT_ID]);
   if (!result.rows[0]) throw hiddenRecord();
-  return toReference(result.rows[0]);
+  return toReference(result.rows[0], session);
 }
 
 const cursorSchema = z.object({ t: z.iso.datetime(), id: z.uuid() }).strict();
@@ -116,20 +150,28 @@ export async function listOwnedConversations(
   const cursor = decodeCursor(options.cursor);
   const escapedTitle = options.title?.replace(/[\\%_]/g, "\\$&") ?? null;
   const result = await query<ConversationRow>(`
-    SELECT c.* FROM conversations c
+    SELECT c.*,state.internal_generation,state.delivery_generation FROM conversations c
     JOIN customer_references customer ON customer.id = c.customer_id
+    JOIN customer_profile_state state ON state.customer_id=c.customer_id
     WHERE c.owner_principal_id = $3 AND c.environment_id = $4
       AND ${scopedCustomer}
       AND ($5::uuid IS NULL OR c.customer_id = $5)
-      AND ($6::text IS NULL OR c.title ILIKE '%' || $6 || '%' ESCAPE '\\')
+      AND ($6::text IS NULL OR (c.context_snapshot_schema='customer-context-v1'
+        AND c.context_audience=CASE WHEN $10::text='internal' THEN 'internal' ELSE 'delivery' END
+        AND c.context_login_session_id=$11 AND c.context_membership_id=$12
+        AND c.context_generation=CASE WHEN $10::text='internal'
+          THEN state.internal_generation ELSE state.delivery_generation END
+        AND (c.context_valid_until IS NULL OR c.context_valid_until>now())
+        AND c.title ILIKE '%' || $6 || '%' ESCAPE '\\'))
       AND ($7::timestamptz IS NULL OR (c.updated_at, c.id) < ($7, $8::uuid))
     ORDER BY c.updated_at DESC, c.id DESC LIMIT $9
   `, [...values(session), getServerConfig().TURAS_ENVIRONMENT_ID, options.customerId ?? null,
-    escapedTitle, cursor?.t ?? null, cursor?.id ?? null, options.limit + 1]);
+    escapedTitle, cursor?.t ?? null, cursor?.id ?? null, options.limit + 1,
+    session.kind, session.sessionId, session.membershipId]);
   const rows = result.rows.slice(0, options.limit);
   const last = rows.at(-1);
   return {
-    items: rows.map(toReference),
+    items: rows.map((row) => toReference(row, session)),
     nextCursor: result.rows.length > options.limit && last
       ? Buffer.from(JSON.stringify({ t: last.updated_at.toISOString(), id: last.id })).toString("base64url")
       : null,
@@ -180,7 +222,7 @@ export async function getOwnedAttemptStatus(
 
 export async function getOwnedConversationDetail(session: CurrentSession, id: string) {
   const conversation = await getOwnedConversation(session, id);
-  const [events, partials, attempts] = await Promise.all([
+  const [events, partials, attempts, submitted] = await Promise.all([
     query<{
       native_event_id: string; event_type: string; visible_payload: Record<string, unknown>;
       stream_index: string | null; emitted_at: Date;
@@ -205,24 +247,38 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
       FROM response_attempts a JOIN submitted_messages sm ON sm.id = a.message_id
       LEFT JOIN watchdog_jobs j ON j.attempt_id = a.id
       WHERE a.conversation_id = $1 ORDER BY a.created_at, a.id LIMIT 101`, [id]),
+    query<{ id: string; text: string; created_at: Date }>(`
+      SELECT id,text,created_at FROM submitted_messages
+      WHERE conversation_id=$1 ORDER BY created_at,id LIMIT 101`, [id]),
   ]);
   // Recheck after potentially long history reads so a concurrent grant change
   // cannot return a completed payload under the authorization observed earlier.
-  await getOwnedConversation(session, id);
+  const latest = await getOwnedConversation(session, id);
+  const stale = latest.contextStatus !== "current";
+  const ownerEvents = stale ? await query<{
+    native_event_id: string; event_type: string; visible_payload: Record<string, unknown>;
+    stream_index: string | null; emitted_at: Date;
+  }>(`SELECT native_event_id,event_type,visible_payload,stream_index,emitted_at
+    FROM event_projections WHERE conversation_id=$1 AND event_type='message.received'
+    ORDER BY emitted_at,native_event_id LIMIT 501`, [id]) : null;
+  const final = await getOwnedConversation(session, id);
+  const hideGenerated = final.contextStatus !== "current";
+  const visibleEvents = hideGenerated ? (ownerEvents?.rows ?? events.rows.filter((row) => row.event_type === "message.received")) : events.rows;
   return {
-    ...conversation,
-    history: [...events.rows.slice(0, 500).map((row) => ({
+    ...conversation, contextStatus: final.contextStatus,
+    title: hideGenerated ? "Previous conversation" : conversation.title,
+    history: [...visibleEvents.slice(0, 500).map((row) => ({
       eventId: row.native_event_id,
       eventType: row.event_type,
       payload: row.visible_payload,
       streamIndex: row.stream_index === null ? null : Number(row.stream_index),
       emittedAt: row.emitted_at.toISOString(),
-    })), ...partials.rows.map((row) => ({
+    })), ...(hideGenerated ? [] : partials.rows.map((row) => ({
       eventId: `partial_${row.turn_id}`, eventType: "message.appended",
       payload: { messageDelta: row.message, partial: true }, streamIndex: null,
       emittedAt: row.emitted_at.toISOString(),
-    }))].sort((a, b) => a.emittedAt.localeCompare(b.emittedAt)),
-    historyTruncated: events.rows.length > 500,
+    })))].sort((a, b) => a.emittedAt.localeCompare(b.emittedAt)),
+    historyTruncated: visibleEvents.length > 500,
     attempts: attempts.rows.slice(0, 100).map((row) => ({
       requestKey: row.request_key,
       dispatchState: row.dispatch_state,
@@ -231,5 +287,9 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
       createdAt: row.created_at.toISOString(),
     })),
     attemptsTruncated: attempts.rows.length > 100,
+    submittedMessages: submitted.rows.slice(0, 100).map((row) => ({
+      id: row.id, text: row.text, createdAt: row.created_at.toISOString(),
+    })),
+    submittedMessagesTruncated: submitted.rows.length > 100,
   };
 }

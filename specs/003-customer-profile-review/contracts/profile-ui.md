@@ -18,6 +18,10 @@ assessment shows scope, period, assessor, rubric, evidence, next capability and
 review date. Unknown is explicit and no empty state creates a stage or product use.
 Product-use badges distinguish actual/evaluating/planned/retired/unknown. Research,
 accepted context, pending/rejected and stale/conflicted states have text labels.
+Internal members can flag two accepted facts from the profile. Assigned stewards
+can confirm a flagged contradiction and resolve it after one side is corrected or
+retracted, citing a current accepted revision. The control displays exact state
+and version; partners never receive the open-conflict list or hidden side IDs.
 
 ## Manual proposal and chat sharing
 
@@ -25,6 +29,11 @@ Provide typed forms for the record kinds in the data model, with clear required
 fields and evidence links. Save creates a Pending revision and keeps the current
 accepted value visible. A correction compares proposed and accepted values and
 retains the request key through ambiguous failures. Do not imply review occurred.
+Keyed kinds revise the existing customer/workload/product/maturity slot; list kinds
+allow multiple items. Show an explicit confirmation when accepting a maturity
+window older than the current one. Retraction shows Unknown rather than restoring
+a prior value. Quality fields expose proposed R/D/C, rationales, information type
+and retained date basis, with unknown defaults and server-computed F/Q.
 
 A chat message action lets its owner explicitly select/edit the claim to submit to
 that conversation's customer. Preview the exact shared text and scope before the
@@ -46,7 +55,7 @@ requires a rationale; provide a partner-safe reason when the submitter is a part
 Internal review notes are a separate field. Self-review is visibly attributed.
 
 A candidate's requested audience is explicit. If the reviewer changes a factual
-payload or audience, save a new candidate and review that exact version. No hidden
+payload, audience or quality inputs, save a new candidate and review that exact version. No hidden
 save-and-accept of modified text under the original ID. A record category that is
 internal operational data cannot be made partner-visible.
 
@@ -67,7 +76,10 @@ When trusted context changes, the chat shows “Customer context has changed. St
 new conversation to use current information.” Keep a direct same-customer action;
 no automatic new model call. Stored stale generated responses are withheld on
 subsequent reads, with a clear historical notice. Owner messages remain available
-under current customer access. Revoked access clears protected content and uses
+under current customer access. Apply the same notice to time-only expiry (at the
+next freshness boundary or 24-hour cap) and unbound 002 conversations. Hide stale
+generated titles/snippets too; never copy a summary into the fresh conversation.
+Revoked access clears protected content and uses
 the existing generic unavailable/denied experience.
 
 ## States and accessibility acceptance

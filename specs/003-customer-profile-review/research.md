@@ -121,6 +121,16 @@ a versioned baseline, not a calibrated model of Vercel customers.
 stage averaging confuses independent capabilities. Copying old persisted stage
 enums reintroduces the maturity/engagement conflict recorded in the legacy review.
 
+### Rating ownership decision
+
+Ratings are immutable candidate inputs confirmed by exact steward acceptance;
+trusted fixtures capture the same envelope and ingest actor. Unknown inputs remain
+explicit zero/unknown values. Corrections create new revisions; a separate mutable
+rating endpoint would bypass the existing exact-review lifecycle. See the
+[data model](data-model.md) for fields and authority. Canonical record keys also
+prevent competing roots from producing multiple current identities or assessments;
+observation dates are historical metadata, not a current-value selection rule.
+
 ## 7. Bounded eve tools and stale conversation context
 
 **Decision:** Add ordinary context-read and pending-proposal tools backed by the

@@ -12,12 +12,29 @@ test.afterEach(async () => {
   await client.connect();
   try {
     const ids = syntheticCleanup.splice(0);
+    // Dispatch captures an immutable context receipt. Keep those synthetic
+    // conversations intact so local UI cleanup never breaks the audit chain.
+    const retained = await client.query<{ conversation_id: string }>(`
+      SELECT DISTINCT conversation_id FROM context_snapshot_receipts
+      WHERE conversation_id = ANY($1::uuid[])
+      UNION
+      SELECT DISTINCT ra.conversation_id FROM context_injection_receipts cir
+      JOIN response_attempts ra ON ra.id = cir.attempt_id
+      WHERE ra.conversation_id = ANY($1::uuid[])`, [ids]);
+    const retainedIds = new Set(retained.rows.map((row) => row.conversation_id));
+    if (retainedIds.size) {
+      await client.query(`UPDATE response_attempts SET response_state = 'cancelled'
+        WHERE conversation_id = ANY($1::uuid[])
+          AND response_state IN ('pending','running','stopping')`, [[...retainedIds]]);
+    }
+    const removableIds = ids.filter((id) => !retainedIds.has(id));
+    if (!removableIds.length) return;
     await client.query(`DELETE FROM watchdog_jobs WHERE attempt_id IN
-      (SELECT id FROM response_attempts WHERE conversation_id = ANY($1::uuid[]))`, [ids]);
-    await client.query("DELETE FROM event_projections WHERE conversation_id = ANY($1::uuid[])", [ids]);
-    await client.query("DELETE FROM response_attempts WHERE conversation_id = ANY($1::uuid[])", [ids]);
-    await client.query("DELETE FROM submitted_messages WHERE conversation_id = ANY($1::uuid[])", [ids]);
-    await client.query("DELETE FROM conversations WHERE id = ANY($1::uuid[])", [ids]);
+      (SELECT id FROM response_attempts WHERE conversation_id = ANY($1::uuid[]))`, [removableIds]);
+    await client.query("DELETE FROM event_projections WHERE conversation_id = ANY($1::uuid[])", [removableIds]);
+    await client.query("DELETE FROM response_attempts WHERE conversation_id = ANY($1::uuid[])", [removableIds]);
+    await client.query("DELETE FROM submitted_messages WHERE conversation_id = ANY($1::uuid[])", [removableIds]);
+    await client.query("DELETE FROM conversations WHERE id = ANY($1::uuid[])", [removableIds]);
   } finally { await client.end(); }
 });
 
@@ -41,6 +58,10 @@ test("bound chat retains visible customer and scope notice", async ({ page }) =>
   await expect(page.getByRole("heading", { name: "Cedar (synthetic)" })).toBeVisible();
   await expect(page.getByText("Synthetic customer data and public research only")).toBeVisible();
   await expect(page.getByLabel("Message")).toBeVisible();
+  await page.getByRole("button", { name: "Submit a message claim for review" }).click();
+  await expect(page.getByRole("heading", { name: "Submit a message claim for review" })).toBeVisible();
+  await expect(page.getByText("No owned messages are available to share.")).toBeVisible();
+  await page.getByRole("button", { name: "Close claim submission" }).click();
   await page.getByLabel("Message").fill("Synthetic unsent draft");
   await expect(page.getByText("Draft not sent.")).toBeVisible();
   await page.reload();

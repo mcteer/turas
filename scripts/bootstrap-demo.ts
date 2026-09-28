@@ -68,6 +68,17 @@ async function main(): Promise<void> {
        ON CONFLICT (membership_id, customer_id) DO NOTHING`,
       [DEMO_IDS.partnerSharedGrant, DEMO_IDS.partnerMembership, DEMO_IDS.workspace, DEMO_IDS.sharedCustomer, DEMO_IDS.mcteer],
     );
+    if (marker.rows[0].schema_version >= 7) {
+      for (const customerId of [DEMO_IDS.sharedCustomer, DEMO_IDS.deniedCustomer]) {
+        await client.query(`INSERT INTO customer_profile_state(customer_id, workspace_id)
+          VALUES ($1,$2) ON CONFLICT (customer_id) DO NOTHING`,
+        [customerId, DEMO_IDS.workspace]);
+        await client.query(`INSERT INTO customer_stewards
+          (customer_id,workspace_id,membership_id,assigned_by)
+          VALUES ($1,$2,$3,$4) ON CONFLICT (customer_id,membership_id) DO NOTHING`,
+        [customerId, DEMO_IDS.workspace, DEMO_IDS.mcteerMembership, DEMO_IDS.mcteer]);
+      }
+    }
     await client.query("COMMIT");
     console.log("Synthetic demo identities initialized without altering existing access decisions");
   } catch (error) {

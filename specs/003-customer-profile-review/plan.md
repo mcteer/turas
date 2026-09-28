@@ -3,7 +3,7 @@
 **Branch**: `003-customer-profile-review` | **Date**: 2026-09-27 | **Spec**: [spec.md](spec.md)
 
 **Input**: Clarified feature specification in `specs/003-customer-profile-review/spec.md`.
-**Status**: Research, design and [task breakdown](tasks.md) complete; analysis and implementation pending.
+**Status**: Research, design and [task breakdown](tasks.md) complete; analysis findings remediated; implementation and local validation in progress. See [validation.md](validation.md) for actual checks and remaining acceptance work.
 
 ## Summary
 
@@ -156,6 +156,26 @@ workflow engine, external index or second permissions implementation.
    human walkthrough results and outstanding evidence honestly.
 
 This ordering informs `$speckit-tasks`; it is not a substitute for that task list.
+
+## Analysis remediation decisions
+
+U1: Canonical keys in [data-model.md](data-model.md) define singleton customer and
+workload details, scoped product use and scoped maturity; seven other kinds remain
+lists. Database uniqueness and transactional root resolution prevent duplicate
+heads. Accepted pointers define current state, with explicit older-window review
+and no fallback after retraction. T003/T005/T008/T013/T025/T028/T037/T039 verify it.
+
+U2: Immutable `qualityInput` belongs to the reviewed candidate or trusted research
+revision. Contributors propose; stewards confirm exact inputs; missing values use
+recorded unknown defaults. Corrections create new revisions, while only F/Q age
+with the clock. Contracts define fields, authority and provenance. T006/T014/T018,
+T043/T047/T053 and T061/T064–T068 cover the complete workflow.
+
+I1: US3 acceptance scenarios 6–7 now explicitly define context-change/time-expiry
+history suppression, unbound 002 conversations and fresh-session recovery.
+T045/T055 verify preserved owner messages, hidden generated content, no summary
+transfer, and current authorization. These are planned behaviors, not completed
+implementation or validation.
 
 ## Traceability and validation
 

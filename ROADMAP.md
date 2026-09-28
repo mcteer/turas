@@ -1,7 +1,7 @@
 # Turas delivery roadmap
 
 Baseline: 2026-09-26; updated 2026-09-27. **001 merged in PR 1; 002 merged in
-[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 design is complete; implementation is pending. 004–016 remain planned.**
+[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 implementation and local validation are in progress. 004–016 remain planned.**
 
 The user disconnected the repository from Vercel. Use local `npm run dev` testing;
 no reconnection or deployment until replacement readiness. Hosted acceptance for
@@ -107,7 +107,12 @@ review, evidence quality and partner delivery-only projections. Clarification is
 recorded in the spec. The [implementation plan](specs/003-customer-profile-review/plan.md),
 research, data model, interface contracts and validation guide are complete.
 The [task breakdown](specs/003-customer-profile-review/tasks.md) is generated;
-analysis, implementation and validation remain open.
+analysis findings have been remediated. Typed profile and review flows, bound
+customer context, synthetic research, conflict review and partner projections
+have passed local domain, HTTP and four-project WebKit checks. Guarded 006 upgrade
+and restored-clone drills also pass. Remaining tasks and independent acceptance evidence are recorded in the
+[003 validation log](specs/003-customer-profile-review/validation.md). No 003 merge,
+hosted validation or release is claimed.
 
 ## Updating this roadmap
 

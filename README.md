@@ -10,9 +10,12 @@ execution, reporting and learning.
 Feature 002 was **merged in [PR 2](https://github.com/mcteer/turas/pull/2)** after local and CI validation. The current build has
 explicit Postgres migrations, the three temporary demo logins, customer grants,
 private owned conversations, guarded eve routes, durable response history, a
-maintenance worker and a responsive web shell. Customer references are synthetic
-and limited to identity and display name. Full customer profiles, attachments,
-accepted context, RAG, delivery plans, staffing, reports and MCP remain planned.
+maintenance worker and a responsive web shell. Feature 003 is being implemented
+locally: typed customer profiles, projected record history, Pending review,
+maturity assessments, attributed synthetic research, evidence quality and conflict
+review, partner projections, and bound agent context
+are available for testing. Its acceptance and merge are still open. Attachments,
+RAG, delivery plans, staffing, reports and MCP remain planned.
 No speculative eve integrations have been installed. The configured model is
 unchanged. The application has not been deployed or validated on hosted infrastructure.
 
@@ -34,9 +37,9 @@ credentials, data and unused integrations are not the new platform. See the
   [local validation](specs/002-identity-platform-shell/validation.md)
 - [Feature 003 specification](specs/003-customer-profile-review/spec.md) and
   [implementation plan](specs/003-customer-profile-review/plan.md), with
-  [implementation tasks](specs/003-customer-profile-review/tasks.md) — analysis and
-  implementation pending
-- [Contributing](CONTRIBUTING.md), [coding-agent instructions](AGENTS.md), and
+  [implementation tasks](specs/003-customer-profile-review/tasks.md) and
+  [local validation](specs/003-customer-profile-review/validation.md) — implementation in progress
+- [Contributing](CONTRIBUTING.md), [development instructions](AGENTS.md), and
   [constitution](.specify/memory/constitution.md)
 
 ## Local setup
@@ -57,13 +60,19 @@ npm run db:bootstrap-demo
 npm run dev
 ```
 
+For an optional populated synthetic profile in local or disposable test environments,
+run `npm run db:seed-profile-demo`. It adds reviewed Juniper examples without
+overwriting later accepted revisions. The [003 quickstart](specs/003-customer-profile-review/quickstart.md)
+describes the review, evidence and guarded recovery journeys.
+
 `npm run dev` supervises Next.js, eve and the Postgres-backed maintenance worker.
 The web app is available at the configured `TURAS_APP_ORIGIN`. The `mcteer` login
 is an internal administrator, `panel` an internal employee, and `partner` an
 external member assigned only Cedar in the synthetic demo. Internal members can
 see every customer reference, including new ones; each account sees only its
-own chats. Claims typed into chat remain unverified and cannot update profiles.
-The app does not yet accept attachments.
+own chats. Profile and explicitly shared chat claims remain Pending until steward
+review; accepted facts and attributed research are kept distinct. The app does not
+yet accept attachments.
 After a local eve dev restart, an in-flight run from an older development
 generation may be quarantined. Its stored message and deadline remain visible;
 the worker flags an unconfirmed overdue turn for operator review without
@@ -82,6 +91,13 @@ npm run test:ui
 npm run test:performance
 ```
 
+The guarded local recovery drills are
+`npm run upgrade:profile:check -- --disposable --container turas-002-postgres`
+and `npm run restore:demo:check -- --disposable --container turas-002-postgres`.
+They create and drop temporary local databases; neither resets the application
+database. The integration and contract scripts clear only disposable test-profile
+rate windows before their suites so repeated local runs are independent.
+
 The database tests require the disposable test environment variables in the
 runbook. UI checks use WebKit from the command line and synthetic data. Both
 compile targets are included in `build:check`; it skips eve sandbox prewarming
@@ -89,6 +105,9 @@ and does not establish hosted readiness. Optional `smoke:local:live` and
 `eval:behavior:local` commands require an explicit `--live` flag and use the
 configured model. Keep all real credentials in ignored `.env.local`. Full
 authentication is deferred until explicitly resumed following hiring.
+For the six-case synthetic profile behavior dataset, use
+`npm run eval:behavior:local -- --feature 003 --live`; its outputs stay under
+ignored `local-artifacts/` for actual-response review.
 
 ## Spec Kit workflow
 
@@ -100,8 +119,8 @@ uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v1
 specify version
 ```
 
-Project-local Codex skills are already committed in `.agents/skills/`; start or
-restart the coding session in this project to discover them. No global prompt
+Project-local Spec Kit commands are already committed in `.agents/skills/`; start or
+restart the development session in this project to discover them. No global prompt
 directory changes are required. Use `$speckit-specify`, `$speckit-clarify`,
 `$speckit-plan`, `$speckit-tasks`, `$speckit-analyze`, `$speckit-implement` and
 `$speckit-converge` as described in [CONTRIBUTING](CONTRIBUTING.md).
@@ -121,8 +140,9 @@ procedure and generated changes while preserving the constitution and authored d
 ## Delivery and documentation
 
 The foundation merged in [PR 1](https://github.com/mcteer/turas/pull/1). The active
-slice is **003: customer profiles, maturity and context review**, with its spec
-clarified, implementation planned and tasks generated. Analysis and implementation are next.
+slice is **003: customer profiles, maturity and context review**. Its local
+implementation is in progress; see the task list and validation record for the
+current evidence and remaining gates.
 The merged 002 application provides the demo identities and shell. Its demo scope uses
 `mcteer` for internal Vercel administrators/FDE/PS leadership, `panel` for internal
 Vercel employees and `partner` for external partners. Internal users see all workspace
