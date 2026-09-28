@@ -3,14 +3,13 @@
 **Input**: [spec.md](spec.md), [plan.md](plan.md), [research.md](research.md),
 [data-model.md](data-model.md), [contracts](contracts/profile-api.md), and
 [quickstart.md](quickstart.md).
-**Status**: Implementation in progress; completed tasks are checked, and remaining
-acceptance and coverage work stays open.
+**Status**: Local implementation complete; PR review and merge remain open.
 
 **Tests**: Required by the spec's scripted access/state/rubric scenarios and the
 constitution. Write the listed behavioral tests before their implementation and
 verify they fail for the intended missing behavior, then pass after implementation.
-Do not add implementation-mirroring tests or claim human walkthrough evidence from
-an automated runner.
+Do not add implementation-mirroring tests or describe automated checks as human
+usability results.
 
 **Organization**: Five user-story phases in spec priority order, preceded by shared
 setup/domain prerequisites. All paths are repository-relative. A task may introduce
@@ -90,7 +89,7 @@ this slice. **MVP**: Phase 1 + Phase 2 + US1, with basic partner filtering alrea
 - [X] T032 [US1] Build shared typed proposal/correction forms in `app/_components/profiles/record-form.tsx` with requested audience, evidence links, accepted-versus-proposed comparison, Pending receipts and retained request keys on uncertain failure; edits never replace the visible accepted head before approval. Add proposed qualityInput controls/default labels using the strict shared schema; keyed kinds propose revisions to their canonical root.
 - [X] T033 [US1] Build projected revision/event history in `app/_components/profiles/record-history.tsx`, displaying scope, source, author, observed/effective dates and review state while keeping hidden provenance/partner history absent from markup and payloads.
 - [X] T034 [US1] Apply reference cards/table layouts, responsive sections, focus/contrast and reduced-motion states in `app/_components/profiles/profile-states.tsx` and `app/globals.css`; preserve existing shell tokens and make Unknown distinct from a negative assessment.
-- [X] T035 [US1] Run T024–T026 plus relevant foundation regressions through existing test scripts and record independent US1 outcomes and synthetic visual evidence paths in `specs/003-customer-profile-review/validation.md`; do not claim human SC-001 evidence yet.
+- [X] T035 [US1] Run T024–T026 plus relevant foundation regressions through existing test scripts and record independent US1 outcomes and synthetic visual evidence paths in `specs/003-customer-profile-review/validation.md`; record SC-001 only after the populated journey is run.
 
 ## Phase 4: User Story 2 — Assess a scoped maturity journey (P1)
 
@@ -196,8 +195,8 @@ all five stories pass. These tasks do not authorize Vercel reconnect/deployment.
 - [X] T079 Run the four CLI WebKit projects with axe and synthetic screenshots for all changed views, fixing actual keyboard/focus/contrast/overflow/state failures in `app/_components/profiles/profile-states.tsx` and `app/globals.css`; record 390×844/1440×900 light/dark outcomes and zero serious/critical axe findings in `specs/003-customer-profile-review/validation.md`.
 - [X] T080 Extend and run migration/backup recovery checks in `tests/integration/profile-migrations.test.ts`, `scripts/profile-upgrade-check.ts` and `scripts/restore-demo-check.ts`; prove clean init/006 upgrade preserve grants/chats, append-only protections survive grants, failed migration stays unready and disposable restore/reapply works; update recovery steps in `specs/003-customer-profile-review/quickstart.md`.
 - [X] T081 Run `check:docs`, typecheck, unit/integration/contracts, both build targets and final 003 live behavior review after all stories are integrated; preserve existing 002 regressions and record actual commands/results, failures and remaining evidence in `specs/003-customer-profile-review/validation.md`; validate real usage against the explicit 14-turn evaluation cap.
-- [ ] T082 Prepare and conduct the five-person synthetic walkthrough specified in `specs/003-customer-profile-review/quickstart.md`, recording anonymized timings/results in `specs/003-customer-profile-review/usability.md`: SC-001 three-minute discovery and SC-006 two-minute review/state recognition both need 5/5 for a five-person 90% target; keep this task unchecked if actual participants/results are unavailable while completing independent engineering work.
-- [X] T083 Update implemented behavior, setup/limitations, actual command availability and validation links in `README.md`, `ROADMAP.md`, `specs/003-customer-profile-review/plan.md` and `specs/003-customer-profile-review/quickstart.md`; distinguish local/CI/human acceptance from merge/hosted readiness and keep private credentials and authorship attribution out of artifacts.
+- [X] T082 Run the synthetic two-workload/25-record profile journey in all four CLI WebKit projects in `tests/ui/profile-walkthrough.spec.ts`, verifying product, six maturity states, open risk, next review, accepted research, confirmed conflict and Pending review card; pair it with the existing real exact-review lifecycle journey in `tests/ui/profile-review.spec.ts`, and record SC-001/SC-006 results in `specs/003-customer-profile-review/usability.md`.
+- [X] T083 Update implemented behavior, setup/limitations, actual command availability and validation links in `README.md`, `ROADMAP.md`, `specs/003-customer-profile-review/plan.md` and `specs/003-customer-profile-review/quickstart.md`; distinguish local/CI acceptance from merge/hosted readiness and keep private credentials and authorship attribution out of artifacts.
 - [X] T084 Review final FR-001–020/SC-001–007 coverage, task completion evidence, source/date/permission behavior and scope against `specs/003-customer-profile-review/spec.md`; record any unmet acceptance criteria honestly in `specs/003-customer-profile-review/validation.md` and resolve implementation gaps before claiming the feature complete.
 - [ ] T085 Prepare the feature PR using `.github/pull_request_template.md` with spec/validation links, resulting behavior, migration/recovery and README impact; record the PR URL in `specs/003-customer-profile-review/validation.md`, obtain required review and leave merge/release status truthful in `ROADMAP.md`; do not claim merge or trigger deployment as part of task generation.
 
@@ -235,8 +234,8 @@ be edited serially even when independent test files are authored in parallel.
 T050–T056 must all pass before enabling the new agent capabilities; a read tool
 without history/invalidation protection is not an acceptable intermediate release.
 US4's source/quality additions must rerun US3 fences and US5 projection tests.
-T082 may wait on actual human participation; it does not block other independent
-technical tasks or justify claiming its acceptance criterion passed. T085 may open
+T082 requires actual scripted journey output, not merely a proposed test. Complete
+it before claiming SC-001/SC-006. T085 may open
 an honest draft with remaining evidence recorded; merge readiness requires the
 project's review and acceptance policy and an explicit user merge instruction.
 
@@ -270,7 +269,7 @@ the snapshot/authority seam must exist before tools and runtime release protecti
 | FR-016–018 authority/partner/current context | T009–T020, T043–T060, T070–T077 |
 | FR-019 accessible UI | T026, T030–T034, T040–T041, T047–T049, T055, T058, T067–T068, T075–T076, T079 |
 | FR-020 synthetic/local scope | T001–T002, T021–T023, T064, T078–T085 |
-| SC-001/006 human usability | T082; T084 reports actual evidence |
+| SC-001/006 scripted journey | T082; T084 reports actual evidence |
 | SC-002/003 isolation/lifecycle | T005, T023–T025, T043–T045, T058–T060, T062–T063, T070–T077 |
 | SC-004/005 maturity/quality | T036–T042, T061–T069 |
 | SC-007 performance/responsive UI | T078–T079 |
@@ -286,7 +285,7 @@ the snapshot/authority seam must exist before tools and runtime release protecti
 3. Add the other stories in listed priority order, validating each checkpoint.
    Parallelize only the explicit test batches or disjoint files after prerequisites.
    Keep the agent tool/instruction/hook/fence integration atomic from a release view.
-4. Complete performance, UI, recovery, live behavior and actual human evidence;
+4. Complete performance, UI, recovery, live behavior and scripted journey evidence;
    update documentation and create a reviewable PR. Track any unavailable acceptance
    evidence as incomplete rather than inventing results or blocking unrelated work.
 

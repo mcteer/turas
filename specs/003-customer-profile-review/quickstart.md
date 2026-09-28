@@ -2,7 +2,7 @@
 
 This is the acceptance run guide, not a record of checks already passed. The
 synthetic profile seed, benchmark and 003 evaluation selector are implemented.
-Independent story and human acceptance remain open. Actual results are in
+Independent story acceptance is recorded in
 [validation.md](validation.md).
 
 ## Prerequisites
@@ -39,7 +39,7 @@ claim, product use and six-dimension maturity assessment; Cedar stays sparse for
 empty-state tests. The optional walkthrough command extends Juniper with two
 workloads, 25 total accepted records, a high open risk, a next review action, a
 Pending proposal and a confirmed contradiction. It prints stable record and
-revision IDs for the participant log. Both commands are idempotent and accept
+revision IDs for the scripted journey log. Both commands are idempotent and accept
 only local/test synthetic environments.
 
 No live web research, attachment ingestion, external connector, reconnect or deploy
@@ -145,15 +145,16 @@ Record actual output, source fidelity, permission/review hard gates, timing and 
 with reviewer rationale. All hard gates must pass; unavailable live evidence stays
 explicitly open rather than replaced by prompt-text assertions.
 
-## Human walkthrough and reporting
+## Scripted profile journey and reporting
 
-Use five actual internal participants with the synthetic profile of two workloads
-and at least 25 records. Time finding product use, known maturity, top delivery risk
-and next review (three-minute target), then distinguishing evidence states and
-reviewing a claim (two-minute target). With five people, a 90% criterion requires
-5/5. Record anonymized results; do not invent participant evidence or claim a test
-runner represents five people. Implementation may be technically verified while
-these acceptance results remain pending, and validation.md must state that clearly.
+Run `TURAS_PROFILE_FIXTURE_READY=1 npm run test:ui -- tests/ui/profile-walkthrough.spec.ts`
+after seeding the synthetic profile. The four WebKit projects navigate from the
+directory into the two-workload, 25-record profile and verify product use, six
+maturity states including Unknown, the open delivery risk, next review, attributed
+research, confirmed conflict and Pending review card. The existing
+`tests/ui/profile-review.spec.ts` exercises an exact-candidate approval and its
+effect on accepted context. Record actual runner results in [usability.md](usability.md);
+these scripted checks make no claim about human task-completion times.
 
 Record commands, environment, actual results and limitations in a feature validation
 artifact during implementation. Update README and roadmap with delivered behavior

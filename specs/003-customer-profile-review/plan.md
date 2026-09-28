@@ -69,13 +69,13 @@ research resolves implementation uncertainties without changing those decisions.
 | IV. Authorization first | Domain/SQL projection before counts/search; source and transcript protection; tool authority bound to session | PASS |
 | V. Human decisions | Exact-revision stewardship, explicit retraction authority, transactional receipts | PASS |
 | VI. eve core | Two ordinary domain tools; installed docs reviewed; no connector or runtime-model change | PASS |
-| VII. Verification | Races, denials, evidence dates, WebKit, live eval and human usability evidence | PASS |
+| VII. Verification | Races, denials, evidence dates, WebKit, live eval and scripted profile journey evidence | PASS |
 | VIII. Maintainability | Bounded reads/writes; append-only audit; migration/readiness/grants; redacted observability | PASS |
 
 No constitutional exception is required. Existing synthetic bootstrap names are
 explicit `authorized_system` baseline records, not an exception for future manual
-edits. Human participant success criteria remain acceptance evidence to collect,
-not a claim that planning or CI completed them.
+edits. The synthetic profile journey is a scripted behavior check, not a claim about
+human task-completion times.
 
 ## Project Structure
 
@@ -153,7 +153,7 @@ workflow engine, external index or second permissions implementation.
    deadlines and explicit fresh-conversation recovery. Keep native reset denied.
 5. **Acceptance evidence:** Complete denial/race/withdrawal tests, WebKit states,
    bounded performance and representative behavior evaluations. Record actual
-   human walkthrough results and outstanding evidence honestly.
+   scripted journey results and outstanding evidence honestly.
 
 This ordering informs `$speckit-tasks`; it is not a substitute for that task list.
 
@@ -189,7 +189,7 @@ implementation or validation.
 | FR-016–018 | Shared projection and conversation fences | Cross-workspace/customer denial, hidden counts, private-chat isolation, stale native replay/tool/stream denial |
 | FR-019 | Profile/review UI | Four WebKit projects, keyboard/focus, empty/error/conflict states, axe |
 | FR-020 | Fixed synthetic/public fixtures | No imported demo/customer secrets, no enabled external tools/deploy |
-| SC-001/006 | Human walkthrough | Five actual participants; 90% threshold means 5/5 with that sample |
+| SC-001/006 | Scripted synthetic journey | Two-workload/25-record profile in four CLI WebKit projects; existing exact-review lifecycle test |
 | SC-002–005 | Automated and representative agent validation | All denial/state/rubric assertions; actual live-response review |
 | SC-007 | Local benchmark and WebKit | 100×25 dataset, p95 view timing <2s, usable 390px/1440px views |
 

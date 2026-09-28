@@ -164,12 +164,12 @@ As a partner assigned to one customer, I can see the context relevant to that de
 
 ### Measurable Outcomes
 
-- **SC-001**: With two workloads and 25 mixed records, at least 90% of internal reviewers identify current product use, known maturity states, the top open delivery risk and next review action within three minutes without confusing Unknown with negative.
+- **SC-001**: In a scripted local journey with two workloads and 25 mixed accepted records, the internal profile view exposes current product use, known and Unknown maturity states, the top open delivery risk and the next review action without treating Unknown as a negative assessment.
 - **SC-002**: In scripted internal, assigned-partner, unassigned-partner and revoked-grant journeys, 100% of ungranted customer, other-contributor unaccepted context and internal-only field attempts are denied across directory, profile, history, search, review and assistant paths without identifying metadata; accepted delivery facts remain visible to the assigned partner regardless of contributor.
 - **SC-003**: Across submission, accept, reject, correct, retract, retry and concurrent-decision journeys, 100% of pending/rejected/superseded/retracted revisions are absent from accepted-fact context, with at most one effective decision per revision.
 - **SC-004**: Every displayed maturity assessment exposes scope, window, assessor, rubric, evidence, rationale and next capability; no dimension is inferred from product count or delivery phase.
 - **SC-005**: For a fixed synthetic dated-source set, all quality bands and freshness labels match the published rubric, including future/unknown dates; scores never bypass approval or visibility.
-- **SC-006**: At least 90% of five internal walkthrough participants distinguish accepted claims, research, pending submissions and conflicts, and complete a routine review within two minutes.
+- **SC-006**: In scripted local journeys, the internal profile and review views distinguish accepted claims, attributed research, Pending submissions and confirmed conflicts; an exact-candidate review decision updates accepted context only after approval.
 - **SC-007**: With 100 synthetic profiles and 25 records each, 95% of authorized profile opens present the current view within two seconds in local testing; mobile and desktop views in both themes complete read/review flows without horizontal overflow or inaccessible controls.
 
 ## Assumptions

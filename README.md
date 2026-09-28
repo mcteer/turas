@@ -62,7 +62,7 @@ npm run dev
 
 For an optional populated synthetic profile in local or disposable test environments,
 run `npm run db:seed-profile-demo`. It adds reviewed Juniper examples without
-overwriting later accepted revisions. For the two-workload, 25-record human
+overwriting later accepted revisions. For the two-workload, 25-record scripted
 walkthrough fixture, run `npm run db:seed-profile-walkthrough`. The [003 quickstart](specs/003-customer-profile-review/quickstart.md)
 describes the review, evidence and guarded recovery journeys.
 
