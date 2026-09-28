@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { chmod, link, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, copyFile, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -57,7 +57,7 @@ describe("artifact upload HTTP contract", () => {
     for (const directory of ["signatures", "assets"]) {
       await mkdir(join(storeRoot, directory), { mode: 0o755 });
       for (const filename of await readdir(join(prepared, directory))) {
-        await link(join(prepared, directory, filename), join(storeRoot, directory, filename));
+        await copyFile(join(prepared, directory, filename), join(storeRoot, directory, filename));
       }
     }
     process.env.TURAS_ARTIFACT_STORE_ROOT = storeRoot;

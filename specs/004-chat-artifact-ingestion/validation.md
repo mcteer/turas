@@ -95,7 +95,10 @@ fixture failed on Linux. The test had mounted its private 0600 source directly,
 while the worker stages a read-only 0444 copy for non-root containers. The
 scanner test and container probe now follow that staging pattern; a focused
 scanner run, typecheck and all 39 local artifact checks pass. Linux CI must
-verify the remaining gates.
+verify the remaining gates. The third CI run passed integration (120 tests) but
+the upload contract fixture could not hard-link FreshClam signature files owned
+by another UID on Linux. The fixture now copies those files into its isolated
+store. The full 45-test local contract suite passes; CI must verify the change.
 The full live evaluation used an isolated copied app, private Eve directory,
 disposable schema-018 database and store. Its copied evaluation agent kept the
 root selected Grok model and capped generation to 1,000 tokens to leave room for
