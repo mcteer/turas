@@ -11,6 +11,7 @@ import { GET as currentSession } from "../../app/api/auth/session/route";
 import { PUT as changeGrant } from "../../app/api/admin/grants/[membershipId]/[customerId]/route";
 import { PATCH as changeMembership } from "../../app/api/admin/memberships/[id]/route";
 import { randomUUID } from "node:crypto";
+import { Client } from "pg";
 import { DEMO_IDS } from "../fixtures/identities";
 
 const runFile = promisify(execFile);
@@ -84,6 +85,12 @@ describe("access contract", () => {
     const grants = (await current.json() as { data: { grants: { membershipId: string; customerId: string; revision: number }[] } }).data.grants;
     const revision = grants.find((grant) => grant.membershipId === DEMO_IDS.partnerMembership && grant.customerId === DEMO_IDS.sharedCustomer)?.revision;
     expect(revision).toBeTypeOf("number");
+    const db = new Client({ connectionString: process.env.TURAS_TEST_DATABASE_URL });
+    await db.connect();
+    const generation = async () => Number((await db.query<{ delivery_generation: string }>(
+      "SELECT delivery_generation FROM customer_profile_state WHERE customer_id=$1",
+      [DEMO_IDS.sharedCustomer])).rows[0].delivery_generation);
+    const beforeGeneration = await generation();
     const key = randomUUID();
     const mutate = (state: "active" | "revoked", expectedRevision: number, requestKey: string) => changeGrant(
       new Request(origin + "/api/admin/grants", {
@@ -95,6 +102,7 @@ describe("access contract", () => {
     const revoked = await mutate("revoked", revision!, key);
     expect(revoked.status).toBe(200);
     try {
+      expect(await generation()).toBe(beforeGeneration + 1);
       expect((await mutate("revoked", revision!, key)).status).toBe(200);
       expect((await mutate("active", revision!, key)).status).toBe(409);
       expect((await mutate("active", revision!, randomUUID())).status).toBe(409);
@@ -106,6 +114,8 @@ describe("access contract", () => {
       expect((await afterBootstrap.json() as { data: { items: { id: string }[] } }).data.items.map((item) => item.id)).not.toContain(DEMO_IDS.sharedCustomer);
     } finally {
       expect((await mutate("active", revision! + 1, randomUUID())).status).toBe(200);
+      expect(await generation()).toBe(beforeGeneration + 2);
+      await db.end();
     }
   });
 

@@ -1,6 +1,6 @@
 import type { EveChannel } from "eve/channels/eve";
 import { z } from "zod";
-import { HttpFailure } from "../../contracts/http";
+import { HttpFailure, hiddenRecord } from "../../contracts/http";
 import { checkSessionCsrf } from "../auth/csrf";
 import { getCurrentSession } from "../auth/sessions";
 import { bindNativeSession, claimBinding, markBindingUncertain } from "./binding";
@@ -8,6 +8,7 @@ import { claimDispatch, getAttemptReceipt, markDispatchUncertain, normalizeMessa
 import { getOwnedConversationByNativeSession } from "./repository";
 import { guardNativeStream } from "./stream";
 import { requestCancellation } from "./cancel";
+import { assertNativeContextCurrent, releaseNativeChunk } from "./context-fence";
 
 const createSchema = z.object({ operationId: z.uuid() }).strict();
 const sendSchema = z.object({ message: z.string() }).strict();
@@ -205,13 +206,19 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             const current = await getCurrentSession(request);
             if (!current) throw new HttpFailure(401, "authentication_required", "Sign in required");
             await getOwnedConversationByNativeSession(current, args.params.sessionId);
+            await assertNativeContextCurrent(current, args.params.sessionId);
             const response = await native(request, args);
             if (!response.ok) return response;
             return guardNativeStream(response, async () => {
               const refreshed = await getCurrentSession(request);
               if (!refreshed) return false;
               await getOwnedConversationByNativeSession(refreshed, args.params.sessionId);
+              await assertNativeContextCurrent(refreshed, args.params.sessionId);
               return true;
+            }, 10_000, 5_000, async (_chunk, enqueue) => {
+              const refreshed = await getCurrentSession(request);
+              if (!refreshed) throw hiddenRecord();
+              await releaseNativeChunk(refreshed, args.params.sessionId, enqueue);
             });
           } catch (error) {
             return nativeFailure(error);

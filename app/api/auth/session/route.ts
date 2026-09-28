@@ -11,7 +11,7 @@ export async function GET(request: Request): Promise<Response> {
     return success({
       principal: { id: session.principalId, loginName: session.loginName, displayName: session.displayName },
       workspace: { id: session.workspaceId },
-      membership: { kind: session.kind, role: session.role },
+      membership: { id: session.membershipId, kind: session.kind, role: session.role },
       csrfToken: csrfTokenForSession(session.token),
       expiresAt: session.expiresAt.toISOString(),
     });

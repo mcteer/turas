@@ -48,6 +48,7 @@ describe("send admission limits", () => {
     if (!created.length) return;
     const ids = created.splice(0);
     await db(async (client) => {
+      await client.query("TRUNCATE context_injection_receipts, context_snapshot_receipts");
       await client.query(`DELETE FROM watchdog_jobs WHERE attempt_id IN
         (SELECT id FROM response_attempts WHERE conversation_id = ANY($1::uuid[]))`, [ids]);
       await client.query("DELETE FROM response_attempts WHERE conversation_id = ANY($1::uuid[])", [ids]);

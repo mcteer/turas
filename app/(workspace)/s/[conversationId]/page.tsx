@@ -21,5 +21,6 @@ export default async function ConversationPage({ params }: { params: Promise<{ c
   if (!customer.rows[0]) notFound();
   return <AgentChat conversationId={conversation.id} nativeSessionId={conversation.eveSessionId}
     bindingState={conversation.bindingState} customerName={customer.rows[0].display_name}
-    synthetic={customer.rows[0].synthetic} csrfToken={csrfTokenForSession(session.token)} />;
+    synthetic={customer.rows[0].synthetic} csrfToken={csrfTokenForSession(session.token)}
+    customerId={conversation.customerId} contextStatus={conversation.contextStatus ?? "historical"} />;
 }

@@ -88,6 +88,13 @@ try {
       AND c.eve_session_id IS NOT NULL
     ORDER BY a.created_at DESC LIMIT 1`, [config.TURAS_ENVIRONMENT_ID, DEMO_IDS.panel]);
   if (!original.rows[0]) throw new Error("No acknowledged completed synthetic turn to check");
+  const originalProfile = await sourceClient.query<{ id: string; content_digest: string;
+    record_id: string; version: string; source_count: string }>(`
+    SELECT v.id,v.content_digest,r.id AS record_id,r.version,
+      (SELECT count(*) FROM evidence_source_revisions WHERE customer_id=r.customer_id)::text AS source_count
+    FROM profile_records r JOIN profile_revisions v ON v.id=r.current_accepted_revision_id
+    WHERE r.customer_id=$1 ORDER BY r.created_at,r.id LIMIT 1`, [DEMO_IDS.deniedCustomer]);
+  if (!originalProfile.rows[0]) throw new Error("No accepted synthetic profile head to restore");
   const workflowSource = join(".eve", ".workflow-data");
   await stat(join(workflowSource, "runs", `${original.rows[0].eve_session_id}.json`));
   const appOrigin = new URL(config.TURAS_APP_ORIGIN);
@@ -131,22 +138,50 @@ try {
         replayed.rows[0].event_count !== original.rows[0].event_count) {
       throw new Error("Restored acknowledged turn differs from source");
     }
+    const restoredProfile = await restored.query<{ id: string; content_digest: string;
+      record_id: string; version: string; source_count: string }>(`
+      SELECT v.id,v.content_digest,r.id AS record_id,r.version,
+        (SELECT count(*) FROM evidence_source_revisions WHERE customer_id=r.customer_id)::text AS source_count
+      FROM profile_records r JOIN profile_revisions v ON v.id=r.current_accepted_revision_id
+      WHERE r.id=$1`, [originalProfile.rows[0].record_id]);
+    if (JSON.stringify(restoredProfile.rows[0]) !== JSON.stringify(originalProfile.rows[0])) {
+      throw new Error("Restored accepted profile/source state differs from source");
+    }
+    execFileSync(process.execPath, ["--experimental-strip-types", "scripts/db-migrate.ts"], {
+      cwd: resolve(), env: { ...process.env,
+        DATABASE_URL_UNPOOLED: restoredUrl.toString(), DATABASE_URL: restoredUrl.toString() },
+      timeout: 30_000, stdio: ["ignore", "pipe", "pipe"],
+    });
+    const reapplied = await restored.query<{ id: string; content_digest: string }>(
+      "SELECT id,content_digest FROM profile_revisions WHERE id=$1", [originalProfile.rows[0].id]);
+    if (reapplied.rows[0]?.content_digest !== originalProfile.rows[0].content_digest) {
+      throw new Error("Migration reapplication changed restored profile history");
+    }
+    await restored.query("BEGIN");
+    try {
+      await restored.query("SAVEPOINT immutable_profile_check");
+      let immutable = false;
+      try {
+        await restored.query("UPDATE profile_revisions SET payload=payload WHERE id=$1",
+          [originalProfile.rows[0].id]);
+      } catch { immutable = true; }
+      await restored.query("ROLLBACK TO SAVEPOINT immutable_profile_check");
+      if (!immutable) throw new Error("Restored profile revisions are mutable");
+    } finally { await restored.query("ROLLBACK"); }
     await stat(join(isolated, ".eve", ".workflow-data", "runs", `${original.rows[0].eve_session_id}.json`));
     const port = await startIsolatedEve(restoredUrl);
     const native = await fetch(`http://127.0.0.1:${port}/eve/v1/session/${original.rows[0].eve_session_id}/stream?startIndex=0`,
       { headers: { cookie }, signal: AbortSignal.timeout(5_000) });
-    if (!native.ok || !native.headers.get("content-type")?.includes("ndjson")) {
-      throw new Error(`Restored native stream unavailable (${native.status})`);
+    if (native.status !== 409) {
+      throw new Error(`Restored older-session native replay was not fenced (${native.status})`);
     }
-    const reader = native.body?.getReader();
-    const first = await reader?.read();
-    await reader?.cancel();
-    if (!first || first.done || !first.value?.byteLength) {
-      throw new Error("Restored native stream contained no continuation history");
-    }
+    await native.body?.cancel();
     console.log(JSON.stringify({ restored: true, acknowledgedAttempt: original.rows[0].id,
       projectedEvents: Number(original.rows[0].event_count), workflowRunPresent: true,
-      nativeStreamReadable: true }));
+      nativeReplaySessionBound: true, profileHeadPreserved: true,
+      migrationsReapplied: true,
+      profileSourceCount: Number(originalProfile.rows[0].source_count),
+      profileRevisionImmutable: true }));
   } finally { await restored.end(); }
 } finally {
   if (isolatedEve && isolatedEve.exitCode === null) {

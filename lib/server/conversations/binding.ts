@@ -6,6 +6,7 @@ import { withTransaction } from "../db/client";
 import { hiddenRecord, HttpFailure } from "../../contracts/http";
 import type { ConversationReference } from "../../contracts/conversations";
 import { getOwnedConversation } from "./repository";
+import { lockProfileActor } from "../profiles/policy";
 
 type BindingRow = {
   id: string;
@@ -17,32 +18,28 @@ type BindingRow = {
   binding_started_at: Date | null;
   binding_claim_token: string | null;
   binding_claim_expires_at: Date | null;
+  context_snapshot_schema: string | null;
+  context_login_session_id: string | null;
+  context_membership_id: string | null;
 };
 
 export async function lockOwnedBinding(client: PoolClient, session: CurrentSession, id: string): Promise<BindingRow> {
+  const scope = await client.query<{ customer_id: string }>(`
+    SELECT customer_id FROM conversations WHERE id=$1 AND owner_principal_id=$2
+      AND workspace_id=$3 AND environment_id=$4`,
+  [id, session.principalId, session.workspaceId, getServerConfig().TURAS_ENVIRONMENT_ID]);
+  if (!scope.rows[0]) throw hiddenRecord();
+  await lockProfileActor(client, session, scope.rows[0].customer_id);
   const result = await client.query<BindingRow>(`
     SELECT c.* FROM conversations c WHERE c.id = $1 AND c.owner_principal_id = $2
       AND c.workspace_id = $3 AND c.environment_id = $4 FOR UPDATE
   `, [id, session.principalId, session.workspaceId, getServerConfig().TURAS_ENVIRONMENT_ID]);
   const row = result.rows[0];
-  if (!row) throw hiddenRecord();
-  const identity = await client.query(`
-    SELECT 1 FROM login_sessions ls
-    JOIN principals p ON p.id = ls.principal_id
-    JOIN memberships m ON m.id = $2 AND m.principal_id = p.id
-    JOIN workspaces w ON w.id = m.workspace_id
-    LEFT JOIN partner_organizations o ON o.id = m.partner_org_id AND o.workspace_id = m.workspace_id
-    WHERE ls.id = $1 AND ls.revoked_at IS NULL AND ls.expires_at > now()
-      AND p.id = $3 AND p.active AND m.active AND w.active AND m.workspace_id = $4
-      AND (m.kind = 'internal' OR o.active)
-    FOR SHARE OF ls, p, m, w
-  `, [session.sessionId, session.membershipId, session.principalId, session.workspaceId]);
-  if (!identity.rowCount) throw hiddenRecord();
-  if (session.kind === "partner") {
-    const grant = await client.query(`SELECT 1 FROM customer_grants
-      WHERE membership_id = $1 AND customer_id = $2 AND state = 'active' FOR SHARE`,
-    [session.membershipId, row.customer_id]);
-    if (!grant.rowCount) throw hiddenRecord();
+  if (!row || row.customer_id !== scope.rows[0].customer_id) throw hiddenRecord();
+  if (row.context_snapshot_schema !== "customer-context-v1" ||
+      row.context_login_session_id !== session.sessionId ||
+      row.context_membership_id !== session.membershipId) {
+    throw new HttpFailure(409, "context_changed", "Start a new conversation for current customer context");
   }
   return row;
 }

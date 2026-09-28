@@ -3,6 +3,7 @@ export function guardNativeStream(
   authority: () => Promise<boolean>,
   intervalMs = 10_000,
   timeoutMs = 5_000,
+  release?: (chunk: Uint8Array, enqueue: () => void) => Promise<void>,
 ): Response {
   if (!native.body) return native;
   const reader = native.body.getReader();
@@ -56,10 +57,13 @@ export function guardNativeStream(
           while (!closed) {
             const chunk = await reader.read();
             if (chunk.done) break;
-            if (checkInFlight || Date.now() - lastAuthorizedAt >= intervalMs) {
+            if (!release && (checkInFlight || Date.now() - lastAuthorizedAt >= intervalMs)) {
               if (!await check()) break;
             }
-            if (!closed) output.enqueue(chunk.value);
+            if (!closed) {
+              if (release) await release(chunk.value, () => output.enqueue(chunk.value));
+              else output.enqueue(chunk.value);
+            }
           }
         } catch { /* a broken native stream closes downstream */ }
         await stop();

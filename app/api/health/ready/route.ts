@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(): Promise<Response> {
   try {
-    await assertDatabaseEnvironment(6);
+    await assertDatabaseEnvironment(11);
     const worker = await query(`SELECT 1 FROM maintenance_workers
       WHERE environment_id = $1 AND last_seen_at >= now() - interval '15 seconds' LIMIT 1`,
     [getServerConfig().TURAS_ENVIRONMENT_ID]);

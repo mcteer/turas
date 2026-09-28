@@ -24,6 +24,34 @@
     {
       "file": "006-native-receipts.cjs",
       "sha256": "fe686616219435a670de4deecc50df132cbb37ff3e3b704e65c6db3d8ff8fac0"
+    },
+    {
+      "file": "007-profile-context.cjs",
+      "sha256": "126b6713f65bfd63ed22f4e8a6748294c0639033d59ae3a0b27975af2def9778"
+    },
+    {
+      "file": "008-profile-context-fences.cjs",
+      "sha256": "3fe7b346145872edaab6c96edda1fdbc4ab0e3a8ce05302d752951953241bff3"
+    },
+    {
+      "file": "009-profile-snapshot-payload.cjs",
+      "sha256": "d367014a3920730cc19433452b129ec9c423e98c09678e8db1891afc8b465141"
+    },
+    {
+      "file": "010-profile-injection-receipts.cjs",
+      "sha256": "f1816acd1330770d6fc357cfd85acefe0a62171db030d1c5e70c90ddc62dedda"
+    },
+    {
+      "file": "011-profile-retraction-versions.cjs",
+      "sha256": "3d5d25dcf62c13ee0d27b97a3906aa9d46335ed03ef3f7d27d76781ee9c51a58"
+    },
+    {
+      "file": "012-profile-submission-channel.cjs",
+      "sha256": "5b7d505533277dc81fef427bfa28e2b8ff65d246f42d02052962502a4cef3be1"
+    },
+    {
+      "file": "013-profile-audit-metrics.cjs",
+      "sha256": "244b7046d175a15b5c415c34fa759f73bcd75fe038e094743a783787f39d0549"
     }
   ]
 }

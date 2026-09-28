@@ -4,6 +4,7 @@ import { getServerConfig } from "../config";
 import { withTransaction } from "../db/client";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
 import { lockOwnedBinding } from "./binding";
+import { captureAttemptContext, readCurrentAttemptContext } from "../profiles/attempt-context";
 
 export function normalizeMessageText(text: string): string {
   return text.replace(/\r\n?/g, "\n").normalize("NFC");
@@ -36,6 +37,17 @@ export async function prepareAttempt(
     const conversation = await lockOwnedBinding(client, session, conversationId);
     if (conversation.binding_state !== "bound" || conversation.eve_session_id !== nativeSessionId) {
       throw hiddenRecord();
+    }
+    const context = await client.query<{ context_snapshot_schema: string | null;
+      context_generation: string | null; context_valid_until: Date | null }>(
+      "SELECT context_snapshot_schema,context_generation,context_valid_until FROM conversations WHERE id=$1",
+      [conversationId]);
+    if (context.rows[0]?.context_snapshot_schema !== "customer-context-v1" ||
+        context.rows[0]?.context_generation === null) {
+      throw new HttpFailure(409, "historical_conversation", "Start a new conversation for current customer context");
+    }
+    if (context.rows[0].context_valid_until && context.rows[0].context_valid_until.getTime() <= Date.now()) {
+      throw new HttpFailure(409, "context_changed", "Start a new conversation for current customer context");
     }
     const existing = await client.query<{ id: string; body_digest: string; attempt_id: string; dispatch_state: string }>(`
       SELECT sm.id, sm.body_digest, a.id AS attempt_id, a.dispatch_state
@@ -95,7 +107,7 @@ export async function claimDispatch(
     throw new HttpFailure(503, "invalid_native_cursor", "Service unavailable");
   }
   return withTransaction(async (client) => {
-    await lockOwnedBinding(client, session, conversationId);
+    const conversation = await lockOwnedBinding(client, session, conversationId);
     await requireWorkerHeartbeat(client);
     const attempt = await client.query<{ dispatch_state: string; response_state: string }>(`
       SELECT dispatch_state, response_state FROM response_attempts
@@ -105,6 +117,7 @@ export async function claimDispatch(
         attempt.rows[0].response_state !== "pending") {
       throw new HttpFailure(409, "dispatch_claimed", "Dispatch already claimed");
     }
+    await captureAttemptContext(client, session, conversationId, attemptId, conversation.customer_id);
     const dispatchStartedAt = new Date();
     const deadlineAt = new Date(dispatchStartedAt.getTime() + 120_000);
     await client.query(`UPDATE response_attempts SET dispatch_state = 'dispatching',
@@ -221,6 +234,7 @@ export async function deriveNativeAttempt(
     const row = found.rows[0];
     if (!row || row.body_digest !== messageDigest(text)) throw hiddenRecord();
     await lockOwnedBinding(client, session, row.conversation_id);
+    await readCurrentAttemptContext(client, row.id, session.principalId);
     return row.id;
   });
   return result;

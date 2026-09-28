@@ -46,6 +46,7 @@ export default function CustomersPage() {
       ))}</ul>
       {nextCursor && <button type="button" onClick={() => void load(nextCursor)}>Load more</button>}
       {selected && <p role="status">Selected customer: {selected.displayName}{" "}
+        <Link href={`/customers/${selected.id}`}>Open profile</Link>{" · "}
         <Link href={`/s?customerId=${selected.id}`}>Start chat</Link></p>}
     </main>
   );

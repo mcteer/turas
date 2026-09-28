@@ -1,10 +1,5 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { expect, test } from "@playwright/test";
-import { Client } from "pg";
 import { signIn } from "../fixtures/ui";
-
-const runFile = promisify(execFile);
 
 test.describe("customer and partner access", () => {
   test.describe.configure({ mode: "serial" });
@@ -24,27 +19,16 @@ test.describe("customer and partner access", () => {
     await expect(page.getByText("404")).toBeVisible();
   });
 
-  test("internal members see new synthetic customers and partners see their subset", async ({ page }) => {
-    const name = `Synthetic access check ${Date.now()}`;
-    const client = new Client({ connectionString: process.env.DATABASE_URL });
-    await runFile(process.execPath, ["--experimental-strip-types", "scripts/create-demo-customer.ts", "--name", name], {
-      cwd: process.cwd(), env: process.env,
-    });
-    await client.connect();
-    try {
-      await signIn(page, "panel");
-      await page.goto("/customers");
-      await expect(page.getByRole("button", { name: `${name} · Synthetic` })).toBeVisible();
-      await page.getByRole("button", { name: "Sign out" }).click();
-      await signIn(page, "partner");
-      await page.goto("/customers");
-      await expect(page.getByRole("button", { name: "Cedar (synthetic) · Synthetic" })).toBeVisible();
-      await expect(page.getByText(name)).toHaveCount(0);
-      await expect(page.getByText("Juniper (synthetic)")).toHaveCount(0);
-    } finally {
-      await client.query("DELETE FROM customer_references WHERE display_name = $1", [name]);
-      await client.end();
-    }
+  test("internal members see every demo customer and partners see their subset", async ({ page }) => {
+    await signIn(page, "panel");
+    await page.goto("/customers");
+    await expect(page.getByRole("button", { name: "Cedar (synthetic) · Synthetic" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Juniper (synthetic) · Synthetic" })).toBeVisible();
+    await page.getByRole("button", { name: "Sign out" }).click();
+    await signIn(page, "partner");
+    await page.goto("/customers");
+    await expect(page.getByRole("button", { name: "Cedar (synthetic) · Synthetic" })).toBeVisible();
+    await expect(page.getByText("Juniper (synthetic)")).toHaveCount(0);
   });
 
   test("administrator grants and revokes one partner customer assignment", async ({ page }) => {

@@ -84,10 +84,10 @@ jobs:
         run: npm run build:check
       - name: Validate Spec Kit feature artifacts
         env:
-          SPECIFY_FEATURE_DIRECTORY: specs/002-identity-platform-shell
+          SPECIFY_FEATURE_DIRECTORY: specs/003-customer-profile-review
           SPECIFY_FEATURE_NO_PERSIST: '1'
         run: .specify/scripts/bash/check-prerequisites.sh --json --require-spec --require-tasks
       - name: Install WebKit
         run: npx playwright install --with-deps webkit
       - name: Exercise the local UI in WebKit
-        run: npm run test:ui -- --workers=2
+        run: npm run test:ui
