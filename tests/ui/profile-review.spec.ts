@@ -76,3 +76,88 @@ test("a partner claim stays Pending through submission, then accepts and retract
     await adminContext.close();
   }
 });
+
+test("approved quality inputs survive a corrected claim and require a second exact review", async (
+  { page }, testInfo,
+) => {
+  test.skip(testInfo.project.name !== "webkit-desktop-light", "Shared review mutation runs once");
+  test.setTimeout(60_000);
+  const marker = randomUUID().slice(0, 8);
+  const title = `Synthetic rating correction ${marker}`;
+  const initialText = `Synthetic original rated claim ${marker}`;
+  const correctedText = `Synthetic corrected rated claim ${marker}`;
+  const customerPath = `/customers/${DEMO_IDS.sharedCustomer}`;
+  let acceptedRevisionId: string | undefined;
+  let acceptedVersion = 0;
+  await signIn(page, "mcteer");
+  try {
+    await page.goto(customerPath);
+    const form = page.locator(".profile-form");
+    await form.getByLabel("Short title").fill(title);
+    await form.getByLabel("Claim", { exact: true }).fill(initialText);
+    await form.getByLabel("Requested audience").selectOption("delivery");
+    await form.getByLabel("R (0–4)").fill("2");
+    await form.getByLabel("D (0–4)").fill("2");
+    await form.getByLabel("C (0–4)").fill("1");
+    await form.getByLabel("Reliability rationale").fill("Synthetic reviewed reference");
+    await form.getByLabel("Directness rationale").fill("Synthetic direct observation");
+    await form.getByLabel("Corroboration rationale").fill("One synthetic independent source");
+    const firstSave = page.waitForResponse((response) => response.url().endsWith("/commands") &&
+      response.request().method() === "POST");
+    await form.getByRole("button", { name: "Save as Pending" }).click();
+    const first = await firstSave;
+    expect(first.status()).toBe(201);
+    acceptedRevisionId = (await first.json() as { data: { revisionId: string } }).data.revisionId;
+    await expect(form.getByRole("status")).toContainText("Proposal saved as Pending");
+    await page.goto(`${customerPath}/review`);
+    let candidate = page.locator(".profile-review-card").filter({ hasText: title });
+    await expect(candidate).toBeVisible();
+    await candidate.getByLabel("Internal review rationale").fill("Synthetic rating confirmed");
+    await candidate.getByRole("button", { name: "Accept exact proposal" }).click();
+    await expect(candidate).toHaveCount(0);
+    acceptedVersion = 1;
+    await page.goto(customerPath);
+    await expect(page.locator('section[aria-labelledby="profile-claim"]')).toContainText(initialText);
+    const correctionForm = page.locator(".profile-form");
+    await correctionForm.getByRole("button", { name: `Correct ${title}` }).click();
+    await expect(correctionForm.getByLabel("R (0–4)")).toHaveValue("2");
+    await expect(correctionForm.getByLabel("D (0–4)")).toHaveValue("2");
+    await expect(correctionForm.getByLabel("C (0–4)")).toHaveValue("1");
+    await expect(correctionForm.getByLabel("Requested audience")).toHaveValue("delivery");
+    await correctionForm.getByRole("textbox", { name: "Claim", exact: true })
+      .fill(correctedText, { timeout: 5_000 });
+    await correctionForm.getByLabel("R (0–4)").fill("3");
+    const secondSave = page.waitForResponse((response) => response.url().endsWith("/commands") &&
+      response.request().method() === "POST");
+    await correctionForm.getByRole("button", { name: "Save as Pending" }).click();
+    const second = await secondSave;
+    expect(second.status()).toBe(201);
+    const correctionRevisionId = (await second.json() as { data: { revisionId: string } }).data.revisionId;
+    await expect(page.locator('section[aria-labelledby="profile-claim"]')).toContainText(initialText);
+    await expect(page.locator('section[aria-labelledby="profile-claim"]')).not.toContainText(correctedText);
+    await page.goto(`${customerPath}/review`);
+    candidate = page.locator(".profile-review-card").filter({ hasText: correctedText });
+    await expect(candidate).toBeVisible();
+    await candidate.getByLabel("Internal review rationale").fill("Synthetic corrected rating confirmed");
+    await candidate.getByRole("button", { name: "Accept exact proposal" }).click();
+    await expect(candidate).toHaveCount(0);
+    acceptedRevisionId = correctionRevisionId;
+    acceptedVersion = 2;
+    await page.goto(customerPath);
+    const facts = page.locator('section[aria-labelledby="profile-claim"]');
+    await expect(facts).toContainText(correctedText);
+    await expect(facts).not.toContainText(initialText);
+  } finally {
+    if (acceptedRevisionId && acceptedVersion > 0) {
+      const session = await page.request.get("/api/auth/session");
+      const csrf = (await session.json() as { data: { csrfToken: string } }).data.csrfToken;
+      const cleanup = await page.request.post(`/api/customers/${DEMO_IDS.sharedCustomer}/commands`, {
+        headers: { origin: "http://127.0.0.1:3000", "x-csrf-token": csrf },
+        data: { action: "retract_revision", requestKey: randomUUID(),
+          revisionId: acceptedRevisionId, expectedRecordVersion: acceptedVersion,
+          rationale: "Synthetic rating correction cleanup" },
+      });
+      expect(cleanup.status()).toBe(200);
+    }
+  }
+});
