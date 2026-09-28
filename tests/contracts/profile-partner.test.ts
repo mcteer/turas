@@ -64,7 +64,10 @@ describe("partner profile HTTP boundary", () => {
     expect(acceptedCandidate.status).toBe(201);
     const acceptedIds = (await acceptedCandidate.json() as {
       data: { recordId: string; revisionId: string } }).data;
-    const hiddenCandidate = await propose(panel, hiddenPending, "delivery");
+    const hiddenRequestKey = randomUUID();
+    const hiddenCandidate = await write(panel, { action: "propose_record", requestKey: hiddenRequestKey,
+      requestedAudience: "delivery", dataCategory: "delivery_context",
+      payload: { kind: "claim", text: hiddenPending, sourceType: "manual" } });
     expect(hiddenCandidate.status).toBe(201);
     const hiddenIds = (await hiddenCandidate.json() as { data: { recordId: string;
       revisionId: string } }).data;
@@ -108,11 +111,21 @@ describe("partner profile HTTP boundary", () => {
     expect(recordsText).not.toContain(hiddenOperations);
     const filtered = await records(new Request(`${origin}/api/customers/${customerId}/records?query=${encodeURIComponent(hiddenPending)}`,
       { headers: { cookie: partner.cookie } }), scope());
-    expect((await filtered.json() as { data: { items: unknown[] } }).data.items).toEqual([]);
+    expect((await filtered.json() as { data: { items: unknown[]; nextCursor: string | null } }).data)
+      .toMatchObject({ items: [], nextCursor: null });
     const direct = (recordId: string) => record(new Request(`${origin}/api/customers/${customerId}/records/${recordId}`,
       { headers: { cookie: partner.cookie } }), { params: Promise.resolve({ customerId, recordId }) });
     expect((await direct(hiddenIds.recordId)).status).toBe(404);
     expect((await direct(internalIds.recordId)).status).toBe(404);
+    for (const hiddenRecordId of [hiddenIds.recordId, internalIds.recordId]) {
+      expect((await history(new Request(`${origin}/api/customers/${customerId}/records/${hiddenRecordId}/history`,
+        { headers: { cookie: partner.cookie } }), { params: Promise.resolve({ customerId,
+          recordId: hiddenRecordId }) })).status).toBe(404);
+    }
+    const hiddenReceipt = await receipt(new Request(`${origin}/api/customers/${customerId}/commands/${hiddenRequestKey}`,
+      { headers: { cookie: partner.cookie } }), { params: Promise.resolve({ customerId,
+        requestKey: hiddenRequestKey }) });
+    expect(hiddenReceipt.status).toBe(404);
     const otherReceipt = await receipt(new Request(`${origin}/api/customers/${customerId}/commands/${ownRequestKey}`,
       { headers: { cookie: panel.cookie } }), { params: Promise.resolve({ customerId,
         requestKey: ownRequestKey }) });

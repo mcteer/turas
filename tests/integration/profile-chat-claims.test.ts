@@ -57,6 +57,11 @@ describe("owned chat claim lineage", () => {
             "SELECT span_digest,message_id FROM profile_private_lineage WHERE profile_revision_id=$1",
             [proposal.revisionId]);
           expect(lineage.rows[0]).toEqual({ span_digest: spanDigest, message_id: messageId });
+          const retainedMessage = await client.query<{ body_digest: string; text: string }>(
+            "SELECT body_digest,text FROM submitted_messages WHERE id=$1", [messageId]);
+          expect(retainedMessage.rows[0]).toEqual({
+            body_digest: createHash("sha256").update(original).digest("hex"), text: original,
+          });
         } finally { await client.query("ROLLBACK"); }
       });
     } finally { process.env.TURAS_ENVIRONMENT_ID = oldMarker; }

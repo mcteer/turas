@@ -153,7 +153,12 @@ describe("profile review state", () => {
             "SELECT current_accepted_revision_id FROM profile_records WHERE id=$1", [proposal.recordId]);
           expect(empty.rows[0].current_accepted_revision_id).toBeNull();
           const decisions = await client.query("SELECT decision FROM profile_review_decisions WHERE revision_id=$1", [proposal.revisionId]);
-          expect(decisions.rows).toHaveLength(1);
+          expect(decisions.rows).toEqual([{ decision: "accept" }]);
+          const lifecycle = await client.query<{ event_type: string; actor_membership_id: string }>(
+            "SELECT event_type,actor_membership_id FROM profile_lifecycle_events WHERE revision_id=$1",
+            [proposal.revisionId]);
+          expect(lifecycle.rows).toContainEqual({ event_type: "retract",
+            actor_membership_id: admin.membershipId });
           await client.query("UPDATE login_sessions SET revoked_at=now() WHERE id=$1", [admin.sessionId]);
           await expect(submitProfileCommand(admin, customerId, approve, client)).rejects.toMatchObject({ status: 401 });
         } finally { await client.query("ROLLBACK"); }
@@ -566,6 +571,61 @@ describe("profile review state", () => {
           rationale: "Synthetic steward race cleanup" });
       }
     } finally { process.env.TURAS_ENVIRONMENT_ID = oldMarker; }
+  });
+
+  it("does not expose an accepted decision after a concurrent partner grant withdrawal", async () => {
+    const previousEnvironment = process.env.TURAS_ENVIRONMENT_ID;
+    process.env.TURAS_ENVIRONMENT_ID = process.env.TURAS_TEST_ENVIRONMENT_ID;
+    let admin: CurrentSession | undefined, partner: CurrentSession | undefined;
+    let accepted = false;
+    let revisionId: string | undefined;
+    try {
+      const fixture = await withTestDatabase(async (client) => {
+        admin = await session(client, "mcteer");
+        partner = await session(client, "partner");
+        const proposed = await submitProfileCommand(partner, customerId, {
+          action: "propose_record", requestKey: randomUUID(),
+          requestedAudience: "delivery", dataCategory: "delivery_context",
+          payload: { kind: "claim", text: `Synthetic grant race ${randomUUID()}`, sourceType: "manual" },
+        }, client) as { recordId: string; revisionId: string };
+        const digest = await client.query<{ content_digest: string }>(
+          "SELECT content_digest FROM profile_revisions WHERE id=$1", [proposed.revisionId]);
+        return { ...proposed, digest: digest.rows[0].content_digest };
+      });
+      revisionId = fixture.revisionId;
+      if (!admin || !partner) throw new Error("Synthetic sessions unavailable");
+      const reviewer = admin;
+      const [decision, withdrawal] = await Promise.allSettled([
+        withTestDatabase((client) => submitProfileCommand(reviewer, customerId, {
+          action: "accept_revision", requestKey: randomUUID(), revisionId: fixture.revisionId,
+          digest: fixture.digest, expectedRecordVersion: 0, expectedAcceptedRevisionId: null,
+          rationale: "Synthetic grant race review", partnerSafeReason: "Delivery evidence reviewed",
+        }, client)),
+        withTestDatabase((client) => client.query(
+          "UPDATE customer_grants SET state='revoked' WHERE customer_id=$1 AND membership_id=$2",
+          [customerId, partner!.membershipId])),
+      ]);
+      expect(withdrawal.status).toBe("fulfilled");
+      if (decision.status === "rejected") expect(decision.reason).toMatchObject({ status: 404 });
+      accepted = decision.status === "fulfilled";
+      await withTestDatabase(async (client) => {
+        await expect(readProfile(partner!, customerId, client)).rejects.toMatchObject({ status: 404 });
+        const row = await client.query<{ current_accepted_revision_id: string | null }>(
+          "SELECT current_accepted_revision_id FROM profile_records WHERE id=$1", [fixture.recordId]);
+        expect(row.rows[0].current_accepted_revision_id)
+          .toBe(accepted ? fixture.revisionId : null);
+      });
+    } finally {
+      await withTestDatabase(async (client) => {
+        await client.query("UPDATE customer_grants SET state='active' WHERE customer_id=$1 AND membership_id=$2",
+          [customerId, DEMO_IDS.partnerMembership]);
+        if (accepted && revisionId && admin) await submitProfileCommand(admin, customerId, {
+          action: "retract_revision", requestKey: randomUUID(), revisionId,
+          expectedRecordVersion: 1, rationale: "Synthetic grant race cleanup",
+        }, client);
+      });
+      process.env.TURAS_ENVIRONMENT_ID = previousEnvironment;
+    }
   });
 
   it("attributes self-review and removes steward authority immediately on revocation", async () => {
