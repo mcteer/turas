@@ -46,6 +46,11 @@ describe("review and steward HTTP authority", () => {
       return (await response.json() as { data: { revisionId: string } }).data.revisionId;
     };
     const firstId = await proposal(`Synthetic steward review ${marker}`);
+    expect((await write(partner, { action: "propose_record", requestKey: randomUUID(),
+      requestedAudience: "delivery", dataCategory: "delivery_context",
+      payload: { kind: "claim", text: `Synthetic forged score ${marker}`, sourceType: "manual" },
+      qualityInput: { rubricVersion: "evidence-quality-v1", R: 4, D: 4, C: 4, Q: 100 },
+    })).status).toBe(422);
     const review = (actor: Identity) => queueRoute(new Request(`${origin}/api/customers/${customerId}/review`,
       { headers: { cookie: actor.cookie } }), scope);
     expect((await review(panel)).status).toBe(403);
@@ -71,6 +76,10 @@ describe("review and steward HTTP authority", () => {
       digest: candidate.contentDigest })).status).toBe(422);
     expect((await write(panel, { ...base, requestKey: randomUUID(),
       digest: "0".repeat(64), partnerSafeReason: "Delivery context verified" })).status).toBe(409);
+    expect((await write(panel, { ...base, requestKey: randomUUID(),
+      digest: candidate.contentDigest, partnerSafeReason: "Delivery context verified",
+      qualityInput: { R: 4, D: 4, C: 4 },
+    })).status).toBe(422);
     expect((await write(panel, { ...base, requestKey: randomUUID(),
       digest: candidate.contentDigest, partnerSafeReason: "Delivery context verified" })).status).toBe(200);
     const secondId = await proposal(`Synthetic steward revocation ${marker}`);
