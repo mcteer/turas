@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import { DEMO_IDS } from "../../lib/server/bootstrap-ids";
-import { sanitizedScreenshot, signIn } from "../fixtures/ui";
+import { sanitizedScreenshot, signIn, signOut } from "../fixtures/ui";
 
 test("profile and review states are usable across configured WebKit viewports", async ({ page }, testInfo) => {
   await signIn(page, "mcteer");
@@ -44,8 +44,7 @@ test("profile and review states are usable across configured WebKit viewports", 
   if (testInfo.project.name.includes("mobile")) {
     await page.getByRole("button", { name: "Open navigation" }).click();
   }
-  await page.getByRole("button", { name: "Sign out" }).click();
-  await page.waitForURL((url) => url.pathname === "/login", { waitUntil: "load" });
+  await signOut(page);
   await signIn(page, "partner");
   await page.goto(`/customers/${DEMO_IDS.sharedCustomer}`);
   await expect(page.getByRole("heading", { name: "Cedar (synthetic)" })).toBeVisible();

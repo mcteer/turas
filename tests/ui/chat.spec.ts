@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { signIn } from "../fixtures/ui";
+import { signIn, signOut } from "../fixtures/ui";
 
 test.describe("owned conversation shell", () => {
   test("internal member starts a parked customer conversation without model work", async ({ page }) => {
@@ -16,7 +16,7 @@ test.describe("owned conversation shell", () => {
     if (page.viewportSize()!.width < 600) {
       await page.getByRole("button", { name: "Open navigation" }).click();
     }
-    await page.getByRole("button", { name: "Sign out" }).click();
+    await signOut(page);
     await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
   });
 });
