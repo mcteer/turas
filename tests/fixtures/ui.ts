@@ -27,6 +27,11 @@ export async function signIn(page: Page, account: DemoAccount): Promise<void> {
   await page.waitForURL((url) => url.pathname === "/s");
 }
 
+export async function signOut(page: Page): Promise<void> {
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.waitForURL((url) => url.pathname === "/login", { waitUntil: "load", timeout: 15_000 });
+}
+
 export async function sanitizedScreenshot(page: Page, path: string): Promise<void> {
   await page.locator("input[type=password]").evaluateAll((inputs) => {
     for (const input of inputs) (input as HTMLInputElement).value = "";

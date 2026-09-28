@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { signIn } from "../fixtures/ui";
+import { signIn, signOut } from "../fixtures/ui";
 
 test.describe("customer and partner access", () => {
   test.describe.configure({ mode: "serial" });
@@ -13,7 +13,7 @@ test.describe("customer and partner access", () => {
     await expect(page.getByRole("heading", { name: "Access" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "partner" })).toBeVisible();
 
-    await page.getByRole("button", { name: "Sign out" }).click();
+    await signOut(page);
     await signIn(page, "panel");
     await page.goto("/admin/access");
     await expect(page.getByText("404")).toBeVisible();
@@ -24,7 +24,7 @@ test.describe("customer and partner access", () => {
     await page.goto("/customers");
     await expect(page.getByRole("button", { name: "Cedar (synthetic) · Synthetic" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Juniper (synthetic) · Synthetic" })).toBeVisible();
-    await page.getByRole("button", { name: "Sign out" }).click();
+    await signOut(page);
     await signIn(page, "partner");
     await page.goto("/customers");
     await expect(page.getByRole("button", { name: "Cedar (synthetic) · Synthetic" })).toBeVisible();
@@ -41,12 +41,12 @@ test.describe("customer and partner access", () => {
     expect((await grantResponse).status()).toBe(200);
     await expect(partner.getByText("Juniper (synthetic): active")).toBeVisible();
 
-    await page.getByRole("button", { name: "Sign out" }).click();
+    await signOut(page);
     await signIn(page, "partner");
     await page.goto("/customers");
     await expect(page.getByRole("button", { name: "Juniper (synthetic) · Synthetic" })).toBeVisible();
 
-    await page.getByRole("button", { name: "Sign out" }).click();
+    await signOut(page);
     await signIn(page, "mcteer");
     await page.goto("/admin/access");
     const restoredPartner = page.getByRole("region", { name: "partner access" });
@@ -54,7 +54,7 @@ test.describe("customer and partner access", () => {
     await restoredPartner.getByRole("button", { name: "Toggle assignment" }).click();
     await expect(restoredPartner.getByText("Juniper (synthetic): revoked")).toBeVisible();
 
-    await page.getByRole("button", { name: "Sign out" }).click();
+    await signOut(page);
     await signIn(page, "partner");
     await page.goto("/customers");
     await expect(page.getByText("Juniper (synthetic)")).toHaveCount(0);
