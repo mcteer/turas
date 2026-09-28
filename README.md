@@ -44,7 +44,7 @@ credentials, data and unused integrations are not the new platform. See the
 - [Feature 004 specification](specs/004-chat-artifact-ingestion/spec.md),
   [implementation plan](specs/004-chat-artifact-ingestion/plan.md) and
   [tasks](specs/004-chat-artifact-ingestion/tasks.md) and
-  [local validation](specs/004-chat-artifact-ingestion/validation.md) — locally validated on the feature branch; merge pending
+  [local validation](specs/004-chat-artifact-ingestion/validation.md) — merged on `main` with local and CI validation, no hosted release
 - [Contributing](CONTRIBUTING.md), [development instructions](AGENTS.md), and
   [constitution](.specify/memory/constitution.md)
 
@@ -144,7 +144,7 @@ directory changes are required. Use `$speckit-specify`, `$speckit-clarify`,
 `$speckit-plan`, `$speckit-tasks`, `$speckit-analyze`, `$speckit-implement` and
 `$speckit-converge` as described in [CONTRIBUTING](CONTRIBUTING.md).
 
-Spec Kit 1.x selects features independently of the Git branch. For the active slice:
+Spec Kit 1.x selects features independently of the Git branch. To inspect 004:
 
 ```sh
 export SPECIFY_FEATURE_DIRECTORY=specs/004-chat-artifact-ingestion
@@ -158,13 +158,13 @@ procedure and generated changes while preserving the constitution and authored d
 
 ## Delivery and documentation
 
-The foundation merged in [PR 1](https://github.com/mcteer/turas/pull/1). The active
-slice is **004: chat attachments and artifact ingestion**. Its specification,
-design contracts and implementation tasks are prepared; local runtime behavior
-passed validation on the feature branch and awaits review/CI. It uses private
+The foundation merged in [PR 1](https://github.com/mcteer/turas/pull/1).
+**004: chat attachments and artifact ingestion** merged in
+[PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation.
+It uses private
 local storage and isolated scanning/extraction, selected evidence review,
 unverified chat discussion and source lifecycle controls.
-Features 002 and 003 are merged with local and CI validation.
+Features 002, 003 and 004 are merged with local and CI validation.
 The merged 002 application provides the demo identities and shell. Its demo scope uses
 `mcteer` for internal Vercel administrators/FDE/PS leadership, `panel` for internal
 Vercel employees and `partner` for external partners. Internal users see all workspace
