@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { Client } from "pg";
 import { beforeAll, describe, expect, it } from "vitest";
 import { requireTestDatabaseUrl } from "../fixtures/database";
 import { DEMO_IDS } from "../fixtures/identities";
@@ -41,6 +42,39 @@ describe("canonical profile HTTP reads", () => {
   beforeAll(() => {
     process.env.DATABASE_URL = requireTestDatabaseUrl();
     process.env.TURAS_ENVIRONMENT_ID = process.env.TURAS_TEST_ENVIRONMENT_ID;
+  });
+
+  it("projects a newly created sparse customer without inventing accepted context", async () => {
+    const panel = await signIn("panel");
+    const partner = await signIn("partner");
+    const sparseId = randomUUID();
+    const client = new Client({ connectionString: process.env.TURAS_TEST_DATABASE_URL });
+    await client.connect();
+    try {
+      await client.query(`INSERT INTO customer_references(id,workspace_id,display_name,synthetic)
+        VALUES($1,$2,'Synthetic sparse contract',true)`, [sparseId, DEMO_IDS.workspace]);
+      const sparse = await profile(new Request(`${origin}/api/customers/${sparseId}/profile`,
+        { headers: { cookie: panel.cookie } }), scope(sparseId));
+      expect(sparse.status).toBe(200);
+      const data = (await sparse.json() as { data: { customer: { id: string; displayName: string };
+        acceptedFacts: unknown[]; attributedResearch: unknown[] } }).data;
+      expect(data).toMatchObject({ customer: { id: sparseId,
+        displayName: "Synthetic sparse contract" }, acceptedFacts: [], attributedResearch: [] });
+      const list = await directory(new Request(`${origin}/api/customers`,
+        { headers: { cookie: panel.cookie } }));
+      expect((await list.json() as { data: { items: { id: string; displayName: string }[] } })
+        .data.items).toContainEqual(expect.objectContaining(data.customer));
+      const emptyRecords = await records(new Request(`${origin}/api/customers/${sparseId}/records`,
+        { headers: { cookie: panel.cookie } }), scope(sparseId));
+      expect((await emptyRecords.json() as { data: { items: unknown[]; nextCursor: string | null } }).data)
+        .toMatchObject({ items: [], nextCursor: null });
+      expect((await profile(new Request(`${origin}/api/customers/${sparseId}/profile`,
+        { headers: { cookie: partner.cookie } }), scope(sparseId))).status).toBe(404);
+    } finally {
+      await client.query("DELETE FROM customer_profile_state WHERE customer_id=$1", [sparseId]);
+      await client.query("DELETE FROM customer_references WHERE id=$1", [sparseId]);
+      await client.end();
+    }
   });
 
   it("agrees with the directory for internal identities and hides ungranted partner scope", async () => {

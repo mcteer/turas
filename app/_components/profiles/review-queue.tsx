@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { StewardEditor } from "./steward-editor";
 
 type Candidate = { id: string; recordId: string; kind: string; payload: Record<string, unknown>;
@@ -81,6 +81,8 @@ function ReviewCard({ candidate, customerId, csrfToken, reviewerMembershipId, on
   const [requestKey, setRequestKey] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
+  const acceptButton = useRef<HTMLButtonElement>(null);
+  const rejectButton = useRef<HTMLButtonElement>(null);
   const priorEnd = Date.parse(String(candidate.acceptedPayload?.observationEnd ?? ""));
   const newEnd = Date.parse(String(candidate.payload.observationEnd ?? ""));
   const olderWindow = candidate.kind === "maturity_assessment" &&
@@ -96,6 +98,7 @@ function ReviewCard({ candidate, customerId, csrfToken, reviewerMembershipId, on
     }
     const key = requestKey ?? crypto.randomUUID();
     setRequestKey(key); setSubmitting(true); setMessage("");
+    let restoreFocus = false;
     const command = { action, requestKey: key, revisionId: candidate.id,
       expectedRecordVersion: candidate.recordVersion, rationale,
       ...(safeReason.trim() ? { partnerSafeReason: safeReason.trim() } : {}),
@@ -112,6 +115,7 @@ function ReviewCard({ candidate, customerId, csrfToken, reviewerMembershipId, on
       });
       const result = await response.json() as { error?: { message: string } };
       if (!response.ok) {
+        restoreFocus = true;
         if (response.status < 500 && response.status !== 429) setRequestKey(null);
         setMessage(response.status === 409 ? "Profile changed. Your review text is preserved; reload the candidate before deciding again." :
           result.error?.message ?? "Review was not saved. Retry with the same request key.");
@@ -120,8 +124,14 @@ function ReviewCard({ candidate, customerId, csrfToken, reviewerMembershipId, on
       setMessage(action === "accept_revision" ? "Accepted." : "Rejected.");
       onDecided();
     } catch {
+      restoreFocus = true;
       setMessage("The result is uncertain. Retry this decision with the same request key.");
-    } finally { setSubmitting(false); }
+    } finally {
+      setSubmitting(false);
+      if (restoreFocus) requestAnimationFrame(() => {
+        (action === "accept_revision" ? acceptButton : rejectButton).current?.focus();
+      });
+    }
   }
 
   return <article className="profile-card profile-review-card">
@@ -156,9 +166,9 @@ function ReviewCard({ candidate, customerId, csrfToken, reviewerMembershipId, on
       <textarea id={`review-attestation-${candidate.id}`} className="field" value={attestation} maxLength={2000}
         onChange={(event) => setAttestation(event.target.value)} rows={2} /></>}
     {message && <p role="status" className="profile-caution">{message}</p>}
-    <div className="profile-review-actions"><button type="button" className="primary-button" disabled={submitting}
+    <div className="profile-review-actions"><button ref={acceptButton} type="button" className="primary-button" disabled={submitting}
       onClick={() => void decide("accept_revision")}>Accept exact proposal</button>
-      <button type="button" className="secondary-button" disabled={submitting}
+      <button ref={rejectButton} type="button" className="secondary-button" disabled={submitting}
         onClick={() => void decide("reject_revision")}>Reject</button></div>
   </article>;
 }

@@ -46,7 +46,8 @@ describe("customer anchor creation", () => {
         const named = await client.query<{ display_name: string }>(
           "SELECT display_name FROM customer_references WHERE id=$1", [created.data.customerId]);
         expect(named.rows[0]?.display_name).toBe("New synthetic account");
-        const profile = await readProfile(panel, created.data.customerId, client);
+        const profile = await readProfile(panel, created.data.customerId, client) as {
+          customer: { displayName: string }; acceptedFacts: { kind: string; payload: unknown }[] };
         expect(profile.customer.displayName).toBe("New synthetic account");
         expect(profile.acceptedFacts).toContainEqual(expect.objectContaining({
           kind: "customer_details", payload: expect.objectContaining({ displayName: "New synthetic account" }),

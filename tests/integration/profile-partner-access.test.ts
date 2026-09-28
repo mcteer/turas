@@ -5,6 +5,7 @@ import { DEMO_IDS } from "../fixtures/identities";
 import { createProfileTestSession } from "../fixtures/profiles";
 import { setMembershipActive } from "../../lib/server/access/service";
 import { readProfile } from "../../lib/server/profiles/read";
+import { readEligibleContext } from "../../lib/server/profiles/context";
 import { submitProfileCommand } from "../../lib/server/profiles/service";
 
 describe("membership lifecycle fence", () => {
@@ -18,9 +19,13 @@ describe("membership lifecycle fence", () => {
           const partner = await createProfileTestSession(client, "partner");
           await expect(readProfile(partner, DEMO_IDS.sharedCustomer, client))
             .resolves.toMatchObject({ customer: { id: DEMO_IDS.sharedCustomer } });
+          await expect(readEligibleContext(partner, DEMO_IDS.sharedCustomer, {}, client))
+            .resolves.toMatchObject({ contextVersion: expect.any(String) });
           await client.query("UPDATE customer_grants SET state='revoked' WHERE customer_id=$1 AND membership_id=$2",
             [DEMO_IDS.sharedCustomer, partner.membershipId]);
           await expect(readProfile(partner, DEMO_IDS.sharedCustomer, client))
+            .rejects.toMatchObject({ status: 404 });
+          await expect(readEligibleContext(partner, DEMO_IDS.sharedCustomer, {}, client))
             .rejects.toMatchObject({ status: 404 });
           await client.query("UPDATE customer_grants SET state='active' WHERE customer_id=$1 AND membership_id=$2",
             [DEMO_IDS.sharedCustomer, partner.membershipId]);
@@ -28,10 +33,14 @@ describe("membership lifecycle fence", () => {
             [DEMO_IDS.partnerOrganization]);
           await expect(readProfile(partner, DEMO_IDS.sharedCustomer, client))
             .rejects.toMatchObject({ status: 404 });
+          await expect(readEligibleContext(partner, DEMO_IDS.sharedCustomer, {}, client))
+            .rejects.toMatchObject({ status: 404 });
           await client.query("UPDATE partner_organizations SET active=true WHERE id=$1",
             [DEMO_IDS.partnerOrganization]);
           await client.query("UPDATE memberships SET active=false WHERE id=$1", [partner.membershipId]);
           await expect(readProfile(partner, DEMO_IDS.sharedCustomer, client))
+            .rejects.toMatchObject({ status: 401 });
+          await expect(readEligibleContext(partner, DEMO_IDS.sharedCustomer, {}, client))
             .rejects.toMatchObject({ status: 401 });
         } finally { await client.query("ROLLBACK"); }
       });

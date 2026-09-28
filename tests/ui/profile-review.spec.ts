@@ -161,3 +161,62 @@ test("approved quality inputs survive a corrected claim and require a second exa
     }
   }
 });
+
+test("a stale second review keeps its rationale and reports the conflict", async (
+  { page, browser }, testInfo,
+) => {
+  test.skip(testInfo.project.name !== "webkit-desktop-light", "Shared review mutation runs once");
+  const title = `Synthetic competing review ${randomUUID().slice(0, 8)}`;
+  const customerPath = `/customers/${DEMO_IDS.sharedCustomer}`;
+  let revisionId: string | undefined;
+  let accepted = false;
+  const secondContext = await browser.newContext();
+  const secondPage = await secondContext.newPage();
+  try {
+    await signIn(page, "mcteer");
+    await page.goto(customerPath);
+    const form = page.locator(".profile-form");
+    await form.getByLabel("Short title").fill(title);
+    await form.getByRole("textbox", { name: "Claim", exact: true }).fill(title);
+    const save = page.waitForResponse((response) => response.url().endsWith("/commands") &&
+      response.request().method() === "POST");
+    await form.getByRole("button", { name: "Save as Pending" }).click();
+    const saved = await save;
+    expect(saved.status()).toBe(201);
+    revisionId = (await saved.json() as { data: { revisionId: string } }).data.revisionId;
+    await signIn(secondPage, "mcteer");
+    await page.goto(`${customerPath}/review`);
+    await secondPage.goto(`${customerPath}/review`);
+    const firstCandidate = page.locator(".profile-review-card").filter({ hasText: title });
+    const secondCandidate = secondPage.locator(".profile-review-card").filter({ hasText: title });
+    await expect(firstCandidate).toBeVisible();
+    await expect(secondCandidate).toBeVisible();
+    await secondCandidate.getByLabel("Internal review rationale").fill("Keep this stale rationale visible");
+    await firstCandidate.getByLabel("Internal review rationale").fill("Synthetic first decision wins");
+    await firstCandidate.getByRole("button", { name: "Accept exact proposal" }).click();
+    await expect(firstCandidate).toHaveCount(0);
+    accepted = true;
+    const staleResponse = secondPage.waitForResponse((response) => response.url().endsWith("/commands") &&
+      response.request().method() === "POST");
+    const secondDecisionButton = secondCandidate.getByRole("button", { name: "Accept exact proposal" });
+    await secondDecisionButton.click();
+    expect((await staleResponse).status()).toBe(409);
+    await expect(secondCandidate.getByRole("status"))
+      .toContainText("Profile changed. Your review text is preserved");
+    await expect(secondCandidate.getByLabel("Internal review rationale"))
+      .toHaveValue("Keep this stale rationale visible");
+    await expect(secondDecisionButton).toBeFocused();
+  } finally {
+    if (accepted && revisionId) {
+      const session = await page.request.get("/api/auth/session");
+      const csrf = (await session.json() as { data: { csrfToken: string } }).data.csrfToken;
+      const cleanup = await page.request.post(`/api/customers/${DEMO_IDS.sharedCustomer}/commands`, {
+        headers: { origin: "http://127.0.0.1:3000", "x-csrf-token": csrf },
+        data: { action: "retract_revision", requestKey: randomUUID(), revisionId,
+          expectedRecordVersion: 1, rationale: "Synthetic competing review cleanup" },
+      });
+      expect(cleanup.status()).toBe(200);
+    }
+    await secondContext.close();
+  }
+});
