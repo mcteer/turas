@@ -27,6 +27,7 @@ npm ci
 npm run db:migrate
 npm run db:roles
 npm run db:seed-profile-demo
+npm run db:seed-profile-walkthrough
 npm run dev
 ```
 
@@ -35,8 +36,11 @@ fixed request keys and a synthetic public-source snapshot, refuses hosted or
 non-synthetic targets, and does not overwrite an existing accepted profile head.
 It populates Juniper, which remains ungranted to the demo partner, with an accepted
 claim, product use and six-dimension maturity assessment; Cedar stays sparse for
-empty-state tests. The broader two-workload/25-record walkthrough fixture remains
-to be built.
+empty-state tests. The optional walkthrough command extends Juniper with two
+workloads, 25 total accepted records, a high open risk, a next review action, a
+Pending proposal and a confirmed contradiction. It prints stable record and
+revision IDs for the participant log. Both commands are idempotent and accept
+only local/test synthetic environments.
 
 No live web research, attachment ingestion, external connector, reconnect or deploy
 is part of setup. Preserve `.eve/.workflow-data` for restart checks.

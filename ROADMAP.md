@@ -110,7 +110,7 @@ The [task breakdown](specs/003-customer-profile-review/tasks.md) is generated;
 analysis findings have been remediated. Typed profile and review flows, bound
 customer context, synthetic research, conflict review and partner projections
 have passed local domain, HTTP and four-project WebKit checks. Guarded 006 upgrade
-and restored-clone drills also pass. The feature is in draft [PR 4](https://github.com/mcteer/turas/pull/4). Five-person synthetic walkthrough results and required review are still open. Remaining tasks and independent acceptance evidence are recorded in the
+and restored-clone drills also pass. A guarded 25-record synthetic walkthrough fixture is ready. The feature is in draft [PR 4](https://github.com/mcteer/turas/pull/4). Five-person synthetic walkthrough results and required review are still open. Remaining tasks and independent acceptance evidence are recorded in the
 [003 validation log](specs/003-customer-profile-review/validation.md). No 003 merge,
 hosted validation or release is claimed.
 
