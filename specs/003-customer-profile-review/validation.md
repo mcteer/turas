@@ -198,3 +198,13 @@ human participants.
 T084 coverage audit is complete. No unmet engineering requirement is being claimed as passed by a prompt-only assertion: source date/rights/quality rules have domain and HTTP evidence, partner and internal permissions have current-read/tool/native/UI evidence, and conversation history staleness has persisted-event and stream evidence. Actual upstream compaction behavior and maintainer review remain explicit limits. The feature is not marked complete or merged.
 
 [PR 4](https://github.com/mcteer/turas/pull/4) was opened from `003-customer-profile-review` with the PR template, scope, migration/recovery notes and local validation. The first CI run failed in WebKit because the workflow overrode the one-worker setting while scenarios mutated a shared demo grant. The corrected final pre-clarification run passed `verify` on commit `16d331f`; the workflow uses its configured single worker and validates the 003 artifacts. T085 stays open pending required review and merge status. No merge or deployment was attempted.
+
+## Merge closeout
+
+The final `verify` check passed on commit `4c3c8f1` after the scripted acceptance
+revision. The repository owner then explicitly directed the merge. PR 4 was
+squash-merged into `main` as `82873db` on 2026-09-28 UTC and closed; its local
+and remote feature branches were deleted. There was no separate GitHub review
+recorded. The merged README and roadmap were checked and found to retain
+pre-merge wording; a corrective documentation PR updates those status lines and
+closes T085. No Vercel deployment or hosted acceptance occurred.

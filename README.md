@@ -7,14 +7,15 @@ execution, reporting and learning.
 
 ## Current state
 
-Feature 002 was **merged in [PR 2](https://github.com/mcteer/turas/pull/2)** after local and CI validation. The current build has
+Features 002 and 003 were merged in [PR 2](https://github.com/mcteer/turas/pull/2)
+and [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation. The current build has
 explicit Postgres migrations, the three temporary demo logins, customer grants,
 private owned conversations, guarded eve routes, durable response history, a
-maintenance worker and a responsive web shell. Feature 003 is being implemented
-locally: typed customer profiles, projected record history, Pending review,
+maintenance worker and a responsive web shell. Feature 003 adds typed customer
+profiles, projected record history, Pending review,
 maturity assessments, attributed synthetic research, evidence quality and conflict
 review, partner projections, and bound agent context
-are available for testing. Its acceptance and merge are still open. Attachments,
+for local testing. Attachments,
 RAG, delivery plans, staffing, reports and MCP remain planned.
 No speculative eve integrations have been installed. The configured model is
 unchanged. The application has not been deployed or validated on hosted infrastructure.
@@ -38,7 +39,7 @@ credentials, data and unused integrations are not the new platform. See the
 - [Feature 003 specification](specs/003-customer-profile-review/spec.md) and
   [implementation plan](specs/003-customer-profile-review/plan.md), with
   [implementation tasks](specs/003-customer-profile-review/tasks.md) and
-  [local validation](specs/003-customer-profile-review/validation.md) — implementation in progress
+  [local validation](specs/003-customer-profile-review/validation.md) — merged on `main`, no hosted release
 - [Contributing](CONTRIBUTING.md), [development instructions](AGENTS.md), and
   [constitution](.specify/memory/constitution.md)
 

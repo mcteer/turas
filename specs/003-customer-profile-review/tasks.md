@@ -3,7 +3,8 @@
 **Input**: [spec.md](spec.md), [plan.md](plan.md), [research.md](research.md),
 [data-model.md](data-model.md), [contracts](contracts/profile-api.md), and
 [quickstart.md](quickstart.md).
-**Status**: Local implementation complete; PR review and merge remain open.
+**Status**: Local implementation and owner-authorized PR merge complete; hosted
+release remains deferred.
 
 **Tests**: Required by the spec's scripted access/state/rubric scenarios and the
 constitution. Write the listed behavioral tests before their implementation and
@@ -198,7 +199,7 @@ all five stories pass. These tasks do not authorize Vercel reconnect/deployment.
 - [X] T082 Run the synthetic two-workload/25-record profile journey in all four CLI WebKit projects in `tests/ui/profile-walkthrough.spec.ts`, verifying product, six maturity states, open risk, next review, accepted research, confirmed conflict and Pending review card; pair it with the existing real exact-review lifecycle journey in `tests/ui/profile-review.spec.ts`, and record SC-001/SC-006 results in `specs/003-customer-profile-review/usability.md`.
 - [X] T083 Update implemented behavior, setup/limitations, actual command availability and validation links in `README.md`, `ROADMAP.md`, `specs/003-customer-profile-review/plan.md` and `specs/003-customer-profile-review/quickstart.md`; distinguish local/CI acceptance from merge/hosted readiness and keep private credentials and authorship attribution out of artifacts.
 - [X] T084 Review final FR-001–020/SC-001–007 coverage, task completion evidence, source/date/permission behavior and scope against `specs/003-customer-profile-review/spec.md`; record any unmet acceptance criteria honestly in `specs/003-customer-profile-review/validation.md` and resolve implementation gaps before claiming the feature complete.
-- [ ] T085 Prepare the feature PR using `.github/pull_request_template.md` with spec/validation links, resulting behavior, migration/recovery and README impact; record the PR URL in `specs/003-customer-profile-review/validation.md`, obtain required review and leave merge/release status truthful in `ROADMAP.md`; do not claim merge or trigger deployment as part of task generation.
+- [X] T085 Prepare the feature PR using `.github/pull_request_template.md` with spec/validation links, resulting behavior, migration/recovery and README impact; record the PR URL and owner-authorized merge in `specs/003-customer-profile-review/validation.md` and `ROADMAP.md`, and verify README freshness on merged `main`. No hosted deployment was triggered.
 
 ## Dependencies and execution order
 
