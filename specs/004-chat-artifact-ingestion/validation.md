@@ -100,7 +100,12 @@ by another UID on Linux. The fixture now copies those files into its isolated
 store. The full 45-test local contract suite passes. The fourth PR CI run passed
 on Linux: docs, types, units, integration, contracts, real artifact isolation,
 build, Spec Kit prerequisites and four-project CLI WebKit UI checks. This is a
-local runner result, not evidence of hosted behavior.
+local runner result, not evidence of hosted behavior. The next documentation
+commit's CI rerun hit an intermittent UI test race: the profile accessibility
+test signed out and immediately navigated to `/login` while the sign-out
+redirect was already in progress. It now waits for that redirect to load before
+signing in again. The focused WebKit test and typecheck pass locally; the new
+PR head carries the wait.
 The full live evaluation used an isolated copied app, private Eve directory,
 disposable schema-018 database and store. Its copied evaluation agent kept the
 root selected Grok model and capped generation to 1,000 tokens to leave room for
