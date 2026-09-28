@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, utimes, writeFile } from "node:fs/promises";
+import { chmod, copyFile, mkdtemp, readFile, rm, utimes, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
@@ -109,16 +109,21 @@ describe("constrained local scanner", () => {
     const images = JSON.parse(await readFile(join(store, "runtime-images.json"), "utf8")) as {
       scannerImage: string; scannerDigest: string;
     };
-    for (const [name, clean] of [["simple.txt", true], ["eicar.txt", false]] as const) {
-      const path = join(root, name);
-      const digest = createHash("sha256").update(await readFile(path)).digest("hex");
-      const invocation = artifactContainerInvocation({ kind: "scan", image: images.scannerImage,
-        originalPath: path, signaturesPath: join(store, "signatures") });
-      const run = scanArtifact({ originalPath: path, originalDigest: digest,
-        signaturesPath: join(store, "signatures"), invocation,
-        scannerImage: images.scannerImage, scannerDigest: images.scannerDigest });
-      if (clean) expect((await run).result).toBe("clean");
-      else await expect(run).rejects.toThrow("unsafe_content");
-    }
+    const staged = await mkdtemp(join(tmpdir(), "turas-artifact-scan-test-"));
+    try {
+      for (const [name, clean] of [["simple.txt", true], ["eicar.txt", false]] as const) {
+        const path = join(staged, name);
+        await copyFile(join(root, name), path);
+        await chmod(path, 0o444);
+        const digest = createHash("sha256").update(await readFile(path)).digest("hex");
+        const invocation = artifactContainerInvocation({ kind: "scan", image: images.scannerImage,
+          originalPath: path, signaturesPath: join(store, "signatures") });
+        const run = scanArtifact({ originalPath: path, originalDigest: digest,
+          signaturesPath: join(store, "signatures"), invocation,
+          scannerImage: images.scannerImage, scannerDigest: images.scannerDigest });
+        if (clean) expect((await run).result).toBe("clean");
+        else await expect(run).rejects.toThrow("unsafe_content");
+      }
+    } finally { await rm(staged, { recursive: true, force: true }); }
   }, 60_000);
 });

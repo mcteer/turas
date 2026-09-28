@@ -89,7 +89,13 @@ The first PR CI run stopped before tests: FreshClam dropped to UID 1000 and coul
 not write the fresh signature directory owned by the Linux runner. Preparation
 now temporarily grants write access to that directory under the 0700 private
 store, then restores 0755 even on failure. CI rerun is required to verify the
-Linux preparation and subsequent gates.
+Linux preparation and subsequent gates. The second CI run prepared signatures
+and passed docs, types and unit checks, then the clean scanner integration
+fixture failed on Linux. The test had mounted its private 0600 source directly,
+while the worker stages a read-only 0444 copy for non-root containers. The
+scanner test and container probe now follow that staging pattern; a focused
+scanner run, typecheck and all 39 local artifact checks pass. Linux CI must
+verify the remaining gates.
 The full live evaluation used an isolated copied app, private Eve directory,
 disposable schema-018 database and store. Its copied evaluation agent kept the
 root selected Grok model and capped generation to 1,000 tokens to leave room for

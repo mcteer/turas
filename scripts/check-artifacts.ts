@@ -1,5 +1,7 @@
 import { execFileSync, spawnSync } from "node:child_process";
+import { chmodSync, copyFileSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { requireTestDatabaseUrl } from "../tests/fixtures/database";
 import { parseArtifactStoreConfig } from "../lib/server/config";
 import { preparedArtifactImages } from "../lib/server/artifacts/prepared";
@@ -22,8 +24,13 @@ for (const [image,expected] of [[images.parserImage,images.parserDigest],
 if (!await artifactInfrastructureReady()) throw new Error("Artifact signatures or OCR assets are unavailable");
 const fixture = join(process.cwd(),"local-artifacts/004/fixtures/simple.txt");
 const privateRoot = parseArtifactStoreConfig(process.env).root;
+const staged = mkdtempSync(join(tmpdir(),"turas-artifact-probe-"));
+const input = join(staged,"input");
+try {
+copyFileSync(fixture,input);
+chmodSync(input,0o444);
 const probe = artifactContainerInvocation({ kind: "parse",image: images.parserImage,
-  originalPath: fixture,ocrAssetsPath: join(privateRoot,"assets") });
+  originalPath: input,ocrAssetsPath: join(privateRoot,"assets") });
 probe.args.splice(probe.args.length-1,0,"--entrypoint","node");
 const proof = await runArtifactContainer({ ...probe,deadlineMs: 10_000,maxOutputBytes: 4096 },[
   "-e",`const f=require('node:fs');let denied=false;try{f.writeFileSync('/probe','x')}catch(e){denied=['EROFS','EACCES'].includes(e.code)};
@@ -44,7 +51,7 @@ if (isolation.uid !== 65_532 || !isolation.rootWriteDenied ||
   throw new Error("Parser container isolation differs from the worker contract");
 }
 const timed = artifactContainerInvocation({ kind: "parse",image: images.parserImage,
-  originalPath: fixture,ocrAssetsPath: join(privateRoot,"assets") });
+  originalPath: input,ocrAssetsPath: join(privateRoot,"assets") });
 timed.args.splice(timed.args.length-1,0,"--entrypoint","node");
 let timedOut = false;
 try {
@@ -72,3 +79,4 @@ if (Date.now()-started > 120_000) throw new Error("Synthetic artifact check exce
 console.info(JSON.stringify({ kind: "artifact_fixture_check",result: "passed",
   durationMs: Date.now()-started,parserImage: images.parserImage,
   scannerImage: images.scannerImage }));
+} finally { rmSync(staged,{ recursive: true,force: true }); }
