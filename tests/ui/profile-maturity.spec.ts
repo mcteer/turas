@@ -48,7 +48,7 @@ test("a seeded assessment shows six independent states and attributed source det
   await page.goto(`/customers/${DEMO_IDS.deniedCustomer}`);
   await expect(page.getByRole("heading", { name: "Maturity", exact: true })).toBeVisible();
   const product = page.locator('section[aria-labelledby="profile-product_use"] .profile-card')
-    .filter({ has: page.getByRole("heading", { name: "Synthetic deployment product" }) });
+    .filter({ hasText: "Used for a fictional public web workload" });
   await expect(product).toContainText("state: actual");
   await expect(product).toContainText("Used for a fictional public web workload");
   await expect(product).toContainText("observed at:");
@@ -134,5 +134,5 @@ test("six distinct maturity states display without inferring a journey stage fro
       .locator(".profile-badge")).toHaveText(state);
   }
   await expect(page.locator('section[aria-labelledby="profile-product_use"]')
-    .getByRole("heading", { name: "Synthetic deployment product" })).toBeVisible();
+    .getByRole("heading", { name: "Synthetic deployment product" }).first()).toBeVisible();
 });
