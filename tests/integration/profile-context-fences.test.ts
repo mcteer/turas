@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { PoolClient } from "pg";
 import { describe, expect, it } from "vitest";
 import { withTestDatabase } from "../fixtures/database";
 import { createProfileTestSession } from "../fixtures/profiles";
@@ -8,8 +9,69 @@ import { createOwnedConversation, getOwnedConversationDetail, listOwnedConversat
 import { boundToolActor } from "../../lib/server/profiles/tool-actor";
 import { readEligibleContext } from "../../lib/server/profiles/context";
 import { claimBinding } from "../../lib/server/conversations/binding";
+import { releaseNativeChunk } from "../../lib/server/conversations/context-fence";
 
 describe("attempt-bound customer context", () => {
+  it("blocks native chunk release from a changed or expired conversation", async () => {
+    const previousEnvironment = process.env.TURAS_ENVIRONMENT_ID;
+    const previousUrl = process.env.DATABASE_URL;
+    process.env.TURAS_ENVIRONMENT_ID = process.env.TURAS_TEST_ENVIRONMENT_ID;
+    const db = async <T,>(run: (client: PoolClient) => Promise<T>): Promise<T> => {
+      const activeUrl = process.env.DATABASE_URL;
+      if (previousUrl === undefined) delete process.env.DATABASE_URL;
+      else process.env.DATABASE_URL = previousUrl;
+      try { return await withTestDatabase(run); }
+      finally {
+        if (activeUrl === undefined) delete process.env.DATABASE_URL;
+        else process.env.DATABASE_URL = activeUrl;
+      }
+    };
+    const customerId = DEMO_IDS.deniedCustomer;
+    let conversationId: string | undefined;
+    let originalGeneration: string | undefined;
+    try {
+      const actor = await db((client) => createProfileTestSession(client, "panel"));
+      process.env.DATABASE_URL = process.env.TURAS_TEST_DATABASE_URL;
+      const created = await createOwnedConversation(actor, { customerId, requestKey: randomUUID(),
+        title: "Synthetic native release fence" });
+      conversationId = created.conversation.id;
+      const nativeId = `wrun_${randomUUID().replaceAll("-", "")}`;
+      originalGeneration = await db(async (client) => {
+        const state = await client.query<{ internal_generation: string }>(
+          "SELECT internal_generation FROM customer_profile_state WHERE customer_id=$1", [customerId]);
+        await client.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2 WHERE id=$1",
+          [conversationId, nativeId]);
+        return state.rows[0].internal_generation;
+      });
+      let released = 0;
+      await releaseNativeChunk(actor, nativeId, () => { released += 1; });
+      expect(released).toBe(1);
+      await db((client) => client.query(`UPDATE customer_profile_state
+        SET internal_generation=internal_generation+1 WHERE customer_id=$1`, [customerId]));
+      await expect(releaseNativeChunk(actor, nativeId, () => { released += 1; }))
+        .rejects.toMatchObject({ status: 409, code: "context_changed" });
+      expect(released).toBe(1);
+      await db(async (client) => {
+        await client.query("UPDATE customer_profile_state SET internal_generation=$1 WHERE customer_id=$2",
+          [originalGeneration, customerId]);
+        await client.query("UPDATE conversations SET context_valid_until=now()-interval '1 second' WHERE id=$1",
+          [conversationId]);
+      });
+      await expect(releaseNativeChunk(actor, nativeId, () => { released += 1; }))
+        .rejects.toMatchObject({ status: 409, code: "context_changed" });
+      expect(released).toBe(1);
+    } finally {
+      if (conversationId || originalGeneration) await db(async (client) => {
+        if (conversationId) await client.query("DELETE FROM conversations WHERE id=$1", [conversationId]);
+        if (originalGeneration) await client.query(
+          "UPDATE customer_profile_state SET internal_generation=$1 WHERE customer_id=$2",
+          [originalGeneration, customerId]);
+      });
+      process.env.TURAS_ENVIRONMENT_ID = previousEnvironment;
+      process.env.DATABASE_URL = previousUrl;
+    }
+  });
+
   it("makes an old conversation historical after a new login and starts fresh without copied history", async () => {
     const priorEnvironment = process.env.TURAS_ENVIRONMENT_ID;
     const priorUrl = process.env.DATABASE_URL;
