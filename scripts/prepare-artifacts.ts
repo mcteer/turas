@@ -46,8 +46,12 @@ function prepareStore(): string {
 function prepareSignatures(root: string): void {
   const signatures = resolve(root, "signatures");
   mkdirSync(signatures, { recursive: true, mode: 0o755 });
-  chmodSync(signatures, 0o755);
-  docker("run", "--rm", "--network", "bridge", "--user", "0:0", "--mount", `type=bind,src=${signatures},dst=/var/lib/clamav`, "--entrypoint", "freshclam", images.scannerBase, "--stdout");
+  // FreshClam drops to UID 1000 even when the container starts as root. The
+  // parent store is 0700; restore this child directory after preparation.
+  chmodSync(signatures, 0o777);
+  try {
+    docker("run", "--rm", "--network", "bridge", "--user", "0:0", "--mount", `type=bind,src=${signatures},dst=/var/lib/clamav`, "--entrypoint", "freshclam", images.scannerBase, "--stdout");
+  } finally { chmodSync(signatures, 0o755); }
   const files = readdirSync(signatures).filter((name) => /^(main|daily|bytecode)\.(cvd|cld)$/.test(name));
   if (!files.length) throw new Error("FreshClam did not prepare a signature snapshot");
   const oldest = Math.min(...files.map((name) => statSync(resolve(signatures, name)).mtimeMs));

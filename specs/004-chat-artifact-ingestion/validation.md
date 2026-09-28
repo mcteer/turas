@@ -85,6 +85,11 @@ One repeat full integration run hit the existing 30-write/minute profile limit
 inside a synthetic history fixture after many commands in one transaction.
 The fixture now clears only its disposable test-environment profile-write window
 before its final independent phase; the full integration suite was rerun.
+The first PR CI run stopped before tests: FreshClam dropped to UID 1000 and could
+not write the fresh signature directory owned by the Linux runner. Preparation
+now temporarily grants write access to that directory under the 0700 private
+store, then restores 0755 even on failure. CI rerun is required to verify the
+Linux preparation and subsequent gates.
 The full live evaluation used an isolated copied app, private Eve directory,
 disposable schema-018 database and store. Its copied evaluation agent kept the
 root selected Grok model and capped generation to 1,000 tokens to leave room for
