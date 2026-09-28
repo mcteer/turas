@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { StewardEditor } from "./steward-editor";
+import { SourceViewer } from "../attachments/source-viewer";
 
 type Candidate = { id: string; recordId: string; kind: string; payload: Record<string, unknown>;
   acceptedPayload: Record<string, unknown> | null; recordVersion: number;
   currentAcceptedRevisionId: string | null; contentDigest: string;
   authorKind: "internal" | "partner"; authorMembershipId: string;
-  submissionChannel: "profile_form" | "chat_share" | "agent_proposal" | "synthetic_bootstrap";
+  submissionChannel: "profile_form" | "chat_share" | "agent_proposal" | "synthetic_bootstrap" | "artifact_share";
+  artifactSource?: { versionId: string; selectionId: string; excerpt: string;
+    excerptDigest: string; citation: Record<string, string | number> };
   requestedAudience: "internal" | "delivery"; dataCategory: string;
   qualityInput: Record<string, unknown>; quality: { Q: number; band: string; freshness: string };
   sourceReferences: string[]; createdAt: string; scopeLabel: string;
@@ -81,6 +84,7 @@ function ReviewCard({ candidate, customerId, csrfToken, reviewerMembershipId, on
   const [requestKey, setRequestKey] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
+  const [inspectSource, setInspectSource] = useState(false);
   const acceptButton = useRef<HTMLButtonElement>(null);
   const rejectButton = useRef<HTMLButtonElement>(null);
   const priorEnd = Date.parse(String(candidate.acceptedPayload?.observationEnd ?? ""));
@@ -154,6 +158,16 @@ function ReviewCard({ candidate, customerId, csrfToken, reviewerMembershipId, on
       <dt>Directness rationale</dt><dd>{String(candidate.qualityInput.directnessRationale ?? "Unknown")}</dd>
       <dt>Corroboration rationale</dt><dd>{String(candidate.qualityInput.corroborationRationale ?? "Unknown")}</dd></dl>
     <p>Evidence references: {candidate.sourceReferences.length ? candidate.sourceReferences.join(", ") : "None submitted"}</p>
+    {candidate.artifactSource && <section className="profile-note" aria-label="Submitted source excerpt">
+      <h3>Submitted source excerpt</h3>
+      <p>{candidate.artifactSource.excerpt}</p>
+      <p className="muted">Citation: {Object.entries(candidate.artifactSource.citation).map(([key, value]) =>
+        `${key} ${value}`).join(" · ")} · SHA-256 {candidate.artifactSource.excerptDigest}</p>
+      <p className="muted">Check the original and coverage before accepting. Source text is a submitted claim until reviewed.</p>
+      <button type="button" className="secondary-button" onClick={() => setInspectSource(true)}>Inspect original source</button>
+      {inspectSource && <SourceViewer versionId={candidate.artifactSource.versionId}
+        onClose={() => setInspectSource(false)} />}
+    </section>}
     {olderWindow && <label className="profile-check"><input type="checkbox" checked={olderAcknowledged}
       onChange={(event) => setOlderAcknowledged(event.target.checked)} /> Replace the current assessment with an older observation window</label>}
     <label className="field-label" htmlFor={`review-rationale-${candidate.id}`}>Internal review rationale</label>

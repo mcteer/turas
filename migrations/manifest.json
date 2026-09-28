@@ -52,6 +52,26 @@
     {
       "file": "013-profile-audit-metrics.cjs",
       "sha256": "244b7046d175a15b5c415c34fa759f73bcd75fe038e094743a783787f39d0549"
+    },
+    {
+      "file": "014-artifact-ingestion.cjs",
+      "sha256": "cd0564fdef901ca68dd1c091aee752b4c768135bfe6a8e62a589148e73aadc1a"
+    },
+    {
+      "file": "015-artifact-evidence-context.cjs",
+      "sha256": "f6a54a8454edab076c2c7131133891f808bb18337eae999ea42c321b0483f593"
+    },
+    {
+      "file": "016-artifact-context-injection.cjs",
+      "sha256": "eb582254b48af6741724f80bdcf9eb27d9d0f179ad1be8240555fccea5cf1601"
+    },
+    {
+      "file": "017-artifact-replacement-retirement.cjs",
+      "sha256": "1c0d092335ed70d4d64f854b747908b71aa923ba2f8f6ca7242c54afd87f953c"
+    },
+    {
+      "file": "018-artifact-tool-budget.cjs",
+      "sha256": "53537b598f4d54b58de98905ad6ba7441828e0adef1ff459f7a6e565ac79788d"
     }
   ]
 }

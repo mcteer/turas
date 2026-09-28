@@ -38,9 +38,9 @@ See installed `guides/frontend/nextjs.mdx` and `guides/frontend/overview.mdx`.
 | Identity | Three demo logins with shared server authorization; full provider integration deferred | 002 uses mcteer (internal admin), panel (internal employee) and partner (external member) per user clarification; platform protection is not app authorization |
 | Authoritative records | Local Postgres 17 for 002; Neon selected for future hosted storage | Explicit migrations and isolated resources; no hosted provisioning in planning |
 | Semantic search | Postgres pgvector plus full-text retrieval | 005, only after scoped evidence contracts exist |
-| Private artifacts | Vercel Blob | 004, authorized upload/read and ingestion flow |
+| Private artifacts | Private local filesystem adapter in 004; private Vercel Blob proposed for hosted readiness | 004 validates local authorization/lifecycle; hosted adapter only when provisioned and exercised |
 | Durable execution | eve's Workflow-backed execution | Per active multi-step feature; no duplicate orchestration framework |
-| Untrusted extraction | Isolated processing, Vercel Sandbox where suitable | 004, validated parser/limits and network policy |
+| Untrusted extraction | Per-job isolated Docker scan/parser in 004; Vercel Sandbox considered at hosted readiness | Real local scanner/parsers and network/resource limits; no unused hosted adapter |
 | External-service access | Native eve integration first, Connect where appropriate | Only the feature that actually reads/writes that service |
 | Scheduling and reports | Durable jobs with explicit recipient policy | 009; no unused mail/chat connector installed early |
 | MCP publication | Dedicated read-only MCP endpoint, candidate `mcp-handler` | 015, after consumer/auth contract and registry review |
@@ -95,11 +95,17 @@ explicit migration files and a controlled migration command. Avoid the demo's
 CREATE/ALTER-on-request approach. SQL/vector indexes and report snapshots are
 derived projections whose eligibility is checked against authoritative revisions.
 
-Blob holds private original and generated artifact versions; SQL holds ownership,
-classification, digest, ingestion status, evidence links and retention. Storage
+004 implements a private local ArtifactStore adapter for original versions; the proposed
+hosted design uses private Blob when it can be provisioned and verified. SQL holds
+ownership, classification, digest, ingestion status, evidence links and retention. Storage
 authentication does not replace Turas customer authorization. Authorize before
 issuing any upload token or short-lived download capability. Use separate dev,
 preview and production resources. Never reuse the demo database automatically.
+The [004 local implementation](../specs/004-chat-artifact-ingestion/plan.md) uses
+isolated scan/parser containers and a separately supervised worker while
+deployment remains disabled. Explicit migrations precede runtime use.
+Hosted Blob intake will need direct client uploads for files above the Functions
+request-body limit; local streaming uploads do not prove hosted compatibility.
 
 ## Agent and durable workflow boundaries
 

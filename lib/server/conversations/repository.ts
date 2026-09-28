@@ -25,6 +25,7 @@ type ConversationRow = {
   context_membership_id?: string | null;
   internal_generation?: string;
   delivery_generation?: string;
+  artifact_context_stale?: boolean;
 };
 
 const scopedCustomer = `
@@ -48,6 +49,7 @@ function contextStatus(row: ConversationRow, session: CurrentSession): "current"
   const audience = session.kind === "internal" ? "internal" : "delivery";
   const generation = audience === "internal" ? row.internal_generation : row.delivery_generation;
   if (row.context_audience !== audience ||
+      row.artifact_context_stale ||
       row.context_login_session_id !== session.sessionId ||
       row.context_membership_id !== session.membershipId ||
       (generation !== undefined && row.context_generation !== generation) ||
@@ -72,6 +74,23 @@ function toReference(row: ConversationRow, session: CurrentSession): Conversatio
 
 function values(session: CurrentSession): string[] {
   return [session.membershipId, session.sessionId, session.principalId];
+}
+
+async function staleArtifactConversations(ids: readonly string[]): Promise<Set<string>> {
+  if (!ids.length) return new Set();
+  const marker = await query<{ schema_version: number }>(
+    "SELECT schema_version FROM turas_environment WHERE environment_id=$1",
+    [getServerConfig().TURAS_ENVIRONMENT_ID]);
+  if ((marker.rows[0]?.schema_version ?? 0) < 18) return new Set();
+  const stale = await query<{ conversation_id: string }>(`
+    SELECT DISTINCT d.conversation_id FROM conversation_artifact_dependencies d
+    LEFT JOIN artifact_versions v ON v.id=d.version_id
+    LEFT JOIN artifact_extraction_runs r ON r.id=d.run_id AND r.version_id=d.version_id
+    WHERE d.conversation_id=ANY($1::uuid[]) AND (
+      v.id IS NULL OR v.state NOT IN ('ready','partial') OR
+      v.lifecycle_generation<>d.lifecycle_generation OR
+      r.id IS NULL OR r.state<>'published')`, [ids]);
+  return new Set(stale.rows.map((row) => row.conversation_id));
 }
 
 export async function createOwnedConversation(
@@ -130,6 +149,7 @@ export async function getOwnedConversation(
     LIMIT 1
   `, [...values(session), id, getServerConfig().TURAS_ENVIRONMENT_ID]);
   if (!result.rows[0]) throw hiddenRecord();
+  result.rows[0].artifact_context_stale = (await staleArtifactConversations([id])).has(id);
   return toReference(result.rows[0], session);
 }
 
@@ -169,6 +189,8 @@ export async function listOwnedConversations(
     escapedTitle, cursor?.t ?? null, cursor?.id ?? null, options.limit + 1,
     session.kind, session.sessionId, session.membershipId]);
   const rows = result.rows.slice(0, options.limit);
+  const stale = await staleArtifactConversations(rows.map((row) => row.id));
+  for (const row of rows) row.artifact_context_stale = stale.has(row.id);
   const last = rows.at(-1);
   return {
     items: rows.map((row) => toReference(row, session)),

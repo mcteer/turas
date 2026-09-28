@@ -20,10 +20,25 @@ export async function persistApprovedQuality(client: PoolClient, input: {
     if (!source.rows[0]) throw new HttpFailure(422, "invalid_date_source", "Rating date source is unavailable");
     evidenceAt = rating.dateBasis === "publication" ? source.rows[0].publication_at :
       rating.dateBasis === "observation" ? source.rows[0].observation_at : null;
-  } else if (rating.dateBasis === "observation") {
-    const observed = input.payload.observedAt ?? input.payload.observationEnd;
-    evidenceAt = typeof observed === "string" && Number.isFinite(Date.parse(observed))
-      ? new Date(observed) : null;
+  } else {
+    const marker = await client.query<{ schema_version: number }>(
+      "SELECT schema_version FROM turas_environment LIMIT 1");
+    const artifact = (marker.rows[0]?.schema_version ?? 0) >= 15 ? await client.query<{ source_published_on: Date | string | null;
+      source_observed_on: Date | string | null }>(`
+      SELECT v.source_published_on,v.source_observed_on FROM profile_evidence_links l
+      JOIN artifact_evidence_selections s ON s.id=l.artifact_selection_id
+      JOIN artifact_versions v ON v.id=s.version_id
+      WHERE l.profile_revision_id=$1 AND v.customer_id=$2 AND l.artifact_selection_id IS NOT NULL
+      LIMIT 1`, [input.revisionId,input.customerId]) : null;
+    if (artifact?.rows[0]) {
+      const dated = rating.dateBasis === "publication" ? artifact.rows[0].source_published_on :
+        rating.dateBasis === "observation" ? artifact.rows[0].source_observed_on : null;
+      evidenceAt = dated ? dated instanceof Date ? dated : new Date(`${dated}T00:00:00Z`) : null;
+    } else if (rating.dateBasis === "observation") {
+      const observed = input.payload.observedAt ?? input.payload.observationEnd;
+      evidenceAt = typeof observed === "string" && Number.isFinite(Date.parse(observed))
+        ? new Date(observed) : null;
+    }
   }
   const reviewValue = input.payload.reviewAt;
   const reviewAt = typeof reviewValue === "string" && Number.isFinite(Date.parse(reviewValue))

@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 type Submission = { id: string; kind: string; reviewState: string;
   recordVersion: number;
   payload: Record<string, unknown>; partnerSafeReason?: string | null;
-  decisionRationale?: string | null };
+  decisionRationale?: string | null;
+  artifactSource?: { excerpt: string; citation: Record<string, string | number> } };
 type Result = { data?: { items: Submission[]; nextCursor: string | null } };
 
 function RetractionRequest({ item, customerId, csrfToken, onSaved }: {
@@ -81,6 +82,10 @@ export function OwnSubmissions({ customerId, refresh }: { customerId: string; re
       <div className="profile-card-head"><h3>{String(item.payload.title ?? item.payload.displayName ?? item.payload.name ?? item.payload.text ?? item.kind)}</h3>
         <span className="profile-badge">{item.reviewState}</span></div>
       {item.reviewState === "pending" && <p>Awaiting steward review. Accepted context remains unchanged.</p>}
+      {item.artifactSource && <div className="profile-note" aria-label="Your submitted source excerpt">
+        <p>{item.artifactSource.excerpt}</p>
+        <p className="muted">{Object.entries(item.artifactSource.citation).map(([key, value]) =>
+          `${key} ${value}`).join(" · ")}</p></div>}
       {item.reviewState === "rejected" && <p>{memberKind === "partner" ? item.partnerSafeReason ?? "No shared reason available" :
         item.decisionRationale ?? "No reason available"}</p>}
       {item.reviewState === "accepted" && <RetractionRequest item={item} customerId={customerId}

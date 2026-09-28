@@ -45,6 +45,7 @@ test("profile and review states are usable across configured WebKit viewports", 
     await page.getByRole("button", { name: "Open navigation" }).click();
   }
   await page.getByRole("button", { name: "Sign out" }).click();
+  await page.waitForURL((url) => url.pathname === "/login", { waitUntil: "load" });
   await signIn(page, "partner");
   await page.goto(`/customers/${DEMO_IDS.sharedCustomer}`);
   await expect(page.getByRole("heading", { name: "Cedar (synthetic)" })).toBeVisible();

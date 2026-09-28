@@ -6,6 +6,7 @@ const next = spawn(resolve(cwd, "node_modules/.bin/next"), ["dev"], {
   cwd, env: process.env, stdio: ["inherit", "pipe", "pipe"],
 });
 let worker;
+let artifactWorker;
 let stopping = false;
 let buffered = "";
 
@@ -13,6 +14,7 @@ function stop(code = 0) {
   if (stopping) return;
   stopping = true;
   worker?.kill("SIGTERM");
+  artifactWorker?.kill("SIGTERM");
   next.kill("SIGTERM");
   process.exitCode = code;
 }
@@ -26,6 +28,10 @@ function consume(text) {
       stdio: "inherit",
     });
     worker.on("exit", (code) => { if (!stopping) stop(code || 1); });
+    artifactWorker = spawn(resolve(cwd, "node_modules/.bin/tsx"), ["scripts/artifact-worker.ts"], {
+      cwd, env: { ...process.env, TURAS_EVE_INTERNAL_ORIGIN: `${match[1]}/` }, stdio: "inherit",
+    });
+    artifactWorker.on("exit", (code) => { if (!stopping) stop(code || 1); });
   }
   buffered = buffered.slice(-1_000);
 }

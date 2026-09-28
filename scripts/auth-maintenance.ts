@@ -17,7 +17,8 @@ async function main(): Promise<void> {
     }
     if (args.length === 1 && args[0] === "--prune") {
       const sessions = await client.query(
-        "DELETE FROM login_sessions WHERE expires_at <= now() OR revoked_at IS NOT NULL",
+        `DELETE FROM login_sessions s WHERE (s.expires_at <= now() OR s.revoked_at IS NOT NULL)
+          AND NOT EXISTS (SELECT 1 FROM conversations c WHERE c.context_login_session_id=s.id)`,
       );
       const windows = await client.query("DELETE FROM rate_windows WHERE expires_at <= now()");
       console.log(`Removed ${sessions.rowCount ?? 0} expired/revoked sessions and ${windows.rowCount ?? 0} expired rate windows`);

@@ -93,9 +93,10 @@ describe("trusted research ingestion", () => {
           const projected = await readProfile(partner, fixture.customerId, client) as {
             attributedResearch: { sourceRevisionId: string; state: string }[];
           };
-          expect(projected.attributedResearch).toEqual([
-            expect.objectContaining({ sourceRevisionId: changed.sourceRevisionId, state: "researched" }),
-          ]);
+          expect(projected.attributedResearch).toContainEqual(
+            expect.objectContaining({ sourceRevisionId: changed.sourceRevisionId, state: "researched" }));
+          expect(projected.attributedResearch.map((item) => item.sourceRevisionId))
+            .not.toContain(first.sourceRevisionId);
           const detail = await readProfileSource(partner, fixture.customerId, changed.sourceRevisionId, client);
           expect(detail).toMatchObject({ state: "researched", passage: "Updated synthetic passage.",
             eventAt: fixture.eventAt });

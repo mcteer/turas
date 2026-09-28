@@ -15,8 +15,9 @@ maintenance worker and a responsive web shell. Feature 003 adds typed customer
 profiles, projected record history, Pending review,
 maturity assessments, attributed synthetic research, evidence quality and conflict
 review, partner projections, and bound agent context
-for local testing. Attachments,
-RAG, delivery plans, staffing, reports and MCP remain planned.
+for local testing. Feature 004 adds local private attachment intake, isolated
+scan/extraction, exact-source review, bounded unverified chat selection and
+versioned cleanup. RAG, delivery plans, staffing, reports and MCP remain planned.
 No speculative eve integrations have been installed. The configured model is
 unchanged. The application has not been deployed or validated on hosted infrastructure.
 
@@ -40,6 +41,10 @@ credentials, data and unused integrations are not the new platform. See the
   [implementation plan](specs/003-customer-profile-review/plan.md), with
   [implementation tasks](specs/003-customer-profile-review/tasks.md) and
   [local validation](specs/003-customer-profile-review/validation.md) — merged on `main`, no hosted release
+- [Feature 004 specification](specs/004-chat-artifact-ingestion/spec.md),
+  [implementation plan](specs/004-chat-artifact-ingestion/plan.md) and
+  [tasks](specs/004-chat-artifact-ingestion/tasks.md) and
+  [local validation](specs/004-chat-artifact-ingestion/validation.md) — locally validated on the feature branch; merge pending
 - [Contributing](CONTRIBUTING.md), [development instructions](AGENTS.md), and
   [constitution](.specify/memory/constitution.md)
 
@@ -61,6 +66,12 @@ npm run db:bootstrap-demo
 npm run dev
 ```
 
+For an existing schema-013 local database, prepare the private artifact store
+and images with `npm run artifacts:prepare`, then run `npm run db:migrate` and
+`npm run db:roles` explicitly before using attachments. The
+[004 quickstart](specs/004-chat-artifact-ingestion/quickstart.md) covers the
+separate disposable test store and recovery checks.
+
 For an optional populated synthetic profile in local or disposable test environments,
 run `npm run db:seed-profile-demo`. It adds reviewed Juniper examples without
 overwriting later accepted revisions. For the two-workload, 25-record scripted
@@ -74,7 +85,8 @@ external member assigned only Cedar in the synthetic demo. Internal members can
 see every customer reference, including new ones; each account sees only its
 own chats. Profile and explicitly shared chat claims remain Pending until steward
 review; accepted facts and attributed research are kept distinct. The app does not
-yet accept attachments.
+yet accept attachments on the unmigrated selected database. The 004 local setup
+and explicit migrations are in the [004 quickstart](specs/004-chat-artifact-ingestion/quickstart.md).
 After a local eve dev restart, an in-flight run from an older development
 generation may be quarantined. Its stored message and deadline remain visible;
 the worker flags an unconfirmed overdue turn for operator review without
@@ -110,6 +122,11 @@ authentication is deferred until explicitly resumed following hiring.
 For the six-case synthetic profile behavior dataset, use
 `npm run eval:behavior:local -- --feature 003 --live`; its outputs stay under
 ignored `local-artifacts/` for actual-response review.
+The 004 checks include `npm run test:artifacts`,
+`npm run artifacts:recovery:check`, and
+`npm run eval:behavior:local -- --feature 004 --live`. The last command runs
+eight synthetic selected-source cases in a disposable app and database; review
+the captured responses before claiming the behavior gate passed.
 
 ## Spec Kit workflow
 
@@ -130,7 +147,7 @@ directory changes are required. Use `$speckit-specify`, `$speckit-clarify`,
 Spec Kit 1.x selects features independently of the Git branch. For the active slice:
 
 ```sh
-export SPECIFY_FEATURE_DIRECTORY=specs/003-customer-profile-review
+export SPECIFY_FEATURE_DIRECTORY=specs/004-chat-artifact-ingestion
 .specify/scripts/bash/check-prerequisites.sh --json --require-spec
 ```
 
@@ -142,9 +159,12 @@ procedure and generated changes while preserving the constitution and authored d
 ## Delivery and documentation
 
 The foundation merged in [PR 1](https://github.com/mcteer/turas/pull/1). The active
-slice is **003: customer profiles, maturity and context review**. Its local
-implementation is in progress; see the task list and validation record for the
-current evidence and remaining gates.
+slice is **004: chat attachments and artifact ingestion**. Its specification,
+design contracts and implementation tasks are prepared; local runtime behavior
+passed validation on the feature branch and awaits review/CI. It uses private
+local storage and isolated scanning/extraction, selected evidence review,
+unverified chat discussion and source lifecycle controls.
+Features 002 and 003 are merged with local and CI validation.
 The merged 002 application provides the demo identities and shell. Its demo scope uses
 `mcteer` for internal Vercel administrators/FDE/PS leadership, `panel` for internal
 Vercel employees and `partner` for external partners. Internal users see all workspace
@@ -162,6 +182,6 @@ PR updates README in the same change; maintainers verify freshness after merge.
 
 The repository was disconnected from Vercel on 2026-09-27 to prevent automatic
 deployments until Turas can replace the existing application. Do not reconnect
-or deploy as part of 003. Hosted validation and project
+or deploy as part of 004. Hosted validation and project
 alignment are deferred to replacement readiness. The earlier Next.js preview failure
 is recorded historically in the [foundation validation record](specs/001-platform-foundation/validation.md).

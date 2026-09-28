@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { profilePayloadSchema, type RecordKind } from "./profile-payloads";
+import { approvedArtifactExcerptSchema } from "./artifacts";
 
 const uuid = z.uuid();
 const rationale = z.string().trim().min(1).max(2_000);
@@ -37,6 +38,7 @@ const proposal = {
   qualityInput, requestedAudience: audience.default("internal"), dataCategory: category.default("other_internal"),
   sourceUrl: sourceUrl.optional(), sourceExcerpt: z.string().max(8_000).optional(),
   evidenceRevisionIds: z.array(uuid).max(20).default([]),
+  artifactSelectionDigest: z.string().regex(/^[0-9a-f]{64}$/).optional(),
 };
 export const profileCommandSchema = z.discriminatedUnion("action", [
   z.object({ ...base, action: z.literal("propose_record"), ...proposal }).strict(),
@@ -93,6 +95,7 @@ const revisionDtoBase = {
   createdAt: z.iso.datetime({ offset: true }).optional(),
   recordVersion: z.number().int().nonnegative().optional(),
   supportStatus: z.enum(["settled", "unsupported", "conflicted", "restricted_source"]).optional(),
+  approvedArtifactExcerpt: approvedArtifactExcerptSchema.optional(),
 };
 export const internalProfileRevisionDtoSchema = z.object({
   ...revisionDtoBase, qualityInput: qualityInputSchema,

@@ -5,6 +5,9 @@ import { withTransaction } from "../db/client";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
 import { lockOwnedBinding } from "./binding";
 import { captureAttemptContext, readCurrentAttemptContext } from "../profiles/attempt-context";
+import { artifactContextSchemaReady, assertArtifactDependenciesCurrent } from "../artifacts/context-fence";
+import { canonicalArtifactSendDigest, captureArtifactDraft,
+  type DraftSelection } from "../artifacts/context";
 
 export function normalizeMessageText(text: string): string {
   return text.replace(/\r\n?/g, "\n").normalize("NFC");
@@ -23,14 +26,14 @@ async function requireWorkerHeartbeat(client: import("pg").PoolClient): Promise<
 
 export async function prepareAttempt(
   session: CurrentSession, conversationId: string, nativeSessionId: string,
-  requestKey: string, rawText: string,
+  requestKey: string, rawText: string, selections: readonly DraftSelection[] = [],
 ): Promise<{ attemptId: string; created: boolean; dispatchState: string }> {
   const text = normalizeMessageText(rawText);
   if (!text.trim()) throw new HttpFailure(422, "invalid_message", "Message required");
   if (Buffer.byteLength(text, "utf8") > 16 * 1024) {
     throw new HttpFailure(413, "message_too_large", "Message too large");
   }
-  const digest = messageDigest(text);
+  const digest = selections.length ? canonicalArtifactSendDigest(text,selections) : messageDigest(text);
   return withTransaction(async (client) => {
     const environmentId = getServerConfig().TURAS_ENVIRONMENT_ID;
     await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [environmentId]);
@@ -49,6 +52,7 @@ export async function prepareAttempt(
     if (context.rows[0].context_valid_until && context.rows[0].context_valid_until.getTime() <= Date.now()) {
       throw new HttpFailure(409, "context_changed", "Start a new conversation for current customer context");
     }
+    await assertArtifactDependenciesCurrent(client, conversationId);
     const existing = await client.query<{ id: string; body_digest: string; attempt_id: string; dispatch_state: string }>(`
       SELECT sm.id, sm.body_digest, a.id AS attempt_id, a.dispatch_state
       FROM submitted_messages sm JOIN response_attempts a ON a.message_id = sm.id
@@ -96,6 +100,8 @@ export async function prepareAttempt(
     await client.query(`INSERT INTO response_attempts
       (id, conversation_id, message_id, input_digest, dispatch_state, response_state)
       VALUES ($1,$2,$3,$4,'prepared','pending')`, [attemptId, conversationId, messageId, digest]);
+    if (selections.length) await captureArtifactDraft(client,session,conversationId,
+      conversation.customer_id,attemptId,messageDigest(text),digest,selections);
     return { attemptId, created: true, dispatchState: "prepared" };
   });
 }
@@ -232,7 +238,12 @@ export async function deriveNativeAttempt(
     `, [nativeSessionId, session.principalId,
       getServerConfig().TURAS_ENVIRONMENT_ID, requestKey]);
     const row = found.rows[0];
-    if (!row || row.body_digest !== messageDigest(text)) throw hiddenRecord();
+    if (!row) throw hiddenRecord();
+    const artifact = await artifactContextSchemaReady(client)
+      ? await client.query<{ native_text_digest: string }>(
+        "SELECT native_text_digest FROM artifact_context_receipts WHERE attempt_id=$1", [row.id])
+      : null;
+    if ((artifact?.rows[0]?.native_text_digest ?? row.body_digest) !== messageDigest(text)) throw hiddenRecord();
     await lockOwnedBinding(client, session, row.conversation_id);
     await readCurrentAttemptContext(client, row.id, session.principalId);
     return row.id;
