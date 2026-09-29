@@ -46,9 +46,11 @@ test("published detail rechecks access and hides withdrawn content",async ({ pag
   await expect(page.getByRole("region",{ name: "Shared guidance detail" }))
     .toContainText("Measure stages");
   available = false;
-  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await expect(page.getByRole("alert").filter({ hasText: "no longer available" }))
-    .toBeVisible();
+  await expect(async () => {
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect(page.getByRole("alert").filter({ hasText: "no longer available" }))
+      .toBeVisible({ timeout: 1_500 });
+  }).toPass({ timeout: 10_000 });
   await expect(page.getByRole("region",{ name: "Shared guidance detail" })).toHaveCount(0);
 });
 

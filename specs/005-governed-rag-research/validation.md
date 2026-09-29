@@ -900,4 +900,14 @@ fresh clone run in the restricted session.
 - The first draft-PR CI run found two legacy fixture-safety assertions that
   still expected the local-only database-guard messages. The guard already
   rejected those URLs; the assertions now expect its Preview-aware messages.
-  The full `npm run test:unit` rerun passed 29 files and 102 tests locally.
+  The later full `npm run test:unit` rerun passed 29 files and 103 tests locally,
+  including the isolated local CI UI-database guard.
+- The next CI run passed the 005 database suite, build and both Spec Kit checks,
+  then exposed that the repository-wide UI command ran the 005 research tests
+  against the ordinary CI app database. CI now runs the pre-005 UI suite on its
+  app database and the 005 knowledge/research journeys on the separately marked
+  disposable local Postgres test database. The 005 retrieval citation journey
+  remains skipped there without a seeded embedding; its isolated live Neon
+  WebKit run passed in the 28-case local matrix above. A timing-sensitive
+  publication focus recheck now retries the focus event until the listener is
+  installed; its focused mobile-light WebKit rerun passed 1/1 in 5.9 seconds.
