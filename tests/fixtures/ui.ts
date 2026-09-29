@@ -1,5 +1,29 @@
 import type { Page } from "@playwright/test";
 
+/** UI setup may write only to the isolated app clone selected by the 005 checker. */
+export function requireUiFixtureDatabaseUrl(): string {
+  const raw = process.env.TURAS_UI_FIXTURE_DATABASE_URL;
+  const selected = process.env.DATABASE_URL_UNPOOLED;
+  const origin = process.env.TURAS_UI_BASE_URL;
+  if (!raw || raw !== selected || !origin ||
+      process.env.TURAS_ENVIRONMENT_ID !== process.env.TURAS_TEST_ENVIRONMENT_ID) {
+    throw new Error("Isolated UI fixture database required");
+  }
+  const url = new URL(raw);
+  const localCi = process.env.CI === "true" &&
+    ["127.0.0.1","localhost","[::1]"].includes(url.hostname) &&
+    /^\/turas_test(?:_|$)/.test(url.pathname) &&
+    raw === process.env.TURAS_TEST_DATABASE_URL &&
+    process.env.DATABASE_URL && new URL(process.env.DATABASE_URL).pathname === url.pathname;
+  const disposableNeon = url.hostname.endsWith(".neon.tech") &&
+    /^\/turas_test_005_eval_[a-f0-9]{12}$/.test(url.pathname);
+  if ((!localCi && !disposableNeon) ||
+      !["127.0.0.1","localhost","[::1]"].includes(new URL(origin).hostname)) {
+    throw new Error("Unsupported UI fixture database identity");
+  }
+  return raw;
+}
+
 export type DemoAccount = "mcteer" | "panel" | "partner";
 
 const accountVariables: Record<DemoAccount, readonly [string, string]> = {
@@ -25,6 +49,7 @@ export async function signIn(page: Page, account: DemoAccount): Promise<void> {
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.waitForURL((url) => url.pathname === "/s");
+  await page.waitForLoadState("networkidle");
 }
 
 export async function signOut(page: Page): Promise<void> {

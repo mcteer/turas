@@ -6,8 +6,14 @@ import { DEMO_IDS } from "../lib/server/bootstrap-ids";
 
 export type BehaviorCase = { id: string; role: "mcteer" | "panel" | "partner";
   prompt: string; required: string; customerId?: string; allowPendingProposal?: boolean;
-  sourceFixture?: string; sourceText?: string; unitTextContains?: string };
+  sourceFixture?: string; sourceText?: string; unitTextContains?: string;
+  fitQueries?: string[];
+  researchPreview?: { mode: "recon";publicName: string;publicDomain: string;
+    submittedUrls?: string[] } | { mode: "practices";product: string;
+    version: string;topic: string;submittedUrls?: string[] } |
+    { mode: "fit";evidenceReceiptIds: string[];submittedUrls?: [] } };
 export type BehaviorResult = { caseId: string; run: number; role: string; conversationId: string;
+  researchRunId?: string;
   response: string; outputTokens: number; maxStepOutputTokens?: number;
   staleHistoryStatus?: number; staleSendStatus?: number;
   modelSteps: number; durationMs: number; terminal: string; hardGates: {
@@ -285,10 +291,56 @@ export async function runBehaviorCase(item: BehaviorCase, run: number,
       lifecycleGeneration: source.lifecycleGeneration,
       ranges: [{ unitId: unit.id,start: 0,end: Array.from(unit.text).length }] };
   }
-  const requestKey = randomUUID();
+  let requestKey: string = randomUUID();
+  let outgoingMessage = item.prompt;
+  let researchRunId: string | undefined;
+  if (item.researchPreview) {
+    let fitReceiptIds: string[] = [];
+    if (item.researchPreview.mode === "fit" && item.fitQueries?.length) {
+      const kinds = new Set<string>();
+      for (const query of item.fitQueries) {
+        const searched = await fetch(new URL("/api/retrieval/search",origin),{
+          method: "POST",headers: common,
+          body: JSON.stringify({ scope: "customer",customerId,query,
+            use: "discovery",limit: 5 }),signal: AbortSignal.timeout(15_000) });
+        if (!searched.ok) throw new Error(`${item.id}: fit evidence search failed (${searched.status})`);
+        const receipt = (await searched.json() as { data: { receiptId: string;
+          results: Array<{ sourceKind: string }> } }).data;
+        fitReceiptIds.push(receipt.receiptId);
+        for (const result of receipt.results) kinds.add(result.sourceKind);
+      }
+      if (!kinds.has("accepted_profile") || !kinds.has("verified_research")) {
+        throw new Error(`${item.id}: fit evidence classes missing`);
+      }
+    }
+    const previewResponse = await fetch(new URL("/api/research/requests",origin),{
+      method: "POST",headers: common,
+      body: JSON.stringify({ idempotencyKey: randomUUID(),customerId,
+        conversationId,submittedUrls: item.researchPreview.submittedUrls ?? [],
+        ...item.researchPreview,
+        ...(item.researchPreview.mode === "fit" ?
+          { evidenceReceiptIds: fitReceiptIds.length ? fitReceiptIds :
+            item.researchPreview.evidenceReceiptIds } : {}),
+        ...(item.researchPreview.mode === "recon" ? { identityConfirmed: true } : {}) }),
+      signal: AbortSignal.timeout(10_000) });
+    if (!previewResponse.ok) throw new Error(`${item.id}: research preview failed (${previewResponse.status})`);
+    const preview = (await previewResponse.json() as { data: { id: string;
+      revision: number;digest: string } }).data;
+    const started = await fetch(new URL(`/api/research/requests/${preview.id}/start`,origin),{
+      method: "POST",headers: common,
+      body: JSON.stringify({ idempotencyKey: randomUUID(),
+        expectedRevision: preview.revision,expectedDigest: preview.digest }),
+      signal: AbortSignal.timeout(10_000) });
+    if (!started.ok) throw new Error(`${item.id}: research start failed (${started.status})`);
+    const admitted = (await started.json() as { data: { runId: string;
+      requestKey: string;message: string } }).data;
+    researchRunId = admitted.runId;
+    requestKey = admitted.requestKey;
+    outgoingMessage = admitted.message;
+  }
   const send = await fetch(new URL(`/eve/v1/session/${nativeId}`, origin), { method: "POST",
     headers: { ...common, "x-turas-conversation-id": conversationId, "x-turas-request-key": requestKey },
-    body: JSON.stringify({ message: item.prompt,
+    body: JSON.stringify({ message: outgoingMessage,
       ...(artifactSelection ? { artifactSelections: [artifactSelection] } : {}) }),
     signal: AbortSignal.timeout(30_000) });
   if (!send.ok) throw new Error(`${item.id}: send failed (${send.status})`);
@@ -357,6 +409,7 @@ export async function runBehaviorCase(item: BehaviorCase, run: number,
     .filter((value): value is string => typeof value === "string" && value.length > 0);
   const citedIds = response.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi) ?? [];
   return { caseId: item.id, run, role: item.role, conversationId, response, outputTokens,
+    ...(researchRunId ? { researchRunId } : {}),
     ...(staleHistoryStatus !== undefined ? { staleHistoryStatus,staleSendStatus } : {}),
     ...(maxStepTokens !== undefined ? { maxStepOutputTokens: maxStepTokens } : {}),
     modelSteps,

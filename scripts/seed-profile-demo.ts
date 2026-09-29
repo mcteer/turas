@@ -5,6 +5,9 @@ import { hashSessionToken, issueSession, revokeSession, type CurrentSession } fr
 import { ingestVerifiedResearch } from "../lib/server/profiles/research.ts";
 import { submitProfileCommand as submitDirect } from "../lib/server/profiles/service.ts";
 import { HttpFailure } from "../lib/contracts/http.ts";
+import { walkthroughClaimTexts,walkthroughFieldTexts,
+  syntheticPublicResearchPassage } from
+  "../tests/fixtures/retrieval/judged-corpus.ts";
 
 async function submitProfileCommand(actor: CurrentSession, targetCustomerId: string,
   command: Record<string, unknown>): Promise<unknown> {
@@ -81,44 +84,27 @@ async function seedWalkthrough(actor: CurrentSession, sourceRevisionId: string):
   const commerce = await ensureWorkload(actor, 1, "Commerce checkout");
   await ensureAccepted(actor, walkthroughKey(2), {
     kind: "product_use", productKey: "synthetic-deployment", displayName: "Synthetic deployment product",
-    state: "actual", usageDescription: "Public web releases use a reviewed deployment path",
+    state: "actual", usageDescription: walkthroughFieldTexts.publicWebUse,
     observedAt: "2026-09-20T00:00:00Z", evidenceRevisionIds: [sourceRevisionId],
   }, [sourceRevisionId], web);
   await ensureAccepted(actor, walkthroughKey(3), {
     kind: "product_use", productKey: "synthetic-deployment", displayName: "Synthetic deployment product",
-    state: "evaluating", usageDescription: "Commerce checkout is evaluating the deployment path",
+    state: "evaluating", usageDescription: walkthroughFieldTexts.checkoutEvaluation,
     observedAt: "2026-09-20T00:00:00Z", evidenceRevisionIds: [sourceRevisionId],
   }, [sourceRevisionId], commerce);
   const risk = await ensureAccepted(actor, walkthroughKey(4), {
-    kind: "risk", category: "Release coordination", description: "Checkout rollback ownership is unresolved",
+    kind: "risk", category: "Release coordination", description: walkthroughFieldTexts.rollbackRisk,
     owner: "Synthetic delivery lead", likelihood: 4, impact: 4, severity: "high",
-    severityRationale: "A failed checkout release could interrupt the review milestone",
+    severityRationale: walkthroughFieldTexts.milestoneImpact,
     mitigation: "Agree a rollback owner and rehearse the checkout release", status: "open",
     observedAt: "2026-09-20T00:00:00Z", reviewAt: "2026-10-15T00:00:00Z",
   }, [], commerce);
   await ensureAccepted(actor, walkthroughKey(5), {
     kind: "next_review", subject: "Checkout rollback ownership", recordReferenceId: risk.recordId,
     owner: "Synthetic delivery lead", dueAt: "2026-10-15T00:00:00Z",
-    action: "Confirm rollback owner and record rehearsal outcome",
+    action: walkthroughFieldTexts.rollbackAction,
   }, [], commerce);
-  const claimTexts = [
-    "Checkout rollback rehearsal is complete.",
-    "Checkout rollback rehearsal has not been completed.",
-    "Public web release checklist has an assigned owner.",
-    "Public web release review occurs before promotion.",
-    "Commerce checkout uses a separate release approval step.",
-    "Commerce checkout has a documented test environment.",
-    "The synthetic team records deployment decisions.",
-    "The synthetic team tracks release follow-up actions.",
-    "The public web team shares a deployment checklist.",
-    "The checkout team has requested rollback training.",
-    "A delivery contact attends weekly release reviews.",
-    "The synthetic team keeps an incident follow-up list.",
-    "Checkout release ownership is under discussion.",
-    "The public web workload has a named technical owner.",
-    "The checkout workload has a named technical owner.",
-    "The next release review includes rollback readiness.",
-  ];
+  const claimTexts = walkthroughClaimTexts;
   const claims = [];
   for (const [offset, text] of claimTexts.entries()) {
     claims.push(await ensureAccepted(actor, walkthroughKey(6 + offset), {
@@ -147,7 +133,7 @@ async function seedWalkthrough(actor: CurrentSession, sourceRevisionId: string):
   console.log(JSON.stringify({ customerId, acceptedRecords: count.rows[0].count,
     workloadIds: [web, commerce], riskRecordId: risk.recordId,
     conflictRevisionIds: [claims[0].revisionId, claims[1].revisionId],
-    sourceRevisionId, reviewAction: "Confirm rollback owner and record rehearsal outcome" }));
+    sourceRevisionId, reviewAction: walkthroughFieldTexts.rollbackAction }));
 }
 
 async function main(): Promise<void> {
@@ -182,7 +168,7 @@ async function main(): Promise<void> {
       trustedIdentity: "synthetic-fixture-v1",
       location: "https://example.com/turas-synthetic-juniper-profile",
       title: "Synthetic public capability reference",
-      passage: "A fictional platform documents deployment review checks and a published rollback procedure.",
+      passage: syntheticPublicResearchPassage,
       supportedClaim: "The fictional platform documents deployment review checks and rollback.",
       publicationAt: "2026-09-01T00:00:00Z", retrievalAt: "2026-09-27T00:00:00Z",
       rights: "Synthetic public fixture", audience: "delivery",
@@ -197,7 +183,7 @@ async function main(): Promise<void> {
     }, client));
     const claim = await ensureAccepted(actor,
       { proposal: fixtureKeys.claimProposal, review: fixtureKeys.claimReview },
-      { kind: "claim", text: "Juniper's synthetic team has a documented deployment review workflow.",
+      { kind: "claim", text: walkthroughFieldTexts.deploymentWorkflow,
         sourceType: "manual", evidenceRevisionIds: [source.sourceRevisionId] },
       [source.sourceRevisionId]);
     await ensureAccepted(actor,

@@ -1,0 +1,341 @@
+{
+  "version": "005-retrieval-governance-v1",
+  "fixture": "synthetic-walkthrough",
+  "customer": "juniper",
+  "answerableQueries": [
+    {
+      "id": "Q01",
+      "kind": "literal",
+      "query": "Public web release checklist has an assigned owner.",
+      "relevantPassages": [
+        "Public web release checklist has an assigned owner."
+      ]
+    },
+    {
+      "id": "Q02",
+      "kind": "semantic",
+      "query": "Who owns the public web release checklist?",
+      "relevantPassages": [
+        "Public web release checklist has an assigned owner."
+      ]
+    },
+    {
+      "id": "Q03",
+      "kind": "literal",
+      "query": "Public web release review occurs before promotion.",
+      "relevantPassages": [
+        "Public web release review occurs before promotion."
+      ]
+    },
+    {
+      "id": "Q04",
+      "kind": "semantic",
+      "query": "Is the public web release reviewed ahead of promotion?",
+      "relevantPassages": [
+        "Public web release review occurs before promotion."
+      ]
+    },
+    {
+      "id": "Q05",
+      "kind": "literal",
+      "query": "Commerce checkout uses a separate release approval step.",
+      "relevantPassages": [
+        "Commerce checkout uses a separate release approval step."
+      ]
+    },
+    {
+      "id": "Q06",
+      "kind": "semantic",
+      "query": "Does checkout have its own release approval?",
+      "relevantPassages": [
+        "Commerce checkout uses a separate release approval step."
+      ]
+    },
+    {
+      "id": "Q07",
+      "kind": "literal",
+      "query": "Commerce checkout has a documented test environment.",
+      "relevantPassages": [
+        "Commerce checkout has a documented test environment."
+      ]
+    },
+    {
+      "id": "Q08",
+      "kind": "semantic",
+      "query": "Is a test environment documented for checkout?",
+      "relevantPassages": [
+        "Commerce checkout has a documented test environment."
+      ]
+    },
+    {
+      "id": "Q09",
+      "kind": "literal",
+      "query": "The synthetic team records deployment decisions.",
+      "relevantPassages": [
+        "The synthetic team records deployment decisions."
+      ]
+    },
+    {
+      "id": "Q10",
+      "kind": "semantic",
+      "query": "Are deployment choices recorded by the team?",
+      "relevantPassages": [
+        "The synthetic team records deployment decisions."
+      ]
+    },
+    {
+      "id": "Q11",
+      "kind": "literal",
+      "query": "The synthetic team tracks release follow-up actions.",
+      "relevantPassages": [
+        "The synthetic team tracks release follow-up actions."
+      ]
+    },
+    {
+      "id": "Q12",
+      "kind": "semantic",
+      "query": "How are post-release action items tracked?",
+      "relevantPassages": [
+        "The synthetic team tracks release follow-up actions."
+      ]
+    },
+    {
+      "id": "Q13",
+      "kind": "literal",
+      "query": "The public web team shares a deployment checklist.",
+      "relevantPassages": [
+        "The public web team shares a deployment checklist."
+      ]
+    },
+    {
+      "id": "Q14",
+      "kind": "semantic",
+      "query": "Does the web team use a shared deployment checklist?",
+      "relevantPassages": [
+        "The public web team shares a deployment checklist."
+      ]
+    },
+    {
+      "id": "Q15",
+      "kind": "literal",
+      "query": "The checkout team has requested rollback training.",
+      "relevantPassages": [
+        "The checkout team has requested rollback training."
+      ]
+    },
+    {
+      "id": "Q16",
+      "kind": "semantic",
+      "query": "Has checkout asked for rollback training?",
+      "relevantPassages": [
+        "The checkout team has requested rollback training."
+      ]
+    },
+    {
+      "id": "Q17",
+      "kind": "literal",
+      "query": "A delivery contact attends weekly release reviews.",
+      "relevantPassages": [
+        "A delivery contact attends weekly release reviews."
+      ]
+    },
+    {
+      "id": "Q18",
+      "kind": "semantic",
+      "query": "Who attends the weekly release review?",
+      "relevantPassages": [
+        "A delivery contact attends weekly release reviews."
+      ]
+    },
+    {
+      "id": "Q19",
+      "kind": "literal",
+      "query": "The synthetic team keeps an incident follow-up list.",
+      "relevantPassages": [
+        "The synthetic team keeps an incident follow-up list."
+      ]
+    },
+    {
+      "id": "Q20",
+      "kind": "semantic",
+      "query": "Is there a list of incident follow-ups?",
+      "relevantPassages": [
+        "The synthetic team keeps an incident follow-up list."
+      ]
+    },
+    {
+      "id": "Q21",
+      "kind": "literal",
+      "query": "Checkout release ownership is under discussion.",
+      "relevantPassages": [
+        "Checkout release ownership is under discussion."
+      ]
+    },
+    {
+      "id": "Q22",
+      "kind": "semantic",
+      "query": "Has checkout release ownership been settled?",
+      "relevantPassages": [
+        "Checkout release ownership is under discussion."
+      ]
+    },
+    {
+      "id": "Q23",
+      "kind": "literal",
+      "query": "The public web workload has a named technical owner.",
+      "relevantPassages": [
+        "The public web workload has a named technical owner."
+      ]
+    },
+    {
+      "id": "Q24",
+      "kind": "semantic",
+      "query": "Is a technical owner named for public web?",
+      "relevantPassages": [
+        "The public web workload has a named technical owner."
+      ]
+    },
+    {
+      "id": "Q25",
+      "kind": "literal",
+      "query": "The checkout workload has a named technical owner.",
+      "relevantPassages": [
+        "The checkout workload has a named technical owner."
+      ]
+    },
+    {
+      "id": "Q26",
+      "kind": "semantic",
+      "query": "Is there an identified technical owner for checkout?",
+      "relevantPassages": [
+        "The checkout workload has a named technical owner."
+      ]
+    },
+    {
+      "id": "Q27",
+      "kind": "literal",
+      "query": "The next release review includes rollback readiness.",
+      "relevantPassages": [
+        "The next release review includes rollback readiness."
+      ]
+    },
+    {
+      "id": "Q28",
+      "kind": "semantic",
+      "query": "Will the next release review cover rollback readiness?",
+      "relevantPassages": [
+        "The next release review includes rollback readiness."
+      ]
+    },
+    {
+      "id": "Q29",
+      "kind": "literal",
+      "query": "Juniper's synthetic team has a documented deployment review workflow.",
+      "relevantPassages": [
+        "Juniper's synthetic team has a documented deployment review workflow."
+      ]
+    },
+    {
+      "id": "Q30",
+      "kind": "semantic",
+      "query": "Does Juniper document its deployment review process?",
+      "relevantPassages": [
+        "Juniper's synthetic team has a documented deployment review workflow."
+      ]
+    },
+    {
+      "id": "Q31",
+      "kind": "literal",
+      "query": "Checkout rollback ownership is unresolved",
+      "relevantPassages": [
+        "Checkout rollback ownership is unresolved"
+      ]
+    },
+    {
+      "id": "Q32",
+      "kind": "semantic",
+      "query": "Who owns checkout rollback?",
+      "relevantPassages": [
+        "Checkout rollback ownership is unresolved"
+      ]
+    },
+    {
+      "id": "Q33",
+      "kind": "literal",
+      "query": "Public web releases use a reviewed deployment path",
+      "relevantPassages": [
+        "Public web releases use a reviewed deployment path"
+      ]
+    },
+    {
+      "id": "Q34",
+      "kind": "semantic",
+      "query": "How are public web deployments reviewed?",
+      "relevantPassages": [
+        "Public web releases use a reviewed deployment path"
+      ]
+    },
+    {
+      "id": "Q35",
+      "kind": "literal",
+      "query": "Commerce checkout is evaluating the deployment path",
+      "relevantPassages": [
+        "Commerce checkout is evaluating the deployment path"
+      ]
+    },
+    {
+      "id": "Q36",
+      "kind": "semantic",
+      "query": "Is commerce checkout already using the deployment path?",
+      "relevantPassages": [
+        "Commerce checkout is evaluating the deployment path"
+      ]
+    },
+    {
+      "id": "Q37",
+      "kind": "literal",
+      "query": "Confirm rollback owner and record rehearsal outcome",
+      "relevantPassages": [
+        "Confirm rollback owner and record rehearsal outcome"
+      ]
+    },
+    {
+      "id": "Q38",
+      "kind": "semantic",
+      "query": "What follow-up is needed for rollback rehearsal?",
+      "relevantPassages": [
+        "Confirm rollback owner and record rehearsal outcome"
+      ]
+    },
+    {
+      "id": "Q39",
+      "kind": "literal",
+      "query": "A failed checkout release could interrupt the review milestone",
+      "relevantPassages": [
+        "A failed checkout release could interrupt the review milestone"
+      ]
+    },
+    {
+      "id": "Q40",
+      "kind": "semantic",
+      "query": "What is the risk to the checkout review milestone?",
+      "relevantPassages": [
+        "A failed checkout release could interrupt the review milestone"
+      ]
+    }
+  ],
+  "denials": [
+    {
+      "id": "D01",
+      "query": "Internal margin plan",
+      "actor": "partner",
+      "expected": "no_results"
+    },
+    {
+      "id": "D02",
+      "query": "Juniper deployment review workflow",
+      "actor": "unassigned_partner",
+      "expected": "denied"
+    }
+  ]
+}

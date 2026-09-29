@@ -4,6 +4,16 @@ import type { ProfileActor } from "./policy";
 import { readProfile } from "./read";
 import { withTransaction } from "../db/client";
 import type { RecordKind } from "../../contracts/profile-payloads";
+import { searchEvidence } from "../retrieval/search";
+
+/** Shared governed path for new customer factual-context retrieval. */
+export async function readGovernedEvidenceContext(actor: ProfileActor, customerId: string,
+  query: string, options: { scope?: "customer" | "shared" | "combined";
+    use?: "discovery" | "current_fact"; limit?: number } = {}) {
+  return searchEvidence(actor,{ scope: options.scope ?? "combined",
+    customerId: options.scope === "shared" ? undefined : customerId,query,
+    use: options.use ?? "current_fact",limit: options.limit ?? 5 });
+}
 
 type ProfileProjection = {
   customer: { id: string; displayName: string; synthetic: boolean };

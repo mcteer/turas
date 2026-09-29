@@ -2,6 +2,7 @@ import type { PoolClient } from "pg";
 import { withTransaction } from "../db/client";
 import { messageDigest } from "./dispatch";
 import { artifactContextSchemaReady, assertArtifactDependenciesCurrent } from "../artifacts/context-fence";
+import { assertRetrievalDependenciesCurrent } from "../retrieval/fences";
 
 export type NativeEvent = {
   type: string;
@@ -62,6 +63,7 @@ export async function projectNativeEventInTransaction(
     }
     if (event.type !== "message.received") {
       await assertArtifactDependenciesCurrent(client,row.conversation_id);
+      await assertRetrievalDependenciesCurrent(client,row.conversation_id);
     }
     const artifact = await artifactContextSchemaReady(client)
       ? await client.query<{ native_text_digest: string }>(

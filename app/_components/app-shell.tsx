@@ -12,6 +12,7 @@ function SidebarContent({ role, loginName, csrfToken }: { role: string; loginNam
     <Link className="nav-action" href="/s">＋ New chat</Link>
     <nav aria-label="Workspace">
       <Link className="nav-link" href="/customers">Customer profiles</Link>
+      <Link className="nav-link" href="/knowledge">Shared knowledge</Link>
       {role === "admin" && <Link className="nav-link" href="/admin/access">Access</Link>}
     </nav>
     <ConversationList />

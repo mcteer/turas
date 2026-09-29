@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 25
     services:
       postgres:
-        image: postgres:17
+        image: pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
         env:
           POSTGRES_PASSWORD: postgres
         ports:
@@ -35,6 +35,8 @@ jobs:
           node-version-file: .node-version
           cache: npm
       - run: npm ci
+      - name: Verify pinned vector image
+        run: npm run retrieval:prepare -- --offline
       - run: npm ci --prefix packages/artifact-extractor
       - name: Create isolated test configuration
         env:
@@ -87,6 +89,8 @@ jobs:
       - run: npm run test:integration
       - run: npm run test:contracts
       - run: npm run test:artifacts
+      - name: Test governed retrieval and research on disposable Postgres
+        run: npm run test:retrieval
       - name: Compile without sandbox preparation
         run: npm run build:check
       - name: Validate Spec Kit feature artifacts
@@ -94,7 +98,22 @@ jobs:
           SPECIFY_FEATURE_DIRECTORY: specs/004-chat-artifact-ingestion
           SPECIFY_FEATURE_NO_PERSIST: '1'
         run: .specify/scripts/bash/check-prerequisites.sh --json --require-spec --require-tasks
+      - name: Validate feature 005 Spec Kit artifacts
+        env:
+          SPECIFY_FEATURE_DIRECTORY: specs/005-governed-rag-research
+          SPECIFY_FEATURE_NO_PERSIST: '1'
+        run: .specify/scripts/bash/check-prerequisites.sh --json --require-spec --require-tasks
       - name: Install WebKit
         run: npx playwright install --with-deps webkit
       - name: Exercise the local UI in WebKit
+        env:
+          TURAS_UI_LEGACY_ONLY: '1'
         run: npm run test:ui
+      - name: Exercise 005 UI on isolated disposable Postgres
+        run: |
+          DATABASE_URL="$TURAS_TEST_DATABASE_URL" \
+          DATABASE_URL_UNPOOLED="$TURAS_TEST_DATABASE_URL" \
+          TURAS_ENVIRONMENT_ID="$TURAS_TEST_ENVIRONMENT_ID" \
+          TURAS_UI_FIXTURE_DATABASE_URL="$TURAS_TEST_DATABASE_URL" \
+          TURAS_UI_BASE_URL="$TURAS_APP_ORIGIN" \
+          npm run test:ui -- tests/ui/knowledge.spec.ts tests/ui/research.spec.ts tests/ui/retrieval.spec.ts

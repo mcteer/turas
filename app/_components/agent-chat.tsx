@@ -8,6 +8,7 @@ import { ChatStatus } from "./chat-status";
 import { ShareChatClaim } from "./profiles/share-chat-claim";
 import { ComposerAttachments } from "./attachments/composer-attachments";
 import type { DraftSourceSelection } from "./attachments/source-viewer";
+import { ResearchPanel } from "./research/research-panel";
 
 export function AgentChat({ conversationId, nativeSessionId, bindingState,
   customerName, synthetic, csrfToken, customerId, contextStatus }: {
@@ -205,6 +206,24 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     catch { setStopping(false); setNotice("Could not request a stop."); }
   }
 
+  async function sendResearchTurn(turn: { message: string; requestKey: string }) {
+    if (denied || stale || pendingKey || agent.status !== "ready") {
+      throw new Error("The chat is busy. Check its status before starting research.");
+    }
+    keyRef.current = turn.requestKey;
+    setPendingKey(turn.requestKey);
+    setDispatchState("prepared");
+    setResponseState("pending");
+    setNotice("Submitting research turn…");
+    try {
+      await agent.send(turn.message,{ headers: { "x-turas-request-key": turn.requestKey } });
+      setNotice("Research turn accepted. Waiting for the response…");
+    } catch {
+      setNotice("Research dispatch outcome is uncertain. The turn was not sent again.");
+      throw new Error("Research dispatch outcome is uncertain. Check status before retrying.");
+    }
+  }
+
   if (denied) return <main className="chat-page">
     <h1>Chat unavailable</h1><p role="alert">Access to this customer or chat has changed.</p>
   </main>;
@@ -215,6 +234,9 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     <h1 className="chat-heading">{customerName}</h1>
     <p className="muted">Private conversation</p>
     <DemoDataNotice synthetic={synthetic} />
+    <ResearchPanel customerId={customerId} conversationId={conversationId}
+      csrfToken={csrfToken} busy={Boolean(pendingKey) || agent.status !== "ready"}
+      onStart={sendResearchTurn} />
     <div className="chat-messages" aria-live="polite">
       {agent.data.messages.length === 0 && <p className="muted">No messages yet.</p>}
       {agent.data.messages.map((message) => <article className="chat-message" key={message.id}>
@@ -242,7 +264,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     {pendingKey && dispatchState === "prepared" && !busy &&
       <button className="secondary-button" type="button" onClick={() => void send(true)}>
         Retry prepared message</button>}
-    {pendingKey && <button type="button" onClick={() => {
+    {pendingKey && <button className="secondary-button" type="button" onClick={() => {
       void fetch(`/api/conversations/${conversationId}/attempts/${pendingKey}`, { cache: "no-store" })
         .then(async (response) => {
           if (!response.ok) throw new Error();

@@ -21,6 +21,18 @@ const windows: Record<InformationType, number> = {
   adoption_process: 90, architecture: 180, unknown: 0,
 };
 
+export function evidenceReviewDueAt(input: {
+  informationType: InformationType; dateBasis: DateBasis;
+  observationAt?: Date | null; publicationAt?: Date | null;
+}, asOf = new Date()): Date {
+  const evidenceAt = input.dateBasis === "observation" ? input.observationAt :
+    input.dateBasis === "publication" ? input.publicationAt : null;
+  const window = windows[input.informationType];
+  if (!evidenceAt || !Number.isFinite(evidenceAt.getTime()) || !window ||
+      evidenceAt.getTime() > asOf.getTime()) return asOf;
+  return new Date(evidenceAt.getTime()+window*day);
+}
+
 export function rateEvidence(input: QualityInput): QualityResult {
   for (const score of [input.R, input.D, input.C]) {
     if (!Number.isInteger(score) || score < 0 || score > 4) throw new RangeError("Quality components must be integers from 0 to 4");

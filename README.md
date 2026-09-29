@@ -17,7 +17,14 @@ maturity assessments, attributed synthetic research, evidence quality and confli
 review, partner projections, and bound agent context
 for local testing. Feature 004 adds local private attachment intake, isolated
 scan/extraction, exact-source review, bounded unverified chat selection and
-versioned cleanup. RAG, delivery plans, staffing, reports and MCP remain planned.
+versioned cleanup. Delivery plans, staffing, reports and MCP remain planned.
+Feature 005 is implemented and locally validated on its feature branch. Governed retrieval,
+shared knowledge publication, bounded research, refresh and typed conflict
+flows have focused local checks and CLI WebKit journeys. A 40-query synthetic
+live embedding evaluation passed its citation and recall gate, and the local
+5,000-passage hybrid load gate, all twelve local actual-output Turi review
+cases and a disposable paired restart/recovery drill passed. These 005
+changes are not merged or released.
 No speculative eve integrations have been installed. The configured model is
 unchanged. The application has not been deployed or validated on hosted infrastructure.
 
@@ -30,6 +37,7 @@ credentials, data and unused integrations are not the new platform. See the
 - [Roadmap and delivery order](ROADMAP.md)
 - [Product blueprint and requirement coverage](docs/product-blueprint.md)
 - [Proposed architecture](docs/architecture.md) and [decision register](docs/decisions.md)
+- [Hosted environment handoff](docs/environment-handoff.md) for the former Vercel variables and Neon Preview selection
 - [Evidence, quality scoring and approval policy](docs/evidence-policy.md)
 - [Plan and report templates](docs/templates/README.md)
 - [Foundation spec and plan](specs/001-platform-foundation/spec.md)
@@ -45,6 +53,11 @@ credentials, data and unused integrations are not the new platform. See the
   [implementation plan](specs/004-chat-artifact-ingestion/plan.md) and
   [tasks](specs/004-chat-artifact-ingestion/tasks.md) and
   [local validation](specs/004-chat-artifact-ingestion/validation.md) — merged on `main` with local and CI validation, no hosted release
+- [Feature 005 specification](specs/005-governed-rag-research/spec.md),
+  [implementation plan](specs/005-governed-rag-research/plan.md),
+  [tasks](specs/005-governed-rag-research/tasks.md) and
+  [validation guide](specs/005-governed-rag-research/quickstart.md) and
+  [local validation log](specs/005-governed-rag-research/validation.md) — local implementation complete, unmerged
 - [Contributing](CONTRIBUTING.md), [development instructions](AGENTS.md), and
   [constitution](.specify/memory/constitution.md)
 
@@ -127,6 +140,27 @@ The 004 checks include `npm run test:artifacts`,
 `npm run eval:behavior:local -- --feature 004 --live`. The last command runs
 eight synthetic selected-source cases in a disposable app and database; review
 the captured responses before claiming the behavior gate passed.
+For 005, `npm run test:retrieval` runs the isolated deterministic unit, contract
+and database checks against an explicitly marked disposable test database.
+For the current 005 workspace, ignored `.env.local` selects the new
+`turas_preview_005` database in Neon Preview for the pooled app runtime and
+direct migrations. A read-only inspection found 16 legacy tables in the
+original Preview database; they were left untouched. The new app database is
+at schema 028 with marker `preview-neon-005`. A separate
+`turas_test_005_neon` database and marker are configured for disposable tests.
+See the [environment handoff](docs/environment-handoff.md). The legacy
+Production site continues to use its Production Neon database.
+`npm run retrieval:prepare -- --offline` checks local prerequisites without
+migrating a database. Public research discovery uses the server-only
+`CONTEXT_API_KEY` for Context.dev URL search. A live discovery and independent
+public-page fetch/quote smoke passed;
+`npm run research:workflow:live:check -- --live --disposable`
+also passed one persisted public-practices path on a temporary clone of the
+marked test database. It requires `TURAS_TEST_DATABASE_URL` and
+`TURAS_TEST_ENVIRONMENT_ID` and drops that clone afterward. The full research
+mode review passed twelve bounded actual-output cases locally. The disposable
+recovery drill verified a bound native session after restart with a matched
+synthetic database/store pair; it does not establish hosted backup restoration.
 
 ## Spec Kit workflow
 

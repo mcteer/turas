@@ -4,6 +4,7 @@ import { HttpFailure, hiddenRecord } from "../../contracts/http";
 import type { ProfileCommand } from "../../contracts/profiles";
 import type { ProfileActor } from "./policy";
 import { requireSteward } from "./policy";
+import { retireRetrievalProjection } from "../retrieval/projections";
 
 type RetractionCommand = Extract<ProfileCommand, { action: "request_retraction" | "retract_revision" | "decline_retraction" | "withdraw_source" }>;
 
@@ -31,6 +32,7 @@ export async function handleRetraction(client: PoolClient, actor: ProfileActor, 
       (id,source_revision_id,lifecycle_version,event_type,actor_membership_id,rationale,command_receipt_id)
       VALUES ($1,$2,$3,'withdraw',$4,$5,$6)`,
     [eventId, command.sourceRevisionId, version + 1, actor.membershipId, command.rationale, receiptId]);
+    await retireRetrievalProjection(client,"verified_research",command.sourceRevisionId);
     const dependents = await client.query(`SELECT 1 FROM profile_evidence_links l
       JOIN profile_revisions v ON v.id=l.profile_revision_id AND v.audience='delivery'
       JOIN profile_records r ON r.id=v.record_id AND r.current_accepted_revision_id=v.id
@@ -100,6 +102,7 @@ export async function handleRetraction(client: PoolClient, actor: ProfileActor, 
     VALUES ($1,$2,$3,'retract',$3,NULL,$4,$5,$6)`,
   [eventId, row.record_id, command.revisionId, actor.membershipId, command.rationale, receiptId]);
   await client.query("UPDATE profile_records SET current_accepted_revision_id=NULL,version=version+1 WHERE id=$1", [row.record_id]);
+  await retireRetrievalProjection(client,"accepted_profile",command.revisionId);
   if (row.kind === "customer_details") await client.query(
     "UPDATE customer_references SET display_name='Unknown customer' WHERE id=$1 AND workspace_id=$2",
     [customerId, actor.workspaceId]);

@@ -59,6 +59,81 @@ export async function unsupportedProfileRevisionIds(client: PoolClient, ids: rea
   return new Set(result.rows.map((row) => row.id));
 }
 
+/** Shared readers never receive these rows; this checks private lineage only. */
+export async function knowledgeLineageIsCurrent(client: PoolClient, revisionId: string): Promise<boolean> {
+  const lineage = await client.query<{
+    source_kind: string; source_revision_id: string; source_generation: string;
+    source_digest: string; workspace_id: string; customer_id: string;
+    author_membership_id: string;
+  }>(`SELECT l.source_kind,l.source_revision_id,l.source_generation,l.source_digest,
+      c.workspace_id,c.customer_id,c.author_membership_id
+    FROM knowledge_lineage l JOIN knowledge_contributions c ON c.id=l.contribution_id
+    WHERE l.revision_id=$1 ORDER BY l.ordinal`, [revisionId]);
+  if (lineage.rows.length < 1 || lineage.rows.length > 20) return false;
+  const author = lineage.rows[0];
+  const authority = await client.query(`SELECT 1 FROM memberships m
+    JOIN principals p ON p.id=m.principal_id AND p.active
+    JOIN workspaces w ON w.id=m.workspace_id AND w.active
+    LEFT JOIN partner_organizations org ON org.id=m.partner_org_id
+    LEFT JOIN customer_grants customer_grant ON customer_grant.membership_id=m.id
+      AND customer_grant.customer_id=$2 AND customer_grant.state='active'
+    WHERE m.id=$1 AND m.workspace_id=$3 AND m.active
+      AND (m.kind='internal' OR (org.active AND customer_grant.id IS NOT NULL))`,
+  [author.author_membership_id,author.customer_id,author.workspace_id]);
+  if (!authority.rowCount) return false;
+  for (const item of lineage.rows) {
+    if (item.source_kind === "accepted_profile") {
+      const current = await client.query(`SELECT 1 FROM profile_revisions v
+        JOIN profile_records r ON r.id=v.record_id AND r.current_accepted_revision_id=v.id
+        WHERE v.id=$1 AND v.workspace_id=$2 AND v.customer_id=$3
+          AND v.revision_number=$4 AND v.content_digest=$5`,
+      [item.source_revision_id,item.workspace_id,item.customer_id,
+        item.source_generation,item.source_digest]);
+      if (!current.rowCount || (await unsupportedProfileRevisionIds(client,
+        [item.source_revision_id], true)).has(item.source_revision_id)) return false;
+    } else if (item.source_kind === "verified_research") {
+      const current = await client.query(`SELECT 1 FROM evidence_source_revisions v
+        JOIN evidence_sources s ON s.id=v.source_id AND s.origin='independent_research'
+        JOIN research_checks c ON c.source_revision_id=v.id
+        WHERE v.id=$1 AND v.workspace_id=$2 AND v.customer_id=$3
+          AND v.version=$4 AND v.passage_digest=$5
+          AND c.identity_result AND c.scope_result AND c.integrity_result AND c.content_result
+          AND NOT EXISTS (SELECT 1 FROM evidence_source_events e
+            WHERE e.source_revision_id=v.id AND e.event_type IN ('withdraw','supersede'))`,
+      [item.source_revision_id,item.workspace_id,item.customer_id,
+        item.source_generation,item.source_digest]);
+      if (!current.rowCount) return false;
+    } else return false;
+  }
+  return true;
+}
+
+/** Only a public-safe boolean leaves the private lineage boundary. */
+export async function knowledgeLineageHasMaterialConflict(client: PoolClient,
+  revisionId: string): Promise<boolean> {
+  const found = await client.query(`SELECT 1 FROM knowledge_lineage lineage
+    JOIN knowledge_contributions contribution ON contribution.id=lineage.contribution_id
+    WHERE lineage.revision_id=$1 AND (
+      EXISTS (SELECT 1 FROM evidence_conflict_targets conflict
+        WHERE conflict.environment_id=contribution.environment_id
+          AND conflict.state='confirmed'
+          AND ((conflict.first_kind=lineage.source_kind
+              AND conflict.first_revision_id=lineage.source_revision_id)
+            OR (conflict.second_kind=lineage.source_kind
+              AND conflict.second_revision_id=lineage.source_revision_id))
+          AND (conflict.scope='shared' OR (conflict.scope='customer'
+            AND conflict.workspace_id=contribution.workspace_id
+            AND conflict.customer_id=contribution.customer_id)))
+      OR (lineage.source_kind='accepted_profile' AND EXISTS (
+        SELECT 1 FROM evidence_conflicts legacy WHERE legacy.state='confirmed'
+          AND legacy.workspace_id=contribution.workspace_id
+          AND legacy.customer_id=contribution.customer_id
+          AND (legacy.first_revision_id=lineage.source_revision_id
+            OR legacy.second_revision_id=lineage.source_revision_id))))
+    LIMIT 1`,[revisionId]);
+  return Boolean(found.rowCount);
+}
+
 /** Lock source versions before the profile record so review cannot race tombstones. */
 export async function validateArtifactReviewSupport(client: PoolClient, revisionId: string,
   workspaceId: string, customerId: string): Promise<void> {

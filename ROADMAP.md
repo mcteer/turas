@@ -1,7 +1,17 @@
 # Turas delivery roadmap
 
-Baseline: 2026-09-26; updated 2026-09-28. **001 merged in PR 1; 002 merged in
-[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005–016 remain planned.**
+Baseline: 2026-09-26; updated 2026-09-29. **001 merged in PR 1; 002 merged in
+[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 is locally implemented and unmerged, while 006–016 remain planned.**
+
+005 now has [specification](specs/005-governed-rag-research/spec.md),
+[design](specs/005-governed-rag-research/plan.md) and
+[implementation tasks](specs/005-governed-rag-research/tasks.md) prepared on
+`005-governed-rag-research`. Local implementation and validation are complete; the
+[validation log](specs/005-governed-rag-research/validation.md) separates focused
+local checks, CLI WebKit journeys, the passing 40-query synthetic live
+embedding gate, local 5,000-passage hybrid load gate, twelve-case actual
+Turi output review and disposable paired recovery drill from hosted validation,
+which remains outside this slice.
 
 The user disconnected the repository from Vercel. Use local `npm run dev` testing;
 no reconnection or deployment until replacement readiness. Hosted acceptance for
