@@ -264,7 +264,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     {pendingKey && dispatchState === "prepared" && !busy &&
       <button className="secondary-button" type="button" onClick={() => void send(true)}>
         Retry prepared message</button>}
-    {pendingKey && <button type="button" onClick={() => {
+    {pendingKey && <button className="secondary-button" type="button" onClick={() => {
       void fetch(`/api/conversations/${conversationId}/attempts/${pendingKey}`, { cache: "no-store" })
         .then(async (response) => {
           if (!response.ok) throw new Error();

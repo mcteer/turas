@@ -911,3 +911,9 @@ fresh clone run in the restricted session.
   WebKit run passed in the 28-case local matrix above. A timing-sensitive
   publication focus recheck now retries the focus event until the listener is
   installed; its focused mobile-light WebKit rerun passed 1/1 in 5.9 seconds.
+- The isolated 005 CI UI stage then passed 22 cases, skipped four live-embedding
+  citation journeys by design, and found serious contrast on the unstyled
+  “Check status” button in two Linux WebKit dark projects. The button now uses
+  the existing secondary style. A focused isolated mobile-dark WebKit rerun
+  passed 1/1 with axe in 16.4 seconds; the four-project local 28-case matrix
+  remains separate evidence for live citation UI.
