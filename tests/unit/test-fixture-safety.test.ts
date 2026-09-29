@@ -15,11 +15,11 @@ describe("test isolation", () => {
     expect(() => requireTestDatabaseUrl({
       TURAS_TEST_DATABASE_URL: "postgres://example.com/turas_test",
       TURAS_TEST_ENVIRONMENT_ID: "test-002",
-    })).toThrow("local turas_test");
+    })).toThrow("Neon test database requires explicit Preview and Production references");
     expect(() => requireTestDatabaseUrl({
       TURAS_TEST_DATABASE_URL: "postgres://localhost/turas",
       TURAS_TEST_ENVIRONMENT_ID: "test-002",
-    })).toThrow("local turas_test");
+    })).toThrow("Tests require a turas_test database");
   });
 
   it("keeps deterministic checks from making live model calls", () => {

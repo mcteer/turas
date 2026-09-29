@@ -897,3 +897,7 @@ fresh clone run in the restricted session.
   links; `git diff --check` and `npm run typecheck` passed after status and
   task reconciliation. All T001–T060 entries are checked against local
   implementation and validation evidence. No Vercel link or deployment ran.
+- The first draft-PR CI run found two legacy fixture-safety assertions that
+  still expected the local-only database-guard messages. The guard already
+  rejected those URLs; the assertions now expect its Preview-aware messages.
+  The full `npm run test:unit` rerun passed 29 files and 102 tests locally.
