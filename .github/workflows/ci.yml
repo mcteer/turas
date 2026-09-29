@@ -89,11 +89,18 @@ jobs:
       - run: npm run test:integration
       - run: npm run test:contracts
       - run: npm run test:artifacts
+      - name: Test governed retrieval and research on disposable Postgres
+        run: npm run test:retrieval
       - name: Compile without sandbox preparation
         run: npm run build:check
       - name: Validate Spec Kit feature artifacts
         env:
           SPECIFY_FEATURE_DIRECTORY: specs/004-chat-artifact-ingestion
+          SPECIFY_FEATURE_NO_PERSIST: '1'
+        run: .specify/scripts/bash/check-prerequisites.sh --json --require-spec --require-tasks
+      - name: Validate feature 005 Spec Kit artifacts
+        env:
+          SPECIFY_FEATURE_DIRECTORY: specs/005-governed-rag-research
           SPECIFY_FEATURE_NO_PERSIST: '1'
         run: .specify/scripts/bash/check-prerequisites.sh --json --require-spec --require-tasks
       - name: Install WebKit
