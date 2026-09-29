@@ -1,12 +1,12 @@
 # Turas delivery roadmap
 
 Baseline: 2026-09-26; updated 2026-09-29. **001 merged in PR 1; 002 merged in
-[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 is locally implemented and unmerged, while 006–016 remain planned.**
+[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006–016 remain planned.**
 
 005 now has [specification](specs/005-governed-rag-research/spec.md),
 [design](specs/005-governed-rag-research/plan.md) and
-[implementation tasks](specs/005-governed-rag-research/tasks.md) prepared on
-`005-governed-rag-research`. Local implementation and validation are complete; the
+[implementation tasks](specs/005-governed-rag-research/tasks.md) merged in
+[PR 8](https://github.com/mcteer/turas/pull/8). Local implementation and validation are complete; the
 [validation log](specs/005-governed-rag-research/validation.md) separates focused
 local checks, CLI WebKit journeys, the passing 40-query synthetic live
 embedding gate, local 5,000-passage hybrid load gate, twelve-case actual

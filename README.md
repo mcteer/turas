@@ -18,13 +18,13 @@ review, partner projections, and bound agent context
 for local testing. Feature 004 adds local private attachment intake, isolated
 scan/extraction, exact-source review, bounded unverified chat selection and
 versioned cleanup. Delivery plans, staffing, reports and MCP remain planned.
-Feature 005 is implemented and locally validated on its feature branch. Governed retrieval,
+Feature 005 is merged in [PR 8](https://github.com/mcteer/turas/pull/8). Governed retrieval,
 shared knowledge publication, bounded research, refresh and typed conflict
 flows have focused local checks and CLI WebKit journeys. A 40-query synthetic
 live embedding evaluation passed its citation and recall gate, and the local
 5,000-passage hybrid load gate, all twelve local actual-output Turi review
 cases and a disposable paired restart/recovery drill passed. These 005
-changes are not merged or released.
+changes have not been released.
 No speculative eve integrations have been installed. The configured model is
 unchanged. The application has not been deployed or validated on hosted infrastructure.
 
@@ -57,7 +57,7 @@ credentials, data and unused integrations are not the new platform. See the
   [implementation plan](specs/005-governed-rag-research/plan.md),
   [tasks](specs/005-governed-rag-research/tasks.md) and
   [validation guide](specs/005-governed-rag-research/quickstart.md) and
-  [local validation log](specs/005-governed-rag-research/validation.md) — local implementation complete, unmerged
+  [local validation log](specs/005-governed-rag-research/validation.md) — merged on `main` with local and CI validation, no hosted release
 - [Contributing](CONTRIBUTING.md), [development instructions](AGENTS.md), and
   [constitution](.specify/memory/constitution.md)
 

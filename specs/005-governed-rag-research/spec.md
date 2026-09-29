@@ -2,7 +2,7 @@
 
 **Feature Branch**: `005-governed-rag-research`
 **Created**: 2026-09-28
-**Status**: Local implementation and validation complete on the unmerged feature branch; internal-administrator publication confirmed; hosted release remains out of scope
+**Status**: Merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation; internal-administrator publication confirmed; hosted release remains out of scope
 **Input**: Roadmap 005, the evidence policy, and the request to run specify, clarify, plan, tasks and analyze before switching models for implementation.
 
 ## Scope and intent
