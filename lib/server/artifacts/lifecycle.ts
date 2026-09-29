@@ -8,6 +8,7 @@ import { hiddenRecord, HttpFailure } from "../../contracts/http";
 import { requireSteward } from "../profiles/policy";
 import { lockArtifactHumanScope } from "./policy";
 import { queueNativeRetirement } from "./native-retirement";
+import { retireRetrievalProjection } from "../retrieval/projections";
 
 export function nextArtifactGeneration(current: number, expected: number): number {
   if (!Number.isSafeInteger(current) || current < 1 || current !== expected) {
@@ -91,6 +92,11 @@ export async function retireArtifactVersion(
     }
     await client.query(`UPDATE artifact_versions SET state=$2,lifecycle_generation=$3,updated_at=now()
       WHERE id=$1`, [versionId, targetState, generation]);
+    const selections = await client.query<{ id: string }>(`
+      SELECT id FROM artifact_evidence_selections WHERE version_id=$1`,[versionId]);
+    for (const selection of selections.rows) {
+      await retireRetrievalProjection(client,"approved_excerpt",selection.id,environmentId);
+    }
     const eventId = randomUUID();
     const result: ArtifactRetirementReceipt = { versionId, state: targetState, lifecycleGeneration: generation, eventId };
     await client.query(`

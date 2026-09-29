@@ -5,6 +5,8 @@ import { getServerConfig } from "../config";
 import { withTransaction } from "../db/client";
 import { lockOwnedBinding } from "./binding";
 import { assertArtifactDependenciesCurrent } from "../artifacts/context-fence";
+import { assertRetrievalDependenciesCurrent } from "../retrieval/fences";
+import { assertResearchConversationCurrent } from "../research/fences";
 
 async function checkCurrentContext(client: PoolClient, session: CurrentSession,
   nativeSessionId: string): Promise<void> {
@@ -33,6 +35,8 @@ async function checkCurrentContext(client: PoolClient, session: CurrentSession,
     throw new HttpFailure(409, "context_changed", "Start a new conversation for current customer context");
   }
   await assertArtifactDependenciesCurrent(client, conversation.id);
+  await assertRetrievalDependenciesCurrent(client, conversation.id);
+  await assertResearchConversationCurrent(client, conversation.id);
 }
 
 export async function assertNativeContextCurrent(session: CurrentSession,

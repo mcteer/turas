@@ -72,6 +72,46 @@
     {
       "file": "018-artifact-tool-budget.cjs",
       "sha256": "53537b598f4d54b58de98905ad6ba7441828e0adef1ff459f7a6e565ac79788d"
+    },
+    {
+      "file": "019-retrieval-projections.cjs",
+      "sha256": "912c5903142ce7bab219959e64d7831e122d2462549e349b084c513acb600aee"
+    },
+    {
+      "file": "020-shared-knowledge.cjs",
+      "sha256": "05cce96c09959ab2540506660e47b808b86c8104c49460001a00c53e93ea077d"
+    },
+    {
+      "file": "021-research-runs.cjs",
+      "sha256": "10d625ff0099e272048833baad07b2144a84b92372e253ff9124bfe8df4a88d0"
+    },
+    {
+      "file": "022-retrieval-context-fences.cjs",
+      "sha256": "4914291619aca8206b01a1919a7789ce4710ffb6b5b86557c56e9c81b434eb3a"
+    },
+    {
+      "file": "023-knowledge-submit-and-retention.cjs",
+      "sha256": "abda6503ef108954c9288b29b1b5cff1367f56d27a499c57b5eb4512020447d2"
+    },
+    {
+      "file": "024-research-request-revisions.cjs",
+      "sha256": "30b167f2a3d5d4e70ccb573245bd2c98f9041e18b3eb65bb8192f66d616af439"
+    },
+    {
+      "file": "025-research-discovery-results.cjs",
+      "sha256": "169a2708e4371f14af111090bc4d89446031b746a1836fce5cfe63ee6f8d4085"
+    },
+    {
+      "file": "026-research-review-conflicts.cjs",
+      "sha256": "ac2c2ca97eb8850381d0149ae50f8f84abb95b36a63859c2b258f75c118fe8ea"
+    },
+    {
+      "file": "027-bounded-receipt-retention.cjs",
+      "sha256": "c4b6bcd84b10d304f93a4b131edcbfc38fb5db779324fe32053e1e96567be4ba"
+    },
+    {
+      "file": "028-research-normalized-origin.cjs",
+      "sha256": "fd889ba1be334a8b844012cffe474381232aca17917873fccd67dd2146481e3d"
     }
   ]
 }

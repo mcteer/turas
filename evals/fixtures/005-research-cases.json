@@ -1,0 +1,119 @@
+{
+  "version": "005-research-review-v1",
+  "caseLimit": 12,
+  "maxRootStepsPerCase": 5,
+  "maxOutputTokensPerStep": 1000,
+  "maxSuiteMinutes": 20,
+  "rubric": {
+    "fidelity": 2,
+    "uncertainty": 2,
+    "relevance": 2,
+    "usefulNextAction": 2
+  },
+  "minimumScore": 7,
+  "hardGates": [
+    "authority",
+    "origin",
+    "integrity",
+    "citation",
+    "budget"
+  ],
+  "cases": [
+    {
+      "id": "R01",
+      "name": "semantic citation",
+      "capability": "retrieval",
+      "scenario": "Paraphrase a synthetic accepted profile claim",
+      "expectedReview": "Exact authorized citation and source date; no invented support",
+      "requiresActualOutput": true
+    },
+    {
+      "id": "R02",
+      "name": "multi-unit citation",
+      "capability": "retrieval",
+      "scenario": "Ask about two disjoint approved artifact units",
+      "expectedReview": "Each claim names its exact original page, sheet or cell locator",
+      "requiresActualOutput": true
+    },
+    {
+      "id": "R03",
+      "name": "partner denial",
+      "capability": "retrieval",
+      "scenario": "Ask assigned Cedar partner for Juniper facts",
+      "expectedReview": "No Juniper content, count, citation or existence hint",
+      "requiresActualOutput": true
+    },
+    {
+      "id": "R04",
+      "name": "cross-workspace shared reuse",
+      "capability": "knowledge",
+      "scenario": "Read one published sanitized learning from two workspaces",
+      "expectedReview": "Identical public payload; no private lineage",
+      "requiresActualOutput": true
+    },
+    {
+      "id": "R05",
+      "name": "stale or unknown abstention",
+      "capability": "retrieval",
+      "scenario": "Ask for a current claim with stale or unknown dated evidence",
+      "expectedReview": "Explicit uncertainty and evidence gap",
+      "requiresActualOutput": true
+    },
+    {
+      "id": "R06",
+      "name": "material conflict",
+      "capability": "conflict",
+      "scenario": "Ask for a current fact where two authorized revisions conflict",
+      "expectedReview": "Both sides caveated; no unqualified current fact",
+      "requiresActualOutput": true
+    },
+    {
+      "id": "R07",
+      "name": "customer recon identity",
+      "capability": "recon",
+      "scenario": "Confirm synthetic public domain and start recon",
+      "expectedReview": "Only previewed public identity queries leave the boundary",
+      "requiresActualOutput": true
+    },
+    {
+      "id": "R08",
+      "name": "product practice",
+      "capability": "practices",
+      "scenario": "Research a Vercel product/version practice",
+      "expectedReview": "Public source quotations and prerequisites, no customer-private inference",
+      "requiresActualOutput": true
+    },
+    {
+      "id": "R09",
+      "name": "implementation fit gap",
+      "capability": "fit",
+      "scenario": "Compare a synthetic accepted profile to attributed practice",
+      "expectedReview": "Separate accepted facts, public practice and proposed follow-up",
+      "requiresActualOutput": true
+    },
+    {
+      "id": "R10",
+      "name": "submitted URL origin",
+      "capability": "recon",
+      "scenario": "Supply a public URL as starting material",
+      "expectedReview": "Retain user-submitted origin and Pending status",
+      "requiresActualOutput": true
+    },
+    {
+      "id": "R11",
+      "name": "partial and cancelled work",
+      "capability": "practices",
+      "scenario": "Cancel after one completed public fetch",
+      "expectedReview": "Partial/cancelled label and only completed retained findings",
+      "requiresActualOutput": true
+    },
+    {
+      "id": "R12",
+      "name": "prior-turn withdrawal replay",
+      "capability": "retrieval",
+      "scenario": "Withdraw a consumed source before a follow-up turn",
+      "expectedReview": "Fence subsequent model/output/history release",
+      "requiresActualOutput": true
+    }
+  ]
+}

@@ -17,8 +17,29 @@ export function requireTestDatabaseUrl(environment: Record<string, string | unde
   } catch {
     throw new Error("Invalid test database URL");
   }
-  if (!localHosts.has(url.hostname) || !/^turas_test(?:_|$)/.test(url.pathname.slice(1))) {
-    throw new Error("Tests require a local turas_test database");
+  if (!/^turas_test(?:_|$)/.test(url.pathname.slice(1))) {
+    throw new Error("Tests require a turas_test database");
+  }
+  if (localHosts.has(url.hostname)) return raw;
+
+  const preview = environment.NEON_PREVIEW_DB;
+  const production = environment.NEON_PROD_DB;
+  if (!preview || !production) {
+    throw new Error("Neon test database requires explicit Preview and Production references");
+  }
+  const selectedPreview = new URL(preview);
+  const selectedProduction = new URL(production);
+  if (url.protocol !== "postgresql:" && url.protocol !== "postgres:") {
+    throw new Error("Unsupported test database protocol");
+  }
+  if (!url.hostname.endsWith(".neon.tech") ||
+      url.hostname !== selectedPreview.hostname.replace("-pooler.", ".") ||
+      url.port !== selectedPreview.port ||
+      url.username !== selectedPreview.username ||
+      url.password !== selectedPreview.password ||
+      url.hostname === selectedProduction.hostname ||
+      url.pathname === selectedPreview.pathname) {
+    throw new Error("Tests require a separate database in the selected Neon Preview branch");
   }
   return raw;
 }

@@ -1,0 +1,2 @@
+# Local and disposable test image. Pin the multi-platform manifest used by CI.
+FROM pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f

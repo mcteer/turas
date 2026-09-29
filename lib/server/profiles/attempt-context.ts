@@ -5,6 +5,8 @@ import type { CurrentSession } from "../auth/sessions";
 import { getServerConfig } from "../config";
 import { readEligibleContext } from "./context";
 import { assertArtifactDependenciesCurrent } from "../artifacts/context-fence";
+import { assertRetrievalDependenciesCurrent } from "../retrieval/fences";
+import { assertResearchAttemptCurrent } from "../research/fences";
 
 type Snapshot = { contractVersion: "customer-context-v1"; contextVersion: string;
   asOf: string; validUntil: string; entries: { citationId: string }[];
@@ -113,6 +115,8 @@ export async function readCurrentAttemptContext(client: PoolClient, attemptId: s
     "SELECT conversation_id FROM response_attempts WHERE id=$1", [attemptId]);
   if (!attempt.rows[0]) throw hiddenRecord();
   await assertArtifactDependenciesCurrent(client, attempt.rows[0].conversation_id);
+  await assertRetrievalDependenciesCurrent(client, attempt.rows[0].conversation_id);
+  await assertResearchAttemptCurrent(client,attemptId);
   const digest = createHash("sha256").update(stableJson(row.snapshot)).digest("hex");
   if (digest !== row.snapshot_digest) throw hiddenRecord();
   return row.snapshot;

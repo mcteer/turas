@@ -17,6 +17,12 @@ BEGIN
   IF to_regclass('public.artifact_context_payloads') IS NOT NULL THEN
     REVOKE UPDATE ON TABLE artifact_context_payloads FROM turas_runtime;
   END IF;
+  IF to_regclass('public.knowledge_revision_payloads') IS NOT NULL THEN
+    REVOKE UPDATE ON TABLE knowledge_revision_payloads FROM turas_runtime;
+  END IF;
+  IF to_regclass('public.research_observation_payloads') IS NOT NULL THEN
+    REVOKE UPDATE ON TABLE research_observation_payloads FROM turas_runtime;
+  END IF;
   IF to_regclass('public.artifact_native_retirement_receipts') IS NOT NULL THEN
     REVOKE DELETE ON TABLE artifact_native_retirement_receipts FROM turas_runtime;
   END IF;
@@ -34,7 +40,13 @@ BEGIN
     'artifacts','artifact_upload_batches',
     'artifact_context_receipts','artifact_context_injection_receipts',
     'conversation_artifact_dependencies',
-    'artifact_lifecycle_events'
+    'artifact_lifecycle_events',
+    'knowledge_revisions','knowledge_lineage','knowledge_decisions',
+    'knowledge_submit_receipts',
+    'research_request_revisions','research_cancel_receipts',
+    'research_discovery_results','evidence_conflict_target_receipts',
+    'research_observations','research_evidence_links','research_refresh_observations',
+    'retrieval_receipts','retrieval_receipt_sources','session_evidence_dependencies'
   ]) LOOP
     IF to_regclass('public.' || table_name) IS NOT NULL THEN
       EXECUTE format('REVOKE UPDATE, DELETE ON TABLE %I FROM turas_runtime', table_name);

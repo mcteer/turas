@@ -87,6 +87,16 @@ knowledge with authorized customer-delivery context when proposing guidance. The
 and correction/withdrawal behavior; 005 introduces this path and 014 automates its
 improvement. No raw cross-customer retrieval followed by output-only redaction.
 
+The 005 feature branch implements this boundary with separate private contribution,
+restricted lineage and public revision tables. Internal administrators make exact
+publication decisions; every reader receives the same sanitized public payload.
+Customer search first authorizes candidate sources, ranks projected passages, then
+rechecks source generation and citation locators before release. The selected
+application uses the new `turas_preview_005` database in Neon Preview at schema
+028. Local validation uses a separately marked disposable Neon database and
+temporary clones. The original legacy Preview database and Production remain
+untouched.
+
 ## Authoritative records and artifacts
 
 Postgres owns durable business entities, immutable revisions and approvals. Agent

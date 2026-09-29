@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 25
     services:
       postgres:
-        image: postgres:17
+        image: pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
         env:
           POSTGRES_PASSWORD: postgres
         ports:
@@ -35,6 +35,8 @@ jobs:
           node-version-file: .node-version
           cache: npm
       - run: npm ci
+      - name: Verify pinned vector image
+        run: npm run retrieval:prepare -- --offline
       - run: npm ci --prefix packages/artifact-extractor
       - name: Create isolated test configuration
         env:

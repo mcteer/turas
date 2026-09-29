@@ -9,6 +9,7 @@ import { validateMaturityAssessment } from "./maturity";
 import type { ProfilePayload } from "../../contracts/profile-payloads";
 import { validateProfileRelationships } from "./profile-records";
 import { persistApprovedQuality } from "./evidence";
+import { retireRetrievalProjection } from "../retrieval/projections";
 
 type ReviewCommand = Extract<ProfileCommand, { action: "accept_revision" | "reject_revision" }>;
 type ReviewRow = {
@@ -106,6 +107,7 @@ export async function reviewRevision(client: PoolClient, actor: ProfileActor, cu
     await client.query("UPDATE profile_records SET current_accepted_revision_id=$1,version=$2 WHERE id=$3",
       [row.revision_id, version, row.record_id]);
     if (row.current_accepted_revision_id) {
+      await retireRetrievalProjection(client,"accepted_profile",row.current_accepted_revision_id);
       await client.query(`INSERT INTO profile_lifecycle_events
         (id,record_id,revision_id,event_type,previous_head_id,new_head_id,actor_membership_id,rationale,command_receipt_id)
         VALUES ($1,$2,$3,'supersede',$4,$5,$6,$7,$8)`,

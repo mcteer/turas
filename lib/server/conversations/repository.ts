@@ -7,6 +7,7 @@ import { query, withTransaction } from "../db/client";
 import { hiddenRecord, HttpFailure } from "../../contracts/http";
 import type { ConversationReference } from "../../contracts/conversations";
 import { lockProfileActor } from "../profiles/policy";
+import { assertRetrievalDependenciesCurrent } from "../retrieval/fences";
 
 type ConversationRow = {
   id: string;
@@ -26,6 +27,7 @@ type ConversationRow = {
   internal_generation?: string;
   delivery_generation?: string;
   artifact_context_stale?: boolean;
+  retrieval_context_stale?: boolean;
 };
 
 const scopedCustomer = `
@@ -50,6 +52,7 @@ function contextStatus(row: ConversationRow, session: CurrentSession): "current"
   const generation = audience === "internal" ? row.internal_generation : row.delivery_generation;
   if (row.context_audience !== audience ||
       row.artifact_context_stale ||
+      row.retrieval_context_stale ||
       row.context_login_session_id !== session.sessionId ||
       row.context_membership_id !== session.membershipId ||
       (generation !== undefined && row.context_generation !== generation) ||
@@ -91,6 +94,27 @@ async function staleArtifactConversations(ids: readonly string[]): Promise<Set<s
       v.lifecycle_generation<>d.lifecycle_generation OR
       r.id IS NULL OR r.state<>'published')`, [ids]);
   return new Set(stale.rows.map((row) => row.conversation_id));
+}
+
+async function staleRetrievalConversations(ids: readonly string[]): Promise<Set<string>> {
+  if (!ids.length) return new Set();
+  const marker = await query<{ schema_version: number }>(
+    "SELECT schema_version FROM turas_environment WHERE environment_id=$1",
+    [getServerConfig().TURAS_ENVIRONMENT_ID]);
+  if ((marker.rows[0]?.schema_version ?? 0) < 22) return new Set();
+  const used = await query<{ conversation_id: string }>(`
+    SELECT DISTINCT conversation_id FROM session_evidence_dependencies
+    WHERE conversation_id=ANY($1::uuid[])`,[ids]);
+  const stale = new Set<string>();
+  for (const row of used.rows) {
+    try {
+      await withTransaction((client) => assertRetrievalDependenciesCurrent(client,row.conversation_id));
+    } catch (error) {
+      if (error instanceof HttpFailure && error.status === 409) stale.add(row.conversation_id);
+      else throw error;
+    }
+  }
+  return stale;
 }
 
 export async function createOwnedConversation(
@@ -150,6 +174,7 @@ export async function getOwnedConversation(
   `, [...values(session), id, getServerConfig().TURAS_ENVIRONMENT_ID]);
   if (!result.rows[0]) throw hiddenRecord();
   result.rows[0].artifact_context_stale = (await staleArtifactConversations([id])).has(id);
+  result.rows[0].retrieval_context_stale = (await staleRetrievalConversations([id])).has(id);
   return toReference(result.rows[0], session);
 }
 
@@ -190,7 +215,9 @@ export async function listOwnedConversations(
     session.kind, session.sessionId, session.membershipId]);
   const rows = result.rows.slice(0, options.limit);
   const stale = await staleArtifactConversations(rows.map((row) => row.id));
+  const retrievalStale = await staleRetrievalConversations(rows.map((row) => row.id));
   for (const row of rows) row.artifact_context_stale = stale.has(row.id);
+  for (const row of rows) row.retrieval_context_stale = retrievalStale.has(row.id);
   const last = rows.at(-1);
   return {
     items: rows.map((row) => toReference(row, session)),

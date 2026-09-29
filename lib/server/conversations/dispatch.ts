@@ -6,8 +6,10 @@ import { HttpFailure, hiddenRecord } from "../../contracts/http";
 import { lockOwnedBinding } from "./binding";
 import { captureAttemptContext, readCurrentAttemptContext } from "../profiles/attempt-context";
 import { artifactContextSchemaReady, assertArtifactDependenciesCurrent } from "../artifacts/context-fence";
+import { assertRetrievalDependenciesCurrent } from "../retrieval/fences";
 import { canonicalArtifactSendDigest, captureArtifactDraft,
   type DraftSelection } from "../artifacts/context";
+import type { PoolClient } from "pg";
 
 export function normalizeMessageText(text: string): string {
   return text.replace(/\r\n?/g, "\n").normalize("NFC");
@@ -27,6 +29,7 @@ async function requireWorkerHeartbeat(client: import("pg").PoolClient): Promise<
 export async function prepareAttempt(
   session: CurrentSession, conversationId: string, nativeSessionId: string,
   requestKey: string, rawText: string, selections: readonly DraftSelection[] = [],
+  existingClient?: PoolClient,
 ): Promise<{ attemptId: string; created: boolean; dispatchState: string }> {
   const text = normalizeMessageText(rawText);
   if (!text.trim()) throw new HttpFailure(422, "invalid_message", "Message required");
@@ -34,7 +37,7 @@ export async function prepareAttempt(
     throw new HttpFailure(413, "message_too_large", "Message too large");
   }
   const digest = selections.length ? canonicalArtifactSendDigest(text,selections) : messageDigest(text);
-  return withTransaction(async (client) => {
+  const run = async (client: PoolClient) => {
     const environmentId = getServerConfig().TURAS_ENVIRONMENT_ID;
     await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [environmentId]);
     const conversation = await lockOwnedBinding(client, session, conversationId);
@@ -53,6 +56,7 @@ export async function prepareAttempt(
       throw new HttpFailure(409, "context_changed", "Start a new conversation for current customer context");
     }
     await assertArtifactDependenciesCurrent(client, conversationId);
+    await assertRetrievalDependenciesCurrent(client, conversationId);
     const existing = await client.query<{ id: string; body_digest: string; attempt_id: string; dispatch_state: string }>(`
       SELECT sm.id, sm.body_digest, a.id AS attempt_id, a.dispatch_state
       FROM submitted_messages sm JOIN response_attempts a ON a.message_id = sm.id
@@ -103,7 +107,8 @@ export async function prepareAttempt(
     if (selections.length) await captureArtifactDraft(client,session,conversationId,
       conversation.customer_id,attemptId,messageDigest(text),digest,selections);
     return { attemptId, created: true, dispatchState: "prepared" };
-  });
+  };
+  return existingClient ? run(existingClient) : withTransaction(run);
 }
 
 export async function claimDispatch(

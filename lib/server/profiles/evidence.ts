@@ -33,7 +33,11 @@ export async function persistApprovedQuality(client: PoolClient, input: {
     if (artifact?.rows[0]) {
       const dated = rating.dateBasis === "publication" ? artifact.rows[0].source_published_on :
         rating.dateBasis === "observation" ? artifact.rows[0].source_observed_on : null;
-      evidenceAt = dated ? dated instanceof Date ? dated : new Date(`${dated}T00:00:00Z`) : null;
+      // PostgreSQL date values arrive as local-midnight Date objects. Preserve
+      // their calendar day when rating evidence against the UTC clock.
+      evidenceAt = dated ? dated instanceof Date ?
+        new Date(Date.UTC(dated.getFullYear(),dated.getMonth(),dated.getDate())) :
+        new Date(`${dated}T00:00:00Z`) : null;
     } else if (rating.dateBasis === "observation") {
       const observed = input.payload.observedAt ?? input.payload.observationEnd;
       evidenceAt = typeof observed === "string" && Number.isFinite(Date.parse(observed))

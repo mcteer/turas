@@ -2,6 +2,10 @@ import { randomUUID } from "node:crypto";
 import { closeRuntimePool } from "../lib/server/db/client";
 import { getServerConfig } from "../lib/server/config";
 import { claimDueJobs, finishDueJob, heartbeatWorker, signMaintenanceRequest } from "../lib/server/conversations/watchdog";
+import { runRetrievalWorkerTick } from "./retrieval-worker";
+import { runRetrievalCleanupTick } from "../lib/server/retrieval/cleanup";
+import { suspendStaleKnowledge } from "../lib/server/knowledge/suspension";
+import { markDueResearch } from "../lib/server/research/refresh";
 
 const rawOrigin = process.env.TURAS_EVE_INTERNAL_ORIGIN;
 if (!rawOrigin) throw new Error("Local eve service origin required");
@@ -15,11 +19,15 @@ const path = "/internal/turas/maintenance";
 const workerId = randomUUID();
 let scanning = false;
 let stopping = false;
+let retrievalScanning = false;
+let cleanupScanning = false;
 
 function fatal(): void {
   if (stopping) return;
   stopping = true;
   clearInterval(timer);
+  clearInterval(retrievalTimer);
+  clearInterval(cleanupTimer);
   void closeRuntimePool().finally(() => process.exit(1));
 }
 
@@ -70,12 +78,28 @@ async function scan(): Promise<void> {
 const timer = setInterval(() => {
   void scan().catch(fatal);
 }, 5_000);
+const retrievalTimer = setInterval(() => {
+  if (stopping || retrievalScanning) return;
+  retrievalScanning = true;
+  void runRetrievalWorkerTick().catch(() => undefined)
+    .finally(() => { retrievalScanning = false; });
+}, 2_000);
+const cleanupTimer = setInterval(() => {
+  if (stopping || cleanupScanning) return;
+  cleanupScanning = true;
+  void runRetrievalCleanupTick().then(() => suspendStaleKnowledge())
+    .then(() => markDueResearch())
+    .catch(() => undefined)
+    .finally(() => { cleanupScanning = false; });
+}, 5_000);
 void scan().catch(fatal);
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
     stopping = true;
     clearInterval(timer);
+    clearInterval(retrievalTimer);
+    clearInterval(cleanupTimer);
     void closeRuntimePool().finally(() => process.exit());
   });
 }

@@ -7,7 +7,8 @@ import { OwnSubmissions } from "./own-submissions";
 import { MaturityAssessment } from "./maturity-assessment";
 import { EvidenceDetail } from "./evidence-detail";
 import { RecordHistory } from "./record-history";
-import { ConflictReview } from "./conflict-review";
+import { ConflictReview,TypedConflictReview } from "./conflict-review";
+import { EvidenceSearch } from "./evidence-search";
 
 type ApprovedExcerpt = { sourceLabel: string; excerpt: string; attestation: string;
   citation: Record<string, string | number> };
@@ -116,6 +117,8 @@ export function ProfileOverview({ customerId }: { customerId: string }) {
           <option value="">All workloads</option>
           {profile.workloads.map((workload) => <option key={workload.id} value={workload.id}>{workload.displayName}</option>)}
         </select><Link className="secondary-button" href={`/s?customerId=${encodeURIComponent(customerId)}`}>Start chat</Link></div>
+      <EvidenceSearch customerId={customerId} workloadId={workloadId || undefined} />
+      <TypedConflictReview customerId={customerId} canReview={profile.canReview} />
       {profile.acceptedFacts.length === 0 && <div className="profile-state"><h2>No accepted facts yet</h2><p>Submitted context appears here after review. An empty section is not a negative assessment.</p></div>}
       {order.map((kind) => {
         const facts = profile.acceptedFacts.filter((fact) => fact.kind === kind);
