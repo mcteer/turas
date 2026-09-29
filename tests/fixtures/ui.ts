@@ -54,7 +54,7 @@ export async function signIn(page: Page, account: DemoAccount): Promise<void> {
 
 export async function signOut(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Sign out" }).click();
-  await page.waitForURL((url) => url.pathname === "/login", { waitUntil: "load", timeout: 15_000 });
+  await page.waitForURL((url) => url.pathname === "/login", { waitUntil: "commit", timeout: 15_000 });
 }
 
 export async function sanitizedScreenshot(page: Page, path: string): Promise<void> {
