@@ -1,8 +1,9 @@
 # Tasks: Delivery plans and technical designs
 
 **Input**: [spec.md](spec.md), [plan.md](plan.md), [research.md](research.md), [data-model.md](data-model.md) and contracts.
-**Status**: Implementation and local/Preview validation complete through T077.
-Checked tasks have recorded evidence; T078 tracks final PR reconciliation.
+**Status**: Implementation and local/Preview validation complete; reviewable PR
+[#11](https://github.com/mcteer/turas/pull/11) is open. Checked tasks have
+recorded evidence. Hosted behavior and CI remain separate review gates.
 **Tests**: Required by FR-023, SC-001–SC-008 and the constitution. Write focused tests before their behavior, then run the narrow relevant gate. Use disposable data only.
 **Policy**: Administrator-only plan decisions are an explicit planning default, not a recorded user confirmation. Follow the current spec if the user revises that choice.
 
@@ -135,7 +136,7 @@ New commands and files below are implementation work, not existing completed cap
 - [X] T075 Align the implemented versioned template and architecture docs in `docs/templates/delivery-plan.md`, `docs/templates/README.md`, `docs/architecture.md` and `docs/decisions.md`, preserving the distinction between internal baseline acceptance and customer/staffing/commercial approval. (FR-003, FR-010, FR-012, FR-013)
 - [X] T076 Run relevant 002–005 authorization/context/retrieval regressions once plus typecheck, both build targets, docs and diff checks; verify `agent/agent.ts` model/reasoning preservation and record exact commands/results in `specs/006-delivery-plans/validation.md`. (FR-016, FR-022, FR-023)
 - [X] T077 After disposable gates, run `scripts/inspect-preview-db.mjs` via `npm run db:inspect-preview`; only with matching fresh Preview identity explicitly upgrade through `scripts/db-migrate.ts` and `scripts/db-roles.ts`, inspect again and record non-destructive local app smoke in `specs/006-delivery-plans/validation.md`; never test destructively there or access Production/Vercel. (FR-022)
-- [ ] T078 Reconcile completed tasks and actual local/CI/live/Preview evidence in `specs/006-delivery-plans/tasks.md`, `validation.md`, `quickstart.md`, `README.md` and `ROADMAP.md`; leave incomplete gates unchecked and create a reviewable PR without deployment or an unrequested merge. (FR-023, SC-001, SC-002, SC-003, SC-004, SC-005, SC-006, SC-007, SC-008)
+- [X] T078 Reconcile completed tasks and actual local/CI/live/Preview evidence in `specs/006-delivery-plans/tasks.md`, `validation.md`, `quickstart.md`, `README.md` and `ROADMAP.md`; leave incomplete gates unchecked and create a reviewable PR without deployment or an unrequested merge. (FR-023, SC-001, SC-002, SC-003, SC-004, SC-005, SC-006, SC-007, SC-008)
 
 ## Dependencies and execution order
 

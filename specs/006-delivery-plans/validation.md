@@ -849,3 +849,9 @@ durable and captured-output gates; the representative benchmark met all three
 p95 targets; and Preview was inspected, upgraded to schema 031, reinspected
 and smoke-tested without destructive testing. CI and hosted behavior remain
 separate from these local/Preview results and will be observed on the PR.
+
+Final reconciliation is in reviewable PR
+[#11](https://github.com/mcteer/turas/pull/11). All 78 feature tasks are
+checked against the implementation and recorded evidence. CI was not yet
+complete at PR creation; it must be reported from its actual run, and this
+record makes no hosted or deployment claim.
