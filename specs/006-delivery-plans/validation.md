@@ -877,3 +877,12 @@ allow closure within 30 seconds. Its wait now covers that requirement, with a
 35-second test budget. The focused marked-test-database rerun passed both files,
 11/11 tests in 15.59 seconds. The revised PR CI run remains the authoritative
 full-workflow check.
+
+PR CI on commit `dce22f9` then passed the complete `Turas checks` verify job
+in 13m26s: docs, typecheck, unit, generic integration and contract suites,
+artifact and retrieval checks, the isolated `test:plans` clone suite, build,
+Spec Kit prerequisites, general WebKit UI and 005 isolated-Postgres WebKit UI.
+The run is [36773169094](https://github.com/mcteer/turas/actions/runs/36773169094).
+This is CI evidence for that code commit, not a claim of deployment or hosted
+application behavior. A subsequent validation-only commit requires its own PR
+head check before the final review state is reported.
