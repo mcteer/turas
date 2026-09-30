@@ -9,6 +9,7 @@ import { artifactContextSchemaReady, assertArtifactDependenciesCurrent } from ".
 import { assertRetrievalDependenciesCurrent } from "../retrieval/fences";
 import { canonicalArtifactSendDigest, captureArtifactDraft,
   type DraftSelection } from "../artifacts/context";
+import { planningScopeForConversation } from "../plans/context";
 import type { PoolClient } from "pg";
 
 export function normalizeMessageText(text: string): string {
@@ -43,6 +44,28 @@ export async function prepareAttempt(
     const conversation = await lockOwnedBinding(client, session, conversationId);
     if (conversation.binding_state !== "bound" || conversation.eve_session_id !== nativeSessionId) {
       throw hiddenRecord();
+    }
+    const planning=await planningScopeForConversation(client,conversationId);
+    if (planning) {
+      if (selections.length) throw new HttpFailure(422,"planning_selections_denied",
+        "Source selections are unavailable during drafting");
+      const selected=await client.query<{id:string;state:string;request_key:string;
+        actor_membership_id:string;actor_session_id:string;deadline_at:Date;
+        instructions:string}>(`SELECT drafting.id,drafting.state,drafting.request_key,
+          drafting.actor_membership_id,drafting.actor_session_id,drafting.deadline_at,
+          payload.instructions FROM plan_drafting_attempts drafting
+          JOIN plan_drafting_instruction_payloads payload ON payload.attempt_id=drafting.id
+          WHERE drafting.conversation_id=$1 FOR UPDATE OF drafting`,[conversationId]);
+      const row=selected.rows[0];
+      if (!row || row.request_key!==requestKey ||
+          row.actor_membership_id!==session.membershipId ||
+          row.actor_session_id!==session.sessionId ||
+          !["prepared","running"].includes(row.state) ||
+          row.deadline_at.getTime()<=Date.now() ||
+          normalizeMessageText(row.instructions).trim()!==text) {
+        throw new HttpFailure(409,"plan_draft_changed",
+          "Plan drafting context changed");
+      }
     }
     const context = await client.query<{ context_snapshot_schema: string | null;
       context_generation: string | null; context_valid_until: Date | null }>(
@@ -104,6 +127,11 @@ export async function prepareAttempt(
     await client.query(`INSERT INTO response_attempts
       (id, conversation_id, message_id, input_digest, dispatch_state, response_state)
       VALUES ($1,$2,$3,$4,'prepared','pending')`, [attemptId, conversationId, messageId, digest]);
+    if (planning) {
+      await client.query(`UPDATE plan_drafting_attempts SET state='running',
+        response_attempt_id=$2,updated_at=now() WHERE conversation_id=$1
+          AND state='prepared'`,[conversationId,attemptId]);
+    }
     if (selections.length) await captureArtifactDraft(client,session,conversationId,
       conversation.customer_id,attemptId,messageDigest(text),digest,selections);
     return { attemptId, created: true, dispatchState: "prepared" };

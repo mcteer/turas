@@ -10,8 +10,8 @@ describe("bounded retrieval receipt retention",() => {
       try {
         const marker = await client.query<{ schema_version: number; environment_id: string }>(
           "SELECT schema_version,environment_id FROM turas_environment");
-        expect(marker.rows[0]).toMatchObject({ schema_version: 28,
-          environment_id: process.env.TURAS_TEST_ENVIRONMENT_ID });
+        expect(marker.rows[0].schema_version).toBeGreaterThanOrEqual(28);
+        expect(marker.rows[0].environment_id).toBe(process.env.TURAS_TEST_ENVIRONMENT_ID);
         await client.query(`INSERT INTO retrieval_receipts
           (id,environment_id,actor_membership_id,scope,workspace_id,
            customer_id,mode,citation_ids,as_of,valid_until)

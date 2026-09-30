@@ -9,7 +9,8 @@ import { confirmedConflictAfter } from "./fences";
 
 export async function resolveRetrievalCitation(client: PoolClient, actor: CurrentSession,
   citationId: string): Promise<{ citationId: string; text: string; locators: unknown[];
-    asOf: string; validUntil: string }> {
+    asOf: string; validUntil: string;sourceKind:string;sourceRevisionId:string;
+    sourceGeneration:number;contentDigest:string }> {
   const found = await client.query<{
     citation_id: string; actor_membership_id: string; scope: "customer" | "shared" | "combined";
     customer_id: string | null; source_id: string; source_kind: string;
@@ -43,5 +44,7 @@ export async function resolveRetrievalCitation(client: PoolClient, actor: Curren
   const locators = citationLocatorSchema.array().min(1).max(50).safeParse(row.locators);
   if (!locators.success || row.passage_text.length > 2_000) throw hiddenRecord();
   return { citationId: row.citation_id,text: row.passage_text,locators: locators.data,
+    sourceKind:row.source_kind,sourceRevisionId:row.source_revision_id,
+    sourceGeneration:Number(row.source_generation),contentDigest:row.content_digest,
     asOf: row.as_of.toISOString(),validUntil: row.valid_until.toISOString() };
 }

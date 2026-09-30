@@ -97,6 +97,16 @@ application uses the new `turas_preview_005` database in Neon Preview at schema
 temporary clones. The original legacy Preview database and Production remain
 untouched.
 
+Feature 006 is under local implementation on isolated schema-031 clones. Delivery
+plans use immutable content revisions and original-source dependencies in the
+same governed domain layer as retrieval. A saved plan does not make cited model
+text an accepted fact. Reads recheck current source eligibility before releasing
+the title or body; source withdrawal queues exact-revision cleanup. A reviewer
+must inspect an exact revision and source-state digest before recording a human
+decision. Acceptance creates or versions one engagement milestone baseline, with
+the accepted and working revision pointers kept separate. The Preview app remains
+at schema 028 until the disposable validation gates pass.
+
 ## Authoritative records and artifacts
 
 Postgres owns durable business entities, immutable revisions and approvals. Agent

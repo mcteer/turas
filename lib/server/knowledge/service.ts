@@ -13,6 +13,7 @@ import { rateEvidence } from "../profiles/quality";
 import { assertExactKnowledgeLineage, assertNoDirectIdentifiers,
   lockKnowledgeAuthor, requireKnowledgePublisher } from "./policy";
 import { materializeSharedProjection,retireRetrievalProjection } from "../retrieval/projections";
+import { enqueuePlanCleanupForSource } from "../plans/cleanup";
 
 function parse<T>(schema: z.ZodType<T>, input: unknown): T {
   try { return schema.parse(input); }
@@ -229,7 +230,7 @@ export async function decideKnowledgeCandidate(client: PoolClient,actor: Current
       parse(sanitizedKnowledgeSchema,revision.payload));
   }
   const publication = await client.query<{ id: string; head_generation: string;
-    state: string }>(`SELECT id,head_generation,state FROM knowledge_publications
+    revision_id:string;state: string }>(`SELECT id,head_generation,revision_id,state FROM knowledge_publications
     WHERE contribution_id=$1 FOR UPDATE`,[id]);
   const head = publication.rows[0];
   if ((head && Number(head.head_generation) !== command.expectedPublicationGeneration) ||
@@ -259,6 +260,8 @@ export async function decideKnowledgeCandidate(client: PoolClient,actor: Current
         head_generation=head_generation+1,state='published',public_quality=$3,
         published_at=$4,updated_at=$4 WHERE id=$1`,
       [head.id,revision.id,JSON.stringify(quality),at]);
+      if (head.revision_id!==revision.id) await enqueuePlanCleanupForSource(client,
+        "shared_knowledge",head.revision_id);
     } else {
       await client.query(`INSERT INTO knowledge_publications
         (id,environment_id,contribution_id,revision_id,head_generation,state,
@@ -317,5 +320,6 @@ export async function withdrawKnowledge(client: PoolClient,actor: CurrentSession
   await client.query(`UPDATE knowledge_publications SET state='withdrawn',
     head_generation=head_generation+1,updated_at=now() WHERE id=$1`,[publicationId]);
   await retireRetrievalProjection(client,"published_shared",row.revision_id);
+  await enqueuePlanCleanupForSource(client,"shared_knowledge",row.revision_id);
   return { decisionId,replayed: false };
 }

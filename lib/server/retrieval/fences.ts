@@ -35,7 +35,7 @@ export async function confirmedConflictAfter(client: PoolClient,kind: string,
   return Boolean(legacy.rowCount);
 }
 
-async function originalCurrent(client: PoolClient, dependency: Dependency): Promise<boolean> {
+export async function originalCurrent(client: PoolClient, dependency: Dependency): Promise<boolean> {
   const values = [dependency.source_revision_id,dependency.source_generation,
     dependency.source_digest];
   if (dependency.source_kind === "accepted_profile") {

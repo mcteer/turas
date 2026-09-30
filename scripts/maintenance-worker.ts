@@ -6,6 +6,7 @@ import { runRetrievalWorkerTick } from "./retrieval-worker";
 import { runRetrievalCleanupTick } from "../lib/server/retrieval/cleanup";
 import { suspendStaleKnowledge } from "../lib/server/knowledge/suspension";
 import { markDueResearch } from "../lib/server/research/refresh";
+import { runPlanCleanupTick } from "../lib/server/plans/cleanup";
 
 const rawOrigin = process.env.TURAS_EVE_INTERNAL_ORIGIN;
 if (!rawOrigin) throw new Error("Local eve service origin required");
@@ -89,6 +90,7 @@ const cleanupTimer = setInterval(() => {
   cleanupScanning = true;
   void runRetrievalCleanupTick().then(() => suspendStaleKnowledge())
     .then(() => markDueResearch())
+    .then(() => runPlanCleanupTick())
     .catch(() => undefined)
     .finally(() => { cleanupScanning = false; });
 }, 5_000);

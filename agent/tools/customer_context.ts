@@ -18,7 +18,14 @@ export default defineTool({
   async execute(input, ctx) {
     return withTransaction(async (client) => {
       const bound = await boundToolActor(client, ctx.session.auth.current);
-      const result = await readEligibleContext(bound.actor, bound.customerId, input, client) as {
+      if (bound.planning && input.workloadId &&
+          input.workloadId!==bound.planning.workloadId) {
+        throw new HttpFailure(409,"context_changed","Planning workload changed");
+      }
+      const result = await readEligibleContext(bound.actor, bound.customerId,
+        bound.planning ? {...input,audience:bound.planning.audience,
+          workloadId:bound.planning.workloadId ?? undefined,
+          customerWideOnly:bound.planning.workloadId===null}:input, client) as {
         contextVersion: string; [key: string]: unknown };
       if (result.contextVersion !== bound.generation) {
         throw new HttpFailure(409, "context_changed", "Start a new conversation for current customer context");

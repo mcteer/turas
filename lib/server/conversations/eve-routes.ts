@@ -234,7 +234,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
               await getOwnedConversationByNativeSession(refreshed, args.params.sessionId);
               await assertNativeContextCurrent(refreshed, args.params.sessionId);
               return true;
-            }, 10_000, 5_000, async (_chunk, enqueue) => {
+            }, 10_000, 15_000, async (_chunk, enqueue) => {
               const refreshed = await getCurrentSession(request);
               if (!refreshed) throw hiddenRecord();
               await releaseNativeChunk(refreshed, args.params.sessionId, enqueue);

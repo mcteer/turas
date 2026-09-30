@@ -112,6 +112,18 @@
     {
       "file": "028-research-normalized-origin.cjs",
       "sha256": "fd889ba1be334a8b844012cffe474381232aca17917873fccd67dd2146481e3d"
+    },
+    {
+      "file": "029-delivery-plans.cjs",
+      "sha256": "efd472a8f21f98b762e175e822e11181721be949e1123d9e08d9467afc58e64e"
+    },
+    {
+      "file": "030-plan-decisions-baselines.cjs",
+      "sha256": "c90a2980b7d2a50d9d17ed1de791c1a37f15d7bce49219ac5f65e57e1e013d51"
+    },
+    {
+      "file": "031-plan-drafting-lifecycle.cjs",
+      "sha256": "6b0eb28dd51340dc0c1e18e3172b14237b1e995f3cd243a512009fb72a67cb5f"
     }
   ]
 }

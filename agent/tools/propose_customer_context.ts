@@ -46,6 +46,8 @@ export default defineTool({
   async execute(input, ctx) {
     return withTransaction(async (client) => {
       const bound = await boundToolActor(client, ctx.session.auth.current);
+      if (bound.planning) throw new HttpFailure(403,"planning_tool_denied",
+        "This planning turn cannot propose customer context");
       let artifactSelection: { versionId: string; runId: string; lifecycleGeneration: number;
         ranges: Array<{ unitId: string; start: number; end: number }>;
         excerpt: string; excerptDigest: string; audience: "internal" | "delivery";

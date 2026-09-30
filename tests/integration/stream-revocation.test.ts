@@ -70,6 +70,38 @@ describe("native stream revocation", () => {
     expect(cancelled).toBe(true);
   });
 
+  it("lets a fenced chunk finish without a redundant timer check closing it", async () => {
+    let checks = 0;
+    let authorized = true;
+    const guarded = guardNativeStream(new Response(new ReadableStream<Uint8Array>({
+      start(controller) { controller.enqueue(new TextEncoder().encode("fenced\n")); },
+    })), async () => { checks += 1; return authorized; }, 20, 25,
+    async (_chunk, enqueue) => { await delay(70); enqueue(); });
+    const reader = guarded.body!.getReader();
+    expect(new TextDecoder().decode((await reader.read()).value)).toBe("fenced\n");
+    expect(checks).toBe(1);
+    authorized = false;
+    expect(await Promise.race([reader.read(), delay(250).then(() => "timeout")]))
+      .toEqual({ done: true, value: undefined });
+  });
+
+  it("batches replay chunks under a release-time authority fence", async () => {
+    let releases = 0;
+    const source = new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (let index = 0; index < 100; index += 1) {
+          controller.enqueue(new TextEncoder().encode(`${index}\n`));
+        }
+        controller.close();
+      },
+    });
+    const guarded = guardNativeStream(new Response(source), async () => true,
+      10_000, 100, async (_chunk, enqueue) => { releases += 1; enqueue(); });
+    const output = await guarded.text();
+    expect(output).toBe(Array.from({ length: 100 }, (_, index) => `${index}\n`).join(""));
+    expect(releases).toBeLessThan(100);
+  });
+
   it("fails closed when the authority store reports an outage", async () => {
     let cancelled = false;
     const guarded = guardNativeStream(new Response(new ReadableStream<Uint8Array>({
@@ -142,7 +174,8 @@ describe("native stream revocation", () => {
       await db.query(`UPDATE customer_grants SET state = 'revoked', revision = revision + 1
         WHERE membership_id = $1 AND customer_id = $2`,
       [DEMO_IDS.partnerMembership, DEMO_IDS.sharedCustomer]);
-      const finished = await Promise.race([reader.read(), delay(12_000).then(() => "timeout")]);
+      // The native guard polls every 10s and allows a 15s authority-store timeout.
+      const finished = await Promise.race([reader.read(), delay(30_000).then(() => "timeout")]);
       expect(finished).toEqual({ done: true, value: undefined });
       expect(Date.now() - revokedAt).toBeLessThanOrEqual(30_000);
       expect(upstreamCancelled).toBe(true);
@@ -155,7 +188,7 @@ describe("native stream revocation", () => {
       await db.query("DELETE FROM conversations WHERE id = $1", [conversation.id]);
       await db.end();
     }
-  }, 15_000);
+  }, 35_000);
 
   it("closes on logout, expiry and owner disablement without forwarding a quiet stream", async () => {
     const db = new Client({ connectionString: process.env.TURAS_TEST_DATABASE_URL });

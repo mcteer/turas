@@ -23,6 +23,17 @@ BEGIN
   IF to_regclass('public.research_observation_payloads') IS NOT NULL THEN
     REVOKE UPDATE ON TABLE research_observation_payloads FROM turas_runtime;
   END IF;
+  IF to_regclass('public.plan_revision_payloads') IS NOT NULL THEN
+    REVOKE DELETE ON TABLE delivery_plans FROM turas_runtime;
+    REVOKE DELETE ON TABLE engagements FROM turas_runtime;
+    REVOKE UPDATE, DELETE ON TABLE plan_revision_payloads FROM turas_runtime;
+    REVOKE UPDATE, DELETE ON TABLE plan_event_payloads FROM turas_runtime;
+    REVOKE UPDATE, DELETE ON TABLE plan_decision_payloads FROM turas_runtime;
+    REVOKE UPDATE, DELETE ON TABLE milestone_baseline_payloads FROM turas_runtime;
+    REVOKE UPDATE, DELETE ON TABLE plan_drafting_instruction_payloads FROM turas_runtime;
+    GRANT EXECUTE ON FUNCTION turas_purge_plan_revision_payload(uuid) TO turas_runtime;
+    GRANT EXECUTE ON FUNCTION turas_prune_plan_ephemera(text,integer) TO turas_runtime;
+  END IF;
   IF to_regclass('public.artifact_native_retirement_receipts') IS NOT NULL THEN
     REVOKE DELETE ON TABLE artifact_native_retirement_receipts FROM turas_runtime;
   END IF;
@@ -47,6 +58,10 @@ BEGIN
     'research_discovery_results','evidence_conflict_target_receipts',
     'research_observations','research_evidence_links','research_refresh_observations',
     'retrieval_receipts','retrieval_receipt_sources','session_evidence_dependencies'
+    ,'plan_revisions','plan_source_dependencies','plan_private_dependencies',
+    'plan_revision_events','plan_decisions','milestone_baselines',
+    'planning_conversation_bindings','plan_command_receipts',
+    'plan_drafting_source_dependencies','plan_drafting_context_chunks'
   ]) LOOP
     IF to_regclass('public.' || table_name) IS NOT NULL THEN
       EXECUTE format('REVOKE UPDATE, DELETE ON TABLE %I FROM turas_runtime', table_name);

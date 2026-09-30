@@ -8,6 +8,7 @@ import { hiddenRecord, HttpFailure } from "../../contracts/http";
 import type { ConversationReference } from "../../contracts/conversations";
 import { lockProfileActor } from "../profiles/policy";
 import { assertRetrievalDependenciesCurrent } from "../retrieval/fences";
+import { assertPlanConversationFence } from "../plans/fences";
 
 type ConversationRow = {
   id: string;
@@ -28,6 +29,7 @@ type ConversationRow = {
   delivery_generation?: string;
   artifact_context_stale?: boolean;
   retrieval_context_stale?: boolean;
+  planning_audience?:"internal"|"delivery"|null;
 };
 
 const scopedCustomer = `
@@ -48,7 +50,7 @@ const scopedCustomer = `
 
 function contextStatus(row: ConversationRow, session: CurrentSession): "current" | "changed" | "historical" {
   if (row.context_snapshot_schema !== "customer-context-v1") return "historical";
-  const audience = session.kind === "internal" ? "internal" : "delivery";
+  const audience = row.planning_audience ?? (session.kind === "internal" ? "internal" : "delivery");
   const generation = audience === "internal" ? row.internal_generation : row.delivery_generation;
   if (row.context_audience !== audience ||
       row.artifact_context_stale ||
@@ -58,6 +60,19 @@ function contextStatus(row: ConversationRow, session: CurrentSession): "current"
       (generation !== undefined && row.context_generation !== generation) ||
       (row.context_valid_until && row.context_valid_until.getTime() <= Date.now())) return "changed";
   return "current";
+}
+
+async function annotatePlanning(rows:ConversationRow[]):Promise<void> {
+  if (!rows.length) return;
+  const marker=await query<{schema_version:number}>(
+    "SELECT schema_version FROM turas_environment WHERE environment_id=$1",
+    [getServerConfig().TURAS_ENVIRONMENT_ID]);
+  if ((marker.rows[0]?.schema_version ?? 0)<31) return;
+  const bindings=await query<{conversation_id:string;audience:"internal"|"delivery"}>(
+    "SELECT conversation_id,audience FROM planning_conversation_bindings WHERE conversation_id=ANY($1::uuid[])",
+    [rows.map((row)=>row.id)]);
+  const byId=new Map(bindings.rows.map((row)=>[row.conversation_id,row.audience]));
+  for (const row of rows) row.planning_audience=byId.get(row.id) ?? null;
 }
 
 function toReference(row: ConversationRow, session: CurrentSession): ConversationReference {
@@ -173,6 +188,7 @@ export async function getOwnedConversation(
     LIMIT 1
   `, [...values(session), id, getServerConfig().TURAS_ENVIRONMENT_ID]);
   if (!result.rows[0]) throw hiddenRecord();
+  await annotatePlanning(result.rows);
   result.rows[0].artifact_context_stale = (await staleArtifactConversations([id])).has(id);
   result.rows[0].retrieval_context_stale = (await staleRetrievalConversations([id])).has(id);
   return toReference(result.rows[0], session);
@@ -214,6 +230,7 @@ export async function listOwnedConversations(
     escapedTitle, cursor?.t ?? null, cursor?.id ?? null, options.limit + 1,
     session.kind, session.sessionId, session.membershipId]);
   const rows = result.rows.slice(0, options.limit);
+  await annotatePlanning(rows);
   const stale = await staleArtifactConversations(rows.map((row) => row.id));
   const retrievalStale = await staleRetrievalConversations(rows.map((row) => row.id));
   for (const row of rows) row.artifact_context_stale = stale.has(row.id);
@@ -303,7 +320,9 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
   // Recheck after potentially long history reads so a concurrent grant change
   // cannot return a completed payload under the authorization observed earlier.
   const latest = await getOwnedConversation(session, id);
-  const stale = latest.contextStatus !== "current";
+  const planStale=await withTransaction((client)=>
+    assertPlanConversationFence(client,session,id)).then(()=>false,()=>true);
+  const stale = latest.contextStatus !== "current" || planStale;
   const ownerEvents = stale ? await query<{
     native_event_id: string; event_type: string; visible_payload: Record<string, unknown>;
     stream_index: string | null; emitted_at: Date;
@@ -311,10 +330,12 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
     FROM event_projections WHERE conversation_id=$1 AND event_type='message.received'
     ORDER BY emitted_at,native_event_id LIMIT 501`, [id]) : null;
   const final = await getOwnedConversation(session, id);
-  const hideGenerated = final.contextStatus !== "current";
+  const finalPlanStale=await withTransaction((client)=>
+    assertPlanConversationFence(client,session,id)).then(()=>false,()=>true);
+  const hideGenerated = final.contextStatus !== "current" || finalPlanStale;
   const visibleEvents = hideGenerated ? (ownerEvents?.rows ?? events.rows.filter((row) => row.event_type === "message.received")) : events.rows;
   return {
-    ...conversation, contextStatus: final.contextStatus,
+    ...conversation, contextStatus: hideGenerated ? "changed":final.contextStatus,
     title: hideGenerated ? "Previous conversation" : conversation.title,
     history: [...visibleEvents.slice(0, 500).map((row) => ({
       eventId: row.native_event_id,

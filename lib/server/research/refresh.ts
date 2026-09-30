@@ -10,6 +10,8 @@ import { withTransaction } from "../db/client";
 import { lockProfileActor } from "../profiles/policy";
 import { evidenceReviewDueAt } from "../profiles/quality";
 import { assertRetrievalReady } from "../retrieval/policy";
+import { retireRetrievalProjection } from "../retrieval/projections";
+import { enqueuePlanCleanupForSource } from "../plans/cleanup";
 
 const refreshInput = z.object({ idempotencyKey: idempotencyKeySchema,
   requestId: governedIdSchema,sourceRevisionId: governedIdSchema,
@@ -173,5 +175,9 @@ export async function recordResearchRefresh(client: PoolClient,actor: CurrentSes
   [id,input.requestId,head.id,current?.id ?? null,outcome,
     head.passage_digest,current?.passage_digest ?? null,actor.membershipId,
     input.idempotencyKey,requestDigest]);
+  if (outcome==="changed") {
+    await retireRetrievalProjection(client,"verified_research",head.id);
+    await enqueuePlanCleanupForSource(client,"verified_research",head.id);
+  }
   return { refreshId: id,outcome,replayed: false };
 }

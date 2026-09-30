@@ -16,7 +16,7 @@ export function requireUiFixtureDatabaseUrl(): string {
     raw === process.env.TURAS_TEST_DATABASE_URL &&
     process.env.DATABASE_URL && new URL(process.env.DATABASE_URL).pathname === url.pathname;
   const disposableNeon = url.hostname.endsWith(".neon.tech") &&
-    /^\/turas_test_005_eval_[a-f0-9]{12}$/.test(url.pathname);
+    /^\/turas_test_00[56]_eval_[a-f0-9]{12}$/.test(url.pathname);
   if ((!localCi && !disposableNeon) ||
       !["127.0.0.1","localhost","[::1]"].includes(new URL(origin).hostname)) {
     throw new Error("Unsupported UI fixture database identity");
