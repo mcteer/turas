@@ -1,7 +1,7 @@
 # Turas delivery roadmap
 
 Baseline: 2026-09-26; updated 2026-09-30. **001 merged in PR 1; 002 merged in
-[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 is in progress; 007–016 remain planned.**
+[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 merged in [PR 11](https://github.com/mcteer/turas/pull/11) after local and CI validation, without a hosted release; 007–016 remain planned.**
 
 005 now has [specification](specs/005-governed-rag-research/spec.md),
 [design](specs/005-governed-rag-research/plan.md) and
@@ -21,17 +21,17 @@ when starting a slice; do not turn the entire product into one implementation PR
 Each slice may need several PRs. No calendar dates are promised before team
 capacity, identity/resource choices and initial delivery velocity are known.
 
-## Current 006 implementation
+## Completed 006 implementation
 
 Feature 006 [specification](specs/006-delivery-plans/spec.md),
 [plan](specs/006-delivery-plans/plan.md), [research](specs/006-delivery-plans/research.md),
 data model, contracts, validation guide and [78 implementation tasks](specs/006-delivery-plans/tasks.md)
-govern the work in progress. Manual authoring, exact human review, replacement,
+govern the merged implementation. Manual authoring, exact human review, replacement,
 bounded drafting, native replay/cancellation, source lifecycle, disposable
 recovery, the local 1,000-plan performance gate, the four-project WebKit
 trusted-context journey and reviewed eight-case live evaluation have passing
 local evidence. Preview has been explicitly upgraded to schema 031 and
-read-only inspected; the feature awaits PR review and remains unreleased. See the
+read-only inspected; [PR 11](https://github.com/mcteer/turas/pull/11) passed its full CI workflow and merged. The feature remains unreleased. See the
 [validation log](specs/006-delivery-plans/validation.md) for evidence. The legacy
 planning and solution-pattern review is reference material, not runtime proof.
 

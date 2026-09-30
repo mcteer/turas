@@ -17,7 +17,7 @@ maturity assessments, attributed synthetic research, evidence quality and confli
 review, partner projections, and bound agent context
 for local testing. Feature 004 adds local private attachment intake, isolated
 scan/extraction, exact-source review, bounded unverified chat selection and
-versioned cleanup. Feature 006 delivery plans are locally implemented; staffing,
+versioned cleanup. Feature 006 delivery plans are merged; staffing,
 reports and MCP remain planned.
 Feature 005 is merged in [PR 8](https://github.com/mcteer/turas/pull/8). Governed retrieval,
 shared knowledge publication, bounded research, refresh and typed conflict
@@ -28,16 +28,16 @@ cases and a disposable paired restart/recovery drill passed. These 005
 changes have not been released.
 Feature 006 delivery plans and technical designs have a [specification](specs/006-delivery-plans/spec.md),
 [implementation plan](specs/006-delivery-plans/plan.md) and
-[task breakdown](specs/006-delivery-plans/tasks.md). Local work on
-`006-delivery-plans` includes schema 029–031, manual plan authoring, exact human
+[task breakdown](specs/006-delivery-plans/tasks.md). The implementation merged in
+[PR 11](https://github.com/mcteer/turas/pull/11) and includes schema 029–031, manual plan authoring, exact human
 review, canonical baseline replacement, governed revision comparison and bounded
 Turi drafting with native replay and cancellation. The
 [validation log](specs/006-delivery-plans/validation.md) records the passing
 disposable domain/recovery checks, local 1,000-plan performance gate,
 four-project WebKit matrix and reviewed eight-case live evaluation. Preview was
 explicitly upgraded to schema 031 and inspected afterward; local unauthenticated
-app and Eve health smoke passed. The feature awaits PR review and has not been
-released.
+app and Eve health smoke passed. The full PR CI workflow passed; the feature has
+not been released.
 No speculative eve integrations have been installed. The configured model is
 unchanged. The application has not been deployed or validated on hosted infrastructure.
 
