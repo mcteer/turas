@@ -56,12 +56,12 @@
     "start": "eve start",
     "typecheck": "tsc",
     "test:unit": "vitest run tests/unit",
-    "test:integration": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/reset-test-profile-rates.ts && node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run tests/integration",
+    "test:integration": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/reset-test-profile-rates.ts && node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run tests/integration --exclude 'tests/integration/plan-*.test.ts'",
     "test:performance": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/benchmark-shell.ts",
     "smoke:local:live": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/smoke-local-live.ts",
     "eval:behavior:local": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/eval-behavior-local.ts",
     "eval:behavior:verify": "node node_modules/tsx/dist/cli.mjs scripts/verify-behavior-review.ts",
-    "test:contracts": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/reset-test-profile-rates.ts && node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run tests/contracts",
+    "test:contracts": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/reset-test-profile-rates.ts && node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run tests/contracts --exclude 'tests/contracts/plan-*.test.ts'",
     "test:ui": "node --env-file-if-exists=.env.local node_modules/@playwright/test/cli.js test"
   },
   "dependencies": {

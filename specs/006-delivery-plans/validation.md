@@ -855,3 +855,14 @@ Final reconciliation is in reviewable PR
 checked against the implementation and recorded evidence. CI was not yet
 complete at PR creation; it must be reported from its actual run, and this
 record makes no hosted or deployment claim.
+
+The first PR CI run was superseded by the reconciliation commit. The run on
+that head passed setup, docs, typecheck and unit tests, then failed in the
+repository-wide `test:integration` command because Vitest also discovered the
+006 plan integration files outside the owned-clone runner. Their database
+guard rejected the generic CI database as designed. The generic integration
+and contract commands now exclude only `plan-*.test.ts`; `test:plans` retains
+the explicit 15-file plan suite on an owned clone. A read-only Vitest file
+listing confirmed 36 generic integration files and 22 generic contract files
+with zero plan files after the exclusions. PR CI must rerun to establish the
+corrected workflow result.
