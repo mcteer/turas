@@ -866,3 +866,14 @@ the explicit 15-file plan suite on an owned clone. A read-only Vitest file
 listing confirmed 36 generic integration files and 22 generic contract files
 with zero plan files after the exclusions. PR CI must rerun to establish the
 corrected workflow result.
+
+The next PR CI run passed the generic test selection but failed two broader
+integration assertions. `retrieval-retention.test.ts` expected exactly schema
+028 even though the CI disposable database was correctly migrated to 031; it
+now requires schema 028 or newer and still checks the test marker. The owned
+quiet-stream revocation test waited 12 seconds while the stream's configured
+10-second poll plus 15-second authority timeout and the test's own requirement
+allow closure within 30 seconds. Its wait now covers that requirement, with a
+35-second test budget. The focused marked-test-database rerun passed both files,
+11/11 tests in 15.59 seconds. The revised PR CI run remains the authoritative
+full-workflow check.

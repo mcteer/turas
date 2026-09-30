@@ -174,7 +174,8 @@ describe("native stream revocation", () => {
       await db.query(`UPDATE customer_grants SET state = 'revoked', revision = revision + 1
         WHERE membership_id = $1 AND customer_id = $2`,
       [DEMO_IDS.partnerMembership, DEMO_IDS.sharedCustomer]);
-      const finished = await Promise.race([reader.read(), delay(12_000).then(() => "timeout")]);
+      // The native guard polls every 10s and allows a 15s authority-store timeout.
+      const finished = await Promise.race([reader.read(), delay(30_000).then(() => "timeout")]);
       expect(finished).toEqual({ done: true, value: undefined });
       expect(Date.now() - revokedAt).toBeLessThanOrEqual(30_000);
       expect(upstreamCancelled).toBe(true);
@@ -187,7 +188,7 @@ describe("native stream revocation", () => {
       await db.query("DELETE FROM conversations WHERE id = $1", [conversation.id]);
       await db.end();
     }
-  }, 15_000);
+  }, 35_000);
 
   it("closes on logout, expiry and owner disablement without forwarding a quiet stream", async () => {
     const db = new Client({ connectionString: process.env.TURAS_TEST_DATABASE_URL });
