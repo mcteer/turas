@@ -70,6 +70,38 @@ describe("native stream revocation", () => {
     expect(cancelled).toBe(true);
   });
 
+  it("lets a fenced chunk finish without a redundant timer check closing it", async () => {
+    let checks = 0;
+    let authorized = true;
+    const guarded = guardNativeStream(new Response(new ReadableStream<Uint8Array>({
+      start(controller) { controller.enqueue(new TextEncoder().encode("fenced\n")); },
+    })), async () => { checks += 1; return authorized; }, 20, 25,
+    async (_chunk, enqueue) => { await delay(70); enqueue(); });
+    const reader = guarded.body!.getReader();
+    expect(new TextDecoder().decode((await reader.read()).value)).toBe("fenced\n");
+    expect(checks).toBe(1);
+    authorized = false;
+    expect(await Promise.race([reader.read(), delay(250).then(() => "timeout")]))
+      .toEqual({ done: true, value: undefined });
+  });
+
+  it("batches replay chunks under a release-time authority fence", async () => {
+    let releases = 0;
+    const source = new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (let index = 0; index < 100; index += 1) {
+          controller.enqueue(new TextEncoder().encode(`${index}\n`));
+        }
+        controller.close();
+      },
+    });
+    const guarded = guardNativeStream(new Response(source), async () => true,
+      10_000, 100, async (_chunk, enqueue) => { releases += 1; enqueue(); });
+    const output = await guarded.text();
+    expect(output).toBe(Array.from({ length: 100 }, (_, index) => `${index}\n`).join(""));
+    expect(releases).toBeLessThan(100);
+  });
+
   it("fails closed when the authority store reports an outage", async () => {
     let cancelled = false;
     const guarded = guardNativeStream(new Response(new ReadableStream<Uint8Array>({

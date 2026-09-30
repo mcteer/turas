@@ -24,6 +24,8 @@ export default defineTool({
   async execute(input,ctx) {
     return withTransaction(async (client) => {
       const bound = await boundToolActor(client,ctx.session.auth.current);
+      if (bound.planning) throw new HttpFailure(403,"planning_tool_denied",
+        "This planning turn cannot propose artifact claims");
       const draft = await readCurrentArtifactDraft(client,bound.attemptId,bound.actor.principalId);
       if (!draft) throw new HttpFailure(409,"artifact_context_absent","No source was selected");
       const envelope = JSON.parse(draft.envelope) as {

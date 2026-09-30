@@ -1,7 +1,8 @@
 # Product artifact templates
 
-These are proposed **v1 content contracts**, not generated customer deliverables.
-Feature 006 implements delivery-plan validation; 009 implements report renderers;
+These are **v1 content contracts**, not generated customer deliverables.
+Feature 006 is implementing the delivery-plan contract and local review flow; its
+drafting, lifecycle and hosted gates remain open. Feature 009 implements report renderers;
 012 implements product-gap reports. Each generator must validate required sections
 and source lineage before review. Missing inputs stay explicitly unknown.
 

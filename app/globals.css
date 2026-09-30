@@ -47,3 +47,19 @@
 .source-units li { padding: .5rem .2rem; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
 .source-units li p { white-space: pre-wrap; }
 .source-viewer > a { display: inline-block; margin-top: .6rem; }
+.plan-editor { display: grid; gap: 1rem; }
+.plan-editor details { border: 1px solid var(--border); border-radius: .625rem;
+  padding: 1rem; }
+.plan-editor summary { cursor: pointer; font-weight: 600; }
+.plan-editor label { display: grid; gap: .35rem; margin: .6rem 0; }
+.plan-editor textarea { min-height: 6rem; resize: vertical; }
+.plan-editor fieldset { margin: 1rem 0; border: 1px solid var(--border); }
+.plan-editor legend { padding: 0 .35rem; text-transform: capitalize; }
+.plan-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(16rem,1fr)); gap: 1rem; }
+.plan-inline { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; }
+.plan-inline > label { flex: 1 1 11rem; }
+.plan-diagram { margin: 1rem 0; overflow: auto; }
+.plan-diagram svg { display: block; max-width: 100%; min-width: 28rem;
+  border: 1px solid var(--border); border-radius: .625rem; }
+.plan-diagram table { width: 100%; text-align: left; border-collapse: collapse; }
+.plan-diagram th,.plan-diagram td { padding: .45rem; border-bottom: 1px solid var(--border); }

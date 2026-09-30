@@ -233,6 +233,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   return <main className="chat-page">
     <h1 className="chat-heading">{customerName}</h1>
     <p className="muted">Private conversation</p>
+    <p><Link href={`/customers/${customerId}/plans`}>Open delivery plans to start a fresh scoped Turi draft</Link></p>
     <DemoDataNotice synthetic={synthetic} />
     <ResearchPanel customerId={customerId} conversationId={conversationId}
       csrfToken={csrfToken} busy={Boolean(pendingKey) || agent.status !== "ready"}

@@ -173,6 +173,11 @@ describe("conversation persistence invariants", () => {
       expect(Number(count.rows[0].count)).toBe(3);
     });
 
+    // This synthetic worker must remain live while remote disposable DB checks
+    // exercise the earlier projection/reconciliation path.
+    await withTestDatabase((client) => client.query(`UPDATE maintenance_workers
+      SET last_seen_at=now() WHERE environment_id=$1`,
+    [process.env.TURAS_TEST_ENVIRONMENT_ID]));
     const lostReceipt = await prepareAttempt(session, conversation.id, nativeId,
       randomUUID(), "Hello");
     expect(lostReceipt.created).toBe(true);
@@ -241,6 +246,9 @@ describe("conversation persistence invariants", () => {
     expect(replayed).toMatchObject({ response_state: "completed", native_receipt: null,
       input_event_id: combinedInput.meta.id });
 
+    await withTestDatabase((client) => client.query(`UPDATE maintenance_workers
+      SET last_seen_at=now() WHERE environment_id=$1`,
+    [process.env.TURAS_TEST_ENVIRONMENT_ID]));
     const ambiguousKey = randomUUID();
     const ambiguousAttempt = await prepareAttempt(session, conversation.id, nativeId,
       ambiguousKey, "Expected input");

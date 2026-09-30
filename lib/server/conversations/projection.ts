@@ -3,6 +3,10 @@ import { withTransaction } from "../db/client";
 import { messageDigest } from "./dispatch";
 import { artifactContextSchemaReady, assertArtifactDependenciesCurrent } from "../artifacts/context-fence";
 import { assertRetrievalDependenciesCurrent } from "../retrieval/fences";
+import { reconcilePlanModelEvent } from "../plans/model-budget";
+import { planningScopeForConversation } from "../plans/context";
+import { assertPlanConversationFence } from "../plans/fences";
+import { boundToolActor } from "../profiles/tool-actor";
 
 export type NativeEvent = {
   type: string;
@@ -23,7 +27,13 @@ function visiblePayload(event: NativeEvent): Record<string, unknown> {
     case "message.completed": return { message: data.message, finishReason: data.finishReason };
     case "step.completed": return { usage: data.usage ?? null };
     case "step.failed":
-    case "turn.failed": return { code: data.code ?? "native_failure" };
+    case "turn.failed": {
+      const details=typeof data.details==="object" && data.details!==null ?
+        data.details as Record<string,unknown>:null;
+      const semanticErrorId=details && typeof details.semanticErrorId==="string" &&
+        /^[a-z0-9-]{1,80}$/.test(details.semanticErrorId) ? details.semanticErrorId:null;
+      return { code: data.code ?? "native_failure",semanticErrorId };
+    }
     default: return {};
   }
 }
@@ -47,6 +57,21 @@ export async function projectNativeEventInTransaction(
   const data = event.data ?? {};
   if (data.kind === "execution.background_task") return;
   {
+    if (["message.appended","message.completed"].includes(event.type)) {
+      const scope=await client.query<{conversation_id:string;owner_principal_id:string}>(`
+        SELECT response.conversation_id,conversation.owner_principal_id
+        FROM response_attempts response JOIN conversations conversation
+          ON conversation.id=response.conversation_id
+        WHERE response.id=$1 AND conversation.eve_session_id=$2
+          AND conversation.binding_state='bound'`,[attemptId,nativeSessionId]);
+      const owner=scope.rows[0];
+      if (!owner) throw new Error("Planning conversation owner unavailable");
+      if (await planningScopeForConversation(client,owner.conversation_id)) {
+        const bound=await boundToolActor(client,{principalId:owner.owner_principal_id,
+          attributes:{turasAttemptId:attemptId}});
+        await assertPlanConversationFence(client,bound.actor,owner.conversation_id);
+      }
+    }
     const attempt = await client.query<{
       conversation_id: string; native_turn_id: string | null; input_event_id: string | null;
       input_digest: string; dispatch_state: string; response_state: string;
@@ -103,7 +128,8 @@ export async function projectNativeEventInTransaction(
     if (!row.native_turn_id || row.native_turn_id !== data.turnId) {
       throw new Error("Native turn does not match the reserved attempt");
     }
-    if (event.type === "step.completed") {
+    const planStepRecorded=await reconcilePlanModelEvent(client,attemptId,event.type,data);
+    if (event.type === "step.completed" && planStepRecorded!==false) {
       const usage = data.usage;
       const outputTokens = typeof usage === "object" && usage !== null &&
         "outputTokens" in usage && Number.isSafeInteger(usage.outputTokens) &&

@@ -23,16 +23,17 @@ type BindingRow = {
   context_membership_id: string | null;
 };
 
-export async function lockOwnedBinding(client: PoolClient, session: CurrentSession, id: string): Promise<BindingRow> {
+async function ownedBinding(client: PoolClient, session: CurrentSession, id: string,
+  readOnly: boolean): Promise<BindingRow> {
   const scope = await client.query<{ customer_id: string }>(`
     SELECT customer_id FROM conversations WHERE id=$1 AND owner_principal_id=$2
       AND workspace_id=$3 AND environment_id=$4`,
   [id, session.principalId, session.workspaceId, getServerConfig().TURAS_ENVIRONMENT_ID]);
   if (!scope.rows[0]) throw hiddenRecord();
-  await lockProfileActor(client, session, scope.rows[0].customer_id);
+  await lockProfileActor(client, session, scope.rows[0].customer_id,undefined,readOnly);
   const result = await client.query<BindingRow>(`
     SELECT c.* FROM conversations c WHERE c.id = $1 AND c.owner_principal_id = $2
-      AND c.workspace_id = $3 AND c.environment_id = $4 FOR UPDATE
+      AND c.workspace_id = $3 AND c.environment_id = $4 ${readOnly ? "FOR SHARE" : "FOR UPDATE"}
   `, [id, session.principalId, session.workspaceId, getServerConfig().TURAS_ENVIRONMENT_ID]);
   const row = result.rows[0];
   if (!row || row.customer_id !== scope.rows[0].customer_id) throw hiddenRecord();
@@ -42,6 +43,16 @@ export async function lockOwnedBinding(client: PoolClient, session: CurrentSessi
     throw new HttpFailure(409, "context_changed", "Start a new conversation for current customer context");
   }
   return row;
+}
+
+export async function lockOwnedBinding(client: PoolClient, session: CurrentSession,
+  id: string): Promise<BindingRow> {
+  return ownedBinding(client,session,id,false);
+}
+
+export async function readOwnedBinding(client: PoolClient, session: CurrentSession,
+  id: string): Promise<BindingRow> {
+  return ownedBinding(client,session,id,true);
 }
 
 export type BindingClaim =

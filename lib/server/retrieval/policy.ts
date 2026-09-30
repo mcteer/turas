@@ -65,7 +65,8 @@ export type AuthorizedRetrievalScope = {
 };
 
 export async function authorizeRetrievalScope(client: PoolClient, actor: CurrentSession,
-  scope: "customer" | "shared" | "combined", customerId?: string): Promise<AuthorizedRetrievalScope> {
+  scope: "customer" | "shared" | "combined", customerId?: string,
+  effectiveAudience?:"internal"|"delivery",readOnly=false): Promise<AuthorizedRetrievalScope> {
   await assertRetrievalReady(client);
   const active = await client.query(`SELECT 1 FROM memberships m
     JOIN principals p ON p.id=m.principal_id AND p.active
@@ -79,15 +80,16 @@ export async function authorizeRetrievalScope(client: PoolClient, actor: Current
     [actor.membershipId, actor.sessionId, actor.principalId, actor.workspaceId,
       actor.kind, actor.role]);
   if (!active.rowCount) throw new HttpFailure(401, "unauthorized", "Sign in again");
+  if (actor.kind==="partner" && effectiveAudience==="internal") throw hiddenRecord();
   if (scope !== "shared") {
     if (!customerId) throw hiddenRecord();
-    await lockProfileActor(client, actor, customerId);
+    await lockProfileActor(client, actor, customerId, undefined, readOnly);
   }
   return {
     environmentId: getServerConfig().TURAS_ENVIRONMENT_ID,
     workspaceId: scope === "shared" ? null : actor.workspaceId,
     customerId: scope === "shared" ? null : customerId ?? null,
-    audience: actor.kind === "internal" ? "internal" : "delivery",
+    audience: effectiveAudience ?? (actor.kind === "internal" ? "internal" : "delivery"),
     includeShared: scope !== "customer",
   };
 }

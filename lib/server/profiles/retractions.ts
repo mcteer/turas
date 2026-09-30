@@ -5,6 +5,7 @@ import type { ProfileCommand } from "../../contracts/profiles";
 import type { ProfileActor } from "./policy";
 import { requireSteward } from "./policy";
 import { retireRetrievalProjection } from "../retrieval/projections";
+import { enqueuePlanCleanupForSource } from "../plans/cleanup";
 
 type RetractionCommand = Extract<ProfileCommand, { action: "request_retraction" | "retract_revision" | "decline_retraction" | "withdraw_source" }>;
 
@@ -13,7 +14,10 @@ export async function handleRetraction(client: PoolClient, actor: ProfileActor, 
   if (command.action === "withdraw_source") {
     await requireSteward(client, actor, customerId);
     const source = await client.query<{ id: string; audience: string }>(
-      "SELECT id,audience FROM evidence_source_revisions WHERE id=$1 AND workspace_id=$2 AND customer_id=$3",
+      `SELECT revision.id,revision.audience FROM evidence_source_revisions revision
+       JOIN evidence_sources source ON source.id=revision.source_id
+       WHERE revision.id=$1 AND revision.workspace_id=$2 AND revision.customer_id=$3
+       FOR UPDATE OF source`,
       [command.sourceRevisionId, actor.workspaceId, customerId]);
     if (!source.rows[0]) throw hiddenRecord();
     const lifecycle = await client.query<{ event_type: string }>(
@@ -33,6 +37,7 @@ export async function handleRetraction(client: PoolClient, actor: ProfileActor, 
       VALUES ($1,$2,$3,'withdraw',$4,$5,$6)`,
     [eventId, command.sourceRevisionId, version + 1, actor.membershipId, command.rationale, receiptId]);
     await retireRetrievalProjection(client,"verified_research",command.sourceRevisionId);
+    await enqueuePlanCleanupForSource(client,"verified_research",command.sourceRevisionId);
     const dependents = await client.query(`SELECT 1 FROM profile_evidence_links l
       JOIN profile_revisions v ON v.id=l.profile_revision_id AND v.audience='delivery'
       JOIN profile_records r ON r.id=v.record_id AND r.current_accepted_revision_id=v.id
@@ -103,6 +108,7 @@ export async function handleRetraction(client: PoolClient, actor: ProfileActor, 
   [eventId, row.record_id, command.revisionId, actor.membershipId, command.rationale, receiptId]);
   await client.query("UPDATE profile_records SET current_accepted_revision_id=NULL,version=version+1 WHERE id=$1", [row.record_id]);
   await retireRetrievalProjection(client,"accepted_profile",command.revisionId);
+  await enqueuePlanCleanupForSource(client,"accepted_profile",command.revisionId);
   if (row.kind === "customer_details") await client.query(
     "UPDATE customer_references SET display_name='Unknown customer' WHERE id=$1 AND workspace_id=$2",
     [customerId, actor.workspaceId]);

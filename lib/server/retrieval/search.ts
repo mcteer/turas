@@ -41,18 +41,20 @@ async function rateLimit(client: PoolClient, actor: CurrentSession): Promise<voi
 }
 
 async function eligibleSources(client: PoolClient, actor: CurrentSession,
-  input: RetrievalSearchInput): Promise<Source[]> {
-  const scope = await authorizeRetrievalScope(client,actor,input.scope,input.customerId);
+  input: RetrievalSearchInput,effectiveAudience?:"internal"|"delivery",
+  customerWideOnly=false): Promise<Source[]> {
+  const scope = await authorizeRetrievalScope(client,actor,input.scope,input.customerId,effectiveAudience);
   const rows = await client.query<Source>(`SELECT id,source_kind,source_revision_id,
       source_generation,audience,content_digest,projection_contract
     FROM retrieval_sources WHERE environment_id=$1 AND lifecycle_state='current'
       AND ((scope='customer' AND workspace_id=$2 AND customer_id=$3
         AND ($4::uuid IS NULL OR workload_id IS NULL OR workload_id=$4)
+        AND (NOT $7::boolean OR workload_id IS NULL)
         AND (audience='delivery' OR $5='internal'))
         OR (scope='shared' AND $6::boolean AND audience='shared'))
     ORDER BY id LIMIT 10001`,
   [scope.environmentId,scope.workspaceId,scope.customerId,input.workloadId ?? null,
-    scope.audience,scope.includeShared]);
+    scope.audience,scope.includeShared,customerWideOnly]);
   if (rows.rows.length > 10_000) throw new HttpFailure(503,"unavailable","Retrieval unavailable");
   const eligible: Source[] = [];
   for (const source of rows.rows) {
@@ -158,10 +160,16 @@ async function hasMaterialConflict(client: PoolClient, row: Ranked,
   return Boolean(profile.rowCount);
 }
 
-export async function searchEvidence(actor: CurrentSession, raw: unknown) {
+export async function searchEvidence(actor: CurrentSession, raw: unknown,
+  effective?:{audience:"internal"|"delivery";workloadId:string|null}) {
   const parsed = retrievalSearchSchema.safeParse(raw);
   if (!parsed.success) throw new HttpFailure(422,"invalid_query","Invalid retrieval request");
   const input = parsed.data;
+  if (effective && input.workloadId !== undefined &&
+      input.workloadId !== effective.workloadId) {
+    throw new HttpFailure(409,"context_changed","Planning workload changed");
+  }
+  const scopedInput=effective ? {...input,workloadId:effective.workloadId ?? undefined}:input;
   const started = Date.now();
   if (activeSearches >= retrievalLimits.activePerEnvironment) {
     throw new HttpFailure(429,"rate_limited","Retrieval busy");
@@ -169,14 +177,16 @@ export async function searchEvidence(actor: CurrentSession, raw: unknown) {
   activeSearches += 1;
   try {
     await withTransaction(async (client) => {
-      await authorizeRetrievalScope(client,actor,input.scope,input.customerId);
+      await authorizeRetrievalScope(client,actor,input.scope,input.customerId,
+        effective?.audience);
       await rateLimit(client,actor);
     });
     let vector: number[] | null = null;
     try { vector = (await embedRetrievalTexts([input.query]))[0]; }
     catch { recordRetrievalMetric("lexical_degraded_count",1); }
     const result = await withTransaction(async (client) => {
-      const sources = await eligibleSources(client,actor,input);
+      const sources = await eligibleSources(client,actor,scopedInput,effective?.audience,
+        Boolean(effective && effective.workloadId===null));
       const ranked = await rankPassages(client,sources,input.query,vector);
       const asOf = new Date();
       const bySource = new Map<string,number>();
@@ -193,7 +203,7 @@ export async function searchEvidence(actor: CurrentSession, raw: unknown) {
         const locators = citationLocatorSchema.array().min(1).max(50).safeParse(row.locators);
         if (!locators.success) continue;
         const quality = await qualityFor(client,row,asOf);
-        const conflict = await hasMaterialConflict(client,row,actor,input);
+        const conflict = await hasMaterialConflict(client,row,actor,scopedInput);
         if (input.use === "current_fact" && !currentFactEligible(quality,conflict,asOf)) continue;
         const caveats = [
           ...(quality.freshness === "Stale" || quality.freshness === "Unknown" ?

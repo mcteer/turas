@@ -15,8 +15,10 @@ export default defineTool({
       const scoped = await client.query<{ customer_id: string }>(`
         SELECT customer_id FROM research_runs WHERE id=$1`,[runId]);
       if (scoped.rows[0]?.customer_id !== bound.customerId) throw hiddenRecord();
-      const receipt = await readResearchRun(client,bound.actor,runId);
-      const findings = await readResearchFindings(client,bound.actor,runId);
+      const receipt = await readResearchRun(client,bound.actor,runId,
+        bound.planning?.audience);
+      const findings = await readResearchFindings(client,bound.actor,runId,
+        bound.planning?.audience);
       return { receipt,findings: findings.slice(0,3),
         omittedFindingCount: Math.max(0,findings.length-3),
         caveat: receipt.state === "cancelled" ?

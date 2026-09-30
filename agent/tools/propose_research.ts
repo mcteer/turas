@@ -20,6 +20,8 @@ export default defineTool({
   async execute(input,ctx) {
     const bound = await withTransaction(async (client) => {
       const current = await boundToolActor(client,ctx.session.auth.current);
+      if (current.planning) throw new HttpFailure(403,"planning_tool_denied",
+        "Start research separately from this planning turn");
       const attempt = await client.query<{ conversation_id: string }>(`
         SELECT conversation_id FROM response_attempts WHERE id=$1`,[current.attemptId]);
       if (!attempt.rows[0]) throw new HttpFailure(409,"context_changed","Conversation unavailable");

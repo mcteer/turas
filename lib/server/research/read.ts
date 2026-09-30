@@ -6,7 +6,7 @@ import { retrievalQuality } from "../retrieval/context";
 import { authorizeRetrievalScope, recheckRetrievalSource } from "../retrieval/policy";
 
 export async function readResearchFindings(client: PoolClient,actor: CurrentSession,
-  runId: string) {
+  runId: string,effectiveAudience?:"internal"|"delivery") {
   const run = await client.query<{ customer_id: string; workspace_id: string;
     actor_membership_id: string; conversation_id: string }>(`
     SELECT run.customer_id,run.workspace_id,run.actor_membership_id,req.conversation_id
@@ -16,7 +16,8 @@ export async function readResearchFindings(client: PoolClient,actor: CurrentSess
   const row = run.rows[0];
   if (!row || row.actor_membership_id !== actor.membershipId ||
       row.workspace_id !== actor.workspaceId) throw hiddenRecord();
-  const scope = await authorizeRetrievalScope(client,actor,"customer",row.customer_id);
+  const scope = await authorizeRetrievalScope(client,actor,"customer",row.customer_id,
+    effectiveAudience);
   const found = await client.query<{ observation_id: string; canonical_url: string;
     passage_text: string; passage_digest: string; source_revision_id: string;
     title: string; quality_input: unknown; observation_at: Date | null;

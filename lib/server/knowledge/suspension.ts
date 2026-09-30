@@ -3,6 +3,7 @@ import { withTransaction } from "../db/client";
 import { getServerConfig } from "../config";
 import { knowledgeLineageIsCurrent } from "../profiles/eligibility";
 import { enqueueRetrievalJob } from "../retrieval/jobs";
+import { enqueuePlanCleanupForSource } from "../plans/cleanup";
 
 // A sweep must advance past healthy publications. Otherwise the oldest 100
 // permanently hide every later publication from maintenance.
@@ -41,6 +42,7 @@ export async function suspendStaleKnowledge(existingClient?: PoolClient): Promis
       for (const projection of projections.rows) {
         await enqueueRetrievalJob(client,projection.id,"cleanup");
       }
+      await enqueuePlanCleanupForSource(client,"shared_knowledge",row.revision_id);
       suspended += 1;
     }
     lastSweptPublicationId = rows.rows[rows.rows.length-1].id;

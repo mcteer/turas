@@ -5,6 +5,7 @@ import { qualityInputSchema } from "../../contracts/profiles";
 import type { CurrentSession } from "../auth/sessions";
 import { rateEvidence } from "../profiles/quality";
 import { materializeCurrentProjection,retireRetrievalProjection } from "../retrieval/projections";
+import { enqueuePlanCleanupForSource } from "../plans/cleanup";
 import { lockResearchOwner } from "./policy";
 import { passageSupportsResearchScope } from "./normalize";
 
@@ -140,8 +141,10 @@ export async function ingestCheckedObservation(client: PoolClient,actor: Current
       (id,source_revision_id,lifecycle_version,event_type,rationale)
       VALUES($1,$2,1,'supersede','New checked public observation')`,
     [randomUUID(),previous.id]);
-    if (previous && !previous.retired) await retireRetrievalProjection(client,
-      "verified_research",previous.id);
+    if (previous && !previous.retired) {
+      await retireRetrievalProjection(client,"verified_research",previous.id);
+      await enqueuePlanCleanupForSource(client,"verified_research",previous.id);
+    }
     if (previous) await client.query(`UPDATE customer_profile_state SET version=version+1,
       internal_generation=internal_generation+1,delivery_generation=delivery_generation+1,
       updated_at=now() WHERE customer_id=$1`,[row.customer_id]);

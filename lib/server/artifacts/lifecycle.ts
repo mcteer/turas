@@ -9,6 +9,7 @@ import { requireSteward } from "../profiles/policy";
 import { lockArtifactHumanScope } from "./policy";
 import { queueNativeRetirement } from "./native-retirement";
 import { retireRetrievalProjection } from "../retrieval/projections";
+import { enqueuePlanCleanupForSource } from "../plans/cleanup";
 
 export function nextArtifactGeneration(current: number, expected: number): number {
   if (!Number.isSafeInteger(current) || current < 1 || current !== expected) {
@@ -96,6 +97,7 @@ export async function retireArtifactVersion(
       SELECT id FROM artifact_evidence_selections WHERE version_id=$1`,[versionId]);
     for (const selection of selections.rows) {
       await retireRetrievalProjection(client,"approved_excerpt",selection.id,environmentId);
+      await enqueuePlanCleanupForSource(client,"approved_excerpt",selection.id);
     }
     const eventId = randomUUID();
     const result: ArtifactRetirementReceipt = { versionId, state: targetState, lifecycleGeneration: generation, eventId };

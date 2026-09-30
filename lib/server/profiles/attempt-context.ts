@@ -7,6 +7,7 @@ import { readEligibleContext } from "./context";
 import { assertArtifactDependenciesCurrent } from "../artifacts/context-fence";
 import { assertRetrievalDependenciesCurrent } from "../retrieval/fences";
 import { assertResearchAttemptCurrent } from "../research/fences";
+import { planningScopeForConversation } from "../plans/context";
 
 type Snapshot = { contractVersion: "customer-context-v1"; contextVersion: string;
   asOf: string; validUntil: string; entries: { citationId: string }[];
@@ -30,16 +31,26 @@ export async function captureAttemptContext(client: PoolClient, actor: CurrentSe
       context_login_session_id,context_membership_id
     FROM conversations WHERE id=$1 AND customer_id=$2 FOR UPDATE`, [conversationId, customerId]);
   const bound = conversation.rows[0];
+  const planning=await planningScopeForConversation(client,conversationId);
+  if (planning && (planning.ownerMembershipId!==actor.membershipId ||
+      planning.customerId!==customerId ||
+      (actor.kind==="partner" && planning.audience!=="delivery"))) {
+    throw hiddenRecord();
+  }
+  const effectiveAudience=planning?.audience ??
+    (actor.kind === "internal" ? "internal" : "delivery");
   if (!bound || bound.context_snapshot_schema !== "customer-context-v1" ||
       bound.context_login_session_id !== actor.sessionId ||
       bound.context_membership_id !== actor.membershipId ||
-      bound.context_audience !== (actor.kind === "internal" ? "internal" : "delivery")) {
+      bound.context_audience !== effectiveAudience) {
     throw new HttpFailure(409, "historical_conversation", "Start a new conversation for current customer context");
   }
   if (bound.context_valid_until && bound.context_valid_until.getTime() <= Date.now()) {
     throw new HttpFailure(409, "context_changed", "Start a new conversation for current customer context");
   }
-  const snapshot = await readEligibleContext(actor, customerId, {}, client) as Snapshot;
+  const snapshot = await readEligibleContext(actor, customerId,planning ?
+    {audience:planning.audience,workloadId:planning.workloadId ?? undefined,
+      customerWideOnly:planning.workloadId===null}:{},client) as Snapshot;
   if (snapshot.contractVersion !== "customer-context-v1" ||
       snapshot.contextVersion !== bound.context_generation ||
       Date.parse(snapshot.validUntil) <= Date.now()) {

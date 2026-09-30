@@ -9,10 +9,13 @@ import { searchEvidence } from "../retrieval/search";
 /** Shared governed path for new customer factual-context retrieval. */
 export async function readGovernedEvidenceContext(actor: ProfileActor, customerId: string,
   query: string, options: { scope?: "customer" | "shared" | "combined";
-    use?: "discovery" | "current_fact"; limit?: number } = {}) {
+    use?: "discovery" | "current_fact"; limit?: number;
+    audience?:"internal"|"delivery";workloadId?:string|null } = {}) {
   return searchEvidence(actor,{ scope: options.scope ?? "combined",
     customerId: options.scope === "shared" ? undefined : customerId,query,
-    use: options.use ?? "current_fact",limit: options.limit ?? 5 });
+    workloadId:options.scope === "shared" ? undefined:options.workloadId ?? undefined,
+    use: options.use ?? "current_fact",limit: options.limit ?? 5 },
+  options.audience ? {audience:options.audience,workloadId:options.workloadId ?? null}:undefined);
 }
 
 type ProfileProjection = {
@@ -24,7 +27,8 @@ type ProfileProjection = {
 };
 
 export async function readEligibleContext(actor: ProfileActor, customerId: string,
-  options: { limit?: number; query?: string; workloadId?: string; kind?: RecordKind; page?: number } = {},
+  options: { limit?: number; query?: string; workloadId?: string; kind?: RecordKind;
+    page?: number;audience?:"internal"|"delivery";customerWideOnly?:boolean } = {},
   existingClient?: PoolClient): Promise<unknown> {
   const limit = options.limit ?? 20;
   const page = options.page ?? 1;
@@ -32,7 +36,8 @@ export async function readEligibleContext(actor: ProfileActor, customerId: strin
       !Number.isInteger(page) || page < 1 || page > 10 ||
       (options.query?.length ?? 0) > 200) throw new HttpFailure(422, "invalid_query", "Invalid context query");
   const run = async (client: PoolClient) => {
-    const profile = await readProfile(actor, customerId, client) as ProfileProjection;
+    const profile = await readProfile(actor, customerId, client,options.workloadId,
+      options.audience,options.customerWideOnly ?? false) as ProfileProjection;
     if (options.workloadId && !profile.workloads.some((workload) => workload.id === options.workloadId)) {
       throw hiddenRecord();
     }
@@ -42,7 +47,8 @@ export async function readEligibleContext(actor: ProfileActor, customerId: strin
     for (const fact of profile.acceptedFacts) {
       if (fact.supportStatus !== "settled" && fact.supportStatus !== "restricted_source") continue;
       if (options.kind && fact.kind !== options.kind) continue;
-      if (options.workloadId && fact.workloadId !== options.workloadId) continue;
+      if (options.workloadId && fact.workloadId && fact.workloadId !== options.workloadId) continue;
+      if (options.customerWideOnly && fact.workloadId) continue;
       if (query && !JSON.stringify({ payload: fact.payload,
         approvedArtifactExcerpt: fact.approvedArtifactExcerpt }).toLocaleLowerCase().includes(query)) continue;
       entries.push({ type: "accepted_manual", citationId: fact.id, kind: fact.kind,

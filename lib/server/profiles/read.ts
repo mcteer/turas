@@ -135,7 +135,12 @@ export async function listProfileRecords(actor: ProfileActor, customerId: string
 }
 
 export async function readProfile(actor: ProfileActor, customerId: string, existingClient?: PoolClient,
-  selectedWorkloadId?: string): Promise<unknown> {
+  selectedWorkloadId?: string,effectiveAudience?:"internal"|"delivery",
+  customerWideOnly=false): Promise<unknown> {
+  if (actor.kind==="partner" && effectiveAudience==="internal") throw hiddenRecord();
+  const allowInternal=(effectiveAudience ?? (actor.kind==="internal" ? "internal":"delivery"))
+    ==="internal";
+  const projectionKind=allowInternal ? actor.kind:"partner";
   const run = async (client: PoolClient) => {
     await lockProfileActor(client, actor, customerId);
     await enforceProfileRate(client, actor, customerId, "read");
@@ -153,7 +158,7 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
              AND r.kind='workload_details' AND v.audience='delivery'
              AND v.data_category='delivery_context'))
        ORDER BY w.created_at,w.id`,
-      [customerId, actor.workspaceId, actor.kind === "internal"]);
+      [customerId, actor.workspaceId, allowInternal]);
     if (selectedWorkloadId && !workloads.rows.some((row) => row.id === selectedWorkloadId)) throw hiddenRecord();
     const accepted = await client.query<RecordRow>(`SELECT v.id,v.record_id,r.workload_id,r.kind,
       r.version AS record_version,
@@ -168,9 +173,11 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
         WHERE profile_revision_id=v.id ORDER BY created_at DESC,id DESC LIMIT 1) q ON true
       WHERE r.workspace_id=$1 AND r.customer_id=$2
         AND ($4::uuid IS NULL OR r.workload_id IS NULL OR r.workload_id=$4)
+        AND (NOT $5::boolean OR r.workload_id IS NULL)
         AND ($3::boolean OR (v.audience='delivery' AND v.data_category='delivery_context'))
       ORDER BY r.kind,r.created_at,r.id`,
-    [actor.workspaceId, customerId, actor.kind === "internal", selectedWorkloadId ?? null]);
+    [actor.workspaceId, customerId, allowInternal, selectedWorkloadId ?? null,
+      customerWideOnly]);
     const revisionIds = accepted.rows.map((row) => row.id);
     const conflicts = revisionIds.length ? await client.query<{ id: string }>(`
       SELECT DISTINCT candidate.id FROM evidence_conflicts c
@@ -179,11 +186,11 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
     [customerId, revisionIds]) : { rows: [] as { id: string }[] };
     const conflicted = new Set(conflicts.rows.map((row) => row.id));
     const unsupportedIds = await unsupportedProfileRevisionIds(client, revisionIds);
-    const artifactExcerpts = await approvedArtifactExcerpts(client, revisionIds, actor.kind);
-    const support = await supportMetadata(client, actor, accepted.rows);
+    const artifactExcerpts = await approvedArtifactExcerpts(client, revisionIds, projectionKind);
+    const support = await supportMetadata(client, {...actor,kind:projectionKind}, accepted.rows);
     const acceptedFacts = accepted.rows.map((row) => {
       const source = support.get(row.id);
-      const projected = projectRevision({ ...projectionRow(row), ...source }, actor.kind, actor.membershipId);
+      const projected = projectRevision({ ...projectionRow(row), ...source }, projectionKind, actor.membershipId);
       if (!projected) return null;
       const supportStatus = conflicted.has(row.id) ? "conflicted" :
         unsupportedIds.has(row.id) ? "unsupported" :
@@ -207,7 +214,7 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
         AND NOT EXISTS (SELECT 1 FROM evidence_source_events e
           WHERE e.source_revision_id=v.id AND e.event_type IN ('withdraw','supersede'))
       ORDER BY v.created_at DESC,v.id DESC LIMIT 50`,
-    [actor.workspaceId, customerId, actor.kind === "internal"]);
+    [actor.workspaceId, customerId, allowInternal]);
     const attributedResearch = research.rows.map((row) => {
       const checked = qualityInputSchema.safeParse(row.quality_input);
       const input = checked.success ? checked.data : unknownQualityInput;
@@ -247,7 +254,7 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
         firstRevisionId: row.first_revision_id, secondRevisionId: row.second_revision_id,
         rationale: row.rationale,
       })) } : {}),
-      contextVersion: actor.kind === "internal" ? state.rows[0]?.internal_generation : state.rows[0]?.delivery_generation };
+      contextVersion: allowInternal ? state.rows[0]?.internal_generation : state.rows[0]?.delivery_generation };
   };
   return existingClient ? run(existingClient) : withTransaction(run);
 }

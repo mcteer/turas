@@ -304,7 +304,8 @@ export async function startResearch(client: PoolClient,actor: CurrentSession,
     message,replayed: false };
 }
 
-export async function readResearchRun(client: PoolClient,actor: CurrentSession,id: string) {
+export async function readResearchRun(client: PoolClient,actor: CurrentSession,id: string,
+  effectiveAudience?:"internal"|"delivery") {
   if (!governedIdSchema.safeParse(id).success) throw hiddenRecord();
   const found = await client.query<{ id: string; request_id: string; state: string;
     mode: string; started_at: Date | null; run_deadline: Date | null;
@@ -321,8 +322,8 @@ export async function readResearchRun(client: PoolClient,actor: CurrentSession,i
     actor.membershipId,actor.principalId]);
   const row = found.rows[0];
   if (!row) throw hiddenRecord();
-  await authorizeRetrievalScope(client,actor,"customer",row.customer_id);
-  const findings = await readResearchFindings(client,actor,id);
+  await authorizeRetrievalScope(client,actor,"customer",row.customer_id,effectiveAudience);
+  const findings = await readResearchFindings(client,actor,id,effectiveAudience);
   return researchRunReceiptSchema.parse({ version: "research-v1",id: row.id,
     requestId: row.request_id,state: row.state,mode: row.mode,
     startedAt: row.started_at?.toISOString() ?? null,
