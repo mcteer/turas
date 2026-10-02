@@ -25,7 +25,10 @@ export function MobileNavigation({ children }: { children: React.ReactNode }) {
       aria-expanded={open} onClick={() => setOpen(true)}>☰</button>
     {open && <div className="mobile-backdrop" onMouseDown={(event) => {
       if (event.target === event.currentTarget) setOpen(false);
-    }}><div className="mobile-panel" ref={dialog} role="dialog" aria-modal="true" aria-label="Navigation">
+    }}><div className="mobile-panel" ref={dialog} role="dialog" aria-modal="true" aria-label="Navigation"
+      onClick={(event) => {
+        if (event.target instanceof Element && event.target.closest("a[href]")) setOpen(false);
+      }}>
       <div className="sidebar"><button className="mobile-close" type="button" aria-label="Close navigation"
         onClick={() => setOpen(false)}>✕</button>{children}</div>
     </div></div>}

@@ -42,11 +42,11 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={submit}>
-      <p><label htmlFor="username">Username</label><br /><input id="username" name="username" autoComplete="username" required /></p>
-      <p><label htmlFor="password">Password</label><br /><input id="password" name="password" type="password" autoComplete="current-password" required /></p>
+    <form className="login-form" onSubmit={submit}>
+      <p><label className="field-label" htmlFor="username">Username</label><input className="field" id="username" name="username" autoComplete="username" required /></p>
+      <p><label className="field-label" htmlFor="password">Password</label><input className="field" id="password" name="password" type="password" autoComplete="current-password" required /></p>
       {error && <p role="alert">{error}</p>}
-      <button type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
+      <button className="primary-button" type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
     </form>
   );
 }

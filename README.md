@@ -247,6 +247,8 @@ on the project; the app integrates `@vercel/analytics` with page URL redaction
 for customer, engagement, plan, resource, import and conversation identifiers.
 Query strings and fragments are removed; unknown routes and custom events are
 discarded. Local development uses the SDK's development mode.
+The shared shell, chat landing, customer directory and sign-in screen follow
+the legacy Turas palette, self-hosted Geist fonts, compact navigation and cards.
 Hosted application validation, durable artifact storage and background worker
 alignment remain release work. The earlier Next.js preview failure
 is recorded historically in the [foundation validation record](specs/001-platform-foundation/validation.md).

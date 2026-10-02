@@ -59,7 +59,7 @@ export function NewConversation({ csrfToken }: { csrfToken: string }) {
     }
   }
 
-  return <main className="chat-page"><div className="chat-center">
+  return <main className="chat-page chat-landing"><div className="chat-center">
     <h1 className="chat-title">Turi</h1>
     <p className="chat-context">Choose a customer to start a private conversation.</p>
     <DemoDataNotice synthetic />

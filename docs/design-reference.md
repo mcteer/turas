@@ -21,6 +21,24 @@ route/source inventory did not identify a separate resource-directory, competenc
 review or staffing-import UI to port; those 007 interactions need their own
 governed implementation and CLI browser validation.
 
+## Legacy alignment follow-up (2026-10-02)
+
+The shell, chat landing, customer directory and sign-in screen were compared
+read-only against the legacy source. The fresh app now uses self-hosted Geist
+Sans/Mono through `next/font`, the legacy neutral surface tokens and 18rem
+sidebar, chat search above product navigation, compact history rows and a
+48px centered Turi title. Sign-in and customer directory use restrained bordered
+cards instead of unstyled inputs/list rows. Current customer scope, access rules,
+review actions and explicit synthetic labels remain part of the fresh workflows.
+Unavailable legacy routes and demo business figures are not navigation entries.
+The local validation used an owned disposable database clone: 20 command-line
+WebKit cases passed across desktop/mobile and light/dark, with no skips, retries
+or failures. Checks covered keyboard navigation/focus return, closing the mobile
+panel after navigation, overflow, labels, serious/critical accessibility issues,
+customer cards and parked chat creation without a model call. Synthetic captures
+were visually reviewed; Next.js development indicators are local test chrome.
+Node-24 typecheck, Next.js production build and documentation checks passed.
+
 ## Preserve the visual language
 
 - Geist Sans for interface/body text and Geist Mono for code/technical data.
