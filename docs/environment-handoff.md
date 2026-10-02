@@ -61,3 +61,22 @@ in the Preview branch has schema 028 and marker `test-neon-005`. The test guard
 permits that direct endpoint only when it differs from the selected app and
 Production databases. Never aim disposable tests at the selected Preview app
 or Production database. No secret values belong in this document or a commit.
+
+## Preview and Analytics reconnection (2026-10-02)
+
+The maintainer reconnected `mcteer/turas` to the existing `turas` project in the
+`turas-6e414af3` team. Read-only project inspection confirmed Git deployments
+are enabled, `main` is Production, non-Production deployments have Vercel
+protection, and Web Analytics was already enabled with historical data.
+The isolated Preview/Analytics branch adds the Analytics component and URL
+redaction; historical Analytics data does not validate this new integration.
+
+`vercel.json` installs both pinned dependency sets and runs the Next.js build.
+`withEve` in `next.config.ts` supplies the Eve service integration. The runtime
+uses the exact generated `VERCEL_URL` origin only in Preview; Production keeps
+its explicit `TURAS_APP_ORIGIN`. Preview configuration must use the fresh marked
+schema-034 database, not the legacy Preview database. Runtime configuration
+uses the runtime database credential for both required URL fields; owner
+credentials stay outside deployed functions and migrations remain explicit.
+Private filesystem attachments, workforce imports and background processing
+still require a hosted storage/worker release before those paths are usable.

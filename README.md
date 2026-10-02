@@ -240,8 +240,13 @@ Deployment is a future feature action using `eve link` and `eve deploy`, as requ
 by [AGENTS](AGENTS.md). No manual provisioning or deployment is part of 001. Every relevant
 PR updates README in the same change; maintainers verify freshness after merge.
 
-The repository was disconnected from Vercel on 2026-09-27 to prevent automatic
-deployments until Turas can replace the existing application. Do not reconnect
-or deploy as part of 004. Hosted validation and project
-alignment are deferred to replacement readiness. The earlier Next.js preview failure
+The repository was disconnected from Vercel on 2026-09-27 and reconnected by the
+maintainer on 2026-10-02. Git deployments are enabled: `main` is the Production
+branch and other branches produce protected Previews. Web Analytics is enabled
+on the project; the app integrates `@vercel/analytics` with page URL redaction
+for customer, engagement, plan, resource, import and conversation identifiers.
+Query strings and fragments are removed; unknown routes and custom events are
+discarded. Local development uses the SDK's development mode.
+Hosted application validation, durable artifact storage and background worker
+alignment remain release work. The earlier Next.js preview failure
 is recorded historically in the [foundation validation record](specs/001-platform-foundation/validation.md).
