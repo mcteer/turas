@@ -973,3 +973,16 @@ plan's named components and decisions, all 77 original tasks and constitution
 principles I–VIII against current source and the checks above. No actionable
 remaining implementation task was found. The outstanding release boundary is
 review-head CI and PR review; hosted behavior remains unclaimed.
+
+### Review-head CI correction
+
+PR 13's first review head (`6ba3fe5`) passed CI install, docs, typecheck,
+unit, integration, contracts, artifact, retrieval, plan, complete owned staffing,
+build and Spec Kit steps. Its shared legacy WebKit step failed after 121 passing
+cases because `TURAS_UI_LEGACY_ONLY=1` excluded 005 cases but still discovered
+007 staffing cases. Those cases correctly refused the shared non-owned database,
+producing `007 checks require the owned disposable clone`; their dedicated owned
+112-case WebKit gate had already passed. Updated `playwright.config.ts` so this
+legacy-only selection excludes `staffing-*.spec.ts`. Node 24 CLI discovery with
+that flag now finds zero staffing cases. A new exact-head CI result is required;
+the failed first head does not satisfy T077.
