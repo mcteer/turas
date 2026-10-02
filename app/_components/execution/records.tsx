@@ -1,10 +1,12 @@
 "use client";
+import {useExecutionPanelGuard} from './client';
 import { useEffect,useLayoutEffect,useRef,useState } from 'react';
 import type {Overview,RecordView,Session,Owner,Mutation,ExecutionRecordContent,ExecutionSource} from './types';
 export function ExecutionRecords({view,records,owners,session,save,disabled,onReview}:{view:Overview;records:RecordView[];owners:Owner[];session:Session;save:Mutation;disabled:boolean;onReview:(record:RecordView,action:string)=>void}){
   const [editing,setEditing]=useState<RecordView|null>(null),[draft,setDraft]=useState<ExecutionRecordContent>(blank()),[query,setQuery]=useState(''),[results,setResults]=useState<{citationId:string;title:string}[]>([]),[message,setMessage]=useState('');
   const [history,setHistory]=useState<{id:string;revisions:Array<{revisionId:string;state:string;reviewRequired:boolean;content:unknown}>;nextCursor:string|null}|null>(null);
-  const dirty=useRef(0),submitted=useRef(0),sequence=useRef(0);
+  const dirty=useRef(0),submitted=useRef(0),sequence=useRef(0),baseline=useRef(view.baselineId);
+  useExecutionPanelGuard(dirty);
   function localDate(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
   function blank():ExecutionRecordContent{return {kind:'activity',subtype:'work',title:'',narrative:'',audience:'delivery',eventDate:localDate(),timezone:Intl.DateTimeFormat().resolvedOptions().timeZone,
     workPackageKey:null,milestoneKeys:[],ownerMembershipId:null,unknownOwnerReason:'Owner not yet assigned',references:[]};}
@@ -21,7 +23,8 @@ export function ExecutionRecords({view,records,owners,session,save,disabled,onRe
   }catch{setResults([]);setMessage('Evidence changed; select a current source.');}}
   async function readHistory(recordId:string,cursor?:string){const ticket=++sequence.current;setHistory(null);try{const response=await fetch(`/api/execution/engagements/${view.engagementId}/records?history=1&recordId=${recordId}${cursor?`&cursor=${encodeURIComponent(cursor)}`:''}`,{cache:'no-store'}),body=await response.json();if(ticket!==sequence.current)return;if(!response.ok||!body.data)throw new Error('History unavailable');setHistory({id:recordId,...body.data});}catch{setHistory(null);setMessage('History unavailable. Refresh current access.');}}
   useLayoutEffect(()=>{setHistory(null);},[records]);
-  function edit(record:RecordView){if(!record.content)return;setEditing(record);setDraft(structuredClone(record.content) as ExecutionRecordContent);dirty.current=0;setMessage('');}
+  const baselineChanged=baseline.current!==view.baselineId;
+  function edit(record:RecordView){if(!record.content)return;baseline.current=record.baselineId;setEditing(record);setDraft(structuredClone(record.content) as ExecutionRecordContent);dirty.current=0;setMessage('');}
   return <section className="profile-section" aria-label="Activity Records"><h2>Activity Records</h2>
     {!records.length&&<p>No reviewed activity yet. This is an empty delivery log.</p>}
     {records.filter(r=>r.kind==='activity').map(record=><article key={record.id} className="profile-card">
@@ -35,8 +38,9 @@ export function ExecutionRecords({view,records,owners,session,save,disabled,onRe
       {record.canRetract&&<button type="button" className="secondary-button" disabled={disabled} onClick={()=>onReview(record,'record.retract')}>Review retraction</button>}
     </article>)}
     {history&&<section aria-label="Activity Revision History"><h3>Activity Revision History</h3>{history.revisions.map(r=><article className="profile-card" key={r.revisionId}><p>{r.state} · revision {r.revisionId}</p>{r.reviewRequired||!r.content?<p>Source content withheld. Review required.</p>:<p>{(r.content as {narrative:string}).narrative}</p>}</article>)}{history.nextCursor&&<button type="button" className="secondary-button" onClick={()=>void readHistory(history.id,history.nextCursor!)}>Next history revisions</button>}<button type="button" className="secondary-button" onClick={()=>setHistory(null)}>Close activity history</button></section>}
-    <form className="plan-editor" onSubmit={event=>{event.preventDefault();submitted.current=dirty.current;void save(editing?'record.revise':'record.create',editing?{execution:view.version,record:editing.version}:{execution:view.version},editing?{recordId:editing.id,record:draft}:{baselineId:view.baselineId,record:draft},()=>{if(dirty.current===submitted.current){setDraft(blank());setEditing(null);dirty.current=0;}});}}>
+    <form className="plan-editor" onSubmit={event=>{event.preventDefault();submitted.current=dirty.current;void save(editing?'record.revise':'record.create',editing?{execution:view.version,record:editing.version}:{execution:view.version},editing?{recordId:editing.id,record:draft}:{baselineId:baseline.current,record:draft},()=>{if(dirty.current===submitted.current){setDraft(blank());setEditing(null);baseline.current=view.baselineId;dirty.current=0;}});}}>
       <h3>{editing?'Revise Activity':'Record an Activity'}</h3>
+      {baselineChanged&&<p role="alert">The baseline changed. Start a new activity draft against the current plan.</p>}
       <label>Activity title<input value={draft.title} maxLength={200} required onChange={e=>change({title:e.target.value})}/></label>
       <label>Observed work<textarea value={draft.narrative} maxLength={8000} required onChange={e=>change({narrative:e.target.value})}/></label>
       <label>Observed date<input type="date" value={draft.eventDate} required onChange={e=>change({eventDate:e.target.value})}/></label>
@@ -51,8 +55,8 @@ export function ExecutionRecords({view,records,owners,session,save,disabled,onRe
         {results.map(r=><button type="button" key={r.citationId} className="secondary-button" onClick={()=>void attach(r.citationId)}>Select {r.title}</button>)}
         {draft.references.map(r=><p key={r.id}>{r.kind.replaceAll('_',' ')} · revision {r.sourceRevisionId}<button type="button" className="secondary-button" onClick={()=>change({references:draft.references.filter(i=>i.id!==r.id)})}>Remove evidence</button></p>)}
       </fieldset>
-      {message&&<p role="status">{message}</p>}<button type="submit" className="primary-button" disabled={disabled||view.reviewRequired}>Save activity draft</button>
-      {editing&&<button type="button" className="secondary-button" onClick={()=>{if(!dirty.current||window.confirm('Discard unsaved activity changes?')){setEditing(null);setDraft(blank());dirty.current=0;}}}>Cancel activity revision</button>}
+      {message&&<p role="status">{message}</p>}<button type="submit" className="primary-button" disabled={disabled||view.reviewRequired||baselineChanged}>Save activity draft</button>
+      {(editing||baselineChanged)&&<button type="button" className="secondary-button" onClick={()=>{if(!dirty.current||window.confirm('Discard unsaved activity changes?')){setEditing(null);setDraft(blank());baseline.current=view.baselineId;dirty.current=0;}}}>{editing?'Cancel activity revision':'Start a new activity draft'}</button>}
     </form>
   </section>;
 }

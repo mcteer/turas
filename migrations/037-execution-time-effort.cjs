@@ -41,6 +41,7 @@ exports.up = pgm => {
     `CREATE TABLE execution_resource_days(environment_id text NOT NULL REFERENCES turas_environment(environment_id),
       workspace_id uuid NOT NULL REFERENCES workspaces(id), resource_id uuid NOT NULL, service_date date NOT NULL,
       timezone text NOT NULL, timezone_version text NOT NULL, approved_minutes integer NOT NULL DEFAULT 0 CHECK(approved_minutes BETWEEN 0 AND 1440),
+      generation bigint NOT NULL DEFAULT 0 CHECK(generation BETWEEN 0 AND 9007199254740991),
       PRIMARY KEY(environment_id,workspace_id,resource_id,service_date),
       FOREIGN KEY(resource_id,environment_id,workspace_id) REFERENCES workforce_resources(id,environment_id,workspace_id));`,
     table('execution_actual_days',`entry_id uuid NOT NULL, revision_id uuid NOT NULL, decision_id uuid NOT NULL,

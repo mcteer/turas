@@ -143,15 +143,15 @@
     },
     {
       "file": "036-execution-records.cjs",
-      "sha256": "bbf6260c2a38bdc1ea7eebbb5f23c67bd2c8345a9ddcea21fb3b94f43a7e2d82"
+      "sha256": "0b21577f65789fbe01f2916b2917b92e75494bdc4c8de23836a00efa3dc9ae94"
     },
     {
       "file": "037-execution-time-effort.cjs",
-      "sha256": "4e2254001edf6d224c8061af1a1922af974cf84ae90e533c5c9918b03eca14ad"
+      "sha256": "3577c046f90decfcc9fcc766db87e0c2c7a10858baf0bccc515019088a531aa1"
     },
     {
       "file": "038-execution-advice-lifecycle.cjs",
-      "sha256": "578656385c6677403b2b1d4c2f9a28fe43e0eb7fe24ae6c24c0ff074894b416f"
+      "sha256": "a046208510d38f8bab8035f1cdfcaf96f16a41d9f99b528f051ac31c23a297c8"
     }
   ]
 }

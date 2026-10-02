@@ -5,13 +5,13 @@ const resultSchema = z.object({ status: z.string(), retry: z.number().int().nonn
   errors: z.array(z.unknown()), error: z.unknown().optional() });
 const testSchema = z.object({ projectName: z.string().min(1), projectId: z.string().min(1),
   expectedStatus: z.literal("passed"), status: z.string(), results: z.array(resultSchema) });
-const specSchema = z.object({ id: z.string().min(1), file: z.string().min(1), ok: z.boolean(), tests: z.array(testSchema).min(1) });
+const specSchema = z.object({ id: z.string().min(1), file: z.string().min(1), line: z.number().int().positive(), ok: z.boolean(), tests: z.array(testSchema).min(1) });
 type Suite = { specs?: z.infer<typeof specSchema>[]; suites?: Suite[] };
 const suiteSchema: z.ZodType<Suite> = z.lazy(() => z.object({ specs: z.array(specSchema).optional(), suites: z.array(suiteSchema).optional() }));
 const count = z.number().int().nonnegative().max(10_000);
 const reportSchema = z.object({ config: z.object({ rootDir: z.string().refine(isAbsolute) }), suites: z.array(suiteSchema), errors: z.array(z.unknown()).length(0),
   stats: z.object({ expected: count, skipped: count, unexpected: count, flaky: count }) });
-export type ExecutionUiCase = { file: string; id: string; project: string };
+export type ExecutionUiCase = { file: string; id: string; project: string; line: number };
 const key = (item: ExecutionUiCase) => JSON.stringify([item.file, item.id, item.project]);
 
 function readCases(raw: unknown) {
@@ -20,7 +20,7 @@ function readCases(raw: unknown) {
   function visit(suites: Suite[]) {
     for (const suite of suites) {
       for (const spec of suite.specs ?? []) for (const test of spec.tests) cases.push({
-        identity: { file: isAbsolute(spec.file) ? resolve(spec.file) : resolve(report.config.rootDir, spec.file), id: spec.id, project: test.projectName }, spec, test });
+        identity: { file: isAbsolute(spec.file) ? resolve(spec.file) : resolve(report.config.rootDir, spec.file), id: spec.id, line: spec.line, project: test.projectName }, spec, test });
       visit(suite.suites ?? []);
     }
   }

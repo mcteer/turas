@@ -16,7 +16,7 @@ string keys inside immutable content, not separate item UUIDs.
 
 | Migration | Tables and purpose |
 | --- | --- |
-| `036-execution-records.cjs` | `execution_workspaces`, `execution_baseline_bindings`, `execution_baseline_items`, `execution_records`, `execution_record_revisions`, `execution_record_payloads`, `execution_record_sources`, `execution_review_decisions`, `execution_review_payloads`, `execution_milestone_heads`, `execution_milestone_events`, `execution_milestone_payloads`, `execution_reconciliations`, `execution_reconciliation_items`, `execution_command_receipts`, `execution_rate_windows` |
+| `036-execution-records.cjs` | `execution_workspaces`, `execution_baseline_bindings`, `execution_baseline_items`, `execution_records`, `execution_record_revisions`, `execution_record_payloads`, `execution_record_sources`, `execution_review_decisions`, `execution_review_payloads`, `execution_milestone_heads`, `execution_milestone_events`, `execution_milestone_payloads`, `execution_reconciliations`, `execution_reconciliation_payloads`, `execution_reconciliation_items`, `execution_command_receipts`, `execution_rate_windows` |
 | `037-execution-time-effort.cjs` | `execution_time_entries`, `execution_time_revisions`, `execution_time_payloads`, `execution_time_decisions`, `execution_time_decision_payloads`, `execution_resource_days`, `execution_actual_days`, `execution_effort_heads`, `execution_calculation_receipts` |
 | `038-execution-advice-lifecycle.cjs` | `execution_advice_bindings`, `execution_advice_attempts`, `execution_advice_dependencies`, `execution_advice_reads`, `execution_advice_steps`, `execution_advice_usage`, `execution_cleanup_jobs`; add source-invalidation/cleanup indexes and narrow role grants |
 

@@ -31,7 +31,10 @@ export async function projectExecutionRecord(db: PoolClient, actor: ExecutionAct
     state: revisionId === record.accepted_revision_id ? "accepted" : record.state, reviewRequired: !eligible };
   if (!eligible) return { ...metadata, content: null };
   const payload = (await db.query<{ content: unknown }>("SELECT content FROM execution_record_payloads WHERE revision_id=$1",[revisionId])).rows[0];
-  return { ...metadata, content: payload?.content ?? null };
+  const active=(await db.query("SELECT active_baseline_id FROM engagements WHERE id=$1",[engagementId])).rows[0]?.active_baseline_id;
+  const content=payload?.content as {kind?:string;state?:string;replacementBaselineId?:string}|undefined;
+  const current=active===record.baseline_id||(content?.kind==="scope_change"&&content.state==="implemented"&&content.replacementBaselineId===active);
+  return { ...metadata, reviewRequired:!current, content: payload?.content ?? null };
 }
 export function requireExecutionTimeVisibility(actor: ExecutionActor, entry: { author_membership_id: string; subject_membership_id: string | null }) {
   if (!isExecutionReviewer(actor) && entry.author_membership_id !== actor.membershipId && entry.subject_membership_id !== actor.membershipId) throw hiddenRecord();

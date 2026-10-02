@@ -4,7 +4,7 @@ import type { ExecutionActor } from "./policy";
 
 export type ActualContribution = { entryId: string; revisionId: string; resourceId: string; serviceDate: string;
   timezone: string; timezoneVersion: string; minutes: number; baselineId: string; workPackageKey: string; billable: boolean };
-export type ActualDay = { resourceId: string; serviceDate: string; timezone: string; timezoneVersion: string; minutes: number };
+export type ActualDay = { resourceId: string; serviceDate: string; timezone: string; timezoneVersion: string; minutes: number; generation:number };
 const key = (r: { resourceId: string; serviceDate: string }) => `${r.resourceId}/${r.serviceDate}`;
 const held = Symbol("actual-day-locks");
 export type ActualLocks = { readonly [held]: PoolClient; days: ActualDay[]; oldRows: ActualContribution[]; newRows: ActualContribution[] };
@@ -25,11 +25,11 @@ export async function lockActualDays(db: PoolClient, actor: ExecutionActor, oldR
     if (materialize) await db.query(`INSERT INTO execution_resource_days(environment_id,workspace_id,resource_id,service_date,timezone,timezone_version)
       VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING`, [process.env.TURAS_ENVIRONMENT_ID, actor.workspaceId,
       row.resourceId, row.serviceDate, row.timezone, row.timezoneVersion]);
-    const day = (await db.query(`SELECT timezone,timezone_version,approved_minutes FROM execution_resource_days
+    const day = (await db.query(`SELECT timezone,timezone_version,approved_minutes,generation FROM execution_resource_days
       WHERE environment_id=$1 AND workspace_id=$2 AND resource_id=$3 AND service_date=$4 FOR UPDATE`,
     [process.env.TURAS_ENVIRONMENT_ID, actor.workspaceId, row.resourceId, row.serviceDate])).rows[0];
     days.push({ resourceId: row.resourceId, serviceDate: row.serviceDate, timezone: day?.timezone ?? row.timezone,
-      timezoneVersion: day?.timezone_version ?? row.timezoneVersion, minutes: day?.approved_minutes ?? 0 });
+      timezoneVersion: day?.timezone_version ?? row.timezoneVersion, minutes: day?.approved_minutes ?? 0, generation:Number(day?.generation??0) });
   }
   return { [held]: db, days, oldRows, newRows };
 }
@@ -48,7 +48,7 @@ export async function applyActualDays(db: PoolClient, actor: ExecutionActor, cus
     const day = locks.days.find(d => key(d) === key(row))!;
     if (day.timezone !== row.timezone || day.timezoneVersion !== row.timezoneVersion) throw new HttpFailure(409, "source_changed", "Revise the entry to the established day timezone");
   }
-  for (const day of totals) await db.query(`UPDATE execution_resource_days SET approved_minutes=$5
+  for (const day of totals) await db.query(`UPDATE execution_resource_days SET approved_minutes=$5,generation=generation+1
     WHERE environment_id=$1 AND workspace_id=$2 AND resource_id=$3 AND service_date=$4`,
   [process.env.TURAS_ENVIRONMENT_ID, actor.workspaceId, day.resourceId, day.serviceDate, day.next]);
   for (const old of locks.oldRows.filter(old => !locks.newRows.some(row => row.entryId === old.entryId))) {

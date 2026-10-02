@@ -59,10 +59,13 @@ exports.up = pgm => {
     `CREATE TABLE execution_milestone_payloads(event_id uuid PRIMARY KEY REFERENCES execution_milestone_events(id),
       rationale text NOT NULL CHECK(length(btrim(rationale)) BETWEEN 1 AND 2000));`,
     table('execution_reconciliations',`old_baseline_id uuid NOT NULL, new_baseline_id uuid NOT NULL, request_key uuid NOT NULL,
+      preview_digest text NOT NULL CHECK(preview_digest ~ '^[a-f0-9]{64}$'), rationale_digest text NOT NULL CHECK(rationale_digest ~ '^[a-f0-9]{64}$'),
       created_at timestamptz NOT NULL DEFAULT now(), ${actor}`,
       `FOREIGN KEY(old_baseline_id,engagement_id) REFERENCES milestone_baselines(id,engagement_id),
       FOREIGN KEY(new_baseline_id,engagement_id) REFERENCES milestone_baselines(id,engagement_id),
-      CHECK(old_baseline_id<>new_baseline_id), UNIQUE(engagement_id,new_baseline_id)`),
+      CHECK(old_baseline_id<>new_baseline_id), UNIQUE(engagement_id,new_baseline_id), UNIQUE(engagement_id,old_baseline_id)`),
+    `CREATE TABLE execution_reconciliation_payloads(reconciliation_id uuid PRIMARY KEY REFERENCES execution_reconciliations(id),
+      rationale text NOT NULL CHECK(length(btrim(rationale)) BETWEEN 1 AND 2000));`,
     table('execution_reconciliation_items',`reconciliation_id uuid NOT NULL, item_kind text NOT NULL CHECK(item_kind IN ('milestone','work_package')),
       old_key text CHECK(old_key ~ '^[a-z][a-z0-9_-]{0,63}$'), new_key text CHECK(new_key ~ '^[a-z][a-z0-9_-]{0,63}$'),
       disposition text NOT NULL CHECK(disposition IN ('mapped','retired','added'))`,
@@ -98,7 +101,7 @@ exports.up = pgm => {
   for (const name of ['execution_baseline_bindings','execution_baseline_items','execution_record_revisions',
     'execution_record_sources','execution_review_decisions','execution_milestone_events','execution_reconciliations',
     'execution_reconciliation_items','execution_command_receipts']) pgm.sql(`CREATE TRIGGER ${name}_immutable BEFORE UPDATE OR DELETE ON ${name} FOR EACH ROW EXECUTE FUNCTION turas_execution_immutable();`);
-  for (const name of ['execution_record_payloads','execution_review_payloads','execution_milestone_payloads'])
+  for (const name of ['execution_record_payloads','execution_review_payloads','execution_milestone_payloads','execution_reconciliation_payloads'])
     pgm.sql(`CREATE TRIGGER ${name}_no_update BEFORE UPDATE ON ${name} FOR EACH ROW EXECUTE FUNCTION turas_execution_immutable();`);
   for (const [name,fields] of [['execution_workspaces',['id','environment_id','workspace_id','customer_id','engagement_id']],
     ['execution_records',['id','environment_id','workspace_id','customer_id','engagement_id','baseline_id','kind','author_membership_id']],

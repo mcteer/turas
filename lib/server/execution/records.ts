@@ -6,8 +6,9 @@ import { getServerConfig } from "../config";
 import type { ExecutionActor } from "./policy";
 import type { ExecutionCommand,ExecutionRecordContent } from "./schema";
 import { executionDigest } from "./commands";
-import { verifyExecutionSources } from "./sources";
-import { executionBaseline,lockExecutionHead,advanceExecution } from "./baselines";
+import { verifyExecutionSources,lockExecutionOriginalSources } from "./sources";
+import { executionBaseline,verifyBaseline,lockExecutionHead,advanceExecution } from "./baselines";
+import {validateRegisterContent} from "./registers";
 import type { ExecutionRecordMetadata } from "./projection";
 export async function executionRecordHead(db:PoolClient,actor:ExecutionActor,engagementId:string,recordId:string,lock=false) {
   const row=(await db.query<ExecutionRecordMetadata>(`SELECT id,author_membership_id,current_revision_id,accepted_revision_id,version,state,kind,baseline_id
@@ -22,7 +23,7 @@ export async function validateRecordContent(db:PoolClient,actor:ExecutionActor,c
     AND environment_id=$2 AND workspace_id=$3 AND engagement_id=$4`,[baselineId,getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,engagementId])).rows;
   if ((content.workPackageKey!==null && !keys.some(k=>k.item_kind==='work_package'&&k.item_key===content.workPackageKey)) ||
     content.milestoneKeys.some(key=>!keys.some(k=>k.item_kind==='milestone'&&k.item_key===key)) ||
-    (content.subtype!=='work' && !keys.some(k=>k.item_kind==='milestone'&&k.item_key===content.milestoneKey)))
+    (content.kind==='activity' && content.subtype!=='work' && !keys.some(k=>k.item_kind==='milestone'&&k.item_key===content.milestoneKey)))
     throw new HttpFailure(422,'invalid_input','Use exact items from the bound baseline');
   if (content.ownerMembershipId) {
     const owner=(await db.query<{active:boolean;principal_active:boolean;kind:string;organization_active:boolean;granted:boolean}>(`SELECT m.active,p.active AS principal_active,m.kind,
@@ -31,6 +32,26 @@ export async function validateRecordContent(db:PoolClient,actor:ExecutionActor,c
       WHERE m.id=$1 AND m.workspace_id=$3`,[content.ownerMembershipId,customerId,actor.workspaceId])).rows[0];
     if (!owner?.active || !owner.principal_active || (owner.kind==='partner'&&(!owner.organization_active||!owner.granted))) throw hiddenRecord();
   }
+  await validateRegisterContent(db,actor,engagementId,baselineId,content);
+}
+export async function lockRecordContext(db:PoolClient,actor:ExecutionActor,customerId:string,engagementId:string,baselineId:string,content:ExecutionRecordContent){
+  let baseline=await executionBaseline(db,actor,customerId,engagementId,baselineId);
+  const replacementId=content.kind==="scope_change"&&content.state==="implemented"?content.replacementBaselineId:null;
+  let replacement=replacementId?await executionBaseline(db,actor,customerId,engagementId,replacementId):null;
+  await db.query("SELECT id FROM delivery_plans WHERE id=ANY($1::uuid[]) ORDER BY id FOR UPDATE",[[...new Set([baseline.plan_id,...(replacement?[replacement.plan_id]:[])])].sort()]);
+  baseline=await executionBaseline(db,actor,customerId,engagementId,baselineId);
+  if(replacement)replacement=await executionBaseline(db,actor,customerId,engagementId,replacement.id);
+  const baselineRef=(b:typeof baseline)=>({id:b.id,kind:"milestone_baseline" as const,sourceRevisionId:b.id,generation:Number(b.baseline_number),contentDigest:b.content_digest});
+  if(replacement){
+    await lockExecutionOriginalSources(db,actor,customerId,engagementId,[...content.references,baselineRef(baseline),baselineRef(replacement)]);
+    await db.query("SELECT id FROM engagements WHERE id=$1 FOR UPDATE",[engagementId]);
+    await validateRegisterContent(db,actor,engagementId,baselineId,content);
+    const sourceDigest=await verifyExecutionSources(db,actor,customerId,engagementId,content.audience,[...content.references,baselineRef(replacement)],false);
+    return {baseline,effectiveBaselineId:replacement.id,sourceDigest};
+  }
+  if(baseline.active_baseline_id!==baseline.id)throw new HttpFailure(409,"source_changed","Current baseline required");
+  const sourceDigest=await verifyExecutionSources(db,actor,customerId,engagementId,content.audience,[...content.references,baselineRef(baseline)],true);
+  return {baseline,effectiveBaselineId:baseline.id,sourceDigest};
 }
 async function appendRecord(db:PoolClient,actor:ExecutionActor,customerId:string,engagementId:string,recordId:string,baselineId:string,content:ExecutionRecordContent) {
   // Search receipts authorize the author's selection at intake. Durable review
@@ -58,12 +79,9 @@ export async function saveRecord(db:PoolClient,actor:ExecutionActor,customerId:s
   command:Extract<ExecutionCommand,{action:'record.create'|'record.revise'}>) {
   const prior=command.action==='record.revise'?await executionRecordHead(db,actor,engagementId,command.payload.recordId):null;
   const baselineId=command.action==='record.create'?command.payload.baselineId:prior!.baseline_id;
-  const baseline=await executionBaseline(db,actor,customerId,engagementId,baselineId,true);
-  if (baseline.active_baseline_id!==baselineId) throw new HttpFailure(409,'source_changed','Current baseline required');
-  await verifyExecutionSources(db,actor,customerId,engagementId,command.payload.record.audience,[...command.payload.record.references,
-    {id:baseline.id,kind:'milestone_baseline',sourceRevisionId:baseline.id,generation:Number(baseline.baseline_number),contentDigest:baseline.content_digest}],true);
+  const context=await lockRecordContext(db,actor,customerId,engagementId,baselineId,command.payload.record);
   const execution=await lockExecutionHead(db,actor,engagementId,command.expectedVersions.execution);
-  if (execution.current_baseline_id!==baselineId) throw new HttpFailure(409,'source_changed','Reconcile the current baseline');
+  if (execution.current_baseline_id!==context.effectiveBaselineId) throw new HttpFailure(409,'source_changed','Reconcile the current baseline');
   await validateRecordContent(db,actor,customerId,engagementId,baselineId,command.payload.record);
   const id=prior?.id??randomUUID();
   let version=1;
@@ -83,16 +101,15 @@ export async function saveRecord(db:PoolClient,actor:ExecutionActor,customerId:s
 export async function submitRecord(db:PoolClient,actor:ExecutionActor,customerId:string,engagementId:string,command:Extract<ExecutionCommand,{action:'record.submit'}>) {
   const pre=await executionRecordHead(db,actor,engagementId,command.payload.recordId);
   if (pre.author_membership_id!==actor.membershipId) throw hiddenRecord();
-  const baseline=await executionBaseline(db,actor,customerId,engagementId,pre.baseline_id,true);
   const revision=(await db.query<{content_digest:string;content:ExecutionRecordContent}>(`SELECT v.content_digest,p.content FROM execution_record_revisions v JOIN execution_record_payloads p ON p.revision_id=v.id
     WHERE v.id=$1 AND v.record_id=$2`,[command.payload.revisionId,pre.id])).rows[0];
   if (!revision) throw hiddenRecord();
-  await verifyExecutionSources(db,actor,customerId,engagementId,revision.content.audience,[...revision.content.references,
-    {id:baseline.id,kind:'milestone_baseline',sourceRevisionId:baseline.id,generation:Number(baseline.baseline_number),contentDigest:baseline.content_digest}],true);
+  const context=await lockRecordContext(db,actor,customerId,engagementId,pre.baseline_id,revision.content);
   const execution=await lockExecutionHead(db,actor,engagementId,command.expectedVersions.execution),record=await executionRecordHead(db,actor,engagementId,pre.id,true);
   if (Number(record.version)!==command.expectedVersions.record || record.current_revision_id!==command.payload.revisionId || revision.content_digest!==command.payload.contentDigest)
     throw new HttpFailure(409,'stale_version','Record changed; refresh');
   if (record.state!=='draft') throw new HttpFailure(422,'approval_blocked','Only draft records can be submitted');
+  if(execution.current_baseline_id!==context.effectiveBaselineId)throw new HttpFailure(409,"source_changed","Reconcile the current baseline");
   await validateRecordContent(db,actor,customerId,engagementId,record.baseline_id,revision.content);
   const version=Number(record.version)+1;
   await db.query("UPDATE execution_records SET state='submitted',version=$2 WHERE id=$1",[record.id,version]);

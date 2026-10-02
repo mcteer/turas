@@ -141,6 +141,6 @@ DO $$ DECLARE t text; BEGIN
     GRANT SELECT, UPDATE, DELETE ON execution_cleanup_jobs TO turas_execution_cleanup;
     GRANT SELECT ON execution_record_revisions,execution_record_sources,execution_review_decisions,
       execution_milestone_events,execution_time_revisions,execution_time_decisions,execution_advice_attempts,
-      execution_workspaces TO turas_execution_cleanup;
+      execution_workspaces,execution_reconciliations TO turas_execution_cleanup;
   END IF;
 END $$;

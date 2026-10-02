@@ -36,7 +36,7 @@ exports.up = pgm => {
       created_at timestamptz NOT NULL DEFAULT now());
     CREATE TABLE execution_cleanup_jobs(id uuid PRIMARY KEY, environment_id text NOT NULL REFERENCES turas_environment(environment_id),
       workspace_id uuid NOT NULL REFERENCES workspaces(id), customer_id uuid NOT NULL, engagement_id uuid NOT NULL,
-      payload_kind text NOT NULL CHECK(payload_kind IN ('record','review','milestone','time','time_decision','advice')),
+      payload_kind text NOT NULL CHECK(payload_kind IN ('record','review','milestone','time','time_decision','reconciliation','advice')),
       revision_id uuid NOT NULL, payload_digest text NOT NULL CHECK(payload_digest ~ '^[a-f0-9]{64}$'),
       source_generation bigint NOT NULL CHECK(source_generation>=1), ineligible_at timestamptz NOT NULL, due_at timestamptz NOT NULL,
       lease_token uuid, lease_until timestamptz, state text NOT NULL DEFAULT 'pending' CHECK(state IN ('pending','leased','done','stale')),

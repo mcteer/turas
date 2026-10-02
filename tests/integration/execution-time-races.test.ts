@@ -16,6 +16,20 @@ const totals = (resourceId: string) => withTransaction(async db => (await db.que
   FROM execution_resource_days WHERE resource_id=$1 ORDER BY service_date`, [resourceId])).rows);
 
 describe("time ledger concurrency", () => {
+  it("invalidates a cross-customer preview when another approval and reversal restore the same daily total",async()=>{
+    const a=await timeFixture({linked:false}),b=await timeFixture({linked:false,customerId:DEMO_IDS.deniedCustomer});
+    const patch={resourceId:a.resourceId,onBehalfRationale:"Human transcribes historical subject time"},reasons={on_behalf:"Human confirms attribution",unplanned:"Historical unbooked work",unknown_capacity:"Human confirms UTC date"};
+    const ea=await submitTime(a,await draftTime(a,patch,a.reviewer),a.reviewer),eb=await submitTime(b,await draftTime(b,patch,b.reviewer),b.reviewer);
+    const stale=await prepared(a,await timeCandidate(a,[ea],"time.approve",reasons));
+    await decideTime(b,await timeCandidate(b,[eb],"time.approve",reasons));
+    const approved=(await readExecutionTime(b.reviewer,b.engagementId,b.period)).entries[0];
+    await decideTime(b,await timeCandidate(b,[approved],"time.reverse",{}));
+    expect((await totals(a.resourceId))[0].approved_minutes).toBe(0);
+    await expect(submitExecutionCommand(a.reviewer,a.engagementId,stale)).rejects.toMatchObject({status:409});
+    expect(await withTransaction(async db=>(await db.query("SELECT 1 FROM execution_command_receipts WHERE request_key=$1",[stale.requestKey])).rowCount)).toBe(0);
+    await decideTime(a,await timeCandidate(a,[ea],"time.approve",reasons));
+    expect(await withTransaction(async db=>(await db.query("SELECT generation FROM execution_resource_days WHERE resource_id=$1 AND service_date=$2",[a.resourceId,a.date])).rows[0].generation)).toBe("3");
+  });
   it("serializes first approvals across customers and enforces 1440 without a partial receipt or contribution", async () => {
     const a = await timeFixture(), b = await timeFixture({ customerId: DEMO_IDS.deniedCustomer });
     expect(a.resourceId).toBe(b.resourceId);

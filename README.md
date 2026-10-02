@@ -57,9 +57,10 @@ Feature 008 has a [specification](specs/008-engagement-execution/spec.md),
 [validation guide](specs/008-engagement-execution/quickstart.md) for reviewed delivery
 logs/time, milestones, RAID/changes, effort forecasts, handoff/outcomes and bounded
 Turi explanations. The user confirmed `mcteer`-only approval. Implementation is in
-progress: the foundation, activity/milestone review and approved time/actuals have
-local domain and four-project WebKit evidence (T001–T032). Registers, reconciliation,
-forecasts, handoff/outcomes, advice and the full release gates remain pending.
+progress: the foundation, activity/milestone review, approved time/actuals, reviewed registers
+and explicit baseline reconciliation have
+local domain and four-project WebKit evidence (T001–T039). Forecasts,
+handoff/outcomes, advice and the full release gates remain pending.
 No speculative eve integrations have been installed. The configured model is
 unchanged. Protected Previews run the app and have basic hosted smoke checks;
 full hosted workflow readiness remains release work.

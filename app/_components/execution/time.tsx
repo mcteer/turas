@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { readExecutionTime, readExecutionTimeOptions } from "../../../lib/server/execution/time";
 import type { TimeInput } from "../../../lib/server/execution/time-schema";
-import { useExecutionRefresh } from "./client";
+import { useExecutionRefresh, useExecutionPanelGuard } from "./client";
 import type { Overview, RecordView, Mutation, Candidate } from "./types";
 type Entry = Awaited<ReturnType<typeof readExecutionTime>>["entries"][number];
 type Options = Awaited<ReturnType<typeof readExecutionTimeOptions>>;
@@ -19,6 +19,7 @@ export function ExecutionTime({view,records,save,disabled,onReview}:{view:Overvi
   const [history,setHistory]=useState<Entry[]|null>(null),[nextCursor,setNextCursor]=useState<string|null>(null),[cursor,setCursor]=useState<string|null>(null);
   const [reviewOnly,setReviewOnly]=useState(false);
   const dirty=useRef(0),sequence=useRef(0),controller=useRef<AbortController|null>(null),flight=useRef<Promise<void>|null>(null),draftRef=useRef(draft);draftRef.current=draft;
+  useExecutionPanelGuard(dirty);
   const change=(patch:Partial<TimeInput>)=>{dirty.current++;setDraft(d=>({...d,...patch}));};
   const clearDraft=()=>{setDraft(blank(view.baselineId));setEditing(null);dirty.current=0;};
   const refresh=useCallback((force=false)=>{

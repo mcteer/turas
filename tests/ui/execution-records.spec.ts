@@ -34,6 +34,8 @@ test('actual reviewed journey: keyboard setup, activity review and exact milesto
   page.once('dialog',dialog=>void dialog.dismiss());await page.getByRole('link',{name:'Engagement',exact:true}).click();
   await expect(page).toHaveURL(new RegExp(`/engagements/${f.engagementId}/execution$`));
   await expect(page.getByRole('textbox',{name:'Observed work',exact:true})).toHaveValue('Human inspected the synthetic delivery proof.');
+  page.once('dialog',dialog=>void dialog.dismiss());await page.getByRole('tab',{name:'Time',exact:true}).click();
+  await expect(page.getByRole('textbox',{name:'Observed work',exact:true})).toHaveValue('Human inspected the synthetic delivery proof.');
   await page.getByRole('button',{name:'Save activity draft',exact:true}).focus();await page.keyboard.press('Enter');
   await expect(page.getByRole('heading',{name:'Synthetic delivery observation',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Submit activity',exact:true}).click();
@@ -43,6 +45,7 @@ test('actual reviewed journey: keyboard setup, activity review and exact milesto
   await page.getByRole('textbox',{name:'Review rationale',exact:true}).fill('Human reviewed the exact synthetic delivery observation');
   await page.getByRole('button',{name:'Confirm reviewed decision',exact:true}).focus();await page.keyboard.press('Enter');
   await expect(page.getByText(/accepted · delivery · revision/)).toBeVisible();
+  await page.getByRole('tab',{name:'Milestones',exact:true}).click();
   await page.getByRole('button',{name:'start Proof reviewed',exact:true}).click();await page.getByRole('textbox',{name:'Review rationale',exact:true}).fill('Explicit start after reviewing the current plan');await page.getByRole('button',{name:'Confirm reviewed decision',exact:true}).click();
   await page.getByRole('button',{name:'request review Proof reviewed',exact:true}).click();await page.getByRole('textbox',{name:'Review rationale',exact:true}).fill('Explicit review requested after checking delivery');await page.getByRole('button',{name:'Confirm reviewed decision',exact:true}).click();
   const milestone=page.locator('article').filter({has:page.getByRole('heading',{name:'Proof reviewed',exact:true})});
@@ -62,7 +65,7 @@ test('rendered evidence withdrawal clears narrative and dirty source-derived edi
   await expect(page.getByText('PRIVATE_WITHDRAWAL_NARRATIVE',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Revise activity',exact:true}).click();await page.getByRole('textbox',{name:'Observed work',exact:true}).fill('PRIVATE_WITHDRAWAL_NARRATIVE plus unsaved edit');
   let releaseOld:()=>void=()=>{},oldCaptured:()=>void=()=>{},oldReleased=false,holdNext=true;
   const captured=new Promise<void>(resolve=>{oldCaptured=resolve;}),release=new Promise<void>(resolve=>{releaseOld=resolve;});
-  await page.route(`**/api/execution/engagements/${f.engagementId}/records`,async route=>{
+  await page.route(`**/api/execution/engagements/${f.engagementId}/records?kind=activity*`,async route=>{
     if(holdNext){holdNext=false;const response=await route.fetch();oldCaptured();await release;try{await route.fulfill({response});}catch{/* Focus revalidation deliberately aborted this superseded read. */}finally{oldReleased=true;await response.dispose();}}else await route.continue();
   });
   await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await captured;
@@ -93,6 +96,7 @@ test('rejects a preview whose milestone head changes before the reviewed POST re
     }
     const response=await route.fetch();status=response.status();await route.fulfill({response});
   });
+  await page.getByRole('tab',{name:'Milestones',exact:true}).click();
   await page.getByRole('button',{name:'start Proof reviewed',exact:true}).click();
   await page.getByRole('textbox',{name:'Review rationale',exact:true}).fill('Review of the originally displayed exact head');
   await page.getByRole('button',{name:'Confirm reviewed decision',exact:true}).focus();await page.keyboard.press('Enter');

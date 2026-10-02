@@ -36,7 +36,7 @@ export async function executeExecutionCommand(actor: ExecutionActor, engagementI
   return executionTransaction(async db => {
     const customerId = await executionCustomer(db, actor, engagementId);
     const capability: ExecutionCapability = command.action === "setup" ? "setup" :
-      ["record.accept","record.reject","record.retract","milestone.decide","time.approve","time.reject","time.reverse"].includes(command.action) ? "review" : "contribute";
+      ["record.accept","record.reject","record.retract","milestone.decide","time.approve","time.reject","time.reverse","baseline.reconcile"].includes(command.action) ? "review" : "contribute";
     let owner: string | undefined;
     if ("record" in command.payload) owner = command.payload.record.ownerMembershipId ?? undefined;
     else if ("revisionId" in command.payload) owner = (await db.query<{owner_membership_id:string|null}>(`SELECT owner_membership_id FROM execution_record_revisions

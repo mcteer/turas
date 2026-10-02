@@ -56,7 +56,7 @@ export async function decideMilestone(db:PoolClient,actor:ExecutionActor,custome
   return {state:'committed' as const,executionGeneration:next.generation,changed:[{id:context.milestone.id,version:Number(context.milestone.version)+1},{id:context.execution.id,version:next.version}]};
 }
 export async function applyActivityMilestone(db:PoolClient,actor:ExecutionActor,customerId:string,engagementId:string,baselineId:string,milestone:{id:string;version:string;state:string},
-  content:ExecutionRecordContent,command:Extract<ExecutionCommand,{action:'record.accept'|'record.reject'|'record.retract'}>) {
+  content:Extract<ExecutionRecordContent,{kind:'activity'}>,command:Extract<ExecutionCommand,{action:'record.accept'|'record.reject'|'record.retract'}>) {
   if (content.subtype==='milestone_review_request') await appendMilestone(db,actor,customerId,engagementId,milestone,'request_review',[command.payload.revisionId],command.requestKey,command.rationale);
   else if (content.subtype==='milestone_plan') {
     if (Number(milestone.version)!==content.milestoneVersion) throw new HttpFailure(409,'stale_version','Milestone changed; refresh');

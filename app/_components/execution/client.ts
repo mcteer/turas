@@ -63,7 +63,15 @@ export function useExecutionRefresh(read:(force?:boolean)=>Promise<void>){
   useEffect(()=>{
     const refresh=()=>{if(document.visibilityState==='visible')void latest.current();};
     const revalidate=()=>{if(document.visibilityState==='visible')void latest.current(true);};
-    refresh();const timer=window.setInterval(refresh,5000);window.addEventListener('focus',revalidate);document.addEventListener('visibilitychange',revalidate);
+    // Each caller owns its initial/dependency read. Starting another here would
+    // race that read and charge the server twice for a single mount.
+    const timer=window.setInterval(refresh,5000);window.addEventListener('focus',revalidate);document.addEventListener('visibilitychange',revalidate);
     return()=>{window.clearInterval(timer);window.removeEventListener('focus',revalidate);document.removeEventListener('visibilitychange',revalidate);};
   },[]);
+}
+/** Only the mounted workflow can veto navigation; a cancelled change preserves
+ * the same editor instance and its unsaved fields. */
+export function useExecutionPanelGuard(dirty:{current:number}){
+  useEffect(()=>{const leave=(event:Event)=>{if(dirty.current&&!window.confirm('Discard unsaved changes in this section?'))event.preventDefault();};
+    window.addEventListener('execution-panel-change',leave);return()=>window.removeEventListener('execution-panel-change',leave);},[dirty]);
 }

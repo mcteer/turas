@@ -243,3 +243,72 @@ unrun. Marked T012 and T014–T024 with these results.
 - T025–T032 marked complete. Documentation now identifies the partial implementation
   accurately. T033–T071 remain pending; no Preview/Production migration or deployment
   was performed by this checkpoint.
+
+## US3 Register and Baseline Work (In Progress)
+
+At source digest `91eec11e96a4ba2faa607829ac83eef0780dc56d17c6eedb677bbfbb757ec504`,
+the complete deterministic manifest passed 16 suites / 58 assertions
+(`deterministic-mkHpZw`). US1 passed 12/12 four-project browser cases (`ui-gckOKK`)
+and US3 passed 8/8 (`ui-JPNtvq`). No skips or retries. The original US3 browser
+journey verifies RAID review, planning-only scope approval, real 006 replacement,
+explicit one-to-one/retired/added mapping, retained original actuals, stale preview
+rejection and partner projection. Implementation-state browser coverage was added
+subsequently and remains pending in this entry.
+
+Register domain coverage includes strict closure/exception/owner/date validation,
+atomic decision supersession, replacement chains, current source withdrawal races,
+replay and rollback with no partial receipt. A fixture SQL query incorrectly
+assumed customer_id on staffing events; corrected to join the allocation header.
+The earlier red register run and this fixture failure remain in private evidence.
+
+A new time regression demonstrated an ABA preview issue: approving then reversing
+another customer's time restored the resource/day total and could leave an old
+preview apparently current (`deterministic-GSINrv`). Stable resource/day rows now
+increment a generation on every actual mutation, including reversal and net-zero
+corrections. The focused time run passed 11 assertions (`deterministic-rACvli`),
+then the full 58-assertion run above passed. Migration 037 and its manifest checksum
+include the counter; these migrations remain unapplied outside owned clones.
+
+The combined time browser regression (`ui-yiSqb8`) reached the real 120-read/minute
+limit after two journeys shared one actor window. Inspection also found redundant
+initial refresh calls. Removed the duplicate mount read and changed the browser
+wrapper to give every discovered case its own database/runtime/admission window;
+server quotas and immutable history are preserved. Expanded register UI checks
+caught a Playwright assertion mismatch: the native option had a disabled attribute,
+but toBeDisabled treated it as enabled. The next assertion checks the actual option
+property. This failed run (`ui-DnoKMj`) is retained, not counted as passing evidence.
+
+The light desktop capture was inspected. Theme/spacing and long identifiers remain
+contained, but displaying every editor in one page creates excessive page length.
+A focused section navigation pass is required before the final UI gate.
+
+The isolated four-project US2 run passed 8/8 (`ui-QhJg4t`) after mount refresh
+deduplication. Section navigation then passed both US2 desktop journeys
+(`ui-CdLzC8`) and both expanded US3 desktop journeys (`ui-TAOEAI`). The latter
+includes reviewed implemented-state acceptance after real 006 replacement and
+complete mapping. The new desktop capture was visually reviewed: only the selected
+workflow is mounted, and the baseline, navigation, accepted register and editor
+form a readable hierarchy. Inactive workflow polling is removed. Unsaved activity,
+time and register edits can veto section navigation.
+
+The US1 section regression exposed a test interception mismatch: the activity list
+now explicitly requests kind=activity, while the withdrawal test intercepted only
+the URL without a query string. The fixture waited for a request it never captured.
+The owned case process was stopped for correction; no completion is claimed for
+that interrupted run (`ui-DqqLXa`). The first activity/milestone/dirty-navigation
+case had passed. The corrected withdrawal case must still prove delayed old-response
+suppression and immediate dirty-editor clearing.
+
+US3 checkpoint: the expanded four-project matrix passed 8/8 without skips, retries,
+flaky cases or failures (`ui-s2rB4M`) at digest
+`6191d43a25626a1490cc950fee45ca7e286bb39d763996305fba8b89b485181e`.
+The desktop light/dark and 390px light/dark captures were visually inspected.
+Scope implementation, retained actuals, unique mapping options, stale decisions,
+partner projection and accessibility checks all passed. Native selects still need
+the shared field presentation class during the remaining cross-story UI work.
+T033–T039 are complete. US4/US5 and final release gates remain pending.
+
+The corrected US1 desktop regression passed 3/3 (`ui-7YPFBN`), including source
+withdrawal, delayed-response fencing, keyboard review, rejected stale milestone
+review, lost acknowledgement and cancelled dirty-section navigation. Typecheck,
+documentation checks and diff checks passed for this register checkpoint.

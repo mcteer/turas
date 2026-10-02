@@ -59,10 +59,9 @@ The [specification](specs/008-engagement-execution/spec.md),
 [validation guide](specs/008-engagement-execution/quickstart.md) cover reviewed
 execution, approved actual time, RAID/scope reconciliation, effort forecasts,
 handoff/outcomes and read-only Turi advice. Approval belongs only to `mcteer`, as
-confirmed during clarification. Foundation, activity/milestone review and time/actuals
-are implemented through T032 with disposable domain and four-project WebKit evidence.
-Registers, reconciliation, forecasts, handoff/outcomes, advice and release gates remain
-pending. Execution migrations 036–038 have only been exercised in owned disposable
+confirmed during clarification. Foundation, activity/milestone review, time/actuals, reviewed registers and baseline reconciliation
+are implemented through T039 with disposable domain and four-project WebKit evidence.
+Forecasts, handoff/outcomes, advice and release gates remain pending. Execution migrations 036–038 have only been exercised in owned disposable
 databases; this checkpoint does not claim hosted execution readiness.
 
 ## Build sequence

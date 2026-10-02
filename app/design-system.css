@@ -305,3 +305,11 @@ input[type="file"]::file-selector-button { font: inherit; color: var(--foregroun
 .execution-review { border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; background: var(--surface); }
 .execution-review fieldset { border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin: 1rem 0; }
 .execution-review label { margin-bottom: 1rem; }
+
+.execution-tabs { display: flex; flex-wrap: wrap; gap: .25rem; border-bottom: 1px solid var(--border); margin-top: 1.75rem; padding-bottom: .5rem; }
+.execution-tab { border: 0; border-radius: 7px; padding: .6rem .85rem; background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; }
+.execution-tab:hover { color: var(--foreground); background: var(--subtle); }
+.execution-tab[aria-selected="true"] { color: var(--foreground); background: var(--subtle); box-shadow: inset 0 0 0 1px var(--border); }
+.execution-tab:focus-visible { outline: 2px solid var(--foreground); outline-offset: 2px; }
+#execution-panel .profile-card + .profile-card { margin-top: .75rem; }
+#execution-panel .plan-editor { margin-top: 1.5rem; }

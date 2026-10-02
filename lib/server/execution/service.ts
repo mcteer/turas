@@ -8,18 +8,20 @@ import { executionCustomer,chargeExecutionRate } from "./locks";
 import { executionBaseline,verifyBaseline,setupExecution } from "./baselines";
 import { saveTime,submitTime } from "./time";
 import { reviewTime,timeReviewInputs } from "./time-review";
+import {reconcileBaseline,reconciliationInputs} from "./reconciliation";
 import { saveRecord,submitRecord } from "./records";
 import { reviewRecord,recordReviewInputs } from "./review";
 import { decideMilestone,milestoneReviewInputs } from "./milestones";
 import { executionPreviewSchema,executionListSchema,executionId } from "./schema";
 import { projectExecutionRecord,type ExecutionRecordMetadata } from "./projection";
-import { executionRevisionEligible } from "./sources";
+import { executionRevisionEligible,lockExecutionOriginalSources } from "./sources";
 import { createExecutionPreview,executionCursor,readExecutionCursor } from "./previews";
 
 export async function submitExecutionCommand(actor:ExecutionActor,engagementId:string,raw:unknown) {
   if (!executionId.safeParse(engagementId).success) throw new HttpFailure(400,'invalid_input','Invalid engagement identity');
   return executeExecutionCommand(actor,engagementId,raw,async(db,command,customerId)=>{
     switch(command.action) {
+      case 'baseline.reconcile':return reconcileBaseline(db,actor,customerId,engagementId,command);
       case 'time.create':case 'time.revise': return saveTime(db,actor,customerId,engagementId,command);
       case 'time.submit': return submitTime(db,actor,customerId,engagementId,command);
       case 'time.approve':case 'time.reject':case 'time.reverse': return reviewTime(db,actor,customerId,engagementId,command);
@@ -46,6 +48,10 @@ export async function previewExecutionCommand(actor:ExecutionActor,engagementId:
     await lockExecutionActor(db,actor,customerId,'review',false,owner??undefined);
     await chargeExecutionRate(db,actor,'read');
     switch (command.action) {
+      case 'baseline.reconcile': {
+        const context=await reconciliationInputs(db,actor,customerId,engagementId,command);
+        return {...createExecutionPreview(actor,context.inputs),expectedVersions:command.expectedVersions};
+      }
       case 'time.approve': case 'time.reject': case 'time.reverse': {
         const context = await timeReviewInputs(db,actor,customerId,engagementId,command);
         return {...createExecutionPreview(actor,context.inputs),expectedVersions:command.expectedVersions,exceptions:context.exceptions};
@@ -66,15 +72,25 @@ export async function readExecutionOverview(actor:ExecutionActor,engagementId:st
     const customerId=await readAuthority(db,actor,engagementId);
     const engagement=(await db.query<{active_baseline_id:string}>('SELECT active_baseline_id FROM engagements WHERE id=$1',[engagementId])).rows[0];
     if (!engagement?.active_baseline_id) throw hiddenRecord();
-    const baseline=await executionBaseline(db,actor,customerId,engagementId,engagement.active_baseline_id);
-    let baselineEligible=true;
-    try { await verifyBaseline(db,actor,customerId,baseline,true); }
-    catch(error) { if (error instanceof HttpFailure && [403,404,409].includes(error.status)) baselineEligible=false; else throw error; }
+    const baseline=await executionBaseline(db,actor,customerId,engagementId,engagement.active_baseline_id,true);
     const head=(await db.query<{id:string;current_baseline_id:string;version:string;generation:string;state:string}>(`SELECT id,current_baseline_id,version,generation,state FROM execution_workspaces
       WHERE engagement_id=$1 AND workspace_id=$2 AND environment_id=$3`,[engagementId,actor.workspaceId,getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
     const mismatch=!!head&&head.current_baseline_id!==baseline.id;
     const milestones=head?(await db.query<{id:string;milestone_key:string;baseline_id:string;state:string;version:string;evidence_revision_ids:string[]}>(`SELECT h.id,h.milestone_key,h.baseline_id,h.state,h.version,COALESCE(e.evidence_revision_ids,'{}') AS evidence_revision_ids
       FROM execution_milestone_heads h LEFT JOIN execution_milestone_events e ON e.id=h.current_event_id WHERE h.engagement_id=$1 AND h.baseline_id=$2 ORDER BY h.milestone_key`,[engagementId,head.current_baseline_id])).rows:[];
+    const proposalIds=head?(await db.query<{id:string}>(`SELECT v.id FROM execution_records r JOIN execution_record_revisions v ON v.id=r.accepted_revision_id
+      JOIN execution_record_payloads p ON p.revision_id=v.id WHERE r.engagement_id=$1 AND r.baseline_id=$2
+      AND p.content->>'subtype'='milestone_plan' AND (v.audience='delivery' OR $3='internal')`,[engagementId,head.current_baseline_id,actor.kind])).rows:[];
+    await lockExecutionOriginalSources(db,actor,customerId,engagementId,[{kind:"milestone_baseline",sourceRevisionId:baseline.id},
+      ...[...new Set([...milestones.flatMap(m=>m.evidence_revision_ids),...proposalIds.map(p=>p.id)])].map(sourceRevisionId=>({kind:"execution_record" as const,sourceRevisionId}))]);
+    let baselineEligible=true;
+    try { await verifyBaseline(db,actor,customerId,baseline,false); }
+    catch(error) { if (error instanceof HttpFailure && [403,404,409].includes(error.status)) baselineEligible=false; else throw error; }
+    await db.query("SELECT id FROM engagements WHERE id=$1 FOR UPDATE",[engagementId]);
+    if((await db.query("SELECT active_baseline_id FROM engagements WHERE id=$1",[engagementId])).rows[0]?.active_baseline_id!==baseline.id)
+      throw new HttpFailure(409,"source_changed","Accepted baseline changed; refresh");
+    const lockedHead=(await db.query("SELECT generation FROM execution_workspaces WHERE engagement_id=$1 FOR UPDATE",[engagementId])).rows[0];
+    if(lockedHead?.generation!==head?.generation)throw new HttpFailure(409,"source_changed","Delivery state changed; refresh");
     const projected=[];
     for(const milestone of milestones) {
       let reviewRequired=!baselineEligible||mismatch;
@@ -96,13 +112,17 @@ export async function readExecutionOverview(actor:ExecutionActor,engagementId:st
         state:reviewRequired?'review_required':milestone.state,recordedState:milestone.state,reviewRequired});
     }
     const payload=baselineEligible?(await db.query<{content:{milestones:Array<{key:string;title:string;exitEvidence:string;customerValidation:string;dependencies:string[];plannedDate:string|null;plannedDateUnknownReason:string|null}>;workPackages:Array<{key:string;title:string}>}}>('SELECT content FROM milestone_baseline_payloads WHERE baseline_id=$1',[baseline.id])).rows[0]?.content:null;
+    const oldItems=mismatch?(await db.query<{kind:"work_package"|"milestone";key:string}>("SELECT item_kind AS kind,item_key AS key FROM execution_baseline_items WHERE baseline_id=$1 ORDER BY item_kind,item_key",[head.current_baseline_id])).rows:[];
+    const oldBaselineVersion=mismatch?Number((await db.query("SELECT baseline_number FROM milestone_baselines WHERE id=$1",[head.current_baseline_id])).rows[0].baseline_number):null;
+    const reconciliation=mismatch?{oldBaselineId:head.current_baseline_id,newBaselineId:baseline.id,oldBaselineVersion:oldBaselineVersion!,newBaselineVersion:Number(baseline.baseline_number),planVersion:Number(baseline.aggregate_version),
+      newEligible:baselineEligible,oldItems,newItems:[...(payload?.workPackages??[]).map(w=>({kind:"work_package" as const,key:w.key,title:w.title})),...(payload?.milestones??[]).map(m=>({kind:"milestone" as const,key:m.key,title:m.title}))]}:null;
     return {engagementId,customerId,audience:baseline.audience,initialized:!!head,id:head?.id??null,version:Number(head?.version??0),generation:Number(head?.generation??0),
       baselineId:baseline.id,baselineRevisionId:baseline.revision_id,boundBaselineId:head?.current_baseline_id??null,baselineVersion:Number(baseline.baseline_number),planVersion:Number(baseline.aggregate_version),
       state:!baselineEligible||mismatch?'review_required':head?.state??'not_initialized',reviewRequired:!baselineEligible||mismatch,
       milestones:projected.map(m=>({...m,exitEvidence:payload?.milestones.find(i=>i.key===m.key)?.exitEvidence??null,customerValidation:payload?.milestones.find(i=>i.key===m.key)?.customerValidation??null,dependencies:payload?.milestones.find(i=>i.key===m.key)?.dependencies??[],plannedDate:m.hasReviewedPlan?m.plannedDate:payload?.milestones.find(i=>i.key===m.key)?.plannedDate??null,unknownPlannedDateReason:m.hasReviewedPlan?m.unknownPlannedDateReason??(m.reviewRequired?'Reviewed planned date unavailable':null):payload?.milestones.find(i=>i.key===m.key)?.plannedDateUnknownReason??'Planned date unavailable',title:payload?.milestones.find(i=>i.key===m.key)?.title??'Review required'})),
       workPackages:payload?.workPackages.map(p=>({key:p.key,title:p.title}))??[],
       capabilities:{setup:actor.kind==='internal',contribute:true,review:isExecutionReviewer(actor),advice:actor.kind==='internal',utilization:isExecutionReviewer(actor)},
-      writesDisabled:process.env.TURAS_008_DISABLED==='1'};
+      reconciliation,writesDisabled:process.env.TURAS_008_DISABLED==='1'};
   });
 }
 const listInput=z.object({...executionListSchema.shape,kind:z.enum(['activity','raid','decision','scope_change','effort_budget','estimate','handoff','closeout','outcome']).optional(),
@@ -127,6 +147,13 @@ export async function readExecutionRecords(actor:ExecutionActor,engagementId:str
       ORDER BY r.created_at,r.id LIMIT $13`,[engagementId,getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,customerId,actor.membershipId,isExecutionReviewer(actor),actor.kind,
         input.kind??null,review?'submitted':input.state??null,input.recordId??null,cursor?.lastAt??null,cursor?.lastId??null,input.limit+1])).rows;
     const selected=rows.slice(0,input.limit),records=[];
+    const revisionIds=selected.map(r=>r.author_membership_id===actor.membershipId||isExecutionReviewer(actor)?r.current_revision_id:r.accepted_revision_id).filter((id):id is string=>!!id);
+    const plans=(await db.query<{plan_id:string}>("SELECT DISTINCT b.plan_id FROM execution_record_revisions v JOIN milestone_baselines b ON b.id=v.baseline_id WHERE v.id=ANY($1::uuid[])",[revisionIds])).rows;
+    await db.query("SELECT id FROM delivery_plans WHERE id=ANY($1::uuid[]) ORDER BY id FOR UPDATE",[plans.map(p=>p.plan_id).sort()]);
+    await lockExecutionOriginalSources(db,actor,customerId,engagementId,revisionIds.map(sourceRevisionId=>({kind:"execution_record" as const,sourceRevisionId})));
+    await db.query("SELECT id FROM engagements WHERE id=$1 FOR UPDATE",[engagementId]);
+    const generation=(await db.query("SELECT generation FROM execution_workspaces WHERE engagement_id=$1 FOR UPDATE",[engagementId])).rows[0]?.generation;
+    if(generation!==head.generation)throw new HttpFailure(409,"source_changed","Record list changed; refresh");
     for(const row of selected){const record=await projectExecutionRecord(db,actor,customerId,engagementId,row);if(record)records.push(record);}
     const last=selected.at(-1);
     return {records,generation:Number(head.generation),nextCursor:rows.length>input.limit&&last?executionCursor(scope,last.created_at.toISOString(),last.id):null};

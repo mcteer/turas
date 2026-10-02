@@ -9,7 +9,7 @@ test.beforeEach(({page})=>{page.setDefaultTimeout(30000);requireOwnedExecutionCl
 test("reviewed allocation to private time, lost acknowledgement, correction, reversal and partner privacy",async({page},testInfo)=>{
   test.setTimeout(300000);const f=await createAllocatedExecutionJourney();
   const url=`/customers/${f.customerId}/engagements/${f.engagementId}/execution`;
-  await signIn(page,"panel");await page.goto(url);
+  await signIn(page,"panel");await page.goto(url);await page.getByRole("tab",{name:"Time",exact:true}).click();
   await page.getByRole("combobox",{name:"Time subject",exact:true}).selectOption(f.resource.resourceId!);
   await page.getByLabel("Service date",{exact:true}).fill(f.date);
   await page.getByLabel("Time entry zone",{exact:true}).fill("UTC");
@@ -28,24 +28,24 @@ test("reviewed allocation to private time, lost acknowledgement, correction, rev
   await expect(page.getByRole("button",{name:"Check save receipt",exact:true})).toHaveCount(0);expect(posts).toBe(1);
   await page.getByRole("button",{name:"Submit time",exact:true}).click();
   await expect(page.getByRole("button",{name:"Submit time",exact:true})).toHaveCount(0);
-  await signIn(page,"mcteer");await page.goto(url);
+  await signIn(page,"mcteer");await page.goto(url);await page.getByRole("tab",{name:"Time",exact:true}).click();
   await page.getByRole("button",{name:"Review time",exact:true}).click();
   await expect(page.getByText("90 minutes · "+f.date,{exact:true})).toBeVisible();
   await page.getByRole("textbox",{name:"Review rationale",exact:true}).fill("Human verified the allocated work and exact private daily time");
   await page.getByRole("button",{name:"Confirm reviewed decision",exact:true}).focus();await page.keyboard.press("Enter");
   const entry=page.getByRole("article",{name:"Time entry 90 minutes",exact:true});
   await expect(entry.getByText("approved",{exact:true})).toBeVisible();
-  await signIn(page,"partner");await page.goto(url);await expect(page.getByRole("heading",{name:"Time and Actuals",exact:true})).toBeVisible();
+  await signIn(page,"partner");await page.goto(url);await page.getByRole("tab",{name:"Time",exact:true}).click();await expect(page.getByRole("heading",{name:"Time and Actuals",exact:true})).toBeVisible();
   await expect(page.getByText("PRIVATE_BROWSER_TIME_NOTE",{exact:true})).toHaveCount(0);
   await expect(page.getByRole("article",{name:"Time entry 90 minutes",exact:true})).toHaveCount(0);
-  await signIn(page,"panel");await page.goto(url);await page.getByRole("button",{name:"Correct time",exact:true}).click();
+  await signIn(page,"panel");await page.goto(url);await page.getByRole("tab",{name:"Time",exact:true}).click();await page.getByRole("button",{name:"Correct time",exact:true}).click();
   await page.getByLabel("Minutes worked",{exact:true}).fill("60");await page.getByLabel("Private time note",{exact:true}).fill("Corrected private daily record");
   await page.getByRole("button",{name:"Save time draft",exact:true}).click();
   await expect(page.getByText("Prior approved revision remains counted while this correction is pending.",{exact:true})).toBeVisible();
   expect(await withTransaction(async db=>Number((await db.query("SELECT SUM(minutes) AS n FROM execution_actual_days WHERE engagement_id=$1",[f.engagementId])).rows[0].n))).toBe(90);
   await page.getByRole("button",{name:"Submit time",exact:true}).click();
   await expect(page.getByRole("button",{name:"Submit time",exact:true})).toHaveCount(0);
-  await signIn(page,"mcteer");await page.goto(url);await page.getByRole("button",{name:"Review time",exact:true}).click();
+  await signIn(page,"mcteer");await page.goto(url);await page.getByRole("tab",{name:"Time",exact:true}).click();await page.getByRole("button",{name:"Review time",exact:true}).click();
   await page.getByRole("textbox",{name:"Review rationale",exact:true}).fill("Human reviewed corrected minutes");await page.getByRole("button",{name:"Confirm reviewed decision",exact:true}).click();
   await expect(page.getByRole("article",{name:"Time entry 60 minutes",exact:true}).getByText("approved",{exact:true})).toBeVisible();
   expect(await withTransaction(async db=>Number((await db.query("SELECT SUM(minutes) AS n FROM execution_actual_days WHERE engagement_id=$1",[f.engagementId])).rows[0].n))).toBe(60);
@@ -57,7 +57,7 @@ test("reviewed allocation to private time, lost acknowledgement, correction, rev
   const axe=await new AxeBuilder({page}).analyze();expect(axe.violations.filter(v=>["serious","critical"].includes(v.impact??""))).toEqual([]);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
   // Already-rendered private time is cleared by current session revocation.
-  await signIn(page,"panel");await page.goto(url);await expect(page.getByText("Corrected private daily record",{exact:true})).toBeVisible();
+  await signIn(page,"panel");await page.goto(url);await page.getByRole("tab",{name:"Time",exact:true}).click();await expect(page.getByText("Corrected private daily record",{exact:true})).toBeVisible();
   await withTransaction(db=>db.query("UPDATE login_sessions SET revoked_at=now() WHERE principal_id=$1",[f.actors.author.principalId]));
   await page.evaluate(()=>window.dispatchEvent(new Event("focus")));
   await expect(page.getByText("Corrected private daily record",{exact:true})).toHaveCount(0,{timeout:15000});
@@ -68,7 +68,7 @@ test("reviewer attributes an inactive subject and approves a batch with separate
   test.setTimeout(180000);
   const {timeFixture}=await import("../fixtures/execution/time"),f=await timeFixture({linked:false});
   await withTransaction(db=>db.query("UPDATE workforce_resources SET active=false WHERE id=$1",[f.resourceId]));
-  await signIn(page,"mcteer");await page.goto(`/customers/${f.customerId}/engagements/${f.engagementId}/execution`);
+  await signIn(page,"mcteer");await page.goto(`/customers/${f.customerId}/engagements/${f.engagementId}/execution`);await page.getByRole("tab",{name:"Time",exact:true}).click();
   for(const minutes of [15,20]) {
     await page.getByRole("combobox",{name:"Time subject",exact:true}).selectOption(f.resourceId);
     await page.getByLabel("Service date",{exact:true}).fill(f.date);
@@ -109,7 +109,7 @@ test("reviewer attributes an inactive subject and approves a batch with separate
     payload:{recordId:activity.id,revisionId:activity.revisionId,contentDigest:activity.contentDigest}};
   await submitExecutionCommand(f.reviewer,f.engagementId,{...retract,...await previewExecutionCommand(f.reviewer,f.engagementId,retract),requestKey:crypto.randomUUID(),rationale:"Human withdraws the prior work evidence"});
   await page.evaluate(()=>window.dispatchEvent(new Event("focus")));
-  await expect(page.getByText("retracted · delivery · revision 1",{exact:true})).toBeVisible();
+  await expect(page.getByText("Source or subject review required. Private notes are withheld; approved numerical history is retained.",{exact:true})).toHaveCount(2);
   await expect(page.getByRole("combobox",{name:"Reviewed activity",exact:true}).getByRole("option",{name:"Synthetic observed work",exact:true})).toHaveCount(0);
   await page.getByRole("article",{name:"Time entry 15 minutes",exact:true}).getByRole("button",{name:"Correct time",exact:true}).click();
   await expect(page.getByLabel("Private time note",{exact:true})).toHaveValue("");
