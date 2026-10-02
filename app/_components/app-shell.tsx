@@ -16,16 +16,16 @@ function SidebarContent({ role, loginName, csrfToken, staffing }: { role: string
     <Link className="nav-link" aria-current={current(href)} href={href}><UiIcon name={icon} /><span>{label}</span></Link>;
   return <>
     <Link className="brand" href="/s"><BrandMark />Turas</Link>
-    <a className="nav-action" href="/s"><UiIcon name="plus" /> New chat</a>
+    <a className="nav-action" href="/s"><UiIcon name="plus" /> New Chat</a>
     <ConversationList navigation={<nav className="workspace-nav" aria-label="Workspace">
       <p className="nav-group-label">Workspace</p>
-      {navItem("/customers", "Customer profiles", "customers")}
-      {navItem("/knowledge", "Shared knowledge", "knowledge")}
+      {navItem("/customers", "Customer Profiles", "customers")}
+      {navItem("/knowledge", "Shared Knowledge", "knowledge")}
       {staffing.resources && <p className="nav-group-label">Delivery</p>}
-      {staffing.resources && navItem("/staffing", "Staffing operations", "operations")}
-      {staffing.resources && navItem("/staffing/resources", "Resources and skills", "people")}
-      {staffing.imports && navItem("/staffing/imports", "Workforce imports", "upload")}
-      {staffing.finance && navItem("/staffing/finance", "Planning finance", "finance")}
+      {staffing.resources && navItem("/staffing", "Staffing Operations", "operations")}
+      {staffing.resources && navItem("/staffing/resources", "Resources And Skills", "people")}
+      {staffing.imports && navItem("/staffing/imports", "Workforce Imports", "upload")}
+      {staffing.finance && navItem("/staffing/finance", "Planning Finance", "finance")}
       {role === "admin" && <><p className="nav-group-label">Administration</p>{navItem("/admin/access", "Access", "access")}</>}
     </nav>} />
     <div className="nav-bottom">

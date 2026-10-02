@@ -100,7 +100,7 @@ export function LifecycleActions({ source, onChanged }: { source: Source; onChan
     finally { setBusy(false); }
   }
   return <section className="profile-card" aria-label="Source lifecycle">
-    <h3>Manage source</h3>
+    <h3>Manage Source</h3>
     <p>{source.submitted ? "This source was submitted for review. Current steward authority is required." :
       "This source has not been submitted for review."}</p>
     {impact && <p>{impact.affectedClaims} linked claim(s) and {impact.dependentConversations} dependent conversation(s) may be affected.</p>}
@@ -109,7 +109,7 @@ export function LifecycleActions({ source, onChanged }: { source: Source; onChan
       {item === "retry" ? "Retry failed processing" : item === "cancel" ? "Cancel processing" :
         item === "withdraw" ? "Withdraw source" : "Delete source and content"}</button>)}</div>
     {["ready","partial","failed","withdrawn"].includes(source.state) && <div>
-      <h4>Replace with a new version</h4><p>The old version and its review history stay separate.</p>
+      <h4>Replace With A New Version</h4><p>The old version and its review history stay separate.</p>
       <label className="field-label" htmlFor={`artifact-replacement-${source.id}`}>Replacement file</label>
       <input id={`artifact-replacement-${source.id}`} type="file"
         accept=".pdf,.docx,.pptx,.xlsx,.csv,.txt,.md,.png,.jpg,.jpeg" disabled={busy}

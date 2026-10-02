@@ -46,7 +46,7 @@ function HistoricalChat({ conversationId, customerId, customerName }: {
     <p role="status" className="chat-notice">Customer context has changed. Start a new conversation to use current information.</p>
     <div className="chat-messages">{messages.map((event) => <article className="chat-message" key={event.eventId}>
       <h2>You</h2><p>{event.payload.message}</p></article>)}</div>
-    <p><Link className="primary-button" href={`/s?customerId=${encodeURIComponent(customerId ?? "")}`}>Start a new conversation</Link></p>
+    <p><Link className="primary-button" href={`/s?customerId=${encodeURIComponent(customerId ?? "")}`}>Start A New Conversation</Link></p>
   </main>;
 }
 
@@ -249,7 +249,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   }
 
   if (denied) return <main className="chat-page">
-    <h1>Chat unavailable</h1><p role="alert">Access to this customer or chat has changed.</p>
+    <h1>Chat Unavailable</h1><p role="alert">Access to this customer or chat has changed.</p>
   </main>;
   if (stale) return <HistoricalChat conversationId={conversationId}
     customerId={customerId} customerName={customerName} />;
@@ -259,7 +259,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     {customerId && <><button type="button" className="chat-context-toggle" aria-expanded={contextOpen}
       onClick={() => setContextOpen(value => !value)}>Customer context</button>
       {contextOpen && <div className="chat-context-details">
-        <Link href={`/customers/${customerId}/plans`}>Delivery plans</Link>
+        <Link href={`/customers/${customerId}/plans`}>Delivery Plans</Link>
         <DemoDataNotice synthetic={synthetic} />
         <ResearchPanel customerId={customerId} conversationId={conversationId}
           csrfToken={csrfToken} busy={Boolean(pendingKey) || agent.status !== "ready"} onStart={sendResearchTurn} />

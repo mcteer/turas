@@ -60,16 +60,16 @@ export function EvidenceSelection({ source, units }: { source: Source; units: Un
     finally { setSaving(false); }
   }
   return <section className="profile-card" aria-label="Propose source evidence">
-    <h3>Propose evidence for review</h3>
+    <h3>Propose Evidence For Review</h3>
     <p>Select exact units from this source. The proposal stays Pending until a reviewer accepts it.</p>
     <p className="profile-caution">A reviewer may inspect the original file after submission. Confirm that it may be shared with the customer profile reviewers.</p>
-    <fieldset><legend>Exact source units</legend>{units.map((unit) => <label key={unit.id} className="profile-check">
+    <fieldset><legend>Exact Source Units</legend>{units.map((unit) => <label key={unit.id} className="profile-check">
       <input type="checkbox" checked={selected.includes(unit.id)}
         onChange={(event) => changeSelected(unit.id, event.target.checked)} />
       Unit {unit.ordinal} ({unit.locator.kind}): {unit.text.slice(0, 120)}
     </label>)}</fieldset>
     <p>{selected.length} units · {count}/8,000 characters. Load more units above if needed.</p>
-    {chosen.length > 0 && <div><h4>Exact excerpt preview</h4><pre className="source-excerpt-preview">{excerpt}</pre></div>}
+    {chosen.length > 0 && <div><h4>Exact Excerpt Preview</h4><pre className="source-excerpt-preview">{excerpt}</pre></div>}
     <label className="field-label" htmlFor={`artifact-claim-${source.id}`}>Claim to review</label>
     <textarea id={`artifact-claim-${source.id}`} className="field" maxLength={8000} rows={3}
       value={claim} onChange={(event) => { setClaim(event.target.value); setRequestKey(null); }} />

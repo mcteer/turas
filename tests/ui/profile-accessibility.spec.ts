@@ -22,7 +22,7 @@ test("profile and review states are usable across configured WebKit viewports", 
     await sanitizedScreenshot(page, `local-artifacts/003/${name}-${testInfo.project.name}.png`);
     if (name === "populated-profile" && process.env.TURAS_PROFILE_FIXTURE_READY === "1") {
       await page.getByRole("button", { name: "View source" }).first().click();
-      await expect(page.getByRole("heading", { name: "Source detail" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Source Detail" })).toBeVisible();
       const sourceAxe = await new AxeBuilder({ page }).analyze();
       expect(sourceAxe.violations.filter((item) => ["critical", "serious"].includes(item.impact ?? "")))
         .toEqual([]);
@@ -31,7 +31,7 @@ test("profile and review states are usable across configured WebKit viewports", 
       await sanitizedScreenshot(page, `local-artifacts/003/source-${testInfo.project.name}.png`);
       await page.getByRole("button", { name: "Close source" }).click();
       await page.getByRole("button", { name: "View history" }).first().click();
-      await expect(page.getByRole("heading", { name: "Record history" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Record History" })).toBeVisible();
       const historyAxe = await new AxeBuilder({ page }).analyze();
       expect(historyAxe.violations.filter((item) => ["critical", "serious"].includes(item.impact ?? "")))
         .toEqual([]);

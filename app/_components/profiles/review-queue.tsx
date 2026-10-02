@@ -1,5 +1,7 @@
 "use client";
 
+import { titleCaseLabel } from "../title-case-label";
+
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { StewardEditor } from "./steward-editor";
@@ -56,7 +58,7 @@ function RetractionCard({ request, customerId, csrfToken, onDecided }: {
       onDecided();
     } catch { setMessage("The result is uncertain. Retry the same decision and key."); }
   }
-  return <article className="profile-card"><h3>Retraction request</h3>
+  return <article className="profile-card"><h3>Retraction Request</h3>
     <p>{request.reason}</p><p className="muted">{request.requesterKind} contributor · Accepted revision {request.acceptedRevisionId}</p>
     <label className="field-label" htmlFor={`retraction-review-${request.id}`}>Internal rationale</label>
     <textarea id={`retraction-review-${request.id}`} className="field" rows={2} value={rationale}
@@ -139,16 +141,16 @@ function ReviewCard({ candidate, customerId, csrfToken, reviewerMembershipId, on
   }
 
   return <article className="profile-card profile-review-card">
-    <div className="profile-card-head"><h2>{candidate.kind.replaceAll("_", " ")}</h2><span className="profile-badge">Pending</span></div>
+    <div className="profile-card-head"><h2>{titleCaseLabel(candidate.kind)}</h2><span className="profile-badge">Pending</span></div>
     <p className="muted">{candidate.authorKind === "partner" ? "Partner submission" : "Internal submission"} · Source: {candidate.submissionChannel.replaceAll("_", " ")} · Requested audience: {candidate.requestedAudience}
       {candidate.authorMembershipId === reviewerMembershipId ? " · Self-review will be attributed" : ""}</p>
     <p className="muted">Scope: {candidate.scopeLabel} · Submitted {new Date(candidate.createdAt).toLocaleString()} · Submitter membership {candidate.authorMembershipId}</p>
     {candidate.confirmedConflict && <p className="profile-caution">Confirmed conflict affects this candidate. Review both sides before deciding.</p>}
-    {candidate.recentHistory.length > 0 && <div><h3>Recent decisions on this record</h3><ul>
+    {candidate.recentHistory.length > 0 && <div><h3>Recent Decisions On This Record</h3><ul>
       {candidate.recentHistory.map((item, index) => <li key={`${item.decidedAt}-${index}`}>
         {item.decision} · {new Date(item.decidedAt).toLocaleString()}</li>)}
     </ul></div>}
-    <div className="profile-comparison"><div><h3>Current accepted</h3><pre>{candidate.acceptedPayload ? JSON.stringify(candidate.acceptedPayload, null, 2) : "Unknown"}</pre></div>
+    <div className="profile-comparison"><div><h3>Current Accepted</h3><pre>{candidate.acceptedPayload ? JSON.stringify(candidate.acceptedPayload, null, 2) : "Unknown"}</pre></div>
       <div><h3>Proposed</h3><pre>{JSON.stringify(candidate.payload, null, 2)}</pre></div></div>
     <p>Quality: {candidate.quality.band} ({candidate.quality.Q}/100), {candidate.quality.freshness}.
       Proposed R/D/C: {String(candidate.qualityInput.R)}/{String(candidate.qualityInput.D)}/{String(candidate.qualityInput.C)}.</p>
@@ -158,8 +160,8 @@ function ReviewCard({ candidate, customerId, csrfToken, reviewerMembershipId, on
       <dt>Directness rationale</dt><dd>{String(candidate.qualityInput.directnessRationale ?? "Unknown")}</dd>
       <dt>Corroboration rationale</dt><dd>{String(candidate.qualityInput.corroborationRationale ?? "Unknown")}</dd></dl>
     <p>Evidence references: {candidate.sourceReferences.length ? candidate.sourceReferences.join(", ") : "None submitted"}</p>
-    {candidate.artifactSource && <section className="profile-note" aria-label="Submitted source excerpt">
-      <h3>Submitted source excerpt</h3>
+    {candidate.artifactSource && <section className="profile-note" aria-label="Submitted Source Excerpt">
+      <h3>Submitted Source Excerpt</h3>
       <p>{candidate.artifactSource.excerpt}</p>
       <p className="muted">Citation: {Object.entries(candidate.artifactSource.citation).map(([key, value]) =>
         `${key} ${value}`).join(" · ")} · SHA-256 {candidate.artifactSource.excerptDigest}</p>
@@ -224,7 +226,7 @@ export function ReviewQueue({ customerId }: { customerId: string }) {
   return <main className="profile-page"><nav aria-label="Breadcrumb" className="profile-breadcrumb">
     <Link href="/customers">Customers</Link><span aria-hidden="true">/</span>
     <Link href={`/customers/${customerId}`}>Profile</Link><span aria-hidden="true">/</span><span>Review</span></nav>
-    <header className="profile-header"><div><p className="profile-eyebrow">Customer context</p><h1>Review queue</h1>
+    <header className="profile-header"><div><p className="profile-eyebrow">Customer Context</p><h1>Review Queue</h1>
       <p className="muted">Decide each exact proposal. Changing its content requires a new pending revision.</p></div></header>
     {state === "loading" && <p role="status" className="profile-state">Loading review queue…</p>}
     {state === "denied" && <p role="alert" className="profile-state">Review is unavailable to your account.</p>}
@@ -236,7 +238,7 @@ export function ReviewQueue({ customerId }: { customerId: string }) {
         reviewerMembershipId={reviewerMembershipId}
         onDecided={reload} />)}</div>
       {queue.nextCursor && <button type="button" className="secondary-button" onClick={() => setCursor(queue.nextCursor)}>More proposals</button>}
-      {queue.openRetractions.length > 0 && <section className="profile-section"><h2>Retraction requests</h2>
+      {queue.openRetractions.length > 0 && <section className="profile-section"><h2>Retraction Requests</h2>
         <div className="profile-review-list">{queue.openRetractions.map((request) => <RetractionCard key={request.id}
           request={request} customerId={customerId} csrfToken={csrfToken}
           onDecided={reload} />)}</div></section>}

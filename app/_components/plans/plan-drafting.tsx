@@ -159,7 +159,7 @@ export function PlanDrafting({customerId,head,onSaved}:{customerId:string;
   }
 
   return <section className="profile-section" aria-label="Turi plan drafting">
-    <h2>Draft with Turi</h2>
+    <h2>Draft With Turi</h2>
     <p>Audience: {head.audience}. Workload: {head.workloadId ?? "Customer wide"}.</p>
     <p>Base revision {head.revisionId}. Up to six model steps, four evidence searches,
       and 24 KiB of governed context. Human review is required before acceptance.</p>
@@ -176,7 +176,7 @@ export function PlanDrafting({customerId,head,onSaved}:{customerId:string;
         {draft.retrievalCalls}/4 searches · {draft.contextBytes}/24,576 context bytes</p>
       <p>Base revision {draft.baseRevisionId}. Deadline {new Date(draft.deadlineAt).toLocaleTimeString()}.</p>
       {draft.resultRevisionId && <p><Link href={`/customers/${customerId}/plans/${head.planId}`}>
-        Open saved revision</Link></p>}
+        Open Saved Revision</Link></p>}
       {nativeSessionId && <ActivePlanDraft key={draft.attemptId}
         conversationId={draft.conversationId} nativeSessionId={nativeSessionId}
         csrf={csrf} onTerminal={()=>void refresh()} onCancel={()=>void cancel()}/>}

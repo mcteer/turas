@@ -1,4 +1,6 @@
 "use client";
+
+import { titleCaseLabel } from "../title-case-label";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { StaffingDemandInput } from "../../../lib/contracts/staffing-demands";
@@ -19,7 +21,7 @@ function serviceDates(from: string, to: string) {
 }
 function SkillFields({ label, value, set, skills }: { label: string; value: SkillRequirement[];
   set: (value: SkillRequirement[]) => void; skills: Skill[] }) {
-  return <fieldset><legend>{label}</legend>{value.map((requirement, index) => <div key={index} className="profile-card">
+  return <fieldset><legend>{titleCaseLabel(label)}</legend>{value.map((requirement, index) => <div key={index} className="profile-card">
     <label>{label} {index + 1}<select className="field" aria-label={`${label} ${index + 1}`} value={requirement.skillId} required onChange={event => set(value.map((old, i) => i === index ? { ...old, skillId: event.target.value } : old))}>
       <option value="" disabled>Choose skill</option>{!skills.some(skill => skill.skillId === requirement.skillId) && requirement.skillId &&
         <option value={requirement.skillId}>Previously selected skill — review current taxonomy</option>}
@@ -59,12 +61,12 @@ function DemandForm({ engagement, skills, command, base, saved, close }: { engag
       expectedAggregateVersion: captured.base.aggregateVersion } : {};
     void command.save(captured.base ? `/api/staffing/demands/${captured.base.demandId}` : "/api/staffing/demands",
       { ...exact, rationale: data.get("rationale"), demand }, captured.base ? "PATCH" : "POST", () => { if (acknowledge()) saved(); });
-  }}><h2>{base ? "Revise demand" : "Create demand"}</h2>
+  }}><h2>{base ? "Revise Demand" : "Create Demand"}</h2>
     {changedBaseline && <p role="alert">The accepted baseline changed. Close and reopen this editor before saving against the new baseline.</p>}
     {initial && initial.baselineId !== engagement.baselineId && <p role="status">This demand retains a previous baseline. Create a new demand to use the current accepted work packages.</p>}
     {base && captured.base?.aggregateVersion !== base.aggregateVersion && <p role="status">This demand changed. Your inputs still use the revision opened for editing.</p>}
-    <fieldset disabled={command.busy || !!command.uncertainKey || changedBaseline}><legend>Requested work</legend>
-      <label>Work package<select className="field" aria-label="Work package" name="workPackage" required defaultValue={initial?.workPackageKey ?? ""}>
+    <fieldset disabled={command.busy || !!command.uncertainKey || changedBaseline}><legend>Requested Work</legend>
+      <label>Work package<select className="field" aria-label="Work Package" name="workPackage" required defaultValue={initial?.workPackageKey ?? ""}>
         <option value="" disabled>Choose accepted work package</option>{initial && initial.baselineId !== captured.engagement.baselineId
           ? <option value={initial.workPackageKey}>Existing demand work package</option>
           : captured.engagement.workPackages.map(work => <option key={work.key} value={work.key}>{work.title}</option>)}
@@ -85,7 +87,7 @@ function DemandForm({ engagement, skills, command, base, saved, close }: { engag
         if (!event.target.checked && overlap && !window.confirm("Remove the separately zoned overlap requirement?")) return;
         setOverlap(event.target.checked ? { timezone: "", minimumOverlapMinutes: 0, windows: [] } : null);
       }} /> Require a separately zoned overlap window</label>
-      {overlap && <fieldset><legend>Overlap requirement</legend>
+      {overlap && <fieldset><legend>Overlap Requirement</legend>
         <p>Choose the overlap timezone explicitly. These clock windows are separate from each resource's local daily effort. Ambiguous clock times require valid endpoint offsets.</p>
         <label>Overlap timezone<input className="field" required maxLength={100} placeholder="Europe/London" value={overlap.timezone} onChange={event => setOverlap(old => old ? { ...old, timezone: event.target.value } : null)} /></label>
         <label>Minimum overlap minutes<input className="field" type="number" required min={1} max={960} step={1} value={overlap.minimumOverlapMinutes || ""} onChange={event => setOverlap(old => old ? { ...old, minimumOverlapMinutes: Number(event.target.value) } : null)} /></label>
@@ -93,7 +95,7 @@ function DemandForm({ engagement, skills, command, base, saved, close }: { engag
           const window = overlap.windows.find(window => window.date === date) ?? { date, from: "", to: "", fromOffset: null, toOffset: null };
           const update = (field: "from" | "to" | "fromOffset" | "toOffset", value: string | null) => setOverlap(old => old ? { ...old,
             windows: [...old.windows.filter(entry => entry.date !== date), { ...window, [field]: value }] } : null);
-          return <fieldset key={date}><legend>Overlap on {date}</legend>
+          return <fieldset key={date}><legend>Overlap On {date}</legend>
             <label>Overlap start on {date}<input className="field" type="datetime-local" required step={60} value={window.from} onChange={event => update("from", event.target.value)} /></label>
             <label>Overlap end on {date}<input className="field" type="datetime-local" required step={60} value={window.to} onChange={event => update("to", event.target.value)} /></label>
             <label>Overlap start offset on {date} (optional)<input className="field" pattern="[+-][0-9]{2}:[0-9]{2}" placeholder="+01:00" value={window.fromOffset ?? ""} onChange={event => update("fromOffset", event.target.value || null)} /></label>
@@ -113,7 +115,7 @@ function DemandActions({ detail, command, edit, dirtyChanged }: { detail: Demand
   const edits = useStaffingDirtyInputs(), [base, setBase] = useState(detail), blocked = command.busy || !!command.uncertainKey;
   useEffect(() => { dirtyChanged(edits.dirty); return () => dirtyChanged(false); }, [edits.dirty, dirtyChanged]);
   const stale = base.aggregateVersion !== detail.aggregateVersion || base.revisionId !== detail.revisionId;
-  return <section className="profile-section"><h2>{detail.demand?.title ?? "Demand requires review"}</h2>
+  return <section className="profile-section"><h2>{detail.demand?.title ?? "Demand Requires Review"}</h2>
     <p>{detail.state} · {detail.contentAvailability}</p>
     {detail.reviewRequired && <p role="status">Baseline or source review is required before current staffing use.</p>}
     {stale && <p role="status">The demand action was opened for a previous revision. Review the current demand before continuing.</p>}
@@ -198,8 +200,8 @@ export function StaffingDemandEditor({ customerId, engagementId, csrfToken, fina
   }, [scopeKey]);
   const command = useStaffingCommand(csrfToken, async () => { await load(); });
   return <>
-    <nav className="profile-breadcrumb" aria-label="Breadcrumb"><Link href={`/customers/${customerId}/engagements/${engagementId}`}>Engagement</Link><span aria-hidden="true">/</span><span>Staffing demand</span></nav>
-    <header className="profile-header"><div><p className="profile-eyebrow">Accepted engagement</p><h1>Staffing demand</h1><p>{engagement?.title}</p></div></header>
+    <nav className="profile-breadcrumb" aria-label="Breadcrumb"><Link href={`/customers/${customerId}/engagements/${engagementId}`}>Engagement</Link><span aria-hidden="true">/</span><span>Staffing Demand</span></nav>
+    <header className="profile-header"><div><p className="profile-eyebrow">Accepted Engagement</p><h1>Staffing Demand</h1><p>{engagement?.title}</p></div></header>
     {loading && <p role="status">Loading staffing context…</p>}{error && <p role="alert">{error}</p>}
     {engagement?.reviewRequired && <p role="status">The accepted baseline needs source review. Demand qualification is unavailable.</p>}
     {command.message && <p role="status">{command.message}</p>}{command.uncertainKey && <button disabled={command.busy} onClick={() => void command.reconcile()}>Check save receipt</button>}
@@ -207,7 +209,7 @@ export function StaffingDemandEditor({ customerId, engagementId, csrfToken, fina
     {!editor && engagement?.workPackages.length ? <button disabled={command.busy || !!command.uncertainKey} onClick={() => {
       if (!(actionsDirty || allocationsDirty) || window.confirm("Discard pending staffing inputs and create a new demand?")) setEditor("new");
     }}>Create demand</button> : null}
-    <section className="profile-section"><h2>Demand records</h2>{!loading && !error && !items.length && <p>No demand has been created for this engagement.</p>}
+    <section className="profile-section"><h2>Demand Records</h2>{!loading && !error && !items.length && <p>No demand has been created for this engagement.</p>}
       <ul>{items.map((item, index) => <li key={item.demandId}><button data-demand-id={item.demandId} disabled={loading || !!editor || command.busy || !!command.uncertainKey} onClick={() => {
         if ((actionsDirty || allocationsDirty) && !window.confirm("Switch demand and discard pending staffing inputs?")) return;
         void openDemand(item.demandId);

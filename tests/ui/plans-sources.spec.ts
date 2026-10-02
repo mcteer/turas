@@ -74,14 +74,14 @@ test("withholds a plan title and body after its research source is withdrawn",
         expectedLifecycleVersion:0,rationale:"Synthetic UI source withdrawn"},db);
     });
     await page.reload();
-    await expect(page.getByRole("heading",{name:"Review required",level:1}))
+    await expect(page.getByRole("heading",{name:"Review Required",level:1}))
       .toBeVisible({timeout:30_000});
     await expect(page.getByText(prepared.claim)).toHaveCount(0);
     await expect(page.getByRole("img",{name:"Customer browser sends requests to the web service."}))
       .toHaveCount(0);
     await page.goto(`/customers/${PLAN_FIXTURE_SCOPE.customerId}/plans`);
     await expect(page.getByText(prepared.title)).toHaveCount(0);
-    await expect(page.getByText("Review required").first()).toBeVisible({timeout:30_000});
+    await expect(page.getByText("Review Required").first()).toBeVisible({timeout:30_000});
     const axe=await new AxeBuilder({page}).analyze();
     expect(axe.violations.filter((item)=>["critical","serious"].includes(item.impact ?? "")))
       .toEqual([]);

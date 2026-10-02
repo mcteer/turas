@@ -49,7 +49,7 @@ export function StaffingFinanceScenarios({ csrfToken }: { csrfToken: string }) {
     }).catch(() => { if (active && read === selectedReadGeneration.current) { setSelected(old => old?.scenarioId === id ? null : old); setError("Scenario unavailable. Reload its current authority and sources."); } }); }, 10_000);
     return () => { active = false; window.clearInterval(timer); };
   }, [selected?.scenarioId]);
-  return <section className="profile-section"><h2>Planning scenarios</h2>
+  return <section className="profile-section"><h2>Planning Scenarios</h2>
     <p>Use confirmed, persisted allocation minutes and entered finance inputs. These snapshots are planning estimates; actual profit is unavailable.</p>
     {error && <p role="alert">{error}</p>}{command.message && <p role="status">{command.message}</p>}
     {command.uncertainKey && <button disabled={command.busy} onClick={() => void command.reconcile()}>Check scenario save receipt</button>}
@@ -93,7 +93,7 @@ export function StaffingFinanceScenarios({ csrfToken }: { csrfToken: string }) {
       <label>Scenario rationale<textarea className="field" name="rationale" required maxLength={2000} /></label>
       <button className="primary-button" disabled={blocked}>Create planning scenario</button>
     </form>}
-    <h3>Saved scenario snapshots</h3>
+    <h3>Saved Scenario Snapshots</h3>
     {items.map(item => <p key={item.scenarioId}><button className="secondary-button" disabled={blocked} onClick={() => {
       const ticket = generation.current, selection = ++selectionGeneration.current, read = ++selectedReadGeneration.current; setSelected(null);
       void staffingGet<Scenario>(`/api/staffing/finance/scenarios/${item.scenarioId}`).then(value => { if (generation.current === ticket && selectionGeneration.current === selection && selectedReadGeneration.current === read) { setSelected(value); setError(""); } })
@@ -114,7 +114,7 @@ export function StaffingFinanceScenarios({ csrfToken }: { csrfToken: string }) {
           <div><dt>Planned margin</dt><dd>{selected.content.marginPercentage === null ? "Unavailable" : `${selected.content.marginPercentage}%`}</dd></div>
         </dl>
         <p>Amounts in {selected.content.currency} for {selected.content.scope.fromDate} through {selected.content.scope.toDate}. Contribution uses contracted revenue less loaded delivery and entered nonlabor costs. Hypothetical service revenue is a separate estimate. Margin is unavailable at zero revenue.</p>
-        <details><summary>Exact grouped calculation inputs</summary>{[...selected.content.costGroups.map(group => ({ ...group, kind: "Loaded cost" })),
+        <details><summary>Exact Grouped Calculation Inputs</summary>{[...selected.content.costGroups.map(group => ({ ...group, kind: "Loaded cost" })),
           ...selected.content.serviceGroups.map(group => ({ ...group, kind: "Hypothetical service" }))].map(group => <p className="evidence-citation" key={`${group.kind}/${group.resourceId}/${group.localDate}/${group.rateRevisionId}`}>
           {group.kind} · resource {group.resourceId} · {group.localDate} · rate revision {group.rateRevisionId}: {group.minutes} minutes × {group.minorUnitsPerHour} / {group.divisor} = {group.amount} minor units after rounding</p>)}</details>
       </>}

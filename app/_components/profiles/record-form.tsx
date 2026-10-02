@@ -1,5 +1,7 @@
 "use client";
 
+import { titleCaseLabel } from "../title-case-label";
+
 import { useEffect, useMemo, useState } from "react";
 import type { RecordKind } from "../../../lib/contracts/profile-payloads";
 
@@ -271,7 +273,7 @@ export function RecordForm({ customerId, workloads, acceptedFacts, onSaved }: {
   if (!memberKind) return <section className="profile-section profile-form" aria-label="Customer context proposal">
     <p role="status">Loading proposal permissions…</p></section>;
   return <section className="profile-section profile-form" aria-labelledby="profile-proposal-heading">
-    <div className="profile-section-head"><h2 id="profile-proposal-heading">Propose customer context</h2></div>
+    <div className="profile-section-head"><h2 id="profile-proposal-heading">Propose Customer Context</h2></div>
     <p className="muted">Your submission stays Pending until a steward accepts it. A correction does not replace the current fact before review.</p>
     <div className="profile-form-grid"><label>Record type<select className="field" value={kind} disabled={saving || Boolean(pendingCommand)}
       onChange={(event) => changeKind(event.target.value as RecordKind)}>{kinds.filter((item) => memberKind === "internal" || item !== "workload_details")
@@ -286,7 +288,7 @@ export function RecordForm({ customerId, workloads, acceptedFacts, onSaved }: {
           {existing.map((fact) => <option key={fact.recordId} value={fact.recordId}>{String(fact.payload.title ?? fact.payload.name ?? fact.payload.statement ?? fact.recordId)}</option>)}</select></label>}
       {memberKind === "internal" && commandAudienceFields(audience, setAudience, category, setCategory, saving || Boolean(pendingCommand))}
     </div>
-    {existing.length > 0 && <div className="profile-correction-options"><h3>Accepted context</h3>
+    {existing.length > 0 && <div className="profile-correction-options"><h3>Accepted Context</h3>
       <p className="muted">Use an accepted record as the starting point for a correction. It remains visible until the correction is reviewed.</p>
       {existing.map((fact) => <button key={fact.recordId} type="button" className="secondary-button"
         disabled={saving || Boolean(pendingCommand)} onClick={() => useAccepted(fact)}>
@@ -303,8 +305,8 @@ export function RecordForm({ customerId, workloads, acceptedFacts, onSaved }: {
             min={field.type === "number" ? 1 : undefined} max={field.type === "number" ? 5 : undefined}
             value={values[field.name] ?? ""} required={field.required} disabled={saving || Boolean(pendingCommand)}
             onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))} />}</label>)}</div>
-    {kind === "maturity_assessment" && <div className="profile-dimensions"><h3>Independent maturity dimensions</h3>
-      {dimensionNames.map((key) => <fieldset key={key} className="profile-card"><legend>{key.replaceAll("_", " ")}</legend>
+    {kind === "maturity_assessment" && <div className="profile-dimensions"><h3>Independent Maturity Dimensions</h3>
+      {dimensionNames.map((key) => <fieldset key={key} className="profile-card"><legend>{titleCaseLabel(key)}</legend>
         <div className="profile-form-grid"><label>State<select className="field" value={dimensions[key]?.state ?? "Unknown"}
           disabled={saving || Boolean(pendingCommand)} onChange={(event) => setDimensions((current) => ({ ...current,
             [key]: { ...current[key], state: event.target.value } }))}>{dimensionStates.map((state) => <option key={state}>{state}</option>)}</select></label>
@@ -312,7 +314,7 @@ export function RecordForm({ customerId, workloads, acceptedFacts, onSaved }: {
             <textarea className="field" rows={2} value={dimensions[key]?.[name] ?? ""}
               disabled={saving || Boolean(pendingCommand)} onChange={(event) => setDimensions((current) => ({ ...current,
                 [key]: { ...current[key], [name]: event.target.value } }))} /></label>)}</div></fieldset>)}</div>}
-    <fieldset className="profile-quality"><legend>Proposed evidence quality</legend>
+    <fieldset className="profile-quality"><legend>Proposed Evidence Quality</legend>
       <p className="muted">R, D and C are proposed inputs. The server calculates freshness and the final score.</p>
       <div className="profile-form-grid">{(["R", "D", "C"] as const).map((name) => <label key={name}>{name} (0–4)<input className="field" type="number" min={0} max={4}
         value={quality[name]} disabled={saving || Boolean(pendingCommand)} onChange={(event) => setQuality((current) => ({ ...current, [name]: event.target.value }))} /></label>)}

@@ -251,6 +251,8 @@ The workspace uses a shared neutral design system with Geist typography, grouped
 navigation, consistent page headers, form panels, accessible controls, and tables
 that scroll within their panels. Customer profiles, knowledge, plans, staffing,
 imports, finance, access, and sign-in use the same light/dark visual language.
+Navigation and section headings capitalize each word; names and authored content
+retain their original spelling.
 Run `npm run workspace:ui:check` with the marked local test database selection to
 validate the desktop/mobile Playwright/WebKit matrix on an owned disposable clone.
 The check exercises real reads and writes with synthetic fixtures and no model calls.

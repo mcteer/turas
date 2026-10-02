@@ -7,15 +7,15 @@ test("maturity proposal keeps all six dimensions separate from the journey stage
   await signIn(page, "panel");
   await page.goto(`/customers/${DEMO_IDS.sharedCustomer}`);
   await page.getByLabel("Record type").selectOption("maturity_assessment");
-  await expect(page.getByRole("heading", { name: "Independent maturity dimensions" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Independent Maturity Dimensions" })).toBeVisible();
   await expect(page.locator(".profile-dimensions fieldset")).toHaveCount(6);
   await page.getByLabel("Journey stage").selectOption("Accelerate");
   await expect(page.getByLabel("Journey stage")).toHaveValue("Accelerate");
-  for (const key of ["outcome ownership", "delivery collaboration", "experience adoption",
-    "operational trust", "platform organization", "innovation ai"]) {
+  for (const key of ["Outcome Ownership", "Delivery Collaboration", "Experience Adoption",
+    "Operational Trust", "Platform Organization", "Innovation AI"]) {
     await expect(page.getByRole("group", { name: key }).getByLabel("State")).toHaveValue("Unknown");
   }
-  await expect(page.getByText("No accepted facts yet")).toBeVisible();
+  await expect(page.getByText("No Accepted Facts Yet")).toBeVisible();
 });
 
 test("a known dimension cannot be saved without reviewed support", async ({ page }) => {
@@ -53,7 +53,7 @@ test("a seeded assessment shows six independent states and attributed source det
   await expect(product).toContainText("Used for a fictional public web workload");
   await expect(product).toContainText("observed at:");
   const assessment = page.locator(".profile-maturity-card");
-  await expect(assessment.getByRole("heading", { name: "Journey stage Unknown" })).toBeVisible();
+  await expect(assessment.getByRole("heading", { name: "Journey Stage Unknown" })).toBeVisible();
   await expect(assessment).toContainText("Scope: Customer-wide");
   await expect(assessment.locator(".profile-maturity-dimension")).toHaveCount(6);
   await expect(assessment.locator(".profile-maturity-dimension", { hasText: "Emerging" })).toHaveCount(2);
@@ -61,15 +61,15 @@ test("a seeded assessment shows six independent states and attributed source det
   await expect(page.getByRole("heading", { name: "Engagements", exact: true })).toHaveCount(0);
   await page.locator('section[aria-labelledby="profile-maturity_assessment"]')
     .getByRole("button", { name: "View history" }).click();
-  await expect(page.getByRole("heading", { name: "Record history" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Record history" })).toContainText("Scope: Customer-wide");
+  await expect(page.getByRole("heading", { name: "Record History" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Record History" })).toContainText("Scope: Customer-wide");
   await expect(page.locator(".profile-history-list").first().locator("li")).toHaveCount(1);
   await expect(page.locator(".profile-history-list").first()).toContainText("Accepted");
-  await expect(page.getByRole("heading", { name: "Review and lifecycle events" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Review And Lifecycle Events" })).toBeVisible();
   await expect(page.locator(".profile-history-list").last()).toContainText("accept");
   await page.getByRole("button", { name: "Close history" }).click();
   await page.getByRole("button", { name: "View source" }).click();
-  await expect(page.getByRole("heading", { name: "Source detail" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Source Detail" })).toBeVisible();
   await expect(page.getByText("A fictional platform documents deployment review checks")).toBeVisible();
 });
 
@@ -101,7 +101,7 @@ test("a seeded maturity correction stays Pending and preserves its delivery audi
   await expect(page.locator(".profile-maturity-card")).not.toContainText(correction);
   await page.locator('section[aria-labelledby="profile-maturity_assessment"]')
     .getByRole("button", { name: "View history" }).click();
-  await expect(page.getByRole("region", { name: "Record history" })).toContainText("Accepted");
+  await expect(page.getByRole("region", { name: "Record History" })).toContainText("Accepted");
 });
 
 test("six distinct maturity states display without inferring a journey stage from products", async ({ page }) => {
@@ -123,7 +123,7 @@ test("six distinct maturity states display without inferring a journey stage fro
   });
   await page.goto(`/customers/${DEMO_IDS.deniedCustomer}`);
   const assessment = page.locator(".profile-maturity-card");
-  await expect(assessment.getByRole("heading", { name: "Journey stage Unknown" })).toBeVisible();
+  await expect(assessment.getByRole("heading", { name: "Journey Stage Unknown" })).toBeVisible();
   await expect(assessment).toContainText("customer-maturity-v1");
   await expect(assessment).toContainText("Scope: Customer-wide");
   await expect(assessment).toContainText("Assessed by Synthetic review team");

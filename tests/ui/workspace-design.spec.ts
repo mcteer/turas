@@ -26,13 +26,13 @@ test("workspace screens retain usable controls and accessible layouts", async ({
   const screens = [
     ["/customers", "Customers", "customers"],
     [`/customers/${DEMO_IDS.sharedCustomer}`, "Cedar (synthetic)", "profile"],
-    [`/customers/${DEMO_IDS.sharedCustomer}/plans`, "Delivery plans", "plans"],
-    [`/customers/${DEMO_IDS.sharedCustomer}/plans/new`, "New plan", "plan-editor"],
-    ["/knowledge", "Shared knowledge", "knowledge"],
-    ["/staffing", "Staffing operations", "operations"],
-    ["/staffing/resources", "Resources and skills", "resources"],
-    ["/staffing/imports", "Workforce imports", "imports"],
-    ["/staffing/finance", "Planning finance inputs", "finance"],
+    [`/customers/${DEMO_IDS.sharedCustomer}/plans`, "Delivery Plans", "plans"],
+    [`/customers/${DEMO_IDS.sharedCustomer}/plans/new`, "New Plan", "plan-editor"],
+    ["/knowledge", "Shared Knowledge", "knowledge"],
+    ["/staffing", "Staffing Operations", "operations"],
+    ["/staffing/resources", "Resources And Skills", "resources"],
+    ["/staffing/imports", "Workforce Imports", "imports"],
+    ["/staffing/finance", "Planning Finance Inputs", "finance"],
     ["/admin/access", "Access", "access"],
   ];
   for (const [path, heading, name] of screens) {
@@ -53,10 +53,10 @@ test("workspace navigation and theme controls work with the keyboard", async ({ 
   await signIn(page, "mcteer");
   const mobile = page.viewportSize()!.width < 768;
   if (mobile) await page.getByRole("button", { name: "Open navigation" }).click();
-  const resources = page.getByRole("link", { name: "Resources and skills", exact: true }).filter({ visible: true });
+  const resources = page.getByRole("link", { name: "Resources And Skills", exact: true }).filter({ visible: true });
   await resources.focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("heading", { name: "Resources and skills", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resources And Skills", exact: true })).toBeVisible();
   if (mobile) {
     await expect(page.getByRole("dialog", { name: "Navigation" })).toHaveCount(0);
     await page.getByRole("button", { name: "Open navigation" }).click();

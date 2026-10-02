@@ -50,29 +50,29 @@ export function EngagementDetailView({customerId,engagementId}:{
     {message && <p role="alert">{message}</p>}
     {!detail && !message && <p role="status">Loading engagement…</p>}
     {detail && <><header className="profile-header"><div>
-      <p className="profile-eyebrow">Accepted internal baseline {detail.baselineNumber}</p>
-      <h1>{detail.title}</h1><p className="muted">Accepted {new Date(detail.acceptedAt).toLocaleString()}</p>
-      </div><Link href={`/customers/${customerId}/plans/${detail.planId}`}>Source plan</Link>
+      <p className="profile-eyebrow">Accepted Internal Baseline {detail.baselineNumber}</p>
+      <h1>{["readable", "historical_warning"].includes(detail.contentAvailability) ? detail.title : "Review Required"}</h1><p className="muted">Accepted {new Date(detail.acceptedAt).toLocaleString()}</p>
+      </div><Link href={`/customers/${customerId}/plans/${detail.planId}`}>Source Plan</Link>
       </header>
-      {staffingAllowed && <Link className="secondary-button" href={`/customers/${customerId}/engagements/${engagementId}/staffing`}>Staffing demand</Link>}
+      {staffingAllowed && <Link className="secondary-button" href={`/customers/${customerId}/engagements/${engagementId}/staffing`}>Staffing Demand</Link>}
       {detail.contentAvailability==="historical_warning" && <p role="status" className="profile-caution">
         Evidence dates need review before current use.</p>}
       {!["readable","historical_warning"].includes(detail.contentAvailability) ? <section className="profile-state" role="status">
-        <h2>Review required</h2><p>Source material changed. Baseline text is unavailable.</p>
-      </section> : <><section className="profile-section"><h2>Planned work</h2>
+        <h2>Review Required</h2><p>Source material changed. Baseline text is unavailable.</p>
+      </section> : <><section className="profile-section"><h2>Planned Work</h2>
         {detail.workPackages?.map((item)=><article className="profile-card" key={item.key}>
           <h3>{item.title}</h3><p>{item.track}</p><p>Exit evidence: {item.exitEvidence}</p>
-        </article>)}</section><section className="profile-section"><h2>Planned milestones</h2>
+        </article>)}</section><section className="profile-section"><h2>Planned Milestones</h2>
         {detail.milestones?.map((item)=><article className="profile-card" key={item.key}>
           <h3>{item.title}</h3><p>{item.track} · {item.plannedDate ?? item.plannedDateUnknownReason}</p>
           <p>Exit evidence: {item.exitEvidence}</p>
           <p>Customer validation: {item.customerValidation}</p>
         </article>)}</section></>}
       <p className="muted">This is an internal delivery baseline. Customer approval and staffing are separate decisions.</p>
-      {detail.staffingAssignments && <section className="profile-section"><h2>Confirmed future assignments</h2>
+      {detail.staffingAssignments && <section className="profile-section"><h2>Confirmed Future Assignments</h2>
         {!detail.staffingAssignments.items.length && <p>No confirmed future assignments available.</p>}
         {detail.staffingAssignments.items.map(assignment=><article className="profile-card" key={assignment.assignmentId}>
-          <h3>{assignment.displayName ?? "Assignment narrative unavailable"}</h3>
+          <h3>{assignment.displayName ?? "Assignment Narrative Unavailable"}</h3>
           {assignment.deliveryRole && <p>{assignment.deliveryRole}</p>}
           {assignment.reviewRequired && <p role="status">Current assignment inputs need review.</p>}
           {assignment.days.map(day=><p key={day.date}>{day.date} · {day.minutes} confirmed minutes</p>)}

@@ -262,6 +262,8 @@ is part of these 60 tasks.
 - [x] Apply the professional workspace design across existing customer, knowledge,
   plan, staffing, access, and sign-in screens while preserving domain behavior.
 - [x] Preserve the approved optional customer bar beneath the Turi composer.
+- [x] Capitalize authored navigation and section headings consistently across all
+  pages, including canonical labels, while preserving names and user-written titles.
 - [x] Validate the completed presentation with CLI Playwright/WebKit: 68 cases
   passed across desktop/mobile and both themes, with no failures, skips, or retries.
 - [x] Verify typecheck and production build; document patterns and the reproducible

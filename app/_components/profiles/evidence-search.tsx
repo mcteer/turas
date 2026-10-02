@@ -77,7 +77,7 @@ export function EvidenceSearch({ customerId, workloadId }: {
   }
 
   return <section className="profile-section evidence-search" aria-labelledby="evidence-search-heading">
-    <div className="profile-section-head"><h2 id="evidence-search-heading">Search evidence</h2></div>
+    <div className="profile-section-head"><h2 id="evidence-search-heading">Search Evidence</h2></div>
     <form className="evidence-search-form" onSubmit={(event) => void search(event)}>
       <label htmlFor="evidence-query">Question or terms</label>
       <input id="evidence-query" className="field" type="search" required maxLength={500}

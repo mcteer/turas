@@ -60,7 +60,7 @@ test("bound chat retains visible customer and scope notice", async ({ page }) =>
   await expect(page.getByText("Synthetic customer data and public research only")).toBeVisible();
   await expect(page.getByLabel("Message Turi")).toBeVisible();
   await page.getByRole("button", { name: "Submit a message claim for review" }).click();
-  await expect(page.getByRole("heading", { name: "Submit a message claim for review" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Submit A Message Claim For Review" })).toBeVisible();
   await expect(page.getByText("No owned messages are available to share.")).toBeVisible();
   await page.getByRole("button", { name: "Close claim submission" }).click();
   await page.getByLabel("Message Turi").fill("Synthetic unsent draft");

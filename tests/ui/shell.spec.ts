@@ -10,7 +10,7 @@ test("workspace shell matches the desktop reference and remains accessible", asy
   await expect(sidebar).toBeVisible();
   expect(Math.round((await sidebar.boundingBox())!.width)).toBe(288);
   expect(await page.evaluate(() => getComputedStyle(document.body).fontFamily)).toContain("Geist");
-  await expect(page.getByRole("link", { name: "New chat" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "New Chat" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   const axe = await new AxeBuilder({ page }).analyze();
   expect(axe.violations.filter((item) => ["critical", "serious"].includes(item.impact ?? ""))).toEqual([]);

@@ -36,7 +36,7 @@ export function PlanDiff({planId,baseRevisionId,targetRevisionId}:{planId:string
     return ()=>controller.abort();
   },[planId,baseRevisionId,targetRevisionId,reload]);
   return <section className="profile-section" aria-label="Revision comparison">
-    <h2>Changes from accepted revision</h2>
+    <h2>Changes From Accepted Revision</h2>
     {message && <><p role="alert">{message}</p><button type="button"
       className="secondary-button" onClick={()=>{setMessage("");setReload((value)=>value+1);}}>
       Retry comparison</button></>}

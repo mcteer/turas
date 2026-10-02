@@ -47,14 +47,14 @@ export default function CustomersPage() {
               {item.displayName}
             </button></h2><p className="muted">Customer workspace{item.synthetic ? " · Synthetic" : ""}</p></div></div>
           <p className="customer-card-description">Explore accepted context, evidence, and delivery plans.</p>
-          <div className="customer-card-actions"><Link className="text-action" href={`/customers/${item.id}`}>Open profile <UiIcon name="arrow" size={15} /></Link>
-          <Link className="secondary-button" href={`/s?customerId=${item.id}`}>Start chat</Link></div>
+          <div className="customer-card-actions"><Link className="text-action" href={`/customers/${item.id}`}>Open Profile <UiIcon name="arrow" size={15} /></Link>
+          <Link className="secondary-button" href={`/s?customerId=${item.id}`}>Start Chat</Link></div>
         </li>
       ))}</ul>
       {nextCursor && <button className="secondary-button" type="button" onClick={() => void load(nextCursor)}>Load more</button>}
       {selected && <p role="status">Selected customer: {selected.displayName}{" "}
-        <Link href={`/customers/${selected.id}`}>Open profile</Link>{" · "}
-        <Link href={`/s?customerId=${selected.id}`}>Start chat</Link></p>}
+        <Link href={`/customers/${selected.id}`}>Open Profile</Link>{" · "}
+        <Link href={`/s?customerId=${selected.id}`}>Start Chat</Link></p>}
     </main>
   );
 }

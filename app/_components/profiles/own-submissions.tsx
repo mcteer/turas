@@ -1,5 +1,7 @@
 "use client";
 
+import { titleCaseLabel } from "../title-case-label";
+
 import { useEffect, useState } from "react";
 
 type Submission = { id: string; kind: string; reviewState: string;
@@ -74,12 +76,12 @@ export function OwnSubmissions({ customerId, refresh }: { customerId: string; re
     return () => controller.abort();
   }, [customerId, refresh]);
   return <section className="profile-section" aria-labelledby="profile-submissions">
-    <div className="profile-section-head"><h2 id="profile-submissions">Your submissions</h2></div>
+    <div className="profile-section-head"><h2 id="profile-submissions">Your Submissions</h2></div>
     {state === "loading" && <p role="status">Loading your submissions…</p>}
     {state === "unavailable" && <p role="alert">Submissions are unavailable. <button type="button" className="secondary-button" onClick={() => void load()}>Retry</button></p>}
     {state === "ready" && items.length === 0 && <p className="muted">You have not submitted context for this customer.</p>}
     {state === "ready" && <div className="profile-grid">{items.map((item) => <article key={item.id} className="profile-card">
-      <div className="profile-card-head"><h3>{String(item.payload.title ?? item.payload.displayName ?? item.payload.name ?? item.payload.text ?? item.kind)}</h3>
+      <div className="profile-card-head"><h3>{String(item.payload.title ?? item.payload.displayName ?? item.payload.name ?? item.payload.text ?? titleCaseLabel(item.kind))}</h3>
         <span className="profile-badge">{item.reviewState}</span></div>
       {item.reviewState === "pending" && <p>Awaiting steward review. Accepted context remains unchanged.</p>}
       {item.artifactSource && <div className="profile-note" aria-label="Your submitted source excerpt">

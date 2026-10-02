@@ -1,4 +1,6 @@
 "use client";
+
+import { titleCaseLabel } from "../title-case-label";
 import { useEffect, useRef, useState } from "react";
 import type { StaffingCalendarInput } from "../../../lib/contracts/staffing-calendar";
 import type { readCalendar } from "../../../lib/server/staffing/calendars";
@@ -52,7 +54,7 @@ export function StaffingCalendar({ resourceId, csrfToken }: { resourceId: string
   function change(update: (prior: Draft) => Draft) { edits.touch("calendar"); setDraft(prior => prior ? update(prior) : null); }
   const stale = draft && calendar && (draft.head?.revisionId !== (calendar.revisionId ?? undefined) ||
     draft.head?.expectedAggregateVersion !== (calendar.aggregateVersion ?? undefined));
-  return <section className="profile-section"><h2>Approved calendar and capacity</h2>
+  return <section className="profile-section"><h2>Approved Calendar And Capacity</h2>
     <p>Dates and working intervals use the resource timezone. Missing calendar dates are unknown; explicitly empty dates have zero approved working time.</p>
     <form className="evidence-search-form" onSubmit={event => { event.preventDefault(); void load(); }}>
       <label>Capacity from date<input className="field" type="date" required min="2000-01-01" max="2100-12-31" value={from} onChange={event => setFrom(event.target.value)} /></label>
@@ -72,7 +74,7 @@ export function StaffingCalendar({ resourceId, csrfToken }: { resourceId: string
       void command.save(`/api/staffing/resources/${resourceId}/calendar`, { ...(draft.head ?? {}),
         calendar: draft.calendar, rationale: draft.rationale }, "POST", () => { if (acknowledge()) setDraft(null); });
     }}>
-      <h3>Calendar approval in {draft.calendar.timezone}</h3>
+      <h3>Calendar Approval In {draft.calendar.timezone}</h3>
       <p>Only these explicitly certified dates are replaced. Confirmed assignments remain recorded.</p>
       {stale && <p role="alert">The calendar head changed. Your inputs are retained; review the current revision before submitting.</p>}
       <label>Observation timestamp with UTC offset<input className="field" required placeholder="2026-09-30T09:00:00-06:00" value={draft.calendar.observedAt} onChange={event => change(prior => ({ ...prior, calendar: { ...prior.calendar, observedAt: event.target.value } }))} /></label>
@@ -86,8 +88,8 @@ export function StaffingCalendar({ resourceId, csrfToken }: { resourceId: string
         if (draft.calendar.days.some(day => !selected.includes(day.date)) && !window.confirm("Discard intervals outside the new certified period?")) return;
         change(prior => ({ ...prior, calendar: { ...prior.calendar, days: selected.map(date => old.get(date) ?? { date, contracted: [], holidays: [], leave: [], protected: [] }) } }));
       }}>Apply certified date range</button>
-      {draft.calendar.days.map((day, index) => <fieldset key={day.date}><legend>{day.date} in {draft.calendar.timezone}</legend>
-        {kinds.map(({ key, label }) => <div key={key}><h4>{label}</h4>
+      {draft.calendar.days.map((day, index) => <fieldset key={day.date}><legend>{day.date} In {draft.calendar.timezone}</legend>
+        {kinds.map(({ key, label }) => <div key={key}><h4>{titleCaseLabel(label)}</h4>
           {day[key].map((window, ordinal) => <div key={ordinal} className="profile-grid">
             <label>{label} start<input className="field" type="datetime-local" step={60} required value={window.from} onChange={event => change(prior => ({ ...prior, calendar: { ...prior.calendar, days: prior.calendar.days.map((item, i) => i !== index ? item : { ...item, [key]: item[key].map((entry, n) => n !== ordinal ? entry : { ...entry, from: event.target.value }) }) } }))} /></label>
             <label>{label} end<input className="field" type="datetime-local" step={60} required value={window.to} onChange={event => change(prior => ({ ...prior, calendar: { ...prior.calendar, days: prior.calendar.days.map((item, i) => i !== index ? item : { ...item, [key]: item[key].map((entry, n) => n !== ordinal ? entry : { ...entry, to: event.target.value }) }) } }))} /></label>

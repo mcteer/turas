@@ -15,7 +15,7 @@ export function AssessmentCorrection({ resourceId, candidate, command }: {
       contentDigest: base.contentDigest, expectedAggregateVersion: base.aggregateVersion, resourceId, skillId: base.skillId,
       level: Number(data.get("level")), assessmentDate: data.get("assessmentDate"), nextReviewDate: data.get("nextReviewDate"),
       evidence: data.get("evidence"), rationale: data.get("rationale") }, "POST", () => { if (confirmed()) setBase(null); });
-  }}><fieldset disabled={command.busy || !!command.uncertainKey}><legend>Correct dated assessment</legend><p>A correction creates a pending revision. The current approved assessment remains until a human accepts its replacement.</p>
+  }}><fieldset disabled={command.busy || !!command.uncertainKey}><legend>Correct Dated Assessment</legend><p>A correction creates a pending revision. The current approved assessment remains until a human accepts its replacement.</p>
     {base.aggregateVersion !== candidate.aggregateVersion && <p role="status">This competency changed. Close and reopen to review the current revision.</p>}
     <label>Corrected level<select className="field" name="level" aria-label="Corrected level" defaultValue={base.level}>{[0, 1, 2, 3, 4].map(level => <option key={level} value={level}>{level}</option>)}</select></label>
     <label>Corrected assessment date<input className="field" name="assessmentDate" type="date" min="2000-01-01" max="2100-12-31" required defaultValue={base.assessmentDate} /></label>

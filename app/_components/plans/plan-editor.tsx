@@ -1,5 +1,7 @@
 "use client";
 
+import { titleCaseLabel } from "../title-case-label";
+
 import Link from "next/link";
 import { useEffect,useState } from "react";
 import { editablePlanSectionKeys,type PlanDraftContent } from "../../../lib/contracts/plan-content";
@@ -147,7 +149,7 @@ export function PlanEditor({customerId,planId,onSaved}:{
   }
 
   return <section className="profile-section plan-editor" aria-label="Plan editor">
-    <div className="profile-section-head"><h2>{head ? "Revise plan":"Create plan"}</h2>
+    <div className="profile-section-head"><h2>{head ? "Revise Plan":"Create Plan"}</h2>
       <span>{dirty ? "Unsaved changes":head?.reviewState ?? "New draft"}</span></div>
     {message && <p role="status" className="profile-note">{message}</p>}
     <label>Title<input className="field" value={content.title} maxLength={160}
@@ -163,9 +165,9 @@ export function PlanEditor({customerId,planId,onSaved}:{
       </select></label></div>}
     {head && <label>Reason for revision<input className="field" value={changeReason}
       onChange={(event)=>setChangeReason(event.target.value)} maxLength={2_000}/></label>}
-    <details open><summary>Plan sections</summary>
+    <details open><summary>Plan Sections</summary>
       {content.sections.map((section,index)=><fieldset key={section.key} className="profile-card">
-        <legend>{label(section.key)}</legend>
+        <legend>{titleCaseLabel(section.key)}</legend>
         <label>Status<select className="field" value={section.state}
           onChange={(event)=>change((draft)=>{
             const item=draft.sections[index];item.state=event.target.value as typeof item.state;
@@ -185,7 +187,7 @@ export function PlanEditor({customerId,planId,onSaved}:{
           value={section.reason ?? ""} onChange={(event)=>change((draft)=>{
             draft.sections[index].reason=event.target.value;})}/></label>}
       </fieldset>)}</details>
-    <details><summary>Evidence and assertions</summary>
+    <details><summary>Evidence And Assertions</summary>
       <div className="plan-inline"><label>Search eligible evidence<input className="field"
         value={query} onChange={(event)=>setQuery(event.target.value)}/></label>
         <button type="button" className="secondary-button" onClick={()=>void search()} disabled={busy}>Search</button></div>
@@ -231,7 +233,7 @@ export function PlanEditor({customerId,planId,onSaved}:{
           ownerRole:"Delivery owner",validationAction:"Validate with customer",
           decisionCritical:false}))}>Add assertion</button>
     </details>
-    <details><summary>Technical design</summary>
+    <details><summary>Technical Design</summary>
       {content.diagrams.map((diagram,index)=><fieldset key={diagram.key} className="profile-card">
         <legend>Diagram {index+1}</legend><label>Kind<select className="field" value={diagram.kind}
           onChange={(event)=>change((draft)=>{
@@ -271,7 +273,7 @@ export function PlanEditor({customerId,planId,onSaved}:{
           textEquivalent:"Describe the flow in words",nodes:[{key:"customer",label:"Customer"},
             {key:"service",label:"Service"}],edges:[]}))}>Add diagram</button>
       {content.designDecisions.map((decision,index)=><fieldset className="profile-card" key={decision.key}>
-        <legend>Design decision {index+1}</legend>
+        <legend>Design Decision {index+1}</legend>
         {(["title","chosen","alternatives","rationale","testing","rollback","ownerRole"] as const)
           .map((field)=><label key={field}>{label(field)}<textarea className="field"
             value={decision[field]} onChange={(event)=>change((draft)=>{
@@ -284,9 +286,9 @@ export function PlanEditor({customerId,planId,onSaved}:{
           testing:"Describe checks",rollback:"Describe rollback",ownerRole:"Engineer"}))}>
         Add design decision</button>
     </details>
-    <details><summary>Work and milestones</summary>
+    <details><summary>Work And Milestones</summary>
       {content.workPackages.map((item,index)=><fieldset className="profile-card" key={item.key}>
-        <legend>Work package {index+1}</legend>
+        <legend>Work Package {index+1}</legend>
         {(["title","ownerRole","exitEvidence"] as const).map((field)=><label key={field}>
           {label(field)}<input className="field" value={item[field]}
             onChange={(event)=>change((draft)=>{draft.workPackages[index][field]=event.target.value;})}/>
@@ -339,6 +341,6 @@ export function PlanEditor({customerId,planId,onSaved}:{
       {busy ? "Working…":head ? "Save new revision":"Create draft"}</button>
       {head && !dirty && head.reviewState==="draft" && <button type="button"
         className="secondary-button" disabled={busy} onClick={()=>void submit()}>Submit for review</button>}
-      {head && <Link href={`/customers/${customerId}/plans/${head.planId}`}>Plan detail</Link>}</div>
+      {head && <Link href={`/customers/${customerId}/plans/${head.planId}`}>Plan Detail</Link>}</div>
   </section>;
 }

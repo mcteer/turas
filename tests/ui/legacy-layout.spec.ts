@@ -28,10 +28,10 @@ test("legacy landing and customer cards retain accessible scoped workflows", asy
   const search = page.getByRole("textbox", { name: "Search chat titles" }).filter({ visible: true });
   const nav = page.getByRole("navigation", { name: "Workspace" }).filter({ visible: true });
   expect((await search.boundingBox())!.y).toBeLessThan((await nav.boundingBox())!.y);
-  await page.getByRole("link", { name: "Customer profiles", exact: true }).filter({ visible: true }).click();
+  await page.getByRole("link", { name: "Customer Profiles", exact: true }).filter({ visible: true }).click();
   await expect(page.getByRole("dialog", { name: "Navigation" })).toHaveCount(0);
   await expect(page.locator(".customer-card").first()).toBeVisible();
-  await expect(page.getByRole("link", { name: "Open profile" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open Profile" }).first()).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   const axe = await new AxeBuilder({ page }).analyze();
   expect(axe.violations.filter(v => ["serious", "critical"].includes(v.impact ?? ""))).toEqual([]);
@@ -43,7 +43,7 @@ test("legacy landing and customer cards retain accessible scoped workflows", asy
 
 test("legacy sign-in card remains labelled and usable at narrow widths", async ({ page }, info) => {
   await page.goto("/login");
-  await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
   await expect(page.getByLabel("Username")).toBeVisible();
   await expect(page.getByLabel("Password")).toBeVisible();
   expect((await page.getByLabel("Username").boundingBox())!.height).toBeGreaterThan(35);

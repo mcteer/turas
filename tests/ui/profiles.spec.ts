@@ -15,8 +15,8 @@ test.describe("customer profile", () => {
     });
     await page.goto(`/customers/${DEMO_IDS.sharedCustomer}`);
     await expect(page.getByRole("heading", { name: "Cedar (synthetic)" })).toBeVisible();
-    await expect(page.getByText("No accepted facts yet")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Start chat" })).toHaveAttribute(
+    await expect(page.getByText("No Accepted Facts Yet")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Start Chat" })).toHaveAttribute(
       "href", `/s?customerId=${DEMO_IDS.sharedCustomer}`);
     await expect(page.locator("body")).not.toContainText("INTERNAL_OPERATIONS_SENTINEL_DO_NOT_PROJECT");
     await page.unrouteAll({ behavior: "wait" });
@@ -26,7 +26,7 @@ test.describe("customer profile", () => {
     await signIn(page, "partner");
     await page.waitForLoadState("load");
     await page.goto(`/customers/${DEMO_IDS.deniedCustomer}`);
-    await expect(page.getByRole("heading", { name: "Profile unavailable" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Profile Unavailable" })).toBeVisible();
     await expect(page.locator("body")).not.toContainText("Juniper (synthetic)");
   });
 
@@ -36,8 +36,8 @@ test.describe("customer profile", () => {
     await page.route(`**${endpoint}`, (route) => route.fulfill({ status: 503,
       contentType: "application/json", body: JSON.stringify({ error: { message: "Unavailable" } }) }));
     await page.goto(`/customers/${DEMO_IDS.sharedCustomer}`);
-    await expect(page.getByRole("heading", { name: "Could not load this profile" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "No accepted facts yet" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Could Not Load This Profile" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "No Accepted Facts Yet" })).toHaveCount(0);
     await page.unroute(`**${endpoint}`);
     await page.getByRole("button", { name: "Retry" }).click();
     await expect(page.getByRole("heading", { name: "Cedar (synthetic)" })).toBeVisible();
@@ -65,7 +65,7 @@ test.describe("customer profile", () => {
     await form.getByRole("button", { name: "Save as Pending" }).click();
     await expect(form.getByRole("status")).toContainText("result is uncertain");
     await expect(form.getByRole("button", { name: "Retry exact proposal" })).toBeVisible();
-    await expect(page.getByRole("region", { name: "Your submissions" })).not.toContainText(text);
+    await expect(page.getByRole("region", { name: "Your Submissions" })).not.toContainText(text);
   });
 
   test("clears a partner profile when its customer assignment is revoked", async ({ page, browser }) => {
@@ -84,7 +84,7 @@ test.describe("customer profile", () => {
       await partner.getByRole("button", { name: "Toggle assignment" }).click();
       await expect(partner.getByText("Cedar (synthetic): revoked")).toBeVisible();
       revoked = true;
-      await expect(page.getByRole("heading", { name: "Profile unavailable" })).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByRole("heading", { name: "Profile Unavailable" })).toBeVisible({ timeout: 10_000 });
       await expect(page.locator("body")).not.toContainText("Cedar (synthetic)");
       await partner.getByRole("button", { name: "Toggle assignment" }).click();
       await expect(partner.getByText("Cedar (synthetic): active")).toBeVisible();

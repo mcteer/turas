@@ -29,7 +29,7 @@ export function ConversationList({ customerId, navigation }: { customerId?: stri
     <input className="field nav-search" id={searchId} aria-label="Search chat titles" placeholder="Search Chats"
       value={query} onChange={(event) => { setQuery(event.target.value); setState("loading"); }} maxLength={100} />
     {navigation}
-    <p className="nav-section">Recent conversations</p>
+    <p className="nav-section">Recent Conversations</p>
     <div className="nav-history" aria-live="polite">
       {state === "loading" && <p className="history-empty">Loading chats…</p>}
       {state === "unavailable" && <p className="history-empty">Chats are unavailable.</p>}

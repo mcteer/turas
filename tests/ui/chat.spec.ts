@@ -18,7 +18,7 @@ test.describe("owned conversation shell", () => {
       await page.getByRole("button", { name: "Open navigation" }).click();
     }
     await signOut(page);
-    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
   });
 });
 
@@ -37,11 +37,11 @@ test("general question creates a customer-free chat and attempts its first deliv
   await page.getByRole("textbox", { name: "Message Turi" }).fill("Explain cache invalidation.");
   await page.getByRole("button", { name: "Send message" }).click();
   await expect(page).toHaveURL(/\/s\/[0-9a-f-]+$/);
-  await expect(page.getByRole("heading", { name: "General technical chat" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "General Technical Chat" })).toBeVisible();
   await expect.poll(() => sends).toBe(1);
   expect(sentText).toBe("Explain cache invalidation.");
   await expect(page.getByRole("button", { name: "Customer context", exact: true })).toHaveCount(0);
   await page.reload();
-  await expect(page.getByRole("heading", { name: "General technical chat" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "General Technical Chat" })).toBeVisible();
   expect(sends).toBe(1);
 });

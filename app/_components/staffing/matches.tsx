@@ -51,7 +51,7 @@ export function StaffingMatches({ demand, csrfToken, contextChanged, selectResou
     return () => clearInterval(interval);
   }, [resultId, qualified, demand.demandId]);
   if (!qualified) return null;
-  return <section className="profile-section" aria-labelledby="matches-heading"><h2 id="matches-heading">Compare staffing resources</h2>
+  return <section className="profile-section" aria-labelledby="matches-heading"><h2 id="matches-heading">Compare Staffing Resources</h2>
     <p>Compare the whole supported active resource pool. Eligibility is a current feasibility check; it does not reserve or confirm staffing.</p>
     {command.message && <p role="status">{command.message}</p>}{error && <p role="alert">{error}</p>}
     {command.uncertainKey && <button disabled={command.busy} onClick={() => void command.reconcile()}>Check comparison receipt</button>}
@@ -72,7 +72,7 @@ export function StaffingMatches({ demand, csrfToken, contextChanged, selectResou
           {constraint.date ? ` · ${constraint.date}` : ""}: {reason[constraint.reason]}{constraint.freshness ? ` (${constraint.freshness})` : ""}
         </li>)}</ul>}
         {match.constraints.some(constraint => constraint.reason === "satisfied") && <details>
-          <summary>Satisfied checks ({match.constraints.filter(constraint => constraint.reason === "satisfied").length})</summary>
+          <summary>Satisfied Checks ({match.constraints.filter(constraint => constraint.reason === "satisfied").length})</summary>
           <ul>{match.constraints.filter(constraint => constraint.reason === "satisfied").map((constraint, index) => <li key={index}>
             {kind[constraint.kind]}{constraint.skillId ? ` · ${page.skills.find(skill => skill.skillId === constraint.skillId)?.name ?? "Selected demand skill"}` : ""}
             {constraint.date ? ` · ${constraint.date}` : ""}: {reason[constraint.reason]}{constraint.freshness ? ` (${constraint.freshness})` : ""}

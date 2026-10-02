@@ -7,9 +7,9 @@ import { sanitizedScreenshot,signIn } from "../fixtures/ui";
 test("shared library and private contribution controls remain accessible",async ({ page },testInfo) => {
   await signIn(page,"mcteer");
   await page.goto("/knowledge");
-  await expect(page.getByRole("heading",{ name: "Shared knowledge",exact: true })).toBeVisible();
+  await expect(page.getByRole("heading",{ name: "Shared Knowledge",exact: true })).toBeVisible();
   await expect(page.getByRole("heading",{ name: "Contributions" })).toBeVisible();
-  await expect(page.getByRole("heading",{ name: "Publication impact" })).toBeVisible();
+  await expect(page.getByRole("heading",{ name: "Publication Impact" })).toBeVisible();
   await expect(page.getByLabel("Publication impact counts"))
     .toBeVisible();
   await expect(page.getByText("Cleanup jobs pending", { exact: true })).toBeVisible();
