@@ -1,6 +1,7 @@
 import type { PoolClient } from "pg";
 import type { CurrentSession } from "../auth/sessions";
 import { hiddenRecord } from "../../contracts/http";
+import { readGeneralAttemptContext } from "../conversations/general-context";
 import { readCurrentAttemptContext } from "./attempt-context";
 import { readCurrentArtifactDraft } from "../artifacts/context";
 import { planningScopeForConversation,type PlanningScope } from "../plans/context";
@@ -21,6 +22,7 @@ export async function boundToolActor(client: PoolClient, principal: ToolPrincipa
   if (conversation && await staffingScopeForConversation(client, conversation.conversation_id)) {
     throw new HttpFailure(403, "staffing_tool_denied", "Use the governed staffing read tools for this explanation");
   }
+  if (await readGeneralAttemptContext(client,attemptId,principal.principalId)) throw new HttpFailure(403,"customer_scope_required","Customer tools require an explicitly selected customer");
   await readCurrentAttemptContext(client, attemptId, principal.principalId);
   const artifact = await readCurrentArtifactDraft(client,attemptId,principal.principalId);
   if (artifact) {

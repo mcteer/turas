@@ -28,7 +28,7 @@ export function PlanHistory({planId,onSelect}:{planId:string;
     } catch(error) {setMessage(error instanceof Error ? error.message:"History unavailable");}
   }
   useEffect(()=>{void load(null);},[planId]);
-  return <section className="profile-section"><h2>Revision history</h2>
+  return <section className="profile-section"><h2>Revision History</h2>
     {message && <p role="alert">{message}</p>}
     {message && <button type="button" className="secondary-button"
       onClick={()=>void load(null)}>Retry history</button>}

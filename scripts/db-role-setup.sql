@@ -7,6 +7,7 @@ GRANT SELECT ON TABLE turas_environment TO turas_runtime;
 REVOKE ALL ON TABLE turas_migrations FROM turas_runtime;
 DO $$
 DECLARE table_name text;
+DECLARE payload_lock record;
 BEGIN
   IF to_regclass('public.access_audit') IS NOT NULL THEN
     REVOKE UPDATE, DELETE ON TABLE access_audit FROM turas_runtime;
@@ -61,7 +62,7 @@ BEGIN
     'research_checks','evidence_quality_snapshots','profile_evidence_links',
     'evidence_conflict_events',
     'profile_private_lineage','profile_audit_events','context_snapshot_receipts',
-    'context_injection_receipts',
+    'context_injection_receipts','general_context_receipts','general_context_injections',
     'artifacts','artifact_upload_batches',
     'artifact_context_receipts','artifact_context_injection_receipts',
     'conversation_artifact_dependencies',
@@ -88,6 +89,31 @@ BEGIN
   ]) LOOP
     IF to_regclass('public.' || table_name) IS NOT NULL THEN
       EXECUTE format('REVOKE UPDATE, DELETE ON TABLE %I FROM turas_runtime', table_name);
+    END IF;
+  END LOOP;
+  -- PostgreSQL row locks require UPDATE on at least one column. These readers
+  -- lock payloads against concurrent purge; grant only their immutable key.
+  -- BEFORE UPDATE triggers reject even key-to-itself writes. Content columns
+  -- and direct DELETE remain denied. Keep this allowlist tied to actual readers.
+  FOR payload_lock IN SELECT * FROM (VALUES
+    ('plan_revision_payloads','revision_id'),
+    ('milestone_baseline_payloads','baseline_id'),
+    ('workforce_resource_payloads','revision_id'),
+    ('workforce_skill_payloads','revision_id'),
+    ('workforce_competency_payloads','revision_id'),
+    ('workforce_extraction_payloads','revision_id'),
+    ('workforce_extracted_cell_payloads','revision_id'),
+    ('workforce_mapping_payloads','revision_id'),
+    ('resource_calendar_payloads','revision_id'),
+    ('staffing_demand_payloads','revision_id'),
+    ('staffing_allocation_payloads','revision_id'),
+    ('staffing_economic_input_payloads','revision_id'),
+    ('staffing_scenario_payloads','scenario_id'),
+    ('staffing_advisory_read_payloads','receipt_id')
+  ) AS payloads(table_name,key_column) LOOP
+    IF to_regclass('public.' || payload_lock.table_name) IS NOT NULL THEN
+      EXECUTE format('GRANT UPDATE (%I) ON TABLE %I TO turas_runtime',
+        payload_lock.key_column,payload_lock.table_name);
     END IF;
   END LOOP;
 END;

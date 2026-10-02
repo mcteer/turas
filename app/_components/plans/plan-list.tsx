@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect,useState } from "react";
+import { EmptyState } from "../empty-state";
+import { UiIcon } from "../ui-icon";
 
 type Plan={planId:string;title:string;revisionId:string;reviewState:string;
   contentAvailability:string;reviewRequired:boolean;workloadId:string|null;
@@ -28,19 +30,20 @@ export function PlanList({customerId}:{customerId:string}) {
     finally {setBusy(false);}
   }
   useEffect(()=>{void load(null);},[customerId]);
-  return <section className="profile-section" aria-label="Delivery plans">
-    <div className="profile-section-head"><h1>Delivery plans</h1>
-      <Link className="secondary-button" href={`/customers/${customerId}/plans/new`}>New plan</Link></div>
+  return <section className="profile-section" aria-label="Delivery Plans">
+    <div className="profile-section-head"><div><p className="profile-eyebrow">Customer Delivery</p><h1>Delivery Plans</h1>
+      <p className="muted">Scope, evidence, and milestones for customer work.</p></div>
+      <Link className="primary-button" href={`/customers/${customerId}/plans/new`}><UiIcon name="plus" size={16} />New Plan</Link></div>
     {message && <p role="alert">{message}</p>}
-    {!busy && items.length===0 && <p className="muted">No plans in this customer scope.</p>}
+    {!busy && !message && items.length===0 && <EmptyState icon="plan" title="No plans in this customer scope.">Create a plan to organize scope, evidence, and delivery milestones.</EmptyState>}
     <div className="profile-grid">{items.map((item)=><article className="profile-card"
       key={item.planId}>
-      <h2>{item.title}</h2><p>{["readable","historical_warning"].includes(item.contentAvailability) ?
-        item.reviewState.replaceAll("_"," "):"Review required"}</p>
+      <div className="profile-card-head"><h2>{["readable", "historical_warning"].includes(item.contentAvailability) ? item.title : "Review Required"}</h2><span className="profile-badge">{["readable","historical_warning"].includes(item.contentAvailability) ?
+        item.reviewState.replaceAll("_"," "):"Review required"}</span></div>
       {item.contentAvailability==="historical_warning" && <p className="profile-caution">
         Evidence dates need review</p>}
       <p className="muted">{item.workloadId ? "Workload plan":"Customer-wide plan"}</p>
-      <Link href={`/customers/${customerId}/plans/${item.planId}`}>Open plan</Link>
+      <Link href={`/customers/${customerId}/plans/${item.planId}`}>Open Plan</Link>
     </article>)}</div>
     {busy && <p role="status">Loading plans…</p>}
     {cursor && !busy && <button type="button" className="secondary-button"

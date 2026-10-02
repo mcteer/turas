@@ -23,7 +23,7 @@ export function RefreshPanel({ customerId,onChoose }: { customerId: string;
     return () => { active = false; };
   },[customerId]);
   return <section aria-label="Research review due" className="profile-state">
-    <h3>Evidence review</h3>
+    <h3>Evidence Review</h3>
     {state === "loading" && <p role="status">Checking review dates…</p>}
     {state === "unavailable" && <p role="status">Review dates are unavailable.</p>}
     {state === "ready" && !dueSources.length && <p>No attributed research requires review.</p>}

@@ -22,12 +22,12 @@ test.describe("customer and partner access", () => {
   test("internal members see every demo customer and partners see their subset", async ({ page }) => {
     await signIn(page, "panel");
     await page.goto("/customers");
-    await expect(page.getByRole("button", { name: "Cedar (synthetic) · Synthetic" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Juniper (synthetic) · Synthetic" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Cedar (synthetic)", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Juniper (synthetic)", exact: true })).toBeVisible();
     await signOut(page);
     await signIn(page, "partner");
     await page.goto("/customers");
-    await expect(page.getByRole("button", { name: "Cedar (synthetic) · Synthetic" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Cedar (synthetic)", exact: true })).toBeVisible();
     await expect(page.getByText("Juniper (synthetic)")).toHaveCount(0);
   });
 
@@ -44,7 +44,7 @@ test.describe("customer and partner access", () => {
     await signOut(page);
     await signIn(page, "partner");
     await page.goto("/customers");
-    await expect(page.getByRole("button", { name: "Juniper (synthetic) · Synthetic" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Juniper (synthetic)", exact: true })).toBeVisible();
 
     await signOut(page);
     await signIn(page, "mcteer");

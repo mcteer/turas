@@ -1,5 +1,9 @@
 "use client";
 
+import { titleCaseLabel } from "../title-case-label";
+
+import { EmptyState } from "../empty-state";
+
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import type { PublishedKnowledge } from "../../../lib/contracts/knowledge";
@@ -204,16 +208,16 @@ export function KnowledgeLibrary() {
   }
 
   return <main className="profile-page knowledge-page">
-    <nav aria-label="Breadcrumb" className="profile-breadcrumb"><Link href="/s">Workspace</Link><span aria-hidden="true">/</span><span>Shared knowledge</span></nav>
-    <header className="profile-header"><div><p className="profile-eyebrow">Reusable guidance</p>
-      <h1>Shared knowledge</h1><p className="muted">Reviewed product learnings available to active members.</p></div></header>
+    <nav aria-label="Breadcrumb" className="profile-breadcrumb"><Link href="/s">Workspace</Link><span aria-hidden="true">/</span><span>Shared Knowledge</span></nav>
+    <header className="profile-header"><div><p className="profile-eyebrow">Reusable Guidance</p>
+      <h1>Shared Knowledge</h1><p className="muted">Reviewed product learnings available to active members.</p></div></header>
     {state === "loading" && <p role="status">Loading shared knowledge…</p>}
     {state === "unavailable" && <div role="alert" className="profile-state">Knowledge is unavailable. <button type="button" className="secondary-button" onClick={() => void reload()}>Retry</button></div>}
     {notice && <p role="status" className="profile-state">{notice}</p>}
     {state === "ready" && <>
       <section className="profile-section" aria-labelledby="knowledge-library-heading">
-        <div className="profile-section-head"><h2 id="knowledge-library-heading">Published guidance</h2></div>
-        {!entries.length && <p className="muted">No shared guidance has been published.</p>}
+        <div className="profile-section-head"><h2 id="knowledge-library-heading">Published Guidance</h2></div>
+        {!entries.length && <EmptyState icon="knowledge" title="No shared guidance has been published.">Reviewed, reusable learnings will appear here once approved for sharing.</EmptyState>}
         <div className="profile-grid">{entries.map((entry) => <article key={entry.id} className="profile-card">
           <div className="profile-card-head"><h3>{entry.payload.title}</h3><span className="profile-badge">{entry.quality.band}</span></div>
           <p>{entry.payload.problem}</p><p className="muted">Product version {entry.payload.productVersion}</p>
@@ -228,7 +232,7 @@ export function KnowledgeLibrary() {
               setPublicState("idle"); }}>Close</button></div>
           <p className="muted">Product version {selectedPublic.payload.productVersion} · Published {selectedPublic.publishedAt}</p>
           {fields.filter(({ key }) => key !== "title" && key !== "productVersion").map(({ key,label }) =>
-            <section key={key}><h4>{label}</h4><p>{selectedPublic.payload[key]}</p></section>)}
+            <section key={key}><h4>{titleCaseLabel(label)}</h4><p>{selectedPublic.payload[key]}</p></section>)}
           <p className="muted">Quality {selectedPublic.quality.Q}/100 ({selectedPublic.quality.band}); {selectedPublic.quality.rationale}</p>
           {selectedPublic.caveats.map((caveat,index) =>
             <p className="profile-caution" key={index}>{caveat}</p>)}
@@ -244,13 +248,15 @@ export function KnowledgeLibrary() {
         canReview={auth?.membership.kind === "internal" && auth.membership.role === "admin"} />
       {auth?.membership.kind === "internal" && auth.membership.role === "admin" &&
         <section className="profile-section" aria-labelledby="knowledge-impact-heading">
-          <div className="profile-section-head"><h2 id="knowledge-impact-heading">Publication impact</h2>
+          <div className="profile-section-head"><h2 id="knowledge-impact-heading">Publication Impact</h2>
             <button className="secondary-button" type="button" onClick={() => void reloadImpact()}>
               Refresh status</button></div>
           {impactUnavailable && <p role="status">Publication impact is unavailable.</p>}
-          {impact && <p role="status">{impact.publications.suspended} suspended publications;
-            {" "}{impact.cleanupJobs.queued + impact.cleanupJobs.leased} cleanup jobs pending;
-            {" "}{impact.cleanupJobs.failed + impact.cleanupJobs.unconfirmed} need operator review.</p>}
+          {impact && <dl className="staffing-metrics" aria-label="Publication impact counts" aria-live="polite">
+            <div><dt>Suspended publications</dt><dd>{impact.publications.suspended}</dd></div>
+            <div><dt>Cleanup jobs pending</dt><dd>{impact.cleanupJobs.queued + impact.cleanupJobs.leased}</dd></div>
+            <div><dt>Need operator review</dt><dd>{impact.cleanupJobs.failed + impact.cleanupJobs.unconfirmed}</dd></div>
+          </dl>}
         </section>}
       <section className="profile-section" aria-labelledby="knowledge-contributions-heading">
         <div className="profile-section-head"><h2 id="knowledge-contributions-heading">Contributions</h2></div>
@@ -259,19 +265,19 @@ export function KnowledgeLibrary() {
           {candidates.map((item) => <button type="button" className="secondary-button" key={item.id}
             onClick={() => void selectCandidate(item)}>{item.payload.title} · {item.state}</button>)}</div>
         <form onSubmit={(event) => void save(event)} className="knowledge-form">
-          {!selected && <><label htmlFor="knowledge-customer">Source customer</label>
+          {!selected && <fieldset className="form-group"><legend>Source and Reuse Permissions</legend><label htmlFor="knowledge-customer">Source customer
             <select id="knowledge-customer" className="field" required value={customerId}
               onChange={(event) => { setCustomerId(event.target.value);setSourceId(""); }}>
               <option value="">Choose a customer</option>{customers.map((item) =>
                 <option key={item.id} value={item.id}>{item.displayName}</option>)}
-            </select><label htmlFor="knowledge-source">Reviewed source</label>
+            </select></label><label htmlFor="knowledge-source">Reviewed source
             <select id="knowledge-source" className="field" required value={sourceId}
               onChange={(event) => setSourceId(event.target.value)}>
               <option value="">Choose accepted context</option>{sources.map((item) =>
                 <option key={item.sourceRevisionId} value={item.sourceRevisionId}>{item.label}</option>)}
-            </select><label htmlFor="knowledge-rights">Reuse rights basis</label>
+            </select></label><label htmlFor="knowledge-rights">Reuse rights basis
             <textarea id="knowledge-rights" className="field" required rows={2} value={rightsBasis}
-              onChange={(event) => setRightsBasis(event.target.value)} /></>}
+              onChange={(event) => setRightsBasis(event.target.value)} /></label></fieldset>}
           {selected && <p className="muted">{selected.state} · Revision {selected.revision} · {lineage.length ? "Source currently authorized" : "Source unavailable"}</p>}
           {fields.map(({ key,label }) => <label key={key}>{label}
             {key === "title" || key === "productVersion" ?
@@ -281,13 +287,13 @@ export function KnowledgeLibrary() {
                 onChange={(event) => setPayload((current) => ({ ...current,[key]: event.target.value }))} />}
           </label>)}
           <p className="muted">Remove names, links, identifying configurations, outcomes, and details that reveal a customer when combined.</p>
-          <div className="knowledge-actions"><button type="submit" className="secondary-button" disabled={busy || Boolean(selected && !lineage.length)}>Save draft</button>
+          <div className="knowledge-actions"><button type="submit" className="primary-button" disabled={busy || Boolean(selected && !lineage.length)}>Save draft</button>
             {selected?.state === "draft" && <button type="button" className="secondary-button"
               disabled={busy || !lineage.length} onClick={() => void submit()}>Submit for review</button>}</div>
         </form>
         {selected?.state === "submitted" && auth?.membership.kind === "internal" &&
           auth.membership.role === "admin" && <div className="knowledge-review profile-state">
-          <h3>Administrator review</h3><p>Review the exact draft, source rights, and combinations of clues.</p>
+          <h3>Administrator Review</h3><p>Review the exact draft, source rights, and combinations of clues.</p>
           {checks.map(([key,label]) => <label key={key} className="profile-check"><input type="checkbox"
             checked={Boolean(checked[key])} onChange={(event) => setChecked((current) =>
               ({ ...current,[key]: event.target.checked }))} />{label}</label>)}

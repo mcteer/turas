@@ -39,7 +39,7 @@ export function ResourceRevisionEditor({ resource, command }: { resource: Editab
       resource: { externalKey: base.manager!.externalKey, membershipId: base.manager!.membershipId,
         partnerOrganizationId: base.manager!.partnerOrganizationId, kind: base.kind, displayName: data.get("displayName"),
         timezone: data.get("timezone"), regionCode: data.get("regionCode"), state: data.get("state") } }, "PATCH", () => { if (confirmed()) setBase(null); });
-  }}><h2>Revise resource</h2><p>The resource identity and linked membership remain fixed.</p>
+  }}><h2>Revise Resource</h2><p>The resource identity and linked membership remain fixed.</p>
     {base.aggregateVersion !== resource.aggregateVersion && <p role="status">This resource changed. Reopen the editor to use the current version.</p>}
     <label>Display name<input className="field" name="displayName" required maxLength={160} defaultValue={base.displayName} /></label>
     <label>Timezone<input className="field" name="timezone" required defaultValue={base.timezone} /></label>
@@ -61,7 +61,7 @@ export function PartnerEligibilityEditor({ resource, command }: { resource: Edit
       contentDigest: base.manager!.contentDigest, expectedAggregateVersion: base.aggregateVersion,
       customerId: data.get("customerId"), fromDate: data.get("fromDate"), toDate: data.get("toDate"),
       state: data.get("state"), rationale: data.get("rationale") }, "POST", () => { if (confirmed()) setBase(null); });
-  }}><h2>Dated partner eligibility</h2><p>A linked partner member must also have a current customer grant.</p>
+  }}><h2>Dated Partner Eligibility</h2><p>A linked partner member must also have a current customer grant.</p>
     {base.aggregateVersion !== resource.aggregateVersion && <p role="status">Resource eligibility changed. Reopen to review the current version.</p>}
     <label>Customer ID<input className="field" name="customerId" required /></label>
     <label>First eligible date<input className="field" name="fromDate" type="date" min="2000-01-01" max="2100-12-31" required /></label>

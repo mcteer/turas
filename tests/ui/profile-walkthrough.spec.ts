@@ -7,7 +7,7 @@ test("the populated synthetic profile exposes delivery and review decisions", as
   await signIn(page, "mcteer");
   await page.goto("/customers");
   await page.getByRole("button", { name: "Juniper (synthetic) · Synthetic" }).click();
-  await page.getByRole("link", { name: "Open profile" }).click();
+  await page.getByRole("link", { name: "Open Profile" }).click();
   await expect(page).toHaveURL(new RegExp(`/customers/${DEMO_IDS.deniedCustomer}$`));
   const workloads = page.locator("#profile-workload");
   await expect(workloads.locator("option")).toHaveCount(3);
@@ -24,8 +24,8 @@ test("the populated synthetic profile exposes delivery and review decisions", as
   await expect(page.locator('section[aria-labelledby="profile-research"]'))
     .toContainText("Synthetic public capability reference");
   await expect(page.locator('section[aria-labelledby="profile-conflicts"]'))
-    .toContainText("Confirmed conflict");
-  await page.getByRole("link", { name: "Review proposals" }).click();
+    .toContainText("Confirmed Conflict");
+  await page.getByRole("link", { name: "Review Proposals" }).click();
   const candidate = page.locator(".profile-review-card")
     .filter({ hasText: "Checkout rollback owner has agreed to the rehearsal plan." });
   await expect(candidate).toContainText("Pending");

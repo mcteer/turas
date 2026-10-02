@@ -20,7 +20,7 @@ async function open(page: Page, f: Awaited<ReturnType<typeof createReviewedAlloc
   await page.goto(`/customers/${demand.customerId}/engagements/${demand.engagementId}/staffing`);
   await page.getByRole("button", { name: /Open demand 1/ }).click();
   await page.getByRole("button", { name: /Open allocation 1/ }).click();
-  await expect(page.getByRole("heading", { name: "Allocation review", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Allocation Review", exact: true })).toBeVisible();
 }
 test("manager reviews daily effects and reconciles a genuinely committed confirmation whose response is lost", async ({ page }) => {
   test.setTimeout(180_000);

@@ -8,16 +8,16 @@ type Assessment = { observationStart: string; observationEnd: string; assessor: 
   evidenceRevisionIds: string[] };
 
 const labels: Record<string, string> = {
-  outcome_ownership: "Outcome ownership", delivery_collaboration: "Delivery collaboration",
-  experience_adoption: "Experience adoption", operational_trust: "Operational trust",
-  platform_organization: "Platform organization", innovation_ai: "Innovation and AI",
+  outcome_ownership: "Outcome Ownership", delivery_collaboration: "Delivery Collaboration",
+  experience_adoption: "Experience Adoption", operational_trust: "Operational Trust",
+  platform_organization: "Platform Organization", innovation_ai: "Innovation and AI",
 };
 
 export function MaturityAssessment({ payload, supportStatus, scope }: {
   payload: Assessment; supportStatus?: string; scope: string;
 }) {
   return <article className="profile-card profile-maturity-card">
-    <div className="profile-card-head"><h3>{payload.journeyStage ?? "Journey stage Unknown"}</h3>
+    <div className="profile-card-head"><h3>{payload.journeyStage ?? "Journey Stage Unknown"}</h3>
       <span className="profile-badge">{payload.rubricVersion}</span></div>
     <p><span className="profile-label">Scope: </span>{scope}</p>
     <p>{payload.rationale}</p>

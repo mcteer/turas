@@ -39,8 +39,8 @@ test("source management keeps replacement and withdrawal distinct", async ({ pag
       data: { versionId,state,lifecycleGeneration: 2 } }) });
   });
   await page.goto("/s");
-  await page.getByLabel("Customer").selectOption({ label: "Cedar (synthetic)" });
-  await page.getByRole("button", { name: "Start chat" }).click();
+  await page.getByLabel("Customer (optional)").selectOption({ label: "Cedar (synthetic)" });
+  await page.getByRole("button", { name: "Attach documents" }).click();
   await page.getByRole("button", { name: "Attach to this chat" }).click();
   await page.getByRole("button", { name: "Inspect source" }).click();
   const manager = page.getByRole("region",{ name: "Source lifecycle" });

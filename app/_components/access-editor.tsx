@@ -66,34 +66,36 @@ export function AccessEditor({ csrfToken }: { csrfToken: string }) {
   }
 
   return (
-    <main style={{ maxWidth: 900, margin: "5vh auto", padding: 24 }}>
-      <h1>Access</h1>
-      <p>Manage demo account membership and partner customer assignments.</p>
+    <main className="profile-page access-page">
+      <header className="profile-header"><div><p className="profile-eyebrow">Administration</p>
+        <h1>Access</h1><p>Manage account membership and partner customer assignments.</p></div>
+        <span className="profile-badge">Demo accounts</span></header>
       {loading && <p role="status">Loading access…</p>}
       {error && <p role="alert">{error} <button type="button" onClick={() => void load()}>Reload</button></p>}
-      {accounts.map((account) => (
-        <section key={account.id} aria-label={`${account.loginName} access`}>
-          <h2>{account.loginName}</h2>
-          <p>{account.membership.kind} · {account.membership.role} · {account.membership.active ? "Active" : "Disabled"}</p>
-          <button type="button" onClick={() => void updateMembership(account)}>
+      <div className="access-grid">{accounts.map((account) => (
+        <section className="profile-card access-card" key={account.id} aria-label={`${account.loginName} access`}>
+          <div className="access-card-heading"><span className="account-avatar" aria-hidden="true">{account.loginName.slice(0, 1).toUpperCase()}</span>
+            <div><h2>{account.loginName}</h2><p>{account.membership.kind} · {account.membership.role}</p></div>
+            <span className="profile-badge">{account.membership.active ? "Active" : "Disabled"}</span></div>
+          <button className="secondary-button" type="button" onClick={() => void updateMembership(account)}>
             {account.membership.active ? "Disable" : "Enable"} {account.loginName}
           </button>
-          {account.membership.kind === "partner" && <div>
-            <label htmlFor={`customer-${account.id}`}>Customer assignment</label>{" "}
-            <select id={`customer-${account.id}`} value={selectedCustomer} onChange={(event) => setSelectedCustomer(event.target.value)}>
+          {account.membership.kind === "partner" && <div className="access-assignments">
+            <div className="plan-inline"><label htmlFor={`customer-${account.id}`}>Customer assignment
+            <select className="field" id={`customer-${account.id}`} value={selectedCustomer} onChange={(event) => setSelectedCustomer(event.target.value)}>
               <option value="">Choose a customer</option>
               {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.displayName}</option>)}
-            </select>{" "}
-            <button type="button" disabled={!selectedCustomer} onClick={() => void updateGrant(account, selectedCustomer,
+            </select></label>
+            <button className="secondary-button" type="button" disabled={!selectedCustomer} onClick={() => void updateGrant(account, selectedCustomer,
               grants.find((grant) => grant.membershipId === account.membership.id && grant.customerId === selectedCustomer))}>
               Toggle assignment
-            </button>
-            <ul>{grants.filter((grant) => grant.membershipId === account.membership.id).map((grant) => (
+            </button></div>
+            <ul className="access-grants">{grants.filter((grant) => grant.membershipId === account.membership.id).map((grant) => (
               <li key={grant.customerId}>{customers.find((customer) => customer.id === grant.customerId)?.displayName ?? grant.customerId}: {grant.state}</li>
             ))}</ul>
           </div>}
         </section>
-      ))}
+      ))}</div>
     </main>
   );
 }

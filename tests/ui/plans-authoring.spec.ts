@@ -13,11 +13,11 @@ test("manual plan draft persists with an accessible diagram",async({page},testIn
   const editor=page.getByRole("region",{name:"Plan editor"});
   await expect(editor).toBeVisible();
   await editor.getByLabel("Title",{exact:true}).fill("Synthetic accessible delivery plan");
-  await editor.getByText("Technical design",{exact:true}).click();
+  await editor.locator("summary").filter({ hasText: /^Technical Design$/ }).click();
   await editor.getByRole("button",{name:"Add diagram"}).click();
   await editor.getByRole("button",{name:"Create draft"}).click();
   await expect(editor.getByRole("status")).toContainText("Draft saved",{timeout:20_000});
-  const link=editor.getByRole("link",{name:"Plan detail"});
+  const link=editor.getByRole("link",{name:"Plan Detail"});
   await expect(link).toBeVisible();
   await link.click();
   await expect(page.getByRole("heading",{name:"Synthetic accessible delivery plan"})).toBeVisible({timeout:20_000});

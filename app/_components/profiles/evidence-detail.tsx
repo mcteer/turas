@@ -61,7 +61,7 @@ export function EvidenceDetail({ customerId, sourceRevisionId, canReview, onClos
     return () => controller.abort();
   }, [customerId, sourceRevisionId]);
   return <section className="profile-section profile-evidence-detail" aria-labelledby="source-detail-heading">
-    <div className="profile-section-head"><h2 id="source-detail-heading">Source detail</h2>
+    <div className="profile-section-head"><h2 id="source-detail-heading">Source Detail</h2>
       <button type="button" className="secondary-button" onClick={onClose}>Close source</button></div>
     {state === "loading" && <p role="status">Loading source…</p>}
     {state === "unavailable" && <p role="alert">This source is unavailable to your account.</p>}

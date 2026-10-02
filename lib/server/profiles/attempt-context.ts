@@ -10,8 +10,9 @@ import { assertResearchAttemptCurrent } from "../research/fences";
 import { planningScopeForConversation } from "../plans/context";
 import { staffingScopeForConversation } from "../staffing/context";
 import { lockStaffingActor } from "../staffing/policy";
+import { readGeneralAttemptContext } from "../conversations/general-context";
 
-type Snapshot = { contractVersion: "customer-context-v1"; contextVersion: string;
+type Snapshot = { contractVersion: "customer-context-v1" | "general-context-v1"; contextVersion: string;
   asOf: string; validUntil: string; entries: { citationId: string }[];
   complete: boolean; truncated: boolean };
 
@@ -94,6 +95,8 @@ export async function captureAttemptContext(client: PoolClient, actor: CurrentSe
 
 export async function readCurrentAttemptContext(client: PoolClient, attemptId: string,
   principalId: string): Promise<Snapshot> {
+  const general = await readGeneralAttemptContext(client, attemptId, principalId);
+  if (general) return general;
   const owned = (await client.query<{ conversation_id: string }>(`SELECT a.conversation_id FROM response_attempts a
     JOIN conversations c ON c.id=a.conversation_id WHERE a.id=$1 AND c.owner_principal_id=$2`, [attemptId, principalId])).rows[0];
   if (owned && await staffingScopeForConversation(client, owned.conversation_id)) {

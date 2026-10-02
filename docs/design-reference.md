@@ -21,16 +21,44 @@ route/source inventory did not identify a separate resource-directory, competenc
 review or staffing-import UI to port; those 007 interactions need their own
 governed implementation and CLI browser validation.
 
+## Legacy alignment follow-up (2026-10-02)
+
+The shell, chat landing, customer directory and sign-in screen were compared
+read-only against the legacy source. The fresh app now uses self-hosted Geist
+Sans/Mono through `next/font`, the legacy neutral surface tokens and 18rem
+sidebar, chat search above product navigation, compact history rows and a
+48px centered Turi title. Sign-in and customer directory use restrained bordered
+cards instead of unstyled inputs/list rows. Current customer scope, access rules,
+review actions and explicit synthetic labels remain part of the fresh workflows.
+Unavailable legacy routes and demo business figures are not navigation entries.
+The local validation used an owned disposable database clone: 20 command-line
+WebKit cases passed across desktop/mobile and light/dark, with no skips, retries
+or failures. Checks covered keyboard navigation/focus return, closing the mobile
+panel after navigation, overflow, labels, serious/critical accessibility issues,
+customer cards and parked chat creation without a model call. Synthetic captures
+were visually reviewed; Next.js development indicators are local test chrome.
+Node-24 typecheck, Next.js production build and documentation checks passed.
+
 ## Preserve the visual language
 
+- Use title case for navigation, page titles, section headings and disclosure
+  labels (for example, “Customer Profiles” and “Resources and Skills”). Keep
+  conjunctions, articles and short prepositions lowercase unless they begin the
+  label. Apply this to authored and canonical labels only; preserve names and
+  user-written titles.
+
 - Geist Sans for interface/body text and Geist Mono for code/technical data.
-- Neutral black/white surfaces, subtle gray borders, restrained rounded controls
-  (base radius 0.625rem), light/dark theme tokens, color reserved for meaningful status.
+- Neutral surfaces, subtle gray borders, restrained rounded controls and panels
+  (7–12px corners), light/dark theme tokens, color reserved for meaningful status.
 - Full-height left navigation, 18rem desktop sidebar, brand at top, New Chat and
   chat-title search, product navigation, recent conversations, identity/sign-out below.
 - Collapsible mobile navigation; no horizontal page overflow at narrow widths.
 - Quiet chat landing state with centered “Turi” and a compact rounded composer.
+  Optional customer selection sits below and outside the composer; new chats do
+  not reuse the last selected customer. Omit landing banners and explanatory prose.
   During conversation, use a readable centered column and persistent bottom composer.
+  Customer research, plans and claim submission live in an expandable context
+  section; attachment details open from the composer control.
 - Attachment control and removable filename/type chips; clear upload/extraction/
   pending-review status. Hide extraction payloads from normal message rendering.
 - Streaming assistant content, source links, useful progress/failure states, stop
@@ -72,3 +100,58 @@ screenshots to the relevant feature PR. Do not operate the host browser.
 Reports follow the same restrained typographic hierarchy with approved Vercel
 assets and an explicit period, audience, confidentiality marker and source appendix.
 Confirm brand assets and slide master in 009; do not invent official branding approval.
+
+### Landing structure correction (2026-10-02)
+
+The user rejected the first alignment because its controls and spacing differed
+from the legacy screen. The follow-up restores the actual empty-state composition:
+centered Turi, Message Turi textarea, attachment control and circular send button,
+with optional customer scope below the composer. General technical chat is now
+owner-private and does not invent a customer. Eight focused contract/integration
+checks passed, including dispatch replay, customer tool denial and session
+revocation. One real local selected-model turn completed with 60 output tokens
+and persisted its answer. The initial revised four-project CLI WebKit matrix
+passed 24 checks without skips, retries or failures; browser interception in the
+first-draft test establishes one UI delivery attempt, not provider completion.
+Preview worker readiness remains a hosted limitation.
+
+The optional customer selector uses a folder icon and chevron inside an inset
+context bar attached beneath the composer, following the supplied ChatGPT screenshot.
+The bar reserves flexible space for a future project selector without a dummy
+control. Plugins and model selectors are outside this scope. Its default visible text is “Customer (optional)”;
+the accessible label remains available without an extra visible caption.
+
+Future model selection should use task-based routing through AI Gateway, rather
+than a model selector in the composer. Routing is a future feature; the currently
+selected model remains unchanged.
+
+### Professional workspace presentation (2026-10-02)
+
+The subsequent user-requested visual upgrade applies one shared presentation
+system across customer profiles, knowledge, plans, staffing, imports, finance,
+access, and sign-in. `app/design-system.css` is imported after the structural
+stylesheet from the root layout, keeping theme and component rules in one place.
+
+- Group navigation by workspace, delivery, and administration, with consistent
+  line icons and an active state that follows customer/resource detail routes.
+- Use a 30px desktop / 26px mobile page title, quiet section labels, readable
+  descriptions, and aligned primary/secondary actions.
+- Group form fields in bordered panels; use two columns where they improve
+  scanning and one column on mobile. Keep visible labels and native controls.
+- Give empty states a clear explanation and preserve the distinction between
+  unavailable, unreviewed, and genuinely empty data. Display only actual counts.
+- Keep numeric capacity values on one line and contain wide tables in keyboard
+  focusable horizontal scroll regions.
+- Preserve the approved Turi composer and optional customer context bar.
+
+`npm run workspace:ui:check` uses the selected marked test database as a read-only
+clone source, starts an owned disposable application, and runs CLI Playwright
+with WebKit. The final four-project run passed 68 cases with zero failures,
+skips, or retries. Coverage includes ten workspace routes per project, customer
+access revocation, knowledge contributions, persisted manual plan creation,
+populated capacity tables, resource forms, navigation/focus, theme switching,
+page overflow, and serious/critical accessibility checks. Synthetic screenshots
+were visually reviewed in both themes and viewport sizes. Typecheck, Next.js
+production build, documentation checks, and diff checks passed. No model call
+is part of this presentation gate. Hosted worker readiness and the complete
+staffing release gate remain separate checks.

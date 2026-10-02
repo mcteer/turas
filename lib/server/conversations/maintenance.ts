@@ -20,7 +20,7 @@ async function loadAttempt(attemptId: string): Promise<MaintenanceAttempt | null
       a.native_turn_id, a.response_state, a.deadline_at, j.state AS job_state
     FROM response_attempts a
     JOIN conversations c ON c.id = a.conversation_id
-    JOIN customer_references customer ON customer.id = c.customer_id
+    LEFT JOIN customer_references customer ON customer.id = c.customer_id
       AND customer.workspace_id = c.workspace_id
     JOIN principals p ON p.id = c.owner_principal_id
     JOIN watchdog_jobs j ON j.attempt_id = a.id

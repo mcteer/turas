@@ -1,12 +1,14 @@
 import { LoginForm } from "./login-form";
+import { BrandMark } from "../_components/ui-icon";
 
 export default function LoginPage() {
   return (
-    <main style={{ maxWidth: 420, margin: "12vh auto", padding: 24 }}>
-      <p>Turas</p>
+    <main className="login-page"><div className="login-card">
+      <p className="login-brand"><BrandMark />Turas</p>
       <h1>Sign in</h1>
       <p>Use a configured demo account to enter the synthetic workspace.</p>
       <LoginForm />
-    </main>
+      <p className="login-footnote">Customer knowledge. Thoughtful delivery.</p>
+    </div></main>
   );
 }

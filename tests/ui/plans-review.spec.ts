@@ -43,7 +43,7 @@ test("exact human review creates one partner-visible accepted baseline",async({p
   await review.getByLabel("I reviewed this exact content for delivery suitability").check();
   await review.getByRole("button",{name:"Accept baseline"}).click();
   await expect(review.getByRole("status")).toContainText("Decision recorded",{timeout:20_000});
-  const engagement=page.getByRole("link",{name:"Accepted engagement"});
+  const engagement=page.getByRole("link",{name:"Accepted Engagement"});
   await expect(engagement).toBeVisible();
   await engagement.click();
   await expect(page.getByRole("heading",{name:content.title})).toBeVisible();
@@ -63,7 +63,7 @@ test("exact human review creates one partner-visible accepted baseline",async({p
   await expect(page.getByRole("heading",{name:content.title})).toBeVisible();
   await expect(page.getByRole("region",{name:"Exact plan review"})).toHaveCount(0);
   await expect(page.getByRole("button",{name:"Revise plan"})).toHaveCount(0);
-  await expect(page.getByRole("link",{name:"Accepted engagement"})).toBeVisible();
+  await expect(page.getByRole("link",{name:"Accepted Engagement"})).toBeVisible();
 });
 
 test("request changes and reject leave no accepted engagement",async({page},testInfo)=>{
@@ -107,6 +107,6 @@ test("request changes and reject leave no accepted engagement",async({page},test
     await expect(review.getByRole("status")).toContainText("Decision recorded");
     await page.reload();
     await expect(page.getByText(`delivery · ${state}`)).toBeVisible();
-    await expect(page.getByRole("link",{name:"Accepted engagement"})).toHaveCount(0);
+    await expect(page.getByRole("link",{name:"Accepted Engagement"})).toHaveCount(0);
   }
 });

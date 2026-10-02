@@ -65,7 +65,7 @@ test("operational keyboard demand creation and exact qualification retain accept
   test.setTimeout(120_000); const f = await withTransaction(createSyntheticDemandBaseline);
   await signIn(page, "panel"); await page.goto(`/customers/${f.demand.customerId}/engagements/${f.demand.engagementId}/staffing`);
   await page.getByRole("button", { name: "Create demand", exact: true }).focus(); await page.keyboard.press("Enter");
-  const form = page.locator("form").filter({ has: page.getByRole("heading", { name: "Create demand", exact: true }) });
+  const form = page.locator("form").filter({ has: page.getByRole("heading", { name: "Create Demand", exact: true }) });
   await form.getByLabel("Work package", { exact: true }).selectOption(f.demand.workPackageKey);
   await form.getByLabel("Demand title", { exact: true }).fill("Synthetic keyboard staffing request");
   await form.getByLabel("Delivery role", { exact: true }).fill("Synthetic delivery lead");
@@ -116,7 +116,7 @@ test("open demand edits retain unsaved input and captured revision after an actu
   const created = await withTransaction(db => createDemand(f.actor, { requestKey: randomUUID(), rationale: "Synthetic stale UI draft", demand: f.demand }, db));
   await signIn(page, "panel"); await page.goto(`/customers/${f.demand.customerId}/engagements/${f.demand.engagementId}/staffing`);
   await page.getByRole("button", { name: /Open demand 1/ }).click(); await page.getByRole("button", { name: "Revise demand", exact: true }).click();
-  const form = page.locator("form").filter({ has: page.getByRole("heading", { name: "Revise demand", exact: true }) });
+  const form = page.locator("form").filter({ has: page.getByRole("heading", { name: "Revise Demand", exact: true }) });
   await form.getByLabel("Demand title", { exact: true }).fill("Synthetic retained unsaved title");
   await form.getByLabel("Rationale", { exact: true }).fill("Synthetic retained change rationale");
   await withTransaction(db => reviseDemand(f.actor, created.demandId, { requestKey: randomUUID(), rationale: "Synthetic concurrent draft",

@@ -27,10 +27,10 @@ type Profile = { customer: { id: string; displayName: string; synthetic: boolean
 type Envelope = { data?: Profile; error?: { message: string } };
 
 const titles: Record<string, string> = {
-  customer_details: "Customer details", workload_details: "Workloads", stakeholder: "Stakeholders",
-  product_use: "Product use", maturity_assessment: "Maturity", risk: "Risks",
+  customer_details: "Customer Details", workload_details: "Workloads", stakeholder: "Stakeholders",
+  product_use: "Product Use", maturity_assessment: "Maturity", risk: "Risks",
   engagement_reference: "Engagements", decision: "Decisions", outcome: "Outcomes",
-  next_review: "Next reviews", claim: "Other context",
+  next_review: "Next Reviews", claim: "Other Context",
 };
 const order = Object.keys(titles);
 
@@ -38,7 +38,7 @@ function factTitle(fact: Fact): string {
   const p = fact.payload;
   for (const key of ["displayName", "name", "title", "subject", "productKey", "category", "statement", "text"])
     if (typeof p[key] === "string") return String(p[key]);
-  return titles[fact.kind] ?? "Profile fact";
+  return titles[fact.kind] ?? "Profile Fact";
 }
 
 function FactCard({ fact, scope, onHistory }: { fact: Fact; scope: string; onHistory: () => void }) {
@@ -104,23 +104,23 @@ export function ProfileOverview({ customerId }: { customerId: string }) {
   return <main className="profile-page">
     <nav aria-label="Breadcrumb" className="profile-breadcrumb"><Link href="/customers">Customers</Link><span aria-hidden="true">/</span><span>Profile</span></nav>
     {status === "loading" && <p role="status" className="profile-state">Loading customer profile…</p>}
-    {status === "denied" && <div role="alert" className="profile-state"><h1>Profile unavailable</h1><p>This customer is unavailable to your account.</p><Link href="/customers">Back to customers</Link></div>}
-    {status === "unavailable" && <div role="alert" className="profile-state"><h1>Could not load this profile</h1><button type="button" className="secondary-button" onClick={() => setRetry((value) => value + 1)}>Retry</button></div>}
+    {status === "denied" && <div role="alert" className="profile-state"><h1>Profile Unavailable</h1><p>This customer is unavailable to your account.</p><Link href="/customers">Back to Customers</Link></div>}
+    {status === "unavailable" && <div role="alert" className="profile-state"><h1>Could Not Load This Profile</h1><button type="button" className="secondary-button" onClick={() => setRetry((value) => value + 1)}>Retry</button></div>}
     {status === "ready" && profile && <>
-      <header className="profile-header"><div><p className="profile-eyebrow">Customer profile</p><h1>{profile.customer.displayName}</h1>
+      <header className="profile-header"><div><p className="profile-eyebrow">Customer Profile</p><h1>{profile.customer.displayName}</h1>
         <p className="muted">Accepted customer context and attributed research</p></div>
         <div className="profile-header-actions">{profile.customer.synthetic && <span className="profile-badge">Synthetic demo</span>}
-          {profile.canReview && <Link className="secondary-button" href={`/customers/${customerId}/review`}>Review proposals</Link>}</div>
+          {profile.canReview && <Link className="secondary-button" href={`/customers/${customerId}/review`}>Review Proposals</Link>}</div>
       </header>
       <div className="profile-toolbar"><label htmlFor="profile-workload">Workload</label>
         <select id="profile-workload" className="field" value={workloadId} onChange={(event) => setWorkloadId(event.target.value)}>
           <option value="">All workloads</option>
           {profile.workloads.map((workload) => <option key={workload.id} value={workload.id}>{workload.displayName}</option>)}
-        </select><Link className="secondary-button" href={`/s?customerId=${encodeURIComponent(customerId)}`}>Start chat</Link>
-        <Link className="secondary-button" href={`/customers/${customerId}/plans`}>Delivery plans</Link></div>
+        </select><Link className="secondary-button" href={`/s?customerId=${encodeURIComponent(customerId)}`}>Start Chat</Link>
+        <Link className="secondary-button" href={`/customers/${customerId}/plans`}>Delivery Plans</Link></div>
       <EvidenceSearch customerId={customerId} workloadId={workloadId || undefined} />
       <TypedConflictReview customerId={customerId} canReview={profile.canReview} />
-      {profile.acceptedFacts.length === 0 && <div className="profile-state"><h2>No accepted facts yet</h2><p>Submitted context appears here after review. An empty section is not a negative assessment.</p></div>}
+      {profile.acceptedFacts.length === 0 && <div className="profile-state"><h2>No Accepted Facts Yet</h2><p>Submitted context appears here after review. An empty section is not a negative assessment.</p></div>}
       {order.map((kind) => {
         const facts = profile.acceptedFacts.filter((fact) => fact.kind === kind);
         if (!facts.length) return null;
@@ -139,7 +139,7 @@ export function ProfileOverview({ customerId }: { customerId: string }) {
       {selectedRecordId && <RecordHistory key={selectedRecordId} customerId={customerId} recordId={selectedRecordId}
         scope={scopeLabel(profile.acceptedFacts.find((fact) => fact.recordId === selectedRecordId)?.workloadId ?? null)}
         onClose={() => setSelectedRecordId(null)} />}
-      <section className="profile-section" aria-labelledby="profile-research"><div className="profile-section-head"><h2 id="profile-research">Attributed research</h2><span>{profile.attributedResearch.length}</span></div>
+      <section className="profile-section" aria-labelledby="profile-research"><div className="profile-section-head"><h2 id="profile-research">Attributed Research</h2><span>{profile.attributedResearch.length}</span></div>
         {profile.attributedResearch.length === 0 ? <p className="muted">No attributed research is available.</p> :
           <div className="profile-grid">{profile.attributedResearch.map((item) => <article key={item.sourceRevisionId} className="profile-card"><h3>{item.title}</h3><p>{item.supportedClaim}</p><span className="profile-badge">{item.quality.band}</span><button type="button" className="secondary-button" onClick={() => setSelectedSourceId(item.sourceRevisionId)}>View source</button></article>)}</div>}
       </section>

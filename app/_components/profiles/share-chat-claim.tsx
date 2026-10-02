@@ -70,7 +70,7 @@ export function ShareChatClaim({ conversationId, customerId, csrfToken }: {
     } catch { setStatus("The result is uncertain. Retry the exact claim with its retained key."); }
   }
   return <section className="profile-section profile-chat-share" aria-labelledby="share-claim-heading">
-    <h2 id="share-claim-heading">Submit a message claim for review</h2>
+    <h2 id="share-claim-heading">Submit a Message Claim for Review</h2>
     <p className="muted">Select an exact span from one of your messages. You can edit the proposed claim before submitting. The rest of the conversation stays private.</p>
     {messages.length === 0 && <p>No owned messages are available to share.</p>}
     {messages.length > 0 && <label>Message<select className="field" value={selected?.id ?? ""}

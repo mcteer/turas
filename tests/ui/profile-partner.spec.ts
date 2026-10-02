@@ -27,11 +27,11 @@ test("partner profile shows cross-contributor accepted delivery and only its own
   await page.goto(`/customers/${DEMO_IDS.sharedCustomer}`);
   const acceptedSection = page.locator('section[aria-labelledby="profile-claim"]');
   await expect(acceptedSection).toContainText(accepted);
-  await expect(page.getByRole("region", { name: "Your submissions" })).toContainText(ownPending);
+  await expect(page.getByRole("region", { name: "Your Submissions" })).toContainText(ownPending);
   await expect(page.locator("body")).not.toContainText(hiddenPending);
   await expect(page.locator("body")).not.toContainText(hiddenOperations);
-  await expect(page.getByRole("heading", { name: "Evidence conflicts" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Evidence Conflicts" })).toHaveCount(0);
   await page.goto(`/customers/${DEMO_IDS.deniedCustomer}`);
-  await expect(page.getByRole("heading", { name: "Profile unavailable" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Profile Unavailable" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText(accepted);
 });

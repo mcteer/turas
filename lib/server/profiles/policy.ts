@@ -6,7 +6,7 @@ import { requiredSchemaVersion } from "../db/readiness";
 
 export type ProfileActor = CurrentSession;
 
-export async function lockProfileActor(client: PoolClient, actor: ProfileActor, customerId: string, affectedMembershipId?: string, readOnly = false): Promise<void> {
+export async function lockWorkspaceActor(client: PoolClient, actor: ProfileActor, affectedMembershipId?: string, readOnly = false): Promise<void> {
   await client.query("SET LOCAL lock_timeout = '3000ms'");
   await client.query("SET LOCAL statement_timeout = '5000ms'");
   const lock = readOnly ? "FOR SHARE" : "FOR UPDATE";
@@ -39,10 +39,15 @@ export async function lockProfileActor(client: PoolClient, actor: ProfileActor, 
     "SELECT environment_id,schema_version FROM turas_environment LIMIT 1");
   if (marker.rows[0]?.environment_id !== getServerConfig().TURAS_ENVIRONMENT_ID ||
       marker.rows[0].schema_version < requiredSchemaVersion) throw new HttpFailure(503, "unavailable", "Service unavailable");
+}
+
+export async function lockProfileActor(client: PoolClient, actor: ProfileActor, customerId: string, affectedMembershipId?: string, readOnly = false): Promise<void> {
+  await lockWorkspaceActor(client, actor, affectedMembershipId, readOnly);
+  const lock = readOnly ? "FOR SHARE" : "FOR UPDATE";
   const state = await client.query(`SELECT customer_id FROM customer_profile_state WHERE customer_id=$1 AND workspace_id=$2 ${lock}`,
     [customerId, actor.workspaceId]);
   if (!state.rowCount) throw hiddenRecord();
-  if (m.kind === "partner") {
+  if (actor.kind === "partner") {
     const grant = await client.query<{ state: string }>(
       `SELECT state FROM customer_grants WHERE customer_id=$1 AND membership_id=$2 ${lock}`,
       [customerId, actor.membershipId]);
