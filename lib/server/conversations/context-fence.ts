@@ -29,6 +29,10 @@ export async function assertNativeContextCurrentInTransaction(client: PoolClient
   }
   const conversation = await readOwnedBinding(client, session, lookup.rows[0].id);
   if (conversation.eve_session_id !== nativeSessionId) throw hiddenRecord();
+  if (conversation.customer_id === null) {
+    if (process.env.TURAS_GENERAL_CHAT_DISABLED === "1") throw hiddenRecord();
+    return;
+  }
   const bound = await client.query<{ context_audience: string | null;
     context_generation: string | null; context_valid_until: Date | null;
     context_snapshot_schema: string | null; internal_generation: string;

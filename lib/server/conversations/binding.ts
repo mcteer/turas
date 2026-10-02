@@ -6,11 +6,11 @@ import { withTransaction } from "../db/client";
 import { hiddenRecord, HttpFailure } from "../../contracts/http";
 import type { ConversationReference } from "../../contracts/conversations";
 import { getOwnedConversation } from "./repository";
-import { lockProfileActor } from "../profiles/policy";
+import { lockProfileActor, lockWorkspaceActor } from "../profiles/policy";
 
 type BindingRow = {
   id: string;
-  customer_id: string;
+  customer_id: string | null;
   creation_operation_id: string;
   binding_state: ConversationReference["bindingState"];
   eve_session_id: string | null;
@@ -25,18 +25,23 @@ type BindingRow = {
 
 async function ownedBinding(client: PoolClient, session: CurrentSession, id: string,
   readOnly: boolean): Promise<BindingRow> {
-  const scope = await client.query<{ customer_id: string }>(`
+  const scope = await client.query<{ customer_id: string | null }>(`
     SELECT customer_id FROM conversations WHERE id=$1 AND owner_principal_id=$2
       AND workspace_id=$3 AND environment_id=$4`,
   [id, session.principalId, session.workspaceId, getServerConfig().TURAS_ENVIRONMENT_ID]);
   if (!scope.rows[0]) throw hiddenRecord();
-  await lockProfileActor(client, session, scope.rows[0].customer_id,undefined,readOnly);
+  if (scope.rows[0].customer_id) await lockProfileActor(client, session, scope.rows[0].customer_id,undefined,readOnly);
+  else await lockWorkspaceActor(client, session, undefined, readOnly);
   const result = await client.query<BindingRow>(`
     SELECT c.* FROM conversations c WHERE c.id = $1 AND c.owner_principal_id = $2
       AND c.workspace_id = $3 AND c.environment_id = $4 ${readOnly ? "FOR SHARE" : "FOR UPDATE"}
   `, [id, session.principalId, session.workspaceId, getServerConfig().TURAS_ENVIRONMENT_ID]);
   const row = result.rows[0];
   if (!row || row.customer_id !== scope.rows[0].customer_id) throw hiddenRecord();
+  if (row.customer_id === null) {
+    if (row.context_snapshot_schema !== "general-context-v1") throw hiddenRecord();
+    return row;
+  }
   if (row.context_snapshot_schema !== "customer-context-v1" ||
       row.context_login_session_id !== session.sessionId ||
       row.context_membership_id !== session.membershipId) {

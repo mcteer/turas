@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 35,
   "migrations": [
     {
       "file": "001-identity-foundation.cjs",
@@ -136,6 +136,10 @@
     {
       "file": "034-staffing-economics-advisory.cjs",
       "sha256": "10af7068480f0bcbf4c7d957c1e619c9229c09f958c9cf50ec0962f2612bc30c"
+    },
+    {
+      "file": "035-general-conversations.cjs",
+      "sha256": "874d3e2bf58dd6f91dc05c26267ebc47c98f72d70c9b8d50aa64912ebc340200"
     }
   ]
 }

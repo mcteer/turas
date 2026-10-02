@@ -3,6 +3,7 @@
 import { useEveAgent } from "eve/react";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { DemoDataNotice } from "./demo-data-notice";
 import { ChatStatus } from "./chat-status";
 import { ShareChatClaim } from "./profiles/share-chat-claim";
@@ -14,7 +15,7 @@ export function AgentChat({ conversationId, nativeSessionId, bindingState,
   customerName, synthetic, csrfToken, customerId, contextStatus }: {
   conversationId: string; nativeSessionId: string | null; bindingState: string;
   customerName: string; synthetic: boolean; csrfToken: string;
-  customerId: string; contextStatus: "current" | "changed" | "historical";
+  customerId: string | null; contextStatus: "current" | "changed" | "historical";
 }) {
   if (contextStatus !== "current") return <HistoricalChat conversationId={conversationId}
     customerId={customerId} customerName={customerName} />;
@@ -29,7 +30,7 @@ export function AgentChat({ conversationId, nativeSessionId, bindingState,
 }
 
 function HistoricalChat({ conversationId, customerId, customerName }: {
-  conversationId: string; customerId: string; customerName: string;
+  conversationId: string; customerId: string | null; customerName: string;
 }) {
   const [messages, setMessages] = useState<{ eventId: string; payload: { message?: string } }[]>([]);
   useEffect(() => {
@@ -45,14 +46,19 @@ function HistoricalChat({ conversationId, customerId, customerName }: {
     <p role="status" className="chat-notice">Customer context has changed. Start a new conversation to use current information.</p>
     <div className="chat-messages">{messages.map((event) => <article className="chat-message" key={event.eventId}>
       <h2>You</h2><p>{event.payload.message}</p></article>)}</div>
-    <p><Link className="primary-button" href={`/s?customerId=${encodeURIComponent(customerId)}`}>Start a new conversation</Link></p>
+    <p><Link className="primary-button" href={`/s?customerId=${encodeURIComponent(customerId ?? "")}`}>Start a new conversation</Link></p>
   </main>;
 }
 
 function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, csrfToken, customerId }: {
   conversationId: string; nativeSessionId: string; customerName: string;
-  synthetic: boolean; csrfToken: string; customerId: string;
+  synthetic: boolean; csrfToken: string; customerId: string | null;
 }) {
+  const search = useSearchParams();
+  const [attachmentsOpen, setAttachmentsOpen] = useState(search.get("attachments") === "1");
+  const [contextOpen, setContextOpen] = useState(false);
+  const [initialDraft, setInitialDraft] = useState<string | null>(null);
+  const initialSent = useRef(false);
   const [draft, setDraft] = useState("");
   const [notice, setNotice] = useState("");
   const [denied, setDenied] = useState(false);
@@ -176,9 +182,27 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     return () => { active = false; clearInterval(timer); };
   }, [agent, conversationId, denied, pendingKey]);
 
-  async function send(retryPrepared = false) {
+  useEffect(() => {
+    const storageKey = `turas-chat-draft:${conversationId}`;
+    const saved = sessionStorage.getItem(storageKey);
+    if (!saved) return;
+    sessionStorage.removeItem(storageKey);
+    try {
+      const value = JSON.parse(saved);
+      if (typeof value.text !== "string" || typeof value.requestKey !== "string") return;
+      setDraft(value.text); keyRef.current = value.requestKey; setInitialDraft(value.text);
+    } catch { /* A corrupt local draft cannot dispatch a turn. */ }
+  }, [conversationId]);
+
+  useEffect(() => {
+    if (!initialDraft || initialSent.current || agent.status !== "ready") return;
+    initialSent.current = true;
+    void send(false, initialDraft);
+  }, [initialDraft, agent.status]);
+
+  async function send(retryPrepared = false, initialText?: string) {
     const selections = retryPrepared ? pendingSelections.current ?? [] : draftSelections;
-    const text = draft.trim() || (selections.length ? "Please discuss the selected customer source passages." : "");
+    const text = (initialText ?? draft).trim() || (selections.length ? "Please discuss the selected customer source passages." : "");
     if (!text.trim() || denied || (pendingKey && !(retryPrepared && dispatchState === "prepared")) ||
         agent.status !== "ready") return;
     const key = keyRef.current ?? crypto.randomUUID();
@@ -232,12 +256,18 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   const busy = agent.status === "submitted" || agent.status === "streaming";
   return <main className="chat-page">
     <h1 className="chat-heading">{customerName}</h1>
-    <p className="muted">Private conversation</p>
-    <p><Link href={`/customers/${customerId}/plans`}>Open delivery plans to start a fresh scoped Turi draft</Link></p>
-    <DemoDataNotice synthetic={synthetic} />
-    <ResearchPanel customerId={customerId} conversationId={conversationId}
-      csrfToken={csrfToken} busy={Boolean(pendingKey) || agent.status !== "ready"}
-      onStart={sendResearchTurn} />
+    {customerId && <><button type="button" className="chat-context-toggle" aria-expanded={contextOpen}
+      onClick={() => setContextOpen(value => !value)}>Customer context</button>
+      {contextOpen && <div className="chat-context-details">
+        <Link href={`/customers/${customerId}/plans`}>Delivery plans</Link>
+        <DemoDataNotice synthetic={synthetic} />
+        <ResearchPanel customerId={customerId} conversationId={conversationId}
+          csrfToken={csrfToken} busy={Boolean(pendingKey) || agent.status !== "ready"} onStart={sendResearchTurn} />
+        <button type="button" className="secondary-button" aria-expanded={shareOpen}
+          onClick={() => setShareOpen(value => !value)}>{shareOpen ? "Close claim submission" : "Submit a message claim for review"}</button>
+        {shareOpen && <ShareChatClaim conversationId={conversationId} customerId={customerId} csrfToken={csrfToken} />}
+      </div>}
+    </>}
     <div className="chat-messages" aria-live="polite">
       {agent.data.messages.length === 0 && <p className="muted">No messages yet.</p>}
       {agent.data.messages.map((message) => <article className="chat-message" key={message.id}>
@@ -246,19 +276,22 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
           ? <p key={index}>{part.text}</p> : null)}
       </article>)}
     </div>
-    <button type="button" className="secondary-button" aria-expanded={shareOpen}
-      onClick={() => setShareOpen((value) => !value)}>{shareOpen ? "Close claim submission" : "Submit a message claim for review"}</button>
-    {shareOpen && <ShareChatClaim conversationId={conversationId} customerId={customerId}
-      csrfToken={csrfToken} />}
     <form className="chat-composer" onSubmit={(event) => { event.preventDefault(); void send(); }}>
-      <ComposerAttachments conversationId={conversationId} customerId={customerId}
+      {customerId && attachmentsOpen && <ComposerAttachments conversationId={conversationId} customerId={customerId}
         customerName={customerName} csrfToken={csrfToken}
-        onDraftSelectionsChange={setDraftSelections} resetSelectionVersion={selectionResetVersion} />
-      <label className="field-label" htmlFor="chat-message">Message</label>
-      <textarea id="chat-message" value={draft} onChange={(event) => setDraft(event.target.value)}
+        onDraftSelectionsChange={setDraftSelections} resetSelectionVersion={selectionResetVersion} />}
+      <textarea id="chat-message" aria-label="Message Turi" placeholder="Message Turi…" value={draft} onChange={(event) => setDraft(event.target.value)}
+        onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(); } }}
         maxLength={16_384} disabled={busy || (Boolean(pendingKey) && dispatchState !== "prepared") || agent.status === "resuming" || stopping} />
-      <div className="chat-actions"><button className="primary-button" type="submit" disabled={(!draft.trim() && !draftSelections.length) || busy || Boolean(pendingKey) || agent.status === "resuming" || stopping}>Send</button>
-        {busy && <button className="secondary-button" type="button" disabled={stopping} onClick={() => void cancel()}>Stop</button>}</div>
+      <div className="chat-actions">
+        {customerId && <button className="composer-attach" type="button" aria-label="Show attachments" aria-expanded={attachmentsOpen}
+          onClick={() => setAttachmentsOpen(value => !value)}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m8 12 6-6a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l9-9" /></svg></button>}
+        <button className="composer-send" type={busy ? "button" : "submit"} aria-label={busy ? "Stop response" : "Send message"}
+          onClick={busy ? () => void cancel() : undefined}
+          disabled={busy ? stopping : (!draft.trim() && !draftSelections.length) || Boolean(pendingKey) || agent.status === "resuming" || stopping}>
+          {busy ? <span aria-hidden="true">■</span> : <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" /></svg>}
+        </button>
+      </div>
     </form>
     {draft.trim() && !pendingKey && <p className="state-message" role="status">Draft not sent.</p>}
     <ChatStatus notice={notice} responseState={responseState} error={Boolean(agent.error)} />

@@ -48,7 +48,11 @@ Node-24 typecheck, Next.js production build and documentation checks passed.
   chat-title search, product navigation, recent conversations, identity/sign-out below.
 - Collapsible mobile navigation; no horizontal page overflow at narrow widths.
 - Quiet chat landing state with centered “Turi” and a compact rounded composer.
+  Optional customer selection sits below and outside the composer; new chats do
+  not reuse the last selected customer. Omit landing banners and explanatory prose.
   During conversation, use a readable centered column and persistent bottom composer.
+  Customer research, plans and claim submission live in an expandable context
+  section; attachment details open from the composer control.
 - Attachment control and removable filename/type chips; clear upload/extraction/
   pending-review status. Hide extraction payloads from normal message rendering.
 - Streaming assistant content, source links, useful progress/failure states, stop
@@ -90,3 +94,17 @@ screenshots to the relevant feature PR. Do not operate the host browser.
 Reports follow the same restrained typographic hierarchy with approved Vercel
 assets and an explicit period, audience, confidentiality marker and source appendix.
 Confirm brand assets and slide master in 009; do not invent official branding approval.
+
+### Landing structure correction (2026-10-02)
+
+The user rejected the first alignment because its controls and spacing differed
+from the legacy screen. The follow-up restores the actual empty-state composition:
+centered Turi, Message Turi textarea, attachment control and circular send button,
+with optional customer scope below the composer. General technical chat is now
+owner-private and does not invent a customer. Eight focused contract/integration
+checks passed, including dispatch replay, customer tool denial and session
+revocation. One real local selected-model turn completed with 60 output tokens
+and persisted its answer. The initial revised four-project CLI WebKit matrix
+passed 24 checks without skips, retries or failures; browser interception in the
+first-draft test establishes one UI delivery attempt, not provider completion.
+Preview worker readiness remains a hosted limitation.

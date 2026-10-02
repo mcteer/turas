@@ -61,7 +61,7 @@ BEGIN
     'research_checks','evidence_quality_snapshots','profile_evidence_links',
     'evidence_conflict_events',
     'profile_private_lineage','profile_audit_events','context_snapshot_receipts',
-    'context_injection_receipts',
+    'context_injection_receipts','general_context_receipts','general_context_injections',
     'artifacts','artifact_upload_batches',
     'artifact_context_receipts','artifact_context_injection_receipts',
     'conversation_artifact_dependencies',

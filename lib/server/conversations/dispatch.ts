@@ -15,6 +15,7 @@ import { prepareStaffingNativeAttempt, claimStaffingNativeDispatch } from "../st
 import { prepareStaffingNativeRelease, assertStaffingNativeRelease } from "../staffing/native-release";
 import { staffingSha256 } from "../staffing/commands";
 import type { PoolClient } from "pg";
+import { captureGeneralContext } from "./general-context";
 
 export function normalizeMessageText(text: string): string {
   return text.replace(/\r\n?/g, "\n").normalize("NFC");
@@ -49,6 +50,9 @@ export async function prepareAttempt(
     const environmentId = getServerConfig().TURAS_ENVIRONMENT_ID;
     await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [environmentId]);
     const conversation = await lockOwnedBinding(client, session, conversationId);
+    if (conversation.customer_id === null && (selections.length || process.env.TURAS_GENERAL_CHAT_DISABLED === "1")) {
+      throw new HttpFailure(422,"general_scope_only","Customer sources require a customer-scoped conversation");
+    }
     if (conversation.binding_state !== "bound" || conversation.eve_session_id !== nativeSessionId) {
       throw hiddenRecord();
     }
@@ -78,8 +82,8 @@ export async function prepareAttempt(
       context_generation: string | null; context_valid_until: Date | null }>(
       "SELECT context_snapshot_schema,context_generation,context_valid_until FROM conversations WHERE id=$1",
       [conversationId]);
-    if (context.rows[0]?.context_snapshot_schema !== "customer-context-v1" ||
-        context.rows[0]?.context_generation === null) {
+    if (conversation.customer_id !== null && (context.rows[0]?.context_snapshot_schema !== "customer-context-v1" ||
+        context.rows[0]?.context_generation === null)) {
       throw new HttpFailure(409, "historical_conversation", "Start a new conversation for current customer context");
     }
     if (context.rows[0].context_valid_until && context.rows[0].context_valid_until.getTime() <= Date.now()) {
@@ -139,7 +143,7 @@ export async function prepareAttempt(
         response_attempt_id=$2,updated_at=now() WHERE conversation_id=$1
           AND state='prepared'`,[conversationId,attemptId]);
     }
-    if (selections.length) await captureArtifactDraft(client,session,conversationId,
+    if (selections.length && conversation.customer_id) await captureArtifactDraft(client,session,conversationId,
       conversation.customer_id,attemptId,messageDigest(text),digest,selections);
     return { attemptId, created: true, dispatchState: "prepared" };
   };
@@ -166,7 +170,8 @@ export async function claimDispatch(
         attempt.rows[0].response_state !== "pending") {
       throw new HttpFailure(409, "dispatch_claimed", "Dispatch already claimed");
     }
-    await captureAttemptContext(client, session, conversationId, attemptId, conversation.customer_id);
+    if (conversation.customer_id) await captureAttemptContext(client, session, conversationId, attemptId, conversation.customer_id);
+    else await captureGeneralContext(client,session,conversationId,attemptId);
     const dispatchStartedAt = new Date();
     const deadlineAt = new Date(dispatchStartedAt.getTime() + 120_000);
     await client.query(`UPDATE response_attempts SET dispatch_state = 'dispatching',
