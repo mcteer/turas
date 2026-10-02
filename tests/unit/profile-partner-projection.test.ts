@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { projectRevision, type ProjectionRow } from "../../lib/server/profiles/projection";
 import { recordKindSchema } from "../../lib/contracts/profile-payloads";
 import { internalProfileRevisionDtoSchema, partnerProfileRevisionDtoSchema,
@@ -39,8 +39,14 @@ describe("partner profile projection", () => {
   });
 
   it("does not reveal hidden candidate sequence changes", () => {
-    expect(projectRevision(row({ candidateSequence: 3 }), "partner", own))
-      .toEqual(projectRevision(row({ candidateSequence: 97 }), "partner", own));
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-10-02T00:00:00.000Z"));
+      expect(projectRevision(row({ candidateSequence: 3 }), "partner", own))
+        .toEqual(projectRevision(row({ candidateSequence: 97 }), "partner", own));
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("validates distinct partner and internal DTO shapes", () => {
