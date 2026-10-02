@@ -33,6 +33,13 @@ export async function validateRecordContent(db:PoolClient,actor:ExecutionActor,c
   }
 }
 async function appendRecord(db:PoolClient,actor:ExecutionActor,customerId:string,engagementId:string,recordId:string,baselineId:string,content:ExecutionRecordContent) {
+  // Search receipts authorize the author's selection at intake. Durable review
+  // binds exact source revision/generation/digest/locator under each reader's
+  // current authority; it never inherits another member's private receipt.
+  content={...content,references:content.references.map(ref=>{
+    if ("citationId" in ref) { const {citationId:_receipt,...durable}=ref; return durable; }
+    return ref;
+  })};
   const revisionId=randomUUID(),env=getServerConfig().TURAS_ENVIRONMENT_ID;
   const number=Number((await db.query('SELECT COALESCE(MAX(revision_number),0)+1 AS n FROM execution_record_revisions WHERE record_id=$1',[recordId])).rows[0].n);
   const digest=executionDigest(content);

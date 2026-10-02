@@ -12,11 +12,46 @@ type Evidence = Extract<ExecutionSource, { locator: unknown }>;
 type SourceKind = Evidence["kind"];
 const changed = () => new HttpFailure(409, "source_changed", "Reviewed execution evidence changed");
 
+/** Metadata-only discovery keeps the original lock union stable even when one
+ * candidate's acceptance or purgeable payload has been withdrawn. Callers still
+ * verify each candidate separately before releasing content. */
+export async function lockExecutionOriginalSources(db:PoolClient,actor:ExecutionActor,customerId:string,
+  engagementId:string,refs:readonly Pick<ExecutionSource,"kind"|"sourceRevisionId">[]) {
+  const env=getServerConfig().TURAS_ENVIRONMENT_ID,seen=new Set<string>();
+  const originals=new Map<string,{kind:SourceKind;id:string}>();
+  const pending=[...refs];
+  while(pending.length) {
+    const ref=pending.pop()!,key=`${ref.kind}:${ref.sourceRevisionId}`;
+    if(seen.has(key))continue;
+    seen.add(key);
+    if(seen.size>200)throw new HttpFailure(422,"scope_too_large","Narrow the execution evidence closure");
+    if(ref.kind==="execution_record") {
+      const rows=(await db.query<{source_kind:ExecutionSource["kind"];source_revision_id:string}>(`SELECT source_kind,source_revision_id
+        FROM execution_record_sources WHERE revision_id=$1 AND environment_id=$2 AND workspace_id=$3 AND customer_id=$4 AND engagement_id=$5`,
+        [ref.sourceRevisionId,env,actor.workspaceId,customerId,engagementId])).rows;
+      pending.push(...rows.map(r=>({kind:r.source_kind,sourceRevisionId:r.source_revision_id})));
+    } else if(ref.kind==="milestone_baseline") {
+      const baseline=(await db.query<{revision_id:string}>(`SELECT revision_id FROM milestone_baselines
+        WHERE id=$1 AND environment_id=$2 AND workspace_id=$3 AND customer_id=$4 AND engagement_id=$5`,
+        [ref.sourceRevisionId,env,actor.workspaceId,customerId,engagementId])).rows[0];
+      if(!baseline)continue;
+      const rows=(await db.query<{source_kind:SourceKind;source_revision_id:string}>(`SELECT source_kind,source_revision_id FROM plan_source_dependencies WHERE revision_id=$1
+        UNION SELECT CASE WHEN source_kind='published_shared' THEN 'shared_knowledge' ELSE source_kind END,source_revision_id
+        FROM plan_private_dependencies WHERE revision_id=$1`,[baseline.revision_id])).rows;
+      pending.push(...rows.map(r=>({kind:r.source_kind,sourceRevisionId:r.source_revision_id})));
+    } else originals.set(key,{kind:ref.kind,id:ref.sourceRevisionId});
+  }
+  for(const source of [...originals.values()].sort((a,b)=>a.kind.localeCompare(b.kind)||a.id.localeCompare(b.id))) {
+    try {await lockOriginalHeader(db,source.kind,source.id);}
+    catch(error) {if(!(error instanceof HttpFailure)||error.status!==409)throw error;}
+  }
+}
+
 /** Caller holds live actor/customer authority. Discover the bounded metadata
  * closure, lock the complete original-source union, then execution heads, and
  * recheck exact pointers before any accepted content can leave the transaction. */
 export async function verifyExecutionSources(db: PoolClient, actor: ExecutionActor, customerId: string,
-  engagementId: string, audience: "internal" | "delivery", refs: readonly ExecutionSource[], lock = false): Promise<string> {
+  engagementId: string, audience: "internal" | "delivery", refs: readonly ExecutionSource[], lock = false, lockExecutionSuffix = true): Promise<string> {
   const env = getServerConfig().TURAS_ENVIRONMENT_ID;
   const scope = (await db.query<{ workload_id: string | null; active_baseline_id: string }>(`SELECT workload_id,active_baseline_id
     FROM engagements WHERE id=$1 AND environment_id=$2 AND workspace_id=$3 AND customer_id=$4`,
@@ -67,7 +102,7 @@ export async function verifyExecutionSources(db: PoolClient, actor: ExecutionAct
     await lockOriginalHeader(db,source.kind,source.id);
   await verifyPlanSources(db,actor,customerId,scope.workload_id,audience,evidence,false,true);
   for (const baseline of baselines) await currentPlanSourceDigest(db,actor,baseline.revisionId,customerId,scope.workload_id,audience,false,true);
-  if (lock) {
+  if (lock && lockExecutionSuffix) {
     await db.query("SELECT id FROM engagements WHERE id=$1 FOR UPDATE",[engagementId]);
     await db.query("SELECT id FROM execution_workspaces WHERE engagement_id=$1 FOR UPDATE",[engagementId]);
     for (const id of [...new Set(records.map(r => r.recordId))].sort()) await db.query("SELECT id FROM execution_records WHERE id=$1 FOR SHARE",[id]);

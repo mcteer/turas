@@ -52,7 +52,12 @@ for (const project of selectedProject ? [selectedProject] : projects) {
   await withExecutionEvalEnvironment(async environment => {
   await environment.prepareRuntime();
   if (!focused || focusMode === "--us5") throw new Error("Execution native UI fixture must be implemented before the complete gate");
-  await environment.start();
+  const ownerUrl = process.env.DATABASE_URL!;
+  const runtimeUrl = new URL(ownerUrl);
+  runtimeUrl.searchParams.set("options", "-c role=turas_runtime");
+  process.env.DATABASE_URL = runtimeUrl.toString();
+  try { await environment.start(); }
+  finally { process.env.DATABASE_URL = ownerUrl; }
   try {
     await unchanged();
     const result = spawnSync(process.execPath, baseArgs, {

@@ -165,3 +165,81 @@ unexpected or flaky cases and no retries. This is a foundation/US1 checkpoint,
 not completion of feature 008; time, registers, forecasts/handoff/outcomes, native
 advice and cross-cutting/live/Preview delivery gates are still unimplemented or
 unrun. Marked T012 and T014–T024 with these results.
+
+## Resume after visual PR 15
+
+- Preserved T001–T024 in local checkpoint `2de82d6`; integrated main `b769785`
+  in `867133f`. General-chat migration035 retained unchanged. Unapplied execution
+  migrations are now036–038; explicit034 and035 upgrade fixtures are covered.
+- Merged checkpoint deterministic run: 11 suites,41 assertions,zero failures/skips,
+  source digest `28a21198029aa02674ef87931a6cae06bc3473b59e28bc24471372fa790220ed`.
+- Restored installed dependencies from the merged lockfile after a typecheck found
+  the analytics dependency missing in this older checkout. Typecheck then passed.
+- Title-case headings and restricted-runtime WebKit run:12/12 cases across all four
+  projects;zero failures,skips,retries/flaky cases. Digest
+  `f184889da045369343e8a9f51df5bd8a815dea8cc3066b906d65a9b008ae693f`.
+  Private evidence: `local-artifacts/008/ui-HDgGb1/`; all four reviewed execution
+  captures visually inspected. A prior attempt was stopped after discovering the
+  missing installed dependency; it is retained as incomplete evidence.
+- These are checkpoint checks, not completion evidence for the remaining008 stories.
+
+## US2 time and actuals (2026-10-02)
+
+- Added strict attributed daily time, immutable corrections, reviewer-only batch
+  preview/approval/rejection/reversal, stable resource/date totals and exactly-once
+  contribution replacement. Notes/history use current author/subject/reviewer
+  authority; approved numerical quantities survive source withdrawal.
+- Time suites first failed on the absent domain module. Subsequent expanded runs
+  covered real transaction rollback after ledger insertion, 1440-minute concurrent
+  first approvals across customers, moved date/resource corrections, canonical
+  timezone after reversal, per-row exceptions, private history and replay denial.
+- The governed WebKit fixture exposed an author-private retrieval receipt being
+  reused at review. Intake now verifies that receipt under its author, then stores
+  durable source identity/revision/generation/digest/locator for current-authority
+  review. The fixture uses actual artifact processing, accepted profile evidence,
+  006 plan acceptance, and reviewed 007 calendar/competency/confirmed allocation.
+- Browser failures retained in private evidence: `ui-JxyZuz` source receipt;
+  `ui-qYEV6M` prefilled note label; `ui-GavF2l` navigation before submission finished.
+  Explicit textarea labels and waiting for acknowledged submission resolved them.
+- A new per-row withdrawal test failed before the source-union fix. The domain now
+  locks metadata-discovered original dependencies once and verifies each activity
+  independently under the engagement lock. Valid independent notes stay visible;
+  withdrawn notes stay withheld even after numerical exception approval.
+- At digest `84014b7daee5874357bfd6e740f3625de8346b0b0d79bf307d401cecfd1981bb`,
+  focused time domain passed 3 suites / 10 assertions, US2 WebKit passed 4/4 and
+  US1 regression WebKit passed 12/12. No failures/skips/flaky cases/retries.
+  Evidence: `ui-cH5W8l`, `ui-7Qnrve`; all four time captures visually inspected.
+  Both themes wrap controls and identifiers at 390px; the full page remains long
+  and will receive final cross-story presentation review with T066.
+- Partner dated-assignment withdrawal was separately tested with customer access
+  still active. The test initially exposed raw notes remaining visible. Reads now
+  filter the current dated assignment and recheck under the locked resource before
+  releasing payload; replay already denied the revoked assignment. Corrected
+  focused domain run passed 3 suites / 10 assertions at digest
+  `0bbec4de4da0afa4fab128b00e25ce41feb168081292ec14a3f3230fc33bb9c1`.
+  Expanded on-behalf/batch WebKit checks are running; a test-only optional-version
+  type error needs correction after the source-bound run finishes.
+- These are incremental checks. Registers, forecasts/handoff/outcomes, native advice,
+  full regressions/load/recovery/live/Preview gates remain pending.
+
+### US2 checkpoint
+
+- Expanded on-behalf/batch matrix passed 8/8 at digest
+  `0bbec4de4da0afa4fab128b00e25ce41feb168081292ec14a3f3230fc33bb9c1`
+  (`ui-FBIdx0`). The test-only optional-version type error was corrected afterward.
+- Added a browser numerical correction after activity retraction. Corrected an
+  assertion that confused removal from eligible evidence with removal of the
+  reviewer's readable retracted record. Withheld time notes stay empty; historical
+  numeric inputs remain editable and require separately reviewed source exceptions.
+  Benign refresh no longer dismisses unchanged time history.
+- Full current deterministic manifest: **14 suites / 51 tests**, zero failures/skips,
+  digest `73fdf05e0a7fb154ed47c6eb32fb692bc59a81d6b6bce6e592560134b88e0ddb`.
+- Final focused US2 WebKit: **8/8 cases**, all four projects, zero failures/skips/
+  flaky cases/retries, digest
+  `0dbe3d1e53aa7a540121af5545df7b7b50a1fa450d36d3718b29122637573113`
+  (`ui-QcpZZt`). This includes exact batch exception re-preview, inactive/unlinked
+  on-behalf attribution and a numerical correction from 35 to 32 total minutes
+  after supporting activity retraction. Typecheck, docs and diff checks passed.
+- T025–T032 marked complete. Documentation now identifies the partial implementation
+  accurately. T033–T071 remain pending; no Preview/Production migration or deployment
+  was performed by this checkpoint.

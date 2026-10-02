@@ -1,24 +1,10 @@
 import { z } from "zod";
 import { citationLocatorSchema } from "../../contracts/retrieval";
-import { Temporal } from "@js-temporal/polyfill";
 
-export const executionId = z.uuid();
-export const executionVersion = z.number().int().positive().safe();
-export const executionHash = z.string().regex(/^[a-f0-9]{64}$/);
-export const executionRationale = z.string().trim().min(1).max(2000);
-export const executionKey = z.string().regex(/^[a-z][a-z0-9_-]{0,63}$/);
-export const executionDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value => {
-  try { return Temporal.PlainDate.from(value, { overflow: "reject" }).toString() === value; } catch { return false; }
-}, "A real ISO date is required");
-export const executionTimezone = z.string().min(1).max(100).refine(value => {
-  try { new Intl.DateTimeFormat("en", { timeZone: value }); return !/^[+-]/.test(value); } catch { return false; }
-}, "An IANA timezone is required");
-export const executionPeriodSchema = z.object({ from: executionDate, to: executionDate }).strict().refine(value => {
-  try { const days = Temporal.PlainDate.from(value.from).until(Temporal.PlainDate.from(value.to)).days; return days >= 0 && days <= 90; }
-  catch { return false; }
-}, "Period must contain 1–91 inclusive dates");
-export const executionExpectedVersions = z.record(z.string().regex(/^[A-Za-z][A-Za-z0-9_:.-]{0,99}$/), executionVersion)
-  .refine(value => Object.keys(value).length >= 1 && Object.keys(value).length <= 50);
+export * from "./fields";
+import { executionId, executionVersion, executionHash, executionRationale, executionKey, executionDate,
+  executionTimezone, executionExpectedVersions } from "./fields";
+import { timeInputSchema, timeIdentitySchema, timeBatchSchema } from "./time-schema";
 const envelope = { version: z.literal("execution-v1"), requestKey: executionId, expectedVersions: executionExpectedVersions };
 export const executionSourceSchema = z.discriminatedUnion("kind", [
   z.object({ id: executionId, kind: z.enum(["accepted_profile", "approved_excerpt", "verified_research", "shared_knowledge"]),
@@ -52,7 +38,13 @@ const recordIdentity = z.object({recordId:executionId,revisionId:executionId,con
 const milestonePayload = z.object({baselineId:executionId,milestoneKey:executionKey,
   decision:z.enum(["start","block","resume","request_review","accept","waive","reopen"]),evidenceRevisionIds:z.array(executionId).max(20).refine(a => new Set(a).size===a.length)}).strict();
 const reviewProof = { previewDigest:executionHash,previewExpiresAt:z.iso.datetime(),rationale:executionRationale };
+const timeExpected = z.object({execution:executionVersion,time:executionVersion}).strict();
 const commandVariants = [
+  z.object({...envelope,action:z.literal("time.create"),expectedVersions:executionExpected,payload:z.object({time:timeInputSchema}).strict()}).strict(),
+  z.object({...envelope,action:z.literal("time.revise"),expectedVersions:timeExpected,payload:z.object({entryId:executionId,time:timeInputSchema}).strict()}).strict(),
+  z.object({...envelope,action:z.literal("time.submit"),expectedVersions:timeExpected,payload:timeIdentitySchema}).strict(),
+  ...(["time.approve","time.reject","time.reverse"] as const).map(action => z.object({...envelope,...reviewProof,action:z.literal(action),expectedVersions:executionExpected,
+    payload: action==="time.reverse"?timeBatchSchema.refine(p=>p.entries.length===1):timeBatchSchema}).strict()),
   z.object({...envelope,action:z.literal("setup"),expectedVersions:z.object({baseline:executionVersion,plan:executionVersion}).strict(),payload:z.object({baselineId:executionId}).strict()}).strict(),
   z.object({...envelope,action:z.literal("record.create"),expectedVersions:executionExpected,payload:z.object({baselineId:executionId,record:executionRecordSchema}).strict()}).strict(),
   z.object({...envelope,action:z.literal("record.revise"),expectedVersions:recordExpected,payload:z.object({recordId:executionId,record:executionRecordSchema}).strict()}).strict(),
@@ -64,6 +56,8 @@ export const executionCommandSchema = z.discriminatedUnion("action",commandVaria
 export type ExecutionCommand = z.infer<typeof executionCommandSchema>;
 export const executionPreviewSchema = z.discriminatedUnion("action",[
   z.object({version:z.literal("execution-v1"),action:z.literal("milestone.decide"),expectedVersions:milestoneExpected,payload:milestonePayload}).strict(),
+  ...(["time.approve","time.reject","time.reverse"] as const).map(action => z.object({version:z.literal("execution-v1"),action:z.literal(action),expectedVersions:executionExpected,
+    payload:action==="time.reverse"?timeBatchSchema.refine(p=>p.entries.length===1):timeBatchSchema}).strict()),
   ...(["record.accept","record.reject","record.retract"] as const).map(action => z.object({version:z.literal("execution-v1"),action:z.literal(action),expectedVersions:recordExpected,payload:recordIdentity}).strict()),
  ]);
 export const executionListSchema = z.object({ limit: z.coerce.number().int().min(1).max(50).default(25),

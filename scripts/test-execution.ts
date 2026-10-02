@@ -14,6 +14,9 @@ export const EXECUTION_SUITES = [
   "tests/unit/execution-client.test.ts",
   "tests/unit/execution-projection.test.ts",
   "tests/contracts/execution-policy.test.ts",
+  "tests/contracts/execution-time-api.test.ts",
+  "tests/integration/execution-time.test.ts",
+  "tests/integration/execution-time-races.test.ts",
   "tests/contracts/execution-record-api.test.ts",
   "tests/contracts/execution-command-api.test.ts",
   "tests/integration/execution-schema.test.ts",
@@ -53,13 +56,14 @@ export function verifyExecutionTestReport(raw: unknown, suites: readonly string[
 }
 
 async function main(): Promise<void> {
+  const timeOnly = process.argv.length === 3 && process.argv[2] === "--time";
   const recordsOnly = process.argv.length === 3 && process.argv[2] === "--records";
   const schemaOnly = process.argv.length === 3 && process.argv[2] === "--foundation-schema";
   const foundation = schemaOnly || (process.argv.length === 3 && process.argv[2] === "--foundation");
-  if (!foundation && !recordsOnly && process.argv.length !== 2) throw new Error("test:execution takes no DB or test-path overrides");
+  if (!foundation && !recordsOnly && !timeOnly && process.argv.length !== 2) throw new Error("test:execution takes no DB or test-path overrides");
   assertDeterministicTestMode();
   verifyExecutionSuiteCoverage();
-  const suites = recordsOnly ? EXECUTION_SUITES.filter(name => /execution-(records|milestones|record-api|client)\.(test|spec)\.ts$/.test(name)) : schemaOnly ? EXECUTION_SUITES.filter(name => name.endsWith("execution-schema.test.ts")) : foundation ? EXECUTION_SUITES.filter(name => [
+  const suites = timeOnly ? EXECUTION_SUITES.filter(name => /execution-time(-api|-races)?\.test\.ts$/.test(name)) : recordsOnly ? EXECUTION_SUITES.filter(name => /execution-(records|milestones|record-api|client)\.(test|spec)\.ts$/.test(name)) : schemaOnly ? EXECUTION_SUITES.filter(name => name.endsWith("execution-schema.test.ts")) : foundation ? EXECUTION_SUITES.filter(name => [
     "execution-test-manifest.test.ts", "execution-contracts.test.ts", "execution-projection.test.ts", "execution-policy.test.ts",
     "execution-command-api.test.ts", "execution-environment.test.ts", "execution-schema.test.ts",
   ].some(suffix => name.endsWith(suffix))) : verifyExecutionSuiteCoverage();

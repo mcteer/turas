@@ -298,3 +298,10 @@ input[type="file"]::file-selector-button { font: inherit; color: var(--foregroun
   .login-card { padding: 1.75rem; }
   .nav-link { min-height: 40px; }
 }
+
+/* Engagement execution uses the shared forms, panels and quiet review hierarchy. */
+.execution-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .625rem; margin-top: 1rem; }
+.profile-page label.execution-check { display: inline-flex; align-items: center; gap: .625rem; }
+.execution-review { border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; background: var(--surface); }
+.execution-review fieldset { border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+.execution-review label { margin-bottom: 1rem; }

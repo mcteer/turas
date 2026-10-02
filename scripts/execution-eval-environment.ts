@@ -127,12 +127,12 @@ export async function withExecutionEvalEnvironment<T>(
       }
       if (options.initialSchemaVersion !== undefined) {
         if (!options.empty) throw new Error("Prior-schema fixture requires an empty owned clone");
-        const directory = join(appRoot, "migrations");
+        const directory = join(appRoot, "migrations"), initialSchemaVersion = options.initialSchemaVersion;
         const manifest: { version: number; migrations: { file: string; sha256: string }[] } =
           JSON.parse(await readFile(join(directory, "manifest.json"), "utf8"));
-        manifest.migrations = manifest.migrations.filter((entry) => Number(entry.file.slice(0, 3)) <= options.initialSchemaVersion);
+        manifest.migrations = manifest.migrations.filter((entry) => Number(entry.file.slice(0, 3)) <= initialSchemaVersion);
         for (const file of await readdir(directory)) {
-          if (/^\d{3}-.*\.cjs$/.test(file) && Number(file.slice(0, 3)) > options.initialSchemaVersion) await rm(join(directory, file));
+          if (/^\d{3}-.*\.cjs$/.test(file) && Number(file.slice(0, 3)) > initialSchemaVersion) await rm(join(directory, file));
         }
         await writeFile(join(directory, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
       }

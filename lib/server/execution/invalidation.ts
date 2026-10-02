@@ -6,7 +6,7 @@ import { getServerConfig } from '../config';
 export async function enqueueExecutionSourceInvalidation(db:PoolClient,sourceKind:string,sourceRevisionId:string):Promise<number>{
   const environment=getServerConfig().TURAS_ENVIRONMENT_ID;
   const marker=(await db.query<{schema_version:number}>('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[environment])).rows[0];
-  if(!marker||marker.schema_version<37)return 0;
+  if(!marker||marker.schema_version<38)return 0;
   const kind=sourceKind==='published_shared'?'shared_knowledge':sourceKind;
   if(!['accepted_profile','approved_excerpt','verified_research','shared_knowledge','execution_record','milestone_baseline'].includes(kind))return 0;
   const result=await db.query(`WITH RECURSIVE affected(revision_id,source_generation) AS (

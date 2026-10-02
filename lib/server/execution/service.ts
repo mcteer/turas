@@ -6,6 +6,8 @@ import { lockExecutionActor,isExecutionReviewer,type ExecutionActor } from "./po
 import { executeExecutionCommand,executionTransaction } from "./commands";
 import { executionCustomer,chargeExecutionRate } from "./locks";
 import { executionBaseline,verifyBaseline,setupExecution } from "./baselines";
+import { saveTime,submitTime } from "./time";
+import { reviewTime,timeReviewInputs } from "./time-review";
 import { saveRecord,submitRecord } from "./records";
 import { reviewRecord,recordReviewInputs } from "./review";
 import { decideMilestone,milestoneReviewInputs } from "./milestones";
@@ -18,6 +20,9 @@ export async function submitExecutionCommand(actor:ExecutionActor,engagementId:s
   if (!executionId.safeParse(engagementId).success) throw new HttpFailure(400,'invalid_input','Invalid engagement identity');
   return executeExecutionCommand(actor,engagementId,raw,async(db,command,customerId)=>{
     switch(command.action) {
+      case 'time.create':case 'time.revise': return saveTime(db,actor,customerId,engagementId,command);
+      case 'time.submit': return submitTime(db,actor,customerId,engagementId,command);
+      case 'time.approve':case 'time.reject':case 'time.reverse': return reviewTime(db,actor,customerId,engagementId,command);
       case 'setup': return setupExecution(db,actor,customerId,engagementId,command);
       case 'record.create':case 'record.revise': return saveRecord(db,actor,customerId,engagementId,command);
       case 'record.submit': return submitRecord(db,actor,customerId,engagementId,command);
@@ -40,8 +45,20 @@ export async function previewExecutionCommand(actor:ExecutionActor,engagementId:
     const owner='revisionId' in command.payload ? (await db.query('SELECT owner_membership_id FROM execution_record_revisions WHERE id=$1 AND engagement_id=$2',[command.payload.revisionId,engagementId])).rows[0]?.owner_membership_id:undefined;
     await lockExecutionActor(db,actor,customerId,'review',false,owner??undefined);
     await chargeExecutionRate(db,actor,'read');
-    const context=command.action==='milestone.decide'?await milestoneReviewInputs(db,actor,customerId,engagementId,command):await recordReviewInputs(db,actor,customerId,engagementId,command);
-    return {...createExecutionPreview(actor,context.inputs),expectedVersions:command.expectedVersions};
+    switch (command.action) {
+      case 'time.approve': case 'time.reject': case 'time.reverse': {
+        const context = await timeReviewInputs(db,actor,customerId,engagementId,command);
+        return {...createExecutionPreview(actor,context.inputs),expectedVersions:command.expectedVersions,exceptions:context.exceptions};
+      }
+      case 'milestone.decide': {
+        const context = await milestoneReviewInputs(db,actor,customerId,engagementId,command);
+        return {...createExecutionPreview(actor,context.inputs),expectedVersions:command.expectedVersions};
+      }
+      case 'record.accept': case 'record.reject': case 'record.retract': {
+        const context = await recordReviewInputs(db,actor,customerId,engagementId,command);
+        return {...createExecutionPreview(actor,context.inputs),expectedVersions:command.expectedVersions};
+      }
+    }
   });
 }
 export async function readExecutionOverview(actor:ExecutionActor,engagementId:string) {

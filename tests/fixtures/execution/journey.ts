@@ -92,3 +92,53 @@ export async function createReviewedExecutionJourney() {
   });
   return {actors,customerId,workloadId,artifact,reference,content,accepted,engagementId:accepted.engagementId!,baselineId:accepted.baselineId!};
 }
+
+/** Real reviewed007 resource/calendar/competency and same-day confirmation,
+ * followed by an008 reviewed activity. No accepted rows are seeded. */
+export async function createAllocatedExecutionJourney() {
+  const f=await createReviewedExecutionJourney();
+  const {createResource}=await import('../../../lib/server/staffing/resources');
+  const {createSkill}=await import('../../../lib/server/staffing/skills');
+  const {syntheticResource,syntheticSkill}=await import('../staffing/seed');
+  const {createManualAssessment,decideCompetencies}=await import('../../../lib/server/staffing/competencies');
+  const {approveCalendar}=await import('../../../lib/server/staffing/calendars');
+  const {createDemand,qualifyDemand}=await import('../../../lib/server/staffing/demands');
+  const {proposeAllocation}=await import('../../../lib/server/staffing/allocations');
+  const {createAllocationReviewPreview,decideAllocation}=await import('../../../lib/server/staffing/decisions');
+  const {submitExecutionCommand,readExecutionOverview,readExecutionRecords,previewExecutionCommand}=await import('../../../lib/server/execution/service');
+  const exact=(r:{revisionId?:string;contentDigest?:string;aggregateVersion?:number})=>({revisionId:r.revisionId!,contentDigest:r.contentDigest!,expectedAggregateVersion:r.aggregateVersion!});
+  const date=new Date().toISOString().slice(0,10),nextDate=new Date(Date.now()+86400000).toISOString().slice(0,10);
+  const existing=await withTransaction(async db=>(await db.query('SELECT id FROM workforce_resources WHERE membership_id=$1',[f.actors.author.membershipId])).rows[0]);
+  if(existing)throw new Error('Allocated journey requires an isolated linked subject');
+  const resource=await createResource(f.actors.reviewer,{requestKey:randomUUID(),rationale:'Human confirmed linked synthetic delivery subject',
+    resource:{...syntheticResource('Synthetic Delivery Contributor'),timezone:'UTC',membershipId:f.actors.author.membershipId}});
+  const skill=await createSkill(f.actors.reviewer,{requestKey:randomUUID(),rationale:'Reviewed synthetic skill definition',skill:syntheticSkill()});
+  const assessment=await createManualAssessment(f.actors.reviewer,{requestKey:randomUUID(),rationale:'Human observed a synthetic exercise',resourceId:resource.resourceId,
+    skillId:skill.skillId,level:3,assessmentDate:date,nextReviewDate:nextDate,evidence:'PRIVATE_EXECUTION_PERSONNEL_ASSESSMENT'});
+  await decideCompetencies(f.actors.reviewer,{requestKey:randomUUID(),rows:[{competencyId:assessment.competencyId,candidateRevisionId:assessment.revisionId,
+    candidateDigest:assessment.contentDigest,sourceGeneration:1,expectedAggregateVersion:assessment.aggregateVersion,action:'accept',rationale:'Human reviewed the observed skill exercise'}]});
+  await approveCalendar(f.actors.reviewer,resource.resourceId,{requestKey:randomUUID(),rationale:'Human confirms same-day working capacity',
+    calendar:{timezone:'UTC',observedAt:new Date(Date.now()-10000).toISOString(),nextReviewAt:new Date(Date.now()+86400000).toISOString(),fromDate:date,toDate:date,
+      days:[{date,contracted:[{date,from:`${date}T09:00`,to:`${date}T17:00`,fromOffset:null,toOffset:null}],holidays:[],leave:[],protected:[]}]}});
+  const demand=await createDemand(f.actors.author,{requestKey:randomUUID(),rationale:'Staffing demand from reviewed exact execution work',demand:{
+    customerId:f.customerId,workloadId:f.workloadId,engagementId:f.engagementId,planId:f.accepted.planId,baselineId:f.baselineId,
+    planRevisionId:f.accepted.planRevisionId,baselineDigest:f.accepted.baselineDigest,workPackageKey:'proof',title:'Reviewed delivery proof',role:'Delivery engineer',
+    fromDate:date,toDate:date,requiredSkills:[{skillId:skill.skillId,minimumLevel:2}],desiredSkills:[],days:[{date,requiredMinutes:240}],allowedRegions:[],billable:true,overlap:null}});
+  const qualified=await qualifyDemand(f.actors.author,demand.demandId,{...exact(demand),requestKey:randomUUID(),rationale:'Human checked exact baseline and resource requirements'});
+  const proposal=await proposeAllocation(f.actors.author,{requestKey:randomUUID(),rationale:'Human proposes reviewed resource',allocation:{resourceId:resource.resourceId,
+    demandId:demand.demandId,demandRevisionId:qualified.revisionId,demandDigest:qualified.contentDigest,expectedDemandVersion:qualified.aggregateVersion,days:[{date,minutes:120}]}});
+  const review=await createAllocationReviewPreview(f.actors.reviewer,proposal.allocationId,{...exact(proposal),action:'confirm',requestKey:randomUUID(),rationale:'Inspect exact capacity and reviewed competency'});
+  const allocation=await decideAllocation(f.actors.reviewer,proposal.allocationId,{...exact(proposal),action:'confirm',reviewPreviewId:review.previewId,requestKey:randomUUID(),rationale:'Human confirms allocation after current reviewed inputs'});
+  const command=(action:string,expectedVersions:Record<string,number>,payload:unknown)=>({version:'execution-v1',action,requestKey:randomUUID(),expectedVersions,payload});
+  await submitExecutionCommand(f.actors.author,f.engagementId,command('setup',{baseline:1,plan:f.accepted.aggregateVersion},{baselineId:f.baselineId}));
+  let view=await readExecutionOverview(f.actors.author,f.engagementId);
+  await submitExecutionCommand(f.actors.author,f.engagementId,command('record.create',{execution:view.version},{baselineId:f.baselineId,record:{kind:'activity',subtype:'work',
+    title:'Reviewed delivery test',narrative:'Human verified the synthetic delivery test against reviewed artifact evidence.',audience:'delivery',eventDate:date,timezone:'UTC',
+    workPackageKey:'proof',milestoneKeys:[],ownerMembershipId:f.actors.author.membershipId,unknownOwnerReason:null,references:[f.reference]}}));
+  let activity=(await readExecutionRecords(f.actors.author,f.engagementId,{})).records[0];view=await readExecutionOverview(f.actors.author,f.engagementId);
+  await submitExecutionCommand(f.actors.author,f.engagementId,command('record.submit',{execution:view.version,record:activity.version},{recordId:activity.id,revisionId:activity.revisionId,contentDigest:activity.contentDigest}));
+  activity=(await readExecutionRecords(f.actors.reviewer,f.engagementId,{})).records[0];view=await readExecutionOverview(f.actors.reviewer,f.engagementId);
+  const candidate={version:'execution-v1',action:'record.accept',expectedVersions:{execution:view.version,record:activity.version},payload:{recordId:activity.id,revisionId:activity.revisionId,contentDigest:activity.contentDigest}};
+  await submitExecutionCommand(f.actors.reviewer,f.engagementId,{...candidate,...await previewExecutionCommand(f.actors.reviewer,f.engagementId,candidate),requestKey:randomUUID(),rationale:'Human accepts observed delivery against the exact reviewed evidence'});
+  return {...f,resource,skill,allocation,allocationRevisionId:proposal.revisionId!,date,activity};
+}

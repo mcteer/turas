@@ -14,7 +14,7 @@ async function accessible(page:Parameters<typeof signIn>[0]){const result=await 
 test('actual reviewed journey: keyboard setup, activity review and exact milestone acceptance',async({page},testInfo)=>{
   test.setTimeout(240000);const f=await createReviewedExecutionJourney();
   await signIn(page,'panel');await page.goto(`/customers/${f.customerId}/engagements/${f.engagementId}/execution`);
-  await expect(page.getByRole('heading',{name:'Execution log',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Execution Log',exact:true})).toBeVisible();
   let setupPosts=0,lostSetup=false;
   await page.route(`**/api/execution/engagements/${f.engagementId}/commands`,async route=>{
     const payload=route.request().postDataJSON();
@@ -26,7 +26,7 @@ test('actual reviewed journey: keyboard setup, activity review and exact milesto
   await page.getByRole('button',{name:'Check save receipt',exact:true}).focus();await page.keyboard.press('Enter');
   await expect(page.getByRole('button',{name:'Check save receipt',exact:true})).toHaveCount(0);
   expect(setupPosts).toBe(1);
-  await expect(page.getByRole('heading',{name:'Record an activity',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Record an Activity',exact:true})).toBeVisible();
   await page.getByRole('textbox',{name:'Activity title',exact:true}).fill('Synthetic delivery observation');
   await page.getByRole('textbox',{name:'Observed work',exact:true}).fill('Human inspected the synthetic delivery proof.');
   await page.getByRole('textbox',{name:'Time zone',exact:true}).fill('UTC');

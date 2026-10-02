@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { authorizeTimeReceipt } from "./time";
 import { createHash, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { withTransaction } from "../db/client";
@@ -35,7 +36,7 @@ export async function executeExecutionCommand(actor: ExecutionActor, engagementI
   return executionTransaction(async db => {
     const customerId = await executionCustomer(db, actor, engagementId);
     const capability: ExecutionCapability = command.action === "setup" ? "setup" :
-      ["record.accept","record.reject","record.retract","milestone.decide"].includes(command.action) ? "review" : "contribute";
+      ["record.accept","record.reject","record.retract","milestone.decide","time.approve","time.reject","time.reverse"].includes(command.action) ? "review" : "contribute";
     let owner: string | undefined;
     if ("record" in command.payload) owner = command.payload.record.ownerMembershipId ?? undefined;
     else if ("revisionId" in command.payload) owner = (await db.query<{owner_membership_id:string|null}>(`SELECT owner_membership_id FROM execution_record_revisions
@@ -48,6 +49,7 @@ export async function executeExecutionCommand(actor: ExecutionActor, engagementI
       [process.env.TURAS_ENVIRONMENT_ID, actor.workspaceId, actor.membershipId, command.requestKey])).rows[0];
     if (previous) {
       if (previous.request_digest !== digest) throw new HttpFailure(409, "key_conflict", "Request key has different input");
+      if (command.action.startsWith("time.")) await authorizeTimeReceipt(db,actor,customerId,engagementId,command.action,previous.result.changed[0].id);
       return { ...previous.result, requestKey: command.requestKey,commandId:previous.id };
     }
     await lockExecutionActor(db, actor, customerId, capability, true, owner);
@@ -63,11 +65,12 @@ export async function executeExecutionCommand(actor: ExecutionActor, engagementI
 }
 export async function readExecutionReceipt(actor: ExecutionActor, requestKey: string) {
   return executionTransaction(async db => {
-    const row = (await db.query<{ id:string; customer_id: string; result: ExecutionResult }>(`SELECT id,customer_id,result
+    const row = (await db.query<{ id:string; customer_id: string; engagement_id: string; action: string; result: ExecutionResult }>(`SELECT id,customer_id,engagement_id,action,result
       FROM execution_command_receipts WHERE environment_id=$1 AND workspace_id=$2 AND actor_membership_id=$3 AND request_key=$4`,
       [process.env.TURAS_ENVIRONMENT_ID, actor.workspaceId, actor.membershipId, requestKey])).rows[0];
     if (!row) throw hiddenRecord();
     await lockExecutionActor(db, actor, row.customer_id, "read", false);
+    if (row.action.startsWith("time.")) await authorizeTimeReceipt(db,actor,row.customer_id,row.engagement_id,row.action,row.result.changed[0].id);
     return { ...row.result, requestKey,commandId:row.id };
   });
 }

@@ -1,8 +1,9 @@
 # 008 implementation and validation handoff
 
-**Planning only.** Commands marked new are tasks to implement, not existing passing
-checks. No runtime, database, provider, browser, migration or hosted validation is
-claimed in this planning pass. The user will switch models before implement.
+**Implementation in progress.** T001–T032 have local checkpoint evidence in
+[validation.md](validation.md). Commands and gates below describe the complete
+feature target; an implemented command or a narrow pass does not establish a later
+gate. Full regression, load, recovery, live-output and Preview gates remain pending.
 
 ## Resume
 

@@ -1,7 +1,8 @@
 # 008 data model
 
-Status: design only. Add explicit migrations after schema 034; do not execute them
-in the planning pass. All tables belong to the existing governed Postgres domain.
+Status: implementation in progress. Explicit migrations 036–038 have been exercised
+in owned disposable databases from empty, 034 and 035 fixtures. Preview execution
+upgrade remains pending. All tables belong to the existing governed Postgres domain.
 
 ## Canonical identities and storage groups
 
