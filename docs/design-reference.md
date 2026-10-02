@@ -108,3 +108,7 @@ and persisted its answer. The initial revised four-project CLI WebKit matrix
 passed 24 checks without skips, retries or failures; browser interception in the
 first-draft test establishes one UI delivery attempt, not provider completion.
 Preview worker readiness remains a hosted limitation.
+
+The optional customer selector uses a compact rounded outline, folder icon and
+chevron beneath the composer. Its default visible text is “Customer (optional)”;
+the accessible label remains available without an extra visible caption.
