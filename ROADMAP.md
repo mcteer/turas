@@ -1,7 +1,7 @@
 # Turas delivery roadmap
 
 Baseline: 2026-09-26; updated 2026-10-01. **001 merged in PR 1; 002 merged in
-[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 merged in [PR 11](https://github.com/mcteer/turas/pull/11) after local and CI validation, without a hosted release; 007 is in progress and 008–016 remain planned.**
+[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 merged in [PR 11](https://github.com/mcteer/turas/pull/11) after local and CI validation, without a hosted release; 007 merged in [PR 13](https://github.com/mcteer/turas/pull/13) after local and CI validation, without a hosted release. 008–016 remain planned.**
 
 005 now has [specification](specs/005-governed-rag-research/spec.md),
 [design](specs/005-governed-rag-research/plan.md) and
@@ -35,12 +35,12 @@ read-only inspected; [PR 11](https://github.com/mcteer/turas/pull/11) passed its
 [validation log](specs/006-delivery-plans/validation.md) for evidence. The legacy
 planning and solution-pattern review is reference material, not runtime proof.
 
-## Feature 007 local implementation validated
+## Completed 007 implementation
 
 Feature 007 [specification](specs/007-skills-staffing/spec.md),
 [design](specs/007-skills-staffing/plan.md),
 [contracts](specs/007-skills-staffing/data-model.md) and
-[tasks](specs/007-skills-staffing/tasks.md) are being implemented.
+[tasks](specs/007-skills-staffing/tasks.md) govern the merged implementation.
 Reviewed competencies and calendars support explainable matches and exact human
 allocation decisions; planned economics and bounded read-only advice retain separate
 access rules. Staffing and finance authority belong only to `mcteer`; delegation is
@@ -48,8 +48,8 @@ deferred. Actual utilization belongs to 008. The
 [validation log](specs/007-skills-staffing/validation.md) records passing local
 domain, regression, WebKit, paired recovery, representative load and eight-case
 reviewed live-advisory gates. Preview is at schema 034 after explicit migration
-and read-only reinspection. Review-head CI and PR review remain; no hosted
-release is claimed.
+and read-only reinspection. [PR 13](https://github.com/mcteer/turas/pull/13)
+passed review-head CI and merged; no hosted release is claimed.
 
 ## Build sequence
 
