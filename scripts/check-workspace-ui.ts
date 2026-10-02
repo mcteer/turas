@@ -14,7 +14,15 @@ const directory = await mkdtemp(resolve("local-artifacts/workspace-ui/run-"));
 const captures = join(directory, "captures");
 await mkdir(captures, { mode: 0o700 });
 await withStaffingEvalEnvironment(async environment => {
-  await environment.start();
+  // Match the deployed app's privileges, while synthetic fixture setup keeps
+  // the owned clone's migration connection. The owner can assume this role
+  // without provisioning or changing a shared runtime login/password.
+  const ownerUrl = process.env.DATABASE_URL!;
+  const runtimeUrl = new URL(ownerUrl);
+  runtimeUrl.searchParams.set("options", "-c role=turas_runtime");
+  process.env.DATABASE_URL = runtimeUrl.toString();
+  try { await environment.start(); }
+  finally { process.env.DATABASE_URL = ownerUrl; }
   try {
     const result = await new Promise<{ code: number | null; stdout: string; stderr: string }>((done, reject) => {
       const child = spawn(process.execPath, ["node_modules/@playwright/test/cli.js", "test",

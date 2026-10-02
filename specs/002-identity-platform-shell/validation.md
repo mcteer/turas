@@ -206,3 +206,22 @@ application verification.
 Local acceptance, constitution review and PR CI completed before
 [PR 2 merged](https://github.com/mcteer/turas/pull/2) on 2026-09-27. Hosted
 application acceptance stays deferred by the deployment hold.
+
+
+## Workspace presentation follow-up — 2026-10-02
+
+The visual follow-up in PR 15 uses standard title case for navigation and section
+headings, with minor words such as “and,” “of,” and “the” lowercase. The final
+local CLI WebKit matrix passed 68/68 cases across desktop/mobile and light/dark,
+with zero failures, skips or retries. The owned app ran as `turas_runtime`;
+synthetic fixture setup retained its separate owner connection. Three additional
+customer-access browser cases passed, including partner assignment and revocation.
+
+CI exposed missing PostgreSQL privileges for existing immutable-payload read
+locks. The explicit role setup now grants UPDATE on only the immutable key of
+payload tables whose readers use row locks. Existing triggers reject even
+key-to-itself updates; content-column updates and direct deletion remain denied.
+Ten focused plan/staffing schema checks passed, including actual runtime-role
+reads and rejected writes. Preview schema 035 received the explicit role refresh;
+read locks and denied table-wide UPDATE/DELETE privileges were verified afterward.
+Production variables and its legacy database were not changed.

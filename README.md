@@ -93,7 +93,10 @@ Use Node **24** (`.node-version`), npm, local Postgres **17**, and CLI
 Playwright/WebKit. Install locked dependencies, configure ignored `.env.local`
 using [.env.example](.env.example), then explicitly initialize an empty local
 database with the configured environment marker. Provision a separate
-`turas_runtime` login and run the role grants after migrations. Keep a distinct
+`turas_runtime` login and run the role grants after migrations. Reapply
+`npm run db:roles` when updating this build: plan and staffing reads now have the key-column privilege PostgreSQL requires for row
+locks during reads. Existing immutability triggers still reject every payload
+update; content-column updates and direct deletion remain denied. Keep a distinct
 disposable test database; the [002 runbook](specs/002-identity-platform-shell/quickstart.md)
 has the setup and recovery details.
 

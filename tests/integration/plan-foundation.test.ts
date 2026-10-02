@@ -4,6 +4,7 @@ import { Client } from "pg";
 import { withTransaction } from "../../lib/server/db/client";
 import { withPlanEvalEnvironment } from "../../scripts/plan-eval-environment";
 import { submitPlanCommand } from "../../lib/server/plans/commands";
+import { listPlans, readPlan } from "../../lib/server/plans/read";
 import { createProfileTestSession } from "../fixtures/profiles";
 import { PLAN_FIXTURE_SCOPE,syntheticPlanContent } from "../fixtures/plans/seed";
 
@@ -90,6 +91,21 @@ describe("delivery plan foundation on isolated Postgres",() => {
         await expect(db.query("UPDATE plan_revisions SET content_digest=$2 WHERE id=$1",
           [first.revisionId,"b".repeat(64)])).rejects.toMatchObject({code:"23514"});
         await db.query("ROLLBACK TO SAVEPOINT immutable_probe");
+        await db.query("SET LOCAL ROLE turas_runtime");
+        expect((await listPlans(author,input.customerId,{},db)).items)
+          .toEqual(expect.arrayContaining([expect.objectContaining({planId:first.planId})]));
+        expect((await readPlan(author,first.planId,first.revisionId,db)).content)
+          .toMatchObject({title:draft.title});
+        for (const [sql,code] of [
+          ["UPDATE plan_revision_payloads SET revision_id=revision_id WHERE revision_id=$1","23514"],
+          ["UPDATE plan_revision_payloads SET title='Changed' WHERE revision_id=$1","42501"],
+          ["DELETE FROM plan_revision_payloads WHERE revision_id=$1","42501"],
+        ]) {
+          await db.query("SAVEPOINT runtime_payload_change");
+          await expect(db.query(sql,[first.revisionId])).rejects.toMatchObject({code});
+          await db.query("ROLLBACK TO SAVEPOINT runtime_payload_change");
+        }
+        await db.query("RESET ROLE");
       } finally { await db.query("ROLLBACK TO SAVEPOINT fixture"); }
     });
   });
