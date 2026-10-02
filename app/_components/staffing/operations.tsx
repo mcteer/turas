@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { readStaffingOperations } from "../../../lib/server/staffing/operations";
 import { staffingGet } from "./client";
+import { EmptyState } from "../empty-state";
 type Report = Awaited<ReturnType<typeof readStaffingOperations>>;
 type Customers = { items: { id: string; displayName: string }[]; nextCursor: string | null };
 export function StaffingOperations() {
@@ -31,8 +32,9 @@ export function StaffingOperations() {
   }
   useEffect(() => { void loadCustomers(); return () => { generation.current++; }; }, []);
   function changed() { generation.current++; setReport(null); setBusy(false); }
-  return <><header className="profile-header"><div><p className="profile-eyebrow">Delivery planning</p><h1>Staffing operations</h1></div></header>
-    <p>Choose a customer and a period of up to 91 resource-local service dates. Shared resource capacity includes every confirmed commitment; customer minutes are shown separately. Actual utilization is unavailable.</p>
+  return <><header className="profile-header"><div><p className="profile-eyebrow">Delivery planning</p><h1>Staffing operations</h1>
+    <p>Review planned capacity and commitments across customer delivery.</p></div><span className="profile-badge">Planned capacity</span></header>
+    <p className="muted">Choose up to 91 resource-local service dates. Shared capacity includes all confirmed commitments; customer minutes are shown separately. Actual utilization is unavailable.</p>
     {error && <p role="alert">{error}</p>}{busy && <p role="status">Loading operations…</p>}
     <form className="staffing-period" onSubmit={event => { event.preventDefault(); void load(); }}><fieldset disabled={busy}><legend>Operations period</legend>
       <label>Customer<select className="field" aria-label="Customer" required value={customerId} onChange={event => { changed(); setCustomer(event.target.value); }}>
@@ -44,6 +46,7 @@ export function StaffingOperations() {
     </fieldset></form>
     <button disabled={busy} onClick={() => void loadCustomers()}>Reload customer choices</button>
     {customers.nextCursor && <button disabled={busy} onClick={() => void loadCustomers(customers.nextCursor!)}>More customer choices</button>}
+    {!report && !busy && !error && <EmptyState icon="operations" title="Choose a period to explore capacity.">Select a customer and service dates above to view confirmed work, tentative reservations, and capacity exceptions.</EmptyState>}
     {report && <StaffingOperationsReport report={report} busy={busy} more={() => void load(report.nextCursor!)} />}
   </>;
 }
@@ -64,7 +67,7 @@ export function StaffingOperationsReport({ report, busy, more }: { report: Repor
           {resource.displayName}: {resource.days.filter(day => day.needsReview).length} service dates need review. Confirmed commitments remain counted.
         </li>)}</ul>
       </aside>}
-      {!report.items.length && <p>No confirmed or active tentative assignments for this customer in the selected period.</p>}
+      {!report.items.length && <EmptyState icon="operations" title="No confirmed or active tentative assignments for this customer in the selected period." />}
       {report.items.map(resource => <article key={resource.resourceId} className="profile-card"><h3>{resource.displayName}</h3>
         <p>Resource-local dates in {resource.timezone}{!resource.active ? " · inactive resource" : ""} · as of {new Date(resource.asOf).toLocaleString()}</p>
         <div className="staffing-table-scroll" role="region" aria-label={`${resource.displayName} daily capacity`} tabIndex={0}>

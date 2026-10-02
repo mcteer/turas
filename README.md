@@ -247,8 +247,13 @@ on the project; the app integrates `@vercel/analytics` with page URL redaction
 for customer, engagement, plan, resource, import and conversation identifiers.
 Query strings and fragments are removed; unknown routes and custom events are
 discarded. Local development uses the SDK's development mode.
-The shared shell, chat landing, customer directory and sign-in screen follow
-the legacy Turas palette, self-hosted Geist fonts, compact navigation and cards.
+The workspace uses a shared neutral design system with Geist typography, grouped
+navigation, consistent page headers, form panels, accessible controls, and tables
+that scroll within their panels. Customer profiles, knowledge, plans, staffing,
+imports, finance, access, and sign-in use the same light/dark visual language.
+Run `npm run workspace:ui:check` with the marked local test database selection to
+validate the desktop/mobile Playwright/WebKit matrix on an owned disposable clone.
+The check exercises real reads and writes with synthetic fixtures and no model calls.
 The chat landing now uses a real composer with optional customer selection below
 it, with “Customer (optional)” inside the selector in an inset context bar. The bar reserves space for a future
 project selector. General technical conversations use private, customer-free scope (migration

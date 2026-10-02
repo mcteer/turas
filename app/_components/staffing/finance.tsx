@@ -1,4 +1,5 @@
 "use client";
+import { EmptyState } from "../empty-state";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { StaffingFinanceInput } from "../../../lib/contracts/staffing-economics";
@@ -73,7 +74,7 @@ export function StaffingFinance({ csrfToken }: { csrfToken: string }) {
     {policy && <section className="profile-section"><h2>Formula and input policy</h2><p>{policy.formulaVersion} · {policy.policyApproval}</p>
       <p>Contribution subtracts loaded delivery cost and entered nonlabor cost from entered contracted revenue. Missing or mixed-currency inputs remain incomplete.
         Service-rate revenue is a separate hypothetical estimate. Costs group by resource, local date and rate revision before rounding once to the nearest minor unit.</p>
-      <p className="evidence-citation">Policy digest: {policy.inputPolicyDigest}</p>
+      <p className="policy-metadata">Policy digest: {policy.inputPolicyDigest}</p>
       <form className="evidence-search-form" onChange={() => edits.touch("policy")} onSubmit={event => {
         event.preventDefault(); const form = event.currentTarget, data = new FormData(form);
         void command.save("/api/staffing/finance/policy-decisions", { formulaVersion: policy.formulaVersion, inputPolicyDigest: policy.inputPolicyDigest,
@@ -81,7 +82,7 @@ export function StaffingFinance({ csrfToken }: { csrfToken: string }) {
       }}><label>Policy approval rationale<textarea className="field" name="rationale" required maxLength={2000} /></label>
         <button className="primary-button" disabled={command.busy || !!command.uncertainKey}>Approve this planning formula and policy</button>
       </form></section>}
-    <section className="profile-section"><form className="evidence-search-form" onChange={() => edits.touch("new-input")} onSubmit={event => {
+    <section className="profile-section"><form className="evidence-search-form form-columns" onChange={() => edits.touch("new-input")} onSubmit={event => {
       event.preventDefault(); const form = event.currentTarget, data = new FormData(form), period = { currency: data.get("currency"), fromDate: data.get("fromDate"), toDate: data.get("toDate") };
       const input = kind === "rate" ? { ...period, kind, rateKind: data.get("rateKind"), resourceId: data.get("resourceId"), minorUnitsPerHour: data.get("amount") }
         : { ...period, kind, engagementId: data.get("engagementId"), baselineId: data.get("baselineId"), minorUnits: data.get("amount") };
@@ -101,7 +102,7 @@ export function StaffingFinance({ csrfToken }: { csrfToken: string }) {
       <button className="primary-button" disabled={command.busy || !!command.uncertainKey}>Save entered finance input</button>
     </form></section>
     <section className="profile-section"><h2>Versioned input history</h2>
-      {!items.length && !error && <p>No finance inputs available.</p>}
+      {!items.length && !error && <EmptyState icon="finance" title="No finance inputs available.">Entered rates and costs will appear here with their revision history.</EmptyState>}
       <div className="profile-grid">{items.map(item => <article className="profile-card evidence-citation" key={item.inputId}><h3>{item.kind.replaceAll("_", " ")}</h3>
         <p>{item.resourceId ? `Resource ${item.resourceId}` : `Baseline ${item.baselineId}`}</p>
         <button className="secondary-button" disabled={command.busy || !!command.uncertainKey || !!editingInputId} onClick={() => {

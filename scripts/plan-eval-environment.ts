@@ -261,6 +261,10 @@ export async function withPlanEvalEnvironment<T>(
         }
         finally { await admin.end(); }
       }
-    } finally { await rm(root,{recursive:true,force:true}); }
+    } finally {
+      // A stopped watcher may finish its last filesystem write during removal.
+      // Retry only this owned temporary tree; keep ownership checks above intact.
+      await rm(root,{recursive:true,force:true,maxRetries:5,retryDelay:200});
+    }
   }
 }

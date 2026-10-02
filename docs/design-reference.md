@@ -42,8 +42,8 @@ Node-24 typecheck, Next.js production build and documentation checks passed.
 ## Preserve the visual language
 
 - Geist Sans for interface/body text and Geist Mono for code/technical data.
-- Neutral black/white surfaces, subtle gray borders, restrained rounded controls
-  (base radius 0.625rem), light/dark theme tokens, color reserved for meaningful status.
+- Neutral surfaces, subtle gray borders, restrained rounded controls and panels
+  (7–12px corners), light/dark theme tokens, color reserved for meaningful status.
 - Full-height left navigation, 18rem desktop sidebar, brand at top, New Chat and
   chat-title search, product navigation, recent conversations, identity/sign-out below.
 - Collapsible mobile navigation; no horizontal page overflow at narrow widths.
@@ -118,3 +118,34 @@ the accessible label remains available without an extra visible caption.
 Future model selection should use task-based routing through AI Gateway, rather
 than a model selector in the composer. Routing is a future feature; the currently
 selected model remains unchanged.
+
+### Professional workspace presentation (2026-10-02)
+
+The subsequent user-requested visual upgrade applies one shared presentation
+system across customer profiles, knowledge, plans, staffing, imports, finance,
+access, and sign-in. `app/design-system.css` is imported after the structural
+stylesheet from the root layout, keeping theme and component rules in one place.
+
+- Group navigation by workspace, delivery, and administration, with consistent
+  line icons and an active state that follows customer/resource detail routes.
+- Use a 30px desktop / 26px mobile page title, quiet section labels, readable
+  descriptions, and aligned primary/secondary actions.
+- Group form fields in bordered panels; use two columns where they improve
+  scanning and one column on mobile. Keep visible labels and native controls.
+- Give empty states a clear explanation and preserve the distinction between
+  unavailable, unreviewed, and genuinely empty data. Display only actual counts.
+- Keep numeric capacity values on one line and contain wide tables in keyboard
+  focusable horizontal scroll regions.
+- Preserve the approved Turi composer and optional customer context bar.
+
+`npm run workspace:ui:check` uses the selected marked test database as a read-only
+clone source, starts an owned disposable application, and runs CLI Playwright
+with WebKit. The final four-project run passed 68 cases with zero failures,
+skips, or retries. Coverage includes ten workspace routes per project, customer
+access revocation, knowledge contributions, persisted manual plan creation,
+populated capacity tables, resource forms, navigation/focus, theme switching,
+page overflow, and serious/critical accessibility checks. Synthetic screenshots
+were visually reviewed in both themes and viewport sizes. Typecheck, Next.js
+production build, documentation checks, and diff checks passed. No model call
+is part of this presentation gate. Hosted worker readiness and the complete
+staffing release gate remain separate checks.

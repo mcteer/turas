@@ -7,24 +7,32 @@ import { ConversationList } from "./conversation-list";
 import { MobileNavigation } from "./mobile-navigation";
 import { ThemeToggle } from "./theme-provider";
 import { SignOutButton } from "../(workspace)/sign-out-button";
+import { BrandMark, UiIcon, type UiIconName } from "./ui-icon";
 
 function SidebarContent({ role, loginName, csrfToken, staffing }: { role: string; loginName: string; csrfToken: string; staffing: StaffingNavigation }) {
   const pathname = usePathname();
-  const current = (href: string) => pathname === href ? "page" as const : undefined;
+  const current = (href: string) => (pathname === href || (href !== "/staffing" && pathname.startsWith(`${href}/`))) ? "page" as const : undefined;
+  const navItem = (href: string, label: string, icon: UiIconName) =>
+    <Link className="nav-link" aria-current={current(href)} href={href}><UiIcon name={icon} /><span>{label}</span></Link>;
   return <>
-    <Link className="brand" href="/s">Turas</Link>
-    <a className="nav-action" href="/s"><span aria-hidden="true">＋</span> New chat</a>
+    <Link className="brand" href="/s"><BrandMark />Turas</Link>
+    <a className="nav-action" href="/s"><UiIcon name="plus" /> New chat</a>
     <ConversationList navigation={<nav className="workspace-nav" aria-label="Workspace">
-      <Link className="nav-link" aria-current={current("/customers")} href="/customers">Customer profiles</Link>
-      <Link className="nav-link" aria-current={current("/knowledge")} href="/knowledge">Shared knowledge</Link>
-      {staffing.resources && <Link className="nav-link" href="/staffing">Staffing operations</Link>}
-      {staffing.resources && <Link className="nav-link" href="/staffing/resources">Resources and skills</Link>}
-      {staffing.imports && <Link className="nav-link" href="/staffing/imports">Workforce imports</Link>}
-      {staffing.finance && <Link className="nav-link" href="/staffing/finance">Planning finance</Link>}
-      {role === "admin" && <Link className="nav-link" href="/admin/access">Access</Link>}
+      <p className="nav-group-label">Workspace</p>
+      {navItem("/customers", "Customer profiles", "customers")}
+      {navItem("/knowledge", "Shared knowledge", "knowledge")}
+      {staffing.resources && <p className="nav-group-label">Delivery</p>}
+      {staffing.resources && navItem("/staffing", "Staffing operations", "operations")}
+      {staffing.resources && navItem("/staffing/resources", "Resources and skills", "people")}
+      {staffing.imports && navItem("/staffing/imports", "Workforce imports", "upload")}
+      {staffing.finance && navItem("/staffing/finance", "Planning finance", "finance")}
+      {role === "admin" && <><p className="nav-group-label">Administration</p>{navItem("/admin/access", "Access", "access")}</>}
     </nav>} />
-    <div className="nav-bottom"><div>Signed in as <strong>{loginName}</strong> <span className="muted">· {role}</span></div>
-      <ThemeToggle /><div><SignOutButton csrfToken={csrfToken} /></div></div>
+    <div className="nav-bottom">
+      <div className="nav-identity"><span className="account-avatar" aria-hidden="true">{loginName.slice(0, 1).toUpperCase()}</span>
+        <div><strong><span className="sr-only">Signed in as </span>{loginName}</strong><span className="muted">{role}</span></div></div>
+      <div className="nav-utilities"><ThemeToggle /><SignOutButton csrfToken={csrfToken} /></div>
+    </div>
   </>;
 }
 

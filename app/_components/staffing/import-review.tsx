@@ -1,4 +1,5 @@
 "use client";
+import { EmptyState } from "../empty-state";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import type { WorkforceMapping } from "../../../lib/contracts/staffing-imports";
@@ -91,8 +92,8 @@ export function StaffingImports({ csrfToken }: { csrfToken: string }) {
           onClick={() => { ++fileChoice.current; setIntent(null); setFile(null); setDigest(""); setDirty(false); setUploadUncertain(false); }}>Start another intake</button>}
       </div>}
     </section>
-    <section className="profile-section"><h2>Intake history</h2><button className="secondary-button" onClick={() => void load()}>Reload status</button>
-      {!items.length && <p>No workforce imports available.</p>}
+    <section className="profile-section"><div className="profile-section-head"><h2>Intake history</h2><button className="secondary-button" onClick={() => void load()}>Reload status</button></div>
+      {!items.length && <EmptyState icon="upload" title="No workforce imports available.">Upload a CSV or XLSX file to begin a reviewed intake.</EmptyState>}
       <div className="profile-grid">{items.map(item => <article className="profile-card" key={item.importId}><h3>{item.withheld ? "Retired workforce source" : item.filename}</h3>
         <p>{item.state.replaceAll("_", " ")}</p><Link href={`/staffing/imports/${item.importId}`}>Open intake</Link></article>)}</div>
       {cursor && <button className="secondary-button" onClick={() => void load(cursor)}>More imports</button>}

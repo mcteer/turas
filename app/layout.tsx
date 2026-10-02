@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "./design-system.css";
 import { ThemeProvider } from "./_components/theme-provider";
 import { WebAnalytics } from "./_components/web-analytics";
 

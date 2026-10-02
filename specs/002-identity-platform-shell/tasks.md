@@ -256,3 +256,15 @@ originating customer identities, artifacts or private lineage. Feature 014 exten
 publication/learning automation. Track these later slices in ROADMAP.md and
 docs/evidence-policy.md; no unused shared-knowledge table, endpoint or integration
 is part of these 60 tasks.
+
+## Authorized presentation follow-up — 2026-10-02
+
+- [x] Apply the professional workspace design across existing customer, knowledge,
+  plan, staffing, access, and sign-in screens while preserving domain behavior.
+- [x] Preserve the approved optional customer bar beneath the Turi composer.
+- [x] Validate the completed presentation with CLI Playwright/WebKit: 68 cases
+  passed across desktop/mobile and both themes, with no failures, skips, or retries.
+- [x] Verify typecheck and production build; document patterns and the reproducible
+  owned-clone check in [the visual contract](../../docs/design-reference.md).
+
+This cosmetic follow-up adds no roadmap capability or model-routing behavior.

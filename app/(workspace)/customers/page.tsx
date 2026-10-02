@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { UiIcon } from "../../_components/ui-icon";
+import { EmptyState } from "../../_components/empty-state";
 
 type Customer = { id: string; displayName: string; synthetic: boolean };
 type Result = { data?: { items: Customer[]; nextCursor: string | null }; error?: { message: string } };
@@ -32,19 +34,21 @@ export default function CustomersPage() {
 
   return (
     <main className="profile-page customer-directory">
-      <header className="directory-header"><h1>Customers</h1>
-      <p className="muted">Customer profiles and reviewed evidence. Customer references in this demo are synthetic.</p></header>
+      <header className="profile-header directory-header"><div><p className="profile-eyebrow">Workspace</p><h1>Customers</h1>
+      <p className="muted">Customer knowledge, reviewed evidence, and delivery in one place.</p></div>
+      <span className="profile-badge">Synthetic workspace</span></header>
       {state === "loading" && <p role="status">Loading customers…</p>}
       {state === "unavailable" && <p role="alert">Customers are unavailable. <button onClick={() => void load()}>Retry</button></p>}
-      {state === "ready" && items.length === 0 && <p>No customers are assigned to this account.</p>}
+      {state === "ready" && items.length === 0 && <EmptyState icon="customers" title="No customers are assigned to this account.">Assigned customer profiles will appear here.</EmptyState>}
       <ul className="customer-grid">{items.map((item) => (
         <li className="customer-card" key={item.id}>
-          <h2><button className="customer-select" type="button" onClick={() => setSelected(item)} aria-pressed={selected?.id === item.id}>
-            {item.displayName}{item.synthetic ? " · Synthetic" : ""}
-          </button></h2>
-          <p className="muted">Profile, evidence and delivery</p>
-          <div className="customer-card-actions"><Link href={`/customers/${item.id}`}>Open profile <span aria-hidden="true">→</span></Link>
-          <Link href={`/s?customerId=${item.id}`}>Start chat</Link></div>
+          <div className="customer-card-heading"><span className="customer-avatar" aria-hidden="true">{item.displayName.slice(0, 2).toUpperCase()}</span>
+            <div><h2><button className="customer-select" type="button" onClick={() => setSelected(item)} aria-pressed={selected?.id === item.id}>
+              {item.displayName}
+            </button></h2><p className="muted">Customer workspace{item.synthetic ? " · Synthetic" : ""}</p></div></div>
+          <p className="customer-card-description">Explore accepted context, evidence, and delivery plans.</p>
+          <div className="customer-card-actions"><Link className="text-action" href={`/customers/${item.id}`}>Open profile <UiIcon name="arrow" size={15} /></Link>
+          <Link className="secondary-button" href={`/s?customerId=${item.id}`}>Start chat</Link></div>
         </li>
       ))}</ul>
       {nextCursor && <button className="secondary-button" type="button" onClick={() => void load(nextCursor)}>Load more</button>}

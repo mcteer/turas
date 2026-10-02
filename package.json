@@ -63,6 +63,7 @@
     "eval:behavior:verify": "node node_modules/tsx/dist/cli.mjs scripts/verify-behavior-review.ts",
     "test:contracts": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/reset-test-profile-rates.ts && node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run tests/contracts --exclude 'tests/contracts/plan-*.test.ts' --exclude 'tests/contracts/staffing-*.test.ts'",
     "test:ui": "node --env-file-if-exists=.env.local node_modules/@playwright/test/cli.js test",
+    "workspace:ui:check": "node --env-file-if-exists=.env.local --import tsx scripts/check-workspace-ui.ts",
     "test:staffing": "node --env-file-if-exists=.env.local --import tsx scripts/test-staffing.ts",
     "staffing:prepare": "node --env-file-if-exists=.env.local --import tsx scripts/prepare-staffing.ts",
     "staffing:ui:check": "node --env-file-if-exists=.env.local --import tsx scripts/check-staffing-ui.ts",
