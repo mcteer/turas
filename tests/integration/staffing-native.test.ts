@@ -206,7 +206,7 @@ describe("owned eve native staffing transport with a bounded fixture provider", 
     const receipts = (await query("SELECT id,ordinal,step_token FROM staffing_model_step_receipts WHERE attempt_id=$1 ORDER BY ordinal", [f.reserved.attemptId])).rows;
     await environment.stop(); await closeRuntimePool();
     expect(process.env.DATABASE_URL_UNPOOLED).toBe(ownedDatabase);
-    expect((await query("SELECT environment_id,schema_version FROM turas_environment")).rows).toEqual([{ environment_id: process.env.TURAS_ENVIRONMENT_ID, schema_version: 34 }]);
+    expect((await query("SELECT environment_id,schema_version FROM turas_environment")).rows).toEqual([{ environment_id: process.env.TURAS_ENVIRONMENT_ID, schema_version: originalPair.schemaVersion }]);
     // Restart the real Next/eve/maintenance supervisor against the same managed
     // DB and owned stores. This reconnects DB clients; it does not reboot Neon.
     await environment.start();
