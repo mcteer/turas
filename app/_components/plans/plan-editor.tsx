@@ -187,7 +187,7 @@ export function PlanEditor({customerId,planId,onSaved}:{
           value={section.reason ?? ""} onChange={(event)=>change((draft)=>{
             draft.sections[index].reason=event.target.value;})}/></label>}
       </fieldset>)}</details>
-    <details><summary>Evidence And Assertions</summary>
+    <details><summary>Evidence and Assertions</summary>
       <div className="plan-inline"><label>Search eligible evidence<input className="field"
         value={query} onChange={(event)=>setQuery(event.target.value)}/></label>
         <button type="button" className="secondary-button" onClick={()=>void search()} disabled={busy}>Search</button></div>
@@ -286,7 +286,7 @@ export function PlanEditor({customerId,planId,onSaved}:{
           testing:"Describe checks",rollback:"Describe rollback",ownerRole:"Engineer"}))}>
         Add design decision</button>
     </details>
-    <details><summary>Work And Milestones</summary>
+    <details><summary>Work and Milestones</summary>
       {content.workPackages.map((item,index)=><fieldset className="profile-card" key={item.key}>
         <legend>Work Package {index+1}</legend>
         {(["title","ownerRole","exitEvidence"] as const).map((field)=><label key={field}>

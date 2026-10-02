@@ -30,7 +30,7 @@ test("workspace screens retain usable controls and accessible layouts", async ({
     [`/customers/${DEMO_IDS.sharedCustomer}/plans/new`, "New Plan", "plan-editor"],
     ["/knowledge", "Shared Knowledge", "knowledge"],
     ["/staffing", "Staffing Operations", "operations"],
-    ["/staffing/resources", "Resources And Skills", "resources"],
+    ["/staffing/resources", "Resources and Skills", "resources"],
     ["/staffing/imports", "Workforce Imports", "imports"],
     ["/staffing/finance", "Planning Finance Inputs", "finance"],
     ["/admin/access", "Access", "access"],
@@ -53,10 +53,10 @@ test("workspace navigation and theme controls work with the keyboard", async ({ 
   await signIn(page, "mcteer");
   const mobile = page.viewportSize()!.width < 768;
   if (mobile) await page.getByRole("button", { name: "Open navigation" }).click();
-  const resources = page.getByRole("link", { name: "Resources And Skills", exact: true }).filter({ visible: true });
+  const resources = page.getByRole("link", { name: "Resources and Skills", exact: true }).filter({ visible: true });
   await resources.focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("heading", { name: "Resources And Skills", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resources and Skills", exact: true })).toBeVisible();
   if (mobile) {
     await expect(page.getByRole("dialog", { name: "Navigation" })).toHaveCount(0);
     await page.getByRole("button", { name: "Open navigation" }).click();

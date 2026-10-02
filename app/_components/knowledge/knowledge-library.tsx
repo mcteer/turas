@@ -265,7 +265,7 @@ export function KnowledgeLibrary() {
           {candidates.map((item) => <button type="button" className="secondary-button" key={item.id}
             onClick={() => void selectCandidate(item)}>{item.payload.title} · {item.state}</button>)}</div>
         <form onSubmit={(event) => void save(event)} className="knowledge-form">
-          {!selected && <fieldset className="form-group"><legend>Source And Reuse Permissions</legend><label htmlFor="knowledge-customer">Source customer
+          {!selected && <fieldset className="form-group"><legend>Source and Reuse Permissions</legend><label htmlFor="knowledge-customer">Source customer
             <select id="knowledge-customer" className="field" required value={customerId}
               onChange={(event) => { setCustomerId(event.target.value);setSourceId(""); }}>
               <option value="">Choose a customer</option>{customers.map((item) =>

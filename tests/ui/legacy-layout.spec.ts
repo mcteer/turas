@@ -43,7 +43,7 @@ test("legacy landing and customer cards retain accessible scoped workflows", asy
 
 test("legacy sign-in card remains labelled and usable at narrow widths", async ({ page }, info) => {
   await page.goto("/login");
-  await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
   await expect(page.getByLabel("Username")).toBeVisible();
   await expect(page.getByLabel("Password")).toBeVisible();
   expect((await page.getByLabel("Username").boundingBox())!.height).toBeGreaterThan(35);

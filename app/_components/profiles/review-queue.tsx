@@ -146,7 +146,7 @@ function ReviewCard({ candidate, customerId, csrfToken, reviewerMembershipId, on
       {candidate.authorMembershipId === reviewerMembershipId ? " · Self-review will be attributed" : ""}</p>
     <p className="muted">Scope: {candidate.scopeLabel} · Submitted {new Date(candidate.createdAt).toLocaleString()} · Submitter membership {candidate.authorMembershipId}</p>
     {candidate.confirmedConflict && <p className="profile-caution">Confirmed conflict affects this candidate. Review both sides before deciding.</p>}
-    {candidate.recentHistory.length > 0 && <div><h3>Recent Decisions On This Record</h3><ul>
+    {candidate.recentHistory.length > 0 && <div><h3>Recent Decisions on This Record</h3><ul>
       {candidate.recentHistory.map((item, index) => <li key={`${item.decidedAt}-${index}`}>
         {item.decision} · {new Date(item.decidedAt).toLocaleString()}</li>)}
     </ul></div>}

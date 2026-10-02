@@ -87,7 +87,7 @@ export function StaffingResourceDetail({ resourceId, csrfToken }: { resourceId: 
       <StaffingCalendar key={resourceId} resourceId={resourceId} csrfToken={csrfToken} />
       {resource.manager && <>
         <section className="profile-section"><ResourceRevisionEditor resource={resource} command={command} /><PartnerEligibilityEditor resource={resource} command={command} /></section>
-        <section className="profile-section"><h2>Manager Evidence And Review</h2>
+        <section className="profile-section"><h2>Manager Evidence and Review</h2>
           <p>Accept the exact dated assessment shown here. Approval does not refresh its assessment date.</p>
           {!review.items.length && <p>No current candidate or accepted evidence.</p>}
           <div className="profile-grid">{review.items.map(row => <article className="profile-card" key={row.revisionId}>
@@ -147,7 +147,7 @@ export function StaffingResourceDetail({ resourceId, csrfToken }: { resourceId: 
           void command.save("/api/staffing/competencies", { resourceId, skillId: data.get("skillId"), level: Number(data.get("level")),
             assessmentDate: data.get("assessmentDate"), nextReviewDate: data.get("nextReviewDate"),
             evidence: data.get("evidence"), rationale: data.get("rationale") }, "POST", edits.confirmation("manual", form));
-        }}><h2>Propose A Dated Assessment</h2>
+        }}><h2>Propose a Dated Assessment</h2>
           <label>Canonical skill ID<input className="field" name="skillId" required /></label>
           <label>Level<select className="field" name="level" aria-label="Level">{[0, 1, 2, 3, 4].map(level => <option key={level} value={level}>{level}</option>)}</select></label>
           <label>Assessment date<input className="field" type="date" name="assessmentDate" required min="2000-01-01" max="2100-12-31" /></label>

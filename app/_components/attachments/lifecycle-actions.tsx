@@ -109,7 +109,7 @@ export function LifecycleActions({ source, onChanged }: { source: Source; onChan
       {item === "retry" ? "Retry failed processing" : item === "cancel" ? "Cancel processing" :
         item === "withdraw" ? "Withdraw source" : "Delete source and content"}</button>)}</div>
     {["ready","partial","failed","withdrawn"].includes(source.state) && <div>
-      <h4>Replace With A New Version</h4><p>The old version and its review history stay separate.</p>
+      <h4>Replace with a New Version</h4><p>The old version and its review history stay separate.</p>
       <label className="field-label" htmlFor={`artifact-replacement-${source.id}`}>Replacement file</label>
       <input id={`artifact-replacement-${source.id}`} type="file"
         accept=".pdf,.docx,.pptx,.xlsx,.csv,.txt,.md,.png,.jpg,.jpeg" disabled={busy}

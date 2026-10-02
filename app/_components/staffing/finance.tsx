@@ -73,7 +73,7 @@ export function StaffingFinance({ csrfToken }: { csrfToken: string }) {
     {error && <p role="alert">{error}</p>}{command.message && <p role="status">{command.message}</p>}
     {command.uncertainKey && <button disabled={command.busy} onClick={() => void command.reconcile()}>Check save receipt</button>}
     <button className="secondary-button" onClick={() => void load()}>Reload finance status</button>
-    {policy && <section className="profile-section"><h2>Formula And Input Policy</h2><p>{policy.formulaVersion} · {policy.policyApproval}</p>
+    {policy && <section className="profile-section"><h2>Formula and Input Policy</h2><p>{policy.formulaVersion} · {policy.policyApproval}</p>
       <p>Contribution subtracts loaded delivery cost and entered nonlabor cost from entered contracted revenue. Missing or mixed-currency inputs remain incomplete.
         Service-rate revenue is a separate hypothetical estimate. Costs group by resource, local date and rate revision before rounding once to the nearest minor unit.</p>
       <p className="policy-metadata">Policy digest: {policy.inputPolicyDigest}</p>
@@ -89,7 +89,7 @@ export function StaffingFinance({ csrfToken }: { csrfToken: string }) {
       const input = kind === "rate" ? { ...period, kind, rateKind: data.get("rateKind"), resourceId: data.get("resourceId"), minorUnitsPerHour: data.get("amount") }
         : { ...period, kind, engagementId: data.get("engagementId"), baselineId: data.get("baselineId"), minorUnits: data.get("amount") };
       void command.save("/api/staffing/finance/inputs", { input, provenance: data.get("provenance"), rationale: data.get("rationale") }, "POST", edits.confirmation("new-input", form));
-    }}><h2>Enter A Finance Input</h2>
+    }}><h2>Enter a Finance Input</h2>
       <label>Input kind<select className="field" aria-label="Input kind" value={kind} onChange={event => setKind(event.target.value as typeof kind)}>
         <option value="rate">Effective hourly rate</option><option value="contracted_revenue">Contracted revenue</option><option value="nonlabor">Nonlabor cost</option></select></label>
       {kind === "rate" ? <><label>Rate kind<select className="field" aria-label="Rate kind" name="rateKind"><option value="loaded_cost">Loaded delivery cost</option><option value="service">Service rate (hypothetical revenue)</option></select></label>

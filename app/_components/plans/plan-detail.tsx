@@ -110,7 +110,7 @@ export function PlanDetail({customerId,planId}:{customerId:string;planId:string}
             <h3>{decision.title}</h3><p>{decision.chosen}</p>
             <p>Alternative: {decision.alternatives}</p><p>Rollback: {decision.rollback}</p>
           </article>)}</section>
-        <section className="profile-section"><h2>Work And Milestones</h2>
+        <section className="profile-section"><h2>Work and Milestones</h2>
           {content.workPackages.map((item)=><article className="profile-card" key={item.key}>
             <h3>{item.title}</h3><p>{item.track} · {item.ownerRole}</p><p>{item.exitEvidence}</p>
           </article>)}

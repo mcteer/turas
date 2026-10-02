@@ -50,7 +50,7 @@ test("operational resource responses and DOM exclude manager evidence", async ({
   const payload = await (await response).text();
   for (const field of [evidenceSentinel, "evidence", "locators", "filename", "rationale", "minorUnitsPerHour"]) expect(payload).not.toContain(field);
   await expect(page.getByText(evidenceSentinel)).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "Manager Evidence And Review" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Manager Evidence and Review" })).toHaveCount(0);
   await accessible(page);
   mkdirSync("local-artifacts/007", { recursive: true });
   await sanitizedScreenshot(page, `local-artifacts/007/operational-resource-${info.project.name}.png`);
@@ -60,7 +60,7 @@ test("manager can propose dated evidence using keyboard and reject its exact rev
   test.setTimeout(120_000);
   const resource = await reviewedResource();
   await signIn(page, "mcteer"); await page.goto(`/staffing/resources/${resource.resourceId}`);
-  const form = page.locator("form").filter({ has: page.getByRole("heading", { name: "Propose A Dated Assessment" }) });
+  const form = page.locator("form").filter({ has: page.getByRole("heading", { name: "Propose a Dated Assessment" }) });
   const skill = await withTransaction(async db => (await db.query("SELECT skill_id FROM workforce_competencies WHERE resource_id=$1", [resource.resourceId])).rows[0].skill_id as string);
   await form.getByLabel("Canonical skill ID").fill(skill);
   await form.getByLabel("Level", { exact: true }).selectOption("3");
@@ -98,7 +98,7 @@ test("unconfirmed browser saves reconcile receipts without a second mutation", a
     if (route.request().method() !== "POST") return route.continue();
     mutations++; const committed = await route.fetch(); expect(committed.status()).toBe(200); await route.abort("failed");
   });
-  const form = page.locator("form").filter({ has: page.getByRole("heading", { name: "Add A Skill", exact: true }) });
+  const form = page.locator("form").filter({ has: page.getByRole("heading", { name: "Add a Skill", exact: true }) });
   await form.getByLabel("Canonical key").fill(`ui_${randomUUID().replaceAll("-", "")}`);
   await form.getByLabel("Name", { exact: true }).fill("Synthetic uncertain skill");
   await form.getByLabel("Definition").fill("Synthetic explicit taxonomy definition");
@@ -126,7 +126,7 @@ test("actual scanned CSV mapping and exact row approval are keyboard accessible"
   await upload.focus(); await page.keyboard.press("Enter");
   const complete = page.getByRole("button", { name: "Complete intake and scan", exact: true }); await expect(complete).toBeEnabled({ timeout: 20_000 });
   await complete.focus(); await page.keyboard.press("Enter");
-  await expect(complete).toHaveCount(0, { timeout: 20_000 }); await page.getByRole("link", { name: "Review Or Cancel Intake" }).click();
+  await expect(complete).toHaveCount(0, { timeout: 20_000 }); await page.getByRole("link", { name: "Review or Cancel Intake" }).click();
   await expect.poll(async () => {
     await page.getByRole("button", { name: "Reload status", exact: true }).click();
     return page.getByText("Complete extraction; explicit mapping and approval required.", { exact: true }).isVisible();

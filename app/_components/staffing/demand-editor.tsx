@@ -95,7 +95,7 @@ function DemandForm({ engagement, skills, command, base, saved, close }: { engag
           const window = overlap.windows.find(window => window.date === date) ?? { date, from: "", to: "", fromOffset: null, toOffset: null };
           const update = (field: "from" | "to" | "fromOffset" | "toOffset", value: string | null) => setOverlap(old => old ? { ...old,
             windows: [...old.windows.filter(entry => entry.date !== date), { ...window, [field]: value }] } : null);
-          return <fieldset key={date}><legend>Overlap On {date}</legend>
+          return <fieldset key={date}><legend>Overlap on {date}</legend>
             <label>Overlap start on {date}<input className="field" type="datetime-local" required step={60} value={window.from} onChange={event => update("from", event.target.value)} /></label>
             <label>Overlap end on {date}<input className="field" type="datetime-local" required step={60} value={window.to} onChange={event => update("to", event.target.value)} /></label>
             <label>Overlap start offset on {date} (optional)<input className="field" pattern="[+-][0-9]{2}:[0-9]{2}" placeholder="+01:00" value={window.fromOffset ?? ""} onChange={event => update("fromOffset", event.target.value || null)} /></label>

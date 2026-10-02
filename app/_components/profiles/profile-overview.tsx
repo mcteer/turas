@@ -104,7 +104,7 @@ export function ProfileOverview({ customerId }: { customerId: string }) {
   return <main className="profile-page">
     <nav aria-label="Breadcrumb" className="profile-breadcrumb"><Link href="/customers">Customers</Link><span aria-hidden="true">/</span><span>Profile</span></nav>
     {status === "loading" && <p role="status" className="profile-state">Loading customer profile…</p>}
-    {status === "denied" && <div role="alert" className="profile-state"><h1>Profile Unavailable</h1><p>This customer is unavailable to your account.</p><Link href="/customers">Back To Customers</Link></div>}
+    {status === "denied" && <div role="alert" className="profile-state"><h1>Profile Unavailable</h1><p>This customer is unavailable to your account.</p><Link href="/customers">Back to Customers</Link></div>}
     {status === "unavailable" && <div role="alert" className="profile-state"><h1>Could Not Load This Profile</h1><button type="button" className="secondary-button" onClick={() => setRetry((value) => value + 1)}>Retry</button></div>}
     {status === "ready" && profile && <>
       <header className="profile-header"><div><p className="profile-eyebrow">Customer Profile</p><h1>{profile.customer.displayName}</h1>

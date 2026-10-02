@@ -46,7 +46,7 @@ function HistoricalChat({ conversationId, customerId, customerName }: {
     <p role="status" className="chat-notice">Customer context has changed. Start a new conversation to use current information.</p>
     <div className="chat-messages">{messages.map((event) => <article className="chat-message" key={event.eventId}>
       <h2>You</h2><p>{event.payload.message}</p></article>)}</div>
-    <p><Link className="primary-button" href={`/s?customerId=${encodeURIComponent(customerId ?? "")}`}>Start A New Conversation</Link></p>
+    <p><Link className="primary-button" href={`/s?customerId=${encodeURIComponent(customerId ?? "")}`}>Start a New Conversation</Link></p>
   </main>;
 }
 

@@ -103,7 +103,7 @@ function Review({ detail, demand, candidate, csrfToken, refresh, dirtyChanged }:
         {detail.canReview && actions.map(action => <option key={action} value={action}>Prepare {action} review</option>)}
         {detail.canRevise && candidate && demand.demand && !demand.reviewRequired && demand.state === "qualified" && <option value="revise">Revise working proposal for {candidate.displayName}</option>}
       </select></label>
-      {detail.canRevise && candidate && demand.demand && <fieldset><legend>Revision Minutes For {candidate.displayName}</legend>
+      {detail.canRevise && candidate && demand.demand && <fieldset><legend>Revision Minutes for {candidate.displayName}</legend>
         <p>These inputs apply only to a working proposal revision. Saving a revision preserves the existing confirmed ledger until an amendment is approved.</p>
         {demand.demand.days.filter(day => day.requiredMinutes > 0).map(day => <label key={day.date}>Revision minutes on {day.date}
           <input className="field" type="number" name={`minutes:${day.date}`} min={0} max={day.requiredMinutes} step={1}

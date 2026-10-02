@@ -174,7 +174,7 @@ export function ConflictReview({ customerId, facts, conflicts, canReview, onChan
       <span>{conflicts.length}</span></div>
     <p className="muted">Flag contradictory accepted facts. A steward confirms the conflict before it blocks their use as support.</p>
     {facts.length >= 2 && <div className="profile-grid"><div className="profile-card">
-      <h3>Flag A Contradiction</h3>
+      <h3>Flag a Contradiction</h3>
       <label>First accepted fact<select className="field" value={firstId}
         onChange={(event) => setFirstId(event.target.value)}><option value="">Select a fact</option>
         {facts.map((fact) => <option key={fact.id} value={fact.id}>{label(fact)}</option>)}</select></label>

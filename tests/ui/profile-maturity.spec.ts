@@ -65,7 +65,7 @@ test("a seeded assessment shows six independent states and attributed source det
   await expect(page.getByRole("region", { name: "Record History" })).toContainText("Scope: Customer-wide");
   await expect(page.locator(".profile-history-list").first().locator("li")).toHaveCount(1);
   await expect(page.locator(".profile-history-list").first()).toContainText("Accepted");
-  await expect(page.getByRole("heading", { name: "Review And Lifecycle Events" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Review and Lifecycle Events" })).toBeVisible();
   await expect(page.locator(".profile-history-list").last()).toContainText("accept");
   await page.getByRole("button", { name: "Close history" }).click();
   await page.getByRole("button", { name: "View source" }).click();

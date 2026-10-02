@@ -18,7 +18,7 @@ test.describe("owned conversation shell", () => {
       await page.getByRole("button", { name: "Open navigation" }).click();
     }
     await signOut(page);
-    await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
   });
 });
 

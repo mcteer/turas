@@ -87,7 +87,7 @@ export function StaffingImports({ csrfToken }: { csrfToken: string }) {
         {uploadUncertain && <button className="secondary-button" disabled={uploading} onClick={() => void checkUpload()}>Check upload status</button>}
         {intent.uploadState === "uploaded" && <button className="primary-button" disabled={command.busy || !!command.uncertainKey}
           onClick={() => void command.save(`/api/staffing/imports/${intent.importId}/complete`, { sourceGeneration: intent.generation, contentDigest: digest })}>Complete intake and scan</button>}
-        <Link href={`/staffing/imports/${intent.importId}`}>Review Or Cancel Intake</Link>
+        <Link href={`/staffing/imports/${intent.importId}`}>Review or Cancel Intake</Link>
         {(intent.uploadState === "completed" || intent.withheld) && <button className="secondary-button" disabled={command.busy || !!command.uncertainKey || uploading}
           onClick={() => { ++fileChoice.current; setIntent(null); setFile(null); setDigest(""); setDirty(false); setUploadUncertain(false); }}>Start another intake</button>}
       </div>}
@@ -190,7 +190,7 @@ export function StaffingImportReview({ importId, csrfToken }: { importId: string
           <button type="button" className="secondary-button" onClick={() => { dirtyInputs.touch("mapping"); setCorrections(old => [...old, { sheetIndex: 0, rowNumber: 2 }]); }}>Add literal correction</button>
           <button className="primary-button" disabled={!tables.length || command.busy || !!command.uncertainKey}>Save exact mapping</button>
         </form></section>}
-        <section className="profile-section"><h2>Original Rows And Candidates</h2>
+        <section className="profile-section"><h2>Original Rows and Candidates</h2>
           {!rows.length && <p>No extracted rows available yet.</p>}
           <div className="profile-grid">{rows.map(row => <article className="profile-card" key={row.rowKey}><h3>Sheet {row.sheetIndex} · Row {row.rowNumber}</h3>
             {!row.columnsComplete && <p>Only the first 50 columns are shown. Use the scanned original for full review.</p>}

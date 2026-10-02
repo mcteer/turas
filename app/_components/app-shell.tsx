@@ -23,7 +23,7 @@ function SidebarContent({ role, loginName, csrfToken, staffing }: { role: string
       {navItem("/knowledge", "Shared Knowledge", "knowledge")}
       {staffing.resources && <p className="nav-group-label">Delivery</p>}
       {staffing.resources && navItem("/staffing", "Staffing Operations", "operations")}
-      {staffing.resources && navItem("/staffing/resources", "Resources And Skills", "people")}
+      {staffing.resources && navItem("/staffing/resources", "Resources and Skills", "people")}
       {staffing.imports && navItem("/staffing/imports", "Workforce Imports", "upload")}
       {staffing.finance && navItem("/staffing/finance", "Planning Finance", "finance")}
       {role === "admin" && <><p className="nav-group-label">Administration</p>{navItem("/admin/access", "Access", "access")}</>}

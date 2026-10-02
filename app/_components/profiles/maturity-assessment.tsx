@@ -10,7 +10,7 @@ type Assessment = { observationStart: string; observationEnd: string; assessor: 
 const labels: Record<string, string> = {
   outcome_ownership: "Outcome Ownership", delivery_collaboration: "Delivery Collaboration",
   experience_adoption: "Experience Adoption", operational_trust: "Operational Trust",
-  platform_organization: "Platform Organization", innovation_ai: "Innovation And AI",
+  platform_organization: "Platform Organization", innovation_ai: "Innovation and AI",
 };
 
 export function MaturityAssessment({ payload, supportStatus, scope }: {

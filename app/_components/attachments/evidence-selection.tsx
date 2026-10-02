@@ -60,7 +60,7 @@ export function EvidenceSelection({ source, units }: { source: Source; units: Un
     finally { setSaving(false); }
   }
   return <section className="profile-card" aria-label="Propose source evidence">
-    <h3>Propose Evidence For Review</h3>
+    <h3>Propose Evidence for Review</h3>
     <p>Select exact units from this source. The proposal stays Pending until a reviewer accepts it.</p>
     <p className="profile-caution">A reviewer may inspect the original file after submission. Confirm that it may be shared with the customer profile reviewers.</p>
     <fieldset><legend>Exact Source Units</legend>{units.map((unit) => <label key={unit.id} className="profile-check">

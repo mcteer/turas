@@ -81,7 +81,7 @@ export function RecordHistory({ customerId, recordId, scope, onClose }: {
           {item.decisionRationale && <p><span className="profile-label">Internal review rationale: </span>{item.decisionRationale}</p>}
         </li>;
       })}</ol>
-      {events.length > 0 && <><h3>Review And Lifecycle Events</h3>
+      {events.length > 0 && <><h3>Review and Lifecycle Events</h3>
         <ol className="profile-history-list">{events.map((event) => <li key={event.id} className="profile-card">
           <div className="profile-card-head"><strong>{event.eventType.replaceAll("_", " ")}</strong>
             <time dateTime={event.createdAt}>{date(event.createdAt)}</time></div>

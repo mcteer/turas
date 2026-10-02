@@ -31,7 +31,7 @@ export function StaffingRoster({ manager, csrfToken }: { manager: boolean; csrfT
     catch { setError("Skills unavailable. Try again."); }
   }
   return <>
-    <header className="profile-header"><div><p className="profile-eyebrow">Staffing</p><h1>Resources And Skills</h1>
+    <header className="profile-header"><div><p className="profile-eyebrow">Staffing</p><h1>Resources and Skills</h1>
       <p>Approved competency summaries. Freshness reflects the original assessment date.</p></div>
       {manager && <Link className="secondary-button" href="/staffing/imports">Workforce Imports</Link>}</header>
     {error && <p role="alert">{error} <button onClick={() => void load()}>Reload</button></p>}
@@ -56,7 +56,7 @@ export function StaffingRoster({ manager, csrfToken }: { manager: boolean; csrfT
       {manager && <form className="evidence-search-form form-columns" onChange={() => edits.touch("skill")} onSubmit={event => {
         event.preventDefault(); const form = event.currentTarget, data = new FormData(form);
         void command.save("/api/staffing/skills", { rationale: data.get("rationale"), skill: { key: data.get("key"), name: data.get("name"), definition: data.get("definition"), state: "active" } }, "POST", edits.confirmation("skill", form));
-      }}><h3>Add A Skill</h3>
+      }}><h3>Add a Skill</h3>
         <label>Canonical key<input className="field" name="key" required pattern="[a-z][a-z0-9_-]{0,63}" maxLength={64} /></label>
         <label>Name<input className="field" name="name" required maxLength={160} /></label>
         <label>Definition<textarea className="field" name="definition" required maxLength={2000} /></label>
@@ -69,7 +69,7 @@ export function StaffingRoster({ manager, csrfToken }: { manager: boolean; csrfT
       void command.save("/api/staffing/resources", { rationale: data.get("rationale"), resource: { externalKey: data.get("externalKey"),
         displayName: data.get("displayName"), kind: data.get("kind"), state: "active", membershipId: data.get("membershipId") || null,
         partnerOrganizationId: data.get("partnerOrganizationId") || null, timezone: data.get("timezone"), regionCode: data.get("regionCode") } }, "POST", edits.confirmation("resource", form));
-    }}><h2>Register A Resource</h2>
+    }}><h2>Register a Resource</h2>
       <label>Stable external key<input className="field" name="externalKey" required maxLength={100} pattern="[A-Za-z0-9_-]+" /></label>
       <label>Display name<input className="field" name="displayName" required maxLength={160} /></label>
       <label>Kind<select className="field" aria-label="Kind" name="kind"><option value="internal">Internal</option><option value="partner">Partner</option></select></label>

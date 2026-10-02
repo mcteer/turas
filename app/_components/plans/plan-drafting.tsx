@@ -159,7 +159,7 @@ export function PlanDrafting({customerId,head,onSaved}:{customerId:string;
   }
 
   return <section className="profile-section" aria-label="Turi plan drafting">
-    <h2>Draft With Turi</h2>
+    <h2>Draft with Turi</h2>
     <p>Audience: {head.audience}. Workload: {head.workloadId ?? "Customer wide"}.</p>
     <p>Base revision {head.revisionId}. Up to six model steps, four evidence searches,
       and 24 KiB of governed context. Human review is required before acceptance.</p>

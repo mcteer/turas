@@ -74,7 +74,7 @@ export function PlanReview({detail,onDecided}:{detail:Detail;onDecided:()=>void}
           <p>{section.state==="content" ? section.narrative :
             `${section.state.replaceAll("_"," ")}: ${section.discoveryAction ?? section.reason ?? "Review required"}`}</p>
         </section>)}
-        <h4>Assertions And Sources</h4>
+        <h4>Assertions and Sources</h4>
         {preview.content.assertions.length===0 ? <p>No assertions recorded.</p>:
           <ul>{preview.content.assertions.map((assertion)=><li key={assertion.key}>
             {assertion.kind.replaceAll("_"," ")}: {assertion.text}
@@ -87,7 +87,7 @@ export function PlanReview({detail,onDecided}:{detail:Detail;onDecided:()=>void}
           {decision.title}: {decision.chosen}. Alternative: {decision.alternatives}.
           Rollback: {decision.rollback}.
         </li>)}</ul>
-        <h4>Planned Work And Exit Evidence</h4>
+        <h4>Planned Work and Exit Evidence</h4>
         <ul>{preview.content.workPackages.map((item)=><li key={item.key}>
           {item.track}: {item.title} · {item.exitEvidence}
         </li>)}</ul>

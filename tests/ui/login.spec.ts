@@ -9,12 +9,12 @@ for (const account of ["mcteer", "panel", "partner"] as DemoAccount[]) {
     }
     await expect(page.getByText(`Signed in as ${account}`, { exact: false }).last()).toBeVisible();
     await signOut(page);
-    await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
   });
 }
 
 test("a cross-site return URL cannot redirect after sign-in", async ({ page }) => {
   await page.goto("/login?returnTo=https%3A%2F%2Fanother.example");
-  await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
   expect(new URL(page.url()).origin).toBe("http://127.0.0.1:3000");
 });

@@ -41,9 +41,11 @@ Node-24 typecheck, Next.js production build and documentation checks passed.
 
 ## Preserve the visual language
 
-- Capitalize each word in navigation, page titles, section headings and disclosure
-  labels (for example, “Customer Profiles”). Apply this to authored labels and
-  canonical labels only; preserve names and user-written titles.
+- Use title case for navigation, page titles, section headings and disclosure
+  labels (for example, “Customer Profiles” and “Resources and Skills”). Keep
+  conjunctions, articles and short prepositions lowercase unless they begin the
+  label. Apply this to authored and canonical labels only; preserve names and
+  user-written titles.
 
 - Geist Sans for interface/body text and Geist Mono for code/technical data.
 - Neutral surfaces, subtle gray borders, restrained rounded controls and panels

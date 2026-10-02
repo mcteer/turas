@@ -58,7 +58,7 @@ async function accessible(page: Parameters<typeof signIn>[0]) {
 test("canonical finance keyboard input, exact revision and planning-only policy approval", async ({ page }) => {
   test.setTimeout(120_000);
   const fixture = await resource(); await signIn(page, "mcteer"); await page.goto("/staffing/finance");
-  const form = page.locator("form").filter({ has: page.getByRole("heading", { name: "Enter A Finance Input" }) });
+  const form = page.locator("form").filter({ has: page.getByRole("heading", { name: "Enter a Finance Input" }) });
   await form.getByLabel("Canonical resource ID").fill(fixture.resourceId); await form.getByLabel("Currency", { exact: true }).selectOption("USD");
   await form.getByLabel("First effective date").fill("2026-10-01"); await form.getByLabel("End date (exclusive)").fill("2026-11-01");
   await form.getByLabel("Rate (minor units per hour)").fill("1000");
