@@ -1,7 +1,7 @@
 # Turas delivery roadmap
 
 Baseline: 2026-09-26; updated 2026-10-01. **001 merged in PR 1; 002 merged in
-[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 merged in [PR 11](https://github.com/mcteer/turas/pull/11) after local and CI validation, without a hosted release; 007 merged in [PR 13](https://github.com/mcteer/turas/pull/13) after local and CI validation, without a hosted release. 008–016 remain planned.**
+[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 merged in [PR 11](https://github.com/mcteer/turas/pull/11) after local and CI validation, without a hosted release; 007 merged in [PR 13](https://github.com/mcteer/turas/pull/13) after local and CI validation, without a hosted release. 008 has a specification, design and task handoff; its implementation and 009–016 remain planned.**
 
 005 now has [specification](specs/005-governed-rag-research/spec.md),
 [design](specs/005-governed-rag-research/plan.md) and
@@ -50,6 +50,17 @@ domain, regression, WebKit, paired recovery, representative load and eight-case
 reviewed live-advisory gates. Preview is at schema 034 after explicit migration
 and read-only reinspection. [PR 13](https://github.com/mcteer/turas/pull/13)
 passed review-head CI and merged; no hosted release is claimed.
+
+## Active 008 planning handoff
+
+The [specification](specs/008-engagement-execution/spec.md),
+[design and contracts](specs/008-engagement-execution/plan.md),
+[71 tasks](specs/008-engagement-execution/tasks.md) and
+[validation guide](specs/008-engagement-execution/quickstart.md) cover reviewed
+execution, approved actual time, RAID/scope reconciliation, effort forecasts,
+handoff/outcomes and read-only Turi advice. Approval belongs only to `mcteer`, as
+confirmed during clarification. No 008 runtime behavior, migration or validation
+is claimed; implementation awaits the model handoff.
 
 ## Build sequence
 

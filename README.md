@@ -51,6 +51,13 @@ Preview was explicitly upgraded to schema 034 and read-only inspected afterward;
 local unauthenticated app and runtime-role smoke passed. Feature 007 merged in
 [PR 13](https://github.com/mcteer/turas/pull/13) after passing review-head CI.
 The feature has not been deployed or validated on hosted infrastructure.
+Feature 008 has a [specification](specs/008-engagement-execution/spec.md),
+[implementation plan](specs/008-engagement-execution/plan.md),
+[71 implementation tasks](specs/008-engagement-execution/tasks.md) and
+[validation guide](specs/008-engagement-execution/quickstart.md) for reviewed delivery
+logs/time, milestones, RAID/changes, effort forecasts, handoff/outcomes and bounded
+Turi explanations. The user confirmed `mcteer`-only approval. This is a planning
+handoff; 008 implementation and runtime validation have not started.
 No speculative eve integrations have been installed. The configured model is
 unchanged. The application has not been deployed or validated on hosted infrastructure.
 

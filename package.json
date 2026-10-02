@@ -70,7 +70,9 @@
     "test:staffing:regressions": "node --env-file-if-exists=.env.local --import tsx scripts/test-staffing-regressions.ts",
     "eval:staffing:verify": "node --import tsx scripts/verify-staffing-review.ts",
     "staffing:recovery:check": "node --env-file-if-exists=.env.local --import tsx scripts/staffing-recovery-check.ts --disposable",
-    "benchmark:staffing": "node --env-file-if-exists=.env.local --import tsx scripts/benchmark-staffing.ts --disposable"
+    "benchmark:staffing": "node --env-file-if-exists=.env.local --import tsx scripts/benchmark-staffing.ts --disposable",
+    "test:execution": "node --env-file-if-exists=.env.local --import tsx scripts/test-execution.ts",
+    "execution:ui:check": "node --env-file-if-exists=.env.local --import tsx scripts/check-execution-ui.ts"
   },
   "dependencies": {
     "@js-temporal/polyfill": "0.5.1",

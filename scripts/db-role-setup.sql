@@ -94,3 +94,27 @@ END;
 $$;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO turas_runtime;
+
+-- 008: runtime history is append-only; payload deletion belongs to cleanup.
+DO $$ DECLARE t text; BEGIN
+  IF to_regclass('public.execution_workspaces') IS NOT NULL THEN
+    IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='turas_execution_cleanup') THEN
+      CREATE ROLE turas_execution_cleanup NOLOGIN;
+    END IF;
+    GRANT USAGE ON SCHEMA public TO turas_execution_cleanup;
+    FOR t IN SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename LIKE 'execution_%' LOOP
+      EXECUTE format('REVOKE ALL ON TABLE %I FROM turas_runtime',t);
+      EXECUTE format('REVOKE ALL ON TABLE %I FROM turas_execution_cleanup',t);
+      EXECUTE format('GRANT SELECT, INSERT ON TABLE %I TO turas_runtime',t);
+      IF t IN ('execution_workspaces','execution_records','execution_milestone_heads','execution_time_entries',
+        'execution_actual_days','execution_resource_days','execution_effort_heads','execution_advice_attempts','execution_rate_windows') THEN
+        EXECUTE format('GRANT UPDATE ON TABLE %I TO turas_runtime',t);
+      END IF;
+      IF t LIKE '%payloads' THEN EXECUTE format('GRANT SELECT, DELETE ON TABLE %I TO turas_execution_cleanup',t); END IF;
+    END LOOP;
+    GRANT SELECT, UPDATE, DELETE ON execution_cleanup_jobs TO turas_execution_cleanup;
+    GRANT SELECT ON execution_record_revisions,execution_record_sources,execution_review_decisions,
+      execution_milestone_events,execution_time_revisions,execution_time_decisions,execution_advice_attempts,
+      execution_workspaces TO turas_execution_cleanup;
+  END IF;
+END $$;

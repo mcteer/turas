@@ -1,0 +1,167 @@
+# 008 implementation validation
+
+Implementation started 2026-10-02 on `008-engagement-execution`.
+
+## Scope and configuration
+
+Canonical `mcteer` alone reviews execution records/time/milestones/changes/closeout.
+Use Node 24, installed locked dependencies, scoped domain and CLI WebKit. Preserve
+`agent/agent.ts` and its selected model/reasoning. Production, Vercel linkage and
+deployment remain excluded. Configured application DB/private stores are preserved;
+all destructive checks use marked owned disposable resources.
+
+## Preparation
+
+- Requirements checklist: 16/16 checked; read-only gate passed.
+- Read installed Eve index/tools/skills/eval and Next route-handler guidance,
+  repository governance/evidence/design policy and 008 artifacts.
+- `.gitignore` and `.dockerignore` already cover private/generated dependencies,
+  artifacts, workflow state and environment files. No publishing, Terraform,
+  Helm, ESLint or Prettier setup requires another ignore file.
+
+## Runtime gates
+
+Pending: owned setup; empty/034 upgrade and role denials; domain/API/race/arithmetic;
+real reviewed source→006 plan→007 staffing→008 journey; full four-project UI;
+002–007 regressions; representative eight-class performance; paired recovery;
+type/build/docs; eight captured/reviewed live E01–E08 cases; fresh Preview inspection
+and eventual explicit upgrade/role/local readiness smoke. No pending check is a pass.
+
+## Setup evidence
+
+- T001–T003: installed guidance and ignore setup reviewed; owned008 wrapper,
+  store/DB ownership guards, suite manifest/report verifier and source fingerprint added.
+- `node node_modules/vitest/vitest.mjs run tests/unit/execution-test-manifest.test.ts`: expected missing-runner failure before code; then 2/2 assertions passed.
+- `npm run test:execution`: 2 suites, 5 assertions passed, zero failures/skips.
+  Includes nested callback failure, selected-state restoration and foreign-store
+  retention/owned-clone cleanup. The subsequent fingerprint enhancement will be
+  exercised with the foundation suite; this initial run does not certify it.
+
+## Initial foundation evidence
+
+- Owned foundation: 6 suites, 17 assertions passed, no failures/skips. Source digest
+  `67aee243a75024bab655922709c61246e93aea55fb50fbd65e4a229f5bcd8386`.
+  Empty037, explicit034→037 history preservation, current-role/revocation and
+  narrow runtime/cleanup grants passed. Full prior accepted-decision recovery,
+  command replay/rate and exact source projection gates still need coverage.
+- Typecheck passed after correcting the synthetic denied-customer identifier.
+- Source/projection unit tests first failed on the missing domain modules.
+
+- Expanded foundation: 7 suites, 25 assertions passed, zero failures/skips at
+  `61cd9291f60352f25dfefb792120b9c0b9d939dbd7af2b799440a58517387413`.
+  Concurrent first-write replay committed once; changed input conflicted; revoked
+  sessions denied both replay and receipt; failed handlers left no terminal receipt.
+  Exact preview actor/session/input/expiry and cursor scope/generation/tamper/expiry
+  checks passed, along with independent rate buckets and projection privacy.
+
+- Strengthened foundation run: policy linked/inactive subjects and exact dated partner
+  eligibility passed; exact governed baseline and missing/changed execution source
+  identities passed. The new pre-upgrade preservation case failed because the empty
+  034 fixture lacked demo principals. Added the explicit owned bootstrap before its
+  governed 006/007 commands; rerunning this concrete schema failure only.
+
+- Corrected owned schema rerun: 1 suite, 4 assertions passed, zero failures/skips;
+  `0a070e0133d79368c8ecfad25836635b183a295a804e88bd7b242b04764c8e85`.
+  Includes unchanged real006 acceptance decisions and real007 resource revisions.
+- Foundation source lock discovery is bounded and sorts original identities before
+  execution heads; reviewed pending-head/privacy and exact source contract tests pass.
+- US1 record tests first failed on the missing service module before implementing it.
+
+- First US1 owned domain check: 1 suite, 2 assertions passed, no failures/skips at
+  `0354dd461e4727c89131425a4f045f2e7be69e7cc4b22078606b2a92c3af03cd`.
+  Actual setup/draft/submission/mcteer acceptance/pending correction/stale review
+  passed; future dates and unknown authority fields denied. Docker workforce
+  preparation completed in the owned environment with no schema changes.
+- Client acknowledgement tests first failed on the missing controller module.
+
+- US1 domain/API/client focused gate: 4 suites, 10 assertions passed, no failures
+  or skips; source `3ee8cc43ad8aee581b9f344f9838779084a39da1aecac224bc1905cee529b38a`.
+  Covers route CSRF/body/authority, private drafts/queues/receipts, preserved pending
+  acceptance, explicit milestone transition graph and immediate source withholding
+  with cleanup paused. Full races/history and four-project UI remain pending.
+
+### Continued US1 validation (2026-10-02)
+
+The first isolated WebKit attempt failed before browser interaction because its
+owned artifact runtime assets were missing. The runtime now prepares pinned images,
+actual scanner signatures and OCR assets in a separate private public-asset cache
+and copies only those assets into owned stores. Subsequent attempts reached the
+page: the first caught a refresh starvation issue; the next reached the editor but
+failed on exact-label selectors for a select and prefilled textarea. Browser gates
+remain unpassed. Action waits are now bounded and selectors use accessible roles.
+
+Added real HTTP history privacy, stale milestone preview, self-review and explicit
+unknown-date checks. The receipt identity check first failed because commandId was
+absent; the API now returns the persistent receipt ID on initial responses, replay
+and lookup. A fixture first failed the 006 known-date schema (null rather than
+absent unknown reason); that fixture was corrected. The next owned local run
+passed 12 assertions and failed the new unknown-date assertion: an accepted unknown
+date incorrectly fell back to the old baseline's known date. The projection now
+preserves the reviewed unknown; its rerun is pending.
+
+Remote tests showed individual source-free API cases taking 26–45 seconds. Verified
+the existing dedicated local 007 test source's test marker and schema 034 through
+a read-only query. Subsequent checks select that source using an ignored private
+selector, and mutate only newly owned disposable clones. Existing app configuration,
+Preview, Production, original stores and the marked source database are preserved.
+This local validation does not prove hosted behavior.
+
+The corrected focused domain gate passed **4 suites / 13 assertions / zero skips**
+at source digest `5349ff1fd226d01c39ce453278e684c7b98f9fef30538e0dd0eb7cf7de399f53`.
+The same-source US1 WebKit run passed **8/8 cases** (two journeys in each of
+desktop/mobile × light/dark), zero skipped/unexpected/flaky cases and zero retries.
+Actual scanner/extraction/profile/006 review paths supplied both journeys; setup
+lost-acknowledgement used the original receipt with one POST, and source withdrawal
+removed rendered narrative and dirty editor content before cleanup. Axe serious/critical
+and 390px viewport overflow checks passed. Inspected the retained mobile-dark
+reviewed capture; other project captures had been overwritten by Playwright's
+shared output directory. The runner now retains private output per project.
+Added an actual HTTP-intercept stale-preview browser race, explicit setup-on-GET
+absence/different-key idempotence assertions, milestone criteria, audience-filtered
+evidence choices and existing theme button classes. Those changes need a new run;
+US1 tasks remain unchecked until this final focused rerun and visual review.
+
+The final US1 matrix at digest
+`513df7f9824eec17d9ca42d75032248733d8720865994ca20fab5dff481f16c3`
+passed **12/12 cases**: three journeys in each of four WebKit projects, including
+a real current-head mutation between browser preview and POST, rejected with 409.
+The same-source foundation gate passed **7 suites / 27 assertions**, and focused
+US1 domain gate passed **4 suites / 13 assertions**, all zero skips/failures.
+Inspected all four retained reviewed captures plus mobile-light withdrawal capture.
+Readable theme buttons, criterion text, wrapped source IDs and source-cleared editor
+were confirmed; screenshot sticky/development overlays are local test chrome.
+
+Added a concurrent source-withdrawal/milestone-accept race and a delayed actual
+record response across withdrawal. Focus/mutation now force fresh reads and abort
+superseded reads; periodic polling still coalesces and sequence-fences responses.
+These additional race checks are pending and do not replace the full later gates.
+
+At digest `eb0ed03c94fcc231f259b04afaf0c5ad4a5af551cfc80ab23283ff24bdfb6c2b`,
+US1 domain passed **4 suites / 13 assertions**, including concurrent withdrawal
+versus milestone acceptance with no partial receipt on rejection. WebKit passed
+**12/12 cases** across four projects, including deliberate late old-source release
+after a newer withheld response and cancelled navigation preserving dirty inputs.
+All cases had zero skips/retries/flakiness, serious/critical axe violations and
+viewport overflow. Reverse cleanup notification coverage is now being added; the
+30-day leased purge/recovery implementation remains assigned to T059/T064.
+
+### Foundation and US1 checkpoint (2026-10-02)
+
+The reverse-notification assertion first failed with zero queued execution jobs.
+Implemented metadata-only recursive source notifications in
+`lib/server/execution/invalidation.ts`, called from source projection retirement
+and accepted-record replacement/retraction. Exact record/review/milestone/time
+payload targets receive immutable digest/generation identity and a due date at
+least 30 days after invalidation. Current eligibility fences remain authoritative;
+the queue does not mutate numerical effort or acquire execution heads under source
+locks. Leased queue consumption, deeper lifecycle/recovery coverage and actual time
+remain assigned to subsequent tasks.
+
+At source digest
+`9642ad6472bd1d1269972a1d079b8a8de427846046ebb75ea6818ec220402938`,
+the complete **current** manifest passed **11 suites / 40 tests / zero skips**.
+The focused US1 WebKit matrix passed **12/12 cases**, four projects, with no skipped,
+unexpected or flaky cases and no retries. This is a foundation/US1 checkpoint,
+not completion of feature 008; time, registers, forecasts/handoff/outcomes, native
+advice and cross-cutting/live/Preview delivery gates are still unimplemented or
+unrun. Marked T012 and T014–T024 with these results.

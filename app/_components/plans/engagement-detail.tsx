@@ -54,6 +54,7 @@ export function EngagementDetailView({customerId,engagementId}:{
       <h1>{detail.title}</h1><p className="muted">Accepted {new Date(detail.acceptedAt).toLocaleString()}</p>
       </div><Link href={`/customers/${customerId}/plans/${detail.planId}`}>Source plan</Link>
       </header>
+      <Link className="secondary-button" href={`/customers/${customerId}/engagements/${engagementId}/execution`}>Execution log</Link>
       {staffingAllowed && <Link className="secondary-button" href={`/customers/${customerId}/engagements/${engagementId}/staffing`}>Staffing demand</Link>}
       {detail.contentAvailability==="historical_warning" && <p role="status" className="profile-caution">
         Evidence dates need review before current use.</p>}

@@ -10,6 +10,8 @@ import { enqueueRetrievalJob } from "./jobs";
 import { sanitizedKnowledgeSchema } from "../../contracts/knowledge";
 import { knowledgeLineageIsCurrent } from "../profiles/eligibility";
 
+import { enqueueExecutionSourceInvalidation } from "../execution/invalidation";
+
 export const projectionContract = "retrieval-projection-v1";
 export const projectionContractDigest = createHash("sha256")
   .update(`${projectionContract}:nfc:approved-unit:no-overlap:2000:duplicate-locators`).digest("hex");
@@ -26,6 +28,7 @@ export async function retireRetrievalProjection(client: PoolClient,
     WHERE environment_id=$1 AND source_kind=$2 AND source_revision_id=$3
       AND lifecycle_state='current' RETURNING id`,[environmentId,kind,revisionId]);
   for (const source of retired.rows) await enqueueRetrievalJob(client,source.id,"cleanup",environmentId);
+  await enqueueExecutionSourceInvalidation(client,kind,revisionId);
   return retired.rows.length;
 }
 

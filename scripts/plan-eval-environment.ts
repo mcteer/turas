@@ -26,7 +26,7 @@ export type PlanEvalOptions = {
   deadlineAt?: number;
   empty?: boolean;
   sourceDatabaseUrl?: string;
-  feature?: "006" | "007";
+  feature?: "006" | "007" | "008";
   prepare?: (paths: { appRoot: string; storeRoot: string; environmentId: string }) =>
     Promise<Record<string, string>>;
   cleanupGuard?: (paths: { appRoot: string; storeRoot: string; databaseName: string;
