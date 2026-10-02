@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { Client } from "pg";
 import { describe, expect, it } from "vitest";
@@ -6,15 +7,17 @@ import { DEMO_IDS } from "../../lib/server/bootstrap-ids";
 import { requireStaffingEnvironment } from "../../lib/server/staffing/repository";
 import { requireOwnedStaffingClone, withStaffingEvalEnvironment } from "../../scripts/staffing-eval-environment";
 
+const currentSchemaVersion = (JSON.parse(readFileSync("migrations/manifest.json", "utf8")) as { version: number }).version;
+
 describe("explicit staffing schema and runtime grants", () => {
-  it("initializes an empty owned database at schema 034", async () => {
+  it("initializes an empty owned database at the current manifest schema", async () => {
     requireOwnedStaffingClone();
     await withStaffingEvalEnvironment(async () => {
       const client = new Client({ connectionString: process.env.DATABASE_URL_UNPOOLED });
       await client.connect();
       try {
         const marker = await client.query("SELECT environment_id,schema_version FROM turas_environment");
-        expect(marker.rows).toEqual([{ environment_id: process.env.TURAS_TEST_ENVIRONMENT_ID, schema_version: 34 }]);
+        expect(marker.rows).toEqual([{ environment_id: process.env.TURAS_TEST_ENVIRONMENT_ID, schema_version: currentSchemaVersion }]);
       } finally { await client.end(); }
     }, { empty: true, sourceDatabaseUrl: process.env.TURAS_TEST_SOURCE_DATABASE_URL });
   }, 120_000);
@@ -28,7 +31,7 @@ describe("explicit staffing schema and runtime grants", () => {
         expect((await client.query("SELECT schema_version FROM turas_environment")).rows[0].schema_version).toBe(31);
         const prior = await client.query("SELECT name FROM turas_migrations ORDER BY name");
         await environment.upgrade();
-        expect((await client.query("SELECT schema_version FROM turas_environment")).rows[0].schema_version).toBe(34);
+        expect((await client.query("SELECT schema_version FROM turas_environment")).rows[0].schema_version).toBe(currentSchemaVersion);
         const after = await client.query("SELECT name FROM turas_migrations ORDER BY name");
         expect(after.rows.slice(0, prior.rows.length)).toEqual(prior.rows);
       } finally { await client.end(); }

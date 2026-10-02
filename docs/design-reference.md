@@ -109,6 +109,12 @@ passed 24 checks without skips, retries or failures; browser interception in the
 first-draft test establishes one UI delivery attempt, not provider completion.
 Preview worker readiness remains a hosted limitation.
 
-The optional customer selector uses a compact rounded outline, folder icon and
-chevron beneath the composer. Its default visible text is “Customer (optional)”;
+The optional customer selector uses a folder icon and chevron inside an inset
+context bar attached beneath the composer, following the supplied ChatGPT screenshot.
+The bar reserves flexible space for a future project selector without a dummy
+control. Plugins and model selectors are outside this scope. Its default visible text is “Customer (optional)”;
 the accessible label remains available without an extra visible caption.
+
+Future model selection should use task-based routing through AI Gateway, rather
+than a model selector in the composer. Routing is a future feature; the currently
+selected model remains unchanged.

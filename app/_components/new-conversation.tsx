@@ -84,8 +84,11 @@ export function NewConversation({ csrfToken }: { csrfToken: string }) {
           </button>
         </div>
       </form>
-      <div className="optional-customer"><CustomerPicker customers={customers} selected={selected}
+      <div className="chat-context-bar" role="group" aria-label="Conversation context">
+        <div className="optional-customer"><CustomerPicker customers={customers} selected={selected}
         onSelect={(value) => { setSelected(value); operation.current = null; }} disabled={state === "creating" || state === "loading"} optional /></div>
+        <div className="chat-project-space" aria-hidden="true" />
+      </div>
       {state === "unavailable" && <p className="state-message" role="status">Customer selection is unavailable. You can still ask a general question.</p>}
       {state === "creating" && <p className="state-message" role="status">Starting chat…</p>}
       {error && <p role="alert">{error}</p>}

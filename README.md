@@ -250,7 +250,8 @@ discarded. Local development uses the SDK's development mode.
 The shared shell, chat landing, customer directory and sign-in screen follow
 the legacy Turas palette, self-hosted Geist fonts, compact navigation and cards.
 The chat landing now uses a real composer with optional customer selection below
-it, with “Customer (optional)” inside the compact rounded selector. General technical conversations use private, customer-free scope (migration
+it, with “Customer (optional)” inside the selector in an inset context bar. The bar reserves space for a future
+project selector. General technical conversations use private, customer-free scope (migration
 035); customer tools and source selections still require an explicit customer.
 See the [bounded chat correction](specs/002-identity-platform-shell/general-chat.md).
 Hosted application validation, durable artifact storage and background worker
