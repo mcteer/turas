@@ -2,7 +2,7 @@
 
 **Input**: `specs/007-skills-staffing/spec.md`, `plan.md`, `research.md`, `data-model.md`, the four contracts and `quickstart.md`.
 
-**Status**: Local implementation and validation complete through T076. Preview is at schema 034. Review-head CI and PR preparation remain under T077; see `validation.md`.
+**Status**: Local implementation and validation complete through T076. Preview is at schema 034. PR 13 is open and review-head CI passed; see `validation.md`.
 
 **Format**: `- [ ] Tnnn [P?] [USn?] action with exact paths`. `[P]` permits separate-file work only after the listed phase prerequisites; it is not permission to run unsafe database work concurrently. Tests are required by FR-023 and constitution VII. Read AGENTS.md and the installed relevant Next/eve docs before framework changes. Preserve existing work, the selected database/eve state, and `spacexai/grok-4.7` with reasoning `low`.
 
@@ -220,7 +220,7 @@ All five stories precede final feature gates. Implement each runner before invok
 
 - [X] T076 Reconcile every FR/SC and checkbox against code and actual evidence in `specs/007-skills-staffing/tasks.md` and `specs/007-skills-staffing/validation.md`; append concrete tasks for discovered gaps instead of claiming completion from focused checks; update `README.md`, `ROADMAP.md`, `docs/architecture.md`, `docs/evidence-policy.md` and `.env.example` with truthful behavior/setup, private store ownership, disable/recovery and approved boundaries (FR-023, FR-022).
 
-- [ ] T077 Prepare a reviewable feature PR only after implementation and required validation are complete; summarize behavior, checked evidence, Preview state, disable/forward-repair and remaining hosted-release exclusion from `specs/007-skills-staffing/validation.md`; verify CI against the exact review head and leave merge for user instruction (FR-023, FR-022).
+- [X] T077 Prepare a reviewable feature PR only after implementation and required validation are complete; summarize behavior, checked evidence, Preview state, disable/forward-repair and remaining hosted-release exclusion from `specs/007-skills-staffing/validation.md`; verify CI against the exact review head and leave merge for user instruction (FR-023, FR-022).
 
 ## Dependencies and execution order
 
@@ -281,4 +281,4 @@ Deliver each story through domain tests, strict contracts/persistence, shared se
 | SC-007 | T028, T037, T046, T054, T066, T071 |
 | SC-008 | T002, T003, T005, T013, T056, T063, T066, T068, T074, T075 |
 
-**Task totals**: 77 total; setup/foundation/cross-cutting 24, US1 15, US2 9, US3 9, US4 8, US5 12. T001–T076 have code and passing local evidence recorded in `validation.md`. This includes the previously reopened schema/receipt/lifecycle tasks and the actual partner-grant, demand-history and pointer race cases. T077 remains open until the PR and exact review-head CI result are recorded. Earlier failed attempts remain in the append-only validation history; its final owned validation section supersedes their gate status.
+**Task totals**: 77 total; setup/foundation/cross-cutting 24, US1 15, US2 9, US3 9, US4 8, US5 12. T001–T076 have code and passing local evidence recorded in `validation.md`. This includes the previously reopened schema/receipt/lifecycle tasks and the actual partner-grant, demand-history and pointer race cases. T077 is complete with PR 13 open and exact review-head CI passing; merge remains a separate instruction. Earlier failed attempts remain in the append-only validation history; its final owned validation section supersedes their gate status.

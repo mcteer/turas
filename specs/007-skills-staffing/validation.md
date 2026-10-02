@@ -986,3 +986,9 @@ producing `007 checks require the owned disposable clone`; their dedicated owned
 legacy-only selection excludes `staffing-*.spec.ts`. Node 24 CLI discovery with
 that flag now finds zero staffing cases. A new exact-head CI result is required;
 the failed first head does not satisfy T077.
+
+The corrected PR 13 review head `d367044` passed the full GitHub `verify` job
+(run `36968675672`): owned staffing, shared WebKit, isolated 005 UI,
+typecheck, build, docs, unit/integration/contracts and Spec Kit steps all
+completed successfully. The first failed head is retained above for audit.
+The PR remains open and unmerged; hosted release is excluded.
