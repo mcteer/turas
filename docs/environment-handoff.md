@@ -80,3 +80,12 @@ uses the runtime database credential for both required URL fields; owner
 credentials stay outside deployed functions and migrations remain explicit.
 Private filesystem attachments, workforce imports and background processing
 still require a hosted storage/worker release before those paths are usable.
+
+Preview runtime variables were updated on 2026-10-02 after the schema-034
+inspection. Both required database URL fields use the scoped runtime login.
+Temporary login credentials, maintenance protection and research/model keys
+were configured only for Preview. Production variables were not changed.
+Local Node-24 validation passed: typecheck, eight focused configuration/privacy
+tests, documentation and diff checks, and the Next.js production build.
+The first Git-triggered Preview build reached READY; hosted runtime verification
+uses the following deployment so it receives the refreshed Preview variables.
