@@ -9,6 +9,9 @@ import type { ConversationReference } from "../../contracts/conversations";
 import { lockProfileActor } from "../profiles/policy";
 import { assertRetrievalDependenciesCurrent } from "../retrieval/fences";
 import { assertPlanConversationFence } from "../plans/fences";
+import { staffingScopeForConversation } from "../staffing/context";
+import { prepareStaffingNativeRelease, assertStaffingNativeRelease } from "../staffing/native-release";
+import { readStaffingAdvisoryStatus } from "../staffing/advisory-status";
 
 type ConversationRow = {
   id: string;
@@ -72,6 +75,10 @@ async function annotatePlanning(rows:ConversationRow[]):Promise<void> {
     "SELECT conversation_id,audience FROM planning_conversation_bindings WHERE conversation_id=ANY($1::uuid[])",
     [rows.map((row)=>row.id)]);
   const byId=new Map(bindings.rows.map((row)=>[row.conversation_id,row.audience]));
+  if ((marker.rows[0]?.schema_version ?? 0)>=34) {
+    const staffing=await query<{conversation_id:string}>("SELECT conversation_id FROM staffing_conversation_bindings WHERE conversation_id=ANY($1::uuid[])", [rows.map(row=>row.id)]);
+    for (const row of staffing.rows) byId.set(row.conversation_id,"delivery");
+  }
   for (const row of rows) row.planning_audience=byId.get(row.id) ?? null;
 }
 
@@ -259,10 +266,21 @@ export async function getOwnedAttemptStatus(
   session: CurrentSession, conversationId: string, requestKey: string,
 ): Promise<{
   dispatchState: string; responseState: string; nativeTurnId: string | null;
-  deadlineAt: string | null; lastErrorCode: string | null; outputTokens: number;
+  deadlineAt: string | null; lastErrorCode: string | null; outputTokens: number | null;
   watchdogState: string | null;
 }> {
   await getOwnedConversation(session, conversationId);
+  const staffing = await withTransaction(db => staffingScopeForConversation(db, conversationId));
+  if (staffing) {
+    if (!z.uuid().safeParse(requestKey).success) throw hiddenRecord();
+    const attempt = (await query<{ id: string }>(`SELECT id FROM staffing_advisory_attempts
+      WHERE conversation_id=$1 AND native_request_id=$2 AND binding_id=$3`, [conversationId, requestKey, staffing.bindingId])).rows[0];
+    if (!attempt) throw hiddenRecord();
+    const status = await readStaffingAdvisoryStatus(session, attempt.id);
+    if (status.nativeRequestId !== requestKey || !status.responseAttemptId || !status.dispatchState || !status.responseState) throw hiddenRecord();
+    return { dispatchState: status.dispatchState, responseState: status.responseState, nativeTurnId: status.nativeTurnId,
+      deadlineAt: status.deadlineAt, lastErrorCode: status.failureCode, outputTokens: status.outputTokens, watchdogState: status.watchdogState };
+  }
   const result = await query<{
     dispatch_state: string; response_state: string; native_turn_id: string | null;
     deadline_at: Date | null; last_error_code: string | null; output_tokens: number;
@@ -287,6 +305,40 @@ export async function getOwnedAttemptStatus(
 }
 
 export async function getOwnedConversationDetail(session: CurrentSession, id: string) {
+  const staffing = await withTransaction(db => staffingScopeForConversation(db, id));
+  if (staffing) {
+    const prepared = await prepareStaffingNativeRelease(id, { actor: session });
+    if (!prepared) throw hiddenRecord();
+    return withTransaction(async db => {
+      const bound = await assertStaffingNativeRelease(db, prepared, session);
+      const row = (await db.query<ConversationRow>("SELECT * FROM conversations WHERE id=$1 AND owner_principal_id=$2", [id, session.principalId])).rows[0];
+      if (!row) throw hiddenRecord();
+      const events = await db.query<{ native_event_id: string; event_type: string; visible_payload: Record<string, unknown>;
+        stream_index: string | null; emitted_at: Date }>(`SELECT native_event_id,event_type,visible_payload,stream_index,emitted_at
+        FROM event_projections WHERE conversation_id=$1 ORDER BY emitted_at,native_event_id LIMIT 501`, [id]);
+      const attempts = await db.query<{ request_key: string; dispatch_state: string; response_state: string;
+        watchdog_state: string | null; created_at: Date }>(`SELECT sm.request_key,a.dispatch_state,a.response_state,j.state AS watchdog_state,a.created_at
+        FROM response_attempts a JOIN submitted_messages sm ON sm.id=a.message_id LEFT JOIN watchdog_jobs j ON j.attempt_id=a.id
+        WHERE a.conversation_id=$1 ORDER BY a.created_at,a.id LIMIT 101`, [id]);
+      const submitted = await db.query<{ id: string; text: string; created_at: Date }>(
+        "SELECT id,text,created_at FROM submitted_messages WHERE conversation_id=$1 ORDER BY created_at,id LIMIT 101", [id]);
+      const now = (await db.query("SELECT clock_timestamp() AS now")).rows[0].now as Date;
+      if (bound.deadlineAt.getTime() <= now.getTime() || bound.actor.expiresAt.getTime() <= now.getTime()) {
+        throw new HttpFailure(409, "staffing_advisory_expired", "Staffing output is unavailable");
+      }
+      return { id: row.id, customerId: row.customer_id, ownerPrincipalId: row.owner_principal_id, title: row.title,
+        bindingState: row.binding_state, eveSessionId: row.eve_session_id, createdAt: row.created_at.toISOString(), updatedAt: row.updated_at.toISOString(),
+        contextStatus: "current" as const,
+        history: events.rows.slice(0, 500).map(event => ({ eventId: event.native_event_id, eventType: event.event_type,
+          payload: event.visible_payload, streamIndex: event.stream_index === null ? null : Number(event.stream_index), emittedAt: event.emitted_at.toISOString() })),
+        historyTruncated: events.rows.length > 500,
+        attempts: attempts.rows.slice(0, 100).map(attempt => ({ requestKey: attempt.request_key, dispatchState: attempt.dispatch_state,
+          responseState: attempt.response_state, watchdogState: attempt.watchdog_state, createdAt: attempt.created_at.toISOString() })),
+        attemptsTruncated: attempts.rows.length > 100,
+        submittedMessages: submitted.rows.slice(0, 100).map(message => ({ id: message.id, text: message.text, createdAt: message.created_at.toISOString() })),
+        submittedMessagesTruncated: submitted.rows.length > 100 };
+    });
+  }
   const conversation = await getOwnedConversation(session, id);
   const [events, partials, attempts, submitted] = await Promise.all([
     query<{

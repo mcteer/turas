@@ -29,8 +29,8 @@ describe("delivery plan foundation on isolated Postgres",() => {
       try {
         const result=await client.query<{environment_id:string;schema_version:number}>(
           "SELECT environment_id,schema_version FROM turas_environment");
-        expect(result.rows[0]).toMatchObject({
-          environment_id:process.env.TURAS_TEST_ENVIRONMENT_ID,schema_version:31});
+        expect(result.rows[0]?.environment_id).toBe(process.env.TURAS_TEST_ENVIRONMENT_ID);
+        expect(result.rows[0]?.schema_version).toBeGreaterThanOrEqual(31);
       } finally {await client.end();}
     },{empty:true,sourceDatabaseUrl});
   },60_000);
@@ -40,9 +40,8 @@ describe("delivery plan foundation on isolated Postgres",() => {
     await withTransaction(async (db) => {
       const environment = await db.query<{environment_id:string;schema_version:number}>(
         "SELECT environment_id,schema_version FROM turas_environment");
-      expect(environment.rows[0]).toMatchObject({
-        environment_id:process.env.TURAS_TEST_ENVIRONMENT_ID,schema_version:31,
-      });
+      expect(environment.rows[0]?.environment_id).toBe(process.env.TURAS_TEST_ENVIRONMENT_ID);
+      expect(environment.rows[0]?.schema_version).toBeGreaterThanOrEqual(31);
       const tables = await db.query<{tablename:string}>(`SELECT tablename FROM pg_tables
         WHERE schemaname='public' AND tablename LIKE 'plan_%'`);
       const names = tables.rows.map((row) => row.tablename);

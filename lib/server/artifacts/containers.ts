@@ -25,7 +25,7 @@ export function artifactContainerInvocation(input: {
   signaturesPath?: string;
   ocrAssetsPath?: string;
 }): ArtifactContainerInvocation {
-  if (!/^turas-artifact-(scanner|parser):004-v1$/.test(input.image)) throw new Error("Unpinned artifact image");
+  if (!/^turas-artifact-(?:scanner:004|parser:(?:004|007))-v1$/.test(input.image)) throw new Error("Unpinned artifact image");
   if ((input.kind === "scan") !== input.image.includes("scanner")) throw new Error("Artifact image/kind mismatch");
   const scan = input.kind === "scan";
   const name = `turas-artifact-${randomUUID()}`;

@@ -124,6 +124,18 @@
     {
       "file": "031-plan-drafting-lifecycle.cjs",
       "sha256": "6b0eb28dd51340dc0c1e18e3172b14237b1e995f3cd243a512009fb72a67cb5f"
+    },
+    {
+      "file": "032-workforce-competencies.cjs",
+      "sha256": "862982a4ece714cd5c2f6d0c45d1817094f87f2cfaba529ec16ec521758924c5"
+    },
+    {
+      "file": "033-staffing-allocations.cjs",
+      "sha256": "15947d7377b74d8b2c17a2035655921476bfb921a6bcd176ce755ba3788fc225"
+    },
+    {
+      "file": "034-staffing-economics-advisory.cjs",
+      "sha256": "10af7068480f0bcbf4c7d957c1e619c9229c09f958c9cf50ec0962f2612bc30c"
     }
   ]
 }

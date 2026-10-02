@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import customerContext from "../../agent/tools/customer_context";
-import proposeCustomerContext from "../../agent/tools/propose_customer_context";
+import { authoredTool as customerContext } from "../../agent/tools/customer_context";
+import { authoredTool as proposeCustomerContext } from "../../agent/tools/propose_customer_context";
 import guardCustomerContext from "../../agent/hooks/guard-customer-context";
-import artifactContext from "../../agent/tools/artifact_context";
-import proposeArtifactClaim from "../../agent/tools/propose_artifact_claim";
+import { authoredTool as artifactContext } from "../../agent/tools/artifact_context";
+import { authoredTool as proposeArtifactClaim } from "../../agent/tools/propose_artifact_claim";
 
 const readSchema = customerContext.inputSchema as z.ZodType;
 const proposeSchema = proposeCustomerContext.inputSchema as z.ZodType;

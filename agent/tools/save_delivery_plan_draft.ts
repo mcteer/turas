@@ -1,4 +1,5 @@
-import { defineTool } from "eve/tools";
+import { staffingResponseScope } from "../../lib/server/staffing/native-context";
+import { defineDynamic, defineTool } from "eve/tools";
 import { z } from "zod";
 import { editablePlanSectionKeys,planDraftContentSchema } from "../../lib/contracts/plan-content";
 import { HttpFailure,hiddenRecord } from "../../lib/contracts/http";
@@ -20,7 +21,7 @@ const assertionUpdate=z.object({key:z.string().max(64),text:z.string().max(4_000
   decisionCritical:z.boolean(),ownerRole:z.string().max(4_000).optional(),
   validationAction:z.string().max(4_000).optional()}).strict();
 
-export default defineTool({
+export const authoredTool = defineTool({
   description: "Save one delivery-plan-v1 proposal for this server-bound attempt. Read the exact base plan first, then send only changed sections and optional assertions. The server merges those changes into the base and validates the complete result. Keep factual assertions tied to the base plan's exact source dependency IDs. This never accepts or publishes a plan.",
   inputSchema:z.object({
     title:z.string().max(160).optional(),
@@ -80,3 +81,10 @@ export default defineTool({
     });
   },
 });
+
+export default defineDynamic({ events: {
+  async "turn.started"(_event, ctx) {
+    const scope = await staffingResponseScope(ctx.session.auth.current);
+    return !scope ? authoredTool : null;
+  },
+} });

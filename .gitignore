@@ -15,6 +15,7 @@ build/
 coverage/
 test-results/
 playwright-report/
+.vitest/
 *.tsbuildinfo
 *.log
 .DS_Store

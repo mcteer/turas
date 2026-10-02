@@ -2,12 +2,12 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { preflightArtifact } from "./preflight.ts";
-import { extractText } from "./text.ts";
-import { extractSpreadsheet } from "./spreadsheet.ts";
+import { extractWorkforceCsv, extractText } from "./text.ts";
+import { extractWorkforceSpreadsheet, extractSpreadsheet } from "./spreadsheet.ts";
 import { extractDocx, extractPptx } from "./office.ts";
 import { extractPdf } from "./pdf.ts";
 import { extractImage } from "./ocr.ts";
-import { finish, type Manifest, type Parsed } from "./types.ts";
+import { finish, type Manifest, type Parsed, type WorkforceManifest } from "./types.ts";
 
 export async function parseArtifact(bytes: Uint8Array, filename: string, declaredType: string,
   binding: { imageDigest: string; scanReceiptDigest: string }): Promise<Manifest> {
@@ -29,12 +29,28 @@ export async function parseArtifact(bytes: Uint8Array, filename: string, declare
     status: parsed.coverage.omitted.length ? "partial" : "ready", ...parsed };
 }
 
+export async function parseWorkforceTable(bytes: Uint8Array, filename: string, declaredType: string,
+  binding: { imageDigest: string; scanReceiptDigest: string }): Promise<WorkforceManifest> {
+  const preflight = await preflightArtifact(bytes, filename, declaredType);
+  if (preflight.format !== "csv" && preflight.format !== "xlsx") throw new Error("unsupported_format");
+  const parsed = preflight.format === "csv" ? extractWorkforceCsv(preflight.text ?? "") :
+    await extractWorkforceSpreadsheet(bytes);
+  const manifest: WorkforceManifest = { ...parsed, contract: "workforce-table-v1", parserVersion: "007-table-parser-v1",
+    originalDigest: createHash("sha256").update(bytes).digest("hex"), imageDigest: binding.imageDigest,
+    scanReceiptDigest: binding.scanReceiptDigest, format: preflight.format,
+    status: parsed.coverage.omitted.length ? "partial" : "ready" };
+  if (Buffer.byteLength(JSON.stringify(manifest)) > 52_428_800) throw new Error("limit_exceeded");
+  return manifest;
+}
+
 async function main(): Promise<void> {
-  const [input, filename, declaredType, imageDigest, scanReceiptDigest, output] = process.argv.slice(2);
+  const [input, filename, declaredType, imageDigest, scanReceiptDigest, output, mode] = process.argv.slice(2);
   if (!input || !filename || !declaredType || !imageDigest || !scanReceiptDigest || !output) {
     throw new Error("Parser arguments required");
   }
-  const manifest = await parseArtifact(await readFile(input), filename, declaredType,
+  if (mode && mode !== "workforce-table-v1") throw new Error("unsupported_format");
+  const parser = mode === "workforce-table-v1" ? parseWorkforceTable : parseArtifact;
+  const manifest = await parser(await readFile(input), filename, declaredType,
     { imageDigest, scanReceiptDigest });
   const encoded = JSON.stringify(manifest);
   if (Buffer.byteLength(encoded) > 52_428_800) throw new Error("manifest_size");

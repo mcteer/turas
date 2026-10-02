@@ -10,6 +10,10 @@ import { assertRetrievalDependenciesCurrent } from "../retrieval/fences";
 import { canonicalArtifactSendDigest, captureArtifactDraft,
   type DraftSelection } from "../artifacts/context";
 import { planningScopeForConversation } from "../plans/context";
+import { staffingScopeForConversation } from "../staffing/context";
+import { prepareStaffingNativeAttempt, claimStaffingNativeDispatch } from "../staffing/native-dispatch";
+import { prepareStaffingNativeRelease, assertStaffingNativeRelease } from "../staffing/native-release";
+import { staffingSha256 } from "../staffing/commands";
 import type { PoolClient } from "pg";
 
 export function normalizeMessageText(text: string): string {
@@ -31,7 +35,10 @@ export async function prepareAttempt(
   session: CurrentSession, conversationId: string, nativeSessionId: string,
   requestKey: string, rawText: string, selections: readonly DraftSelection[] = [],
   existingClient?: PoolClient,
-): Promise<{ attemptId: string; created: boolean; dispatchState: string }> {
+): Promise<{ attemptId: string; created: boolean; dispatchState: string; staffing?: boolean }> {
+  const staffing = existingClient ? await staffingScopeForConversation(existingClient, conversationId)
+    : await withTransaction(db => staffingScopeForConversation(db, conversationId));
+  if (staffing) return { ...await prepareStaffingNativeAttempt(session, conversationId, nativeSessionId, requestKey, rawText, selections.length > 0, existingClient), staffing: true };
   const text = normalizeMessageText(rawText);
   if (!text.trim()) throw new HttpFailure(422, "invalid_message", "Message required");
   if (Buffer.byteLength(text, "utf8") > 16 * 1024) {
@@ -145,6 +152,9 @@ export async function claimDispatch(
   if (!Number.isSafeInteger(dispatchStartIndex) || dispatchStartIndex < 0) {
     throw new HttpFailure(503, "invalid_native_cursor", "Service unavailable");
   }
+  if (await withTransaction(db => staffingScopeForConversation(db, conversationId))) {
+    return claimStaffingNativeDispatch(session, conversationId, attemptId, dispatchStartIndex);
+  }
   return withTransaction(async (client) => {
     const conversation = await lockOwnedBinding(client, session, conversationId);
     await requireWorkerHeartbeat(client);
@@ -173,8 +183,10 @@ export async function claimDispatch(
 export async function getAttemptReceipt(
   session: CurrentSession, conversationId: string, attemptId: string,
 ): Promise<Response | null> {
+  const prepared = await prepareStaffingNativeRelease(conversationId, { actor: session, responseAttemptId: attemptId, allowUnclaimedTurn: true });
   return withTransaction(async (client) => {
-    await lockOwnedBinding(client, session, conversationId);
+    if (prepared) await assertStaffingNativeRelease(client, prepared, session);
+    else await lockOwnedBinding(client, session, conversationId);
     const result = await client.query<{
       dispatch_state: string; native_receipt: unknown; native_response_status: number | null;
       native_response_headers: Record<string, string> | null;
@@ -209,6 +221,9 @@ export async function recordNativePreAdmissionRejection(
       WHERE id = $1 AND conversation_id = $3 AND dispatch_state = 'dispatching'`,
     [attemptId, JSON.stringify(receipt), conversationId]);
     if (!changed.rowCount) throw new HttpFailure(409, "dispatch_claimed", "Dispatch state changed");
+    if (await staffingScopeForConversation(client, conversationId)) await client.query(`UPDATE staffing_advisory_attempts SET state='failed',
+      failure_code='native_pre_admission_rejected',settled_at=clock_timestamp(),updated_at=clock_timestamp()
+      WHERE response_attempt_id=$1 AND conversation_id=$2 AND state='running'`, [attemptId, conversationId]);
     await client.query(`UPDATE watchdog_jobs SET state = 'settled', updated_at = now()
       WHERE attempt_id = $1`, [attemptId]);
   });
@@ -230,15 +245,29 @@ export async function recordNativeReceipt(
   for (const [key, value] of nativeResponse.headers) {
     if (key === "content-type" || key.startsWith("x-eve-")) headers[key] = value;
   }
+  const prepared = await prepareStaffingNativeRelease(conversationId, { actor: session, responseAttemptId: attemptId, allowUnclaimedTurn: true });
   await withTransaction(async (client) => {
-    await lockOwnedBinding(client, session, conversationId);
+    if (prepared) await assertStaffingNativeRelease(client, prepared, session);
+    else await lockOwnedBinding(client, session, conversationId);
+    if (prepared) {
+      const prior = (await client.query(`SELECT native_receipt,native_response_status,native_response_headers FROM response_attempts
+        WHERE id=$1 AND conversation_id=$2`, [attemptId, conversationId])).rows[0];
+      if (prior?.native_receipt !== null && prior?.native_receipt !== undefined) {
+        if (staffingSha256(prior.native_receipt) !== staffingSha256(receipt) || prior.native_response_status !== nativeResponse.status ||
+          staffingSha256(prior.native_response_headers) !== staffingSha256(headers)) {
+          throw new HttpFailure(409, "native_receipt_changed", "Native receipt differs from the saved result");
+        }
+        return;
+      }
+    }
     const result = await client.query(`UPDATE response_attempts SET
       dispatch_state = 'admitted', native_delivery_id = $2,
       native_receipt = $3, native_response_status = $4, native_response_headers = $5,
       updated_at = now(), revision = revision + 1
-      WHERE id = $1 AND conversation_id = $6 AND dispatch_state = 'dispatching'`,
+      WHERE id = $1 AND conversation_id = $6 AND (dispatch_state = 'dispatching' OR ($7 AND dispatch_state='admitted'))
+        AND native_receipt IS NULL`,
     [attemptId, deliveryId, JSON.stringify(receipt), nativeResponse.status,
-      JSON.stringify(headers), conversationId]);
+      JSON.stringify(headers), conversationId, Boolean(prepared)]);
     if (!result.rowCount) throw new HttpFailure(409, "dispatch_claimed", "Dispatch state changed");
   });
 }
@@ -252,12 +281,35 @@ export async function markDispatchUncertain(
       last_error_code = $2, updated_at = now(), revision = revision + 1
       WHERE id = $1 AND conversation_id = $3 AND dispatch_state = 'dispatching'`,
     [attemptId, code, conversationId]);
+    if (await staffingScopeForConversation(client, conversationId)) await client.query(`UPDATE staffing_advisory_attempts SET state='unconfirmed',
+      failure_code='native_completion_unconfirmed',settled_at=clock_timestamp(),updated_at=clock_timestamp()
+      WHERE response_attempt_id=$1 AND conversation_id=$2 AND state='running'`, [attemptId, conversationId]);
   });
 }
 
 export async function deriveNativeAttempt(
   session: CurrentSession, nativeSessionId: string, requestKey: string, text: string,
 ): Promise<string> {
+  const staffingAttempt = await withTransaction(async db => {
+    const row = (await db.query(`SELECT a.id,a.conversation_id FROM response_attempts a JOIN submitted_messages sm ON sm.id=a.message_id
+      JOIN conversations c ON c.id=a.conversation_id WHERE c.eve_session_id=$1 AND c.owner_principal_id=$2 AND c.environment_id=$3
+      AND sm.request_key=$4 AND a.dispatch_state='dispatching'`,
+      [nativeSessionId, session.principalId, getServerConfig().TURAS_ENVIRONMENT_ID, requestKey])).rows[0];
+    return row && await staffingScopeForConversation(db, row.conversation_id) ? row as { id: string; conversation_id: string } : null;
+  });
+  if (staffingAttempt) {
+    const prepared = await prepareStaffingNativeRelease(staffingAttempt.conversation_id,
+      { actor: session, nativeSessionId, responseAttemptId: staffingAttempt.id, allowUnclaimedTurn: true });
+    if (!prepared) throw hiddenRecord();
+    return withTransaction(async db => {
+      await assertStaffingNativeRelease(db, prepared, session);
+      const row = (await db.query(`SELECT a.dispatch_state,sm.body_digest,sm.request_key FROM response_attempts a
+        JOIN submitted_messages sm ON sm.id=a.message_id WHERE a.id=$1 AND a.conversation_id=$2`,
+        [staffingAttempt.id, staffingAttempt.conversation_id])).rows[0];
+      if (!row || row.dispatch_state !== "dispatching" || row.request_key !== requestKey || row.body_digest !== messageDigest(text)) throw hiddenRecord();
+      return staffingAttempt.id;
+    });
+  }
   const result = await withTransaction(async (client) => {
     const found = await client.query<{ id: string; conversation_id: string; body_digest: string }>(`
       SELECT a.id, a.conversation_id, sm.body_digest

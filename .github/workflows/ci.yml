@@ -93,6 +93,8 @@ jobs:
         run: npm run test:retrieval
       - name: Test delivery plans on an isolated disposable clone
         run: npm run test:plans
+      - name: Test staffing with complete suite coverage on an owned disposable clone
+        run: npm run test:staffing
       - name: Compile without sandbox preparation
         run: npm run build:check
       - name: Validate Spec Kit feature artifacts
@@ -103,6 +105,11 @@ jobs:
       - name: Validate feature 005 Spec Kit artifacts
         env:
           SPECIFY_FEATURE_DIRECTORY: specs/005-governed-rag-research
+          SPECIFY_FEATURE_NO_PERSIST: '1'
+        run: .specify/scripts/bash/check-prerequisites.sh --json --require-spec --require-tasks
+      - name: Validate feature 007 Spec Kit artifacts
+        env:
+          SPECIFY_FEATURE_DIRECTORY: specs/007-skills-staffing
           SPECIFY_FEATURE_NO_PERSIST: '1'
         run: .specify/scripts/bash/check-prerequisites.sh --json --require-spec --require-tasks
       - name: Install WebKit

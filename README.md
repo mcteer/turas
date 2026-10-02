@@ -17,8 +17,8 @@ maturity assessments, attributed synthetic research, evidence quality and confli
 review, partner projections, and bound agent context
 for local testing. Feature 004 adds local private attachment intake, isolated
 scan/extraction, exact-source review, bounded unverified chat selection and
-versioned cleanup. Feature 006 delivery plans are merged; staffing,
-reports and MCP remain planned.
+versioned cleanup. Feature 006 delivery plans are merged; staffing is locally validated,
+while reports and MCP remain planned.
 Feature 005 is merged in [PR 8](https://github.com/mcteer/turas/pull/8). Governed retrieval,
 shared knowledge publication, bounded research, refresh and typed conflict
 flows have focused local checks and CLI WebKit journeys. A 40-query synthetic
@@ -38,6 +38,19 @@ four-project WebKit matrix and reviewed eight-case live evaluation. Preview was
 explicitly upgraded to schema 031 and inspected afterward; local unauthenticated
 app and Eve health smoke passed. The full PR CI workflow passed; the feature has
 not been released.
+Feature 007 has a [specification](specs/007-skills-staffing/spec.md),
+[design](specs/007-skills-staffing/plan.md) and
+[implementation tasks](specs/007-skills-staffing/tasks.md). It implements reviewed
+competencies and private workforce imports, dated capacity, explained matching,
+human-confirmed allocations, planned operations/economics and governed read-only
+Turi advice. Only `mcteer` has staffing-manager and finance authority; delegation
+is deferred. The [validation log](specs/007-skills-staffing/validation.md) records
+passing disposable domain and regression tests, 112 CLI WebKit cases, paired
+recovery, the 500-resource load gate and eight reviewed live advisory cases.
+Preview was explicitly upgraded to schema 034 and read-only inspected afterward;
+local unauthenticated app and runtime-role smoke passed. Review-head CI and the
+feature PR remain to be completed. The feature has not been deployed or
+validated on hosted infrastructure.
 No speculative eve integrations have been installed. The configured model is
 unchanged. The application has not been deployed or validated on hosted infrastructure.
 

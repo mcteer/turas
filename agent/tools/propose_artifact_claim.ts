@@ -1,5 +1,6 @@
+import { staffingResponseScope } from "../../lib/server/staffing/native-context";
 import { createHash } from "node:crypto";
-import { defineTool } from "eve/tools";
+import { defineDynamic, defineTool } from "eve/tools";
 import { z } from "zod";
 import { withTransaction } from "../../lib/server/db/client";
 import { boundToolActor } from "../../lib/server/profiles/tool-actor";
@@ -18,7 +19,7 @@ function stableRequestKey(attemptId: string,callId: string): string {
   return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
 }
 
-export default defineTool({
+export const authoredTool = defineTool({
   description: "When the human explicitly asks to retain a claim from a selected document, submit one assistant-authored Pending claim. Input only sourceNumber (1–5) and the claim text; exact selected units supply support. The tool never approves the claim and cannot read arbitrary files.",
   inputSchema,
   async execute(input,ctx) {
@@ -49,3 +50,10 @@ export default defineTool({
     });
   },
 });
+
+export default defineDynamic({ events: {
+  async "turn.started"(_event, ctx) {
+    const scope = await staffingResponseScope(ctx.session.auth.current);
+    return !scope ? authoredTool : null;
+  },
+} });

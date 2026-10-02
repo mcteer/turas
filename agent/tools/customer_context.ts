@@ -1,4 +1,5 @@
-import { defineTool } from "eve/tools";
+import { staffingResponseScope } from "../../lib/server/staffing/native-context";
+import { defineDynamic, defineTool } from "eve/tools";
 import { z } from "zod";
 import { withTransaction } from "../../lib/server/db/client";
 import { readEligibleContext } from "../../lib/server/profiles/context";
@@ -12,7 +13,7 @@ const inputSchema = z.object({
   limit: z.number().int().min(1).max(20).default(20),
 }).strict();
 
-export default defineTool({
+export const authoredTool = defineTool({
   description: "Read currently authorized, cited accepted customer facts and attributed research for this bound customer. Results may be partial or expire. No pending claims are returned.",
   inputSchema,
   async execute(input, ctx) {
@@ -34,3 +35,10 @@ export default defineTool({
     });
   },
 });
+
+export default defineDynamic({ events: {
+  async "turn.started"(_event, ctx) {
+    const scope = await staffingResponseScope(ctx.session.auth.current);
+    return !scope ? authoredTool : null;
+  },
+} });
