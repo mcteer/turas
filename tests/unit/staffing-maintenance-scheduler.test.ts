@@ -1,0 +1,41 @@
+import { afterEach, expect, it, vi } from "vitest";
+
+const calls = vi.hoisted(() => ({ workforce: vi.fn(async () => undefined), cleanup: vi.fn(async () => undefined),
+  heartbeat: vi.fn(async () => undefined), expiry: vi.fn(async () => 0), advisory: vi.fn(async () => 0), conversation: vi.fn(() => new Promise<void>(() => undefined)) }));
+vi.mock("../../lib/server/db/client", () => ({ closeRuntimePool: vi.fn(async () => undefined), withTransaction: vi.fn(async (run: (db: object) => unknown) => run({})) }));
+vi.mock("../../lib/server/config", () => ({ getServerConfig: () => ({ TURAS_ENVIRONMENT_ID: "staffing-synthetic-scheduler" }) }));
+vi.mock("../../lib/server/conversations/watchdog", () => ({ heartbeatWorker: calls.conversation, claimDueJobs: vi.fn(), finishDueJob: vi.fn(), signMaintenanceRequest: vi.fn() }));
+vi.mock("../../scripts/retrieval-worker", () => ({ runRetrievalWorkerTick: vi.fn(async () => undefined) }));
+vi.mock("../../lib/server/retrieval/cleanup", () => ({ runRetrievalCleanupTick: vi.fn(async () => undefined) }));
+vi.mock("../../lib/server/knowledge/suspension", () => ({ suspendStaleKnowledge: vi.fn(async () => undefined) }));
+vi.mock("../../lib/server/research/refresh", () => ({ markDueResearch: vi.fn(async () => undefined) }));
+vi.mock("../../lib/server/plans/cleanup", () => ({ runPlanCleanupTick: vi.fn(async () => undefined) }));
+vi.mock("../../lib/server/staffing/runner", () => ({ runWorkforceWorkerTick: calls.workforce }));
+vi.mock("../../lib/server/staffing/cleanup", () => ({ runWorkforceCleanupTick: calls.cleanup }));
+vi.mock("../../lib/server/staffing/worker-readiness", () => ({ heartbeatWorkforceWorker: calls.heartbeat }));
+vi.mock("../../lib/server/staffing/repository", () => ({ requireStaffingEnvironment: vi.fn(async () => undefined) }));
+vi.mock("../../lib/server/staffing/reservations", () => ({ expireStaffingReservations: calls.expiry }));
+vi.mock("../../lib/server/staffing/advisory-maintenance", () => ({ settleDueStaffingAdvisories: calls.advisory }));
+
+afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllEnvs(); });
+it("a stalled conversation watchdog neither blocks workforce maintenance nor multiplies its timers", async () => {
+  vi.useFakeTimers(); vi.stubEnv("TURAS_EVE_INTERNAL_ORIGIN", "http://127.0.0.1:19007");
+  vi.stubEnv("TURAS_WORKFORCE_STORE_ROOT", "/tmp/staffing-synthetic-scheduler");
+  const signals = ["SIGINT", "SIGTERM"] as const;
+  const existing = new Map(signals.map(signal => [signal, process.listeners(signal)]));
+  try {
+    await import("../../scripts/maintenance-worker");
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(calls.conversation).toHaveBeenCalledTimes(1);
+    expect(calls.workforce).toHaveBeenCalledTimes(7);
+    expect(calls.cleanup).toHaveBeenCalledTimes(3);
+    expect(calls.heartbeat).toHaveBeenCalledTimes(3);
+    expect(calls.expiry).toHaveBeenCalledTimes(3);
+    expect(calls.advisory).toHaveBeenCalledTimes(3);
+    expect(vi.getTimerCount()).toBe(6);
+  } finally {
+    for (const signal of signals) for (const listener of process.listeners(signal)) {
+      if (!existing.get(signal)!.includes(listener)) process.removeListener(signal, listener);
+    }
+  }
+});

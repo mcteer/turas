@@ -6,6 +6,7 @@ import { withTransaction } from "../db/client";
 import type { PlanActor } from "../plans/policy";
 import { lockPlanActor } from "../plans/policy";
 import { readPlan } from "../plans/read";
+import { readDeliveryAssignments } from "../staffing/assignments";
 
 type Row={id:string;plan_id:string;customer_id:string;workload_id:string|null;
   audience:"internal"|"delivery";active_baseline_id:string|null;
@@ -15,7 +16,8 @@ export type EngagementDetail={contractVersion:"delivery-plan-v1";engagementId:st
   audience:"internal"|"delivery";acceptedRevisionId:string;
   activeBaselineId:string;baselineNumber:number;contentAvailability:string;
   reviewRequired:boolean;title:string;milestones:unknown[]|null;
-  workPackages:unknown[]|null;acceptedAt:string};
+  workPackages:unknown[]|null;acceptedAt:string;
+  staffingAssignments?:Awaited<ReturnType<typeof readDeliveryAssignments>>};
 
 async function detail(client:PoolClient,actor:PlanActor,row:Row):Promise<EngagementDetail> {
   if (!row.active_baseline_id || !row.accepted_revision_id) throw hiddenRecord();
@@ -48,7 +50,7 @@ async function detail(client:PoolClient,actor:PlanActor,row:Row):Promise<Engagem
 }
 
 export async function readEngagement(actor:PlanActor,id:string,
-  existingClient?:PoolClient):Promise<EngagementDetail> {
+  existingClient?:PoolClient,staffingPaging:unknown={}):Promise<EngagementDetail> {
   if (!z.uuid().safeParse(id).success) throw hiddenRecord();
   const run=async(client:PoolClient)=>{
     const found=await client.query<Row>(`SELECT engagement.id,engagement.plan_id,
@@ -62,7 +64,9 @@ export async function readEngagement(actor:PlanActor,id:string,
     if (!row) throw hiddenRecord();
     await lockPlanActor(client,actor,row.customer_id,false);
     if (actor.kind==="partner" && row.audience!=="delivery") throw hiddenRecord();
-    return detail(client,actor,row);
+    const result=await detail(client,actor,row);
+    result.staffingAssignments=await readDeliveryAssignments(client,actor,result,staffingPaging);
+    return result;
   };
   return existingClient ? run(existingClient):withTransaction(run);
 }

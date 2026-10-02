@@ -1,4 +1,5 @@
-import { defineTool } from "eve/tools";
+import { staffingResponseScope } from "../../lib/server/staffing/native-context";
+import { defineDynamic, defineTool } from "eve/tools";
 import { z } from "zod";
 import { planDraftContentSchema } from "../../lib/contracts/plan-content";
 import { HttpFailure,hiddenRecord } from "../../lib/contracts/http";
@@ -10,7 +11,7 @@ import { recordPlanRead } from "../../lib/server/plans/drafting";
 const partSchema=z.enum(["complete","sections","assertions","diagrams","designDecisions",
   "workPackages","milestones","reusedSolutions"]);
 
-export default defineTool({
+export const authoredTool = defineTool({
   description: "Read the exact editable base plan for the active planning attempt. The default complete view returns the full content when it fits the context budget; use named parts and offsets for larger plans. The server fixes plan, revision, audience and workload; withheld content is never returned.",
   inputSchema:z.object({part:partSchema.default("complete"),
     offset:z.number().int().min(0).max(100).default(0),
@@ -92,3 +93,10 @@ export default defineTool({
     });
   },
 });
+
+export default defineDynamic({ events: {
+  async "turn.started"(_event, ctx) {
+    const scope = await staffingResponseScope(ctx.session.auth.current);
+    return !scope ? authoredTool : null;
+  },
+} });

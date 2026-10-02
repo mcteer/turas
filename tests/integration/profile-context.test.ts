@@ -7,6 +7,7 @@ import { submitProfileCommand } from "../../lib/server/profiles/service";
 import { readEligibleContext } from "../../lib/server/profiles/context";
 import { ingestVerifiedResearch } from "../../lib/server/profiles/research";
 import { readProfile, readProfileSource } from "../../lib/server/profiles/read";
+import { rateEvidence } from "../../lib/server/profiles/quality";
 
 const customerId = DEMO_IDS.sharedCustomer;
 
@@ -106,13 +107,17 @@ describe("accepted context eligibility", () => {
             { requestKey: randomUUID(), action: "accept_revision", revisionId: proposed.revisionId,
               digest: digest.rows[0].content_digest, expectedRecordVersion: 0,
               expectedAcceptedRevisionId: null, rationale: "Synthetic source verified" }, client);
-          const quality = await client.query<{ input: { evidenceAt: string }; freshness: number }>(
-            "SELECT input,freshness FROM evidence_quality_snapshots WHERE profile_revision_id=$1",
+          const quality = await client.query<{ input: { evidenceAt: string }; freshness: number; as_of: Date }>(
+            "SELECT input,freshness,as_of FROM evidence_quality_snapshots WHERE profile_revision_id=$1",
             [proposed.revisionId]);
-          expect(quality.rows[0]).toMatchObject({ input: { evidenceAt: "2026-09-01T00:00:00.000Z" }, freshness: 4 });
+          const datedQuality = (asOf: Date) => rateEvidence({ R: 2, D: 4, C: 1,
+            informationType: "product_capability", dateBasis: "publication",
+            evidenceAt: new Date("2026-09-01T00:00:00.000Z"), asOf }).F;
+          expect(quality.rows[0].input.evidenceAt).toBe("2026-09-01T00:00:00.000Z");
+          expect(quality.rows[0].freshness).toBe(datedQuality(quality.rows[0].as_of));
           const projected = await readProfile(admin, customerId, client) as {
             acceptedFacts: { id: string; quality: { F: number } }[] };
-          expect(projected.acceptedFacts.find((item) => item.id === proposed.revisionId)?.quality.F).toBe(4);
+          expect(projected.acceptedFacts.find((item) => item.id === proposed.revisionId)?.quality.F).toBe(datedQuality(new Date()));
           const before = await readEligibleContext(admin, customerId,
             { query: marker }, client) as { entries: { citationId: string }[] };
           expect(before.entries.map((entry) => entry.citationId)).toContain(proposed.revisionId);

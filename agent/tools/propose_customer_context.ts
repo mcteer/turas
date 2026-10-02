@@ -1,5 +1,6 @@
+import { staffingResponseScope } from "../../lib/server/staffing/native-context";
 import { createHash } from "node:crypto";
-import { defineTool } from "eve/tools";
+import { defineDynamic, defineTool } from "eve/tools";
 import { z } from "zod";
 import { profilePayloadSchema } from "../../lib/contracts/profile-payloads";
 import { qualityInputSchema } from "../../lib/contracts/profiles";
@@ -40,7 +41,7 @@ function stableRequestKey(attemptId: string, callId: string): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-export default defineTool({
+export const authoredTool = defineTool({
   description: "Submit one assistant-authored Pending customer proposal for human review. For a human-requested claim from selected artifact text, input only artifactSourceNumber 1–5 and a claim payload with sourceType manual; do not pass coverage, source objects, citations or paths. Exact selected units supply the citation. A claim citing the current user's message instead needs its exact message ID, span and SHA-256 digest. This tool cannot accept facts or select a trusted origin.",
   inputSchema,
   async execute(input, ctx) {
@@ -109,3 +110,10 @@ export default defineTool({
     });
   },
 });
+
+export default defineDynamic({ events: {
+  async "turn.started"(_event, ctx) {
+    const scope = await staffingResponseScope(ctx.session.auth.current);
+    return !scope ? authoredTool : null;
+  },
+} });

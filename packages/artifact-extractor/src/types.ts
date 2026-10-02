@@ -34,3 +34,45 @@ export function finish(units: Unit[], total = units.length, omitted: Coverage["o
     coverage: { total, visited: Math.min(total, units.length), omitted },
     warnings: units.length ? [] : ["no_text"] };
 }
+
+export type WorkforceCell = {
+  sheetIndex: number; rowNumber: number; columnNumber: number; a1: string | null;
+  kind: "string" | "number" | "boolean" | "date" | "formula" | "error" | "empty";
+  raw: string | number | boolean | null; text: string;
+  formula: string | null; sharedFormula: string | null;
+  cachedValue: string | number | boolean | null;
+  hiddenSheet: boolean; hiddenRow: boolean; hiddenColumn: boolean;
+  merged: boolean; mergedMaster: string | null;
+  lineStart: number | null; lineEnd: number | null;
+};
+export type WorkforceTable = {
+  cells: WorkforceCell[];
+  sheets: Array<{ index: number; name: string; state: "visible" | "hidden" | "veryHidden";
+    rowCount: number; columnCount: number }>;
+  dateSystem: "1900" | "1904" | null;
+  coverage: Coverage; codePointCount: number;
+};
+export type WorkforceManifest = WorkforceTable & {
+  contract: "workforce-table-v1"; parserVersion: "007-table-parser-v1";
+  originalDigest: string; imageDigest: string; scanReceiptDigest: string;
+  format: "csv" | "xlsx"; status: "ready" | "partial";
+};
+
+/** No cell is truncated into an apparently complete candidate. */
+export function workforceCollector() {
+  const cells: WorkforceCell[] = [];
+  const omissions = new Map<string, number>();
+  let total = 0, codePointCount = 0;
+  const omit = (reason: string, count = 1) => omissions.set(reason, (omissions.get(reason) ?? 0) + count);
+  const append = (cell: WorkforceCell) => {
+    total++;
+    if (cells.length >= 50_000) { omit("cell_limit"); return; }
+    const points = Array.from(cell.text).length + Array.from(cell.formula ?? "").length;
+    if (codePointCount + points > 500_000) { omit("code_point_limit"); return; }
+    codePointCount += points; cells.push(cell);
+  };
+  const finish = () => ({ cells, codePointCount,
+    coverage: { total, visited: cells.length, omitted: [...omissions].map(([reason, count]) =>
+      ({ kind: "cell", count, reason })) } });
+  return { append, omit, finish };
+}

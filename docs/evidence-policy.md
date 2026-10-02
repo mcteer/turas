@@ -92,6 +92,17 @@ sheet/row/cell location, extraction and embedding versions. Spreadsheet competen
 also become structured candidate rows with person identity, skill taxonomy, level,
 assessment date, evidence and reviewer; approval precedes staffing use.
 
+Feature 007 implements this as a separate private workforce intake and domain.
+Workforce originals, extracted cells, assessment notes and
+absence categories do not enter customer artifact retrieval, shared knowledge or
+ordinary chat context. Current operational readers receive approved competency
+summaries and dated capacity totals; canonical `mcteer` alone reviews personnel
+evidence and controls finance. A later approval does not refresh an assessment's
+original date. Withdrawal makes a source ineligible and withholds its prose before
+physical cleanup, while immutable revision and decision identities survive.
+See the [007 validation log](../specs/007-skills-staffing/validation.md) for the passing
+local source-lifecycle, native-output and reviewed journey gates.
+
 Filter permissions and evidence eligibility before hybrid keyword/vector retrieval;
 recheck current source revision and grants after ranking. Similarity indicates
 relevance only. Reject stale asynchronous index writes. Correction/deletion must

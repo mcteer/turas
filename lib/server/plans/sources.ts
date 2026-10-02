@@ -50,6 +50,27 @@ async function lockOriginalHeader(client:PoolClient,
     "Plan evidence changed; review its sources again");
 }
 
+/** Lock a union of immutable revision dependencies before a batched consumer
+ * acquires engagement/workforce locks. Missing originals remain ineligible;
+ * currentPlanSourceDigest still performs each revision's authority checks. */
+export async function lockPlanRevisionSourceHeaders(client: PoolClient, revisionIds: readonly string[]) {
+  const rows = (await client.query<{source_kind: string; source_revision_id: string}>(`
+    SELECT source_kind,source_revision_id FROM plan_source_dependencies WHERE revision_id=ANY($1::uuid[])
+    UNION SELECT CASE WHEN source_kind='published_shared' THEN 'shared_knowledge' ELSE source_kind END,source_revision_id
+      FROM plan_private_dependencies WHERE revision_id=ANY($1::uuid[])
+    ORDER BY source_kind,source_revision_id`, [revisionIds])).rows;
+  for (const row of rows) {
+    if (!["accepted_profile", "approved_excerpt", "verified_research", "shared_knowledge"].includes(row.source_kind)) {
+      throw new HttpFailure(409, "plan_source_changed", "Plan evidence changed; review its sources again");
+    }
+    try { await lockOriginalHeader(client, row.source_kind as SourceReference["kind"], row.source_revision_id); }
+    catch (error) {
+      if (!(error instanceof HttpFailure) || error.status !== 409) throw error;
+      // Consumers check the missing original and retain historical commitments.
+    }
+  }
+}
+
 /** Resolve original identities under the reader's current scope, never receipt TTL. */
 export async function verifyPlanSources(client:PoolClient,actor:PlanActor,
   customerId:string,workloadId:string|null,audience:"internal"|"delivery",

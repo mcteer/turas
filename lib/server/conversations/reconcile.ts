@@ -3,6 +3,8 @@ import { getServerConfig } from "../config";
 import { messageDigest } from "./dispatch";
 import { projectNativeEventInTransaction, type NativeEvent } from "./projection";
 import { artifactContextSchemaReady } from "../artifacts/context-fence";
+import { staffingScopeForConversation } from "../staffing/context";
+import { reconcileStaffingNativeEvents } from "../staffing/native-reconcile";
 
 export type IndexedNativeEvent = { index: number; event: NativeEvent };
 export type ReconcileResult = { state: "reconciled" | "uncertain" | "ambiguous"; nextIndex: number };
@@ -10,6 +12,13 @@ export type ReconcileResult = { state: "reconciled" | "uncertain" | "ambiguous";
 export async function reconcileFromEvents(
   nativeSessionId: string, attemptId: string, inputEvents: readonly IndexedNativeEvent[],
 ): Promise<ReconcileResult> {
+  const staffing = await withTransaction(async db => {
+    const row = (await db.query(`SELECT a.conversation_id FROM response_attempts a JOIN conversations c ON c.id=a.conversation_id
+      WHERE a.id=$1 AND c.eve_session_id=$2 AND c.environment_id=$3`,
+      [attemptId, nativeSessionId, getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
+    return row ? staffingScopeForConversation(db, row.conversation_id) : null;
+  });
+  if (staffing) return reconcileStaffingNativeEvents(nativeSessionId, attemptId, inputEvents);
   return withTransaction(async (client) => {
     const result = await client.query<{
       conversation_id: string; dispatch_start_index: string | null; input_digest: string;

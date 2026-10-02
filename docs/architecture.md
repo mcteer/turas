@@ -152,6 +152,36 @@ and report retrieval. Enforce token audience/scopes and customer grants, paginat
 response limits, source citations and audit. Do not expose SQL or administrative
 tools. Select current protocol/SDK versions when implementing the MCP spec.
 
+## Feature 007 implementation boundary
+
+Staffing is implemented in a separate governed server domain under
+`lib/server/staffing`. UI routes share its live authorization, exact revision
+commands and actor-scoped reconciliation. Workforce originals use a marked private
+store distinct from customer artifact/RAG storage. Explicit 032–034 migrations
+passed in marked tests and owned clones before explicit Preview upgrade to schema
+034. Production remains excluded.
+
+The current slice includes personnel intake/review, exact accepted-baseline demand,
+calendar publication, matching, allocation proposals/reservations, all four human
+decision paths, batched operations, separate entered finance inputs and immutable
+scenario snapshots. Engagement detail adds a bounded confirmed-future assignment
+projection with restricted narrative and current customer-grant checks. Current
+decision/lifecycle/HTTP/UI database gates passed locally. Calendar approval refuses a
+missing or mismatched pinned timezone resolver. Scenario, partner assignment and
+governed native advisory gates passed locally. Fresh advisory preparation,
+binding guards, charged delivery-only snapshots, four bounded read tools, governed
+paid-step admission, source-fenced projection/history/chunk/reconnect/replay and
+metadata-only usage/terminal reconciliation are now connected in authored code.
+The native test suite substitutes a bounded eve fixture model only in an owned
+disposable app copy; the owned native and eight-case actual-output gates passed.
+The explanation UI uses one
+explicit dispatch, owner status and durable stop acknowledgement. Feature disable
+also closes all native content/provider paths while metadata settlement continues.
+Feature disable blocks new writes while eligible
+reads, cancellation, receipt lookup and independent retention continue. This is a
+local implementation boundary, not a hosted rollout or recovery claim; see
+[007 validation](../specs/007-skills-staffing/validation.md) for current evidence.
+
 ## Primary references
 
 - [eve documentation](https://eve.dev/docs); installed task routing in

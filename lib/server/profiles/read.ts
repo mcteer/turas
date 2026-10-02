@@ -136,14 +136,15 @@ export async function listProfileRecords(actor: ProfileActor, customerId: string
 
 export async function readProfile(actor: ProfileActor, customerId: string, existingClient?: PoolClient,
   selectedWorkloadId?: string,effectiveAudience?:"internal"|"delivery",
-  customerWideOnly=false): Promise<unknown> {
+  customerWideOnly=false,shareActorRows=false,staffingFence=false): Promise<unknown> {
   if (actor.kind==="partner" && effectiveAudience==="internal") throw hiddenRecord();
+  if (staffingFence && (!existingClient || effectiveAudience !== "delivery" || !shareActorRows)) throw hiddenRecord();
   const allowInternal=(effectiveAudience ?? (actor.kind==="internal" ? "internal":"delivery"))
     ==="internal";
   const projectionKind=allowInternal ? actor.kind:"partner";
   const run = async (client: PoolClient) => {
-    await lockProfileActor(client, actor, customerId);
-    await enforceProfileRate(client, actor, customerId, "read");
+    await lockProfileActor(client, actor, customerId, undefined, shareActorRows);
+    if (!staffingFence) await enforceProfileRate(client, actor, customerId, "read");
     const customer = await client.query<{ id: string; display_name: string; synthetic: boolean }>(
       "SELECT id,display_name,synthetic FROM customer_references WHERE id=$1 AND workspace_id=$2",
       [customerId, actor.workspaceId]);

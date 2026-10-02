@@ -236,3 +236,42 @@ export const approvedArtifactExcerptSchema = z.object({
   attestation: z.string().min(1).max(2_000),
 }).strict();
 export type ApprovedArtifactExcerpt = z.infer<typeof approvedArtifactExcerptSchema>;
+
+/** Additive private workforce mode; existing artifact-intake-v1 contracts are unchanged. */
+const workforceScalarSchema = z.union([z.string().max(500_000), z.number().finite(), z.boolean(), z.null()]);
+export const workforceCellSchema = z.object({ sheetIndex: z.number().int().min(0).max(19),
+  rowNumber: positive.max(1_048_576), columnNumber: positive.max(16_384),
+  a1: z.string().regex(/^[A-Z]{1,3}[1-9][0-9]{0,6}$/).nullable(),
+  kind: z.enum(["string", "number", "boolean", "date", "formula", "error", "empty"]),
+  raw: workforceScalarSchema, text: z.string().max(500_000), formula: z.string().max(500_000).nullable(),
+  sharedFormula: z.string().max(100).nullable(), cachedValue: workforceScalarSchema,
+  hiddenSheet: z.boolean(), hiddenRow: z.boolean(), hiddenColumn: z.boolean(),
+  merged: z.boolean(), mergedMaster: z.string().max(20).nullable(),
+  lineStart: positive.nullable(), lineEnd: positive.nullable(),
+}).strict();
+export const workforceExtractionSchema = z.object({ contract: z.literal("workforce-table-v1"),
+  parserVersion: z.literal("007-table-parser-v1"), originalDigest: digest, imageDigest: digest,
+  scanReceiptDigest: digest, format: z.enum(["csv", "xlsx"]), status: z.enum(["ready", "partial"]),
+  dateSystem: z.enum(["1900", "1904"]).nullable(),
+  sheets: z.array(z.object({ index: z.number().int().min(0).max(19), name: z.string().min(1).max(255),
+    state: z.enum(["visible", "hidden", "veryHidden"]), rowCount: nonnegative.max(1_048_576),
+    columnCount: nonnegative.max(16_384) }).strict()).min(1).max(20),
+  cells: z.array(workforceCellSchema).max(50_000), codePointCount: nonnegative.max(500_000),
+  coverage: z.object({ total: nonnegative.nullable(), visited: nonnegative.max(50_000),
+    omitted: z.array(z.object({ kind: z.string().max(30), count: positive,
+      reason: z.enum(["sheet_limit", "cell_limit", "code_point_limit", "raw_date_unavailable"]) }).strict()).max(20),
+  }).strict(),
+}).strict().superRefine((v, ctx) => {
+  const sheetIds = new Set(v.sheets.map(s => s.index));
+  const locators = new Set(v.cells.map(c => `${c.sheetIndex}:${c.rowNumber}:${c.columnNumber}`));
+  const points = v.cells.reduce((n, c) => n + Array.from(c.text).length + Array.from(c.formula ?? "").length, 0);
+  if (sheetIds.size !== v.sheets.length || locators.size !== v.cells.length ||
+      v.cells.some(c => !sheetIds.has(c.sheetIndex)) || v.coverage.visited !== v.cells.length ||
+      (v.coverage.total !== null && v.coverage.total < v.cells.length) || points !== v.codePointCount ||
+      (v.status === "ready") !== (v.coverage.omitted.length === 0) ||
+      (v.format === "csv") !== (v.dateSystem === null)) {
+    ctx.addIssue({ code: "custom", message: "Invalid workforce coverage or lineage" });
+  }
+});
+export type WorkforceExtraction = z.infer<typeof workforceExtractionSchema>;
+export type WorkforceExtractedCell = z.infer<typeof workforceCellSchema>;

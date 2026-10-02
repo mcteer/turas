@@ -1,4 +1,5 @@
-import { defineTool } from "eve/tools";
+import { staffingResponseScope } from "../../lib/server/staffing/native-context";
+import { defineDynamic, defineTool } from "eve/tools";
 import { z } from "zod";
 import { withTransaction } from "../../lib/server/db/client";
 import { boundToolActor } from "../../lib/server/profiles/tool-actor";
@@ -6,7 +7,7 @@ import { readResearchRun } from "../../lib/server/research/requests";
 import { readResearchFindings } from "../../lib/server/research/read";
 import { hiddenRecord } from "../../lib/contracts/http";
 
-export default defineTool({
+export const authoredTool = defineTool({
   description: "Read the current state and retained checked findings of a research run owned by the bound actor. A cancelled or partial run stays labelled as such. Only completed, currently eligible attributed findings are returned.",
   inputSchema: z.object({ runId: z.uuid() }).strict(),
   async execute({ runId },ctx) {
@@ -28,3 +29,10 @@ export default defineTool({
     });
   },
 });
+
+export default defineDynamic({ events: {
+  async "turn.started"(_event, ctx) {
+    const scope = await staffingResponseScope(ctx.session.auth.current);
+    return !scope ? authoredTool : null;
+  },
+} });

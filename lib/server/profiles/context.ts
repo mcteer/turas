@@ -28,7 +28,8 @@ type ProfileProjection = {
 
 export async function readEligibleContext(actor: ProfileActor, customerId: string,
   options: { limit?: number; query?: string; workloadId?: string; kind?: RecordKind;
-    page?: number;audience?:"internal"|"delivery";customerWideOnly?:boolean } = {},
+    page?: number;audience?:"internal"|"delivery";customerWideOnly?:boolean;shareActorRows?:boolean;
+    staffingFence?: boolean } = {},
   existingClient?: PoolClient): Promise<unknown> {
   const limit = options.limit ?? 20;
   const page = options.page ?? 1;
@@ -37,7 +38,7 @@ export async function readEligibleContext(actor: ProfileActor, customerId: strin
       (options.query?.length ?? 0) > 200) throw new HttpFailure(422, "invalid_query", "Invalid context query");
   const run = async (client: PoolClient) => {
     const profile = await readProfile(actor, customerId, client,options.workloadId,
-      options.audience,options.customerWideOnly ?? false) as ProfileProjection;
+      options.audience,options.customerWideOnly ?? false,options.shareActorRows ?? false,options.staffingFence ?? false) as ProfileProjection;
     if (options.workloadId && !profile.workloads.some((workload) => workload.id === options.workloadId)) {
       throw hiddenRecord();
     }
@@ -85,4 +86,18 @@ export async function readEligibleContext(actor: ProfileActor, customerId: strin
       knownGaps: truncated ? ["Additional authorized context was omitted by the result limit"] : [] };
   };
   return existingClient ? run(existingClient) : withTransaction(run);
+}
+
+/** Staffing never falls back to the actor's default internal audience. This
+ * authoritative read must precede plan/workforce locks in the native prefix.
+ * Only the governed accepted delivery projection is returned, with explicit
+ * bounded coverage; callers charge it before model injection. */
+export async function readStaffingDeliveryContext(actor: ProfileActor, customerId: string, workloadId: string | null,
+  client: PoolClient) {
+  return readEligibleContext(actor, customerId, { audience: "delivery", workloadId: workloadId ?? undefined,
+    customerWideOnly: workloadId === null, limit: 20, shareActorRows: true, staffingFence: true }, client) as Promise<{
+      contractVersion: "customer-context-v1"; customer: { id: string; displayName: string; synthetic: boolean };
+      contextVersion: string; asOf: string; validUntil: string; entries: Record<string, unknown>[];
+      page: number; complete: boolean; truncated: boolean; knownGaps: string[];
+    }>;
 }

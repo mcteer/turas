@@ -1,5 +1,6 @@
+import { staffingResponseScope } from "../../lib/server/staffing/native-context";
 import { createHash } from "node:crypto";
-import { defineTool } from "eve/tools";
+import { defineDynamic, defineTool } from "eve/tools";
 import { z } from "zod";
 import { withTransaction } from "../../lib/server/db/client";
 import { boundToolActor } from "../../lib/server/profiles/tool-actor";
@@ -14,7 +15,7 @@ const inputSchema = z.discriminatedUnion("mode",[
   z.object({ mode: z.literal("fit"),evidenceReceiptIds: z.array(z.uuid()).min(1).max(10) }).strict(),
 ]);
 
-export default defineTool({
+export const authoredTool = defineTool({
   description: "Prepare an inert public research preview for the bound customer and owned conversation. Does not send anything to a provider. Recon public identity must be confirmed by the user in the UI before a preview can be created. The user alone starts admitted research.",
   inputSchema,
   async execute(input,ctx) {
@@ -42,3 +43,10 @@ export default defineTool({
       nextAction: "Show the exact preview and wait for the user to start it" };
   },
 });
+
+export default defineDynamic({ events: {
+  async "turn.started"(_event, ctx) {
+    const scope = await staffingResponseScope(ctx.session.auth.current);
+    return !scope ? authoredTool : null;
+  },
+} });

@@ -29,3 +29,25 @@ export function extractText(text: string, format: "txt" | "md" | "csv"): Parsed 
   }
   return finish(units);
 }
+
+import { workforceCollector, type WorkforceTable } from "./types.ts";
+
+export function extractWorkforceCsv(text: string): WorkforceTable {
+  const records = parseCsv(text, { bom: true, skip_empty_lines: false, relax_quotes: false,
+    info: true, relax_column_count: true, max_record_size: 10_485_760 }) as unknown as
+    Array<{ record: string[]; info: { lines: number } }>;
+  const collected = workforceCollector();
+  let previousEnd = 0, columnCount = 0;
+  for (const [index, item] of records.entries()) {
+    const lineStart = previousEnd + 1, lineEnd = Math.max(lineStart, item.info.lines);
+    columnCount = Math.max(columnCount, item.record.length);
+    for (const [column, raw] of item.record.entries()) collected.append({ sheetIndex: 0,
+      rowNumber: index + 1, columnNumber: column + 1, a1: null, kind: raw === "" ? "empty" : "string",
+      raw, text: raw, formula: null, sharedFormula: null, cachedValue: null,
+      hiddenSheet: false, hiddenRow: false, hiddenColumn: false, merged: false, mergedMaster: null,
+      lineStart, lineEnd });
+    previousEnd = item.info.lines;
+  }
+  return { ...collected.finish(), dateSystem: null,
+    sheets: [{ index: 0, name: "CSV", state: "visible", rowCount: records.length, columnCount }] };
+}

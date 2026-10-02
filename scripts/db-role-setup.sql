@@ -40,6 +40,20 @@ BEGIN
   IF to_regclass('public.artifact_context_tool_reads') IS NOT NULL THEN
     REVOKE DELETE ON TABLE artifact_context_tool_reads FROM turas_runtime;
   END IF;
+  IF to_regclass('public.workforce_resources') IS NOT NULL THEN
+    GRANT EXECUTE ON FUNCTION turas_purge_workforce_source(uuid,bigint) TO turas_runtime;
+    GRANT EXECUTE ON FUNCTION turas_purge_workforce_manual(uuid,bigint) TO turas_runtime;
+    FOR table_name IN SELECT tablename FROM pg_tables WHERE schemaname='public'
+      AND (tablename LIKE 'workforce_%' OR tablename LIKE 'staffing_%'
+        OR tablename LIKE 'resource_calendar%') LOOP
+      IF table_name LIKE '%payloads' THEN
+        EXECUTE format('REVOKE UPDATE, DELETE ON TABLE %I FROM turas_runtime',table_name);
+      ELSIF table_name NOT IN ('staffing_allocation_days','resource_calendar_days',
+          'staffing_write_windows') THEN
+        EXECUTE format('REVOKE DELETE ON TABLE %I FROM turas_runtime',table_name);
+      END IF;
+    END LOOP;
+  END IF;
   -- Immutable profile history is append-only even if a future runtime grant drifts.
   FOR table_name IN SELECT unnest(ARRAY[
     'profile_revisions','profile_review_decisions','profile_lifecycle_events',
@@ -62,6 +76,15 @@ BEGIN
     'plan_revision_events','plan_decisions','milestone_baselines',
     'planning_conversation_bindings','plan_command_receipts',
     'plan_drafting_source_dependencies','plan_drafting_context_chunks'
+    ,'workforce_resource_revisions','workforce_partner_eligibility','workforce_skill_revisions',
+    'workforce_source_versions','workforce_extractions','workforce_extracted_cells',
+    'workforce_mapping_revisions','workforce_competency_revisions','workforce_review_decisions',
+    'workforce_command_receipts','resource_calendar_revisions','resource_calendar_intervals',
+    'staffing_demand_revisions','staffing_demand_events','staffing_allocation_revisions','staffing_allocation_events','staffing_reservation_expirations','staffing_decisions',
+    'staffing_command_receipts','staffing_match_results','staffing_economic_input_revisions',
+    'staffing_finance_policy_decisions','staffing_scenarios','staffing_scenario_inputs',
+    'staffing_conversation_bindings','staffing_advisory_dependencies',
+    'staffing_model_step_receipts','staffing_model_step_usage_receipts','staffing_advisory_read_receipts','staffing_skill_load_receipts'
   ]) LOOP
     IF to_regclass('public.' || table_name) IS NOT NULL THEN
       EXECUTE format('REVOKE UPDATE, DELETE ON TABLE %I FROM turas_runtime', table_name);

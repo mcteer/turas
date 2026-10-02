@@ -5,6 +5,22 @@ on 2026-09-26. This is a design inventory, not a completed UI test or redesign.
 Future UI validation uses **command-line Playwright with WebKit**, as requested.
 Use synthetic accounts and artifacts for committed visual evidence.
 
+Feature 007 directly reviewed the legacy `app/portfolio/page.tsx`,
+`app/operating-model/page.tsx` and `app/_components/services-plan.tsx` source on
+2026-10-01 (the operations/planning routes re-export those pages). Staffing
+operations follows their compact metric cards, exception-first review and tabular
+detail; restricted scenario totals use readable currency amounts with exact grouped
+inputs underneath. This is a read-only source comparison, not a visual or hosted
+validation result. Demo assumptions and annual business planning remain outside 007.
+
+The legacy `app/engagements/[id]/page.tsx` was also reviewed read-only. Its pending
+intervention clearly separates requested skill/time from schedulable capacity and
+human approval. Current matching preserves that distinction, exposes unmet checks
+first and keeps satisfied checks in a keyboard-accessible disclosure. The legacy
+route/source inventory did not identify a separate resource-directory, competency
+review or staffing-import UI to port; those 007 interactions need their own
+governed implementation and CLI browser validation.
+
 ## Preserve the visual language
 
 - Geist Sans for interface/body text and Geist Mono for code/technical data.

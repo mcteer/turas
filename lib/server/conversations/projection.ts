@@ -7,6 +7,10 @@ import { reconcilePlanModelEvent } from "../plans/model-budget";
 import { planningScopeForConversation } from "../plans/context";
 import { assertPlanConversationFence } from "../plans/fences";
 import { boundToolActor } from "../profiles/tool-actor";
+import { staffingScopeForConversation } from "../staffing/context";
+import { prepareStaffingReleaseForNative, type StaffingNativeRelease } from "../staffing/native-release";
+import { projectStaffingNativeEventInTransaction, staffingMetadataEvent, type StaffingNativeProjection } from "../staffing/native-events";
+import { recordStaffingTelemetry } from "../staffing/telemetry";
 
 export type NativeEvent = {
   type: string;
@@ -41,14 +45,25 @@ function visiblePayload(event: NativeEvent): Record<string, unknown> {
 export async function projectNativeEvent(
   nativeSessionId: string, attemptId: string, event: NativeEvent, streamIndex?: number,
 ): Promise<void> {
-  return withTransaction((client) =>
-    projectNativeEventInTransaction(client, nativeSessionId, attemptId, event, streamIndex));
+  if (!visibleTypes.has(event.type) || event.data?.kind === "execution.background_task") return;
+  const staffing = await withTransaction(async client => {
+    const row = (await client.query(`SELECT conversation_id FROM response_attempts a JOIN conversations c ON c.id=a.conversation_id
+      WHERE a.id=$1 AND c.eve_session_id=$2 AND c.binding_state='bound'`, [attemptId, nativeSessionId])).rows[0];
+    return row ? staffingScopeForConversation(client, row.conversation_id) : null;
+  });
+  const prepared = staffing && !staffingMetadataEvent(event.type) ? await prepareStaffingReleaseForNative(nativeSessionId,
+    { responseAttemptId: attemptId, incomingTurnId: event.type === "message.received" && typeof event.data?.turnId === "string" ? event.data.turnId : undefined }) : null;
+  const started = performance.now();
+  const projection = await withTransaction((client) =>
+    projectNativeEventInTransaction(client, nativeSessionId, attemptId, event, streamIndex, prepared));
+  if (projection?.usage) recordStaffingTelemetry({ operation: "model", outcome: "committed", ...projection.usage,
+    durationMs: Math.min(86_400_000, Math.max(0, performance.now() - started)) });
 }
 
 export async function projectNativeEventInTransaction(
   client: PoolClient, nativeSessionId: string, attemptId: string,
-  event: NativeEvent, streamIndex?: number,
-): Promise<void> {
+  event: NativeEvent, streamIndex?: number, preparedStaffing?: StaffingNativeRelease | null,
+): Promise<void | StaffingNativeProjection> {
   if (!visibleTypes.has(event.type)) return;
   if (!event.meta.id?.startsWith("evt_") || !event.meta.at ||
       !Number.isFinite(Date.parse(event.meta.at))) {
@@ -56,6 +71,15 @@ export async function projectNativeEventInTransaction(
   }
   const data = event.data ?? {};
   if (data.kind === "execution.background_task") return;
+  // Fence every visible event before response locks, projection writes or usage
+  // reconciliation. A historical/uncertain native session must not bypass the
+  // closed staffing context entry point through received/completed events.
+  const owned = (await client.query<{ conversation_id: string }>(`SELECT a.conversation_id FROM response_attempts a
+    JOIN conversations c ON c.id=a.conversation_id WHERE a.id=$1 AND c.eve_session_id=$2 AND c.binding_state='bound'`,
+    [attemptId, nativeSessionId])).rows[0];
+  if (!owned) throw new Error("Native attempt association unavailable");
+  const staffingProjection = await projectStaffingNativeEventInTransaction(client, nativeSessionId, attemptId, event, streamIndex, preparedStaffing);
+  if (staffingProjection) return staffingProjection;
   {
     if (["message.appended","message.completed"].includes(event.type)) {
       const scope=await client.query<{conversation_id:string;owner_principal_id:string}>(`

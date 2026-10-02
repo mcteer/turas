@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 
 const gate = vi.hoisted(() => ({ checked: 0, receipts: 0, queries: 0, invalidAttempt: false }));
 vi.mock("../../lib/server/db/client", () => ({ withTransaction: async (run: (client: unknown) => Promise<unknown>) =>
-  run({ query: async () => { gate.queries += 1; return { rowCount: gate.receipts }; } }) }));
+  run({ query: async () => { gate.queries += 1; return { rowCount: gate.receipts, rows: [] }; } }) }));
+vi.mock("../../lib/server/staffing/native-context", () => ({ staffingResponseScope: async () => null }));
+vi.mock("../../lib/server/artifacts/context", () => ({ readCurrentArtifactDraft: async () => null }));
 vi.mock("../../lib/server/profiles/attempt-context", () => ({
   readCurrentAttemptContext: async () => {
     gate.checked += 1;

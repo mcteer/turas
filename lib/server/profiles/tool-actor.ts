@@ -4,6 +4,8 @@ import { hiddenRecord } from "../../contracts/http";
 import { readCurrentAttemptContext } from "./attempt-context";
 import { readCurrentArtifactDraft } from "../artifacts/context";
 import { planningScopeForConversation,type PlanningScope } from "../plans/context";
+import { staffingScopeForConversation } from "../staffing/context";
+import { HttpFailure } from "../../contracts/http";
 
 type ToolPrincipal = { principalId?: string; attributes?: Record<string, unknown> } | null | undefined;
 
@@ -13,6 +15,12 @@ export async function boundToolActor(client: PoolClient, principal: ToolPrincipa
 }> {
   const attemptId = principal?.attributes?.turasAttemptId;
   if (!principal?.principalId || typeof attemptId !== "string") throw hiddenRecord();
+  const conversation = (await client.query<{ conversation_id: string }>(
+    `SELECT a.conversation_id FROM response_attempts a JOIN conversations c ON c.id=a.conversation_id
+      WHERE a.id=$1 AND c.owner_principal_id=$2`, [attemptId, principal.principalId])).rows[0];
+  if (conversation && await staffingScopeForConversation(client, conversation.conversation_id)) {
+    throw new HttpFailure(403, "staffing_tool_denied", "Use the governed staffing read tools for this explanation");
+  }
   await readCurrentAttemptContext(client, attemptId, principal.principalId);
   const artifact = await readCurrentArtifactDraft(client,attemptId,principal.principalId);
   if (artifact) {

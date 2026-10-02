@@ -44,7 +44,11 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
     ...channel,
     routes: channel.routes.map((route) => {
       if (route.method === "GET" && route.path === "/eve/v1/health") return route;
-      if (route.transport === "websocket") return route;
+      // Installed eve exposes no WebSocket routes. A future upgrade must not
+      // introduce a content path around the governed HTTP release wrapper.
+      if (route.transport === "websocket") return { ...route, handler: async () => {
+        throw new HttpFailure(403, "not_available", "Not available");
+      } };
       if (route.method === "POST" && route.path === "/eve/v1/session") {
         const native = route.handler;
         return { ...route, handler: async (request, args) => {
@@ -182,7 +186,8 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             headers.delete("x-turas-artifact-selections");
             let nativeResponse: Response | undefined;
             const started = Date.now();
-            for (let retry = 0; retry < 5 && Date.now() - started < 20_000; retry++) {
+            const dispatches = prepared.staffing ? 1 : 5;
+            for (let retry = 0; retry < dispatches && Date.now() - started < 20_000; retry++) {
               nativeResponse = await native(new Request(request.url, {
                 method: "POST", headers, body: JSON.stringify({ message: text }),
               }), args);
@@ -191,7 +196,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
               try { rejection = await nativeResponse.clone().json(); } catch { /* uncertain */ }
               if (typeof rejection !== "object" || rejection === null ||
                   !("code" in rejection) || rejection.code !== "session_not_ready") break;
-              if (retry < 4) await new Promise((resolve) => setTimeout(resolve, 1_000));
+              if (retry + 1 < dispatches) await new Promise((resolve) => setTimeout(resolve, 1_000));
             }
             if (!nativeResponse) throw new HttpFailure(503, "native_unavailable", "Service unavailable");
             if (!nativeResponse.ok) {
@@ -201,10 +206,12 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
                 if (typeof rejection === "object" && rejection !== null &&
                     "code" in rejection && rejection.code === "session_not_ready") {
                   await recordNativePreAdmissionRejection(session, conversationId!, attemptId, nativeResponse);
+                  if (prepared.staffing) return nativeFailure(new HttpFailure(409, "staffing_native_rejected", "Native admission was rejected; no request was resent"));
                   return nativeResponse;
                 }
               }
               await markDispatchUncertain(session, conversationId!, attemptId, "native_rejection");
+              if (prepared.staffing) return nativeFailure(new HttpFailure(409, "staffing_native_unconfirmed", "Native dispatch is unconfirmed; no request was resent"));
               return nativeResponse;
             }
             await recordNativeReceipt(session, conversationId!, attemptId, nativeResponse);

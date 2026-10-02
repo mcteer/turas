@@ -4,6 +4,8 @@ import { withTransaction } from "../db/client";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
 import { readOwnedBinding } from "./binding";
 import type { PoolClient } from "pg";
+import { staffingScopeForConversation } from "../staffing/context";
+import { lockStaffingActor } from "../staffing/policy";
 
 export async function requestCancellation(
   session: CurrentSession, nativeSessionId: string, turnId: string,
@@ -19,6 +21,16 @@ export async function requestCancellation(
     await readOwnedBinding(client, session, id);
     await client.query("SET LOCAL lock_timeout = '10000ms'");
     await client.query("SET LOCAL statement_timeout = '15000ms'");
+    const marker = await client.query<{schema_version:number}>(
+      "SELECT schema_version FROM turas_environment LIMIT 1");
+    if ((marker.rows[0]?.schema_version ?? 0) >= 34) {
+      const staffing = await staffingScopeForConversation(client, id);
+      if (staffing) {
+        if (staffing.ownerMembershipId !== session.membershipId) throw hiddenRecord();
+        await lockStaffingActor(client, session, staffing.mode === "finance" ? "finance" : "operational",
+          { customerId: staffing.customerId, write: true, allowDisabled: true });
+      }
+    }
     const attempt = await client.query<{ id: string; response_state: string }>(`
       SELECT id, response_state FROM response_attempts
       WHERE conversation_id = $1 AND native_turn_id = $2
@@ -32,13 +44,18 @@ export async function requestCancellation(
     // This is the first durable acknowledgement of native cancellation. Close
     // the draft in the same transaction so a late save cannot win the gap
     // before the separate drafting-status request or turn.cancelled projection.
-    const marker = await client.query<{schema_version:number}>(
-      "SELECT schema_version FROM turas_environment LIMIT 1");
     if ((marker.rows[0]?.schema_version ?? 0) >= 31) {
       await client.query(`UPDATE plan_drafting_attempts SET state='cancelled',
         safe_error_code='cancelled', updated_at=now()
         WHERE response_attempt_id=$1 AND state IN ('prepared','running')`,
       [attempt.rows[0].id]);
+    }
+    if ((marker.rows[0]?.schema_version ?? 0) >= 34) {
+      await client.query(`UPDATE staffing_advisory_attempts SET state='cancelled',failure_code='cancelled',
+        settled_at=clock_timestamp(),updated_at=clock_timestamp()
+        WHERE response_attempt_id=$1 AND conversation_id=$2 AND environment_id=$3 AND workspace_id=$4
+          AND owner_membership_id=$5 AND state IN ('prepared','running','unconfirmed')`,
+        [attempt.rows[0].id, id, getServerConfig().TURAS_ENVIRONMENT_ID, session.workspaceId, session.membershipId]);
     }
   };
   if (existingClient) return run(existingClient);

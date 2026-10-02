@@ -8,6 +8,8 @@ import { assertArtifactDependenciesCurrent } from "../artifacts/context-fence";
 import { assertRetrievalDependenciesCurrent } from "../retrieval/fences";
 import { assertResearchAttemptCurrent } from "../research/fences";
 import { planningScopeForConversation } from "../plans/context";
+import { staffingScopeForConversation } from "../staffing/context";
+import { lockStaffingActor } from "../staffing/policy";
 
 type Snapshot = { contractVersion: "customer-context-v1"; contextVersion: string;
   asOf: string; validUntil: string; entries: { citationId: string }[];
@@ -24,6 +26,15 @@ function stableJson(value: unknown): string {
 
 export async function captureAttemptContext(client: PoolClient, actor: CurrentSession,
   conversationId: string, attemptId: string, customerId: string): Promise<Snapshot> {
+  const staffing = await staffingScopeForConversation(client, conversationId);
+  if (staffing) {
+    if (staffing.ownerMembershipId !== actor.membershipId || staffing.customerId !== customerId) throw hiddenRecord();
+    await lockStaffingActor(client, actor, staffing.mode === "finance" ? "finance" : "operational", { customerId });
+    // The staffing context/receipt bridge must replace this guard once its
+    // shared budgets and output fences are connected. Never capture a default
+    // internal customer snapshot as a fallback for a staffing request.
+    throw new HttpFailure(503, "staffing_native_unavailable", "Staffing explanation context is not available");
+  }
   const conversation = await client.query<{ context_audience: string | null; context_generation: string | null;
     context_valid_until: Date | null; context_snapshot_schema: string | null;
     context_login_session_id: string | null; context_membership_id: string | null }>(`
@@ -83,6 +94,11 @@ export async function captureAttemptContext(client: PoolClient, actor: CurrentSe
 
 export async function readCurrentAttemptContext(client: PoolClient, attemptId: string,
   principalId: string): Promise<Snapshot> {
+  const owned = (await client.query<{ conversation_id: string }>(`SELECT a.conversation_id FROM response_attempts a
+    JOIN conversations c ON c.id=a.conversation_id WHERE a.id=$1 AND c.owner_principal_id=$2`, [attemptId, principalId])).rows[0];
+  if (owned && await staffingScopeForConversation(client, owned.conversation_id)) {
+    throw new HttpFailure(503, "staffing_native_unavailable", "Staffing explanation context is not available");
+  }
   const receipt = await client.query<{ snapshot: Snapshot; snapshot_digest: string;
     customer_id: string; owner_principal_id: string; login_session_id: string;
     membership_id: string; workspace_id: string; environment_id: string;

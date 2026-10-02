@@ -2,6 +2,7 @@ import { defineHook } from "eve/hooks";
 import { withTransaction } from "../../lib/server/db/client";
 import { readCurrentAttemptContext } from "../../lib/server/profiles/attempt-context";
 import { readCurrentArtifactDraft } from "../../lib/server/artifacts/context";
+import { readStaffingInitialContext, staffingResponseScope } from "../../lib/server/staffing/native-context";
 
 export default defineHook({
   events: {
@@ -10,6 +11,10 @@ export default defineHook({
       const attemptId = principal?.attributes?.turasAttemptId;
       if (typeof attemptId !== "string" || !principal?.principalId) {
         throw new Error("Customer context was not bound to this turn");
+      }
+      if (await staffingResponseScope(principal)) {
+        await readStaffingInitialContext(principal, event.data.turnId, ctx.session.id, false);
+        return;
       }
       await withTransaction(async (client) => {
         await readCurrentAttemptContext(client, attemptId, principal.principalId);

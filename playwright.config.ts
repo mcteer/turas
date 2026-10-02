@@ -9,7 +9,7 @@ if (!["localhost", "127.0.0.1", "[::1]"].includes(hostname)) {
 export default defineConfig({
   testDir: "./tests/ui",
   testIgnore: process.env.TURAS_UI_LEGACY_ONLY === "1" ?
-    ["**/knowledge.spec.ts","**/research.spec.ts","**/retrieval.spec.ts"] : [],
+    ["**/knowledge.spec.ts", "**/research.spec.ts", "**/retrieval.spec.ts", "**/staffing-*.spec.ts"] : [],
   timeout: 30_000,
   // UI scenarios share the local demo database, including mutable customer grants.
   workers: 1,

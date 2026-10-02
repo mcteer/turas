@@ -6,7 +6,14 @@ import { runRetrievalWorkerTick } from "./retrieval-worker";
 import { runRetrievalCleanupTick } from "../lib/server/retrieval/cleanup";
 import { suspendStaleKnowledge } from "../lib/server/knowledge/suspension";
 import { markDueResearch } from "../lib/server/research/refresh";
+import { runWorkforceWorkerTick } from "../lib/server/staffing/runner";
+import { runWorkforceCleanupTick } from "../lib/server/staffing/cleanup";
+import { heartbeatWorkforceWorker } from "../lib/server/staffing/worker-readiness";
+import { requireStaffingEnvironment } from "../lib/server/staffing/repository";
+import { withTransaction } from "../lib/server/db/client";
 import { runPlanCleanupTick } from "../lib/server/plans/cleanup";
+import { expireStaffingReservations } from "../lib/server/staffing/reservations";
+import { settleDueStaffingAdvisories } from "../lib/server/staffing/advisory-maintenance";
 
 const rawOrigin = process.env.TURAS_EVE_INTERNAL_ORIGIN;
 if (!rawOrigin) throw new Error("Local eve service origin required");
@@ -22,6 +29,7 @@ let scanning = false;
 let stopping = false;
 let retrievalScanning = false;
 let cleanupScanning = false;
+let workforceScanning = false, workforceCleanupScanning = false, workforceHeartbeatBusy = false;
 
 function fatal(): void {
   if (stopping) return;
@@ -29,6 +37,9 @@ function fatal(): void {
   clearInterval(timer);
   clearInterval(retrievalTimer);
   clearInterval(cleanupTimer);
+  clearInterval(workforceTimer);
+  clearInterval(workforceCleanupTimer);
+  clearInterval(workforceHeartbeatTimer);
   void closeRuntimePool().finally(() => process.exit(1));
 }
 
@@ -79,6 +90,24 @@ async function scan(): Promise<void> {
 const timer = setInterval(() => {
   void scan().catch(fatal);
 }, 5_000);
+// Independent async workloads cannot block conversation/retrieval maintenance.
+const workforceTimer = setInterval(() => {
+  if (stopping || workforceScanning || !process.env.TURAS_WORKFORCE_STORE_ROOT) return;
+  workforceScanning = true;
+  void runWorkforceWorkerTick().catch(() => undefined).finally(() => { workforceScanning = false; });
+}, 2_000);
+const workforceCleanupTimer = setInterval(() => {
+  if (stopping || workforceCleanupScanning || !process.env.TURAS_WORKFORCE_STORE_ROOT) return;
+  workforceCleanupScanning = true;
+  void Promise.allSettled([expireStaffingReservations(), runWorkforceCleanupTick(), settleDueStaffingAdvisories()])
+    .finally(() => { workforceCleanupScanning = false; });
+}, 5_000);
+const workforceHeartbeatTimer = setInterval(() => {
+  if (stopping || workforceHeartbeatBusy || !process.env.TURAS_WORKFORCE_STORE_ROOT) return;
+  workforceHeartbeatBusy = true;
+  void withTransaction(db => requireStaffingEnvironment(db, false)).then(() => heartbeatWorkforceWorker())
+    .catch(() => undefined).finally(() => { workforceHeartbeatBusy = false; });
+}, 5_000);
 const retrievalTimer = setInterval(() => {
   if (stopping || retrievalScanning) return;
   retrievalScanning = true;
@@ -102,6 +131,9 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
     clearInterval(timer);
     clearInterval(retrievalTimer);
     clearInterval(cleanupTimer);
+    clearInterval(workforceTimer);
+    clearInterval(workforceCleanupTimer);
+    clearInterval(workforceHeartbeatTimer);
     void closeRuntimePool().finally(() => process.exit());
   });
 }

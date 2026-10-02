@@ -1,7 +1,12 @@
 import { spawn } from "node:child_process";
-import { resolve } from "node:path";
+import { isAbsolute, resolve } from "node:path";
 
 const cwd = process.cwd();
+// Personnel storage is explicit; the supervised maintenance worker owns its
+// separate import, cleanup and heartbeat loops. Preserve the selected DB/eve data.
+if (process.env.TURAS_WORKFORCE_STORE_ROOT && !isAbsolute(process.env.TURAS_WORKFORCE_STORE_ROOT)) {
+  throw new Error("Workforce store root must be absolute");
+}
 const next = spawn(resolve(cwd, "node_modules/.bin/next"), ["dev"], {
   cwd, env: process.env, stdio: ["inherit", "pipe", "pipe"],
 });
@@ -23,12 +28,12 @@ function consume(text) {
   buffered += text;
   const match = buffered.match(/server listening at (http:\/\/127\.0\.0\.1:\d+)\//);
   if (match && !worker && !stopping) {
-    worker = spawn(resolve(cwd, "node_modules/.bin/tsx"), ["scripts/maintenance-worker.ts"], {
+    worker = spawn(process.execPath, ["--import", "tsx", "scripts/maintenance-worker.ts"], {
       cwd, env: { ...process.env, TURAS_EVE_INTERNAL_ORIGIN: `${match[1]}/` },
       stdio: "inherit",
     });
     worker.on("exit", (code) => { if (!stopping) stop(code || 1); });
-    artifactWorker = spawn(resolve(cwd, "node_modules/.bin/tsx"), ["scripts/artifact-worker.ts"], {
+    artifactWorker = spawn(process.execPath, ["--import", "tsx", "scripts/artifact-worker.ts"], {
       cwd, env: { ...process.env, TURAS_EVE_INTERNAL_ORIGIN: `${match[1]}/` }, stdio: "inherit",
     });
     artifactWorker.on("exit", (code) => { if (!stopping) stop(code || 1); });

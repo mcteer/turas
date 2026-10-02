@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { getCurrentSession } from "../../lib/server/auth/sessions";
 import { csrfTokenForSession } from "../../lib/server/auth/csrf";
 import { getServerConfig } from "../../lib/server/config";
+import { staffingNavigation } from "../../lib/server/staffing/navigation";
 import { AppShell } from "../_components/app-shell";
 
 export default async function WorkspaceLayout({ children }: { children: ReactNode }) {
@@ -12,6 +13,7 @@ export default async function WorkspaceLayout({ children }: { children: ReactNod
     headers: { cookie: cookieHeader },
   }));
   if (!session) redirect("/login");
-  return <AppShell role={session.role} loginName={session.loginName}
+  const staffing = await staffingNavigation(session);
+  return <AppShell staffing={staffing} role={session.role} loginName={session.loginName}
     csrfToken={csrfTokenForSession(session.token)}>{children}</AppShell>;
 }
