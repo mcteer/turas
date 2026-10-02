@@ -212,7 +212,7 @@ application acceptance stays deferred by the deployment hold.
 
 The visual follow-up in PR 15 uses standard title case for navigation and section
 headings, with minor words such as “and,” “of,” and “the” lowercase. The final
-local CLI WebKit matrix passed 68/68 cases across desktop/mobile and light/dark,
+local CLI WebKit matrix passed 88/88 cases across desktop/mobile and light/dark,
 with zero failures, skips or retries. The owned app ran as `turas_runtime`;
 synthetic fixture setup retained its separate owner connection. Three additional
 customer-access browser cases passed, including partner assignment and revocation.
@@ -225,3 +225,12 @@ Ten focused plan/staffing schema checks passed, including actual runtime-role
 reads and rejected writes. Preview schema 035 received the explicit role refresh;
 read locks and denied table-wide UPDATE/DELETE privileges were verified afterward.
 Production variables and its legacy database were not changed.
+
+The general-chat check now waits for a missing response receipt followed by a
+successful conversation access check. It reproduced the false access-denial bug
+in all four WebKit projects before the fix. The client now rechecks conversation
+authority before interpreting an absent receipt as lost access, preserves the
+pending/uncertain send state and never redispatches from polling. Reload still
+sends no duplicate message, and genuine conversation denial still hides the chat.
+The final 88-case matrix includes research preview, cancellation, conflict review
+and accessibility checks through the current Customer context disclosure.

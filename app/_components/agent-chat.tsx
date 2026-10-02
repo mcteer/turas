@@ -156,8 +156,26 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
       try {
         const response = await fetch(`/api/conversations/${conversationId}/attempts/${pendingKey}`,
           { cache: "no-store" });
-        if (response.status === 401 || response.status === 404) {
+        if (response.status === 401) {
           if (active) { agent.reset(); setDenied(true); }
+          return;
+        }
+        if (response.status === 404) {
+          // A status read can beat response preparation, or the send can fail
+          // before admission. Check chat authority before treating an absent
+          // response receipt as lost access. Never redispatch from this poll.
+          const visibility = await fetch(`/api/conversations/${conversationId}`, { cache: "no-store" });
+          if (!active) return;
+          if (visibility.status === 401 || visibility.status === 404) {
+            agent.reset(); setDenied(true); return;
+          }
+          if (!visibility.ok) throw new Error();
+          const detail = await visibility.json() as { data: { contextStatus?: string } };
+          if (!active) return;
+          if (detail.data.contextStatus !== "current") {
+            agent.reset(); setStale(true); return;
+          }
+          // Preserve the send's pending/uncertain notice until a receipt exists.
           return;
         }
         if (!response.ok) throw new Error();

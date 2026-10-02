@@ -50,9 +50,10 @@ recovery, the 500-resource load gate and eight reviewed live advisory cases.
 Preview was explicitly upgraded to schema 034 and read-only inspected afterward;
 local unauthenticated app and runtime-role smoke passed. Feature 007 merged in
 [PR 13](https://github.com/mcteer/turas/pull/13) after passing review-head CI.
-The feature has not been deployed or validated on hosted infrastructure.
+Hosted staffing workflow acceptance remains pending.
 No speculative eve integrations have been installed. The configured model is
-unchanged. The application has not been deployed or validated on hosted infrastructure.
+unchanged. Protected Previews run the app and have basic hosted smoke checks;
+full hosted workflow readiness remains release work.
 
 The old demo at `../turas-back` was reviewed as a reference only. Its fixtures,
 credentials, data and unused integrations are not the new platform. See the

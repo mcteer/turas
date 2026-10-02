@@ -7,6 +7,6 @@ export default defineConfig({
   webServer: undefined,
   timeout: 60_000,
   testIgnore: [],
-  testMatch: ["workspace-design.spec.ts", "staffing-design.spec.ts", "shell.spec.ts",
-    "legacy-layout.spec.ts", "profiles.spec.ts", "plans-authoring.spec.ts", "knowledge.spec.ts"],
+  testMatch: ["workspace-design.spec.ts", "staffing-design.spec.ts", "shell.spec.ts", "chat.spec.ts",
+    "legacy-layout.spec.ts", "profiles.spec.ts", "plans-authoring.spec.ts", "knowledge.spec.ts", "research.spec.ts"],
 });
