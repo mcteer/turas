@@ -120,7 +120,7 @@ export function StaffingAdvisory({ demand, csrfToken, financeAllowed = false }: 
   return <section className="profile-section" aria-label="Turi staffing explanation"><h2>Explain with Turi</h2>
     <p>Review the deterministic comparison and planning results alongside this explanation. Turi cannot confirm staffing or change finance inputs.</p>
     {!qualified && <p role="status">A current qualified demand is required.</p>}
-    {!status && !prepared && !recoveryId && !uncertainPreparation && <fieldset disabled={busy || !qualified}><legend>Explanation scope</legend>
+    {!status && !prepared && !recoveryId && !uncertainPreparation && <fieldset disabled={busy || !qualified}><legend>Explanation Scope</legend>
       <label>Explanation mode<select className="field" aria-label="Explanation mode" value={mode} onChange={event => {
         const next = event.target.value as "operational" | "finance"; setMode(next); setScenarioId("");
         if (next === "finance") void loadScenarios();

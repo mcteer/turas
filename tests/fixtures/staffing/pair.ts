@@ -24,9 +24,10 @@ export async function readOwnedStaffingPair(environment: StaffingEvalEnvironment
   if (process.env.TURAS_ARTIFACT_STORE_ROOT !== environment.storeRoot || process.env.TURAS_WORKFORCE_STORE_ROOT !== environment.workforceRoot)
     throw new Error("Owned restart store selection changed");
   const digest = async (path: string) => createHash("sha256").update(await readFile(path)).digest("hex");
+  const manifest = JSON.parse(await readFile(resolve("migrations/manifest.json"), "utf8")) as { version: number };
   const marker = (await query("SELECT current_database() AS database,environment_id,schema_version FROM turas_environment")).rows;
   if (marker.length !== 1 || marker[0].database !== environment.databaseName || marker[0].environment_id !== process.env.TURAS_ENVIRONMENT_ID ||
-    marker[0].schema_version !== 34) throw new Error("Owned restart database marker changed");
+    marker[0].schema_version !== manifest.version) throw new Error("Owned restart database marker changed");
   return { database: marker[0].database, environmentId: marker[0].environment_id, schemaVersion: marker[0].schema_version,
     directories: identities, artifactMarker: await digest(join(environment.storeRoot, ".turas-artifact-store.json")),
     workforceMarker: await digest(join(environment.workforceRoot, ".turas-workforce-store.json")) };

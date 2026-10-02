@@ -112,13 +112,25 @@ async function main(): Promise<void> {
     // changing another file's assertions or admission window.
     for (const [index, suite] of suites.entries()) {
       const suiteReportPath = resolve(directory, `suite-${index}.json`);
+      console.log(JSON.stringify({ gate: "owned-staffing", suite, phase: "started" }));
       await withStaffingEvalEnvironment(async environment => {
         if (!foundation) await environment.prepareRuntime();
         const result = spawnSync(process.execPath, ["node_modules/vitest/vitest.mjs", "run",
           "--reporter=verbose", "--reporter=json", `--outputFile.json=${suiteReportPath}`, "--silent=true", "--testTimeout=120000", "--hookTimeout=120000", suite], {
           env: { ...process.env, CI: process.env.CI ?? "" }, stdio: ["ignore", fd, fd], timeout: 1_200_000,
         });
-        if (result.error || result.status !== 0) throw new Error(`007 disposable staffing suite failed: ${suite}`);
+        if (result.error || result.status !== 0) {
+          // Publish only authored test identities and code locations. The full
+          // assertion output can include private records and stays in the local log.
+          const failed = await readFile(suiteReportPath, "utf8").then(text => JSON.parse(text)).catch(() => null);
+          const failures = (failed?.testResults ?? []).flatMap((file: { assertionResults?: { title: string; status: string; failureMessages?: string[] }[]; message?: string }) => {
+            const assertions = (file.assertionResults ?? []).filter(test => test.status === "failed");
+            return assertions.map(test => ({ title: test.title, locations: [...new Set(
+              [...(test.failureMessages ?? []).join("\n").matchAll(/(?:tests|scripts|lib)\/[a-zA-Z0-9_./-]+\.[cm]?[jt]sx?:\d+:\d+/g)].map(match => match[0]))] }));
+          });
+          console.error(JSON.stringify({ gate: "owned-staffing", suite, phase: "failed", status: result.status, signal: result.signal, failures }));
+          throw new Error(`007 disposable staffing suite failed: ${suite}`);
+        }
         const report = JSON.parse(await readFile(suiteReportPath, "utf8"));
         verifyStaffingTestReport(report, [suite]);
         reports.push(report);

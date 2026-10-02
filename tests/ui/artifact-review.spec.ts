@@ -39,7 +39,7 @@ test("reviewer sees exact submitted excerpt and preserves rationale on stale rev
       error: { message: "Source changed" } }) }));
   await page.goto(`/customers/${customer}/review`);
   const candidate = page.locator(".profile-review-card").filter({ hasText: "Synthetic delivery observation" });
-  await expect(candidate.getByRole("region",{ name: "Submitted source excerpt" }))
+  await expect(candidate.getByRole("region",{ name: "Submitted Source Excerpt" }))
     .toContainText("Synthetic selected delivery passage");
   await candidate.getByRole("button",{ name: "Inspect original source" }).click();
   await expect(page.getByRole("dialog",{ name: "Source viewer" }))

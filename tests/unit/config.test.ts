@@ -19,6 +19,12 @@ const valid = {
 };
 
 describe("server configuration", () => {
+  it("uses the exact generated Preview origin without changing Production", () => {
+    const hosted = { ...valid, VERCEL_ENV: "preview", VERCEL_URL: "turas-preview.vercel.app" };
+    expect(parseServerConfig(hosted).TURAS_APP_ORIGIN).toBe("https://turas-preview.vercel.app");
+    expect(parseServerConfig({ ...hosted, VERCEL_ENV: "production" }).TURAS_APP_ORIGIN).toBe(valid.TURAS_APP_ORIGIN);
+    expect(() => parseServerConfig({ ...hosted, VERCEL_URL: "attacker.example/path" })).toThrow("VERCEL_URL");
+  });
   it("accepts complete explicit configuration", () => {
     expect(parseServerConfig(valid).TURAS_ENVIRONMENT_ID).toBe("local-002");
   });

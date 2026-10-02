@@ -7,8 +7,8 @@ test("uploads and inspects a real scanned and parsed source", async ({ page }) =
   test.setTimeout(120_000);
   await signIn(page,"panel");
   await page.goto("/s");
-  await page.getByLabel("Customer").selectOption({ label: "Cedar (synthetic)" });
-  await page.getByRole("button",{ name: "Start chat" }).click();
+  await page.getByLabel("Customer (optional)").selectOption({ label: "Cedar (synthetic)" });
+  await page.getByRole("button",{ name: "Attach documents" }).click();
   await page.getByLabel("Attach documents").setInputFiles("local-artifacts/004/fixtures/simple.txt");
   await page.getByLabel("Source rights note").fill("Synthetic local browser upload test");
   await page.getByLabel("Audience").selectOption("delivery");

@@ -176,7 +176,7 @@ export function PlanDrafting({customerId,head,onSaved}:{customerId:string;
         {draft.retrievalCalls}/4 searches · {draft.contextBytes}/24,576 context bytes</p>
       <p>Base revision {draft.baseRevisionId}. Deadline {new Date(draft.deadlineAt).toLocaleTimeString()}.</p>
       {draft.resultRevisionId && <p><Link href={`/customers/${customerId}/plans/${head.planId}`}>
-        Open saved revision</Link></p>}
+        Open Saved Revision</Link></p>}
       {nativeSessionId && <ActivePlanDraft key={draft.attemptId}
         conversationId={draft.conversationId} nativeSessionId={nativeSessionId}
         csrf={csrf} onTerminal={()=>void refresh()} onCancel={()=>void cancel()}/>}

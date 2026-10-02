@@ -9,6 +9,9 @@ vi.mock("../../lib/server/profiles/attempt-context", () => ({
   readCurrentAttemptContext: async () => {
     gate.checked += 1;
     if (gate.invalidAttempt) throw new Error("Synthetic context expired");
+    return { contractVersion: "customer-context-v1", contextVersion: "1",
+      asOf: new Date().toISOString(), validUntil: new Date(Date.now() + 120_000).toISOString(),
+      entries: [], complete: true, truncated: false };
   },
 }));
 

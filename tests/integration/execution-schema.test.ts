@@ -19,15 +19,15 @@ export const executionTables = ["execution_workspaces", "execution_baseline_bind
   "execution_advice_usage", "execution_cleanup_jobs"];
 
 describe("008 schema and grants", () => {
-  it("upgrades an explicit034 fixture without rewriting its migration history", async () => {
+  it.each([34,35] as const)("upgrades an explicit schema %i fixture without rewriting its migration history", async (initialSchemaVersion) => {
     requireOwnedExecutionClone();
     await withExecutionEvalEnvironment(async environment => {
       const client = new Client({ connectionString: requireOwnedExecutionClone() }); await client.connect();
       try {
-        expect((await client.query("SELECT schema_version FROM turas_environment")).rows[0].schema_version).toBe(34);
+        expect((await client.query("SELECT schema_version FROM turas_environment")).rows[0].schema_version).toBe(initialSchemaVersion);
         requireOwnedExecutionClone();
         const bootstrap = spawnSync(process.execPath,["--experimental-strip-types","scripts/bootstrap-demo.ts"],{env:process.env,encoding:"utf8",timeout:120_000});
-        if (bootstrap.error || bootstrap.status!==0) throw new Error("Owned034 demo bootstrap failed");
+        if (bootstrap.error || bootstrap.status!==0) throw new Error("Owned prior-schema demo bootstrap failed");
         const fixture = await withExecutionDatabase(async db => {
           await db.query("BEGIN");
           try {
@@ -41,12 +41,12 @@ describe("008 schema and grants", () => {
         const resources = (await client.query("SELECT to_jsonb(r) AS metadata FROM workforce_resource_revisions r WHERE resource_id=$1", [fixture.resource.resourceId])).rows;
         const prior = (await client.query("SELECT name FROM turas_migrations ORDER BY name")).rows;
         await environment.upgrade();
-        expect((await client.query("SELECT schema_version FROM turas_environment")).rows[0].schema_version).toBe(37);
+        expect((await client.query("SELECT schema_version FROM turas_environment")).rows[0].schema_version).toBe(38);
         expect((await client.query("SELECT name FROM turas_migrations ORDER BY name")).rows.slice(0, prior.length)).toEqual(prior);
         expect((await client.query("SELECT to_jsonb(d) AS metadata FROM plan_decisions d WHERE plan_id=$1", [fixture.created.planId])).rows).toEqual(decisions);
         expect((await client.query("SELECT to_jsonb(r) AS metadata FROM workforce_resource_revisions r WHERE resource_id=$1", [fixture.resource.resourceId])).rows).toEqual(resources);
       } finally { await client.end(); }
-    }, { empty: true, initialSchemaVersion: 34, sourceDatabaseUrl: process.env.TURAS_TEST_SOURCE_DATABASE_URL });
+    }, { empty: true, initialSchemaVersion, sourceDatabaseUrl: process.env.TURAS_TEST_SOURCE_DATABASE_URL });
   }, 180_000);
   it("creates every table and denies runtime history/payload mutation and cleanup numeric access", async () => {
     await withExecutionDatabase(async db => {
@@ -82,10 +82,10 @@ describe("008 schema and grants", () => {
       } finally { await db.query("ROLLBACK"); }
     });
   });
-  it("initializes an empty owned database explicitly at037", async () => {
+  it("initializes an empty owned database explicitly at038", async () => {
     await withExecutionEvalEnvironment(async () => {
       await withExecutionDatabase(async db => {
-        expect((await db.query("SELECT schema_version FROM turas_environment")).rows[0].schema_version).toBe(37);
+        expect((await db.query("SELECT schema_version FROM turas_environment")).rows[0].schema_version).toBe(38);
         expect((await db.query("SELECT count(*)::int AS n FROM execution_actual_days")).rows[0].n).toBe(0);
       });
     }, { empty: true, sourceDatabaseUrl: process.env.TURAS_TEST_SOURCE_DATABASE_URL });

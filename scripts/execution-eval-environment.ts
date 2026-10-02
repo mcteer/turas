@@ -74,7 +74,7 @@ export async function verifyExecutionStoreOwnership(
 /** Only the existing marked test source may be cloned. No app/DB URL CLI override. */
 export async function withExecutionEvalEnvironment<T>(
   run: (environment: ExecutionEvalEnvironment) => Promise<T>,
-  options: { empty?: boolean; sourceDatabaseUrl?: string; initialSchemaVersion?: 34; deadlineAt?: number } = {},
+  options: { empty?: boolean; sourceDatabaseUrl?: string; initialSchemaVersion?: 34 | 35; deadlineAt?: number } = {},
 ): Promise<T> {
   let workforceRoot = "";
   const ownerToken = randomUUID();
@@ -125,14 +125,14 @@ export async function withExecutionEvalEnvironment<T>(
             { deadlineAt: options.deadlineAt, allowMissing: true });
         }
       }
-      if (options.initialSchemaVersion === 34) {
-        if (!options.empty) throw new Error("Schema-034 fixture requires an empty owned clone");
+      if (options.initialSchemaVersion !== undefined) {
+        if (!options.empty) throw new Error("Prior-schema fixture requires an empty owned clone");
         const directory = join(appRoot, "migrations");
         const manifest: { version: number; migrations: { file: string; sha256: string }[] } =
           JSON.parse(await readFile(join(directory, "manifest.json"), "utf8"));
-        manifest.migrations = manifest.migrations.filter((entry) => Number(entry.file.slice(0, 3)) <= 34);
+        manifest.migrations = manifest.migrations.filter((entry) => Number(entry.file.slice(0, 3)) <= options.initialSchemaVersion);
         for (const file of await readdir(directory)) {
-          if (/^\d{3}-.*\.cjs$/.test(file) && Number(file.slice(0, 3)) > 34) await rm(join(directory, file));
+          if (/^\d{3}-.*\.cjs$/.test(file) && Number(file.slice(0, 3)) > options.initialSchemaVersion) await rm(join(directory, file));
         }
         await writeFile(join(directory, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
       }

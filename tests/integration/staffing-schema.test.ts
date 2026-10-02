@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { Client } from "pg";
 import { describe, expect, it } from "vitest";
@@ -6,15 +7,17 @@ import { DEMO_IDS } from "../../lib/server/bootstrap-ids";
 import { requireStaffingEnvironment } from "../../lib/server/staffing/repository";
 import { requireOwnedStaffingClone, withStaffingEvalEnvironment } from "../../scripts/staffing-eval-environment";
 
+const currentSchemaVersion = (JSON.parse(readFileSync("migrations/manifest.json", "utf8")) as { version: number }).version;
+
 describe("explicit staffing schema and runtime grants", () => {
-  it("initializes an empty owned database at schema 034", async () => {
+  it("initializes an empty owned database at the current manifest schema", async () => {
     requireOwnedStaffingClone();
     await withStaffingEvalEnvironment(async () => {
       const client = new Client({ connectionString: process.env.DATABASE_URL_UNPOOLED });
       await client.connect();
       try {
         const marker = await client.query("SELECT environment_id,schema_version FROM turas_environment");
-        expect(marker.rows).toEqual([{ environment_id: process.env.TURAS_TEST_ENVIRONMENT_ID, schema_version: 34 }]);
+        expect(marker.rows).toEqual([{ environment_id: process.env.TURAS_TEST_ENVIRONMENT_ID, schema_version: currentSchemaVersion }]);
       } finally { await client.end(); }
     }, { empty: true, sourceDatabaseUrl: process.env.TURAS_TEST_SOURCE_DATABASE_URL });
   }, 120_000);
@@ -28,7 +31,7 @@ describe("explicit staffing schema and runtime grants", () => {
         expect((await client.query("SELECT schema_version FROM turas_environment")).rows[0].schema_version).toBe(31);
         const prior = await client.query("SELECT name FROM turas_migrations ORDER BY name");
         await environment.upgrade();
-        expect((await client.query("SELECT schema_version FROM turas_environment")).rows[0].schema_version).toBe(34);
+        expect((await client.query("SELECT schema_version FROM turas_environment")).rows[0].schema_version).toBe(currentSchemaVersion);
         const after = await client.query("SELECT name FROM turas_migrations ORDER BY name");
         expect(after.rows.slice(0, prior.rows.length)).toEqual(prior.rows);
       } finally { await client.end(); }
@@ -102,7 +105,39 @@ describe("explicit staffing schema and runtime grants", () => {
         expect((await db.query(`SELECT has_table_privilege('turas_runtime',
           'workforce_resource_payloads','DELETE') AS allowed`)).rows[0].allowed).toBe(false);
         expect((await db.query("SELECT revision_id FROM workforce_resource_payloads WHERE revision_id=$1", [revisionId])).rowCount).toBe(1);
+        await db.query("SET LOCAL ROLE turas_runtime");
+        expect((await db.query("SELECT display_name FROM workforce_resource_payloads WHERE revision_id=$1 FOR SHARE", [revisionId]))
+          .rows[0].display_name).toBe("Synthetic resource");
+        for (const [sql, code] of [
+          ["UPDATE workforce_resource_payloads SET revision_id=revision_id WHERE revision_id=$1", "23514"],
+          ["UPDATE workforce_resource_payloads SET display_name='Changed' WHERE revision_id=$1", "42501"],
+          ["DELETE FROM workforce_resource_payloads WHERE revision_id=$1", "42501"],
+        ]) {
+          await db.query("SAVEPOINT runtime_payload_change");
+          await expect(db.query(sql, [revisionId])).rejects.toMatchObject({ code });
+          await db.query("ROLLBACK TO SAVEPOINT runtime_payload_change");
+        }
+        await db.query("RESET ROLE");
       } finally { await db.query("ROLLBACK TO SAVEPOINT immutable_fixture"); }
+    });
+  });
+
+  it("allows runtime reads to lock immutable payloads without table-wide update or delete grants", async () => {
+    requireOwnedStaffingClone();
+    await withTransaction(async db => {
+      await db.query("SET LOCAL ROLE turas_runtime");
+      for (const table of ["plan_revision_payloads", "milestone_baseline_payloads",
+        "workforce_resource_payloads", "workforce_skill_payloads", "workforce_competency_payloads",
+        "workforce_extraction_payloads", "workforce_extracted_cell_payloads", "workforce_mapping_payloads",
+        "resource_calendar_payloads", "staffing_demand_payloads", "staffing_allocation_payloads",
+        "staffing_economic_input_payloads", "staffing_scenario_payloads", "staffing_advisory_read_payloads"]) {
+        await db.query(`SELECT * FROM ${table} LIMIT 1 FOR SHARE`);
+        expect((await db.query(`SELECT
+          has_table_privilege(current_user,$1,'UPDATE') AS update,
+          has_table_privilege(current_user,$1,'DELETE') AS delete`, [table])).rows[0])
+          .toEqual({ update: false, delete: false });
+      }
+      await db.query("RESET ROLE");
     });
   });
 

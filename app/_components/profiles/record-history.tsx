@@ -1,5 +1,7 @@
 "use client";
 
+import { titleCaseLabel } from "../title-case-label";
+
 import { useEffect, useState } from "react";
 import { MaturityAssessment } from "./maturity-assessment";
 
@@ -51,8 +53,8 @@ export function RecordHistory({ customerId, recordId, scope, onClose }: {
     // The next cursor is consumed only when the reader requests another page.
   }, [customerId, recordId, page, retry]);
 
-  return <section className="profile-section" aria-label="Record history">
-    <div className="profile-section-head"><h2>Record history</h2>
+  return <section className="profile-section" aria-label="Record History">
+    <div className="profile-section-head"><h2>Record History</h2>
       <button type="button" className="secondary-button" onClick={onClose}>Close history</button></div>
     <p><span className="profile-label">Scope: </span>{scope}</p>
     {status === "loading" && <p role="status">Loading record history…</p>}
@@ -66,7 +68,7 @@ export function RecordHistory({ customerId, recordId, scope, onClose }: {
         const summary = ["displayName", "name", "title", "statement", "text", "description"]
           .map((key) => item.payload[key]).find((value) => typeof value === "string") as string | undefined;
         return <li key={item.id} className="profile-card"><div className="profile-card-head">
-          <h3>{item.reviewState.charAt(0).toUpperCase() + item.reviewState.slice(1)}</h3>
+          <h3>{titleCaseLabel(item.reviewState)}</h3>
           {submitted && <time dateTime={item.createdAt}>{submitted}</time>}</div>
           {summary && <p>{summary}</p>}
           {item.kind === "maturity_assessment" && <MaturityAssessment
@@ -79,7 +81,7 @@ export function RecordHistory({ customerId, recordId, scope, onClose }: {
           {item.decisionRationale && <p><span className="profile-label">Internal review rationale: </span>{item.decisionRationale}</p>}
         </li>;
       })}</ol>
-      {events.length > 0 && <><h3>Review and lifecycle events</h3>
+      {events.length > 0 && <><h3>Review and Lifecycle Events</h3>
         <ol className="profile-history-list">{events.map((event) => <li key={event.id} className="profile-card">
           <div className="profile-card-head"><strong>{event.eventType.replaceAll("_", " ")}</strong>
             <time dateTime={event.createdAt}>{date(event.createdAt)}</time></div>

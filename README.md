@@ -50,16 +50,18 @@ recovery, the 500-resource load gate and eight reviewed live advisory cases.
 Preview was explicitly upgraded to schema 034 and read-only inspected afterward;
 local unauthenticated app and runtime-role smoke passed. Feature 007 merged in
 [PR 13](https://github.com/mcteer/turas/pull/13) after passing review-head CI.
-The feature has not been deployed or validated on hosted infrastructure.
+Hosted staffing workflow acceptance remains pending.
 Feature 008 has a [specification](specs/008-engagement-execution/spec.md),
 [implementation plan](specs/008-engagement-execution/plan.md),
 [71 implementation tasks](specs/008-engagement-execution/tasks.md) and
 [validation guide](specs/008-engagement-execution/quickstart.md) for reviewed delivery
 logs/time, milestones, RAID/changes, effort forecasts, handoff/outcomes and bounded
-Turi explanations. The user confirmed `mcteer`-only approval. This is a planning
-handoff; 008 implementation and runtime validation have not started.
+Turi explanations. The user confirmed `mcteer`-only approval. Implementation is in
+progress: the foundation, activity review and milestone checkpoint has local test
+evidence; the remaining stories and full release gates are pending.
 No speculative eve integrations have been installed. The configured model is
-unchanged. The application has not been deployed or validated on hosted infrastructure.
+unchanged. Protected Previews run the app and have basic hosted smoke checks;
+full hosted workflow readiness remains release work.
 
 The old demo at `../turas-back` was reviewed as a reference only. Its fixtures,
 credentials, data and unused integrations are not the new platform. See the
@@ -100,7 +102,10 @@ Use Node **24** (`.node-version`), npm, local Postgres **17**, and CLI
 Playwright/WebKit. Install locked dependencies, configure ignored `.env.local`
 using [.env.example](.env.example), then explicitly initialize an empty local
 database with the configured environment marker. Provision a separate
-`turas_runtime` login and run the role grants after migrations. Keep a distinct
+`turas_runtime` login and run the role grants after migrations. Reapply
+`npm run db:roles` when updating this build: plan and staffing reads now have the key-column privilege PostgreSQL requires for row
+locks during reads. Existing immutability triggers still reject every payload
+update; content-column updates and direct deletion remain denied. Keep a distinct
 disposable test database; the [002 runbook](specs/002-identity-platform-shell/quickstart.md)
 has the setup and recovery details.
 
@@ -247,8 +252,27 @@ Deployment is a future feature action using `eve link` and `eve deploy`, as requ
 by [AGENTS](AGENTS.md). No manual provisioning or deployment is part of 001. Every relevant
 PR updates README in the same change; maintainers verify freshness after merge.
 
-The repository was disconnected from Vercel on 2026-09-27 to prevent automatic
-deployments until Turas can replace the existing application. Do not reconnect
-or deploy as part of 004. Hosted validation and project
-alignment are deferred to replacement readiness. The earlier Next.js preview failure
+The repository was disconnected from Vercel on 2026-09-27 and reconnected by the
+maintainer on 2026-10-02. Git deployments are enabled: `main` is the Production
+branch and other branches produce protected Previews. Web Analytics is enabled
+on the project; the app integrates `@vercel/analytics` with page URL redaction
+for customer, engagement, plan, resource, import and conversation identifiers.
+Query strings and fragments are removed; unknown routes and custom events are
+discarded. Local development uses the SDK's development mode.
+The workspace uses a shared neutral design system with Geist typography, grouped
+navigation, consistent page headers, form panels, accessible controls, and tables
+that scroll within their panels. Customer profiles, knowledge, plans, staffing,
+imports, finance, access, and sign-in use the same light/dark visual language.
+Navigation and section headings use title case, keeping conjunctions, articles,
+and short prepositions lowercase. Names and authored content retain their spelling.
+Run `npm run workspace:ui:check` with the marked local test database selection to
+validate the desktop/mobile Playwright/WebKit matrix on an owned disposable clone.
+The check exercises real reads and writes with synthetic fixtures and no model calls.
+The chat landing now uses a real composer with optional customer selection below
+it, with “Customer (optional)” inside the selector in an inset context bar. The bar reserves space for a future
+project selector. General technical conversations use private, customer-free scope (migration
+035); customer tools and source selections still require an explicit customer.
+See the [bounded chat correction](specs/002-identity-platform-shell/general-chat.md).
+Hosted application validation, durable artifact storage and background worker
+alignment remain release work. The earlier Next.js preview failure
 is recorded historically in the [foundation validation record](specs/001-platform-foundation/validation.md).

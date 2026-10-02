@@ -56,7 +56,7 @@ test("compares a replacement and accepts a second baseline on the same engagemen
     await expect(comparison).toContainText("milestones",{timeout:30_000});
     await expect(page.locator("header").getByText("Change reason: Updated proof exit evidence"))
       .toBeVisible();
-    await expect(page.getByRole("link",{name:"Accepted engagement"})).toBeVisible();
+    await expect(page.getByRole("link",{name:"Accepted Engagement"})).toBeVisible();
     await withTransaction(async(db)=>{
       const admin=await createProfileTestSession(db,"mcteer");
       await submitPlanCommand(admin,{action:"submit",
@@ -91,7 +91,7 @@ test("compares a replacement and accepts a second baseline on the same engagemen
     expect(identity.active_baseline_id).not.toBe(prepared.firstBaselineId);
     expect(Number(identity.baseline_number)).toBe(2);
     expect(identity.revision_id).toBe(prepared.saved.revisionId);
-    const history=page.getByRole("heading",{name:"Revision history"}).locator("..");
+    const history=page.getByRole("heading",{name:"Revision History"}).locator("..");
     await expect(history.getByRole("button",{name:/Revision 1:/})).toBeVisible();
     const axe=await new AxeBuilder({page}).analyze();
     expect(axe.violations.filter((item)=>["critical","serious"].includes(item.impact ?? "")))

@@ -1,4 +1,5 @@
 "use client";
+import { EmptyState } from "../empty-state";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import type { WorkforceMapping } from "../../../lib/contracts/staffing-imports";
@@ -69,14 +70,14 @@ export function StaffingImports({ csrfToken }: { csrfToken: string }) {
     finally { setUploading(false); }
   }
   return <>
-    <nav className="profile-breadcrumb" aria-label="Breadcrumb"><Link href="/staffing/resources">Resources</Link><span aria-hidden="true">/</span><span>Workforce imports</span></nav>
-    <header className="profile-header"><div><p className="profile-eyebrow">Manager intake</p><h1>Workforce imports</h1><p>Scan and review personnel evidence separately from customer knowledge.</p></div></header>
+    <nav className="profile-breadcrumb" aria-label="Breadcrumb"><Link href="/staffing/resources">Resources</Link><span aria-hidden="true">/</span><span>Workforce Imports</span></nav>
+    <header className="profile-header"><div><p className="profile-eyebrow">Manager Intake</p><h1>Workforce Imports</h1><p>Scan and review personnel evidence separately from customer knowledge.</p></div></header>
     {(message || command.message) && <p role="status">{message || command.message}</p>}
     {command.uncertainKey && <button disabled={command.busy} onClick={() => void command.reconcile()}>Check save receipt</button>}
     <section className="profile-section"><form className="evidence-search-form" onSubmit={event => {
       event.preventDefault(); if (file && digest) void command.save("/api/staffing/imports", { filename: file.name,
         format: file.name.toLowerCase().endsWith(".csv") ? "csv" : "xlsx", byteSize: file.size, contentDigest: digest });
-    }}><h2>New intake</h2><label>Single CSV or XLSX original<input className="field" type="file" accept=".csv,.xlsx" disabled={!!intent || uploading || !!command.uncertainKey}
+    }}><h2>New Intake</h2><label>Single CSV or XLSX original<input className="field" type="file" accept=".csv,.xlsx" disabled={!!intent || uploading || !!command.uncertainKey}
       onChange={event => void choose(event.target.files?.item(0) ?? null)} /></label>
       <p>Every identity, skill, date and formula correction must be reviewed. A partial extraction cannot be approved.</p>
       {!intent && <button className="primary-button" disabled={!digest || command.busy || !!command.uncertainKey}>Start intake</button>}
@@ -86,15 +87,15 @@ export function StaffingImports({ csrfToken }: { csrfToken: string }) {
         {uploadUncertain && <button className="secondary-button" disabled={uploading} onClick={() => void checkUpload()}>Check upload status</button>}
         {intent.uploadState === "uploaded" && <button className="primary-button" disabled={command.busy || !!command.uncertainKey}
           onClick={() => void command.save(`/api/staffing/imports/${intent.importId}/complete`, { sourceGeneration: intent.generation, contentDigest: digest })}>Complete intake and scan</button>}
-        <Link href={`/staffing/imports/${intent.importId}`}>Review or cancel intake</Link>
+        <Link href={`/staffing/imports/${intent.importId}`}>Review or Cancel Intake</Link>
         {(intent.uploadState === "completed" || intent.withheld) && <button className="secondary-button" disabled={command.busy || !!command.uncertainKey || uploading}
           onClick={() => { ++fileChoice.current; setIntent(null); setFile(null); setDigest(""); setDirty(false); setUploadUncertain(false); }}>Start another intake</button>}
       </div>}
     </section>
-    <section className="profile-section"><h2>Intake history</h2><button className="secondary-button" onClick={() => void load()}>Reload status</button>
-      {!items.length && <p>No workforce imports available.</p>}
-      <div className="profile-grid">{items.map(item => <article className="profile-card" key={item.importId}><h3>{item.withheld ? "Retired workforce source" : item.filename}</h3>
-        <p>{item.state.replaceAll("_", " ")}</p><Link href={`/staffing/imports/${item.importId}`}>Open intake</Link></article>)}</div>
+    <section className="profile-section"><div className="profile-section-head"><h2>Intake History</h2><button className="secondary-button" onClick={() => void load()}>Reload status</button></div>
+      {!items.length && <EmptyState icon="upload" title="No workforce imports available.">Upload a CSV or XLSX file to begin a reviewed intake.</EmptyState>}
+      <div className="profile-grid">{items.map(item => <article className="profile-card" key={item.importId}><h3>{item.withheld ? "Retired Workforce Source" : item.filename}</h3>
+        <p>{item.state.replaceAll("_", " ")}</p><Link href={`/staffing/imports/${item.importId}`}>Open Intake</Link></article>)}</div>
       {cursor && <button className="secondary-button" onClick={() => void load(cursor)}>More imports</button>}
     </section>
   </>;
@@ -139,22 +140,22 @@ export function StaffingImportReview({ importId, csrfToken }: { importId: string
     })());
   }
   return <>
-    <nav className="profile-breadcrumb" aria-label="Breadcrumb"><Link href="/staffing/imports">Workforce imports</Link><span aria-hidden="true">/</span><span>Review</span></nav>
-    <h1>{source?.withheld ? "Retired workforce source" : source?.filename ?? "Workforce import"}</h1>
+    <nav className="profile-breadcrumb" aria-label="Breadcrumb"><Link href="/staffing/imports">Workforce Imports</Link><span aria-hidden="true">/</span><span>Review</span></nav>
+    <h1>{source?.withheld ? "Retired Workforce Source" : source?.filename ?? "Workforce Import"}</h1>
     {(message || command.message) && <p role="status">{message || command.message}</p>}
     {command.uncertainKey && <button disabled={command.busy} onClick={() => void command.reconcile()}>Check save receipt</button>}
     <button className="secondary-button" onClick={() => void load()}>Reload status</button>
     {source && <>
       <p>Source state: {source.state.replaceAll("_", " ")}{source.job?.errorCode ? ` · ${source.job.errorCode.replaceAll("_", " ")}` : ""}</p>
       {source.withheld ? <p>Original and personnel evidence are withheld. Audit identities are retained.</p> : <>
-        {source.extraction && <section className="profile-section"><h2>Extraction coverage</h2>
+        {source.extraction && <section className="profile-section"><h2>Extraction Coverage</h2>
           <p>{source.extraction.complete ? "Complete extraction; explicit mapping and approval required." : "Partial extraction. Replace with a complete original before approval."}</p>
           <p>{source.extraction.cellCount} cells · {source.extraction.coverage.visited} of {source.extraction.coverage.total} visited · {source.extraction.dateSystem} dates</p>
           <ul>{source.extraction.coverage.omitted.map((omission, i) => <li key={i}>{omission.count} {omission.kind}: {omission.reason}</li>)}</ul>
           {source.state === "ready" && <a href={`/api/staffing/imports/${importId}/content`}>Download scanned original</a>}
         </section>}
         {source.extraction?.complete && <section className="profile-section"><form className="evidence-search-form" onSubmit={event => { event.preventDefault(); saveMapping(); }}>
-          <h2>Explicit table mapping</h2><p>Select each included sheet and its header, row range and six distinct source columns. Hidden cells remain visible and are never automatically approved.</p>
+          <h2>Explicit Table Mapping</h2><p>Select each included sheet and its header, row range and six distinct source columns. Hidden cells remain visible and are never automatically approved.</p>
           <label>CSV date convention<select className="field" aria-label="CSV date convention" value={convention} onChange={event => { dirtyInputs.touch("mapping"); setConvention(event.target.value as typeof convention); }}>
             <option value="ISO">YYYY-MM-DD</option><option value="DMY">Day/month/year</option><option value="MDY">Month/day/year</option></select></label>
           {source.extraction.sheets.map(sheet => <label key={sheet.index}><input type="checkbox" checked={tables.some(t => t.sheetIndex === sheet.index)} onChange={event => {
@@ -167,7 +168,7 @@ export function StaffingImportReview({ importId, csrfToken }: { importId: string
             {fields.map(field => <label key={field}>{names[field]} column<input className="field" type="number" min={1} required value={value.columns[field]}
               onChange={event => table(index, { columns: { ...value.columns, [field]: Number(event.target.value) } })} /></label>)}
           </fieldset>)}
-          <h3>Exact identity resolution</h3>
+          <h3>Exact Identity Resolution</h3>
           {identities.map((identity, i) => <fieldset key={i}><legend>Identity {i + 1}</legend>
             <label>Kind<select className="field" aria-label="Kind" value={identity.kind} onChange={event => { dirtyInputs.touch("mapping"); setIdentities(old => old.map((item, n) => n === i ? { ...item, kind: event.target.value as typeof identity.kind } : item)); }}><option value="resources">Resource</option><option value="skills">Skill</option></select></label>
             <label>Exact original value<input className="field" required value={identity.value} maxLength={160} onChange={event => { dirtyInputs.touch("mapping"); setIdentities(old => old.map((item, n) => n === i ? { ...item, value: event.target.value } : item)); }} /></label>
@@ -176,7 +177,7 @@ export function StaffingImportReview({ importId, csrfToken }: { importId: string
           </fieldset>)}
           <button type="button" className="secondary-button" onClick={() => { dirtyInputs.touch("mapping"); setIdentities(old => [...old, { kind: "resources", value: "", id: "" }]); }}>Add exact identity</button>
           <p>Formula-derived identities, levels and dates need a literal correction. Corrections preserve original cell provenance.</p>
-          {corrections.map((correction, i) => <fieldset key={i}><legend>Literal correction {i + 1}</legend>
+          {corrections.map((correction, i) => <fieldset key={i}><legend>Literal Correction {i + 1}</legend>
             <label>Sheet index<input className="field" type="number" min={0} max={19} value={correction.sheetIndex} onChange={event => { dirtyInputs.touch("mapping"); setCorrections(old => old.map((item, n) => n === i ? { ...item, sheetIndex: Number(event.target.value) } : item)); }} /></label>
             <label>Original row<input className="field" type="number" min={2} value={correction.rowNumber} onChange={event => { dirtyInputs.touch("mapping"); setCorrections(old => old.map((item, n) => n === i ? { ...item, rowNumber: Number(event.target.value) } : item)); }} /></label>
             {(["resourceId", "skillId", "level", "assessmentDate", "nextReviewDate", "evidence"] as const).map(key => <label key={key}>{key.replace(/([A-Z])/g, " $1")}
@@ -189,9 +190,9 @@ export function StaffingImportReview({ importId, csrfToken }: { importId: string
           <button type="button" className="secondary-button" onClick={() => { dirtyInputs.touch("mapping"); setCorrections(old => [...old, { sheetIndex: 0, rowNumber: 2 }]); }}>Add literal correction</button>
           <button className="primary-button" disabled={!tables.length || command.busy || !!command.uncertainKey}>Save exact mapping</button>
         </form></section>}
-        <section className="profile-section"><h2>Original rows and candidates</h2>
+        <section className="profile-section"><h2>Original Rows and Candidates</h2>
           {!rows.length && <p>No extracted rows available yet.</p>}
-          <div className="profile-grid">{rows.map(row => <article className="profile-card" key={row.rowKey}><h3>Sheet {row.sheetIndex} · row {row.rowNumber}</h3>
+          <div className="profile-grid">{rows.map(row => <article className="profile-card" key={row.rowKey}><h3>Sheet {row.sheetIndex} · Row {row.rowNumber}</h3>
             {!row.columnsComplete && <p>Only the first 50 columns are shown. Use the scanned original for full review.</p>}
             <ul>{row.cells.map(cell => <li key={cell.cellId}>Column {cell.columnNumber}: {cell.text}{cell.formula ? " · formula requires literal review" : ""}
               {cell.hiddenSheet || cell.hiddenRow || cell.hiddenColumn ? " · hidden" : ""}{cell.merged ? " · merged" : ""}{cell.truncated ? " · display shortened" : ""}</li>)}</ul>
@@ -209,7 +210,7 @@ export function StaffingImportReview({ importId, csrfToken }: { importId: string
             disabled={command.busy || !!command.uncertainKey || !selected.length || selected.length > 100 || !rationale.trim() || !source.extraction?.complete}
             onClick={() => review(action)}>{action === "accept" ? "Accept selected exact candidates" : "Reject selected candidates"}</button>)}</div>
         </section>
-        <section className="profile-section"><h2>Retire this source</h2><label>Cancellation or withdrawal rationale<textarea className="field" value={retirementRationale} maxLength={2000} onChange={event => { dirtyInputs.touch("retirement"); setRetirementRationale(event.target.value); }} /></label>
+        <section className="profile-section"><h2>Retire This Source</h2><label>Cancellation or withdrawal rationale<textarea className="field" value={retirementRationale} maxLength={2000} onChange={event => { dirtyInputs.touch("retirement"); setRetirementRationale(event.target.value); }} /></label>
           <button className="secondary-button" disabled={command.busy || !!command.uncertainKey || !retirementRationale.trim()} onClick={() => {
             void command.save(`/api/staffing/imports/${importId}${source.sourceVersionId ? "" : "/cancel"}`, { sourceGeneration: source.generation, rationale: retirementRationale }, source.sourceVersionId ? "DELETE" : "POST", (() => {
               const confirmed = dirtyInputs.confirmation("retirement");

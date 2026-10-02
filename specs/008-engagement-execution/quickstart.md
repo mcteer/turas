@@ -28,8 +28,8 @@ cleanup roles, private artifact store, worker heartbeats, application ports and 
 workflow directories. Clone only the marked test source using existing identity and
 cleanup checks; never reset/migrate the configured app DB. Production URLs are only
 guard comparisons and are never contacted. A fixture creates schema 034 explicitly
-from the manifest, validates representative 006/007 state, then upgrades 035–037.
-A separate empty fixture exercises 001–037. Do not borrow 007's prior-schema selector.
+from the manifest, validates representative 006/007 state, then upgrades 036–038.
+A separate empty fixture exercises 001–038. Do not borrow 007's prior-schema selector.
 Only delete resources whose generated ownership marker matches the wrapper's receipt.
 Private captures live in ignored `local-artifacts/008/`, unique per run, mode0700
 folders/0600 files. Keep failure evidence; do not overwrite a previous passing run.
@@ -91,7 +91,7 @@ npm run execution:recovery:check
    reconcile mapped/retired/added keys; history retains minutes and acceptance does
    not transfer. Missing budget/ETC/calendar/acknowledgement remains explicit.
 6. Empty and034 upgrades plus runtime-role denials, narrow cleanup grant and no
-   request-time migration. Older feature readiness remains unchanged below 037.
+   request-time migration. Older feature readiness remains unchanged below 038.
 
 ## Live explanation gate — new commands
 
@@ -141,7 +141,7 @@ evaluation review digests, runtime limits, failure/rerun and cleanup evidence.
 
 Only after all required gates pass, inspect the configured Preview read-only with
 `npm run db:inspect-preview`. Historical schema 034 is not a fresh observation. Check
-marker/schema, then explicitly migrate 035–037 and apply roles using existing
+marker/schema, then explicitly migrate 036–038 and apply roles using existing
 `db:migrate` / `db:roles` commands, reinspect and perform non-destructive local app/
 Eve/runtime-readiness smoke. An unexpected identity or schema requires reconciliation
 before writing; Production is never a fallback. No seed/load/destructive test against

@@ -20,7 +20,7 @@ alter the selected agent model, commercial decisions, maturity or hosting.
 **Language/Version**: TypeScript 7.0.2, Node 24.x, SQL/Postgres 17, React 19.2.6.
 **Primary Dependencies**: Next.js 16.3.4, eve 0.67.1, pg 8.23.0, Zod 4.5.4,
 Temporal polyfill 0.5.1; use installed locked versions, no new integration.
-**Storage**: Existing scoped Postgres domain; explicit migrations 035–037; existing
+**Storage**: Existing scoped Postgres domain; explicit migrations 036–038 (main owns 035 general conversations); existing
 private artifact storage and `.eve/.workflow-data` preserved for paired recovery.
 **Testing**: Vitest, CLI Playwright/WebKit, axe, disposable Postgres and runtime
 roles, native Eve fixtures, eight captured/reviewed live responses, independent
@@ -82,9 +82,9 @@ specs/008-engagement-execution/
 ### Source Code (repository root, planned additions/edits)
 
 ```text
-migrations/035-execution-records.cjs
-migrations/036-execution-time-effort.cjs
-migrations/037-execution-advice-lifecycle.cjs
+migrations/036-execution-records.cjs
+migrations/037-execution-time-effort.cjs
+migrations/038-execution-advice-lifecycle.cjs
 lib/execution/calculations.ts       # pure versioned arithmetic
 lib/server/execution/               # policy, schema, commands, records, sources,
                                    # milestones, time, ledger, registers,
@@ -205,7 +205,7 @@ No database/provider work is performed by this planning pass. During implementat
 first verify disposable migrations/runtime roles, integration/regression/UI,
 performance, paired recovery and live-output gates. Record commands, environment,
 revision and actual outcomes in `validation.md`. Preview was historically at 034;
-inspect fresh marker/schema before an explicit 035–037 upgrade and role setup, then
+inspect fresh marker/schema before an explicit 036–038 upgrade and role setup, then
 read-only inspect and local smoke. Stop on an unexpected marker/schema. Production
 and Vercel linkage/deployment remain excluded. A Preview migration is not a hosted
 feature release. Disable new work with `TURAS_008_DISABLED=1`; keep reads, cancellation,

@@ -56,8 +56,9 @@ test("public research preview stays explicit in an owned synthetic chat",async (
       }) });
     });
     await visitAfterSignIn(page,`/s/${id}`);
+    await page.getByRole("button",{ name: "Customer context",exact: true }).click();
     await page.getByRole("button",{ name: "Start public research" }).click();
-    const panel = page.getByRole("region",{ name: "Public research" });
+    const panel = page.getByRole("region",{ name: "Public Research" });
     await panel.getByRole("button",{ name: "Prepare refresh" }).click();
     await expect(panel.getByLabel("Mode")).toHaveValue("recon");
     await expect(panel.getByLabel("Public name")).toHaveValue("Example Organization");
@@ -193,8 +194,9 @@ test("keyboard cancellation retains only checked public findings",async ({ page 
         body: JSON.stringify({ data: { dispatchState: "dispatched",
           responseState: cancelled ? "cancelled" : "running",watchdogState: null } }) }));
     await visitAfterSignIn(page,`/s/${conversationId}`);
+    await page.getByRole("button",{ name: "Customer context",exact: true }).click();
     await page.getByRole("button",{ name: "Start public research" }).click();
-    const panel = page.getByRole("region",{ name: "Public research" });
+    const panel = page.getByRole("region",{ name: "Public Research" });
     await panel.getByLabel("Product",{ exact: true }).fill("Vercel");
     await panel.getByLabel("Version",{ exact: true }).fill("2026");
     await panel.getByLabel("Topic",{ exact: true }).fill("build cache");

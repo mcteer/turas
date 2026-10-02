@@ -1,5 +1,7 @@
 "use client";
 
+import { titleCaseLabel } from "../title-case-label";
+
 import { useEffect,useState } from "react";
 
 type Fact = { id: string; payload: Record<string, unknown>; kind: string };
@@ -60,7 +62,7 @@ export function TypedConflictReview({ customerId,canReview,scopeKind = "customer
   const kinds = scopeKind === "shared" ? ["published_shared"] :
     ["accepted_profile","verified_research","published_shared"];
   return <section className="profile-section" aria-label="Typed evidence conflicts">
-    <div className="profile-section-head"><h2>Source conflicts</h2></div>
+    <div className="profile-section-head"><h2>Source Conflicts</h2></div>
     <p className="muted">Flag two current source revisions covering the same period. A steward confirms a material conflict before current fact answers are blocked.</p>
     <button className="secondary-button" type="button" aria-expanded={open}
       onClick={() => setOpen((value) => !value)}>{open ? "Close conflict form" : "Flag source conflict"}</button>
@@ -94,7 +96,7 @@ export function TypedConflictReview({ customerId,canReview,scopeKind = "customer
     </form>}
     {!items.length && <p className="muted">No source conflicts are visible.</p>}
     {items.map((item) => <article className="profile-card" key={item.id}>
-      <h3>{item.state} source conflict</h3>
+      <h3>{titleCaseLabel(item.state)} Source Conflict</h3>
       <p>{item.first.kind.replaceAll("_"," ")} {item.first.revisionId} ↔ {item.second.kind.replaceAll("_"," ")} {item.second.revisionId}</p>
       <p>{item.periodStart}–{item.periodEnd}. {item.rationale}</p>
       {canReview && ["flagged","confirmed"].includes(item.state) && <><label>
@@ -168,11 +170,11 @@ export function ConflictReview({ customerId, facts, conflicts, canReview, onChan
   };
   if (facts.length < 2 && conflicts.length === 0) return null;
   return <section className="profile-section" aria-labelledby="profile-conflicts">
-    <div className="profile-section-head"><h2 id="profile-conflicts">Evidence conflicts</h2>
+    <div className="profile-section-head"><h2 id="profile-conflicts">Evidence Conflicts</h2>
       <span>{conflicts.length}</span></div>
     <p className="muted">Flag contradictory accepted facts. A steward confirms the conflict before it blocks their use as support.</p>
     {facts.length >= 2 && <div className="profile-grid"><div className="profile-card">
-      <h3>Flag a contradiction</h3>
+      <h3>Flag a Contradiction</h3>
       <label>First accepted fact<select className="field" value={firstId}
         onChange={(event) => setFirstId(event.target.value)}><option value="">Select a fact</option>
         {facts.map((fact) => <option key={fact.id} value={fact.id}>{label(fact)}</option>)}</select></label>
@@ -185,7 +187,7 @@ export function ConflictReview({ customerId, facts, conflicts, canReview, onChan
     </div></div>}
     {conflicts.length === 0 ? <p className="muted">No open conflicts.</p> :
       <div className="profile-grid">{conflicts.map((conflict) => <article className="profile-card" key={conflict.id}>
-        <h3>{conflict.state === "confirmed" ? "Confirmed conflict" : "Flagged conflict"}</h3>
+        <h3>{conflict.state === "confirmed" ? "Confirmed Conflict" : "Flagged Conflict"}</h3>
         <p>{factName(conflict.firstRevisionId)} ↔ {factName(conflict.secondRevisionId)}</p>
         <p className="muted">{conflict.rationale}</p>
         {canReview && <><label>Decision rationale<textarea className="field" rows={2}

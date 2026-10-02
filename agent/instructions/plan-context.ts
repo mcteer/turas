@@ -1,3 +1,4 @@
+import { readGeneralAttemptContext } from "../../lib/server/conversations/general-context";
 import { defineDynamic,defineInstructions } from "eve/instructions";
 import { withTransaction } from "../../lib/server/db/client";
 import { hiddenRecord } from "../../lib/contracts/http";
@@ -13,6 +14,7 @@ export default defineDynamic({events:{
     if (!principal?.principalId ||
         typeof principal.attributes?.turasAttemptId!=="string") return null;
     return withTransaction(async(client)=>{
+      if(await readGeneralAttemptContext(client,principal.attributes!.turasAttemptId as string,principal.principalId!)) return null;
       const bound=await boundToolActor(client,principal);
       if (!bound.planning) return null;
       const found=await client.query<{id:string;base_revision_id:string;

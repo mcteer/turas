@@ -17,7 +17,13 @@ export default defineHook({
         return;
       }
       await withTransaction(async (client) => {
-        await readCurrentAttemptContext(client, attemptId, principal.principalId);
+        const context = await readCurrentAttemptContext(client, attemptId, principal.principalId);
+        if (context.contractVersion === "general-context-v1") {
+          const receipt = await client.query(`SELECT 1 FROM general_context_injections i JOIN general_context_receipts r ON r.attempt_id=i.attempt_id
+            WHERE i.attempt_id=$1 AND i.turn_id=$2 AND i.snapshot_digest=r.snapshot_digest`,[attemptId,event.data.turnId]);
+          if (!receipt.rowCount) throw new Error("General context was not injected");
+          return;
+        }
         const receipt = await client.query(`SELECT 1 FROM context_injection_receipts i
           JOIN context_snapshot_receipts s ON s.attempt_id=i.attempt_id
           WHERE i.attempt_id=$1 AND i.turn_id=$2 AND i.snapshot_digest=s.snapshot_digest`,

@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 35,
   "migrations": [
     {
       "file": "001-identity-foundation.cjs",
@@ -138,15 +138,19 @@
       "sha256": "10af7068480f0bcbf4c7d957c1e619c9229c09f958c9cf50ec0962f2612bc30c"
     },
     {
-      "file": "035-execution-records.cjs",
+      "file": "035-general-conversations.cjs",
+      "sha256": "874d3e2bf58dd6f91dc05c26267ebc47c98f72d70c9b8d50aa64912ebc340200"
+    },
+    {
+      "file": "036-execution-records.cjs",
       "sha256": "bbf6260c2a38bdc1ea7eebbb5f23c67bd2c8345a9ddcea21fb3b94f43a7e2d82"
     },
     {
-      "file": "036-execution-time-effort.cjs",
+      "file": "037-execution-time-effort.cjs",
       "sha256": "02127dc1d6882a74a3aa16c8c7e9a885957a4556e9d042cb891e3c95890a7bb2"
     },
     {
-      "file": "037-execution-advice-lifecycle.cjs",
+      "file": "038-execution-advice-lifecycle.cjs",
       "sha256": "578656385c6677403b2b1d4c2f9a28fe43e0eb7fe24ae6c24c0ff074894b416f"
     }
   ]

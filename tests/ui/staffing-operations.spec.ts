@@ -40,7 +40,7 @@ test("operational keyboard period reports unknown capacity without erasing a com
   await expect(day.getByRole("cell", { name: "120", exact: true })).toHaveCount(2);
   await expect(day.getByRole("cell", { name: "Unknown", exact: true })).toHaveCount(5);
   await expect(page.getByText(/Needs review: calendar missing/)).toBeVisible();
-  await expect(page.getByRole("link", { name: "Planning finance", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Planning Finance", exact: true })).toHaveCount(0);
   const response = await page.request.get(`/api/staffing/operations?customerId=${f.customerId}&fromDate=${f.firstDate}&toDate=${f.firstDate}`);
   expect(response.status()).toBe(200); expect(await response.text()).not.toMatch(/minorUnits|provenance|evidence|rationale|leave/);
   await accessible(page);
@@ -58,7 +58,7 @@ async function accessible(page: Parameters<typeof signIn>[0]) {
 test("canonical finance keyboard input, exact revision and planning-only policy approval", async ({ page }) => {
   test.setTimeout(120_000);
   const fixture = await resource(); await signIn(page, "mcteer"); await page.goto("/staffing/finance");
-  const form = page.locator("form").filter({ has: page.getByRole("heading", { name: "Enter a finance input" }) });
+  const form = page.locator("form").filter({ has: page.getByRole("heading", { name: "Enter a Finance Input" }) });
   await form.getByLabel("Canonical resource ID").fill(fixture.resourceId); await form.getByLabel("Currency", { exact: true }).selectOption("USD");
   await form.getByLabel("First effective date").fill("2026-10-01"); await form.getByLabel("End date (exclusive)").fill("2026-11-01");
   await form.getByLabel("Rate (minor units per hour)").fill("1000");
@@ -69,7 +69,7 @@ test("canonical finance keyboard input, exact revision and planning-only policy 
   await page.getByRole("button", { name: `Review input ${result.entityId}` }).click();
   await expect(page.getByText("Provenance: Synthetic finance UI provenance", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Revise this input" }).click();
-  const revision = page.locator("form").filter({ has: page.getByRole("heading", { name: "Revise finance input" }) });
+  const revision = page.locator("form").filter({ has: page.getByRole("heading", { name: "Revise Finance Input" }) });
   await revision.getByLabel("Rate (minor units per hour)").fill("1200"); await revision.getByLabel("Revision rationale").fill("Synthetic exact input revision");
   await revision.getByRole("button", { name: "Save finance revision" }).focus(); await page.keyboard.press("Enter");
   await expect(page.getByText(/USD · 1200 minor units\/hour/)).toBeVisible({ timeout: 20_000 });
@@ -108,8 +108,8 @@ test("a delayed eligible finance-input response cannot replace its newer withhel
 });
 test("operational accounts see no finance navigation, controls, amounts or provenance", async ({ page }) => {
   test.setTimeout(90_000); await signIn(page, "panel"); await page.goto("/staffing/finance");
-  await expect(page.getByRole("heading", { name: "Staffing unavailable" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Planning finance", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Staffing Unavailable" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Planning Finance", exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Rate (minor units per hour)")).toHaveCount(0);
   await expect(page.getByLabel("Provenance reference")).toHaveCount(0);
   const response = await page.request.get("/api/staffing/finance/inputs"); expect(response.status()).toBe(403);
@@ -123,7 +123,7 @@ test("inactive resources withhold current finance values before deletion or clea
       currency: "JPY", fromDate: "2026-10-01", toDate: "2026-11-01", minorUnitsPerHour: "99999999" } });
   await signIn(page, "mcteer"); await page.goto(`/staffing/resources/${fixture.resourceId}`);
   await page.getByRole("button", { name: "Revise resource", exact: true }).click();
-  const registry = page.locator("form").filter({ has: page.getByRole("heading", { name: "Revise resource", exact: true }) });
+  const registry = page.locator("form").filter({ has: page.getByRole("heading", { name: "Revise Resource", exact: true }) });
   await registry.getByLabel("State", { exact: true }).selectOption("inactive"); await registry.getByLabel("Revision rationale").fill("Synthetic resource withdrawal from current supply");
   await registry.getByRole("button", { name: "Save resource revision" }).click();
   await expect(page.getByRole("status")).toContainText("Saved", { timeout: 20_000 });
@@ -169,7 +169,7 @@ test("finance scenario keyboard snapshot exposes exact persisted cost and withho
   const snapshot = page.locator("article").filter({ has: page.getByRole("heading", { name: `Scenario ${created.scenarioId}`, exact: true }) });
   await expect(snapshot.getByText("$30.00", { exact: true })).toBeVisible();
   await expect(snapshot.getByText("Incomplete: missing revenue, missing nonlabor", { exact: true })).toBeVisible();
-  await snapshot.getByText("Exact grouped calculation inputs", { exact: true }).click();
+  await snapshot.getByText("Exact Grouped Calculation Inputs", { exact: true }).click();
   await expect(snapshot.getByText(/120 minutes × 1500 \/ 60 = 3000 minor units after rounding/)).toBeVisible();
   await expect(page.getByText("PRIVATE_SYNTHETIC_SCENARIO_UI_PROVENANCE", { exact: false })).toHaveCount(0);
   await accessible(page);

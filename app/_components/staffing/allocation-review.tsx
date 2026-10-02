@@ -1,4 +1,6 @@
 "use client";
+
+import { titleCaseLabel } from "../title-case-label";
 import { useEffect, useRef, useState } from "react";
 import type { readDemand } from "../../../lib/server/staffing/demands";
 import type { readAllocation, listAllocations } from "../../../lib/server/staffing/allocations";
@@ -65,7 +67,7 @@ function Review({ detail, demand, candidate, csrfToken, refresh, dirtyChanged }:
   }, [preview?.previewId, scopeKey]);
   const actions: Preview["action"][] = detail.state === "confirmed" ? ["amend", "release", "cancel"]
     : ["proposed", "tentative"].includes(detail.state) ? ["confirm"] : [];
-  return <section className="profile-card"><h3>Allocation review</h3>
+  return <section className="profile-card"><h3>Allocation Review</h3>
     <p>{detail.state} · {detail.contentAvailability}</p>
     {detail.reviewRequired && <p role="status">Current staffing inputs need review. Existing commitments remain counted.</p>}
     {detail.reservationExpiresAt && <p>Tentative reservation expires {new Date(detail.reservationExpiresAt).toLocaleString()}. Tentative minutes do not consume confirmed capacity.</p>}
@@ -93,7 +95,7 @@ function Review({ detail, demand, candidate, csrfToken, refresh, dirtyChanged }:
       } else {
         save(`/api/staffing/allocations/${detail.allocationId}/review-preview`, { ...body, action }, "POST");
       }
-    }}><fieldset disabled={blocked || stale}><legend>Exact allocation action</legend>
+    }}><fieldset disabled={blocked || stale}><legend>Exact Allocation Action</legend>
       <label>Allocation action<select className="field" aria-label="Allocation action" name="action" required defaultValue="">
         <option value="" disabled>Choose action</option>
         {detail.canReserve && <option value="reserve">Reserve tentatively</option>}
@@ -101,7 +103,7 @@ function Review({ detail, demand, candidate, csrfToken, refresh, dirtyChanged }:
         {detail.canReview && actions.map(action => <option key={action} value={action}>Prepare {action} review</option>)}
         {detail.canRevise && candidate && demand.demand && !demand.reviewRequired && demand.state === "qualified" && <option value="revise">Revise working proposal for {candidate.displayName}</option>}
       </select></label>
-      {detail.canRevise && candidate && demand.demand && <fieldset><legend>Revision minutes for {candidate.displayName}</legend>
+      {detail.canRevise && candidate && demand.demand && <fieldset><legend>Revision Minutes for {candidate.displayName}</legend>
         <p>These inputs apply only to a working proposal revision. Saving a revision preserves the existing confirmed ledger until an amendment is approved.</p>
         {demand.demand.days.filter(day => day.requiredMinutes > 0).map(day => <label key={day.date}>Revision minutes on {day.date}
           <input className="field" type="number" name={`minutes:${day.date}`} min={0} max={day.requiredMinutes} step={1}
@@ -110,7 +112,7 @@ function Review({ detail, demand, candidate, csrfToken, refresh, dirtyChanged }:
       <label>Allocation rationale<textarea className="field" name="rationale" required maxLength={2000} /></label>
       <button className="secondary-button">Prepare or save exact action</button>
     </fieldset></form>
-    {preview && <section aria-label="Daily allocation effects"><h4>Review {preview.action}</h4>
+    {preview && <section aria-label="Daily allocation effects"><h4>Review {titleCaseLabel(preview.action)}</h4>
       <p>This review expires {new Date(preview.expiresAt).toLocaleString()}. Approval rechecks current authority and every staffing input.</p>
       <ul>{preview.effects.retainedPastRows.map(row => <li key={`past:${row.date}`}>{row.date}: retain {row.minutes} historical minutes</li>)}
         {preview.effects.removedFutureRows.map(row => <li key={`old:${row.date}`}>{row.date}: remove {row.minutes} minutes from resource {row.resourceId}</li>)}
@@ -190,7 +192,7 @@ export function StaffingAllocationReview({ demand, candidate, csrfToken, dirtyCh
     return () => { clearInterval(timer); };
   }, [detail?.allocationId, scopeKey]);
   const blocked = command.busy || !!command.uncertainKey || reading;
-  return <section className="profile-section"><h2>Staffing allocations</h2>
+  return <section className="profile-section"><h2>Staffing Allocations</h2>
     {error && <p role="alert">{error}</p>}{command.message && <p role="status">{command.message}</p>}
     {command.uncertainKey && <button disabled={command.busy} onClick={() => void command.reconcile()}>Check proposal receipt</button>}
     <button disabled={blocked} onClick={() => void load()}>Reload allocations</button>

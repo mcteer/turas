@@ -30,7 +30,7 @@ test("source-bound reviewed journey through keyboard demand, match, human confir
   const f = await createReviewedStaffingJourneyInputs();
   const path = `/customers/${f.customerId}/engagements/${f.accepted.engagementId}/staffing`;
   await signIn(page, "panel"); await page.goto(path); await keyboard(page, "Create demand");
-  const draft = page.locator("form").filter({ has: page.getByRole("heading", { name: "Create demand", exact: true }) });
+  const draft = page.locator("form").filter({ has: page.getByRole("heading", { name: "Create Demand", exact: true }) });
   await draft.getByLabel("Work package", { exact: true }).selectOption(f.content.workPackages[0].key);
   await draft.getByLabel("Demand title", { exact: true }).fill("Synthetic reviewed UI journey demand");
   await draft.getByLabel("Delivery role", { exact: true }).fill("Application delivery lead");
@@ -77,7 +77,7 @@ test("source-bound reviewed journey through keyboard demand, match, human confir
   expect(confirmed.state).toBe("confirmed"); await accessible(page);
   await page.goto("/staffing/finance");
   for (const [kind, rateKind, amount] of [["rate", "loaded_cost", "1000"], ["rate", "service", "2000"], ["contracted_revenue", "", "10000"], ["nonlabor", "", "500"]]) {
-    const input = page.locator("form").filter({ has: page.getByRole("heading", { name: "Enter a finance input" }) });
+    const input = page.locator("form").filter({ has: page.getByRole("heading", { name: "Enter a Finance Input" }) });
     await input.getByLabel("Input kind").selectOption(kind);
     if (kind === "rate") { await input.getByLabel("Rate kind").selectOption(rateKind); await input.getByLabel("Canonical resource ID").fill(f.resource.resourceId!); }
     else { await input.getByLabel("Engagement ID", { exact: true }).fill(f.accepted.engagementId!); await input.getByLabel("Accepted baseline ID").fill(f.accepted.baselineId!); }

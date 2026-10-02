@@ -16,7 +16,7 @@ test("a partner claim stays Pending through submission, then accepts and retract
   await proposal.getByLabel("Claim", { exact: true }).fill(claim);
   await proposal.getByRole("button", { name: "Save as Pending" }).click();
   await expect(proposal.getByRole("status")).toContainText("Proposal saved as Pending");
-  await expect(page.getByRole("region", { name: "Your submissions" })).toContainText(claim);
+  await expect(page.getByRole("region", { name: "Your Submissions" })).toContainText(claim);
   await expect(page.getByRole("heading", { name: claim })).toHaveCount(1);
 
   const adminContext = await browser.newContext();
@@ -33,7 +33,7 @@ test("a partner claim stays Pending through submission, then accepts and retract
 
     await page.reload();
     await expect(page.getByRole("heading", { name: claim })).toHaveCount(2);
-    const own = page.getByRole("region", { name: "Your submissions" }).locator(".profile-card")
+    const own = page.getByRole("region", { name: "Your Submissions" }).locator(".profile-card")
       .filter({ hasText: claim });
     await expect(own).toContainText("accepted");
     await own.getByLabel("Request retraction").fill(`Synthetic withdrawal ${marker}`);
@@ -50,7 +50,7 @@ test("a partner claim stays Pending through submission, then accepts and retract
     await expect(request).toHaveCount(0);
     await page.reload();
     await expect(page.locator(".profile-section")
-      .filter({ has: page.getByRole("heading", { name: "Other context" }) })
+      .filter({ has: page.getByRole("heading", { name: "Other Context" }) })
       .locator(".profile-card").filter({ hasText: claim })).toHaveCount(0);
 
     const rejectedClaim = `Synthetic rejected observation ${marker}`;
@@ -67,7 +67,7 @@ test("a partner claim stays Pending through submission, then accepts and retract
     await rejectedCandidate.getByRole("button", { name: "Reject" }).click();
     await expect(rejectedCandidate).toHaveCount(0);
     await page.reload();
-    const ownRejection = page.getByRole("region", { name: "Your submissions" })
+    const ownRejection = page.getByRole("region", { name: "Your Submissions" })
       .locator(".profile-card").filter({ hasText: rejectedClaim });
     await expect(ownRejection).toContainText("rejected");
     await expect(ownRejection).toContainText("More delivery evidence is needed");

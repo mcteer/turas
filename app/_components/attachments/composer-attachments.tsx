@@ -173,7 +173,7 @@ export function ComposerAttachments({ conversationId, customerId, customerName, 
         onClick={() => void upload()}>Upload selected documents</button>
     </>}
     {priorSources.filter((source) => !items.some((item) => item.intent?.versionId === source.versionId))
-      .length > 0 && <div><h3>Previously uploaded sources</h3><ul className="attachment-list">
+      .length > 0 && <div><h3>Previously Uploaded Sources</h3><ul className="attachment-list">
       {priorSources.filter((source) => !items.some((item) => item.intent?.versionId === source.versionId))
         .map((source) => <li key={source.versionId}><span>{source.displayName} · {source.state}</span>
           {attachedPrevious.includes(source.versionId) ? <button type="button" className="secondary-button"

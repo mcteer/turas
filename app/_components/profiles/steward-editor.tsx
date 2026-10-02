@@ -64,7 +64,7 @@ export function StewardEditor({ customerId, refresh }: { customerId: string; ref
     } catch { setStatus("The result is uncertain. Retry the same assignment with its key."); }
   }
   return <section className="profile-section" aria-labelledby="profile-stewards">
-    <div className="profile-section-head"><h2 id="profile-stewards">Customer stewards</h2></div>
+    <div className="profile-section-head"><h2 id="profile-stewards">Customer Stewards</h2></div>
     {assignments.length === 0 && <p className="muted">No active steward is assigned.</p>}
     <div className="profile-grid">{assignments.map((item) => <article className="profile-card" key={item.membershipId}>
       <div className="profile-card-head"><h3>{item.displayName}</h3><span className="profile-badge">{item.active ? "Active" : "Revoked"}</span></div>

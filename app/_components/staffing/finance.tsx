@@ -1,4 +1,7 @@
 "use client";
+
+import { titleCaseLabel } from "../title-case-label";
+import { EmptyState } from "../empty-state";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { StaffingFinanceInput } from "../../../lib/contracts/staffing-economics";
@@ -25,7 +28,7 @@ function RevisionEditor({ detail, command, editing }: { detail: Detail; command:
     const input = base.input!.kind === "rate" ? { ...period, minorUnitsPerHour: data.get("amount") } : { ...period, minorUnits: data.get("amount") };
     void command.save(`/api/staffing/finance/inputs/${base.inputId}`, { revisionId: base.revisionId, contentDigest: base.contentDigest,
       expectedAggregateVersion: base.aggregateVersion, input, provenance: data.get("provenance"), rationale: data.get("rationale") }, "PATCH", () => { if (acknowledge()) { setBase(null); editing(false); } });
-  }}><h3>Revise finance input</h3><p>Revision {base.revisionId}. Resource and baseline ownership remain fixed.</p>
+  }}><h3>Revise Finance Input</h3><p>Revision {base.revisionId}. Resource and baseline ownership remain fixed.</p>
     {base.aggregateVersion !== detail.aggregateVersion && <p role="status">This input changed. Reopen to use its current revision.</p>}
     <CurrencyField initial={base.input.currency} /><PeriodFields from={base.input.fromDate} to={base.input.toDate} />
     <label>{base.input.kind === "rate" ? "Rate (minor units per hour)" : "Entered total (minor units)"}<input className="field" name="amount" required pattern="0|[1-9][0-9]*"
@@ -64,16 +67,16 @@ export function StaffingFinance({ csrfToken }: { csrfToken: string }) {
   useEffect(() => { void load(); return () => { ++reads.current; ++selectionReads.current; }; }, []);
   const command = useStaffingCommand(csrfToken, async () => { await load(); });
   return <>
-    <nav className="profile-breadcrumb" aria-label="Breadcrumb"><Link href="/staffing/resources">Resources</Link><span aria-hidden="true">/</span><span>Planning finance</span></nav>
-    <header className="profile-header"><div><p className="profile-eyebrow">Finance</p><h1>Planning finance inputs</h1>
+    <nav className="profile-breadcrumb" aria-label="Breadcrumb"><Link href="/staffing/resources">Resources</Link><span aria-hidden="true">/</span><span>Planning Finance</span></nav>
+    <header className="profile-header"><div><p className="profile-eyebrow">Finance</p><h1>Planning Finance Inputs</h1>
       <p>Entered rates and totals support planning. Formula approval does not approve a quote or actual profit.</p></div></header>
     {error && <p role="alert">{error}</p>}{command.message && <p role="status">{command.message}</p>}
     {command.uncertainKey && <button disabled={command.busy} onClick={() => void command.reconcile()}>Check save receipt</button>}
     <button className="secondary-button" onClick={() => void load()}>Reload finance status</button>
-    {policy && <section className="profile-section"><h2>Formula and input policy</h2><p>{policy.formulaVersion} · {policy.policyApproval}</p>
+    {policy && <section className="profile-section"><h2>Formula and Input Policy</h2><p>{policy.formulaVersion} · {policy.policyApproval}</p>
       <p>Contribution subtracts loaded delivery cost and entered nonlabor cost from entered contracted revenue. Missing or mixed-currency inputs remain incomplete.
         Service-rate revenue is a separate hypothetical estimate. Costs group by resource, local date and rate revision before rounding once to the nearest minor unit.</p>
-      <p className="evidence-citation">Policy digest: {policy.inputPolicyDigest}</p>
+      <p className="policy-metadata">Policy digest: {policy.inputPolicyDigest}</p>
       <form className="evidence-search-form" onChange={() => edits.touch("policy")} onSubmit={event => {
         event.preventDefault(); const form = event.currentTarget, data = new FormData(form);
         void command.save("/api/staffing/finance/policy-decisions", { formulaVersion: policy.formulaVersion, inputPolicyDigest: policy.inputPolicyDigest,
@@ -81,12 +84,12 @@ export function StaffingFinance({ csrfToken }: { csrfToken: string }) {
       }}><label>Policy approval rationale<textarea className="field" name="rationale" required maxLength={2000} /></label>
         <button className="primary-button" disabled={command.busy || !!command.uncertainKey}>Approve this planning formula and policy</button>
       </form></section>}
-    <section className="profile-section"><form className="evidence-search-form" onChange={() => edits.touch("new-input")} onSubmit={event => {
+    <section className="profile-section"><form className="evidence-search-form form-columns" onChange={() => edits.touch("new-input")} onSubmit={event => {
       event.preventDefault(); const form = event.currentTarget, data = new FormData(form), period = { currency: data.get("currency"), fromDate: data.get("fromDate"), toDate: data.get("toDate") };
       const input = kind === "rate" ? { ...period, kind, rateKind: data.get("rateKind"), resourceId: data.get("resourceId"), minorUnitsPerHour: data.get("amount") }
         : { ...period, kind, engagementId: data.get("engagementId"), baselineId: data.get("baselineId"), minorUnits: data.get("amount") };
       void command.save("/api/staffing/finance/inputs", { input, provenance: data.get("provenance"), rationale: data.get("rationale") }, "POST", edits.confirmation("new-input", form));
-    }}><h2>Enter a finance input</h2>
+    }}><h2>Enter a Finance Input</h2>
       <label>Input kind<select className="field" aria-label="Input kind" value={kind} onChange={event => setKind(event.target.value as typeof kind)}>
         <option value="rate">Effective hourly rate</option><option value="contracted_revenue">Contracted revenue</option><option value="nonlabor">Nonlabor cost</option></select></label>
       {kind === "rate" ? <><label>Rate kind<select className="field" aria-label="Rate kind" name="rateKind"><option value="loaded_cost">Loaded delivery cost</option><option value="service">Service rate (hypothetical revenue)</option></select></label>
@@ -100,9 +103,9 @@ export function StaffingFinance({ csrfToken }: { csrfToken: string }) {
       <label>Input rationale<textarea className="field" name="rationale" required maxLength={2000} /></label>
       <button className="primary-button" disabled={command.busy || !!command.uncertainKey}>Save entered finance input</button>
     </form></section>
-    <section className="profile-section"><h2>Versioned input history</h2>
-      {!items.length && !error && <p>No finance inputs available.</p>}
-      <div className="profile-grid">{items.map(item => <article className="profile-card evidence-citation" key={item.inputId}><h3>{item.kind.replaceAll("_", " ")}</h3>
+    <section className="profile-section"><h2>Versioned Input History</h2>
+      {!items.length && !error && <EmptyState icon="finance" title="No finance inputs available.">Entered rates and costs will appear here with their revision history.</EmptyState>}
+      <div className="profile-grid">{items.map(item => <article className="profile-card evidence-citation" key={item.inputId}><h3>{titleCaseLabel(item.kind)}</h3>
         <p>{item.resourceId ? `Resource ${item.resourceId}` : `Baseline ${item.baselineId}`}</p>
         <button className="secondary-button" disabled={command.busy || !!command.uncertainKey || !!editingInputId} onClick={() => {
           const ticket = ++selectionReads.current; setSelected(null);
@@ -114,7 +117,7 @@ export function StaffingFinance({ csrfToken }: { csrfToken: string }) {
         }}>Review input {item.inputId}</button></article>)}</div>
       {cursor && <button className="secondary-button" onClick={() => void load(cursor)}>More finance inputs</button>}
     </section>
-    {selected && <section className="profile-section evidence-citation"><h2>Selected input</h2><p>{selected.inputId} · revision {selected.revisionId}</p>
+    {selected && <section className="profile-section evidence-citation"><h2>Selected Input</h2><p>{selected.inputId} · revision {selected.revisionId}</p>
       {selected.withheld || !selected.input ? <p>Financial values and provenance are withheld because current resource or baseline eligibility changed.</p> : <>
         <p>{selected.input.currency} · {selected.input.kind === "rate" ? `${selected.input.minorUnitsPerHour} minor units/hour` : `${selected.input.minorUnits} minor units`}
           · {selected.input.fromDate} to {selected.input.toDate} (exclusive)</p><p>Provenance: {selected.provenance}</p>

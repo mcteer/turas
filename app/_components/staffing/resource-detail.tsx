@@ -71,7 +71,7 @@ export function StaffingResourceDetail({ resourceId, csrfToken }: { resourceId: 
       expectedAggregateVersion: row.aggregateVersion, action, rationale })) }, "POST", () => { if (acknowledge()) { setRationale(""); setSelected([]); } });
   }
   return <>
-    <nav className="profile-breadcrumb" aria-label="Breadcrumb"><Link href="/staffing/resources">Resources</Link><span aria-hidden="true">/</span><span>Resource detail</span></nav>
+    <nav className="profile-breadcrumb" aria-label="Breadcrumb"><Link href="/staffing/resources">Resources</Link><span aria-hidden="true">/</span><span>Resource Detail</span></nav>
     {error && <p role="alert">{error} <button onClick={() => void load()}>Reload</button></p>}
     {!resource && !error && <p role="status">Loading resource…</p>}
     {command.message && <p role="status">{command.message}</p>}
@@ -79,7 +79,7 @@ export function StaffingResourceDetail({ resourceId, csrfToken }: { resourceId: 
     {resource && <>
       <header className="profile-header"><div><p className="profile-eyebrow">Resource</p><h1>{resource.displayName}</h1>
         <p>{resource.kind} · {resource.state} · {resource.timezone}{resource.regionCode ? ` · ${resource.regionCode}` : ""}</p></div></header>
-      <section className="profile-section"><h2>Current approved competencies</h2>
+      <section className="profile-section"><h2>Current Approved Competencies</h2>
         {!skills.length && <p>No current approved competencies. Pending or withdrawn evidence is excluded.</p>}
         <ul>{skills.map(skill => <li key={skill.skillId}>Skill {skill.skillId} · level {skill.level} · {skill.freshness}</li>)}</ul>
         {skillCursor && <button className="secondary-button" onClick={() => void more("skills")}>More approved skills</button>}
@@ -87,7 +87,7 @@ export function StaffingResourceDetail({ resourceId, csrfToken }: { resourceId: 
       <StaffingCalendar key={resourceId} resourceId={resourceId} csrfToken={csrfToken} />
       {resource.manager && <>
         <section className="profile-section"><ResourceRevisionEditor resource={resource} command={command} /><PartnerEligibilityEditor resource={resource} command={command} /></section>
-        <section className="profile-section"><h2>Manager evidence and review</h2>
+        <section className="profile-section"><h2>Manager Evidence and Review</h2>
           <p>Accept the exact dated assessment shown here. Approval does not refresh its assessment date.</p>
           {!review.items.length && <p>No current candidate or accepted evidence.</p>}
           <div className="profile-grid">{review.items.map(row => <article className="profile-card" key={row.revisionId}>
@@ -127,7 +127,7 @@ export function StaffingResourceDetail({ resourceId, csrfToken }: { resourceId: 
               review.items.filter(row => selected.includes(row.revisionId)).some(row => action === "retract" ? row.state !== "accepted" : row.state !== "pending" || action === "accept" && row.withheld)}
             onClick={() => decide(action)}>{action === "accept" ? "Accept selected" : action === "reject" ? "Reject selected" : "Retract selected"}</button>)}</div>
         </section>
-        {history && <section className="profile-section"><h2>Revision history</h2>
+        {history && <section className="profile-section"><h2>Revision History</h2>
           <button className="secondary-button" onClick={() => { ++histories.current; setHistory(null); setHistoryId(null); }}>Close history</button>
           <ul>{history.items.map(row => <li key={row.revisionId}>{row.state} · revision {row.revisionId} ·
             {row.withheld ? " Evidence withheld" : ` Level ${row.level}, assessed ${row.assessmentDate}: ${row.evidence ?? ""}`}</li>)}</ul>
@@ -147,7 +147,7 @@ export function StaffingResourceDetail({ resourceId, csrfToken }: { resourceId: 
           void command.save("/api/staffing/competencies", { resourceId, skillId: data.get("skillId"), level: Number(data.get("level")),
             assessmentDate: data.get("assessmentDate"), nextReviewDate: data.get("nextReviewDate"),
             evidence: data.get("evidence"), rationale: data.get("rationale") }, "POST", edits.confirmation("manual", form));
-        }}><h2>Propose a dated assessment</h2>
+        }}><h2>Propose a Dated Assessment</h2>
           <label>Canonical skill ID<input className="field" name="skillId" required /></label>
           <label>Level<select className="field" name="level" aria-label="Level">{[0, 1, 2, 3, 4].map(level => <option key={level} value={level}>{level}</option>)}</select></label>
           <label>Assessment date<input className="field" type="date" name="assessmentDate" required min="2000-01-01" max="2100-12-31" /></label>

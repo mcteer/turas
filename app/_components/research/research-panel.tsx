@@ -134,10 +134,10 @@ export function ResearchPanel({ customerId,conversationId,csrfToken,busy,onStart
     } catch (error) { setNotice(error instanceof Error ? error.message : "Refresh unavailable"); }
     finally { setWorking(false); }
   }
-  return <section className="profile-section research-panel" aria-label="Public research">
+  return <section className="profile-section research-panel" aria-label="Public Research">
     <button className="secondary-button" type="button" aria-expanded={open}
       onClick={() => setOpen((value) => !value)}>{open ? "Close research" : "Start public research"}</button>
-    {open && <><h2>Public research</h2><p className="muted">Review the exact public search terms before starting. Supplied links remain pending until independently checked.</p>
+    {open && <><h2>Public Research</h2><p className="muted">Review the exact public search terms before starting. Supplied links remain pending until independently checked.</p>
       <RefreshPanel customerId={customerId} onChoose={(source) => {
         if (!source.mode || !source.publicFields) return;
         const fields = source.publicFields;
@@ -190,7 +190,7 @@ export function ResearchPanel({ customerId,conversationId,csrfToken,busy,onStart
         <button className="secondary-button" type="submit" disabled={working}>Preview scope</button>
       </form>
       {preview && <div className="profile-state" role="region" aria-label="Research scope preview">
-        <h3>Review outbound scope</h3><p>Mode: {preview.mode}. Discovery: {preview.discoveryProvider ?? "none"}.</p>
+        <h3>Review Outbound Scope</h3><p>Mode: {preview.mode}. Discovery: {preview.discoveryProvider ?? "none"}.</p>
         <p>Destination: {preview.destination}. Fetch: {preview.fetchScope}.</p>
         <ul>{preview.queries.map((query,index) => <li key={index}>{query}</li>)}</ul>
         <p>Maximum {preview.limits.searches} searches, {preview.limits.fetchAttempts} fetches, {preview.limits.wallSeconds} seconds.</p>

@@ -26,7 +26,13 @@ export type ServerConfig = z.infer<typeof schema>;
 
 export function parseServerConfig(environment: Record<string, string | undefined>): ServerConfig {
   if (typeof window !== "undefined") throw new Error("Server configuration cannot run in a browser");
-  const parsed = schema.safeParse(environment);
+  const previewHost = environment.VERCEL_ENV === "preview" ? environment.VERCEL_URL : undefined;
+  if (previewHost && !/^[a-zA-Z0-9-]+\.vercel\.app$/.test(previewHost)) {
+    throw new Error("Turas configuration invalid: VERCEL_URL");
+  }
+  const parsed = schema.safeParse(previewHost
+    ? { ...environment, TURAS_APP_ORIGIN: `https://${previewHost}` }
+    : environment);
   if (!parsed.success) {
     const names = parsed.error.issues.map((issue) => issue.path.join(".")).filter(Boolean);
     throw new Error(`Turas configuration invalid: ${[...new Set(names)].join(", ")}`);

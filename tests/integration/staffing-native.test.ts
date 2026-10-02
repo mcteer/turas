@@ -172,7 +172,10 @@ describe("owned eve native staffing transport with a bounded fixture provider", 
       value => ["completed", "failed", "cancelled"].includes(value.responseState ?? ""), 30_000, false);
     expect(settled.outputReadable).toBe(false);
     expect(settled.fenced || settled.state === "failed").toBe(true);
+    // CI clones can contain unfinished responses from earlier general-chat tests.
+    // Check every attempt exercised by this native fixture, preserving unrelated history.
     const active = (await query(`SELECT response_state,dispatch_state,count(*)::int AS n FROM response_attempts
+      WHERE id IN (SELECT response_attempt_id FROM staffing_native_fixture_calls)
       GROUP BY response_state,dispatch_state ORDER BY response_state,dispatch_state`)).rows;
     expect(active.filter(row => ["pending", "running", "stopping"].includes(row.response_state))).toEqual([]);
     expect((await query("SELECT count(*)::int AS n FROM staffing_native_fixture_calls WHERE response_attempt_id=$1", [running.responseAttemptId])).rows[0].n).toBe(2);
@@ -206,7 +209,7 @@ describe("owned eve native staffing transport with a bounded fixture provider", 
     const receipts = (await query("SELECT id,ordinal,step_token FROM staffing_model_step_receipts WHERE attempt_id=$1 ORDER BY ordinal", [f.reserved.attemptId])).rows;
     await environment.stop(); await closeRuntimePool();
     expect(process.env.DATABASE_URL_UNPOOLED).toBe(ownedDatabase);
-    expect((await query("SELECT environment_id,schema_version FROM turas_environment")).rows).toEqual([{ environment_id: process.env.TURAS_ENVIRONMENT_ID, schema_version: 34 }]);
+    expect((await query("SELECT environment_id,schema_version FROM turas_environment")).rows).toEqual([{ environment_id: process.env.TURAS_ENVIRONMENT_ID, schema_version: originalPair.schemaVersion }]);
     // Restart the real Next/eve/maintenance supervisor against the same managed
     // DB and owned stores. This reconnects DB clients; it does not reboot Neon.
     await environment.start();

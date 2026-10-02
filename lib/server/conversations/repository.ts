@@ -6,7 +6,7 @@ import { getServerConfig } from "../config";
 import { query, withTransaction } from "../db/client";
 import { hiddenRecord, HttpFailure } from "../../contracts/http";
 import type { ConversationReference } from "../../contracts/conversations";
-import { lockProfileActor } from "../profiles/policy";
+import { lockProfileActor, lockWorkspaceActor } from "../profiles/policy";
 import { assertRetrievalDependenciesCurrent } from "../retrieval/fences";
 import { assertPlanConversationFence } from "../plans/fences";
 import { staffingScopeForConversation } from "../staffing/context";
@@ -15,7 +15,9 @@ import { readStaffingAdvisoryStatus } from "../staffing/advisory-status";
 
 type ConversationRow = {
   id: string;
-  customer_id: string;
+  workspace_id: string;
+  environment_id: string;
+  customer_id: string | null;
   owner_principal_id: string;
   title: string;
   binding_state: ConversationReference["bindingState"];
@@ -51,7 +53,18 @@ const scopedCustomer = `
       )))
   )`;
 
+const scopedGeneral = `c.customer_id IS NULL AND c.context_snapshot_schema='general-context-v1' AND EXISTS (
+  SELECT 1 FROM login_sessions ls JOIN principals p ON p.id=ls.principal_id
+  JOIN memberships m ON m.id=$1 AND m.principal_id=p.id
+  JOIN workspaces w ON w.id=m.workspace_id
+  LEFT JOIN partner_organizations o ON o.id=m.partner_org_id AND o.workspace_id=m.workspace_id
+  WHERE ls.id=$2 AND ls.revoked_at IS NULL AND ls.expires_at>now()
+    AND p.id=$3 AND p.active AND m.active AND w.active AND m.workspace_id=c.workspace_id
+    AND (m.kind='internal' OR o.active)
+)`;
+
 function contextStatus(row: ConversationRow, session: CurrentSession): "current" | "changed" | "historical" {
+  if (row.customer_id === null && row.context_snapshot_schema === "general-context-v1") return "current";
   if (row.context_snapshot_schema !== "customer-context-v1") return "historical";
   const audience = row.planning_audience ?? (session.kind === "internal" ? "internal" : "delivery");
   const generation = audience === "internal" ? row.internal_generation : row.delivery_generation;
@@ -141,10 +154,25 @@ async function staleRetrievalConversations(ids: readonly string[]): Promise<Set<
 
 export async function createOwnedConversation(
   session: CurrentSession,
-  input: { customerId: string; requestKey: string; title?: string },
+  input: { customerId?: string | null; requestKey: string; title?: string },
 ): Promise<{ conversation: ConversationReference; created: boolean }> {
   const title = input.title ?? "New conversation";
   return withTransaction(async (client: PoolClient) => {
+    if (!input.customerId) {
+      await lockWorkspaceActor(client, session);
+      const schema = (await client.query("SELECT schema_version FROM turas_environment LIMIT 1")).rows[0]?.schema_version;
+      if (schema < 35 || process.env.TURAS_GENERAL_CHAT_DISABLED === "1") throw new HttpFailure(503, "general_chat_unavailable", "General chat is unavailable");
+      const id = randomUUID();
+      const result = await client.query<ConversationRow>(`INSERT INTO conversations
+        (id,environment_id,workspace_id,customer_id,owner_principal_id,creation_operation_id,binding_state,title,
+          context_snapshot_schema,context_login_session_id,context_membership_id)
+        VALUES($1,$2,$3,NULL,$4,$5,'unbound',$6,'general-context-v1',$7,$8)
+        ON CONFLICT(creation_operation_id) DO NOTHING RETURNING *`,
+        [id,getServerConfig().TURAS_ENVIRONMENT_ID,session.workspaceId,session.principalId,input.requestKey,title,session.sessionId,session.membershipId]);
+      const row = result.rows[0] ?? (await client.query<ConversationRow>("SELECT * FROM conversations WHERE creation_operation_id=$1", [input.requestKey])).rows[0];
+      if (!row || row.owner_principal_id!==session.principalId || row.workspace_id !== session.workspaceId || row.environment_id !== getServerConfig().TURAS_ENVIRONMENT_ID || row.customer_id!==null || row.title!==title) throw new HttpFailure(409,"request_key_conflict","Request key already used");
+      return { conversation: toReference(row,session), created: Boolean(result.rows[0]) };
+    }
     await lockProfileActor(client, session, input.customerId);
     const allowed = await client.query(`
       SELECT customer.id FROM customer_references customer
@@ -188,10 +216,10 @@ export async function getOwnedConversation(
 ): Promise<ConversationReference> {
   const result = await query<ConversationRow>(`
     SELECT c.*,state.internal_generation,state.delivery_generation FROM conversations c
-    JOIN customer_references customer ON customer.id = c.customer_id
-    JOIN customer_profile_state state ON state.customer_id=c.customer_id
+    LEFT JOIN customer_references customer ON customer.id = c.customer_id
+    LEFT JOIN customer_profile_state state ON state.customer_id=c.customer_id
     WHERE c.id = $4 AND c.owner_principal_id = $3 AND c.environment_id = $5
-      AND ${scopedCustomer}
+      AND (${scopedCustomer} OR (${scopedGeneral}))
     LIMIT 1
   `, [...values(session), id, getServerConfig().TURAS_ENVIRONMENT_ID]);
   if (!result.rows[0]) throw hiddenRecord();
@@ -219,12 +247,12 @@ export async function listOwnedConversations(
   const escapedTitle = options.title?.replace(/[\\%_]/g, "\\$&") ?? null;
   const result = await query<ConversationRow>(`
     SELECT c.*,state.internal_generation,state.delivery_generation FROM conversations c
-    JOIN customer_references customer ON customer.id = c.customer_id
-    JOIN customer_profile_state state ON state.customer_id=c.customer_id
+    LEFT JOIN customer_references customer ON customer.id = c.customer_id
+    LEFT JOIN customer_profile_state state ON state.customer_id=c.customer_id
     WHERE c.owner_principal_id = $3 AND c.environment_id = $4
-      AND ${scopedCustomer}
+      AND (${scopedCustomer} OR (${scopedGeneral}))
       AND ($5::uuid IS NULL OR c.customer_id = $5)
-      AND ($6::text IS NULL OR (c.context_snapshot_schema='customer-context-v1'
+      AND ($6::text IS NULL OR ((${scopedGeneral}) AND c.title ILIKE '%' || $6 || '%' ESCAPE '\\') OR (c.context_snapshot_schema='customer-context-v1'
         AND c.context_audience=CASE WHEN $10::text='internal' THEN 'internal' ELSE 'delivery' END
         AND c.context_login_session_id=$11 AND c.context_membership_id=$12
         AND c.context_generation=CASE WHEN $10::text='internal'

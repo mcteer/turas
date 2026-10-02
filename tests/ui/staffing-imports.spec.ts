@@ -46,11 +46,11 @@ test("operational resource responses and DOM exclude manager evidence", async ({
   await signIn(page, "panel");
   const response = page.waitForResponse(response => response.url().includes(`/api/staffing/resources/${resource.resourceId}`) && response.request().method() === "GET");
   await page.goto(`/staffing/resources/${resource.resourceId}`);
-  await expect(page.getByRole("heading", { name: "Current approved competencies" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Current Approved Competencies" })).toBeVisible();
   const payload = await (await response).text();
   for (const field of [evidenceSentinel, "evidence", "locators", "filename", "rationale", "minorUnitsPerHour"]) expect(payload).not.toContain(field);
   await expect(page.getByText(evidenceSentinel)).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "Manager evidence and review" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Manager Evidence and Review" })).toHaveCount(0);
   await accessible(page);
   mkdirSync("local-artifacts/007", { recursive: true });
   await sanitizedScreenshot(page, `local-artifacts/007/operational-resource-${info.project.name}.png`);
@@ -60,7 +60,7 @@ test("manager can propose dated evidence using keyboard and reject its exact rev
   test.setTimeout(120_000);
   const resource = await reviewedResource();
   await signIn(page, "mcteer"); await page.goto(`/staffing/resources/${resource.resourceId}`);
-  const form = page.locator("form").filter({ has: page.getByRole("heading", { name: "Propose a dated assessment" }) });
+  const form = page.locator("form").filter({ has: page.getByRole("heading", { name: "Propose a Dated Assessment" }) });
   const skill = await withTransaction(async db => (await db.query("SELECT skill_id FROM workforce_competencies WHERE resource_id=$1", [resource.resourceId])).rows[0].skill_id as string);
   await form.getByLabel("Canonical skill ID").fill(skill);
   await form.getByLabel("Level", { exact: true }).selectOption("3");
@@ -98,7 +98,7 @@ test("unconfirmed browser saves reconcile receipts without a second mutation", a
     if (route.request().method() !== "POST") return route.continue();
     mutations++; const committed = await route.fetch(); expect(committed.status()).toBe(200); await route.abort("failed");
   });
-  const form = page.locator("form").filter({ has: page.getByRole("heading", { name: "Add a skill", exact: true }) });
+  const form = page.locator("form").filter({ has: page.getByRole("heading", { name: "Add a Skill", exact: true }) });
   await form.getByLabel("Canonical key").fill(`ui_${randomUUID().replaceAll("-", "")}`);
   await form.getByLabel("Name", { exact: true }).fill("Synthetic uncertain skill");
   await form.getByLabel("Definition").fill("Synthetic explicit taxonomy definition");
@@ -126,13 +126,13 @@ test("actual scanned CSV mapping and exact row approval are keyboard accessible"
   await upload.focus(); await page.keyboard.press("Enter");
   const complete = page.getByRole("button", { name: "Complete intake and scan", exact: true }); await expect(complete).toBeEnabled({ timeout: 20_000 });
   await complete.focus(); await page.keyboard.press("Enter");
-  await expect(complete).toHaveCount(0, { timeout: 20_000 }); await page.getByRole("link", { name: "Review or cancel intake" }).click();
+  await expect(complete).toHaveCount(0, { timeout: 20_000 }); await page.getByRole("link", { name: "Review or Cancel Intake" }).click();
   await expect.poll(async () => {
     await page.getByRole("button", { name: "Reload status", exact: true }).click();
     return page.getByText("Complete extraction; explicit mapping and approval required.", { exact: true }).isVisible();
   }, { timeout: 120_000, intervals: [1000, 2000, 5000] }).toBe(true);
   await page.getByRole("checkbox", { name: /CSV · visible/ }).focus(); await page.keyboard.press("Space");
-  const mapping = page.locator("form").filter({ has: page.getByRole("heading", { name: "Explicit table mapping" }) });
+  const mapping = page.locator("form").filter({ has: page.getByRole("heading", { name: "Explicit Table Mapping" }) });
   for (const identity of [{ kind: "resources", value: "exact-resource", id: resource.resourceId }, { kind: "skills", value: "exact-skill", id: skillId }]) {
     await mapping.getByRole("button", { name: "Add exact identity" }).click();
     const block = mapping.locator("fieldset").filter({ has: page.getByLabel("Exact original value", { exact: true }) }).last();
@@ -157,9 +157,9 @@ test("actual scanned CSV mapping and exact row approval are keyboard accessible"
 test("restricted accounts receive no intake controls or personnel payload", async ({ page }) => {
   test.setTimeout(90_000);
   await signIn(page, "panel"); await page.goto("/staffing/imports");
-  await expect(page.getByRole("heading", { name: "Staffing unavailable" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Staffing Unavailable" })).toBeVisible();
   await expect(page.getByLabel("Single CSV or XLSX original")).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Workforce imports", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Workforce Imports", exact: true })).toHaveCount(0);
   const response = await page.request.get("/api/staffing/imports");
   expect(response.status()).toBe(403); expect(await response.text()).not.toContain(evidenceSentinel);
   await accessible(page);
@@ -194,10 +194,10 @@ test("manual source withdrawal immediately withholds evidence and preserves revi
   const oldResponse = page.waitForResponse(response => historyPattern.test(new URL(response.url()).pathname));
   releaseHistory(); await oldResponse; await page.unroute(historyPattern);
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
-  await expect(page.getByRole("heading", { name: "Revision history", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Revision History", exact: true })).toHaveCount(0);
   await expect(page.getByText(evidenceSentinel)).toHaveCount(0);
   await page.getByRole("button", { name: "View revision history" }).click();
-  await expect(page.getByRole("heading", { name: "Revision history" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Revision History" })).toBeVisible();
   await expect(page.getByText(/Evidence withheld/)).toBeVisible();
   await expect(page.getByText(evidenceSentinel, { exact: true })).toHaveCount(0);
   await accessible(page);
@@ -208,7 +208,7 @@ test("manager resource revisions and exact competency corrections preserve appro
   const resource = await reviewedResource();
   await signIn(page, "mcteer"); await page.goto(`/staffing/resources/${resource.resourceId}`);
   await page.getByRole("button", { name: "Revise resource", exact: true }).click();
-  const registry = page.locator("form").filter({ has: page.getByRole("heading", { name: "Revise resource", exact: true }) });
+  const registry = page.locator("form").filter({ has: page.getByRole("heading", { name: "Revise Resource", exact: true }) });
   await registry.getByLabel("Display name", { exact: true }).fill("Synthetic revised resource");
   await registry.getByLabel("Region code", { exact: true }).fill("us-west");
   await registry.getByLabel("Revision rationale", { exact: true }).fill("Synthetic exact registry revision");

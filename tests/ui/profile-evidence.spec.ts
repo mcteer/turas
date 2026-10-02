@@ -88,17 +88,17 @@ test("an internal reviewer can flag, confirm and resolve a displayed conflict", 
   });
   await page.goto(`/customers/${DEMO_IDS.sharedCustomer}`);
   const section = page.locator('section[aria-labelledby="profile-conflicts"]');
-  await expect(section.getByRole("heading", { name: "Evidence conflicts" })).toBeVisible();
+  await expect(section.getByRole("heading", { name: "Evidence Conflicts" })).toBeVisible();
   await section.getByLabel("First accepted fact").selectOption(firstId);
   await section.getByLabel("Second accepted fact").selectOption(secondId);
   await section.getByLabel("Contradiction reason").fill("Synthetic contradictory observations");
   await section.getByRole("button", { name: "Flag conflict" }).click();
-  await expect(section.getByRole("heading", { name: "Flagged conflict" })).toBeVisible();
+  await expect(section.getByRole("heading", { name: "Flagged Conflict" })).toBeVisible();
   expect(commands[0]).toMatchObject({ action: "flag_conflict", firstRevisionId: firstId,
     secondRevisionId: secondId });
   await section.getByLabel("Decision rationale").fill("Synthetic contradiction confirmed");
   await section.getByRole("button", { name: "Confirm conflict" }).click();
-  await expect(section.getByRole("heading", { name: "Confirmed conflict" })).toBeVisible();
+  await expect(section.getByRole("heading", { name: "Confirmed Conflict" })).toBeVisible();
   expect(commands[1]).toMatchObject({ action: "confirm_conflict", conflictId, expectedVersion: 1 });
   await section.getByLabel("Decision rationale").fill("Synthetic opposing fact withdrawn");
   await section.getByLabel("Current resolution evidence").selectOption(firstId);

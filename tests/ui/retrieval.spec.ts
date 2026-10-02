@@ -9,7 +9,7 @@ test("search and exact citation states fit WebKit viewports",async ({ page },tes
     "Seed disposable synthetic profile and retrieval projections first");
   await signIn(page,"mcteer");
   await page.goto(`/customers/${DEMO_IDS.deniedCustomer}`);
-  const search = page.getByRole("region",{ name: "Search evidence" });
+  const search = page.getByRole("region",{ name: "Search Evidence" });
   await expect(search).toBeVisible();
   await search.getByLabel("Question or terms").fill("synthetic deployment");
   await search.getByRole("button",{ name: "Search" }).click();

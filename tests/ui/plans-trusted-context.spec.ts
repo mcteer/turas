@@ -60,7 +60,7 @@ test("reviewed evidence reaches an exact accepted plan and canonical engagement"
     await review.getByLabel("I reviewed this exact content for delivery suitability").check();
     await review.getByRole("button",{name:"Accept baseline"}).click();
     await expect(review.getByRole("status")).toContainText("Decision recorded",{timeout:30_000});
-    await expect(page.getByRole("link",{name:"Accepted engagement"})).toBeVisible();
+    await expect(page.getByRole("link",{name:"Accepted Engagement"})).toBeVisible();
     await withTransaction(async(db)=>{
       const stored=await db.query<{source_revision_id:string;decision_id:string;
         engagement_id:string;baseline_id:string;body:unknown}>(`
@@ -82,7 +82,7 @@ test("reviewed evidence reaches an exact accepted plan and canonical engagement"
       expect(stored.rows[0].baseline_id).toBeTruthy();
       expect(JSON.stringify(stored.rows[0].body)).not.toContain(evidence.reference.citationId);
     });
-    await page.getByRole("link",{name:"Accepted engagement"}).click();
+    await page.getByRole("link",{name:"Accepted Engagement"}).click();
     await page.reload();
     await expect(page.getByRole("heading",{name:content.title})).toBeVisible();
     await expect(page).toHaveTitle("Turas");
