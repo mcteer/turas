@@ -908,3 +908,17 @@ cancellation, usage settlement and cleanup. Prefer a forward repair. A restore
 must use a verified matched database, private files and Eve workflow snapshot;
 never restore only one member of that set. Production has not been upgraded by
 this implementation task.
+
+
+### Clean-checkout CI repair before merge (2026-10-03)
+
+Initial PR head `829ffff` passed the legacy verify job and Vercel preview build,
+but all three execution CI jobs failed before their owned suites could run.
+A private clean `git archive` checkout reproduced the owned-copy failure. The
+harness requires `public/`; this locally present empty directory was absent from
+Git. Creating only that directory made the same clean-checkout owned environment
+prepare, migrate and clean up successfully. A tracked `public/.gitkeep` now
+preserves the required directory in fresh checkouts. No runtime behavior, model,
+provider bounds or migrations changed. The earlier source-bound local/live
+results remain historical evidence for their recorded digest; review-head CI
+is rerun for this checkout repair.
