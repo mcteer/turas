@@ -8,6 +8,8 @@ import type { ExecutionCommand,ExecutionRecordContent } from "./schema";
 import { executionDigest } from "./commands";
 import { executionBaseline,lockExecutionHead,advanceExecution } from "./baselines";
 import { executionRecordHead,validateRecordContent,lockRecordContext } from "./records";
+import {closeoutReviewInputs,recordCloseout} from "./closeout";
+import {effortReviewInputs,acceptEffort} from "./effort";
 import {registerReviewInputs,applyDecisionSupersessions} from "./registers";
 import { verifyExecutionSources } from "./sources";
 import { assertExecutionPreview } from "./previews";
@@ -25,12 +27,13 @@ export async function recordReviewInputs(db:PoolClient,actor:ExecutionActor,cust
   let effectiveBaselineId=baseline.id;
   if (command.action==='record.accept') {
     if (!revision.content) throw new HttpFailure(409,'source_changed','Candidate content unavailable');
-    const context=await lockRecordContext(db,actor,customerId,engagementId,baseline.id,revision.content);
+    const context=await lockRecordContext(db,actor,customerId,engagementId,baseline.id,revision.content,command.payload.revisionId);
     sourceDigest=context.sourceDigest;baseline=context.baseline;effectiveBaselineId=context.effectiveBaselineId;
   } else {await db.query("SELECT id FROM delivery_plans WHERE id=$1 FOR UPDATE",[baseline.plan_id]);await db.query('SELECT id FROM engagements WHERE id=$1 FOR UPDATE',[engagementId]);}
   const execution=await lockExecutionHead(db,actor,engagementId,command.expectedVersions.execution);
+  const effort=command.action==='record.accept'?await effortReviewInputs(db,engagementId,baseline.id,record.id,revision.content):null;
   const targetIds=command.action==='record.accept'&&revision.content.kind==='decision'?revision.content.supersededDecisionIds??[]:[];
-  await db.query("SELECT id FROM execution_records WHERE id=ANY($1::uuid[]) ORDER BY id FOR UPDATE",[[record.id,...targetIds].sort()]);
+  await db.query("SELECT id FROM execution_records WHERE id=ANY($1::uuid[]) ORDER BY id FOR UPDATE",[[record.id,...targetIds,...(effort?.previous??[]).map(r=>r.id)].sort()]);
   const current=await executionRecordHead(db,actor,engagementId,record.id,true);
   const exactRevision=command.action==='record.retract'?current.accepted_revision_id:current.current_revision_id;
   if (Number(current.version)!==command.expectedVersions.record || exactRevision!==command.payload.revisionId || revision.content_digest!==command.payload.contentDigest)
@@ -41,14 +44,15 @@ export async function recordReviewInputs(db:PoolClient,actor:ExecutionActor,cust
     if (execution.current_baseline_id!==effectiveBaselineId) throw new HttpFailure(409,'source_changed','Reconcile the current baseline');
     await validateRecordContent(db,actor,customerId,engagementId,baseline.id,revision.content);
   }
-  const superseded=command.action==='record.accept'?await registerReviewInputs(db,actor,engagementId,record.id,revision.content):[];
+  const superseded=command.action==='record.accept'?[...await registerReviewInputs(db,actor,engagementId,record.id,revision.content),...(effort?.previous??[])]:[];
   const milestone = revision.content?.kind==='activity' && revision.content.subtype!=='work' ?
     (await db.query('SELECT id,version,state FROM execution_milestone_heads WHERE baseline_id=$1 AND milestone_key=$2 FOR UPDATE',[baseline.id,revision.content.milestoneKey])).rows[0]:null;
   if (command.action==='record.accept' && milestone && revision.content.kind==='activity'&&revision.content.subtype!=='work' && Number(milestone.version)!==revision.content.milestoneVersion)
     throw new HttpFailure(409,'stale_version','Milestone changed; refresh');
-  return {execution,record:current,revision,baseline,milestone,superseded,inputs:{action:command.action,expectedVersions:command.expectedVersions,payload:command.payload,
+  const closeout=command.action==='record.accept'?await closeoutReviewInputs(db,actor,customerId,engagementId,baseline.id,revision.content):null;
+  return {execution,record:current,revision,baseline,milestone,superseded,closeout,inputs:{action:command.action,expectedVersions:command.expectedVersions,payload:command.payload,
     acceptedRevisionId:current.accepted_revision_id,sourceDigest,baselineId:baseline.id,activeBaselineId:baseline.active_baseline_id,
-    generation:Number(execution.generation),milestoneVersion:milestone?Number(milestone.version):null,superseded}};
+    generation:Number(execution.generation),closeoutDigest:closeout?.inputDigest??null,effortHead:effort?.head??null,milestoneVersion:milestone?Number(milestone.version):null,superseded}};
 }
 export async function reviewRecord(db:PoolClient,actor:ExecutionActor,customerId:string,engagementId:string,command:RecordReview) {
   const context=await recordReviewInputs(db,actor,customerId,engagementId,command);
@@ -56,6 +60,7 @@ export async function reviewRecord(db:PoolClient,actor:ExecutionActor,customerId
   const {record,execution,revision,milestone}=context,version=Number(record.version)+1;
   if (command.action==='record.accept') {
     if (milestone&&revision.content.kind==='activity') await applyActivityMilestone(db,actor,customerId,engagementId,context.baseline.id,milestone,revision.content,command);
+    await acceptEffort(db,actor,customerId,engagementId,context.baseline.id,command.payload.revisionId,revision.content);
     await db.query("UPDATE execution_records SET accepted_revision_id=$2,state='accepted',version=$3 WHERE id=$1",[record.id,command.payload.revisionId,version]);
   } else if (command.action==='record.reject') await db.query("UPDATE execution_records SET state='rejected',version=$2 WHERE id=$1",[record.id,version]);
   else await db.query("UPDATE execution_records SET accepted_revision_id=NULL,state=CASE WHEN current_revision_id=accepted_revision_id THEN 'retracted' ELSE state END,version=$2 WHERE id=$1",[record.id,version]);
@@ -68,5 +73,6 @@ export async function reviewRecord(db:PoolClient,actor:ExecutionActor,customerId
   await db.query('INSERT INTO execution_review_payloads(decision_id,rationale) VALUES($1,$2)',[id,command.rationale]);
   const superseded=await applyDecisionSupersessions(db,actor,customerId,engagementId,context.superseded,command);
   const next=await advanceExecution(db,execution,command.action!=='record.reject');
+  if(context.closeout)await recordCloseout(db,execution.id,command.payload.revisionId,context.closeout);
   return {state:'committed' as const,executionGeneration:next.generation,changed:[{id:record.id,version},...superseded,{id:execution.id,version:next.version}]};
 }

@@ -11,10 +11,10 @@ import { requireExecutionEnvironment } from "../../lib/server/execution/reposito
 
 export const executionTables = ["execution_workspaces", "execution_baseline_bindings", "execution_baseline_items",
   "execution_records", "execution_record_revisions", "execution_record_payloads", "execution_record_sources",
-  "execution_review_decisions", "execution_milestone_heads", "execution_milestone_events", "execution_reconciliations",
+  "execution_closeout_snapshots", "execution_closeout_invalidations", "execution_review_decisions", "execution_milestone_heads", "execution_milestone_events", "execution_reconciliations",
   "execution_reconciliation_items", "execution_command_receipts", "execution_rate_windows", "execution_time_entries",
   "execution_time_revisions", "execution_time_payloads", "execution_time_decisions", "execution_resource_days",
-  "execution_actual_days", "execution_effort_heads", "execution_calculation_receipts", "execution_advice_bindings",
+  "execution_actual_days", "execution_actual_package_heads", "execution_effort_heads", "execution_calculation_receipts", "execution_advice_bindings",
   "execution_advice_attempts", "execution_advice_dependencies", "execution_advice_reads", "execution_advice_steps",
   "execution_advice_usage", "execution_cleanup_jobs"];
 
@@ -52,7 +52,7 @@ describe("008 schema and grants", () => {
     await withExecutionDatabase(async db => {
       const tables = (await db.query("SELECT tablename FROM pg_tables WHERE schemaname='public'")).rows.map(r => r.tablename);
       expect(tables).toEqual(expect.arrayContaining(executionTables));
-      for (const table of ["execution_record_revisions", "execution_review_decisions", "execution_time_revisions",
+      for (const table of ["execution_record_revisions", "execution_closeout_snapshots", "execution_closeout_invalidations", "execution_review_decisions", "execution_time_revisions",
         "execution_time_decisions", "execution_advice_steps", "execution_advice_usage", "execution_command_receipts"]) {
         const grants = await db.query(`SELECT has_table_privilege('turas_runtime',$1,'UPDATE') AS u,
           has_table_privilege('turas_runtime',$1,'DELETE') AS d`, [table]);

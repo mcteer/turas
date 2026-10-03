@@ -13,8 +13,8 @@ export function visibleExecutionRevision(actor: ExecutionActor, record: Executio
     ? record.current_revision_id : record.accepted_revision_id;
 }
 export async function projectExecutionRecord(db: PoolClient, actor: ExecutionActor, customerId: string,
-  engagementId: string, record: ExecutionRecordMetadata) {
-  const revisionId = visibleExecutionRevision(actor, record);
+  engagementId: string, record: ExecutionRecordMetadata, acceptedOnly=false) {
+  const revisionId = acceptedOnly ? record.accepted_revision_id : visibleExecutionRevision(actor, record);
   if (!revisionId) return null;
   const audience = actor.kind === "partner" ? "delivery" : "internal";
   const header = (await db.query<{ id: string; audience: string; revision_number: string; content_digest: string; event_date: string; timezone: string }>(`SELECT id,audience,revision_number,content_digest,event_date::text,timezone
@@ -24,10 +24,10 @@ export async function projectExecutionRecord(db: PoolClient, actor: ExecutionAct
   if (!header) return null;
   const eligible = await executionRevisionEligible(db, actor, customerId, engagementId, revisionId, audience, true);
   const own=record.author_membership_id===actor.membershipId,reviewer=isExecutionReviewer(actor);
-  const acceptedVersion=!own&&!reviewer?(await db.query<{expected_version:string}>("SELECT expected_version FROM execution_review_decisions WHERE revision_id=$1 AND action='accept' ORDER BY created_at DESC LIMIT 1",[revisionId])).rows[0]?.expected_version:null;
+  const acceptedVersion=acceptedOnly||(!own&&!reviewer)?(await db.query<{expected_version:string}>("SELECT expected_version FROM execution_review_decisions WHERE revision_id=$1 AND action='accept' ORDER BY created_at DESC LIMIT 1",[revisionId])).rows[0]?.expected_version:null;
   const acceptedDigest=reviewer&&record.accepted_revision_id?(await db.query<{content_digest:string}>("SELECT content_digest FROM execution_record_revisions WHERE id=$1",[record.accepted_revision_id])).rows[0]?.content_digest:null;
   const metadata = { id: record.id, revisionId, kind: record.kind, baselineId: record.baseline_id,
-    acceptedRevisionId:own||reviewer?record.accepted_revision_id:revisionId, acceptedContentDigest:acceptedDigest??null, version: acceptedVersion?Number(acceptedVersion)+1:Number(record.version), canRevise:own&&!["submitted","retracted"].includes(record.state), canSubmit:own&&record.state==="draft", canReview:reviewer&&record.state==="submitted", canRetract:reviewer&&record.accepted_revision_id!==null, contentDigest: header.content_digest, revisionNumber: Number(header.revision_number), audience: header.audience,
+    acceptedRevisionId:own||reviewer?record.accepted_revision_id:revisionId, acceptedContentDigest:acceptedOnly?header.content_digest:acceptedDigest??null, version: acceptedVersion?Number(acceptedVersion)+1:Number(record.version), canRevise:!acceptedOnly&&own&&!["submitted","retracted"].includes(record.state), canSubmit:!acceptedOnly&&own&&record.state==="draft", canReview:!acceptedOnly&&reviewer&&record.state==="submitted", canRetract:!acceptedOnly&&reviewer&&record.accepted_revision_id!==null, contentDigest: header.content_digest, revisionNumber: Number(header.revision_number), audience: header.audience,
     state: revisionId === record.accepted_revision_id ? "accepted" : record.state, reviewRequired: !eligible };
   if (!eligible) return { ...metadata, content: null };
   const payload = (await db.query<{ content: unknown }>("SELECT content FROM execution_record_payloads WHERE revision_id=$1",[revisionId])).rows[0];

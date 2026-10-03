@@ -312,3 +312,104 @@ The corrected US1 desktop regression passed 3/3 (`ui-7YPFBN`), including source
 withdrawal, delayed-response fencing, keyboard review, rejected stale milestone
 review, lost acknowledgement and cancelled dirty-section navigation. Typecheck,
 documentation checks and diff checks passed for this register checkpoint.
+
+## US4 implementation checks in progress
+
+The independent arithmetic fixture imports no calculator. Its 14 cases distinguish
+period from lifetime quantities, explicit zero from absent inputs, BigInt totals,
+retired/unmapped history, UTC day 7/8, rounding once, and zero/missing/timezone
+utilization. A microsecond regression failed before the precision correction
+(`forecast-precision-red.log`) and passed afterward (`forecast-precision-green.log`).
+Postgres mutation/reconciliation timestamps retain microseconds rather than passing
+through the JavaScript Date decoder.
+
+Owned forecast/domain checkpoints:
+
+- `deterministic-PIbwm4`: four suites / 19 passed, digest
+  `018260a90c4635856bf954fd7fd106a427adb4af7ae8dcb4051b08b77589a9b8`.
+- `deterministic-P0IQSO`: five suites / 20 passed, digest
+  `46d9ab832b9f8f029db6a94f5c5f9068d4f514c9ad8736dbeec2e25b085399d4`.
+  Real 007 calendar commands cover overlapping holiday/leave union (360 available
+  minutes), protected time kept separate, zero capacity, 300% utilization, changed
+  timezone, and a seven-hour spring DST shift. Partner/contributor utilization is
+  denied; engagement quantities contain neither personnel nor private time notes.
+- `deterministic-erIBis`: first five suites passed; the new full journey failed
+  because the test included preview-only `exceptions` in a strict approval command.
+  The fixture now sends only the signed preview fields, matching the real client.
+  This failed run remains retained; it is not a passing full journey.
+- `ui-QRzs3w`: the forecast UI workflow completed estimate authoring, human review,
+  partner projection, and late-actual invalidation. Axe rejected descriptive
+  paragraphs placed beside definition-list terms. Descriptions now sit inside the
+  corresponding definition. This failed capture/report remains retained.
+
+No US4 completion or hosted claim is made by these intermediate checks. Final
+US4 journey and four-project WebKit results will be recorded below.
+
+Further US4 evidence:
+
+- `deterministic-Nmh03T` exposed a real evidence-age bug: profile intake persists
+  observation timestamps in the versioned payload, while the optional legacy header
+  field stays null. Summary now reads the reviewed payload timestamp; approved
+  excerpts use their exact artifact observation date, with unknown/future ages null.
+- `ui-USCOgM`: forecast passed; closeout attempted a preview before the focus refresh
+  had installed its new generation. The case now waits for the rendered generation
+  and then opens a deliberate new review. No stale preview is auto-accepted.
+- `deterministic-UVLY1i`: the complete then-current suite passed **22 suites / 79
+  tests**, zero skips/failures, at digest
+  `4d32a74fe2dca14a67e12e1cce985103e4f76eded843879ba9f6e1f59b3e65d5`.
+  The governed journey includes real artifact scanning/extraction, human claim
+  review, 006 plan acceptance, 007 reviewed competency/calendar/confirmed allocation,
+  90 approved actual minutes, 30 remaining, 180 budget, 120 forecast, −60 variance,
+  120 separately planned minutes, 18.75% utilization, measured outcome with unknown
+  baseline/comparison, evidenced acknowledgement, closeout, and source retraction.
+  006 plan and 007 allocation identities/versions remain unchanged by execution.
+- `ui-UM6s3M`: desktop forecast and closeout passed; the third outcome case exposed
+  a WebKit label-lookup ambiguity around populated textarea content. The outcome
+  limitation control now has an explicit accessible label. Failed evidence retained.
+- `deterministic-16aL37`: a new accepted-evidence regression failed because an author
+  or reviewer asking for accepted records lost the accepted head during a pending
+  correction. Explicit `state=accepted` now projects only the retained accepted
+  revision, with accepted-decision version and no draft action permissions.
+  The focused record gate then passed **4 suites / 13 tests**, digest
+  `cf3d4e05b43799026cb94486380b472cf4158e20a6b10866372cb92a0e2f406d`.
+  This fixes accepted evidence selection without replacing the ordinary owned-draft
+  view. Typecheck passed afterward.
+
+T040–T047 have domain/API evidence. T048–T049 still await the complete US4 browser
+matrix; US5 and final release gates remain pending.
+
+
+### US4 checkpoint
+
+The complete browser matrix subsequently exposed a real read/write deadlock, rather
+than only the earlier test-generation timing issue. `ui-pZvqXr` recorded a summary
+503 and a time approval deadlock. A new concurrent overview/summary integration
+case reproduced the reversed rate-row/plan lock order (`deterministic-SuhMzx`,
+55P03). Read admission now commits before summary/utilization snapshots, and the
+internal overview snapshot does not charge a second read after source locks.
+
+The focused green run passed **6 suites / 22 tests**, with zero skips/failures,
+source digest `5416857931accf9bb3e24f1ebfd238696f04d9b7a23d3b8a2c8729d6cb39a1f6`.
+All four WebKit projects passed **12/12 cases**, with zero skips/retries/flakes,
+at that same digest:
+
+- Desktop light: `ui-tM0TLy`, 3/3.
+- Desktop dark: `ui-kIuVRp`, 3/3.
+- Mobile light: `ui-qlvals`, 3/3.
+- Mobile dark: `ui-2vZoFj`, 3/3.
+
+The cases exercise reviewed estimates, exact quantities, privacy, utilization,
+late-actual invalidation, closeout pending-time blocking, renewed closeout review,
+source withdrawal, and unknown versus measured outcomes. Axe and 390 px overflow
+checks passed. Forecast and closeout captures were inspected across all four
+layouts/themes. Visual review prompted two small presentation follow-ups: remove
+the inaccurate “active” sentence from closed logs and use the existing fieldset
+style for selected utilization resources. A desktop follow-up is recorded below.
+Earlier failed evidence remains retained; this is a story checkpoint, not the final
+same-source release gate or any hosted execution claim. T040–T049 are complete;
+US5 and the final release gates remain pending.
+
+Presentation follow-up: desktop light passed **3/3**, zero skips/retries/flakes
+(`ui-B6YrHB`), digest `cadd075ef77ccec4d70c604242bca4b4a19107178fd8407393c99fd336a4352b`.
+Typecheck, documentation consistency and `git diff --check` passed.
+Outcome captures were also visually inspected in desktop light and mobile dark.

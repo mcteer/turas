@@ -133,7 +133,7 @@ DO $$ DECLARE t text; BEGIN
       EXECUTE format('REVOKE ALL ON TABLE %I FROM turas_execution_cleanup',t);
       EXECUTE format('GRANT SELECT, INSERT ON TABLE %I TO turas_runtime',t);
       IF t IN ('execution_workspaces','execution_records','execution_milestone_heads','execution_time_entries',
-        'execution_actual_days','execution_resource_days','execution_effort_heads','execution_advice_attempts','execution_rate_windows') THEN
+        'execution_actual_days','execution_resource_days','execution_actual_package_heads','execution_effort_heads','execution_advice_attempts','execution_rate_windows') THEN
         EXECUTE format('GRANT UPDATE ON TABLE %I TO turas_runtime',t);
       END IF;
       IF t LIKE '%payloads' THEN EXECUTE format('GRANT SELECT, DELETE ON TABLE %I TO turas_execution_cleanup',t); END IF;

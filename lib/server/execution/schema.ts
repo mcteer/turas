@@ -8,7 +8,9 @@ const envelope = { version: z.literal("execution-v1"), requestKey: executionId, 
 export * from "./record-schema";
 import {activityRecordSchema} from "./record-schema";
 import {raidRecordSchema,decisionRecordSchema,scopeChangeSchema,reconciliationPayloadSchema,reconciliationExpectedSchema} from "./change-schema";
-export const executionRecordSchema=z.union([activityRecordSchema,raidRecordSchema,decisionRecordSchema,scopeChangeSchema]);
+import {effortBudgetSchema,estimateSchema} from "./effort-schema";
+import {handoffSchema,closeoutSchema,outcomeSchema} from "./handoff-schema";
+export const executionRecordSchema=z.union([activityRecordSchema,raidRecordSchema,decisionRecordSchema,scopeChangeSchema,effortBudgetSchema,estimateSchema,handoffSchema,closeoutSchema,outcomeSchema]);
 export type ExecutionRecordContent = z.infer<typeof executionRecordSchema>;
 const executionExpected = z.object({execution:executionVersion}).strict();
 const recordExpected = z.object({execution:executionVersion,record:executionVersion}).strict();

@@ -47,6 +47,18 @@ export async function lockExecutionOriginalSources(db:PoolClient,actor:Execution
   }
 }
 
+/** Main evidence retains locator detail; relationship edges contain only exact
+ * execution/baseline identities and do not acquire a newer accepted revision. */
+export async function executionStoredReferences(db:PoolClient,revisionId:string,content:{references?:unknown}):Promise<ExecutionSource[]>{
+  const main=executionSourcesSchema.parse(content.references??[]);
+  const extra=(await db.query(`SELECT s.source_kind,s.source_revision_id,s.source_generation,s.content_digest,
+    COALESCE(v.record_id,s.source_revision_id) AS source_id FROM execution_record_sources s
+    LEFT JOIN execution_record_revisions v ON v.id=s.source_revision_id AND s.source_kind='execution_record'
+    WHERE s.revision_id=$1 AND s.source_kind IN ('execution_record','milestone_baseline')`,[revisionId])).rows;
+  return [...new Map([...main,...extra.map(r=>({kind:r.source_kind,id:r.source_id,sourceRevisionId:r.source_revision_id,generation:Number(r.source_generation),contentDigest:r.content_digest} as ExecutionSource))]
+    .map(ref=>[`${ref.kind}/${ref.sourceRevisionId}`,ref])).values()];
+}
+
 /** Caller holds live actor/customer authority. Discover the bounded metadata
  * closure, lock the complete original-source union, then execution heads, and
  * recheck exact pointers before any accepted content can leave the transaction. */
@@ -92,7 +104,7 @@ export async function verifyExecutionSources(db: PoolClient, actor: ExecutionAct
             [ref.sourceRevisionId,env,actor.workspaceId,customerId,engagementId,audience])).rows[0];
           if (!row || row.content_digest !== ref.contentDigest || Number(row.revision_number) !== ref.generation) throw changed();
           records.push({ref,recordId:row.record_id});
-          await discover(executionSourcesSchema.parse(row.content.references ?? []));
+          await discover(await executionStoredReferences(db,ref.sourceRevisionId,row.content));
         }
       } finally { path.delete(key); }
     }
@@ -122,6 +134,6 @@ export async function executionRevisionEligible(db: PoolClient, actor: Execution
     WHERE v.id=$1 AND v.environment_id=$2 AND v.workspace_id=$3 AND v.customer_id=$4 AND v.engagement_id=$5
       AND (v.audience='delivery' OR $6='internal')`,[revisionId,getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,customerId,engagementId,audience])).rows[0];
   if (!row) return false;
-  try { await verifyExecutionSources(db,actor,customerId,engagementId,row.audience,executionSourcesSchema.parse(row.content.references ?? []),lock); return true; }
+  try { await verifyExecutionSources(db,actor,customerId,engagementId,row.audience,await executionStoredReferences(db,revisionId,row.content),lock); return true; }
   catch (error) { if (error instanceof HttpFailure && [403,404,409].includes(error.status)) return false; throw error; }
 }

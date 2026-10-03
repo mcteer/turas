@@ -52,6 +52,9 @@ exports.up = pgm => {
       FOREIGN KEY(revision_id,entry_id) REFERENCES execution_time_revisions(id,entry_id),
       FOREIGN KEY(environment_id,workspace_id,resource_id,service_date) REFERENCES execution_resource_days(environment_id,workspace_id,resource_id,service_date),
       FOREIGN KEY(baseline_id,engagement_id) REFERENCES milestone_baselines(id,engagement_id), UNIQUE(entry_id)`),
+    table('execution_actual_package_heads',`baseline_id uuid NOT NULL, work_package_key text NOT NULL,
+      generation bigint NOT NULL DEFAULT 1 CHECK(generation BETWEEN 1 AND 9007199254740991), changed_at timestamptz NOT NULL DEFAULT clock_timestamp()`,
+      `FOREIGN KEY(baseline_id,engagement_id) REFERENCES milestone_baselines(id,engagement_id), UNIQUE(baseline_id,work_package_key)`),
     table('execution_effort_heads',`baseline_id uuid NOT NULL, work_package_key text NOT NULL,
       kind text NOT NULL CHECK(kind IN ('effort_budget','estimate')), revision_id uuid NOT NULL, version bigint NOT NULL DEFAULT 1 CHECK(version>=1)`,
       `${fk('revision_id','execution_record_revisions')}, FOREIGN KEY(baseline_id,engagement_id) REFERENCES milestone_baselines(id,engagement_id),
@@ -74,6 +77,7 @@ exports.up = pgm => {
     pgm.sql(`CREATE TRIGGER ${name}_no_update BEFORE UPDATE ON ${name} FOR EACH ROW EXECUTE FUNCTION turas_execution_immutable();`);
   for (const [name,fields] of [['execution_time_entries',['id','environment_id','workspace_id','customer_id','engagement_id','author_membership_id']],
     ['execution_actual_days',['id','environment_id','workspace_id','customer_id','engagement_id','entry_id']],
+    ['execution_actual_package_heads',['id','environment_id','workspace_id','customer_id','engagement_id','baseline_id','work_package_key']],
     ['execution_effort_heads',['id','environment_id','workspace_id','customer_id','engagement_id','baseline_id','work_package_key','kind']],
     ['execution_resource_days',['environment_id','workspace_id','resource_id','service_date','timezone','timezone_version']]])
     pgm.sql(`CREATE TRIGGER ${name}_identity BEFORE UPDATE OR DELETE ON ${name} FOR EACH ROW EXECUTE FUNCTION turas_execution_identity(${fields.map(f=>`'${f}'`).join(',')});`);

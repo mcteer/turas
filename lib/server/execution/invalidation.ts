@@ -33,6 +33,12 @@ export async function enqueueExecutionSourceInvalidation(db:PoolClient,sourceKin
       encode(sha256(convert_to(p.rationale,'UTF8')),'hex'),a.source_generation
       FROM affected a JOIN execution_time_revisions v ON v.activity_revision_id=a.revision_id JOIN execution_time_decisions d ON d.revision_id=v.id
       JOIN execution_time_decision_payloads p ON p.decision_id=d.id
+  ), invalidated_closeouts AS (
+    INSERT INTO execution_closeout_invalidations(revision_id)
+      SELECT DISTINCT s.revision_id FROM execution_closeout_snapshots s
+      JOIN execution_record_revisions v ON v.id=s.revision_id AND v.environment_id=$1
+      JOIN affected a ON (s.inputs->'records') @> jsonb_build_array(jsonb_build_object('revision_id',a.revision_id))
+      ON CONFLICT DO NOTHING
   ) INSERT INTO execution_cleanup_jobs(id,environment_id,workspace_id,customer_id,engagement_id,payload_kind,revision_id,payload_digest,source_generation,ineligible_at,due_at)
     SELECT gen_random_uuid(),environment_id,workspace_id,customer_id,engagement_id,kind,revision_id,payload_digest,source_generation,now(),now()+interval '30 days'
     FROM targets ON CONFLICT DO NOTHING`,[environment,kind,sourceRevisionId]);

@@ -28,7 +28,7 @@ export function ExecutionRecords({view,records,owners,session,save,disabled,onRe
   return <section className="profile-section" aria-label="Activity Records"><h2>Activity Records</h2>
     {!records.length&&<p>No reviewed activity yet. This is an empty delivery log.</p>}
     {records.filter(r=>r.kind==='activity').map(record=><article key={record.id} className="profile-card">
-      <h3>{record.content?(record.content as ExecutionRecordContent).title:'Source content withheld'}</h3><p>{record.state} · {record.audience} · revision {record.revisionNumber}</p>
+      <h3>{record.content?(record.content as ExecutionRecordContent).title:'Source Content Withheld'}</h3><p>{record.state} · {record.audience} · revision {record.revisionNumber}</p>
       {record.reviewRequired?<p role="status">Review required. Current evidence is unavailable.</p>:<p>{(record.content as ExecutionRecordContent)?.narrative}</p>}
       <p className="evidence-citation">Record {record.id}</p>{record.content&&!record.reviewRequired&&(record.content as ExecutionRecordContent).references.map(ref=><p key={ref.id} className="evidence-citation">Evidence: {ref.kind.replaceAll("_"," ")} · revision {ref.sourceRevisionId}</p>)}<button type="button" className="secondary-button" onClick={()=>void readHistory(record.id)}>Read activity history</button>
       {record.content&&record.canRevise&&<button type="button" className="secondary-button" disabled={disabled} onClick={()=>edit(record)}>Revise activity</button>}
@@ -41,17 +41,17 @@ export function ExecutionRecords({view,records,owners,session,save,disabled,onRe
     <form className="plan-editor" onSubmit={event=>{event.preventDefault();submitted.current=dirty.current;void save(editing?'record.revise':'record.create',editing?{execution:view.version,record:editing.version}:{execution:view.version},editing?{recordId:editing.id,record:draft}:{baselineId:baseline.current,record:draft},()=>{if(dirty.current===submitted.current){setDraft(blank());setEditing(null);baseline.current=view.baselineId;dirty.current=0;}});}}>
       <h3>{editing?'Revise Activity':'Record an Activity'}</h3>
       {baselineChanged&&<p role="alert">The baseline changed. Start a new activity draft against the current plan.</p>}
-      <label>Activity title<input value={draft.title} maxLength={200} required onChange={e=>change({title:e.target.value})}/></label>
-      <label>Observed work<textarea value={draft.narrative} maxLength={8000} required onChange={e=>change({narrative:e.target.value})}/></label>
-      <label>Observed date<input type="date" value={draft.eventDate} required onChange={e=>change({eventDate:e.target.value})}/></label>
-      <label>Time zone<input value={draft.timezone} required onChange={e=>change({timezone:e.target.value})}/></label>
-      <label>Audience<select value={draft.audience} onChange={e=>change({audience:e.target.value as 'internal'|'delivery'})}><option value="delivery">Delivery</option>{session.membership.kind==='internal'&&<option value="internal">Internal</option>}</select></label>
-      <label>Work package<select value={draft.workPackageKey??''} onChange={e=>change({workPackageKey:e.target.value||null})}><option value="">No package</option>{view.workPackages.map(p=><option value={p.key} key={p.key}>{p.title}</option>)}</select></label>
-      <fieldset><legend>Milestone links</legend>{view.milestones.map(m=><label key={m.key}><input type="checkbox" checked={draft.milestoneKeys.includes(m.key)} onChange={e=>change({milestoneKeys:e.target.checked?[...draft.milestoneKeys,m.key]:draft.milestoneKeys.filter(k=>k!==m.key)})}/>{m.title}</label>)}</fieldset>
-      <label>Activity owner<select value={draft.ownerMembershipId??''} onChange={e=>change({ownerMembershipId:e.target.value||null,unknownOwnerReason:e.target.value?null:'Owner not yet assigned'})}><option value="">Unknown owner</option>{owners.map(o=><option value={o.id} key={o.id}>{o.label}</option>)}</select></label>
-      {draft.ownerMembershipId===null&&<label>Unknown owner reason<input required value={draft.unknownOwnerReason??''} maxLength={500} onChange={e=>change({unknownOwnerReason:e.target.value})}/></label>}
-      <fieldset><legend>Exact evidence revisions</legend><p>Only currently eligible reviewed evidence can support acceptance.</p>
-        <label>Search evidence<input value={query} maxLength={500} onChange={e=>setQuery(e.target.value)}/></label><button type="button" className="secondary-button" disabled={disabled||!query.trim()||draft.references.length>=20} onClick={()=>void search()}>Find evidence</button>
+      <label>Activity title<input className="field" value={draft.title} maxLength={200} required onChange={e=>change({title:e.target.value})}/></label>
+      <label>Observed work<textarea className="field" value={draft.narrative} maxLength={8000} required onChange={e=>change({narrative:e.target.value})}/></label>
+      <label>Observed date<input className="field" type="date" value={draft.eventDate} required onChange={e=>change({eventDate:e.target.value})}/></label>
+      <label>Time zone<input className="field" value={draft.timezone} required onChange={e=>change({timezone:e.target.value})}/></label>
+      <label>Audience<select className="field" value={draft.audience} onChange={e=>change({audience:e.target.value as 'internal'|'delivery'})}><option value="delivery">Delivery</option>{session.membership.kind==='internal'&&<option value="internal">Internal</option>}</select></label>
+      <label>Work package<select className="field" value={draft.workPackageKey??''} onChange={e=>change({workPackageKey:e.target.value||null})}><option value="">No package</option>{view.workPackages.map(p=><option value={p.key} key={p.key}>{p.title}</option>)}</select></label>
+      <fieldset><legend>Milestone Links</legend>{view.milestones.map(m=><label key={m.key}><input type="checkbox" checked={draft.milestoneKeys.includes(m.key)} onChange={e=>change({milestoneKeys:e.target.checked?[...draft.milestoneKeys,m.key]:draft.milestoneKeys.filter(k=>k!==m.key)})}/>{m.title}</label>)}</fieldset>
+      <label>Activity owner<select className="field" value={draft.ownerMembershipId??''} onChange={e=>change({ownerMembershipId:e.target.value||null,unknownOwnerReason:e.target.value?null:'Owner not yet assigned'})}><option value="">Unknown owner</option>{owners.map(o=><option value={o.id} key={o.id}>{o.label}</option>)}</select></label>
+      {draft.ownerMembershipId===null&&<label>Unknown owner reason<input className="field" required value={draft.unknownOwnerReason??''} maxLength={500} onChange={e=>change({unknownOwnerReason:e.target.value})}/></label>}
+      <fieldset><legend>Exact Evidence Revisions</legend><p>Only currently eligible reviewed evidence can support acceptance.</p>
+        <label>Search evidence<input className="field" value={query} maxLength={500} onChange={e=>setQuery(e.target.value)}/></label><button type="button" className="secondary-button" disabled={disabled||!query.trim()||draft.references.length>=20} onClick={()=>void search()}>Find evidence</button>
         {results.map(r=><button type="button" key={r.citationId} className="secondary-button" onClick={()=>void attach(r.citationId)}>Select {r.title}</button>)}
         {draft.references.map(r=><p key={r.id}>{r.kind.replaceAll('_',' ')} · revision {r.sourceRevisionId}<button type="button" className="secondary-button" onClick={()=>change({references:draft.references.filter(i=>i.id!==r.id)})}>Remove evidence</button></p>)}
       </fieldset>

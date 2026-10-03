@@ -147,3 +147,10 @@ exception; that does not release restricted activity text. No exception bypasses
 Closeout cannot bypass missing acknowledgement or pending submitted time. Detail and
 history response projections always re-evaluate source eligibility and deny stale
 cache release; use private no-store responses and server-owned current-generation tags.
+
+### Utilization Query Encoding
+
+GET utilization accepts exactly one `resourceIds` parameter containing 1–50
+comma-separated UUIDs, plus `from` and `to`. Duplicate identities, duplicate query
+keys, unknown keys and periods outside 1–91 dates are rejected. Summary accepts
+only `from` and `to`; these responses remain uncached.

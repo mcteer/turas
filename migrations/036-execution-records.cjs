@@ -38,6 +38,10 @@ exports.up = pgm => {
       FOREIGN KEY(owner_membership_id,workspace_id) REFERENCES memberships(id,workspace_id), UNIQUE(record_id,revision_number), UNIQUE(id,record_id)`),
     `CREATE TABLE execution_record_payloads(revision_id uuid PRIMARY KEY REFERENCES execution_record_revisions(id),
       content jsonb NOT NULL CHECK(jsonb_typeof(content)='object' AND octet_length(content::text)<=131072));`,
+    `CREATE TABLE execution_closeout_snapshots(revision_id uuid PRIMARY KEY REFERENCES execution_record_revisions(id),
+      input_digest text NOT NULL CHECK(input_digest ~ '^[a-f0-9]{64}$'), inputs jsonb NOT NULL CHECK(jsonb_typeof(inputs)='object' AND octet_length(inputs::text)<=262144));`,
+    `CREATE TABLE execution_closeout_invalidations(revision_id uuid PRIMARY KEY REFERENCES execution_closeout_snapshots(revision_id), created_at timestamptz NOT NULL DEFAULT now());
+     CREATE INDEX execution_closeout_record_dependencies ON execution_closeout_snapshots USING gin ((inputs->'records') jsonb_path_ops);`,
     table('execution_record_sources',`revision_id uuid NOT NULL, source_kind text NOT NULL CHECK(source_kind IN ('accepted_profile','approved_excerpt','verified_research','shared_knowledge','execution_record','milestone_baseline')),
       source_revision_id uuid NOT NULL, source_generation bigint NOT NULL CHECK(source_generation>=1), ${digest}`,
       `${fk('revision_id','execution_record_revisions')}, UNIQUE(revision_id,source_kind,source_revision_id)`),
@@ -98,7 +102,7 @@ exports.up = pgm => {
            RAISE EXCEPTION 'execution identity is immutable' USING ERRCODE='23514'; END IF;
        END LOOP; RETURN NEW; END $$;`
   ].join('\n'));
-  for (const name of ['execution_baseline_bindings','execution_baseline_items','execution_record_revisions',
+  for (const name of ['execution_closeout_snapshots','execution_closeout_invalidations','execution_baseline_bindings','execution_baseline_items','execution_record_revisions',
     'execution_record_sources','execution_review_decisions','execution_milestone_events','execution_reconciliations',
     'execution_reconciliation_items','execution_command_receipts']) pgm.sql(`CREATE TRIGGER ${name}_immutable BEFORE UPDATE OR DELETE ON ${name} FOR EACH ROW EXECUTE FUNCTION turas_execution_immutable();`);
   for (const name of ['execution_record_payloads','execution_review_payloads','execution_milestone_payloads','execution_reconciliation_payloads'])

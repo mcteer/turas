@@ -41,6 +41,12 @@ describe("reviewed execution records", () => {
     const publicRecord = (await readExecutionRecords(partner, f.engagementId, {})).records.find(r => r.id === draft.id)!;
     expect(publicRecord.revisionId).toBe(current.revisionId);
     expect(publicRecord.content).not.toEqual({ narrative: "A pending revised observation" });
+    for(const reader of [f.author,f.reviewer]){
+      const accepted=(await readExecutionRecords(reader,f.engagementId,{state:"accepted"})).records.find(r=>r.id===draft.id);
+      expect(accepted?.revisionId).toBe(current.revisionId);
+      expect(accepted?.content).toMatchObject({narrative:activity().narrative});
+      expect(accepted?.canSubmit).toBe(false);
+    }
     await expect(submitExecutionCommand(f.reviewer, f.engagementId, { ...accept, requestKey: randomUUID(), ...preview, rationale: "Stale review" })).rejects.toMatchObject({ status: 409 });
   });
   it("denies hidden drafts, unknown payload authority and future observations", async () => {

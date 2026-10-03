@@ -6,11 +6,13 @@ import { ExecutionRecords } from './records';
 import { ExecutionMilestones } from './milestones';
 import { ExecutionReview } from './review';
 import { ExecutionTime } from './time';
+import {ExecutionForecast} from './forecast';
+import {ExecutionHandoff} from './handoff';
 import { ExecutionChanges } from './changes';
 import type {Overview,RecordView,Session,Owner,Candidate} from './types';
 async function get<T>(url:string,signal?:AbortSignal):Promise<T>{const response=await fetch(url,{cache:'no-store',signal}),body=await response.json();if(!response.ok||!body.data)throw Object.assign(new Error(body.error?.message??'Execution unavailable'),{status:response.status});return body.data as T;}
 export function ExecutionOverview({customerId,engagementId}:{customerId:string;engagementId:string}){
-  const sections=['Activity','Time','Milestones','Registers'] as const;
+  const sections=['Activity','Time','Milestones','Registers','Forecast','Handoff'] as const;
   const [section,setSection]=useState<(typeof sections)[number]>('Activity'),[switching,setSwitching]=useState(false);
   const [session,setSession]=useState<Session|null>(null),[view,setView]=useState<Overview|null>(null),[records,setRecords]=useState<RecordView[]>([]),[owners,setOwners]=useState<Owner[]>([]),[message,setMessage]=useState(''),[showContent,setShowContent]=useState(false),[candidate,setCandidate]=useState<Candidate|null>(null),[cursor,setCursor]=useState<string|null>(null);
   const readAbort=useRef<AbortController|null>(null);
@@ -53,18 +55,20 @@ export function ExecutionOverview({customerId,engagementId}:{customerId:string;e
       <section className="profile-section"><h2>Baseline and Delivery State</h2><p>Accepted baseline {view.baselineVersion} · {view.state.replaceAll('_',' ')}</p>
         {view.reviewRequired&&<p role="status" className="profile-caution">Review required. The baseline or evidence changed; refresh and reconcile before new acceptance.</p>}
         {view.writesDisabled&&<p role="status">Execution changes are temporarily disabled. Reviewed history remains readable.</p>}
-        {!view.initialized?<><p>No execution workspace exists yet. Setup binds the accepted plan; it does not mark any work complete.</p>{view.capabilities.setup&&<button type="button" className="primary-button" disabled={disabled||view.reviewRequired} onClick={()=>void save('setup',{baseline:view.baselineVersion,plan:view.planVersion},{baselineId:view.baselineId})}>Set up execution</button>}</>:<p>Delivery log is active. Empty or unreviewed records do not imply healthy delivery.</p>}
+        {!view.initialized?<><p>No execution workspace exists yet. Setup binds the accepted plan; it does not mark any work complete.</p>{view.capabilities.setup&&<button type="button" className="primary-button" disabled={disabled||view.reviewRequired} onClick={()=>void save('setup',{baseline:view.baselineVersion,plan:view.planVersion},{baselineId:view.baselineId})}>Set up execution</button>}</>:<p>Empty or unreviewed records do not imply healthy delivery.</p>}
       </section>
       {view.initialized&&<>
         <div className="execution-tabs" role="tablist" aria-label="Delivery Sections" onKeyDown={event=>{
           const index=sections.indexOf(section),next=event.key==='ArrowRight'?sections[(index+1)%sections.length]:event.key==='ArrowLeft'?sections[(index+sections.length-1)%sections.length]:event.key==='Home'?sections[0]:event.key==='End'?sections.at(-1):null;
           if(next){event.preventDefault();void selectSection(next).then(()=>document.getElementById(`execution-tab-${next}`)?.focus());}
         }}>{sections.map(name=><button type="button" className="execution-tab" role="tab" id={`execution-tab-${name}`} aria-controls="execution-panel" aria-selected={section===name} tabIndex={section===name?0:-1} disabled={switching||commands.busy||!!commands.uncertainKey} key={name} onClick={()=>void selectSection(name)}>{name}</button>)}</div>
-        <div id="execution-panel" role="tabpanel" aria-labelledby={`execution-tab-${section}`} aria-busy={switching}>
+        <div id="execution-panel" data-execution-generation={view.generation} role="tabpanel" aria-labelledby={`execution-tab-${section}`} aria-busy={switching}>
         {section==='Activity'&&<><ExecutionRecords view={view} records={records} owners={owners} session={session} save={save} disabled={disabled} onReview={(record,action)=>openReview({version:'execution-v1',action,expectedVersions:{execution:view.version,record:record.version},payload:{recordId:record.id,revisionId:action==='record.retract'?record.acceptedRevisionId??record.revisionId:record.revisionId,contentDigest:action==='record.retract'?record.acceptedContentDigest??record.contentDigest:record.contentDigest}})}/>
         {cursor&&<button type="button" className="secondary-button" onClick={()=>{pageCursor.current=cursor;void refresh();}}>Next activity records</button>}</>}
         {section==='Time'&&<ExecutionTime view={view} records={records} save={save} disabled={disabled} onReview={openReview}/>}
         {section==='Milestones'&&<ExecutionMilestones view={view} records={records} owners={owners} disabled={disabled} save={save} onReview={openReview}/>}
+        {section==='Forecast'&&<ExecutionForecast view={view} owners={owners} session={session} disabled={disabled} save={save} onReview={openReview}/>}
+        {section==='Handoff'&&<ExecutionHandoff view={view} owners={owners} session={session} disabled={disabled} save={save} onReview={openReview}/>}
         {section==='Registers'&&<ExecutionChanges view={view} activities={records} owners={owners} session={session} disabled={disabled} save={save} onReview={openReview}/>}
         </div>
       </>}

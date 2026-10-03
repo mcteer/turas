@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-02
 
-**Status**: Implementation in progress following the user’s `$speckit-implement` request; runtime gates remain pending.
+**Status**: Implementation in progress through T049 (forecast, handoff and outcomes); governed advice and final release gates remain pending.
 
 **Input**: Run specify, clarify, plan, tasks and analyze for roadmap 008, then hand off before implement. Scope derives from TR-01, TR-02, TR-10, TR-11 and TR-15 after merged 006 and 007.
 

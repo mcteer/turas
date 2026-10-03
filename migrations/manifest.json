@@ -143,11 +143,11 @@
     },
     {
       "file": "036-execution-records.cjs",
-      "sha256": "0b21577f65789fbe01f2916b2917b92e75494bdc4c8de23836a00efa3dc9ae94"
+      "sha256": "9ecac0e1d2c416cdcfd309e9ae7b4cdd0a9d31ecabd323cfea28c6f3a04b5cfe"
     },
     {
       "file": "037-execution-time-effort.cjs",
-      "sha256": "3577c046f90decfcc9fcc766db87e0c2c7a10858baf0bccc515019088a531aa1"
+      "sha256": "e6149fe42a6a2d456e69e720044097da972fb430d7fac03d1a605ba12043b318"
     },
     {
       "file": "038-execution-advice-lifecycle.cjs",

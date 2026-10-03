@@ -54,6 +54,13 @@ export async function applyActualDays(db: PoolClient, actor: ExecutionActor, cus
   for (const old of locks.oldRows.filter(old => !locks.newRows.some(row => row.entryId === old.entryId))) {
     await db.query("UPDATE execution_actual_days SET minutes=0,decision_id=$2,approved_at=clock_timestamp() WHERE entry_id=$1", [old.entryId, decisions.get(old.entryId)]);
   }
+  // Mutate the complete old/new package union. Moving a contribution away must
+  // stale the old package's estimate even when no current ledger row remains there.
+  const packages=new Map([...locks.oldRows,...locks.newRows].map(r=>[`${r.baselineId}/${r.workPackageKey}`,r]));
+  for(const [,row] of [...packages].sort(([a],[b])=>a.localeCompare(b)))await db.query(`INSERT INTO execution_actual_package_heads
+    (id,environment_id,workspace_id,customer_id,engagement_id,baseline_id,work_package_key) VALUES(gen_random_uuid(),$1,$2,$3,$4,$5,$6)
+    ON CONFLICT(baseline_id,work_package_key) DO UPDATE SET generation=execution_actual_package_heads.generation+1,changed_at=clock_timestamp()`,
+    [process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,customerId,engagementId,row.baselineId,row.workPackageKey]);
   for (const row of locks.newRows) await db.query(`INSERT INTO execution_actual_days
     (id,environment_id,workspace_id,customer_id,engagement_id,entry_id,revision_id,decision_id,resource_id,baseline_id,work_package_key,service_date,minutes,billable)
     VALUES(gen_random_uuid(),$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)

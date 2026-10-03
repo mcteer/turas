@@ -16,8 +16,8 @@ string keys inside immutable content, not separate item UUIDs.
 
 | Migration | Tables and purpose |
 | --- | --- |
-| `036-execution-records.cjs` | `execution_workspaces`, `execution_baseline_bindings`, `execution_baseline_items`, `execution_records`, `execution_record_revisions`, `execution_record_payloads`, `execution_record_sources`, `execution_review_decisions`, `execution_review_payloads`, `execution_milestone_heads`, `execution_milestone_events`, `execution_milestone_payloads`, `execution_reconciliations`, `execution_reconciliation_payloads`, `execution_reconciliation_items`, `execution_command_receipts`, `execution_rate_windows` |
-| `037-execution-time-effort.cjs` | `execution_time_entries`, `execution_time_revisions`, `execution_time_payloads`, `execution_time_decisions`, `execution_time_decision_payloads`, `execution_resource_days`, `execution_actual_days`, `execution_effort_heads`, `execution_calculation_receipts` |
+| `036-execution-records.cjs` | `execution_workspaces`, `execution_baseline_bindings`, `execution_baseline_items`, `execution_records`, `execution_record_revisions`, `execution_record_payloads`, `execution_record_sources`, `execution_review_decisions`, `execution_review_payloads`, `execution_milestone_heads`, `execution_milestone_events`, `execution_milestone_payloads`, `execution_reconciliations`, `execution_reconciliation_payloads`, `execution_reconciliation_items`, `execution_closeout_snapshots`, `execution_closeout_invalidations`, `execution_command_receipts`, `execution_rate_windows` |
+| `037-execution-time-effort.cjs` | `execution_time_entries`, `execution_time_revisions`, `execution_time_payloads`, `execution_time_decisions`, `execution_time_decision_payloads`, `execution_resource_days`, `execution_actual_days`, `execution_actual_package_heads`, `execution_effort_heads`, `execution_calculation_receipts` |
 | `038-execution-advice-lifecycle.cjs` | `execution_advice_bindings`, `execution_advice_attempts`, `execution_advice_dependencies`, `execution_advice_reads`, `execution_advice_steps`, `execution_advice_usage`, `execution_cleanup_jobs`; add source-invalidation/cleanup indexes and narrow role grants |
 
 Header/revision/decision metadata is immutable except explicit mutable head and
@@ -139,7 +139,9 @@ budget and approve it independently; no midpoint or maximum is chosen automatica
 Estimates are explicitly remaining effort at their accepted as-of date. At read time
 newly approved time after that as-of instant makes the estimate stale until reviewed
 again, avoiding actual-plus-old-remaining double counting. The seven-day rule is an
-additional freshness bound. Approval does not reset the entered as-of date.
+additional freshness bound. Approval does not reset the entered as-of date. Every
+affected old/new package has a monotonic mutation generation and a database
+timestamp with microsecond precision, including moved and net-zero corrections.
 
 Reconciliation is one-to-one or retired/added in v1; choose retired/added for splits,
 which remain a visible allocation-of-history gap. Whole-engagement actual totals
@@ -162,6 +164,9 @@ Waivers and accepted RAID exceptions retain rationale and follow-up owner/date.
 Outcome measurement is optional for closeout but unknown/inconclusive is explicit.
 Any later accepted execution/time/source change invalidates closeout's current
 summary. Reclose requires a new exact review, never an overwritten snapshot.
+`execution_closeout_snapshots` holds only the exact input identities and digest;
+source invalidation inserts an immutable marker in `execution_closeout_invalidations`
+so processing a cleanup job cannot restore a previously invalidated closeout.
 
 ## Indexes, source lifecycle and grants
 

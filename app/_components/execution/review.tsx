@@ -27,12 +27,12 @@ export function ExecutionReview({engagementId,candidate,session,disabled,save,on
     {candidate.display?.map((row,i)=><article className="profile-card" key={i}><h3>{row.title}</h3><p>{row.detail}</p></article>)}
     <p>The decision applies to these exact revisions and their current evidence.</p>
     {message&&<p role="alert">{message}</p>}{!preview&&!message&&<p role="status">Checking current review inputs…</p>}
-    {requirements.filter(r=>r.codes.length>0).map((row,i)=><fieldset key={row.entryId}><legend>Entry {i+1}: Required Exceptions</legend>{row.codes.map(code=><label key={code}>{labels[code]??code}<textarea required maxLength={2000}
+    {requirements.filter(r=>r.codes.length>0).map((row,i)=><fieldset key={row.entryId}><legend>Entry {i+1}: Required Exceptions</legend>{row.codes.map(code=><label key={code}>{labels[code]??code}<textarea className="field" required maxLength={2000}
       value={exceptions[row.entryId]?.[code]??""} onChange={e=>{const text=e.target.value;setExceptions(current=>({...current,[row.entryId]:{...current[row.entryId],[code]:text}}));setChanged(true);}}/></label>)}</fieldset>)}
     {changed&&<button type="button" className="secondary-button" disabled={disabled||missing} onClick={()=>void load(body)}>Review updated exceptions</button>}
     {preview&&<><p>Preview expires {new Date(preview.previewExpiresAt).toLocaleTimeString()}.</p><p className="muted">Versions: {Object.entries(preview.expectedVersions).map(([name,value])=>`${name} ${value}`).join(" · ")}</p>
       <form onSubmit={event=>{event.preventDefault();void save({...body,previewDigest:preview.previewDigest,previewExpiresAt:preview.previewExpiresAt,rationale}).then(saved=>{if(saved)onClose();else{setPreview(null);setMessage("Decision is unconfirmed or inputs changed. Check the save status and current state before another review.");}});}}>
-        <label>Review rationale<textarea required minLength={1} maxLength={2000} value={rationale} onChange={e=>setRationale(e.target.value)}/></label>
+        <label>Review rationale<textarea className="field" required minLength={1} maxLength={2000} value={rationale} onChange={e=>setRationale(e.target.value)}/></label>
         <button type="submit" className="primary-button" disabled={disabled||changed||missing||!rationale.trim()}>Confirm reviewed decision</button>
       </form></>}
     <button type="button" className="secondary-button" onClick={onClose}>Close review</button>

@@ -9,6 +9,12 @@ import { z } from "zod";
 import { executionSourceDigest } from "./execution-source-digest";
 
 export const EXECUTION_SUITES = [
+  "tests/unit/execution-calculations.test.ts",
+  "tests/contracts/execution-summary-api.test.ts",
+  "tests/integration/execution-handoff.test.ts",
+  "tests/integration/execution-effort.test.ts",
+  "tests/integration/execution-utilization.test.ts",
+  "tests/integration/execution-journey.test.ts",
   "tests/unit/execution-test-manifest.test.ts",
   "tests/unit/execution-contracts.test.ts",
   "tests/unit/execution-client.test.ts",
@@ -58,15 +64,16 @@ export function verifyExecutionTestReport(raw: unknown, suites: readonly string[
 }
 
 async function main(): Promise<void> {
+  const forecastOnly = process.argv.length === 3 && process.argv[2] === "--forecast";
   const timeOnly = process.argv.length === 3 && process.argv[2] === "--time";
   const registersOnly = process.argv.length === 3 && process.argv[2] === "--registers";
   const recordsOnly = process.argv.length === 3 && process.argv[2] === "--records";
   const schemaOnly = process.argv.length === 3 && process.argv[2] === "--foundation-schema";
   const foundation = schemaOnly || (process.argv.length === 3 && process.argv[2] === "--foundation");
-  if (!foundation && !recordsOnly && !timeOnly && !registersOnly && process.argv.length !== 2) throw new Error("test:execution takes no DB or test-path overrides");
+  if (!foundation && !recordsOnly && !timeOnly && !registersOnly && !forecastOnly && process.argv.length !== 2) throw new Error("test:execution takes no DB or test-path overrides");
   assertDeterministicTestMode();
   verifyExecutionSuiteCoverage();
-  const suites = registersOnly ? EXECUTION_SUITES.filter(name => /execution-(register-api|reconciliation)\.test\.ts$/.test(name)) : timeOnly ? EXECUTION_SUITES.filter(name => /execution-time(-api|-races)?\.test\.ts$/.test(name)) : recordsOnly ? EXECUTION_SUITES.filter(name => /execution-(records|milestones|record-api|client)\.(test|spec)\.ts$/.test(name)) : schemaOnly ? EXECUTION_SUITES.filter(name => name.endsWith("execution-schema.test.ts")) : foundation ? EXECUTION_SUITES.filter(name => [
+  const suites = forecastOnly ? EXECUTION_SUITES.filter(name => /execution-(calculations|summary-api|handoff|effort|utilization|journey)\.test\.ts$/.test(name)) : registersOnly ? EXECUTION_SUITES.filter(name => /execution-(register-api|reconciliation)\.test\.ts$/.test(name)) : timeOnly ? EXECUTION_SUITES.filter(name => /execution-time(-api|-races)?\.test\.ts$/.test(name)) : recordsOnly ? EXECUTION_SUITES.filter(name => /execution-(records|milestones|record-api|client)\.(test|spec)\.ts$/.test(name)) : schemaOnly ? EXECUTION_SUITES.filter(name => name.endsWith("execution-schema.test.ts")) : foundation ? EXECUTION_SUITES.filter(name => [
     "execution-test-manifest.test.ts", "execution-contracts.test.ts", "execution-projection.test.ts", "execution-policy.test.ts",
     "execution-command-api.test.ts", "execution-environment.test.ts", "execution-schema.test.ts",
   ].some(suffix => name.endsWith(suffix))) : verifyExecutionSuiteCoverage();
