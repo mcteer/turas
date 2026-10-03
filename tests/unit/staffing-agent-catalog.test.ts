@@ -2,8 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import type { DynamicResolveContext } from "eve/tools";
 
 const scope = vi.hoisted(() => vi.fn());
-vi.mock("../../lib/server/staffing/native-context", () => ({ staffingResponseScope: scope,
-  prepareStaffingNativeFence: vi.fn(), readStaffingInitialContext: vi.fn() }));
+vi.mock("../../lib/server/conversations/feature", () => ({ responseFeature: async () => {
+  const current = await scope();
+  return current ? { kind: "staffing", scope: current } : { kind: "normal" };
+} }));
 
 import customerContext from "../../agent/tools/customer_context";
 import artifactContext from "../../agent/tools/artifact_context";

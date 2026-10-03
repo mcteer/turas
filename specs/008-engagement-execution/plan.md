@@ -2,7 +2,7 @@
 
 **Branch**: `008-engagement-execution` | **Date**: 2026-10-02 | **Spec**: [spec.md](spec.md)
 
-**Status**: Implementation in progress through T058; retention and release gates are pending. See validation.md for actual checkpoint evidence.
+**Status**: Implementation and release tooling are present. See validation.md for actual gate results and limits.
 **Input**: Roadmap 008 after merged 006/007. User confirmed `mcteer`-only approval.
 
 ## Summary

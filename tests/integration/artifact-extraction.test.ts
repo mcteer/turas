@@ -10,6 +10,7 @@ import { artifactContainerInvocation } from "../../lib/server/artifacts/containe
 import { assertFreshArtifactSignatures, scanArtifact } from "../../lib/server/artifacts/scan";
 
 const root = join(process.cwd(), "local-artifacts/004/fixtures");
+const preparedStore = process.env.TURAS_TEST_ARTIFACT_STORE_ROOT ?? join(process.cwd(), "local-artifacts/004/store");
 const declared = {
   pdf: "application/pdf", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
@@ -77,7 +78,7 @@ describe("located synthetic extraction", () => {
     ["scanned.pdf", "pdf", "Synthetic invoice 42"],
   ] as const)("OCRs %s offline with image provenance", async (filename, format, phrase) => {
     const old = process.env.TURAS_OCR_ASSET_ROOT;
-    process.env.TURAS_OCR_ASSET_ROOT = join(process.cwd(), "local-artifacts/004/store/assets");
+    process.env.TURAS_OCR_ASSET_ROOT = join(preparedStore, "assets");
     try {
       const result = await parseArtifact(await readFile(join(root, filename)), filename, declared[format], {
         imageDigest: "a".repeat(64), scanReceiptDigest: "b".repeat(64),
@@ -105,7 +106,7 @@ describe("constrained local scanner", () => {
   });
 
   it("accepts a clean fixture and blocks the generated EICAR canary", async () => {
-    const store = join(process.cwd(), "local-artifacts/004/store");
+    const store = preparedStore;
     const images = JSON.parse(await readFile(join(store, "runtime-images.json"), "utf8")) as {
       scannerImage: string; scannerDigest: string;
     };

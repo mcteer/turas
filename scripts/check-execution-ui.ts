@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { mkdir, mkdtemp, writeFile, chmod, readdir, lstat } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { installExecutionNativeFixture } from "../tests/fixtures/execution/native";
 import { withExecutionEvalEnvironment } from "./execution-eval-environment";
@@ -14,6 +14,8 @@ async function privateCaptureTree(path:string):Promise<void>{
   if(stat.isDirectory())for(const name of await readdir(path))await privateCaptureTree(join(path,name));
 }
 const allSpecs = ["execution-records", "execution-time", "execution-changes", "execution-handoff", "execution-advisory"];
+const discoveredFiles = readdirSync(resolve("tests/ui")).filter(name=>/^execution-.*\.spec\.ts$/.test(name)).sort();
+if(JSON.stringify(discoveredFiles)!==JSON.stringify(allSpecs.map(name=>name+".spec.ts").sort()))throw new Error("Execution UI suite manifest differs from discovery");
 const projects = ["webkit-desktop-light", "webkit-desktop-dark", "webkit-mobile-light", "webkit-mobile-dark"];
 const args = process.argv.slice(2), focusMode = ["--us1", "--us2", "--us3", "--us4", "--us5"].includes(args[0]) ? args[0] : null, focused = !!focusMode;
 if (args.length > (focused ? 2 : 1) || args.some((arg, i) => i === 0 && focused ? false : !projects.includes(arg))) {

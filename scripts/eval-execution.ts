@@ -46,7 +46,7 @@ async function main(){
           const nativeSessionId=binding.nativeSessionId;
           if(id==="E04"||id==="E08")await query("INSERT INTO execution_live_provider_barriers(attempt_id) VALUES($1)",[prepared.attemptId]);
           const writesBefore=await executionLiveDomainDigests();await unchanged();
-          const started=Date.now(),deadline=budget.reserve(id);
+          const deadline=budget.reserve(id),started=Date.now();
           // This durable reservation is retained even if the POST acknowledgement is lost.
           await privateJson(join(directory,`${id}-dispatch.json`),{caseId:id,attemptId:prepared.attemptId,nativeRequestId:prepared.nativeRequestId,
             startedAt:new Date(started).toISOString(),deadlineAt:new Date(deadline).toISOString(),initialDispatches:1,automaticPaidRetries:0});

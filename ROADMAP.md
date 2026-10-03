@@ -1,7 +1,7 @@
 # Turas delivery roadmap
 
 Baseline: 2026-09-26; updated 2026-10-01. **001 merged in PR 1; 002 merged in
-[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 merged in [PR 11](https://github.com/mcteer/turas/pull/11) after local and CI validation, without a hosted release; 007 merged in [PR 13](https://github.com/mcteer/turas/pull/13) after local and CI validation, without a hosted release. 008 implementation is in progress through governed advice, payload retention and the native evaluation harness; complete release gates are pending. 009–016 remain planned.**
+[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 merged in [PR 11](https://github.com/mcteer/turas/pull/11) after local and CI validation, without a hosted release; 007 merged in [PR 13](https://github.com/mcteer/turas/pull/13) after local and CI validation, without a hosted release. 008 implementation covers the delivery workflow, governed advice and payload retention; current release evidence is tracked in its validation log. 009–016 remain planned.**
 
 005 now has [specification](specs/005-governed-rag-research/spec.md),
 [design](specs/005-governed-rag-research/plan.md) and
@@ -61,8 +61,11 @@ execution, approved actual time, RAID/scope reconciliation, effort forecasts,
 handoff/outcomes and read-only Turi advice. Approval belongs only to `mcteer`, as
 confirmed during clarification. Foundation, activity/milestone review, time/actuals, reviewed registers, baseline reconciliation, forecasts,
 utilization and handoff/closeout/outcomes are implemented through T049 with disposable domain and four-project WebKit evidence.
-Governed advice has 17 focused contract/native assertions and three desktop WebKit journeys through T058. Retention and full release gates remain pending. Execution migrations 036–038 have only been exercised in owned disposable
-databases; this checkpoint does not claim hosted execution readiness.
+Governed advice, exact retained-payload cleanup, actual-output capture and owned
+regression/load/recovery tooling are implemented. See the validation log for the
+current complete gate and Preview results. Execution migrations 036–038 have explicit
+owned upgrade and runtime-role checks; Preview status is recorded separately.
+This checkpoint does not claim hosted execution readiness.
 
 ## Build sequence
 

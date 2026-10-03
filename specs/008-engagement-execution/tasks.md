@@ -195,25 +195,25 @@ verbatim; the remaining data-model state/transaction rules also apply.
 
 **Independent verification**: All discovered suites/cases pass, live captures are reviewed, representative p95 gates and recovery pass, and no hosted claim is inferred.
 
-- [ ] T062 [P] Implement owned affected 002–007 regression command in `scripts/test-execution-regressions.ts`; update exclusions and scripts in `package.json` and CI in `.github/workflows/ci.yml` so every execution suite is owned and existing access/source/plan/staffing/native suites still run with correct schema fixtures. (FR-023, FR-024, SC-002, SC-008)
+- [X] T062 [P] Implement owned affected 002–007 regression command in `scripts/test-execution-regressions.ts`; update exclusions and scripts in `package.json` and CI in `.github/workflows/ci.yml` so every execution suite is owned and existing access/source/plan/staffing/native suites still run with correct schema fixtures. (FR-023, FR-024, SC-002, SC-008)
 
-- [ ] T063 [P] Implement representative eight-class load runner in `scripts/benchmark-execution.ts` using the exact quickstart dataset/sample/concurrency/warmup/rate-preserving workload; assert per-class p95≤2s and zero correctness failures, with complete query results and redacted private evidence. (FR-022, FR-024, SC-005)
+- [X] T063 [P] Implement representative eight-class load runner in `scripts/benchmark-execution.ts` using the exact quickstart dataset/sample/concurrency/warmup/rate-preserving workload; assert per-class p95≤2s and zero correctness failures, with complete query results and redacted private evidence. (FR-022, FR-024, SC-005)
 
-- [ ] T064 [P] Implement paired DB/artifact/Eve interruption/restore drill in `scripts/execution-recovery-check.ts` and `tests/integration/execution-recovery.test.ts`; cover lost acknowledgement, moved-time correction, newer payload versus leased purge, source/baseline changes, dispatch/cancel/disable and unknown settlement without redispatch. (FR-017, FR-022, FR-023, SC-008)
+- [X] T064 [P] Implement paired DB/artifact/Eve interruption/restore drill in `scripts/execution-recovery-check.ts` and `tests/integration/execution-recovery.test.ts`; cover lost acknowledgement, moved-time correction, newer payload versus leased purge, source/baseline changes, dispatch/cancel/disable and unknown settlement without redispatch. (FR-017, FR-022, FR-023, SC-008)
 
-- [ ] T065 Run `npm run test:execution` and `npm run test:execution:regressions`; verify complete manifest/report counts, strict source digest and empty/034 role gates; resolve failures and record actual results in `specs/008-engagement-execution/validation.md`. (FR-024, SC-001, SC-002, SC-003, SC-004, SC-008)
+- [X] T065 Run `npm run test:execution` and `npm run test:execution:regressions`; verify complete manifest/report counts, strict source digest and empty/034 role gates; resolve failures and record actual results in `specs/008-engagement-execution/validation.md`. (FR-024, SC-001, SC-002, SC-003, SC-004, SC-008)
 
-- [ ] T066 Run the complete `npm run execution:ui:check`, inspect four-project visual captures, keyboard/axe/revocation and390 px cases, resolve failures and record matrix completion evidence in `specs/008-engagement-execution/validation.md`. (FR-019, FR-024, SC-007)
+- [X] T066 Run the complete `npm run execution:ui:check`, inspect four-project visual captures, keyboard/axe/revocation and390 px cases, resolve failures and record matrix completion evidence in `specs/008-engagement-execution/validation.md`. (FR-019, FR-024, SC-007)
 
-- [ ] T067 Run `npm run benchmark:execution` and `npm run execution:recovery:check`; record actual per-class p95/sample/dataset and matched-state cleanup evidence in `specs/008-engagement-execution/validation.md`; failures cannot be replaced by narrow passing subsets. (FR-023, FR-024, SC-005, SC-008)
+- [X] T067 Run `npm run benchmark:execution` and `npm run execution:recovery:check`; record actual per-class p95/sample/dataset and matched-state cleanup evidence in `specs/008-engagement-execution/validation.md`; failures cannot be replaced by narrow passing subsets. (FR-023, FR-024, SC-005, SC-008)
 
-- [ ] T068 Run typecheck, Eve/web builds, docs consistency and diff checks per `quickstart.md`; bind passing deterministic/UI/recovery/load evidence to the same source digest in `specs/008-engagement-execution/validation.md` before live admission. (FR-024)
+- [X] T068 Run typecheck, Eve/web builds, docs consistency and diff checks per `quickstart.md`; bind passing deterministic/UI/recovery/load evidence to the same source digest in `specs/008-engagement-execution/validation.md` before live admission. (FR-024)
 
-- [ ] T069 Explicitly run E01–E08 via `npm run eval:execution -- --live` with the live opt-in, inspect every actual capture against independent evidence/numbers, complete and verify the separate private digest-bound review, and record results/limitations in `specs/008-engagement-execution/validation.md`; no fabricated scores or automatic paid retry. (FR-024, SC-006)
+- [x] T069 Explicitly run E01–E08 via `npm run eval:execution -- --live` with the live opt-in, inspect every actual capture against independent evidence/numbers, complete and verify the separate private digest-bound review, and record results/limitations in `specs/008-engagement-execution/validation.md`; no fabricated scores or automatic paid retry. (FR-024, SC-006)
 
-- [ ] T070 After all disposable gates pass, inspect Preview fresh using `scripts/inspect-preview-db.mjs`; only for the confirmed expected marker/schema explicitly apply 036–038 and roles, reinspect and run non-destructive local readiness smoke; stop on mismatch, exclude Production/Vercel deployment and record actual versions in `specs/008-engagement-execution/validation.md`. (FR-023)
+- [x] T070 After all disposable gates pass, inspect Preview fresh using `scripts/inspect-preview-db.mjs`; only for the confirmed expected marker/schema explicitly apply 036–038 and roles, reinspect and run non-destructive local readiness smoke; stop on mismatch, exclude Production/Vercel deployment and record actual versions in `specs/008-engagement-execution/validation.md`. (FR-023)
 
-- [ ] T071 Update `README.md`, `ROADMAP.md`, `specs/008-engagement-execution/spec.md`, `specs/008-engagement-execution/tasks.md` and `specs/008-engagement-execution/validation.md` with implemented scope, actual checks, remaining limits and rollback/disable guidance; check off only proven tasks and prepare the reviewable implementation PR without merging. (FR-024)
+- [x] T071 Update `README.md`, `ROADMAP.md`, `specs/008-engagement-execution/spec.md`, `specs/008-engagement-execution/tasks.md` and `specs/008-engagement-execution/validation.md` with implemented scope, actual checks, remaining limits and rollback/disable guidance; check off only proven tasks and prepare the reviewable implementation PR without merging. (FR-024)
 
 **Checkpoint**: Complete this phase’s relevant checks before advancing dependent work.
 

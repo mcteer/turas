@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-02
 
-**Status**: Implementation in progress through T058 (governed advice); retention and final release gates remain pending.
+**Status**: T001–T071 implemented and locally validated; reviewable PR prepared without merging. Preview schema 038 is verified; full hosted workflow and maintenance readiness remain release work.
 
 **Input**: Run specify, clarify, plan, tasks and analyze for roadmap 008, then hand off before implement. Scope derives from TR-01, TR-02, TR-10, TR-11 and TR-15 after merged 006 and 007.
 

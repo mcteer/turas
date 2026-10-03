@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdtemp, mkdir, writeFile, utimes, symlink, rm, realpath } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, chmod, utimes, symlink, rm, realpath } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
@@ -22,6 +22,9 @@ describe("owned workforce orphan nomination", () => {
       const old = randomUUID(), young = randomUUID(), publicFile = randomUUID(), alias = randomUUID();
       await mkdir(join(root, "staged"), { mode: 0o700 });
       for (const key of [old, young, publicFile]) await writeFile(join(root, "staged", key), "synthetic", { mode: key === publicFile ? 0o644 : 0o600 });
+      // A private test-runner umask must not turn this intentional public-file
+      // rejection fixture into another eligible private file.
+      await chmod(join(root, "staged", publicFile), 0o644);
       const earlier = new Date(Date.now() - 2 * 86_400_000);
       for (const key of [old, publicFile]) await utimes(join(root, "staged", key), earlier, earlier);
       await symlink(join(root, "staged", old), join(root, "staged", alias));

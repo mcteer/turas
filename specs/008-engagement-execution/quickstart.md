@@ -1,9 +1,9 @@
 # 008 implementation and validation handoff
 
-**Implementation in progress.** T001–T061 have local checkpoint evidence in
-[validation.md](validation.md). Commands and gates below describe the complete
-feature target; an implemented command or a narrow pass does not establish a later
-gate. Full regression, load, recovery, live-output and Preview gates remain pending.
+**Implementation and validation tooling are present.** [validation.md](validation.md)
+is the evidence ledger for current gate results, failed runs and rollout status.
+The complete commands below must pass; an implemented command or a narrow pass
+does not establish a later gate.
 
 ## Resume
 
@@ -38,6 +38,8 @@ folders/0600 files. Keep failure evidence; do not overwrite a previous passing r
 ## Deterministic gates — new commands
 
 ```sh
+npm run execution:release:check
+# Individual gates:
 npm run test:execution
 npm run test:execution:regressions
 npm run execution:ui:check
@@ -45,6 +47,10 @@ npm run benchmark:execution
 npm run execution:recovery:check
 ```
 
+- `execution:release:check`: runs all ten deterministic/build gates with provider
+  keys stripped and binds their actual completion logs to one unchanged source
+  digest. `--resume` accepts only the same source and verified prior evidence.
+  Failed gates remain private evidence; changing source requires a new full run.
 - `test:execution`: owns every `execution-*.test.ts` unit/contract/integration suite,
   fails missing/orphaned/duplicate/skipped tests, validates actual assertion counts,
   and records the unchanged source digest. No CLI database/path override. Isolate
@@ -64,7 +70,9 @@ npm run execution:recovery:check
   summary, utilization, command receipt and time-review acknowledgement. Warmups
   and writes use distinct keys/eligible rows; never benchmark cached replay instead
   of a new atomic review. Spread actors/windows in synthetic setup to stay within
-  documented rates without disabling production rate checks. Every class p95≤2s,
+  documented rates without disabling production rate checks. Privileged classes use five concurrent clients of the sole canonical reviewer;
+  contributor classes use five distinct current users. Approval bursts wait for
+  real rate windows, with pacing excluded from request latency. Every class p95≤2s,
   zero correctness/authorization failures; report dataset, timings and sample count.
 - `execution:recovery:check`: matched DB/artifact/Eve state restart around committed
   time correction/lost acknowledgement, leased source purge/newer revision, baseline
@@ -128,6 +136,7 @@ or failed gates; do not fill in expected results as actual observations.
 
 ```sh
 npm run typecheck
+npm run typecheck:execution
 npm run build:eve:check
 npm run build:web:check
 npm run check:docs
@@ -141,8 +150,8 @@ synthetic environment identity, assertion/matrix counts, benchmark per-class res
 evaluation review digests, runtime limits, failure/rerun and cleanup evidence.
 
 Only after all required gates pass, inspect the configured Preview read-only with
-`npm run db:inspect-preview`. Historical schema 034 is not a fresh observation. Check
-marker/schema, then explicitly migrate 036–038 and apply roles using existing
+`npm run db:inspect-preview`. The expected marker is `preview-neon-005`, at schema 035 after the general-chat
+upgrade. Historical schema 034 is not a fresh observation. Check marker/schema, then explicitly migrate 036–038 and apply roles using existing
 `db:migrate` / `db:roles` commands, reinspect and perform non-destructive local app/
 Eve/runtime-readiness smoke. An unexpected identity or schema requires reconciliation
 before writing; Production is never a fallback. No seed/load/destructive test against

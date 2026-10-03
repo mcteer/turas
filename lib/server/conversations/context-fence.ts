@@ -21,9 +21,10 @@ export async function assertNativeContextCurrentInTransaction(client: PoolClient
   [nativeSessionId, session.principalId, session.workspaceId,
     getServerConfig().TURAS_ENVIRONMENT_ID]);
   if (!lookup.rows[0]) throw hiddenRecord();
-  if (["staffing", "execution"].includes((await conversationFeature(client, lookup.rows[0].id)).kind)) {
+  const feature = await conversationFeature(client, lookup.rows[0].id);
+  if (feature.kind === "staffing" || feature.kind === "execution") {
     if (!preparedStaffing || preparedStaffing.conversationId !== lookup.rows[0].id || preparedStaffing.nativeSessionId !== nativeSessionId) {
-      throw new HttpFailure(503, "governed_release_preflight_required", "Current source preparation is required");
+      throw new HttpFailure(503, `${feature.kind}_release_preflight_required`, "Current source preparation is required");
     }
     await assertGovernedNativeRelease(client, preparedStaffing, session);
     return;

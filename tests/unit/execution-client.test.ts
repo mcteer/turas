@@ -1,5 +1,6 @@
 import { describe,expect,it } from 'vitest';
 import { ExecutionCommandClient } from '../../app/_components/execution/client';
+import { executionDateInZone } from "../../lib/execution/dates";
 const reply=(key:string)=>Response.json({data:{requestKey:key,state:'committed',executionGeneration:1,changed:[]}});
 describe('execution client acknowledgement',()=>{
   it('never repeats an unknown write, reconciles the same identity, and preserves edits after submission',async()=>{
@@ -30,4 +31,11 @@ describe('execution client acknowledgement',()=>{
 it('updates CSRF after initial session loading before sending a command',async()=>{
   let token='';const client=new ExecutionCommandClient('',async(_url,init)=>{token=new Headers(init?.headers).get('x-csrf-token')??'';return reply(JSON.parse(String(init?.body)).requestKey);},()=>{});
   client.setCsrf('current-session-csrf');expect(await client.save('/commands',{})).toBe(true);expect(token).toBe('current-session-csrf');
+});
+it.each([
+  ["America/Denver", "2026-10-03T00:30:00Z", "2026-10-02"],
+  ["Pacific/Kiritimati", "2026-12-31T12:30:00Z", "2027-01-01"],
+  ["UTC", "2026-10-03T00:30:00Z", "2026-10-03"],
+])('defaults an observed date in %s to its declared calendar day', (timezone, instant, expected) => {
+  expect(executionDateInZone(timezone, new Date(instant))).toBe(expected);
 });

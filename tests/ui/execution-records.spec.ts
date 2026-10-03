@@ -76,7 +76,7 @@ test('rendered evidence withdrawal clears narrative and dirty source-derived edi
   await expect(page.getByText('PRIVATE_WITHDRAWAL_NARRATIVE',{exact:true})).toHaveCount(0,{timeout:15000});
   releaseOld();await expect.poll(()=>oldReleased).toBe(true);
   await expect(page.getByText('PRIVATE_WITHDRAWAL_NARRATIVE',{exact:true})).toHaveCount(0);
-  await expect(page.getByRole('textbox',{name:'Observed work',exact:true})).toHaveValue('');await expect(page.getByText(/Source content withheld/)).toBeVisible();await accessible(page);
+  await expect(page.getByRole('textbox',{name:'Observed work',exact:true})).toHaveValue('');await expect(page.getByRole('heading',{name:'Source Content Withheld',exact:true})).toBeVisible();await accessible(page);
   await page.screenshot({path:testInfo.outputPath('withdrawn-execution.png'),fullPage:true});
 });
 

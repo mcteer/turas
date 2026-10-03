@@ -2,12 +2,14 @@
 import Link from "next/link";
 import {useCallback,useEffect,useLayoutEffect,useRef,useState} from "react";
 import {useExecutionRefresh,useExecutionPanelGuard} from "./client";
+import {executionDateInZone} from "../../../lib/execution/dates";
 import type {Overview,RecordView,Owner,Session,Mutation,Candidate,ExecutionRecordContent,ExecutionSource} from "./types";
 type Kind="raid"|"decision"|"scope_change";
 type Register=Extract<ExecutionRecordContent,{kind:Kind}>;
 const names={raid:"RAID",decision:"Decisions",scope_change:"Scope Changes"};
 function blank(kind:Kind,baselineId:string):Register {
-  const base={title:"",narrative:"",audience:"delivery" as const,eventDate:new Date().toISOString().slice(0,10),timezone:Intl.DateTimeFormat().resolvedOptions().timeZone,
+  const timezone=Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const base={title:"",narrative:"",audience:"delivery" as const,eventDate:executionDateInZone(timezone),timezone,
     workPackageKey:null,milestoneKeys:[],ownerMembershipId:null,unknownOwnerReason:"Owner not assigned",references:[]};
   if(kind==="raid")return {...base,kind,raidType:"risk",status:"open",severity:"medium",impact:"",reviewDate:null,unknownDateReason:"Review date not assigned",acceptedExceptionRationale:null};
   if(kind==="decision")return {...base,kind,decisionDate:base.eventDate,decider:"",rationale:""};

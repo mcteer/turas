@@ -56,14 +56,13 @@ Feature 008 has a [specification](specs/008-engagement-execution/spec.md),
 [71 implementation tasks](specs/008-engagement-execution/tasks.md) and
 [validation guide](specs/008-engagement-execution/quickstart.md) for reviewed delivery
 logs/time, milestones, RAID/changes, effort forecasts, handoff/outcomes and bounded
-Turi explanations. The user confirmed `mcteer`-only approval. Implementation is in
-progress: the foundation, activity/milestone review, approved time/actuals, reviewed registers
-baseline reconciliation, exact effort forecasts, reviewer-only utilization and evidenced
-handoff/closeout/outcomes have local domain and four-project WebKit evidence
-(T001–T049). Governed advice, exact retained-payload cleanup and the native evaluation
-harness now have 46 focused assertions and three desktop WebKit journeys
-(T050–T061). The complete regression/browser matrix, load, matched recovery,
-actual-model review and release gates remain pending.
+Turi explanations. The user confirmed `mcteer`-only approval. The implementation includes activity and milestone review, approved time and actuals,
+RAID and scope registers, baseline reconciliation, deterministic effort forecasts,
+reviewer-only utilization, evidenced handoff/closeout/outcomes, bounded native Turi
+explanations and exact leased payload cleanup. The
+[validation log](specs/008-engagement-execution/validation.md) records the current
+local checks, full release gates, actual-model review and Preview status. These
+local results do not establish hosted workflow acceptance.
 No speculative eve integrations have been installed. The configured model is
 unchanged. Protected Previews run the app and have basic hosted smoke checks;
 full hosted workflow readiness remains release work.

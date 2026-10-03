@@ -12,7 +12,7 @@ assertDeterministicTestMode();
 const suites = ["unit", "contracts", "integration"].flatMap(group => readdirSync(resolve("tests", group))
   // This legacy case requires an externally prepared native conversation and
   // would otherwise silently skip. Owned staffing recovery is a separate gate.
-  .filter(name => name.endsWith(".test.ts") && !name.startsWith("staffing-") && name !== "runtime-restart.test.ts")
+  .filter(name => name.endsWith(".test.ts") && !name.startsWith("staffing-") && !name.startsWith("execution-") && name !== "runtime-restart.test.ts")
   .map(name => `tests/${group}/${name}`));
 const plans = suites.filter(file => file.startsWith("tests/integration/plan-"));
 const earlier = suites.filter(file => !plans.includes(file));
@@ -36,6 +36,13 @@ async function runSubset(name: string, files: string[], environment: NodeJS.Proc
 }
 try {
   await withStaffingEvalEnvironment(async environment => {
+    // The scanner tag may have been rebuilt by another owned feature gate.
+    // Attest fresh images/assets inside this owned store rather than borrowing
+    // a stale shared 004 manifest or changing the configured application store.
+    const artifacts = spawnSync(process.execPath, ["--import", "tsx", "scripts/prepare-artifacts.ts"], {
+      env: process.env, stdio: "inherit", timeout: 600_000,
+    });
+    if (artifacts.error || artifacts.status !== 0) throw new Error("Owned regression artifact preparation failed");
     await environment.prepareRuntime();
     const appDatabase = process.env.DATABASE_URL_UNPOOLED;
     const sourceDatabaseUrl = process.env.TURAS_TEST_SOURCE_DATABASE_URL;
@@ -53,7 +60,8 @@ try {
       runtimeDatabase.searchParams.set("options", "-c role=turas_runtime");
       const base = { ...process.env, TURAS_APP_ORIGIN: "http://127.0.0.1:3000" };
       earlierResult = await runSubset("earlier", earlier, { ...base, DATABASE_URL: runtimeDatabase.toString(),
-        DATABASE_URL_UNPOOLED: appDatabase, TURAS_TEST_DATABASE_URL: testDatabase, TURAS_OWNED_REGRESSION_SETUP: "1" });
+        DATABASE_URL_UNPOOLED: appDatabase, TURAS_TEST_DATABASE_URL: testDatabase, TURAS_OWNED_REGRESSION_SETUP: "1",
+        TURAS_TEST_ARTIFACT_STORE_ROOT: environment.storeRoot });
       planResult = await runSubset("plans", plans.filter(file => !file.endsWith("/plan-drafting.test.ts")),
         { ...base, DATABASE_URL: testDatabase, DATABASE_URL_UNPOOLED: testDatabase,
           TURAS_TEST_DATABASE_URL: testDatabase, TURAS_OWNED_REGRESSION_SETUP: "0" });
