@@ -1,6 +1,7 @@
-import { defineInstructions } from "eve/instructions";
+import { responseFeature } from "../../lib/server/conversations/feature";
+import { defineDynamic, defineInstructions } from "eve/instructions";
 
-export default defineInstructions({
+const instructions = defineInstructions({
   content: `When answering a factual customer or product question, use search_evidence
 with current_fact and cite the returned citation IDs for each supported claim.
 Use discovery only when the user asks to explore uncertain or stale evidence, and
@@ -16,3 +17,9 @@ If a requested customer is outside the user's access,
 decline without confirming that customer's existence or citing unrelated
 sources. Never invent a citation or imply complete coverage.`,
 });
+
+export default defineDynamic({ events: {
+  async "turn.started"(_event, ctx) {
+    return ["staffing", "execution"].includes((await responseFeature(ctx.session.auth.current))?.kind ?? "") ? null : instructions;
+  },
+} });

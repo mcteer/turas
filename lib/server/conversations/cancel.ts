@@ -1,3 +1,5 @@
+import { conversationFeature } from "./feature";
+import { lockExecutionActor } from "../execution/policy";
 import type { CurrentSession } from "../auth/sessions";
 import { getServerConfig } from "../config";
 import { withTransaction } from "../db/client";
@@ -24,7 +26,12 @@ export async function requestCancellation(
     const marker = await client.query<{schema_version:number}>(
       "SELECT schema_version FROM turas_environment LIMIT 1");
     if ((marker.rows[0]?.schema_version ?? 0) >= 34) {
-      const staffing = await staffingScopeForConversation(client, id);
+      const feature = await conversationFeature(client, id);
+      if (feature.kind === "execution") {
+        if (feature.scope.ownerMembershipId !== session.membershipId) throw hiddenRecord();
+        await lockExecutionActor(client, session, feature.scope.customerId, "read");
+      }
+      const staffing = feature.kind === "staffing" ? feature.scope : null;
       if (staffing) {
         if (staffing.ownerMembershipId !== session.membershipId) throw hiddenRecord();
         await lockStaffingActor(client, session, staffing.mode === "finance" ? "finance" : "operational",
@@ -49,6 +56,11 @@ export async function requestCancellation(
         safe_error_code='cancelled', updated_at=now()
         WHERE response_attempt_id=$1 AND state IN ('prepared','running')`,
       [attempt.rows[0].id]);
+    }
+    if ((marker.rows[0]?.schema_version ?? 0) >= 38) {
+      await client.query(`UPDATE execution_advice_attempts SET state='cancelled',failure_code='cancelled',settled_at=clock_timestamp(),updated_at=clock_timestamp()
+        WHERE response_attempt_id=$1 AND conversation_id=$2 AND environment_id=$3 AND workspace_id=$4 AND owner_membership_id=$5 AND state IN ('prepared','running','unconfirmed')`,
+        [attempt.rows[0].id,id,getServerConfig().TURAS_ENVIRONMENT_ID,session.workspaceId,session.membershipId]);
     }
     if ((marker.rows[0]?.schema_version ?? 0) >= 34) {
       await client.query(`UPDATE staffing_advisory_attempts SET state='cancelled',failure_code='cancelled',

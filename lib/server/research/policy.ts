@@ -1,3 +1,4 @@
+import { conversationFeature } from "../conversations/feature";
 import { isIP } from "node:net";
 import type { PoolClient } from "pg";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
@@ -48,6 +49,8 @@ export async function lockResearchOwner(client: PoolClient,actor: CurrentSession
   customerId: string,conversationId: string) {
   await assertRetrievalReady(client);
   const bound = await lockOwnedBinding(client,actor,conversationId);
+  if ((await conversationFeature(client,conversationId)).kind !== "normal")
+    throw new HttpFailure(409,"conversation_already_bound","Research requires its own conversation");
   if (bound.customer_id !== customerId || bound.binding_state !== "bound" ||
       !bound.eve_session_id) throw hiddenRecord();
   return bound;

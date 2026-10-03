@@ -4,34 +4,44 @@ exports.up = pgm => {
       workspace_id uuid NOT NULL REFERENCES workspaces(id), customer_id uuid NOT NULL, engagement_id uuid NOT NULL,
       conversation_id uuid NOT NULL UNIQUE REFERENCES conversations(id), owner_membership_id uuid NOT NULL,
       baseline_id uuid NOT NULL, generation bigint NOT NULL CHECK(generation>=1), from_date date NOT NULL, to_date date NOT NULL,
-      created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(id,environment_id,workspace_id),
+      created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(id,environment_id,workspace_id), UNIQUE(id,conversation_id,owner_membership_id),
       FOREIGN KEY(engagement_id,environment_id,workspace_id,customer_id) REFERENCES engagements(id,environment_id,workspace_id,customer_id),
       FOREIGN KEY(baseline_id,engagement_id) REFERENCES milestone_baselines(id,engagement_id),
       FOREIGN KEY(owner_membership_id,workspace_id) REFERENCES memberships(id,workspace_id), CHECK(to_date BETWEEN from_date AND from_date+90));
     CREATE TABLE execution_advice_attempts(id uuid PRIMARY KEY, environment_id text NOT NULL REFERENCES turas_environment(environment_id),
-      workspace_id uuid NOT NULL REFERENCES workspaces(id), binding_id uuid NOT NULL, conversation_id uuid NOT NULL REFERENCES conversations(id),
+      workspace_id uuid NOT NULL REFERENCES workspaces(id), binding_id uuid NOT NULL UNIQUE, conversation_id uuid NOT NULL UNIQUE REFERENCES conversations(id),
       owner_membership_id uuid NOT NULL, request_key uuid NOT NULL, request_digest text NOT NULL CHECK(request_digest ~ '^[a-f0-9]{64}$'),
       response_attempt_id uuid UNIQUE REFERENCES response_attempts(id), native_request_id uuid, response_id text, native_turn_id text,
       state text NOT NULL DEFAULT 'prepared' CHECK(state IN ('prepared','running','completed','failed','cancelled','expired','unconfirmed')),
       model_steps integer NOT NULL DEFAULT 0 CHECK(model_steps BETWEEN 0 AND 6), read_calls integer NOT NULL DEFAULT 0 CHECK(read_calls BETWEEN 0 AND 6),
       context_bytes integer NOT NULL DEFAULT 0 CHECK(context_bytes BETWEEN 0 AND 24576), dependency_count integer NOT NULL DEFAULT 0 CHECK(dependency_count BETWEEN 0 AND 200),
-      dispatch_at timestamptz, deadline_at timestamptz, settled_at timestamptz, created_at timestamptz NOT NULL DEFAULT now(),
+      dispatch_at timestamptz, deadline_at timestamptz, settled_at timestamptz, failure_code text CHECK(failure_code ~ '^[a-z][a-z0-9_]{0,79}$'),
+      updated_at timestamptz NOT NULL DEFAULT now(), created_at timestamptz NOT NULL DEFAULT now(),
       UNIQUE(id,environment_id,workspace_id), UNIQUE(environment_id,workspace_id,owner_membership_id,request_key),
       FOREIGN KEY(binding_id,environment_id,workspace_id) REFERENCES execution_advice_bindings(id,environment_id,workspace_id),
+      FOREIGN KEY(binding_id,conversation_id,owner_membership_id) REFERENCES execution_advice_bindings(id,conversation_id,owner_membership_id),
       FOREIGN KEY(owner_membership_id,workspace_id) REFERENCES memberships(id,workspace_id));
+    CREATE TABLE execution_advice_instruction_payloads(attempt_id uuid PRIMARY KEY REFERENCES execution_advice_attempts(id),
+      instruction text NOT NULL CHECK(length(instruction) BETWEEN 1 AND 4000 AND octet_length(instruction)<=16384));
     CREATE TABLE execution_advice_dependencies(id uuid PRIMARY KEY, attempt_id uuid NOT NULL REFERENCES execution_advice_attempts(id),
       kind text NOT NULL CHECK(length(kind) BETWEEN 1 AND 80), dependency_id uuid NOT NULL, revision_id uuid,
-      generation bigint NOT NULL CHECK(generation>=1), content_digest text NOT NULL CHECK(content_digest ~ '^[a-f0-9]{64}$'),
+      generation bigint NOT NULL CHECK(generation>=0), content_digest text NOT NULL CHECK(content_digest ~ '^[a-f0-9]{64}$'),
       UNIQUE(attempt_id,kind,dependency_id));
     CREATE TABLE execution_advice_reads(id uuid PRIMARY KEY, attempt_id uuid NOT NULL REFERENCES execution_advice_attempts(id),
       call_id text NOT NULL CHECK(length(call_id) BETWEEN 1 AND 200), tool_name text NOT NULL CHECK(tool_name IN ('execution_summary','execution_records','execution_effort','load_skill')),
-      bytes integer NOT NULL CHECK(bytes BETWEEN 0 AND 24576), content_digest text NOT NULL CHECK(content_digest ~ '^[a-f0-9]{64}$'),
-      created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(attempt_id,call_id));
+      ordinal integer NOT NULL CHECK(ordinal BETWEEN 1 AND 6), request_digest text NOT NULL CHECK(request_digest ~ '^[a-f0-9]{64}$'),
+      created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(attempt_id,call_id), UNIQUE(attempt_id,ordinal));
+    CREATE TABLE execution_advice_read_results(receipt_id uuid PRIMARY KEY REFERENCES execution_advice_reads(id),
+      bytes integer NOT NULL CHECK(bytes BETWEEN 0 AND 24576),content_digest text NOT NULL CHECK(content_digest ~ '^[a-f0-9]{64}$'),
+      created_at timestamptz NOT NULL DEFAULT now());
+    CREATE TABLE execution_advice_read_payloads(receipt_id uuid PRIMARY KEY REFERENCES execution_advice_read_results(receipt_id),
+      result jsonb NOT NULL CHECK(octet_length(result::text)<=65536));
     CREATE TABLE execution_advice_steps(id uuid PRIMARY KEY, attempt_id uuid NOT NULL REFERENCES execution_advice_attempts(id),
       ordinal integer NOT NULL CHECK(ordinal BETWEEN 1 AND 6), step_token text NOT NULL CHECK(length(step_token) BETWEEN 1 AND 200),
       created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(attempt_id,ordinal), UNIQUE(attempt_id,step_token));
     CREATE TABLE execution_advice_usage(id uuid PRIMARY KEY, attempt_id uuid NOT NULL REFERENCES execution_advice_attempts(id),
-      step_id uuid NOT NULL UNIQUE REFERENCES execution_advice_steps(id), input_tokens bigint CHECK(input_tokens BETWEEN 0 AND 9007199254740991),
+      step_id uuid NOT NULL UNIQUE REFERENCES execution_advice_steps(id), native_event_id text UNIQUE,
+      event_type text CHECK(event_type IN ('step.completed','step.failed')), emitted_at timestamptz, input_tokens bigint CHECK(input_tokens BETWEEN 0 AND 9007199254740991),
       output_tokens bigint CHECK(output_tokens BETWEEN 0 AND 4096), outcome text NOT NULL CHECK(outcome IN ('confirmed','unknown','failed','cancelled')),
       created_at timestamptz NOT NULL DEFAULT now());
     CREATE TABLE execution_cleanup_jobs(id uuid PRIMARY KEY, environment_id text NOT NULL REFERENCES turas_environment(environment_id),
@@ -54,19 +64,26 @@ exports.up = pgm => {
           (EXISTS(SELECT 1 FROM planning_conversation_bindings WHERE conversation_id=c.id)
           OR EXISTS(SELECT 1 FROM staffing_conversation_bindings WHERE conversation_id=c.id)
           OR EXISTS(SELECT 1 FROM response_attempts WHERE conversation_id=c.id)
-          OR EXISTS(SELECT 1 FROM research_requests WHERE conversation_id=c.id AND state IN ('draft','admitted')))) THEN
+          OR EXISTS(SELECT 1 FROM submitted_messages WHERE conversation_id=c.id)
+          OR EXISTS(SELECT 1 FROM event_projections WHERE conversation_id=c.id)
+          OR EXISTS(SELECT 1 FROM research_requests WHERE conversation_id=c.id))) THEN
         RAISE EXCEPTION 'conversation already bound or populated' USING ERRCODE='23514'; END IF;
-      IF TG_TABLE_NAME='execution_advice_bindings' AND
-        (NEW.workspace_id<>c.workspace_id OR NEW.environment_id<>c.environment_id OR
+      IF TG_TABLE_NAME='execution_advice_bindings' THEN
+      IF (c.context_audience IS DISTINCT FROM 'internal' OR NEW.customer_id IS DISTINCT FROM c.customer_id OR NEW.workspace_id<>c.workspace_id OR NEW.environment_id<>c.environment_id OR
          NOT EXISTS(SELECT 1 FROM memberships WHERE id=NEW.owner_membership_id AND principal_id=c.owner_principal_id AND workspace_id=c.workspace_id)) THEN
         RAISE EXCEPTION 'conversation ownership mismatch' USING ERRCODE='23514'; END IF;
+      END IF;
       RETURN NEW; END $$;
     CREATE TRIGGER execution_bind_exclusive BEFORE INSERT ON execution_advice_bindings FOR EACH ROW EXECUTE FUNCTION turas_execution_binding_exclusive();
     CREATE TRIGGER planning_execution_exclusive BEFORE INSERT ON planning_conversation_bindings FOR EACH ROW EXECUTE FUNCTION turas_execution_binding_exclusive();
     CREATE TRIGGER staffing_execution_exclusive BEFORE INSERT ON staffing_conversation_bindings FOR EACH ROW EXECUTE FUNCTION turas_execution_binding_exclusive();
     CREATE TRIGGER research_execution_exclusive BEFORE INSERT OR UPDATE ON research_requests FOR EACH ROW EXECUTE FUNCTION turas_execution_binding_exclusive();
   `);
-  for (const name of ['execution_advice_bindings','execution_advice_dependencies','execution_advice_reads','execution_advice_steps','execution_advice_usage'])
+  pgm.sql(`CREATE TRIGGER execution_advice_read_payloads_no_update BEFORE UPDATE ON execution_advice_read_payloads
+    FOR EACH ROW EXECUTE FUNCTION turas_execution_immutable();`);
+  pgm.sql(`CREATE TRIGGER execution_advice_instruction_payloads_no_update BEFORE UPDATE ON execution_advice_instruction_payloads
+    FOR EACH ROW EXECUTE FUNCTION turas_execution_immutable();`);
+  for (const name of ['execution_advice_bindings','execution_advice_dependencies','execution_advice_reads','execution_advice_read_results','execution_advice_steps','execution_advice_usage'])
     pgm.sql(`CREATE TRIGGER ${name}_immutable BEFORE UPDATE OR DELETE ON ${name} FOR EACH ROW EXECUTE FUNCTION turas_execution_immutable();`);
   pgm.sql(`CREATE TRIGGER execution_advice_attempts_identity BEFORE UPDATE OR DELETE ON execution_advice_attempts FOR EACH ROW
     EXECUTE FUNCTION turas_execution_identity('id','environment_id','workspace_id','binding_id','conversation_id','owner_membership_id','request_key','request_digest');`);

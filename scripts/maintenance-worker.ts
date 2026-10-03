@@ -13,6 +13,7 @@ import { requireStaffingEnvironment } from "../lib/server/staffing/repository";
 import { withTransaction } from "../lib/server/db/client";
 import { runPlanCleanupTick } from "../lib/server/plans/cleanup";
 import { expireStaffingReservations } from "../lib/server/staffing/reservations";
+import { settleDueExecutionAdvisories } from "../lib/server/execution/maintenance";
 import { settleDueStaffingAdvisories } from "../lib/server/staffing/advisory-maintenance";
 
 const rawOrigin = process.env.TURAS_EVE_INTERNAL_ORIGIN;
@@ -25,6 +26,7 @@ if (origin.protocol !== "http:" || origin.hostname !== "127.0.0.1" ||
 
 const path = "/internal/turas/maintenance";
 const workerId = randomUUID();
+let executionScanning = false;
 let scanning = false;
 let stopping = false;
 let retrievalScanning = false;
@@ -40,6 +42,7 @@ function fatal(): void {
   clearInterval(workforceTimer);
   clearInterval(workforceCleanupTimer);
   clearInterval(workforceHeartbeatTimer);
+  clearInterval(executionTimer);
   void closeRuntimePool().finally(() => process.exit(1));
 }
 
@@ -108,6 +111,11 @@ const workforceHeartbeatTimer = setInterval(() => {
   void withTransaction(db => requireStaffingEnvironment(db, false)).then(() => heartbeatWorkforceWorker())
     .catch(() => undefined).finally(() => { workforceHeartbeatBusy = false; });
 }, 5_000);
+const executionTimer = setInterval(() => {
+  if (stopping || executionScanning) return;
+  executionScanning = true;
+  void settleDueExecutionAdvisories().catch(() => undefined).finally(() => { executionScanning = false; });
+}, 5_000);
 const retrievalTimer = setInterval(() => {
   if (stopping || retrievalScanning) return;
   retrievalScanning = true;
@@ -134,6 +142,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
     clearInterval(workforceTimer);
     clearInterval(workforceCleanupTimer);
     clearInterval(workforceHeartbeatTimer);
+  clearInterval(executionTimer);
     void closeRuntimePool().finally(() => process.exit());
   });
 }

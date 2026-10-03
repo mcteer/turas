@@ -27,6 +27,17 @@ export async function readExecutionSummary(actor:ExecutionActor,engagementId:str
     await lockExecutionActor(db,actor,customerId,"read");await chargeExecutionRate(db,actor,"read");});
   return executionTransaction(async db=>{
     await db.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ");
+    const selected=await selectExecutionSummarySnapshot(db,actor,engagementId,period),summary=selected.summary,id=randomUUID();
+    await db.query(`INSERT INTO execution_calculation_receipts(id,environment_id,workspace_id,customer_id,engagement_id,generation,formula_version,input_digest,from_date,to_date,as_of,actor_membership_id)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,[id,process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,selected.view.customerId,engagementId,summary.generation,EXECUTION_EFFORT_VERSION,summary.receipt.inputDigest,period.from,period.to,summary.asOf,actor.membershipId]);
+    return {...summary,receipt:{...summary.receipt,id}};
+  });
+}
+/** Shared internal read for a live authorized transaction. Native callers must
+ * separately prove their admitted scope, persist budgets and fence dependencies.
+ * This function cannot be selected through a request flag and never charges an
+ * interactive read while holding the plan/source snapshot locks. */
+export async function selectExecutionSummarySnapshot(db:PoolClient,actor:ExecutionActor,engagementId:string,period:{from:string;to:string}){
     const customerId=await executionCustomer(db,actor,engagementId);await lockExecutionActor(db,actor,customerId,"read");
     const selected=(await db.query(`SELECT r.id,r.kind,r.baseline_id,v.id AS revision_id,v.content_digest,v.revision_number
       FROM execution_records r JOIN execution_record_revisions v ON v.id=r.accepted_revision_id
@@ -63,15 +74,13 @@ export async function readExecutionSummary(actor:ExecutionActor,engagementId:str
     const evidenceAge=[];
     for(const ref of sources.values()){const observed=await observationDate(db,ref);evidenceAge.push({kind:ref.kind,sourceRevisionId:ref.sourceRevisionId,observationDate:observed,ageDays:observed&&observed<=today?(Date.parse(today)-Date.parse(observed))/86400000:null});}
     const inputDigest=executionDigest({engagementId,baselineId:view.baselineId,generation:view.generation,asOf,period,records:records.map(r=>({id:r.id,revisionId:r.revisionId,contentDigest:r.contentDigest,reviewRequired:r.reviewRequired})),effort:selectedEffort.inputs,milestones:view.milestones.map(m=>({id:m.id,version:m.version,state:m.state}))});
-    const id=randomUUID();await db.query(`INSERT INTO execution_calculation_receipts(id,environment_id,workspace_id,customer_id,engagement_id,generation,formula_version,input_digest,from_date,to_date,as_of,actor_membership_id)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,[id,process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,customerId,engagementId,view.generation,EXECUTION_EFFORT_VERSION,inputDigest,period.from,period.to,asOf,actor.membershipId]);
     const provenance=view.reviewRequired?null:(await db.query("SELECT content->'workPackages' AS packages FROM milestone_baseline_payloads WHERE baseline_id=$1",[view.baselineId])).rows[0]?.packages;
-    return {engagementId,baselineId:view.baselineId,generation:view.generation,asOf,period,state:view.state,reviewRequired:view.reviewRequired,
-      receipt:{id,inputDigest,formulaVersion:EXECUTION_EFFORT_VERSION,generation:view.generation},effort:selectedEffort.effort,
+    return {inputs:{records:selected,baselines,references,effort:selectedEffort.inputs,milestones:view.milestones.map(m=>({id:m.id,version:m.version,state:m.state})),
+      status:{counts,blockers,overdue,unknownDates,eligibleRecords:eligibleRecords.map(r=>r.revisionId)}},records,view,summary:{engagementId,baselineId:view.baselineId,generation:view.generation,asOf,period,state:view.state,reviewRequired:view.reviewRequired,
+      receipt:{inputDigest,formulaVersion:EXECUTION_EFFORT_VERSION,generation:view.generation},effort:selectedEffort.effort,
       planEffortProvenance:(provenance??[]).map((p:{key:string;effort:unknown})=>({key:p.key,effort:p.effort})),
       status:{milestoneCounts:counts,blockers,overdue,unknownDates,latestActivity:activities[0]?{id:activities[0].id,title:activities[0].content!.title,eventDate:activities[0].content!.eventDate}:null,evidenceAge,
-        reviewRequiredRecords:records.filter(r=>r.reviewRequired).length}};
-  });
+        reviewRequiredRecords:records.filter(r=>r.reviewRequired).length}}};
 }
 async function observationDate(db:PoolClient,ref:ExecutionSource):Promise<string|null>{
   let result:unknown=null;

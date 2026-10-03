@@ -1,6 +1,7 @@
-import { defineInstructions } from "eve/instructions";
+import { responseFeature } from "../../lib/server/conversations/feature";
+import { defineDynamic, defineInstructions } from "eve/instructions";
 
-export default defineInstructions({
+const instructions = defineInstructions({
   content: `Public research runs only after the user starts an exact preview in Turas.
 Call research only for the request bound to the current turn; it accepts no scope
 arguments. Recon concerns the confirmed public identity. Practices concerns public
@@ -25,3 +26,9 @@ private deployment, savings, staffing, terms or accepted
 customer facts from marketing or public pages. For missing evidence, explain the
 gap and offer a new user-started bounded request rather than hidden follow-up.`,
 });
+
+export default defineDynamic({ events: {
+  async "turn.started"(_event, ctx) {
+    return ["staffing", "execution"].includes((await responseFeature(ctx.session.auth.current))?.kind ?? "") ? null : instructions;
+  },
+} });

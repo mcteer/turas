@@ -1,3 +1,4 @@
+import { conversationFeature } from "../conversations/feature";
 import { createHash, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
@@ -27,7 +28,12 @@ function stableJson(value: unknown): string {
 
 export async function captureAttemptContext(client: PoolClient, actor: CurrentSession,
   conversationId: string, attemptId: string, customerId: string): Promise<Snapshot> {
-  const staffing = await staffingScopeForConversation(client, conversationId);
+  const feature = await conversationFeature(client, conversationId);
+  if (feature.kind === "execution") {
+    const { captureExecutionInitialContext } = await import("../execution/initial-context");
+    return captureExecutionInitialContext(client, actor, conversationId, attemptId);
+  }
+  const staffing = feature.kind === "staffing" ? feature.scope : null;
   if (staffing) {
     if (staffing.ownerMembershipId !== actor.membershipId || staffing.customerId !== customerId) throw hiddenRecord();
     await lockStaffingActor(client, actor, staffing.mode === "finance" ? "finance" : "operational", { customerId });
@@ -99,7 +105,14 @@ export async function readCurrentAttemptContext(client: PoolClient, attemptId: s
   if (general) return general;
   const owned = (await client.query<{ conversation_id: string }>(`SELECT a.conversation_id FROM response_attempts a
     JOIN conversations c ON c.id=a.conversation_id WHERE a.id=$1 AND c.owner_principal_id=$2`, [attemptId, principalId])).rows[0];
-  if (owned && await staffingScopeForConversation(client, owned.conversation_id)) {
+  const feature = owned ? await conversationFeature(client, owned.conversation_id) : null;
+  if (feature?.kind === "execution") {
+    const { boundExecutionToolActor } = await import("../execution/tool-actor");
+    const { readChargedExecutionSnapshot } = await import("../execution/initial-context");
+    const bound = await boundExecutionToolActor(client, { principalId, attributes: { turasAttemptId: attemptId } }, { release: true, allowUnclaimedTurn: true });
+    return (await readChargedExecutionSnapshot(client, bound)).snapshot;
+  }
+  if (feature?.kind === "staffing") {
     throw new HttpFailure(503, "staffing_native_unavailable", "Staffing explanation context is not available");
   }
   const receipt = await client.query<{ snapshot: Snapshot; snapshot_digest: string;

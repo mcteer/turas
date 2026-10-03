@@ -1,3 +1,6 @@
+import { projectExecutionNativeEventInTransaction, type ExecutionNativeProjection } from "../execution/native-events";
+import { recordExecutionTelemetry } from "../execution/telemetry";
+import { conversationFeature } from "./feature";
 import type { PoolClient } from "pg";
 import { withTransaction } from "../db/client";
 import { messageDigest } from "./dispatch";
@@ -8,7 +11,7 @@ import { planningScopeForConversation } from "../plans/context";
 import { assertPlanConversationFence } from "../plans/fences";
 import { boundToolActor } from "../profiles/tool-actor";
 import { staffingScopeForConversation } from "../staffing/context";
-import { prepareStaffingReleaseForNative, type StaffingNativeRelease } from "../staffing/native-release";
+import { prepareGovernedReleaseForNative, type GovernedNativeRelease } from "./native-release";
 import { projectStaffingNativeEventInTransaction, staffingMetadataEvent, type StaffingNativeProjection } from "../staffing/native-events";
 import { recordStaffingTelemetry } from "../staffing/telemetry";
 
@@ -49,21 +52,21 @@ export async function projectNativeEvent(
   const staffing = await withTransaction(async client => {
     const row = (await client.query(`SELECT conversation_id FROM response_attempts a JOIN conversations c ON c.id=a.conversation_id
       WHERE a.id=$1 AND c.eve_session_id=$2 AND c.binding_state='bound'`, [attemptId, nativeSessionId])).rows[0];
-    return row ? staffingScopeForConversation(client, row.conversation_id) : null;
+    return row ? ["staffing", "execution"].includes((await conversationFeature(client, row.conversation_id)).kind) : false;
   });
-  const prepared = staffing && !staffingMetadataEvent(event.type) ? await prepareStaffingReleaseForNative(nativeSessionId,
+  const prepared = staffing && !staffingMetadataEvent(event.type) ? await prepareGovernedReleaseForNative(nativeSessionId,
     { responseAttemptId: attemptId, incomingTurnId: event.type === "message.received" && typeof event.data?.turnId === "string" ? event.data.turnId : undefined }) : null;
   const started = performance.now();
   const projection = await withTransaction((client) =>
     projectNativeEventInTransaction(client, nativeSessionId, attemptId, event, streamIndex, prepared));
-  if (projection?.usage) recordStaffingTelemetry({ operation: "model", outcome: "committed", ...projection.usage,
+  if (projection?.usage) ("execution" in projection ? recordExecutionTelemetry : recordStaffingTelemetry)({ operation: "model", outcome: "committed", ...projection.usage,
     durationMs: Math.min(86_400_000, Math.max(0, performance.now() - started)) });
 }
 
 export async function projectNativeEventInTransaction(
   client: PoolClient, nativeSessionId: string, attemptId: string,
-  event: NativeEvent, streamIndex?: number, preparedStaffing?: StaffingNativeRelease | null,
-): Promise<void | StaffingNativeProjection> {
+  event: NativeEvent, streamIndex?: number, preparedStaffing?: GovernedNativeRelease | null,
+): Promise<void | StaffingNativeProjection | ExecutionNativeProjection> {
   if (!visibleTypes.has(event.type)) return;
   if (!event.meta.id?.startsWith("evt_") || !event.meta.at ||
       !Number.isFinite(Date.parse(event.meta.at))) {
@@ -78,8 +81,10 @@ export async function projectNativeEventInTransaction(
     JOIN conversations c ON c.id=a.conversation_id WHERE a.id=$1 AND c.eve_session_id=$2 AND c.binding_state='bound'`,
     [attemptId, nativeSessionId])).rows[0];
   if (!owned) throw new Error("Native attempt association unavailable");
-  const staffingProjection = await projectStaffingNativeEventInTransaction(client, nativeSessionId, attemptId, event, streamIndex, preparedStaffing);
+  const staffingProjection = await projectStaffingNativeEventInTransaction(client, nativeSessionId, attemptId, event, streamIndex, preparedStaffing?.kind === "staffing" ? preparedStaffing : null);
   if (staffingProjection) return staffingProjection;
+  const executionProjection = await projectExecutionNativeEventInTransaction(client, nativeSessionId, attemptId, event, streamIndex, preparedStaffing?.kind === "execution" ? preparedStaffing : null);
+  if (executionProjection) return executionProjection;
   {
     if (["message.appended","message.completed"].includes(event.type)) {
       const scope=await client.query<{conversation_id:string;owner_principal_id:string}>(`

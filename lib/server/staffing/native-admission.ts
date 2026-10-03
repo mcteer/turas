@@ -13,7 +13,7 @@ const changed = () => new HttpFailure(409, "staffing_context_changed", "Staffing
 /** Production paid-step admission requires the charged initial snapshot and its
  * exact owned native injection. Neither a synthetic response identity nor a
  * caller-supplied partial dependency callback can authorize a provider call. */
-export async function admitGovernedStaffingModelStep(principal: Principal,
+export async function admitStaffingNativeModelStep(principal: Principal,
   identity: { nativeSessionId: string; responseAttemptId: string; turnId: string; stepIndex: number }) {
   const prepared = await prepareStaffingNativeFence(principal);
   return withTransaction(async db => {
@@ -47,7 +47,7 @@ export async function admitGovernedStaffingModelStep(principal: Principal,
 
 /** A previously admitted call must still own the current native step and exact
  * injection at provider release. This never increments the paid-step counter. */
-export async function assertGovernedStaffingProviderRelease(principal: Principal,
+export async function assertStaffingNativeProviderRelease(principal: Principal,
   identity: { nativeSessionId: string; responseAttemptId: string; turnId: string; stepIndex: number }) {
   const prepared = await prepareStaffingNativeFence(principal);
   return withTransaction(async db => {
@@ -66,4 +66,15 @@ export async function assertGovernedStaffingProviderRelease(principal: Principal
     if (!receipt || receipt.eve_session_id !== identity.nativeSessionId || receipt.ordinal !== identity.stepIndex + 1 ||
       receipt.snapshot_digest !== charged.digest) throw changed();
   });
+}
+
+/** Compatibility imports used by the unchanged root agent. Every dispatch uses
+ * the explicit server-owned feature; no staffing scope is inferred for execution. */
+export async function admitGovernedStaffingModelStep(principal: Principal, identity: import("../execution/native-admission").ExecutionModelIdentity) {
+  const { admitGovernedModelStep } = await import("../conversations/model-admission");
+  return admitGovernedModelStep(principal, identity);
+}
+export async function assertGovernedStaffingProviderRelease(principal: Principal, identity: import("../execution/native-admission").ExecutionModelIdentity) {
+  const { assertGovernedProviderRelease } = await import("../conversations/model-admission");
+  return assertGovernedProviderRelease(principal, identity);
 }

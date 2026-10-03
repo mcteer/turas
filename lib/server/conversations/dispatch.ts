@@ -1,3 +1,5 @@
+import { prepareExecutionNativeAttempt, claimExecutionNativeDispatch } from "../execution/native-dispatch";
+import { conversationFeature } from "./feature";
 import { createHash, randomUUID } from "node:crypto";
 import type { CurrentSession } from "../auth/sessions";
 import { getServerConfig } from "../config";
@@ -12,7 +14,7 @@ import { canonicalArtifactSendDigest, captureArtifactDraft,
 import { planningScopeForConversation } from "../plans/context";
 import { staffingScopeForConversation } from "../staffing/context";
 import { prepareStaffingNativeAttempt, claimStaffingNativeDispatch } from "../staffing/native-dispatch";
-import { prepareStaffingNativeRelease, assertStaffingNativeRelease } from "../staffing/native-release";
+import { prepareGovernedNativeRelease, assertGovernedNativeRelease } from "./native-release";
 import { staffingSha256 } from "../staffing/commands";
 import type { PoolClient } from "pg";
 import { captureGeneralContext } from "./general-context";
@@ -36,10 +38,10 @@ export async function prepareAttempt(
   session: CurrentSession, conversationId: string, nativeSessionId: string,
   requestKey: string, rawText: string, selections: readonly DraftSelection[] = [],
   existingClient?: PoolClient,
-): Promise<{ attemptId: string; created: boolean; dispatchState: string; staffing?: boolean }> {
-  const staffing = existingClient ? await staffingScopeForConversation(existingClient, conversationId)
-    : await withTransaction(db => staffingScopeForConversation(db, conversationId));
-  if (staffing) return { ...await prepareStaffingNativeAttempt(session, conversationId, nativeSessionId, requestKey, rawText, selections.length > 0, existingClient), staffing: true };
+): Promise<{ attemptId: string; created: boolean; dispatchState: string; governed?: boolean }> {
+  const feature = existingClient ? await conversationFeature(existingClient, conversationId) : await withTransaction(db => conversationFeature(db, conversationId));
+  if (feature.kind === "execution") return { ...await prepareExecutionNativeAttempt(session, conversationId, nativeSessionId, requestKey, rawText, selections.length > 0, existingClient), governed: true };
+  if (feature.kind === "staffing") return { ...await prepareStaffingNativeAttempt(session, conversationId, nativeSessionId, requestKey, rawText, selections.length > 0, existingClient), governed: true };
   const text = normalizeMessageText(rawText);
   if (!text.trim()) throw new HttpFailure(422, "invalid_message", "Message required");
   if (Buffer.byteLength(text, "utf8") > 16 * 1024) {
@@ -50,6 +52,10 @@ export async function prepareAttempt(
     const environmentId = getServerConfig().TURAS_ENVIRONMENT_ID;
     await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [environmentId]);
     const conversation = await lockOwnedBinding(client, session, conversationId);
+    // A first feature binder can win after the metadata preflight. Never let
+    // an ordinary send cross that committed scope under the conversation lock.
+    if (["execution", "staffing"].includes((await conversationFeature(client, conversationId)).kind))
+      throw new HttpFailure(409, "conversation_already_bound", "Use the bound workflow to start this explanation");
     if (conversation.customer_id === null && (selections.length || process.env.TURAS_GENERAL_CHAT_DISABLED === "1")) {
       throw new HttpFailure(422,"general_scope_only","Customer sources require a customer-scoped conversation");
     }
@@ -156,7 +162,9 @@ export async function claimDispatch(
   if (!Number.isSafeInteger(dispatchStartIndex) || dispatchStartIndex < 0) {
     throw new HttpFailure(503, "invalid_native_cursor", "Service unavailable");
   }
-  if (await withTransaction(db => staffingScopeForConversation(db, conversationId))) {
+  const feature = await withTransaction(db => conversationFeature(db, conversationId));
+  if (feature.kind === "execution") return claimExecutionNativeDispatch(session, conversationId, attemptId, dispatchStartIndex);
+  if (feature.kind === "staffing") {
     return claimStaffingNativeDispatch(session, conversationId, attemptId, dispatchStartIndex);
   }
   return withTransaction(async (client) => {
@@ -188,9 +196,9 @@ export async function claimDispatch(
 export async function getAttemptReceipt(
   session: CurrentSession, conversationId: string, attemptId: string,
 ): Promise<Response | null> {
-  const prepared = await prepareStaffingNativeRelease(conversationId, { actor: session, responseAttemptId: attemptId, allowUnclaimedTurn: true });
+  const prepared = await prepareGovernedNativeRelease(conversationId, { actor: session, responseAttemptId: attemptId, allowUnclaimedTurn: true });
   return withTransaction(async (client) => {
-    if (prepared) await assertStaffingNativeRelease(client, prepared, session);
+    if (prepared) await assertGovernedNativeRelease(client, prepared, session);
     else await lockOwnedBinding(client, session, conversationId);
     const result = await client.query<{
       dispatch_state: string; native_receipt: unknown; native_response_status: number | null;
@@ -226,7 +234,8 @@ export async function recordNativePreAdmissionRejection(
       WHERE id = $1 AND conversation_id = $3 AND dispatch_state = 'dispatching'`,
     [attemptId, JSON.stringify(receipt), conversationId]);
     if (!changed.rowCount) throw new HttpFailure(409, "dispatch_claimed", "Dispatch state changed");
-    if (await staffingScopeForConversation(client, conversationId)) await client.query(`UPDATE staffing_advisory_attempts SET state='failed',
+    const governedFeature = await conversationFeature(client, conversationId);
+    if (governedFeature.kind === "staffing" || governedFeature.kind === "execution") await client.query(`UPDATE ${governedFeature.kind === "staffing" ? "staffing_advisory_attempts" : "execution_advice_attempts"} SET state='failed',
       failure_code='native_pre_admission_rejected',settled_at=clock_timestamp(),updated_at=clock_timestamp()
       WHERE response_attempt_id=$1 AND conversation_id=$2 AND state='running'`, [attemptId, conversationId]);
     await client.query(`UPDATE watchdog_jobs SET state = 'settled', updated_at = now()
@@ -250,9 +259,9 @@ export async function recordNativeReceipt(
   for (const [key, value] of nativeResponse.headers) {
     if (key === "content-type" || key.startsWith("x-eve-")) headers[key] = value;
   }
-  const prepared = await prepareStaffingNativeRelease(conversationId, { actor: session, responseAttemptId: attemptId, allowUnclaimedTurn: true });
+  const prepared = await prepareGovernedNativeRelease(conversationId, { actor: session, responseAttemptId: attemptId, allowUnclaimedTurn: true });
   await withTransaction(async (client) => {
-    if (prepared) await assertStaffingNativeRelease(client, prepared, session);
+    if (prepared) await assertGovernedNativeRelease(client, prepared, session);
     else await lockOwnedBinding(client, session, conversationId);
     if (prepared) {
       const prior = (await client.query(`SELECT native_receipt,native_response_status,native_response_headers FROM response_attempts
@@ -286,7 +295,8 @@ export async function markDispatchUncertain(
       last_error_code = $2, updated_at = now(), revision = revision + 1
       WHERE id = $1 AND conversation_id = $3 AND dispatch_state = 'dispatching'`,
     [attemptId, code, conversationId]);
-    if (await staffingScopeForConversation(client, conversationId)) await client.query(`UPDATE staffing_advisory_attempts SET state='unconfirmed',
+    const governedFeature = await conversationFeature(client, conversationId);
+    if (governedFeature.kind === "staffing" || governedFeature.kind === "execution") await client.query(`UPDATE ${governedFeature.kind === "staffing" ? "staffing_advisory_attempts" : "execution_advice_attempts"} SET state='unconfirmed',
       failure_code='native_completion_unconfirmed',settled_at=clock_timestamp(),updated_at=clock_timestamp()
       WHERE response_attempt_id=$1 AND conversation_id=$2 AND state='running'`, [attemptId, conversationId]);
   });
@@ -300,14 +310,14 @@ export async function deriveNativeAttempt(
       JOIN conversations c ON c.id=a.conversation_id WHERE c.eve_session_id=$1 AND c.owner_principal_id=$2 AND c.environment_id=$3
       AND sm.request_key=$4 AND a.dispatch_state='dispatching'`,
       [nativeSessionId, session.principalId, getServerConfig().TURAS_ENVIRONMENT_ID, requestKey])).rows[0];
-    return row && await staffingScopeForConversation(db, row.conversation_id) ? row as { id: string; conversation_id: string } : null;
+    return row && ["staffing", "execution"].includes((await conversationFeature(db, row.conversation_id)).kind) ? row as { id: string; conversation_id: string } : null;
   });
   if (staffingAttempt) {
-    const prepared = await prepareStaffingNativeRelease(staffingAttempt.conversation_id,
+    const prepared = await prepareGovernedNativeRelease(staffingAttempt.conversation_id,
       { actor: session, nativeSessionId, responseAttemptId: staffingAttempt.id, allowUnclaimedTurn: true });
     if (!prepared) throw hiddenRecord();
     return withTransaction(async db => {
-      await assertStaffingNativeRelease(db, prepared, session);
+      await assertGovernedNativeRelease(db, prepared, session);
       const row = (await db.query(`SELECT a.dispatch_state,sm.body_digest,sm.request_key FROM response_attempts a
         JOIN submitted_messages sm ON sm.id=a.message_id WHERE a.id=$1 AND a.conversation_id=$2`,
         [staffingAttempt.id, staffingAttempt.conversation_id])).rows[0];

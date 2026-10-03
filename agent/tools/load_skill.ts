@@ -1,3 +1,5 @@
+import { responseFeature } from "../../lib/server/conversations/feature";
+import { runExecutionRead } from "../../lib/server/execution/tools";
 import { defineTool } from "eve/tools";
 import { loadSkill } from "eve/tools/load_skill";
 import { z } from "zod";
@@ -9,6 +11,8 @@ export default defineTool({ ...loadSkill,
   outputSchema: z.string(),
   availableInSubagents: false,
   async execute(input, ctx) {
+    if ((await responseFeature(ctx.session.auth.current))?.kind === "execution")
+      return z.string().parse(await runExecutionRead(ctx.session.auth.current, "load_skill", input, ctx.callId));
     if (await authorizeStaffingSkill(ctx.session.auth.current, input.skill)) {
       return loadStaffingSkill(ctx.session.auth.current, ctx.callId);
     }

@@ -1,3 +1,4 @@
+import { assertFreshFeatureConversation, conversationFeature } from "../conversations/feature";
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
@@ -27,7 +28,7 @@ export async function staffingScopeForConversation(db: PoolClient, conversationI
  * Capture alone is insufficient: existing/uncertain sessions can reach history,
  * reconnect, event projection or an exact dispatch replay without capture. */
 export async function rejectUnbridgedStaffingNative(db: PoolClient, conversationId: string) {
-  if (await staffingScopeForConversation(db, conversationId)) {
+  if (["staffing", "execution"].includes((await conversationFeature(db, conversationId)).kind)) {
     throw new HttpFailure(503, "staffing_native_unavailable", "Staffing explanation context is not available");
   }
 }
@@ -80,6 +81,7 @@ export async function createFreshStaffingConversation(db: PoolClient, actor: Sta
     creation_operation_id,binding_state,title,context_audience,context_generation,context_snapshot_schema,context_login_session_id,context_membership_id)
     VALUES($1,$2,$3,$4,$5,$6,'unbound','Staffing explanation','delivery',$7,'customer-context-v1',$8,$9)`,
     [conversationId, env, actor.workspaceId, demand.customerId, actor.principalId, operationId, state.delivery_generation, actor.sessionId, actor.membershipId]);
+  await assertFreshFeatureConversation(db,conversationId);
   await db.query(`INSERT INTO staffing_conversation_bindings(id,environment_id,workspace_id,conversation_id,
     owner_membership_id,customer_id,workload_id,demand_id,demand_revision_id,mode,scenario_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
     [bindingId, env, actor.workspaceId, conversationId, actor.membershipId, demand.customerId, demand.workloadId, demand.demandId, demand.revisionId, mode, scenarioId]);

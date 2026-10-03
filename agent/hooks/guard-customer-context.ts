@@ -2,7 +2,9 @@ import { defineHook } from "eve/hooks";
 import { withTransaction } from "../../lib/server/db/client";
 import { readCurrentAttemptContext } from "../../lib/server/profiles/attempt-context";
 import { readCurrentArtifactDraft } from "../../lib/server/artifacts/context";
-import { readStaffingInitialContext, staffingResponseScope } from "../../lib/server/staffing/native-context";
+import { readStaffingInitialContext } from "../../lib/server/staffing/native-context";
+import { readExecutionInitialContext } from "../../lib/server/execution/initial-context";
+import { responseFeature } from "../../lib/server/conversations/feature";
 
 export default defineHook({
   events: {
@@ -12,7 +14,12 @@ export default defineHook({
       if (typeof attemptId !== "string" || !principal?.principalId) {
         throw new Error("Customer context was not bound to this turn");
       }
-      if (await staffingResponseScope(principal)) {
+      const feature = await responseFeature(principal);
+      if (feature?.kind === "execution") {
+        await readExecutionInitialContext(principal, event.data.turnId, ctx.session.id, false);
+        return;
+      }
+      if (feature?.kind === "staffing") {
         await readStaffingInitialContext(principal, event.data.turnId, ctx.session.id, false);
         return;
       }

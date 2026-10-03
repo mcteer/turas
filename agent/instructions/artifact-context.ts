@@ -1,3 +1,4 @@
+import { responseFeature } from "../../lib/server/conversations/feature";
 import { defineDynamic, defineInstructions } from "eve/instructions";
 import { withTransaction } from "../../lib/server/db/client";
 import { readCurrentAttemptContext } from "../../lib/server/profiles/attempt-context";
@@ -10,6 +11,7 @@ export default defineDynamic({
         typeof event.data === "object" && event.data !== null && "turnId" in event.data &&
         typeof event.data.turnId === "string" ? event.data.turnId : null;
       const principal = ctx.session.auth.current;
+      if (["staffing", "execution"].includes((await responseFeature(principal))?.kind ?? "")) return null;
       const attemptId = principal?.attributes?.turasAttemptId;
       if (typeof attemptId !== "string" || !principal?.principalId || !turnId) {
         throw new Error("Artifact context is unavailable");

@@ -8,11 +8,12 @@ import { ExecutionReview } from './review';
 import { ExecutionTime } from './time';
 import {ExecutionForecast} from './forecast';
 import {ExecutionHandoff} from './handoff';
+import { ExecutionAdvisory } from './advisory';
 import { ExecutionChanges } from './changes';
 import type {Overview,RecordView,Session,Owner,Candidate} from './types';
 async function get<T>(url:string,signal?:AbortSignal):Promise<T>{const response=await fetch(url,{cache:'no-store',signal}),body=await response.json();if(!response.ok||!body.data)throw Object.assign(new Error(body.error?.message??'Execution unavailable'),{status:response.status});return body.data as T;}
 export function ExecutionOverview({customerId,engagementId}:{customerId:string;engagementId:string}){
-  const sections=['Activity','Time','Milestones','Registers','Forecast','Handoff'] as const;
+  const sections=['Activity','Time','Milestones','Registers','Forecast','Handoff','Turi'] as const;
   const [section,setSection]=useState<(typeof sections)[number]>('Activity'),[switching,setSwitching]=useState(false);
   const [session,setSession]=useState<Session|null>(null),[view,setView]=useState<Overview|null>(null),[records,setRecords]=useState<RecordView[]>([]),[owners,setOwners]=useState<Owner[]>([]),[message,setMessage]=useState(''),[showContent,setShowContent]=useState(false),[candidate,setCandidate]=useState<Candidate|null>(null),[cursor,setCursor]=useState<string|null>(null);
   const readAbort=useRef<AbortController|null>(null);
@@ -68,6 +69,7 @@ export function ExecutionOverview({customerId,engagementId}:{customerId:string;e
         {section==='Time'&&<ExecutionTime view={view} records={records} save={save} disabled={disabled} onReview={openReview}/>}
         {section==='Milestones'&&<ExecutionMilestones view={view} records={records} owners={owners} disabled={disabled} save={save} onReview={openReview}/>}
         {section==='Forecast'&&<ExecutionForecast view={view} owners={owners} session={session} disabled={disabled} save={save} onReview={openReview}/>}
+        {section==='Turi'&&<ExecutionAdvisory view={view} session={session}/>}
         {section==='Handoff'&&<ExecutionHandoff view={view} owners={owners} session={session} disabled={disabled} save={save} onReview={openReview}/>}
         {section==='Registers'&&<ExecutionChanges view={view} activities={records} owners={owners} session={session} disabled={disabled} save={save} onReview={openReview}/>}
         </div>

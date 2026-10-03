@@ -413,3 +413,70 @@ Presentation follow-up: desktop light passed **3/3**, zero skips/retries/flakes
 (`ui-B6YrHB`), digest `cadd075ef77ccec4d70c604242bca4b4a19107178fd8407393c99fd336a4352b`.
 Typecheck, documentation consistency and `git diff --check` passed.
 Outcome captures were also visually inspected in desktop light and mobile dark.
+
+
+## US5 Native Advice Checkpoint (T050–T057)
+
+Implemented the shared conversation feature discriminator, strict fresh owned
+execution admission, reciprocal database guards, admitted context/dependency
+closure, three read tools plus the charged procedure, actual provider admission,
+per-release source fences and metadata-only usage reconciliation. The root
+`agent/agent.ts` remains unchanged. The dynamic procedure follows the existing
+007 layout: `agent/skills/execution-explanation.ts` registers it and
+`agent/skill-procedures/execution-explanation/SKILL.md` preserves authored text.
+Eve rejects a dynamic module and `skills/.../SKILL.md` with the same name;
+`deterministic-NXk2S6` records that failed registration run.
+
+The expanded reciprocal/race contract checks exposed a PostgreSQL trigger that
+referenced an execution-only field on a research row (`deterministic-XWizaS`).
+An explicit trigger-table branch fixes that error. Eight contract assertions
+passed at `5f161bb44a6af1ac83cf74328cc67364eb2d8e291101285e976aa26283f36510`.
+
+The first working native run (`deterministic-TEX8vb`) passed six cases, then
+correctly failed because interrupted advice remained running. Added bounded
+metadata maintenance: at its deadline a dispatched request becomes unconfirmed,
+without inventing usage or redispatching. Native terminal proof can still settle
+it. This implements only the advice-deadline part of T059; leased retention
+cleanup is still pending.
+
+At source digest
+`695a9df1ca965933b4e27453e4ddf7f953bb00b0bb52bc4243ac26b7aeb14447`:
+
+- `--advice`: **4 suites / 17 assertions passed**, zero failures/skips,
+  `deterministic-yHlBzA`. Eight actual native lifecycle cases use an isolated
+  deterministic provider and the real Eve HTTP/session/stream path.
+- Actual provider instrumentation recorded the exact four-tool catalog,
+  <=4096 output tokens per call, <=120-second deadline and one durable admission
+  per step. Normal two-step usage was 22 input / 14 output tokens.
+- Withdrawal denies attached chunks, saved history, reconnect, native POST replay
+  and admission replay. New reviewed blockers invalidate consumed absence.
+- Six procedure loads exhaust the shared read budget; generic context and research
+  paths remain denied. No ordinary profile-read quota or forbidden write effect.
+- Native cancellation suppresses content immediately; terminal confirmation in
+  this fixture arrived through watchdog reconciliation (~135 seconds including
+  startup). Restart became unconfirmed at its real deadline (~132 seconds
+  including startup), retained null unknown usage, and never called the provider
+  again. Disabled/revoked authority blocks output while metadata remains governed.
+- `--forecast`: **6 suites / 22 assertions passed**, `deterministic-TPE0CQ`,
+  including the complete governed journey and summary/ordinary-read lock-order
+  regression after extracting the shared internal summary snapshot.
+
+All checks above used owned disposable clones. No paid evaluation, hosted 008
+migration, production change or deployment has run. T058 browser validation,
+T059 retention work and all remaining release gates are pending.
+
+### T058: focused US5 desktop WebKit checkpoint
+
+- `ui-YOqVoK` first observed the safe cancelled-history 404 where the test
+  expected 409; corrected the expectation and asserted no model content. Visual
+  inspection also caught and fixed a stale running notice on completed advice.
+- `ui-gr6dpc`: desktop light, **3/3 passed**, zero skips/retries/flakes; source
+  `bfcda7452860b2eb768ae0dd99b367fdcfe4e0dcd1b25ab755556dd1260c1292`.
+  Normal native explanation/reload, source withdrawal, durable stop/reload and
+  actual lost preparation acknowledgement all passed keyboard, axe and overflow
+  checks. Inspected completed, stopped and unconfirmed screenshots.
+- Recovery of a lost preparation acknowledgement makes zero model calls until
+  the explicit Send action. The UI unconfirmed projection used an advanced owned
+  deadline; the separate native restart test proves the actual 120-second bound.
+- This is focused desktop evidence. The complete light/dark desktop/mobile
+  matrix remains T066. No hosted or paid-model claim follows from this checkpoint.

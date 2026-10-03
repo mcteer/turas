@@ -42,12 +42,13 @@ export async function selectExecutionEffort(db:PoolClient,actor:ExecutionActor,e
     FROM staffing_allocation_days day JOIN staffing_allocations a ON a.id=day.allocation_id AND a.state='confirmed' AND a.confirmed_revision_id=day.revision_id
     JOIN staffing_allocation_revisions v ON v.id=day.revision_id JOIN staffing_demand_revisions r ON r.id=v.demand_revision_id JOIN staffing_demands d ON d.id=v.demand_id
     WHERE r.engagement_id=$1 AND day.service_date BETWEEN $3 AND $4`,[engagementId,baselineId,period.from,period.to])).rows[0];
-  const tentative=(await db.query(`SELECT COALESCE(SUM((day->>'minutes')::integer),0)::text AS minutes FROM staffing_allocations a
+  const tentative=(await db.query(`SELECT COALESCE(SUM((day->>'minutes')::integer),0)::text AS minutes,
+    COALESCE(string_agg(v.id::text||'/'||a.aggregate_version::text||'/'||a.reservation_expires_at::text||'/'||day::text,'|' ORDER BY a.id,day->>'date'),'') AS identity FROM staffing_allocations a
     JOIN staffing_allocation_revisions v ON v.id=a.current_revision_id JOIN staffing_demand_revisions r ON r.id=v.demand_revision_id
     JOIN staffing_allocation_payloads payload ON payload.revision_id=v.id CROSS JOIN LATERAL jsonb_array_elements(payload.content->'days') day
     WHERE r.engagement_id=$1 AND a.state='tentative' AND a.reservation_expires_at>clock_timestamp() AND (day->>'date')::date BETWEEN $2 AND $3`,[engagementId,period.from,period.to])).rows[0];
   const actualIdentity=(await db.query(`SELECT encode(sha256(convert_to(COALESCE(string_agg(entry_id::text||'/'||revision_id::text||'/'||decision_id::text||'/'||minutes::text,'|' ORDER BY entry_id),''),'UTF8')),'hex') AS digest
     FROM execution_actual_days WHERE engagement_id=$1`,[engagementId])).rows[0].digest;
   return {effort:{...result,plannedPeriodMinutes:planned.minutes,tentativePeriodMinutes:tentative.minutes,plannedReviewRequired:planned.review_required||!baselineCurrent},
-    inputs:{heads,mutations,actualDigest:actualIdentity,plannedIdentity:planned.identity,tentativeMinutes:tentative.minutes,reconciledAt:reconciled}};
+    inputs:{heads,mutations,actualDigest:actualIdentity,plannedIdentity:planned.identity,tentativeMinutes:tentative.minutes,tentativeIdentity:tentative.identity,reconciledAt:reconciled}};
 }

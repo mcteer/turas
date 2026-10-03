@@ -1,3 +1,4 @@
+import { getServerConfig } from "../config";
 import type { PoolClient } from "pg";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
 import { profileListQuerySchema } from "../../contracts/profiles";
@@ -582,4 +583,23 @@ export async function listCustomerStewards(actor: ProfileActor, customerId: stri
       version: Number(row.version), assignedAt: row.assigned_at.toISOString() })) };
   };
   return existingClient ? run(existingClient) : withTransaction(run);
+}
+
+/** Execution's admitted identity path has no caller-controlled quota flag. It
+ * validates the durable owned attempt before reading current customer identity;
+ * accepted engagement evidence is selected by the execution domain separately. */
+export async function readAdmittedExecutionIdentity(client: PoolClient, actor: ProfileActor, attemptId: string) {
+  const row = (await client.query(`SELECT b.customer_id,c.context_generation,c.context_audience,c.context_login_session_id,
+    c.context_membership_id FROM execution_advice_attempts a JOIN execution_advice_bindings b ON b.id=a.binding_id
+    JOIN conversations c ON c.id=a.conversation_id WHERE a.id=$1 AND a.environment_id=$2 AND a.workspace_id=$3
+    AND a.owner_membership_id=$4 AND b.owner_membership_id=a.owner_membership_id AND b.conversation_id=c.id
+    AND c.owner_principal_id=$5 AND a.state IN ('prepared','running','completed')`,
+    [attemptId, getServerConfig().TURAS_ENVIRONMENT_ID, actor.workspaceId, actor.membershipId, actor.principalId])).rows[0];
+  if (!row || actor.kind !== "internal" || row.context_login_session_id !== actor.sessionId || row.context_membership_id !== actor.membershipId || row.context_audience !== "internal") throw hiddenRecord();
+  await lockProfileActor(client, actor, row.customer_id, undefined, true);
+  const identity = (await client.query(`SELECT c.id,c.display_name,c.synthetic,s.internal_generation FROM customer_references c
+    JOIN customer_profile_state s ON s.customer_id=c.id AND s.workspace_id=c.workspace_id WHERE c.id=$1 AND c.workspace_id=$2 FOR SHARE OF c,s`, [row.customer_id, actor.workspaceId])).rows[0];
+  if (!identity || identity.internal_generation !== row.context_generation) throw new HttpFailure(409, "source_changed", "Execution explanation inputs changed");
+  return { customer: { id: identity.id as string, displayName: identity.display_name as string, synthetic: identity.synthetic as boolean },
+    contextVersion: identity.internal_generation as string };
 }

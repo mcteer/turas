@@ -1,6 +1,6 @@
 # 008 implementation and validation handoff
 
-**Implementation in progress.** T001–T049 have local checkpoint evidence in
+**Implementation in progress.** T001–T058 have local checkpoint evidence in
 [validation.md](validation.md). Commands and gates below describe the complete
 feature target; an implemented command or a narrow pass does not establish a later
 gate. Full regression, load, recovery, live-output and Preview gates remain pending.

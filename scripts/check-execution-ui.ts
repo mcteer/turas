@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { mkdir, mkdtemp, writeFile, chmod, readdir, lstat } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { installExecutionNativeFixture } from "../tests/fixtures/execution/native";
 import { withExecutionEvalEnvironment } from "./execution-eval-environment";
 import { assertDeterministicTestMode } from "../tests/fixtures/runtime";
 import { executionUiDiscovery, verifyExecutionUiReport } from "./execution-ui-report";
@@ -51,7 +52,10 @@ for (const project of selectedProject ? [selectedProject] : projects) {
   for (const [caseIndex, testCase] of cases.entries()) {
   await withExecutionEvalEnvironment(async environment => {
   await environment.prepareRuntime();
-  if (!focused || focusMode === "--us5") throw new Error("Execution native UI fixture must be implemented before the complete gate");
+  const nativeCase = testCase.file.endsWith("execution-advisory.spec.ts");
+  if (nativeCase) await installExecutionNativeFixture(environment);
+  const priorNativeReady = process.env.TURAS_EXECUTION_NATIVE_FIXTURE_READY;
+  process.env.TURAS_EXECUTION_NATIVE_FIXTURE_READY = nativeCase ? "1" : "0";
   const ownerUrl = process.env.DATABASE_URL!;
   const runtimeUrl = new URL(ownerUrl);
   runtimeUrl.searchParams.set("options", "-c role=turas_runtime");
@@ -81,7 +85,7 @@ for (const project of selectedProject ? [selectedProject] : projects) {
     }
     await unchanged();
     for (const key of ["expected", "unexpected", "skipped", "flaky"] as const) total[key] += counts[key];
-  } finally { await environment.stop(); }
+  } finally { await environment.stop(); if(priorNativeReady===undefined) delete process.env.TURAS_EXECUTION_NATIVE_FIXTURE_READY; else process.env.TURAS_EXECUTION_NATIVE_FIXTURE_READY=priorNativeReady; }
 });
   }
 }
