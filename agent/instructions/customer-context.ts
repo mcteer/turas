@@ -1,7 +1,7 @@
 import { defineDynamic, defineInstructions } from "eve/instructions";
 import { withTransaction } from "../../lib/server/db/client";
 import { readCurrentAttemptContext } from "../../lib/server/profiles/attempt-context";
-import { staffingResponseScope } from "../../lib/server/staffing/native-context";
+import { responseFeature } from "../../lib/server/conversations/feature";
 
 export default defineDynamic({
   events: {
@@ -15,7 +15,8 @@ export default defineDynamic({
         throw new Error("Customer context is unavailable");
       }
       // Staffing has its own charged delivery-only instruction resolver.
-      if (await staffingResponseScope(principal)) return null;
+      const feature = await responseFeature(principal);
+      if (feature?.kind === "staffing" || feature?.kind === "execution") return null;
       return withTransaction(async (client) => {
         const snapshot = await readCurrentAttemptContext(client, attemptId, principal.principalId);
         if (snapshot.contractVersion === "general-context-v1") {

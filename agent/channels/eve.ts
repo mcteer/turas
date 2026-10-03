@@ -4,13 +4,14 @@ import { getCurrentSession } from "../../lib/server/auth/sessions";
 import { composeEveRoutes } from "../../lib/server/conversations/eve-routes";
 import { deriveNativeAttempt } from "../../lib/server/conversations/dispatch";
 import { HttpFailure } from "../../lib/contracts/http";
+import { authorizeExecutionRetirement } from "../../lib/server/execution/native-retirement";
 import { authorizeNativeRetirement } from "../../lib/server/artifacts/native-retirement";
 
 const appCookieAuth: AuthFn<Request> = async (request): Promise<Awaited<ReturnType<AuthFn<Request>>>> => {
   const retirementSession = new URL(request.url).pathname.match(/^\/eve\/v1\/session\/(wrun_[A-Za-z0-9_-]+)\/reset$/);
   if (request.method === "POST" && retirementSession) {
-    const principalId = await authorizeNativeRetirement(request,retirementSession[1]);
-    if (principalId) return { authenticator: "turas-artifact-retirement",
+    const principalId = await authorizeNativeRetirement(request,retirementSession[1]) ?? await authorizeExecutionRetirement(request,retirementSession[1]);
+    if (principalId) return { authenticator: "turas-source-retirement",
       principalId, principalType: "user", attributes: {} };
   }
   const session = await getCurrentSession(request);

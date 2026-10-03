@@ -51,7 +51,7 @@ describe("artifact upload HTTP contract", () => {
     await chmod(storeRoot, 0o700);
     await writeFile(join(storeRoot, ".turas-artifact-store.json"),
       JSON.stringify({ environmentId: process.env.TURAS_TEST_ENVIRONMENT_ID }), { mode: 0o600 });
-    const prepared = join(process.cwd(), "local-artifacts/004/store");
+    const prepared = process.env.TURAS_TEST_ARTIFACT_STORE_ROOT ?? join(process.cwd(), "local-artifacts/004/store");
     await writeFile(join(storeRoot, "runtime-images.json"),
       await readFile(join(prepared, "runtime-images.json")), { mode: 0o600 });
     for (const directory of ["signatures", "assets"]) {

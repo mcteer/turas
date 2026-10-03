@@ -1,0 +1,44 @@
+import {it,expect} from "vitest";
+import {saveRegister,submitRegister,reviewRegister,raidRecord} from "../fixtures/execution/registers";
+import {handoffRecord,referenceTo,waiveMilestones} from "../fixtures/execution/handoff";
+import {timeFixture,draftTime,submitTime,timeCandidate,decideTime,timeCommand} from "../fixtures/execution/time";
+import {readExecutionOverview,readExecutionRecords,submitExecutionCommand} from "../../lib/server/execution/service";
+import {readExecutionTime} from "../../lib/server/execution/time";
+import {withTransaction} from "../../lib/server/db/client";
+it("requires reviewed acknowledgement, resolved blockers, completed milestones and no pending time; late actuals and source loss require reclose",async()=>{
+  const f=await timeFixture(),reference=referenceTo(f.activity),handoff=handoffRecord(reference);
+  let delivery=await submitRegister(f,await saveRegister(f,handoff));await reviewRegister(f,delivery);
+  let concern=await submitRegister(f,await saveRegister(f,{...raidRecord(),raidType:"issue",severity:"critical"}));await reviewRegister(f,concern);
+  const closure=()=>({...handoff,kind:"closeout",title:"Synthetic closeout",handoffRevisionId:delivery.revisionId});
+  let close=await submitRegister(f,await saveRegister(f,closure()));
+  await expect(reviewRegister(f,close)).rejects.toMatchObject({status:422});
+  await waiveMilestones(f);
+  // An accepted handoff without acknowledged receiving evidence still blocks.
+  await expect(reviewRegister(f,close)).rejects.toMatchObject({status:422});
+  delivery=(await readExecutionRecords(f.author,f.engagementId,{recordId:delivery.id})).records[0];
+  const acknowledged={...handoff,acknowledgement:{state:"recorded",eventDate:f.date,evidenceReferenceIds:[reference.id]}};
+  delivery=await submitRegister(f,await saveRegister(f,acknowledged,delivery));await reviewRegister(f,delivery);
+  // Reject the old submitted closeout explicitly, then author its corrected revision.
+  await reviewRegister(f,close,"record.reject");close=(await readExecutionRecords(f.author,f.engagementId,{recordId:close.id})).records[0];
+  close=await submitRegister(f,await saveRegister(f,{...acknowledged,kind:"closeout",handoffRevisionId:delivery.revisionId},close));
+  await expect(reviewRegister(f,close)).rejects.toMatchObject({status:422});
+  concern=(await readExecutionRecords(f.author,f.engagementId,{recordId:concern.id})).records[0];
+  concern=await submitRegister(f,await saveRegister(f,{...raidRecord(),raidType:"issue",severity:"critical",status:"resolved",references:[reference]},concern));await reviewRegister(f,concern);
+  let time=await submitTime(f,await draftTime(f));
+  await expect(reviewRegister(f,close)).rejects.toMatchObject({status:422});
+  await decideTime(f,await timeCandidate(f,[time]));await reviewRegister(f,close);
+  expect((await readExecutionOverview(f.reviewer,f.engagementId)).state).toBe("closed");
+  time=(await readExecutionTime(f.author,f.engagementId,f.period)).entries[0];
+  const view=await readExecutionOverview(f.author,f.engagementId);
+  await expect(submitExecutionCommand(f.author,f.engagementId,timeCommand("time.revise",{execution:view.version,time:time.version},{entryId:time.id,time:{...f.time,minutes:45}}))).rejects.toMatchObject({status:403});
+  await submitExecutionCommand(f.reviewer,f.engagementId,timeCommand("time.revise",{execution:view.version,time:time.version},{entryId:time.id,time:{...f.time,minutes:45,onBehalfRationale:"Reviewer transcribes the documented late correction"}}));
+  time=await submitTime(f,(await readExecutionTime(f.reviewer,f.engagementId,f.period)).entries[0],f.reviewer);
+  await decideTime(f,await timeCandidate(f,[time],"time.approve",{on_behalf:"Human verifies original contributor attribution",unplanned:"Human confirms the historical work",unknown_capacity:"Human confirms UTC historical date",post_closeout:"Human accepts a late numerical correction"}));
+  expect((await readExecutionOverview(f.reviewer,f.engagementId)).state).toBe("review_required");
+  close=(await readExecutionRecords(f.author,f.engagementId,{recordId:close.id})).records[0];
+  close=await submitRegister(f,await saveRegister(f,{...acknowledged,kind:"closeout",handoffRevisionId:delivery.revisionId},close));await reviewRegister(f,close);
+  expect((await readExecutionOverview(f.reviewer,f.engagementId)).state).toBe("closed");
+  const activity=(await readExecutionRecords(f.reviewer,f.engagementId,{recordId:f.activity.id})).records[0];await reviewRegister(f,activity,"record.retract");
+  expect((await readExecutionOverview(f.reviewer,f.engagementId)).state).toBe("review_required");
+  await withTransaction(async db=>{expect((await db.query("SELECT SUM(minutes)::text AS n FROM execution_actual_days WHERE engagement_id=$1",[f.engagementId])).rows[0].n).toBe("45");expect((await db.query("SELECT 1 FROM execution_record_payloads WHERE revision_id=$1",[close.revisionId])).rowCount).toBe(1);});
+},180000);

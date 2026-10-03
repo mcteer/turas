@@ -1,3 +1,5 @@
+import { readExecutionAdviceStatus } from "../execution/advisory-status";
+import { conversationFeature } from "./feature";
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { z } from "zod";
@@ -10,7 +12,7 @@ import { lockProfileActor, lockWorkspaceActor } from "../profiles/policy";
 import { assertRetrievalDependenciesCurrent } from "../retrieval/fences";
 import { assertPlanConversationFence } from "../plans/fences";
 import { staffingScopeForConversation } from "../staffing/context";
-import { prepareStaffingNativeRelease, assertStaffingNativeRelease } from "../staffing/native-release";
+import { prepareGovernedNativeRelease, assertGovernedNativeRelease } from "./native-release";
 import { readStaffingAdvisoryStatus } from "../staffing/advisory-status";
 
 type ConversationRow = {
@@ -298,13 +300,13 @@ export async function getOwnedAttemptStatus(
   watchdogState: string | null;
 }> {
   await getOwnedConversation(session, conversationId);
-  const staffing = await withTransaction(db => staffingScopeForConversation(db, conversationId));
-  if (staffing) {
+  const feature = await withTransaction(db => conversationFeature(db, conversationId));
+  if (feature.kind === "staffing" || feature.kind === "execution") {
     if (!z.uuid().safeParse(requestKey).success) throw hiddenRecord();
-    const attempt = (await query<{ id: string }>(`SELECT id FROM staffing_advisory_attempts
-      WHERE conversation_id=$1 AND native_request_id=$2 AND binding_id=$3`, [conversationId, requestKey, staffing.bindingId])).rows[0];
+    const attempt = (await query<{ id: string }>(`SELECT id FROM ${feature.kind === "staffing" ? "staffing_advisory_attempts" : "execution_advice_attempts"}
+      WHERE conversation_id=$1 AND native_request_id=$2 AND binding_id=$3`, [conversationId, requestKey, feature.scope.bindingId])).rows[0];
     if (!attempt) throw hiddenRecord();
-    const status = await readStaffingAdvisoryStatus(session, attempt.id);
+    const status = feature.kind === "execution" ? await readExecutionAdviceStatus(session, attempt.id) : await readStaffingAdvisoryStatus(session, attempt.id);
     if (status.nativeRequestId !== requestKey || !status.responseAttemptId || !status.dispatchState || !status.responseState) throw hiddenRecord();
     return { dispatchState: status.dispatchState, responseState: status.responseState, nativeTurnId: status.nativeTurnId,
       deadlineAt: status.deadlineAt, lastErrorCode: status.failureCode, outputTokens: status.outputTokens, watchdogState: status.watchdogState };
@@ -333,12 +335,12 @@ export async function getOwnedAttemptStatus(
 }
 
 export async function getOwnedConversationDetail(session: CurrentSession, id: string) {
-  const staffing = await withTransaction(db => staffingScopeForConversation(db, id));
-  if (staffing) {
-    const prepared = await prepareStaffingNativeRelease(id, { actor: session });
+  const feature = await withTransaction(db => conversationFeature(db, id));
+  if (feature.kind === "staffing" || feature.kind === "execution") {
+    const prepared = await prepareGovernedNativeRelease(id, { actor: session });
     if (!prepared) throw hiddenRecord();
     return withTransaction(async db => {
-      const bound = await assertStaffingNativeRelease(db, prepared, session);
+      const bound = await assertGovernedNativeRelease(db, prepared, session);
       const row = (await db.query<ConversationRow>("SELECT * FROM conversations WHERE id=$1 AND owner_principal_id=$2", [id, session.principalId])).rows[0];
       if (!row) throw hiddenRecord();
       const events = await db.query<{ native_event_id: string; event_type: string; visible_payload: Record<string, unknown>;
@@ -351,7 +353,7 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
       const submitted = await db.query<{ id: string; text: string; created_at: Date }>(
         "SELECT id,text,created_at FROM submitted_messages WHERE conversation_id=$1 ORDER BY created_at,id LIMIT 101", [id]);
       const now = (await db.query("SELECT clock_timestamp() AS now")).rows[0].now as Date;
-      if (bound.deadlineAt.getTime() <= now.getTime() || bound.actor.expiresAt.getTime() <= now.getTime()) {
+      if (feature.kind === "staffing" && bound.deadlineAt.getTime() <= now.getTime() || bound.actor.expiresAt.getTime() <= now.getTime()) {
         throw new HttpFailure(409, "staffing_advisory_expired", "Staffing output is unavailable");
       }
       return { id: row.id, customerId: row.customer_id, ownerPrincipalId: row.owner_principal_id, title: row.title,

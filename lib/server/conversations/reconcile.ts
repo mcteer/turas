@@ -1,3 +1,5 @@
+import { conversationFeature } from "./feature";
+import { reconcileExecutionNativeEvents } from "../execution/native-reconcile";
 import { withTransaction } from "../db/client";
 import { getServerConfig } from "../config";
 import { messageDigest } from "./dispatch";
@@ -16,9 +18,10 @@ export async function reconcileFromEvents(
     const row = (await db.query(`SELECT a.conversation_id FROM response_attempts a JOIN conversations c ON c.id=a.conversation_id
       WHERE a.id=$1 AND c.eve_session_id=$2 AND c.environment_id=$3`,
       [attemptId, nativeSessionId, getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
-    return row ? staffingScopeForConversation(db, row.conversation_id) : null;
+    return row ? conversationFeature(db, row.conversation_id) : null;
   });
-  if (staffing) return reconcileStaffingNativeEvents(nativeSessionId, attemptId, inputEvents);
+  if (staffing?.kind === "execution") return reconcileExecutionNativeEvents(nativeSessionId, attemptId, inputEvents);
+  if (staffing?.kind === "staffing") return reconcileStaffingNativeEvents(nativeSessionId, attemptId, inputEvents);
   return withTransaction(async (client) => {
     const result = await client.query<{
       conversation_id: string; dispatch_start_index: string | null; input_digest: string;

@@ -54,6 +54,7 @@ export function EngagementDetailView({customerId,engagementId}:{
       <h1>{["readable", "historical_warning"].includes(detail.contentAvailability) ? detail.title : "Review Required"}</h1><p className="muted">Accepted {new Date(detail.acceptedAt).toLocaleString()}</p>
       </div><Link href={`/customers/${customerId}/plans/${detail.planId}`}>Source Plan</Link>
       </header>
+      <Link className="secondary-button" href={`/customers/${customerId}/engagements/${engagementId}/execution`}>Execution Log</Link>
       {staffingAllowed && <Link className="secondary-button" href={`/customers/${customerId}/engagements/${engagementId}/staffing`}>Staffing Demand</Link>}
       {detail.contentAvailability==="historical_warning" && <p role="status" className="profile-caution">
         Evidence dates need review before current use.</p>}

@@ -10,6 +10,7 @@ import { guardNativeStream } from "./stream";
 import { requestCancellation } from "./cancel";
 import { assertNativeContextCurrent, releaseNativeChunk } from "./context-fence";
 import { artifactDraftSelectionSchema } from "../../contracts/artifacts";
+import { authorizeExecutionRetirement } from "../execution/native-retirement";
 import { authorizeNativeRetirement } from "../artifacts/native-retirement";
 
 const createSchema = z.object({ operationId: z.uuid() }).strict();
@@ -186,7 +187,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             headers.delete("x-turas-artifact-selections");
             let nativeResponse: Response | undefined;
             const started = Date.now();
-            const dispatches = prepared.staffing ? 1 : 5;
+            const dispatches = prepared.governed ? 1 : 5;
             for (let retry = 0; retry < dispatches && Date.now() - started < 20_000; retry++) {
               nativeResponse = await native(new Request(request.url, {
                 method: "POST", headers, body: JSON.stringify({ message: text }),
@@ -206,12 +207,12 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
                 if (typeof rejection === "object" && rejection !== null &&
                     "code" in rejection && rejection.code === "session_not_ready") {
                   await recordNativePreAdmissionRejection(session, conversationId!, attemptId, nativeResponse);
-                  if (prepared.staffing) return nativeFailure(new HttpFailure(409, "staffing_native_rejected", "Native admission was rejected; no request was resent"));
+                  if (prepared.governed) return nativeFailure(new HttpFailure(409, "staffing_native_rejected", "Native admission was rejected; no request was resent"));
                   return nativeResponse;
                 }
               }
               await markDispatchUncertain(session, conversationId!, attemptId, "native_rejection");
-              if (prepared.staffing) return nativeFailure(new HttpFailure(409, "staffing_native_unconfirmed", "Native dispatch is unconfirmed; no request was resent"));
+              if (prepared.governed) return nativeFailure(new HttpFailure(409, "staffing_native_unconfirmed", "Native dispatch is unconfirmed; no request was resent"));
               return nativeResponse;
             }
             await recordNativeReceipt(session, conversationId!, attemptId, nativeResponse);
@@ -284,7 +285,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
           try {
             const sessionId = args.params.sessionId;
             if (!sessionId || !/^wrun_[A-Za-z0-9_-]+$/.test(sessionId) ||
-                !await authorizeNativeRetirement(request,sessionId)) return closed();
+                !await authorizeNativeRetirement(request,sessionId) && !await authorizeExecutionRetirement(request,sessionId)) return closed();
             return native(request,args);
           } catch (error) { return nativeFailure(error); }
         } };

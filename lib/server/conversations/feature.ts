@@ -1,0 +1,50 @@
+import type { PoolClient } from "pg";
+import { z } from "zod";
+import { HttpFailure, hiddenRecord } from "../../contracts/http";
+import type { ExecutionAdviceScope } from "../../execution/advice";
+import { getServerConfig } from "../config";
+import { withTransaction } from "../db/client";
+import { planningScopeForConversation, type PlanningScope } from "../plans/context";
+import { staffingScopeForConversation, type StaffingScope } from "../staffing/context";
+
+export type ConversationFeature = { kind: "normal" } | { kind: "planning"; scope: PlanningScope } |
+  { kind: "staffing"; scope: StaffingScope } | { kind: "execution"; scope: ExecutionAdviceScope };
+export type FeaturePrincipal = { principalId?: string; attributes?: Record<string, unknown> } | null | undefined;
+/** Association metadata only. Each content path still performs current authority
+ * and its complete dependency fence. Ambiguous bindings never fall through. */
+export async function conversationFeature(db: PoolClient, conversationId: string): Promise<ConversationFeature> {
+  const conversation = (await db.query("SELECT id FROM conversations WHERE id=$1 AND environment_id=$2", [conversationId, getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
+  if (!conversation) throw hiddenRecord();
+  const marker = Number((await db.query("SELECT schema_version FROM turas_environment LIMIT 1")).rows[0]?.schema_version ?? 0);
+  const planning = await planningScopeForConversation(db, conversationId), staffing = await staffingScopeForConversation(db, conversationId);
+  const execution = marker >= 38 ? (await db.query(`SELECT id,customer_id,owner_membership_id,engagement_id,baseline_id,generation,from_date::text,to_date::text
+    FROM execution_advice_bindings WHERE conversation_id=$1 AND environment_id=$2`, [conversationId, getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0] : null;
+  if ([planning, staffing, execution].filter(Boolean).length > 1) throw new HttpFailure(409, "conversation_feature_conflict", "Conversation scope is unavailable");
+  if (execution) return { kind: "execution", scope: { bindingId: execution.id, conversationId, customerId: execution.customer_id,
+    ownerMembershipId: execution.owner_membership_id, engagementId: execution.engagement_id, baselineId: execution.baseline_id,
+    generation: Number(execution.generation), period: { from: execution.from_date, to: execution.to_date } } };
+  if (staffing) return { kind: "staffing", scope: staffing };
+  if (planning) return { kind: "planning", scope: planning };
+  return { kind: "normal" };
+}
+export async function responseFeature(principal: FeaturePrincipal): Promise<ConversationFeature | null> {
+  const attemptId = principal?.attributes?.turasAttemptId;
+  if (attemptId === undefined) return null;
+  if (!z.uuid().safeParse(attemptId).success || !z.uuid().safeParse(principal?.principalId).success) throw hiddenRecord();
+  return withTransaction(async db => {
+    const row = (await db.query(`SELECT r.conversation_id FROM response_attempts r JOIN conversations c ON c.id=r.conversation_id
+      WHERE r.id=$1 AND c.owner_principal_id=$2 AND c.environment_id=$3`, [attemptId, principal!.principalId, getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
+    if (!row) throw hiddenRecord();
+    return conversationFeature(db, row.conversation_id);
+  });
+}
+/** Must precede the first feature binding. Direct SQL is independently guarded
+ * by the migration trigger using this same conversation-row mutex. */
+export async function assertFreshFeatureConversation(db: PoolClient, conversationId: string) {
+  const row = (await db.query("SELECT id FROM conversations WHERE id=$1 AND environment_id=$2 FOR UPDATE", [conversationId, getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
+  if (!row) throw hiddenRecord();
+  if ((await conversationFeature(db, conversationId)).kind !== "normal" || (await db.query(`SELECT 1 WHERE
+    EXISTS(SELECT 1 FROM submitted_messages WHERE conversation_id=$1) OR EXISTS(SELECT 1 FROM response_attempts WHERE conversation_id=$1)
+    OR EXISTS(SELECT 1 FROM event_projections WHERE conversation_id=$1) OR EXISTS(SELECT 1 FROM research_requests WHERE conversation_id=$1)`, [conversationId])).rowCount)
+    throw new HttpFailure(409, "conversation_already_bound", "Start a fresh conversation for this workflow");
+}

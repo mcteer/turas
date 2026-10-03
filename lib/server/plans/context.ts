@@ -1,3 +1,4 @@
+import { assertFreshFeatureConversation } from "../conversations/feature";
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { HttpFailure,hiddenRecord } from "../../contracts/http";
@@ -26,6 +27,7 @@ export async function createFreshPlanConversation(client:PoolClient,actor:PlanAc
   [conversationId,plan.environment_id,plan.workspace_id,plan.customer_id,
     actor.principalId,operationId,plan.audience,generation,
     actor.sessionId,actor.membershipId]);
+  await assertFreshFeatureConversation(client,conversationId);
   await client.query(`INSERT INTO planning_conversation_bindings
     (conversation_id,environment_id,workspace_id,customer_id,workload_id,
      plan_id,audience,owner_membership_id)

@@ -1,3 +1,4 @@
+import { responseFeature } from "../../lib/server/conversations/feature";
 import { readGeneralAttemptContext } from "../../lib/server/conversations/general-context";
 import { defineDynamic,defineInstructions } from "eve/instructions";
 import { withTransaction } from "../../lib/server/db/client";
@@ -11,6 +12,7 @@ import { planDraftContentSchema } from "../../lib/contracts/plan-content";
 export default defineDynamic({events:{
   async "turn.started"(_event,ctx) {
     const principal=ctx.session.auth.current;
+    if (["staffing", "execution"].includes((await responseFeature(principal))?.kind ?? "")) return null;
     if (!principal?.principalId ||
         typeof principal.attributes?.turasAttemptId!=="string") return null;
     return withTransaction(async(client)=>{

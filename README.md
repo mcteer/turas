@@ -51,6 +51,18 @@ Preview was explicitly upgraded to schema 034 and read-only inspected afterward;
 local unauthenticated app and runtime-role smoke passed. Feature 007 merged in
 [PR 13](https://github.com/mcteer/turas/pull/13) after passing review-head CI.
 Hosted staffing workflow acceptance remains pending.
+Feature 008 has a [specification](specs/008-engagement-execution/spec.md),
+[implementation plan](specs/008-engagement-execution/plan.md),
+[71 implementation tasks](specs/008-engagement-execution/tasks.md) and
+[validation guide](specs/008-engagement-execution/quickstart.md) for reviewed delivery
+logs/time, milestones, RAID/changes, effort forecasts, handoff/outcomes and bounded
+Turi explanations. The user confirmed `mcteer`-only approval. The implementation includes activity and milestone review, approved time and actuals,
+RAID and scope registers, baseline reconciliation, deterministic effort forecasts,
+reviewer-only utilization, evidenced handoff/closeout/outcomes, bounded native Turi
+explanations and exact leased payload cleanup. The
+[validation log](specs/008-engagement-execution/validation.md) records the current
+local checks, full release gates, actual-model review and Preview status. These
+local results do not establish hosted workflow acceptance.
 No speculative eve integrations have been installed. The configured model is
 unchanged. Protected Previews run the app and have basic hosted smoke checks;
 full hosted workflow readiness remains release work.

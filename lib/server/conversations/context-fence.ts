@@ -1,3 +1,4 @@
+import { conversationFeature } from "./feature";
 import type { PoolClient } from "pg";
 import { hiddenRecord, HttpFailure } from "../../contracts/http";
 import type { CurrentSession } from "../auth/sessions";
@@ -10,21 +11,22 @@ import { assertResearchConversationCurrent } from "../research/fences";
 import { planningScopeForConversation } from "../plans/context";
 import { assertPlanConversationFence } from "../plans/fences";
 import { staffingScopeForConversation } from "../staffing/context";
-import { assertStaffingNativeRelease, prepareStaffingReleaseForNative, type StaffingNativeRelease } from "../staffing/native-release";
+import { assertGovernedNativeRelease, prepareGovernedReleaseForNative, type GovernedNativeRelease } from "./native-release";
 
 export async function assertNativeContextCurrentInTransaction(client: PoolClient, session: CurrentSession,
-  nativeSessionId: string, preparedStaffing?: StaffingNativeRelease | null): Promise<void> {
+  nativeSessionId: string, preparedStaffing?: GovernedNativeRelease | null): Promise<void> {
   const lookup = await client.query<{ id: string }>(`
     SELECT id FROM conversations WHERE eve_session_id=$1 AND owner_principal_id=$2
       AND workspace_id=$3 AND environment_id=$4`,
   [nativeSessionId, session.principalId, session.workspaceId,
     getServerConfig().TURAS_ENVIRONMENT_ID]);
   if (!lookup.rows[0]) throw hiddenRecord();
-  if (await staffingScopeForConversation(client, lookup.rows[0].id)) {
+  const feature = await conversationFeature(client, lookup.rows[0].id);
+  if (feature.kind === "staffing" || feature.kind === "execution") {
     if (!preparedStaffing || preparedStaffing.conversationId !== lookup.rows[0].id || preparedStaffing.nativeSessionId !== nativeSessionId) {
-      throw new HttpFailure(503, "staffing_release_preflight_required", "Staffing output requires current source preparation");
+      throw new HttpFailure(503, `${feature.kind}_release_preflight_required`, "Current source preparation is required");
     }
-    await assertStaffingNativeRelease(client, preparedStaffing, session);
+    await assertGovernedNativeRelease(client, preparedStaffing, session);
     return;
   }
   const conversation = await readOwnedBinding(client, session, lookup.rows[0].id);
@@ -59,13 +61,13 @@ export async function assertNativeContextCurrentInTransaction(client: PoolClient
 
 export async function assertNativeContextCurrent(session: CurrentSession,
   nativeSessionId: string): Promise<void> {
-  const prepared = await prepareStaffingReleaseForNative(nativeSessionId, { actor: session });
+  const prepared = await prepareGovernedReleaseForNative(nativeSessionId, { actor: session });
   await withTransaction((client) => assertNativeContextCurrentInTransaction(client, session, nativeSessionId, prepared));
 }
 
 export async function releaseNativeChunk(session: CurrentSession,
   nativeSessionId: string, enqueue: () => void): Promise<void> {
-  const prepared = await prepareStaffingReleaseForNative(nativeSessionId, { actor: session });
+  const prepared = await prepareGovernedReleaseForNative(nativeSessionId, { actor: session });
   await withTransaction(async (client) => {
     await assertNativeContextCurrentInTransaction(client, session, nativeSessionId, prepared);
     enqueue();

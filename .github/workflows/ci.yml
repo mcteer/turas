@@ -134,3 +134,111 @@ jobs:
           TURAS_UI_FIXTURE_DATABASE_URL="$TURAS_TEST_DATABASE_URL" \
           TURAS_UI_BASE_URL="$TURAS_APP_ORIGIN" \
           npm run test:ui -- tests/ui/knowledge.spec.ts tests/ui/research.spec.ts tests/ui/retrieval.spec.ts
+
+  execution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        gate: [deterministic, regressions, webkit]
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - name: Verify pinned vector image
+        run: npm run retrieval:prepare -- --offline
+      - run: npm ci --prefix packages/artifact-extractor
+      - name: Create isolated test configuration
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h 127.0.0.1 -U postgres -c 'CREATE DATABASE turas_ci'
+          psql -h 127.0.0.1 -U postgres -c 'CREATE DATABASE turas_test'
+          runtime_password="$(openssl rand -hex 24)"
+          demo_password="$(openssl rand -hex 20)"
+          panel_password="$(openssl rand -hex 20)"
+          partner_password="$(openssl rand -hex 20)"
+          maintenance_secret="$(openssl rand -hex 32)"
+          for value in "$runtime_password" "$demo_password" "$panel_password" "$partner_password" "$maintenance_secret"; do
+            echo "::add-mask::$value"
+          done
+          psql -h 127.0.0.1 -U postgres -c "CREATE ROLE turas_runtime LOGIN PASSWORD '${runtime_password}'"
+          {
+            echo "DATABASE_URL=postgres://turas_runtime:${runtime_password}@127.0.0.1:5432/turas_ci"
+            echo 'DATABASE_URL_UNPOOLED=postgres://postgres:postgres@127.0.0.1:5432/turas_ci'
+            echo 'TURAS_TEST_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/turas_test'
+            echo 'TURAS_ENVIRONMENT_ID=ci-002'
+            echo 'TURAS_TEST_ENVIRONMENT_ID=test-ci-002'
+            echo 'TURAS_APP_ORIGIN=http://127.0.0.1:3000'
+            echo 'TURAS_DEMO_USERNAME=mcteer'
+            echo 'PANEL_USERNAME=panel'
+            echo 'PARTNER_USERNAME=partner'
+            echo "TURAS_DEMO_PASSWORD=$demo_password"
+            echo "PANEL_PASSWORD=$panel_password"
+            echo "PARTNER_PASSWORD=$partner_password"
+            echo "TURAS_MAINTENANCE_SECRET=$maintenance_secret"
+          } >> "$GITHUB_ENV"
+      - name: Initialize disposable databases
+        run: |
+          npm run db:init
+          npm run db:roles
+          npm run db:bootstrap-demo
+          DATABASE_URL_UNPOOLED="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:init
+          DATABASE_URL_UNPOOLED="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:roles
+          DATABASE_URL="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:bootstrap-demo
+      - name: Prepare isolated artifact fixtures and images
+        run: |
+          echo "TURAS_ARTIFACT_STORE_ROOT=${GITHUB_WORKSPACE}/local-artifacts/004/store" >> "$GITHUB_ENV"
+          TURAS_ARTIFACT_STORE_ROOT="${GITHUB_WORKSPACE}/local-artifacts/004/store" npm run artifacts:prepare
+          npm run artifacts:fixtures
+      - name: Validate feature 008 Spec Kit artifacts
+        env:
+          SPECIFY_FEATURE_DIRECTORY: specs/008-engagement-execution
+          SPECIFY_FEATURE_NO_PERSIST: '1'
+        run: .specify/scripts/bash/check-prerequisites.sh --json --require-spec --require-tasks
+      - name: Complete execution suite manifest
+        if: matrix.gate == 'deterministic'
+        run: npm run test:execution
+      - name: Owned 002–007 regression cohorts
+        if: matrix.gate == 'regressions'
+        run: npm run test:execution:regressions
+      - name: Complete four-project execution UI matrix
+        if: matrix.gate == 'webkit'
+        run: |
+          npx playwright install --with-deps webkit
+          npm run execution:ui:check
+
+      - name: Summarize owned startup failures without private output
+        if: failure()
+        run: |
+          node --input-type=module <<'JS'
+          import { readFile } from 'node:fs/promises';
+          const signatures = ['ENOENT', 'EACCES', 'EADDRINUSE', 'ECONNREFUSED', 'EAGAIN',
+            'ENOMEM', 'ENOSPC', 'Cannot find module', 'Cannot find package',
+            'Module not found', 'TurbopackInternalError', 'panicked at',
+            'Resource temporarily unavailable', 'permission denied',
+            'JavaScript heap out of memory', 'Database environment marker mismatch',
+            'Turas configuration invalid', 'Maintenance unavailable',
+            'WORKFLOW', 'SIGKILL', 'thread'];
+          for (const feature of ['006', '007', '008']) {
+            const log = await readFile(`local-artifacts/${feature}/eval-startup-failure.log`, 'utf8').catch(() => null);
+            if (log !== null) console.log(JSON.stringify({ feature, startupFailure: true,
+              signatures: signatures.filter(value => log.toLowerCase().includes(value.toLowerCase())) }));
+          }
+          JS

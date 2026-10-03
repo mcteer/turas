@@ -1,5 +1,5 @@
 import { generalResponseScope } from "../../lib/server/conversations/general-context";
-import { staffingResponseScope } from "../../lib/server/staffing/native-context";
+import { responseFeature } from "../../lib/server/conversations/feature";
 import { createHash } from "node:crypto";
 import { defineDynamic, defineTool } from "eve/tools";
 import { z } from "zod";
@@ -114,7 +114,7 @@ export const authoredTool = defineTool({
 
 export default defineDynamic({ events: {
   async "turn.started"(_event, ctx) {
-    const scope = await staffingResponseScope(ctx.session.auth.current);
-    return !scope && !await generalResponseScope(ctx.session.auth.current) ? authoredTool : null;
+    const feature = await responseFeature(ctx.session.auth.current);
+    return feature?.kind !== "staffing" && feature?.kind !== "execution" && !await generalResponseScope(ctx.session.auth.current) ? authoredTool : null;
   },
 } });

@@ -22,7 +22,7 @@ function retrievalKind(kind:SourceReference["kind"]):string {
   return kind === "shared_knowledge" ? "published_shared" : kind;
 }
 
-async function lockOriginalHeader(client:PoolClient,
+export async function lockOriginalHeader(client:PoolClient,
   kind:SourceReference["kind"],id:string):Promise<void> {
   let result;
   switch (kind) {

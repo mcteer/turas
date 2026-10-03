@@ -101,3 +101,10 @@ export async function readStaffingDeliveryContext(actor: ProfileActor, customerI
       page: number; complete: boolean; truncated: boolean; knownGaps: string[];
     }>;
 }
+
+/** Only a durable execution attempt can use this quota-independent identity
+ * context. No ordinary profile/research read can select this path via options. */
+export async function readExecutionIdentityContext(actor: ProfileActor, attemptId: string, client: PoolClient) {
+  const { readAdmittedExecutionIdentity } = await import("./read");
+  return readAdmittedExecutionIdentity(client, actor, attemptId);
+}

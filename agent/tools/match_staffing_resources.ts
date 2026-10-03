@@ -1,4 +1,4 @@
-import { staffingResponseScope } from "../../lib/server/staffing/native-context";
+import { responseFeature } from "../../lib/server/conversations/feature";
 import { defineDynamic, defineTool } from "eve/tools";
 import { staffingMatchToolSchema } from "../../lib/contracts/staffing-tools";
 import { executeStaffingRead } from "../../lib/server/staffing/tools";
@@ -14,7 +14,7 @@ export const authoredTool = defineTool({
 
 export default defineDynamic({ events: {
   async "turn.started"(_event, ctx) {
-    const scope = await staffingResponseScope(ctx.session.auth.current);
-    return scope ? authoredTool : null;
+    const feature = await responseFeature(ctx.session.auth.current);
+    return feature?.kind === "staffing" ? authoredTool : null;
   },
 } });

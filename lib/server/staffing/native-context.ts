@@ -13,16 +13,12 @@ import { staffingSha256 } from "./commands";
 type Principal = Parameters<typeof boundStaffingToolActor>[1];
 const changed = () => new HttpFailure(409, "staffing_context_changed", "Staffing explanation inputs changed");
 
-/** Binding metadata only. It never assembles a default internal snapshot. */
+/** Compatibility probe for the unchanged root agent's model hook. All other
+ * catalogs and instruction resolvers inspect an explicit feature discriminator. */
 export async function staffingResponseScope(principal: Principal) {
-  if (!staffingIdSchema.safeParse(principal?.principalId).success ||
-    !staffingIdSchema.safeParse(principal?.attributes?.turasAttemptId).success) return null;
-  return withTransaction(async db => {
-    const row = (await db.query(`SELECT a.conversation_id FROM response_attempts a JOIN conversations c ON c.id=a.conversation_id
-      WHERE a.id=$1 AND c.owner_principal_id=$2 AND c.environment_id=$3`,
-      [principal!.attributes!.turasAttemptId, principal!.principalId, getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
-    return row ? staffingScopeForConversation(db, row.conversation_id) : null;
-  });
+  const { responseFeature } = await import("../conversations/feature");
+  const feature = await responseFeature(principal);
+  return feature?.kind === "staffing" || feature?.kind === "execution" ? feature.scope : null;
 }
 
 /** Prepare only the strict zoned overlap outside the final release transaction. */
