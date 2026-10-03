@@ -63,6 +63,17 @@ explanations and exact leased payload cleanup. The
 [validation log](specs/008-engagement-execution/validation.md) records the current
 local checks, full release gates, actual-model review and Preview status. These
 local results do not establish hosted workflow acceptance.
+Feature 008 merged in [PR 16](https://github.com/mcteer/turas/pull/16) after passing CI.
+Feature 009 has a [specification](specs/009-weekly-executive-reporting/spec.md),
+[design and contracts](specs/009-weekly-executive-reporting/plan.md),
+[68 planned tasks](specs/009-weekly-executive-reporting/tasks.md) and
+[validation guide](specs/009-weekly-executive-reporting/quickstart.md). It covers
+reviewed weekly reports, monthly/quarterly PDFs and editable QBR slides, audience
+boundaries and durable email receipts. The user confirmed automatic weekly
+drafts with `mcteer` approval for each send. Implementation has not started;
+brand-sample approval, verified sender/test-recipient configuration and hosted
+worker/storage readiness are explicit acceptance/release inputs.
+
 No speculative eve integrations have been installed. The configured model is
 unchanged. Protected Previews run the app and have basic hosted smoke checks;
 full hosted workflow readiness remains release work.

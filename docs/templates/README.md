@@ -1,9 +1,10 @@
 # Product artifact templates
 
 These are **v1 content contracts**, not generated customer deliverables.
-Feature 006 is implementing the delivery-plan contract and local review flow; its
-drafting, lifecycle and hosted gates remain open. Feature 009 implements report renderers;
-012 implements product-gap reports. Each generator must validate required sections
+Feature 006 implements the delivery-plan contract and merged in PR 11; hosted
+acceptance remains separate. Feature 009 has [reporting design and tasks](../../specs/009-weekly-executive-reporting/plan.md)
+for report renderers and delivery; implementation has not started. Feature 012 owns
+product-gap reports. Each generator must validate required sections
 and source lineage before review. Missing inputs stay explicitly unknown.
 
 | Template | Purpose |

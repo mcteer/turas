@@ -1,7 +1,7 @@
 # Turas delivery roadmap
 
-Baseline: 2026-09-26; updated 2026-10-01. **001 merged in PR 1; 002 merged in
-[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 merged in [PR 11](https://github.com/mcteer/turas/pull/11) after local and CI validation, without a hosted release; 007 merged in [PR 13](https://github.com/mcteer/turas/pull/13) after local and CI validation, without a hosted release. 008 implementation covers the delivery workflow, governed advice and payload retention; current release evidence is tracked in its validation log. 009–016 remain planned.**
+Baseline: 2026-09-26; updated 2026-10-03. **001 merged in PR 1; 002 merged in
+[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 merged in [PR 11](https://github.com/mcteer/turas/pull/11) after local and CI validation, without a hosted release; 007 merged in [PR 13](https://github.com/mcteer/turas/pull/13) after local and CI validation, without a hosted release. 008 merged in [PR 16](https://github.com/mcteer/turas/pull/16) after passing CI; hosted execution acceptance remains separate. 009 is specified and designed with implementation tasks; 010–016 remain roadmap proposals.**
 
 005 now has [specification](specs/005-governed-rag-research/spec.md),
 [design](specs/005-governed-rag-research/plan.md) and
@@ -13,9 +13,11 @@ embedding gate, local 5,000-passage hybrid load gate, twelve-case actual
 Turi output review and disposable paired recovery drill from hosted validation,
 which remains outside this slice.
 
-The user disconnected the repository from Vercel. Use local `npm run dev` testing;
-no reconnection or deployment until replacement readiness. Hosted acceptance for
-002 is deferred to that release gate. See the [002 plan](specs/002-identity-platform-shell/plan.md).
+The user subsequently connected Git/Vercel; protected Previews have basic app smoke
+checks. Full hosted workflow/worker acceptance remains release work. Feature 009
+planning does not authorize new hosting resources or deployment. Use owned local
+validation first; see the [002 plan](specs/002-identity-platform-shell/plan.md) for
+the historical local-only boundary.
 Numbers reserve the intended sequence. Create detailed Spec Kit artifacts only
 when starting a slice; do not turn the entire product into one implementation PR.
 Each slice may need several PRs. No calendar dates are promised before team
@@ -51,7 +53,7 @@ reviewed live-advisory gates. Preview is at schema 034 after explicit migration
 and read-only reinspection. [PR 13](https://github.com/mcteer/turas/pull/13)
 passed review-head CI and merged; no hosted release is claimed.
 
-## Active 008 Implementation
+## Completed 008 Implementation
 
 The [specification](specs/008-engagement-execution/spec.md),
 [design and contracts](specs/008-engagement-execution/plan.md),
@@ -65,7 +67,20 @@ Governed advice, exact retained-payload cleanup, actual-output capture and owned
 regression/load/recovery tooling are implemented. See the validation log for the
 current complete gate and Preview results. Execution migrations 036–038 have explicit
 owned upgrade and runtime-role checks; Preview status is recorded separately.
+The complete slice merged in [PR 16](https://github.com/mcteer/turas/pull/16).
 This checkpoint does not claim hosted execution readiness.
+
+## Active 009 Planning
+
+The [specification](specs/009-weekly-executive-reporting/spec.md),
+[plan and contracts](specs/009-weekly-executive-reporting/plan.md),
+[68 tasks](specs/009-weekly-executive-reporting/tasks.md) and
+[validation guide](specs/009-weekly-executive-reporting/quickstart.md) define reviewed
+weekly reporting, executive PDF/editable slides, audience/source fences and durable
+email delivery. Weekly schedules prepare drafts; the user confirmed mcteer approval for every exact
+send. No reporting runtime is implemented yet.
+Actual branding/sender/test-recipient inputs are release gates, and local rendering
+or provider simulation will not establish hosted readiness.
 
 ## Build sequence
 
