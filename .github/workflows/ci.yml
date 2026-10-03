@@ -223,3 +223,22 @@ jobs:
         run: |
           npx playwright install --with-deps webkit
           npm run execution:ui:check
+
+      - name: Summarize owned startup failures without private output
+        if: failure()
+        run: |
+          node --input-type=module <<'JS'
+          import { readFile } from 'node:fs/promises';
+          const signatures = ['ENOENT', 'EACCES', 'EADDRINUSE', 'ECONNREFUSED', 'EAGAIN',
+            'ENOMEM', 'ENOSPC', 'Cannot find module', 'Cannot find package',
+            'Module not found', 'TurbopackInternalError', 'panicked at',
+            'Resource temporarily unavailable', 'permission denied',
+            'JavaScript heap out of memory', 'Database environment marker mismatch',
+            'Turas configuration invalid', 'Maintenance unavailable',
+            'WORKFLOW', 'SIGKILL', 'thread'];
+          for (const feature of ['006', '007', '008']) {
+            const log = await readFile(`local-artifacts/${feature}/eval-startup-failure.log`, 'utf8').catch(() => null);
+            if (log !== null) console.log(JSON.stringify({ feature, startupFailure: true,
+              signatures: signatures.filter(value => log.toLowerCase().includes(value.toLowerCase())) }));
+          }
+          JS
