@@ -922,3 +922,12 @@ preserves the required directory in fresh checkouts. No runtime behavior, model,
 provider bounds or migrations changed. The earlier source-bound local/live
 results remain historical evidence for their recorded digest; review-head CI
 is rerun for this checkout repair.
+
+
+The subsequent execution WebKit job reached the real app but failed before a case
+could run. A bounded local reproduction with `CI=1` and an existing loopback HTTP
+server confirmed Playwright's “already used” server conflict. The execution runner
+already supervises the owned app; Playwright now omits its own web-server launcher
+only when that runner supplies `TURAS_EXECUTION_FIXTURE_READY=1`. Normal UI runs
+retain their managed server and CI reuse policy. No domain or agent behavior
+changed. A fixed-category startup diagnostic step preserves private runtime logs.
