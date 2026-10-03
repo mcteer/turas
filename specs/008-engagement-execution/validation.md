@@ -480,3 +480,26 @@ T059 retention work and all remaining release gates are pending.
   deadline; the separate native restart test proves the actual 120-second bound.
 - This is focused desktop evidence. The complete light/dark desktop/mobile
   matrix remains T066. No hosted or paid-model claim follows from this checkpoint.
+
+### T059: exact retention and native context payloads
+
+- The new lifecycle tests first failed in `deterministic-8w2Pgb`: directly
+  superseded activities did not queue their own review/time payloads and the
+  leased cleanup functions were absent. A first migration attempt exposed missing
+  legacy environment columns; the views now resolve those through the selected
+  database marker. A test then incorrectly counted only approval and omitted the
+  immutable submission decision; it now compares all exact decisions before/after.
+- Source `c64316503688ba966caab85d043edcf924194bb0fdef3adb06d81fe2cb387368`:
+  lifecycle **5/5**, native **8/8** (`deterministic-nZfc31`), schema **5/5**,
+  no skips. Native context/read payload deletion preserves exact usage; source
+  withdrawal still denies history/reconnect/replay and prevents another paid call.
+- Cleanup rechecks exact source identity and live lease, preserves newer revisions
+  and numerical actuals, waits 30 days, and claims at most 100 jobs with disjoint
+  concurrent leases. Plan replacement now queues implicit baseline dependencies.
+- Full advice snapshots use separately purgeable payloads; immutable receipts retain
+  only metadata and digests. A retired attempt cannot reinsert its payload. Native
+  reset has a separate signed, retryable retirement receipt. Reset retires the
+  session ID; no claim is made about physical erasure of framework archives or
+  external provider storage. Native runtime tests exercised the production role.
+- No Preview or Production changes. Live provider evaluation and complete release
+  gates remain pending.

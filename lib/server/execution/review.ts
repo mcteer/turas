@@ -64,13 +64,13 @@ export async function reviewRecord(db:PoolClient,actor:ExecutionActor,customerId
     await db.query("UPDATE execution_records SET accepted_revision_id=$2,state='accepted',version=$3 WHERE id=$1",[record.id,command.payload.revisionId,version]);
   } else if (command.action==='record.reject') await db.query("UPDATE execution_records SET state='rejected',version=$2 WHERE id=$1",[record.id,version]);
   else await db.query("UPDATE execution_records SET accepted_revision_id=NULL,state=CASE WHEN current_revision_id=accepted_revision_id THEN 'retracted' ELSE state END,version=$2 WHERE id=$1",[record.id,version]);
-  if(record.accepted_revision_id && ((command.action==='record.accept'&&record.accepted_revision_id!==command.payload.revisionId)||command.action==='record.retract'))
-    await enqueueExecutionSourceInvalidation(db,'execution_record',record.accepted_revision_id);
   const id=randomUUID();
   await db.query(`INSERT INTO execution_review_decisions(id,environment_id,workspace_id,customer_id,engagement_id,record_id,revision_id,action,expected_version,request_key,preview_digest,actor_membership_id)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,[id,getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,customerId,engagementId,record.id,command.payload.revisionId,
       command.action.slice(7),command.expectedVersions.record,command.requestKey,command.previewDigest,actor.membershipId]);
   await db.query('INSERT INTO execution_review_payloads(decision_id,rationale) VALUES($1,$2)',[id,command.rationale]);
+  if(record.accepted_revision_id && ((command.action==='record.accept'&&record.accepted_revision_id!==command.payload.revisionId)||command.action==='record.retract'))
+    await enqueueExecutionSourceInvalidation(db,'execution_record',record.accepted_revision_id);
   const superseded=await applyDecisionSupersessions(db,actor,customerId,engagementId,context.superseded,command);
   const next=await advanceExecution(db,execution,command.action!=='record.reject');
   if(context.closeout)await recordCloseout(db,execution.id,command.payload.revisionId,context.closeout);

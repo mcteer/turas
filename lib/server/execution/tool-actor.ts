@@ -22,6 +22,7 @@ export async function boundExecutionToolActor(db: PoolClient, principal: Feature
       AND c.workspace_id=a.workspace_id AND m.workspace_id=c.workspace_id AND m.principal_id=c.owner_principal_id AND s.principal_id=c.owner_principal_id`,
     [responseAttemptId, principal!.principalId, getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
   if (!row) throw hiddenRecord();
+  if ((await db.query("SELECT 1 FROM execution_advice_retirements WHERE attempt_id=$1",[row.id])).rowCount) throw changed();
   const actor: ExecutionActor = { sessionId: row.context_login_session_id, token: "", expiresAt: row.expires_at,
     principalId: row.owner_principal_id, membershipId: row.owner_membership_id, workspaceId: row.workspace_id,
     loginName: row.login_name, displayName: row.display_name, kind: row.kind, role: row.role };

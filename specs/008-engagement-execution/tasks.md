@@ -181,7 +181,7 @@ verbatim; the remaining data-model state/transaction rules also apply.
 
 - [X] T058 [US5] Add `app/api/execution/engagements/[engagementId]/advice/route.ts` and `app/_components/execution/advisory.tsx`, integrate existing owned conversation cancel/history/reconnect without redispatch and write `tests/ui/execution-advisory.spec.ts` for withdrawal, cancel, denied replay and pending/unconfirmed states. (FR-019, FR-020, FR-021, SC-007)
 
-- [ ] T059 [US5] Implement exact leased payload cleanup/source invalidation/advice maintenance in `lib/server/execution/maintenance.ts`, wire bounded 100-job ticks into `scripts/maintenance-worker.ts` and existing conversation maintenance; enforce 30-day ineligible payload retention without purging numeric audit or newer revisions. Test paused cleanup/lease replacement in `tests/integration/execution-lifecycle.test.ts`. (FR-017, FR-022, SC-008)
+- [X] T059 [US5] Implement exact leased payload cleanup/source invalidation/advice maintenance in `lib/server/execution/maintenance.ts`, wire bounded 100-job ticks into `scripts/maintenance-worker.ts` and existing conversation maintenance; enforce 30-day ineligible payload retention without purging numeric audit or newer revisions. Test paused cleanup/lease replacement in `tests/integration/execution-lifecycle.test.ts`. (FR-017, FR-022, SC-008)
 
 - [ ] T060 [US5] Implement synthetic E01–E08 live fixture scenarios in `tests/fixtures/execution/advisory.ts`, actual native output capture/preflight verification/20-minute/eight-turn limits in `scripts/eval-execution.ts`, and a digest-bound independently reviewed rubric verifier in `scripts/verify-execution-review.ts`; retain failed/pending evidence and no automatic retry. (FR-024, SC-006)
 

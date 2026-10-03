@@ -16,7 +16,7 @@ export const executionTables = ["execution_workspaces", "execution_baseline_bind
   "execution_time_revisions", "execution_time_payloads", "execution_time_decisions", "execution_resource_days",
   "execution_actual_days", "execution_actual_package_heads", "execution_effort_heads", "execution_calculation_receipts", "execution_advice_bindings",
   "execution_advice_attempts", "execution_advice_instruction_payloads", "execution_advice_dependencies", "execution_advice_reads", "execution_advice_read_results", "execution_advice_read_payloads", "execution_advice_steps",
-  "execution_advice_usage", "execution_cleanup_jobs"];
+  "execution_advice_usage", "execution_advice_context_payloads", "execution_advice_retirements", "execution_native_retirement_receipts", "execution_cleanup_jobs"];
 
 describe("008 schema and grants", () => {
   it.each([34,35] as const)("upgrades an explicit schema %i fixture without rewriting its migration history", async (initialSchemaVersion) => {

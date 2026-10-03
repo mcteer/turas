@@ -1,3 +1,5 @@
+import {query} from "../../lib/server/db/client";
+import {runExecutionCleanupTick} from "../../lib/server/execution/maintenance";
 import { expect, it } from "vitest";
 import { withExecutionNativeCase } from "../fixtures/execution/native";
 
@@ -22,7 +24,16 @@ it("runs the native read-only catalog, fences every release and replays without 
 it("withdraws saved history, reconnect and exact POST replay after a consumed source changes", async () => {
   await withExecutionNativeCase("normal", async f => {
     await f.send(); await f.settled(); const count = (await f.providerCalls()).length;
+    const context=(await query("SELECT r.snapshot,p.snapshot AS content FROM context_snapshot_receipts r JOIN execution_advice_attempts a ON a.response_attempt_id=r.attempt_id JOIN execution_advice_context_payloads p ON p.attempt_id=a.id WHERE a.id=$1",[f.reserved.attemptId])).rows[0];
+    expect(context.snapshot).toEqual({contractVersion:"execution-context-retained-v1",attemptId:f.reserved.attemptId});
+    expect(context.content.execution.engagementId).toBe(f.source.engagementId);
+    const usage=(await query("SELECT to_jsonb(u) AS row FROM execution_advice_usage u WHERE attempt_id=$1 ORDER BY step_id",[f.reserved.attemptId])).rows;
     await f.withdrawEvidence();
+    await query("UPDATE execution_cleanup_jobs SET ineligible_at=now()-interval '31 days',due_at=now()-interval '1 day' WHERE engagement_id=$1",[f.source.engagementId]);
+    expect((await runExecutionCleanupTick()).purged).toBeGreaterThan(0);
+    expect((await query("SELECT 1 FROM execution_advice_context_payloads WHERE attempt_id=$1",[f.reserved.attemptId])).rowCount).toBe(0);
+    expect((await query("SELECT 1 FROM execution_advice_read_payloads p JOIN execution_advice_reads r ON r.id=p.receipt_id WHERE r.attempt_id=$1",[f.reserved.attemptId])).rowCount).toBe(0);
+    expect((await query("SELECT to_jsonb(u) AS row FROM execution_advice_usage u WHERE attempt_id=$1 ORDER BY step_id",[f.reserved.attemptId])).rows).toEqual(usage);
     expect((await f.status()).outputReadable).toBe(false);
     expect(await f.historyStatus()).toBe(409); expect(await f.reconnect()).toBe(409); expect(await f.send()).toBe(409);
     expect(await f.admissionReplayStatus()).toBe(409);

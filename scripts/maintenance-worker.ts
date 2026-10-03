@@ -13,7 +13,8 @@ import { requireStaffingEnvironment } from "../lib/server/staffing/repository";
 import { withTransaction } from "../lib/server/db/client";
 import { runPlanCleanupTick } from "../lib/server/plans/cleanup";
 import { expireStaffingReservations } from "../lib/server/staffing/reservations";
-import { settleDueExecutionAdvisories } from "../lib/server/execution/maintenance";
+import { processExecutionNativeRetirement } from "../lib/server/execution/native-retirement";
+import { settleDueExecutionAdvisories, runExecutionCleanupTick } from "../lib/server/execution/maintenance";
 import { settleDueStaffingAdvisories } from "../lib/server/staffing/advisory-maintenance";
 
 const rawOrigin = process.env.TURAS_EVE_INTERNAL_ORIGIN;
@@ -114,7 +115,7 @@ const workforceHeartbeatTimer = setInterval(() => {
 const executionTimer = setInterval(() => {
   if (stopping || executionScanning) return;
   executionScanning = true;
-  void settleDueExecutionAdvisories().catch(() => undefined).finally(() => { executionScanning = false; });
+  void settleDueExecutionAdvisories().then(()=>runExecutionCleanupTick()).then(()=>processExecutionNativeRetirement()).catch(() => undefined).finally(() => { executionScanning = false; });
 }, 5_000);
 const retrievalTimer = setInterval(() => {
   if (stopping || retrievalScanning) return;

@@ -1,3 +1,4 @@
+import { enqueueExecutionSourceInvalidation } from "./invalidation";
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { HttpFailure } from "../../contracts/http";
@@ -86,6 +87,8 @@ export async function reviewTime(db: PoolClient, actor: ExecutionActor, customer
     if (command.action === "time.approve") await db.query("UPDATE execution_time_entries SET approved_revision_id=$2,state='approved',version=$3 WHERE id=$1", [row.head.id, row.revision.id, version]);
     else if (command.action === "time.reject") await db.query("UPDATE execution_time_entries SET state='rejected',version=$2 WHERE id=$1", [row.head.id, version]);
     else await db.query("UPDATE execution_time_entries SET approved_revision_id=NULL,state=CASE WHEN current_revision_id=approved_revision_id THEN 'reversed' ELSE state END,version=$2 WHERE id=$1", [row.head.id, version]);
+    if(row.head.approved_revision_id && (command.action==="time.reverse" || command.action==="time.approve" && row.head.approved_revision_id!==row.revision.id))
+      await enqueueExecutionSourceInvalidation(db,"execution_time",row.head.approved_revision_id);
     changed.push({ id: row.head.id, version });
   }
   if (command.action !== "time.reject") {

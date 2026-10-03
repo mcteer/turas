@@ -68,6 +68,7 @@ export function verifyExecutionTestReport(raw: unknown, suites: readonly string[
 }
 
 async function main(): Promise<void> {
+  const lifecycleOnly = process.argv.length === 3 && process.argv[2] === "--lifecycle";
   const nativeOnly = process.argv.length === 3 && process.argv[2] === "--native";
   const adviceContracts = process.argv.length === 3 && process.argv[2] === "--advice-contracts";
   const adviceOnly = process.argv.length === 3 && process.argv[2] === "--advice";
@@ -77,10 +78,10 @@ async function main(): Promise<void> {
   const recordsOnly = process.argv.length === 3 && process.argv[2] === "--records";
   const schemaOnly = process.argv.length === 3 && process.argv[2] === "--foundation-schema";
   const foundation = schemaOnly || (process.argv.length === 3 && process.argv[2] === "--foundation");
-  if (!foundation && !recordsOnly && !timeOnly && !registersOnly && !forecastOnly && !adviceOnly && !adviceContracts && !nativeOnly && process.argv.length !== 2) throw new Error("test:execution takes no DB or test-path overrides");
+  if (!lifecycleOnly && !foundation && !recordsOnly && !timeOnly && !registersOnly && !forecastOnly && !adviceOnly && !adviceContracts && !nativeOnly && process.argv.length !== 2) throw new Error("test:execution takes no DB or test-path overrides");
   assertDeterministicTestMode();
   verifyExecutionSuiteCoverage();
-  const suites = nativeOnly ? EXECUTION_SUITES.filter(name => name.endsWith("execution-native.test.ts")) : adviceContracts ? EXECUTION_SUITES.filter(name => /execution-(advice-api|tool-contracts)\.test\.ts$/.test(name)) : adviceOnly ? EXECUTION_SUITES.filter(name => /execution-(advice-api|tool-contracts|native|lifecycle|evaluation|telemetry)\.test\.ts$/.test(name)) : forecastOnly ? EXECUTION_SUITES.filter(name => /execution-(calculations|summary-api|handoff|effort|utilization|journey)\.test\.ts$/.test(name)) : registersOnly ? EXECUTION_SUITES.filter(name => /execution-(register-api|reconciliation)\.test\.ts$/.test(name)) : timeOnly ? EXECUTION_SUITES.filter(name => /execution-time(-api|-races)?\.test\.ts$/.test(name)) : recordsOnly ? EXECUTION_SUITES.filter(name => /execution-(records|milestones|record-api|client)\.(test|spec)\.ts$/.test(name)) : schemaOnly ? EXECUTION_SUITES.filter(name => name.endsWith("execution-schema.test.ts")) : foundation ? EXECUTION_SUITES.filter(name => [
+  const suites = lifecycleOnly ? EXECUTION_SUITES.filter(name=>name.endsWith("execution-lifecycle.test.ts")) : nativeOnly ? EXECUTION_SUITES.filter(name => name.endsWith("execution-native.test.ts")) : adviceContracts ? EXECUTION_SUITES.filter(name => /execution-(advice-api|tool-contracts)\.test\.ts$/.test(name)) : adviceOnly ? EXECUTION_SUITES.filter(name => /execution-(advice-api|tool-contracts|native|lifecycle|evaluation|telemetry)\.test\.ts$/.test(name)) : forecastOnly ? EXECUTION_SUITES.filter(name => /execution-(calculations|summary-api|handoff|effort|utilization|journey)\.test\.ts$/.test(name)) : registersOnly ? EXECUTION_SUITES.filter(name => /execution-(register-api|reconciliation)\.test\.ts$/.test(name)) : timeOnly ? EXECUTION_SUITES.filter(name => /execution-time(-api|-races)?\.test\.ts$/.test(name)) : recordsOnly ? EXECUTION_SUITES.filter(name => /execution-(records|milestones|record-api|client)\.(test|spec)\.ts$/.test(name)) : schemaOnly ? EXECUTION_SUITES.filter(name => name.endsWith("execution-schema.test.ts")) : foundation ? EXECUTION_SUITES.filter(name => [
     "execution-test-manifest.test.ts", "execution-contracts.test.ts", "execution-projection.test.ts", "execution-policy.test.ts",
     "execution-command-api.test.ts", "execution-environment.test.ts", "execution-schema.test.ts",
   ].some(suffix => name.endsWith(suffix))) : verifyExecutionSuiteCoverage();
@@ -100,7 +101,7 @@ async function main(): Promise<void> {
     for (const [index, suite] of suites.entries()) {
       const suiteReportPath = resolve(directory, `suite-${index}.json`);
       await withExecutionEvalEnvironment(async environment => {
-        if (!foundation && /execution-(journey|lifecycle|recovery|telemetry)\.test\.ts$/.test(suite)) await environment.prepareRuntime();
+        if (!foundation && /execution-(journey|recovery|telemetry)\.test\.ts$/.test(suite)) await environment.prepareRuntime();
         const result = spawnSync(process.execPath, ["node_modules/vitest/vitest.mjs", "run",
           "--reporter=verbose", "--reporter=json", `--outputFile.json=${suiteReportPath}`, "--silent=true", "--testTimeout=120000", "--hookTimeout=120000", ...(nativeOnly ? ["--bail=1"] : []), suite], {
           env: { ...process.env, CI: process.env.CI ?? "" }, stdio: ["ignore", fd, fd], timeout: 1_200_000,

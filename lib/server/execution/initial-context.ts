@@ -38,7 +38,8 @@ export async function captureExecutionInitialContext(db: PoolClient, actor: Exec
     membership_id,environment_id,audience,generation,as_of,valid_until,schema_version,snapshot_digest,citation_ids,complete,truncated,snapshot)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'internal',$10,$11,$12,'customer-context-v1',$13,$14,true,false,$15)`,
     [randomUUID(), responseAttemptId, conversationId, actor.workspaceId, feature.scope.customerId, actor.principalId, actor.sessionId, actor.membershipId,
-      getServerConfig().TURAS_ENVIRONMENT_ID, identity.contextVersion, snapshot.asOf, snapshot.validUntil, executionDigest(snapshot), JSON.stringify(snapshot.execution.citations.map(d => d.revisionId).filter(Boolean)), JSON.stringify(snapshot)]);
+      getServerConfig().TURAS_ENVIRONMENT_ID, identity.contextVersion, snapshot.asOf, snapshot.validUntil, executionDigest(snapshot), JSON.stringify(snapshot.execution.citations.map(d => d.revisionId).filter(Boolean)), JSON.stringify({contractVersion:"execution-context-retained-v1",attemptId:metadata.id})]);
+  await db.query("INSERT INTO execution_advice_context_payloads(attempt_id,snapshot) VALUES($1,$2)",[metadata.id,JSON.stringify(snapshot)]);
   await db.query("UPDATE conversations SET context_valid_until=$2 WHERE id=$1", [conversationId, snapshot.validUntil]);
   await db.query(`UPDATE response_attempts SET context_generation=$2,context_valid_until=$3,context_login_session_id=$4,context_membership_id=$5 WHERE id=$1`,
     [responseAttemptId, identity.contextVersion, snapshot.validUntil, actor.sessionId, actor.membershipId]);
@@ -47,8 +48,8 @@ export async function captureExecutionInitialContext(db: PoolClient, actor: Exec
   return snapshot;
 }
 export async function readChargedExecutionSnapshot(db: PoolClient, bound: Awaited<ReturnType<typeof boundExecutionToolActor>>) {
-  const row = (await db.query(`SELECT snapshot,snapshot_digest,owner_principal_id,login_session_id,membership_id,audience,generation,valid_until,
-    environment_id,workspace_id,customer_id FROM context_snapshot_receipts WHERE attempt_id=$1 AND conversation_id=$2`, [bound.responseAttemptId, bound.scope.conversationId])).rows[0];
+  const row = (await db.query(`SELECT p.snapshot,snapshot_digest,owner_principal_id,login_session_id,membership_id,audience,generation,valid_until,
+    r.environment_id,r.workspace_id,r.customer_id FROM context_snapshot_receipts r JOIN execution_advice_attempts a ON a.response_attempt_id=r.attempt_id JOIN execution_advice_context_payloads p ON p.attempt_id=a.id WHERE r.attempt_id=$1 AND r.conversation_id=$2`, [bound.responseAttemptId, bound.scope.conversationId])).rows[0];
   if (!row || row.owner_principal_id !== bound.actor.principalId || row.login_session_id !== bound.actor.sessionId || row.membership_id !== bound.actor.membershipId ||
     row.audience !== "internal" || row.generation !== bound.current.identity.contextVersion || row.environment_id !== getServerConfig().TURAS_ENVIRONMENT_ID ||
     row.workspace_id !== bound.actor.workspaceId || row.customer_id !== bound.scope.customerId) throw changed();
