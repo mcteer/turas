@@ -60,9 +60,10 @@ Turi explanations. The user confirmed `mcteer`-only approval. Implementation is 
 progress: the foundation, activity/milestone review, approved time/actuals, reviewed registers
 baseline reconciliation, exact effort forecasts, reviewer-only utilization and evidenced
 handoff/closeout/outcomes have local domain and four-project WebKit evidence
-(T001–T049). Governed advice now has 17 focused contract/native assertions and three
-desktop WebKit journeys (T050–T058). Retention, the complete browser matrix and
-release gates remain pending.
+(T001–T049). Governed advice, exact retained-payload cleanup and the native evaluation
+harness now have 46 focused assertions and three desktop WebKit journeys
+(T050–T061). The complete regression/browser matrix, load, matched recovery,
+actual-model review and release gates remain pending.
 No speculative eve integrations have been installed. The configured model is
 unchanged. Protected Previews run the app and have basic hosted smoke checks;
 full hosted workflow readiness remains release work.

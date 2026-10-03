@@ -8,7 +8,7 @@ export async function executionSourceDigest(root = process.cwd()) {
   const digest = createHash("sha256");
   const ignored = new Set(["node_modules", ".eve", ".next", "dist", "build", "coverage", "test-results", "playwright-report"]);
   const roots = ["app", "agent", "lib", "migrations", "scripts", "public", "evals", "tests", "packages", "infra", "docs", ".github",
-    "specs/008-engagement-execution", "package.json", "package-lock.json", "next.config.ts", "tsconfig.json", "vitest.config.ts",
+    "specs/008-engagement-execution", "package.json", "package-lock.json", "next.config.ts", "tsconfig.json", "tsconfig.execution.json", "vitest.config.ts",
     "playwright.config.ts", "AGENTS.md", "README.md", "ROADMAP.md", "CONTRIBUTING.md", ".specify/memory/constitution.md"];
   async function visit(path: string): Promise<void> {
     const full = join(root, path), info = await lstat(full).catch(error => {

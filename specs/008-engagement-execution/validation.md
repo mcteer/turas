@@ -503,3 +503,38 @@ T059 retention work and all remaining release gates are pending.
   external provider storage. Native runtime tests exercised the production role.
 - No Preview or Production changes. Live provider evaluation and complete release
   gates remain pending.
+
+## T060–T061 — Native evaluation capture and review tooling
+
+The owned E01–E08 fixtures now use governed delivery commands and independent
+minute/forecast expectations. The live runner requires ten current-source preflight
+gates, reserves each initial turn once, enforces the original 20-minute suite and
+120-second attempt limits, captures actual native provider input/output/usage, and
+leaves a separate unscored review. The verifier checks exact capture digests, source
+identity, numerical observations, disclosure/write denials, interruption receipts,
+provider limits and the independently entered rubric. No paid 008 evaluation has
+run at this checkpoint.
+
+- Expected-red verifier and fixture runs exposed missing modules and an invalid
+  half-open finance interval; those were fixed. The native matrix initially failed
+  nine cases because the shared helper expected `data.conversation.id`; the public
+  API returns `data.id`. The corrected helper is shared by fake and live runners.
+- `scripts/test-execution.ts --capture`: **9/9 passed**, source
+  `da0e1266ff04d890dcee13bf28014295c45c7540a1508d89c21fc98f49428bff`.
+  The observer captured two actual fake-provider calls, bounded input/catalog and
+  output limits, GET stream events and usage receipts. Six direct guarded tool
+  probes were denied. Withdrawal followed by the leased purge retired that exact
+  native session through the signed worker reset, without another provider call.
+- After adding the package commands, `scripts/test-execution.ts --advice`: **8
+  suites, 46 assertions passed; zero failed/skipped**, source
+  `4659d862490146cc78ac0471380381da88dee6b2a7ce75434d4baf1432beb732`.
+  Private log: `local-artifacts/008/us5-complete-fake.log`. This includes all native
+  interruption and source fences, five lifecycle assertions, eight richer fixture
+  cases, six verifier/budget assertions and two content-free telemetry checks.
+- `tsc -p tsconfig.execution.json` passed before the capture rerun. This additional
+  configuration includes the release scripts, which the root typecheck otherwise
+  excludes unless imported by a test.
+
+These are deterministic local results, not actual-model or hosted proof. The
+complete release preflight, full browser matrix, performance, matched restore,
+paid review and Preview upgrade remain pending.

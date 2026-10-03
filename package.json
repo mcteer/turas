@@ -73,7 +73,10 @@
     "staffing:recovery:check": "node --env-file-if-exists=.env.local --import tsx scripts/staffing-recovery-check.ts --disposable",
     "benchmark:staffing": "node --env-file-if-exists=.env.local --import tsx scripts/benchmark-staffing.ts --disposable",
     "test:execution": "node --env-file-if-exists=.env.local --import tsx scripts/test-execution.ts",
-    "execution:ui:check": "node --env-file-if-exists=.env.local --import tsx scripts/check-execution-ui.ts"
+    "execution:ui:check": "node --env-file-if-exists=.env.local --import tsx scripts/check-execution-ui.ts",
+    "typecheck:execution": "tsc -p tsconfig.execution.json",
+    "eval:execution": "node --env-file-if-exists=.env.local --import tsx scripts/eval-execution.ts",
+    "eval:execution:verify": "node --import tsx scripts/verify-execution-review.ts"
   },
   "dependencies": {
     "@js-temporal/polyfill": "0.5.1",
