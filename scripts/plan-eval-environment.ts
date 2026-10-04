@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { spawn,spawnSync,type ChildProcess } from "node:child_process";
 import { mkdir,mkdtemp,rm,symlink,writeFile } from "node:fs/promises";
+import {mkdirSync,writeFileSync,readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import { createServer } from "node:net";
 import { join,resolve } from "node:path";
 import { Client } from "pg";
@@ -26,7 +28,7 @@ export type PlanEvalOptions = {
   deadlineAt?: number;
   empty?: boolean;
   sourceDatabaseUrl?: string;
-  feature?: "006" | "007" | "008";
+  feature?: "006" | "007" | "008" | "009";
   prepare?: (paths: { appRoot: string; storeRoot: string; environmentId: string }) =>
     Promise<Record<string, string>>;
   cleanupGuard?: (paths: { appRoot: string; storeRoot: string; databaseName: string;
@@ -34,7 +36,7 @@ export type PlanEvalOptions = {
 };
 
 const sourceFiles = ["app","agent","lib","migrations","scripts","public","evals","tests",
-  "packages","next.config.ts","next-env.d.ts","tsconfig.json","package.json"] as const;
+  "packages","report-templates","report-renderer","next.config.ts","next-env.d.ts","tsconfig.json","package.json"] as const;
 
 async function freePort(): Promise<number> {
   const server = createServer();
@@ -65,7 +67,27 @@ function runGuardedScript(file: string,cwd: string,env: NodeJS.ProcessEnv,
     cwd,env,encoding: "utf8",timeout: ownedEvalTimeout(deadlineAt,120_000),killSignal:"SIGKILL",maxBuffer: 1_000_000,
   });
   if (result.error || result.status !== 0) {
-    throw new Error(`Disposable ${file} failed; inspect the selected test environment`);
+    // Do not expose child output: migration diagnostics may include credentials.
+    // Preserve bounded process metadata so setup failures are distinguishable
+    // from behavioral assertions and timeouts without leaking private values.
+    const code=(result.error as NodeJS.ErrnoException|undefined)?.code;
+    const reason=code&&/^[A-Z0-9_]+$/.test(code)?code:'nonzero_exit';
+    const diagnosticRoot=resolve('local-artifacts/eval-diagnostics');
+    mkdirSync(diagnosticRoot,{recursive:true,mode:0o700});
+    let output=(result.stdout??'')+'\n'+(result.stderr??'');
+    for(const [name,value]of Object.entries(env))if(value&&/KEY|SECRET|TOKEN|PASSWORD|URL/.test(name))output=output.replaceAll(value,'[redacted]');
+    output=output.replace(/(?:postgres(?:ql)?|https?):\/\/[^\s'"<>]+/g,'[redacted-url]');
+    const migrationMismatches:Array<{file:string;expected:string;actual:string}>=[];
+    if(file==='scripts/db-migrate.ts'){
+     try{const manifest=JSON.parse(readFileSync(join(cwd,'migrations/manifest.json'),'utf8'));
+      for(const entry of manifest.migrations){if(!/^\d{3}-[a-z0-9-]+\.cjs$/.test(entry.file))continue;
+       const actual=createHash('sha256').update(readFileSync(join(cwd,'migrations',entry.file))).digest('hex');
+       if(actual!==entry.sha256)migrationMismatches.push({file:entry.file,expected:entry.sha256,actual});
+      }
+     }catch{/* Preserve original failure even if the diagnostic snapshot is incomplete. */}
+    }
+    writeFileSync(join(diagnosticRoot,`${randomUUID()}.json`),JSON.stringify({file,reason,status:result.status,signal:result.signal,output,migrationMismatches}),{mode:0o600,flag:'wx'});
+    throw new Error(`Disposable ${file} failed (${reason}; status=${result.status}; signal=${result.signal}); inspect the selected test environment`);
   }
 }
 
@@ -161,7 +183,7 @@ export async function withPlanEvalEnvironment<T>(
     }
     await writeFile(join(storeRoot,".turas-artifact-store.json"),
       JSON.stringify({environmentId:testMarker}),{mode:0o600});
-    for (const file of sourceFiles) {
+    for (const file of [...sourceFiles,...(feature === "009" ? ["report-renderer","report-templates"] : [])]) {
       remaining();
       copyOwnedEvalFiles(resolve(file),join(appRoot,file),{
         deadlineAt:options.deadlineAt,excludeRuntime:true,

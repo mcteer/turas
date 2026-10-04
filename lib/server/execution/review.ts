@@ -15,6 +15,7 @@ import { verifyExecutionSources } from "./sources";
 import { assertExecutionPreview } from "./previews";
 import { applyActivityMilestone } from "./milestones";
 import { enqueueExecutionSourceInvalidation } from "./invalidation";
+import {refreshReportScopeWatches} from '../reports/invalidation';
 type RecordReview = Extract<ExecutionCommand,{action:'record.accept'|'record.reject'|'record.retract'}>;
 export async function recordReviewInputs(db:PoolClient,actor:ExecutionActor,customerId:string,engagementId:string,command:Pick<RecordReview,'action'|'expectedVersions'|'payload'>) {
   requireExecutionCapability(actor,'review');
@@ -74,5 +75,6 @@ export async function reviewRecord(db:PoolClient,actor:ExecutionActor,customerId
   const superseded=await applyDecisionSupersessions(db,actor,customerId,engagementId,context.superseded,command);
   const next=await advanceExecution(db,execution,command.action!=='record.reject');
   if(context.closeout)await recordCloseout(db,execution.id,command.payload.revisionId,context.closeout);
+  if(command.action!=='record.reject')await refreshReportScopeWatches(db,actor.workspaceId,customerId,engagementId);
   return {state:'committed' as const,executionGeneration:next.generation,changed:[{id:record.id,version},...superseded,{id:execution.id,version:next.version}]};
 }

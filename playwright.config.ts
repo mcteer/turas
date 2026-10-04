@@ -9,7 +9,7 @@ if (!["localhost", "127.0.0.1", "[::1]"].includes(hostname)) {
 export default defineConfig({
   testDir: "./tests/ui",
   testIgnore: process.env.TURAS_UI_LEGACY_ONLY === "1" ?
-    ["**/knowledge.spec.ts", "**/research.spec.ts", "**/retrieval.spec.ts", "**/staffing-*.spec.ts", "**/execution-*.spec.ts"] : [],
+    ["**/knowledge.spec.ts", "**/research.spec.ts", "**/retrieval.spec.ts", "**/staffing-*.spec.ts", "**/execution-*.spec.ts", "**/report-*.spec.ts"] : [],
   timeout: 30_000,
   // UI scenarios share the local demo database, including mutable customer grants.
   workers: 1,
@@ -21,7 +21,7 @@ export default defineConfig({
     { name: "webkit-mobile-dark", use: { ...devices["Desktop Safari"], viewport: { width: 390, height: 844 }, colorScheme: "dark" } },
   ],
   // The execution runner owns and supervises its already-started app.
-  webServer: process.env.TURAS_EXECUTION_FIXTURE_READY === "1" ? undefined : {
+   webServer: process.env.TURAS_EXECUTION_FIXTURE_READY === "1" || process.env.TURAS_REPORT_UI_READY === "1" ? undefined : {
     command: "npm run dev",
     url: baseURL,
     reuseExistingServer: !process.env.CI,

@@ -18,7 +18,7 @@ review, partner projections, and bound agent context
 for local testing. Feature 004 adds local private attachment intake, isolated
 scan/extraction, exact-source review, bounded unverified chat selection and
 versioned cleanup. Feature 006 delivery plans are merged; staffing is locally validated,
-while reports and MCP remain planned.
+while reporting is in progress and MCP remains planned.
 Feature 005 is merged in [PR 8](https://github.com/mcteer/turas/pull/8). Governed retrieval,
 shared knowledge publication, bounded research, refresh and typed conflict
 flows have focused local checks and CLI WebKit journeys. A 40-query synthetic
@@ -63,6 +63,36 @@ explanations and exact leased payload cleanup. The
 [validation log](specs/008-engagement-execution/validation.md) records the current
 local checks, full release gates, actual-model review and Preview status. These
 local results do not establish hosted workflow acceptance.
+Feature 008 merged in [PR 16](https://github.com/mcteer/turas/pull/16) after passing CI.
+Feature 009 has a [specification](specs/009-weekly-executive-reporting/spec.md),
+[design and contracts](specs/009-weekly-executive-reporting/plan.md),
+[68 planned tasks](specs/009-weekly-executive-reporting/tasks.md) and
+[validation guide](specs/009-weekly-executive-reporting/quickstart.md). It covers
+reviewed weekly reports, monthly/quarterly PDFs and editable QBR slides, audience
+boundaries and durable email receipts. The user confirmed automatic weekly
+drafts with `mcteer` approval for each send. The local implementation includes
+review/publication/corrections, real PDF/editable-slide rendering, private audience
+projections, schedules, exact-recipient outbox delivery and retention cleanup.
+The [validation log](specs/009-weekly-executive-reporting/validation.md) distinguishes
+final-source local checks from controlled provider delivery and hosted acceptance.
+The [reporting operations guide](docs/reporting-operations.md) describes the
+separate, default-off live-dispatch switch and local reporting checks. The full
+48-suite/160-test deterministic reporting gate has passed; its manifest includes
+actual subprocess-exit dispatch recovery, exact provider reconciliation, source
+withdrawal races and audit minimization. Six actual artifact pairs pass native
+LibreOffice edit/save/reopen checks and review of all 121 page/slide rasters.
+Final-source representative load passed (maximum class p95 1,894.73 ms);
+the final four-project WebKit matrix passed all 36 cases. Local implementation
+and testing are complete; exact evidence is recorded in the validation log.
+Live Resend acceptance is explicitly deferred by the user. Dispatch remains
+default-off; no real delivery or hosted acceptance is claimed.
+The full representative local load gate passes with 5,000 report histories and the
+required execution workload, 20 weekly preparations, 12 actual executive pairs and
+queue/rate/overflow/fairness checks. Its source-bound result is recorded in the ledger;
+it does not certify hosted behavior or substitute for complete lifecycle acceptance.
+Production build checks use the documented Webpack compiler; Turbopack development
+is unchanged. Private local artifacts are excluded from production file traces.
+
 No speculative eve integrations have been installed. The configured model is
 unchanged. Protected Previews run the app and have basic hosted smoke checks;
 full hosted workflow readiness remains release work.
@@ -214,11 +244,13 @@ uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v1
 specify version
 ```
 
-Project-local Spec Kit commands are already committed in `.agents/skills/`; start or
-restart the development session in this project to discover them. No global prompt
-directory changes are required. Use `$speckit-specify`, `$speckit-clarify`,
-`$speckit-plan`, `$speckit-tasks`, `$speckit-analyze`, `$speckit-implement` and
-`$speckit-converge` as described in [CONTRIBUTING](CONTRIBUTING.md).
+Project-local OpenCode Spec Kit commands live in `.opencode/commands/` and use
+dot-separated names only: `/speckit.specify`, `/speckit.clarify`,
+`/speckit.plan`, `/speckit.tasks`, `/speckit.analyze`, `/speckit.implement` and
+`/speckit.converge`. OpenCode is the default Spec Kit integration; no hyphenated
+command aliases or global configuration are added. Existing Codex skills in
+`.agents/skills/` are preserved for that separate integration. See
+[CONTRIBUTING](CONTRIBUTING.md) for the workflow.
 
 Spec Kit 1.x selects features independently of the Git branch. To inspect 004:
 

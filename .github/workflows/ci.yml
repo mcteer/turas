@@ -8,11 +8,66 @@ on:
 permissions:
   contents: read
 
+env:
+  # Owned UI clones reuse module paths across disposable roots; do not reuse
+  # cached TSX transforms from another root during startup.
+  TSX_DISABLE_CACHE: '1'
+
 concurrency:
   group: turas-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  reporting:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        gate: [deterministic, regressions, webkit]
+    env:
+      TURAS_APP_ORIGIN: http://127.0.0.1:3000
+      TURAS_DEMO_USERNAME: mcteer
+      PANEL_USERNAME: panel
+      PARTNER_USERNAME: partner
+      AI_GATEWAY_API_KEY: ''
+      TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
+      TURAS_REPORT_DELIVERY_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - name: Create private disposable reporting credentials
+        run: |
+          for key in TURAS_DEMO_PASSWORD PANEL_PASSWORD PARTNER_PASSWORD TURAS_MAINTENANCE_SECRET; do
+            value="$(openssl rand -hex 32)"
+            echo "::add-mask::$value"
+            echo "$key=$value" >> "$GITHUB_ENV"
+          done
+      - name: Build isolated report renderer
+        if: matrix.gate != 'regressions'
+        run: docker build --file report-renderer/Dockerfile --tag turas-report-renderer:009-executive-v1 .
+      - name: Install host artifact validators
+        if: matrix.gate != 'regressions'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends poppler-utils
+      - name: Install WebKit
+        if: matrix.gate == 'webkit'
+        run: npx playwright install --with-deps webkit
+      - name: Test reporting on owned disposable Postgres and private stores
+        if: matrix.gate == 'deterministic'
+        run: npm run test:reports
+      - name: Check previous features without model calls
+        if: matrix.gate == 'regressions'
+        run: npm run test:reports:regressions
+      - name: Exercise reporting in four WebKit projects
+        if: matrix.gate == 'webkit'
+        run: npm run reports:ui:check
+
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 25

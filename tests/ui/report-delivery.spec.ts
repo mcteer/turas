@@ -1,0 +1,27 @@
+import {test} from '@playwright/test';
+import {reportsDeliveryFixture} from '../fixtures/reports/delivery';
+import {reportUiGuard,checkReportAccessibility,reportUiExpect as expect} from '../fixtures/reports/ui';
+import {signIn} from '../fixtures/ui';
+import {reportTransaction} from '../../lib/server/reports/commands';
+import {verifyConfiguredReportSender,registerVerifiedReportSender} from '../../lib/server/reports/senders';
+test.beforeEach(async()=>{await reportUiGuard();});
+test('approves explicit recipients, prepares weekly drafts and pauses the schedule without sending',async({page},info)=>{
+ test.setTimeout(240000);const fixture=await reportsDeliveryFixture(),domainId=process.env.TURAS_REPORT_SENDER_DOMAIN_ID!;
+ const verified=await verifyConfiguredReportSender(async()=>new Response(JSON.stringify({id:domainId,name:'example.invalid',status:'verified',capabilities:{sending:'enabled'},open_tracking:false,click_tracking:false})));
+ await reportTransaction(db=>registerVerifiedReportSender(db,fixture.reviewer.workspaceId,verified));
+ await signIn(page,'mcteer');await page.goto(`/customers/${fixture.customerId}/reports`);
+ await page.getByRole('button',{name:'New Recipient Policy',exact:true}).click();
+ await page.getByRole('radio').check();await page.getByLabel('Include Customer-Level Inputs').check();
+ await page.getByLabel('Timezone',{exact:true}).fill('UTC');
+ await page.getByLabel('Email Address 1').fill('synthetic-recipient@example.invalid');
+ await page.getByLabel('Delivery Entitlement 1').fill('Explicit synthetic UI recipient with no live delivery authority');
+ await page.getByRole('button',{name:'Save Draft Policy'}).click();
+ await page.getByRole('button',{name:'Review Approval',exact:true}).click();
+ await page.getByLabel('Policy Decision Rationale').fill('Review exact synthetic policy recipients and customer scope');
+ await page.getByRole('button',{name:'Confirm Policy Decision'}).click();
+ await page.getByRole('button',{name:'Schedule Weekly Drafts at 09:00'}).click();
+ await page.getByRole('button',{name:'Pause Draft Schedule'}).click();
+ await expect(page.getByRole('button',{name:'Resume Draft Schedule'})).toBeVisible();
+ expect(await reportTransaction(async db=>Number((await db.query('SELECT count(*) AS n FROM report_deliveries WHERE customer_id=$1',[fixture.customerId])).rows[0].n))).toBe(0);
+ await checkReportAccessibility(page);await page.screenshot({path:info.outputPath('paused-draft-schedule.png'),fullPage:true});
+});

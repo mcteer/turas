@@ -10,7 +10,7 @@
     "build": "eve build",
     "build:check": "node scripts/build-check.mjs",
     "build:eve:check": "eve build --skip-sandbox-prewarm",
-    "build:web:check": "next build",
+    "build:web:check": "next build --webpack",
     "check:docs": "node scripts/check-docs.mjs",
     "retrieval:prepare": "node --experimental-strip-types scripts/prepare-retrieval.ts",
     "retrieval:check": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/check-retrieval.ts",
@@ -56,12 +56,12 @@
     "start": "eve start",
     "typecheck": "tsc",
     "test:unit": "vitest run tests/unit --exclude 'tests/unit/execution-*.test.ts'",
-    "test:integration": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/reset-test-profile-rates.ts && node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run tests/integration --exclude 'tests/integration/plan-*.test.ts' --exclude 'tests/integration/staffing-*.test.ts' --exclude 'tests/integration/execution-*.test.ts'",
+    "test:integration": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/reset-test-profile-rates.ts && node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run tests/integration --exclude 'tests/integration/plan-*.test.ts' --exclude 'tests/integration/staffing-*.test.ts' --exclude 'tests/integration/execution-*.test.ts' --exclude 'tests/integration/report-*.test.ts'",
     "test:performance": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/benchmark-shell.ts",
     "smoke:local:live": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/smoke-local-live.ts",
     "eval:behavior:local": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/eval-behavior-local.ts",
     "eval:behavior:verify": "node node_modules/tsx/dist/cli.mjs scripts/verify-behavior-review.ts",
-    "test:contracts": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/reset-test-profile-rates.ts && node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run tests/contracts --exclude 'tests/contracts/plan-*.test.ts' --exclude 'tests/contracts/staffing-*.test.ts' --exclude 'tests/contracts/execution-*.test.ts'",
+    "test:contracts": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/reset-test-profile-rates.ts && node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run tests/contracts --exclude 'tests/contracts/plan-*.test.ts' --exclude 'tests/contracts/staffing-*.test.ts' --exclude 'tests/contracts/execution-*.test.ts' --exclude 'tests/contracts/report-*.test.ts'",
     "test:ui": "node --env-file-if-exists=.env.local node_modules/@playwright/test/cli.js test",
     "workspace:ui:check": "node --env-file-if-exists=.env.local --import tsx scripts/check-workspace-ui.ts",
     "test:staffing": "node --env-file-if-exists=.env.local --import tsx scripts/test-staffing.ts",
@@ -80,7 +80,16 @@
     "test:execution:regressions": "node --env-file-if-exists=.env.local --import tsx scripts/test-execution-regressions.ts",
     "benchmark:execution": "node --env-file-if-exists=.env.local --import tsx scripts/benchmark-execution.ts --disposable",
     "execution:recovery:check": "node --env-file-if-exists=.env.local --import tsx scripts/execution-recovery-check.ts --disposable",
-    "execution:release:check": "node --env-file-if-exists=.env.local --import tsx scripts/check-execution-release.ts"
+    "execution:release:check": "node --env-file-if-exists=.env.local --import tsx scripts/check-execution-release.ts",
+    "test:reports": "node --env-file-if-exists=.env.local --import tsx scripts/test-reports.ts",
+    "reports:prepare": "node --env-file-if-exists=.env.local --import tsx scripts/prepare-reports.ts",
+    "reports:ui:check": "TSX_DISABLE_CACHE=1 node --env-file-if-exists=.env.local --import tsx scripts/check-reports-ui.ts",
+    "reports:artifacts:check": "node --env-file-if-exists=.env.local --import tsx scripts/check-report-artifacts.ts",
+    "reports:recovery:check": "node --env-file-if-exists=.env.local --import tsx scripts/reports-recovery-check.ts",
+    "benchmark:reports": "node --env-file-if-exists=.env.local --import tsx scripts/benchmark-reports.ts",
+    "reports:delivery:check": "node --env-file-if-exists=.env.local --import tsx scripts/check-report-delivery.ts",
+    "reports:release:check": "node --env-file-if-exists=.env.local --import tsx scripts/check-reports-release.ts",
+    "test:reports:regressions": "node --env-file-if-exists=.env.local --import tsx scripts/test-reports-regressions.ts"
   },
   "dependencies": {
     "@js-temporal/polyfill": "0.5.1",
@@ -93,8 +102,10 @@
     "node-pg-migrate": "9.0.0",
     "parse5": "8.0.0",
     "pg": "8.23.0",
+    "pptxgenjs": "4.0.1",
     "react": "19.2.6",
     "react-dom": "19.2.6",
+    "resend": "6.32.0",
     "zod": "4.5.4"
   },
   "devDependencies": {
@@ -110,5 +121,10 @@
   },
   "engines": {
     "node": "24.x"
+  },
+  "overrides": {
+    "pptxgenjs": {
+      "image-size": "2.0.4"
+    }
   }
 }

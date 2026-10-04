@@ -1,0 +1,22 @@
+import {it,expect} from 'vitest';
+import {randomUUID} from 'node:crypto';
+import {publishedReportFixture} from '../fixtures/reports/published';
+import {createProfileTestSession} from '../fixtures/profiles';
+import {reportTransaction} from '../../lib/server/reports/commands';
+import {readReportHistory} from '../../lib/server/reports/history';
+import {submitReportRevisionCommand} from '../../lib/server/reports/service';
+it('compares current-authorized correction history and hides unpublished predecessors from partners',async()=>{
+ const fixture=await publishedReportFixture();
+ const revised=await submitReportRevisionCommand(fixture.author,fixture.published.reportId,{action:'revise',expectedVersion:fixture.published.version,requestKey:randomUUID(),rationale:'Review the synthetic next-period recommendation',annotations:['Recommendation: inspect the next synthetic proof.']}) as {revisionId:string};
+ const history=await readReportHistory(fixture.reviewer,fixture.published.reportId,{});
+ const correction=history.revisions.find(row=>row.revisionId===revised.revisionId)!;
+ expect(correction.comparison).toMatchObject({available:true,annotationsChanged:true});
+ await reportTransaction(db=>db.query("UPDATE report_revision_states SET visibility='withheld',generation=generation+1 WHERE revision_id=$1",[fixture.published.revisionId]));
+ const withheld=await readReportHistory(fixture.reviewer,fixture.published.reportId,{});
+ expect(withheld.revisions.find(row=>row.revisionId===revised.revisionId)?.comparison).toMatchObject({available:false});
+ const partner=await reportTransaction(db=>createProfileTestSession(db,'partner'));
+ const external=await readReportHistory(partner,fixture.published.reportId,{});
+ expect(external.revisions).toHaveLength(1);
+ expect(JSON.stringify(external)).not.toContain(revised.revisionId);
+ expect(JSON.stringify(external)).not.toContain('Recommendation:');
+},300000);

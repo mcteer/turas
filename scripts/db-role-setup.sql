@@ -146,3 +146,26 @@ DO $$ DECLARE t text; BEGIN
       execution_workspaces,execution_reconciliations TO turas_execution_cleanup;
   END IF;
 END $$;
+
+DO $$ DECLARE t text; BEGIN
+ IF to_regclass('public.report_scopes') IS NOT NULL THEN
+  IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='turas_report_cleanup') THEN CREATE ROLE turas_report_cleanup NOLOGIN;END IF;
+  GRANT USAGE ON SCHEMA public TO turas_report_cleanup;
+  FOR t IN SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename LIKE 'report_%' LOOP
+   EXECUTE format('REVOKE ALL ON TABLE %I FROM turas_runtime,turas_report_cleanup',t);
+   EXECUTE format('GRANT SELECT, INSERT ON TABLE %I TO turas_runtime',t);
+   IF t IN ('report_scopes','report_brand_profiles','report_revision_states','report_senders','report_policy_heads','report_schedules','report_schedule_periods',
+     'report_deliveries','report_jobs','report_cleanup_jobs','report_worker_heartbeats','report_store_objects','report_rate_windows','report_recipient_suppressions') THEN
+     EXECUTE format('GRANT UPDATE ON TABLE %I TO turas_runtime',t);
+   END IF;
+  END LOOP;
+  GRANT SELECT ON report_cleanup_jobs,report_revision_states,report_revisions,report_store_objects TO turas_report_cleanup;
+   GRANT EXECUTE ON FUNCTION turas_report_purge_revision(text,uuid,uuid) TO turas_report_cleanup,turas_runtime;
+    GRANT EXECUTE ON FUNCTION turas_report_purge_receipt_audit(text,uuid,uuid) TO turas_report_cleanup,turas_runtime;
+     GRANT EXECUTE ON FUNCTION turas_report_purge_delivery_audit(text,uuid,uuid) TO turas_report_cleanup,turas_runtime;
+     GRANT EXECUTE ON FUNCTION turas_report_purge_decision_audit(text,uuid,uuid) TO turas_report_cleanup,turas_runtime;
+     GRANT EXECUTE ON FUNCTION turas_report_purge_unmatched_event(text,uuid,text) TO turas_report_cleanup,turas_runtime;
+     GRANT EXECUTE ON FUNCTION turas_report_purge_revision_audit(text,uuid,uuid) TO turas_report_cleanup,turas_runtime;
+     GRANT EXECUTE ON FUNCTION turas_report_purge_preview(text,uuid,text) TO turas_report_cleanup,turas_runtime;
+ END IF;
+END $$;

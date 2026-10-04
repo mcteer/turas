@@ -1,4 +1,5 @@
 import { enqueueExecutionSourceInvalidation } from "./invalidation";
+import {refreshReportScopeWatches} from '../reports/invalidation';
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { HttpFailure } from "../../contracts/http";
@@ -96,5 +97,6 @@ export async function reviewTime(db: PoolClient, actor: ExecutionActor, customer
     await applyActualDays(db, actor, customerId, engagementId, materialized, decisions);
   }
   const next = await advanceExecution(db, context.execution, command.action !== "time.reject");
+  if(command.action!=='time.reject')await refreshReportScopeWatches(db,actor.workspaceId,customerId,engagementId);
   return { state: "committed" as const, executionGeneration: next.generation, changed: [...changed, { id: context.execution.id, version: next.version }] };
 }

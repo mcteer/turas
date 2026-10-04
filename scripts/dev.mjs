@@ -12,6 +12,7 @@ const next = spawn(resolve(cwd, "node_modules/.bin/next"), ["dev"], {
 });
 let worker;
 let artifactWorker;
+let reportsWorker;
 let stopping = false;
 let buffered = "";
 
@@ -20,6 +21,7 @@ function stop(code = 0) {
   stopping = true;
   worker?.kill("SIGTERM");
   artifactWorker?.kill("SIGTERM");
+  reportsWorker?.kill("SIGTERM");
   next.kill("SIGTERM");
   process.exitCode = code;
 }
@@ -32,11 +34,15 @@ function consume(text) {
       cwd, env: { ...process.env, TURAS_EVE_INTERNAL_ORIGIN: `${match[1]}/` },
       stdio: "inherit",
     });
-    worker.on("exit", (code) => { if (!stopping) stop(code || 1); });
+    worker.on("exit", (code,signal) => { if (!stopping) { console.error(JSON.stringify({kind:'turas_worker_exit',worker:'maintenance',code,signal}));stop(code || 1); } });
     artifactWorker = spawn(process.execPath, ["--import", "tsx", "scripts/artifact-worker.ts"], {
       cwd, env: { ...process.env, TURAS_EVE_INTERNAL_ORIGIN: `${match[1]}/` }, stdio: "inherit",
     });
-    artifactWorker.on("exit", (code) => { if (!stopping) stop(code || 1); });
+    artifactWorker.on("exit", (code,signal) => { if (!stopping) { console.error(JSON.stringify({kind:'turas_worker_exit',worker:'artifacts',code,signal}));stop(code || 1); } });
+    reportsWorker = spawn(process.execPath, ["--import", "tsx", "scripts/reports-worker.ts"], {
+      cwd, env: process.env, stdio: "inherit",
+    });
+    reportsWorker.on("exit", (code,signal) => { if (!stopping) { console.error(JSON.stringify({kind:'turas_worker_exit',worker:'reports',code,signal}));stop(code || 1); } });
   }
   buffered = buffered.slice(-1_000);
 }

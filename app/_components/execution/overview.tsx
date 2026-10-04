@@ -48,7 +48,7 @@ export function ExecutionOverview({customerId,engagementId}:{customerId:string;e
   };
   const disabled=commands.busy||!!commands.uncertainKey||!!view?.writesDisabled||!scopeReady.current;
   return <main className="profile-page"><nav aria-label="Breadcrumb" className="profile-breadcrumb"><Link href="/customers">Customers</Link><span aria-hidden="true">/</span><Link href={`/customers/${customerId}`}>Profile</Link><span aria-hidden="true">/</span><Link href={`/customers/${customerId}/engagements/${engagementId}`}>Engagement</Link><span aria-hidden="true">/</span><span>Execution</span></nav>
-    <header className="profile-header"><div><p className="profile-eyebrow">Engagement Delivery</p><h1 ref={heading} tabIndex={-1}>Execution Log</h1><p className="muted">Reviewed work and explicit delivery decisions.</p></div></header>
+    <header className="profile-header"><div><p className="profile-eyebrow">Engagement Delivery</p><h1 ref={heading} tabIndex={-1}>Execution Log</h1><p className="muted">Reviewed work and explicit delivery decisions.</p></div><Link className="secondary-button" href={`/customers/${customerId}/reports`}>Customer Reports</Link></header>
     {message&&<p role="alert">{message}</p>}{commands.message&&<p role="status">{commands.message}</p>}
     {commands.uncertainKey&&<button type="button" className="secondary-button" disabled={commands.busy} onClick={()=>void commands.reconcile()}>Check save receipt</button>}
     {!view&&!message&&<p role="status">Loading current execution eligibility…</p>}

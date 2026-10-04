@@ -11,6 +11,7 @@ import { BrandMark, UiIcon, type UiIconName } from "./ui-icon";
 
 function SidebarContent({ role, loginName, csrfToken, staffing }: { role: string; loginName: string; csrfToken: string; staffing: StaffingNavigation }) {
   const pathname = usePathname();
+  const customerScope = pathname.match(/^\/customers\/([a-f0-9-]{36})(?:\/|$)/)?.[1];
   const current = (href: string) => (pathname === href || (href !== "/staffing" && pathname.startsWith(`${href}/`))) ? "page" as const : undefined;
   const navItem = (href: string, label: string, icon: UiIconName) =>
     <Link className="nav-link" aria-current={current(href)} href={href}><UiIcon name={icon} /><span>{label}</span></Link>;
@@ -21,6 +22,7 @@ function SidebarContent({ role, loginName, csrfToken, staffing }: { role: string
       <p className="nav-group-label">Workspace</p>
       {navItem("/customers", "Customer Profiles", "customers")}
       {navItem("/knowledge", "Shared Knowledge", "knowledge")}
+      {customerScope && <><p className="nav-group-label">Current Customer</p>{navItem(`/customers/${customerScope}/reports`, "Customer Reports", "plan")}</>}
       {staffing.resources && <p className="nav-group-label">Delivery</p>}
       {staffing.resources && navItem("/staffing", "Staffing Operations", "operations")}
       {staffing.resources && navItem("/staffing/resources", "Resources and Skills", "people")}

@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { createExecutionBaseline } from "../fixtures/execution/baseline";
 import { createResource } from "../../lib/server/staffing/resources";
@@ -8,6 +9,8 @@ import { describe, expect, it } from "vitest";
 import { requireOwnedExecutionClone, withExecutionEvalEnvironment } from "../../scripts/execution-eval-environment";
 import { withExecutionDatabase } from "../fixtures/execution/environment";
 import { requireExecutionEnvironment } from "../../lib/server/execution/repository";
+
+const currentSchemaVersion = JSON.parse(readFileSync("migrations/manifest.json", "utf8")).version;
 
 export const executionTables = ["execution_workspaces", "execution_baseline_bindings", "execution_baseline_items",
   "execution_records", "execution_record_revisions", "execution_record_payloads", "execution_record_sources",
@@ -41,7 +44,7 @@ describe("008 schema and grants", () => {
         const resources = (await client.query("SELECT to_jsonb(r) AS metadata FROM workforce_resource_revisions r WHERE resource_id=$1", [fixture.resource.resourceId])).rows;
         const prior = (await client.query("SELECT name FROM turas_migrations ORDER BY name")).rows;
         await environment.upgrade();
-        expect((await client.query("SELECT schema_version FROM turas_environment")).rows[0].schema_version).toBe(38);
+        expect((await client.query("SELECT schema_version FROM turas_environment")).rows[0].schema_version).toBe(currentSchemaVersion);
         expect((await client.query("SELECT name FROM turas_migrations ORDER BY name")).rows.slice(0, prior.length)).toEqual(prior);
         expect((await client.query("SELECT to_jsonb(d) AS metadata FROM plan_decisions d WHERE plan_id=$1", [fixture.created.planId])).rows).toEqual(decisions);
         expect((await client.query("SELECT to_jsonb(r) AS metadata FROM workforce_resource_revisions r WHERE resource_id=$1", [fixture.resource.resourceId])).rows).toEqual(resources);
@@ -82,10 +85,10 @@ describe("008 schema and grants", () => {
       } finally { await db.query("ROLLBACK"); }
     });
   });
-  it("initializes an empty owned database explicitly at038", async () => {
+  it("initializes an empty owned database explicitly at the current manifest version", async () => {
     await withExecutionEvalEnvironment(async () => {
       await withExecutionDatabase(async db => {
-        expect((await db.query("SELECT schema_version FROM turas_environment")).rows[0].schema_version).toBe(38);
+        expect((await db.query("SELECT schema_version FROM turas_environment")).rows[0].schema_version).toBe(currentSchemaVersion);
         expect((await db.query("SELECT count(*)::int AS n FROM execution_actual_days")).rows[0].n).toBe(0);
       });
     }, { empty: true, sourceDatabaseUrl: process.env.TURAS_TEST_SOURCE_DATABASE_URL });

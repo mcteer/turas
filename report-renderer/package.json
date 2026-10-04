@@ -1,0 +1,17 @@
+{
+  "name": "turas-report-renderer",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@playwright/test": "1.63.0",
+    "pptxgenjs": "4.0.1",
+    "tsx": "4.23.15",
+    "zod": "4.5.4",
+    "@js-temporal/polyfill": "0.5.1"
+  },
+  "overrides": {
+    "pptxgenjs": {
+      "image-size": "2.0.4"
+    }
+  }
+}
