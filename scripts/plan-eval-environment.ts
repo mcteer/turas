@@ -36,7 +36,7 @@ export type PlanEvalOptions = {
 };
 
 const sourceFiles = ["app","agent","lib","migrations","scripts","public","evals","tests",
-  "packages","next.config.ts","next-env.d.ts","tsconfig.json","package.json"] as const;
+  "packages","report-templates","report-renderer","next.config.ts","next-env.d.ts","tsconfig.json","package.json"] as const;
 
 async function freePort(): Promise<number> {
   const server = createServer();
