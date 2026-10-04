@@ -45,6 +45,11 @@ jobs:
       - name: Build isolated report renderer
         if: matrix.gate != 'regressions'
         run: docker build --file report-renderer/Dockerfile --tag turas-report-renderer:009-executive-v1 .
+      - name: Install host artifact validators
+        if: matrix.gate != 'regressions'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends poppler-utils
       - name: Install WebKit
         if: matrix.gate == 'webkit'
         run: npx playwright install --with-deps webkit
