@@ -1,0 +1,11 @@
+import type {ReportDocument} from '../../reports/document';import type {ReportProfileInput} from './profile-inputs';
+export function reportProfileBlocks(input:ReportProfileInput,label:string):{section:'maturity'|'value'|'risk'|'decision'|'next';blocks:ReportDocument['sections'][number]['blocks']}|null{
+ const p=input.payload,citations=[label],fact=(text:string)=>({type:'fact' as const,text,citations}),proposal=(text:string)=>({type:'proposal' as const,text,citations});
+ if(p.kind==='maturity_assessment')return {section:'maturity',blocks:[fact(`Accepted maturity assessment (${p.observationStart} to ${p.observationEnd}; ${p.rubricVersion}). ${p.journeyStage?`Customer journey stage: ${p.journeyStage}.`:'Customer journey stage remains unknown.'}`),...p.dimensions.map(d=>fact(`${d.key.replaceAll('_',' ')}: ${d.state}. ${d.rationale}`)),proposal(`Next capability for review: ${p.nextCapability}. Review due ${p.reviewAt}.`)]};
+ if(p.kind==='product_use')return {section:'value',blocks:[(p.state==='planned'||p.state==='evaluating'?proposal:fact)(`${p.displayName}: ${p.state}, observed ${p.observedAt}. ${p.usageDescription}`)]};
+ if(p.kind==='outcome')return {section:'value',blocks:[fact(`Accepted outcome: ${p.statement}${p.measure?` Measure: ${p.measure}${p.unit?` (${p.unit})`:''}.`:''}${p.period?` Reported measurement period: ${p.period}.`:''}`),...(!p.baseline||!p.comparison?[{type:'gap' as const,text:'Comparable numerical baseline or comparison is not established by this accepted outcome.',citations:[]}]:[fact(`Recorded baseline: ${p.baseline}. Recorded comparison: ${p.comparison}. No numerical change is inferred from narrative inputs.`)])]};
+ if(p.kind==='risk')return {section:'risk',blocks:[fact(`Accepted ${p.severity} risk (${p.status}), observed ${p.observedAt}: ${p.description}`),proposal(`Reviewed mitigation: ${p.mitigation}`)]};
+ if(p.kind==='decision')return {section:'decision',blocks:[fact(`Accepted decision, effective ${p.effectiveAt}: ${p.statement}. ${p.rationale}`)]};
+ if(p.kind==='next_review')return {section:'next',blocks:[proposal(`Review ${p.subject} by ${p.dueAt}: ${p.action}${p.completedAt?` Accepted completion recorded ${p.completedAt}.`:''}`)]};
+ return null;
+}

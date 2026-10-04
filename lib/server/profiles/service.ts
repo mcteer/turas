@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import {refreshReportScopeWatches} from '../reports/invalidation';
 import type { PoolClient } from "pg";
 import { ZodError } from "zod";
 import { HttpFailure } from "../../contracts/http";
@@ -68,6 +69,7 @@ export async function submitProfileCommandDetailed(actor: ProfileActor, customer
       default:
         throw new HttpFailure(422, "unsupported_action", "Action is not available");
     }
+    if(command.action==='accept_revision')await refreshReportScopeWatches(client,actor.workspaceId,customerId);
     const status = ["propose_record", "propose_revision", "propose_workload", "request_retraction"].includes(command.action) ? 201 : 200;
     await appendProfileAudit(client, actor, customerId, command, result, receiptId,
       Date.now() - started);

@@ -11,6 +11,7 @@ import { sanitizedKnowledgeSchema } from "../../contracts/knowledge";
 import { knowledgeLineageIsCurrent } from "../profiles/eligibility";
 
 import { enqueueExecutionSourceInvalidation } from "../execution/invalidation";
+import {refreshReportScopeWatches} from '../reports/invalidation';
 
 export const projectionContract = "retrieval-projection-v1";
 export const projectionContractDigest = createHash("sha256")
@@ -198,6 +199,7 @@ export async function materializeCurrentProjection(client: PoolClient,
       JSON.stringify(chunk.locators),JSON.stringify(chunk.warnings)]);
   }
   await enqueueRetrievalJob(client,sourceId,"index",environmentId);
+  await refreshReportScopeWatches(client,candidate.workspaceId,candidate.customerId);
   return sourceId;
 }
 

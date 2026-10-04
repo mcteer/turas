@@ -2,7 +2,7 @@
 
 **Branch**: `009-weekly-executive-reporting` | **Date**: 2026-10-03 | **Spec**: [spec.md](spec.md)
 
-**Status**: Design only; implementation and all runtime gates remain pending.
+**Status**: Local implementation available; exact final-source verification is recorded in [validation.md](validation.md). Controlled provider delivery and hosted acceptance remain distinct release gates.
 **Input**: Roadmap 009 / TR-04 after 008 merged in PR 16.
 
 ## Summary
@@ -167,6 +167,12 @@ hold long database transactions across rendering or provider requests. An expire
 lease after dispatch is uncertainty, not permission to create a new send identity.
 
 ### Worker and Storage
+
+Retention uses the user-confirmed `report-retention-v2` clarification dated
+2026-10-04. Non-technical audit metadata expires at 730 days; minimal content-free
+identity/link tombstones persist solely for replay protection and correction lineage.
+This does not extend payload, recipient-address or diagnostic retention. The
+remaining audit minimization implementation and tests are tracked under T053.
 
 A separate report worker is supervised by root dev. It manages bounded draft,
 render, dispatch, reconciliation and cleanup queues with independent concurrency.

@@ -60,7 +60,7 @@ is not send authority. An approved send decision enqueues each recipient exactly
 
 401 `unauthenticated`; 403 `forbidden` where object visibility is already established;
 404 `not_found`; 409 `version_conflict`, `request_conflict`, `preview_expired`,
-`source_changed`, `policy_changed`, `delivery_uncertain`; 413 `body_too_large`;
+`source_changed`, `policy_changed`, `delivery_uncertain`, `payload_expired`; 413 `body_too_large`;
 422 `invalid_input`, `scope_too_large`, `incomplete_sources`, `layout_failed`,
 `font_unavailable`, `recipient_invalid`, `invalid_period`; 429 `rate_limited` with
 Retry-After; 503 `report_schema_unavailable`, `worker_unavailable`,

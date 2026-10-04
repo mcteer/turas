@@ -21,13 +21,27 @@ unknown fields and invalid values; no silent truncation or permissive coercion.
 - **C09**: Draft/render jobs have at most 3 attempts with delays of 10 and 60 seconds; draft deadline is 30 seconds and render deadline is 120 seconds; leases last 180 seconds with a heartbeat every 15 seconds; the renderer has at most 2 concurrent jobs, 2 CPUs and 2 GiB per job, with no network access.
 - **C10**: One delivery row identifies one publication and normalized recipient address; transport timeout is 15 seconds; at most 3 send attempts use the same provider key and identical request bytes; no retry starts 23 hours or more after first dispatch; uncertain outcomes after this boundary require operator reconciliation and are never automatically resent.
 - **C11**: A brand profile contains versioned asset/font/template hashes, source provenance and approval state draft, approved or revoked; only bundled reviewed SVG/PNG logos and static TTF/OTF fonts are allowed; a missing approved font or unsupported glyph blocks release.
-- **C12**: Unpublished report payloads expire after 30 days without a new revision, published payloads and recipient addresses expire after 365 days, render scratch files expire after 1 hour, and minimal audit metadata expires after 730 days; withdrawal queues immediate ineligibility and cleanup within 24 hours; cleanup batches contain at most 100 exact payload/file identities.
+- **C12**: Unpublished report payloads expire after 30 days without a new revision, published payloads and recipient addresses expire after 365 days, render scratch files expire after 1 hour, and non-technical audit metadata expires after 730 days; minimal content-free identity/link tombstones survive solely for replay protection and correction lineage; withdrawal queues immediate ineligibility and cleanup within 24 hours; cleanup batches contain at most 100 exact payload/file identities.
 
 C12 is a documented synthetic-demo default, not an organizational private-customer
 retention approval. Policy expiry is visible. Recipients cannot be reconstructed
 from retained hashes after address purge; no retry is possible after expiry.
-Request/delivery identities survive for the audit horizon and expired resources
-cannot be resurrected by replay. Retention changes need a future versioned policy.
+The user confirmed `report-retention-v2` on 2026-10-04: minimal content-free
+request/delivery identity and correction-link tombstones survive the audit horizon.
+They must not retain report content, recipient addresses, provider diagnostics,
+review rationale or other non-technical audit metadata. Expired resources cannot
+be resurrected by replay. Subsequent retention changes need a versioned policy.
+
+The implementation treats scope/request/publication/recipient IDs, predecessor and
+suppression links, source/template/payload digests, dispatch attempt identity and
+the fixed first-dispatch clock as technical tombstones. It minimizes decision
+actor/rationale/preview attribution, obsolete revision author/generation watches,
+receipt result details, provider IDs/failure diagnostics and provider occurrence/
+verification/settlement timestamps. Capture periods and formula/version identities
+remain content-free calculation lineage; calculation inputs/results are purged
+with report payloads. Configuration manifests remain active workspace configuration,
+not customer audit. Ephemeral previews are removed after expiry. Unmatched receipt
+IDs have a 24-hour, 1,000-ID-per-environment quarantine, not a perpetual audit record.
 
 ## Scope Selection and Period Identity
 

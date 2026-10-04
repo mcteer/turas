@@ -1,0 +1,16 @@
+import type {ReportDocument} from '../lib/reports/document';
+import {escapeReportText} from './weekly';
+/** Complete semantic content is shared by PDF and slides; HTML contains no remote resources. */
+export function executiveContent(document:ReportDocument){
+ return [...document.sections.map(section=>({heading:section.heading,paragraphs:section.blocks.map(block=>`${block.type==='proposal'?'Proposed next step: ':''}${block.text}${block.citations.length?' ['+block.citations.join(', ')+']':''}`)})),
+  {heading:'Reviewed Measures',paragraphs:document.metrics.map(metric=>`${metric.label}: ${metric.value===null?'Unknown - '+(metric.reason??'No reviewed input'):metric.value+' '+metric.unit}${metric.citations.length?' ['+metric.citations.join(', ')+']':''}`)},
+  {heading:'Evidence and Review',paragraphs:[...document.citations.map(citation=>`${citation.label}: ${citation.description}`),...document.annotations.map(annotation=>`Reviewer annotation (not an accepted fact): ${annotation}`)]}];
+}
+export function renderExecutiveHTML(document:ReportDocument,fonts:{regular:string;bold:string},logo:string){
+ const escape=escapeReportText,content=executiveContent(document);
+ const blocks=content.map(section=>`<section><h2>${escape(section.heading)}</h2>${section.paragraphs.length?section.paragraphs.map(text=>`<p>${escape(text)}</p>`).join(''):'<p>No reviewed input is available.</p>'}</section>`).join('');
+ return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${escape(document.title)}</title><style>
+ @font-face{font-family:Geist;src:url(data:font/ttf;base64,${fonts.regular})} @font-face{font-family:Geist;font-weight:700;src:url(data:font/ttf;base64,${fonts.bold})}
+ @page{size:A4;margin:20mm 18mm 22mm;@bottom-right{content:counter(page) ' / ' counter(pages);font-family:Geist;font-size:8pt;color:#666}}*{box-sizing:border-box}body{margin:0;font-family:Geist;font-size:11pt;line-height:1.55;color:#171717}header{padding-bottom:18px;border-bottom:1px solid #ddd}header img{width:94px;height:auto}h1{font-size:30pt;line-height:1.15;margin:24px 0 16px;letter-spacing:-.7pt}h2{font-size:19pt;line-height:1.25;margin:0 0 18px;break-after:avoid}p{margin:0 0 14px;overflow-wrap:anywhere;orphans:3;widows:3}.eyebrow{font-size:9pt;letter-spacing:1pt;text-transform:uppercase;color:#666}.metadata{font-size:10pt;color:#555}section{margin-top:28px;break-inside:avoid}footer{font-size:8pt;color:#666;margin-top:24px}
+ </style></head><body><header><img alt="Vercel" src="data:image/png;base64,${logo}"><p class="eyebrow">${escape(document.classification)} - ${escape(document.audience.replaceAll('_',' '))}</p><h1>${escape(document.title)}</h1><p class="metadata">${escape(document.period.fromDate)} to ${escape(document.period.toDate)} - ${escape(document.timezone)}${document.partial?' - Partial Period':''}${document.correctionOf?' - Reviewed Correction':''}</p><p class="metadata">Accountable Owner: ${escape(document.ownerLabel)}<br>Executive Sponsor: ${escape(document.sponsorLabel)}<br>Captured ${escape(document.asOf)}</p></header>${blocks}<footer>${escape(document.templateVersion)} - ${escape(document.formulaVersion)}<br>Vercel is a trademark of Vercel Inc.</footer></body></html>`;
+}

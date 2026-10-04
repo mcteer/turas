@@ -1,7 +1,8 @@
 # 009 Implementation and Validation Guide
 
-**Status**: Planned commands and gates. The scripts named below are implementation
-tasks and do not exist yet. No result in this document asserts that 009 has run.
+**Status**: Implementation and acceptance are in progress. Deterministic, artifact,
+UI, regression and paired-snapshot scripts exist; load and controlled-release
+tooling remain pending. Actual source-bound results are in `validation.md`.
 Start with `SPECIFY_FEATURE_DIRECTORY=specs/009-weekly-executive-reporting` and the
 checked-in `$speckit-implement` skill after switching models.
 

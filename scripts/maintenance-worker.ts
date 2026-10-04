@@ -34,9 +34,12 @@ let retrievalScanning = false;
 let cleanupScanning = false;
 let workforceScanning = false, workforceCleanupScanning = false, workforceHeartbeatBusy = false;
 
-function fatal(): void {
+function fatal(error:unknown): void {
   if (stopping) return;
   stopping = true;
+  const code=error && typeof error==='object' && 'code' in error && /^[A-Z0-9]{5,20}$/.test(String(error.code))?String(error.code):'worker_unavailable';
+  const permission=error instanceof Error?/^permission denied for (?:table|relation|schema) ([a-z_]+)$/.exec(error.message)?.[1]:undefined;
+  console.error(JSON.stringify({kind:'turas_worker_failure',worker:'maintenance',code,...(permission?{relation:permission}:{})}));
   clearInterval(timer);
   clearInterval(retrievalTimer);
   clearInterval(cleanupTimer);

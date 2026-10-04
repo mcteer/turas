@@ -1,0 +1,2 @@
+import {ReportDetail} from '../../../../../_components/reports/report-detail';
+export default async function ReportPage({params,searchParams}:{params:Promise<{customerId:string;reportId:string}>;searchParams:Promise<{revisionId?:string|string[]}>}){const {customerId,reportId}=await params,query=await searchParams;const revisionId=typeof query.revisionId==='string'?query.revisionId:undefined;return <ReportDetail key={`${reportId}:${revisionId??''}`} customerId={customerId} reportId={reportId} revisionId={revisionId}/>;}

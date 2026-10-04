@@ -8,6 +8,7 @@ import type { ExecutionCommand,ExecutionRecordContent } from "./schema";
 import { executionBaseline,lockExecutionHead,advanceExecution } from "./baselines";
 import { verifyExecutionSources,type ExecutionSource } from "./sources";
 import { assertExecutionPreview } from "./previews";
+import {invalidateReportSource,refreshReportScopeWatches} from '../reports/invalidation';
 type MilestoneCommand=Extract<ExecutionCommand,{action:'milestone.decide'}>;
 const transitions:Record<string,Partial<Record<string,string>>>={
   not_started:{start:'in_progress',waive:'waived'},in_progress:{block:'blocked',request_review:'ready_for_review',waive:'waived'},
@@ -43,11 +44,14 @@ export async function milestoneReviewInputs(db:PoolClient,actor:ExecutionActor,c
 async function appendMilestone(db:PoolClient,actor:ExecutionActor,customerId:string,engagementId:string,milestone:{id:string;version:string;state:string},decision:string,
   evidenceRevisionIds:string[],requestKey:string,rationale:string) {
   const id=randomUUID(),next=milestoneTransition(milestone.state,decision);
+  const previous=(await db.query('SELECT current_event_id FROM execution_milestone_heads WHERE id=$1',[milestone.id])).rows[0]?.current_event_id;
   await db.query(`INSERT INTO execution_milestone_events(id,environment_id,workspace_id,customer_id,engagement_id,milestone_id,action,expected_version,evidence_revision_ids,request_key,actor_membership_id)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,[id,getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,customerId,engagementId,milestone.id,decision,
       Number(milestone.version),evidenceRevisionIds,requestKey,actor.membershipId]);
   await db.query('INSERT INTO execution_milestone_payloads(event_id,rationale) VALUES($1,$2)',[id,rationale]);
   await db.query('UPDATE execution_milestone_heads SET state=$2,current_event_id=$3,version=version+1 WHERE id=$1',[milestone.id,next,id]);
+  if(previous)await invalidateReportSource(db,'milestone_decision',previous);
+  await refreshReportScopeWatches(db,actor.workspaceId,customerId,engagementId);
 }
 export async function decideMilestone(db:PoolClient,actor:ExecutionActor,customerId:string,engagementId:string,command:MilestoneCommand) {
   const context=await milestoneReviewInputs(db,actor,customerId,engagementId,command); assertExecutionPreview(actor,context.inputs,command);

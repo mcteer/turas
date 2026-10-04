@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-03
 
-**Status**: Specified and clarified; per-send approval confirmed. Implementation has not started.
+**Status**: Local implementation available; per-send approval confirmed. Final verification and provider/hosted acceptance are tracked separately in [validation.md](validation.md).
 
 **Input**: Run specify, clarify, plan, tasks and analyze for roadmap 009, then hand off before implement. Scope is TR-04 after merged 008, using the weekly and executive content contracts.
 
@@ -295,6 +295,16 @@ withdraw a source between preparation and release.
   agent authority; local evidence does not claim hosted readiness.
 
 ## Assumptions
+
+### Clarification — 2026-10-04
+
+- The user selected technical tombstones for 730-day audit expiry. Under
+  `report-retention-v2`, purge non-technical audit metadata after 730 days but
+  retain minimal content-free identities/links solely for replay protection and
+  correction lineage. This resolves references from newer corrections to expired
+  publications without preserving report content or private delivery diagnostics.
+
+### Other assumptions
 
 - 008 merged in PR 16; its existing reviewed logs, outcomes and estimates are the
   authoritative delivery inputs. Historical validation is not proof of 009 behavior.

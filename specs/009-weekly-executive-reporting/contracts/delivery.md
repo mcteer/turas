@@ -71,8 +71,12 @@ Webhook endpoint accepts only bounded raw signed requests; verify via the SDK wi
 timestamp tolerance 5 minutes, event ID and configured signing secret before parsing.
 Maximum raw body 256 KiB. Persist only matched metadata for the configured environment,
 known sender and delivery/recipient, never arbitrary webhook body or content.
-Deduplicate event ID; quarantine bounded unmatched IDs for up to 24 hours for response
-races, without addresses/content. Unknown events cannot manufacture a sent report.
+Deduplicate event ID; quarantine at most 1,000 unmatched IDs per environment for up
+to 24 hours for response races, without addresses/content. At capacity acknowledge
+without retaining another unmatched ID; matched receipts remain eligible for
+settlement. Cleanup removes at most 100 exact expired IDs per transaction, using
+an environment/ID/digest-bound function and row locks. Unknown events cannot
+manufacture a sent report.
 
 Maintain append-only facts and a deterministic status projection. A late acceptance
 cannot downgrade delivered; a later bounce/complaint remains visible. Out-of-order

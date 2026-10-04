@@ -70,7 +70,7 @@ owned upgrade and runtime-role checks; Preview status is recorded separately.
 The complete slice merged in [PR 16](https://github.com/mcteer/turas/pull/16).
 This checkpoint does not claim hosted execution readiness.
 
-## Active 009 Planning
+## Active 009 Implementation
 
 The [specification](specs/009-weekly-executive-reporting/spec.md),
 [plan and contracts](specs/009-weekly-executive-reporting/plan.md),
@@ -78,9 +78,14 @@ The [specification](specs/009-weekly-executive-reporting/spec.md),
 [validation guide](specs/009-weekly-executive-reporting/quickstart.md) define reviewed
 weekly reporting, executive PDF/editable slides, audience/source fences and durable
 email delivery. Weekly schedules prepare drafts; the user confirmed mcteer approval for every exact
-send. No reporting runtime is implemented yet.
-Actual branding/sender/test-recipient inputs are release gates, and local rendering
-or provider simulation will not establish hosted readiness.
+send. Local reporting implementation is available; the
+[validation log](specs/009-weekly-executive-reporting/validation.md) records
+source-bound deterministic, artifact, lifecycle, recovery and regression evidence,
+including passing final-source four-project WebKit and representative load checks.
+Local implementation/testing is complete. The controlled live-send gate
+is explicitly deferred by the user (“Resend can come later”) and remains separate
+from development completion. Local rendering/provider simulation does not establish real
+delivery or hosted readiness. No deployment or roadmap 010 work is included.
 
 ## Build sequence
 

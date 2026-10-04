@@ -1,5 +1,5 @@
 {
-  "version": 38,
+  "version": 41,
   "migrations": [
     {
       "file": "001-identity-foundation.cjs",
@@ -152,6 +152,18 @@
     {
       "file": "038-execution-advice-lifecycle.cjs",
       "sha256": "3e6a1e9c545ea91466567d064606cd4fea709260721e9ec2f26524a5af7ff030"
+    },
+    {
+      "file": "039-report-revisions.cjs",
+      "sha256": "d26b643726d5895c7dabf64330dd849f0d16d7daa5bd5271dbc509c4f408c36d"
+    },
+    {
+      "file": "040-report-delivery.cjs",
+      "sha256": "1de265436fe9b265149f20ebd56776dfca63a4d48aa9a9710831f9d6f6be81bc"
+    },
+    {
+      "file": "041-report-jobs-cleanup.cjs",
+      "sha256": "80d559caf9a594f713b10f3453b8bec48554c3a2ba6ae0e31163f34f8977267e"
     }
   ]
 }

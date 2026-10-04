@@ -11,6 +11,8 @@ import {executionDigest} from "../../../lib/server/execution/commands";
 import {executionRecordSchema} from "../../../lib/server/execution/schema";
 import {timeInputSchema} from "../../../lib/server/execution/time-schema";
 import type {ExecutionActor} from "../../../lib/server/execution/policy";
+import {requireOwnedReportsDatabase} from '../reports/environment';
+import {createReportsBaseline} from '../reports/baseline';
 export const executionBenchmarkShape={engagements:1000,resources:500,timeRevisions:50000,recordRevisions:20000,decisions:10000,clients:5,warmups:10,samples:100} as const;
 type Row=Record<string,unknown>;
 // All identifiers below are authored constants, not command-line or user input.
@@ -22,9 +24,9 @@ async function bulk(db:PoolClient,table:string,rows:Row[]){
 }
 /** Bulk synthetic history is load only. The separate governed journey is the
  * approval evidence. Constraints, immutable triggers and production rates stay on. */
-export async function seedExecutionBenchmark(){
-  requireOwnedExecutionClone();
-  const f=await withTransaction(db=>createExecutionBaseline(db));
+export async function seedExecutionBenchmark(options:{reporting?:true}={}){
+  if(options.reporting)await requireOwnedReportsDatabase();else requireOwnedExecutionClone();
+  const f=await withTransaction(db=>options.reporting?createReportsBaseline(db):createExecutionBaseline(db));
   const actor=f.reviewer,users:ExecutionActor[]=[f.author,actor];
   const date=new Date(Date.now()-86400000).toISOString().slice(0,10),period={from:date,to:date};
   const resource=await createResource(actor,{requestKey:randomUUID(),rationale:"Synthetic representative benchmark resource",resource:{...syntheticResource(),timezone:"UTC",membershipId:f.author.membershipId}});
@@ -34,6 +36,9 @@ export async function seedExecutionBenchmark(){
   const engagements=[{engagementId:f.engagementId,baselineId:f.baselineId,planId:f.created.planId}],resources=[resource.resourceId!];
   const receipts:Array<{actor:ExecutionActor;key:string;engagementId:string}>=[],candidates:Array<{engagementId:string;entryId:string;revisionId:string;contentDigest:string}>=[];
   await withTransaction(async db=>{
+    // The guarded 009 bulk seed is setup, not a measured application request.
+    // Keep production/read deadlines unchanged; SET LOCAL ends at this commit.
+    if(options.reporting)await db.query("SET LOCAL statement_timeout='60s'");
     for(let i=2;i<5;i++){
       const principalId=randomUUID(),membershipId=randomUUID(),sessionId=randomUUID(),loginName=`execution_benchmark_${i}_${randomUUID().slice(0,8)}`;
       await db.query("INSERT INTO principals(id,login_name,display_name) VALUES($1,$2,'Synthetic load contributor')",[principalId,loginName]);

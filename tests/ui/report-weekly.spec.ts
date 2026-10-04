@@ -1,0 +1,34 @@
+import {test} from '@playwright/test';
+import {reportsDeliveryFixture} from '../fixtures/reports/delivery';
+import {publishedReportFixture} from '../fixtures/reports/published';
+import {reportUiGuard,checkReportAccessibility,reportUiExpect as expect} from '../fixtures/reports/ui';
+import {signIn} from '../fixtures/ui';
+test.beforeEach(async()=>{await reportUiGuard();});
+test('prepares an honest empty weekly draft with keyboard-accessible scope selection',async({page},info)=>{
+ test.setTimeout(240000);const fixture=await reportsDeliveryFixture();
+ await signIn(page,'panel');await page.goto(`/customers/${fixture.customerId}/reports`);
+ await expect(page.getByRole('heading',{name:'No Reports Yet'})).toBeVisible();
+ await page.getByRole('button',{name:'Prepare Report',exact:true}).focus();await page.keyboard.press('Enter');
+ await page.getByRole('combobox',{name:'Engagement',exact:true}).selectOption(fixture.engagementId);
+ await page.getByLabel('Timezone',{exact:true}).fill('UTC');
+ await page.getByLabel('Period Start').fill('2026-09-21');await page.getByLabel('Period End').fill('2026-09-27');
+ await page.getByRole('button',{name:'Prepare Draft',exact:true}).click();
+ await page.getByRole('link',{name:'Open Report'}).click();
+ await expect(page.getByRole('heading',{name:'Executive Summary',exact:true})).toBeVisible();
+ await expect(page.getByText('No validated update available for this period.',{exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Review Publication'})).toHaveCount(0);
+ await checkReportAccessibility(page);await page.screenshot({path:info.outputPath('weekly-empty.png'),fullPage:true});
+});
+test('reviews and publishes a new correction through exact browser decisions',async({page},info)=>{
+ test.setTimeout(300000);const fixture=await publishedReportFixture();
+ await signIn(page,'mcteer');await page.goto(`/customers/${fixture.customerId}/reports/${fixture.published.reportId}`);
+ await page.getByLabel('Reviewer Annotation (Optional)').fill('Recommendation: review the next synthetic proof.');
+ await page.getByRole('button',{name:'Prepare New Revision',exact:true}).click();
+ await page.getByRole('button',{name:'Prepare Review',exact:true}).click();
+ await page.getByRole('button',{name:'Review Publication',exact:true}).click();
+ await page.getByLabel('Decision Rationale',{exact:true}).fill('Review exact synthetic correction and eligible sources');
+ await page.getByRole('button',{name:'Confirm Publication',exact:true}).click();
+ await expect(page.getByRole('button',{name:'Withdraw Publication',exact:true})).toBeVisible();
+ await expect(page.getByText(/Corrects an earlier publication/)).toBeVisible();
+ await checkReportAccessibility(page);await page.screenshot({path:info.outputPath('weekly-correction.png'),fullPage:true});
+});

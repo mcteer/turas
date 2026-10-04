@@ -41,7 +41,7 @@ must first pass the original source approval workflow.
 3. Value and Adoption: measured baseline/current/target and limitations.
 4. Delivery Portfolio: selected customer's engagements only.
 5. Risk and Readiness: reviewed delivery/handoff evidence; support automation unavailable.
-6. Next-period Plan: reviewed planned activities and explicit decisions; qualified
+6. Next Period Plan: reviewed planned activities and explicit decisions; qualified
    expansion unavailable until a later feature supplies authorized records.
 7. Appendix: eligible evidence, formulas, detailed milestones and omission reasons.
 
