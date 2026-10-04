@@ -115,7 +115,13 @@ async function main(): Promise<void> {
           "--reporter=verbose", "--reporter=json", `--outputFile.json=${suiteReportPath}`, "--silent=true", "--testTimeout=120000", "--hookTimeout=120000", ...(nativeOnly ? ["--bail=1"] : []), suite], {
           env: { ...process.env, CI: process.env.CI ?? "" }, stdio: ["ignore", fd, fd], timeout: 1_200_000,
         });
-        if (result.error || result.status !== 0) throw new Error(`008 disposable execution suite failed: ${suite}`);
+        if (result.error || result.status !== 0) {
+          const report = await readFile(suiteReportPath, "utf8").catch(() => "");
+          const signatures = ["timed out", "timeout", "ECONNREFUSED", "Cannot find module", "expected", "environment marker", "statement timeout"];
+          console.error(JSON.stringify({gate:"owned-execution-suite-failure",suite,status:result.status,
+            signatures:signatures.filter(value=>report.toLowerCase().includes(value.toLowerCase()))}));
+          throw new Error(`008 disposable execution suite failed: ${suite}`);
+        }
         const report = JSON.parse(await readFile(suiteReportPath, "utf8"));
         verifyExecutionTestReport(report, [suite]);
         reports.push(report);
