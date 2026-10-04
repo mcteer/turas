@@ -8,6 +8,11 @@ on:
 permissions:
   contents: read
 
+env:
+  # Owned UI clones reuse module paths across disposable roots; do not reuse
+  # cached TSX transforms from another root during startup.
+  TSX_DISABLE_CACHE: '1'
+
 concurrency:
   group: turas-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
