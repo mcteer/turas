@@ -295,6 +295,16 @@ on the project; the app integrates `@vercel/analytics` with page URL redaction
 for customer, engagement, plan, resource, import and conversation identifiers.
 Query strings and fragments are removed; unknown routes and custom events are
 discarded. Local development uses the SDK's development mode.
+
+Hosted chat requires an active watchdog: admission fails closed when no worker
+heartbeat is newer than 15 seconds. The minute cron at `/eve/v1/turas/watchdog`
+runs a 65-second bounded worker, refreshing readiness every five seconds and
+using database job leases for cancellation/retry. Set a Production-only
+`CRON_SECRET` of at least 32 characters; browser cookies are not accepted by the
+watchdog. Verify the generated function supports runs longer than 65 seconds,
+cron invocation history, fresh database heartbeats and an authenticated chat
+before declaring hosted recovery complete. A successful build alone does not
+establish hosted readiness. Local development continues using its local worker.
 The workspace uses a shared neutral design system with Geist typography, grouped
 navigation, consistent page headers, form panels, accessible controls, and tables
 that scroll within their panels. Customer profiles, knowledge, plans, staffing,
