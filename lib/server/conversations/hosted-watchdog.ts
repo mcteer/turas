@@ -10,8 +10,14 @@ export function authorizeHostedWatchdog(request: Request, secret = process.env.C
   const expected = secret ? `Bearer ${secret}` : "";
   if (request.method !== "GET" || request.headers.has("cookie") || !secret || secret.length < 32 ||
     Buffer.byteLength(supplied) !== Buffer.byteLength(expected) ||
-    !timingSafeEqual(Buffer.from(supplied), Buffer.from(expected)))
+    !timingSafeEqual(Buffer.from(supplied), Buffer.from(expected))) {
+    console.warn(JSON.stringify({ kind: "hosted_watchdog_denied", methodAllowed: request.method === "GET",
+      cookiePresent: request.headers.has("cookie"), secretConfigured: !!secret && secret.length >= 32,
+      bearerPresent: supplied.startsWith("Bearer "), lengthMatches: Buffer.byteLength(supplied) === Buffer.byteLength(expected),
+      bearerMatches: !!expected && Buffer.byteLength(supplied) === Buffer.byteLength(expected) &&
+        timingSafeEqual(Buffer.from(supplied), Buffer.from(expected)) }));
     throw new HttpFailure(403, "maintenance_denied", "Action not allowed");
+  }
 }
 
 /** Minute cron invocations overlap by five seconds. Existing SKIP LOCKED job
