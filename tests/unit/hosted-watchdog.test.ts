@@ -18,8 +18,14 @@ describe("hosted watchdog authentication", () => {
   });
   it("fails closed without a secret and refuses browser cookies or writes", () => {
     expect(() => authorizeHostedWatchdog(request(), "")).toThrow();
-    expect(() => authorizeHostedWatchdog(request({ authorization: `Bearer ${secret}`, cookie: "synthetic=1" }), secret)).toThrow();
+    for (const cookie of ["turas_session=synthetic", "__Host-turas_session=synthetic", "platform=synthetic; turas_session=synthetic"])
+      expect(() => authorizeHostedWatchdog(request({ authorization: `Bearer ${secret}`, cookie }), secret)).toThrow();
     expect(() => authorizeHostedWatchdog(request({ authorization: `Bearer ${secret}` }, "POST"), secret)).toThrow();
+  });
+  it("allows platform cookies only with the exact independent cron bearer", () => {
+    expect(() => authorizeHostedWatchdog(request({ authorization: `Bearer ${secret}`, cookie: "synthetic_platform=1" }), secret)).not.toThrow();
+    expect(() => authorizeHostedWatchdog(request({ cookie: "synthetic_platform=1" }), secret)).toThrow();
+    expect(() => authorizeHostedWatchdog(request({ authorization: "Bearer wrong", cookie: "synthetic_platform=1" }), secret)).toThrow();
   });
 });
 

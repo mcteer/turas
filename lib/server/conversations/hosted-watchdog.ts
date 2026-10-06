@@ -8,11 +8,15 @@ import { performMaintenance } from "./maintenance";
 export function authorizeHostedWatchdog(request: Request, secret = process.env.CRON_SECRET): void {
   const supplied = request.headers.get("authorization") ?? "";
   const expected = secret ? `Bearer ${secret}` : "";
-  if (request.method !== "GET" || request.headers.has("cookie") || !secret || secret.length < 32 ||
+  // Vercel's protected scheduler supplies platform cookies. These grant no
+  // authority here: only the exact cron bearer authenticates this endpoint.
+  const applicationCookie = (request.headers.get("cookie") ?? "").split(";").some(part =>
+    ["turas_session", "__Host-turas_session"].includes(part.trim().split("=", 1)[0]));
+  if (request.method !== "GET" || applicationCookie || !secret || secret.length < 32 ||
     Buffer.byteLength(supplied) !== Buffer.byteLength(expected) ||
     !timingSafeEqual(Buffer.from(supplied), Buffer.from(expected))) {
     console.warn(JSON.stringify({ kind: "hosted_watchdog_denied", methodAllowed: request.method === "GET",
-      cookiePresent: request.headers.has("cookie"), secretConfigured: !!secret && secret.length >= 32,
+      applicationCookiePresent: applicationCookie, secretConfigured: !!secret && secret.length >= 32,
       bearerPresent: supplied.startsWith("Bearer "), lengthMatches: Buffer.byteLength(supplied) === Buffer.byteLength(expected),
       bearerMatches: !!expected && Buffer.byteLength(supplied) === Buffer.byteLength(expected) &&
         timingSafeEqual(Buffer.from(supplied), Buffer.from(expected)) }));
