@@ -18,7 +18,7 @@ export const supportSkillToolSchema = z.object({ name: z.literal("tam-support-gu
 const text = z.string().trim().min(1).max(2000);
 const citations = z.array(supportId).max(20).refine(keys => new Set(keys).size === keys.length);
 export const supportAdviceResultSchema = z.object({ contractVersion: z.literal("support-advice-v1"), summary: text,
-  facts: z.array(z.object({ statement: text, citationKeys: citations.refine(keys => keys.length > 0) }).strict()).max(20),
+  facts: z.array(z.object({ statement: text, citationKeys: citations.min(1) }).strict()).max(20),
   unknowns: z.array(z.string().trim().min(1).max(500)).max(20),
   actionSuggestions: z.array(z.object({ content: supportActionSchema, citationKeys: citations }).strict()).max(5),
 }).strict().superRefine((result, ctx) => {

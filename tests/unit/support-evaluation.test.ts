@@ -3,8 +3,16 @@ import { supportEvaluationCases, supportEvaluationBounds, validateSupportEvaluat
 import { supportCaptureSettled } from "../../scripts/support-capture-settlement";
 import { captureSupportProviderOutput, supportProviderFinishReason } from "../../scripts/support-provider-output";
 import { supportDigest } from "../../lib/server/support/commands";
+import { supportAdviceResultSchema } from "../../lib/support/advice";
+import { z } from "zod";
 
 describe("support actual-output cohort identity", () => {
+  it("exposes required fact citations to the provider JSON schema", () => {
+    const schema = z.toJSONSchema(supportAdviceResultSchema);
+    expect(schema).toMatchObject({ properties: { facts: { items: { properties: { citationKeys: { minItems: 1 } } } } } });
+    expect(supportAdviceResultSchema.safeParse({ contractVersion: "support-advice-v1", summary: "Unknown",
+      facts: [{ statement: "Uncited claim", citationKeys: [] }], unknowns: [], actionSuggestions: [] }).success).toBe(false);
+  });
   it("captures only a bounded exact final suggestion, not tool narration or malformed output", () => {
     expect(supportProviderFinishReason({ unified: "stop", raw: "private-provider-detail" })).toBe("stop");
     expect(supportProviderFinishReason("private-provider-detail")).toBe("unknown");

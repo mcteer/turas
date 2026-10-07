@@ -24,17 +24,20 @@ import { supportSourcesSchema } from "../lib/server/support/schema";
 
 async function main() {
   const fixtureMode = process.argv.length === 3 && process.argv[2] === "--fixture";
+  const diagnosticMode = process.argv.length === 3 && process.argv[2] === "--diagnostic-S02";
   if (fixtureMode) assertDeterministicTestMode();
-  else if (process.argv.length !== 3 || process.argv[2] !== "--live" || process.env.TURAS_ALLOW_LIVE_MODEL_TESTS !== "1" ||
+  else if (process.argv.length !== 3 || (!diagnosticMode && process.argv[2] !== "--live") || process.env.TURAS_ALLOW_LIVE_MODEL_TESTS !== "1" ||
     !process.env.AI_GATEWAY_API_KEY || process.env.TURAS_SUPPORT_NATIVE_FIXTURE_READY)
     throw new Error("Explicit configured-provider live opt-in required");
   const sourceDigest = await featureSourceDigest("010");
   const model = (await readFile("agent/agent.ts", "utf8")).match(/const selectedModel = "([^"]+)";/)?.[1];
   if (!model) throw new Error("Configured model identity unavailable");
   await mkdir("local-artifacts/010", { recursive: true, mode: 0o700 });
-  const directory = await mkdtemp(resolve("local-artifacts/010/live-"));
+  const directory = await mkdtemp(resolve(diagnosticMode ? "local-artifacts/010/diagnostic-S02-" : "local-artifacts/010/live-"));
   let failures = 0;
-  for (const scenario of supportEvaluationCases) {
+  const cases = diagnosticMode ? supportEvaluationCases.filter(scenario => scenario.id === "S02") : supportEvaluationCases;
+  if (diagnosticMode && cases.length !== 1) throw new Error("Exactly one S02 diagnostic case required");
+  for (const scenario of cases) {
     await withSupportEvalEnvironment(async environment => {
       let attemptId: string | undefined, dispatched = false;
       let phase = "setup";
@@ -134,7 +137,7 @@ async function main() {
           caseId: scenario.id, sourceDigest, rootAgentDigest: environment.rootAgentDigest, actualConfiguredProvider: !fixtureMode,
           initialDispatches: 1, automaticPaidRetries: 0, latencyMs: Date.now() - startedAt, domainUnchanged,
           sourceChangedBeforeRelease: changed, evidence }), { mode: 0o600, flag: "wx" });
-        if (!fixtureMode) {
+        if (!fixtureMode && !diagnosticMode) {
         const capture = mapSupportCapture({ caseId: scenario.id, sourceDigest, rootAgentDigest: environment.rootAgentDigest,
           model, latencyMs: Date.now() - startedAt, domainUnchanged, staleSuggestionSaveDenied, evidence });
         await writeFile(resolve(directory, `${scenario.id}-capture.json`), JSON.stringify(capture), { mode: 0o600, flag: "wx" });
@@ -163,8 +166,8 @@ async function main() {
     }, { empty: true, deadlineAt: Date.now() + 360000 });
   }
   if (await featureSourceDigest("010") !== sourceDigest) throw new Error("Source changed during live capture");
-  console.log(JSON.stringify({ gate: fixtureMode ? "support-capture-runner-fixture" : "support-live-capture",
-    cases: 8, failures, actualConfiguredProvider: !fixtureMode, reviewed: false, hostedProof: false }));
+  console.log(JSON.stringify({ gate: diagnosticMode ? "support-S02-diagnostic" : fixtureMode ? "support-capture-runner-fixture" : "support-live-capture",
+    cases: cases.length, failures, actualConfiguredProvider: !fixtureMode, reviewed: false, hostedProof: false }));
   if (failures) process.exitCode = 1;
 }
 main().catch(() => { console.error("Support live capture failed; retain private artifacts, do not retry paid work automatically"); process.exitCode = 1; });

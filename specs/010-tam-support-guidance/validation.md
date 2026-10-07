@@ -11,6 +11,75 @@ reporting and Spec Kit changes in the main checkout are not included.
 
 #### Publication and CI Bootstrap Corrections
 
+Full support regression `sh_11807a151001nIus5VLTWJNQZY` passed **22 suites /
+122 tests**, zero failures/skips, at `2026-10-07T20:32:34.608Z` on source
+`eda559e3c8313515bd3a0cde334da39438d29cffee926fc5088401406dd1538d`.
+This includes explicit provider JSON Schema fact-citation minimum regression.
+It is deterministic evidence only; no additional paid capture was authorized or
+run, and configured-provider acceptance remains outstanding.
+
+Authorized single S02 diagnostic `sh_118036da1001y2SoNELP3qAdbM` failed
+with complete actual usage/cost and retained bounded final JSON in private
+`diagnostic-S02-m12Z3P`. Offline schema validation identified four empty fact
+citation arrays; no other shape errors were reported. The existing server custom
+refinement rejected them, but did not express `minItems` in provider JSON Schema.
+Fact citations now use explicit `.min(1)`, preserving server rejection while
+exposing the requirement to the provider. Five focused evaluation tests and
+typecheck pass, including a provider-schema assertion. No further paid call was
+made; this fix does not establish live acceptance or explain other deadline failures.
+
+Distinct interrupted-dispatch check `sh_117e73d0f001UovvZcHh29fsFv`
+passed through the actual framework runtime with exactly one fixture-provider
+call and verified uncertain native dispatch across restart. Paid calls were
+disabled. This complements the preserved database/workflow recovery result;
+it is not configured-provider or hosted proof.
+
+Published-source preserved recovery `sh_117e48cd800173KCjGDzocBUTp`
+passed on `cb902f39734007ea179de79faeeb87b27ca65b06dc07b5756eeab4c4d366fc97`:
+one record, two revisions and one receipt survived restart. Workflow digest
+`1a87cee07f0af44d84f23e890ca2633950af2f23507e5973582265d1c0574db9`
+was preserved; dependent withholding and purge were verified. This isolated
+check reports neither hosted proof nor native uncertain-dispatch verification;
+the latter remains a separate acceptance check.
+
+Published-source runtime rebind `sh_117e097ad001MxDeQp1Axxps7A` passed
+on `cb902f39734007ea179de79faeeb87b27ca65b06dc07b5756eeab4c4d366fc97`.
+An actual disposable runtime LOGIN denied all 12 mutation statements; temporary
+role cleanup was verified. Production was unchanged. This establishes the local
+runtime-role denial check, not hosted behavior or live-model acceptance.
+
+Published-source benchmark rebind `sh_117c5cc96001nFMiIxPuLzujkL` passed
+on `cb902f39734007ea179de79faeeb87b27ca65b06dc07b5756eeab4c4d366fc97`,
+corpus `d9cfa1a4c669abfc5572870153f177488760a1be182b94908eeb5a0426e7ea50`.
+Each class used 100 samples, ten warmups and five clients against the required
+100 customers / 500 scopes / 5,000 actions / 20,000 revisions. p95 milliseconds:
+list 1723.309416, detail 1596.315791, preview 1730.679459, acknowledgement
+1957.694416. All meet the unchanged 2,000ms threshold with zero correctness
+failures, preserved Production rates and pacing excluded from latency. This is
+local performance evidence, not hosted or configured-provider acceptance.
+
+Same-head failed-job rerun `sh_117ae2ca3001MBWbmE2gBaTgLl` completed
+successfully: Actions `37661480961` is green across all nine jobs on `7aaa11b`.
+The rerun's `verify` job completed in 22m35s, including both legacy local WebKit
+and isolated 005 UI checks, without changing test limits or coverage. The earlier
+25-minute cancellation remains retained. This CI pass does not resolve the failed
+configured-provider cohort or the unfinished research/history follow-up.
+
+Published-head Actions run `37661480961` on `7aaa11b` passed eight jobs;
+`verify` was canceled at its 25-minute job limit during the legacy local WebKit
+cohort. That cohort started at `18:01:57Z`, reported 224 cases, and the job was
+canceled at `18:10:24Z`. No assertion failure was reported before cancellation;
+this is not a passing UI result. One failed-job-only rerun was launched on the
+same commit with unchanged test limits and coverage. Its result remains pending.
+
+Published `7aaa11b` full support check `sh_11778270c001Bl4HKQ4qs0GVVP`
+passed **22 suites / 121 tests**, zero failures/skips, at
+`2026-10-07T17:55:45.213Z`, source
+`cb902f39734007ea179de79faeeb87b27ca65b06dc07b5756eeab4c4d366fc97`.
+This matches the eight-case diagnostic fixture source. Exact-head CI remains
+pending; the failed live-provider cohort and research/history follow-up remain
+unfinished and are not covered by this deterministic pass.
+
 Private diagnostic capture fixture `sh_117656f19001fhFJTMhxNmZ8eB`
 passed **eight cases / zero failures**, complete terminal usage throughout, on
 source `cb902f39734007ea179de79faeeb87b27ca65b06dc07b5756eeab4c4d366fc97`.
