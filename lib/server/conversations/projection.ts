@@ -1,4 +1,6 @@
 import { projectExecutionNativeEventInTransaction, type ExecutionNativeProjection } from "../execution/native-events";
+import { projectSupportNativeEventInTransaction, type SupportNativeProjection } from "../support/native-events";
+import { recordSupportTelemetry } from "../support/telemetry";
 import { recordExecutionTelemetry } from "../execution/telemetry";
 import { conversationFeature } from "./feature";
 import type { PoolClient } from "pg";
@@ -52,21 +54,23 @@ export async function projectNativeEvent(
   const staffing = await withTransaction(async client => {
     const row = (await client.query(`SELECT conversation_id FROM response_attempts a JOIN conversations c ON c.id=a.conversation_id
       WHERE a.id=$1 AND c.eve_session_id=$2 AND c.binding_state='bound'`, [attemptId, nativeSessionId])).rows[0];
-    return row ? ["staffing", "execution"].includes((await conversationFeature(client, row.conversation_id)).kind) : false;
+    return row ? ["staffing", "execution", "support"].includes((await conversationFeature(client, row.conversation_id)).kind) : false;
   });
   const prepared = staffing && !staffingMetadataEvent(event.type) ? await prepareGovernedReleaseForNative(nativeSessionId,
     { responseAttemptId: attemptId, incomingTurnId: event.type === "message.received" && typeof event.data?.turnId === "string" ? event.data.turnId : undefined }) : null;
   const started = performance.now();
   const projection = await withTransaction((client) =>
     projectNativeEventInTransaction(client, nativeSessionId, attemptId, event, streamIndex, prepared));
-  if (projection?.usage) ("execution" in projection ? recordExecutionTelemetry : recordStaffingTelemetry)({ operation: "model", outcome: "committed", ...projection.usage,
+  if (projection && "support" in projection && projection.usage) recordSupportTelemetry({ operation: "model", outcome: "committed",
+    correlationId: attemptId, ...projection.usage, durationMs: Math.min(86400000, Math.max(0, performance.now() - started)) });
+  if (projection?.usage && !("support" in projection)) ("execution" in projection ? recordExecutionTelemetry : recordStaffingTelemetry)({ operation: "model", outcome: "committed", ...projection.usage,
     durationMs: Math.min(86_400_000, Math.max(0, performance.now() - started)) });
 }
 
 export async function projectNativeEventInTransaction(
   client: PoolClient, nativeSessionId: string, attemptId: string,
   event: NativeEvent, streamIndex?: number, preparedStaffing?: GovernedNativeRelease | null,
-): Promise<void | StaffingNativeProjection | ExecutionNativeProjection> {
+): Promise<void | StaffingNativeProjection | ExecutionNativeProjection | SupportNativeProjection> {
   if (!visibleTypes.has(event.type)) return;
   if (!event.meta.id?.startsWith("evt_") || !event.meta.at ||
       !Number.isFinite(Date.parse(event.meta.at))) {
@@ -81,6 +85,8 @@ export async function projectNativeEventInTransaction(
     JOIN conversations c ON c.id=a.conversation_id WHERE a.id=$1 AND c.eve_session_id=$2 AND c.binding_state='bound'`,
     [attemptId, nativeSessionId])).rows[0];
   if (!owned) throw new Error("Native attempt association unavailable");
+  const supportProjection = await projectSupportNativeEventInTransaction(client, nativeSessionId, attemptId, event, streamIndex, preparedStaffing?.kind === "support" ? preparedStaffing : null);
+  if (supportProjection) return supportProjection;
   const staffingProjection = await projectStaffingNativeEventInTransaction(client, nativeSessionId, attemptId, event, streamIndex, preparedStaffing?.kind === "staffing" ? preparedStaffing : null);
   if (staffingProjection) return staffingProjection;
   const executionProjection = await projectExecutionNativeEventInTransaction(client, nativeSessionId, attemptId, event, streamIndex, preparedStaffing?.kind === "execution" ? preparedStaffing : null);

@@ -89,3 +89,38 @@ Local Node-24 validation passed: typecheck, eight focused configuration/privacy
 tests, documentation and diff checks, and the Next.js production build.
 The first Git-triggered Preview build reached READY; hosted runtime verification
 uses the following deployment so it receives the refreshed Preview variables.
+
+## Authorized Production recovery (2026-10-05)
+
+The maintainer authorized repurposing the configured Production database after
+the fresh deployment failed runtime configuration validation. The historical
+Production descriptions above describe the earlier state, not the current schema.
+
+A private custom-format backup was captured over certificate-verified TLS and
+restored successfully into isolated Postgres 18 with pgvector. All 16 legacy
+tables were moved into `legacy_archive_20261005`, not deleted or imported into
+fresh domain records. Committed `main` at `080ad48` initialized explicit schema
+041 after provisioning the required runtime role. Runtime grants and synthetic
+bootstrap completed. The Production marker is `production-neon-20261005`.
+
+Both deployed database URL variables now use a separate Production runtime login;
+the migration-owner credential remains private and is not deployed. Runtime
+verification confirmed three synthetic principals, no archive-schema access and
+no environment-marker update privilege. Existing Production `mcteer` and `panel`
+credentials were left unchanged. Partner and maintenance credentials were created
+for Production only; no Preview credentials or data were copied.
+
+Committed-main recovery deployment `dpl_4JR32V421UoWgS8rWQnuahSDJwKe`
+reached READY and was aliased to `www.turas.dev` and `turas.dev`. Public HTTP
+checks passed: anonymous root redirects to `/login`, login returns 200 and an
+anonymous session returns the expected 401. The synthetic partner login returns
+200 with Secure/HttpOnly session cookies; authenticated session, chat and customer
+pages return 200. Authenticated root correctly redirects to `/s`. Logout returns
+200 and reuse of the revoked cookie returns 401. A command-line Playwright/WebKit
+journey independently passed browser login, chat navigation, session/customer
+checks and logout. These checks establish basic site recovery, not
+hosted attachment storage, background-worker, reporting-delivery or
+full agent workflow acceptance. The unfinished 010 branch is not part of the
+recovery deployment. Keep the private backup and archived tables until a separate
+retention decision; restoring legacy service would require restoring its compatible
+code/configuration as well as its database layout.

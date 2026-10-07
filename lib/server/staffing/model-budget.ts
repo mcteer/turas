@@ -1,4 +1,5 @@
 import { wrapExecutionModel } from "../execution/model-budget";
+import { wrapSupportModel } from "../support/model-budget";
 import { wrapLanguageModel } from "ai";
 import { STAFFING_LIMITS } from "../../contracts/staffing";
 import { HttpFailure } from "../../contracts/http";
@@ -22,9 +23,10 @@ export function staffingContextCharge(current: { contextBytes: number; readCalls
 
 /** Both provider paths receive a finite output limit. Durable admission and
  * current dependency fencing must run before calling this wrapped model. */
-export function wrapStaffingModel(model: Model, mode: "operational" | "finance" | "execution" = "operational",
+export function wrapStaffingModel(model: Model, mode: "operational" | "finance" | "execution" | "support" = "operational",
   governance?: { deadlineAt: Date; beforeProvider: () => Promise<void> }): ReturnType<typeof wrapLanguageModel> {
   if (mode === "execution") return wrapExecutionModel(model, governance);
+  if (mode === "support") return wrapSupportModel(model, governance);
   // One wrapper is created for one durably admitted step. SDK retries cannot
   // make a second generate/stream call after the first may have reached billing.
   let invoked = false;

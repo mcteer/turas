@@ -16,6 +16,8 @@ import { expireStaffingReservations } from "../lib/server/staffing/reservations"
 import { processExecutionNativeRetirement } from "../lib/server/execution/native-retirement";
 import { settleDueExecutionAdvisories, runExecutionCleanupTick } from "../lib/server/execution/maintenance";
 import { settleDueStaffingAdvisories } from "../lib/server/staffing/advisory-maintenance";
+import { runSupportCleanupTick, expireSupportReceipts, settleDueSupportAdvice, runSupportAdviceCleanupTick, minimizeSupportAudit } from "../lib/server/support/maintenance";
+import { processSupportNativeRetirement } from "../lib/server/support/native-retirement";
 
 const rawOrigin = process.env.TURAS_EVE_INTERNAL_ORIGIN;
 if (!rawOrigin) throw new Error("Local eve service origin required");
@@ -28,6 +30,7 @@ if (origin.protocol !== "http:" || origin.hostname !== "127.0.0.1" ||
 const path = "/internal/turas/maintenance";
 const workerId = randomUUID();
 let executionScanning = false;
+let supportScanning = false;
 let scanning = false;
 let stopping = false;
 let retrievalScanning = false;
@@ -47,6 +50,7 @@ function fatal(error:unknown): void {
   clearInterval(workforceCleanupTimer);
   clearInterval(workforceHeartbeatTimer);
   clearInterval(executionTimer);
+  clearInterval(supportTimer);
   void closeRuntimePool().finally(() => process.exit(1));
 }
 
@@ -115,6 +119,17 @@ const workforceHeartbeatTimer = setInterval(() => {
   void withTransaction(db => requireStaffingEnvironment(db, false)).then(() => heartbeatWorkforceWorker())
     .catch(() => undefined).finally(() => { workforceHeartbeatBusy = false; });
 }, 5_000);
+const supportTimer = setInterval(() => {
+  if (stopping || supportScanning) return;
+  supportScanning = true;
+  void withTransaction(async db => Number((await db.query("SELECT schema_version FROM turas_environment WHERE environment_id=$1",
+    [getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0]?.schema_version ?? 0)).then(async version => {
+    if (version < 42) return;
+    await runSupportCleanupTick(); await expireSupportReceipts(); await minimizeSupportAudit();
+    if (version >= 43) { await settleDueSupportAdvice(); await runSupportAdviceCleanupTick(); await processSupportNativeRetirement(); }
+  }).catch(fatal).finally(() => { supportScanning = false; });
+}, 30000);
+
 const executionTimer = setInterval(() => {
   if (stopping || executionScanning) return;
   executionScanning = true;
@@ -146,7 +161,8 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
     clearInterval(workforceTimer);
     clearInterval(workforceCleanupTimer);
     clearInterval(workforceHeartbeatTimer);
-  clearInterval(executionTimer);
+    clearInterval(executionTimer);
+    clearInterval(supportTimer);
     void closeRuntimePool().finally(() => process.exit());
   });
 }

@@ -22,7 +22,7 @@ export async function assertNativeContextCurrentInTransaction(client: PoolClient
     getServerConfig().TURAS_ENVIRONMENT_ID]);
   if (!lookup.rows[0]) throw hiddenRecord();
   const feature = await conversationFeature(client, lookup.rows[0].id);
-  if (feature.kind === "staffing" || feature.kind === "execution") {
+  if (feature.kind === "staffing" || feature.kind === "execution" || feature.kind === "support") {
     if (!preparedStaffing || preparedStaffing.conversationId !== lookup.rows[0].id || preparedStaffing.nativeSessionId !== nativeSessionId) {
       throw new HttpFailure(503, `${feature.kind}_release_preflight_required`, "Current source preparation is required");
     }

@@ -1,11 +1,13 @@
 import type { PoolClient } from "pg";
 import { getServerConfig } from "../config";
 import {invalidateReportSource} from '../reports/invalidation';
+import { invalidateSupportSource } from "../support/invalidation";
 /** Enqueue exact payloads within the source mutation. No execution head locks or
  * content retrieval here; authoritative release fences remain synchronous. */
 export async function enqueueExecutionSourceInvalidation(db:PoolClient,sourceKind:string,sourceRevisionId:string):Promise<number>{
   const env=getServerConfig().TURAS_ENVIRONMENT_ID;
   await invalidateReportSource(db,sourceKind,sourceRevisionId);
+  await invalidateSupportSource(db,sourceKind,sourceRevisionId);
   if(Number((await db.query("SELECT schema_version FROM turas_environment WHERE environment_id=$1",[env])).rows[0]?.schema_version??0)<38)return 0;
   const kind=sourceKind==="published_shared"?"shared_knowledge":sourceKind;
   if(!["accepted_profile","approved_excerpt","verified_research","shared_knowledge","execution_record","milestone_baseline","execution_time","advice"].includes(kind))return 0;

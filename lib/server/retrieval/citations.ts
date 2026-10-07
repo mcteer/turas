@@ -33,7 +33,10 @@ export async function resolveRetrievalCitation(client: PoolClient, actor: Curren
   if (!row || !row.passage_text || passageDigest(row.passage_text) !== row.passage_digest) {
     throw hiddenRecord();
   }
-  const scope = await authorizeRetrievalScope(client,actor,row.scope,row.customer_id ?? undefined);
+  // Resolution reads immutable receipt/passage content and rechecks eligibility;
+  // it does not mutate authority. Shared locks retain revocation fencing without
+  // upgrading membership locks held by concurrent governed context readers.
+  const scope = await authorizeRetrievalScope(client,actor,row.scope,row.customer_id ?? undefined,undefined,true);
   if (await confirmedConflictAfter(client,row.source_kind,row.source_revision_id,row.as_of)) {
     throw hiddenRecord();
   }

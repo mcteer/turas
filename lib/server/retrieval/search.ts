@@ -161,7 +161,7 @@ async function hasMaterialConflict(client: PoolClient, row: Ranked,
 }
 
 export async function searchEvidence(actor: CurrentSession, raw: unknown,
-  effective?:{audience:"internal"|"delivery";workloadId:string|null}) {
+  effective?:{audience:"internal"|"delivery";workloadId:string|null;lexicalOnly?:boolean}) {
   const parsed = retrievalSearchSchema.safeParse(raw);
   if (!parsed.success) throw new HttpFailure(422,"invalid_query","Invalid retrieval request");
   const input = parsed.data;
@@ -182,7 +182,7 @@ export async function searchEvidence(actor: CurrentSession, raw: unknown,
       await rateLimit(client,actor);
     });
     let vector: number[] | null = null;
-    try { vector = (await embedRetrievalTexts([input.query]))[0]; }
+    try { if (!effective?.lexicalOnly) vector = (await embedRetrievalTexts([input.query]))[0]; }
     catch { recordRetrievalMetric("lexical_degraded_count",1); }
     const result = await withTransaction(async (client) => {
       const sources = await eligibleSources(client,actor,scopedInput,effective?.audience,

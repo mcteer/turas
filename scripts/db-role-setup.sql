@@ -12,6 +12,20 @@ BEGIN
   IF to_regclass('public.access_audit') IS NOT NULL THEN
     REVOKE UPDATE, DELETE ON TABLE access_audit FROM turas_runtime;
   END IF;
+  IF to_regclass('public.support_records') IS NOT NULL THEN
+    GRANT EXECUTE ON FUNCTION turas_purge_support_payload(uuid,uuid) TO turas_runtime;
+    GRANT EXECUTE ON FUNCTION turas_expire_support_receipt(uuid,text[]) TO turas_runtime;
+    GRANT EXECUTE ON FUNCTION turas_minimize_support_audit(text,integer) TO turas_runtime;
+    FOR table_name IN SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename LIKE 'support_%' LOOP
+      EXECUTE format('REVOKE DELETE ON TABLE %I FROM turas_runtime',table_name);
+      IF table_name NOT IN ('support_scopes','support_records','support_cleanup_jobs','support_advice_attempts','support_advice_cleanup_jobs','support_native_retirement_receipts') THEN
+        EXECUTE format('REVOKE UPDATE ON TABLE %I FROM turas_runtime',table_name);
+      END IF;
+    END LOOP;
+  END IF;
+  IF to_regclass('public.support_advice_attempts') IS NOT NULL THEN
+    GRANT EXECUTE ON FUNCTION turas_purge_support_advice(uuid,uuid) TO turas_runtime;
+  END IF;
   IF to_regclass('public.artifact_evidence_payloads') IS NOT NULL THEN
     REVOKE UPDATE ON TABLE artifact_evidence_payloads FROM turas_runtime;
   END IF;
