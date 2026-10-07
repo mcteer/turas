@@ -1,11 +1,23 @@
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { requireTestDatabaseUrl } from "../fixtures/database";
-import { supportUiGlobalDiagnostic } from "../../scripts/support-ui-diagnostic";
+import { supportUiGlobalDiagnostic, supportUiCaseDiagnostic } from "../../scripts/support-ui-diagnostic";
 import { requireOwnedSupportClone } from "../../scripts/support-eval-environment";
 import { verifySupportSuiteCoverage, SUPPORT_SUITES } from "../../scripts/test-support";
 
 describe("support disposable ownership guard", () => {
+  it("classifies browser case failures without returning private titles, messages or arbitrary statuses", () => {
+    const report = { suites: [{ specs: [{ title: "SYNTHETIC_PRIVATE_TEXT", tests: [{ results: [
+      { status: "passed" }, { status: "timedOut", errors: [{ message: "Test timeout of 180000ms exceeded SYNTHETIC_PRIVATE_TEXT" }] },
+      { status: "failed", errors: [{ message: "expect(locator).toBeVisible() SYNTHETIC_PRIVATE_TEXT",
+        stack: "SYNTHETIC_PRIVATE_TEXT /private/customer/tests/ui/support-readiness.spec.ts:43:10" }] },
+      { status: "SYNTHETIC_PRIVATE_TEXT", errors: [{ message: "SYNTHETIC_PRIVATE_TEXT" }] },
+    ] }] }] }] };
+    expect(supportUiCaseDiagnostic(report)).toEqual({ failedResults: 3, statuses: ["failed", "timedOut", "unknown"],
+      categories: ["case_error", "case_timeout", "locator_assertion"], locations: ["tests/ui/support-readiness.spec.ts:43:10"] });
+    expect(JSON.stringify(supportUiCaseDiagnostic(report))).not.toContain("SYNTHETIC_PRIVATE_TEXT");
+    expect(supportUiCaseDiagnostic(null)).toEqual({ failedResults: 0, statuses: [], categories: [], locations: [] });
+  });
   it("reports only bounded public error categories without leaking child messages or stacks", () => {
     expect(supportUiGlobalDiagnostic({ errors: [
       { message: "Synthetic server is already used; set reuseExistingServer", stack: "SYNTHETIC_PRIVATE_TEXT" },

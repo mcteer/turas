@@ -11,6 +11,15 @@ reporting and Spec Kit changes in the main checkout are not included.
 
 #### Publication and CI Bootstrap Corrections
 
+Published head `a4228b3` support WebKit failed case reconciliation in CI run
+`37576793930`; the log did not identify the failed case/assertion. The runner now
+emits only fixed error categories/statuses, authored case file/line and
+allowlisted support-test assertion locations. It does not publish raw messages,
+titles, stack paths, credentials, URLs or screenshots. Nine environment/diagnostic
+unit tests and typecheck pass. Strict pass-once/global-error/skip/flaky checks are
+unchanged. Pending earlier-source checks are diagnostic after this intentional
+diagnostic correction; required final-source acceptance remains outstanding.
+
 The first nonterminal-message post-fix full-suite invocation failed in preparation
 without writing an assertion report; its private log contains startup warnings
 only. It is not evidence that the prior assertion still fails. An external

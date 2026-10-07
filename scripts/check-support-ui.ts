@@ -6,7 +6,7 @@ import { createSupportActors } from "../tests/fixtures/support/seed";
 import { executionUiDiscovery, verifyExecutionUiReport } from "./execution-ui-report";
 import { featureSourceDigest } from "./execution-source-digest";
 import { installSupportNativeFixture } from "../tests/fixtures/support/native";
-import { supportUiGlobalDiagnostic } from "./support-ui-diagnostic";
+import { supportUiGlobalDiagnostic, supportUiCaseDiagnostic } from "./support-ui-diagnostic";
 
 async function privateCaptures(path: string): Promise<void> {
   const stat = await lstat(path);
@@ -55,6 +55,9 @@ async function main() {
         await privateCaptures(output);
         const report = JSON.parse(run.stdout), diagnostic = supportUiGlobalDiagnostic(report);
         if (diagnostic.globalErrors) console.error(JSON.stringify({ gate: "support-ui-runner", phase: "execution", project, file: current.file, ...diagnostic }));
+        const caseDiagnostic = supportUiCaseDiagnostic(report);
+        if (caseDiagnostic.failedResults) console.error(JSON.stringify({ gate: "support-ui-case", project,
+          file: current.file, line: current.line, ...caseDiagnostic }));
         const counts = verifyExecutionUiReport(report, [current]);
         if (run.status !== 0 || counts.unexpected || counts.skipped || counts.flaky || counts.expected !== 1) throw new Error("Support UI case failed");
         passed++;

@@ -14,3 +14,37 @@ export function supportUiGlobalDiagnostic(raw: unknown) {
   }
   return { globalErrors: errors.length, categories: [...categories].sort() };
 }
+
+/** Diagnose case failures without returning model, fixture or browser prose. */
+export function supportUiCaseDiagnostic(raw: unknown) {
+  const statuses = new Set<string>(), categories = new Set<string>(), locations = new Set<string>();
+  let failedResults = 0, visited = 0;
+  function walk(value: unknown, depth = 0): void {
+    if (++visited > 10000 || depth > 20 || !value || typeof value !== "object") return;
+    const node = value as Record<string, unknown>;
+    if (Array.isArray(node.results)) for (const result of node.results.slice(0, 100)) {
+      if (!result || typeof result !== "object") continue;
+      const row = result as Record<string, unknown>;
+      if (row.status === "passed") continue;
+      failedResults++;
+      statuses.add(["failed", "timedOut", "interrupted", "skipped"].includes(String(row.status)) ? String(row.status) : "unknown");
+      const errors = Array.isArray(row.errors) ? row.errors : row.error ? [row.error] : [];
+      for (const error of errors.slice(0, 50)) {
+        const message = error && typeof error === "object" && "message" in error && typeof error.message === "string" ? error.message : "";
+        const stack = error && typeof error === "object" && "stack" in error && typeof error.stack === "string" ? error.stack.slice(0, 20000) : "";
+        for (const match of stack.matchAll(/tests\/ui\/(support-(?:readiness|advice)\.spec\.ts):(\d{1,6}):(\d{1,6})/g))
+          locations.add(`tests/ui/${match[1]}:${match[2]}:${match[3]}`);
+        categories.add(/browserType\.launch|Executable doesn't exist|Host system is missing dependencies/.test(message) ? "browser_unavailable"
+          : /Test timeout|timed out|TimeoutError/i.test(message) ? "case_timeout"
+          : /toBeVisible|toHaveCount|locator\./.test(message) ? "locator_assertion"
+          : /expect\(|AssertionError/.test(message) ? "assertion_failure"
+          : /ECONNREFUSED|ERR_CONNECTION|net::|page\.goto/.test(message) ? "navigation_failure"
+          : "case_error");
+      }
+    }
+    for (const key of ["suites", "specs", "tests"]) if (Array.isArray(node[key]))
+      for (const child of node[key].slice(0, 1000)) walk(child, depth + 1);
+  }
+  walk(raw);
+  return { failedResults, statuses: [...statuses].sort(), categories: [...categories].sort(), locations: [...locations].sort() };
+}
