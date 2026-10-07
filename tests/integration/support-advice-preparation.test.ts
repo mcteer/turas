@@ -171,6 +171,7 @@ describe("atomic support advice preparation", () => {
       const injected = await readSupportInitialContext(principal, turnId, nativeSessionId);
       expect(injected).toMatchObject({
         currentDate: new Date().toISOString().slice(0, 10),
+        proposalTimezone: "UTC",
         evidence: [{ citationKey: reference.id, text: expect.stringContaining("Synthetic operating ownership verification outcome"),
           observationDate: evidence.observedAt }],
       });

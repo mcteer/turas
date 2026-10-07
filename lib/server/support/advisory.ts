@@ -76,7 +76,7 @@ export async function prepareSupportAdvice(actor: SupportActor, customerId: stri
       return retained;
     });
     const scope = await supportScope(db, actor, customerId, input.workloadId, { lock: true });
-    const snapshot = { ...context.snapshot, currentDate: new Date().toISOString().slice(0, 10),
+    const snapshot = { ...context.snapshot, currentDate: new Date().toISOString().slice(0, 10), proposalTimezone: "UTC",
       defaultNextReviewDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
       evidence: await captureSupportEvidence(db, actor, customerId, input.workloadId, input.audience, retainedRefs) };
     const instructionBytes = Buffer.byteLength(supportAdviceInstructions(snapshot), "utf8") + Buffer.byteLength(supportAdvicePrompt, "utf8");

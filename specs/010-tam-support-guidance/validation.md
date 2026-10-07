@@ -86,6 +86,26 @@ binding regression protects release. A new complete eight-case cohort is an
 explicit corrected-code validation, with the same finite budget and no automatic
 paid retries; the failed cohort is not selectively recaptured or erased.
 
+The next complete actual cohort `live-myVJpY` retained all eight case outcomes:
+S01 failed to settle by 120 seconds with incomplete provider metadata, S02 was
+withheld for an invalid IANA timezone placeholder, S03–S07 completed, and S08
+withheld after source change. No SDK retry or pass-only recapture occurred. S05
+no longer invents assessment bindings; the strict schema correction works.
+The proposal now explicitly supplies UTC, matching the server-generated dates;
+it does not assert a customer operating timezone. Its injected-snapshot
+regression requires that value. The next corrected-code full cohort uses the
+unchanged finite bounds and retains these failures.
+
+Local WebKit also found an actual owned-harness `EADDRINUSE` startup failure:
+`freePort()` released an ephemeral port before clone/setup, and an outgoing
+connection occupied it before Next started. Owned app ports now remain leased
+through setup in 20000–29999, below Linux/macOS ephemeral client ranges, and are
+released immediately before startup. A real socket regression proves exclusive
+reservation, availability after release and idempotent cleanup. There is no
+browser-case retry, timeout extension or quota change. The correctly bootstrapped
+execution desktop-light reproduction passed all 13 cases with zero failures,
+skips or retries before this infrastructure correction.
+
 ## Setup Evidence
 
 ### Continuation — 2026-10-06

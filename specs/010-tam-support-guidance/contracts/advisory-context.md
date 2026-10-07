@@ -11,7 +11,7 @@ Capture accepted readiness/action projections, accepted maturity context if pres
 The initial model context includes every explicitly selected evidence passage,
 exact citation key, original observation/publication date and quality. Dates remain
 unknown when the original supplies none; retrieval time never replaces observation
-time. Supply the server date and default seven-day review date for new proposals.
+time. Supply the server UTC proposal timezone, date and default seven-day review date for new proposals. This is not evidence of the customer operating timezone.
 Charge the complete dynamic instruction and submitted request before admission;
 oversized evidence is rejected rather than truncated. Retained evidence reads
 reuse these exact passages only after the normal current-source fence passes.
