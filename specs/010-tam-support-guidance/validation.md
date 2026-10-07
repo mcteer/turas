@@ -11,6 +11,71 @@ reporting and Spec Kit changes in the main checkout are not included.
 
 #### Publication and CI Bootstrap Corrections
 
+The economics diagnostic `sh_116aa3761001kSEqASNt4BJg02` passed all six
+tests with zero failures/skips on an owned clone with real prepared scanner
+assets. The withdrawal regression now asserts the entire exact metadata-only
+projection, retaining identity, null content, stale status and fixed reasons;
+opaque UUID/digest substrings no longer cause false financial-leak failures.
+No runtime behavior changed. The complete local staffing run passed its eight
+preceding contract suites, including actual clean/EICAR scans, but timed out on
+125 sequential advisory context reads at the unchanged 120-second limit. That
+failure is retained and this focused result does not establish full staffing or
+published CI acceptance. The local browser run rejected changed source and is
+not current-source acceptance.
+
+Required four-class benchmark `sh_11508d8a8001iFCR2kxg4cQRhg` passed on
+source `07f979eca45a9d7a2845ccec2edff2f2bac5605414cf86fc094e4177f200b8dc`,
+corpus `5c476ea60cc2141d9849b20ea10c6a25a98d5ab3ad3d1f6727a41495594324fa`.
+At 100 customers, 500 scopes, 5,000 actions and 20,000 revisions, each class used
+five clients, ten warmups and 100 samples. p95 milliseconds: list **1763.683375**,
+detail **1587.916708**, preview **1654.436000**, acknowledgement **1687.722791**;
+all below the unchanged 2,000ms threshold with zero correctness failures.
+Production rates were preserved and pacing excluded from measured latency.
+This is owned-clone performance evidence, not hosted proof.
+
+Current-source fixture capture `sh_11508ceb7001dN6YBKeG3iRfld` passed all
+**eight cases**, zero failures, on unchanged support source
+`07f979eca45a9d7a2845ccec2edff2f2bac5605414cf86fc094e4177f200b8dc`.
+S01–S07 completed; S08 failed/withheld as expected following source withdrawal.
+Every case has complete usage settlement. Paid calls were disabled; fixture cost
+is unavailable, and outputs are not configured-provider, reviewed or hosted proof.
+The separate live semantic and exact stale-output save-denial gates remain open.
+
+Required interrupted-native check `sh_1150c5b97001C3ERpjPiB3P2f4` passed on
+unchanged source `07f979eca45a9d7a2845ccec2edff2f2bac5605414cf86fc094e4177f200b8dc`:
+exactly one fixture-provider call and verified uncertain dispatch across restart
+in the actual framework runtime. Paid calls were disabled. This complements the
+preserved-restart gate but does not establish configured-provider or hosted
+behavior. Browser, performance, fixture capture, live review and published CI
+remain separate required gates.
+
+Required preserved-restart rerun `sh_1150afafa001M13igiV6AsZpq2` passed on
+source `07f979eca45a9d7a2845ccec2edff2f2bac5605414cf86fc094e4177f200b8dc`:
+one record, two revisions and one receipt survived; workflow sentinel digest
+`8c49aed79b737b6bfde2412399135fba3bb0de5998e7ff5e9edb18f0cd618f5e`
+was preserved, dependent content remained withheld and dependent purge was
+verified. The earlier failure remains recorded. This owned-clone pass is not
+hosted proof or uncertain native-dispatch verification; that separate check
+remains required.
+
+On source `07f979eca45a9d7a2845ccec2edff2f2bac5605414cf86fc094e4177f200b8dc`,
+the authorized actual disposable runtime LOGIN denied all **12** mutation probes;
+temporary-role cleanup and absence were verified, with no Production changes.
+The setup-aware recovery diagnostic also passed all phases, including preserved
+restart comparison and dependent purge. Its preceding required-command failure
+remains retained and unexplained; the required recovery command is running again
+on unchanged source. Diagnostic success is neither required-command acceptance
+nor hosted proof. No paid provider calls, schema changes or relaxed limits occurred.
+
+Published head `7fa0d24`, support source
+`07f979eca45a9d7a2845ccec2edff2f2bac5605414cf86fc094e4177f200b8dc`,
+passed the complete support gate at `2026-10-07T06:23:56.042Z`:
+**22 suites / 120 tests**, zero failures or skips. The preparation fixture reuse
+preserves canonical evidence, original identity, replay and forged-key assertions
+within the unchanged deadlines. This is deterministic acceptance only; live
+provider review, exact stale-save proof, full browser/performance/restart/runtime
+source binding, published CI and required review/merge remain outstanding.
+
 Preparation-suite diagnostic `sh_114fd0938001BdRSYbJpmGRe95` passed with
 process status 0 in **99,814ms**, within the unchanged 120-second child limit.
 The canonical-evidence regression reuses the source-identity test's owned fixture

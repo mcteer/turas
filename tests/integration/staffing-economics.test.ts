@@ -60,7 +60,11 @@ describe("canonical finance input and human policy boundary", () => {
       await withdrawManualEvidence(f.actor, manualId, { requestKey: randomUUID(), rationale: "Synthetic withdrawal after forecast", sourceGeneration: 1 }, db);
       const after = await readStaffingScenario(f.actor, created.scenarioId, db);
       expect(after).toMatchObject({ contentAvailability: "withheld", content: null, status: "stale" });
-      expect(JSON.stringify(after)).not.toContain("3000");
+      // Opaque UUIDs and digests can contain the digits of a financial value.
+      // Assert the complete metadata-only projection instead of substring absence.
+      expect(after).toEqual({ scenarioId: before.scenarioId, customerId: before.customerId,
+        engagementId: before.engagementId, baselineId: before.baselineId, contentDigest: before.contentDigest,
+        contentAvailability: "withheld", content: null, status: "stale", reasons: ["inputs_unavailable"] });
       expect((await db.query("SELECT minutes FROM staffing_allocation_days WHERE allocation_id=$1", [f.allocation.allocationId])).rows[0].minutes).toBe(120);
       expect((await db.query("SELECT count(*)::int AS n FROM staffing_scenario_payloads WHERE scenario_id=$1", [created.scenarioId])).rows[0].n).toBe(1);
     });
