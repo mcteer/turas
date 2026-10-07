@@ -41,4 +41,16 @@ describe("bounded support advice contract", () => {
         owner: { kind: "unassigned", reason: "Owner is unknown" }, disposition: "open", outcomeSourceKeys: [] } }] };
     expect(() => validateSupportAdviceResult(output, [])).toThrow("future observation");
   });
+  it("refuses model-created assessment bindings before suggestion release", () => {
+    const content = { contractVersion: "support-v1", title: "Verify ownership",
+      observationDate: "2020-01-01", nextReviewDate: "2099-01-08", timezone: "UTC", desiredOutcome: "Confirm the accountable role",
+      rationale: "Ownership is unknown", validationCriterion: "Human reviews an accepted stakeholder record", priority: "normal",
+      owner: { kind: "unassigned", reason: "Owner is unknown" }, disposition: "open", outcomeSourceKeys: [] };
+    const output = { contractVersion: "support-advice-v1", summary: "Confirm the operating owner", facts: [], unknowns: ["Operating owner"],
+      actionSuggestions: [{ citationKeys: [], content }] };
+    expect(validateSupportAdviceResult(output, [])).toEqual(output);
+    expect(() => validateSupportAdviceResult({ ...output, actionSuggestions: [{ citationKeys: [], content: {
+      ...content, basedOnAssessmentRevisionId: "00000000-0000-4000-8000-000000000001",
+    } }] }, [])).toThrow("malformed");
+  });
 });

@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { supportUiGlobalDiagnostic, supportUiCaseDiagnostic } from "./support-ui-diagnostic";
 import { mkdir, mkdtemp, writeFile, chmod, readdir, lstat } from "node:fs/promises";
 import { existsSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -78,7 +79,16 @@ for (const project of selectedProject ? [selectedProject] : projects) {
     await writeFile(join(directory, `${project}-case-${caseIndex}-stderr.log`), result.stderr ?? "", { mode: 0o600, flag: "wx" });
     await privateCaptureTree(captures);
     let counts: { expected: number; unexpected: number; skipped: number; flaky: number };
-    try { counts = verifyExecutionUiReport(JSON.parse(result.stdout), [testCase]); }
+    try {
+      const report = JSON.parse(result.stdout);
+      const globalDiagnostic = supportUiGlobalDiagnostic(report);
+      if (globalDiagnostic.globalErrors) console.error(JSON.stringify({ gate: "execution-ui-runner", project,
+        file: testCase.file, ...globalDiagnostic }));
+      const caseDiagnostic = supportUiCaseDiagnostic(report, "execution");
+      if (caseDiagnostic.failedResults) console.error(JSON.stringify({ gate: "execution-ui-case", project,
+        file: testCase.file, line: testCase.line, ...caseDiagnostic }));
+      counts = verifyExecutionUiReport(report, [testCase]);
+    }
     catch { throw new Error("Execution UI did not produce an auditable report"); }
     console.log(JSON.stringify({ gate: focused ? `focused-${focusMode!.slice(2)}` : "complete-execution", project,
       suites: specs.length, counts, exitCode: result.status }));

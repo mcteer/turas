@@ -67,6 +67,25 @@ restart proved exactly one fixture-provider call. The earlier-feature regression
 passed 15 unit suites / 75 tests and seven integration suites / 30 tests. These
 passes are retained as checkpoints; source-bound final gates use the digest above.
 
+The first corrected-context actual cohort `live-O6hL58` completed all eight runtime
+outcomes (seven released, changed-source S08 withheld) with 15 steps, 102,536
+input / 18,515 output tokens, $0.236866 recorded cost and 13.362–43.590 second
+latencies. All captures remain private and retained. Detailed semantic review
+withheld acceptance: S05 invented `basedOnAssessmentRevisionId` values despite
+null accepted assessment, so its two suggestions would fail exact human save.
+The review file records that failing criterion; the earlier structural verifier
+result is superseded, not final semantic acceptance. S03 used the wrong tense
+for a future validity date, and S07 overreached by treating absent maturity or
+engagement inputs as assessment prerequisites. None mutated accepted state.
+
+Generated suggestions now forbid assessment bindings at the strict provider and
+release schema. Human-authored action bindings are unchanged. Instructions
+explicitly preserve assessment without maturity/engagement prerequisites and
+distinguish future validity from stale observation. An independent malformed
+binding regression protects release. A new complete eight-case cohort is an
+explicit corrected-code validation, with the same finite budget and no automatic
+paid retries; the failed cohort is not selectively recaptured or erased.
+
 ## Setup Evidence
 
 ### Continuation — 2026-10-06

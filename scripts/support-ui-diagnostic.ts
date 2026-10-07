@@ -16,7 +16,13 @@ export function supportUiGlobalDiagnostic(raw: unknown) {
 }
 
 /** Diagnose case failures without returning model, fixture or browser prose. */
-export function supportUiCaseDiagnostic(raw: unknown) {
+export function supportUiCaseDiagnostic(raw: unknown, feature: "support" | "execution" = "support") {
+  const filePattern = feature === "execution"
+    ? /(?:^|\/)tests\/ui\/(execution-(?:records|time|changes|handoff|advisory)\.spec\.ts)$/
+    : /(?:^|\/)tests\/ui\/(support-(?:readiness|advice)\.spec\.ts)$/;
+  const stackPattern = feature === "execution"
+    ? /tests\/ui\/(execution-(?:records|time|changes|handoff|advisory)\.spec\.ts):(\d{1,6}):(\d{1,6})/g
+    : /tests\/ui\/(support-(?:readiness|advice)\.spec\.ts):(\d{1,6}):(\d{1,6})/g;
   const statuses = new Set<string>(), categories = new Set<string>(), locations = new Set<string>();
   let failedResults = 0, visited = 0;
   function walk(value: unknown, depth = 0): void {
@@ -34,11 +40,11 @@ export function supportUiCaseDiagnostic(raw: unknown) {
         const stack = error && typeof error === "object" && "stack" in error && typeof error.stack === "string" ? error.stack.slice(0, 20000) : "";
         const location = error && typeof error === "object" && "location" in error && error.location && typeof error.location === "object"
           ? error.location as Record<string, unknown> : null;
-        const file = typeof location?.file === "string" ? location.file.match(/(?:^|\/)tests\/ui\/(support-(?:readiness|advice)\.spec\.ts)$/)?.[1] : null;
+        const file = typeof location?.file === "string" ? location.file.match(filePattern)?.[1] : null;
         if (file && Number.isSafeInteger(location?.line) && Number(location?.line) > 0 && Number(location?.line) < 1000000 &&
           Number.isSafeInteger(location?.column) && Number(location?.column) > 0 && Number(location?.column) < 1000000)
           locations.add(`tests/ui/${file}:${location!.line}:${location!.column}`);
-        for (const match of `${stack}\n${message.slice(0, 20000)}`.matchAll(/tests\/ui\/(support-(?:readiness|advice)\.spec\.ts):(\d{1,6}):(\d{1,6})/g))
+        for (const match of `${stack}\n${message.slice(0, 20000)}`.matchAll(stackPattern))
           locations.add(`tests/ui/${match[1]}:${match[2]}:${match[3]}`);
         categories.add(/browserType\.launch|Executable doesn't exist|Host system is missing dependencies/.test(message) ? "browser_unavailable"
           : /Test timeout|timed out|TimeoutError/i.test(message) ? "case_timeout"
