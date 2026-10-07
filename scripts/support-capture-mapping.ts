@@ -4,10 +4,20 @@ import { supportEvaluationCases } from "../tests/fixtures/support/evaluation";
 import { supportArtifactDigest } from "./verify-support-review";
 import type { readSupportLiveEvidence } from "./support-live-evidence";
 
+/** Measure the admitted attempt, excluding observer queries and stale-save
+ * verification. Missing/late timestamps cannot become passing evidence. */
+export function supportCaptureLatency(attempt: { dispatch_at?: unknown; deadline_at?: unknown; settled_at?: unknown }) {
+  const time = (value: unknown) => value instanceof Date ? value.getTime() : typeof value === "string" ? Date.parse(value) : NaN;
+  const dispatch = time(attempt.dispatch_at), deadline = time(attempt.deadline_at), settled = time(attempt.settled_at);
+  if (![dispatch, deadline, settled].every(Number.isFinite) || deadline <= dispatch || deadline - dispatch > 120000 ||
+    settled < dispatch || settled > deadline) throw new Error("Actual attempt timing missing or outside deadline");
+  return settled - dispatch;
+}
+
 /** No defaults for missing provider measurements. Incomplete captures remain raw
  * failure evidence and cannot be turned into passing review candidates. */
 export function mapSupportCapture(input: { caseId: string; sourceDigest: string; rootAgentDigest: string; model: string;
-  latencyMs: number; domainUnchanged: boolean; staleSuggestionSaveDenied: boolean;
+  domainUnchanged: boolean; staleSuggestionSaveDenied: boolean;
   evidence: Awaited<ReturnType<typeof readSupportLiveEvidence>> }) {
   const { evidence } = input;
   if (!evidence.usageComplete || evidence.costUsd === null || evidence.inputTokens === null || evidence.outputTokens === null)
@@ -24,6 +34,6 @@ export function mapSupportCapture(input: { caseId: string; sourceDigest: string;
     output: released ? output!.payload : null, terminalState: evidence.attempt.state, released,
     initialDispatches: 1, automaticPaidRetries: 0, paidSteps: evidence.steps.length,
     inputTokens: evidence.inputTokens, outputTokens: evidence.outputTokens, costUsd: evidence.costUsd,
-    latencyMs: input.latencyMs, providerMetadataComplete: true, domainUnchanged: input.domainUnchanged,
+    latencyMs: supportCaptureLatency(evidence.attempt), providerMetadataComplete: true, domainUnchanged: input.domainUnchanged,
     staleSuggestionSaveDenied: input.staleSuggestionSaveDenied };
 }

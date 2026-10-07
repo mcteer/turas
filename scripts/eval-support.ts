@@ -11,7 +11,7 @@ import { supportLiveLogin, prepareSupportLive, dispatchSupportLive } from "./sup
 import { readSupportLiveEvidence, supportLiveDomainDigests } from "./support-live-evidence";
 import { query, closeRuntimePool } from "../lib/server/db/client";
 import { supportDigest } from "../lib/server/support/commands";
-import { mapSupportCapture } from "./support-capture-mapping";
+import { mapSupportCapture, supportCaptureLatency } from "./support-capture-mapping";
 import { saveSupportSuggestion } from "../lib/server/support/suggestions";
 import { createProfileTestSession } from "../tests/fixtures/profiles";
 import { withSupportDatabase } from "../tests/fixtures/support/environment";
@@ -135,11 +135,12 @@ async function main() {
         }
         await writeFile(resolve(directory, `${scenario.id}.json`), JSON.stringify({ version: "support-live-raw-v1",
           caseId: scenario.id, sourceDigest, rootAgentDigest: environment.rootAgentDigest, actualConfiguredProvider: !fixtureMode,
-          initialDispatches: 1, automaticPaidRetries: 0, latencyMs: Date.now() - startedAt, domainUnchanged,
+          initialDispatches: 1, automaticPaidRetries: 0, latencyMs: supportCaptureLatency(evidence.attempt),
+          observerElapsedMs: Date.now() - startedAt, domainUnchanged,
           sourceChangedBeforeRelease: changed, evidence }), { mode: 0o600, flag: "wx" });
         if (!fixtureMode && !diagnosticMode) {
         const capture = mapSupportCapture({ caseId: scenario.id, sourceDigest, rootAgentDigest: environment.rootAgentDigest,
-          model, latencyMs: Date.now() - startedAt, domainUnchanged, staleSuggestionSaveDenied, evidence });
+          model, domainUnchanged, staleSuggestionSaveDenied, evidence });
         await writeFile(resolve(directory, `${scenario.id}-capture.json`), JSON.stringify(capture), { mode: 0o600, flag: "wx" });
         }
         const expected = scenario.expectedRelease === "completed" ? evidence.attempt.state === "completed" : changed && evidence.attempt.state !== "completed";

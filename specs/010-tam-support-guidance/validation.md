@@ -106,6 +106,23 @@ browser-case retry, timeout extension or quota change. The correctly bootstrappe
 execution desktop-light reproduction passed all 13 cases with zero failures,
 skips or retries before this infrastructure correction.
 
+The timezone/port-corrected actual cohort `live-qayhJC` retained five captures and
+three failures. S05/S07 lacked complete actual provider measurements; S08 could
+not prove stale-save denial because no exact provider final was available.
+S04's observer elapsed time was 120,258 ms; it is not counted as a bounded pass.
+Semantic review also found S01/S03 citing a profile passage for authorized
+projection metadata the passage did not establish. This cohort is not accepted.
+
+The procedure now keeps projection metadata in the summary and reserves cited
+facts for original passage/date/quality claims. It requests two concise suggestions
+within the unchanged hard schema maximum of five, reducing repetition and output
+cost without truncating selected context or changing any paid-call limits.
+Captures now retain persisted dispatch/deadline/settlement timestamps and measure
+actual attempt latency from them; observer elapsed time is separately retained.
+A boundary test rejects absent timestamps, negative duration, deadline extension
+and settlement even one millisecond after the unchanged 120-second deadline.
+No historical capture is rewritten or accepted using reconstructed timing.
+
 ## Setup Evidence
 
 ### Continuation — 2026-10-06

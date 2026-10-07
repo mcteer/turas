@@ -21,7 +21,7 @@ export async function supportLiveDomainDigests() {
  * headers and arbitrary metadata are never queried. Missing usage stays null. */
 export async function readSupportLiveEvidence(attemptId: string) {
   requireOwnedSupportClone();
-  const attempt = (await query(`SELECT id,response_attempt_id,state,deadline_at,failure_code,model_steps,read_calls,
+  const attempt = (await query(`SELECT id,response_attempt_id,state,dispatch_at,deadline_at,settled_at,failure_code,model_steps,read_calls,
     context_bytes,dependency_count FROM support_advice_attempts WHERE id=$1 AND environment_id=$2`,
   [attemptId, process.env.TURAS_ENVIRONMENT_ID])).rows[0];
   if (!attempt) throw new Error("Owned support attempt unavailable");

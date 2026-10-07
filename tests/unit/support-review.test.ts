@@ -4,7 +4,7 @@ import { supportEvaluationCases } from "../fixtures/support/evaluation";
 import { verifySupportActualReview } from "../../scripts/support-review-contract";
 import { verifySupportCapture } from "../../scripts/verify-support-review";
 import { supportDigest } from "../../lib/server/support/commands";
-import { mapSupportCapture } from "../../scripts/support-capture-mapping";
+import { mapSupportCapture, supportCaptureLatency } from "../../scripts/support-capture-mapping";
 
 const hash = "a".repeat(64);
 function evidence() {
@@ -17,9 +17,19 @@ function evidence() {
       domainUnchanged: true, staleSuggestionSaveDenied: item.id === "S08", review: item.review.map(criterion => ({ criterion, passed: true, rationale: "Synthetic structural-test rationale, not a live output review" })) })) };
 }
 describe("support actual-output review contract", () => {
+  it("measures persisted dispatch-to-settlement and rejects missing or late timings", () => {
+    const dispatch = Date.parse("2026-10-07T00:00:00Z");
+    const timing = { dispatch_at: new Date(dispatch), deadline_at: new Date(dispatch + 120000), settled_at: new Date(dispatch + 1100) };
+    expect(supportCaptureLatency(timing)).toBe(1100);
+    expect(supportCaptureLatency({ ...timing, settled_at: new Date(dispatch + 120000) })).toBe(120000);
+    expect(() => supportCaptureLatency({ ...timing, settled_at: new Date(dispatch + 120001) })).toThrow();
+    expect(() => supportCaptureLatency({ ...timing, settled_at: null })).toThrow();
+    expect(() => supportCaptureLatency({ ...timing, settled_at: new Date(dispatch - 1) })).toThrow();
+    expect(() => supportCaptureLatency({ ...timing, deadline_at: new Date(dispatch + 120001) })).toThrow();
+  });
   it("cannot map missing actual provider measurements into review evidence", () => {
     const raw = { caseId: "S02", sourceDigest: hash, rootAgentDigest: hash, model: "configured-model",
-      latencyMs: 1000, domainUnchanged: true, staleSuggestionSaveDenied: false,
+      domainUnchanged: true, staleSuggestionSaveDenied: false,
       evidence: { usageComplete: false, costUsd: null, inputTokens: null, outputTokens: null } };
     expect(() => mapSupportCapture(raw as Parameters<typeof mapSupportCapture>[0])).toThrow("Actual provider measurements incomplete");
   });
