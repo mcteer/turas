@@ -11,6 +11,35 @@ reporting and Spec Kit changes in the main checkout are not included.
 
 #### Publication and CI Bootstrap Corrections
 
+The strengthened native-stop diagnostic initially failed because its new test
+query incorrectly expected `customer_id` on the attempt table. The lookup now
+uses migration 043's canonical `support_advice_bindings` join. Its rerun
+`sh_114eb9428001U3WgFgixbJkSdD` passed with process status 0, paid calls disabled
+and no retries: successful stop acknowledgement and persisted cancellation
+preceded barrier release; late-output withholding, reload and exact call count
+remained asserted. This is a filtered WebKit diagnostic, not full matrix or
+published-head acceptance. The older full WebKit invocation failed strict case
+reconciliation and remains retained separately.
+
+CI run `37577944604` identifies the native-stop failure at
+`tests/ui/support-advice.spec.ts:50:76`: cancelled-state visibility after releasing
+the provider barrier. The journey previously treated click completion as proof
+that its asynchronous stop had committed. It now awaits a successful actual stop
+response and verifies the persisted cancelled state before releasing late output,
+then retains the original hidden-output/reload/exact-call-count assertions.
+No runtime cancellation, timeout or acceptance behavior was changed. Narrow
+WebKit verification is running; typecheck passes. The reporting runner also emits
+its registered failing suite and fixed stage without private messages so the
+separate deterministic CI failure can be located; its strict cohort is unchanged.
+
+Earlier-source benchmark `benchmark-yqpYBB` completed all four unchanged classes
+with 100 samples, 10 warmups and five clients each: p95 list 1672.549083,
+detail 1580.585250, preview 1647.308959 and acknowledgement 1655.654084
+milliseconds, all with zero correctness failures. Its final gate rejected
+`Support source changed during benchmark`; no completed acceptance record was
+issued. These are historical measurements, not final-head performance acceptance.
+No corpus, quota, sample count or 2,000ms threshold was changed.
+
 The exact native-stop/reload WebKit journey from published CI was run alone on
 an owned clone with `CI=true`, paid calls disabled and zero retries; it passed
 with process status 0. This filtered reproduction is diagnostic, not a complete

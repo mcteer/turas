@@ -45,7 +45,15 @@ test("native stop withholds late output and reload does not admit another paid s
   await page.getByRole("button", { name: "Ask Turi for Support Guidance", exact: true }).click();
   const calls = async () => Number((await query("SELECT count(*)::int AS count FROM support_native_fixture_calls")).rows[0].count);
   await expect.poll(calls, { timeout: 60000 }).toBe(1);
+  const stopAcknowledgement = page.waitForResponse(response => response.request().method() === "POST" &&
+    new URL(response.url()).pathname.endsWith("/cancel"));
   await page.getByRole("button", { name: "Stop Support Guidance", exact: true }).click();
+  expect((await stopAcknowledgement).ok()).toBe(true);
+  // A click dispatches the asynchronous request; it does not establish that
+  // cancellation has committed. Release late output only after the durable stop.
+  await expect.poll(async () => (await query(`SELECT a.state FROM support_advice_attempts a
+    JOIN support_advice_bindings b ON b.id=a.binding_id WHERE b.customer_id=$1`, [customerId])).rows[0]?.state,
+    { timeout: 60000 }).toBe("cancelled");
   await query("UPDATE support_native_fixture_barriers SET released=true WHERE customer_id=$1", [customerId]);
   await expect(page.getByText("Advice State: cancelled", { exact: true })).toBeVisible({ timeout: 60000 });
   expect(await page.getByRole("button", { name: "Save Suggestion 1 as Proposal", exact: true }).count()).toBe(0);

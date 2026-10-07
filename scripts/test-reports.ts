@@ -98,6 +98,7 @@ async function main() {
        if (!suite.startsWith('tests/integration/') && !['tests/contracts/report-publication-api.test.ts','tests/contracts/report-audience.test.ts'].includes(suite)) await run(); else await withReportsTestEnvironment(run);
     }catch(error){
       await writeFile(resolve(directory,'failure.json'),JSON.stringify({suite,stage:'suite-or-owned-environment',error:error instanceof Error?{name:error.name,message:error.message,stack:error.stack}:String(error)}),{mode:0o600,flag:'wx'});
+      console.error(JSON.stringify({gate:'reports-deterministic',suite,stage:'suite-or-owned-environment',status:'failed'}));
       throw new Error(`Report check failed at ${suite}; inspect private failure.json`);
     }
   }
