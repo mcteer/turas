@@ -50,7 +50,7 @@ export async function runSupportRead(principal: FeaturePrincipal, tool: keyof ty
             AND s.content_digest=$5 AND s.lifecycle_state='current' AND p.locators @> $6::jsonb
             AND ((s.scope='shared' AND $2='published_shared') OR (s.scope='customer' AND s.workspace_id=$7 AND s.customer_id=$8
               AND ($9::uuid IS NULL OR s.workload_id IS NULL OR s.workload_id=$9) AND (s.audience='delivery' OR $10='internal')))
-          ORDER BY p.chunk_index LIMIT 1`, [getServerConfig().TURAS_ENVIRONMENT_ID,
+          ORDER BY p.ordinal LIMIT 1`, [getServerConfig().TURAS_ENVIRONMENT_ID,
         ref.kind === "shared_knowledge" ? "published_shared" : ref.kind, ref.sourceRevisionId, ref.generation, ref.contentDigest,
         JSON.stringify([ref.locator]), bound.actor.workspaceId, bound.scope.customerId, bound.scope.workloadId, bound.scope.audience])).rows[0];
         if (!row) throw new HttpFailure(409, "support_context_changed", "Selected evidence is no longer available");

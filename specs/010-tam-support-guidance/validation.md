@@ -11,6 +11,127 @@ reporting and Spec Kit changes in the main checkout are not included.
 
 #### Publication and CI Bootstrap Corrections
 
+The first nonterminal-message post-fix full-suite invocation failed in preparation
+without writing an assertion report; its private log contains startup warnings
+only. It is not evidence that the prior assertion still fails. An external
+single-test diagnostic on an owned clone subsequently passed the affected
+pre-tool narration, hidden projection and existing valid-final-output regression
+with status 0 and no timeout. That filtered diagnostic is not full-suite
+acceptance; the complete required cohort is running again on unchanged source
+`cc2ae6f3b2f8665473f034a870ecb0bba56b9c5289fb42395970dab3842ee0ec`.
+The incomplete invocation remains recorded, with no timeout or gate relaxation.
+
+The intermediate-message regression failed before correction: pre-tool
+`message.completed` narration with `finishReason: "tool-calls"` changed the
+attempt from running to failed. The projection now skips final JSON parsing only
+for that explicit nonterminal finish reason. Current release preflight and source
+authority checks still run; no narration is visible or retained as advice output.
+All other completed messages remain subject to strict schema/citation validation.
+Typecheck passes; the full post-correction support cohort is running. This proves
+a reproducible lifecycle defect, not that every retained live failure shares it.
+No new paid capture or automatic retry has occurred.
+
+Post-correction source
+`7b0ad6cc056b083d474d18a27a02e3229c42bfdc729e79a1b8626df52d6d6ea7`
+passed the full support cohort: **22 suites / 120 tests**, zero failures or skips,
+at `2026-10-07T05:19:23.748Z`. This includes the canonical evidence read, exact
+read replay and forged-key rejection regression that failed before the query
+correction. Typecheck and diff whitespace checks also pass. Actual-provider,
+browser, complete performance, published CI and review/merge gates remain open;
+the deterministic pass does not replace them.
+
+The new real-database canonical-evidence regression failed before correction
+with exactly `column p.chunk_index does not exist`, matching the retained live
+trace. The support evidence query now orders by migration 019's `p.ordinal`.
+No migration, authority fence, eligibility predicate, citation map or budget
+changed. Typecheck passes; the full support cohort is running after the fix.
+This regression checks selected evidence, exact read replay and forged-key denial.
+No further paid capture has been dispatched; malformed-output and incomplete
+usage/settlement failures remain separate unresolved actual-provider gates.
+
+Current-source configured-provider capture `live-j10378` failed **seven of eight**
+cases: S01/S03/S06/S07 did not settle and have incomplete usage; S04 failed with
+`invalid_advice` and incomplete usage at the deadline; S02/S05 failed with
+`invalid_advice` despite complete usage and cost. S08 was withheld with complete
+usage/cost but is not yet semantically reviewed or proof of an exact stale-output
+save rejection. No automatic paid retry occurred. The strict output format has
+not established actual-provider acceptance.
+
+The S01 retained runtime trace identifies `column p.chunk_index does not exist`
+in `support_evidence`; migration 019 defines `retrieval_passages.ordinal` instead.
+A real-database regression now exercises selected canonical evidence, exact
+read replay and forged-key denial. Full support checks are running to establish
+its pre-fix failure; typecheck passes. The root model and budgets remain unchanged.
+Pending previous-source fixture/browser captures become diagnostic after this
+intentional regression addition, rather than silently rebinding their evidence.
+
+The unchanged benchmark invocation failed with Postgres `57P01` before producing
+the fourth class and complete acceptance record. Its list/detail/preview classes
+had p95 1702.132625 / 1632.351792 / 1600.360292 milliseconds and zero correctness
+failures, but these partial results are not a passing four-class gate. The
+termination cause remains under investigation; the threshold/corpus/quota and
+sample counts have not been relaxed.
+
+The required interrupted-restart rerun
+`sh_114b04bf3001nMr6v1MInSEBAG` passed while source remained
+`d9ac6a2e250811a19760449e7a7c9eb8453295bb2f9d28f787f064132622273b`:
+exactly **one** fixture-provider call, actual framework runtime and verified
+uncertain dispatch across restart without repeating provider work. Paid calls
+were disabled. This is distinct from preserved-state recovery and is neither
+configured-provider nor hosted proof. The earlier `503 unavailable` failure
+remains recorded; its cause has not been established by the passing rerun.
+
+Older fixture invocation `sh_114a098b0001k68SmSDrLpC5UH` exited 1 after the
+source changed during its execution. Its retained `live-VdZM6u` raw evidence is
+bound to `151e0af1e08439add4d624bcea91def1b0b924974c8c3ab542fc6efc45f1b133`:
+S01–S07 completed, S08 failed/withheld after its source withdrawal, and all eight
+have complete usage and unchanged expected domain digests. This is historical
+fixture evidence, not a passing final-source or configured-provider gate. A
+current-source fixture invocation is running separately with paid calls disabled.
+
+The older WebKit invocation `sh_1147de303001Bszn3yMlNSzeBo` completed with
+`Support UI source changed`. Its required source binding failed, so it remains
+historical diagnostic evidence, not final-head UI acceptance. The current-source
+WebKit reproduction is separate and still pending.
+
+Current published head `025da44`, source
+`d9ac6a2e250811a19760449e7a7c9eb8453295bb2f9d28f787f064132622273b`,
+passes eve/Next builds and typecheck. Its authorized disposable runtime LOGIN
+denied all **12** mutation probes; revoke/drop and temporary-role absence were
+verified, with no Production changes. Published WebKit now executes browser cases
+but fails strict discovered-case reconciliation; no global runner error category
+was emitted. Local current-source WebKit reproduction, unchanged benchmark,
+preserved recovery, interrupted native check and configured-provider capture are
+running. These pending checks are not acceptance evidence. Source is held stable
+through the paid capture; no automatic paid retry or acceptance relaxation occurs.
+
+The first current-source recovery command failed, and the interrupted-native
+command rejected dispatch with `503 unavailable`; both failures are retained.
+An external phase-specific recovery diagnostic subsequently passed setup,
+fixture, start, pre-restart verification, restart, post-restart comparison,
+dependent purge and post-purge verification on an owned clone without source
+changes. This narrows diagnosis but does not erase the original required-command
+failure or establish hosted behavior. A fresh invocation of the required recovery
+command is running on the unchanged source with no paid provider calls.
+
+That required recovery invocation subsequently passed on source
+`d9ac6a2e250811a19760449e7a7c9eb8453295bb2f9d28f787f064132622273b`:
+one record, two revisions and one receipt survived restart with the workflow
+sentinel digest preserved; dependent content remained withheld and its exact
+purge was verified. The earlier failure remains recorded. This proves the owned
+preserved-restart gate, not hosted behavior or uncertain native dispatch; the
+separate native `503 unavailable` failure remains unresolved.
+
+The external native diagnostic subsequently admitted its single fixture dispatch
+with paid calls disabled. This did not reproduce `503`, but it was not an
+interrupted-restart acceptance gate; the required interrupted command is running
+again separately. Published support deterministic CI passed on head `025da44`.
+Published support WebKit, execution regressions, reporting deterministic and
+verify jobs failed. Verify's content-free location report identifies the prior
+staffing paired-supervisor restart (`tests/fixtures/staffing/pair.ts:30:58`), while
+other failures require retained assertion diagnostics. Those failures remain
+merge gates; successful support CI or Preview deployment does not waive them.
+
 Published head `7fca932` has source digest
 `151e0af1e08439add4d624bcea91def1b0b924974c8c3ab542fc6efc45f1b133`.
 An explicitly authorized disposable runtime login passed all **12** actual

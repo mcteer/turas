@@ -33,7 +33,9 @@ export async function projectSupportNativeEventInTransaction(db: PoolClient, nat
     if (!prepared || prepared.responseAttemptId !== responseAttemptId || prepared.nativeSessionId !== nativeSessionId)
       throw new HttpFailure(503, "support_release_preflight_required", "Current support output preparation required");
     const bound = await assertSupportNativeRelease(db, prepared);
-    try {
+    // eve completes assistant messages before executing tools as well as at the
+    // end of a turn. Pre-tool narration is never a released advice result.
+    if (data.finishReason !== "tool-calls") try {
       if (typeof data.message !== "string" || Buffer.byteLength(data.message, "utf8") > 65536) throw new Error("Invalid final output");
       finalOutput = validateSupportAdviceResult(JSON.parse(data.message), bound.refs.map(ref => ref.id));
     } catch { invalidOutput = true; }

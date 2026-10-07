@@ -104,6 +104,38 @@ describe("atomic support advice preparation", () => {
       await withSupportDatabase(db => db.query("UPDATE support_advice_attempts SET state='cancelled',settled_at=clock_timestamp() WHERE id=$1", [saved.attemptId]));
     }
   }, 60_000);
+  it("reads selected canonical evidence through the actual migrated passage ordering", async () => {
+    const f = await fresh();
+    const reviewer = await withSupportDatabase(db => createProfileTestSession(db, "mcteer"));
+    const source = await createSupportOutcomeEvidence(actor, reviewer, f.customerId);
+    await withSupportDatabase(db => db.query(`UPDATE conversations SET context_generation=(
+      SELECT delivery_generation FROM customer_profile_state WHERE customer_id=$2 AND workspace_id=$3) WHERE id=$1`,
+    [f.input.conversationId, f.customerId, actor.workspaceId]));
+    const saved = await prepareSupportAdvice(actor, f.customerId, { ...f.input, sourceRefs: [source.reference] });
+    const responseAttemptId = randomUUID(), messageId = randomUUID(), nativeSessionId = `synthetic-evidence-${randomUUID()}`, turnId = "synthetic-evidence-turn";
+    const principal = { principalId: actor.principalId, attributes: { turasAttemptId: responseAttemptId } };
+    try {
+      await withSupportDatabase(async db => {
+        await db.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2 WHERE id=$1", [f.input.conversationId, nativeSessionId]);
+        await db.query("INSERT INTO submitted_messages(id,conversation_id,request_key,body_digest,text) VALUES($1,$2,$3,$4,$5)",
+          [messageId, f.input.conversationId, saved.nativeRequestId, messageDigest(supportAdvicePrompt), supportAdvicePrompt]);
+        await db.query(`INSERT INTO response_attempts(id,conversation_id,message_id,input_digest,dispatch_state,response_state,deadline_at)
+          VALUES($1,$2,$3,$4,'dispatching','pending',now()+interval '120 seconds')`, [responseAttemptId, f.input.conversationId, messageId, messageDigest(supportAdvicePrompt)]);
+        await db.query("UPDATE support_advice_attempts SET response_attempt_id=$2,state='running',dispatch_at=now(),deadline_at=now()+interval '120 seconds' WHERE id=$1", [saved.attemptId, responseAttemptId]);
+        await projectSupportNativeEventInTransaction(db, nativeSessionId, responseAttemptId, { type: "message.received",
+          meta: { id: `evt_${randomUUID()}`, at: new Date().toISOString() }, data: { turnId, message: supportAdvicePrompt } });
+      });
+      await readSupportInitialContext(principal, turnId, nativeSessionId);
+      const sourceKeys = [source.reference.id];
+      const result = await runSupportRead(principal, "support_evidence", { sourceKeys }, "synthetic-evidence-read");
+      expect(result).toMatchObject({ evidence: [{ citationKey: source.reference.id, text: expect.any(String) }] });
+      expect(await runSupportRead(principal, "support_evidence", { sourceKeys }, "synthetic-evidence-read")).toEqual(result);
+      await expect(runSupportRead(principal, "support_evidence", { sourceKeys: [randomUUID()] }, "synthetic-forged-read"))
+        .rejects.toMatchObject({ code: "support_source_denied" });
+    } finally {
+      await withSupportDatabase(db => db.query("UPDATE support_advice_attempts SET state='cancelled',settled_at=clock_timestamp() WHERE id=$1", [saved.attemptId]));
+    }
+  }, 60_000);
   it("charges injected bound reads and durable steps, rejects paid retries and withholds deltas", async () => {
     const f = await fresh(), saved = await prepareSupportAdvice(actor, f.customerId, f.input);
     const responseAttemptId = randomUUID(), messageId = randomUUID(), nativeSessionId = `synthetic-support-${randomUUID()}`, turnId = "synthetic-turn";
@@ -135,6 +167,17 @@ describe("atomic support advice preparation", () => {
       await withSupportDatabase(db => db.query("UPDATE login_sessions SET revoked_at=NULL WHERE id=$1", [actor.sessionId]));
     }
     await expect(admitSupportModelStep(principal, identity)).rejects.toMatchObject({ code: "support_step_uncertain" });
+    await withSupportDatabase(async db => {
+      const eventId = `evt_${randomUUID()}`;
+      await projectSupportNativeEventInTransaction(db, nativeSessionId, responseAttemptId, { type: "message.completed",
+        meta: { id: eventId, at: new Date().toISOString() },
+        data: { turnId, finishReason: "tool-calls", message: "Synthetic unvalidated pre-tool narration" } }, undefined,
+      { principal, conversationId: f.input.conversationId, responseAttemptId, nativeSessionId });
+      expect((await db.query("SELECT state,failure_code FROM support_advice_attempts WHERE id=$1", [saved.attemptId])).rows[0])
+        .toEqual({ state: "running", failure_code: null });
+      expect((await db.query("SELECT visible_payload FROM event_projections WHERE native_event_id=$1", [eventId])).rows[0].visible_payload).toEqual({});
+      expect((await db.query("SELECT 1 FROM support_advice_payloads WHERE attempt_id=$1 AND kind='output'", [saved.attemptId])).rowCount).toBe(0);
+    });
     const read = await runSupportRead(principal, "support_summary", {}, "synthetic-summary");
     expect(await runSupportRead(principal, "support_summary", {}, "synthetic-summary")).toEqual(read);
     await expect(runSupportRead(principal, "load_skill", { name: "research" }, "synthetic-forbidden")).rejects.toMatchObject({ status: 400 });
