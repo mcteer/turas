@@ -247,6 +247,8 @@ Include documentation changes in the feature PR; merge after required checks pas
 See the [environment handoff](docs/environment-handoff.md) for hosted configuration
 and recovery limitations, and the [evidence policy](docs/evidence-policy.md) for
 provenance and lifecycle rules.
+Feature 010's disable, retention, receipt-key rotation and forward-recovery
+procedures are documented in [support operations](docs/support-operations.md).
 
 ## Documentation and Help
 

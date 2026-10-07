@@ -9,6 +9,33 @@ reporting and Spec Kit changes in the main checkout are not included.
 
 ### Continuation — 2026-10-06
 
+#### Publication and CI Bootstrap Corrections
+
+Implementation commit `8d06d96` and integration merge `e3003e4` preserve merged
+recovery PR 18, including hosted watchdog routes, cron configuration and its
+independent secret. [Draft PR 19](https://github.com/mcteer/turas/pull/19) is
+published, not ready for merge. Unrelated `.opencode/commands` files remain outside
+the commit. Production migrations and selected database/workflow resets were not
+performed by this publication.
+
+The first published support jobs failed before tests because fresh-cluster
+migration 023 grants to `turas_runtime`, which had not been created. Commit
+`11d92d7` creates a `NOLOGIN` role before initialization without rewriting an old
+migration. The next jobs passed initialization but correctly refused equal
+application/test database URLs. The CI setup now separates application placeholders
+from the marked test source after initialization; the isolation guard is unchanged.
+Nineteen focused environment/evaluation/model-budget/hosted-watchdog tests pass,
+including same-source denial and distinct-source acceptance. These checks do not
+establish published CI completion or replace the required full support cohort.
+
+The corrected pre-main fixture run reached completed S01–S07 and failed/withheld
+S08 with complete usage, but its overall result is rejected because source changed
+during main integration. The earlier fixture S08 timeout is retained separately.
+The pre-main interrupted native restart passed exactly one fixture-provider call
+and no unconfirmed-content restoration; it is not configured-provider, hosted or
+final-head acceptance evidence. Prior-feature regressions passed 75 unit and 30
+integration tests. Final source-bound gates remain outstanding.
+
 #### Retained-source correction and latest deterministic evidence
 
 Strict output-contract correction source:

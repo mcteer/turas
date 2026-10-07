@@ -1,9 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import { requireTestDatabaseUrl } from "../fixtures/database";
 import { requireOwnedSupportClone } from "../../scripts/support-eval-environment";
 import { verifySupportSuiteCoverage, SUPPORT_SUITES } from "../../scripts/test-support";
 
 describe("support disposable ownership guard", () => {
+  it("permits the marked CI source only when it is distinct from application selection", () => {
+    const source = "postgres://postgres:postgres@127.0.0.1:5432/turas_test_support";
+    const application = "postgres://postgres:postgres@127.0.0.1:5432/turas_support_app_not_selected";
+    const env = { TURAS_TEST_DATABASE_URL: source, TURAS_TEST_ENVIRONMENT_ID: "test-ci-support",
+      DATABASE_URL: application, DATABASE_URL_UNPOOLED: application };
+    expect(requireTestDatabaseUrl(env)).toBe(source);
+    expect(() => requireTestDatabaseUrl({ ...env, DATABASE_URL: source })).toThrow("Test database must differ");
+    expect(() => requireTestDatabaseUrl({ ...env, DATABASE_URL_UNPOOLED: source })).toThrow("Test database must differ");
+  });
   it("bootstraps the referenced runtime role before fresh CI migrations for both support jobs", () => {
     const workflow = readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8");
     const support = workflow.split("\n  support-deterministic:\n")[1]?.split(/\n  [a-zA-Z][\w-]*:/)[0];
@@ -14,6 +24,11 @@ describe("support disposable ownership guard", () => {
     expect(role).toBeGreaterThanOrEqual(0);
     expect(migrate).toBeGreaterThan(role);
     expect(support!.indexOf("npm run db:roles")).toBeGreaterThan(migrate);
+    const isolation = support!.indexOf("Separate application placeholders from the marked test source");
+    expect(isolation).toBeGreaterThan(support!.indexOf("npm run db:roles"));
+    expect(support!.indexOf("npm run test:support")).toBeGreaterThan(isolation);
+    expect(support!.slice(isolation)).toContain('DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/turas_support_app_not_selected');
+    expect(support!.slice(isolation)).toContain('DATABASE_URL_UNPOOLED=postgres://postgres:postgres@127.0.0.1:5432/turas_support_app_not_selected');
   });
   const raw = "postgres://localhost/turas_test_010_eval_012345abcdef";
   const owned = () => ({ DATABASE_URL: raw, DATABASE_URL_UNPOOLED: raw, TURAS_TEST_DATABASE_URL: raw,

@@ -76,6 +76,10 @@ jobs:
           mkdir -p "$TURAS_ARTIFACT_STORE_ROOT"
           chmod 700 "$TURAS_ARTIFACT_STORE_ROOT"
           node --input-type=module -e 'import {writeFileSync} from "node:fs";writeFileSync(`${process.env.TURAS_ARTIFACT_STORE_ROOT}/.turas-artifact-store.json`,JSON.stringify({environmentId:process.env.TURAS_ENVIRONMENT_ID}),{mode:0o600});'
+      - name: Separate application placeholders from the marked test source
+        run: |
+          echo "DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/turas_support_app_not_selected" >> "$GITHUB_ENV"
+          echo "DATABASE_URL_UNPOOLED=postgres://postgres:postgres@127.0.0.1:5432/turas_support_app_not_selected" >> "$GITHUB_ENV"
       - name: Test every support suite on owned disposable clones
         if: matrix.gate == 'deterministic'
         run: npm run test:support

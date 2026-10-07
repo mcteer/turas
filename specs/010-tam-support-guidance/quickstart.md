@@ -1,6 +1,10 @@
 # 010 Validation Guide
 
-This is a future build/validation guide. The support commands below are planned tasks and do not yet exist. Planning-only checks do not establish runtime behavior.
+The support commands below are implemented on the feature branch. Required gates
+remain in progress; consult [validation.md](validation.md) and
+[support operations](../../docs/support-operations.md) for actual source-bound
+results. Planning artifacts, fixture output and successful builds do not establish
+configured-provider acceptance or hosted readiness.
 
 ## Handoff and Prerequisites
 
@@ -9,7 +13,7 @@ This is a future build/validation guide. The support commands below are planned 
 3. Use a marked owned disposable Postgres database and synthetic fixtures. Never substitute the selected development/Preview/Production database. Existing private artifact store and `.eve/.workflow-data` survive recovery checks.
 4. Implement and validate explicit additive migrations after committed schema 041, update runtime grants and test an empty initialization. Do not rewrite old migrations or reuse the unrelated working-tree 041 edits.
 
-## Planned Commands and Required Results
+## Commands and Required Results
 
 | Command | Required evidence |
 | --- | --- |
@@ -20,7 +24,7 @@ This is a future build/validation guide. The support commands below are planned 
 | `npm run support:ui:check` | All seven defined journeys in all four CLI WebKit projects, at least 28 cases, zero missing/skipped/retried/failed cases |
 | `npm run benchmark:support -- --disposable` | SC-004's representative corpus and every measured operation class |
 | `npm run support:recovery:check -- --disposable` | Schema upgrade, accepted heads, lost-ack reconciliation, source withholding and exact cleanup across restart |
-| `npm run eval:support -- --live --disposable` | Eight synthetic actual-model captures using the unchanged model and finite admission limits |
+| `npm run eval:support -- --live` | Eight synthetic actual-model captures using the unchanged model and finite admission limits; this runner always owns its disposable environment |
 | `npm run eval:support:verify` | Explicit human/agent review of captured output and all eight case results, source/cost/latency provenance |
 
 The test runner is responsible for setup/cleanup ownership and fail-closed environment markers. No script may treat missing JSON output, zero tests or skipped tests as success. Pure unit tests should not start a database unnecessarily. Native fixture substitution is allowed only in an owned disposable app copy, never the root `agent/agent.ts`.
