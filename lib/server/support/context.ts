@@ -49,7 +49,11 @@ export async function captureSupportAdviceContext(db: PoolClient, actor: Support
   const fence = { sourceState, scopeGeneration: support?.generation ?? 0,
     profileGeneration: scope.audience === "delivery" ? profile?.delivery_generation : profile?.internal_generation,
     sharedGeneration: supportDigest(publications), acceptedHeads: rows.map(row => [row.id, row.accepted_revision_id]),
-    assessmentHead: readiness.assessment?.revisionId ?? null };
+    assessmentHead: readiness.assessment?.revisionId ?? null,
+    // Head identities can stay unchanged when an original source becomes
+    // ineligible before fanout runs. Fence the qualified projections too, so
+    // retained prose can never outlive its synchronous eligibility checks.
+    eligibleContextDigest: supportDigest({ assessment: readiness.assessment, actions, maturity: metadata.maturity }) };
   const snapshot = { contractVersion: "support-advice-v1", customer: metadata.customer,
     workloadId: scope.workloadId, audience: scope.audience, readiness: readiness.effectiveReadiness,
     assessment: readiness.assessment, maturity: metadata.maturity, actions,

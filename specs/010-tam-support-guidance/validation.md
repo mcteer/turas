@@ -52,6 +52,21 @@ tokens maximum), a 120-second deadline per attempt and no automatic paid retry.
 Actual usage, cost, latency and every failure will be retained for semantic review.
 Hosted rollout and reporting sends remain outside this completion work.
 
+The synchronous fence now also hashes eligible accepted assessment/action and
+maturity projections. A test retires an accepted action's retrieval projection
+without running source invalidation; the retained preparation is immediately
+refused, with zero retirement rows. This proves withholding independently of
+fanout. Current source digest:
+`ac189ae13f3066c3d133b616524d32a97d11c71651e2111f3d976d6f58ff83b1`.
+The complete deterministic gate passed **24 suites / 129 tests**, zero failures
+or skips, at `2026-10-07T23:18:52.112Z`; typecheck and docs pass.
+
+The preceding source's eight-case actual-framework fixture passed all expected
+states with complete usage; paid calls were disabled. Its interrupted-native
+restart proved exactly one fixture-provider call. The earlier-feature regression
+passed 15 unit suites / 75 tests and seven integration suites / 30 tests. These
+passes are retained as checkpoints; source-bound final gates use the digest above.
+
 ## Setup Evidence
 
 ### Continuation — 2026-10-06

@@ -19,6 +19,8 @@ import { boundSupportToolActor } from "../../lib/server/support/tool-actor";
 import { createSupportOutcomeEvidence } from "../fixtures/support/outcome";
 import { createPublishedPlanPractice } from "../fixtures/plans/journey";
 import { submitProfileCommand } from "../../lib/server/profiles/service";
+import { saveSupportProposal } from "../../lib/server/support/service";
+import { createSupportReviewPreview, decideSupportRevision } from "../../lib/server/support/review";
 
 describe("atomic support advice preparation", () => {
   let actor: CurrentSession;
@@ -105,6 +107,35 @@ describe("atomic support advice preparation", () => {
     await withSupportDatabase(async db => expect((await db.query("SELECT 1 FROM support_advice_retirements WHERE attempt_id=$1", [saved.attemptId])).rowCount).toBe(1));
     await expect(prepareSupportAdvice(actor, f.customerId, input)).rejects.toMatchObject({ code: "support_context_changed" });
     await withSupportDatabase(db => db.query("UPDATE support_advice_attempts SET state='cancelled',settled_at=clock_timestamp() WHERE id=$1", [saved.attemptId]));
+  }, 60_000);
+  it("withholds retained accepted-input content even before source invalidation fanout", async () => {
+    const f = await fresh(), reviewer = await withSupportDatabase(db => createProfileTestSession(db, "mcteer"));
+    const evidence = await createSupportOutcomeEvidence(actor, reviewer, f.customerId);
+    const observationDate = new Date().toISOString().slice(0, 10), nextReviewDate = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+    const action = await saveSupportProposal(actor, f.customerId, { contractVersion: "support-v1", operation: "save_action",
+      requestKey: randomUUID(), workloadId: null, expectedVersion: 0, audience: "delivery", selectedEngagementIds: [], sourceRefs: [evidence.reference],
+      content: { contractVersion: "support-v1", title: "Verify the accepted operating observation", observationDate, nextReviewDate, timezone: "UTC",
+        desiredOutcome: "Confirm the operating owner", rationale: "Original observation needs human follow-up", validationCriterion: "Review dated operating evidence",
+        priority: "normal", owner: { kind: "unassigned", reason: "Owner remains unknown" }, disposition: "open", outcomeSourceKeys: [] } });
+    const preview = await createSupportReviewPreview(reviewer, f.customerId, { workloadId: null, recordId: action.recordId, revisionId: action.revisionId });
+    await decideSupportRevision(reviewer, f.customerId, { contractVersion: "support-v1", operation: "review_revision", requestKey: randomUUID(), workloadId: null,
+      recordId: action.recordId, revisionId: action.revisionId, expectedVersion: preview.expectedVersion, sourceDigest: preview.sourceDigest,
+      decision: "accept", rationale: "Human accepts the exact sourced open proposal" });
+    await withSupportDatabase(db => db.query(`UPDATE conversations SET context_generation=(SELECT delivery_generation FROM customer_profile_state
+      WHERE customer_id=$2 AND workspace_id=$3) WHERE id=$1`, [f.input.conversationId, f.customerId, actor.workspaceId]));
+    const saved = await prepareSupportAdvice(actor, f.customerId, f.input);
+    try {
+      // Test only: simulate a projection losing eligibility while fanout is
+      // delayed. No source-retirement/domain mutation function is invoked.
+      await withSupportDatabase(db => db.query("UPDATE retrieval_sources SET lifecycle_state='retired' WHERE source_revision_id=$1", [evidence.reference.sourceRevisionId]));
+      await withSupportDatabase(async db => expect((await db.query("SELECT 1 FROM support_advice_retirements WHERE attempt_id=$1", [saved.attemptId])).rowCount).toBe(0));
+      await expect(prepareSupportAdvice(actor, f.customerId, f.input)).rejects.toMatchObject({ code: "support_context_changed" });
+    } finally {
+      await withSupportDatabase(async db => {
+        await db.query("UPDATE retrieval_sources SET lifecycle_state='current' WHERE source_revision_id=$1", [evidence.reference.sourceRevisionId]);
+        await db.query("UPDATE support_advice_attempts SET state='cancelled',settled_at=clock_timestamp() WHERE id=$1", [saved.attemptId]);
+      });
+    }
   }, 60_000);
   it("checks discovery permission, original source identity and canonical evidence reads with exact replay", async () => {
     const f = await fresh();
