@@ -53,10 +53,16 @@ export async function projectNativeEvent(
 ): Promise<void> {
   if (!visibleTypes.has(event.type) || event.data?.kind === "execution.background_task") return;
   const staffing = await withTransaction(async client => {
-    const row = (await client.query(`SELECT conversation_id FROM response_attempts a JOIN conversations c ON c.id=a.conversation_id
+    const row = (await client.query(`SELECT conversation_id,a.native_turn_id FROM response_attempts a JOIN conversations c ON c.id=a.conversation_id
       WHERE a.id=$1 AND c.eve_session_id=$2 AND c.binding_state='bound'`, [attemptId, nativeSessionId])).rows[0];
-    return row ? (await conversationFeature(client, row.conversation_id)).kind : null;
+    const kind = row ? (await conversationFeature(client, row.conversation_id)).kind : null;
+    if (kind === "support" && event.type === "message.appended" &&
+      (!row.native_turn_id || row.native_turn_id !== event.data?.turnId)) throw new Error("Native support delta association unavailable");
+    return kind;
   });
+  // No delta prose is released or retained for support. After the exact durable
+  // turn/session association check, avoid a write transaction per hidden chunk.
+  if (staffing === "support" && event.type === "message.appended") return;
   // Support never releases streaming deltas. Rebuilding its source closure for
   // each hidden token blocks the event hook and can prevent terminal settlement.
   // Durable attempt/turn association is still checked in the transaction below;

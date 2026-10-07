@@ -1,5 +1,5 @@
 import { randomUUID, createHmac } from "node:crypto";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { withSupportDatabase } from "../fixtures/support/environment";
 import { createProfileTestSession } from "../fixtures/profiles";
 import { unknownSupportAssessment } from "../fixtures/support/seed";
@@ -113,6 +113,10 @@ describe("support proposal authority and retry", () => {
   });
   it("admits exactly one concurrent last quota slot and caps denied counters", async () => {
     const config = getServerConfig();
+    // This tests contention within one fixed window, not wall-clock rollover
+    // while remote database round trips are in flight. Keep production time real.
+    const now = Date.now(), clock = vi.spyOn(Date, "now").mockReturnValue(now);
+    try {
     for (const kind of ["read", "write"] as const) {
       const actor = { ...panel, membershipId: randomUUID() }, limit = kind === "read" ? 60 : 30;
       const hash = createHmac("sha256", config.TURAS_MAINTENANCE_SECRET)
@@ -129,6 +133,7 @@ describe("support proposal authority and retry", () => {
       await withSupportDatabase(async db => expect((await db.query("SELECT count FROM rate_windows WHERE environment_id=$1 AND key_hash=$2 AND window_start=$3",
         [config.TURAS_ENVIRONMENT_ID, hash, start])).rows[0].count).toBe(limit));
     }
+    } finally { clock.mockRestore(); }
   });
   it("denies runtime content-update privilege and preserves the proposal", async () => {
     const id = await customer(), saved = await saveSupportProposal(panel, id, command());

@@ -20,13 +20,10 @@ const citations = z.array(supportId).max(20).refine(keys => new Set(keys).size =
 export const supportAdviceResultSchema = z.object({ contractVersion: z.literal("support-advice-v1"), summary: text,
   facts: z.array(z.object({ statement: text, citationKeys: citations.min(1) }).strict()).max(20),
   unknowns: z.array(z.string().trim().min(1).max(500)).max(20),
-  actionSuggestions: z.array(z.object({ content: supportActionSchema, citationKeys: citations }).strict()).max(5),
-}).strict().superRefine((result, ctx) => {
-  for (const [index, suggestion] of result.actionSuggestions.entries()) {
-    if (suggestion.content.disposition !== "open" || suggestion.content.handoff || suggestion.content.completedDate)
-      ctx.addIssue({ code: "custom", path: ["actionSuggestions", index], message: "Advice suggests open human work, not reported or completed work" });
-  }
-});
+  actionSuggestions: z.array(z.object({ content: supportActionSchema.safeExtend({
+    disposition: z.literal("open"), handoff: z.never().optional(), completedDate: z.never().optional(),
+  }), citationKeys: citations }).strict()).max(5),
+}).strict();
 export type SupportAdviceResult = z.infer<typeof supportAdviceResultSchema>;
 export function validateSupportAdviceResult(raw: unknown, sourceKeys: readonly string[]) {
   const parsed = supportAdviceResultSchema.safeParse(raw);

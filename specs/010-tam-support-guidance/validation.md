@@ -11,6 +11,27 @@ reporting and Spec Kit changes in the main checkout are not included.
 
 #### Publication and CI Bootstrap Corrections
 
+Full support gate `sh_1188efdfc001Oxjfm5vpSb44bs` passed 23 suites / 123 tests,
+zero failures/skips, at `2026-10-07T23:00:08.408Z`, source
+`a50c681da699eb1df06dc6f7e63e86e06ecab02a0d026530fd1f0655038fb1f9`.
+Advice uses `safeExtend` to expose open-only dispositions and forbidden
+handoff/completion fields while preserving original action refinements. Hidden
+support deltas are ignored after exact durable session/turn association; final
+content still requires full release checks. The quota-contention test fixes its
+clock within one window and restores it afterward, with unchanged production
+quotas and assertions. Its preceding boundary-race failure is retained.
+The authorized live cohort `live-mEQheU` had six expected outcomes and two
+failures: S01 exceeded the deadline after extra tool steps; S07 violated the
+previous custom open-only refinement. S08 verified exact stale-save denial with
+complete actual usage/cost. No new paid call occurred after that cohort; neither
+this deterministic pass nor the schema fixes prove a passing live cohort.
+
+Observed native check `sh_1186e6697001stnbNmxdTjEea1` passed on published
+`88fa882` after the hidden-delta preflight fix, using the actual framework runtime
+and exactly two fixture-provider calls. Paid calls were disabled. This verifies
+the checked native smoke path, not configured-provider deadline recovery or live
+semantic acceptance.
+
 Hidden-delta preflight regression `sh_1186371e0001W7YAxQicco3Kgi` passed
 23 suites / 123 tests, zero failures/skips, at `2026-10-07T22:12:31.474Z`,
 source `0e5d68b74a10c337aafea0421903901d6761ff13840470eaa92d2fd92b07a00c`.

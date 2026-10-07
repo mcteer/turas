@@ -10,6 +10,9 @@ describe("support actual-output cohort identity", () => {
   it("exposes required fact citations to the provider JSON schema", () => {
     const schema = z.toJSONSchema(supportAdviceResultSchema);
     expect(schema).toMatchObject({ properties: { facts: { items: { properties: { citationKeys: { minItems: 1 } } } } } });
+    expect(schema).toMatchObject({ properties: { actionSuggestions: { items: { properties: {
+      content: { properties: { disposition: { const: "open" } } }
+    } } } } });
     expect(supportAdviceResultSchema.safeParse({ contractVersion: "support-advice-v1", summary: "Unknown",
       facts: [{ statement: "Uncited claim", citationKeys: [] }], unknowns: [], actionSuggestions: [] }).success).toBe(false);
   });
@@ -23,6 +26,11 @@ describe("support actual-output cohort identity", () => {
         rationale: "Owner unknown", validationCriterion: "Human verifies role", priority: "normal",
         owner: { kind: "unassigned", reason: "Unknown owner" }, disposition: "open", outcomeSourceKeys: [] } }] };
     const text = JSON.stringify(output);
+    for (const change of [{ disposition: "completed" }, { completedDate: "2026-10-07" },
+      { handoff: {} }]) {
+      expect(supportAdviceResultSchema.safeParse({ ...output, actionSuggestions: [{ citationKeys: [],
+        content: { ...output.actionSuggestions[0].content, ...change } }] }).success).toBe(false);
+    }
     expect(captureSupportProviderOutput(text, { unified: "stop" })).toEqual({ text, output, digest: supportDigest(output) });
     expect(captureSupportProviderOutput(text, "tool-calls")).toBeNull();
     expect(captureSupportProviderOutput(text, "length")).toBeNull();
