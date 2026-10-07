@@ -1,10 +1,37 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { requireTestDatabaseUrl } from "../fixtures/database";
+import { supportUiGlobalDiagnostic } from "../../scripts/support-ui-diagnostic";
 import { requireOwnedSupportClone } from "../../scripts/support-eval-environment";
 import { verifySupportSuiteCoverage, SUPPORT_SUITES } from "../../scripts/test-support";
 
 describe("support disposable ownership guard", () => {
+  it("reports only bounded public error categories without leaking child messages or stacks", () => {
+    expect(supportUiGlobalDiagnostic({ errors: [
+      { message: "Synthetic server is already used; set reuseExistingServer", stack: "SYNTHETIC_PRIVATE_TEXT" },
+      { message: "Cannot find module SYNTHETIC_PRIVATE_TEXT" },
+      { message: "SYNTHETIC_PRIVATE_TEXT" },
+    ] })).toEqual({ globalErrors: 3, categories: ["module_unavailable", "owned_server_conflict", "runner_global_error"] });
+    expect(supportUiGlobalDiagnostic(null)).toEqual({ globalErrors: 0, categories: [] });
+    expect(supportUiGlobalDiagnostic({ errors: [{ message: "browserType.launch: missing executable" }, { message: "SyntaxError: Unexpected token" }, { message: "test timed out" }] }))
+      .toEqual({ globalErrors: 3, categories: ["browser_unavailable", "runner_timeout", "transform_failure"] });
+  });
+  it("never launches a second app when the support runner already owns the CI server", async () => {
+    vi.stubEnv("CI", "true");
+    vi.stubEnv("TURAS_SUPPORT_UI_FIXTURE_READY", "1");
+    vi.stubEnv("TURAS_EXECUTION_FIXTURE_READY", "0");
+    vi.stubEnv("TURAS_REPORT_UI_READY", "0");
+    try {
+      vi.resetModules();
+      const configuration = (await import("../../playwright.config")).default;
+      expect(configuration.webServer).toBeUndefined();
+      expect(configuration.projects).toHaveLength(4);
+      vi.stubEnv("TURAS_SUPPORT_UI_FIXTURE_READY", "0");
+      vi.resetModules();
+      const ordinary = (await import("../../playwright.config")).default;
+      expect(ordinary.webServer).toMatchObject({ command: "npm run dev", reuseExistingServer: false });
+    } finally { vi.unstubAllEnvs(); }
+  });
   it("permits the marked CI source only when it is distinct from application selection", () => {
     const source = "postgres://postgres:postgres@127.0.0.1:5432/turas_test_support";
     const application = "postgres://postgres:postgres@127.0.0.1:5432/turas_support_app_not_selected";

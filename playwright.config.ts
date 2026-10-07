@@ -20,8 +20,9 @@ export default defineConfig({
     { name: "webkit-mobile-light", use: { ...devices["Desktop Safari"], viewport: { width: 390, height: 844 }, colorScheme: "light" } },
     { name: "webkit-mobile-dark", use: { ...devices["Desktop Safari"], viewport: { width: 390, height: 844 }, colorScheme: "dark" } },
   ],
-  // The execution runner owns and supervises its already-started app.
-   webServer: process.env.TURAS_EXECUTION_FIXTURE_READY === "1" || process.env.TURAS_REPORT_UI_READY === "1" ? undefined : {
+  // Feature runners own and supervise their already-started app.
+   webServer: process.env.TURAS_EXECUTION_FIXTURE_READY === "1" || process.env.TURAS_REPORT_UI_READY === "1" ||
+     process.env.TURAS_SUPPORT_UI_FIXTURE_READY === "1" ? undefined : {
     command: "npm run dev",
     url: baseURL,
     reuseExistingServer: !process.env.CI,

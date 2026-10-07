@@ -11,6 +11,28 @@ reporting and Spec Kit changes in the main checkout are not included.
 
 #### Publication and CI Bootstrap Corrections
 
+Published head `7fca932` has source digest
+`151e0af1e08439add4d624bcea91def1b0b924974c8c3ab542fc6efc45f1b133`.
+An explicitly authorized disposable runtime login passed all **12** actual
+UPDATE/DELETE permission-denial probes on that source. The login inherited only
+`turas_runtime`; its absence was verified after revoke/drop cleanup. The owned
+clone was cleaned without Production changes. This is real restricted-connection
+evidence, not an inference from inspected grants or a failed `SET ROLE` command.
+Stable-source eight-case fixture capture and published-head CI remain running.
+
+The next published support WebKit job got beyond database setup but failed with
+global Playwright runner errors before browser assertions. A focused regression
+reproduced that the support fixture flag left `webServer` enabled with CI's
+`reuseExistingServer=false`, despite the owned runner already starting its app.
+The configuration now recognizes that support flag; ordinary non-fixture CI still
+owns its usual server and all four projects remain present. Twenty-one focused
+tests and full typecheck pass. The UI runner retains private discovery reports
+and exposes only fixed content-free global-error categories; report reconciliation
+still rejects global errors, missing/skipped/flaky cases and unexpected results.
+Published CI and stable-source final acceptance are not yet established by this
+configuration regression. Previously running captures become diagnostic after
+this intentional runner correction.
+
 Implementation commit `8d06d96` and integration merge `e3003e4` preserve merged
 recovery PR 18, including hosted watchdog routes, cron configuration and its
 independent secret. [Draft PR 19](https://github.com/mcteer/turas/pull/19) is

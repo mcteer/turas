@@ -6,6 +6,7 @@ import { createSupportActors } from "../tests/fixtures/support/seed";
 import { executionUiDiscovery, verifyExecutionUiReport } from "./execution-ui-report";
 import { featureSourceDigest } from "./execution-source-digest";
 import { installSupportNativeFixture } from "../tests/fixtures/support/native";
+import { supportUiGlobalDiagnostic } from "./support-ui-diagnostic";
 
 async function privateCaptures(path: string): Promise<void> {
   const stat = await lstat(path);
@@ -28,8 +29,13 @@ async function main() {
   for (const project of projects) {
     const args = ["node_modules/@playwright/test/cli.js", "test", ...specs, `--project=${project}`, "--reporter=json", "--forbid-only", "--retries=0"];
     const discovery = spawnSync(process.execPath, [...args, "--list"], { env: process.env, encoding: "utf8", timeout: 60000, maxBuffer: 10000000 });
+    await writeFile(resolve(directory, `${project}-discovery.json`), discovery.stdout, { mode: 0o600 });
+    await writeFile(resolve(directory, `${project}-discovery.log`), discovery.stderr, { mode: 0o600 });
     if (discovery.status !== 0) throw new Error("Support UI discovery failed");
-    const cases = executionUiDiscovery(JSON.parse(discovery.stdout), specs, project);
+    const discoveryReport = JSON.parse(discovery.stdout);
+    const discoveryDiagnostic = supportUiGlobalDiagnostic(discoveryReport);
+    if (discoveryDiagnostic.globalErrors) console.error(JSON.stringify({ gate: "support-ui-runner", phase: "discovery", project, ...discoveryDiagnostic }));
+    const cases = executionUiDiscovery(discoveryReport, specs, project);
     if (!smoke && cases.length < 7) throw new Error("Support UI full gate requires at least seven journeys per project");
     for (const [index, current] of cases.entries()) await withSupportEvalEnvironment(async environment => {
       await createSupportActors(environment.appRoot);
@@ -47,7 +53,9 @@ async function main() {
         await writeFile(resolve(directory, `${project}-${index}.json`), run.stdout, { mode: 0o600 });
         await writeFile(resolve(directory, `${project}-${index}.log`), run.stderr + environment.privateLogTail(), { mode: 0o600 });
         await privateCaptures(output);
-        const counts = verifyExecutionUiReport(JSON.parse(run.stdout), [current]);
+        const report = JSON.parse(run.stdout), diagnostic = supportUiGlobalDiagnostic(report);
+        if (diagnostic.globalErrors) console.error(JSON.stringify({ gate: "support-ui-runner", phase: "execution", project, file: current.file, ...diagnostic }));
+        const counts = verifyExecutionUiReport(report, [current]);
         if (run.status !== 0 || counts.unexpected || counts.skipped || counts.flaky || counts.expected !== 1) throw new Error("Support UI case failed");
         passed++;
       } finally {
