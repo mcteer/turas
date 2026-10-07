@@ -11,6 +11,17 @@ reporting and Spec Kit changes in the main checkout are not included.
 
 #### Publication and CI Bootstrap Corrections
 
+The exact native-stop/reload WebKit journey from published CI was run alone on
+an owned clone with `CI=true`, paid calls disabled and zero retries; it passed
+with process status 0. This filtered reproduction is diagnostic, not a complete
+browser gate and not an explanation of the Linux CI failure. Published diagnostics
+identified case line 36 but omitted its assertion location, because Playwright can
+put that location in its structured `error.location` rather than `stack`. The
+diagnostic now permits only exact authored support-test filenames with bounded
+numeric line/column values, including that structured field. Nine unit tests,
+typecheck and private-location exclusion checks pass. No cancellation behavior,
+timing bound or acceptance criterion changed.
+
 Published head `a4228b3` support WebKit failed case reconciliation in CI run
 `37576793930`; the log did not identify the failed case/assertion. The runner now
 emits only fixed error categories/statuses, authored case file/line and

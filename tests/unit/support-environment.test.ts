@@ -17,6 +17,11 @@ describe("support disposable ownership guard", () => {
       categories: ["case_error", "case_timeout", "locator_assertion"], locations: ["tests/ui/support-readiness.spec.ts:43:10"] });
     expect(JSON.stringify(supportUiCaseDiagnostic(report))).not.toContain("SYNTHETIC_PRIVATE_TEXT");
     expect(supportUiCaseDiagnostic(null)).toEqual({ failedResults: 0, statuses: [], categories: [], locations: [] });
+    expect(supportUiCaseDiagnostic({ tests: [{ results: [{ status: "failed", error: { message: "Private assertion",
+      location: { file: "/private/customer/tests/ui/support-advice.spec.ts", line: 50, column: 80 } } }] }] }).locations)
+      .toEqual(["tests/ui/support-advice.spec.ts:50:80"]);
+    expect(supportUiCaseDiagnostic({ tests: [{ results: [{ status: "failed", error: { message: "Private assertion",
+      location: { file: "/private/customer/secret.ts", line: 50, column: 80 } } }] }] }).locations).toEqual([]);
   });
   it("reports only bounded public error categories without leaking child messages or stacks", () => {
     expect(supportUiGlobalDiagnostic({ errors: [
