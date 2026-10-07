@@ -45,6 +45,7 @@ test("native stop withholds late output and reload does not admit another paid s
   await page.getByRole("button", { name: "Ask Turi for Support Guidance", exact: true }).click();
   const calls = async () => Number((await query("SELECT count(*)::int AS count FROM support_native_fixture_calls")).rows[0].count);
   await expect.poll(calls, { timeout: 60000 }).toBe(1);
+  await expect(page.getByRole("button", { name: "Stop Support Guidance", exact: true })).toBeEnabled();
   const stopAcknowledgement = page.waitForResponse(response => response.request().method() === "POST" &&
     new URL(response.url()).pathname.endsWith("/cancel"));
   await page.getByRole("button", { name: "Stop Support Guidance", exact: true }).click();

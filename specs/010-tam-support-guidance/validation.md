@@ -11,6 +11,29 @@ reporting and Spec Kit changes in the main checkout are not included.
 
 #### Publication and CI Bootstrap Corrections
 
+Stop-readiness narrow WebKit diagnostic `sh_114f8881a0014lIHWmsipHMxtO`
+passed with process status 0, paid calls disabled and no retries. The control
+waits for the handler's native session/turn prerequisites; acknowledged durable
+cancellation precedes barrier release, with late-output withholding, reload and
+exact call-count assertions retained. This filtered diagnostic is not full-matrix
+acceptance. Fourteen environment/model-budget unit tests and typecheck pass.
+The preparation-suite diagnostic confirmed its child timeout at 120,018ms;
+private per-test progress diagnosis retains the same 120-second child deadline
+and does not relax the required cohort gate.
+
+Local full reporting invocation `sh_114f79ccf001C4isU2yBfN1YH0` produced all
+48 registered suite reports in `tests-iUXmKm`: **160 passed**, zero failures or
+skips, but exited 1 without a completion summary. Its captured reporting source
+`3774152fe76410ed1e5a48807bd7b789bec7e7aa63cdcd23fd906377964f246f`
+differs from current `67d7af6f8a23ffa024c0399b39bce10ce201631f9932be77dc14797fa61e5773`
+after the intentional Stop UI/test change. This is diagnostic only, not a passing
+final-source gate. Published support and reporting deterministic CI passed on
+`85216b6`; its WebKit Stop acknowledgement timed out. The Stop control now stays
+disabled until the native session and turn identities required by its handler
+exist, and the browser journey explicitly waits for enabled readiness. Typecheck
+passes; narrow WebKit verification is pending. No cancellation authority, timing
+bound, provider budget or safety assertion was relaxed.
+
 The first manifest-based reporting rerun exposed stale manifest metadata:
 `version` was 42 while its verified migration list included 043 and initialization
 correctly reached 43. Correcting only that metadata to 43 also aligns the

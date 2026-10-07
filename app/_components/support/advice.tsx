@@ -109,7 +109,7 @@ export function SupportAdvice({ customerId, workloadId, audience, sources, engag
     {savedId.current && <button className="secondary-button" disabled={busy} onClick={() => void refresh(savedId.current!)}>Check Advice Status</button>}
     <button className="secondary-button" disabled={busy} onClick={() => void reconcileSave()}>Check Suggestion Save Status</button>
     {status && <p>Advice State: {status.state}</p>}
-    {status?.state === "running" && <button className="secondary-button" disabled={busy} onClick={() => void stop()}>Stop Support Guidance</button>}
+    {status?.state === "running" && <button className="secondary-button" disabled={busy || !status.nativeSessionId || !status.nativeTurnId} onClick={() => void stop()}>Stop Support Guidance</button>}
     {withheld && <p role="status">Advice content is withheld until current status is verified.</p>}
     {status?.outputReadable && status.output && !withheld && <article className="profile-card"><h3>Proposed Guidance</h3><p>{status.output.summary}</p>
       {status.output.facts.map((fact, index) => <p key={index}>{fact.statement} · {fact.citationKeys.length} exact evidence references</p>)}
