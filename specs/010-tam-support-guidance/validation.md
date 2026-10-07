@@ -11,6 +11,22 @@ reporting and Spec Kit changes in the main checkout are not included.
 
 #### Publication and CI Bootstrap Corrections
 
+Hidden-delta preflight regression `sh_1186371e0001W7YAxQicco3Kgi` passed
+23 suites / 123 tests, zero failures/skips, at `2026-10-07T22:12:31.474Z`,
+source `0e5d68b74a10c337aafea0421903901d6761ff13840470eaa92d2fd92b07a00c`.
+Support streaming deltas remain hidden and retain durable association checks,
+without repeated full source-release preparation; final messages still require
+the full release fence. Staffing/execution delta fences are unchanged. The new
+suite was explicitly registered after the exhaustive coverage guard rejected its
+initial omission. This deterministic pass does not prove live deadline recovery.
+
+Published `9e9e7e3` fixture `sh_1181226ee001M1D3AWczVUciYw` passed
+eight cases with zero failures and complete terminal usage throughout on source
+`eda559e3c8313515bd3a0cde334da39438d29cffee926fc5088401406dd1538d`.
+S01–S07 completed; S08 withheld as expected. Paid calls were disabled. This
+matches the 122-test support gate but does not establish live semantic review,
+actual-provider cost, hosted behavior or final merge approval.
+
 Full support regression `sh_11807a151001nIus5VLTWJNQZY` passed **22 suites /
 122 tests**, zero failures/skips, at `2026-10-07T20:32:34.608Z` on source
 `eda559e3c8313515bd3a0cde334da39438d29cffee926fc5088401406dd1538d`.

@@ -17,6 +17,7 @@ export const SUPPORT_SUITES = [
   "tests/unit/support-evaluation.test.ts",
   "tests/unit/support-review.test.ts",
   "tests/unit/support-model-budget.test.ts",
+  "tests/unit/support-release-preflight.test.ts",
   "tests/contracts/support-schema.test.ts", "tests/contracts/support-command-schema.test.ts",
   "tests/contracts/support-http.test.ts",
   "tests/contracts/support-escalation.test.ts",

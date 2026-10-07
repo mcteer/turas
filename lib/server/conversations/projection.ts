@@ -14,7 +14,8 @@ import { assertPlanConversationFence } from "../plans/fences";
 import { boundToolActor } from "../profiles/tool-actor";
 import { staffingScopeForConversation } from "../staffing/context";
 import { prepareGovernedReleaseForNative, type GovernedNativeRelease } from "./native-release";
-import { projectStaffingNativeEventInTransaction, staffingMetadataEvent, type StaffingNativeProjection } from "../staffing/native-events";
+import { projectStaffingNativeEventInTransaction, type StaffingNativeProjection } from "../staffing/native-events";
+import { needsGovernedReleasePreflight } from "./release-preflight";
 import { recordStaffingTelemetry } from "../staffing/telemetry";
 
 export type NativeEvent = {
@@ -54,9 +55,13 @@ export async function projectNativeEvent(
   const staffing = await withTransaction(async client => {
     const row = (await client.query(`SELECT conversation_id FROM response_attempts a JOIN conversations c ON c.id=a.conversation_id
       WHERE a.id=$1 AND c.eve_session_id=$2 AND c.binding_state='bound'`, [attemptId, nativeSessionId])).rows[0];
-    return row ? ["staffing", "execution", "support"].includes((await conversationFeature(client, row.conversation_id)).kind) : false;
+    return row ? (await conversationFeature(client, row.conversation_id)).kind : null;
   });
-  const prepared = staffing && !staffingMetadataEvent(event.type) ? await prepareGovernedReleaseForNative(nativeSessionId,
+  // Support never releases streaming deltas. Rebuilding its source closure for
+  // each hidden token blocks the event hook and can prevent terminal settlement.
+  // Durable attempt/turn association is still checked in the transaction below;
+  // completed messages retain the full current-source release preflight.
+  const prepared = needsGovernedReleasePreflight(staffing, event.type) ? await prepareGovernedReleaseForNative(nativeSessionId,
     { responseAttemptId: attemptId, incomingTurnId: event.type === "message.received" && typeof event.data?.turnId === "string" ? event.data.turnId : undefined }) : null;
   const started = performance.now();
   const projection = await withTransaction((client) =>
