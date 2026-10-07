@@ -70,6 +70,7 @@ jobs:
           PGPASSWORD: postgres
         run: |
           psql -h 127.0.0.1 -U postgres -c 'CREATE DATABASE turas_test_support'
+          psql -h 127.0.0.1 -U postgres -c 'CREATE ROLE turas_runtime NOLOGIN'
           npm run db:init
           npm run db:roles
           mkdir -p "$TURAS_ARTIFACT_STORE_ROOT"

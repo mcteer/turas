@@ -1,8 +1,20 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { requireOwnedSupportClone } from "../../scripts/support-eval-environment";
 import { verifySupportSuiteCoverage, SUPPORT_SUITES } from "../../scripts/test-support";
 
 describe("support disposable ownership guard", () => {
+  it("bootstraps the referenced runtime role before fresh CI migrations for both support jobs", () => {
+    const workflow = readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8");
+    const support = workflow.split("\n  support-deterministic:\n")[1]?.split(/\n  [a-zA-Z][\w-]*:/)[0];
+    expect(support).toBeDefined();
+    expect(support).toContain("[deterministic, webkit]");
+    const role = support!.indexOf("CREATE ROLE turas_runtime NOLOGIN");
+    const migrate = support!.indexOf("npm run db:init");
+    expect(role).toBeGreaterThanOrEqual(0);
+    expect(migrate).toBeGreaterThan(role);
+    expect(support!.indexOf("npm run db:roles")).toBeGreaterThan(migrate);
+  });
   const raw = "postgres://localhost/turas_test_010_eval_012345abcdef";
   const owned = () => ({ DATABASE_URL: raw, DATABASE_URL_UNPOOLED: raw, TURAS_TEST_DATABASE_URL: raw,
     TURAS_ENVIRONMENT_ID: "test-support", TURAS_TEST_ENVIRONMENT_ID: "test-support" });
