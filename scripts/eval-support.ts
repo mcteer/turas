@@ -18,6 +18,9 @@ import { withSupportDatabase } from "../tests/fixtures/support/environment";
 import { randomUUID } from "node:crypto";
 import { installSupportNativeFixture } from "../tests/fixtures/support/native";
 import { assertDeterministicTestMode } from "../tests/fixtures/runtime";
+import { captureSupportProviderOutput } from "./support-provider-output";
+import { validateSupportAdviceResult } from "../lib/support/advice";
+import { supportSourcesSchema } from "../lib/server/support/schema";
 
 async function main() {
   const fixtureMode = process.argv.length === 3 && process.argv[2] === "--fixture";
@@ -80,7 +83,7 @@ async function main() {
             if (blocked.length && blockers.length < 120) blockers.push({ at: Date.now(), blocked });
           }
           if (scenario.id === "S08" && !changed && (await query(`SELECT 1 FROM support_live_provider_observations
-            WHERE attempt_id=$1 AND provider_finished_at IS NOT NULL`, [attemptId])).rowCount) {
+            WHERE attempt_id=$1 AND provider_finished_at IS NOT NULL AND output_digest IS NOT NULL`, [attemptId])).rowCount) {
             await fixture.changeBeforeRelease();
             expectedDomain = await supportLiveDomainDigests();
             await query("UPDATE support_live_provider_barriers SET released=true WHERE attempt_id=$1", [attemptId]);
@@ -109,16 +112,17 @@ async function main() {
           // fixture setup session, so denial proves state rather than ownership.
           const session = (await query(`SELECT c.context_login_session_id FROM conversations c
             JOIN support_advice_attempts a ON a.conversation_id=c.id WHERE a.id=$1`, [attemptId])).rows[0];
-          const date = new Date().toISOString().slice(0, 10);
-          const nextReviewDate = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+          const captured = (await query(`SELECT output_text,output_digest FROM support_live_provider_observations
+            WHERE attempt_id=$1 AND output_digest IS NOT NULL ORDER BY step_index DESC LIMIT 1`, [attemptId])).rows[0];
+          const exact = captured && captureSupportProviderOutput(captured.output_text, "stop");
+          if (!exact || exact.digest !== captured.output_digest || !changed) throw new Error("Exact stale provider output unavailable");
+          const refs = supportSourcesSchema.parse(evidence.payloads.find(item => item.kind === "source_map")?.payload);
+          const output = validateSupportAdviceResult(exact.output, refs.map(ref => ref.id));
           try {
             await saveSupportSuggestion({ ...actor, sessionId: session.context_login_session_id }, fixture.customerId, {
               contractVersion: "support-v1", operation: "save_suggestion", requestKey: randomUUID(), workloadId: fixture.workloadId,
-              expectedVersion: 0, attemptId, outputDigest: "0".repeat(64), suggestionIndex: 0,
-              content: { contractVersion: "support-v1", title: "Synthetic stale save denial probe", observationDate: date,
-                nextReviewDate, timezone: "UTC", desiredOutcome: "Verify stale advice cannot become a proposal",
-                rationale: "Withdrawn evidence is unavailable", validationCriterion: "Human verifies no proposal was saved",
-                priority: "normal", owner: { kind: "unassigned", reason: "Unknown owner" }, disposition: "open", outcomeSourceKeys: [] } });
+              expectedVersion: 0, attemptId, outputDigest: exact.digest, suggestionIndex: 0,
+              content: output.actionSuggestions[0].content });
           } catch (error) {
             staleSuggestionSaveDenied = !!error && typeof error === "object" && "code" in error && error.code === "suggestion_unavailable";
             if (!staleSuggestionSaveDenied) throw error;
@@ -136,7 +140,7 @@ async function main() {
         await writeFile(resolve(directory, `${scenario.id}-capture.json`), JSON.stringify(capture), { mode: 0o600, flag: "wx" });
         }
         const expected = scenario.expectedRelease === "completed" ? evidence.attempt.state === "completed" : changed && evidence.attempt.state !== "completed";
-        if (!expected || (!fixtureMode && (!evidence.usageComplete || evidence.costUsd === null)) || !domainUnchanged ||
+        if (!expected || !evidence.usageComplete || (!fixtureMode && evidence.costUsd === null) || !domainUnchanged ||
           (scenario.id === "S08" && !staleSuggestionSaveDenied)) {
           failures++;
           await writeFile(resolve(directory, `${scenario.id}-runtime.log`), environment.privateLogTail(), { mode: 0o600, flag: "wx" });

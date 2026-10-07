@@ -11,6 +11,57 @@ reporting and Spec Kit changes in the main checkout are not included.
 
 #### Publication and CI Bootstrap Corrections
 
+Stable-source exact-output fixture `sh_11704b6fa001oHA2Za2hqt2wxb`
+passed **eight cases / zero failures** on
+`6c3c83e2d350562e56f871cc8f803441aad034455d4326ead16e66a227ec448c`.
+Every admitted step has complete terminal usage. S08 withheld the exact captured
+final response and denied saving its exact digest/suggestion without domain
+mutation. Typed content-release denials no longer interrupt terminal usage
+projection. Paid calls were disabled; this verifies actual-framework fixture
+mechanics, not configured-provider semantics, cost, review or hosted behavior.
+
+Earlier-source fixture `sh_117006618001ajMUBVKp5Xie7B` reached all eight
+expected states, including withheld S08 with complete terminal usage, but exited
+1 after source changed during execution. It is retained as diagnostic evidence
+only, not current-source acceptance. The stable-source fixture invocation remains
+pending; no paid provider calls or automatic recapture occurred.
+
+Current-source full support invocation `sh_11704c375001jhjN3gEx12EJ1c`
+passed **22 suites / 121 tests**, zero failures/skips, at
+`2026-10-07T15:49:26.519Z`, source
+`6c3c83e2d350562e56f871cc8f803441aad034455d4326ead16e66a227ec448c`.
+This includes fail-closed revoked-session final projection and terminal usage
+settlement. The exact-output framework fixture remains pending; configured-provider
+semantic acceptance, final-source CI and required review/merge remain outstanding.
+
+Preparation regression `sh_117027aa2001Q8Q7SHPPYHTZoG` passed in
+**110,510ms** within the unchanged 120-second child bound. The rollback-isolated
+revoked-session case verifies hidden final content, absent retained output and
+an exact confirmed terminal usage receipt. Release denial handles only typed
+401/403/404/409 failures, retaining durable session/attempt/turn association
+checks; unexpected errors propagate. The prior regression's 401 failure is
+retained. Current-source full support and eight-case exact-output fixture checks
+are running; this diagnostic does not establish live-provider acceptance.
+
+Exact-output fixture run `sh_116e25c7b001ppYWsbHLvtqGPz`, retained as
+`live-NACzLY`, exercised the final-only S08 barrier and denied saving the exact
+captured suggestion/digest without domain mutation. It nevertheless is **not
+acceptance**: S08's second admitted step settled as unknown with null token
+counts, despite observed provider completion and a captured final output.
+The existing fixture-mode usage exemption incorrectly reported zero failures;
+the runner now requires complete usage in both modes (actual provider cost is
+still required only in live mode). No unknown usage was filled or fabricated.
+S01–S07 completed with complete usage. Withdrawal/native event settlement must
+be corrected and verified before any configured-provider recapture or acceptance.
+
+Exact published Actions run `37633666729` passed all **nine jobs** on
+`423e62f3374a7f8495850b1cf639e9a5a7a76e33`, including full staffing coverage
+without quota/deadline changes, support deterministic/native/restart checks and
+the complete support, reporting and execution four-project WebKit matrices.
+The prior local remote-database quota timeout and changed-source browser rejection
+remain retained. Published CI does not establish configured-provider semantic
+review, exact stale-output save denial, restored Notion execution or merge approval.
+
 The economics diagnostic `sh_116aa3761001kSEqASNt4BJg02` passed all six
 tests with zero failures/skips on an owned clone with real prepared scanner
 assets. The withdrawal regression now asserts the entire exact metadata-only

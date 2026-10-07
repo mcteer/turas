@@ -183,6 +183,24 @@ describe("atomic support advice preparation", () => {
     const output = { contractVersion: "support-advice-v1", summary: "Confirm missing operating evidence", facts: [], unknowns: ["Operating owner"],
       actionSuggestions: [{ content, citationKeys: [] }] };
     await withSupportDatabase(async db => {
+      await db.query("BEGIN");
+      try {
+        await db.query("UPDATE login_sessions SET revoked_at=clock_timestamp() WHERE id=$1", [actor.sessionId]);
+        const eventId = `evt_${randomUUID()}`;
+        await projectSupportNativeEventInTransaction(db, nativeSessionId, responseAttemptId, { type: "message.completed",
+          meta: { id: eventId, at: new Date().toISOString() }, data: { turnId, message: JSON.stringify(output) } }, undefined,
+        { principal, conversationId: f.input.conversationId, responseAttemptId, nativeSessionId });
+        expect((await db.query("SELECT visible_payload FROM event_projections WHERE native_event_id=$1", [eventId])).rows[0].visible_payload).toEqual({});
+        expect((await db.query("SELECT state FROM support_advice_attempts WHERE id=$1", [saved.attemptId])).rows[0].state).toBe("failed");
+        expect((await db.query("SELECT 1 FROM support_advice_payloads WHERE attempt_id=$1 AND kind='output'", [saved.attemptId])).rowCount).toBe(0);
+        await projectSupportNativeEventInTransaction(db, nativeSessionId, responseAttemptId, { type: "step.completed",
+          meta: { id: `evt_${randomUUID()}`, at: new Date().toISOString() }, data: { turnId, stepIndex: 0, usage: { inputTokens: 11, outputTokens: 7 } } });
+        expect((await db.query(`SELECT u.outcome,u.input_tokens::int,u.output_tokens::int FROM support_advice_usage u
+          JOIN support_model_step_receipts s ON s.id=u.step_id WHERE s.attempt_id=$1`, [saved.attemptId])).rows)
+          .toEqual([{ outcome: "confirmed", input_tokens: 11, output_tokens: 7 }]);
+      } finally { await db.query("ROLLBACK"); }
+    });
+    await withSupportDatabase(async db => {
       await projectSupportNativeEventInTransaction(db, nativeSessionId, responseAttemptId, { type: "message.completed",
         meta: { id: `evt_${randomUUID()}`, at: new Date().toISOString() }, data: { turnId, message: JSON.stringify(output) } }, undefined,
       { principal, conversationId: f.input.conversationId, responseAttemptId, nativeSessionId });

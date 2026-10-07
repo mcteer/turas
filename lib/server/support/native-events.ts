@@ -29,13 +29,22 @@ export async function projectSupportNativeEventInTransaction(db: PoolClient, nat
   if (typeof data.turnId !== "string" || !data.turnId || data.turnId.length > 180) throw hiddenRecord();
   let finalOutput: ReturnType<typeof validateSupportAdviceResult> | null = null;
   let invalidOutput = false;
+  let withheldOutput = false;
   if (event.type === "message.completed") {
     if (!prepared || prepared.responseAttemptId !== responseAttemptId || prepared.nativeSessionId !== nativeSessionId)
       throw new HttpFailure(503, "support_release_preflight_required", "Current support output preparation required");
-    const bound = await assertSupportNativeRelease(db, prepared);
+    let bound: Awaited<ReturnType<typeof assertSupportNativeRelease>> | null = null;
+    try { bound = await assertSupportNativeRelease(db, prepared); }
+    catch (error) {
+      // A denied content release must not interrupt the native event callback:
+      // the framework still owes the admitted step's actual terminal usage.
+      // Identity/turn association is checked below before any projection/write.
+      if (!(error instanceof HttpFailure) || ![401, 403, 404, 409].includes(error.status)) throw error;
+      withheldOutput = true;
+    }
     // eve completes assistant messages before executing tools as well as at the
     // end of a turn. Pre-tool narration is never a released advice result.
-    if (data.finishReason !== "tool-calls") try {
+    if (bound && data.finishReason !== "tool-calls") try {
       if (typeof data.message !== "string" || Buffer.byteLength(data.message, "utf8") > 65536) throw new Error("Invalid final output");
       finalOutput = validateSupportAdviceResult(JSON.parse(data.message), bound.refs.map(ref => ref.id));
     } catch { invalidOutput = true; }
@@ -79,6 +88,8 @@ export async function projectSupportNativeEventInTransaction(db: PoolClient, nat
     await db.query("UPDATE support_advice_attempts SET output_digest=$2 WHERE id=$1", [advice.id, digest]);
   }
   if (invalidOutput) await db.query("UPDATE support_advice_attempts SET state='failed',failure_code='invalid_advice',settled_at=clock_timestamp() WHERE id=$1", [advice.id]);
+  if (withheldOutput) await db.query(`UPDATE support_advice_attempts SET state='failed',failure_code='support_context_changed',
+    settled_at=COALESCE(settled_at,clock_timestamp()) WHERE id=$1 AND state IN ('prepared','running')`, [advice.id]);
   if (step) {
     if (!Number.isInteger(data.stepIndex) || Number(data.stepIndex) < 0 || Number(data.stepIndex) > 5) throw hiddenRecord();
     const receipt = (await db.query("SELECT id FROM support_model_step_receipts WHERE attempt_id=$1 AND step_token=$2", [advice.id, `${data.turnId}/${data.stepIndex}`])).rows[0];

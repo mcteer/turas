@@ -6,6 +6,7 @@ import type { ExecutionModelIdentity } from "../../../lib/server/execution/nativ
 import type { FeaturePrincipal } from "../../../lib/server/conversations/feature";
 import { requireOwnedSupportClone } from "../../../scripts/support-eval-environment";
 import { assertDeterministicTestMode } from "../runtime";
+import { captureSupportProviderOutput } from "../../../scripts/support-provider-output";
 type Model = Parameters<typeof wrapLanguageModel>[0]["model"];
 
 /** Observe, never replace, the supplied model. Never retain headers, credentials
@@ -34,7 +35,7 @@ export function observeSupportLiveProvider(model: Model, principal: FeaturePrinc
       await new Promise(resolve => setTimeout(resolve, 50));
     }
   }
-  async function finish(metadata: unknown) {
+  async function finish(metadata: unknown, text: string, reason: unknown) {
     const gateway = metadata && typeof metadata === "object" ? (metadata as Record<string, unknown>).gateway : null;
     const values = gateway && typeof gateway === "object" ? gateway as Record<string, unknown> : {};
     // Gateway documents cost as a decimal string. Capture only the allowlisted
@@ -42,8 +43,10 @@ export function observeSupportLiveProvider(model: Model, principal: FeaturePrinc
     const cost = typeof values.cost === "string" && /^\d+(?:\.\d+)?$/.test(values.cost) &&
       Number.isFinite(Number(values.cost)) ? values.cost : null;
     const generation = typeof values.generationId === "string" && /^[a-zA-Z0-9_-]{1,200}$/.test(values.generationId) ? values.generationId : null;
-    await query("UPDATE support_live_provider_observations SET cost_usd=$2,generation_id=$3,provider_finished_at=clock_timestamp() WHERE id=$1",
-      [observationId, cost, generation]);
+    const output = captureSupportProviderOutput(text, reason);
+    await query("UPDATE support_live_provider_observations SET cost_usd=$2,generation_id=$3,provider_finished_at=clock_timestamp(),output_text=$4,output_digest=$5 WHERE id=$1",
+      [observationId, cost, generation, output?.text ?? null, output?.digest ?? null]);
+    return output !== null;
   }
   return wrapLanguageModel({ model, middleware: {
     transformParams: async ({ params, type }) => {
@@ -61,12 +64,21 @@ export function observeSupportLiveProvider(model: Model, principal: FeaturePrinc
       if (row.rowCount !== 1) throw new Error("Support observation admission association unavailable");
       return params;
     },
-    wrapGenerate: async ({ doGenerate, params }) => { await begin(params.abortSignal); const result = await doGenerate(); await finish(result.providerMetadata); await hold(params.abortSignal); return result; },
+    wrapGenerate: async ({ doGenerate, params }) => {
+      await begin(params.abortSignal); const result = await doGenerate();
+      const text = result.content.filter(item => item.type === "text").map(item => item.text).join("");
+      if (await finish(result.providerMetadata, text, result.finishReason)) await hold(params.abortSignal);
+      return result;
+    },
     wrapStream: async ({ doStream, params }) => {
-      await begin(params.abortSignal); const result = await doStream();
+      await begin(params.abortSignal); const result = await doStream(); let text = "";
       return { ...result, stream: result.stream.pipeThrough(new TransformStream({
         async transform(chunk, controller) {
-          if (chunk.type === "finish") { await finish(chunk.providerMetadata); await hold(params.abortSignal); }
+          if (chunk.type === "text-delta") {
+            text += chunk.delta;
+            if (Buffer.byteLength(text, "utf8") > 131072) throw new Error("Support provider output capture exceeds bound");
+          }
+          if (chunk.type === "finish" && await finish(chunk.providerMetadata, text, chunk.finishReason)) await hold(params.abortSignal);
           controller.enqueue(chunk);
         },
       })) };
