@@ -258,6 +258,26 @@ provenance and lifecycle rules.
 Open a repository issue for bugs/questions with reproduction steps and sanitized
 diagnostics. Never include secrets or customer content.
 
+## Hosting and Recovery
+
+The repository was disconnected from Vercel on 2026-09-27 and reconnected by the
+maintainer on 2026-10-02. Git deployments are enabled: `main` is the Production
+branch and other branches produce protected Previews. Web Analytics is enabled
+on the project; the app integrates `@vercel/analytics` with page URL redaction
+for customer, engagement, plan, resource, import and conversation identifiers.
+Query strings and fragments are removed; unknown routes and custom events are
+discarded. Local development uses the SDK's development mode.
+
+Hosted chat requires an active watchdog: admission fails closed when no worker
+heartbeat is newer than 15 seconds. The minute cron at `/eve/v1/turas/watchdog`
+runs a 65-second bounded worker, refreshing readiness every five seconds and
+using database job leases for cancellation/retry. Set a Production-only
+`CRON_SECRET` of at least 32 characters; browser cookies are not accepted by the
+watchdog. Verify the generated function supports runs longer than 65 seconds,
+cron invocation history, fresh database heartbeats and an authenticated chat
+before declaring hosted recovery complete. A successful build alone does not
+establish hosted readiness. Local development continues using its local worker.
+
 ## License
 
 No project-wide license is currently declared. Do not assume redistribution
