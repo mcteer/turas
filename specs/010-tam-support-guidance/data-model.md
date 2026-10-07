@@ -1,10 +1,10 @@
 # Data Model: Support Guidance v1
 
-Status: planned additive model, not installed. References: [spec](spec.md), [API](contracts/support-api.md), [advice](contracts/advisory-context.md).
+Status: implemented additive model; installed only through explicit migrations in selected environments. References: [spec](spec.md), [API](contracts/support-api.md), [advice](contracts/advisory-context.md).
 
 ## Records and Relationships
 
-| Storage group | Planned fields / purpose |
+| Storage group | Fields / purpose |
 | --- | --- |
 | `support_scopes` | UUID id; environment, workspace, customer, nullable workload; generation; created/updated timestamps. Unique tuple with null workload treated as equal. Read of absent scope returns an empty view; first explicit save/prepare command creates it idempotently. |
 | `support_records` | UUID id; scope; kind assessment/action; immutable audience internal/delivery; current revision, accepted revision, optimistic version; lifecycle metadata. At most one assessment record per scope/audience. Action identities remain stable across revisions. |

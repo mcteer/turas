@@ -139,4 +139,4 @@ Demonstrate US1 manually first, then US2/US3 without a model, then US4. Each sto
 | SC-006 | T013, T018, T021, T029, T039, T040, T042 |
 | SC-007 | T034–T036, T038, T040, T043 |
 
-Story task counts: US1 5; US2 5; US3 3; US4 9; shared setup/foundation/lifecycle/verification 23. Total 45. All remain unchecked until implemented and evidenced.
+Story task counts: US1 5; US2 5; US3 3; US4 9; shared setup/foundation/lifecycle/verification 23. Total 45. Completion is recorded only after implementation and acceptance evidence in validation.md.

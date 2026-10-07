@@ -9,7 +9,7 @@ import { supportScope } from "./repository";
 import { supportRevisionSources } from "./repository";
 import { projectSupportReadiness, supportRevisionViews } from "./projection";
 import { supportWorkspaceMetadata } from "./metadata";
-import { supportSelectedEngagements, verifySupportSources } from "./sources";
+import { dependencyUnion, supportSelectedEngagements, verifySupportSources } from "./sources";
 import type { SupportSource } from "./schema";
 
 export type SupportAdviceScope = { bindingId: string; conversationId: string; ownerMembershipId: string;
@@ -37,6 +37,9 @@ export async function captureSupportAdviceContext(db: PoolClient, actor: Support
   for (const revisionId of [readiness.assessment?.revisionId, ...rows.map(row => row.accepted_revision_id)].filter(Boolean))
     for (const ref of await supportRevisionSources(db, revisionId)) allRefs.set(`${ref.kind}:${ref.sourceRevisionId}`, ref);
   if (allRefs.size > 200) throw new HttpFailure(422, "scope_too_large", "Narrow support advice dependencies");
+  // Bound the union across every accepted record, including private original
+  // lineage, rather than bounding each direct selection independently.
+  const dependencies = await dependencyUnion(db, actor, scope.customerId, [...allRefs.values()]);
   const profile = (await db.query(`SELECT internal_generation,delivery_generation FROM customer_profile_state
     WHERE workspace_id=$1 AND customer_id=$2`, [actor.workspaceId, scope.customerId])).rows[0];
   const publications = (await db.query(`SELECT revision_id,head_generation FROM knowledge_publications
@@ -52,5 +55,5 @@ export async function captureSupportAdviceContext(db: PoolClient, actor: Support
     assessment: readiness.assessment, maturity: metadata.maturity, actions,
     engagements: engagements.map(row => ({ id: row.id, baselineId: row.active_baseline_id, executionGeneration: row.execution_generation })),
     unknowns: { externalAcknowledgement: "unknown", externalResolution: "unknown", entitlement: "unknown", responseGuarantee: "unknown" } };
-  return { snapshot, fence, digest: supportDigest(fence), bytes: supportContextCharge(snapshot), dependencies: [...allRefs.values()] };
+  return { snapshot, fence, digest: supportDigest(fence), bytes: supportContextCharge(snapshot), dependencies };
 }

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
-import { supportAdviceRequestSchema, supportAdvicePrompt, SUPPORT_ADVICE_LIMITS } from "../../support/advice";
+import { supportAdviceRequestSchema, supportAdvicePrompt, supportAdviceInstructions, SUPPORT_ADVICE_LIMITS } from "../../support/advice";
 import { getServerConfig } from "../config";
 import { assertFreshFeatureConversation } from "../conversations/feature";
 import { supportTransaction } from "./service";
@@ -8,6 +8,7 @@ import { supportDigest } from "./commands";
 import { lockSupportActor, type SupportActor } from "./policy";
 import { supportScope } from "./repository";
 import { captureSupportAdviceContext, type SupportAdviceScope } from "./context";
+import { captureSupportEvidence } from "./evidence";
 
 /** Preparation never performs provider I/O. All admission identities and the
  * initial context are committed atomically before native dispatch is possible. */
@@ -75,9 +76,12 @@ export async function prepareSupportAdvice(actor: SupportActor, customerId: stri
       return retained;
     });
     const scope = await supportScope(db, actor, customerId, input.workloadId, { lock: true });
-    const instructionBytes = Buffer.byteLength(supportAdvicePrompt, "utf8");
+    const snapshot = { ...context.snapshot, currentDate: new Date().toISOString().slice(0, 10),
+      defaultNextReviewDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+      evidence: await captureSupportEvidence(db, actor, customerId, input.workloadId, input.audience, retainedRefs) };
+    const instructionBytes = Buffer.byteLength(supportAdviceInstructions(snapshot), "utf8") + Buffer.byteLength(supportAdvicePrompt, "utf8");
     const sourceBytes = Buffer.byteLength(JSON.stringify(input.sourceRefs), "utf8");
-    if (context.bytes + instructionBytes + sourceBytes > SUPPORT_ADVICE_LIMITS.contextBytes)
+    if (instructionBytes + sourceBytes > SUPPORT_ADVICE_LIMITS.contextBytes)
       throw new HttpFailure(422, "scope_too_large", "Narrow support advice context");
     await db.query(`INSERT INTO support_advice_bindings(id,scope_id,environment_id,workspace_id,customer_id,workload_id,
       audience,conversation_id,owner_membership_id,selected_engagement_ids) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
@@ -85,14 +89,14 @@ export async function prepareSupportAdvice(actor: SupportActor, customerId: stri
     await db.query(`INSERT INTO support_advice_attempts(id,binding_id,environment_id,workspace_id,conversation_id,owner_membership_id,
       request_key,request_digest,native_request_id,context_bytes,dependency_count) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
     [attemptId, bindingId, env, actor.workspaceId, input.conversationId, actor.membershipId, input.requestKey, requestDigest,
-      nativeRequestId, context.bytes + instructionBytes + sourceBytes, context.dependencies.length]);
-    for (const [kind, payload] of [["instruction", supportAdvicePrompt], ["context", { snapshot: context.snapshot, fence: context.fence }],
+      nativeRequestId, instructionBytes + sourceBytes, context.dependencies.length]);
+    for (const [kind, payload] of [["instruction", supportAdvicePrompt], ["context", { snapshot, fence: context.fence }],
       ["source_map", retainedRefs]] as const)
       await db.query("INSERT INTO support_advice_payloads(attempt_id,kind,content_digest,payload) VALUES($1,$2,$3,$4::jsonb)",
         [attemptId, kind, supportDigest(payload), JSON.stringify(payload)]);
     for (const ref of context.dependencies) await db.query(`INSERT INTO support_advice_dependencies(id,attempt_id,kind,dependency_id,
       revision_id,generation,content_digest) VALUES($1,$2,$3,$4,$4,$5,$6)`,
-    [randomUUID(), attemptId, ref.kind, ref.sourceRevisionId, ref.generation, ref.contentDigest]);
+    [randomUUID(), attemptId, ref.kind, ref.revisionId, ref.generation, ref.contentDigest]);
     return { attemptId, conversationId: input.conversationId, operationId: conversation.creation_operation_id as string,
       nativeRequestId, state: "prepared" };
   });

@@ -8,6 +8,14 @@ Internal active members only. An explicit preparation command binds a fresh empt
 
 Capture accepted readiness/action projections, accepted maturity context if present, selected current execution/handoff/risk summaries, and the bounded selected evidence set. Do not read workforce records, finance, private chats, unselected customer histories or private shared-knowledge lineage. For delivery audience, project eligible inputs before model context capture, regardless of the internal caller's broader read authority.
 
+The initial model context includes every explicitly selected evidence passage,
+exact citation key, original observation/publication date and quality. Dates remain
+unknown when the original supplies none; retrieval time never replaces observation
+time. Supply the server date and default seven-day review date for new proposals.
+Charge the complete dynamic instruction and submitted request before admission;
+oversized evidence is rejected rather than truncated. Retained evidence reads
+reuse these exact passages only after the normal current-source fence passes.
+
 Dependencies include exact source revisions/digests/locators, selected baseline/execution generations, accepted support heads, support scope generation, profile audience generation and shared publication generation. New activity within a selected execution scope or a changed accepted support/profile head invalidates stale prepared work. No implicit selection of new engagements.
 
 ## Allowed Surface

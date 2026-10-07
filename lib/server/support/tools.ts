@@ -3,7 +3,6 @@ import { HttpFailure, hiddenRecord } from "../../contracts/http";
 import { SUPPORT_ADVICE_LIMITS, supportActionsToolSchema, supportEvidenceToolSchema } from "../../support/advice";
 import { supportSkillMarkdown } from "../../support/skill-text";
 import type { FeaturePrincipal } from "../conversations/feature";
-import { getServerConfig } from "../config";
 import { supportTransaction } from "./service";
 import { boundSupportToolActor } from "./tool-actor";
 import { supportReadSchemas } from "./model-budget";
@@ -44,17 +43,12 @@ export async function runSupportRead(principal: FeaturePrincipal, tool: keyof ty
       for (const key of input.sourceKeys) {
         const ref = bound.refs.find(ref => ref.id === key);
         if (!ref) throw new HttpFailure(403, "support_source_denied", "Only selected support evidence is available");
-        if (!("locator" in ref)) throw new HttpFailure(422, "support_source_unavailable", "Execution evidence must be read through the bound summary");
-        const row = (await db.query(`SELECT p.passage_text FROM retrieval_sources s JOIN retrieval_passages p ON p.source_id=s.id
-          WHERE s.environment_id=$1 AND s.source_kind=$2 AND s.source_revision_id=$3 AND s.source_generation=$4
-            AND s.content_digest=$5 AND s.lifecycle_state='current' AND p.locators @> $6::jsonb
-            AND ((s.scope='shared' AND $2='published_shared') OR (s.scope='customer' AND s.workspace_id=$7 AND s.customer_id=$8
-              AND ($9::uuid IS NULL OR s.workload_id IS NULL OR s.workload_id=$9) AND (s.audience='delivery' OR $10='internal')))
-          ORDER BY p.ordinal LIMIT 1`, [getServerConfig().TURAS_ENVIRONMENT_ID,
-        ref.kind === "shared_knowledge" ? "published_shared" : ref.kind, ref.sourceRevisionId, ref.generation, ref.contentDigest,
-        JSON.stringify([ref.locator]), bound.actor.workspaceId, bound.scope.customerId, bound.scope.workloadId, bound.scope.audience])).rows[0];
-        if (!row) throw new HttpFailure(409, "support_context_changed", "Selected evidence is no longer available");
-        evidence.push({ citationKey: key, reference: ref, text: row.passage_text });
+        // boundSupportToolActor has just rechecked original-source eligibility
+        // and the exact captured fence. Reuse that retained passage, rather than
+        // discovering a different chunk or losing its original dates/quality.
+        const captured = bound.snapshot.evidence?.find((item: { citationKey: string }) => item.citationKey === key);
+        if (!captured) throw new HttpFailure(409, "support_context_changed", "Selected evidence is no longer retained");
+        evidence.push(captured);
       }
       result = { evidence };
     }

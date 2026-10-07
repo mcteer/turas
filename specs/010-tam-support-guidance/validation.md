@@ -5,11 +5,68 @@ worktree, based on committed main `080ad48645c90be63affd7e83a62185a9aacb8d1`.
 Existing uncommitted support scaffolding was preserved and inspected. Unrelated
 reporting and Spec Kit changes in the main checkout are not included.
 
+## Completion Work — 2026-10-07
+
+Implementation continued in the existing isolated worktree. Unrelated main-checkout
+changes and untracked OpenCode configuration were preserved.
+
+Review of retained configured-provider outputs found a material context defect:
+selected sources were stored but omitted from initial model context. S03/S04/S06
+therefore reported missing evidence instead of examining stale, conflicting or
+injected passages. A completed runtime state was not semantic acceptance. The
+prior captures remain retained and are not counted as passing actual-output review.
+
+The context now supplies exact selected passages/citation keys, original dates,
+quality, current server date and default review date. The complete dynamic
+instruction and submitted request count against the context budget. Bound reads
+reuse the exact retained passages after rechecking original eligibility; selected
+execution and baseline evidence also remains available. Future observation dates
+are refused before final release. A regression failed on the preceding code and
+passed after the correction. No source text became an approved fact through this fix.
+
+The combined original-source closure now counts transitive lineage across all
+accepted inputs, and persists its exact identities/generations/digests for indexed
+withdrawal. A real shared-publication test verifies that private lineage is absent
+from delivery context but its original withdrawal retires the attempt immediately.
+The two-source 200/201 boundary test confirms the unchanged total limit.
+
+An owned local Postgres 17/pgvector container and marked disposable source were
+created for these checks. The selected application, Neon test source and durable
+workflow directories were unchanged. All app/database clones remain runner-owned.
+Node 24, production quotas, model selection and 120-second deadlines are unchanged.
+
+Current support source digest:
+`07ab8199c6a956098e1f50a7cbab2bb565368748b55e742ca107a379816a1487`.
+`npm run test:support` passed **24 suites / 128 tests**, zero failures/skips,
+at `2026-10-07T23:14:56.420Z`. Typecheck and focused contract checks passed.
+Preserved restart passed: one record, two revisions and one receipt; workflow
+sentinel digest `7dc008f04527cf6d550128d5711754e42b61395bda4bd3dc9ff0533e12c0c199`;
+dependent withholding and purge verified. The separate interrupted-native,
+four-project WebKit, representative benchmark, build and final-head CI gates
+remain running; no pending result is counted as passed.
+
+The user's request to finish 010 includes its required actual-output acceptance.
+The next explicit live cohort has eight synthetic cases, one admission per case,
+at most six paid steps and 4,096 output tokens per step (48 steps / 196,608 output
+tokens maximum), a 120-second deadline per attempt and no automatic paid retry.
+Actual usage, cost, latency and every failure will be retained for semantic review.
+Hosted rollout and reporting sends remain outside this completion work.
+
 ## Setup Evidence
 
 ### Continuation — 2026-10-06
 
 #### Publication and CI Bootstrap Corrections
+
+Observed native check `sh_1189931bb001gjpbKloTn26NaV` passed on `12ac347`
+through the actual framework runtime, with exactly two fixture-provider calls.
+Paid calls were disabled. This confirms the checked native smoke path after
+open-only schema and hidden-chunk changes; live acceptance remains outstanding.
+
+Historical Actions `37694818519` on `88fa882` finished with eight passing
+jobs and execution WebKit canceled (`The operation was canceled`,
+`2026-10-07T23:01:45Z`). No assertion failure was reported in that job's log.
+This is not a green full CI result and is not acceptance for newer `12ac347`.
 
 Full support gate `sh_1188efdfc001Oxjfm5vpSb44bs` passed 23 suites / 123 tests,
 zero failures/skips, at `2026-10-07T23:00:08.408Z`, source

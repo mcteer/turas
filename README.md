@@ -8,8 +8,8 @@ into one workspace. **Turi**, its eve-powered assistant, explains and proposes n
 steps using authorized evidence. Human review—not a model response—determines which
 facts and decisions become accepted.
 
-**Status:** active development. Features through executive reporting are merged;
-TAM/support guidance (010) is in progress. Local validation and basic hosted smoke
+**Status:** active development. Customer profiles through executive reporting and
+TAM/support guidance (010) are implemented. Local validation and basic hosted smoke
 checks do not establish full Production workflow readiness. See the
 [roadmap](ROADMAP.md) and feature validation records under [`specs/`](specs/).
 
@@ -63,7 +63,7 @@ and editable QBR slides. Audience-specific projections control report content.
 Email delivery uses a separate, default-off release switch and exact-recipient
 receipts; local rendering does not prove live delivery.
 
-### TAM and Support Guidance — In Progress
+### TAM and Support Guidance
 
 Feature 010 adds customer/workload readiness, owned recommended actions, proposed
 disposition changes and procedural escalation guidance. Internal users propose
@@ -72,7 +72,9 @@ accepted delivery-visible guidance only. Bounded Turi suggestions can be explici
 saved as proposed actions. Human-reported handoff never means a ticket was sent,
 acknowledged or resolved externally.
 
-Implementation and acceptance gates remain open. See the
+Readiness uses six explicit checks and a deterministic summary, with reviewed
+actions and source-qualified history. Advice receives selected passages, original
+dates and evidence quality before generation; each save remains a proposal. See the
 [support specification](specs/010-tam-support-guidance/spec.md) and
 [validation record](specs/010-tam-support-guidance/validation.md).
 
@@ -183,7 +185,7 @@ use owned environments and enforce complete suite discovery.
 | Staffing | `npm run test:staffing` | `npm run staffing:ui:check` |
 | Execution | `npm run test:execution` | `npm run execution:ui:check` |
 | Reporting | `npm run test:reports` | `npm run reports:ui:check` |
-| Support (in progress) | `npm run test:support` | `npm run support:ui:check -- --smoke` |
+| Support | `npm run test:support` | `npm run support:ui:check` |
 
 Install browser prerequisites with `npx playwright install --with-deps webkit`.
 UI checks use CLI Playwright/WebKit across desktop/mobile and light/dark themes,

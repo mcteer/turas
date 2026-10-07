@@ -1,9 +1,9 @@
 # Support Guidance Operations
 
-Feature 010 is implemented on its feature branch; required acceptance and review
-remain in progress. [PR #19](https://github.com/mcteer/turas/pull/19) is a draft,
-not a hosted-release or merge claim. The [validation ledger](../specs/010-tam-support-guidance/validation.md)
-records source-bound results and outstanding gates.
+Feature 010 implements reviewed readiness, recommended actions and bounded
+guidance. [PR #19](https://github.com/mcteer/turas/pull/19) records implementation
+and review. The [validation ledger](../specs/010-tam-support-guidance/validation.md)
+records source-bound acceptance results separately from hosted readiness.
 
 ## Scope and Authority
 
@@ -12,6 +12,13 @@ Actions and human-reported handoffs do not send, acknowledge or resolve external
 tickets. Canonical `mcteer` reviews exact proposed revisions; `panel` may propose
 its own drafts. Partners read only accepted delivery data for assigned customers.
 Advice conversations are private to their owner, regardless of role.
+
+Preparation supplies the exact selected evidence passages, citation keys,
+original observation/publication dates and evidence quality. It also supplies the
+server's current date and default next-review date. All supplied instructions and
+evidence count against the context budget; oversized selections are refused.
+Source eligibility is checked again before each paid step, read, final release
+and save. Procedure loading and additional reads remain bounded.
 
 Turi receives only the bound support snapshot, three read tools and the support
 procedure. Advice cannot approve or mutate domain state. An explicit human save

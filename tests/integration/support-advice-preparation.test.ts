@@ -17,6 +17,8 @@ import { runSupportAdviceCleanupTick } from "../../lib/server/support/maintenanc
 import { authorizeSupportRetirement, processSupportNativeRetirement } from "../../lib/server/support/native-retirement";
 import { boundSupportToolActor } from "../../lib/server/support/tool-actor";
 import { createSupportOutcomeEvidence } from "../fixtures/support/outcome";
+import { createPublishedPlanPractice } from "../fixtures/plans/journey";
+import { submitProfileCommand } from "../../lib/server/profiles/service";
 
 describe("atomic support advice preparation", () => {
   let actor: CurrentSession;
@@ -81,6 +83,29 @@ describe("atomic support advice preparation", () => {
     const f = await fresh(DEMO_IDS.mcteer);
     await expect(prepareSupportAdvice(actor, f.customerId, f.input)).rejects.toMatchObject({ status: 404 });
   });
+  it("tracks shared knowledge's private original for withdrawal without exposing its lineage", async () => {
+    const f = await fresh(), reviewer = await withSupportDatabase(db => createProfileTestSession(db, "mcteer"));
+    const practice = await withSupportDatabase(db => createPublishedPlanPractice(db, actor, reviewer, actor.workspaceId));
+    const input = { ...f.input, sourceRefs: [practice.reference] };
+    const saved = await prepareSupportAdvice(actor, f.customerId, input);
+    const version = await withSupportDatabase(async db => {
+      const dependencies = (await db.query("SELECT kind,revision_id FROM support_advice_dependencies WHERE attempt_id=$1 ORDER BY kind", [saved.attemptId])).rows;
+      expect(dependencies).toEqual([
+        { kind: "accepted_profile", revision_id: practice.originRevisionId },
+        { kind: "shared_knowledge", revision_id: practice.reference.sourceRevisionId },
+      ]);
+      expect((await db.query("SELECT dependency_count FROM support_advice_attempts WHERE id=$1", [saved.attemptId])).rows[0].dependency_count).toBe(2);
+      const context = JSON.stringify((await db.query("SELECT payload FROM support_advice_payloads WHERE attempt_id=$1 AND kind='context'", [saved.attemptId])).rows[0].payload.snapshot);
+      for (const hidden of [practice.privateOriginName, practice.originCustomerId, practice.originRevisionId, "Synthetic private build-stage observation"])
+        expect(context).not.toContain(hidden);
+      return Number((await db.query(`SELECT r.version FROM profile_records r JOIN profile_revisions v ON v.record_id=r.id WHERE v.id=$1`, [practice.originRevisionId])).rows[0].version);
+    });
+    await submitProfileCommand(reviewer, practice.originCustomerId, { action: "retract_revision", requestKey: randomUUID(),
+      revisionId: practice.originRevisionId, expectedRecordVersion: version, rationale: "Original synthetic evidence withdrawn" });
+    await withSupportDatabase(async db => expect((await db.query("SELECT 1 FROM support_advice_retirements WHERE attempt_id=$1", [saved.attemptId])).rowCount).toBe(1));
+    await expect(prepareSupportAdvice(actor, f.customerId, input)).rejects.toMatchObject({ code: "support_context_changed" });
+    await withSupportDatabase(db => db.query("UPDATE support_advice_attempts SET state='cancelled',settled_at=clock_timestamp() WHERE id=$1", [saved.attemptId]));
+  }, 60_000);
   it("checks discovery permission, original source identity and canonical evidence reads with exact replay", async () => {
     const f = await fresh();
     const reviewer = await withSupportDatabase(db => createProfileTestSession(db, "mcteer"));
@@ -112,7 +137,13 @@ describe("atomic support advice preparation", () => {
         await projectSupportNativeEventInTransaction(db, nativeSessionId, responseAttemptId, { type: "message.received",
           meta: { id: `evt_${randomUUID()}`, at: new Date().toISOString() }, data: { turnId, message: supportAdvicePrompt } });
       });
-      await readSupportInitialContext(principal, turnId, nativeSessionId);
+      const injected = await readSupportInitialContext(principal, turnId, nativeSessionId);
+      expect(injected).toMatchObject({
+        currentDate: new Date().toISOString().slice(0, 10),
+        evidence: [{ citationKey: reference.id, text: expect.stringContaining("Synthetic operating ownership verification outcome"),
+          observationDate: evidence.observedAt }],
+      });
+      expect(JSON.stringify(injected)).not.toContain(reference.citationId);
       const sourceKeys = [reference.id];
       const result = await runSupportRead(principal, "support_evidence", { sourceKeys }, "synthetic-evidence-read");
       expect(result).toMatchObject({ evidence: [{ citationKey: reference.id, text: expect.any(String) }] });

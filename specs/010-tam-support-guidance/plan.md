@@ -1,7 +1,7 @@
 # Implementation Plan: TAM and Support Guidance
 
 **Branch**: `010-tam-support-guidance` | **Date**: 2026-10-04 | **Spec**: [spec.md](spec.md)
-**Status**: Implementation in progress; see [validation.md](validation.md) for evidence and remaining acceptance gates.
+**Status**: Implementation and acceptance evidence are recorded in [validation.md](validation.md).
 **Input**: Roadmap 010 / TR-05; mcteer-only approval confirmed.
 
 ## Summary
