@@ -11,6 +11,24 @@ reporting and Spec Kit changes in the main checkout are not included.
 
 #### Publication and CI Bootstrap Corrections
 
+The first manifest-based reporting rerun exposed stale manifest metadata:
+`version` was 42 while its verified migration list included 043 and initialization
+correctly reached 43. Correcting only that metadata to 43 also aligns the
+staffing/execution restart marker expectations; migration contents/checksums and
+database data were not changed. The registered reporting-schema suite then
+passed **four tests**, zero failures/skips, source
+`3774152fe76410ed1e5a48807bd7b789bec7e7aa63cdcd23fd906377964f246f`.
+This focused result does not establish complete reporting or final acceptance.
+
+The registered focused reporting-schema suite failed before correction in three
+cases with exact `expected 43 to be 41`: empty initialization, current installed
+tables/grants, and explicit schema-38 upgrade. The two post-initialization version
+assertions now compare exactly with the migration manifest's current version,
+following the existing execution-schema test pattern. The initial schema-38
+assertion, exact prior migration-history preservation, table installation,
+runtime mutation denial and immutability checks remain unchanged. Post-fix
+registered verification is running; no application schema or migration was altered.
+
 The strengthened native-stop diagnostic initially failed because its new test
 query incorrectly expected `customer_id` on the attempt table. The lookup now
 uses migration 043's canonical `support_advice_bindings` join. Its rerun
