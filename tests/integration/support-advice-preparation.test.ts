@@ -81,7 +81,7 @@ describe("atomic support advice preparation", () => {
     const f = await fresh(DEMO_IDS.mcteer);
     await expect(prepareSupportAdvice(actor, f.customerId, f.input)).rejects.toMatchObject({ status: 404 });
   });
-  it("checks discovery permission at admission but retains only original source identity", async () => {
+  it("checks discovery permission, original source identity and canonical evidence reads with exact replay", async () => {
     const f = await fresh();
     const reviewer = await withSupportDatabase(db => createProfileTestSession(db, "mcteer"));
     const evidence = await createSupportOutcomeEvidence(actor, reviewer, f.customerId);
@@ -100,21 +100,8 @@ describe("atomic support advice preparation", () => {
         expect(refs).toEqual([original]);
         expect(refs[0]).not.toHaveProperty("citationId");
       });
-    } finally {
-      await withSupportDatabase(db => db.query("UPDATE support_advice_attempts SET state='cancelled',settled_at=clock_timestamp() WHERE id=$1", [saved.attemptId]));
-    }
-  }, 60_000);
-  it("reads selected canonical evidence through the actual migrated passage ordering", async () => {
-    const f = await fresh();
-    const reviewer = await withSupportDatabase(db => createProfileTestSession(db, "mcteer"));
-    const source = await createSupportOutcomeEvidence(actor, reviewer, f.customerId);
-    await withSupportDatabase(db => db.query(`UPDATE conversations SET context_generation=(
-      SELECT delivery_generation FROM customer_profile_state WHERE customer_id=$2 AND workspace_id=$3) WHERE id=$1`,
-    [f.input.conversationId, f.customerId, actor.workspaceId]));
-    const saved = await prepareSupportAdvice(actor, f.customerId, { ...f.input, sourceRefs: [source.reference] });
-    const responseAttemptId = randomUUID(), messageId = randomUUID(), nativeSessionId = `synthetic-evidence-${randomUUID()}`, turnId = "synthetic-evidence-turn";
-    const principal = { principalId: actor.principalId, attributes: { turasAttemptId: responseAttemptId } };
-    try {
+      const responseAttemptId = randomUUID(), messageId = randomUUID(), nativeSessionId = `synthetic-evidence-${randomUUID()}`, turnId = "synthetic-evidence-turn";
+      const principal = { principalId: actor.principalId, attributes: { turasAttemptId: responseAttemptId } };
       await withSupportDatabase(async db => {
         await db.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2 WHERE id=$1", [f.input.conversationId, nativeSessionId]);
         await db.query("INSERT INTO submitted_messages(id,conversation_id,request_key,body_digest,text) VALUES($1,$2,$3,$4,$5)",
@@ -126,9 +113,9 @@ describe("atomic support advice preparation", () => {
           meta: { id: `evt_${randomUUID()}`, at: new Date().toISOString() }, data: { turnId, message: supportAdvicePrompt } });
       });
       await readSupportInitialContext(principal, turnId, nativeSessionId);
-      const sourceKeys = [source.reference.id];
+      const sourceKeys = [reference.id];
       const result = await runSupportRead(principal, "support_evidence", { sourceKeys }, "synthetic-evidence-read");
-      expect(result).toMatchObject({ evidence: [{ citationKey: source.reference.id, text: expect.any(String) }] });
+      expect(result).toMatchObject({ evidence: [{ citationKey: reference.id, text: expect.any(String) }] });
       expect(await runSupportRead(principal, "support_evidence", { sourceKeys }, "synthetic-evidence-read")).toEqual(result);
       await expect(runSupportRead(principal, "support_evidence", { sourceKeys: [randomUUID()] }, "synthetic-forged-read"))
         .rejects.toMatchObject({ code: "support_source_denied" });

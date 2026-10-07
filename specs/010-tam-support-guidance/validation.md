@@ -11,6 +11,14 @@ reporting and Spec Kit changes in the main checkout are not included.
 
 #### Publication and CI Bootstrap Corrections
 
+Preparation-suite diagnostic `sh_114fd0938001BdRSYbJpmGRe95` passed with
+process status 0 in **99,814ms**, within the unchanged 120-second child limit.
+The canonical-evidence regression reuses the source-identity test's owned fixture
+instead of rebuilding it; discovery admission, original source identity,
+canonical passage read, exact replay and forged-key rejection assertions remain.
+The 60-second individual test limit is unchanged. This suite-only diagnostic does
+not replace the complete support gate, which is running on the updated source.
+
 Stop-readiness narrow WebKit diagnostic `sh_114f8881a0014lIHWmsipHMxtO`
 passed with process status 0, paid calls disabled and no retries. The control
 waits for the handler's native session/turn prerequisites; acknowledged durable
