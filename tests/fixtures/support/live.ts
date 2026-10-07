@@ -22,6 +22,7 @@ export async function installSupportLiveObservation(environment: { appRoot: stri
     max_output_tokens integer NOT NULL CHECK(max_output_tokens BETWEEN 1 AND 4096),prompt_digest text NOT NULL,captured jsonb NOT NULL,io_started_at timestamptz,
     cost_usd numeric CHECK(cost_usd>=0), generation_id text, provider_finished_at timestamptz,
     output_text text CHECK(octet_length(output_text)<=131072), output_digest text,
+    finish_reason text CHECK(finish_reason IN('stop','length','tool-calls','content-filter','error','other','unknown')),
     UNIQUE(response_attempt_id,step_index));
     CREATE TABLE support_live_provider_barriers(attempt_id uuid PRIMARY KEY REFERENCES support_advice_attempts(id),released boolean NOT NULL DEFAULT false);
     GRANT SELECT,INSERT,UPDATE ON support_live_provider_observations,support_live_provider_barriers TO turas_runtime;`);

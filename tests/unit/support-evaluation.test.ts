@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { supportEvaluationCases, supportEvaluationBounds, validateSupportEvaluationCohort } from "../fixtures/support/evaluation";
 import { supportCaptureSettled } from "../../scripts/support-capture-settlement";
-import { captureSupportProviderOutput } from "../../scripts/support-provider-output";
+import { captureSupportProviderOutput, supportProviderFinishReason } from "../../scripts/support-provider-output";
 import { supportDigest } from "../../lib/server/support/commands";
 
 describe("support actual-output cohort identity", () => {
   it("captures only a bounded exact final suggestion, not tool narration or malformed output", () => {
+    expect(supportProviderFinishReason({ unified: "stop", raw: "private-provider-detail" })).toBe("stop");
+    expect(supportProviderFinishReason("private-provider-detail")).toBe("unknown");
+    expect(supportProviderFinishReason(null)).toBe("unknown");
     const output = { contractVersion: "support-advice-v1", summary: "Verify ownership", facts: [], unknowns: ["Owner"],
       actionSuggestions: [{ citationKeys: [], content: { contractVersion: "support-v1", title: "Verify ownership",
         observationDate: "2026-10-07", nextReviewDate: "2026-10-14", timezone: "UTC", desiredOutcome: "Confirm owner",

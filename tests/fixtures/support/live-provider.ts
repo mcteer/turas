@@ -6,7 +6,7 @@ import type { ExecutionModelIdentity } from "../../../lib/server/execution/nativ
 import type { FeaturePrincipal } from "../../../lib/server/conversations/feature";
 import { requireOwnedSupportClone } from "../../../scripts/support-eval-environment";
 import { assertDeterministicTestMode } from "../runtime";
-import { captureSupportProviderOutput } from "../../../scripts/support-provider-output";
+import { captureSupportProviderOutput, supportProviderFinishReason } from "../../../scripts/support-provider-output";
 type Model = Parameters<typeof wrapLanguageModel>[0]["model"];
 
 /** Observe, never replace, the supplied model. Never retain headers, credentials
@@ -44,8 +44,10 @@ export function observeSupportLiveProvider(model: Model, principal: FeaturePrinc
       Number.isFinite(Number(values.cost)) ? values.cost : null;
     const generation = typeof values.generationId === "string" && /^[a-zA-Z0-9_-]{1,200}$/.test(values.generationId) ? values.generationId : null;
     const output = captureSupportProviderOutput(text, reason);
-    await query("UPDATE support_live_provider_observations SET cost_usd=$2,generation_id=$3,provider_finished_at=clock_timestamp(),output_text=$4,output_digest=$5 WHERE id=$1",
-      [observationId, cost, generation, output?.text ?? null, output?.digest ?? null]);
+    // Preserve bounded text even when malformed. Its absence previously prevented
+    // offline diagnosis; a digest is still assigned only to valid final advice.
+    await query("UPDATE support_live_provider_observations SET cost_usd=$2,generation_id=$3,provider_finished_at=clock_timestamp(),output_text=$4,output_digest=$5,finish_reason=$6 WHERE id=$1",
+      [observationId, cost, generation, text || null, output?.digest ?? null, supportProviderFinishReason(reason)]);
     return output !== null;
   }
   return wrapLanguageModel({ model, middleware: {

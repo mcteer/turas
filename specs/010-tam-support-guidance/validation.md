@@ -11,6 +11,49 @@ reporting and Spec Kit changes in the main checkout are not included.
 
 #### Publication and CI Bootstrap Corrections
 
+Private diagnostic capture fixture `sh_117656f19001fhFJTMhxNmZ8eB`
+passed **eight cases / zero failures**, complete terminal usage throughout, on
+source `cb902f39734007ea179de79faeeb87b27ca65b06dc07b5756eeab4c4d366fc97`.
+Retained `live-b1dFIV` S08 evidence contains two steps with allowlisted
+`tool-calls` / `stop` finish reasons and exact final text/digest. The owned observer
+now preserves bounded malformed text for diagnosis without granting it a valid
+output digest or release eligibility. Focused evaluation tests and typecheck pass.
+No additional paid calls were made; this does not recover missing malformed text
+from `live-XMljsA` or establish configured-provider acceptance.
+
+Final-source benchmark `sh_1174a8699001iuVdH0U3MQ0eg7` passed on
+`6c3c83e2d350562e56f871cc8f803441aad034455d4326ead16e66a227ec448c`,
+corpus `7f87657b8ab0423209c0bc25d2eb3c8a3914d36de20dd6eeb10e69e8e96ff293`.
+All classes used 100 samples, ten warmups and five clients against 100 customers,
+500 scopes, 5,000 actions and 20,000 revisions. p95 milliseconds: list
+**1802.361333**, detail **1638.059834**, preview **1714.861541**, acknowledgement
+**1733.081875**, all below the unchanged 2,000ms threshold with zero correctness
+failures. Production rates were preserved and pacing excluded from latency.
+Actual disposable runtime LOGIN on the same source denied all 12 mutation probes,
+with temporary-role cleanup verified and no Production changes. These local
+passes do not replace the failed configured-provider cohort or prove hosted behavior.
+
+Exact published Actions run `37648421289` passed all **nine jobs** on
+`e15ff30ac83ae09431f3c3fc47cae2bad2668140`, including verification, complete
+staffing/regression cohorts, support native/restart checks, and support/reporting/
+execution four-project WebKit matrices. This final-source CI result is separate
+from the failed configured-provider capture `live-XMljsA`; green deterministic
+CI does not fulfill live semantic or exact live S08 acceptance.
+
+The single authorized configured-provider capture
+`sh_11722d162001Za65uw9LIqleb9`, retained in `live-XMljsA`, failed **all eight
+cases** on published `e15ff30` / source
+`6c3c83e2d350562e56f871cc8f803441aad034455d4326ead16e66a227ec448c`.
+S01/S03/S04/S06/S07/S08 did not settle within the unchanged bounded deadline;
+their retained attempts were running with incomplete usage. S02/S05 settled
+`invalid_advice` with complete usage and actual cost, but no schema-valid final
+output was captured. S08 therefore does not prove live exact stale-save denial.
+The observation currently retains schema-valid final text only, limiting offline
+diagnosis of malformed responses. This is a failed actual-provider cohort, not
+acceptance. The one authorized capture is consumed; no paid retry or additional
+capture has been launched, and failed evidence is retained. Fixture and deterministic
+passes remain separate from this failure.
+
 Stable-source exact-output fixture `sh_11704b6fa001oHA2Za2hqt2wxb`
 passed **eight cases / zero failures** on
 `6c3c83e2d350562e56f871cc8f803441aad034455d4326ead16e66a227ec448c`.

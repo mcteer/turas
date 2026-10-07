@@ -29,7 +29,7 @@ export async function readSupportLiveEvidence(attemptId: string) {
   for (const item of payloads) if (supportDigest(item.payload) !== item.content_digest) throw new Error("Support capture payload changed");
   const steps = (await query(`SELECT s.id,s.ordinal,u.outcome,u.input_tokens,u.output_tokens,
     o.provider_path,o.max_output_tokens,o.prompt_digest,o.captured,o.io_started_at,o.cost_usd,o.generation_id,o.provider_finished_at,
-    o.output_text,o.output_digest
+    o.output_text,o.output_digest,o.finish_reason
     FROM support_model_step_receipts s LEFT JOIN support_advice_usage u ON u.step_id=s.id
     LEFT JOIN support_live_provider_observations o ON o.step_id=s.id WHERE s.attempt_id=$1 ORDER BY s.ordinal`, [attemptId])).rows;
   for (const item of steps) if (item.captured && supportDigest(item.captured) !== item.prompt_digest)
