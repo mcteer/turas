@@ -1,0 +1,45 @@
+import {beforeAll,describe,it,expect} from 'vitest';
+import {withExpansionDatabase} from '../fixtures/expansion/environment';
+import {createProfileTestSession} from '../fixtures/profiles';
+import {startExpansionNative} from '../fixtures/expansion/native';
+import {readExpansionInitialContext} from '../../lib/server/expansion/native';
+import {admitGovernedModelStep,assertGovernedProviderRelease} from '../../lib/server/conversations/model-admission';
+import {runExpansionRead} from '../../lib/server/expansion/tools';
+import {getOwnedConversationDetail} from '../../lib/server/conversations/repository';
+import {boundToolActor} from '../../lib/server/profiles/tool-actor';
+import {withTransaction} from '../../lib/server/db/client';
+import type {CurrentSession} from '../../lib/server/auth/sessions';
+const zero={contractVersion:'expansion-advice-v1',summary:'No selected observation establishes a need.',facts:[],unknowns:[{text:'Customer need',reason:'No reviewed observation selected'}],discoverySteps:[{action:'Ask the operating owner',validationCriterion:'Record a reviewed need'}],proposals:[]};
+describe('Expansion governed native domain paths',()=>{
+ let actor:CurrentSession,other:CurrentSession;
+ beforeAll(async()=>{({actor,other}=await withExpansionDatabase(async db=>({actor:await createProfileTestSession(db,'panel'),other:await createProfileTestSession(db,'mcteer')})));});
+ it('requires exact injection, persists paid admission, denies SDK retries and enforces the six-step/read boundaries',async()=>{
+  const f=await startExpansionNative(actor);
+  await expect(admitGovernedModelStep(f.principal,f.identity)).rejects.toMatchObject({code:'expansion_context_changed'});
+  expect(await readExpansionInitialContext(f.principal,f.turnId,f.nativeSessionId)).toMatchObject({question:'What should the operating owner validate?',evidence:[],hypotheses:[]});
+  expect((await admitGovernedModelStep(f.principal,f.identity)).mode).toBe('expansion');await assertGovernedProviderRelease(f.principal,f.identity);
+  await expect(admitGovernedModelStep(f.principal,f.identity)).rejects.toMatchObject({code:'expansion_step_uncertain'});
+  for(let stepIndex=1;stepIndex<6;stepIndex++)await admitGovernedModelStep(f.principal,{...f.identity,stepIndex});
+  await expect(admitGovernedModelStep(f.principal,{...f.identity,stepIndex:6})).rejects.toMatchObject({code:'expansion_step_budget'});
+  const result=await runExpansionRead(f.principal,'expansion_summary',{},'summary-0');expect(await runExpansionRead(f.principal,'expansion_summary',{},'summary-0')).toEqual(result);
+  for(let index=1;index<6;index++)await runExpansionRead(f.principal,'expansion_summary',{},`summary-${index}`);
+  await expect(runExpansionRead(f.principal,'expansion_summary',{},'summary-over')).rejects.toMatchObject({code:'expansion_read_budget'});
+  await expect(withTransaction(db=>boundToolActor(db,f.principal))).rejects.toMatchObject({code:'expansion_tool_denied'});
+ });
+ it('releases only validated final output, preserves zero-proposal discovery and keeps conversations private',async()=>{
+  const f=await startExpansionNative(actor);await readExpansionInitialContext(f.principal,f.turnId,f.nativeSessionId);await admitGovernedModelStep(f.principal,f.identity);
+  await f.event('message.appended',{text:'Private partial model prose'});
+  const partials=await withExpansionDatabase(db=>db.query("SELECT visible_payload FROM event_projections WHERE conversation_id=$1 AND event_type='message.appended'",[f.conversationId]));expect(partials.rows).toEqual([]);
+  await f.event('message.completed',{message:JSON.stringify(zero),finishReason:'stop'});await f.event('step.completed',{stepIndex:0,usage:{inputTokens:10,outputTokens:20}});await f.event('turn.completed');
+  const detail=await getOwnedConversationDetail(actor,f.conversationId);expect(detail.history.find(item=>item.eventType==='message.completed')?.payload).toMatchObject({message:JSON.stringify(zero)});
+  await expect(getOwnedConversationDetail(other,f.conversationId)).rejects.toMatchObject({status:404});
+  expect((await withExpansionDatabase(db=>db.query('SELECT state,output_digest FROM expansion_advice_attempts WHERE id=$1',[f.attemptId]))).rows[0]).toMatchObject({state:'completed',output_digest:expect.any(String)});
+ });
+ it('terminalizes malformed final output and denies a paid repair',async()=>{
+  const f=await startExpansionNative(actor);await readExpansionInitialContext(f.principal,f.turnId,f.nativeSessionId);await admitGovernedModelStep(f.principal,f.identity);
+  await f.event('message.completed',{message:JSON.stringify({...zero,qualification:'qualified'}),finishReason:'stop'});
+  await expect(admitGovernedModelStep(f.principal,{...f.identity,stepIndex:1})).rejects.toMatchObject({code:'expansion_advice_unavailable'});
+  expect((await withExpansionDatabase(db=>db.query('SELECT state,failure_code FROM expansion_advice_attempts WHERE id=$1',[f.attemptId]))).rows[0]).toMatchObject({state:'failed',failure_code:'invalid_advice'});
+  expect(Number((await withExpansionDatabase(db=>db.query("SELECT count(*) AS n FROM expansion_advice_payloads WHERE attempt_id=$1 AND kind='output'",[f.attemptId]))).rows[0].n)).toBe(0);
+ });
+});

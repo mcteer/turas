@@ -2,7 +2,7 @@
 
 **Branch**: `011-product-expansion` | **Date**: 2026-10-08 | **Spec**: [spec.md](spec.md)
 **Input**: `specs/011-product-expansion/spec.md`
-**Status**: Planning artifacts prepared; implementation reserved for the next model session.
+**Status**: Implemented locally; release acceptance in progress.
 
 ## Summary
 
@@ -147,3 +147,7 @@ retention continue with current eligibility. Rollback is disable plus forward re
 never remove durable decisions or uncertain provider receipts. Verify Preview before
 an explicitly authorized Production release, using eve for explicit Vercel operations.
 Do not claim those environments are validated by local or deterministic CI checks.
+
+## Implementation status
+
+Local implementation is under release validation. Migrations 046–047, all four story implementations and deterministic local checks are available. See [validation.md](validation.md) and [tasks.md](tasks.md) for source-bound receipts and remaining gates. Configured-provider evaluation, independent actual-output review, CI and hosted migration/release are not established by local fixtures.

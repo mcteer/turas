@@ -1,8 +1,6 @@
 # Validation Quickstart: Product Expansion
 
-Planning only. Commands specific to 011 below are the required future interfaces;
-they do not exist until their tasks are implemented. Do not run them against Preview
-or Production. Current planning validation is `npm run check:docs` and artifact checks.
+The local implementation and command interfaces are available. Run acceptance checks only against a marked synthetic source and owned disposable clones. Preview and Production migration/release require separate authorization. See `validation.md` for actual results and outstanding gates.
 
 ## Environment and setup
 
@@ -14,8 +12,7 @@ or Production. Current planning validation is `npm run check:docs` and artifact 
    or external integration install is part of this slice.
 4. Configure a separate marked PG17/pgvector test source; owned runners create their
    own clones/app copies/private artifact and workflow roots. Do not copy Production
-   customer data. `.env.example` documents names only. Add the `011` feature to the
-   existing owned environment infrastructure before running suites.
+   customer data. `.env.example` documents names only. The `011` owned environment infrastructure creates isolated test copies.
 5. Recheck migration numbers; validate empty and prior schema045 upgrades, exact
    manifest hashes and runtime grants on disposable databases. Never migrate in a handler.
 
@@ -29,8 +26,8 @@ npm run test:expansion
 npm run expansion:native:check
 npm run expansion:native:check -- --interrupted
 npm run expansion:ui:check
-npm run benchmark:expansion -- --disposable
-npm run expansion:recovery:check -- --disposable
+npm run benchmark:expansion
+npm run expansion:recovery:check
 npm run test:expansion:regressions
 ```
 
@@ -68,7 +65,7 @@ After deterministic native guards pass, explicitly admit the eight cases in
 
 ```sh
 npm run eval:expansion -- --live --budget-usd <positive-operator-budget>
-npm run eval:expansion:verify -- --capture <private-capture> --review <private-review>
+npm run eval:expansion:verify -- --review <private-review>
 ```
 
 Arguments denote operator-selected private paths/budget, not checked-in values.

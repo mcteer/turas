@@ -1,4 +1,5 @@
 import { prepareExecutionNativeAttempt, claimExecutionNativeDispatch } from "../execution/native-dispatch";
+import { prepareExpansionNativeAttempt, claimExpansionNativeDispatch } from "../expansion/native";
 import { prepareSupportNativeAttempt, claimSupportNativeDispatch } from "../support/native";
 import { conversationFeature } from "./feature";
 import { createHash, randomUUID } from "node:crypto";
@@ -42,6 +43,7 @@ export async function prepareAttempt(
 ): Promise<{ attemptId: string; created: boolean; dispatchState: string; governed?: boolean }> {
   const feature = existingClient ? await conversationFeature(existingClient, conversationId) : await withTransaction(db => conversationFeature(db, conversationId));
   if (feature.kind === "execution") return { ...await prepareExecutionNativeAttempt(session, conversationId, nativeSessionId, requestKey, rawText, selections.length > 0, existingClient), governed: true };
+  if(feature.kind==="expansion")return {...await prepareExpansionNativeAttempt(session,conversationId,nativeSessionId,requestKey,rawText,selections.length>0,existingClient),governed:true};
   if (feature.kind === "support") return { ...await prepareSupportNativeAttempt(session, conversationId, nativeSessionId, requestKey, rawText, selections.length > 0, existingClient), governed: true };
   if (feature.kind === "staffing") return { ...await prepareStaffingNativeAttempt(session, conversationId, nativeSessionId, requestKey, rawText, selections.length > 0, existingClient), governed: true };
   const text = normalizeMessageText(rawText);
@@ -166,6 +168,7 @@ export async function claimDispatch(
   }
   const feature = await withTransaction(db => conversationFeature(db, conversationId));
   if (feature.kind === "execution") return claimExecutionNativeDispatch(session, conversationId, attemptId, dispatchStartIndex);
+  if(feature.kind==="expansion")return claimExpansionNativeDispatch(session,conversationId,attemptId,dispatchStartIndex);
   if (feature.kind === "support") return claimSupportNativeDispatch(session, conversationId, attemptId, dispatchStartIndex);
   if (feature.kind === "staffing") {
     return claimStaffingNativeDispatch(session, conversationId, attemptId, dispatchStartIndex);
@@ -313,7 +316,7 @@ export async function deriveNativeAttempt(
       JOIN conversations c ON c.id=a.conversation_id WHERE c.eve_session_id=$1 AND c.owner_principal_id=$2 AND c.environment_id=$3
       AND sm.request_key=$4 AND a.dispatch_state='dispatching'`,
       [nativeSessionId, session.principalId, getServerConfig().TURAS_ENVIRONMENT_ID, requestKey])).rows[0];
-    return row && ["staffing", "execution", "support"].includes((await conversationFeature(db, row.conversation_id)).kind) ? row as { id: string; conversation_id: string } : null;
+    return row && ["staffing", "execution", "support", "expansion"].includes((await conversationFeature(db, row.conversation_id)).kind) ? row as { id: string; conversation_id: string } : null;
   });
   if (staffingAttempt) {
     const prepared = await prepareGovernedNativeRelease(staffingAttempt.conversation_id,

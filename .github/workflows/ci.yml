@@ -18,6 +18,102 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  expansion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        gate: [deterministic, native, recovery, benchmark, evaluation-fixture, regressions, webkit]
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/turas_test_011_source
+      DATABASE_URL_UNPOOLED: postgres://postgres:postgres@127.0.0.1:5432/turas_test_011_source
+      TURAS_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/turas_test_011_source
+      TURAS_ENVIRONMENT_ID: test-ci-expansion
+      TURAS_TEST_ENVIRONMENT_ID: test-ci-expansion
+      TURAS_APP_ORIGIN: http://127.0.0.1:3000
+      TURAS_DEMO_USERNAME: mcteer
+      PANEL_USERNAME: panel
+      PARTNER_USERNAME: partner
+      AI_GATEWAY_API_KEY: ''
+      TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix packages/artifact-extractor
+      - name: Create private synthetic credentials
+        run: |
+          for key in TURAS_DEMO_PASSWORD PANEL_PASSWORD PARTNER_PASSWORD TURAS_MAINTENANCE_SECRET; do
+            value="$(openssl rand -hex 32)"
+            echo "::add-mask::$value"
+            echo "$key=$value" >> "$GITHUB_ENV"
+          done
+          echo "TURAS_ARTIFACT_STORE_ROOT=${GITHUB_WORKSPACE}/local-artifacts/011/source-store" >> "$GITHUB_ENV"
+      - name: Initialize marked disposable source
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h 127.0.0.1 -U postgres -c 'CREATE DATABASE turas_test_011_source'
+          psql -h 127.0.0.1 -U postgres -c 'CREATE ROLE turas_runtime NOLOGIN'
+          npm run db:init
+          npm run db:roles
+          mkdir -p "$TURAS_ARTIFACT_STORE_ROOT"
+          chmod 700 "$TURAS_ARTIFACT_STORE_ROOT"
+          node --input-type=module -e 'import {writeFileSync} from "node:fs";writeFileSync(`${process.env.TURAS_ARTIFACT_STORE_ROOT}/.turas-artifact-store.json`,JSON.stringify({environmentId:process.env.TURAS_ENVIRONMENT_ID}),{mode:0o600});'
+      - name: Separate application placeholders from the marked test source
+        run: |
+          echo "DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/turas_expansion_app_not_selected" >> "$GITHUB_ENV"
+          echo "DATABASE_URL_UNPOOLED=postgres://postgres:postgres@127.0.0.1:5432/turas_expansion_app_not_selected" >> "$GITHUB_ENV"
+      - name: Validate feature 011 artifacts
+        env:
+          SPECIFY_FEATURE_DIRECTORY: specs/011-product-expansion
+          SPECIFY_FEATURE_NO_PERSIST: '1'
+        run: .specify/scripts/bash/check-prerequisites.sh --json --require-spec --require-tasks
+      - name: Complete expansion domain and contract suites
+        if: matrix.gate == 'deterministic'
+        run: |
+          npm run typecheck:expansion
+          npm run test:expansion
+      - name: Actual framework and interrupted recovery with deterministic provider
+        if: matrix.gate == 'native'
+        run: |
+          npm run expansion:native:check
+          npm run expansion:native:check -- --interrupted
+      - name: Empty and 045 upgrade, privileges and preserved owned restarts
+        if: matrix.gate == 'recovery'
+        run: npm run expansion:recovery:check
+      - name: Representative expansion performance corpus
+        if: matrix.gate == 'benchmark'
+        run: npm run benchmark:expansion
+      - name: Live-capture runner guard fixture without configured-provider calls
+        if: matrix.gate == 'evaluation-fixture'
+        run: npm run eval:expansion -- --fixture
+      - name: Governed earlier privacy, research, plan, execution and support regressions
+        if: matrix.gate == 'regressions'
+        run: npm run test:expansion:regressions
+      - name: Install WebKit
+        if: matrix.gate == 'webkit'
+        run: npx playwright install --with-deps webkit
+      - name: Complete expansion journeys across four WebKit projects
+        if: matrix.gate == 'webkit'
+        run: npm run expansion:ui:check
+
   support-deterministic:
     runs-on: ubuntu-latest
     timeout-minutes: 120

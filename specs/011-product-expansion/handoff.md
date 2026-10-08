@@ -1,5 +1,7 @@
 # 011 Planning Handoff
 
+Historical planning record. Implementation is now active; see [tasks.md](tasks.md) and [validation.md](validation.md) for current status.
+
 **Date**: 2026-10-08
 **Branch**: `011-product-expansion`
 **Worktree**: `/Users/mcteer/Projects/turas-011`

@@ -11,6 +11,7 @@ are normative in [data-model.md](../data-model.md).
 | `/api/expansion/customers/[customerId]` | GET list or exact record detail; optional workloadId, disposition, recordId, limit, cursor; no cross-customer list |
 | `/api/expansion/customers/[customerId]/owner` | GET assignment/version and eligible internal owner choices; POST assign/reassign/unassign with rationale, requestKey and expected assignment version |
 | `/api/expansion/customers/[customerId]/evidence` | GET bounded lexical discovery, then current original-source citation verification; query 1–500 characters, limit at most ten; no provider calls |
+| `/api/expansion/customers/[customerId]/evidence/detail` | GET current original passage, attribution, dates and quality from an owned fresh citation or an exact scoped record/revision/source key; expired receipts do not prevent retained-source inspection |
 | `/api/expansion/customers/[customerId]/preview` | POST exact proposal/decision preview with eligibility, missing qualification checks, current versions, original-source digest and related-set digest; no mutation |
 | `/api/expansion/customers/[customerId]/commands` | POST strict discriminated command below |
 | `/api/expansion/customers/[customerId]/advice` | POST prepare a fresh bound conversation for one scope and explicit inputs |
@@ -52,11 +53,13 @@ validation except preview has no write or idempotency receipt.
 | `save_suggestion` | attemptId, outputDigest, suggestionIndex, validated content edits and duplicate acknowledgement if needed | One proposed revision preserving eligible original suggestion lineage |
 
 Advice preparation accepts contractVersion, requestKey, workloadId, expected scope
-version, sourceRefs, selectedEngagementIds and selectedHypothesisIds. The server
+version, the bounded question, sourceRefs, selectedEngagementIds and selectedHypothesisIds. The server
 creates and binds a fresh owned conversation atomically and returns conversationId,
-bindingId and expiresAt; same-key replay returns the same current-authorized binding
+attemptId, operationId and nativeRequestId; preparation expires after five minutes; same-key replay returns the same current-authorized binding
 rather than creating another conversation. It does not dispatch a model. The bounded
-question is submitted through the existing governed conversation route. No attachment
+question is charged within the prepared context. The existing governed conversation
+route dispatches only the exact static bound instruction with nativeRequestId; private
+question prose is retained in purgeable context rather than immutable submitted messages. No attachment
 or generic research/history is admitted. Selection above twenty existing hypotheses
 requires explicit narrowing, never an implicit first-page snapshot.
 

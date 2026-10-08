@@ -6,6 +6,7 @@ REVOKE ALL ON TABLE turas_environment FROM turas_runtime;
 GRANT SELECT ON TABLE turas_environment TO turas_runtime;
 REVOKE ALL ON TABLE turas_migrations FROM turas_runtime;
 DO $$ BEGIN
+
   IF to_regclass('public.public_customer_research_results') IS NOT NULL THEN
     REVOKE UPDATE, DELETE ON TABLE public_customer_research_results FROM turas_runtime;
   END IF;
@@ -15,6 +16,24 @@ DO $$
 DECLARE table_name text;
 DECLARE payload_lock record;
 BEGIN
+  IF to_regclass('public.expansion_scopes') IS NOT NULL THEN
+    GRANT EXECUTE ON FUNCTION turas_expansion_purge(text,uuid) TO turas_runtime;
+    GRANT EXECUTE ON FUNCTION turas_expansion_mark_invalid(text,uuid) TO turas_runtime;
+    GRANT EXECUTE ON FUNCTION turas_expansion_invalidate_revision(text,uuid) TO turas_runtime;
+    GRANT EXECUTE ON FUNCTION turas_expansion_schedule_retention(text,integer) TO turas_runtime;
+    GRANT EXECUTE ON FUNCTION turas_expire_expansion_receipt(text,uuid,text[]) TO turas_runtime;
+    FOR table_name IN SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename LIKE 'expansion_%' LOOP
+      EXECUTE format('REVOKE DELETE ON TABLE %I FROM turas_runtime',table_name);
+      IF table_name NOT IN ('expansion_account_owners','expansion_scopes','expansion_hypotheses','expansion_cleanup_jobs','expansion_advice_attempts','expansion_advice_cleanup_jobs','expansion_native_retirement_receipts') THEN
+        EXECUTE format('REVOKE UPDATE ON TABLE %I FROM turas_runtime',table_name);
+      END IF;
+    END LOOP;
+  END IF;
+  IF to_regclass('public.expansion_advice_attempts') IS NOT NULL THEN
+    GRANT EXECUTE ON FUNCTION turas_purge_expansion_advice(uuid,uuid) TO turas_runtime;
+    GRANT EXECUTE ON FUNCTION turas_minimize_expansion_advice(text,integer) TO turas_runtime;
+    REVOKE INSERT ON expansion_advice_minimizations FROM turas_runtime;
+  END IF;
   IF to_regclass('public.access_audit') IS NOT NULL THEN
     REVOKE UPDATE, DELETE ON TABLE access_audit FROM turas_runtime;
   END IF;

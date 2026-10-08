@@ -11,6 +11,7 @@ import { requestCancellation } from "./cancel";
 import { assertNativeContextCurrent, releaseNativeChunk } from "./context-fence";
 import { artifactDraftSelectionSchema } from "../../contracts/artifacts";
 import { authorizeExecutionRetirement } from "../execution/native-retirement";
+import {authorizeExpansionRetirement} from "../expansion/native-retirement";
 import { authorizeSupportRetirement } from "../support/native-retirement";
 import { authorizeNativeRetirement } from "../artifacts/native-retirement";
 
@@ -286,7 +287,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
           try {
             const sessionId = args.params.sessionId;
             if (!sessionId || !/^wrun_[A-Za-z0-9_-]+$/.test(sessionId) ||
-                !await authorizeNativeRetirement(request,sessionId) && !await authorizeExecutionRetirement(request,sessionId) && !await authorizeSupportRetirement(request,sessionId)) return closed();
+                !await authorizeNativeRetirement(request,sessionId) && !await authorizeExecutionRetirement(request,sessionId) && !await authorizeSupportRetirement(request,sessionId) && !await authorizeExpansionRetirement(request,sessionId)) return closed();
             return native(request,args);
           } catch (error) { return nativeFailure(error); }
         } };

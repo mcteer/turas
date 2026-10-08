@@ -21,6 +21,7 @@ export async function boundToolActor(client: PoolClient, principal: ToolPrincipa
     `SELECT a.conversation_id FROM response_attempts a JOIN conversations c ON c.id=a.conversation_id
       WHERE a.id=$1 AND c.owner_principal_id=$2`, [attemptId, principal.principalId])).rows[0];
   const feature = conversation ? await conversationFeature(client, conversation.conversation_id) : null;
+  if (feature?.kind === "expansion") throw new HttpFailure(403, "expansion_tool_denied", "Use only the bound expansion reads");
   if (feature?.kind === "execution") throw new HttpFailure(403, "execution_tool_denied", "Use only the bound execution reads");
   if (feature?.kind === "staffing") {
     throw new HttpFailure(403, "staffing_tool_denied", "Use the governed staffing read tools for this explanation");

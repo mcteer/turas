@@ -2,7 +2,7 @@
 
 **Feature Branch**: `011-product-expansion`
 **Created**: 2026-10-08
-**Status**: Specified, clarified, planned and tasked; implementation not started
+**Status**: Implemented locally; release acceptance in progress
 **Input**: Roadmap 011 and product blueprint TR-03: explain new-product and usage-expansion hypotheses using documented use, outcomes, constraints and engagement fit; rank transparently, qualify with the account owner, retain dismiss/defer decisions and re-evaluate on new evidence. User requested specify, clarify, plan, tasks and analyze, then a model handoff before implementation.
 
 ## Scope and decision boundaries
@@ -150,3 +150,7 @@ An internal user requests on-demand advice for one customer/workload and explici
 - Product knowledge comes from existing eligible research/shared knowledge. Users may explicitly run existing research separately; 011 does not install an integration or scrape a new product catalog.
 - English and the current temporary internal logins are sufficient for this slice. No new identity-provider or general sales-role hierarchy is introduced.
 - No product/customer has to yield an opportunity. An honest no-supported-hypothesis result is successful behavior.
+
+## Implementation status
+
+Local implementation is under release validation. Migrations 046–047, all four story implementations and deterministic local checks are available. See [validation.md](validation.md) and [tasks.md](tasks.md) for source-bound receipts and remaining gates. Configured-provider evaluation, independent actual-output review, CI and hosted migration/release are not established by local fixtures.

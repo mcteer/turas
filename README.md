@@ -82,13 +82,13 @@ dates and evidence quality before generation; each save remains a proposal. See 
 [support specification](specs/010-tam-support-guidance/spec.md) and
 [validation record](specs/010-tam-support-guidance/validation.md).
 
-### Planned Capabilities
+### Product Expansion and Planned Capabilities
 
 Product expansion opportunities (011) now have a [specification](specs/011-product-expansion/spec.md),
 [implementation plan](specs/011-product-expansion/plan.md) and
-[task list](specs/011-product-expansion/tasks.md). Planning covers evidence-backed
-hypotheses, designated account-owner qualification and explicit defer/dismiss review.
-Implementation has not started; see the [model handoff](specs/011-product-expansion/handoff.md).
+[task list](specs/011-product-expansion/tasks.md). Local implementation covers evidence-backed hypotheses, explainable ranking, owner review and bounded private Turi advice. Only `mcteer` assigns the internal account owner; that owner qualifies, defers, dismisses or reopens a hypothesis. Explicitly saved advice remains proposed.
+
+Migrations 046–047 are explicit deployment prerequisites. `TURAS_011_DISABLED=1` disables new authoring, decisions and advice while governed retention continues. Recovery uses forward migrations and the same database/workflow pair. See the [validation record](specs/011-product-expansion/validation.md) for local evidence and outstanding live evaluation, CI and hosted release gates.
 
 
 MCP access and further delivery/learning automation remain roadmap work, not
