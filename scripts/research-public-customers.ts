@@ -161,6 +161,7 @@ async function collect(customer:PublicCustomer,account:Account){
    }
   }
  }
+ if(!dossier.findings.length){account.state="no_retained_findings";await save();return;}
  account.dossier=dossier;account.state="collected";await save();
 }
 let actor:CurrentSession|undefined;

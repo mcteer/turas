@@ -317,7 +317,11 @@ Production import after
 migration 045. The command verifies the marked target and active administrator;
 it does not migrate schemas. It preserves existing customer IDs, grants and private
 facts. Missing public identities become sourced, non-synthetic canonical anchors.
-Provider/model failures and unsupported areas remain visible gaps. Every customer
+Provider/model failures, empty reviewed outputs and unsupported areas remain visible
+gaps. Empty dossiers are not imported as successful research. Reviewed inventory
+entries may include public identity URLs and a discovery qualifier for ambiguous
+brand names; source quotations still have to establish the exact subject. An
+anonymous published case retains its public descriptor and unknown identity. Every customer
 gets six discovery queries and up to sixteen pinned public fetch attempts; model
 synthesis/review/correction stays bounded by six calls, no automatic provider retry,
 an eight-hour process deadline and a $50 AI Gateway model-cost ceiling. Discovery
