@@ -84,6 +84,13 @@ dates and evidence quality before generation; each save remains a proposal. See 
 
 ### Planned Capabilities
 
+Product expansion opportunities (011) now have a [specification](specs/011-product-expansion/spec.md),
+[implementation plan](specs/011-product-expansion/plan.md) and
+[task list](specs/011-product-expansion/tasks.md). Planning covers evidence-backed
+hypotheses, designated account-owner qualification and explicit defer/dismiss review.
+Implementation has not started; see the [model handoff](specs/011-product-expansion/handoff.md).
+
+
 MCP access and further delivery/learning automation remain roadmap work, not
 available integrations. There is no external support-ticket connector. See the
 [roadmap](ROADMAP.md) for proposed slices and dependencies.
