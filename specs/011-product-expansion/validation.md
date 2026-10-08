@@ -407,3 +407,14 @@ The prepared snapshot now includes exact server-evaluated temporal status for ea
 Final temporal/owner source `49f48d613b9adcd34936ff70aab535e6fc1592c296b5f86b64b32250b082d655` passed 23 suites / 138 tests / zero failures or skips at 2026-10-08T23:01:50.614Z and all eight restricted-runtime capture fixtures. Typecheck and documentation checks passed. The fresh actual cohort is running with separate independent review under the remaining $5.268578 and unchanged root model.
 
 Recovery diagnostics source `cf71a2545729d31ae8eb4dd28940bbc47615def22a8155c3627e2b7f2216d96b` passed both empty/045 → 047 local recovery cohorts; CI recovery on `42f63c1` also passed. The earlier generic CI failure remains recorded rather than represented as a passing check.
+
+
+### Final actual-provider acceptance
+
+All eight current-source Grok 4.7 cases completed under the operator-authorized 8,192 total output-token allowance (4,096 requested). The separate authorized reviewer inspected actual outputs, sources, usage and failure records and passed all 48 rubric criteria. The strict command `npm run eval:expansion:verify -- --review local-artifacts/011/live-Ei3PVv/independent-review.json` passed against source `49f48d613b9adcd34936ff70aab535e6fc1592c296b5f86b64b32250b082d655`. Private review SHA256: `d4d0c65a50f3a44802b7047c7ea6ef5ae44b3f0561ca5c3891ce0665b0401df5`. No private output or customer material is committed. T045 is complete.
+
+E01–E07 released reviewed advice. E08 failed with `expansion_context_changed`, retained no final output and denied stale saving. Its owner-change provenance combines inspected governed reassignment instrumentation and capture assertions; the disposable database was removed and no separate before/after assignment receipt was retained. The independent rationale records this limit explicitly. All paid steps remained within the authorized total allowance (maximum 5,143); usage and costs were confirmed. There were no automatic paid retries.
+
+This final cohort cost $0.268008. Total known actual charges across all cohorts are $0.999430. The original interrupted call remains actual-cost unknown: its conservative $4 exposure is retained separately, giving $4.999430 total conservative charge and $5.000570 remaining from the original $10 authorization. No further paid run is needed. The unchanged root agent digest is `07c4b66e88fd7572c7ccb339c8455abd5f0ab34f2d5389636af6f8429e25045a`.
+
+Implementation PR #22 is prepared. CI run 37857447418 on `dbf0683` is still running; completed expansion deterministic, native, recovery, benchmark and capture-fixture gates passed. Final CI acceptance and T051 remain pending until recorded. This establishes local configured-provider evidence, not Preview or Production proof. No merge, link or manual deployment was performed.
