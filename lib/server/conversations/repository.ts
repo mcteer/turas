@@ -243,7 +243,7 @@ function decodeCursor(encoded?: string): { t: string; id: string } | null {
 
 export async function listOwnedConversations(
   session: CurrentSession,
-  options: { customerId?: string; title?: string; cursor?: string; limit: number },
+  options: { customerId?: string; title?: string; cursor?: string; limit: number; archived?: string },
 ): Promise<{ items: ConversationReference[]; nextCursor: string | null }> {
   const cursor = decodeCursor(options.cursor);
   const escapedTitle = options.title?.replace(/[\\%_]/g, "\\$&") ?? null;
@@ -253,6 +253,7 @@ export async function listOwnedConversations(
     LEFT JOIN customer_profile_state state ON state.customer_id=c.customer_id
     WHERE c.owner_principal_id = $3 AND c.environment_id = $4
       AND (${scopedCustomer} OR (${scopedGeneral}))
+      AND (c.archived_at IS NOT NULL) = $13::boolean
       AND ($5::uuid IS NULL OR c.customer_id = $5)
       AND ($6::text IS NULL OR ((${scopedGeneral}) AND c.title ILIKE '%' || $6 || '%' ESCAPE '\\') OR (c.context_snapshot_schema='customer-context-v1'
         AND c.context_audience=CASE WHEN $10::text='internal' THEN 'internal' ELSE 'delivery' END
@@ -265,7 +266,7 @@ export async function listOwnedConversations(
     ORDER BY c.updated_at DESC, c.id DESC LIMIT $9
   `, [...values(session), getServerConfig().TURAS_ENVIRONMENT_ID, options.customerId ?? null,
     escapedTitle, cursor?.t ?? null, cursor?.id ?? null, options.limit + 1,
-    session.kind, session.sessionId, session.membershipId]);
+    session.kind, session.sessionId, session.membershipId, options.archived === "true"]);
   const rows = result.rows.slice(0, options.limit);
   await annotatePlanning(rows);
   const stale = await staleArtifactConversations(rows.map((row) => row.id));
@@ -444,4 +445,18 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
     })),
     submittedMessagesTruncated: submitted.rows.length > 100,
   };
+}
+
+/** Archive is an owner-private presentation preference; it never erases history. */
+export async function setOwnedConversationArchived(session: CurrentSession, id: string, archived: boolean) {
+  return withTransaction(async client => {
+    await lockWorkspaceActor(client, session);
+    const result = await client.query(`UPDATE conversations c SET archived_at=CASE WHEN $5 THEN COALESCE(c.archived_at,clock_timestamp()) ELSE NULL END
+      WHERE c.id=$4 AND c.owner_principal_id=$3 AND c.environment_id=$6
+        AND c.workspace_id=$7
+        AND ((${scopedGeneral}) OR EXISTS (SELECT 1 FROM customer_references customer WHERE customer.id=c.customer_id AND ${scopedCustomer}))
+      RETURNING c.id`, [...values(session), id, archived, getServerConfig().TURAS_ENVIRONMENT_ID, session.workspaceId]);
+    if (!result.rowCount) throw hiddenRecord();
+    return { id, archived };
+  });
 }
