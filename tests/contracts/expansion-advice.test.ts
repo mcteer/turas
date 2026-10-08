@@ -5,7 +5,7 @@ const id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',other='bbbbbbbb-bbbb-4bbb-8bbb-b
 const zero={contractVersion:'expansion-advice-v1',summary:'Selected evidence does not yet establish a customer need.',facts:[],unknowns:[{text:'Customer need',reason:'No accepted private observation selected'}],discoverySteps:[{action:'Ask the operating owner',validationCriterion:'Record a reviewed need'}],proposals:[]};
 describe('Bounded expansion advice contracts',()=>{
  it('encodes the six-step/read and cumulative byte limits with zero-proposal output',()=>{
-  expect(EXPANSION_ADVICE_LIMITS).toMatchObject({steps:6,reads:6,outputTokens:4096,contextBytes:24576,dependencies:200,hourlyAdmissions:5,deadlineMs:120000,requestExpiryMs:300000});expect(validateExpansionAdviceResult(zero,[],[]).proposals).toEqual([]);
+  expect(EXPANSION_ADVICE_LIMITS).toMatchObject({steps:6,reads:6,outputTokens:8192,requestedOutputTokens:4096,contextBytes:24576,dependencies:200,hourlyAdmissions:5,deadlineMs:120000,requestExpiryMs:300000});expect(validateExpansionAdviceResult(zero,[],[]).proposals).toEqual([]);
   expect(expansionContextCharge('x'.repeat(24574))).toBe(24576);expect(()=>expansionContextCharge('é'.repeat(12288))).toThrow();
  });
  it('requires explicit inputs and rejects attachments, authority fields, duplicate or excessive hypotheses',()=>{

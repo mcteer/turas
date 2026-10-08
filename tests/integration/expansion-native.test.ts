@@ -60,7 +60,7 @@ describe('Expansion governed native domain paths',()=>{
   const f=await startExpansionNative(actor);await readExpansionInitialContext(f.principal,f.turnId,f.nativeSessionId);
   const admitted=await admitGovernedModelStep(f.principal,f.identity);if(admitted.mode!=='expansion')throw Error('Expected expansion admission');
   const model={specificationVersion:'v4',provider:'synthetic',modelId:'synthetic',supportedUrls:{},doGenerate:async()=>({
-   content:[{type:'text',text:JSON.stringify(zero)}],finishReason:'stop',usage:{inputTokens:{total:100},outputTokens:{total:4619}},warnings:[]
+   content:[{type:'text',text:JSON.stringify(zero)}],finishReason:'stop',usage:{inputTokens:{total:100},outputTokens:{total:8193}},warnings:[]
   })} as unknown as Parameters<typeof wrapExpansionModel>[0];
   const wrapped=wrapExpansionModel(model,{deadlineAt:admitted.deadlineAt,beforeProvider:()=>assertGovernedProviderRelease(f.principal,f.identity)});
   await expect(wrapped.doGenerate({prompt:[]})).rejects.toMatchObject({code:'expansion_output_budget'});
@@ -69,8 +69,8 @@ describe('Expansion governed native domain paths',()=>{
    usage:(await db.query('SELECT u.outcome,u.input_tokens,u.output_tokens,u.native_event_id FROM expansion_advice_usage u JOIN expansion_model_step_receipts s ON s.id=u.step_id WHERE s.attempt_id=$1',[f.attemptId])).rows,
    payloads:(await db.query("SELECT 1 FROM expansion_advice_payloads WHERE attempt_id=$1 AND kind='output'",[f.attemptId])).rows}));
   expect(stored.attempt).toMatchObject({state:'failed',failure_code:'expansion_output_budget',output_digest:null});expect(stored.payloads).toEqual([]);
-  expect(stored.usage).toHaveLength(1);expect(stored.usage[0]).toMatchObject({outcome:'failed',native_event_id:expect.any(String)});
-  expect(Number(stored.usage[0].input_tokens)).toBe(100);expect(Number(stored.usage[0].output_tokens)).toBe(4619);
+  expect(stored.usage).toHaveLength(1);expect(stored.usage[0]).toMatchObject({outcome:'failed',native_event_id:null});
+  expect(Number(stored.usage[0].input_tokens)).toBe(100);expect(Number(stored.usage[0].output_tokens)).toBe(8193);
   await expect(admitGovernedModelStep(f.principal,{...f.identity,stepIndex:1})).rejects.toMatchObject({code:'expansion_advice_unavailable'});
  });
 

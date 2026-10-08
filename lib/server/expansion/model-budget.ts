@@ -65,7 +65,7 @@ export function wrapExpansionModel(model: Model, governance?: { deadlineAt: Date
         responseFormat: { type: "json", name: "expansion_advice_v1", schema: z.toJSONSchema(expansionAdviceResultSchema) },
         abortSignal: params.abortSignal ? AbortSignal.any([params.abortSignal, deadline]) : deadline,
         maxOutputTokens: Number.isSafeInteger(params.maxOutputTokens) && (params.maxOutputTokens ?? 0) > 0
-          ? Math.min(params.maxOutputTokens!, EXPANSION_ADVICE_LIMITS.outputTokens) : EXPANSION_ADVICE_LIMITS.outputTokens };
+          ? Math.min(params.maxOutputTokens!, EXPANSION_ADVICE_LIMITS.requestedOutputTokens) : EXPANSION_ADVICE_LIMITS.requestedOutputTokens };
       } catch(error){await fail(error);throw error;}
     },
     wrapGenerate: async ({doGenerate,params})=>{try{params.abortSignal?.throwIfAborted();const result=await doGenerate();assertOutputUsage(result.usage);for(const item of result.content)if(item.type==='tool-call')assertToolCall(item.toolName,item.input);return result;}catch(error){if(governance)await fail(error);throw error;}},

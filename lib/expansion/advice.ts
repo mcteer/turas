@@ -2,7 +2,7 @@ import {z} from 'zod';
 import {HttpFailure} from '../contracts/http';
 import {expansionId,expansionVersion,expansionDisposition,expansionHypothesisSchema,validateExpansionReviewDate} from '../contracts/expansion';
 import {expansionEngagementsSchema,expansionSourcesSchema} from '../server/expansion/schema';
-export const EXPANSION_ADVICE_LIMITS={steps:6,reads:6,outputTokens:4096,contextBytes:24576,dependencies:200,hourlyAdmissions:5,deadlineMs:120000,requestExpiryMs:300000} as const;
+export const EXPANSION_ADVICE_LIMITS={steps:6,reads:6,outputTokens:8192,requestedOutputTokens:4096,contextBytes:24576,dependencies:200,hourlyAdmissions:5,deadlineMs:120000,requestExpiryMs:300000} as const;
 const text=z.string().trim().min(1).max(2000);
 const citationKeys=z.array(expansionId).max(20).refine(keys=>new Set(keys).size===keys.length,'Duplicate citation keys');
 export const expansionAdviceRequestSchema=z.object({contractVersion:z.literal('expansion-v1'),expectedVersion:expansionVersion,requestKey:expansionId,workloadId:expansionId.nullable(),question:text,selectedEngagementIds:expansionEngagementsSchema,sourceRefs:expansionSourcesSchema,selectedHypothesisIds:z.array(expansionId).max(20).refine(ids=>new Set(ids).size===ids.length,'Duplicate selected hypothesis')}).strict();

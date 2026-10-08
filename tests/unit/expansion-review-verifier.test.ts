@@ -19,7 +19,7 @@ describe('Expansion actual capture verifier and live admission guards',()=>{
  it('uses highest published rate including context/service tiers and never discounts a reservation',()=>{const price=expansionLivePricing({input:'0.000002',output:'0.000006',input_tiers:[{cost:'0.000004',min:100}],service_tiers:{priority:{input:'0.000005',long_context:{input:'0.000008',output:'0.000024'}}}});expect(price).toEqual({inputUsdPerToken:.000008,outputUsdPerToken:.000024});expect(expansionCaseReservation(price)).toBeGreaterThan(6);expect(()=>expansionLivePricing({input:'unknown',output:'0.1'})).toThrow();});
  it('rejects a review whose observed cumulative cost exceeds operator budget',()=>{const f=example();expect(()=>verifyExpansionActualReview({...f.review,budgetUsd:.01})).toThrow();});
  it('rejects an individual over-limit step even when aggregate usage is below six-step allowance',()=>{
-  const f=example();f.captures[0].outputTokens=4916;f.captures[0].outputTokensByStep=[4916];Object.assign(f.review.cases[0],{outputTokens:4916});
+  const f=example();f.captures[0].outputTokens=8193;f.captures[0].outputTokensByStep=[8193];Object.assign(f.review.cases[0],{outputTokens:8193});
   expect(()=>verifyExpansionCapture(f.captures[0],verifyExpansionActualReview(f.review),0)).toThrow();
  });
  it('reserves provider exposure independently of the unenforced requested cap',()=>{
