@@ -6,6 +6,9 @@ import {randomUUID} from 'node:crypto';
 import AxeBuilder from '@axe-core/playwright';
 import {query} from '../../lib/server/db/client';
 import {expansionUiCustomer} from '../fixtures/expansion/ui';
+// Native journeys include several actions and bounded 60-second assertions.
+// Keep their overall harness allowance above those assertions; app limits stay unchanged.
+test.setTimeout(180000);
 test('on-demand Turi offers discovery and a human-edited proposal stays unqualified',async({page},info)=>{
  const customerId=await expansionUiCustomer(page);await page.getByRole('button',{name:'Ask Turi for Expansion Proposals',exact:true}).focus();await page.keyboard.press('Enter');
  await expect(page.getByText('Advice State: completed',{exact:true})).toBeVisible({timeout:60000});

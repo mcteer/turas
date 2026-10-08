@@ -55,7 +55,7 @@ export async function projectExpansionNativeEventInTransaction(db: PoolClient, n
         const assessment=await assessPlanEvidence(db,bound.actor,bound.scope.customerId,{sourceDependencies:originals,assertions:[{key:'advice-fact',text:fact.statement,kind:'accepted_fact',sourceDependencyIds:fact.citationKeys,decisionCritical:true}]});
         if(assessment.issues.length)throw new Error('Inadequate factual evidence');
       }
-    } catch { invalidOutput = true; }
+    } catch { finalOutput = null; invalidOutput = true; }
   }
   await db.query("SELECT id FROM conversations WHERE id=$1 FOR UPDATE", [association.id]);
   const response = (await db.query("SELECT * FROM response_attempts WHERE id=$1 AND conversation_id=$2 FOR UPDATE", [responseAttemptId, association.id])).rows[0];

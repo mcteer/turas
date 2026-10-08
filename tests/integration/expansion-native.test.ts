@@ -2,6 +2,8 @@ import {beforeAll,describe,it,expect} from 'vitest';
 import {withExpansionDatabase} from '../fixtures/expansion/environment';
 import {createProfileTestSession} from '../fixtures/profiles';
 import {startExpansionNative} from '../fixtures/expansion/native';
+import {acceptedExpansionEvidence} from '../fixtures/expansion/evidence';
+import {DEMO_IDS} from '../../lib/server/bootstrap-ids';
 import {readExpansionInitialContext} from '../../lib/server/expansion/native';
 import {admitGovernedModelStep,assertGovernedProviderRelease} from '../../lib/server/conversations/model-admission';
 import {runExpansionRead} from '../../lib/server/expansion/tools';
@@ -34,6 +36,17 @@ describe('Expansion governed native domain paths',()=>{
   const detail=await getOwnedConversationDetail(actor,f.conversationId);expect(detail.history.find(item=>item.eventType==='message.completed')?.payload).toMatchObject({message:JSON.stringify(zero)});
   await expect(getOwnedConversationDetail(other,f.conversationId)).rejects.toMatchObject({status:404});
   expect((await withExpansionDatabase(db=>db.query('SELECT state,output_digest FROM expansion_advice_attempts WHERE id=$1',[f.attemptId]))).rows[0]).toMatchObject({state:'completed',output_digest:expect.any(String)});
+ });
+ it('never persists structurally valid prose rejected by current factual-evidence checks',async()=>{
+  const evidence=await acceptedExpansionEvidence(actor,other,DEMO_IDS.sharedCustomer,null,'Historical capability requires fresh verification','synthetic-candidate','product_capability',{observedAt:new Date(Date.now()-400*86400000).toISOString(),state:'planned'});
+  const f=await startExpansionNative(actor,[evidence.reference]);
+  await readExpansionInitialContext(f.principal,f.turnId,f.nativeSessionId);await admitGovernedModelStep(f.principal,f.identity);
+  const rejected={...zero,facts:[{classification:'accepted_fact',statement:'Rejected stale capability must never be retained as current factual advice.',citationKeys:[evidence.reference.id]}]};
+  await f.event('message.completed',{message:JSON.stringify(rejected),finishReason:'stop'});
+  await f.event('step.completed',{stepIndex:0,usage:{inputTokens:10,outputTokens:20}});
+  const stored=await withExpansionDatabase(async db=>({attempt:(await db.query('SELECT state,failure_code,output_digest FROM expansion_advice_attempts WHERE id=$1',[f.attemptId])).rows[0],payloads:(await db.query("SELECT payload FROM expansion_advice_payloads WHERE attempt_id=$1 AND kind='output'",[f.attemptId])).rows,events:(await db.query("SELECT visible_payload FROM event_projections WHERE conversation_id=$1 AND event_type='message.completed'",[f.conversationId])).rows}));
+  expect(stored.attempt).toMatchObject({state:'failed',failure_code:'invalid_advice',output_digest:null});
+  expect(stored.payloads).toEqual([]);expect(stored.events).toEqual([{visible_payload:{code:'invalid_advice'}}]);
  });
  it('terminalizes malformed final output and denies a paid repair',async()=>{
   const f=await startExpansionNative(actor);await readExpansionInitialContext(f.principal,f.turnId,f.nativeSessionId);await admitGovernedModelStep(f.principal,f.identity);

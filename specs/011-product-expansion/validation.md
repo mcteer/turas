@@ -335,3 +335,20 @@ Implementation draft PR: https://github.com/mcteer/turas/pull/22. It remains dra
 
 
 The owner-guidance revision passed 23 suites / 125 tests / zero failures or skips at 22:00:37.881Z, source `0df6e34296497802684db0a4486091a04e5774012a99d215070718c69f2e5021`. Expansion typecheck and authored documentation checks passed. A fresh manually reviewed evaluation on this revision uses the remaining $9.638574 cap; the runner still stops rather than automatically repairing/retrying a failed or uncertain case.
+
+
+### Stale-evidence semantic rejection and output-storage regression
+
+On source `0df6e34296497802684db0a4486091a04e5774012a99d215070718c69f2e5021`, actual E01–E03 completed with known usage/cost. E04 produced structurally valid JSON but labeled stale accepted-profile observations as accepted current facts; the authoritative quality check rejected it. The run stopped without E05–E08 or automatic retry. Its four cases made seven provider calls costing $0.117086 in total, bringing conservative total cap exposure to $0.478512 and leaving $9.521488.
+
+That rejection revealed a projection bug: after structural parsing succeeded, a later semantic validation exception retained the parsed output variable, allowing rejected prose and its digest to be stored even though the attempt became failed. A targeted stale-evidence regression failed before correction. The catch now clears the parsed output before projecting a content-free failure, so semantically rejected advice has no retained output payload or digest. Instructions also distinguish source acceptance from current factual eligibility: stale/unknown/expired/weak/conflicting support remains attributed history or unknown/discovery. This strengthens withholding without accepting stale facts or changing the root model.
+
+
+The semantic-output correction passed 23 suites / 126 tests / zero failures or skips at 22:07:52.773Z, source `35309958f348da232afbd1befce11e0201a71e55f71a8989c03ae13e838db9d0`. Eight capture fixtures and all 28 advice UI journeys across four WebKit configurations also passed on that source. Typecheck passed; the earlier complete 84-journey UI checkpoint remains recorded separately.
+
+The independent reviewer identified conservative overstatements in the earlier actual E01: unnamed ownership was described as blocked/undocumented, and account versus operating-owner identity was overstated. Final guidance distinguishes unknowns from proven incompatibility and keeps source-header metadata outside passage-supported fact text. It prefers two facts/assertions and three unknowns to preserve token headroom. These are guidance changes; the evidence policy and domain validators remain enforced.
+
+CI on commit `894e410` passed deterministic/native/recovery/benchmark/capture-fixture expansion gates but its WebKit malformed-output journey hit the harness's 30-second overall timeout while using a bounded 60-second assertion. Expansion advice journeys now have a 180-second overall test allowance; individual assertions, no-retry policy and production 120-second advice deadline remain unchanged. Other CI checks and the final-source rerun remain pending.
+
+
+Final precision source `a977ccf8386c27728e46575ce274c8bc8c7205772e4707f9ca074accbadbad2b` passed 23 suites / 126 tests / zero failures or skips at 2026-10-08T22:16:54.854Z. Expansion typecheck and documentation checks passed. The fresh eight-case actual run on this source is admitted under the remaining $9.521488 cap; independent review is authorized and underway. Actual acceptance and fresh CI remain pending until recorded.
