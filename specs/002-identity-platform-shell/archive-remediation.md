@@ -18,3 +18,10 @@ Validation: four API contract checks including archive/restore replay, cross-own
 and CSRF denial, retained history; four CLI WebKit journeys across desktop/mobile
 and light/dark with keyboard and serious/critical axe checks; Node 24 typecheck
 and Next.js production build passed. Existing Temporal bundler warnings remain.
+
+
+Released in [PR 20](https://github.com/mcteer/turas/pull/20). Production WebKit
+verification on 2026-10-08 UTC passed Archive, Restore and keyboard interaction
+with zero serious/critical axe findings. The native binding remained unchanged;
+the temporary owned verification conversation and session were cleaned up.
+The merged feature branch was removed, and README was verified on main.

@@ -290,3 +290,67 @@ establish hosted readiness. Local development continues using its local worker.
 
 No project-wide license is currently declared. Do not assume redistribution
 permission. Third-party assets retain their own license and provenance notices.
+
+## Public Customer Research
+
+The authorized Production run on 2026-10-08 UTC saved 184 reviewed public dossiers:
+183 named companies and one anonymous published case. The inventory covers 105
+current directory logos and 116 canonical case studies across ten archive pages.
+It retained 1,926 attributed findings across 766 source revisions, with six-area
+coverage and 304 explicit no-finding gaps. All 1,532 public index jobs completed;
+three real hybrid searches returned exact public-source citations. The original
+six customer references remain, and accepted private profile records remain zero.
+See the [validation record](specs/005-governed-rag-research/validation.md) for scope,
+usage and the separate application-release checks.
+
+Public customer recon now previews four broad searches and can retain multiple
+checked sources, including Vercel case studies, employee talks and practitioner
+reports outside the customer's own domain. Existing admitted requests retain their
+original host policy. Source text is quoted evidence; a host, mention or generated
+summary never establishes employer-wide deployment or accepted internal facts.
+
+The authorized operator batch researches a reviewed official Vercel directory and
+paginated story inventory. It records six coverage areas, exact source passages,
+dates, caveats, unknowns and provider usage, with source signatures and checkpointed
+provider dispatches. Customer Profiles show attributed findings and public research
+coverage. Rejected or withdrawn evidence is not restored by a cached result.
+
+```sh
+npm run research:customers -- --live --production \
+  --manifest local-artifacts/customer-research/roster.json \
+  --output local-artifacts/customer-research/run --collect-only
+```
+
+Run one Production import process at a time; workspace authorization locks serialize
+these writes. Import failures retain a private diagnostic for exact idempotent retry.
+Use `--import-only` with an immutable copied checkpoint to save reviewed dossiers
+without new provider calls. Omit `--collect-only` only for the explicitly authorized
+Production import after
+migration 045. The command verifies the marked target and active administrator;
+it does not migrate schemas. It preserves existing customer IDs, grants and private
+facts. Missing public identities become sourced, non-synthetic canonical anchors.
+Provider/model failures, empty reviewed outputs and unsupported areas remain visible
+gaps. Empty dossiers are not imported as successful research. Reviewed inventory
+entries may include public identity URLs and a discovery qualifier for ambiguous
+brand names; source quotations still have to establish the exact subject. An
+anonymous published case retains its public descriptor and unknown identity. Every customer
+gets six discovery queries and up to sixteen pinned public fetch attempts; model
+synthesis/review/correction stays bounded by six calls, no automatic provider retry,
+an eight-hour process deadline and a $50 AI Gateway model-cost ceiling. Discovery
+provider charges are separate and recorded as call counts when billing metadata is
+unavailable. Captured excerpts may be bounded; an omitted section is not evidence
+that the source lacks information. Checkpoints and source captures are private,
+ignored files. An interrupted dispatched call requires reconciliation before reuse.
+`--reconcile-failed-models` permits one explicitly recorded additional attempt for
+a failed model response, within the original six-call limit; the failed dispatch
+remains in the checkpoint and may have incurred provider charges. It never replays
+a dispatch whose completion is ambiguous. A private `STOP` file in the output
+directory stops admission after the current accounts finish.
+
+Disable the operator command to stop intake; retain immutable receipts and existing
+sources. Use the normal source withdrawal workflow to remove a bad public finding.
+Real public batch sources may be indexed through the existing retrieval worker when
+its immutable batch receipt and current source eligibility agree. A bounded source
+selector keeps operator indexing within this public inventory; existing private
+source and synthetic-worker restrictions remain in place.
+This command neither approves private context nor publishes cross-customer learning.

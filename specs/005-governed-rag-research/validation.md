@@ -917,3 +917,76 @@ fresh clone run in the restricted session.
   the existing secondary style. A focused isolated mobile-dark WebKit rerun
   passed 1/1 with axe in 16.4 seconds; the four-project local 28-case matrix
   remains separate evidence for live citation UI.
+
+
+## Production public research remediation — 2026-10-08 UTC
+
+The user authorized research of Vercel's published customer directory and story
+archive, with results saved in Production Turas. The legacy snapshot contained
+147 accounts, 114 stories and 60 directory logos, including descriptions,
+products, signals and cautions. The pre-run Production baseline had six customer
+references, 11 evidence sources and no research runs; Preview had two references
+and no research evidence. Legacy live storage was unreachable; this comparison
+uses its checked-in snapshot, not an asserted live legacy inspection.
+
+The current public inventory was checked against 105 directory logos and all ten
+archive pages, yielding 116 canonical case studies and 184 identities: 183 named
+companies and one anonymous sportswear retailer case. Current-page subject checks
+caught a short-name substring misassignment; the published Klaviyo identity was
+corrected before import. Ambiguous brand names received qualified discovery and
+checked official identity sources. The anonymous case remains explicitly unnamed,
+with findings scoped only to its published Vercel article. No legacy customer facts
+were copied into the new implementation.
+
+Actual Production verification completed at 04:30 UTC:
+
+- 184 nonempty reviewed dossiers, zero missing authoritative inventory entries,
+  1,926 attributed findings and 766 retained source revisions.
+- Each dossier has six coverage areas: 800 supported areas and 304 explicit
+  no-finding gaps. A completed bounded pass does not establish every aspect of
+  customer operations or every paying Vercel customer. Private engagement and
+  formal maturity remain unknown.
+- 1,309 retained page captures were matched to original fetched bytes, full
+  normalization digests, exact retained windows and signed source receipts. Model
+  proposals passed exact-quote validation and separate semantic review/correction;
+  empty or failed proposals were excluded from successful imports.
+- All 1,532 index jobs completed with real embeddings. Three real hybrid searches
+  on the identity-corrected profiles returned source-revision-scoped public URLs
+  and citations. A real-source indexing regression was fixed without admitting
+  private sources: immutable operator receipts scope eligibility, while original
+  current-revision checks and withdrawal fences still govern dispatch and commit.
+  Existing public source ingest metadata remains immutable and unchanged.
+- The original six customer references and seven conversations remained; accepted
+  profile records stayed at zero. Imports used exact idempotent request keys, an
+  active administrator, a marked Production database, explicit migrations 042–045
+  and temporary revoked operator sessions. Runtime app selection remained Preview
+  in this checkout; only bounded operator processes selected Production.
+- Deduplicated operational usage across all distinct requests: 1,152 discovery
+  calls, 2,311 fetch attempts, 686 model calls, 10,261,102 input tokens and 2,201,437
+  output tokens. Successful model-response metadata reported $32.49. This includes
+  additional reconciliation and consolidation attempts; it is not total billing.
+  Failed responses may have charged without usage, and discovery/embedding charges
+  are separate. No provider dispatch remains ambiguous in the final ledger.
+
+Validation also passed seven dossier unit cases, checkpoint replay/input-digest
+cases, bounded retrieval-selector checks, three disposable persistence/indexing
+integration cases, existing workflow and API regressions, and four CLI WebKit
+coverage/overview journeys with keyboard and serious/critical axe checks. Node 24
+typecheck, production build and documentation checks are recorded separately from
+hosted behavior. Private captures, checkpoints and operational receipts remain
+under ignored local artifacts and were not committed.
+
+The archive remediation released in PR 20 passed hosted Production WebKit Archive,
+Restore, keyboard and axe checks at 03:48 UTC; native conversation bindings were
+unchanged and its temporary owned test conversation was removed. Research code
+release is tracked in PR 21. Hosted research profile verification is a separate
+post-merge gate; the Production data/index proof above does not assert that an
+unmerged UI change is hosted. Feature 011 remains a proposal.
+
+
+A final Source Detail check caught horizontal overflow from long provenance hashes.
+The detail section now wraps long metadata without altering source contents. Its
+four-project CLI WebKit rerun passed all four desktop/mobile light/dark journeys
+in 10.4 seconds, including keyboard opening, the public citation link, long hash
+rationale, no horizontal overflow and zero serious/critical axe findings. A
+standalone 390px synthetic check changed from 1,701px document width to 390px.

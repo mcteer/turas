@@ -68,7 +68,10 @@ export function discoveryInScope(mode: "recon" | "practices",
   catch { return false; }
   if (mode === "recon") {
     const domain = String(fields.publicDomain ?? "").toLowerCase();
-    return parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`);
+    // Public recon includes customer, vendor, organizer and practitioner sources.
+    // Subject identity and exact support are checked after retrieval, not by host alone.
+    return fields.sourcePolicy === "public-subject-v2" ? Boolean(domain) :
+      parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`);
   }
   return true;
 }

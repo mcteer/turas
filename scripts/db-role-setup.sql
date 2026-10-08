@@ -5,6 +5,12 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO turas_run
 REVOKE ALL ON TABLE turas_environment FROM turas_runtime;
 GRANT SELECT ON TABLE turas_environment TO turas_runtime;
 REVOKE ALL ON TABLE turas_migrations FROM turas_runtime;
+DO $$ BEGIN
+  IF to_regclass('public.public_customer_research_results') IS NOT NULL THEN
+    REVOKE UPDATE, DELETE ON TABLE public_customer_research_results FROM turas_runtime;
+  END IF;
+END $$;
+
 DO $$
 DECLARE table_name text;
 DECLARE payload_lock record;

@@ -39,7 +39,7 @@ type RequestRow = { id: string; environment_id: string; workspace_id: string;
 
 function publicFields(input: ResearchPreviewInput) {
   if (input.mode === "recon") return { publicName: input.publicName,
-    publicDomain: input.publicDomain,identityConfirmed: true,
+    publicDomain: input.publicDomain,identityConfirmed: true,sourcePolicy: "public-subject-v2",
     submittedUrls: input.submittedUrls,
     ...(input.refreshSourceRevisionId ? { refreshSourceRevisionId: input.refreshSourceRevisionId } : {}) };
   if (input.mode === "practices") return { product: input.product,

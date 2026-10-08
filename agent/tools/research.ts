@@ -81,7 +81,7 @@ async function stepFinish(principal: Principal,runId: string,plannedFetches: num
     await finishResearchRun(client,bound.actor,runId,plannedFetches);
     const receipt = await readResearchRun(client,bound.actor,runId);
     const findings = await readResearchFindings(client,bound.actor,runId);
-    const shown = findings.slice(0,1);
+    const shown = findings;
     return { receipt,findings: shown,omittedFindingCount: findings.length-shown.length,
       gaps: findings.length ? [] : ["No attributed public passage passed the source checks"] };
   });
@@ -103,7 +103,7 @@ export default defineWorkflowTool({
       try {
         const urls = await stepSearch(ctx.session.auth.current,scope.id,index);
         discovered.push(...urls);
-        if (discovered.length >= 3) break;
+
       } catch (error) {
         if (error && typeof error === "object" && "code" in error &&
           typeof error.code === "string" && ["research_not_running","deadline_exceeded",
@@ -120,7 +120,7 @@ export default defineWorkflowTool({
       attemptedFetches += 1;
       try {
         const checked = await stepFetch(ctx.session.auth.current,scope.id,index,url);
-        if (checked.attributed) break;
+        void checked;
       }
       catch (error) {
         if (error && typeof error === "object" && "code" in error &&

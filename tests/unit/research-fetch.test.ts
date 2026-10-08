@@ -14,6 +14,10 @@ describe("pinned public fetch boundary", () => {
     expect(discoveryInScope("recon",fields,"https://evil.org/example.org/path")).toBe(false);
     expect(discoveryInScope("recon",fields,"https://example.org.evil.org/path")).toBe(false);
   });
+  it("admits third-party discovery only for the new explicit public subject policy", () => {
+    expect(discoveryInScope("recon", { publicDomain: "example.org", sourcePolicy: "public-subject-v2" }, "https://vercel.com/customers/example")).toBe(true);
+    expect(discoveryInScope("recon", { publicDomain: "example.org", sourcePolicy: "public-subject-v2" }, "https://127.0.0.1/private")).toBe(false);
+  });
   it("rejects private, reserved, mapped and mixed DNS answers", async () => {
     for (const address of ["127.0.0.1","10.1.2.3","169.254.169.254",
       "192.168.1.2","100.64.0.1","::1","fc00::1","::ffff:127.0.0.1",
