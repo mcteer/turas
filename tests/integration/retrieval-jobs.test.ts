@@ -61,7 +61,9 @@ describe("retrieval lease compare-and-swap", () => {
           VALUES($1,$2,$3,$4,'customer','accepted_profile',$5,'internal','test-v1',$6,1,$7)`,
         [sourceId,environmentId,workspaceId,customerId,revisionId,contractDigest,"b".repeat(64)]);
         expect(await enqueueRetrievalJob(client,sourceId,"index",environmentId)).toBeTruthy();
-        const [claim] = await claimRetrievalJobs(1,client,environmentId);
+        expect(await claimRetrievalJobs(1,client,environmentId,[])).toEqual([]);
+        expect(await claimRetrievalJobs(1,client,environmentId,[randomUUID()])).toEqual([]);
+        const [claim] = await claimRetrievalJobs(1,client,environmentId,[sourceId]);
         expect(claim).toMatchObject({ sourceId,generation: 1,attempt: 1,kind: "index" });
         expect(await renewRetrievalLease(client,claim)).toBe(true);
         await client.query(`UPDATE retrieval_sources SET source_generation=2 WHERE id=$1`,[sourceId]);

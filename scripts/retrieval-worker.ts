@@ -1,3 +1,4 @@
+import { getServerConfig } from "../lib/server/config";
 import { withTransaction } from "../lib/server/db/client";
 import { claimRetrievalJobs, finishRetrievalJob, renewRetrievalLease,
   type RetrievalJobClaim } from "../lib/server/retrieval/jobs";
@@ -12,9 +13,16 @@ type IndexPassage = { id: string; passage_text: string; passage_digest: string }
 export async function currentIndexPassages(claim: RetrievalJobClaim,
   existingClient?: PoolClient): Promise<IndexPassage[] | null> {
   const run = async (client: PoolClient) => {
-    const source = await client.query<{ synthetic: boolean | null; scope: string;
+    const marker=(await client.query<{schema_version:number}>("SELECT schema_version FROM turas_environment WHERE environment_id=$1",[getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
+    const publicBatchProof=marker?.schema_version>=45?`EXISTS(SELECT 1 FROM public_customer_research_results r
+      JOIN evidence_source_revisions v ON v.id=s.source_revision_id AND v.workspace_id=s.workspace_id AND v.customer_id=s.customer_id
+      JOIN evidence_sources e ON e.id=v.source_id
+      WHERE r.environment_id=s.environment_id AND r.workspace_id=s.workspace_id AND r.customer_id=s.customer_id
+        AND v.id=ANY(r.source_revision_ids) AND e.origin='independent_research' AND e.trusted_ingest_identity='public-batch-fetch-v1')`:"false";
+    const source = await client.query<{ synthetic: boolean | null; scope: string; public_batch:boolean;
       source_kind: string; source_revision_id: string; source_generation: string }>(`
-      SELECT c.synthetic,s.scope,s.source_kind,s.source_revision_id,s.source_generation
+      SELECT c.synthetic,s.scope,s.source_kind,s.source_revision_id,s.source_generation,
+        CASE WHEN s.source_kind='verified_research' THEN ${publicBatchProof} ELSE false END AS public_batch
       FROM retrieval_jobs j
       JOIN retrieval_sources s ON s.id=j.source_id AND s.source_generation=j.source_generation
         AND s.contract_digest=j.contract_digest AND s.lifecycle_state='current'
@@ -22,7 +30,7 @@ export async function currentIndexPassages(claim: RetrievalJobClaim,
       WHERE j.id=$1 AND j.lease_token=$2 AND j.lease_until>now()
         AND j.state='leased' AND j.kind='index'`, [claim.id,claim.leaseToken]);
     const row = source.rows[0];
-    if (!row || !(row.synthetic || row.scope === "shared") ||
+    if (!row || !(row.synthetic || row.scope === "shared" || row.public_batch) ||
         !await exactRetrievalOriginalCurrent(client,row.source_kind,
           row.source_revision_id,row.source_generation)) return null;
     const passages = await client.query<IndexPassage>(`
@@ -112,9 +120,9 @@ async function runLifecycle(claim: RetrievalJobClaim): Promise<void> {
 }
 
 /** One bounded lane in the existing maintenance process; research stays in eve. */
-export async function runRetrievalWorkerTick(): Promise<void> {
+export async function runRetrievalWorkerTick(sourceIds?: readonly string[]): Promise<void> {
   if (!retrievalIntakeEnabled()) return;
-  const claims = await claimRetrievalJobs(2);
+  const claims = await claimRetrievalJobs(2,undefined,getServerConfig().TURAS_ENVIRONMENT_ID,sourceIds);
   await Promise.all(claims.map(async (claim) => {
     const started = Date.now();
     try {

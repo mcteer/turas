@@ -333,4 +333,8 @@ directory stops admission after the current accounts finish.
 
 Disable the operator command to stop intake; retain immutable receipts and existing
 sources. Use the normal source withdrawal workflow to remove a bad public finding.
+Real public batch sources may be indexed through the existing retrieval worker when
+its immutable batch receipt and current source eligibility agree. A bounded source
+selector keeps operator indexing within this public inventory; existing private
+source and synthetic-worker restrictions remain in place.
 This command neither approves private context nor publishes cross-customer learning.

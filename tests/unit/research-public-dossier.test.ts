@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {publicDigest,validatePublicDossier,publicSubjectMention,dossierAreas,publicResearchQueries} from '../../lib/server/research/public-dossier';
+import {publicDigest,validatePublicDossier,publicSubjectMention,dossierAreas,publicResearchQueries,normalizePublicDraft} from '../../lib/server/research/public-dossier';
 const customer={name:'Cedar Company',industries:[],directoryListed:true,stories:[]};
 const text='Cedar Company reports a bounded improvement for its public documentation workload.';
 const pages=[{url:'https://publisher.org/cedar',title:'Public report',text,bodyDigest:'a'.repeat(64),normalizedDigest:publicDigest(text),retrievedAt:new Date().toISOString(),publishedAt:null,discoveryPurpose:'identity'}];
@@ -13,6 +13,17 @@ describe('public customer dossier contracts',()=>{
  it('rejects altered source receipts and unsupported coverage',()=>{
   expect(()=>validatePublicDossier(dossier,customer,[{...pages[0],normalizedDigest:'b'.repeat(64)}])).toThrow();
   expect(()=>validatePublicDossier({...dossier,coverage:dossier.coverage.map(c=>({...c,state:'supported'}))},customer,pages)).toThrow();
+ });
+ it('unwraps a captured model correction without admitting extra model fields',()=>{
+  const corrected=normalizePublicDraft({customer:{accepted:true},dossier:{...dossier,issues:['Removed overstatement'],sources:['Model-proposed source']}},customer,pages);
+  expect(validatePublicDossier(corrected,customer,pages).findings).toHaveLength(1);
+  expect(corrected).not.toHaveProperty('customer');expect(corrected).not.toHaveProperty('sources');
+ });
+ it('quarantines quotes from a retained window that no longer establishes the subject',()=>{
+  const unrelated=text.replace('Cedar Company','Other Company');
+  const proposed={...dossier,findings:[{...dossier.findings[0],quote:unrelated}]};
+  const normalized=normalizePublicDraft(proposed,customer,[{...pages[0],text:unrelated,normalizedDigest:publicDigest(unrelated)}]);
+  expect(normalized.findings).toEqual([]);expect(normalized.coverage.every(c=>c.state==='not_found')).toBe(true);
  });
  it('does not match a short identity within another word and discovers every research area',()=>{
   expect(publicSubjectMention('Acme builds public tools.','Acme')).toBe(true);

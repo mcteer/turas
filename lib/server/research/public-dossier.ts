@@ -84,3 +84,23 @@ export function assertCheckedPublicPage(page: CheckedPublicPage): void {
   if(publicDigest(page.text)!==page.normalizedDigest || Date.parse(page.retrievedAt)>Date.now() ||
     Number.isNaN(Date.parse(page.retrievedAt)))throw new Error("Public fetch receipt content or date is invalid");
 }
+
+/** Treat a model draft as proposals: retain only the requested fields and checked quotes. */
+export function normalizePublicDraft(raw: unknown, customer: PublicCustomer, pages: readonly CheckedPublicPage[]) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Public draft object required');
+  const wrapper=raw as Record<string,unknown>;
+  const candidate=wrapper.dossier && typeof wrapper.dossier==='object' && !Array.isArray(wrapper.dossier)
+    ? wrapper.dossier as Record<string,unknown> : wrapper;
+  if (!Array.isArray(candidate.findings)) throw new Error('Public draft findings required');
+  const findings=candidate.findings.flatMap(proposal=>{
+    const checked=publicDossierSchema.shape.findings.element.safeParse(proposal);
+    if(!checked.success)return [];
+    const page=pages[checked.data.sourceIndex];
+    return page?.text.includes(checked.data.quote)&&publicSubjectMention(page.text,customer.name)?[checked.data]:[];
+  }).slice(0,24);
+  return {description:candidate.description,findings,unknowns:candidate.unknowns,
+    coverage:dossierAreas.map(area=>{const count=findings.filter(f=>f.area===area).length;
+      return {area,state:count?'supported':'not_found',explanation:count
+        ? `This pass retained ${count} finding(s) supported by exact public passages; claims remain attributed.`
+        : 'No supported finding was retained in this bounded research pass. This does not establish that evidence is absent.'};})};
+}

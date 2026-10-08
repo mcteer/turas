@@ -387,4 +387,6 @@ unresolved identity collisions; domain-authorized idempotent anchors and sourced
 research visible through profile/retrieval; actual broad research across every
 inventory account with cited supported findings and honest coverage status;
 restart/replay and authorization-denial tests; measured provider usage/cost and
-aggregate-only operational output. Missing coverage is not full research completion.
+aggregate-only operational output. A completed research pass must not be represented
+as complete coverage of a customer’s operations. Unavailable sources and unsupported
+areas remain explicit gaps; failures are not successful research.

@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { withTransaction } from "../db/client";
@@ -63,8 +64,10 @@ export async function retryFailedRetrievalJob(client: PoolClient,jobId: string):
 }
 
 export async function claimRetrievalJobs(limit = 2, existingClient?: PoolClient,
-  environmentId = getServerConfig().TURAS_ENVIRONMENT_ID): Promise<RetrievalJobClaim[]> {
+  environmentId = getServerConfig().TURAS_ENVIRONMENT_ID,
+  sourceIds?: readonly string[]): Promise<RetrievalJobClaim[]> {
   if (!Number.isInteger(limit) || limit < 1 || limit > 2) throw new Error("Invalid retrieval worker concurrency");
+  const selected = sourceIds === undefined ? null : z.array(z.uuid()).max(1000).parse(sourceIds);
   const execute = async (client: PoolClient) => {
     await assertRetrievalReady(client,environmentId);
     const candidates = await client.query<{
@@ -73,7 +76,8 @@ export async function claimRetrievalJobs(limit = 2, existingClient?: PoolClient,
     }>(`SELECT id,source_id,source_generation,contract_digest,kind,state,attempts
       FROM retrieval_jobs WHERE environment_id=$1 AND
         (state='queued' OR (state='leased' AND lease_until<=now()))
-      ORDER BY created_at,id FOR UPDATE SKIP LOCKED LIMIT $2`, [environmentId,limit]);
+        AND ($3::uuid[] IS NULL OR source_id=ANY($3::uuid[]))
+      ORDER BY created_at,id FOR UPDATE SKIP LOCKED LIMIT $2`, [environmentId,limit,selected]);
     const claims: RetrievalJobClaim[] = [];
     for (const job of candidates.rows) {
       const source = await client.query<{ source_generation: string; contract_digest: string;
