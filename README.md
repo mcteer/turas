@@ -311,6 +311,8 @@ npm run research:customers -- --live --production \
   --output local-artifacts/customer-research/run --collect-only
 ```
 
+Run one Production import process at a time; workspace authorization locks serialize
+these writes. Import failures retain a private diagnostic for exact idempotent retry.
 Use `--import-only` with an immutable copied checkpoint to save reviewed dossiers
 without new provider calls. Omit `--collect-only` only for the explicitly authorized
 Production import after

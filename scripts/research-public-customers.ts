@@ -191,7 +191,10 @@ try{
    try { if(!importOnly)await collect(customer,account); }
    catch(error){await writeFile(join(root,`${account.requestKey}-error.json`),JSON.stringify(error instanceof Error?{name:error.name,message:error.message,stack:error.stack}:{code:safeCode(error)}),{mode:0o600});account.state="needs_attention";await save();console.log(JSON.stringify({gate:"public-customer-research-error",processed,state:account.state,code:safeCode(error)}));}
    if(Date.now()>=deadline||totals().costUsd>=maxModelUsd)throw new Error("Batch budget exhausted");
-   if(!collectOnly&&account.dossier){account.result=await persistPublicCustomerResearch(actor!,{requestKey:account.requestKey,batchDigest,customer,dossier:account.dossier,usage:account.usage},account.pages);account.state="saved";await save();}
+   if(!collectOnly&&account.dossier){
+    try{account.result=await persistPublicCustomerResearch(actor!,{requestKey:account.requestKey,batchDigest,customer,dossier:account.dossier,usage:account.usage},account.pages);account.state="saved";await save();}
+    catch(error){await writeFile(join(root,`${account.requestKey}-import-error.json`),JSON.stringify(error instanceof Error?{name:error.name,message:error.message,stack:error.stack}:{code:safeCode(error)}),{mode:0o600});console.log(JSON.stringify({gate:"public-customer-import-error",code:safeCode(error)}));throw error;}
+   }
    processed++;
    console.log(JSON.stringify({gate:"public-customer-research",processed,total:manifest.customers.length,states:Object.values(ledger.accounts).reduce((a,c)=>({...a,[c.state]:(a[c.state]??0)+1}),{} as Record<string,number>),usage:totals()}));
   }
