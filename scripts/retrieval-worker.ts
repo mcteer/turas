@@ -14,11 +14,13 @@ export async function currentIndexPassages(claim: RetrievalJobClaim,
   existingClient?: PoolClient): Promise<IndexPassage[] | null> {
   const run = async (client: PoolClient) => {
     const marker=(await client.query<{schema_version:number}>("SELECT schema_version FROM turas_environment WHERE environment_id=$1",[getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
+    // The immutable operator receipt scopes public eligibility. Original-current
+    // checks below still require independent origin, successful revision checks and no withdrawal.
     const publicBatchProof=marker?.schema_version>=45?`EXISTS(SELECT 1 FROM public_customer_research_results r
       JOIN evidence_source_revisions v ON v.id=s.source_revision_id AND v.workspace_id=s.workspace_id AND v.customer_id=s.customer_id
       JOIN evidence_sources e ON e.id=v.source_id
       WHERE r.environment_id=s.environment_id AND r.workspace_id=s.workspace_id AND r.customer_id=s.customer_id
-        AND v.id=ANY(r.source_revision_ids) AND e.origin='independent_research' AND e.trusted_ingest_identity='public-batch-fetch-v1')`:"false";
+        AND v.id=ANY(r.source_revision_ids) AND e.origin='independent_research')`:"false";
     const source = await client.query<{ synthetic: boolean | null; scope: string; public_batch:boolean;
       source_kind: string; source_revision_id: string; source_generation: string }>(`
       SELECT c.synthetic,s.scope,s.source_kind,s.source_revision_id,s.source_generation,

@@ -293,6 +293,16 @@ permission. Third-party assets retain their own license and provenance notices.
 
 ## Public Customer Research
 
+The authorized Production run on 2026-10-08 UTC saved 184 reviewed public dossiers:
+183 named companies and one anonymous published case. The inventory covers 105
+current directory logos and 116 canonical case studies across ten archive pages.
+It retained 1,926 attributed findings across 766 source revisions, with six-area
+coverage and 304 explicit no-finding gaps. All 1,532 public index jobs completed;
+three real hybrid searches returned exact public-source citations. The original
+six customer references remain, and accepted private profile records remain zero.
+See the [validation record](specs/005-governed-rag-research/validation.md) for scope,
+usage and the separate application-release checks.
+
 Public customer recon now previews four broad searches and can retain multiple
 checked sources, including Vercel case studies, employee talks and practitioner
 reports outside the customer's own domain. Existing admitted requests retain their

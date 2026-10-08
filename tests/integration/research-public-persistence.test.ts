@@ -51,4 +51,19 @@ describe('operator public research persistence',()=>{
    await expect(persistPublicCustomerResearch(actors.admin,input(),pages(),DEMO_IDS.sharedCustomer)).rejects.toMatchObject({code:'unauthorized'});
   },{deadlineAt:Date.now()+120000,sourceDatabaseUrl:process.env.TURAS_TEST_SOURCE_DATABASE_URL});
  },150000);
+ it('indexes a newly checked revision on an older public source without relabeling its parent',async()=>{
+  await withPlanEvalEnvironment(async()=>{
+   const actor=await withTransaction(db=>createProfileTestSession(db,'mcteer'));
+   const customerId=randomUUID(),sourceId=randomUUID();
+   await query('INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,$3,false)',[customerId,actor.workspaceId,customer.name]);
+   await query("INSERT INTO evidence_sources(id,workspace_id,customer_id,origin,canonical_location,trusted_ingest_identity) VALUES($1,$2,$3,'independent_research',$4,'earlier-public-fetch')",[sourceId,actor.workspaceId,customerId,rawPages[0].url]);
+   await persistPublicCustomerResearch(actor,input(),pages(),customerId);
+   const projections=(await query<{id:string}>("SELECT id FROM retrieval_sources WHERE customer_id=$1 AND source_kind='verified_research'",[customerId])).rows;
+   const claims=await claimRetrievalJobs(2,undefined,getServerConfig().TURAS_ENVIRONMENT_ID,projections.map(p=>p.id));
+   expect(claims).toHaveLength(2);
+   for(const claim of claims)expect(await currentIndexPassages(claim)).toHaveLength(1);
+   expect((await query('SELECT trusted_ingest_identity FROM evidence_sources WHERE id=$1',[sourceId])).rows[0].trusted_ingest_identity).toBe('earlier-public-fetch');
+  },{deadlineAt:Date.now()+120000,sourceDatabaseUrl:process.env.TURAS_TEST_SOURCE_DATABASE_URL});
+ },150000);
+
 });
