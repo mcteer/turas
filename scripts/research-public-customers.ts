@@ -1,6 +1,6 @@
 import { readFile, writeFile, mkdir, rename, lstat } from "node:fs/promises";
 import { resolve, join } from "node:path";
-import { existsSync } from "node:fs";
+import { existsSync, openSync, writeFileSync, closeSync, unlinkSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { generateText, gateway } from "ai";
 import { z } from "zod";
@@ -18,8 +18,9 @@ const args = process.argv.slice(2);
 function flag(name: string) { return args.includes(name); }
 function value(name: string) { const i=args.indexOf(name);return i>=0?args[i+1]:undefined; }
 const manifestPath=value("--manifest"), outputPath=value("--output");
-const collectOnly=flag("--collect-only");
-const switches=new Set(["--live","--production","--collect-only","--reconcile-failed-models"]),values=new Set(["--manifest","--output","--limit"]);
+const collectOnly=flag("--collect-only"),importOnly=flag("--import-only");
+if(collectOnly&&importOnly)throw new Error("Collection and import-only modes are mutually exclusive");
+const switches=new Set(["--live","--production","--collect-only","--import-only","--reconcile-failed-models"]),values=new Set(["--manifest","--output","--limit"]);
 for(let i=0;i<args.length;i++){if(switches.has(args[i]))continue;if(values.has(args[i])&&args[i+1]&&!args[i+1].startsWith("--")){i++;continue;}throw new Error("Unknown or incomplete public research option");}
 const limit=Number(value("--limit")??500);
 if(!flag("--live")||!flag("--production")||!manifestPath||!outputPath||!Number.isInteger(limit)||limit<1||limit>500)
@@ -36,6 +37,10 @@ if(new Set(manifest.customers.map(c=>c.name.normalize("NFKC").toLowerCase())).si
 const modelText=await readFile("agent/agent.ts","utf8");
 const model=modelText.match(/const selectedModel = "([^"]+)"/)?.[1];
 if(!model)throw new Error("Selected root model could not be verified");
+const lockPath=join(root,"batch.lock");
+const lock=openSync(lockPath,"wx",0o600);
+writeFileSync(lock,JSON.stringify({pid:process.pid,batchDigest,createdAt:new Date().toISOString()}));
+process.on("exit",()=>{closeSync(lock);unlinkSync(lockPath);});
 const maxModelUsd=50, maxSearches=3000, deadline=Date.now()+8*60*60*1000;
 const checkpointPath=join(root,"checkpoint.json");
 type Step=PublicOperationStep;
@@ -189,9 +194,9 @@ try{
  async function worker(){
   while(index<manifest.customers.length&&index<limit&&!existsSync(join(root,"STOP"))){
    const customer=manifest.customers[index++];
-   const key=publicDigest(customer.name);const account=ledger.accounts[key]??={requestKey:randomUUID(),steps:{},pages:[],usage:{searches:0,fetches:0,inputTokens:0,outputTokens:0,costUsd:0,model:model!,modelCalls:0},state:"pending"};
+   const key=publicDigest(customer.name);if(importOnly&&!ledger.accounts[key]?.dossier)continue;const account=ledger.accounts[key]??={requestKey:randomUUID(),steps:{},pages:[],usage:{searches:0,fetches:0,inputTokens:0,outputTokens:0,costUsd:0,model:model!,modelCalls:0},state:"pending"};
    if(account.state==="saved")continue;
-   try { await collect(customer,account); }
+   try { if(!importOnly)await collect(customer,account); }
    catch(error){await writeFile(join(root,`${account.requestKey}-error.json`),JSON.stringify(error instanceof Error?{name:error.name,message:error.message,stack:error.stack}:{code:safeCode(error)}),{mode:0o600});account.state="needs_attention";await save();console.log(JSON.stringify({gate:"public-customer-research-error",processed,state:account.state,code:safeCode(error)}));}
    if(Date.now()>=deadline||totals().costUsd>=maxModelUsd)throw new Error("Batch budget exhausted");
    if(!collectOnly&&account.dossier){account.result=await persistPublicCustomerResearch(actor!,{requestKey:account.requestKey,batchDigest,customer,dossier:account.dossier,usage:account.usage},account.pages);account.state="saved";await save();}

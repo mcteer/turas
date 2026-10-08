@@ -311,7 +311,9 @@ npm run research:customers -- --live --production \
   --output local-artifacts/customer-research/run --collect-only
 ```
 
-Omit `--collect-only` only for the explicitly authorized Production import after
+Use `--import-only` with an immutable copied checkpoint to save reviewed dossiers
+without new provider calls. Omit `--collect-only` only for the explicitly authorized
+Production import after
 migration 045. The command verifies the marked target and active administrator;
 it does not migrate schemas. It preserves existing customer IDs, grants and private
 facts. Missing public identities become sourced, non-synthetic canonical anchors.

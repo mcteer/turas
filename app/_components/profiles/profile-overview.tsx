@@ -20,7 +20,7 @@ type Fact = { id: string; recordId: string; workloadId: string | null; kind: str
 type Profile = { customer: { id: string; displayName: string; synthetic: boolean };
   workloads: { id: string; displayName: string; lifecycle: string }[];
   canReview: boolean;
-  publicResearchCoverage?: { asOf: string; coverage: { area: string; state: string; explanation: string }[]; unknowns: string[] } | null;
+  publicResearchCoverage?: { asOf: string; description?: string; coverage: { area: string; state: string; explanation: string }[]; unknowns: string[] } | null;
   openConflicts?: { id: string; state: "flagged" | "confirmed"; version: number;
     firstRevisionId: string; secondRevisionId: string; rationale: string }[];
   acceptedFacts: Fact[]; attributedResearch: { sourceRevisionId: string; title: string;
@@ -146,6 +146,7 @@ export function ProfileOverview({ customerId }: { customerId: string }) {
       <section className="profile-section" aria-labelledby="profile-research"><div className="profile-section-head"><h2 id="profile-research">Attributed Research</h2><span>{profile.attributedResearch.length}</span></div>
         {profile.publicResearchCoverage && <details className="profile-card"><summary>Public Research Coverage</summary>
           <p className="muted">Checked {new Date(profile.publicResearchCoverage.asOf).toLocaleDateString()}. Public evidence does not establish private engagement or formal maturity.</p>
+          {profile.publicResearchCoverage.description && <><h3>Attributed Public Overview</h3><p>{profile.publicResearchCoverage.description}</p></>}
           <ul>{profile.publicResearchCoverage.coverage.map(area => <li key={area.area}><strong>{researchAreaTitles[area.area] ?? "Public Research"}</strong>: {researchStateTitles[area.state] ?? "Incomplete"} — {area.explanation}</li>)}</ul>
           {profile.publicResearchCoverage.unknowns.length > 0 && <><h3>Unknowns</h3><ul>{profile.publicResearchCoverage.unknowns.map((item, index) => <li key={index}>{item}</li>)}</ul></>}
         </details>}

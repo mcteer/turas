@@ -20,5 +20,5 @@ export async function readPublicCustomerCoverage(db:PoolClient,actor:ProfileActo
  const raw=found.rows[0].dossier as Record<string,unknown>;
  const bounded=parsed.success?parsed:publicDossierSchema.safeParse({description:raw.description,findings:raw.findings,coverage:raw.coverage,unknowns:raw.unknowns});
  if(!bounded.success)return null;
- return {asOf:found.rows[0].created_at.toISOString(),coverage:bounded.data.coverage,unknowns:bounded.data.unknowns};
+ return {asOf:found.rows[0].created_at.toISOString(),description:bounded.data.description,coverage:bounded.data.coverage,unknowns:bounded.data.unknowns};
 }
