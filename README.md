@@ -290,3 +290,45 @@ establish hosted readiness. Local development continues using its local worker.
 
 No project-wide license is currently declared. Do not assume redistribution
 permission. Third-party assets retain their own license and provenance notices.
+
+## Public Customer Research
+
+Public customer recon now previews four broad searches and can retain multiple
+checked sources, including Vercel case studies, employee talks and practitioner
+reports outside the customer's own domain. Existing admitted requests retain their
+original host policy. Source text is quoted evidence; a host, mention or generated
+summary never establishes employer-wide deployment or accepted internal facts.
+
+The authorized operator batch researches a reviewed official Vercel directory and
+paginated story inventory. It records six coverage areas, exact source passages,
+dates, caveats, unknowns and provider usage, with source signatures and checkpointed
+provider dispatches. Customer Profiles show attributed findings and public research
+coverage. Rejected or withdrawn evidence is not restored by a cached result.
+
+```sh
+npm run research:customers -- --live --production \
+  --manifest local-artifacts/customer-research/roster.json \
+  --output local-artifacts/customer-research/run --collect-only
+```
+
+Omit `--collect-only` only for the explicitly authorized Production import after
+migration 045. The command verifies the marked target and active administrator;
+it does not migrate schemas. It preserves existing customer IDs, grants and private
+facts. Missing public identities become sourced, non-synthetic canonical anchors.
+Provider/model failures and unsupported areas remain visible gaps. Every customer
+gets six discovery queries and up to sixteen pinned public fetch attempts; model
+synthesis/review/correction stays bounded by six calls, no automatic provider retry,
+an eight-hour process deadline and a $50 AI Gateway model-cost ceiling. Discovery
+provider charges are separate and recorded as call counts when billing metadata is
+unavailable. Captured excerpts may be bounded; an omitted section is not evidence
+that the source lacks information. Checkpoints and source captures are private,
+ignored files. An interrupted dispatched call requires reconciliation before reuse.
+`--reconcile-failed-models` permits one explicitly recorded additional attempt for
+a failed model response, within the original six-call limit; the failed dispatch
+remains in the checkpoint and may have incurred provider charges. It never replays
+a dispatch whose completion is ambiguous. A private `STOP` file in the output
+directory stops admission after the current accounts finish.
+
+Disable the operator command to stop intake; retain immutable receipts and existing
+sources. Use the normal source withdrawal workflow to remove a bad public finding.
+This command neither approves private context nor publishes cross-customer learning.

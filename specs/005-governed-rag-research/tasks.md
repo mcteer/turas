@@ -216,3 +216,12 @@ commit/PR/merge or deployment is performed by this task-generation pass.
 **Counts:** 60 tasks: setup 3, foundation 9, US1 12, US2 9, US3 10, US4 8,
 integrated validation/documentation 9. Eight tasks have `[P]`. Implementation
 progress: 44 checked, 16 open; live research and full acceptance remain open.
+
+## Public research remediation (authorized 2026-10-08)
+
+- [ ] T061 Capture and verify the current official directory and all archive pages, reconcile identity aliases and compare aggregate legacy/Production coverage.
+- [x] T062 Implement bounded, checkpointed public research with shared checked-source policy, authenticated admin writes, source lineage and idempotent customer anchors.
+- [x] T063 Restore broad discovery and multi-source interactive recon without changing user-origin or scope/authorization boundaries; add regression checks.
+- [x] T064 Verify batch denial, replay, source integrity, attribution and generated citation contracts in disposable tests; run types/build and focused research checks.
+- [ ] T065 Execute and review real public research for every captured account, save to Production with explicit authorization, record citations, per-area gaps, provider usage and terminal coverage.
+- [ ] T066 Update README and validation with exact released behavior and actual run results; keep 011 a proposal.

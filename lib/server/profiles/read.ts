@@ -1,3 +1,4 @@
+import { readPublicCustomerCoverage } from "../research/public-read";
 import { getServerConfig } from "../config";
 import type { PoolClient } from "pg";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
@@ -249,7 +250,7 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
     return { customer: { id: customer.rows[0].id, displayName: customer.rows[0].display_name,
       synthetic: customer.rows[0].synthetic }, workloads: workloads.rows.map((row) => ({
       id: row.id, displayName: row.display_name, lifecycle: row.lifecycle })),
-      acceptedFacts, attributedResearch,
+      acceptedFacts, attributedResearch, publicResearchCoverage: await readPublicCustomerCoverage(client,actor,customerId),
       canReview,
       ...(openConflicts ? { openConflicts: openConflicts.rows.map((row) => ({
         id: row.id, state: row.state, version: Number(row.version),

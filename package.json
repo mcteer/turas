@@ -96,7 +96,8 @@
     "benchmark:reports": "node --env-file-if-exists=.env.local --import tsx scripts/benchmark-reports.ts",
     "reports:delivery:check": "node --env-file-if-exists=.env.local --import tsx scripts/check-report-delivery.ts",
     "reports:release:check": "node --env-file-if-exists=.env.local --import tsx scripts/check-reports-release.ts",
-    "test:reports:regressions": "node --env-file-if-exists=.env.local --import tsx scripts/test-reports-regressions.ts"
+    "test:reports:regressions": "node --env-file-if-exists=.env.local --import tsx scripts/test-reports-regressions.ts",
+    "research:customers": "node --env-file-if-exists=.env.local --import tsx scripts/research-public-customers.ts"
   },
   "dependencies": {
     "@js-temporal/polyfill": "0.5.1",

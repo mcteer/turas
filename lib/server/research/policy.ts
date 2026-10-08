@@ -7,7 +7,7 @@ import type { CurrentSession } from "../auth/sessions";
 import { lockOwnedBinding } from "../conversations/binding";
 import { assertRetrievalReady } from "../retrieval/policy";
 
-export const researchQueryTemplate = "public-research-v1" as const;
+export const researchQueryTemplate = "public-research-v2" as const;
 
 const secretLike = /(?:\b(?:password|secret|token|api[_-]?key|private[_-]?key)\s*[:=]|\b(?:sk|ghp|gho|github_pat|xox[baprs])[-_][A-Za-z0-9]{8,}|-----BEGIN\s+[^-]*PRIVATE KEY-----)/i;
 const privateTopic = /\b(?:internal-only|confidential|customer contract|private repository|employee record|billing account)\b/i;
@@ -35,8 +35,10 @@ export function renderResearchQueries(input: ResearchPreviewInput): string[] {
   if (input.mode === "recon") {
     const domain = publicDomain(input.publicDomain);
     const name = safeField(input.publicName);
-    return [`site:${domain} "${name}" company products`,
-      `"${name}" "${domain}" public profile`];
+    return [`"${name}" "${domain}" company products architecture`,
+      `"${name}" Vercel case study outcomes`,
+      `"${name}" engineer conference webinar architecture`,
+      `"${name}" product releases user experience limitations`];
   }
   const product = safeField(input.product);
   const version = safeField(input.version);

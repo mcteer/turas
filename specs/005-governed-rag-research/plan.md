@@ -259,3 +259,16 @@ planning workflow after tasks and read-only analysis, before implementing tasks.
 No constitution violations. The added vector extension serves semantic retrieval;
 the authored external adapter serves exact egress/provenance controls unavailable
 from the inspected built-in surface. Both are bounded by explicit contracts.
+
+## Public research remediation plan
+
+Preserve the selected root agent/model and existing interactive research admission.
+Add an operator batch lane with immutable checked public source receipts and
+per-customer checkpoints. Use Context.dev discovery, existing pinned HTTPS fetch
+and inert normalization. Separate deterministic source validation/persistence from
+bounded model synthesis; generated findings must refer to retained exact passages.
+Record public identity and directory provenance without approving internal facts.
+Retain existing customer IDs and grants; add missing public anchors idempotently.
+Use the shared evidence and retrieval projections; no parallel profile database.
+Target Production only through an explicit marked operator command after disposable
+migration/policy/replay verification. Store private logs under ignored artifacts.

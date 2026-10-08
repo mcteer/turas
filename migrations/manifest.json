@@ -1,5 +1,5 @@
 {
-  "version": 44,
+  "version": 45,
   "migrations": [
     {
       "file": "001-identity-foundation.cjs",
@@ -176,6 +176,10 @@
     {
       "file": "044-conversation-archive.cjs",
       "sha256": "c8492da1686f2e0a4458447d414f8ee57b9c641b0ab1ae71cb810294f256c82c"
+    },
+    {
+      "file": "045-public-customer-research.cjs",
+      "sha256": "90b177a9ae12398bc5e7b9f3c7f25756e537413783abde41eb1d7d8d376f8a7b"
     }
   ]
 }

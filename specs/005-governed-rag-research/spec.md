@@ -355,3 +355,36 @@ must deny obsolete content. An authorized fresh revision becomes searchable once
   plan must verify provider availability and state required configuration explicitly.
 - Versioned evidence-quality-v1 is a starting rubric. Synthetic evaluation verifies
   behavior and thresholds, not real-customer statistical calibration.
+
+## Public customer research remediation (2026-10-08)
+
+The maintainer requests discovery of all customers posted on Vercel's official
+customer directory and complete paginated story archive, followed by broad public
+research saved to Production Turas. Public scope is bounded to the posted inventory;
+it does not establish Vercel's private full customer base. Legacy inventory is a
+read-only comparison/identity reference, never imported as current verified facts.
+
+Each customer must receive a dated dossier with independently retrieved identity,
+Vercel relationship/workloads/products, architecture and delivery outcomes,
+customer releases, employee engineering testimony, product-user experience and
+material contrary evidence. Coverage is explicit: checked with supported findings,
+not found after recorded discovery, unavailable, or incomplete. Reports retain
+exact passages and canonical URLs, separate publication/retrieval dates, attribution,
+unknown maturity/internal engagement and marketing caveats. Never infer customers'
+private terms, staffing or internal current state. User-submitted evidence remains
+Pending. No research prose can approve internal facts.
+
+A separately authorized operator batch may execute public discovery outside the
+interactive owned-turn lane. It uses the same fetch/normalization/quality/retrieval
+policy and current active internal-admin authorization before every customer write.
+Batch scope, target environment, identity mapping, budgets, provider dispatches,
+checkpoints and errors must be recorded and replay-safe; no blind paid retries.
+Production data writes use explicit maintainer authorization recorded in this task;
+no development server or disposable test may select Production.
+
+Acceptance: independently captured official roster/archive pagination with no
+unresolved identity collisions; domain-authorized idempotent anchors and sourced
+research visible through profile/retrieval; actual broad research across every
+inventory account with cited supported findings and honest coverage status;
+restart/replay and authorization-denial tests; measured provider usage/cost and
+aggregate-only operational output. Missing coverage is not full research completion.
