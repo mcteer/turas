@@ -1,4 +1,5 @@
 import {Client} from 'pg';
+import {readFileSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {DEMO_IDS} from '../../lib/server/bootstrap-ids';
 import {withReportsDatabase} from '../fixtures/reports/environment';
@@ -6,12 +7,13 @@ import {insertReportRevisionFixture} from '../fixtures/reports/revision';
 import {describe,it,expect} from 'vitest';
 import {requireOwnedReportsDatabase} from '../fixtures/reports/environment';
 import {withReportsTestEnvironment} from '../../scripts/reports-test-environment';
+const currentSchemaVersion=JSON.parse(readFileSync('migrations/manifest.json','utf8')).version;
 export const reportTables=['report_scopes','report_revisions','report_revision_payloads','report_dependencies','report_calculations','report_artifacts','report_validations','report_decisions','report_brand_profiles','report_command_receipts','report_publications','report_senders','report_recipient_policies','report_policy_recipients','report_schedules','report_deliveries','report_delivery_attempts','report_delivery_events','report_jobs','report_cleanup_jobs'];
 describe('report schema isolation and immutability',()=>{
   it('creates scoped tables and restricts runtime mutation',async()=>{
     await requireOwnedReportsDatabase();const db=new Client({connectionString:process.env.TURAS_TEST_DATABASE_URL});await db.connect();
     try {
-      expect((await db.query('SELECT schema_version FROM turas_environment')).rows[0].schema_version).toBe(41);
+      expect((await db.query('SELECT schema_version FROM turas_environment')).rows[0].schema_version).toBe(currentSchemaVersion);
       expect((await db.query("SELECT tablename FROM pg_tables WHERE schemaname='public'")).rows.map(row=>row.tablename)).toEqual(expect.arrayContaining(reportTables));
       for(const name of ['report_revisions','report_revision_payloads','report_dependencies','report_calculations','report_validations','report_decisions','report_publications','report_command_receipts','report_delivery_attempts','report_delivery_events']) {
         expect((await db.query("SELECT has_table_privilege('turas_runtime',$1,'UPDATE') AS u,has_table_privilege('turas_runtime',$1,'DELETE') AS d",[name])).rows[0]).toEqual({u:false,d:false});
@@ -40,7 +42,7 @@ describe('report schema isolation and immutability',()=>{
         const prior=(await db.query('SELECT name FROM turas_migrations ORDER BY name')).rows;
         if(initialSchemaVersion)expect((await db.query('SELECT schema_version FROM turas_environment')).rows[0].schema_version).toBe(38);
         await environment.upgrade();
-        expect((await db.query('SELECT schema_version FROM turas_environment')).rows[0].schema_version).toBe(41);
+        expect((await db.query('SELECT schema_version FROM turas_environment')).rows[0].schema_version).toBe(currentSchemaVersion);
         expect((await db.query('SELECT name FROM turas_migrations ORDER BY name')).rows.slice(0,prior.length)).toEqual(prior);
       }finally{await db.end();}
     },{empty:true,initialSchemaVersion,sourceDatabaseUrl:process.env.TURAS_TEST_SOURCE_DATABASE_URL});

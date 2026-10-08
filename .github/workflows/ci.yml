@@ -18,6 +18,87 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  support-deterministic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        gate: [deterministic, webkit]
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/turas_test_support
+      DATABASE_URL_UNPOOLED: postgres://postgres:postgres@127.0.0.1:5432/turas_test_support
+      TURAS_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/turas_test_support
+      TURAS_ENVIRONMENT_ID: test-ci-support
+      TURAS_TEST_ENVIRONMENT_ID: test-ci-support
+      TURAS_APP_ORIGIN: http://127.0.0.1:3000
+      TURAS_DEMO_USERNAME: mcteer
+      PANEL_USERNAME: panel
+      PARTNER_USERNAME: partner
+      AI_GATEWAY_API_KEY: ''
+      TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix packages/artifact-extractor
+      - name: Create private synthetic credentials
+        run: |
+          for key in TURAS_DEMO_PASSWORD PANEL_PASSWORD PARTNER_PASSWORD TURAS_MAINTENANCE_SECRET; do
+            value="$(openssl rand -hex 32)"
+            echo "::add-mask::$value"
+            echo "$key=$value" >> "$GITHUB_ENV"
+          done
+          echo "TURAS_ARTIFACT_STORE_ROOT=${GITHUB_WORKSPACE}/local-artifacts/010/source-store" >> "$GITHUB_ENV"
+      - name: Initialize marked disposable source
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h 127.0.0.1 -U postgres -c 'CREATE DATABASE turas_test_support'
+          psql -h 127.0.0.1 -U postgres -c 'CREATE ROLE turas_runtime NOLOGIN'
+          npm run db:init
+          npm run db:roles
+          mkdir -p "$TURAS_ARTIFACT_STORE_ROOT"
+          chmod 700 "$TURAS_ARTIFACT_STORE_ROOT"
+          node --input-type=module -e 'import {writeFileSync} from "node:fs";writeFileSync(`${process.env.TURAS_ARTIFACT_STORE_ROOT}/.turas-artifact-store.json`,JSON.stringify({environmentId:process.env.TURAS_ENVIRONMENT_ID}),{mode:0o600});'
+      - name: Separate application placeholders from the marked test source
+        run: |
+          echo "DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/turas_support_app_not_selected" >> "$GITHUB_ENV"
+          echo "DATABASE_URL_UNPOOLED=postgres://postgres:postgres@127.0.0.1:5432/turas_support_app_not_selected" >> "$GITHUB_ENV"
+      - name: Test every support suite on owned disposable clones
+        if: matrix.gate == 'deterministic'
+        run: npm run test:support
+      - name: Check governed support dispatch through the actual framework
+        if: matrix.gate == 'deterministic'
+        run: npm run support:native:check
+      - name: Check interrupted support dispatch and same-key replay
+        if: matrix.gate == 'deterministic'
+        run: npm run support:native:check -- --interrupted
+      - name: Check preserved support database and workflow restart
+        if: matrix.gate == 'deterministic'
+        run: npm run support:recovery:check -- --disposable
+      - name: Install WebKit
+        if: matrix.gate == 'webkit'
+        run: npx playwright install --with-deps webkit
+      - name: Exercise every support journey in four WebKit projects
+        if: matrix.gate == 'webkit'
+        run: npm run support:ui:check
+
   reporting:
     runs-on: ubuntu-latest
     timeout-minutes: 90

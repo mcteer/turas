@@ -6,10 +6,12 @@ import { getServerConfig } from "../config";
 import { conversationFeature } from "./feature";
 import { prepareStaffingNativeRelease, assertStaffingNativeRelease, type StaffingNativeRelease } from "../staffing/native-release";
 import { prepareExecutionNativeRelease, assertExecutionNativeRelease, type ExecutionNativeRelease } from "../execution/native-release";
-export type GovernedNativeRelease = (StaffingNativeRelease & { kind: "staffing" }) | (ExecutionNativeRelease & { kind: "execution" });
+import { prepareSupportNativeRelease, assertSupportNativeRelease, type SupportNativeRelease } from "../support/native-release";
+export type GovernedNativeRelease = (StaffingNativeRelease & { kind: "staffing" }) | (ExecutionNativeRelease & { kind: "execution" }) | (SupportNativeRelease & { kind: "support" });
 type Expected = { actor?: CurrentSession; nativeSessionId?: string; responseAttemptId?: string; incomingTurnId?: string; allowUnclaimedTurn?: boolean };
 export async function prepareGovernedNativeRelease(conversationId: string, expected?: Expected): Promise<GovernedNativeRelease | null> {
   const feature = await withTransaction(db => conversationFeature(db, conversationId));
+  if (feature.kind === "support") { const release = await prepareSupportNativeRelease(conversationId, expected); if (!release) throw hiddenRecord(); return { ...release, kind: "support" }; }
   if (feature.kind === "execution") { const release = await prepareExecutionNativeRelease(conversationId, expected); if (!release) throw hiddenRecord(); return { ...release, kind: "execution" }; }
   if (feature.kind === "staffing") { const release = await prepareStaffingNativeRelease(conversationId, expected); if (!release) throw hiddenRecord(); return { ...release, kind: "staffing" }; }
   return null;
@@ -25,5 +27,6 @@ export async function prepareGovernedReleaseForNative(nativeSessionId: string, e
 export async function assertGovernedNativeRelease(db: PoolClient, prepared: GovernedNativeRelease, actor?: CurrentSession) {
   const feature = await conversationFeature(db, prepared.conversationId);
   if (feature.kind !== prepared.kind) throw hiddenRecord();
+  if (prepared.kind === "support") return assertSupportNativeRelease(db, prepared, actor);
   return prepared.kind === "execution" ? assertExecutionNativeRelease(db, prepared, actor) : assertStaffingNativeRelease(db, prepared, actor);
 }

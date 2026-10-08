@@ -3,7 +3,7 @@ import { spawn,spawnSync,type ChildProcess } from "node:child_process";
 import { mkdir,mkdtemp,rm,symlink,writeFile } from "node:fs/promises";
 import {mkdirSync,writeFileSync,readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
-import { createServer } from "node:net";
+import { reserveOwnedEvalPort } from "./eval-port";
 import { join,resolve } from "node:path";
 import { Client } from "pg";
 import { closeRuntimePool } from "../lib/server/db/client";
@@ -28,7 +28,7 @@ export type PlanEvalOptions = {
   deadlineAt?: number;
   empty?: boolean;
   sourceDatabaseUrl?: string;
-  feature?: "006" | "007" | "008" | "009";
+  feature?: "006" | "007" | "008" | "009" | "010";
   prepare?: (paths: { appRoot: string; storeRoot: string; environmentId: string }) =>
     Promise<Record<string, string>>;
   cleanupGuard?: (paths: { appRoot: string; storeRoot: string; databaseName: string;
@@ -37,18 +37,6 @@ export type PlanEvalOptions = {
 
 const sourceFiles = ["app","agent","lib","migrations","scripts","public","evals","tests",
   "packages","report-templates","report-renderer","next.config.ts","next-env.d.ts","tsconfig.json","package.json"] as const;
-
-async function freePort(): Promise<number> {
-  const server = createServer();
-  await new Promise<void>((done,reject) => {
-    server.once("error",reject);
-    server.listen(0,"127.0.0.1",done);
-  });
-  const address = server.address();
-  await new Promise<void>((done) => server.close(() => done()));
-  if (!address || typeof address === "string") throw new Error("Disposable port unavailable");
-  return address.port;
-}
 
 async function stopChild(child: ChildProcess | null): Promise<void> {
   if (!child || child.exitCode !== null || child.signalCode !== null) return;
@@ -142,7 +130,8 @@ export async function withPlanEvalEnvironment<T>(
   const root = await mkdtemp(resolve(`local-artifacts/${feature}/eval-`));
   const appRoot = join(root,"app");
   const storeRoot = join(root,"store");
-  const origin = `http://127.0.0.1:${await freePort()}`;
+  const portLease = await reserveOwnedEvalPort();
+  const origin = `http://127.0.0.1:${portLease.port}`;
   const prior: Record<string, string | undefined> = Object.fromEntries(["DATABASE_URL","DATABASE_URL_UNPOOLED",
     "TURAS_TEST_DATABASE_URL","TURAS_ENVIRONMENT_ID","TURAS_APP_ORIGIN",
     "TURAS_ARTIFACT_STORE_ROOT","TURAS_TEST_SOURCE_DATABASE_URL"].map((key) =>
@@ -217,6 +206,7 @@ export async function withPlanEvalEnvironment<T>(
       if (child) throw new Error("Disposable app already running");
       startupTail = "";
       const port = new URL(origin).port;
+      await portLease.release();
       child = spawn(process.execPath,["scripts/dev.mjs"],{
         cwd:appRoot,env:{...process.env,NODE_ENV:"development",PORT:port,NODE_OPTIONS:""},
         stdio:["ignore","pipe","pipe"],
@@ -259,6 +249,7 @@ export async function withPlanEvalEnvironment<T>(
         .filter((value)=>startupTail.toLowerCase().includes(value.toLowerCase())),
       privateLogTail:()=>startupTail});
   } finally {
+    await portLease.release();
     await stopChild(child);
     await closeRuntimePool();
     for (const [key,value] of Object.entries(prior)) {

@@ -12,7 +12,7 @@ assertDeterministicTestMode();
 const suites = ["unit", "contracts", "integration"].flatMap(group => readdirSync(resolve("tests", group))
   // This legacy case requires an externally prepared native conversation and
   // would otherwise silently skip. Owned staffing recovery is a separate gate.
-  .filter(name => name.endsWith(".test.ts") && !name.startsWith("staffing-") && !name.startsWith("execution-") && !name.startsWith("report-") && name !== "runtime-restart.test.ts")
+  .filter(name => name.endsWith(".test.ts") && !name.startsWith("staffing-") && !name.startsWith("execution-") && !name.startsWith("report-") && !name.startsWith("support-") && name !== "runtime-restart.test.ts")
   .map(name => `tests/${group}/${name}`));
 const plans = suites.filter(file => file.startsWith("tests/integration/plan-"));
 const earlier = suites.filter(file => !plans.includes(file));

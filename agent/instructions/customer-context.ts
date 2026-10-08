@@ -16,7 +16,7 @@ export default defineDynamic({
       }
       // Staffing has its own charged delivery-only instruction resolver.
       const feature = await responseFeature(principal);
-      if (feature?.kind === "staffing" || feature?.kind === "execution") return null;
+      if (feature?.kind === "staffing" || feature?.kind === "execution" || feature?.kind === "support") return null;
       return withTransaction(async (client) => {
         const snapshot = await readCurrentAttemptContext(client, attemptId, principal.principalId);
         if (snapshot.contractVersion === "general-context-v1") {

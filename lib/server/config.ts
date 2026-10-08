@@ -20,6 +20,7 @@ const schema = z.object({
   PARTNER_USERNAME: z.literal("partner"),
   PARTNER_PASSWORD: credential,
   TURAS_MAINTENANCE_SECRET: z.string().min(32),
+  TURAS_010_DISABLED: z.enum(["0", "1"]).optional(),
 });
 
 export type ServerConfig = z.infer<typeof schema>;

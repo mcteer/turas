@@ -117,7 +117,8 @@ export function ProfileOverview({ customerId }: { customerId: string }) {
           <option value="">All workloads</option>
           {profile.workloads.map((workload) => <option key={workload.id} value={workload.id}>{workload.displayName}</option>)}
         </select><Link className="secondary-button" href={`/s?customerId=${encodeURIComponent(customerId)}`}>Start Chat</Link>
-        <Link className="secondary-button" href={`/customers/${customerId}/plans`}>Delivery Plans</Link></div>
+        <Link className="secondary-button" href={`/customers/${customerId}/plans`}>Delivery Plans</Link>
+        <Link className="secondary-button" href={`/customers/${customerId}/support`}>Support Guidance</Link></div>
       <EvidenceSearch customerId={customerId} workloadId={workloadId || undefined} />
       <TypedConflictReview customerId={customerId} canReview={profile.canReview} />
       {profile.acceptedFacts.length === 0 && <div className="profile-state"><h2>No Accepted Facts Yet</h2><p>Submitted context appears here after review. An empty section is not a negative assessment.</p></div>}

@@ -15,6 +15,13 @@ export default defineHook({
         throw new Error("Customer context was not bound to this turn");
       }
       const feature = await responseFeature(principal);
+      if (feature?.kind === "support") {
+        // Hooks observe events; they are not the paid-call authorization boundary.
+        // Support admission validates exact injection and current sources, and
+        // wrapSupportModel rechecks authority immediately before provider I/O.
+        // Repeating that full capture here adds latency without a new boundary.
+        return;
+      }
       if (feature?.kind === "execution") {
         await readExecutionInitialContext(principal, event.data.turnId, ctx.session.id, false);
         return;

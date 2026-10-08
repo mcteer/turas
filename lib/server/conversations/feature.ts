@@ -2,13 +2,15 @@ import type { PoolClient } from "pg";
 import { z } from "zod";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
 import type { ExecutionAdviceScope } from "../../execution/advice";
+import type { SupportAdviceScope } from "../support/context";
 import { getServerConfig } from "../config";
 import { withTransaction } from "../db/client";
 import { planningScopeForConversation, type PlanningScope } from "../plans/context";
 import { staffingScopeForConversation, type StaffingScope } from "../staffing/context";
 
 export type ConversationFeature = { kind: "normal" } | { kind: "planning"; scope: PlanningScope } |
-  { kind: "staffing"; scope: StaffingScope } | { kind: "execution"; scope: ExecutionAdviceScope };
+  { kind: "staffing"; scope: StaffingScope } | { kind: "execution"; scope: ExecutionAdviceScope } |
+  { kind: "support"; scope: SupportAdviceScope };
 export type FeaturePrincipal = { principalId?: string; attributes?: Record<string, unknown> } | null | undefined;
 /** Association metadata only. Each content path still performs current authority
  * and its complete dependency fence. Ambiguous bindings never fall through. */
@@ -19,7 +21,12 @@ export async function conversationFeature(db: PoolClient, conversationId: string
   const planning = await planningScopeForConversation(db, conversationId), staffing = await staffingScopeForConversation(db, conversationId);
   const execution = marker >= 38 ? (await db.query(`SELECT id,customer_id,owner_membership_id,engagement_id,baseline_id,generation,from_date::text,to_date::text
     FROM execution_advice_bindings WHERE conversation_id=$1 AND environment_id=$2`, [conversationId, getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0] : null;
-  if ([planning, staffing, execution].filter(Boolean).length > 1) throw new HttpFailure(409, "conversation_feature_conflict", "Conversation scope is unavailable");
+   const support = marker >= 43 ? (await db.query(`SELECT id,customer_id,workload_id,audience,owner_membership_id,selected_engagement_ids
+     FROM support_advice_bindings WHERE conversation_id=$1 AND environment_id=$2`, [conversationId, getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0] : null;
+   if ([planning, staffing, execution, support].filter(Boolean).length > 1) throw new HttpFailure(409, "conversation_feature_conflict", "Conversation scope is unavailable");
+   if (support) return { kind: "support", scope: { bindingId: support.id, conversationId, customerId: support.customer_id,
+     ownerMembershipId: support.owner_membership_id, workloadId: support.workload_id, audience: support.audience,
+     selectedEngagementIds: support.selected_engagement_ids } };
   if (execution) return { kind: "execution", scope: { bindingId: execution.id, conversationId, customerId: execution.customer_id,
     ownerMembershipId: execution.owner_membership_id, engagementId: execution.engagement_id, baselineId: execution.baseline_id,
     generation: Number(execution.generation), period: { from: execution.from_date, to: execution.to_date } } };

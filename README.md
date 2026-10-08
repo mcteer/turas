@@ -1,292 +1,268 @@
 # Turas
 
-Turas is a customer maturity and delivery platform for Vercel Forward Deployed
-Engineering, Professional Services, TAM, account teams and partners. **Turi**, its
-eve assistant, will connect governed customer context to delivery plans, staffing,
-execution, reporting and learning.
+Customer maturity and delivery management for Vercel FDE, Professional Services,
+TAM, account teams and partners.
 
-## Current state
+Turas brings reviewed customer context, planning, staffing, execution and reporting
+into one workspace. **Turi**, its eve-powered assistant, explains and proposes next
+steps using authorized evidence. Human review—not a model response—determines which
+facts and decisions become accepted.
 
-Features 002 and 003 were merged in [PR 2](https://github.com/mcteer/turas/pull/2)
-and [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation. The current build has
-explicit Postgres migrations, the three temporary demo logins, customer grants,
-private owned conversations, guarded eve routes, durable response history, a
-maintenance worker and a responsive web shell. Feature 003 adds typed customer
-profiles, projected record history, Pending review,
-maturity assessments, attributed synthetic research, evidence quality and conflict
-review, partner projections, and bound agent context
-for local testing. Feature 004 adds local private attachment intake, isolated
-scan/extraction, exact-source review, bounded unverified chat selection and
-versioned cleanup. Feature 006 delivery plans are merged; staffing is locally validated,
-while reporting is in progress and MCP remains planned.
-Feature 005 is merged in [PR 8](https://github.com/mcteer/turas/pull/8). Governed retrieval,
-shared knowledge publication, bounded research, refresh and typed conflict
-flows have focused local checks and CLI WebKit journeys. A 40-query synthetic
-live embedding evaluation passed its citation and recall gate, and the local
-5,000-passage hybrid load gate, all twelve local actual-output Turi review
-cases and a disposable paired restart/recovery drill passed. These 005
-changes have not been released.
-Feature 006 delivery plans and technical designs have a [specification](specs/006-delivery-plans/spec.md),
-[implementation plan](specs/006-delivery-plans/plan.md) and
-[task breakdown](specs/006-delivery-plans/tasks.md). The implementation merged in
-[PR 11](https://github.com/mcteer/turas/pull/11) and includes schema 029–031, manual plan authoring, exact human
-review, canonical baseline replacement, governed revision comparison and bounded
-Turi drafting with native replay and cancellation. The
-[validation log](specs/006-delivery-plans/validation.md) records the passing
-disposable domain/recovery checks, local 1,000-plan performance gate,
-four-project WebKit matrix and reviewed eight-case live evaluation. Preview was
-explicitly upgraded to schema 031 and inspected afterward; local unauthenticated
-app and Eve health smoke passed. The full PR CI workflow passed; the feature has
-not been released.
-Feature 007 has a [specification](specs/007-skills-staffing/spec.md),
-[design](specs/007-skills-staffing/plan.md) and
-[implementation tasks](specs/007-skills-staffing/tasks.md). It implements reviewed
-competencies and private workforce imports, dated capacity, explained matching,
-human-confirmed allocations, planned operations/economics and governed read-only
-Turi advice. Only `mcteer` has staffing-manager and finance authority; delegation
-is deferred. The [validation log](specs/007-skills-staffing/validation.md) records
-passing disposable domain and regression tests, 112 CLI WebKit cases, paired
-recovery, the 500-resource load gate and eight reviewed live advisory cases.
-Preview was explicitly upgraded to schema 034 and read-only inspected afterward;
-local unauthenticated app and runtime-role smoke passed. Feature 007 merged in
-[PR 13](https://github.com/mcteer/turas/pull/13) after passing review-head CI.
-Hosted staffing workflow acceptance remains pending.
-Feature 008 has a [specification](specs/008-engagement-execution/spec.md),
-[implementation plan](specs/008-engagement-execution/plan.md),
-[71 implementation tasks](specs/008-engagement-execution/tasks.md) and
-[validation guide](specs/008-engagement-execution/quickstart.md) for reviewed delivery
-logs/time, milestones, RAID/changes, effort forecasts, handoff/outcomes and bounded
-Turi explanations. The user confirmed `mcteer`-only approval. The implementation includes activity and milestone review, approved time and actuals,
-RAID and scope registers, baseline reconciliation, deterministic effort forecasts,
-reviewer-only utilization, evidenced handoff/closeout/outcomes, bounded native Turi
-explanations and exact leased payload cleanup. The
-[validation log](specs/008-engagement-execution/validation.md) records the current
-local checks, full release gates, actual-model review and Preview status. These
-local results do not establish hosted workflow acceptance.
-Feature 008 merged in [PR 16](https://github.com/mcteer/turas/pull/16) after passing CI.
-Feature 009 has a [specification](specs/009-weekly-executive-reporting/spec.md),
-[design and contracts](specs/009-weekly-executive-reporting/plan.md),
-[68 planned tasks](specs/009-weekly-executive-reporting/tasks.md) and
-[validation guide](specs/009-weekly-executive-reporting/quickstart.md). It covers
-reviewed weekly reports, monthly/quarterly PDFs and editable QBR slides, audience
-boundaries and durable email receipts. The user confirmed automatic weekly
-drafts with `mcteer` approval for each send. The local implementation includes
-review/publication/corrections, real PDF/editable-slide rendering, private audience
-projections, schedules, exact-recipient outbox delivery and retention cleanup.
-The [validation log](specs/009-weekly-executive-reporting/validation.md) distinguishes
-final-source local checks from controlled provider delivery and hosted acceptance.
-The [reporting operations guide](docs/reporting-operations.md) describes the
-separate, default-off live-dispatch switch and local reporting checks. The full
-48-suite/160-test deterministic reporting gate has passed; its manifest includes
-actual subprocess-exit dispatch recovery, exact provider reconciliation, source
-withdrawal races and audit minimization. Six actual artifact pairs pass native
-LibreOffice edit/save/reopen checks and review of all 121 page/slide rasters.
-Final-source representative load passed (maximum class p95 1,894.73 ms);
-the final four-project WebKit matrix passed all 36 cases. Local implementation
-and testing are complete; exact evidence is recorded in the validation log.
-Live Resend acceptance is explicitly deferred by the user. Dispatch remains
-default-off; no real delivery or hosted acceptance is claimed.
-The full representative local load gate passes with 5,000 report histories and the
-required execution workload, 20 weekly preparations, 12 actual executive pairs and
-queue/rate/overflow/fairness checks. Its source-bound result is recorded in the ledger;
-it does not certify hosted behavior or substitute for complete lifecycle acceptance.
-Production build checks use the documented Webpack compiler; Turbopack development
-is unchanged. Private local artifacts are excluded from production file traces.
+**Status:** active development. Customer profiles through executive reporting and
+TAM/support guidance (010) are implemented. Local validation and basic hosted smoke
+checks do not establish full Production workflow readiness. See the
+[roadmap](ROADMAP.md) and feature validation records under [`specs/`](specs/).
 
-No speculative eve integrations have been installed. The configured model is
-unchanged. Protected Previews run the app and have basic hosted smoke checks;
-full hosted workflow readiness remains release work.
+## Features
 
-The old demo at `../turas-back` was reviewed as a reference only. Its fixtures,
-credentials, data and unused integrations are not the new platform. See the
-[reference review](docs/legacy-review.md) and [visual contract](docs/design-reference.md).
+### Customer Profiles and Maturity
 
-## Start here
+Maintain customer/workload profiles, stakeholders and operating context. Record
+maturity assessments against a versioned rubric, with evidence, unknowns and the
+next measurable capability. Review proposed changes and inspect their history;
+customer maturity stays separate from engagement progress.
 
-- [Roadmap and delivery order](ROADMAP.md)
-- [Product blueprint and requirement coverage](docs/product-blueprint.md)
-- [Proposed architecture](docs/architecture.md) and [decision register](docs/decisions.md)
-- [Hosted environment handoff](docs/environment-handoff.md) for the former Vercel variables and Neon Preview selection
-- [Evidence, quality scoring and approval policy](docs/evidence-policy.md)
-- [Plan and report templates](docs/templates/README.md)
-- [Foundation spec and plan](specs/001-platform-foundation/spec.md)
-- [Feature 002 specification](specs/002-identity-platform-shell/spec.md) and
-  [implementation plan](specs/002-identity-platform-shell/plan.md), with
-  [implementation tasks](specs/002-identity-platform-shell/tasks.md) and
-  [local validation](specs/002-identity-platform-shell/validation.md)
-- [Feature 003 specification](specs/003-customer-profile-review/spec.md) and
-  [implementation plan](specs/003-customer-profile-review/plan.md), with
-  [implementation tasks](specs/003-customer-profile-review/tasks.md) and
-  [local validation](specs/003-customer-profile-review/validation.md) — merged on `main`, no hosted release
-- [Feature 004 specification](specs/004-chat-artifact-ingestion/spec.md),
-  [implementation plan](specs/004-chat-artifact-ingestion/plan.md) and
-  [tasks](specs/004-chat-artifact-ingestion/tasks.md) and
-  [local validation](specs/004-chat-artifact-ingestion/validation.md) — merged on `main` with local and CI validation, no hosted release
-- [Feature 005 specification](specs/005-governed-rag-research/spec.md),
-  [implementation plan](specs/005-governed-rag-research/plan.md),
-  [tasks](specs/005-governed-rag-research/tasks.md) and
-  [validation guide](specs/005-governed-rag-research/quickstart.md) and
-  [local validation log](specs/005-governed-rag-research/validation.md) — merged on `main` with local and CI validation, no hosted release
-- [Contributing](CONTRIBUTING.md), [development instructions](AGENTS.md), and
-  [constitution](.specify/memory/constitution.md)
+### Evidence, Knowledge and Research
 
-## Local setup
+Upload private artifacts for isolated scanning and extraction, select passages
+for discussion and submit claims for factual review. Retrieve eligible customer
+evidence and published shared practices with citations. Run bounded public research,
+review conflicts and refresh stale sources. Withdrawal and access changes govern
+subsequent retrieval and use.
 
-Use Node **24** (`.node-version`), npm, local Postgres **17**, and CLI
-Playwright/WebKit. Install locked dependencies, configure ignored `.env.local`
-using [.env.example](.env.example), then explicitly initialize an empty local
-database with the configured environment marker. Provision a separate
-`turas_runtime` login and run the role grants after migrations. Reapply
-`npm run db:roles` when updating this build: plan and staffing reads now have the key-column privilege PostgreSQL requires for row
-locks during reads. Existing immutability triggers still reject every payload
-update; content-column updates and direct deletion remain denied. Keep a distinct
-disposable test database; the [002 runbook](specs/002-identity-platform-shell/quickstart.md)
-has the setup and recovery details.
+### Turi Conversations and Guidance
+
+Use owner-private chat for general technical questions or explicitly selected
+customer context. Ask Turi to draft plans or explain staffing and execution using
+permitted inputs. Stop running responses and inspect saved status. Suggestions do
+not approve facts, allocate staff or complete work; human decisions remain separate.
+
+### Delivery Plans and Technical Designs
+
+Author plans and designs, select evidence and submit exact revisions for review.
+Compare revisions and establish or replace reviewed milestone baselines. Turi
+drafting produces proposals, not accepted commitments.
+
+### Skills and Staffing
+
+Maintain reviewed competencies and dated capacity, identify demand and inspect
+explained resource matches. Propose and review allocations, track unmet demand and
+inspect planned operations and economics. Personnel and financial data have separate
+access controls; a match is not a confirmed allocation.
+
+### Engagement Execution
+
+Record activities and time, review milestones and maintain risk, issue and scope-change
+registers. Compare actual effort with forecasts and baselines. Record evidenced
+handoffs, closeout and outcomes; reported activity is not accepted completion.
+
+### Executive Reporting
+
+Prepare and review weekly reports, publish corrections and generate executive PDFs
+and editable QBR slides. Audience-specific projections control report content.
+Email delivery uses a separate, default-off release switch and exact-recipient
+receipts; local rendering does not prove live delivery.
+
+### TAM and Support Guidance
+
+Feature 010 adds customer/workload readiness, owned recommended actions, proposed
+disposition changes and procedural escalation guidance. Internal users propose
+changes; the designated reviewer accepts exact revisions. Assigned partners receive
+accepted delivery-visible guidance only. Bounded Turi suggestions can be explicitly
+saved as proposed actions. Human-reported handoff never means a ticket was sent,
+acknowledged or resolved externally.
+
+Readiness uses six explicit checks and a deterministic summary, with reviewed
+actions and source-qualified history. Advice receives selected passages, original
+dates and evidence quality before generation; each save remains a proposal. See the
+[support specification](specs/010-tam-support-guidance/spec.md) and
+[validation record](specs/010-tam-support-guidance/validation.md).
+
+### Planned Capabilities
+
+MCP access and further delivery/learning automation remain roadmap work, not
+available integrations. There is no external support-ticket connector. See the
+[roadmap](ROADMAP.md) for proposed slices and dependencies.
+
+## Technology
+
+TypeScript, Next.js 16, React 19, eve and PostgreSQL 17 with pgvector. Development
+uses Node.js 24 and npm. Versions are pinned in [`package-lock.json`](package-lock.json).
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js **24** ([`.node-version`](.node-version)) and npm.
+- PostgreSQL **17** with pgvector, a development database and a separate disposable
+  test database.
+- Docker for isolated artifact scanning/extraction and report rendering.
+- An AI Gateway key for live Turi calls; deterministic tests do not require one.
+
+Database, runtime-role and recovery details are in the
+[platform quickstart](specs/002-identity-platform-shell/quickstart.md).
+
+### Install and Configure
 
 ```sh
 npm ci
+npm ci --prefix packages/artifact-extractor
+cp .env.example .env.local
+```
+
+On a new checkout, fill in ignored `.env.local` before running database/runtime
+commands. Do not overwrite existing local configuration.
+[`.env.example`](.env.example) lists available settings.
+
+| Configuration | Purpose |
+| --- | --- |
+| `DATABASE_URL` | Application connection using the least-privilege runtime login |
+| `DATABASE_URL_UNPOOLED` | Direct owner connection for explicit migrations and grants |
+| `TURAS_ENVIRONMENT_ID` | Database/private-store environment marker |
+| `TURAS_APP_ORIGIN` | Exact application origin, e.g. `http://localhost:3000` |
+| Demo login names/passwords | Temporary synthetic accounts described below |
+| `TURAS_MAINTENANCE_SECRET` | Private secret of at least 32 characters |
+| `TURAS_ARTIFACT_STORE_ROOT` | Absolute private artifact-store path outside `public/` |
+| `AI_GATEWAY_API_KEY` | Live model access, not deterministic test access |
+
+Provision the separate `turas_runtime` login as described in the quickstart.
+Do not use the owner connection as the application's runtime login.
+
+### Initialize and Run
+
+For a **new, empty development database** with its environment marker configured:
+
+```sh
 npm run db:init
 npm run db:roles
 npm run db:bootstrap-demo
 npm run dev
 ```
 
-For an existing schema-013 local database, prepare the private artifact store
-and images with `npm run artifacts:prepare`, then run `npm run db:migrate` and
-`npm run db:roles` explicitly before using attachments. The
-[004 quickstart](specs/004-chat-artifact-ingestion/quickstart.md) covers the
-separate disposable test store and recovery checks.
+Open `TURAS_APP_ORIGIN`. `npm run dev` supervises Next.js, eve and the PostgreSQL-backed
+maintenance worker. For existing databases, use `npm run db:migrate` followed by
+`npm run db:roles`, not initialization. Back up data before operational changes;
+request handlers never initialize or upgrade schemas.
 
-For an optional populated synthetic profile in local or disposable test environments,
-run `npm run db:seed-profile-demo`. It adds reviewed Juniper examples without
-overwriting later accepted revisions. For the two-workload, 25-record scripted
-walkthrough fixture, run `npm run db:seed-profile-walkthrough`. The [003 quickstart](specs/003-customer-profile-review/quickstart.md)
-describes the review, evidence and guarded recovery journeys.
+Artifact intake needs explicit private-store/scanner preparation; follow the
+[artifact quickstart](specs/004-chat-artifact-ingestion/quickstart.md). Additional
+staffing/reporting prerequisites are in the
+[staffing guide](specs/007-skills-staffing/quickstart.md) and
+[reporting operations guide](docs/reporting-operations.md).
 
-`npm run dev` supervises Next.js, eve and the Postgres-backed maintenance worker.
-The web app is available at the configured `TURAS_APP_ORIGIN`. The `mcteer` login
-is an internal administrator, `panel` an internal employee, and `partner` an
-external member assigned only Cedar in the synthetic demo. Internal members can
-see every customer reference, including new ones; each account sees only its
-own chats. Profile and explicitly shared chat claims remain Pending until steward
-review; accepted facts and attributed research are kept distinct. The app does not
-yet accept attachments on the unmigrated selected database. The 004 local setup
-and explicit migrations are in the [004 quickstart](specs/004-chat-artifact-ingestion/quickstart.md).
-After a local eve dev restart, an in-flight run from an older development
-generation may be quarantined. Its stored message and deadline remain visible;
-the worker flags an unconfirmed overdue turn for operator review without
-starting another model turn. See the [restart evidence](specs/002-identity-platform-shell/validation.md).
+### Demo Accounts
 
-For local checks, use:
+Passwords come from local configuration, not the repository.
+
+| Login | Access |
+| --- | --- |
+| `mcteer` | Internal administrator; designated reviewer for manager-only workflows |
+| `panel` | Internal member; proposes changes without manager-only approval authority |
+| `partner` | Delivery data for explicitly assigned customers only |
+
+Internal accounts can read workspace customer references. Conversations remain
+owner-private for **every** role. These temporary logins are not a general-purpose
+identity-provider integration.
+
+## Development and Testing
 
 ```sh
 npm run check:docs
 npm run typecheck
 npm run test:unit
-npm run test:integration
-npm run test:contracts
 npm run build:check
-npm run test:ui
-npm run test:performance
 ```
 
-The guarded local recovery drills are
-`npm run upgrade:profile:check -- --disposable --container turas-002-postgres`
-and `npm run restore:demo:check -- --disposable --container turas-002-postgres`.
-They create and drop temporary local databases; neither resets the application
-database. The integration and contract scripts clear only disposable test-profile
-rate windows before their suites so repeated local runs are independent.
+`build:check` compiles eve and Next.js; the web production check uses Webpack.
+Database/browser tests require marked disposable configuration from the relevant
+quickstart. Never point them at Preview or Production. Feature-specific runners
+use owned environments and enforce complete suite discovery.
 
-The database tests require the disposable test environment variables in the
-runbook. UI checks use WebKit from the command line and synthetic data. Both
-compile targets are included in `build:check`; it skips eve sandbox prewarming
-and does not establish hosted readiness. Optional `smoke:local:live` and
-`eval:behavior:local` commands require an explicit `--live` flag and use the
-configured model. Keep all real credentials in ignored `.env.local`. Full
-authentication is deferred until explicitly resumed following hiring.
-For the six-case synthetic profile behavior dataset, use
-`npm run eval:behavior:local -- --feature 003 --live`; its outputs stay under
-ignored `local-artifacts/` for actual-response review.
-The 004 checks include `npm run test:artifacts`,
-`npm run artifacts:recovery:check`, and
-`npm run eval:behavior:local -- --feature 004 --live`. The last command runs
-eight synthetic selected-source cases in a disposable app and database; review
-the captured responses before claiming the behavior gate passed.
-For 005, `npm run test:retrieval` runs the isolated deterministic unit, contract
-and database checks against an explicitly marked disposable test database.
-For the current 005 workspace, ignored `.env.local` selects the new
-`turas_preview_005` database in Neon Preview for the pooled app runtime and
-direct migrations. A read-only inspection found 16 legacy tables in the
-original Preview database; they were left untouched. The new app database is
-at schema 028 with marker `preview-neon-005`. A separate
-`turas_test_005_neon` database and marker are configured for disposable tests.
-See the [environment handoff](docs/environment-handoff.md). The legacy
-Production site continues to use its Production Neon database.
-`npm run retrieval:prepare -- --offline` checks local prerequisites without
-migrating a database. Public research discovery uses the server-only
-`CONTEXT_API_KEY` for Context.dev URL search. A live discovery and independent
-public-page fetch/quote smoke passed;
-`npm run research:workflow:live:check -- --live --disposable`
-also passed one persisted public-practices path on a temporary clone of the
-marked test database. It requires `TURAS_TEST_DATABASE_URL` and
-`TURAS_TEST_ENVIRONMENT_ID` and drops that clone afterward. The full research
-mode review passed twelve bounded actual-output cases locally. The disposable
-recovery drill verified a bound native session after restart with a matched
-synthetic database/store pair; it does not establish hosted backup restoration.
+| Area | Deterministic Checks | CLI WebKit Checks |
+| --- | --- | --- |
+| Retrieval/research | `npm run test:retrieval` | `npm run retrieval:ui:check` |
+| Plans | `npm run test:plans` | `npm run plans:ui:check` |
+| Staffing | `npm run test:staffing` | `npm run staffing:ui:check` |
+| Execution | `npm run test:execution` | `npm run execution:ui:check` |
+| Reporting | `npm run test:reports` | `npm run reports:ui:check` |
+| Support | `npm run test:support` | `npm run support:ui:check` |
 
-## Spec Kit workflow
+Install browser prerequisites with `npx playwright install --with-deps webkit`.
+UI checks use CLI Playwright/WebKit across desktop/mobile and light/dark themes,
+not the host browser. Support smoke does not certify full acceptance.
 
-The official [Specify CLI installation](https://github.github.com/spec-kit/installation.html)
-is pinned to the release used for this repository:
+Live evaluations require explicit `--live` opt-in and can incur provider costs.
+Read the relevant validation guide first. Keep captures, logs and model outputs
+in ignored `local-artifacts/`, never in public issues or PRs.
+
+## Project Structure
+
+```text
+app/                  Pages, UI components and authenticated API routes
+agent/                Turi instructions, tools, skills, hooks and channels
+lib/                  Versioned contracts, domain logic and server services
+migrations/           PostgreSQL migrations and integrity manifest
+scripts/              Development, database, verification and recovery runners
+tests/                Unit, contract, integration and browser tests
+specs/                Feature specifications, plans, tasks and validation evidence
+docs/                 Architecture, policies, runbooks and product documentation
+packages/             Isolated artifact extraction components
+report-renderer/      Isolated report-rendering runtime
+report-templates/     Versioned templates and bundled font licenses
+```
+
+The old demo at `../turas-back` is a read-only reference, not the implementation
+base. See the [legacy review](docs/legacy-review.md).
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md), [AGENTS.md](AGENTS.md) and the
+[constitution](.specify/memory/constitution.md) for workflow, review and checks.
+Select a feature explicitly rather than relying on the Git branch:
+
+```sh
+export SPECIFY_FEATURE_DIRECTORY=specs/010-tam-support-guidance
+```
+
+Project-local Spec Kit commands live in `.opencode/commands/`; checked-in skills
+live in `.agents/skills/`. If needed, install the pinned Specify CLI:
 
 ```sh
 uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v1.0.12
-specify version
 ```
 
-Project-local OpenCode Spec Kit commands live in `.opencode/commands/` and use
-dot-separated names only: `/speckit.specify`, `/speckit.clarify`,
-`/speckit.plan`, `/speckit.tasks`, `/speckit.analyze`, `/speckit.implement` and
-`/speckit.converge`. OpenCode is the default Spec Kit integration; no hyphenated
-command aliases or global configuration are added. Existing Codex skills in
-`.agents/skills/` are preserved for that separate integration. See
-[CONTRIBUTING](CONTRIBUTING.md) for the workflow.
+Do not reinitialize existing checkouts or overwrite customized governance.
+Include documentation changes in the feature PR; merge after required checks pass.
 
-Spec Kit 1.x selects features independently of the Git branch. To inspect 004:
+## Operations and Security
 
-```sh
-export SPECIFY_FEATURE_DIRECTORY=specs/004-chat-artifact-ingestion
-.specify/scripts/bash/check-prerequisites.sh --json --require-spec
-```
+- Keep credentials, customer/personnel data and runtime state out of commits and
+  public output.
+- Authorization and factual approval are enforced server-side. Uploads and chat
+  claims do not become accepted facts through model wording.
+- Keep maturity separate from engagement progress and commercial opportunity.
+- Use synthetic fixtures. Preserve the database and `.eve/.workflow-data` during
+  restart/recovery checks.
+- Do not enable live reporting delivery or change hosted databases during routine
+  setup. Deployment requires explicit maintainer authorization.
 
-Create Git branches explicitly; the optional Git extension is not installed.
-`.specify/feature.json` is a local ignored pointer. Do not rerun `specify init
---force` on a normal checkout. Upgrades require reviewing the official upgrade
-procedure and generated changes while preserving the constitution and authored docs.
+See the [environment handoff](docs/environment-handoff.md) for hosted configuration
+and recovery limitations, and the [evidence policy](docs/evidence-policy.md) for
+provenance and lifecycle rules.
+Feature 010's disable, retention, receipt-key rotation and forward-recovery
+procedures are documented in [support operations](docs/support-operations.md).
 
-## Delivery and documentation
+## Documentation and Help
 
-The foundation merged in [PR 1](https://github.com/mcteer/turas/pull/1).
-**004: chat attachments and artifact ingestion** merged in
-[PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation.
-It uses private
-local storage and isolated scanning/extraction, selected evidence review,
-unverified chat discussion and source lifecycle controls.
-Features 002, 003 and 004 are merged with local and CI validation.
-The merged 002 application provides the demo identities and shell. Its demo scope uses
-`mcteer` for internal Vercel administrators/FDE/PS leadership, `panel` for internal
-Vercel employees and `partner` for external partners. Internal users see all workspace
-customer profiles; partners see only delivery-relevant information for assigned
-customers. Accounts have separate chat histories and synthetic customer data or public research only.
-The roadmap also includes reviewed shared product learnings available to all active
-users, including partners, without exposing the originating customer. Shared retrieval
-starts in 005; it is not implemented in 002.
-Add an eve integration only when an active
-feature uses it and verifies it. No speculative connector installation.
+- [Product blueprint](docs/product-blueprint.md) and [roadmap](ROADMAP.md)
+- [Architecture](docs/architecture.md) and [decisions](docs/decisions.md)
+- [Design reference](docs/design-reference.md)
+- [Plan and report templates](docs/templates/README.md)
 
-Deployment is a future feature action using `eve link` and `eve deploy`, as required
-by [AGENTS](AGENTS.md). No manual provisioning or deployment is part of 001. Every relevant
-PR updates README in the same change; maintainers verify freshness after merge.
+Open a repository issue for bugs/questions with reproduction steps and sanitized
+diagnostics. Never include secrets or customer content.
+
+## Hosting and Recovery
 
 The repository was disconnected from Vercel on 2026-09-27 and reconnected by the
 maintainer on 2026-10-02. Git deployments are enabled: `main` is the Production
@@ -305,20 +281,8 @@ watchdog. Verify the generated function supports runs longer than 65 seconds,
 cron invocation history, fresh database heartbeats and an authenticated chat
 before declaring hosted recovery complete. A successful build alone does not
 establish hosted readiness. Local development continues using its local worker.
-The workspace uses a shared neutral design system with Geist typography, grouped
-navigation, consistent page headers, form panels, accessible controls, and tables
-that scroll within their panels. Customer profiles, knowledge, plans, staffing,
-imports, finance, access, and sign-in use the same light/dark visual language.
-Navigation and section headings use title case, keeping conjunctions, articles,
-and short prepositions lowercase. Names and authored content retain their spelling.
-Run `npm run workspace:ui:check` with the marked local test database selection to
-validate the desktop/mobile Playwright/WebKit matrix on an owned disposable clone.
-The check exercises real reads and writes with synthetic fixtures and no model calls.
-The chat landing now uses a real composer with optional customer selection below
-it, with “Customer (optional)” inside the selector in an inset context bar. The bar reserves space for a future
-project selector. General technical conversations use private, customer-free scope (migration
-035); customer tools and source selections still require an explicit customer.
-See the [bounded chat correction](specs/002-identity-platform-shell/general-chat.md).
-Hosted application validation, durable artifact storage and background worker
-alignment remain release work. The earlier Next.js preview failure
-is recorded historically in the [foundation validation record](specs/001-platform-foundation/validation.md).
+
+## License
+
+No project-wide license is currently declared. Do not assume redistribution
+permission. Third-party assets retain their own license and provenance notices.

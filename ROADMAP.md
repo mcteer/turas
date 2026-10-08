@@ -1,7 +1,7 @@
 # Turas delivery roadmap
 
-Baseline: 2026-09-26; updated 2026-10-03. **001 merged in PR 1; 002 merged in
-[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 merged in [PR 11](https://github.com/mcteer/turas/pull/11) after local and CI validation, without a hosted release; 007 merged in [PR 13](https://github.com/mcteer/turas/pull/13) after local and CI validation, without a hosted release. 008 merged in [PR 16](https://github.com/mcteer/turas/pull/16) after passing CI; hosted execution acceptance remains separate. 009 is specified and designed with implementation tasks; 010–016 remain roadmap proposals.**
+Baseline: 2026-09-26; updated 2026-10-06. **001 merged in PR 1; 002 merged in
+[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 merged in [PR 11](https://github.com/mcteer/turas/pull/11) after local and CI validation, without a hosted release; 007 merged in [PR 13](https://github.com/mcteer/turas/pull/13) after local and CI validation, without a hosted release. 008 merged in [PR 16](https://github.com/mcteer/turas/pull/16) after passing CI; hosted execution acceptance remains separate. 009 merged in [PR 17](https://github.com/mcteer/turas/pull/17); live reporting delivery remains deferred. 010 implementation and acceptance are recorded in [PR 19](https://github.com/mcteer/turas/pull/19); 011–016 remain roadmap proposals.**
 
 005 now has [specification](specs/005-governed-rag-research/spec.md),
 [design](specs/005-governed-rag-research/plan.md) and
@@ -70,7 +70,7 @@ owned upgrade and runtime-role checks; Preview status is recorded separately.
 The complete slice merged in [PR 16](https://github.com/mcteer/turas/pull/16).
 This checkpoint does not claim hosted execution readiness.
 
-## Active 009 Implementation
+## Completed 009 Implementation
 
 The [specification](specs/009-weekly-executive-reporting/spec.md),
 [plan and contracts](specs/009-weekly-executive-reporting/plan.md),
@@ -85,7 +85,25 @@ including passing final-source four-project WebKit and representative load check
 Local implementation/testing is complete. The controlled live-send gate
 is explicitly deferred by the user (“Resend can come later”) and remains separate
 from development completion. Local rendering/provider simulation does not establish real
-delivery or hosted readiness. No deployment or roadmap 010 work is included.
+delivery or hosted readiness. The slice merged in
+[PR 17](https://github.com/mcteer/turas/pull/17); its implementation does not include
+roadmap 010 or claim real email delivery.
+
+## 010 TAM and Support Guidance
+
+The [specification](specs/010-tam-support-guidance/spec.md),
+[plan](specs/010-tam-support-guidance/plan.md) and
+[45 tasks](specs/010-tam-support-guidance/tasks.md) govern support readiness,
+reviewed owned actions, escalation/human-reported handoff and bounded owner-private
+Turi guidance. [PR 19](https://github.com/mcteer/turas/pull/19) delivers the
+implementation while preserving merged recovery PR 18. Selected evidence,
+original dates and quality are supplied before guidance generation.
+The [validation ledger](specs/010-tam-support-guidance/validation.md) records
+source-bound domain, native, browser, actual-output, performance, recovery and CI
+acceptance. Hosted rollout remains separately authorized. See
+[support operations](docs/support-operations.md) for disable, retention and
+forward-recovery boundaries. Broader research-specialist and conversation-history
+follow-up remains separate.
 
 ## Build sequence
 

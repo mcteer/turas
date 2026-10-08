@@ -86,6 +86,6 @@ export const authoredTool = defineTool({
 export default defineDynamic({ events: {
   async "turn.started"(_event, ctx) {
     const feature = await responseFeature(ctx.session.auth.current);
-    return feature?.kind !== "staffing" && feature?.kind !== "execution" && !await generalResponseScope(ctx.session.auth.current) ? authoredTool : null;
+    return feature?.kind !== "staffing" && feature?.kind !== "execution" && feature?.kind !== "support" && !await generalResponseScope(ctx.session.auth.current) ? authoredTool : null;
   },
 } });
