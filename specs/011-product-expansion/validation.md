@@ -323,3 +323,15 @@ The canonical regression gate completed at 21:56:46Z on source `6b98382c874196d2
 The operator reported that project logs were unavailable and instructed calculation from known Grok costs. The interrupted call is conservatively charged at the enforced maximum: 131,072 input tokens × $0.000002 plus 4,096 output tokens × $0.000006 = $0.286720. This bounds budget exposure; it does not invent actual usage or cost. Together with $0.031222 confirmed charges, $0.317942 is deducted from the original $10 cap, leaving $9.682058. The failed capture remains retained and unreviewed. A fresh operator-directed evaluation uses that remaining cap, with no automatic retry and the same unknown-cost stop policy inside the new run.
 
 After the canonical regression checkpoint, only whitespace (including the unreleased 047 checksum) and the synthetic evaluation question changed. The question now requests at most one concise proposal and three short discovery questions. Production instructions, authored root model, time/token limits and UI behavior are unchanged. The capture fixture and typecheck are rerun for this harness adjustment.
+
+
+### Actual-output prerequisite diagnosis and correction
+
+The operator-directed second E01 run on source `e250c6009b225448401a63ceb66cd0ac924ee4f8dde92af2cd5f5d158ae53983` finished two actual model calls with complete usage and known cost $0.043484. The final JSON was withheld as `invalid_advice`: two `validation_needed` prerequisites omitted the required responsible owner. No result was released or saved, and no subsequent case or automatic paid retry occurred. The concise-question fixture completed all eight cases on that source; actual output was not counted as a pass.
+
+Authored dynamic instructions and the provider schema description now state the unchanged semantic rule explicitly: `validation_needed` requires a known owner and concrete step. When that owner is unknown, preserve the requirement and missing owner in unknowns/discovery steps instead of inventing an assignment or producing an invalid prerequisite object. A contract regression proves invalid ownerless validation is withheld and explicit unknown-owner discovery remains valid. Root model selection, contract versions, server validation and limits remain unchanged. Known charges plus the reserved first interrupted-call maximum now total $0.361426, leaving $9.638574 of the operator's original $10 cap.
+
+Implementation draft PR: https://github.com/mcteer/turas/pull/22. It remains draft pending actual-output acceptance, CI and review. The automatically configured Vercel integration reported a successful preview check; no manual project linking/deployment was performed, and that status is not validation of hosted 011 behavior.
+
+
+The owner-guidance revision passed 23 suites / 125 tests / zero failures or skips at 22:00:37.881Z, source `0df6e34296497802684db0a4486091a04e5774012a99d215070718c69f2e5021`. Expansion typecheck and authored documentation checks passed. A fresh manually reviewed evaluation on this revision uses the remaining $9.638574 cap; the runner still stops rather than automatically repairing/retrying a failed or uncertain case.

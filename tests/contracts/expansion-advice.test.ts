@@ -28,6 +28,17 @@ describe('Bounded expansion advice contracts',()=>{
   expect(()=>validateExpansionAdviceResult({...zero,proposals:[{...proposal,content:{...proposal.content,disposition:'qualified'}}]},[],[])).toThrow();
   expect(()=>validateExpansionAdviceResult({...zero,proposals:[{...proposal,content:{...proposal.content,currentUse:{kind:'evidenced',state:'actual',sourceKeys:[id]}}}]},[{id,kind:'accepted_profile'}],[])).toThrow();
  });
+ it('withholds ownerless prerequisite validation while preserving an explicit unknown-owner discovery proposal',()=>{
+  const content=discoveryHypothesis();
+  const prerequisite={id:'validate-runtime',status:'validation_needed',rationale:'Confirm candidate runtime eligibility',sourceKeys:[],unknownReason:'No accepted eligibility or operating owner selected',validationStep:'Ask the operating owner to review runtime requirements'};
+  const proposal={content:{...content,prerequisites:[prerequisite]},citationKeys:[],relatedHypothesisIds:[]};
+  expect(()=>validateExpansionAdviceResult({...zero,proposals:[proposal]},[],[])).toThrow();
+  const unknown={text:'Candidate runtime eligibility and validation owner',reason:'No accepted eligibility or operating owner selected'};
+  const discovery={...proposal,content:{...content,prerequisites:[],unknowns:[unknown]}};
+  const result=validateExpansionAdviceResult({...zero,unknowns:[unknown],discoverySteps:[{action:prerequisite.validationStep,validationCriterion:'A human identifies the operating owner and records reviewed eligibility'}],proposals:[discovery]},[],[]);
+  expect(result.proposals[0].content.unknowns).toEqual([unknown]);
+  expect(result.proposals[0].content.prerequisites).toEqual([]);
+ });
  it('validates review dates against the server UTC day without changing source age',()=>{
   const at=new Date('2026-10-08T23:59:59.999Z');
   const proposal={content:{...discoveryHypothesis(),nextReviewDate:'2026-10-08'},citationKeys:[],relatedHypothesisIds:[]};

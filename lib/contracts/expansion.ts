@@ -34,7 +34,7 @@ export const expansionCurrentUseSchema=z.discriminatedUnion("kind",[
 ]);
 export const expansionPrerequisiteSchema=z.object({id:z.string().min(1).max(80),status:z.enum(["satisfied","validation_needed","blocked"]),
   rationale:text,sourceKeys:expansionSourceKeys,unknownReason:text.optional(),ownerMembershipId:expansionId.optional(),validationStep:text.optional(),
-}).strict().superRefine((v,c)=>{
+}).strict().describe("A validation_needed prerequisite requires a known ownerMembershipId and concrete validationStep; if the owner is unknown, preserve the requirement in hypothesis unknowns and advice discoverySteps instead. Satisfied prerequisites require supporting sourceKeys. Uncited prerequisites require unknownReason.").superRefine((v,c)=>{
   if(v.status==="satisfied"&&!v.sourceKeys.length)c.addIssue({code:"custom",message:"Satisfied prerequisite needs evidence"});
   if(!v.sourceKeys.length&&!v.unknownReason)c.addIssue({code:"custom",message:"Missing evidence needs a reason"});
   if(v.status==="validation_needed"&&(!v.ownerMembershipId||!v.validationStep))c.addIssue({code:"custom",message:"Validation needs an owner and concrete step"});
