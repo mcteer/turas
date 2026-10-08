@@ -66,4 +66,35 @@ describe("expansion paid-call wrapper", () => {
     }
   });
 
+  it.each([4916, undefined, -1])("withholds generated output with inadmissible actual usage %s", async total => {
+    const p = provider();
+    const model = {...p.model, doGenerate: async () => ({content: [{type: "text", text: "Must not release"}], finishReason: "stop",
+      usage: {inputTokens: {total: 1}, outputTokens: {total}}, warnings: []})} as unknown as Model;
+    const wrapped = wrapExpansionModel(model, {deadlineAt: new Date(Date.now()+10000), beforeProvider: async()=>{}});
+    await expect(wrapped.doGenerate({prompt: []})).rejects.toMatchObject({code: "expansion_output_budget"});
+    await expect(wrapped.doGenerate({prompt: []})).rejects.toMatchObject({code: "expansion_step_uncertain"});
+  });
+  it.each([4916, undefined])("withholds stream completion with inadmissible actual usage %s", async total => {
+    const p = provider();
+    const model = {...p.model, doStream: async () => ({stream: new ReadableStream({start(controller) {
+      controller.enqueue({type: "finish", finishReason: "stop", usage: {inputTokens: {total: 1}, outputTokens: {total}}}); controller.close();
+    }})})} as unknown as Model;
+    const wrapped = wrapExpansionModel(model, {deadlineAt: new Date(Date.now()+10000), beforeProvider: async()=>{}});
+    const result = await wrapped.doStream({prompt: []});
+    await expect(result.stream.getReader().read()).rejects.toMatchObject({code: "expansion_output_budget"});
+  });
+
+  it("releases a stream only with confirmed in-limit terminal usage", async()=>{
+    const p=provider();
+    const model={...p.model,doStream:async()=>({stream:new ReadableStream({start(controller){
+      controller.enqueue({type:"finish",finishReason:"stop",usage:{inputTokens:{total:1},outputTokens:{total:4096}}});controller.close();
+    }})})} as unknown as Model;
+    const result=await wrapExpansionModel(model,{deadlineAt:new Date(Date.now()+10000),beforeProvider:async()=>{}}).doStream({prompt:[]});
+    const reader=result.stream.getReader();expect((await reader.read()).value?.type).toBe("finish");expect((await reader.read()).done).toBe(true);
+  });
+  it("rejects a stream ending without terminal usage",async()=>{
+    const result=await wrapExpansionModel(provider().model,{deadlineAt:new Date(Date.now()+10000),beforeProvider:async()=>{}}).doStream({prompt:[]});
+    await expect(result.stream.getReader().read()).rejects.toMatchObject({code:"expansion_output_budget"});
+  });
+
 });

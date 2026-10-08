@@ -18,7 +18,7 @@ export function observeExpansionLiveProvider(model: Model, principal: FeaturePri
   else if (process.env.TURAS_ALLOW_LIVE_MODEL_TESTS !== "1" || !process.env.AI_GATEWAY_API_KEY) throw new Error("Explicit owned live observation required");
   let observationId: string | undefined;let observedGateway:{cost?:unknown;generationId?:unknown}={};
   const fixture=process.env.TURAS_EXPANSION_NATIVE_FIXTURE_READY=== "1",budget=expansionLiveBudgetSchema.parse(Number(process.env.TURAS_EXPANSION_LIVE_BUDGET_USD));
-  const pricing=expansionLivePricing(JSON.parse(process.env.TURAS_EXPANSION_LIVE_PRICING_JSON??"null")),stepReservation=expansionCaseReservation(pricing)/6;
+  const pricing=expansionLivePricing(JSON.parse(process.env.TURAS_EXPANSION_LIVE_PRICING_JSON??"null")),stepReservation=expansionCaseReservation(pricing);
   async function begin(signal: AbortSignal | undefined) {
     if (!signal || !observationId) throw new Error("Expansion observation requires native admission and deadline");
     // The outer production wrapExpansionModel runs its authoritative beforeProvider

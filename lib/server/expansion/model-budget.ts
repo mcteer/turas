@@ -13,6 +13,11 @@ export const expansionReadSchemas = { expansion_summary: expansionSummaryToolSch
  * same single-invocation fence; a retry cannot silently incur another paid call. */
 export function wrapExpansionModel(model: Model, governance?: { deadlineAt: Date; beforeProvider: () => Promise<void> }) {
   let invoked = false;
+  const assertOutputUsage = (usage: { outputTokens: { total: number | undefined } }) => {
+    const total = usage.outputTokens.total;
+    if (!Number.isSafeInteger(total) || total === undefined || total < 0 || total > EXPANSION_ADVICE_LIMITS.outputTokens)
+      throw new HttpFailure(429, "expansion_output_budget", "Actual expansion output usage exceeds its limit or is unknown");
+  };
   const allowed = new Set(Object.keys(expansionReadSchemas));
   const assertToolCall=(name:string,input:unknown)=>{
     if(!allowed.has(name))throw new HttpFailure(403,'expansion_tool_denied','Forbidden expansion tool');
@@ -52,7 +57,7 @@ export function wrapExpansionModel(model: Model, governance?: { deadlineAt: Date
           ? Math.min(params.maxOutputTokens!, EXPANSION_ADVICE_LIMITS.outputTokens) : EXPANSION_ADVICE_LIMITS.outputTokens };
       } catch(error){await failExpansionModel(governance.deadlineAt);throw error;}
     },
-    wrapGenerate: async ({doGenerate,params})=>{try{params.abortSignal?.throwIfAborted();const result=await doGenerate();for(const item of result.content)if(item.type==='tool-call')assertToolCall(item.toolName,item.input);return result;}catch(error){if(governance)await failExpansionModel(governance.deadlineAt);throw error;}},
-    wrapStream: async ({doStream,params})=>{try{params.abortSignal?.throwIfAborted();const result=await doStream();return {...result,stream:result.stream.pipeThrough(new TransformStream({async transform(chunk,controller){try{if(chunk.type==='tool-input-start'&&!allowed.has(chunk.toolName))throw new HttpFailure(403,'expansion_tool_denied','Forbidden expansion tool');if(chunk.type==='tool-call')assertToolCall(chunk.toolName,chunk.input);controller.enqueue(chunk);}catch(error){if(governance)await failExpansionModel(governance.deadlineAt);controller.error(error);}}}))};}catch(error){if(governance)await failExpansionModel(governance.deadlineAt);throw error;}},
+    wrapGenerate: async ({doGenerate,params})=>{try{params.abortSignal?.throwIfAborted();const result=await doGenerate();assertOutputUsage(result.usage);for(const item of result.content)if(item.type==='tool-call')assertToolCall(item.toolName,item.input);return result;}catch(error){if(governance)await failExpansionModel(governance.deadlineAt);throw error;}},
+    wrapStream: async ({doStream,params})=>{try{params.abortSignal?.throwIfAborted();const result=await doStream();let finished=false;return {...result,stream:result.stream.pipeThrough(new TransformStream({async transform(chunk,controller){try{if(chunk.type==='finish'){assertOutputUsage(chunk.usage);finished=true;}if(chunk.type==='tool-input-start'&&!allowed.has(chunk.toolName))throw new HttpFailure(403,'expansion_tool_denied','Forbidden expansion tool');if(chunk.type==='tool-call')assertToolCall(chunk.toolName,chunk.input);controller.enqueue(chunk);}catch(error){if(governance)await failExpansionModel(governance.deadlineAt);controller.error(error);}},async flush(){if(!finished){if(governance)await failExpansionModel(governance.deadlineAt);throw new HttpFailure(429,'expansion_output_budget','Actual expansion output usage is unknown');}}}))};}catch(error){if(governance)await failExpansionModel(governance.deadlineAt);throw error;}},
   } });
 }
