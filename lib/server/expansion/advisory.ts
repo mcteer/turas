@@ -1,6 +1,6 @@
 import {randomUUID} from 'node:crypto';
 import {HttpFailure,hiddenRecord} from '../../contracts/http';
-import {expansionAdviceRequestSchema,expansionAdvicePrompt,expansionAdviceInstructions,EXPANSION_ADVICE_LIMITS} from '../../expansion/advice';
+import {expansionAdviceRequestSchema,expansionAdvicePrompt,expansionAdviceInstructions,expansionEvidenceTemporalStatus,EXPANSION_ADVICE_LIMITS} from '../../expansion/advice';
 import {getServerConfig} from '../config';
 import {createOwnedConversation} from '../conversations/repository';
 import {expansionTransaction} from './service';
@@ -41,7 +41,7 @@ export async function prepareExpansionAdvice(actor:ExpansionActor,customerId:str
   const bindingId=randomUUID(),attemptId=randomUUID(),nativeRequestId=randomUUID();
   const bound:ExpansionAdviceScope={bindingId,scopeId:scope.id,conversationId:conversation.id,ownerMembershipId:actor.membershipId,customerId,workloadId:input.workloadId,audience:'internal',selectedEngagementIds:input.selectedEngagementIds,selectedHypothesisIds:input.selectedHypothesisIds};
   const context=await captureExpansionAdviceContext(db,actor,bound,input.sourceRefs,input.question);
-  const now=new Date(),snapshot={...context.snapshot,currentDate:now.toISOString().slice(0,10),proposalTimezone:'UTC',defaultNextReviewDate:new Date(now.getTime()+7*86400000).toISOString().slice(0,10)};
+  const now=new Date(),snapshot={...context.snapshot,evidence:context.snapshot.evidence.map(item=>({...item,temporalStatus:expansionEvidenceTemporalStatus(item.quality?.validUntil,now)})),currentDate:now.toISOString().slice(0,10),proposalTimezone:'UTC',defaultNextReviewDate:new Date(now.getTime()+7*86400000).toISOString().slice(0,10)};
   const bytes=Buffer.byteLength(expansionAdviceInstructions(snapshot),'utf8')+Buffer.byteLength(expansionAdvicePrompt,'utf8')+Buffer.byteLength(JSON.stringify(context.sourceRefs),'utf8')+Buffer.byteLength(JSON.stringify(input),'utf8');
   if(bytes>EXPANSION_ADVICE_LIMITS.contextBytes)throw new HttpFailure(422,'scope_too_large','Narrow expansion advice context');
   await db.query(`INSERT INTO expansion_advice_bindings(id,scope_id,environment_id,workspace_id,customer_id,workload_id,audience,conversation_id,owner_membership_id,selected_engagement_ids,selected_hypothesis_ids)

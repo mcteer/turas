@@ -24,7 +24,7 @@ const baseline=z.discriminatedUnion("kind",[
   z.object({kind:z.literal("unknown"),reason:text}).strict(),
 ]);
 export const expansionBenefitSchema=z.discriminatedUnion("kind",[
-  z.object({kind:z.literal("measurable_target"),rationale:text,metric:title,unit:title,target:title,baseline,validationCriterion:text}).strict(),
+  z.object({kind:z.literal("measurable_target"),rationale:text,metric:title,unit:title,target:title.describe('Preserve the source comparison operator when present, such as below 150 rather than 150; this is a proposed test target, never a promised result.'),baseline,validationCriterion:text}).strict(),
   z.object({kind:z.literal("qualitative_outcome"),rationale:text,validationCriterion:text}).strict(),
   z.object({kind:z.literal("unknown"),reason:text}).strict(),
 ]);

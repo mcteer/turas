@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {EXPANSION_ADVICE_LIMITS,expansionAdviceRequestSchema,expansionSummaryToolSchema,expansionHypothesesToolSchema,expansionEvidenceToolSchema,expansionSkillToolSchema,validateExpansionAdviceResult,expansionContextCharge} from '../../lib/expansion/advice';
+import {EXPANSION_ADVICE_LIMITS,expansionAdviceRequestSchema,expansionSummaryToolSchema,expansionHypothesesToolSchema,expansionEvidenceToolSchema,expansionSkillToolSchema,validateExpansionAdviceResult,expansionContextCharge,expansionEvidenceTemporalStatus} from '../../lib/expansion/advice';
 import {discoveryHypothesis} from '../fixtures/expansion';
 const id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',other='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const zero={contractVersion:'expansion-advice-v1',summary:'Selected evidence does not yet establish a customer need.',facts:[],unknowns:[{text:'Customer need',reason:'No accepted private observation selected'}],discoverySteps:[{action:'Ask the operating owner',validationCriterion:'Record a reviewed need'}],proposals:[]};
@@ -56,6 +56,16 @@ describe('Bounded expansion advice contracts',()=>{
   const summary='Account assignment membership is not an operating owner.';
   expect(()=>validateExpansionAdviceResult({...zero,summary},[],[])).toThrow();
   expect(validateExpansionAdviceResult({...zero,unknowns:[{text:'Operating owner identity',reason:'Not named in the selected passages'}]},[],[]).unknowns).toHaveLength(1);
+ });
+
+ it('uses the request UTC instant for evidence validity and never describes a future end date as past',()=>{
+  const at=new Date('2026-10-08T22:00:00Z');
+  expect(expansionEvidenceTemporalStatus('2026-10-09T22:00:00Z',at).state).toBe('not_expired');
+  expect(expansionEvidenceTemporalStatus('2026-10-08T21:59:59Z',at).state).toBe('expired');
+  expect(expansionEvidenceTemporalStatus(null,at).state).toBe('unknown');
+  expect(expansionEvidenceTemporalStatus('invalid-date',at).state).toBe('unknown');
+  expect(()=>validateExpansionAdviceResult({...zero,summary:'The selected baseline validity ended 2026-10-09.'},[],[],at)).toThrow();
+  expect(validateExpansionAdviceResult({...zero,summary:'The selected validity ends on 2026-10-09.'},[],[],at).summary).toContain('ends on');
  });
 
 });

@@ -10,7 +10,10 @@ A planning approval date does not establish a customer observation or actual use
 Absent product mention never proves non-adoption. Public claims never prove intent.
 
 Preserve deferred and dismissed decisions. Distinguish conversation ownership from
-account-owner assignment. Only a designated active account owner may qualify.
+account-owner assignment. Only the currently designated active internal account owner
+may qualify, defer, dismiss or reopen. A discovery step requesting any disposition
+change must explicitly ask that account owner to decide. A steward may collect
+evidence but cannot decide.
 Offer retain-current-practice alternatives, explicit prerequisites, measurable or
 unknown baselines, operating-owner unknowns and concrete human validation steps.
 Do not promise suitability, savings, entitlements or customer agreement without evidence.
