@@ -103,9 +103,17 @@ export async function projectExpansionNativeEventInTransaction(db: PoolClient, n
     if (!Number.isInteger(data.stepIndex) || Number(data.stepIndex) < 0 || Number(data.stepIndex) > 5) throw hiddenRecord();
     const receipt = (await db.query("SELECT id FROM expansion_model_step_receipts WHERE attempt_id=$1 AND step_token=$2", [advice.id, `${data.turnId}/${data.stepIndex}`])).rows[0];
     if (!receipt && event.type === "step.completed") throw new HttpFailure(409, "expansion_step_unadmitted", "Native usage has no admitted model call");
-    if (receipt) await db.query(`INSERT INTO expansion_advice_usage(step_id,native_event_id,outcome,input_tokens,output_tokens) VALUES($1,$2,$3,$4,$5)`,
-      [receipt.id, event.meta.id, inputTokens === null || outputTokens === null ? "unknown" : event.type === "step.failed" ? "failed" : "confirmed", inputTokens, outputTokens]);
-    if (outputTokens !== null) await db.query("UPDATE response_attempts SET output_tokens=output_tokens+$2 WHERE id=$1", [responseAttemptId, outputTokens]);
+    if (receipt) {const usageReceipt=await db.query(`INSERT INTO expansion_advice_usage(step_id,native_event_id,outcome,input_tokens,output_tokens) VALUES($1,$2,$3,$4,$5)
+      ON CONFLICT(step_id) DO UPDATE SET native_event_id=COALESCE(expansion_advice_usage.native_event_id,EXCLUDED.native_event_id),
+      input_tokens=COALESCE(expansion_advice_usage.input_tokens,EXCLUDED.input_tokens),
+      output_tokens=COALESCE(expansion_advice_usage.output_tokens,EXCLUDED.output_tokens),
+      outcome=CASE WHEN expansion_advice_usage.outcome='failed' THEN 'failed' ELSE EXCLUDED.outcome END
+      WHERE expansion_advice_usage.native_event_id IS NULL
+      AND (EXCLUDED.input_tokens IS NULL OR expansion_advice_usage.input_tokens=EXCLUDED.input_tokens)
+      AND (EXCLUDED.output_tokens IS NULL OR expansion_advice_usage.output_tokens=EXCLUDED.output_tokens)`,
+      [receipt.id, event.meta.id, inputTokens === null || outputTokens === null ? "unknown" : event.type === "step.failed" ? "failed" : "confirmed", inputTokens, outputTokens]);if(usageReceipt.rowCount!==1)throw hiddenRecord();}
+    await db.query(`UPDATE response_attempts SET output_tokens=COALESCE((SELECT sum(u.output_tokens) FROM expansion_advice_usage u
+      JOIN expansion_model_step_receipts s ON s.id=u.step_id WHERE s.response_attempt_id=$1),0) WHERE id=$1`,[responseAttemptId]);
   }
   if (["turn.completed", "turn.failed", "turn.cancelled"].includes(event.type)) {
     const retained = (await db.query("SELECT 1 FROM expansion_advice_payloads WHERE attempt_id=$1 AND kind='output'", [advice.id])).rowCount;

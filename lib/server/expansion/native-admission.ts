@@ -31,7 +31,7 @@ export async function admitExpansionModelStep(principal: FeaturePrincipal, ident
     await db.query("UPDATE expansion_advice_attempts SET model_steps=model_steps+1 WHERE id=$1", [bound.attemptId]);
     return { mode: "expansion" as const, deadlineAt: bound.deadlineAt };
   });
-  registerExpansionModelFailure(admitted.deadlineAt,()=>failExpansionNativeAttempt(principal));
+  registerExpansionModelFailure(admitted.deadlineAt,failure=>failExpansionNativeAttempt(principal,failure?.code,identity,failure));
   return admitted;
 }
 export async function assertExpansionProviderRelease(principal: FeaturePrincipal, identity: ExecutionModelIdentity) {

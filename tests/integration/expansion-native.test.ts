@@ -1,3 +1,4 @@
+import {wrapExpansionModel} from '../../lib/server/expansion/model-budget';
 import {beforeAll,describe,it,expect} from 'vitest';
 import {withExpansionDatabase} from '../fixtures/expansion/environment';
 import {createProfileTestSession} from '../fixtures/profiles';
@@ -55,4 +56,22 @@ describe('Expansion governed native domain paths',()=>{
   expect((await withExpansionDatabase(db=>db.query('SELECT state,failure_code FROM expansion_advice_attempts WHERE id=$1',[f.attemptId]))).rows[0]).toMatchObject({state:'failed',failure_code:'invalid_advice'});
   expect(Number((await withExpansionDatabase(db=>db.query("SELECT count(*) AS n FROM expansion_advice_payloads WHERE attempt_id=$1 AND kind='output'",[f.attemptId]))).rows[0].n)).toBe(0);
  });
+ it('withholds an over-limit provider result and preserves actual usage when the framework reports failure without usage',async()=>{
+  const f=await startExpansionNative(actor);await readExpansionInitialContext(f.principal,f.turnId,f.nativeSessionId);
+  const admitted=await admitGovernedModelStep(f.principal,f.identity);if(admitted.mode!=='expansion')throw Error('Expected expansion admission');
+  const model={specificationVersion:'v4',provider:'synthetic',modelId:'synthetic',supportedUrls:{},doGenerate:async()=>({
+   content:[{type:'text',text:JSON.stringify(zero)}],finishReason:'stop',usage:{inputTokens:{total:100},outputTokens:{total:4619}},warnings:[]
+  })} as unknown as Parameters<typeof wrapExpansionModel>[0];
+  const wrapped=wrapExpansionModel(model,{deadlineAt:admitted.deadlineAt,beforeProvider:()=>assertGovernedProviderRelease(f.principal,f.identity)});
+  await expect(wrapped.doGenerate({prompt:[]})).rejects.toMatchObject({code:'expansion_output_budget'});
+  await f.event('step.failed',{stepIndex:0});
+  const stored=await withExpansionDatabase(async db=>({attempt:(await db.query('SELECT state,failure_code,output_digest FROM expansion_advice_attempts WHERE id=$1',[f.attemptId])).rows[0],
+   usage:(await db.query('SELECT u.outcome,u.input_tokens,u.output_tokens,u.native_event_id FROM expansion_advice_usage u JOIN expansion_model_step_receipts s ON s.id=u.step_id WHERE s.attempt_id=$1',[f.attemptId])).rows,
+   payloads:(await db.query("SELECT 1 FROM expansion_advice_payloads WHERE attempt_id=$1 AND kind='output'",[f.attemptId])).rows}));
+  expect(stored.attempt).toMatchObject({state:'failed',failure_code:'expansion_output_budget',output_digest:null});expect(stored.payloads).toEqual([]);
+  expect(stored.usage).toHaveLength(1);expect(stored.usage[0]).toMatchObject({outcome:'failed',native_event_id:expect.any(String)});
+  expect(Number(stored.usage[0].input_tokens)).toBe(100);expect(Number(stored.usage[0].output_tokens)).toBe(4619);
+  await expect(admitGovernedModelStep(f.principal,{...f.identity,stepIndex:1})).rejects.toMatchObject({code:'expansion_advice_unavailable'});
+ });
+
 });
