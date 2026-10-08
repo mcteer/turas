@@ -3,9 +3,9 @@ import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { DEMO_IDS } from "../../lib/server/bootstrap-ids";
 import { POST as login } from "../../app/api/auth/login/route";
 import { POST as createConversation, GET as listConversations } from "../../app/api/conversations/route";
-import { GET as readConversation } from "../../app/api/conversations/[id]/route";
+import { GET as readConversation, PATCH as archiveConversation } from "../../app/api/conversations/[id]/route";
 
-const origin = "http://127.0.0.1:3000";
+const origin = process.env.TURAS_APP_ORIGIN ?? "http://127.0.0.1:3000";
 const createdIds: string[] = [];
 
 async function identity(name: "mcteer" | "panel" | "partner") {
@@ -68,6 +68,29 @@ describe("owned conversations API", () => {
       params: Promise.resolve({ id: created.data.id }),
     });
     expect(hidden.status).toBe(404);
+  });
+
+
+  it("archives and restores idempotently without erasing history or granting another owner access", async () => {
+    const panel = await identity("panel"), other = await identity("mcteer");
+    const created = await createConversation(api("/api/conversations", "POST", panel, {
+      requestKey: randomUUID(), title: "Archive regression" }));
+    expect(created.status).toBe(201);
+    const id = (await created.json()).data.id; createdIds.push(id);
+    const context = { params: Promise.resolve({ id }) };
+    expect((await archiveConversation(api(`/api/conversations/${id}`, "PATCH", other, { archived: true }), context)).status).toBe(404);
+    const noCsrf = api(`/api/conversations/${id}`, "PATCH", panel, { archived: true });
+    noCsrf.headers.delete("x-csrf-token");
+    expect((await archiveConversation(noCsrf, context)).status).toBe(403);
+    for (let i = 0; i < 2; i++) expect((await archiveConversation(api(`/api/conversations/${id}`, "PATCH", panel, { archived: true }), context)).status).toBe(200);
+    const recent = (await (await listConversations(api("/api/conversations", "GET", panel))).json()).data.items;
+    expect(recent.some((item: { id: string }) => item.id === id)).toBe(false);
+    const archived = (await (await listConversations(api("/api/conversations?archived=true", "GET", panel))).json()).data.items;
+    expect(archived.some((item: { id: string }) => item.id === id)).toBe(true);
+    expect((await readConversation(api(`/api/conversations/${id}`, "GET", panel), context)).status).toBe(200);
+    expect((await archiveConversation(api(`/api/conversations/${id}`, "PATCH", panel, { archived: false }), context)).status).toBe(200);
+    const restored = (await (await listConversations(api("/api/conversations", "GET", panel))).json()).data.items;
+    expect(restored.some((item: { id: string }) => item.id === id)).toBe(true);
   });
 
   it("rejects an unassigned partner customer without creating a record", async () => {

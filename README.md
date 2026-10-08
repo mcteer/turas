@@ -13,6 +13,10 @@ TAM/support guidance (010) are implemented. Local validation and basic hosted sm
 checks do not establish full Production workflow readiness. See the
 [roadmap](ROADMAP.md) and feature validation records under [`specs/`](specs/).
 
+Recent Conversations provides owner-private Archive and Restore controls. Archived
+chats remain available in Archived Conversations and retain their history.
+Apply migration 044 before deploying this version.
+
 ## Features
 
 ### Customer Profiles and Maturity

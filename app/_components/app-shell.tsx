@@ -18,7 +18,7 @@ function SidebarContent({ role, loginName, csrfToken, staffing }: { role: string
   return <>
     <Link className="brand" href="/s"><BrandMark />Turas</Link>
     <a className="nav-action" href="/s"><UiIcon name="plus" /> New Chat</a>
-    <ConversationList navigation={<nav className="workspace-nav" aria-label="Workspace">
+    <ConversationList csrfToken={csrfToken} navigation={<nav className="workspace-nav" aria-label="Workspace">
       <p className="nav-group-label">Workspace</p>
       {navItem("/customers", "Customer Profiles", "customers")}
       {navItem("/knowledge", "Shared Knowledge", "knowledge")}

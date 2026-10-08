@@ -84,12 +84,17 @@ test("customer loading and empty assignment remain distinct", async ({ page }) =
   await signIn(page, "partner");
   let release: (() => void) | undefined;
   const pending = new Promise<void>((resolve) => { release = resolve; });
+  let observeRequest: (() => void) | undefined;
+  const requestStarted = new Promise<void>((resolve) => { observeRequest = resolve; });
   await page.route("**/api/customers", async (route) => {
+    observeRequest?.();
     await pending;
     await route.fulfill({ status: 200, contentType: "application/json",
       body: JSON.stringify({ data: { items: [] } }) });
   });
   await page.goto("/s");
+  // The client effect proves hydration finished before testing input while loading.
+  await requestStarted;
   await expect(page.getByLabel("Customer (optional)")).toBeDisabled();
   await page.getByLabel("Message Turi").fill("Ask without a customer while assignments load.");
   await expect(page.getByRole("button", { name: "Send message" })).toBeEnabled();
