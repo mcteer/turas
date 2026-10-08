@@ -97,7 +97,11 @@ describe("atomic support advice preparation", () => {
         { kind: "shared_knowledge", revision_id: practice.reference.sourceRevisionId },
       ]);
       expect((await db.query("SELECT dependency_count FROM support_advice_attempts WHERE id=$1", [saved.attemptId])).rows[0].dependency_count).toBe(2);
-      const context = JSON.stringify((await db.query("SELECT payload FROM support_advice_payloads WHERE attempt_id=$1 AND kind='context'", [saved.attemptId])).rows[0].payload.snapshot);
+      const snapshot = (await db.query("SELECT payload FROM support_advice_payloads WHERE attempt_id=$1 AND kind='context'", [saved.attemptId])).rows[0].payload.snapshot;
+      const publication = (await db.query("SELECT published_at FROM knowledge_publications WHERE revision_id=$1 AND state='published'", [practice.reference.sourceRevisionId])).rows[0];
+      expect(snapshot.evidence[0].publicationDate).toBe(publication.published_at.toISOString());
+      expect(snapshot.evidence[0].observationDate).toBeNull();
+      const context = JSON.stringify(snapshot);
       for (const hidden of [practice.privateOriginName, practice.originCustomerId, practice.originRevisionId, "Synthetic private build-stage observation"])
         expect(context).not.toContain(hidden);
       return Number((await db.query(`SELECT r.version FROM profile_records r JOIN profile_revisions v ON v.record_id=r.id WHERE v.id=$1`, [practice.originRevisionId])).rows[0].version);

@@ -15,7 +15,7 @@ export async function captureSupportEvidence(db: PoolClient, actor: SupportActor
     if ("locator" in source) {
       const row = (await db.query(`SELECT p.passage_text,
         COALESCE(v.payload->>'observedAt',v.payload->>'observationEnd',r.observation_at::text) AS observation_date,
-        r.publication_at AS publication_date,COALESCE(v.quality_input,r.quality_input) AS quality_input,
+        COALESCE(r.publication_at,k.published_at) AS publication_date,COALESCE(v.quality_input,r.quality_input) AS quality_input,
         v.payload->>'reviewAt' AS review_at,k.public_quality
         FROM retrieval_sources s JOIN retrieval_passages p ON p.source_id=s.id
         LEFT JOIN artifact_evidence_selections a ON s.source_kind='approved_excerpt' AND a.id=s.source_revision_id

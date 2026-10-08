@@ -117,9 +117,15 @@ async function main(): Promise<void> {
         });
         if (result.error || result.status !== 0) {
           const report = await readFile(suiteReportPath, "utf8").catch(() => "");
-          const signatures = ["timed out", "timeout", "ECONNREFUSED", "Cannot find module", "expected", "environment marker", "statement timeout"];
+          // Vitest may exit before producing JSON. Inspect private log bytes too,
+          // but publish only fixed categories and repository test locations.
+          const diagnostic = `${report}\n${(await readFile(logPath, "utf8").catch(() => "")).slice(-65536)}`;
+          const signatures = ["timed out", "timeout", "ECONNREFUSED", "EADDRINUSE", "EAGAIN", "ENOMEM", "ENOSPC",
+            "SIGKILL", "heap out of memory", "Cannot find module", "expected", "environment marker", "statement timeout",
+            "Snapshot file set differs", "Restored file set differs", "active connections", "Runtime startup failed"];
+          const locations = [...new Set([...diagnostic.matchAll(/tests\/(?:integration|fixtures\/execution)\/[a-z-]+(?:\.test)?\.ts:\d{1,6}:\d{1,6}/g)].map(match => match[0]))].slice(0, 20);
           console.error(JSON.stringify({gate:"owned-execution-suite-failure",suite,status:result.status,
-            signatures:signatures.filter(value=>report.toLowerCase().includes(value.toLowerCase()))}));
+            signatures:signatures.filter(value=>diagnostic.toLowerCase().includes(value.toLowerCase())),locations}));
           throw new Error(`008 disposable execution suite failed: ${suite}`);
         }
         const report = JSON.parse(await readFile(suiteReportPath, "utf8"));

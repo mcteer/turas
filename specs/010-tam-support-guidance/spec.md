@@ -2,7 +2,7 @@
 
 **Feature Branch**: `010-tam-support-guidance`
 **Created**: 2026-10-04
-**Status**: Implementation in progress; required acceptance gates remain open
+**Status**: Implementation and local acceptance complete; published-head CI guards merge
 **Input**: Run specify, clarify, plan, tasks and analyze for roadmap 010, which delivers customer-scoped support readiness, recommended actions, evidence, ownership, escalation boundaries and disposition tracking. Product requirement TR-05; prerequisites 005 and 008.
 
 ## Overview

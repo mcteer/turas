@@ -5,6 +5,107 @@ worktree, based on committed main `080ad48645c90be63affd7e83a62185a9aacb8d1`.
 Existing uncommitted support scaffolding was preserved and inspected. Unrelated
 reporting and Spec Kit changes in the main checkout are not included.
 
+## Final Local Acceptance — 2026-10-08
+
+The four stories and local acceptance gates are complete. The records below are
+the current acceptance evidence; later sections preserve earlier failures and
+superseded checkpoints. Published-head CI must be green before the authorized
+merge of [PR 19](https://github.com/mcteer/turas/pull/19). Its checks provide the
+final CI result; this ledger does not count a pending job as passed or claim an
+independent maintainer review.
+
+Final source digest:
+`a2d220da5bfca43854df77e05c2017ee6e79b96aeb317e4f61f2363aa329a632`.
+`npm run test:support` passed **25 suites / 132 tests**, zero failures/skips,
+at `2026-10-08T00:27:42.266Z`. Typecheck, eve/Next production build and docs checks
+also passed. The shared-evidence regression first reproduced the missing public
+publication date; the corrected full cohort preserves `published_at` without
+revealing the private original observation date or lineage. The failing assertion
+left an active preparation and caused three subsequent active-request admission refusals in that
+red run; all four outcomes remain in its private evidence.
+
+`npm run eval:support -- --live` captured the complete configured-provider cohort
+in private `local-artifacts/010/live-wIEOcj`. All seven released outputs were read
+against their selected original passages and authorized snapshots. S08 changed
+its source after the provider final, withheld output and denied the exact stale
+save. All eight semantic reviews passed; `npm run eval:support:verify -- --review
+local-artifacts/010/live-wIEOcj/review.json` verified capture/content hashes and
+current source/model/prompt/cohort identities. This is implementation acceptance,
+not an independently submitted maintainer review.
+
+The cohort used **16 paid steps, 109,950 input / 19,283 output tokens and
+$0.259182 recorded cost**. Complete persisted provider measurements were available
+for every case. Latencies were 35.776, 21.447, 30.010, 21.752, 28.630, 27.858,
+40.967 and 30.298 seconds; all stayed within 120 seconds. Each case had one initial
+dispatch and zero automatic paid retries. Accepted domain state was unchanged.
+The earlier `live-q8DkYI` cohort also passed semantic/hash verification on its own
+source: 14 steps, 95,957 input / 17,008 output tokens, $0.226186, maximum 35.460
+seconds. It is a retained checkpoint rather than the final source-bound review.
+
+The following complete local gates passed on source
+`42a906d948ffa8fe981e67a7352bad3ff6a6675fb3a286e03b9cf32768ee6a59`.
+The final delta is the shared publication-date getter, its regression assertion,
+and content-free execution failure diagnostics. It changes no browser component,
+benchmark operation, recovery/state path, migration or runtime grant. Final CI
+reruns the full deterministic and browser matrices on the published head.
+
+- `npm run support:ui:check`: **44/44 cases**, all four desktop/mobile light/dark
+  WebKit projects, zero missing/skipped/retried cases. Representative captures
+  from private `ui-LsNH1T` were visually inspected in every project.
+- The timed browser journey took **6,721 ms**: six readiness checks, exact human
+  review, accepted open action and accountable owner, keyboard controls, and zero
+  serious/critical axe findings.
+- `npm run support:recovery:check -- --disposable` preserved one record, two
+  revisions and one receipt plus the workflow digest, and proved immediate
+  withholding and exact dependent purge. `support:native:check -- --interrupted`
+  separately proved actual-framework uncertain restart with exactly one fixture
+  provider call, paid calls disabled and no duplicate dispatch.
+- Actual temporary runtime LOGIN probes denied all **12 UPDATE/DELETE attempts**
+  across six immutable tables, then verified role cleanup.
+- `npm run eval:support -- --fixture`: all eight expected framework outcomes,
+  zero failures, paid calls disabled. Fixtures do not substitute for live review.
+- Earlier-feature regression checkpoint: **15 unit suites / 75 tests and seven
+  integration suites / 30 tests**, zero failures/skips. Source identity is retained
+  in private `acceptance-regressions.log`; final CI also reruns those cohorts.
+
+The full quota-compliant `benchmark:support -- --disposable` used 100 customers,
+500 scopes, 5,000 actions, 20,000 revisions and five concurrent clients/users,
+with ten warmups and 100 measured operations per class. List/detail use five
+authorized identities; privileged review clients share the canonical reviewer
+and its unchanged quota. Corpus digest:
+`f09b708dcc3b5eb2123433dcfe0873772f9101d2acdacdc08047c1c3b727c00f`.
+Every class had zero correctness errors; quota pacing was excluded from latency.
+
+| Class | p95 milliseconds | Required maximum |
+| --- | ---: | ---: |
+| List | 39.447 | 2,000 |
+| Detail | 31.635 | 2,000 |
+| Exact review preview | 55.471 | 2,000 |
+| Review acknowledgement | 22.128 | 2,000 |
+
+CI checkpoint `37705329747` failed its execution recovery suite without useful
+JSON diagnostics. A subsequent owned local reproduction passed both recovery
+tests, with paid calls disabled. Failure diagnostics now inspect private log bytes
+when JSON is absent but publish only fixed categories and repository test
+locations. No timeout, assertion, quota or retry was relaxed. This CI checkpoint
+is not a full green result; final published-head CI remains the merge gate.
+
+The final Spec Kit convergence audit checked 24 functional requirements, seven
+success criteria, 17 story acceptance scenarios, all 45 tasks, eight plan decision
+groups and all eight constitution principles. No remaining buildable gap was
+found, and convergence left tasks.md byte-for-byte unchanged. The implementation
+workflow then reconciled task checkboxes with this evidence. Consolidated action,
+escalation and native tests live in the exhaustive support manifest and the two
+support browser suites; planned filenames are not claimed as separate executed
+suites.
+
+Root `agent/agent.ts` remains byte-identical, SHA-256
+`07c4b66e88fd7572c7ccb339c8455abd5f0ab34f2d5389636af6f8429e25045a`.
+The selected application database, existing durable workflow state, unrelated
+dirty-main edits and private configuration were preserved. Checks used only the
+owned marked local Postgres source and disposable app/database copies. No hosted
+010 rollout, selected-database migration, connector or external send is claimed.
+
 ## Completion Work — 2026-10-07
 
 Implementation continued in the existing isolated worktree. Unrelated main-checkout
