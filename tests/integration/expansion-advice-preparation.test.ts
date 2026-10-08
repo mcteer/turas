@@ -22,7 +22,9 @@ describe('Selected-only atomic expansion advice preparation',()=>{
    FROM expansion_advice_attempts a JOIN conversations c ON c.id=a.conversation_id JOIN expansion_advice_payloads p ON p.attempt_id=a.id AND p.kind='context' WHERE a.id=$1`,[prepared.attemptId]));
   expect(stored.rows[0]).toMatchObject({owner_principal_id:actor.principalId,context_audience:'internal'});
   expect(stored.rows[0].context_bytes).toBeGreaterThan(0);expect(stored.rows[0].context_bytes).toBeLessThanOrEqual(24576);
-  expect(stored.rows[0].payload.snapshot).toMatchObject({question:input.question,proposalTimezone:'UTC',assignment:{membershipId:null},hypotheses:[],evidence:[]});
+  expect(stored.rows[0].payload.snapshot).toMatchObject({question:input.question,proposalTimezone:'UTC',hypotheses:[],evidence:[]});
+  expect(stored.rows[0].payload.snapshot).not.toHaveProperty('assignment');
+  expect(stored.rows[0].payload.fence.dependencies).toEqual(expect.arrayContaining([expect.objectContaining({kind:'account_owner',generation:0})]));
   const messages=await withExpansionDatabase(db=>db.query('SELECT count(*) AS n FROM submitted_messages WHERE conversation_id=$1',[prepared.conversationId]));expect(Number(messages.rows[0].n)).toBe(0);
   await expect(prepareExpansionAdvice(actor,DEMO_IDS.sharedCustomer,request())).rejects.toMatchObject({code:'advice_active'});
  });

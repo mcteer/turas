@@ -96,7 +96,7 @@ export async function captureExpansionAdviceContext(db:PoolClient,actor:Expansio
  const evidenceFence=selectedEvidence.map(item=>({citationKey:item.citationKey,publicationAt:item.publicationAt,observationAt:item.observationAt,eventAt:item.eventAt,retrievalAt:item.retrievalAt,
   quality:item.quality?Object.fromEntries(Object.entries(item.quality).filter(([key])=>!['asOf','validUntil'].includes(key))):null}));
  const fence={dependencies,evidenceFence,requestRefs,sourceRefs,selectedEngagementIds:scope.selectedEngagementIds,selectedHypothesisIds:scope.selectedHypothesisIds};
- const snapshot={customer:{id:scope.customerId,name:customer.display_name},workload:scope.workloadId?{id:scope.workloadId,name:workload!.display_name}:null,assignment,question,
+ const snapshot={customer:{id:scope.customerId,name:customer.display_name},workload:scope.workloadId?{id:scope.workloadId,name:workload!.display_name}:null,question,
   hypotheses:hypotheses.map(item=>({...item,content:remapKeys(item.content,keys)})),evidence:selectedEvidence,
   selectedEngagementIds:scope.selectedEngagementIds};
  return {snapshot,fence,digest:expansionHash(fence),dependencies,sourceRefs};

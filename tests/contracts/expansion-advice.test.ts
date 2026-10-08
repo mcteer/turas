@@ -52,4 +52,10 @@ describe('Bounded expansion advice contracts',()=>{
   expect(()=>validateExpansionAdviceResult({...zero,facts:[{...fact,classification:'accepted_fact'}]},[{id,kind:'milestone_baseline'}],[])).toThrow();
  });
 
+ it('rejects unsupported account-assignment identity comparisons in a summary while preserving an explicit owner unknown',()=>{
+  const summary='Account assignment membership is not an operating owner.';
+  expect(()=>validateExpansionAdviceResult({...zero,summary},[],[])).toThrow();
+  expect(validateExpansionAdviceResult({...zero,unknowns:[{text:'Operating owner identity',reason:'Not named in the selected passages'}]},[],[]).unknowns).toHaveLength(1);
+ });
+
 });
