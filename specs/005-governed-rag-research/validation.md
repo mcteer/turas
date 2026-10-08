@@ -982,3 +982,11 @@ unchanged and its temporary owned test conversation was removed. Research code
 release is tracked in PR 21. Hosted research profile verification is a separate
 post-merge gate; the Production data/index proof above does not assert that an
 unmerged UI change is hosted. Feature 011 remains a proposal.
+
+
+A final Source Detail check caught horizontal overflow from long provenance hashes.
+The detail section now wraps long metadata without altering source contents. Its
+four-project CLI WebKit rerun passed all four desktop/mobile light/dark journeys
+in 10.4 seconds, including keyboard opening, the public citation link, long hash
+rationale, no horizontal overflow and zero serious/critical axe findings. A
+standalone 390px synthetic check changed from 1,701px document width to 390px.
