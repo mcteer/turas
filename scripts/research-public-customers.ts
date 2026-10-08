@@ -87,7 +87,8 @@ async function modelCall(account:Account,key:string,system:string,prompt:string)
 }
 async function collect(customer:PublicCustomer,account:Account){
  if(account.dossier)return;
- const candidates:Array<{url:string;title:string;purpose:string}>=customer.stories.map(s=>({...s,purpose:"vercel_relationship"}));
+ const candidates:Array<{url:string;title:string;purpose:string}>=[...customer.stories.map(s=>({...s,purpose:"vercel_relationship"})),
+  ...(customer.identitySources??[]).map(url=>({url,title:`${customer.name} official identity source`,purpose:"identity"}))];
  for(const [i,request]of publicResearchQueries(customer).entries()){
   try{
    const result=await dispatch(account,`search:${i}`,async()=>{account.usage.searches++;await save();return discoverContext(request.query,process.env.CONTEXT_API_KEY??"");},publicDigest(request.query));

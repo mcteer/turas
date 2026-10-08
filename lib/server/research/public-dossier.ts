@@ -6,7 +6,9 @@ export const dossierAreas = ["identity", "vercel_relationship", "architecture_ou
 export const dossierAreaSchema = z.enum(dossierAreas);
 export const publicCustomerSchema = z.object({ name: z.string().trim().min(1).max(200),
   industries: z.array(z.string()).max(20), directoryListed: z.boolean(),
-  stories: z.array(z.object({ url: z.url(), title: z.string() })).max(30) });
+  stories: z.array(z.object({ url: z.url(), title: z.string() })).max(30),
+  researchQualifier: z.string().trim().min(1).max(100).optional(),
+  identitySources: z.array(z.url()).max(3).optional() });
 export type PublicCustomer = z.infer<typeof publicCustomerSchema>;
 export const publicDossierSchema = z.object({
   description: z.string().max(2000),
@@ -57,7 +59,7 @@ export function checkedPublicPage(raw: { url: string; title: string; text: strin
 }
 
 export function publicResearchQueries(customer: PublicCustomer): Array<{ purpose: string; query: string }> {
-  const name = `"${customer.name.replaceAll('"', '')}"`;
+  const name = `"${customer.name.replaceAll('"', '')}"${customer.researchQualifier ? " " + customer.researchQualifier : ""}`;
   return [
     { purpose: "identity", query: `${name} official company products website` },
     { purpose: "vercel_relationship", query: `${name} Vercel customer architecture case study outcomes` },

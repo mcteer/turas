@@ -25,6 +25,11 @@ describe('public customer dossier contracts',()=>{
   const normalized=normalizePublicDraft(proposed,customer,[{...pages[0],text:unrelated,normalizedDigest:publicDigest(unrelated)}]);
   expect(normalized.findings).toEqual([]);expect(normalized.coverage.every(c=>c.state==='not_found')).toBe(true);
  });
+ it('qualifies ambiguous discovery without changing the exact source subject',()=>{
+  const qualified={...customer,researchQualifier:'cookware'};
+  expect(publicResearchQueries(qualified).every(q=>q.query.includes('\"Cedar Company\" cookware'))).toBe(true);
+  expect(()=>validatePublicDossier(dossier,qualified,pages)).not.toThrow();
+ });
  it('does not match a short identity within another word and discovers every research area',()=>{
   expect(publicSubjectMention('Acme builds public tools.','Acme')).toBe(true);
   expect(publicSubjectMention('Acmeology builds tools.','Acme')).toBe(false);
