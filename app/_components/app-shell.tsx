@@ -9,7 +9,7 @@ import { ThemeToggle } from "./theme-provider";
 import { SignOutButton } from "../(workspace)/sign-out-button";
 import { BrandMark, UiIcon, type UiIconName } from "./ui-icon";
 
-function SidebarContent({ role, loginName, csrfToken, staffing }: { role: string; loginName: string; csrfToken: string; staffing: StaffingNavigation }) {
+function SidebarContent({ role, loginName, csrfToken, staffing, kind }: { role: string; loginName: string; csrfToken: string; staffing: StaffingNavigation; kind: string }) {
   const pathname = usePathname();
   const customerScope = pathname.match(/^\/customers\/([a-f0-9-]{36})(?:\/|$)/)?.[1];
   const current = (href: string) => (pathname === href || (href !== "/staffing" && pathname.startsWith(`${href}/`))) ? "page" as const : undefined;
@@ -22,6 +22,7 @@ function SidebarContent({ role, loginName, csrfToken, staffing }: { role: string
       <p className="nav-group-label">Workspace</p>
       {navItem("/customers", "Customer Profiles", "customers")}
       {navItem("/knowledge", "Shared Knowledge", "knowledge")}
+      {kind === "internal" && navItem("/product-gaps", "Product Gaps", "plan")}
       {customerScope && <><p className="nav-group-label">Current Customer</p>{navItem(`/customers/${customerScope}/reports`, "Customer Reports", "plan")}</>}
       {staffing.resources && <p className="nav-group-label">Delivery</p>}
       {staffing.resources && navItem("/staffing", "Staffing Operations", "operations")}
@@ -38,13 +39,13 @@ function SidebarContent({ role, loginName, csrfToken, staffing }: { role: string
   </>;
 }
 
-export function AppShell({ children, role, loginName, csrfToken, staffing }: {
-  children: React.ReactNode; role: string; loginName: string; csrfToken: string; staffing: StaffingNavigation;
+export function AppShell({ children, role, loginName, csrfToken, staffing, kind }: {
+  children: React.ReactNode; role: string; loginName: string; csrfToken: string; staffing: StaffingNavigation; kind: string;
 }) {
-  const content = <SidebarContent staffing={staffing} role={role} loginName={loginName} csrfToken={csrfToken} />;
+  const content = <SidebarContent kind={kind} staffing={staffing} role={role} loginName={loginName} csrfToken={csrfToken} />;
   return <div className="workspace">
     <aside className="desktop-sidebar"><div className="sidebar">{content}</div></aside>
-    <MobileNavigation><SidebarContent staffing={staffing} role={role} loginName={loginName} csrfToken={csrfToken} /></MobileNavigation>
+    <MobileNavigation><SidebarContent kind={kind} staffing={staffing} role={role} loginName={loginName} csrfToken={csrfToken} /></MobileNavigation>
     <div className="workspace-main">{children}</div>
   </div>;
 }

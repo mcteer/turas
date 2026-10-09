@@ -13,22 +13,22 @@ export async function reportStoreRoot(){
  if(marker.environmentId!==process.env.TURAS_ENVIRONMENT_ID)throw new HttpFailure(503,'store_unavailable','Report store unavailable');
  return resolve(root);
 }
-export async function writeReportObject(bytes:Buffer,key=randomUUID()){
+export async function writeReportObject(bytes:Buffer,key:string=randomUUID(),preparedOnly=false){
  reportId.parse(key);if(bytes.length<1 || bytes.length>10485760)throw new HttpFailure(422,'scope_too_large','Report file exceeds limit');
- const objects=await reportObjectDirectory();
+ const objects=await reportObjectDirectory(!preparedOnly);
  const file=join(objects,key),handle=await open(file,'wx',0o600);try{await handle.writeFile(bytes);await handle.sync();}finally{await handle.close();}
  return {objectKey:key,contentDigest:createHash('sha256').update(bytes).digest('hex'),sizeBytes:bytes.length};
 }
-export async function readReportObject(key:string,digest:string,size:number){
+export async function readReportObject(key:string,digest:string,size:number,preparedOnly=false){
  reportId.parse(key);reportDigestSchema.parse(digest);if(!Number.isInteger(size) || size<1 || size>10485760)throw new HttpFailure(503,'store_unavailable','Report file unavailable');
- const file=join(await reportObjectDirectory(),key),handle=await open(file,constants.O_RDONLY|constants.O_NOFOLLOW);let bytes:Buffer;
+ const file=join(await reportObjectDirectory(!preparedOnly),key),handle=await open(file,constants.O_RDONLY|constants.O_NOFOLLOW);let bytes:Buffer;
  try{const stat=await handle.stat();if(!stat.isFile() || stat.size!==size || (stat.mode & 0o077)!==0)throw new HttpFailure(503,'store_unavailable','Report file unavailable');bytes=await handle.readFile();}finally{await handle.close();}
  if(bytes.length!==size || createHash('sha256').update(bytes).digest('hex')!==digest)throw new HttpFailure(503,'store_unavailable','Report file unavailable');return bytes;
 }
-export async function reportObjectDirectory(){
- const directory=join(await reportStoreRoot(),'objects');try{await mkdir(directory,{mode:0o700});}catch(error){if((error as {code?:string}).code!=='EEXIST')throw error;}
+export async function reportObjectDirectory(create=true){
+ const directory=join(await reportStoreRoot(),'objects');if(create)try{await mkdir(directory,{mode:0o700});}catch(error){if((error as {code?:string}).code!=='EEXIST')throw error;}
  const stat=await lstat(directory);if(!stat.isDirectory() || stat.isSymbolicLink() || stat.mode & 0o077)throw new HttpFailure(503,'store_unavailable','Report store unavailable');return directory;
 }
-export async function deleteExactReportObject(key:string,digest:string,size:number){
- await readReportObject(key,digest,size);await unlink(join(await reportStoreRoot(),'objects',key));
+export async function deleteExactReportObject(key:string,digest:string,size:number,preparedOnly=false){
+ await readReportObject(key,digest,size,preparedOnly);await unlink(join(await reportStoreRoot(),'objects',key));
 }

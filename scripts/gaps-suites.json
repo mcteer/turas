@@ -1,0 +1,6 @@
+[
+ "tests/unit/gap-content.test.ts", "tests/unit/gap-impact.test.ts", "tests/unit/gap-report-document.test.ts", "tests/unit/gap-runner-coverage.test.ts",
+ "tests/contracts/gap-http.test.ts", "tests/contracts/gap-projection.test.ts",
+ "tests/integration/gap-foundation.test.ts", "tests/integration/gap-authoring-review.test.ts", "tests/integration/gap-evidence-races.test.ts",
+ "tests/integration/gap-canonicalization.test.ts", "tests/integration/gap-counts.test.ts", "tests/integration/gap-report-lifecycle.test.ts", "tests/integration/gap-report-release.test.ts", "tests/integration/gap-handoff.test.ts", "tests/integration/gap-retention-recovery.test.ts"
+]

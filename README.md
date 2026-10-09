@@ -9,7 +9,7 @@ steps using authorized evidence. Human review—not a model response—determine
 facts and decisions become accepted.
 
 **Status:** active development. Customer profiles through executive reporting and
-TAM/support guidance (010) are implemented. Local validation and basic hosted smoke
+TAM/support guidance (010), product expansion (011) and product gaps (012) are implemented. Local validation and basic hosted smoke
 checks do not establish full Production workflow readiness. See the
 [roadmap](ROADMAP.md) and feature validation records under [`specs/`](specs/).
 
@@ -82,18 +82,26 @@ dates and evidence quality before generation; each save remains a proposal. See 
 [support specification](specs/010-tam-support-guidance/spec.md) and
 [validation record](specs/010-tam-support-guidance/validation.md).
 
-### Product Expansion and Planned Capabilities
+### Product Expansion
 
 Product expansion opportunities (011) now have a [specification](specs/011-product-expansion/spec.md),
 [implementation plan](specs/011-product-expansion/plan.md) and
-[task list](specs/011-product-expansion/tasks.md). Local implementation covers evidence-backed hypotheses, explainable ranking, owner review and bounded private Turi advice. Only `mcteer` assigns the internal account owner; that owner qualifies, defers, dismisses or reopens a hypothesis. Explicitly saved advice remains proposed.
+[task list](specs/011-product-expansion/tasks.md). Merged implementation covers evidence-backed hypotheses, explainable ranking, owner review and bounded private Turi advice. Only `mcteer` assigns the internal account owner; that owner qualifies, defers, dismisses or reopens a hypothesis. Explicitly saved advice remains proposed.
 
-Migrations 046–047 are explicit deployment prerequisites. `TURAS_011_DISABLED=1` disables new authoring, decisions and advice while governed retention continues. Recovery uses forward migrations and the same database/workflow pair. See the [validation record](specs/011-product-expansion/validation.md) for local evidence and outstanding live evaluation, CI and hosted release gates.
+Migrations 046–047 are explicit deployment prerequisites. `TURAS_011_DISABLED=1` disables new authoring, decisions and advice while governed retention continues. Recovery uses forward migrations and the same database/workflow pair. See the [validation record](specs/011-product-expansion/validation.md) for passing local, eight-case actual-model independent review and CI evidence. Feature 011 merged in [PR 22](https://github.com/mcteer/turas/pull/22); Preview/Production release and hosted acceptance remain separate.
 
 
 MCP access and further delivery/learning automation remain roadmap work, not
 available integrations. There is no external support-ticket connector. See the
 [roadmap](ROADMAP.md) for proposed slices and dependencies.
+
+### Product Gaps and Engineering Feedback
+
+Feature 012 implements the [52-task plan](specs/012-product-gap-feedback/tasks.md) and adds proposed and reviewed gap narratives, separate customer impact observations, explicit merge/split decisions and distinct-customer counts. Internal members propose; canonical active internal administrator `mcteer` reviews, approves exact customer disclosure and records manual engineering handoffs. Confirmed impact requires accepted customer need and current direct product evidence. Resolved history is nonadditive. Evidence freshness is displayed separately from review recency and deterministic ordering.
+
+Engineering detail and portfolio reports use deterministic templates and reviewed private Markdown/JSON exports for an exact audience. Handoff notes are human-reported and never send messages or resolve customer impact automatically. Source withdrawal, changed authority and expiry withhold content immediately; independent cleanup retains minimal identities and lifetime request tombstones.
+
+Migrations 048–049 and explicit `npm run gaps:prepare` are release prerequisites. `TURAS_012_DISABLED=1` blocks new work while cancellation, reconciliation and retention continue independently of 009 enablement. Retain every key in `TURAS_012_RECEIPT_HASH_KEYS` needed to verify existing tombstones. Use the same database, private store and workflow directory during forward recovery. See the [quickstart](specs/012-product-gap-feedback/quickstart.md), [validation record](specs/012-product-gap-feedback/validation.md) and [release handoff](specs/012-product-gap-feedback/handoff.md). Hosted rollout and acceptance are separate pending gates.
 
 ## Technology
 
@@ -232,7 +240,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), [AGENTS.md](AGENTS.md) and the
 Select a feature explicitly rather than relying on the Git branch:
 
 ```sh
-export SPECIFY_FEATURE_DIRECTORY=specs/010-tam-support-guidance
+export SPECIFY_FEATURE_DIRECTORY=specs/012-product-gap-feedback
 ```
 
 Project-local Spec Kit commands live in `.opencode/commands/`; checked-in skills

@@ -48,7 +48,7 @@ export function ConversationList({ customerId, navigation, csrfToken }: { custom
       <button type="button" className="history-view" onClick={() => { setArchived(!archived); setState("loading"); setError(""); }}>
         {archived ? "Recent" : "Archived"}</button></div>
     {error && <p className="history-empty" role="alert">{error}</p>}
-    <div className="nav-history" aria-live="polite">
+    <div className="nav-history" role="region" aria-label={archived ? "Archived chats" : "Recent chats"} tabIndex={0} aria-live="polite">
       {state === "loading" && <p className="history-empty">Loading chats…</p>}
       {state === "unavailable" && <p className="history-empty">Chats are unavailable.</p>}
       {state === "ready" && items.length === 0 && <p className="history-empty">{query ? "No matching chats." : archived ? "No archived chats." : "No chats yet."}</p>}

@@ -14,6 +14,6 @@ export default async function WorkspaceLayout({ children }: { children: ReactNod
   }));
   if (!session) redirect("/login");
   const staffing = await staffingNavigation(session);
-  return <AppShell staffing={staffing} role={session.role} loginName={session.loginName}
+  return <AppShell kind={session.kind} staffing={staffing} role={session.role} loginName={session.loginName}
     csrfToken={csrfTokenForSession(session.token)}>{children}</AppShell>;
 }

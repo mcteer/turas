@@ -69,6 +69,9 @@ test("workspace navigation and theme controls work with the keyboard", async ({ 
   await page.keyboard.press("Enter");
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe(before);
   if (mobile) {
+    const history = page.getByRole("region", { name: "Recent chats" }).filter({ visible: true });
+    await history.focus();
+    await expect(history).toBeFocused();
     await reviewScreen(page, info, "navigation");
     await page.keyboard.press("Escape");
     await expect(page.getByRole("button", { name: "Open navigation" })).toBeFocused();

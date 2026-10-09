@@ -87,7 +87,8 @@ async function main() {
         await environment.restart();
         const dispatchResult = await observedDispatch;
         if ("response" in dispatchResult) await dispatchResult.response.body?.cancel();
-        await query("UPDATE expansion_native_fixture_barriers SET released=true WHERE customer_id=$1", [customerId]);
+        // Keep the synthetic provider blocked until interruption settles.
+        // Releasing it during restart can let a draining old request complete.
         const replay = await fetch(`${environment.origin}/eve/v1/session/${bound.sessionId}`, { method: "POST", headers: {
           cookie, origin: environment.origin, "content-type": "application/json", "x-csrf-token": csrf,
           "x-turas-conversation-id": prepared.conversationId, "x-turas-request-key": prepared.nativeRequestId },
@@ -103,6 +104,7 @@ async function main() {
           if (Date.now() > deadline) throw new Error("Interrupted expansion settlement timeout");
           await new Promise(resolve => setTimeout(resolve, 250));
         }
+        await query("UPDATE expansion_native_fixture_barriers SET released=true WHERE customer_id=$1", [customerId]);
         const count = Number((await query(`SELECT count(*) AS count FROM expansion_native_fixture_calls WHERE response_attempt_id=
           (SELECT response_attempt_id FROM expansion_advice_attempts WHERE id=$1)`, [prepared.attemptId])).rows[0].count);
         if (count !== 1) throw new Error("Interrupted replay repeated provider work");

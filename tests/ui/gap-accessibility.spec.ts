@@ -1,0 +1,8 @@
+import {installGapUiDiagnostics} from '../fixtures/gaps/ui-diagnostics';
+import {test,expect} from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+import {testCredentials} from '../fixtures/ui';
+import {withGapDatabase} from '../fixtures/gaps/environment';
+installGapUiDiagnostics();
+test.beforeEach(async()=>{if(process.env.TURAS_GAPS_UI_FIXTURE_READY!=='1')throw Error('Owned gap UI runner required');await withGapDatabase(db=>db.query("DELETE FROM rate_windows WHERE environment_id=$1 AND category LIKE 'gap_%'",[process.env.TURAS_ENVIRONMENT_ID]));});
+test('uses keyboard controls, visible focus, bounded mobile layout and accessible report selection',async({page},info)=>{expect((await page.request.post('/api/auth/login',{headers:{origin:process.env.TURAS_UI_BASE_URL!},data:{...testCredentials('panel'),returnTo:'/product-gaps'}})).ok()).toBe(true);await page.goto('/product-gaps');await page.getByRole('button',{name:'Prepare Engineering Report',exact:true}).focus();await expect(page.getByRole('button',{name:'Prepare Engineering Report',exact:true})).toBeFocused();await page.keyboard.press('Enter');await expect(page.getByLabel('Engineering Team',{exact:true})).toBeVisible();await page.getByLabel('Engineering Team',{exact:true}).focus();await page.keyboard.press('Tab');await expect(page.getByLabel('Named Recipients (One per Line)',{exact:true})).toBeFocused();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);expect((await new AxeBuilder({page}).analyze()).violations.filter(v=>['serious','critical'].includes(v.impact??''))).toHaveLength(0);await page.screenshot({path:info.outputPath('accessible-report-selection.png'),fullPage:true});});

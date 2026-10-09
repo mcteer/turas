@@ -14,13 +14,13 @@ function check(value:unknown,message:string):asserts value{if(!value)throw Error
 let recoveryPhase='source_preflight';
 let recoveryCohort:string|null=null;
 async function main(){
- check(process.argv.length===3&&process.argv[2]==='--disposable','Expansion recovery requires --disposable and takes no database overrides');const sourceDigest=await featureSourceDigest('011');const url=process.env.TURAS_TEST_DATABASE_URL;check(url&&new URL(url).pathname==='/turas_test_011_source','Owned source environment required');
+ check(process.argv.length===3&&process.argv[2]==='--disposable','Expansion recovery requires --disposable and takes no database overrides');const sourceDigest=await featureSourceDigest('011');const currentSchema=JSON.parse(await readFile('migrations/manifest.json','utf8')).version;check(Number.isSafeInteger(currentSchema)&&currentSchema>=47,'Current migration manifest required');const url=process.env.TURAS_TEST_DATABASE_URL;check(url&&new URL(url).pathname==='/turas_test_011_source','Owned source environment required');
  const source=new Client({connectionString:url});await source.connect();const original=(await source.query('SELECT environment_id,schema_version FROM turas_environment')).rows;await source.end();const preservedEnvironment=process.env.TURAS_ENVIRONMENT_ID;
  await mkdir('local-artifacts/011',{recursive:true,mode:0o700});const directory=await mkdtemp(resolve('local-artifacts/011/recovery-'));const cohorts:unknown[]=[];
  try{for(const priorSchema of [undefined,45] as const)await withExpansionEvalEnvironment(async environment=>{
   recoveryCohort=priorSchema===45?'045':'empty';recoveryPhase='schema_validation';
   requireOwnedExpansionClone();await createExpansionActors(environment.appRoot);const marker=(await query('SELECT environment_id,schema_version FROM turas_environment')).rows[0];if(priorSchema===45){check(marker.schema_version===45,'Prior schema fixture missing');check(!(await query("SELECT to_regclass('public.expansion_scopes') AS table_name")).rows[0].table_name,'Future tables leaked into 045');await environment.upgradeToCurrent();}
-  const current=(await query('SELECT environment_id,schema_version FROM turas_environment')).rows[0];check(current.environment_id===marker.environment_id&&current.schema_version===47,'Owned upgrade changed marker or omitted current schema');
+  const current=(await query('SELECT environment_id,schema_version FROM turas_environment')).rows[0];check(current.environment_id===marker.environment_id&&current.schema_version===currentSchema,'Owned upgrade changed marker or omitted current schema');
   const privileges=(await query(`SELECT has_table_privilege('turas_runtime','expansion_revisions','DELETE') AS revision_delete,
     has_table_privilege('turas_runtime','expansion_advice_payloads','DELETE') AS payload_delete,
     has_table_privilege('turas_runtime','expansion_advice_minimizations','INSERT') AS forged_minimization,
