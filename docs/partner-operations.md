@@ -44,7 +44,9 @@ Current eligible bodies remain available. Original source withdrawal, authority
 loss and expiry withhold affected bodies synchronously before release, regardless
 of worker state. Shared citations reveal published sanitized passages only; private
 contributor lineage stays server-side. Transaction-scoped repeated source checks
-reuse completed locks only within one transaction and recheck expiry.
+reuse completed locks only within one transaction and recheck expiry. Original
+profile support and conflict checks use bounded batches with the same governed
+predicates; closure discovery runs afresh before and after original locking.
 
 The maintenance worker runs independently of reporting and feature enablement,
 with at most 100 records per tick and a ten-second deadline. Globally ineligible

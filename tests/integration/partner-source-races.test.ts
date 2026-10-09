@@ -19,6 +19,11 @@ import {submitExecutionCommand} from "../../lib/server/execution/service";
 import {executionCommand,saveRegister,submitRegister,reviewRegister,registerBase} from "../fixtures/execution/registers";
 import {submitProfileCommand} from "../../lib/server/profiles/service";
 describe("partner synchronous source fences",()=>{
+ it("withholds the whole guide when a transitive accepted profile dependency is withdrawn",async()=>{
+  const f=await actorsBaseline(),child=await partnerAcceptedEvidence(f.author,f.reviewer,DEMO_IDS.sharedCustomer,"Synthetic independently accepted supporting observation"),parent=await partnerAcceptedEvidence(f.author,f.reviewer,DEMO_IDS.sharedCustomer,"Synthetic supported customer practice",{evidenceRevisionIds:[child.revisionId]}),guide=await submitted(f,parent.reference),preview=await previewPartnerGuide(f.reviewer,guide.review);await decidePartnerGuide(f.reviewer,{...guide.review,requestId:randomUUID(),previewId:preview.previewId});
+  expect((await readPartnerGuide(f.partner,guide.guideId)).availability).toBe("eligible");await withPartnerDatabase(db=>db.query("UPDATE profile_records SET current_accepted_revision_id=NULL WHERE id=$1",[child.recordId]));expect((await readPartnerGuide(f.partner,guide.guideId)).content).toBeNull();
+ });
+
  it("never promotes a pending customer claim into accepted guide evidence",async()=>{
   const f=await actorsBaseline(),accepted=await partnerAcceptedEvidence(f.author,f.reviewer,DEMO_IDS.sharedCustomer),pending=await submitProfileCommand(f.author,DEMO_IDS.sharedCustomer,{action:"propose_record",requestKey:randomUUID(),workloadId:null,requestedAudience:"delivery",dataCategory:"delivery_context",payload:{kind:"product_use",productKey:"synthetic-pending-"+randomUUID(),displayName:"Synthetic Pending Product",state:"actual",usageDescription:"PRIVATE_PENDING_ASSERTION",observedAt:accepted.reference.observationAt}}) as {revisionId:string};
   const header=await withPartnerDatabase(async db=>(await db.query("SELECT revision_number,content_digest FROM profile_revisions WHERE id=$1",[pending.revisionId])).rows[0]),reference={...accepted.reference,id:randomUUID(),sourceRevisionId:pending.revisionId,generation:Number(header.revision_number),contentDigest:header.content_digest};

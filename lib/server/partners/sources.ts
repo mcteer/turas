@@ -7,7 +7,7 @@ import type { PartnerSource } from "../../contracts/partners";
 import { HttpFailure } from "../../contracts/http";
 import { evidenceQualitySchema } from "../../contracts/retrieval";
 import { lockOriginalHeader,verifyPlanSources } from "../plans/sources";
-import { originalCurrent,confirmedConflictAfter } from "../retrieval/fences";
+import { originalCurrent,originalProfilesCurrent,confirmedConflictAfterAny } from "../retrieval/fences";
 import { retrievalQuality } from "../retrieval/context";
 import { dependencyUnion,type ExpansionDependency } from "../expansion/dependencies";
 import { getServerConfig } from "../config";
@@ -20,12 +20,6 @@ import { partnerAuthorityDigest,readPartnerCursor,issuePartnerCursor } from "./c
 export type PartnerGuideScope={customerId:string;engagementId:string;acceptedRevisionId:string;baselineId:string;workloadId:string|null};
 export type PartnerDependency={kind:"accepted_profile"|"approved_excerpt"|"verified_research"|"shared_knowledge";revisionId:string;generation:number;contentDigest:string};
 const unavailable=()=>new HttpFailure(409,"source_unavailable","Delivery evidence is unavailable; review current originals");
-const sql={
- accepted_profile:"SELECT revision_number AS generation,content_digest AS digest FROM profile_revisions WHERE id=$1",
- approved_excerpt:"SELECT lifecycle_generation AS generation,excerpt_digest AS digest FROM artifact_evidence_selections WHERE id=$1",
- verified_research:"SELECT version AS generation,passage_digest AS digest FROM evidence_source_revisions WHERE id=$1",
- shared_knowledge:"SELECT p.head_generation AS generation,r.content_digest AS digest FROM knowledge_publications p JOIN knowledge_revisions r ON r.id=p.revision_id WHERE p.revision_id=$1",
-};
 export async function partnerSourceMetadata(db:PoolClient,ref:PartnerSource,at=new Date(ref.quality.asOf)){
  const iso=(v:unknown)=>v instanceof Date?v.toISOString():typeof v==="string"&&!Number.isNaN(Date.parse(v))?new Date(v).toISOString():null;
  if(ref.kind==="shared_knowledge"){
@@ -47,22 +41,45 @@ export async function partnerSourceMetadata(db:PoolClient,ref:PartnerSource,at=n
 async function closure(db:PoolClient,actor:PartnerActor,scope:PartnerGuideScope,refs:readonly PartnerSource[]){
  const baseline=(await db.query("SELECT baseline_number,content_digest FROM milestone_baselines WHERE id=$1 AND revision_id=$2 AND engagement_id=$3 AND customer_id=$4 AND environment_id=$5 AND workspace_id=$6",[scope.baselineId,scope.acceptedRevisionId,scope.engagementId,scope.customerId,getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId])).rows[0];if(!baseline)throw unavailable();
  const expanded=await dependencyUnion(db,actor,scope.customerId,[...refs.map(r=>({kind:r.kind==="accepted_execution"?"execution_record" as const:r.kind,sourceRevisionId:r.sourceRevisionId,generation:r.generation,contentDigest:r.contentDigest,...(r.engagementId?{engagementId:r.engagementId}:{})})),{kind:"milestone_baseline",sourceRevisionId:scope.baselineId,generation:Number(baseline.baseline_number),contentDigest:baseline.content_digest,engagementId:scope.engagementId}]);
- const pending:Array<{dependency:ExpansionDependency;direct:boolean}>=expanded.map(d=>({dependency:d,direct:refs.some(r=>r.kind===d.kind&&r.sourceRevisionId===d.revisionId)})),seen=new Map<string,PartnerDependency>();
- while(pending.length){const {dependency:d,direct}=pending.pop()!;if(d.kind==="milestone_baseline"||d.kind==="execution_record")continue;
-  const row=(await db.query(sql[d.kind],[d.revisionId])).rows[0];if(!row||Number(row.generation)!==d.generation)throw unavailable();
-  if(!direct&&row.digest!==d.contentDigest){const projected=(await db.query("SELECT 1 FROM retrieval_sources WHERE source_kind=$1 AND source_revision_id=$2 AND source_generation=$3 AND content_digest=$4 LIMIT 1",[d.kind==="shared_knowledge"?"published_shared":d.kind,d.revisionId,d.generation,d.contentDigest])).rowCount;if(!projected)throw unavailable();}
-  const next:PartnerDependency={kind:d.kind,revisionId:d.revisionId,generation:Number(row.generation),contentDigest:row.digest},key=`${d.kind}:${d.revisionId}`,previous=seen.get(key);
-  if(previous){if(partnerHash(previous)!==partnerHash(next))throw unavailable();continue;}seen.set(key,next);if(seen.size>200)throw new HttpFailure(422,"scope_too_large","Narrow the original evidence closure");
-  const linked:Array<{kind:PartnerDependency['kind'];id:string}>=[];
-  if(d.kind==="accepted_profile")for(const r of (await db.query("SELECT source_revision_id,supporting_profile_revision_id,artifact_selection_id FROM profile_evidence_links WHERE profile_revision_id=$1",[d.revisionId])).rows){if(r.source_revision_id)linked.push({kind:"verified_research",id:r.source_revision_id});if(r.supporting_profile_revision_id)linked.push({kind:"accepted_profile",id:r.supporting_profile_revision_id});if(r.artifact_selection_id)linked.push({kind:"approved_excerpt",id:r.artifact_selection_id});}
-  if(d.kind==="approved_excerpt"){const r=(await db.query("SELECT profile_revision_id FROM artifact_evidence_selections WHERE id=$1",[d.revisionId])).rows[0];if(r?.profile_revision_id)linked.push({kind:"accepted_profile",id:r.profile_revision_id});}
-  for(const link of linked){const original=(await db.query(sql[link.kind],[link.id])).rows[0];if(!original)throw unavailable();pending.push({dependency:{kind:link.kind,revisionId:link.id,generation:Number(original.generation),contentDigest:original.digest},direct:false});}
+ type Pending={kind:PartnerDependency["kind"];revisionId:string;generation?:number;contentDigest?:string;direct:boolean};
+ let pending:Pending[]=expanded.filter((d):d is ExpansionDependency & {kind:PartnerDependency["kind"]}=>d.kind!=="milestone_baseline"&&d.kind!=="execution_record").map(d=>({...d,direct:refs.some(r=>r.kind===d.kind&&r.sourceRevisionId===d.revisionId)}));
+ const seen=new Map<string,PartnerDependency>();
+ // Expand bounded waves, preserving exact original/projection identity checks.
+ // Every closure call reads afresh; the post-lock closure still detects changes.
+ while(pending.length){
+  const headers=new Map<string,{generation:number;digest:string}>();
+  for(const kind of ["accepted_profile","approved_excerpt","verified_research","shared_knowledge"] as const){
+   const ids=[...new Set(pending.filter(d=>d.kind===kind).map(d=>d.revisionId))];if(!ids.length)continue;
+   if(ids.length+seen.size>200)throw new HttpFailure(422,"scope_too_large","Narrow the original evidence closure");
+   const query=kind==="shared_knowledge"?"SELECT p.revision_id AS id,p.head_generation AS generation,r.content_digest AS digest FROM knowledge_publications p JOIN knowledge_revisions r ON r.id=p.revision_id WHERE p.revision_id=ANY($1::uuid[])":kind==="accepted_profile"?"SELECT id,revision_number AS generation,content_digest AS digest FROM profile_revisions WHERE id=ANY($1::uuid[])":kind==="approved_excerpt"?"SELECT id,lifecycle_generation AS generation,excerpt_digest AS digest FROM artifact_evidence_selections WHERE id=ANY($1::uuid[])":"SELECT id,version AS generation,passage_digest AS digest FROM evidence_source_revisions WHERE id=ANY($1::uuid[])";
+   for(const row of (await db.query(query,[ids])).rows)headers.set(`${kind}:${row.id}`,{generation:Number(row.generation),digest:row.digest});
+  }
+  const mismatches=pending.filter(d=>!d.direct&&d.contentDigest!==undefined&&headers.get(`${d.kind}:${d.revisionId}`)?.digest!==d.contentDigest);
+  const projected=new Set<string>();if(mismatches.length){
+   const rows=(await db.query(`SELECT d.kind,d.revision_id,d.generation,d.digest FROM jsonb_to_recordset($1::jsonb) AS d(kind text,revision_id uuid,generation bigint,digest text) JOIN retrieval_sources s ON s.source_kind=d.kind AND s.source_revision_id=d.revision_id AND s.source_generation=d.generation AND s.content_digest=d.digest`,[JSON.stringify(mismatches.map(d=>({kind:d.kind==="shared_knowledge"?"published_shared":d.kind,revision_id:d.revisionId,generation:d.generation,digest:d.contentDigest})))])).rows;
+   for(const row of rows)projected.add(partnerHash([row.kind,row.revision_id,Number(row.generation),row.digest]));
+  }
+  const fresh:PartnerDependency[]=[];
+  for(const d of pending){const key=`${d.kind}:${d.revisionId}`,row=headers.get(key);if(!row||d.generation!==undefined&&row.generation!==d.generation)throw unavailable();
+   if(!d.direct&&d.contentDigest!==undefined&&row.digest!==d.contentDigest&&!projected.has(partnerHash([d.kind==="shared_knowledge"?"published_shared":d.kind,d.revisionId,d.generation,d.contentDigest])))throw unavailable();
+   const next:PartnerDependency={kind:d.kind,revisionId:d.revisionId,generation:row.generation,contentDigest:row.digest},prior=seen.get(key);if(prior){if(partnerHash(prior)!==partnerHash(next))throw unavailable();continue;}seen.set(key,next);fresh.push(next);if(seen.size>200)throw new HttpFailure(422,"scope_too_large","Narrow the original evidence closure");
+  }
+  const linked:Pending[]=[],profiles=fresh.filter(d=>d.kind==="accepted_profile").map(d=>d.revisionId),excerpts=fresh.filter(d=>d.kind==="approved_excerpt").map(d=>d.revisionId);
+  if(profiles.length)for(const row of (await db.query("SELECT DISTINCT source_revision_id,supporting_profile_revision_id,artifact_selection_id FROM profile_evidence_links WHERE profile_revision_id=ANY($1::uuid[]) LIMIT 201",[profiles])).rows){if(row.source_revision_id)linked.push({kind:"verified_research",revisionId:row.source_revision_id,direct:false});if(row.supporting_profile_revision_id)linked.push({kind:"accepted_profile",revisionId:row.supporting_profile_revision_id,direct:false});if(row.artifact_selection_id)linked.push({kind:"approved_excerpt",revisionId:row.artifact_selection_id,direct:false});}
+  if(excerpts.length)for(const row of (await db.query("SELECT profile_revision_id FROM artifact_evidence_selections WHERE id=ANY($1::uuid[])",[excerpts])).rows)if(row.profile_revision_id)linked.push({kind:"accepted_profile",revisionId:row.profile_revision_id,direct:false});
+  pending=linked.filter(d=>!seen.has(`${d.kind}:${d.revisionId}`));
  }
+
  return [...seen.values()].sort((a,b)=>a.kind.localeCompare(b.kind)||a.revisionId.localeCompare(b.revisionId));
+}
+async function lockPartnerOriginal(db:PoolClient,kind:PartnerDependency["kind"],revisionId:string){
+ const key=`original-lock:${kind}:${revisionId}`;
+ if(partnerCached<boolean>(db,key))return;
+ await lockOriginalHeader(db,kind,revisionId);cachePartnerValue(db,key,true);
 }
 export async function lockPartnerSourceUnion(db:PoolClient,actor:PartnerActor,sets:readonly {scope:PartnerGuideScope;refs:readonly PartnerSource[]}[],tolerateUnavailable=false){
  const union=new Map<string,PartnerDependency>(),discovered=new Set<string>();for(const set of sets){const identity=partnerHash(set);if(discovered.has(identity))continue;discovered.add(identity);let dependencies:PartnerDependency[];try{dependencies=await closure(db,actor,set.scope,set.refs);}catch(error){if(tolerateUnavailable&&error instanceof HttpFailure&&[404,409].includes(error.status))continue;throw error;}for(const d of dependencies){const key=`${d.kind}:${d.revisionId}`,prior=union.get(key);if(prior&&partnerHash(prior)!==partnerHash(d))throw unavailable();union.set(key,d);if(union.size>200)throw new HttpFailure(422,"scope_too_large","Narrow the original evidence closure");}}
- for(const d of [...union.values()].sort((a,b)=>a.kind.localeCompare(b.kind)||a.revisionId.localeCompare(b.revisionId)))try{await lockOriginalHeader(db,d.kind,d.revisionId);}catch(error){if(!tolerateUnavailable||!(error instanceof HttpFailure)||error.status!==409)throw error;}
+ for(const d of [...union.values()].sort((a,b)=>a.kind.localeCompare(b.kind)||a.revisionId.localeCompare(b.revisionId)))try{await lockPartnerOriginal(db,d.kind,d.revisionId);}catch(error){if(!tolerateUnavailable||!(error instanceof HttpFailure)||error.status!==409)throw error;}
  return [...union.values()];
 }
 export async function partnerSourceFence(db:PoolClient,actor:PartnerActor,scope:PartnerGuideScope,refs:readonly PartnerSource[],qualityRequired=false){
@@ -71,9 +88,11 @@ export async function partnerSourceFence(db:PoolClient,actor:PartnerActor,scope:
  // never an earlier request or an expired quality assessment.
  const cacheKey="source-fence:"+partnerHash({actor:actor.membershipId,workspace:actor.workspaceId,scope,refs,qualityRequired}),cached=partnerCached<{dependencies:PartnerDependency[];digest:string;engagement:Awaited<ReturnType<typeof readEngagement>>}>(db,cacheKey);if(cached){if(refs.some(ref=>Date.parse(ref.quality.validUntil)<=Date.now()))throw unavailable();return cached;}
  const dependencies=await closure(db,actor,scope,refs);
- for(const dependency of dependencies)await lockOriginalHeader(db,dependency.kind,dependency.revisionId);
+ for(const dependency of dependencies)await lockPartnerOriginal(db,dependency.kind,dependency.revisionId);
  if(partnerHash(await closure(db,actor,scope,refs))!==partnerHash(dependencies))throw unavailable();
- for(const d of dependencies){const kind=d.kind==="shared_knowledge"?"published_shared":d.kind;if(!await originalCurrent(db,{source_kind:kind,source_revision_id:d.revisionId,source_generation:String(d.generation),source_digest:d.contentDigest})||await confirmedConflictAfter(db,kind,d.revisionId,new Date(0)))throw unavailable();}
+ const originals=dependencies.map(d=>({source_kind:d.kind==="shared_knowledge"?"published_shared":d.kind,source_revision_id:d.revisionId,source_generation:String(d.generation),source_digest:d.contentDigest}));
+ if(!await originalProfilesCurrent(db,originals.filter(d=>d.source_kind==="accepted_profile"))||await confirmedConflictAfterAny(db,originals.map(d=>({kind:d.source_kind,revisionId:d.source_revision_id})),new Date(0)))throw unavailable();
+ for(const d of originals.filter(d=>d.source_kind!=="accepted_profile"))if(!await originalCurrent(db,d))throw unavailable();
  await db.query("SELECT p.id FROM delivery_plans p JOIN engagements e ON e.plan_id=p.id WHERE e.id=$1 AND e.workspace_id=$2 FOR SHARE OF p",[scope.engagementId,actor.workspaceId]);await db.query("SELECT id FROM engagements WHERE id=$1 AND workspace_id=$2 FOR SHARE",[scope.engagementId,actor.workspaceId]);
  const engagement=await readEngagement(actor,scope.engagementId,db);if(engagement.customerId!==scope.customerId||engagement.audience!=="delivery"||engagement.acceptedRevisionId!==scope.acceptedRevisionId||engagement.activeBaselineId!==scope.baselineId||engagement.contentAvailability!=="readable"||engagement.reviewRequired)throw unavailable();
  const execution=refs.filter(r=>r.kind==="accepted_execution");if(execution.length){if(execution.some(r=>r.engagementId!==scope.engagementId))throw unavailable();await verifyExecutionSources(db,actor,scope.customerId,scope.engagementId,"delivery",execution.map(r=>({id:r.id,kind:"execution_record" as const,sourceRevisionId:r.sourceRevisionId,generation:r.generation,contentDigest:r.contentDigest})),true);}
