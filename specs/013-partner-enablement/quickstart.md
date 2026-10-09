@@ -1,6 +1,6 @@
 # Quickstart: 013 Implementation Validation
 
-This is a planned run guide. The feature-specific scripts below are implementation deliverables, not commands that exist or have passed during planning. Use Node 24 in the canonical `/Users/mcteer/Projects/turas` checkout, installed lockfile dependencies, Docker/local PostgreSQL and CLI Playwright WebKit prerequisites. Do not use a selected hosted database or create sibling worktrees.
+This run guide uses implemented, owned synthetic validation runners. See validation.md for completed acceptance evidence. Use Node 24 in the canonical `/Users/mcteer/Projects/turas` checkout, installed lockfile dependencies, Docker/local PostgreSQL and CLI Playwright WebKit prerequisites. Do not use a selected hosted database or create sibling worktrees.
 
 ## Select and inspect
 
@@ -12,7 +12,7 @@ git status --short --branch
 
 Read the spec, plan, tasks and contracts before implementing. Preserve the chosen model and private state. Complete explicit migration 050/051 plus manifest updates; no application request may migrate schema.
 
-## Owned validation commands (to implement)
+## Owned validation commands
 
 ```sh
 npm run check:docs
@@ -20,9 +20,9 @@ npm run typecheck
 npm run test:partners
 npm run partners:ui:check
 npm run partners:recovery:check
-npm run benchmark:partners -- --disposable
+npm run benchmark:partners
 npm run test:partners:regressions
-npm run build:check
+npm run build:partners:check
 ```
 
 Every `partners` runner owns a synthetic environment using `scripts/partners-environment.ts`; it must refuse unowned targets and clean only its resources. UI runner supervises its own local app and all five declared files in all four WebKit projects. Do not invoke root `test:ui` against the operator's database. Benchmark respects production quotas and records pacing separately, so allow it to finish without trimming cases. Build verification uses the existing repository conventions and no deploy step.

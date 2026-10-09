@@ -73,10 +73,10 @@ lib/server/partners/
   commands.ts, receipts.ts, projection.ts, maintenance.ts, telemetry.ts, http.ts
 lib/server/engagements/read.ts
 lib/server/config.ts
-app/partners/page.tsx
-app/partners/customers/[customerId]/page.tsx
-app/partners/guides/[guideId]/page.tsx
-app/partners/assignments/[assignmentId]/page.tsx
+app/(workspace)/partners/page.tsx
+app/(workspace)/partners/customers/[customerId]/page.tsx
+app/(workspace)/partners/guides/[guideId]/page.tsx
+app/(workspace)/partners/assignments/[assignmentId]/page.tsx
 app/_components/partners/
   workspace.tsx, guides.tsx, guide-review.tsx, learning.tsx, revalidation.ts
 app/_components/app-shell.tsx

@@ -1,5 +1,5 @@
 {
-  "version": 49,
+  "version": 51,
   "migrations": [
     {
       "file": "001-identity-foundation.cjs",
@@ -196,6 +196,14 @@
     {
       "file": "049-gap-engineering-reports.cjs",
       "sha256": "86a894d4bad2b1c93a8f3c9d1897b488aa8a7a3711d7545b9480dad4d3a3cbd2"
+    },
+    {
+      "file": "050-partner-guides.cjs",
+      "sha256": "d6d74c82fec6542005458717d88f05a7517612ec92a6809fdfca20af982bdfda"
+    },
+    {
+      "file": "051-partner-learning.cjs",
+      "sha256": "44084ee30c7f53c75fa25aa8d8b0ce6f34f5bb30ddcbb8e63d52087b8960b7a2"
     }
   ]
 }

@@ -18,6 +18,61 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  partner-enablement:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      matrix:
+        gate: [deterministic, webkit, recovery, benchmark, regressions]
+    env:
+      AI_GATEWAY_API_KEY: ''
+      TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix packages/artifact-extractor
+      - name: Capture common 013 source fingerprint
+        run: |
+          node --import tsx --input-type=module <<'JS' >> "$GITHUB_ENV"
+          import {featureSourceDigest} from './scripts/execution-source-digest.ts';
+          console.log('TURAS_013_EXPECTED_SOURCE_DIGEST='+await featureSourceDigest('013'));
+          JS
+      - name: Validate 013 design artifacts
+        env:
+          SPECIFY_FEATURE_DIRECTORY: specs/013-partner-enablement
+          SPECIFY_FEATURE_NO_PERSIST: '1'
+        run: .specify/scripts/bash/check-prerequisites.sh --json --require-spec --require-tasks
+      - name: Complete partner manifest, types, owned build and documentation
+        if: matrix.gate == 'deterministic'
+        run: |
+          npm run typecheck:partners
+          npm run test:partners
+          npm run build:partners:check
+          npm run check:docs
+      - name: Complete five journeys across four WebKit projects
+        if: matrix.gate == 'webkit'
+        run: |
+          npx playwright install --with-deps webkit
+          npm run partners:ui:check
+      - name: Empty and 049 upgrade, interrupted cleanup and preserved restart
+        if: matrix.gate == 'recovery'
+        run: npm run partners:recovery:check
+      - name: Seven load classes with production-quota pacing
+        if: matrix.gate == 'benchmark'
+        run: npm run benchmark:partners
+      - name: Exact earlier delivery and privacy regressions
+        if: matrix.gate == 'regressions'
+        run: |
+          npx playwright install --with-deps webkit
+          npm run test:partners:regressions
+      - name: Require complete evidence for the same source
+        run: node --import tsx scripts/partners-ci-evidence.ts "${{ matrix.gate }}"
+
   expansion:
     runs-on: ubuntu-latest
     timeout-minutes: 120

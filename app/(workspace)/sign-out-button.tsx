@@ -16,6 +16,8 @@ export function SignOutButton({ csrfToken }: { csrfToken: string }) {
         headers: { "x-csrf-token": csrfToken },
       });
       if (!response.ok) throw new Error("Sign-out unavailable");
+      for (const key of Object.keys(sessionStorage)) if (key.startsWith("turas.partner.pending:")) sessionStorage.removeItem(key);
+      window.dispatchEvent(new Event("turas.partner.access-cleared"));
       window.location.assign("/login");
     } catch {
       setError("Sign-out unavailable");

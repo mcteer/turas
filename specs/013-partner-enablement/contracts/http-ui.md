@@ -2,17 +2,18 @@
 
 ## HTTP surface
 
-All routes are authenticated, environment scoped and call the governed domain. Responses include `contractVersion: partner-enablement-v1`, `Cache-Control: private, no-store` and `Vary: Cookie`. No public cache or business-state mutation by GET; bounded private discovery cursors are the only read-generated cache metadata. Existing CSRF/same-origin/content-type protection applies to POST. Reject unknown fields, invalid UUIDs, excessive nesting and C02/C04/C09 bounds before domain work; maximum request body is 160 KiB.
+All routes are authenticated, environment scoped and call the governed domain. Responses include `contractVersion: partner-enablement-v1`, `Cache-Control: private, no-store` and `Vary: Cookie`. No public cache or business-state mutation by GET; bounded private discovery cursors are the only read-generated cache metadata. Existing CSRF/same-origin/content-type protection applies to POST. Reject unknown fields, invalid UUIDs, excessive nesting and C02/C04/C09 bounds before domain work; maximum request body is 160 KiB. Successful object projections also include the authenticated actorPrincipalId, actorMembershipId and an opaque environment/principal/member commandNamespace for private pending-request storage. These fields never authorize a client override.
 
 | Method/path | Input and response |
 | --- | --- |
 | GET `/api/partners/workspace` | C08 search/page/cursor; authorized customer cards with safe existing-domain links and hasMore/nextCursor |
 | GET `/api/partners/customers/:customerId/engagements` | C08 page/cursor/search, optional workloadId; accepted delivery cards, current eligibility and existing plan/execution/support links |
 | GET `/api/partners/customers/:customerId/members` | mcteer only; C08 eligible assignment-target page; no partner roster endpoint |
+| GET `/api/partners/evidence` | Required customerId/engagementId, C08 search/page and optional sourceType; currently eligible original or accepted-execution citations, with exact immutable source descriptors |
 | GET `/api/partners/guides` | Required customerId/engagementId plus C08 paging; partner sees published identities only; internal includes working status |
 | GET `/api/partners/guides/:guideId` | Current guide projection, eligible exact published revision for partner; internal may select an authorized revisionId for review/history |
 | GET `/api/partners/assignments` | Required customerId, optional engagementId/memberId; C08 paging; partner memberId must be self; internal member filter remains customer scoped |
-| GET `/api/partners/assignments/:assignmentId` | Current learning projection, own attempts/internal review, history and C12 progress |
+| GET `/api/partners/assignments/:assignmentId` | Current learning projection and C12 progress; optional checkpointId selects C08 paged immutable attempt history, with own-partner/internal authority |
 | POST `/api/partners/commands` | Strict action union, requestId, expectedVersion, target IDs, action payload and previewId where required; minimal receipt |
 | POST `/api/partners/previews` | Exact review/assignment action and proposed input/version; actor/session-bound preview ID, expiry and authorized review projection |
 | GET `/api/partners/requests/:requestId` | Own currently authorized minimal `committed`, `not_found`, `pending`, `abandoned` or `retired` result under the admission lock; never prior payload |
@@ -20,7 +21,7 @@ All routes are authenticated, environment scoped and call the governed domain. R
 
 Member/workspace/environment identity is taken from the authenticated request, never trusted from a client override. A command receipt exposes requestId, action, target identity, committed version, outcome and committedAt when retained; no input hash, source closure or customer prose. Unknown fields in the selected action are invalid. Changing action/target/body under requestId is a conflict. Preview creation is itself idempotent using a requestId; replay cannot refresh expiry or source binding. A preview receipt only exposes an unexpired currently authorized preview identity, otherwise `expired`.
 
-Status codes: 401 missing/expired session; 404 unknown or inaccessible target; 403 known-role capability denial without target detail; 409 stale version/source/authority/preview or request conflict; 410 expired preview or command replay of a retired/abandoned request where identity remains authorized (status GET returns its minimal state with 200); 202 pending reconciliation; 422 invalid input/bounds/evidence criteria; 429 quota with Retry-After; 503 disabled or required schema unavailable. An uncertain transport result is a client state, never falsely reported as a definitive rollback. Safe reason enums may distinguish stale guide/evidence for an authorized internal reviewer, but cannot identify a hidden source. Revalidate all persisted cursor scope on every request; reject stale cursors and restart discovery.
+Status codes: 401 missing/expired session; 404 unknown or inaccessible target; 403 known-role capability denial without target detail; 409 stale version/source/authority/preview or request conflict; 410 expired preview or command replay of a retired/abandoned request where identity remains authorized (status GET returns its minimal state with 200); 202 pending reconciliation; 413 oversized request body; 422 invalid input/bounds/evidence criteria; 429 quota with Retry-After; 503 disabled or required schema unavailable. An uncertain transport result is a client state, never falsely reported as a definitive rollback. Safe reason enums may distinguish stale guide/evidence for an authorized internal reviewer, but cannot identify a hidden source. Revalidate all persisted cursor scope on every request; reject stale cursors and restart discovery.
 
 ## UI surfaces
 

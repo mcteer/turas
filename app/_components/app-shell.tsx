@@ -22,6 +22,7 @@ function SidebarContent({ role, loginName, csrfToken, staffing, kind }: { role: 
       <p className="nav-group-label">Workspace</p>
       {navItem("/customers", "Customer Profiles", "customers")}
       {navItem("/knowledge", "Shared Knowledge", "knowledge")}
+      {navItem("/partners", "Partner Delivery", "people")}
       {kind === "internal" && navItem("/product-gaps", "Product Gaps", "plan")}
       {customerScope && <><p className="nav-group-label">Current Customer</p>{navItem(`/customers/${customerScope}/reports`, "Customer Reports", "plan")}</>}
       {staffing.resources && <p className="nav-group-label">Delivery</p>}

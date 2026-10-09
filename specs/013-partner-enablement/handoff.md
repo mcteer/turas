@@ -27,3 +27,17 @@ Clarification coverage: reviewer decision rights resolved; scope, domain model, 
 - Update `docs/partner-operations.md` during implementation with migration, disable and forward-recovery details. Do not deploy, migrate hosted data, send external messages or merge this planning branch under the prior 012 merge instruction.
 
 The final read-only analysis is reported in the conversation. This file records design/handoff facts, not implementation or hosted acceptance.
+
+## Implementation preflight
+
+2026-10-09: canonical branch confirmed, Node 24 and local Docker available, all 16 specification checklist items pass, no extension hooks. Installed Next layout, client component and route-handler guides reviewed before framework authoring. Ignore files cover private environments, runtime state, generated output and owned local artifacts.
+
+## Implementation status
+
+The canonical branch now contains 050/051 migrations, governed workspace/guide/
+assignment/checkpoint services, strict HTTP adapters, protected responsive UI and
+owned domain, WebKit, recovery, regression, build and load runners. Agent model
+selection and selected private runtime state are preserved. All tests use disposable
+synthetic environments under ignored `local-artifacts/013/`; no hosted migration,
+deployment or new model call was performed. Final acceptance and CI outcomes are recorded in [validation](validation.md). Follow [operations](../../docs/partner-operations.md) for release and
+forward recovery. Prior planning statements above describe the planning phase.

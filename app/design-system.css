@@ -329,3 +329,13 @@ input[type="file"]::file-selector-button { font: inherit; color: var(--foregroun
 #execution-panel details summary { cursor: pointer; font-size: 13px; font-weight: 500; }
 #execution-panel fieldset .execution-check { margin-right: 1rem; margin-bottom: .5rem; }
 .execution-hours { display: block; margin-top: .25rem; font-size: 11px; font-weight: 400; letter-spacing: 0; color: var(--muted); }
+/* Partner delivery forms use the existing surface and spacing tokens. */
+.partner-form { display: grid; gap: 1rem; }
+.partner-form fieldset { min-width: 0; margin: .75rem 0; }
+.partner-form label { display: grid; gap: .4rem; min-width: 0; margin: .6rem 0; }
+.partner-form .field { width: 100%; min-width: 0; }
+.partner-form textarea { resize: vertical; }
+.partner-form label:has(> input[type="checkbox"]):not(.partner-evidence-option) { display: flex; align-items: center; gap: .6rem; }
+.profile-page .partner-evidence-option { display: grid; grid-template-columns: 1rem minmax(0, 1fr); gap: .5rem; margin: .8rem 0; cursor: pointer; }
+.partner-evidence-option > input { grid-column: 1; grid-row: 1; align-self: start; margin: .2rem 0 0; }
+.partner-evidence-option > :not(input) { grid-column: 2; min-width: 0; overflow-wrap: anywhere; }

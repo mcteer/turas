@@ -1,13 +1,13 @@
 # Turas delivery roadmap
 
 Baseline: 2026-09-26; updated 2026-10-09. **001 merged in PR 1; 002 merged in
-[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 merged in [PR 11](https://github.com/mcteer/turas/pull/11) after local and CI validation, without a hosted release; 007 merged in [PR 13](https://github.com/mcteer/turas/pull/13) after local and CI validation, without a hosted release. 008 merged in [PR 16](https://github.com/mcteer/turas/pull/16) after passing CI; hosted execution acceptance remains separate. 009 merged in [PR 17](https://github.com/mcteer/turas/pull/17); live reporting delivery remains deferred. 010 implementation and acceptance are recorded in [PR 19](https://github.com/mcteer/turas/pull/19); 011 merged in [PR 22](https://github.com/mcteer/turas/pull/22) after local, actual-model independent review and passing CI; 012 merged in [PR 23](https://github.com/mcteer/turas/pull/23); 013 is specified and planned, with implementation pending; 014–016 remain roadmap proposals.**
+[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 merged in [PR 11](https://github.com/mcteer/turas/pull/11) after local and CI validation, without a hosted release; 007 merged in [PR 13](https://github.com/mcteer/turas/pull/13) after local and CI validation, without a hosted release. 008 merged in [PR 16](https://github.com/mcteer/turas/pull/16) after passing CI; hosted execution acceptance remains separate. 009 merged in [PR 17](https://github.com/mcteer/turas/pull/17); live reporting delivery remains deferred. 010 implementation and acceptance are recorded in [PR 19](https://github.com/mcteer/turas/pull/19); 011 merged in [PR 22](https://github.com/mcteer/turas/pull/22) after local, actual-model independent review and passing CI; 012 merged in [PR 23](https://github.com/mcteer/turas/pull/23); 013 is locally implemented, with acceptance tracked in its validation record and merge pending; 014–016 remain roadmap proposals.**
 
 Owner-private chat archiving released in [PR 20](https://github.com/mcteer/turas/pull/20).
 The [public research remediation](https://github.com/mcteer/turas/pull/21) saved and
 indexed the authorized 184-entry public customer inventory in Production; its
 application release and hosted UI checks remain separate from the data proof.
-011 is merged with local/CI acceptance; hosted release remains separate. 012 is merged in PR 23; local and CI acceptance are tracked in its validation record. 013 is specified and planned, with implementation pending; 014–016 remain proposals.
+011 is merged with local/CI acceptance; hosted release remains separate. 012 is merged in PR 23; local and CI acceptance are tracked in its validation record. 013 is locally implemented, with acceptance tracked in its validation record and merge pending; 014–016 remain proposals.
 
 005 now has [specification](specs/005-governed-rag-research/spec.md),
 [design](specs/005-governed-rag-research/plan.md) and
@@ -135,8 +135,9 @@ The [specification](specs/013-partner-enablement/spec.md),
 workspace using existing delivery workflows, reviewed customer-scoped guides and
 individual training checkpoints. The user confirmed mcteer verification of partner
 submissions. Individual customer grants remain authoritative; shared knowledge
-uses 005's sanitized publications. This is planning only: no implementation,
-migrations, hosted rollout or new model behavior has occurred. See the
+uses 005's sanitized publications. Local implementation includes explicit 050/051 migrations and owned synthetic
+validation runners. See the [validation record](specs/013-partner-enablement/validation.md) for local
+and CI outcomes; merge, hosted rollout and acceptance remain pending. Agent model selection is unchanged. See the
 [handoff](specs/013-partner-enablement/handoff.md).
 
 ## Build sequence

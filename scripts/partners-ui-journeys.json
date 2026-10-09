@@ -1,0 +1,7 @@
+[
+  "tests/ui/partner-workspace.spec.ts",
+  "tests/ui/partner-guides.spec.ts",
+  "tests/ui/partner-learning.spec.ts",
+  "tests/ui/partner-revocation.spec.ts",
+  "tests/ui/partner-accessibility.spec.ts"
+]

@@ -229,3 +229,17 @@ DO $$ DECLARE t text; BEGIN
   GRANT EXECUTE ON FUNCTION turas_gap_expire_receipt(text,uuid,text[]),turas_gap_purge_payloads(text,integer),turas_gap_invalidate_source(text,uuid) TO turas_runtime;
  END IF;
 END $$;
+
+-- 013: bounded partner domain with immutable revisions and owner-scoped maintenance.
+DO $$ DECLARE t text; BEGIN
+ IF to_regclass('public.partner_guides') IS NOT NULL THEN
+  FOR t IN SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename LIKE 'partner_%' AND tablename<>'partner_organizations' LOOP
+   EXECUTE format('REVOKE ALL ON TABLE %I FROM turas_runtime',t);
+   EXECUTE format('GRANT SELECT,INSERT ON TABLE %I TO turas_runtime',t);
+   IF t IN('partner_guides','partner_guide_revision_states','partner_learning_assignments','partner_checkpoint_attempts','partner_checkpoint_revision_states','partner_cleanup_jobs','partner_rate_windows','partner_list_cursors') THEN EXECUTE format('GRANT UPDATE ON TABLE %I TO turas_runtime',t);END IF;
+  END LOOP;
+  GRANT DELETE ON partner_list_cursors TO turas_runtime;
+  GRANT EXECUTE ON FUNCTION turas_partner_purge(text,integer) TO turas_runtime;
+  IF to_regclass('public.partner_learning_assignments') IS NOT NULL THEN GRANT EXECUTE ON FUNCTION turas_partner_purge_learning(text,integer) TO turas_runtime;END IF;
+ END IF;
+END $$;

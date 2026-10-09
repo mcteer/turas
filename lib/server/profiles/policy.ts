@@ -6,8 +6,8 @@ import { requiredSchemaVersion } from "../db/readiness";
 
 export type ProfileActor = CurrentSession;
 
-export async function lockWorkspaceActor(client: PoolClient, actor: ProfileActor, affectedMembershipId?: string | readonly string[], readOnly = false): Promise<void> {
-  await client.query("SET LOCAL lock_timeout = '3000ms'");
+export async function lockWorkspaceActor(client: PoolClient, actor: ProfileActor, affectedMembershipId?: string | readonly string[], readOnly = false, lockTimeoutMs = 3000): Promise<void> {
+  await client.query("SELECT set_config('lock_timeout',CASE WHEN current_setting('turas.partner_operation',true)='013' THEN '2000ms' ELSE $1 END,true)",[`${lockTimeoutMs}ms`]);
   await client.query("SET LOCAL statement_timeout = '5000ms'");
   const lock = readOnly ? "FOR SHARE" : "FOR UPDATE";
   const memberIds = [...new Set([actor.membershipId, ...(typeof affectedMembershipId === "string" ? [affectedMembershipId] : affectedMembershipId ?? [])].filter((id): id is string => Boolean(id)))].sort();
