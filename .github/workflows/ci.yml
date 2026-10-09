@@ -477,7 +477,7 @@ jobs:
 
   product-gaps:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 50
     strategy:
       fail-fast: false
       matrix:

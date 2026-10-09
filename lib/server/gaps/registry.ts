@@ -6,7 +6,7 @@ import { HttpFailure } from '../../contracts/http';
 import { getServerConfig } from '../config';
 import type { GapActor } from './policy';
 import { gapHash } from './commands';
-import { revisionHeader,gapRow,gapExpected } from './repository';
+import { revisionHeaders } from './repository';
 import {gapCountMetadata} from './counts';
 import {gapRankingFactors} from './ranking';
 import {compareGapRank} from '../../product-gaps/ranking';
@@ -20,7 +20,6 @@ export async function gapRegistry(db:PoolClient,actor:GapActor,input:z.infer<typ
  const counts=await gapCountMetadata(db,actor,undefined,input.asOf?new Date(input.asOf):new Date(),[],input.comparisonAt?new Date(input.comparisonAt):undefined);
  const rows=counts.items.map(item=>item.record);
  const countMap=new Map(counts.items.map(item=>[item.id,item]));
- const headers=new Map<string,Awaited<ReturnType<typeof revisionHeader>>>();
  let generation='';
  const binding=gapHash({env,workspace:actor.workspaceId,actor:actor.membershipId,session:actor.sessionId,filters:{...input,cursor:undefined}});
  const sign=(value:string)=>createHmac('sha256',getServerConfig().TURAS_MAINTENANCE_SECRET).update(`gap-list-v1:${value}`).digest();
@@ -39,8 +38,8 @@ export async function gapRegistry(db:PoolClient,actor:GapActor,input:z.infer<typ
  result.sort((a,b)=>a.ranking&&b.ranking?compareGapRank(a.ranking.factors,b.ranking.factors):a.ranking?-1:b.ranking?1:a.id.localeCompare(b.id));
  generation=gapHash({source:counts.generation,eligible:result.map(r=>[r.id,r.revisionId,r.ranking])});
  if(priorGeneration!==null&&priorGeneration!==generation)throw new HttpFailure(409,'cursor_changed','Gap view changed; refresh the list');
- const selected=result.slice(offset,offset+input.limit),page=[],verifyFenced=await createFencedGapVerifier(db,actor);
- for(const item of selected){const header=await revisionHeader(db,actor,item.revisionId),projection=await projectGapRevision(db,actor,item.revisionId,false,header,verifyFenced);if(projection?.availability!=='eligible')throw new HttpFailure(409,'source_unavailable','Gap view changed; refresh the list');page.push({...item,revision:projection});}
+ const selected=result.slice(offset,offset+input.limit),page=[],headers=await revisionHeaders(db,actor,selected.map(item=>item.revisionId)),verifyFenced=await createFencedGapVerifier(db,actor);
+ for(const item of selected){const header=headers.get(item.revisionId)!,projection=await projectGapRevision(db,actor,item.revisionId,false,header,verifyFenced);if(projection?.availability!=='eligible')throw new HttpFailure(409,'source_unavailable','Gap view changed; refresh the list');page.push({...item,revision:projection});}
  let nextCursor:string|null=null;
  if(result.length>offset+input.limit){const body=Buffer.from(JSON.stringify({binding,generation,offset:offset+input.limit,expiresAt:Date.now()+300000})).toString('base64url');nextCursor=`${body}.${sign(body).toString('base64url')}`;}
  return {contractVersion:'product-gaps-v1' as const,commandNamespace:gapHash([env,actor.workspaceId,actor.membershipId,actor.sessionId]),scopeGeneration:generation,items:page,nextCursor};
