@@ -64,5 +64,5 @@ The domain, five-file/four-project WebKit, recovery, exact earlier-domain regres
 owned web/eve build and seven-class load gates reject incomplete acceptance.
 Load measurement respects production quotas and records pacing separately.
 Runners refuse unowned targets and remove only their own subprocesses, synthetic
-containers and checkout copies beneath ignored `local-artifacts/013/`.
+containers, their anonymous database volumes and checkout copies beneath ignored `local-artifacts/013/`.
 Do not point these runners at customer data or use the host browser for UI testing.
