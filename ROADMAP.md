@@ -1,13 +1,13 @@
 # Turas delivery roadmap
 
-Baseline: 2026-09-26; updated 2026-10-06. **001 merged in PR 1; 002 merged in
-[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 merged in [PR 11](https://github.com/mcteer/turas/pull/11) after local and CI validation, without a hosted release; 007 merged in [PR 13](https://github.com/mcteer/turas/pull/13) after local and CI validation, without a hosted release. 008 merged in [PR 16](https://github.com/mcteer/turas/pull/16) after passing CI; hosted execution acceptance remains separate. 009 merged in [PR 17](https://github.com/mcteer/turas/pull/17); live reporting delivery remains deferred. 010 implementation and acceptance are recorded in [PR 19](https://github.com/mcteer/turas/pull/19); 011–016 remain roadmap proposals.**
+Baseline: 2026-09-26; updated 2026-10-08. **001 merged in PR 1; 002 merged in
+[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 merged in [PR 11](https://github.com/mcteer/turas/pull/11) after local and CI validation, without a hosted release; 007 merged in [PR 13](https://github.com/mcteer/turas/pull/13) after local and CI validation, without a hosted release. 008 merged in [PR 16](https://github.com/mcteer/turas/pull/16) after passing CI; hosted execution acceptance remains separate. 009 merged in [PR 17](https://github.com/mcteer/turas/pull/17); live reporting delivery remains deferred. 010 implementation and acceptance are recorded in [PR 19](https://github.com/mcteer/turas/pull/19); 011 is implemented locally with release validation in progress; 012–016 remain roadmap proposals.**
 
 Owner-private chat archiving released in [PR 20](https://github.com/mcteer/turas/pull/20).
 The [public research remediation](https://github.com/mcteer/turas/pull/21) saved and
 indexed the authorized 184-entry public customer inventory in Production; its
 application release and hosted UI checks remain separate from the data proof.
-011–016 remain proposals.
+011 local implementation is under release validation; 012–016 remain proposals.
 
 005 now has [specification](specs/005-governed-rag-research/spec.md),
 [design](specs/005-governed-rag-research/plan.md) and
@@ -110,6 +110,18 @@ acceptance. Hosted rollout remains separately authorized. See
 [support operations](docs/support-operations.md) for disable, retention and
 forward-recovery boundaries. Broader research-specialist and conversation-history
 follow-up remains separate.
+
+## 011 Product Expansion Opportunities
+
+The [specification](specs/011-product-expansion/spec.md),
+[plan](specs/011-product-expansion/plan.md) and
+[51 implementation tasks](specs/011-product-expansion/tasks.md) define internal
+customer/workload hypotheses, transparent ranking, evidence-driven review and bounded
+Turi proposals. The user confirmed one designated internal account owner per customer,
+with assignments managed by `mcteer`. Qualification remains separate from customer
+fact approval, maturity, delivery acceptance and commercial commitment.
+
+All four stories have local implementations and deterministic browser/domain evidence. Release validation is in progress; configured-provider evaluation and independent review, CI and hosted release remain separate pending gates. See the [validation record](specs/011-product-expansion/validation.md).
 
 ## Build sequence
 

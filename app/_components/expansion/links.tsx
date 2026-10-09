@@ -1,0 +1,17 @@
+"use client";
+import {useEffect,useState} from 'react';
+import type {z} from 'zod';
+import type {expansionDeliveryChoicesSchema} from '../../../lib/server/expansion/link-choices';
+import type {ExpansionLink} from '../../../lib/server/expansion/schema';
+type Choices=z.infer<typeof expansionDeliveryChoicesSchema>;
+export function ExpansionDeliveryLinks({customerId,workloadId,selected,links,busy,onChange}:{customerId:string;workloadId:string|null;selected:string[];links:ExpansionLink[];busy:boolean;onChange:(selected:string[],links:ExpansionLink[])=>void}){
+ const [choices,setChoices]=useState<Choices|null>(null),[status,setStatus]=useState('Loading eligible delivery references…');
+ useEffect(()=>{const controller=new AbortController();setChoices(null);void fetch(`/api/expansion/customers/${customerId}/links${workloadId?`?workloadId=${workloadId}`:''}`,{cache:'no-store',signal:controller.signal}).then(async response=>{const body=await response.json();if(!response.ok||!body.data)throw Error('Eligible delivery references unavailable.');setChoices(body.data);setStatus('');}).catch(error=>{if(error.name!=='AbortError')setStatus(error.message);});return()=>controller.abort();},[customerId,workloadId]);
+ const key=(link:ExpansionLink)=>JSON.stringify(link);
+ function toggle(link:ExpansionLink,checked:boolean){const next=checked?[...links,link]:links.filter(item=>key(item)!==key(link));const engagements='engagementId' in link&&checked?[...new Set([...selected,link.engagementId])]:selected;onChange(engagements,next);}
+ return <fieldset className="profile-card" disabled={busy}><legend>Delivery References</legend><p>Optional links retain exact accepted revisions and their original evidence. They do not change plans, staffing, or execution.</p>{status&&<p role="status">{status}</p>}
+ {choices?.plans.map(plan=>{const link:ExpansionLink={kind:'plan_revision',planId:plan.planId,revisionId:plan.revisionId},checked=links.some(item=>key(item)===key(link));return <label key={plan.revisionId}><input type="checkbox" checked={checked} disabled={!checked&&links.length>=10} onChange={event=>toggle(link,event.target.checked)}/>Link Plan: {plan.title}</label>;})}
+ {choices?.engagements.map(engagement=>{const link:ExpansionLink={kind:'milestone_baseline',engagementId:engagement.engagementId,baselineId:engagement.baselineId,revisionId:engagement.revisionId},checked=links.some(item=>key(item)===key(link));return <div key={engagement.engagementId}><label><input type="checkbox" checked={selected.includes(engagement.engagementId)} disabled={!selected.includes(engagement.engagementId)&&selected.length>=10} onChange={event=>onChange(event.target.checked?[...selected,engagement.engagementId]:selected.filter(id=>id!==engagement.engagementId),event.target.checked?links:links.filter(item=>!('engagementId' in item)||item.engagementId!==engagement.engagementId))}/>Select Engagement: {engagement.title}</label><label><input type="checkbox" checked={checked} disabled={!checked&&(links.length>=10||!selected.includes(engagement.engagementId))} onChange={event=>toggle(link,event.target.checked)}/>Link Current Baseline: {engagement.title}</label></div>;})}
+ {links.map((link,index)=><div key={key(link)}><p>Selected {link.kind.replaceAll('_',' ')}: {'revisionId' in link?link.revisionId:link.baselineId}</p><button className="secondary-button" type="button" onClick={()=>onChange(selected,links.filter((_,position)=>position!==index))}>Remove Delivery Link {index+1}</button></div>)}
+ </fieldset>;
+}

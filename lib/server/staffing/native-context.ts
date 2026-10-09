@@ -18,7 +18,7 @@ const changed = () => new HttpFailure(409, "staffing_context_changed", "Staffing
 export async function staffingResponseScope(principal: Principal) {
   const { responseFeature } = await import("../conversations/feature");
   const feature = await responseFeature(principal);
-  return feature?.kind === "staffing" || feature?.kind === "execution" || feature?.kind === "support" ? feature.scope : null;
+  return feature?.kind === "staffing" || feature?.kind === "execution" || feature?.kind === "support" || feature?.kind === "expansion" ? feature.scope : null;
 }
 
 /** Prepare only the strict zoned overlap outside the final release transaction. */

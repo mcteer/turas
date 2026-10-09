@@ -1,3 +1,5 @@
+import {processExpansionNativeRetirement} from "../lib/server/expansion/native-retirement";
+import {runExpansionCleanupTick,expireExpansionReceipts,settleDueExpansionAdvice,runExpansionAdviceCleanupTick,minimizeExpansionAdviceMetadata} from "../lib/server/expansion/maintenance";
 import { randomUUID } from "node:crypto";
 import { closeRuntimePool } from "../lib/server/db/client";
 import { getServerConfig } from "../lib/server/config";
@@ -126,6 +128,8 @@ const supportTimer = setInterval(() => {
     [getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0]?.schema_version ?? 0)).then(async version => {
     if (version < 42) return;
     await runSupportCleanupTick(); await expireSupportReceipts(); await minimizeSupportAudit();
+    if(version>=47){await settleDueExpansionAdvice();await runExpansionAdviceCleanupTick();await processExpansionNativeRetirement();await minimizeExpansionAdviceMetadata();}
+    if(version>=46){await runExpansionCleanupTick();await expireExpansionReceipts();}
     if (version >= 43) { await settleDueSupportAdvice(); await runSupportAdviceCleanupTick(); await processSupportNativeRetirement(); }
   }).catch(fatal).finally(() => { supportScanning = false; });
 }, 30000);

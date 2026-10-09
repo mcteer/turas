@@ -62,6 +62,11 @@ export async function requestCancellation(
         WHERE response_attempt_id=$1 AND conversation_id=$2 AND environment_id=$3 AND workspace_id=$4 AND owner_membership_id=$5 AND state IN ('prepared','running','unconfirmed')`,
         [attempt.rows[0].id,id,getServerConfig().TURAS_ENVIRONMENT_ID,session.workspaceId,session.membershipId]);
     }
+    if((marker.rows[0]?.schema_version??0)>=47){
+      await client.query(`UPDATE expansion_advice_attempts SET state='cancelled',failure_code='cancelled',settled_at=COALESCE(settled_at,clock_timestamp()),updated_at=clock_timestamp()
+        WHERE response_attempt_id=$1 AND conversation_id=$2 AND environment_id=$3 AND workspace_id=$4 AND owner_membership_id=$5 AND state IN ('prepared','running','unconfirmed')`,
+      [attempt.rows[0].id,id,getServerConfig().TURAS_ENVIRONMENT_ID,session.workspaceId,session.membershipId]);
+    }
     if ((marker.rows[0]?.schema_version ?? 0) >= 43) {
       await client.query(`UPDATE support_advice_attempts SET state='cancelled',failure_code='cancelled',settled_at=clock_timestamp(),updated_at=clock_timestamp()
         WHERE response_attempt_id=$1 AND conversation_id=$2 AND environment_id=$3 AND workspace_id=$4 AND owner_membership_id=$5 AND state IN ('prepared','running','unconfirmed')`,

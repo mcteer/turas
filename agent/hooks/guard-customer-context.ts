@@ -15,7 +15,7 @@ export default defineHook({
         throw new Error("Customer context was not bound to this turn");
       }
       const feature = await responseFeature(principal);
-      if (feature?.kind === "support") {
+      if (feature?.kind === "support" || feature?.kind === "expansion") {
         // Hooks observe events; they are not the paid-call authorization boundary.
         // Support admission validates exact injection and current sources, and
         // wrapSupportModel rechecks authority immediately before provider I/O.

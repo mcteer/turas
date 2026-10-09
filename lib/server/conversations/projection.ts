@@ -1,4 +1,6 @@
 import { projectExecutionNativeEventInTransaction, type ExecutionNativeProjection } from "../execution/native-events";
+import {projectExpansionNativeEventInTransaction,type ExpansionNativeProjection} from "../expansion/native-events";
+import {recordExpansionTelemetry} from "../expansion/telemetry";
 import { projectSupportNativeEventInTransaction, type SupportNativeProjection } from "../support/native-events";
 import { recordSupportTelemetry } from "../support/telemetry";
 import { recordExecutionTelemetry } from "../execution/telemetry";
@@ -56,13 +58,13 @@ export async function projectNativeEvent(
     const row = (await client.query(`SELECT conversation_id,a.native_turn_id FROM response_attempts a JOIN conversations c ON c.id=a.conversation_id
       WHERE a.id=$1 AND c.eve_session_id=$2 AND c.binding_state='bound'`, [attemptId, nativeSessionId])).rows[0];
     const kind = row ? (await conversationFeature(client, row.conversation_id)).kind : null;
-    if (kind === "support" && event.type === "message.appended" &&
+    if ((kind === "support" || kind === "expansion") && event.type === "message.appended" &&
       (!row.native_turn_id || row.native_turn_id !== event.data?.turnId)) throw new Error("Native support delta association unavailable");
     return kind;
   });
   // No delta prose is released or retained for support. After the exact durable
   // turn/session association check, avoid a write transaction per hidden chunk.
-  if (staffing === "support" && event.type === "message.appended") return;
+  if ((staffing === "support" || staffing === "expansion") && event.type === "message.appended") return;
   // Support never releases streaming deltas. Rebuilding its source closure for
   // each hidden token blocks the event hook and can prevent terminal settlement.
   // Durable attempt/turn association is still checked in the transaction below;
@@ -72,16 +74,17 @@ export async function projectNativeEvent(
   const started = performance.now();
   const projection = await withTransaction((client) =>
     projectNativeEventInTransaction(client, nativeSessionId, attemptId, event, streamIndex, prepared));
+  if(projection&&"expansion" in projection&&projection.usage)recordExpansionTelemetry({operation:"model",outcome:"committed",correlationId:attemptId,...projection.usage,durationMs:Math.min(86400000,Math.max(0,performance.now()-started))});
   if (projection && "support" in projection && projection.usage) recordSupportTelemetry({ operation: "model", outcome: "committed",
     correlationId: attemptId, ...projection.usage, durationMs: Math.min(86400000, Math.max(0, performance.now() - started)) });
-  if (projection?.usage && !("support" in projection)) ("execution" in projection ? recordExecutionTelemetry : recordStaffingTelemetry)({ operation: "model", outcome: "committed", ...projection.usage,
+  if (projection?.usage && !("support" in projection)&&!("expansion" in projection)) ("execution" in projection ? recordExecutionTelemetry : recordStaffingTelemetry)({ operation: "model", outcome: "committed", ...projection.usage,
     durationMs: Math.min(86_400_000, Math.max(0, performance.now() - started)) });
 }
 
 export async function projectNativeEventInTransaction(
   client: PoolClient, nativeSessionId: string, attemptId: string,
   event: NativeEvent, streamIndex?: number, preparedStaffing?: GovernedNativeRelease | null,
-): Promise<void | StaffingNativeProjection | ExecutionNativeProjection | SupportNativeProjection> {
+): Promise<void | StaffingNativeProjection | ExecutionNativeProjection | SupportNativeProjection | ExpansionNativeProjection> {
   if (!visibleTypes.has(event.type)) return;
   if (!event.meta.id?.startsWith("evt_") || !event.meta.at ||
       !Number.isFinite(Date.parse(event.meta.at))) {
@@ -96,6 +99,8 @@ export async function projectNativeEventInTransaction(
     JOIN conversations c ON c.id=a.conversation_id WHERE a.id=$1 AND c.eve_session_id=$2 AND c.binding_state='bound'`,
     [attemptId, nativeSessionId])).rows[0];
   if (!owned) throw new Error("Native attempt association unavailable");
+  const expansionProjection=await projectExpansionNativeEventInTransaction(client,nativeSessionId,attemptId,event,streamIndex,preparedStaffing?.kind==="expansion"?preparedStaffing:null);
+  if(expansionProjection)return expansionProjection;
   const supportProjection = await projectSupportNativeEventInTransaction(client, nativeSessionId, attemptId, event, streamIndex, preparedStaffing?.kind === "support" ? preparedStaffing : null);
   if (supportProjection) return supportProjection;
   const staffingProjection = await projectStaffingNativeEventInTransaction(client, nativeSessionId, attemptId, event, streamIndex, preparedStaffing?.kind === "staffing" ? preparedStaffing : null);

@@ -157,9 +157,10 @@ async function staleRetrievalConversations(ids: readonly string[]): Promise<Set<
 export async function createOwnedConversation(
   session: CurrentSession,
   input: { customerId?: string | null; requestKey: string; title?: string },
+  existingClient?: PoolClient,
 ): Promise<{ conversation: ConversationReference; created: boolean }> {
   const title = input.title ?? "New conversation";
-  return withTransaction(async (client: PoolClient) => {
+  const create = async (client: PoolClient) => {
     if (!input.customerId) {
       await lockWorkspaceActor(client, session);
       const schema = (await client.query("SELECT schema_version FROM turas_environment LIMIT 1")).rows[0]?.schema_version;
@@ -210,7 +211,8 @@ export async function createOwnedConversation(
       throw new HttpFailure(409, "request_key_conflict", "Request key already used");
     }
     return { conversation: toReference(row, session), created: false };
-  });
+  };
+  return existingClient ? create(existingClient) : withTransaction(create);
 }
 
 export async function getOwnedConversation(
@@ -337,7 +339,7 @@ export async function getOwnedAttemptStatus(
 
 export async function getOwnedConversationDetail(session: CurrentSession, id: string) {
   const feature = await withTransaction(db => conversationFeature(db, id));
-  if (feature.kind === "staffing" || feature.kind === "execution" || feature.kind === "support") {
+  if (feature.kind === "staffing" || feature.kind === "execution" || feature.kind === "support" || feature.kind === "expansion") {
     const prepared = await prepareGovernedNativeRelease(id, { actor: session });
     if (!prepared) throw hiddenRecord();
     return withTransaction(async db => {
