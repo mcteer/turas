@@ -93,3 +93,21 @@ export async function listEngagements(actor:PlanActor,customerId:string,
   };
   return existingClient ? run(existingClient):withTransaction(run);
 }
+
+// The partner workspace uses bounded keyset discovery. Existing list callers retain
+// their contract; only eligible projected titles participate in the new search.
+export async function listDeliveryEngagementPage(client:PoolClient,actor:PlanActor,customerId:string,
+ query:{limit:number;search:string;workloadId:string|null;after:Record<string,string>|null}){
+ await lockPlanActor(client,actor,customerId,false);
+ const rows=(await client.query<Row & {created_key:string}>(`SELECT e.id,e.plan_id,e.customer_id,e.workload_id,e.audience,
+  to_char(e.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_key,
+  e.active_baseline_id,p.accepted_revision_id,e.created_at FROM engagements e JOIN delivery_plans p ON p.id=e.plan_id
+  WHERE e.environment_id=$1 AND e.workspace_id=$2 AND e.customer_id=$3 AND e.audience='delivery'
+  AND p.accepted_revision_id IS NOT NULL AND ($4::uuid IS NULL OR e.workload_id=$4)
+  AND ($5::timestamptz IS NULL OR (e.created_at,e.id)<($5::timestamptz,$6::uuid))
+  ORDER BY e.created_at DESC,e.id DESC LIMIT $7`,[getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,customerId,query.workloadId,
+  query.after?.createdAt??null,query.after?.id??null,query.limit+1])).rows;
+ const scanned=rows.slice(0,query.limit),items:EngagementDetail[]=[];
+ for(const row of scanned){const item=await detail(client,actor,row);if(!query.search||item.title.toLocaleLowerCase().includes(query.search.toLocaleLowerCase()))items.push(item);}
+ const last=scanned.at(-1);return {items,hasMore:rows.length>query.limit,lastKey:last?{createdAt:last.created_key,id:last.id}:null};
+}

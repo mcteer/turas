@@ -103,6 +103,25 @@ Engineering detail and portfolio reports use deterministic templates and reviewe
 
 Migrations 048–049 and explicit `npm run gaps:prepare` are release prerequisites. `TURAS_012_DISABLED=1` blocks new work while cancellation, reconciliation and retention continue independently of 009 enablement. Retain every key in `TURAS_012_RECEIPT_HASH_KEYS` needed to verify existing tombstones. Use the same database, private store and workflow directory during forward recovery. See the [quickstart](specs/012-product-gap-feedback/quickstart.md), [validation record](specs/012-product-gap-feedback/validation.md) and [release handoff](specs/012-product-gap-feedback/handoff.md). Hosted rollout and acceptance are separate pending gates.
 
+### Partner Delivery and Enablement — Local implementation
+
+Feature 013 implements the [48-task plan](specs/013-partner-enablement/tasks.md):
+assigned-customer navigation, reviewed what/how/why guides and individual learning
+checkpoints. Internal members author guides; canonical active administrator mcteer
+publishes guides, assigns eligible members and verifies demonstrations. Individual
+customer grants and private conversations retain their existing boundaries.
+Learning progress is separate from delivery acceptance and skills certification.
+
+Explicit migrations 050–051 and runtime role grants are release prerequisites.
+`TURAS_013_DISABLED=1` blocks new work while authorized reads, retirement,
+withdrawal, reconciliation and retention continue. Original evidence withdrawal
+withholds dependent content synchronously, including when cleanup is stopped.
+See [operations](docs/partner-operations.md), the
+[validation run guide](specs/013-partner-enablement/quickstart.md) and
+[handoff](specs/013-partner-enablement/handoff.md). Local and CI evidence is recorded in the
+[validation log](specs/013-partner-enablement/validation.md); hosted migration,
+rollout and acceptance remain separate pending gates.
+
 ## Technology
 
 TypeScript, Next.js 16, React 19, eve and PostgreSQL 17 with pgvector. Development
@@ -240,7 +259,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), [AGENTS.md](AGENTS.md) and the
 Select a feature explicitly rather than relying on the Git branch:
 
 ```sh
-export SPECIFY_FEATURE_DIRECTORY=specs/012-product-gap-feedback
+export SPECIFY_FEATURE_DIRECTORY=specs/013-partner-enablement
 ```
 
 Project-local Spec Kit commands live in `.opencode/commands/`; checked-in skills

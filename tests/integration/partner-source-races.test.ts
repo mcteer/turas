@@ -1,0 +1,67 @@
+import { describe,it,expect } from "vitest";
+import { randomUUID } from "node:crypto";
+import { withPartnerDatabase } from "../fixtures/partners/environment";
+import { partnerTestActors,partnerDeliveryBaseline } from "../fixtures/partners/seed";
+import { partnerAcceptedEvidence,partnerSharedEvidence,syntheticPartnerGuide } from "../fixtures/partners/originals";
+import { DEMO_IDS } from "../../lib/server/bootstrap-ids";
+import { writePartnerGuide,readPartnerGuide } from "../../lib/server/partners/guides";
+import { previewPartnerGuide,decidePartnerGuide } from "../../lib/server/partners/previews";
+import { partnerContractVersion,type PartnerSource } from "../../lib/contracts/partners";
+import { submitPlanCommand } from "../../lib/server/plans/commands";
+import { createPlanReviewPreview,decidePlan } from "../../lib/server/plans/decisions";
+import { syntheticPlanContent } from "../fixtures/plans/seed";
+const envelope=()=>({contractVersion:partnerContractVersion,requestId:randomUUID(),expectedVersion:0});
+async function actorsBaseline(){return withPartnerDatabase(async db=>{const actors=await partnerTestActors(db);await db.query("BEGIN");try{const baseline=await partnerDeliveryBaseline(db,actors.author,actors.reviewer);await db.query("COMMIT");return {...actors,baseline};}catch(error){await db.query("ROLLBACK");throw error;}});}
+async function submitted(f:Awaited<ReturnType<typeof actorsBaseline>>,source:PartnerSource){const saved=await writePartnerGuide(f.author,{...envelope(),action:"guide.create",customerId:DEMO_IDS.sharedCustomer,engagementId:f.baseline.engagementId,acceptedRevisionId:f.baseline.created.revisionId,baselineId:f.baseline.baselineId,content:syntheticPartnerGuide(source)}),draft=await readPartnerGuide(f.author,saved.targetId!);const receipt=await writePartnerGuide(f.author,{...envelope(),action:"guide.submit",guideId:saved.targetId!,revisionId:draft.revisionId!,contentDigest:draft.contentDigest!,expectedVersion:1});return {guideId:saved.targetId!,review:{...envelope(),action:"guide.publish" as const,guideId:saved.targetId!,revisionId:draft.revisionId!,contentDigest:draft.contentDigest!,expectedVersion:receipt.version!,rationale:"Synthetic evidence-qualified publication",selfReview:false}};}
+import {partnerSourceFence,partnerSourceMetadata} from "../../lib/server/partners/sources";
+import {retrievalQuality} from "../../lib/server/retrieval/context";
+import {submitExecutionCommand} from "../../lib/server/execution/service";
+import {executionCommand,saveRegister,submitRegister,reviewRegister,registerBase} from "../fixtures/execution/registers";
+import {submitProfileCommand} from "../../lib/server/profiles/service";
+describe("partner synchronous source fences",()=>{
+ it("withholds the whole guide when a transitive accepted profile dependency is withdrawn",async()=>{
+  const f=await actorsBaseline(),child=await partnerAcceptedEvidence(f.author,f.reviewer,DEMO_IDS.sharedCustomer,"Synthetic independently accepted supporting observation"),parent=await partnerAcceptedEvidence(f.author,f.reviewer,DEMO_IDS.sharedCustomer,"Synthetic supported customer practice",{evidenceRevisionIds:[child.revisionId]}),guide=await submitted(f,parent.reference),preview=await previewPartnerGuide(f.reviewer,guide.review);await decidePartnerGuide(f.reviewer,{...guide.review,requestId:randomUUID(),previewId:preview.previewId});
+  expect((await readPartnerGuide(f.partner,guide.guideId)).availability).toBe("eligible");await withPartnerDatabase(db=>db.query("UPDATE profile_records SET current_accepted_revision_id=NULL WHERE id=$1",[child.recordId]));expect((await readPartnerGuide(f.partner,guide.guideId)).content).toBeNull();
+ });
+
+ it("never promotes a pending customer claim into accepted guide evidence",async()=>{
+  const f=await actorsBaseline(),accepted=await partnerAcceptedEvidence(f.author,f.reviewer,DEMO_IDS.sharedCustomer),pending=await submitProfileCommand(f.author,DEMO_IDS.sharedCustomer,{action:"propose_record",requestKey:randomUUID(),workloadId:null,requestedAudience:"delivery",dataCategory:"delivery_context",payload:{kind:"product_use",productKey:"synthetic-pending-"+randomUUID(),displayName:"Synthetic Pending Product",state:"actual",usageDescription:"PRIVATE_PENDING_ASSERTION",observedAt:accepted.reference.observationAt}}) as {revisionId:string};
+  const header=await withPartnerDatabase(async db=>(await db.query("SELECT revision_number,content_digest FROM profile_revisions WHERE id=$1",[pending.revisionId])).rows[0]),reference={...accepted.reference,id:randomUUID(),sourceRevisionId:pending.revisionId,generation:Number(header.revision_number),contentDigest:header.content_digest};
+  await expect(submitted(f,reference)).rejects.toMatchObject({status:409});const valid=await submitted(f,accepted.reference),preview=await previewPartnerGuide(f.reviewer,valid.review);expect(JSON.stringify(preview)).not.toContain("PRIVATE_PENDING_ASSERTION");
+ });
+ it("re-resolves projected baseline dependencies and accepts only separately accepted observed execution",async()=>{
+  const f=await withPartnerDatabase(async db=>{const actors=await partnerTestActors(db);return actors;}),evidence=await partnerAcceptedEvidence(f.author,f.reviewer,DEMO_IDS.sharedCustomer),ref=evidence.reference;
+  const baseline=await withPartnerDatabase(async db=>{await db.query("BEGIN");try{const b=await partnerDeliveryBaseline(db,f.author,f.reviewer,DEMO_IDS.sharedCustomer,"Synthetic evidenced baseline",[{id:ref.id,kind:"accepted_profile",sourceRevisionId:ref.sourceRevisionId,generation:ref.generation,contentDigest:ref.contentDigest,locator:ref.locator!}]);await db.query("COMMIT");return b;}catch(e){await db.query("ROLLBACK");throw e;}}),scope={customerId:DEMO_IDS.sharedCustomer,engagementId:baseline.engagementId,acceptedRevisionId:baseline.created.revisionId,baselineId:baseline.baselineId,workloadId:null};
+  await withPartnerDatabase(async db=>{await db.query("BEGIN");try{const fenced=await partnerSourceFence(db,f.partner,scope,[],true);expect(fenced.dependencies.some(d=>d.revisionId===ref.sourceRevisionId)).toBe(true);await db.query("COMMIT");}catch(e){await db.query("ROLLBACK");throw e;}});
+  await submitExecutionCommand(f.author,baseline.engagementId,executionCommand("setup",{baseline:1,plan:baseline.decision.aggregateVersion},{baselineId:baseline.baselineId}));
+  const fixture={...f,engagementId:baseline.engagementId,baselineId:baseline.baselineId},draft=await saveRegister(fixture,{...registerBase(),kind:"activity",subtype:"work",title:"Synthetic accepted demonstration",narrative:"Separately recorded observed delivery practice",references:[{id:ref.id,kind:ref.kind,sourceRevisionId:ref.sourceRevisionId,generation:ref.generation,contentDigest:ref.contentDigest,locator:ref.locator!}]});
+  const execution:PartnerSource={id:randomUUID(),kind:"accepted_execution",sourceRevisionId:draft.revisionId,generation:draft.revisionNumber,contentDigest:draft.contentDigest,engagementId:baseline.engagementId,classification:"demonstration",observationAt:null,publicationAt:null,reviewAt:null,quality:retrievalQuality(null,{})};
+  await expect(withPartnerDatabase(db=>partnerSourceMetadata(db,execution))).rejects.toMatchObject({status:409});const submitted=await submitRegister(fixture,draft);await reviewRegister(fixture,submitted);
+  await withPartnerDatabase(async db=>{await db.query("BEGIN");try{Object.assign(execution,await partnerSourceMetadata(db,execution));await partnerSourceFence(db,f.partner,scope,[execution],true);await db.query("COMMIT");}catch(e){await db.query("ROLLBACK");throw e;}});
+  await withPartnerDatabase(db=>db.query("UPDATE execution_records SET accepted_revision_id=NULL WHERE id=$1",[draft.id]));await expect(withPartnerDatabase(db=>partnerSourceFence(db,f.partner,scope,[execution],true))).rejects.toMatchObject({status:409});
+ });
+ it("withholds a guide bound to a superseded accepted baseline before maintenance runs",async()=>{
+  const f=await actorsBaseline(),source=await partnerAcceptedEvidence(f.author,f.reviewer,DEMO_IDS.sharedCustomer),guide=await submitted(f,source.reference),preview=await previewPartnerGuide(f.reviewer,guide.review);await decidePartnerGuide(f.reviewer,{...guide.review,requestId:randomUUID(),previewId:preview.previewId});
+  await withPartnerDatabase(async db=>{await db.query("BEGIN");try{const row=(await db.query("SELECT aggregate_version,working_revision_id,accepted_revision_id FROM delivery_plans WHERE id=$1",[f.baseline.created.planId])).rows[0],content=syntheticPlanContent();content.sourceDependencies=[];content.assertions=[];content.asOf=new Date(Date.now()-1000).toISOString();content.title="Synthetic replacement accepted baseline";
+   const saved=await submitPlanCommand(f.author,{action:"save",requestKey:randomUUID(),planId:f.baseline.created.planId,expectedAggregateVersion:Number(row.aggregate_version),parentRevisionId:row.working_revision_id,baseAcceptedRevisionId:row.accepted_revision_id,content,changeReason:"Reviewed synthetic replacement"},db),pending=await submitPlanCommand(f.author,{action:"submit",requestKey:randomUUID(),planId:saved.planId,revisionId:saved.revisionId,contentDigest:saved.contentDigest,expectedAggregateVersion:saved.aggregateVersion},db),review=await createPlanReviewPreview(f.reviewer,saved.planId,{requestKey:randomUUID(),revisionId:saved.revisionId,contentDigest:saved.contentDigest,expectedAggregateVersion:pending.aggregateVersion},db);await decidePlan(f.reviewer,saved.planId,{action:"accept",requestKey:randomUUID(),revisionId:saved.revisionId,contentDigest:saved.contentDigest,expectedAggregateVersion:pending.aggregateVersion,reviewPreviewId:review.previewId,engagementId:f.baseline.engagementId,rationale:"Exact synthetic replacement baseline",deliverySuitabilityConfirmed:true},db);await db.query("COMMIT");}catch(error){await db.query("ROLLBACK");throw error;}});
+  const view=await readPartnerGuide(f.partner,guide.guideId);expect(view.availability).toBe("obsolete");expect(view.content).toBeNull();
+ });
+ it("withholds a published body and rejects an exact prepared publication after original withdrawal with no worker",async()=>{
+  const f=await actorsBaseline(),evidence=await partnerAcceptedEvidence(f.author,f.reviewer,DEMO_IDS.sharedCustomer),first=await submitted(f,evidence.reference),preview=await previewPartnerGuide(f.reviewer,first.review);await decidePartnerGuide(f.reviewer,{...first.review,requestId:randomUUID(),previewId:preview.previewId});expect((await readPartnerGuide(f.partner,first.guideId)).availability).toBe("eligible");
+  const second=await submitted(f,evidence.reference),pending=await previewPartnerGuide(f.reviewer,second.review);await withPartnerDatabase(db=>db.query("UPDATE profile_records SET current_accepted_revision_id=NULL WHERE id=$1",[evidence.recordId]));
+  const withheld=await readPartnerGuide(f.partner,first.guideId);expect(withheld.content).toBeNull();expect(withheld.availability).toBe("source_unavailable");await expect(decidePartnerGuide(f.reviewer,{...second.review,requestId:randomUUID(),previewId:pending.previewId})).rejects.toMatchObject({status:409});
+ });
+ it("does not accept internal-only evidence or client-invented dates/quality",async()=>{
+  const f=await actorsBaseline(),internal=await partnerAcceptedEvidence(f.author,f.reviewer,DEMO_IDS.sharedCustomer,"Synthetic internal-only evidence",{audience:"internal"}),accepted=await partnerAcceptedEvidence(f.author,f.reviewer,DEMO_IDS.sharedCustomer);
+  for(const source of [internal.reference,{...accepted.reference,observationAt:new Date().toISOString()},{...accepted.reference,quality:{...accepted.reference.quality,Q:100}}])await expect(submitted(f,source)).rejects.toMatchObject({status:409});
+ });
+ it("allows drafts of weak accepted evidence but never publication",async()=>{
+  const f=await actorsBaseline(),weak=await partnerAcceptedEvidence(f.author,f.reviewer,DEMO_IDS.sharedCustomer,"Synthetic indirect delivery description",{directness:2}),guide=await submitted(f,weak.reference);await expect(previewPartnerGuide(f.reviewer,guide.review)).rejects.toMatchObject({status:409});
+ });
+ it("uses sanitized shared practices from another customer and checks private lineage at release",async()=>{
+  const f=await actorsBaseline(),shared=await partnerSharedEvidence(f.author,f.reviewer,DEMO_IDS.deniedCustomer),guide=await submitted(f,shared.reference),preview=await previewPartnerGuide(f.reviewer,guide.review);await decidePartnerGuide(f.reviewer,{...guide.review,requestId:randomUUID(),previewId:preview.previewId});
+  const view=await readPartnerGuide(f.partner,guide.guideId),serialized=JSON.stringify(view);expect(view.availability).toBe("eligible");for(const sentinel of ["PRIVATE_B_SOURCE",DEMO_IDS.deniedCustomer,shared.privateRevisionId,"Birch"])expect(serialized).not.toContain(sentinel);
+  await withPartnerDatabase(db=>db.query("UPDATE memberships SET active=false WHERE id=$1",[f.author.membershipId]));try{expect((await readPartnerGuide(f.partner,guide.guideId)).content).toBeNull();}finally{await withPartnerDatabase(db=>db.query("UPDATE memberships SET active=true WHERE id=$1",[f.author.membershipId]));}
+  await withPartnerDatabase(db=>db.query("UPDATE profile_records SET current_accepted_revision_id=NULL WHERE id=(SELECT record_id FROM profile_revisions WHERE id=$1)",[shared.privateRevisionId]));expect((await readPartnerGuide(f.partner,guide.guideId)).content).toBeNull();
+ });
+});

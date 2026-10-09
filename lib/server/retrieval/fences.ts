@@ -35,6 +35,40 @@ export async function confirmedConflictAfter(client: PoolClient,kind: string,
   return Boolean(legacy.rowCount);
 }
 
+/** Same original conflict policy for a bounded, already locked dependency union. */
+export async function confirmedConflictAfterAny(client:PoolClient,
+  dependencies:readonly {kind:string;revisionId:string}[],asOf:Date):Promise<boolean>{
+  if(!dependencies.length)return false;
+  if(dependencies.length>200)throw new HttpFailure(422,"scope_too_large","Narrow the original dependency closure");
+  const typed=await client.query(`SELECT 1 FROM evidence_conflict_targets t
+    JOIN jsonb_to_recordset($3::jsonb) AS d(kind text,revision_id uuid)
+      ON (t.first_kind=d.kind AND t.first_revision_id=d.revision_id)
+       OR (t.second_kind=d.kind AND t.second_revision_id=d.revision_id)
+    WHERE t.environment_id=$1 AND t.state='confirmed' AND t.updated_at>$2 LIMIT 1`,
+    [getServerConfig().TURAS_ENVIRONMENT_ID,asOf,JSON.stringify(dependencies.map(d=>({kind:d.kind,revision_id:d.revisionId})))]);
+  if(typed.rowCount)return true;
+  const profiles=dependencies.filter(d=>d.kind==='accepted_profile').map(d=>d.revisionId);
+  if(!profiles.length)return false;
+  return Boolean((await client.query(`SELECT 1 FROM evidence_conflicts conflict
+    JOIN evidence_conflict_events event ON event.conflict_id=conflict.id AND event.event_type='confirm'
+    WHERE conflict.state='confirmed' AND event.created_at>$2
+      AND (conflict.first_revision_id=ANY($1::uuid[]) OR conflict.second_revision_id=ANY($1::uuid[])) LIMIT 1`,[profiles,asOf])).rowCount);
+}
+
+/** Batch the existing exact profile-head and recursive support checks. */
+export async function originalProfilesCurrent(client:PoolClient,dependencies:readonly Dependency[]):Promise<boolean>{
+  if(!dependencies.length)return true;
+  if(dependencies.length>200)throw new HttpFailure(422,"scope_too_large","Narrow the original dependency closure");
+  if(dependencies.some(d=>d.source_kind!=='accepted_profile'))return false;
+  const ids=dependencies.map(d=>d.source_revision_id);
+  const found=await client.query(`SELECT v.id FROM profile_revisions v
+    JOIN profile_records r ON r.id=v.record_id AND r.current_accepted_revision_id=v.id
+    JOIN unnest($1::uuid[],$2::bigint[],$3::text[]) AS d(id,generation,digest)
+      ON v.id=d.id AND v.revision_number=d.generation AND v.content_digest=d.digest`,
+    [ids,dependencies.map(d=>d.source_generation),dependencies.map(d=>d.source_digest)]);
+  return found.rowCount===dependencies.length && (await unsupportedProfileRevisionIds(client,ids,true)).size===0;
+}
+
 export async function originalCurrent(client: PoolClient, dependency: Dependency): Promise<boolean> {
   const values = [dependency.source_revision_id,dependency.source_generation,
     dependency.source_digest];

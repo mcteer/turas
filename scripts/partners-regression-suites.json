@@ -1,0 +1,15 @@
+[
+ "tests/integration/grant-concurrency.test.ts",
+ "tests/integration/profile-partner-access.test.ts",
+ "tests/integration/retrieval-fences.test.ts",
+ "tests/integration/knowledge-publication.test.ts",
+ "tests/integration/plan-authoring.test.ts",
+ "tests/integration/plan-acceptance.test.ts",
+ "tests/contracts/execution-policy.test.ts",
+ "tests/contracts/execution-time-api.test.ts",
+ "tests/integration/support-policy.test.ts",
+ "tests/contracts/conversations.test.ts",
+ "tests/integration/conversation-delivery.test.ts",
+ "tests/ui/profile-partner.spec.ts",
+ "tests/ui/conversation-archive.spec.ts"
+]

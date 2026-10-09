@@ -1,0 +1,13 @@
+[
+  "tests/unit/partner-content.test.ts",
+  "tests/unit/partner-progress.test.ts",
+  "tests/unit/partner-runner-coverage.test.ts",
+  "tests/contracts/partner-http.test.ts",
+  "tests/contracts/partner-projection.test.ts",
+  "tests/integration/partner-foundation.test.ts",
+  "tests/integration/partner-workspace.test.ts",
+  "tests/integration/partner-guides.test.ts",
+  "tests/integration/partner-source-races.test.ts",
+  "tests/integration/partner-learning.test.ts",
+  "tests/integration/partner-retention-recovery.test.ts"
+]

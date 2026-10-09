@@ -9,7 +9,7 @@ import {
 import { governedIdSchema, writeEnvelopeSchema } from "../../contracts/retrieval";
 import type { CurrentSession } from "../auth/sessions";
 import { getServerConfig } from "../config";
-import { rateEvidence } from "../profiles/quality";
+import { sharedPublicationQuality } from "./quality";
 import { assertExactKnowledgeLineage, assertNoDirectIdentifiers,
   lockKnowledgeAuthor, requireKnowledgePublisher } from "./policy";
 import { materializeSharedProjection,retireRetrievalProjection } from "../retrieval/projections";
@@ -249,12 +249,7 @@ export async function decideKnowledgeCandidate(client: PoolClient,actor: Current
     JSON.stringify(command.action === "publish" ? command.checklist : {})]);
   if (command.action === "publish") {
     const at = new Date();
-    const rated = rateEvidence({ R: 3,D: 3,C: 1,informationType: "product_capability",
-      dateBasis: "unknown",evidenceAt: null,asOf: at });
-    const quality = { rubricVersion: "evidence-quality-v1",R: rated.R,F: rated.F,
-      D: rated.D,C: rated.C,Q: rated.Q,band: rated.band,freshness: rated.freshness,
-      rationale: "Reusable guidance reviewed; current applicability requires verification.",
-      asOf: rated.asOf.toISOString(),validUntil: rated.validUntil.toISOString() };
+    const quality = await sharedPublicationQuality(client,revision.id,at);
     if (head) {
       await client.query(`UPDATE knowledge_publications SET revision_id=$2,
         head_generation=head_generation+1,state='published',public_quality=$3,

@@ -19,6 +19,7 @@ import { processExecutionNativeRetirement } from "../lib/server/execution/native
 import { settleDueExecutionAdvisories, runExecutionCleanupTick } from "../lib/server/execution/maintenance";
 import { settleDueStaffingAdvisories } from "../lib/server/staffing/advisory-maintenance";
 import { runSupportCleanupTick, expireSupportReceipts, settleDueSupportAdvice, runSupportAdviceCleanupTick, minimizeSupportAudit } from "../lib/server/support/maintenance";
+import {runPartnerMaintenanceTick} from "../lib/server/partners/maintenance";
 import { processSupportNativeRetirement } from "../lib/server/support/native-retirement";
 
 const rawOrigin = process.env.TURAS_EVE_INTERNAL_ORIGIN;
@@ -35,6 +36,10 @@ let executionScanning = false;
 let supportScanning = false;
 let scanning = false;
 let stopping = false;
+let partnerTick:Promise<unknown>|null=null;
+function schedulePartnerMaintenance(){if(stopping||partnerTick)return;partnerTick=runPartnerMaintenanceTick().catch(()=>undefined).finally(()=>{partnerTick=null;});}
+const partnerTimer=setInterval(schedulePartnerMaintenance,30000);
+void schedulePartnerMaintenance();
 let retrievalScanning = false;
 let cleanupScanning = false;
 let workforceScanning = false, workforceCleanupScanning = false, workforceHeartbeatBusy = false;
@@ -160,6 +165,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
     stopping = true;
     clearInterval(timer);
+    clearInterval(partnerTimer);
     clearInterval(retrievalTimer);
     clearInterval(cleanupTimer);
     clearInterval(workforceTimer);
@@ -167,6 +173,6 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
     clearInterval(workforceHeartbeatTimer);
     clearInterval(executionTimer);
     clearInterval(supportTimer);
-    void closeRuntimePool().finally(() => process.exit());
+    void Promise.resolve(partnerTick).finally(()=>closeRuntimePool()).finally(() => process.exit());
   });
 }
