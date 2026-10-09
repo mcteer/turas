@@ -492,6 +492,9 @@ jobs:
           node-version-file: .node-version
           cache: npm
       - run: npm ci
+      - run: npm ci --prefix packages/artifact-extractor
+      - name: Verify pinned vector image
+        run: npm run retrieval:prepare -- --offline
       - name: Capture common 012 source fingerprint
         run: |
           node --import tsx --input-type=module <<'JS' >> "$GITHUB_ENV"

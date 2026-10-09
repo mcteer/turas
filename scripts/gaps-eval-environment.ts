@@ -41,7 +41,7 @@ export async function withGapEnvironment<T>(run: (environment: GapEnvironment) =
  const remaining=()=>{const value=deadline-Date.now();if(value<=0)throw Error('Owned gap check deadline exceeded');return value;};
  async function stop(){if(worker){const current=worker;worker=undefined;if(current.exitCode===null)await new Promise<void>(done=>{const timer=setTimeout(()=>{current.kill('SIGKILL');done();},5000);current.once('exit',()=>{clearTimeout(timer);done();});current.kill('SIGTERM');});}if(!child)return;const current=child;child=undefined;if(current.exitCode===null)await new Promise<void>(done=>{const timer=setTimeout(()=>{current.kill('SIGKILL');done();},5000);current.once('exit',()=>{clearTimeout(timer);done();});current.kill('SIGTERM');});}
  try {
-  created=true;command('docker',['run','--detach','--name',container,'--label',`turas.012.owner=${token}`,'--publish','127.0.0.1::5432','--env',`POSTGRES_PASSWORD=${password}`,'--env',`POSTGRES_DB=${name}`,'pgvector/pgvector:pg17'],safeEnv);created=true;
+  created=true;command('docker',['run','--detach','--name',container,'--label',`turas.012.owner=${token}`,'--publish','127.0.0.1::5432','--env',`POSTGRES_PASSWORD=${password}`,'--env',`POSTGRES_DB=${name}`,'pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f'],safeEnv);created=true;
   const port=command('docker',['port',container,'5432/tcp'],safeEnv).split(':').at(-1)!;
   const ownerUrl=`postgresql://postgres:${password}@127.0.0.1:${port}/${name}`;
   const runtimeUrl=`postgresql://turas_runtime:${password}@127.0.0.1:${port}/${name}`;
