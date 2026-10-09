@@ -2,7 +2,7 @@
 
 **Input**: [spec.md](spec.md), [plan.md](plan.md), [research.md](research.md), [data-model.md](data-model.md), [contracts](contracts/domain.md) and [quickstart.md](quickstart.md).
 
-**Status**: Implementation complete:52/52 tasks and full local acceptance passed. Focused PR prepared; hosted rollout remains pending. Hosted changes and paid model calls remain outside this authorization.
+**Status**: Implementation built; final corrected-source benchmark, acceptance recording and PR readiness remain in progress. Hosted rollout, hosted changes and paid model calls remain outside this authorization.
 
 **Tests**: FR-020 and SC-001–SC-007 require targeted automated checks. Write the specified tests before behavior; demonstrate meaningful failure, then pass them. A test file that runs zero assertions is not evidence. Tasks use exact paths; braces denote the enumerated paths, not arbitrary new modules.
 
@@ -128,7 +128,7 @@ All four stories are required for 012 completion. Run acceptance only after thei
 
 - [X] T046 Build `tests/ui/gap-accessibility.spec.ts`, `scripts/gaps-ui-journeys.json` and `scripts/gaps-ui-check.ts`; use T002’s owned app lifecycle, require all six journeys × four WebKit projects with zero skips, capture/inspect synthetic screenshots and assert keyboard/focus/no-overflow/zero serious-critical axe failures. Update `playwright.config.ts` for owned 012 server readiness and legacy-suite isolation without changing earlier feature viewports; extend runner-coverage tests to detect missing journey/project evidence.
 
-- [X] T047 Implement and run `scripts/gaps-benchmark.ts` with the exact independently checked 200-customer/2000-gap/10000-observation/40000-revision fixture and dependency bounds from quickstart; measure at least 100 operations per class under five readers plus reviewer, nearest-rank p95 ≤2s, 100-gap admission-to-prepared ≤30s, query counts and complete output. Record safe source/environment/machine/cardinality evidence; optimize only measured failures.
+- [ ] T047 Implement and run `scripts/gaps-benchmark.ts` with the exact independently checked 200-customer/2000-gap/10000-observation/40000-revision fixture and dependency bounds from quickstart; measure at least 100 operations per class under five readers plus reviewer, nearest-rank p95 ≤2s, 100-gap admission-to-prepared ≤30s, query counts and complete output. Record safe source/environment/machine/cardinality evidence; optimize only measured failures.
 
 - [X] T048 Implement and run `scripts/gaps-recovery-check.ts` for empty→049 and 047→049 with seeded predecessor state, least-privilege grants and selected marker preservation; kill/restart jobs/staged files/receipts/tombstones, rotate retained keys, disable while cancelling/cleaning, and verify no auto preparation retry or restored withdrawn bytes. Record bounded forward-recovery evidence.
 
@@ -136,9 +136,9 @@ All four stories are required for 012 completion. Run acceptance only after thei
 
 - [X] T050 Wire complete deterministic, browser, benchmark/recovery and build/docs gates into `.github/workflows/ci.yml` using owned resources; require canonical suite/journey counts and matching source digests, not filtered paths or all-skipped checks. Keep hosted deployment/migration and paid evaluation outside CI for this feature.
 
-- [X] T051 Run the full quickstart acceptance commands from the canonical checkout, inspect synthetic UI/artifact evidence, verify `agent/agent.ts` and authored instructions remain unchanged, and record exact executed counts/source/environment/results in `specs/012-product-gap-feedback/validation.md`. Run `git diff --check`; a local or CI result cannot be recorded as Preview/Production evidence.
+- [ ] T051 Run the full quickstart acceptance commands from the canonical checkout, inspect synthetic UI/artifact evidence, verify `agent/agent.ts` and authored instructions remain unchanged, and record exact executed counts/source/environment/results in `specs/012-product-gap-feedback/validation.md`. Run `git diff --check`; a local or CI result cannot be recorded as Preview/Production evidence.
 
-- [X] T052 Update `README.md`, `ROADMAP.md`, `specs/012-product-gap-feedback/{spec,plan,tasks,handoff,validation}.md` and relevant operational docs with final implementation/verification and explicit hosted rollout/forward-recovery prerequisites; prepare a focused PR with actual checks and risks. Keep the canonical checkout clean of scratch/resources. Merge only when authorized and CI is green, then delete that PR’s local/remote branch and verify README on main; do not start 013.
+- [ ] T052 Update `README.md`, `ROADMAP.md`, `specs/012-product-gap-feedback/{spec,plan,tasks,handoff,validation}.md` and relevant operational docs with final implementation/verification and explicit hosted rollout/forward-recovery prerequisites; prepare a focused PR with actual checks and risks. Keep the canonical checkout clean of scratch/resources. Merge only when authorized and CI is green, then delete that PR’s local/remote branch and verify README on main; do not start 013.
 
 ## Dependencies and execution order
 
