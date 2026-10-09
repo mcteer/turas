@@ -12,7 +12,7 @@ export function MobileNavigation({ children }: { children: React.ReactNode }) {
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") { setOpen(false); requestAnimationFrame(() => trigger.current?.focus()); return; }
       if (event.key !== "Tab" || !dialog.current) return;
-      const focusable = [...dialog.current.querySelectorAll<HTMLElement>("button:not(:disabled),a[href],input:not(:disabled)")];
+      const focusable = [...dialog.current.querySelectorAll<HTMLElement>("button:not(:disabled),a[href],input:not(:disabled),[tabindex='0']")];
       const first = focusable[0], last = focusable.at(-1);
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
