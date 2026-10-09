@@ -19,7 +19,20 @@ type Dependency = { source_kind: string; source_revision_id: string;
 /** A receipt minted before confirmation cannot be replayed as settled evidence. */
 export async function confirmedConflictAfter(client: PoolClient,kind: string,
   revisionId: string,asOf: Date): Promise<boolean> {
-  return confirmedConflictAfterAny(client,[{kind,revisionId}],asOf);
+  const typed = await client.query(`SELECT 1 FROM evidence_conflict_targets
+    WHERE environment_id=$1 AND state='confirmed' AND updated_at>$2
+      AND ((first_kind=$3 AND first_revision_id=$4)
+        OR (second_kind=$3 AND second_revision_id=$4)) LIMIT 1`,
+  [getServerConfig().TURAS_ENVIRONMENT_ID,asOf,kind,revisionId]);
+  if (typed.rowCount) return true;
+  if (kind !== "accepted_profile") return false;
+  const legacy = await client.query(`SELECT 1 FROM evidence_conflicts conflict
+    JOIN evidence_conflict_events event ON event.conflict_id=conflict.id
+      AND event.event_type='confirm'
+    WHERE conflict.state='confirmed' AND event.created_at>$2
+      AND (conflict.first_revision_id=$1 OR conflict.second_revision_id=$1)
+    LIMIT 1`,[revisionId,asOf]);
+  return Boolean(legacy.rowCount);
 }
 
 /** Same original conflict policy for a bounded, already locked dependency union. */
@@ -60,7 +73,11 @@ export async function originalCurrent(client: PoolClient, dependency: Dependency
   const values = [dependency.source_revision_id,dependency.source_generation,
     dependency.source_digest];
   if (dependency.source_kind === "accepted_profile") {
-    return originalProfilesCurrent(client,[dependency]);
+    const found = await client.query(`SELECT 1 FROM profile_revisions v
+      JOIN profile_records r ON r.id=v.record_id AND r.current_accepted_revision_id=v.id
+      WHERE v.id=$1 AND v.revision_number=$2 AND v.content_digest=$3`,values);
+    return Boolean(found.rowCount) && !(await unsupportedProfileRevisionIds(client,
+      [dependency.source_revision_id],true)).has(dependency.source_revision_id);
   }
   if (dependency.source_kind === "approved_excerpt") {
     const found = await client.query(`SELECT 1 FROM artifact_evidence_selections s
