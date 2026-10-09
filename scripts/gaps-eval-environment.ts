@@ -59,7 +59,11 @@ export async function withGapEnvironment<T>(run: (environment: GapEnvironment) =
   const origin=`http://127.0.0.1:${portLease.port}`;
   const env={...safeEnv,DATABASE_URL:runtimeUrl,DATABASE_URL_UNPOOLED:ownerUrl,TURAS_TEST_DATABASE_URL:ownerUrl,TURAS_ENVIRONMENT_ID:environmentId,TURAS_TEST_ENVIRONMENT_ID:environmentId,TURAS_GAPS_OWNED:'1',TURAS_APP_ORIGIN:origin,TURAS_REPORT_STORE_ROOT:storeRoot,TURAS_MAINTENANCE_SECRET:randomBytes(32).toString('hex'),TURAS_012_RECEIPT_HASH_KEYS:JSON.stringify([randomBytes(32).toString('hex')]),TURAS_DEMO_USERNAME:'mcteer',TURAS_DEMO_PASSWORD:'SyntheticGapPassword1!',PANEL_USERNAME:'panel',PANEL_PASSWORD:'SyntheticGapPassword2!',PARTNER_USERNAME:'partner',PARTNER_PASSWORD:'SyntheticGapPassword3!',TURAS_TEST_MODEL_MODE:'deterministic',NODE_ENV:'test',TURAS_REPORTS_ENABLED:'0',TURAS_REPORT_DELIVERY_ENABLED:'0'};
   for(const key of Object.keys(process.env))delete process.env[key];Object.assign(process.env,env);
-  const manifestPath=join(appRoot,'migrations/manifest.json'),full=await readFile(manifestPath,'utf8');let future:string[]=[];
+  const manifestPath=join(appRoot,'migrations/manifest.json');
+  // This 012 fixture owns the 047-to-049 contract even after later features land.
+  const current=JSON.parse(await readFile(manifestPath,'utf8')),later=current.migrations.filter((m:{file:string})=>Number(m.file.slice(0,3))>49);
+  if(later.length){await mkdir(join(appRoot,'later'));for(const m of later)await rename(join(appRoot,'migrations',m.file),join(appRoot,'later',m.file));}
+  current.version=49;current.migrations=current.migrations.filter((m:{file:string})=>Number(m.file.slice(0,3))<=49);const full=JSON.stringify(current);await writeFile(manifestPath,full);let future:string[]=[];
   if(options.priorSchema){const manifest=JSON.parse(full);future=manifest.migrations.filter((m:{file:string})=>Number(m.file.slice(0,3))>47).map((m:{file:string})=>m.file);await mkdir(join(appRoot,'future'));for(const file of future)await rename(join(appRoot,'migrations',file),join(appRoot,'future',file));manifest.version=47;manifest.migrations=manifest.migrations.filter((m:{file:string})=>Number(m.file.slice(0,3))<=47);await writeFile(manifestPath,JSON.stringify(manifest));}
   const script=(file:string,args:string[]=[])=>command(process.execPath,['--experimental-strip-types',file,...args],process.env,appRoot,Math.min(remaining(),120_000));
   script('scripts/db-migrate.ts',['--init']);script('scripts/db-roles.ts');script('scripts/bootstrap-demo.ts');

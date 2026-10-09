@@ -30,7 +30,8 @@ async function main(){
   // The fixture has exactly 100 active assignments for this individual.
   // Two competing admissions must both refuse the 101st without writes.
   const overflow={...partnerCommandEnvelope(),action:"assignment.create",guideId:f.guides[100].guideId,revisionId:f.guides[100].revisionId,membershipId:f.partners[0].membershipId,rationale:"Synthetic active-cap refusal",selfReview:false};
-  const refused=await Promise.allSettled([previewPartnerAssignment(f.actors.reviewer,overflow),previewPartnerAssignment(f.actors.reviewer,{...overflow,requestId:randomUUID()})]);
+  const capPreviews=await Promise.all([previewPartnerAssignment(f.actors.reviewer,overflow),previewPartnerAssignment(f.actors.reviewer,{...overflow,requestId:randomUUID()})]);
+  const refused=await Promise.allSettled(capPreviews.map(preview=>decidePartnerAssignment(f.actors.reviewer,{...overflow,requestId:randomUUID(),previewId:preview.previewId})));
   check(refused.every(r=>r.status==="rejected"&&r.reason?.code==="assignment_limit"),"Concurrent assignment cap admitted overflow");
   await measure("workspace",async(_,reader)=>{const page=await readPartnerWorkspace(reader,{limit:50});check(page.items.length===50&&page.hasMore,"Incomplete workspace page");},true);
   await measure("engagement-guide-pages",async(n,reader)=>{const page=n%2?await listPartnerGuides(reader,{customerId:DEMO_IDS.sharedCustomer,engagementId:f.guides[0].engagementId,limit:50}):await readPartnerEngagements(reader,DEMO_IDS.sharedCustomer,{limit:50});check(page.items.length===50&&page.hasMore,"Incomplete scoped page");},true);
