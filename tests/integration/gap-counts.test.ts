@@ -16,6 +16,10 @@ import {withGapDatabase} from '../fixtures/gaps/environment';
 import {DEMO_IDS} from '../../lib/server/bootstrap-ids';
 describe('Authorized current customer sets',()=>{
  let actors:Awaited<ReturnType<typeof gapActors>>;beforeAll(async()=>{actors=await gapActors();});
+ it('refreshes a concurrent disposition decision when its reviewed evidence head is unchanged',async()=>{
+  const gap=await reviewedSyntheticGap(actors.panel,actors.mcteer),preview=await previewGapDecision(actors.mcteer,gap.id,{...gapEnvelope(2),target:'gap',revisionId:gap.reviewed!.id,action:'dismiss',rationale:'Concurrent unchanged-head disposition',revisitDate:null,selfReview:false});
+  await withGapDatabase(async db=>{await db.query('BEGIN');try{await lockGapActor(db,actors.panel);const fenced=Object.create(db) as typeof db,original=db.query;let changed=false;fenced.query=(async(...args:unknown[])=>{if(!changed&&String(args[0]).includes('FROM product_gaps WHERE id=ANY')&&String(args[0]).includes('FOR SHARE')){changed=true;await commitGapDecision(actors.mcteer,gap.id,{...gapEnvelope(2),previewId:preview.resultId,bindingDigest:preview.bindingDigest});}return Reflect.apply(original,db,args);}) as typeof db.query;const result=await gapCountMetadata(fenced,actors.panel,[gap.id]);expect(changed).toBe(true);expect(result.items[0].record).toMatchObject({version:'3',disposition:'dismissed',reviewed_revision_id:gap.reviewed!.id});}finally{await db.query('ROLLBACK');}});
+ });
  it('binds locator eligibility to the complete reference even when IDs are reused',async()=>{
   const source=await acceptedGapEvidence(actors.panel,actors.mcteer,DEMO_IDS.sharedCustomer,'corroboration','Synthetic exact locator binding');
   const saved:Awaited<ReturnType<typeof saveGap>>[]=[];for(const title of ['Synthetic valid locator','Synthetic changed locator'])saved.push(await saveGap(actors.panel,{...gapEnvelope(),content:syntheticGap({title}),sourceRefs:[source.reference],customerIndependentAcknowledgment:true}));
