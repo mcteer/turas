@@ -1,26 +1,15 @@
 # 011 Planning Handoff
 
-Historical planning record. Implementation is now active; see [tasks.md](tasks.md) and [validation.md](validation.md) for current status.
+Historical planning record. Implementation and local/CI acceptance are complete and merged in [PR 22](https://github.com/mcteer/turas/pull/22), merge commit `b5d54276c9e46630b3dd9401c573d5788d9337cd`. See [validation.md](validation.md) for evidence and remaining hosted release boundaries.
 
-**Date**: 2026-10-08
-**Branch**: `011-product-expansion`
-**Worktree**: `/Users/mcteer/Projects/turas-011`
-**Base**: main `187b05731bcf83f96826a544dee5a59d3c95ec18`
-**Scope**: Specify → clarify → plan → tasks → read-only analyze, then stop for model switch.
+**Original planning date**: 2026-10-08
+**Historical branch**: `011-product-expansion` (deleted after merge)
+**Canonical checkout**: `/Users/mcteer/Projects/turas`
+**Original planning base**: main `187b05731bcf83f96826a544dee5a59d3c95ec18`
 
-## Resume here
+## Current handoff
 
-```sh
-cd /Users/mcteer/Projects/turas-011
-export SPECIFY_FEATURE_DIRECTORY=specs/011-product-expansion
-```
-
-Read [spec.md](spec.md), [plan.md](plan.md), [tasks.md](tasks.md) and the linked
-contracts, then use `$speckit-implement` when the user starts implementation.
-Do not start from the original dirty `/Users/mcteer/Projects/turas` checkout or copy
-its unrelated changes. The older 010/archiving worktrees are references, not this branch.
-The ignored `.specify/feature.json` points here locally; the explicit environment
-variable above is the portable feature selector.
+Do not resume 011 implementation or recreate its removed worktree. Work stays in the canonical checkout. The active planning handoff is [012 product gaps](../012-product-gap-feedback/handoff.md); feature selection is explicit via `SPECIFY_FEATURE_DIRECTORY`. The following sections preserve the original 011 planning decisions and analysis, not a claim that its tasks remain unstarted.
 
 ## Decisions and readiness
 
