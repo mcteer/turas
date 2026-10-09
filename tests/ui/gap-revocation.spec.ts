@@ -1,3 +1,4 @@
+import {installGapUiDiagnostics} from '../fixtures/gaps/ui-diagnostics';
 import {test,expect,type Page} from '@playwright/test';
 import {reviewedSyntheticGap} from '../fixtures/gaps/authoring';
 import {gapActors} from '../fixtures/gaps/seed';
@@ -9,6 +10,7 @@ import {syntheticGap} from '../fixtures/gaps/ui';
 import {DEMO_IDS} from '../../lib/server/bootstrap-ids';
 import {approvedGapReport} from '../fixtures/gaps/reports';
 import {testCredentials} from '../fixtures/ui';
+installGapUiDiagnostics();
 test.beforeEach(async()=>{if(process.env.TURAS_GAPS_UI_FIXTURE_READY!=='1')throw Error('Owned gap UI runner required');await withGapDatabase(db=>db.query("DELETE FROM rate_windows WHERE environment_id=$1 AND category LIKE 'gap_%'",[process.env.TURAS_ENVIRONMENT_ID]));});
 async function login(page:Page,who:'panel'|'partner'|'mcteer'='panel'){expect((await page.request.post('/api/auth/login',{headers:{origin:process.env.TURAS_UI_BASE_URL!},data:{...testCredentials(who),returnTo:'/product-gaps'}})).ok()).toBe(true);}
 test('clears private gap DOM on focus after changing session and persists no narrative',async({page})=>{const actors=await gapActors(),gap=await reviewedSyntheticGap(actors.panel,actors.mcteer,{title:'Synthetic private session-bound narrative'});await login(page);await page.goto('/product-gaps/'+gap.id);await expect(page.getByRole('heading',{name:'Synthetic private session-bound narrative',exact:true})).toBeVisible();const storage=await page.evaluate(()=>JSON.stringify({local:{...localStorage},session:{...sessionStorage}}));expect(storage).not.toContain('Synthetic private session-bound narrative');await login(page,'partner');await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await expect(page.getByRole('heading',{name:'Synthetic private session-bound narrative',exact:true})).toHaveCount(0);await expect(page.getByRole('status').filter({hasText:'Product gaps are unavailable'})).toBeVisible();});

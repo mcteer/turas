@@ -1,3 +1,4 @@
+import {installGapUiDiagnostics} from '../fixtures/gaps/ui-diagnostics';
 import {test,expect,type Page} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {randomUUID} from 'node:crypto';
@@ -7,6 +8,7 @@ import {withGapDatabase} from '../fixtures/gaps/environment';
 import {DEMO_IDS} from '../../lib/server/bootstrap-ids';
 import {testCredentials} from '../fixtures/ui';
 async function login(page:Page){expect((await page.request.post('/api/auth/login',{headers:{origin:process.env.TURAS_UI_BASE_URL!},data:{...testCredentials('mcteer'),returnTo:'/product-gaps'}})).ok()).toBe(true);}
+installGapUiDiagnostics();
 test.beforeEach(async()=>{if(process.env.TURAS_GAPS_UI_FIXTURE_READY!=='1')throw Error('Owned gap app required');await withGapDatabase(db=>db.query("DELETE FROM rate_windows WHERE environment_id=$1 AND category LIKE 'gap_%'",[process.env.TURAS_ENVIRONMENT_ID]));});
 async function setup(){const actors=await gapActors(),token=randomUUID().slice(0,8),a=await reviewedSyntheticGap(actors.panel,actors.mcteer,{title:`Canonical First ${token}`}),b=await reviewedSyntheticGap(actors.panel,actors.mcteer,{title:`Canonical Second ${token}`}),x=await reviewedSuspectedImpact(actors.panel,actors.mcteer,a.id,DEMO_IDS.sharedCustomer),y=await reviewedSuspectedImpact(actors.panel,actors.mcteer,b.id,DEMO_IDS.sharedCustomer);return {actors,a,b,x,y,token};}
 async function merge(page:Page,fixture:Awaited<ReturnType<typeof setup>>){await login(page);await page.goto(`/product-gaps/${fixture.a.id}`);await page.getByLabel('Find Reviewed Candidate',{exact:true}).fill(fixture.token);await page.getByRole('checkbox',{name:`Canonical Second ${fixture.token}`,exact:true}).check();await page.getByRole('button',{name:'Load Assignment Review',exact:true}).click();await expect(page.getByLabel(`Result for Observation ${fixture.y}`,{exact:true})).toBeVisible();for(const id of [fixture.x,fixture.y])await page.getByLabel(`Result for Observation ${id}`,{exact:true}).selectOption(fixture.a.id);await page.getByLabel('Canonicalization Rationale',{exact:true}).fill('Review exact synthetic duplicate assignments and survivor.');await page.getByRole('checkbox',{name:/I reviewed the exact narratives/}).check();await page.getByRole('button',{name:'Preview Canonicalization',exact:true}).click();await expect(page.getByRole('button',{name:'Confirm Canonicalization',exact:true})).toBeVisible();}

@@ -1,3 +1,4 @@
+import {installGapUiDiagnostics} from '../fixtures/gaps/ui-diagnostics';
 import {test,expect,type Page} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {randomUUID} from 'node:crypto';
@@ -7,6 +8,7 @@ import {reviewedSyntheticGap,reviewedSuspectedImpact} from '../fixtures/gaps/aut
 import {DEMO_IDS} from '../../lib/server/bootstrap-ids';
 import {testCredentials} from '../fixtures/ui';
 import {withGapDatabase} from '../fixtures/gaps/environment';
+installGapUiDiagnostics();
 test.beforeEach(async()=>{if(process.env.TURAS_GAPS_UI_FIXTURE_READY!=='1')throw Error('Owned gap UI runner required');await withGapDatabase(db=>db.query("DELETE FROM rate_windows WHERE environment_id=$1 AND category LIKE 'gap_%'",[process.env.TURAS_ENVIRONMENT_ID]));});
 async function login(page:Page,identity:'mcteer'|'panel'='mcteer'){expect((await page.request.post('/api/auth/login',{headers:{origin:process.env.TURAS_UI_BASE_URL!},data:{...testCredentials(identity),returnTo:'/product-gaps'}})).ok()).toBe(true);}
 async function fillAudience(page:Page){await page.getByLabel('Engineering Team',{exact:true}).fill('Synthetic Functions engineering');await page.getByLabel('Named Recipients (One per Line)',{exact:true}).fill('Synthetic Engineer');await page.getByLabel('Report Purpose',{exact:true}).fill('Assess the exact reviewed synthetic capability and customer scope.');}
