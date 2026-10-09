@@ -1,0 +1,5 @@
+import { acceptedExpansionEvidence,weakPublicExpansionEvidence } from '../expansion/evidence';
+import type { CurrentSession } from '../../../lib/server/auth/sessions';
+import type { GapSource } from '../../../lib/contracts/product-gaps';
+export async function acceptedGapEvidence(author:CurrentSession,reviewer:CurrentSession,customerId:string,purpose:GapSource['purpose'],text:string,options:{directness?:number;observedAt?:string;state?:'actual'|'planned';workloadId?:string}={}){const evidence=await acceptedExpansionEvidence(author,reviewer,customerId,options.workloadId??null,text,'vercel-functions',purpose==='product_limitation'?'product_capability':'adoption_process',options);return {revisionId:evidence.reviewedRevisionId,reference:{...evidence.reference,customerId,purpose} as GapSource};}
+export async function publicGapEvidence(actor:CurrentSession,customerId:string){const evidence=await weakPublicExpansionEvidence(actor,customerId);return {...evidence,reference:{...evidence.reference,customerId,purpose:'customer_need'} as GapSource};}

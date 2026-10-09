@@ -1,0 +1,5 @@
+import type { PoolClient } from 'pg';
+import { getServerConfig } from '../config';
+/** Original writes are fenced synchronously by migration triggers; reads also validate originals. */
+export async function invalidateGapSource(db:PoolClient,kind:string,revisionId:string){await db.query('SELECT turas_gap_invalidate_source($1,$2)',[kind,revisionId]);}
+export async function invalidateGapReports(db:PoolClient,gapIds:readonly string[],invalidatedAt?:Date){if(!(await db.query("SELECT to_regclass('public.gap_report_revision_states') AS t")).rows[0].t)return;await db.query("UPDATE gap_report_revision_states s SET invalidated_at=LEAST(COALESCE(s.invalidated_at,COALESCE($3::timestamptz,clock_timestamp())),COALESCE($3::timestamptz,clock_timestamp())),purge_at=LEAST(COALESCE(s.purge_at,COALESCE($3::timestamptz,clock_timestamp())+interval '24 hours'),COALESCE($3::timestamptz,clock_timestamp())+interval '24 hours') FROM gap_report_revisions r WHERE r.id=s.revision_id AND r.environment_id=$1 AND r.gap_ids && $2::uuid[]",[getServerConfig().TURAS_ENVIRONMENT_ID,gapIds,invalidatedAt??null]);}

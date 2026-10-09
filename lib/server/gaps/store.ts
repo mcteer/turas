@@ -1,0 +1,10 @@
+import type {PoolClient} from 'pg';
+import {randomUUID} from 'node:crypto';
+import {reportObjectDirectory,writeReportObject,readReportObject,deleteExactReportObject} from '../reports/store';
+import {getServerConfig} from '../config';
+import {HttpFailure} from '../../contracts/http';
+export async function requireGapStore(){try{return await reportObjectDirectory(false);}catch{throw new HttpFailure(503,'store_unavailable','Engineering report store unavailable');}}
+export async function stageGapObject(db:PoolClient,scope:{workspaceId:string;jobId:string;revisionId:string},format:'markdown'|'json',digest:string,size:number){await requireGapStore();if(size<1||size>5*1024*1024)throw new HttpFailure(413,'scope_too_large','Engineering export exceeds limit');const key=randomUUID();if((await db.query('SELECT 1 FROM report_store_objects WHERE object_key=$1',[key])).rowCount)throw new HttpFailure(503,'store_unavailable','Object identity unavailable');await db.query('INSERT INTO gap_report_store_objects(object_key,environment_id,workspace_id,job_id,revision_id,format,content_digest,size_bytes) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[key,getServerConfig().TURAS_ENVIRONMENT_ID,scope.workspaceId,scope.jobId,scope.revisionId,format,digest,size]);return key;}
+export async function writeGapObject(bytes:Buffer,key:string){await requireGapStore();if(bytes.length>5*1024*1024)throw new HttpFailure(413,'scope_too_large','Engineering export exceeds limit');return writeReportObject(bytes,key,true);}
+export async function readGapObject(key:string,digest:string,size:number){await requireGapStore();if(size>5*1024*1024)throw new HttpFailure(503,'store_unavailable','Engineering export unavailable');try{return await readReportObject(key,digest,size,true);}catch{throw new HttpFailure(503,'store_unavailable','Engineering export unavailable');}}
+export async function deleteGapObject(key:string,digest:string,size:number){await requireGapStore();if(size>5*1024*1024)throw Error('Invalid cleanup identity');return deleteExactReportObject(key,digest,size,true);}

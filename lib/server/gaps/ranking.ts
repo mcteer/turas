@@ -1,0 +1,3 @@
+import type {GapContent} from '../../contracts/product-gaps';
+import {gapOrderVersion,type GapRank} from '../../product-gaps/ranking';
+export function gapRankingFactors(row:{id:string;disposition:string;revisit_at:Date|null;last_review_at:Date|null},content:Pick<GapContent,'severity'|'workaroundFeasibility'>,confirmed:number,now=new Date()){const factors:GapRank={id:row.id,due:row.disposition==='deferred'&&Boolean(row.revisit_at&&row.revisit_at<=now),severity:content.severity,confirmed,workaround:content.workaroundFeasibility,lastReviewAt:row.last_review_at?.toISOString()??null};return {methodVersion:gapOrderVersion,factors,freshness:row.last_review_at&&now.getTime()-row.last_review_at.getTime()<=30*86400000?'reviewed_recently':'review_due'};}

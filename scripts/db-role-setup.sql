@@ -208,3 +208,24 @@ DO $$ DECLARE t text; BEGIN
      GRANT EXECUTE ON FUNCTION turas_report_purge_preview(text,uuid,text) TO turas_report_cleanup,turas_runtime;
  END IF;
 END $$;
+
+-- 012: independent internal gap history and narrowly scoped payload maintenance.
+DO $$ DECLARE t text; BEGIN
+ IF to_regclass('public.product_gaps') IS NOT NULL THEN
+  FOR t IN SELECT tablename FROM pg_tables WHERE schemaname='public' AND (tablename LIKE 'gap_%' OR tablename='product_gaps') LOOP
+   EXECUTE format('REVOKE ALL ON TABLE %I FROM turas_runtime',t);
+   EXECUTE format('GRANT SELECT, INSERT ON TABLE %I TO turas_runtime',t);
+   IF t IN('gap_workspace_state','product_gaps','gap_impact_observations','gap_observation_assignments','gap_revision_states','gap_reports','gap_report_jobs','gap_report_revision_states','gap_report_store_objects','gap_export_receipts','gap_cleanup_leases','gap_handoff_states') THEN
+    EXECUTE format('GRANT UPDATE ON TABLE %I TO turas_runtime',t);
+   END IF;
+  END LOOP;
+  GRANT UPDATE(revision_id) ON gap_revision_payloads TO turas_runtime;
+  GRANT SELECT ON gap_impact_revisions,gap_impact_decisions TO turas_runtime;
+  IF to_regclass('public.gap_report_revision_payloads') IS NOT NULL THEN
+   GRANT UPDATE(revision_id) ON gap_report_revision_payloads TO turas_runtime;
+   GRANT UPDATE(receipt_id) ON gap_handoff_payloads TO turas_runtime;
+   GRANT EXECUTE ON FUNCTION turas_gap_retention_payloads(text,uuid,integer) TO turas_runtime;
+  END IF;
+  GRANT EXECUTE ON FUNCTION turas_gap_expire_receipt(text,uuid,text[]),turas_gap_purge_payloads(text,integer),turas_gap_invalidate_source(text,uuid) TO turas_runtime;
+ END IF;
+END $$;

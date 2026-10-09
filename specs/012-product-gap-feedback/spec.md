@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-08
 
-**Status**: Planned; implementation not started
+**Status**: Implementation complete; local acceptance passed; hosted rollout pending
 
 **Input**: Complete specify, clarify, plan, tasks and analyze for roadmap 012; stop before implementation for a model switch.
 

@@ -6,6 +6,11 @@ export function redactAnalyticsEvent(event: BeforeSendEvent): BeforeSendEvent | 
   try {
     const url = new URL(event.url);
     const routes: [RegExp, string][] = [
+      [/^\/product-gaps\/reports\/[^/]+\/?$/, "/product-gaps/reports/[reportId]"],
+      [/^\/product-gaps\/(reports|new)\/?$/, "/product-gaps/$1"],
+      [/^\/product-gaps\/[^/]+\/?$/, "/product-gaps/[gapId]"],
+      [/^\/product-gaps\/?$/, "/product-gaps"],
+      [/^\/customers\/[^/]+\/product-gaps\/?$/, "/customers/[customerId]/product-gaps"],
       [/^\/customers\/[^/]+\/engagements\/[^/]+\/staffing\/?$/, "/customers/[customerId]/engagements/[engagementId]/staffing"],
       [/^\/customers\/[^/]+\/engagements\/[^/]+\/?$/, "/customers/[customerId]/engagements/[engagementId]"],
       [/^\/customers\/[^/]+\/plans\/new\/?$/, "/customers/[customerId]/plans/new"],

@@ -1,3 +1,4 @@
+import {tickGapWorker} from '../lib/server/gaps/worker';
 import {randomUUID} from 'node:crypto';
 import {closeRuntimePool} from '../lib/server/db/client';
 import {reportTransaction} from '../lib/server/reports/commands';
@@ -10,7 +11,8 @@ import {tickReportSchedules} from '../lib/server/reports/schedules';
 import {claimReportDeliveries,dispatchReportDelivery} from '../lib/server/reports/outbox';
 import {cleanupReportRevisionPayloads,cleanupReportFiles,cleanupStagedReportObjects,cleanupReportScratch,cleanupReportReceiptAudit,cleanupReportDeliveryAudit,cleanupReportDecisionAudit,cleanupUnmatchedReportEvents,cleanupReportRevisionAudit,cleanupExpiredReportPreviews} from '../lib/server/reports/cleanup';
 
-const workerId=randomUUID();let stopping=false,ready=false,refreshing=false,working=false;
+const workerId=randomUUID();let stopping=false,ready=false,refreshing=false,working=false,gapWorking=false;
+async function gapWork(){if(stopping||gapWorking)return;gapWorking=true;try{await tickGapWorker();}catch(error){const code=String((error as {code?:unknown})?.code??'unknown');console.error(JSON.stringify({kind:'gap_worker_failure',code:/^[a-zA-Z0-9_]{1,64}$/.test(code)?code:'unknown'}));}finally{gapWorking=false;}}
 async function refresh(){
  if(stopping||refreshing)return;refreshing=true;
  try{
@@ -49,10 +51,12 @@ async function work(){
   }finally{working=false;}
 }
 const heartbeat=setInterval(()=>{void refresh();},10000),tick=setInterval(()=>{void work();},2000);
+const gapTick=setInterval(()=>{void gapWork();},2000);void gapWork();
 void refresh();
 async function stop(){
- if(stopping)return;stopping=true;clearInterval(heartbeat);clearInterval(tick);
- while(working||refreshing)await new Promise(resolve=>setTimeout(resolve,100));
- await closeRuntimePool();
+ if(stopping)return;stopping=true;clearInterval(heartbeat);clearInterval(tick);clearInterval(gapTick);
+ const shutdown=setTimeout(()=>process.exit(0),35000);shutdown.unref();
+ while(working||refreshing||gapWorking)await new Promise(resolve=>setTimeout(resolve,100));
+ await closeRuntimePool();clearTimeout(shutdown);
 }
 for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>{void stop();});

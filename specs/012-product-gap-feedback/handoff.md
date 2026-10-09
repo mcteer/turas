@@ -1,40 +1,36 @@
-# 012 Implementation Handoff
+# 012 Implementation and Release Handoff
 
 **Date**: 2026-10-08
 **Branch**: `012-product-gap-feedback`
 **Checkout**: `/Users/mcteer/Projects/turas`
 **Base**: merged 011 on main, `b5d54276c9e46630b3dd9401c573d5788d9337cd`
-**Scope**: Specify → clarify → plan → tasks → read-only analyze, then stop for the requested model switch. No implementation has started.
+**Scope**: Four product-gap stories and their complete local acceptance gates. Final results and PR status are recorded in [validation.md](validation.md).
 
-## Resume in the canonical checkout
+## Implemented behavior
 
-```sh
-cd /Users/mcteer/Projects/turas
-export PATH=/opt/homebrew/opt/node@24/bin:$PATH
-export SPECIFY_FEATURE_DIRECTORY=specs/012-product-gap-feedback
-```
+Internal members propose gap narratives and customer impact observations. Only canonical active internal administrator mcteer reviews them, confirms exhaustive merge/split assignments, approves exact customer disclosure and records manual handoff events. Working and reviewed heads remain separate; history, receipts and canonical identities are append-only.
 
-Read root `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, the constitution and the [spec](spec.md), [plan](plan.md), [tasks](tasks.md), [data model](data-model.md), [contracts](contracts/domain.md) and [quickstart](quickstart.md). Run `$speckit-implement` only when the user starts implementation with the chosen model. Do not create another checkout/worktree, import legacy data, change the selected database/workflow data or relink/deploy the project during setup.
+Original evidence and current access govern reads, counts, review and export. Confirmation requires independently adequate accepted customer need and direct current product evidence. Public attribution remains suspected. Customer sets suppress suspected-only when confirmed; resolved history is nonadditive. Missing primary history fails explicitly, and incomparable optional history reports unavailable.
 
-## Settled decisions
+Engineering detail/portfolio reports are deterministic and self-contained in-app, Markdown and JSON. Preparation has an absolute admission plus 30-second deadline, separate catalog identities and no automatic retry. Approval binds exact audience and every disclosed customer. Exports validate actual bytes and recheck authority between chunks; cancellation and revocation stop further release. Manual initial handoff, follow-up and correction retain attribution; expiry or withdrawal permits metadata-only follow-up and flags human review. There is no external send/fetch or automatic customer resolution.
 
-- One clarification answered: active internal members propose; only canonical active internal administrator mcteer approves/reclassifies gaps and impact, confirms merge/split, approves customer disclosure and records handoff. Account ownership/stewardship/another administrator is not an override.
-- Four stories: capture/review; canonicalization and counts; deterministic engineering reports; manual handoff/follow-up.
-- Original evidence and current access govern every read/count/review/export. Confirmed impact needs accepted customer need and current direct product evidence. Public attribution remains suspected.
-- Merge/split explicitly preserves each observation once; customer sets use canonical customer identity, with separate confirmed, suspected-only and resolved-history categories.
-- Existing template sections are mandatory. Reports are in-app plus private Markdown/JSON, reviewed for exact audience and every included customer. Handoffs are human-reported; no external send/fetch or automatic customer resolution.
-- Reuse the existing reports-worker process and low-level private store through 012-specific policy. No new agent/model behavior, provider, renderer, dependency or paid evaluation is planned. Preserve `agent/agent.ts`.
+The existing reports-worker process runs an independent 012 timer. Cleanup uses exact catalog/environment/lease identities, preserves 009 files, quarantines tampered bytes and reconciles missing files. Time-only critical quality expiry uses the original failure deadline; access loss by one actor never globally purges another actor's content. Minimal identities, original lineage and lifetime keyed tombstones remain after payload expiry.
 
-## Task readiness and acceptance
+## Local validation
 
-There are 52 unchecked tasks: 3 setup, 6 foundation, 9 US1, 7 US2, 11 US3, 4 US4 and 12 cross-cutting. Six `[P]` test-authoring tasks form three independent pairs; shared contracts/fixtures/manifests stay sequential. US1 is the first complete local demonstration, but all four stories and cross-cutting gates are required for completion.
+Read root governance and the [spec](spec.md), [plan](plan.md), [tasks](tasks.md), [contracts](contracts/domain.md) and [quickstart](quickstart.md). Select `SPECIFY_FEATURE_DIRECTORY=specs/012-product-gap-feedback` when resuming. Runners use owned ignored directories, loopback PostgreSQL, synthetic data and private CLI WebKit captures; they sanitize inherited configuration and tear down their exact resources in `finally`. No additional checkout or sibling Projects directory is needed.
 
-The [requirements checklist](checklists/requirements.md) passes 16/16. All 22 functional requirements and seven buildable success criteria map to tasks. C01–C16 are quoted verbatim at their implementation points. The [quickstart](quickstart.md) defines 15 initial automated suites and six browser journeys in each of four WebKit projects, plus exact load and recovery corpora; these are planned checks, not executed runtime evidence.
+The deterministic manifest has 15 suites. Browser acceptance requires all six journey files in each of four WebKit projects with zero skipped cases. The benchmark verifies exactly 200 customers, 2000 gaps, 10000 observations and 40000 revisions, at least 100 operations per class with five readers and a separate reviewer, p95 ≤ 2 seconds and 100-gap preparation ≤ 30 seconds. Recovery covers empty→049 and 047→049 with the actual root supervisor, crashes, staged objects, disabled cleanup and retained tombstone keys. Relevant 003–011 regressions run without paid evaluations. Consult the validation ledger for executed source fingerprints and counts; planned checks are not acceptance evidence.
 
-Planning documentation checks are recorded in [validation.md](validation.md). The final read-only analysis is reported in the planning conversation; it does not silently alter the artifacts. Implementation must read that result before starting. Any subsequent source/contract change requires corresponding tasks/check updates.
+## Hosted release prerequisites
 
-## Workspace and release boundaries
+Preview and Production have not been migrated or certified by 012 local checks. Preserve the selected database, `.env.local` and `.eve/.workflow-data`; do not relink or deploy implicitly. Before an explicitly authorized release:
 
-011 merged with all 16 CI jobs and eight independently reviewed actual-model cases accepted. Its branches and redundant worktrees were removed. Read-only legacy remains `../turas-back`; recovery archives are outside Projects. Preserve the canonical `.env.local` and `.eve/.workflow-data`; synthetic runners must sanitize inherited configuration and own/clean their disposable resources.
+1. Back up and verify the selected environment, apply explicit migrations 048–049 in order and apply the checked-in least-privilege role setup.
+2. Prepare the private report store with `npm run gaps:prepare`; verify its environment marker and ensure it is separate from uploads. Configure `TURAS_012_RECEIPT_HASH_KEYS` with at least one strong key and retain all historical verification keys for lifetime tombstones.
+3. Verify the existing reports-worker runs the independent 012 tick and can maintain retention while `TURAS_012_DISABLED=1` or 009 is disabled. No new daemon, cron, provider, connector or model behavior is introduced.
+4. Check real hosted session/role boundaries, source withdrawal, approved audience exports, manual handoff and disabled retention. Record Preview and Production results separately.
 
-012 migrations 048–049 are provisional until implementation rechecks the manifest. Planning has not installed them, run Docker/databases/browsers/model calls, modified runtime code or certified hosted behavior. Implementation local acceptance, CI, Preview and Production must be recorded separately. A future implementation PR should include actual checks and forward recovery; merge/deploy need applicable user authorization. Stop here for the model switch.
+Recovery is forward-only on the same database, private store and workflow directory. Stop new work with `TURAS_012_DISABLED=1`; cancel or reconcile existing identities and keep cleanup running. Abandoned jobs fail without retry. Restore compatible code/configuration after applying a reviewed forward migration; never recreate schemas inside handlers, reuse expired keys or restore withdrawn bytes. Quarantined files require an operator to resolve their exact identity before deletion.
+
+A focused PR includes actual checks and release limitations. Merge only when authorized and CI is green. After a successful merge, leave the PR closed, delete its local/remote feature branch and verify README on main. Do not start 013 as part of this scope.

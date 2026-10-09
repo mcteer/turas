@@ -474,3 +474,55 @@ jobs:
               signatures: signatures.filter(value => log.toLowerCase().includes(value.toLowerCase())) }));
           }
           JS
+
+  product-gaps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        gate: [deterministic, webkit, recovery, benchmark, regressions]
+    env:
+      AI_GATEWAY_API_KEY: ''
+      TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - name: Capture common 012 source fingerprint
+        run: |
+          node --import tsx --input-type=module <<'JS' >> "$GITHUB_ENV"
+          import {featureSourceDigest} from './scripts/execution-source-digest.ts';
+          console.log('TURAS_012_EXPECTED_SOURCE_DIGEST='+await featureSourceDigest('012'));
+          JS
+      - name: Validate 012 design artifacts
+        env:
+          SPECIFY_FEATURE_DIRECTORY: specs/012-product-gap-feedback
+          SPECIFY_FEATURE_NO_PERSIST: '1'
+        run: .specify/scripts/bash/check-prerequisites.sh --json --require-spec --require-tasks
+      - name: Complete canonical deterministic manifest and types
+        if: matrix.gate == 'deterministic'
+        run: |
+          npm run typecheck:gaps
+          npm run test:gaps
+          npm run build:gaps:check
+          npm run check:docs
+      - name: Complete six-journey four-project WebKit matrix
+        if: matrix.gate == 'webkit'
+        run: |
+          npx playwright install --with-deps webkit
+          npm run gaps:ui:check
+      - name: Empty and 047 forward recovery with real root supervisor
+        if: matrix.gate == 'recovery'
+        run: npm run gaps:recovery:check
+      - name: Exact bounded fixture and concurrent load acceptance
+        if: matrix.gate == 'benchmark'
+        run: npm run benchmark:gaps
+      - name: Owned 003–011 regression cohorts without model calls
+        if: matrix.gate == 'regressions'
+        run: npm run test:gaps:regressions
+      - name: Require complete evidence with the same source fingerprint
+        run: node --import tsx scripts/gaps-ci-evidence.ts "${{ matrix.gate }}"

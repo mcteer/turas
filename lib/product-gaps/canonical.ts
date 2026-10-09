@@ -1,0 +1,3 @@
+import {HttpFailure} from '../contracts/http';
+export type CanonicalAssignment={observationId:string;resultKey:string};
+export function canonicalAssignments(observations:readonly string[],results:readonly string[],assignments:readonly CanonicalAssignment[]){const ids=new Set(observations),keys=new Set(results);if(ids.size!==observations.length||keys.size!==results.length||observations.length>1000||assignments.length!==observations.length||new Set(assignments.map(a=>a.observationId)).size!==assignments.length||assignments.some(a=>!ids.has(a.observationId)||!keys.has(a.resultKey)))throw new HttpFailure(400,'invalid_input','Every observation requires one explicit resulting assignment');return [...assignments].sort((a,b)=>a.observationId.localeCompare(b.observationId));}

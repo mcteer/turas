@@ -1,0 +1,1 @@
+export function recordGapTelemetry(input:{operation:'read'|'write'|'worker';outcome:'committed'|'denied'|'failed';correlationId:string;durationMs:number}){console.info(JSON.stringify({kind:'gap_operation',...input,durationMs:Math.max(0,Math.round(input.durationMs))}));}

@@ -10,11 +10,11 @@ export PATH=/opt/homebrew/opt/node@24/bin:$PATH
 export SPECIFY_FEATURE_DIRECTORY=specs/012-product-gap-feedback
 ```
 
-Do not run `db:init`, `db:migrate`, `reports:prepare` or root dev against the selected `.env.local` during synthetic checks. Future 012 runners provision their own marked loopback PostgreSQL environment, runtime roles, private store and workflow directory under an owned ignored `local-artifacts/012` namespace. They must sanitize inherited database/model/provider variables, refuse non-owned targets and arbitrary database/test-path overrides, preserve the selected database and `.eve/.workflow-data`, and tear down only their exact resources in `finally`. No paid model calls or real customer import is permitted. Evidence/logs/screenshots are private and synthetic; public summaries contain safe totals and hashes only. Keep reviewed evidence until its acceptance record is written, then remove expendable owned scratch and containers.
+Do not run `db:init`, `db:migrate`, `reports:prepare` or root dev against the selected `.env.local` during synthetic checks. The 012 runners provision their own marked loopback PostgreSQL environment, runtime roles, private store and workflow directory under an owned ignored `local-artifacts/012` namespace. They must sanitize inherited database/model/provider variables, refuse non-owned targets and arbitrary database/test-path overrides, preserve the selected database and `.eve/.workflow-data`, and tear down only their exact resources in `finally`. No paid model calls or real customer import is permitted. Evidence/logs/screenshots are private and synthetic; public summaries contain safe totals and hashes only. Keep reviewed evidence until its acceptance record is written, then remove expendable owned scratch and containers.
 
 Before route/UI implementation, read the relevant installed Next.js guides. No eve authoring is planned; preserve `agent/agent.ts` and instructions. Verify provisional migrations 048–049 against the current manifest. Explicit store preparation `npm run gaps:prepare` is for a deliberately selected implementation environment, uses only the private-store helper and requires release authorization on hosted targets; runners call the helper within their owned environment instead.
 
-## Planned commands
+## Acceptance commands
 
 | Command | Expected evidence |
 | --- | --- |
@@ -25,13 +25,13 @@ Before route/UI implementation, read the relevant installed Next.js guides. No e
 | `npm run gaps:recovery:check` | Empty and 047→049 upgrade, runtime grants, same-environment restart, receipts/tombstones/jobs/store/disable/retention evidence |
 | `npm run test:gaps:regressions` | Relevant source/authority/invalidation/store/shell behavior for 003–011 in owned deterministic environments |
 | `npm run check:docs` | Current links/status and tracked-file hygiene |
-| `npm run build:check` | Existing web/eve build checks, with no deploy or model change |
+| `npm run build:gaps:check` | Existing `build:check` web/eve builds in an owned app copy, with no deploy or model change |
 
 The first six runners must reject source changes during acceptance, record source/environment identity and run the whole declared corpus when claiming feature acceptance. Narrow developer checks may run while implementing, but their success is not full acceptance. Extend existing source-digest utilities for 012 without changing the meaning of historical feature fingerprints.
 
 ## Canonical automated suites
 
-`scripts/gaps-suites.json` must enumerate exactly the discovered `gap-*.test.ts` files in unit/contracts/integration. Initial required files (expand the manifest when implementation discovers additional meaningful checks):
+`scripts/gaps-suites.json` must enumerate exactly the discovered `gap-*.test.ts` files in unit/contracts/integration. Required files:
 
 ```text
 tests/unit/gap-content.test.ts

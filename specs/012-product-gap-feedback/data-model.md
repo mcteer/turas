@@ -78,3 +78,12 @@ Ordering `gap-order-v1`: due revisit first; then current reviewed severity (`cri
 `gap_handoff_receipts`: report/review/artifact digests, approved audience digest, C14 event payload, reporter, request identity and predecessor/correction link. Initial handoff requires a current eligible approved unexpired report; later follow-up/correction may append permitted metadata after expiry without releasing report prose or claiming a new send. Any attached response evidence must pass the existing original-source policy and remain attributed. Event payloads expire after 90 days once obsolete or 24 hours after global invalidation; minimum report/event identity and state survive in metadata.
 
 Receipts, decisions and relation identities retain minimal audit for at least 365 days. After that, retain only referential identity, monotonic versions, disposition and required deduplication/redirect links while the associated records exist; remove actor/time/rationale payload where not needed. Request-key tombstones survive for the environment lifetime using the versioned keyring. Per-actor permission loss denies that actor immediately but does not delete otherwise valid workspace content. Global source withdrawal/customer retirement triggers payload withholding and C15 purge. Maintenance operates when feature creation is disabled and never derives permission from a stale receipt.
+
+### Physical revision storage
+
+Migration 048 stores gap and observation revisions/decisions in scoped unified
+append-only tables with nullable `impact_id`; `gap_impact_revisions` and
+`gap_impact_decisions` are filtered views. Composite revision/observation keys and
+head constraints preserve the distinct logical identities above. Deletable prose
+and immutable identity metadata remain separate. Gap acceptance decisions also
+retain the explicit reviewer customer-independence acknowledgment.

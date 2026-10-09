@@ -4,7 +4,7 @@
 
 **Input**: `specs/012-product-gap-feedback/spec.md`
 
-**Status**: Planning complete; implementation not started.
+**Status**: Implemented design; executed acceptance and release status are tracked in validation.md.
 
 ## Summary
 

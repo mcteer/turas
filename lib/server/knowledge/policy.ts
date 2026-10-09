@@ -47,7 +47,7 @@ export async function assertExactKnowledgeLineage(client: PoolClient,
                    (support.audience<>'delivery' OR support.data_category<>'delivery_context')) OR
                  (selection.id IS NOT NULL AND
                    (selection.audience<>'delivery' OR selection.data_category<>'delivery_context')))))))
-        FOR UPDATE OF v,r`,
+        FOR UPDATE OF r`,
       [source.sourceRevisionId,actor.workspaceId,customerId,source.sourceGeneration,
         source.sourceDigest,actor.kind]);
       if (!found.rowCount || (await unsupportedProfileRevisionIds(client,
@@ -62,7 +62,7 @@ export async function assertExactKnowledgeLineage(client: PoolClient,
           AND (v.audience='delivery' OR $6='internal')
           AND NOT EXISTS (SELECT 1 FROM evidence_source_events e
             WHERE e.source_revision_id=v.id AND e.event_type IN ('withdraw','supersede'))
-        FOR UPDATE OF v,s`,
+        FOR UPDATE OF s`,
       [source.sourceRevisionId,actor.workspaceId,customerId,source.sourceGeneration,
         source.sourceDigest,actor.kind]);
       if (!found.rowCount) throw hiddenRecord();

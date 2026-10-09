@@ -58,3 +58,9 @@ Use transactional persisted C16 admission; report preparation consumes mutation 
 `TURAS_012_DISABLED=1` or unavailable required schema blocks new authoring, previews, review, preparation, export admission and handoff. It permits current-authorized minimal metadata, receipt reconciliation, cancellation and maintenance; private prose/export bytes remain withheld. Old-schema checks fail safely before querying absent tables. Initial 048 authoring is testable separately; report operations require 049. C16 read/body/count bounds remain enforced. Do not change unrelated feature schema gates.
 
 Use safe errors: `not_found` for forbidden/unknown objects; `invalid_input`, `stale_version`, `preview_expired`, `source_unavailable`, `scope_too_large`, `comparison_unavailable`, `rate_limited`, `feature_disabled`, `schema_unavailable`, `request_conflict`, `receipt_expired`, `preparation_failed` only after appropriate authorization. Details never contain source titles, hidden IDs, SQL or credentials. Telemetry is operation category, safe opaque ID, duration, bounded counts and outcome; no customer names, prose, URLs, request bodies or artifacts.
+
+Implementation detail for the common-narrative boundary: gap acceptance previews
+require `customerIndependentAcknowledgment: true` in addition to the authoring
+acknowledgment. The exact binding and immutable decision retain this reviewer
+acknowledgment. This is an explicit human disclosure check, not automated proof
+that free text is safe. Impact decisions do not attest common-narrative disclosure.

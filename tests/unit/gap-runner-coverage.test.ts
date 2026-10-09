@@ -1,0 +1,18 @@
+import { describe,it,expect } from 'vitest';
+import { verifyGapTestReport } from '../../scripts/test-gaps';
+describe('Gap acceptance coverage',()=>{
+ it('refuses empty, skipped, missing and duplicate reports instead of claiming acceptance',()=>{expect(()=>verifyGapTestReport({success:true,testResults:[]},['tests/unit/gap-content.test.ts'])).toThrow();expect(()=>verifyGapTestReport({success:true,testResults:[{name:'/tests/unit/gap-content.test.ts',assertionResults:[{status:'pending'}]}]},['tests/unit/gap-content.test.ts'])).toThrow();expect(verifyGapTestReport({success:true,testResults:[{name:'/tests/unit/gap-content.test.ts',assertionResults:[{status:'passed'}]}]},['tests/unit/gap-content.test.ts'])).toBe(1);});
+});
+
+import {mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';
+import {join} from 'node:path';
+import {tmpdir} from 'node:os';
+import {verifyGapSuiteCoverage} from '../../scripts/test-gaps';
+import {featureSourceDigest} from '../../scripts/execution-source-digest';
+it('detects missing, duplicate and orphan suite files and changed implementation bytes',async()=>{const root=await mkdtemp(join(tmpdir(),'turas-gap-coverage-'));try{for(const group of ['unit','contracts','integration'])await mkdir(join(root,'tests',group),{recursive:true});const path='tests/unit/gap-example.test.ts';await writeFile(join(root,path),'synthetic suite');expect(verifyGapSuiteCoverage(root,[path])).toEqual([path]);expect(()=>verifyGapSuiteCoverage(root,[path,path])).toThrow();expect(()=>verifyGapSuiteCoverage(root,[])).toThrow();expect(()=>verifyGapSuiteCoverage(root,['tests/unit/gap-missing.test.ts'])).toThrow();const before=await featureSourceDigest('012',root);await writeFile(join(root,path),'changed implementation assertion');expect(await featureSourceDigest('012',root)).not.toBe(before);await writeFile(join(root,'tests/unit/gap-orphan.test.ts'),'orphan');expect(()=>verifyGapSuiteCoverage(root,[path])).toThrow();}finally{await rm(root,{recursive:true,force:true});}});
+
+import {verifyGapUiFiles,gapUiProjects} from '../../scripts/gaps-ui-check';
+it('rejects incomplete or duplicate browser journeys and pins all four WebKit projects',()=>{const files=Array.from({length:6},(_,i)=>'tests/ui/gap-'+i+'.spec.ts');expect(()=>verifyGapUiFiles(files,files)).not.toThrow();expect(()=>verifyGapUiFiles(files.slice(1),files)).toThrow();expect(()=>verifyGapUiFiles(files,[...files.slice(1),files[1]])).toThrow();expect(gapUiProjects).toEqual(['webkit-desktop-light','webkit-desktop-dark','webkit-mobile-light','webkit-mobile-dark']);});
+
+import {verifyExecutionUiReport} from '../../scripts/execution-ui-report';
+it('requires every discovered browser case and rejects skipped or different project evidence',()=>{const project=gapUiProjects[0],identity={file:'/synthetic/tests/ui/gap-authoring.spec.ts',id:'synthetic-gap-case',project,line:1},test={projectName:project,projectId:project,expectedStatus:'passed',status:'expected',results:[{status:'passed',retry:0,errors:[]}]},report={config:{rootDir:'/synthetic'},suites:[{specs:[{id:identity.id,file:identity.file,line:1,ok:true,tests:[test]}]}],errors:[],stats:{expected:1,skipped:0,unexpected:0,flaky:0}};expect(verifyExecutionUiReport(report,[identity]).expected).toBe(1);expect(()=>verifyExecutionUiReport(report,[identity,{...identity,id:'missing-case'}])).toThrow();expect(()=>verifyExecutionUiReport(report,[{...identity,project:gapUiProjects[1]}])).toThrow();expect(()=>verifyExecutionUiReport({...report,stats:{...report.stats,skipped:1}},[identity])).toThrow();expect(()=>verifyExecutionUiReport({...report,suites:[{specs:[{...report.suites[0].specs[0],tests:[{...test,results:[{status:'skipped',retry:0,errors:[]}]}]}]}]},[identity])).toThrow();});
