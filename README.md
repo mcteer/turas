@@ -103,6 +103,17 @@ Engineering detail and portfolio reports use deterministic templates and reviewe
 
 Migrations 048–049 and explicit `npm run gaps:prepare` are release prerequisites. `TURAS_012_DISABLED=1` blocks new work while cancellation, reconciliation and retention continue independently of 009 enablement. Retain every key in `TURAS_012_RECEIPT_HASH_KEYS` needed to verify existing tombstones. Use the same database, private store and workflow directory during forward recovery. See the [quickstart](specs/012-product-gap-feedback/quickstart.md), [validation record](specs/012-product-gap-feedback/validation.md) and [release handoff](specs/012-product-gap-feedback/handoff.md). Hosted rollout and acceptance are separate pending gates.
 
+### Partner Delivery and Enablement — Planned
+
+Feature 013 has a [specification](specs/013-partner-enablement/spec.md),
+[design](specs/013-partner-enablement/plan.md) and
+[48 implementation tasks](specs/013-partner-enablement/tasks.md). The planned slice
+adds assigned-customer navigation, reviewed what/how/why guides and individual
+learning checkpoints. Internal members author guides; mcteer publishes guides,
+assigns eligible members and verifies demonstrations. Learning progress stays
+separate from delivery acceptance and skills certification. Implementation has not
+started; see the [model-switch handoff](specs/013-partner-enablement/handoff.md).
+
 ## Technology
 
 TypeScript, Next.js 16, React 19, eve and PostgreSQL 17 with pgvector. Development
@@ -240,7 +251,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), [AGENTS.md](AGENTS.md) and the
 Select a feature explicitly rather than relying on the Git branch:
 
 ```sh
-export SPECIFY_FEATURE_DIRECTORY=specs/012-product-gap-feedback
+export SPECIFY_FEATURE_DIRECTORY=specs/013-partner-enablement
 ```
 
 Project-local Spec Kit commands live in `.opencode/commands/`; checked-in skills
