@@ -46,6 +46,12 @@ upgrade. Review installed version and manifest changes in their own PR.
 - Use explicit migrations, versioned contracts, deterministic calculations, and
   idempotent writes. Never initialize or migrate schemas inside request handlers.
 - Do not claim a planned feature, local check, or mock proves hosted behavior.
+- When an authorized feature/fix release requires database changes, include its
+  explicit migrations and runtime grants in the release. Verify the target and
+  recovery backup, rehearse migrations, and coordinate schema/code compatibility.
+  After merge, verify the deployed commit, required schema and changed behavior
+  in Production with authenticated HTTP and CLI Playwright/WebKit checks. CI alone
+  is not release completion; record actual results and unresolved hosted checks.
 - Update README and relevant spec/roadmap status in the PR that changes them.
 - After a successful merge, leave the merged PR closed and delete its associated
   local and remote feature branch; verify README on `main` afterward.

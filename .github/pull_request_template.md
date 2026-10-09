@@ -17,6 +17,11 @@ List commands, outcomes, relevant preview/visual evidence, and checks not run.
 Describe authorization/approval impact, migrations, template/contract changes,
 telemetry, and rollout/rollback. Use “Not applicable” with a reason where appropriate.
 
+- Current/required target schema and migration/grant steps:
+- Backup/rehearsal and code/schema compatibility order:
+- Post-merge Production commit, schema and authenticated workflow checks:
+- Hosted checks still unverified:
+
 ## Documentation and review
 
 - [ ] Acceptance criteria and relevant tasks have evidence.

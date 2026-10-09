@@ -9,13 +9,14 @@ steps using authorized evidence. Human review—not a model response—determine
 facts and decisions become accepted.
 
 **Status:** active development. Customer profiles through executive reporting and
-TAM/support guidance (010), product expansion (011) and product gaps (012) are implemented. Local validation and basic hosted smoke
+TAM/support guidance (010), product expansion (011), product gaps (012) and partner enablement (013) are implemented. Local validation and basic hosted smoke
 checks do not establish full Production workflow readiness. See the
 [roadmap](ROADMAP.md) and feature validation records under [`specs/`](specs/).
 
 Recent Conversations provides owner-private Archive and Restore controls. Archived
 chats remain available in Archived Conversations and retain their history.
-Apply migration 044 before deploying this version.
+Archive/restore requires migration 044. Apply the current migration manifest and
+runtime grants as part of each schema-dependent release.
 
 ## Features
 
@@ -101,9 +102,11 @@ Feature 012 implements the [52-task plan](specs/012-product-gap-feedback/tasks.m
 
 Engineering detail and portfolio reports use deterministic templates and reviewed private Markdown/JSON exports for an exact audience. Handoff notes are human-reported and never send messages or resolve customer impact automatically. Source withdrawal, changed authority and expiry withhold content immediately; independent cleanup retains minimal identities and lifetime request tombstones.
 
-Migrations 048–049 and explicit `npm run gaps:prepare` are release prerequisites. `TURAS_012_DISABLED=1` blocks new work while cancellation, reconciliation and retention continue independently of 009 enablement. Retain every key in `TURAS_012_RECEIPT_HASH_KEYS` needed to verify existing tombstones. Use the same database, private store and workflow directory during forward recovery. See the [quickstart](specs/012-product-gap-feedback/quickstart.md), [validation record](specs/012-product-gap-feedback/validation.md) and [release handoff](specs/012-product-gap-feedback/handoff.md). Hosted rollout and acceptance are separate pending gates.
+Migrations 048–049 and explicit `npm run gaps:prepare` are release prerequisites. `TURAS_012_DISABLED=1` blocks new work while cancellation, reconciliation and retention continue independently of 009 enablement. Retain every key in `TURAS_012_RECEIPT_HASH_KEYS` needed to verify existing tombstones. Use the same database, private store and workflow directory during forward recovery. See the [quickstart](specs/012-product-gap-feedback/quickstart.md), [validation record](specs/012-product-gap-feedback/validation.md) and [release handoff](specs/012-product-gap-feedback/handoff.md). Production migrations through 051 and internal Product Gaps page/API checks passed
+on 2026-10-09; engineering exports and full hosted workflow acceptance remain
+unverified. See the [Production recovery record](docs/production-recovery-2026-10-09.md).
 
-### Partner Delivery and Enablement — Local implementation
+### Partner Delivery and Enablement
 
 Feature 013 implements the [48-task plan](specs/013-partner-enablement/tasks.md):
 assigned-customer navigation, reviewed what/how/why guides and individual learning
@@ -119,8 +122,20 @@ withholds dependent content synchronously, including when cleanup is stopped.
 See [operations](docs/partner-operations.md), the
 [validation run guide](specs/013-partner-enablement/quickstart.md) and
 [handoff](specs/013-partner-enablement/handoff.md). Local and CI evidence is recorded in the
-[validation log](specs/013-partner-enablement/validation.md); hosted migration,
-rollout and acceptance remain separate pending gates.
+[validation log](specs/013-partner-enablement/validation.md). Feature 013 merged in
+[PR 24](https://github.com/mcteer/turas/pull/24). Production is on schema 051 and
+internal Partner Delivery page/API checks passed; full partner-role and workflow
+acceptance remains unverified. See the [recovery record](docs/production-recovery-2026-10-09.md).
+
+### Governed Adaptive Learning — Planning
+
+Feature 014 has a [specification](specs/014-governed-adaptive-learning/spec.md),
+[design](specs/014-governed-adaptive-learning/plan.md) and
+[66 implementation tasks](specs/014-governed-adaptive-learning/tasks.md). It plans
+private feedback, budgeted Turi improvements and paired evaluation, administrator
+publication/rollback, internal-only quarterly outcome metrics and bounded refresh
+monitoring. Implementation has not started; see the
+[model-switch handoff](specs/014-governed-adaptive-learning/handoff.md).
 
 ## Technology
 
