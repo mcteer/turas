@@ -93,6 +93,8 @@ all original data and revoked authority; logs/storage never expose private paylo
 - [X] T045 Run complete authorized local gates/build/docs/diff review, update only evidence-backed task/status records in `specs/015-read-only-mcp/{tasks,validation,handoff}.md`, and prepare reviewable PR; no paid provider calls or hosted changes under planning authorization. (FR-018, SC-001–006)
 - [ ] T046 After explicit merge/release authorization and all completed CI checks green, perform selected-target backup/restore rehearsal, explicit 055/grants, compatible disabled deployment, activation and available Production HTTP/SDK/CLI WebKit checks per `docs/mcp-operations.md`; revoke disposable test credentials, record deployed identity/schema/role/read coverage/limits in `specs/015-read-only-mcp/validation.md`, delete merged branches and verify README on main. Never fabricate grants/customer records or claim absent-record coverage. (FR-017–018, SC-006)
 
+- [X] T047 Correct the hosted modern SDK tool-error envelope without disclosing private errors; verify out-of-scope customer and invalid-input denials through the actual pinned consumer. Full local consumer manifest passes 19 suites/54 cases. Production acceptance still requires the corrected committed release and T046. (FR-004, FR-018)
+
 ## Dependencies and parallel opportunities
 
 Setup T001–003 → foundation T004–011 → US1 T012–021 → US2 T022–029 → US3

@@ -2,11 +2,41 @@
 
 ## Current acceptance
 
+PR 28 merged as `c41b17120a31e162970e5741a3998ca98610f405` after all
+42 checks passed in CI run `38077082624` on source commit
+`c4e92160e57dc3ba34c02f7ad5cca72c9b7bbf94`. All seven mandatory MCP
+receipts passed on fingerprint
+`0e300b6f97def7d19b4e3564f58c8d69a78aaf1d386f1aaddfc08d6e15af8acb`.
+The complete local eight-part regression gate passed on that same fingerprint;
+014 native readiness included hosted MCP cleanup, and protected watchdog units
+passed six cases. This supersedes the original local cohort below without
+relabelling its receipts.
+
+The user authorized release. A verify-full TLS Production backup was restored to
+an isolated owned database and rehearsed through 054→055 and runtime grants.
+All 419 pre-existing tables retained their original rows. Migration 055 and all
+required runtime grants were applied explicitly on 2026-10-10; the exact
+Production marker/55-entry ledger and denied runtime marker UPDATE/archive USAGE
+were verified. Disabled eve deployment `dpl_Dzb7AYQsVVT6xLQZsSMHpimTXSxZ`
+was READY on the merged commit and www.turas.dev. Actual CLI WebKit checks for
+mcteer, panel and partner passed management HTTP 200, no create form and disabled
+creation HTTP 503, with no browser errors.
+
+Activation deployment `dpl_DFN42kVatikicE4c8iqpbdSBRXh6` was READY on that
+same commit. Actual SDK validation exposed a protocol error in sanitized tool-error
+responses: omitting mandatory `resultType` made the pinned modern SDK reject the
+reply. Acceptance stopped, operator credentials were revoked, and exposure was
+disabled for correction. Preserve `resultType: complete` while retaining only the
+generic sanitized error message; actual SDK coverage now includes out-of-scope
+customer reads and invalid arguments. The complete local corrected consumer gate passed 19 suites/54 cases, zero failed/skipped; MCP typecheck and authored-doc checks passed. Hosted release acceptance remains pending;
+no absent customer assignments or source records were fabricated.
+
+## Original complete local cohort
+
 Final implementation and authored design source:
 `f70891997ac393f4cd26b685f1ece2e8e759fef34cedb413e6fb896324589b60`.
 All seven complete local gates passed on this exact fingerprint. Earlier captures
-remain historical evidence. A reviewable PR is prepared; CI acceptance is pending.
-CI and hosted acceptance are separate. Production remains unchanged at schema 054.
+remain historical evidence. At that capture, a reviewable PR was prepared and CI/hosted acceptance were pending. Production was then unchanged at schema 054.
 
 | Gate | Local evidence |
 | --- | --- |
