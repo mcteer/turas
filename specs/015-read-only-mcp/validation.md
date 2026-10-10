@@ -2,6 +2,57 @@
 
 ## Current acceptance
 
+015 is released to Production with MCP enabled (`TURAS_015_DISABLED=0`), exact
+schema/ledger 055, required runtime grants and preserved privilege boundaries.
+PR 30 merged after all 42 checks passed in CI run `38088186292` on commit
+`47d72f52278c5bbfd23e703224405ede1eddd3fb`. All seven mandatory MCP gates
+passed fresh source-bound receipts for
+`3f2a2d4e47fbe4b516c478821a112e5240c3eaafc6deeb15022f7f4864fed7d1`.
+The frozen-source local consumer suite passed 19 suites/54 cases, including
+research passage/citation reads after a real JSONB round trip and changed-URL
+withholding. The chronology below preserves earlier incomplete attempts.
+
+Accepted runtime release identity on 2026-10-10:
+`3eca020380f131534aaea4001816f8361c4f22ec`, READY Production deployment
+`dpl_ApNPK5akysTt2r7BmQsrMXvBhRa8`, aliased to www.turas.dev. Compatible
+disabled deployment `dpl_oLRCvdomb1SJYge86YuMbH3o9UbT` was verified first,
+with three-role management 200/disabled creation 503/no browser errors at 22:46 UTC.
+The complete enabled three-role actual SDK/HTTP/CLI WebKit suite passed at 22:51 UTC,
+repeating scoped discovery (12 internal/4 unassigned partner tools), customer/category
+ceilings and foreign-read denial, metadata-only UUID replay/reconciliation, browser
+logout independence, owner/admin revocation 401, safe usage, one-time credential
+creation/dismissal/revocation without DOM/storage leakage, current authority boundaries,
+internal Product Gaps refresh 200, and four desktop/mobile light/dark layouts without
+browser errors or overflow. Thirty valid requests succeeded in one natural UTC minute;
+request 31 returned 429 with bounded Retry-After, without resets or bypasses.
+
+A supplemental actual pinned SDK check at 22:51 UTC against an existing current
+research record passed available evidence listing, exact original passage read and
+citation resolution to matching text. The JSONB locator correction fixes the observed
+production withholding without changing source data, hashes, contracts, review states,
+quality gates or authorization. Invalid/changed locators remain denied in the owned
+consumer gate. No paid provider dispatch occurred.
+
+At 22:51 UTC, Production verification confirmed schema/55-entry ledger, all required
+MCP runtime grants, denied runtime marker UPDATE/archive USAGE, fresh hosted maintenance
+heartbeat, and all 27 operator-owned connections revoked. Hosted cleanup had purged
+every credential hash and retained permanent create/revoke receipts. Earlier interrupted
+probes are included in that cleanup count. Selected Preview configuration, root model
+and all 40,615 workflow files matched their original content hashes. Owned databases/
+containers were removed. PRs 28–30 remain closed; their local/remote feature branches
+were deleted and README verified on main. T046 is complete. This follow-up record
+changes documentation/status only; its merge still requires green CI and another
+Production identity/authenticated read/UI check.
+
+Coverage limits: Production has no accepted profile revisions, published shared
+knowledge, accepted delivery plans or published reports, and partner has no active
+customer assignments. Their empty/denied paths passed, but positive record/assigned-
+partner content coverage is unverified. Existing research was used for positive hosted
+passage/citation proof. No customer records or assignments were fabricated. Owned
+synthetic gates cover the absent positive cases; they do not prove absent hosted data.
+
+## Initial implementation and first release attempt
+
 PR 28 merged as `c41b17120a31e162970e5741a3998ca98610f405` after all
 42 checks passed in CI run `38077082624` on source commit
 `c4e92160e57dc3ba34c02f7ad5cca72c9b7bbf94`. All seven mandatory MCP
