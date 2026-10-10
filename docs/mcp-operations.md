@@ -1,6 +1,6 @@
 # Read-only MCP operations (015)
 
-015 is implemented on its feature branch. Local/CI acceptance is recorded separately;
+015 is implemented in [PR 28](https://github.com/mcteer/turas/pull/28). Local/CI acceptance is recorded separately;
 no hosted release or Production schema change is implied. See the
 [validation record](../specs/015-read-only-mcp/validation.md) for actual evidence.
 

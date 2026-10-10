@@ -2,7 +2,7 @@
 
 **Branch**: `015-read-only-mcp` | **Date**: 2026-10-10 | **Spec**: [spec.md](spec.md)
 
-**Input**: `specs/015-read-only-mcp/spec.md`. Design only; no implementation begun.
+**Input**: `specs/015-read-only-mcp/spec.md`. Implementation and acceptance are tracked in tasks.md and validation.md.
 
 ## Summary
 
@@ -49,7 +49,7 @@ identity/customer listing/citation resolution; 20-row pages, 100-customer ceilin
 
 | Principle | Pre-design gate | Post-design result |
 | --- | --- | --- |
-| I — Specify first | Four testable stories and 18 requirements | Spec, contracts, model, tasks; implementation deferred |
+| I — Specify first | Four testable stories and 18 requirements | Spec, contracts, model and tasks preceded implementation |
 | II — Customer outcomes | Reviewed maturity separate from stage/opportunity | No recalculation, opportunity ranking or success inference |
 | III — Evidence lifecycle | Accepted facts and attributed research only | Current source fences, dates/conflicts/citations; no historical withdrawn prose |
 | IV — Authorization | Current actor and explicit partner grants | Shared read-authority union and transaction fences; scopes only narrow |
@@ -74,7 +74,7 @@ specs/015-read-only-mcp/
   handoff.md
 ```
 
-### Source Code (repository root; proposed)
+### Source Code (repository root)
 
 ```text
 lib/contracts/mcp.ts

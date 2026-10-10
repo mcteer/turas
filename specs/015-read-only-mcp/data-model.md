@@ -1,6 +1,6 @@
 # Data Model: Read-only MCP Service
 
-Design only; explicit migration 055 and runtime grants are implementation tasks.
+Explicit migration 055 and runtime grants implement this model; hosted release is tracked in validation.md.
 
 ## Bounds and invariants
 
