@@ -2,7 +2,7 @@
 
 Planning completed 2026-10-10 on `015-read-only-mcp` in the canonical checkout.
 Select `SPECIFY_FEATURE_DIRECTORY=specs/015-read-only-mcp`. Read spec, plan, tasks,
-contracts and quickstart. Implementation merged in PR 28 as `c41b17120a31e162970e5741a3998ca98610f405`. Production schema 055/grants are applied; exposure is disabled pending completion of the hosted research-locator correction. Task markers and the validation record distinguish local/CI acceptance from hosted release.
+contracts and quickstart. Implementation merged in PR 28 as `c41b17120a31e162970e5741a3998ca98610f405`. Production is enabled on schema 055 after protocol/research-locator corrections in PRs 29 and 30 and actual SDK/HTTP/CLI WebKit validation, including research passage/citation reads. Task markers and the validation record distinguish local/CI acceptance from hosted release.
 
 T001 setup checked against main `80c8f3422abd1e0978960bc0531ad5f0df5a1038`.
 055 was available. Official server/client packages are pinned to 2.3.1; their
@@ -61,11 +61,10 @@ before writing Next/eve code. Common browser/native authority regressions are
 mandatory because the shared read guard changes. Quotas and owned harness precede
 story checks; do not release an unlimited incomplete checkpoint.
 
-Planning authorizes no extra live-model evaluation or hosted schema changes. Future
-release follows T046 only after explicit merge/release instruction and completed
-green checks: target backup/rehearsal, 055/grants, disabled compatible deployment,
+Planning authorized no extra live-model evaluation or hosted schema changes. The
+user later explicitly authorized T046, which completed after all checks were green: target backup/rehearsal, 055/grants, disabled compatible deployment,
 explicit enablement and Production checks with honest record-dependent limits.
 Use eve for any authorized Vercel operation and preserve selected local config when
 it pulls hosted variables. Roll back exposure with disable/revoke, not domain loss.
 
-Current work: finish complete local gates and prepare a reviewable PR. Release remains separately authorized.
+T001–T048 are complete. Production release acceptance is recorded in validation.md; missing record-dependent coverage remains explicit. No further roadmap implementation is authorized by this handoff.

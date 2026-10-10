@@ -96,7 +96,7 @@ Read-only MCP access (015) has a [specification](specs/015-read-only-mcp/spec.md
 [plan](specs/015-read-only-mcp/plan.md) and [tasks](specs/015-read-only-mcp/tasks.md),
 merged in [PR 28](https://github.com/mcteer/turas/pull/28). It supports internal users and assigned partners
 through scoped revocable access. Local and CI acceptance are recorded in the
-[validation record](specs/015-read-only-mcp/validation.md); Production schema 055 and runtime grants are applied. Exposure is disabled while a hosted research-locator correction completes validation. See [operations](docs/mcp-operations.md). Further
+[validation record](specs/015-read-only-mcp/validation.md); Production is enabled on schema 055 with runtime grants and authenticated SDK/HTTP/CLI WebKit validation, including actual research passage and citation reads. See [operations](docs/mcp-operations.md). Further
 delivery/learning automation remains roadmap work. There is no external support-ticket connector. See the
 [roadmap](ROADMAP.md) for proposed slices and dependencies.
 

@@ -1,6 +1,6 @@
 # Read-only MCP operations (015)
 
-015 merged in [PR 28](https://github.com/mcteer/turas/pull/28). Production schema 055 and runtime grants are applied; exposure is disabled while the hosted research-locator correction completes validation. Local/CI and hosted evidence remain separate. See the
+015 merged in [PR 28](https://github.com/mcteer/turas/pull/28). Production is enabled on schema 055 with runtime grants after authenticated SDK/HTTP/CLI WebKit checks, including actual research passages and citations. Protocol and research-locator corrections merged in PRs 29 and 30. Local/CI and hosted evidence remain separate. See the
 [validation record](../specs/015-read-only-mcp/validation.md) for actual evidence.
 
 ## Compatibility and scope

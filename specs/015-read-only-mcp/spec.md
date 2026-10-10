@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-10
 
-**Status**: Merged in PR 28; Production schema 055/grants applied; exposure disabled pending hosted research-locator correction
+**Status**: Released to Production; schema 055/grants, CI and authenticated hosted acceptance recorded in validation.md
 
 **Input**: Start roadmap 015 after release validation: versioned profile, evidence,
 plan and report reads through shared policy; scopes, pagination, current
