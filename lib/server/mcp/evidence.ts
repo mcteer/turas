@@ -1,4 +1,5 @@
 import { createHash,randomUUID } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 import type { PoolClient } from 'pg';
 import type { McpReadActor } from '../auth/read-actor';
 import { mcpToolInputs,mcpEvidenceSchema,mcpContractVersion } from '../../contracts/mcp';
@@ -72,7 +73,7 @@ async function projectPassage(db:PoolClient,actor:McpReadActor,customerId:string
     'SELECT passage_text,locators,extraction_warnings FROM retrieval_passages WHERE id=$1 AND source_id=$2 AND passage_digest=$3',
     [row.passage_id,row.id,row.passage_digest])).rows[0];
   if(!passage || passageDigest(passage.passage_text)!==row.passage_digest || !chunks.some(chunk=>chunk.digest===row.passage_digest &&
-    chunk.text===passage.passage_text && digest(chunk.locators)===digest(passage.locators)))return null;
+    chunk.text===passage.passage_text && isDeepStrictEqual(chunk.locators,passage.locators)))return null;
   if(Array.isArray(passage.locators) && passage.locators.some(locator=>locator.kind==='profile_field' &&
     /(^|\.)(sourceExcerpt|sourceUrl|sourceMessageId|sourceSpanDigest|ownerReferenceId|recordReferenceId|referenceId)(\.|$)/.test(locator.fieldPath)))return null;
   const dates=row.source_kind==='verified_research'?(await db.query<{title:string;publication_at:Date|null;observation_at:Date|null;retrieved_at:Date|null}>(

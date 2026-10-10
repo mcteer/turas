@@ -2,7 +2,7 @@
 
 Planning completed 2026-10-10 on `015-read-only-mcp` in the canonical checkout.
 Select `SPECIFY_FEATURE_DIRECTORY=specs/015-read-only-mcp`. Read spec, plan, tasks,
-contracts and quickstart. Implementation merged in PR 28 as `c41b17120a31e162970e5741a3998ca98610f405`. Production schema 055/grants are applied; exposure is disabled pending completion of the hosted SDK error-envelope correction. Task markers and the validation record distinguish local/CI acceptance from hosted release.
+contracts and quickstart. Implementation merged in PR 28 as `c41b17120a31e162970e5741a3998ca98610f405`. Production schema 055/grants are applied; exposure is disabled pending completion of the hosted research-locator correction. Task markers and the validation record distinguish local/CI acceptance from hosted release.
 
 T001 setup checked against main `80c8f3422abd1e0978960bc0531ad5f0df5a1038`.
 055 was available. Official server/client packages are pinned to 2.3.1; their

@@ -188,3 +188,65 @@ retaining both permanent management receipts. No model/provider call was introdu
 This operational correction needs final-source CI and a renewed rehearsal before
 Production activation. The local nested learning WebKit cohort also passed with the
 focus regression; the remaining full regression cohorts are running.
+
+## Protocol correction and renewed hosted validation
+
+PR 29 merged as `e7fdb05c8148a983ea9a538c12f935b2685de265` after all
+42 checks passed in CI run `38082181335` on
+`fef5f0ab4dbcd5416e6a8ae8c4fd160a35723b5b`. The required MCP gates passed
+fresh receipts. Corrected disabled eve deployment
+`dpl_HpgitSo6v2LuCR4aNEWKvoFzYptj` was READY on the merged commit;
+three-role CLI WebKit checks repeated management 200 and creation 503.
+Activated eve deployment `dpl_4cBoaxBRSEfqrpMahH9CGu5TaTBZ` was READY
+on that same commit, schema 055, and www.turas.dev.
+
+The full authenticated hosted run passed on 2026-10-10 at 21:22 UTC:
+mcteer/panel discovered twelve scoped tools; the unassigned partner discovered
+four knowledge/identity tools. Exact UUID replay did not recover a secret;
+reconciliation was metadata-only. Selected customer ceilings and foreign-read
+denial passed through the actual pinned SDK. Browser logout left bearer access
+working; personal and canonical-admin revocation returned 401. All three roles
+created/dismissed/revoked a credential through CLI WebKit without DOM/storage
+credential exposure or browser errors. Usage remained minimal. Internal Product
+Gaps refresh returned 200; partner Product Gaps/learning denials and partner
+workspace reads passed. Four desktop/mobile light/dark WebKit layouts had no
+overflow. Thirty requests were allowed in one natural UTC minute; request 31
+returned 429 with bounded Retry-After, without quota resets. No paid calls occurred.
+
+Two private raw-probe failures were validation-helper errors: the helper lacked
+the modern metadata envelope and method/name headers. They are not evidence of
+logout revoking MCP. The completed run used valid modern requests; stranded
+operator credentials were recovered through the canonical administrator.
+
+The selected customer initially returned empty profile/evidence/knowledge/plan/
+report lists. Read-only operational metadata confirmed no accepted profiles,
+published shared knowledge, accepted plans or published reports exist; the partner
+has no active customer assignments. Checked research and current projections do
+exist. A bounded twenty-customer research sample produced no eligible list entries.
+A genuine, scoped MCP actor then checked one passage: source/revision/contract/
+content/passage hashes matched, no confirmed conflict existed, but locator
+comparison failed. PostgreSQL JSONB object-key ordering differs from the authored
+locator object's ordering. Comparing their JSON serialization digests wrongly
+withheld unchanged research; use structural object equality while preserving
+array order, value/type checks and every existing source fence. No customer records,
+grants, projections or truth were altered during diagnosis.
+
+Acceptance stopped and exposure was disabled again. A new actual SDK synthetic
+research case reproduces the pre-fix withholding and verifies current passage/cite
+reads plus denial after changing the locator URL. An overlapping eve deployment
+invalidated one local run's configuration-preservation guard; its selected file
+was restored byte-for-byte. A subsequent run detected concurrent authored-doc
+changes through its source guard; neither invalidated run is counted as acceptance.
+The complete gate is rerun after freezing source and configuration.
+Production cleanup at 21:31 UTC verified all 18 operator-owned connections revoked,
+all hashes purged, permanent create/revoke receipts retained and a fresh hosted
+maintenance heartbeat. Positive hosted passage/citation proof and final release
+acceptance remain pending this locator correction. Missing record/partner coverage
+must remain explicit; no data or assignments are fabricated to produce it.
+
+The frozen-source corrected local consumer gate passed 19 suites / 54 cases with
+zero failed/skipped, including the new real-SDK research list/read/citation and
+changed-locator denial. MCP typecheck, 206-file authored-doc validation and diff
+checks passed. Release exposure remains disabled pending fresh CI and renewed
+hosted passage/citation proof. No source data migration is required for structural
+JSONB locator equality.

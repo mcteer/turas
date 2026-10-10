@@ -95,6 +95,8 @@ all original data and revoked authority; logs/storage never expose private paylo
 
 - [X] T047 Correct the hosted modern SDK tool-error envelope without disclosing private errors; verify out-of-scope customer and invalid-input denials through the actual pinned consumer. Full local consumer manifest passes 19 suites/54 cases. Production acceptance still requires the corrected committed release and T046. (FR-004, FR-018)
 
+- [X] T048 Preserve research locator equality across PostgreSQL JSONB object ordering; add an actual SDK synthetic current research passage/citation case and changed-URL withholding. Complete fresh consumer/type/doc/CI gates, then repeat Production passage/citation checks under T046. (FR-006, FR-011, FR-018)
+
 ## Dependencies and parallel opportunities
 
 Setup T001–003 → foundation T004–011 → US1 T012–021 → US2 T022–029 → US3
