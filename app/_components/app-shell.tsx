@@ -23,6 +23,7 @@ function SidebarContent({ role, loginName, csrfToken, staffing, kind }: { role: 
       {navItem("/customers", "Customer Profiles", "customers")}
       {navItem("/knowledge", "Shared Knowledge", "knowledge")}
       {navItem('/learning','Learning','knowledge')}
+      {navItem('/settings/connections','Connections','access')}
       {navItem("/partners", "Partner Delivery", "people")}
       {kind === "internal" && navItem("/product-gaps", "Product Gaps", "plan")}
       {customerScope && <><p className="nav-group-label">Current Customer</p>{navItem(`/customers/${customerScope}/reports`, "Customer Reports", "plan")}</>}

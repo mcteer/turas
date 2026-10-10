@@ -51,6 +51,11 @@ admission without reconciliation; release/expiry does not grant duplicate work.
 
 `mcp_management_receipts`: exact actor/connection/action/request digest and outcome,
 no secret. Creation response loss requires revoke and recreate with a new key.
+`mcp_management_cursors`: hashed opaque continuation, current browser principal/member,
+environment/workspace, own/admin/usage operation, optional usage connection identity,
+immutable position and 15-minute expiry. These let disabled/revoked-access management
+remain usable without requiring an active MCP credential. They contain no prose or
+credential, and cannot be accepted as external MCP context handles.
 `mcp_access_receipts`: connection/member/workspace, allowed operation category,
 result category, time, duration and correlation UUID; no raw arguments/prose or
 hidden record names/counts. Nonmember denial telemetry contains only fixed failure

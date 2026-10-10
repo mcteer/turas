@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { withLearningDatabase } from '../fixtures/learning/environment';
@@ -9,7 +10,7 @@ import { scheduleLearningPayloadPurge } from '../../lib/server/learning/retentio
 import { DEMO_IDS } from '../../lib/server/bootstrap-ids';
 describe('learning database foundation', () => {
   it('has all explicit migrations, an inactive gate and scoped state', async () => withLearningDatabase(async db => {
-    expect((await db.query('SELECT schema_version FROM turas_environment')).rows[0].schema_version).toBe(54);
+    expect((await db.query('SELECT schema_version FROM turas_environment')).rows[0].schema_version).toBe(JSON.parse(readFileSync('migrations/manifest.json','utf8')).version);
     const state=(await db.query('SELECT enabled,gate_activated_at FROM learning_workspace_state WHERE workspace_id=$1',[DEMO_IDS.workspace])).rows[0];
     expect(state).toEqual({enabled:false,gate_activated_at:null});
     await expect(db.query(`INSERT INTO learning_feedback(id,environment_id,workspace_id,author_membership_id,target_kind,target_id,target_revision_id,target_generation,target_digest,category) VALUES($1,$2,$3,$4,'shared_practice',$5,$6,1,$7,'unclear')`,[randomUUID(),process.env.TURAS_ENVIRONMENT_ID,randomUUID(),DEMO_IDS.panelMembership,randomUUID(),randomUUID(),'a'.repeat(64)])).rejects.toMatchObject({code:'23503'});

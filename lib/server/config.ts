@@ -23,6 +23,7 @@ const schema = z.object({
   TURAS_013_DISABLED: z.enum(["0", "1"]).optional(),
   TURAS_011_DISABLED: z.enum(["0", "1"]).optional(),
   TURAS_010_DISABLED: z.enum(["0", "1"]).optional(),
+  TURAS_015_DISABLED: z.enum(["0", "1"]).optional(),
 });
 
 export type ServerConfig = z.infer<typeof schema>;

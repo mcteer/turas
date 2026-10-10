@@ -13,7 +13,7 @@ else if(gate==='native')requireEvidence(d=>d.checks===25&&d.paidCalls===0&&d.act
 else if(gate==='webkit')requireEvidence(d=>d.acceptance===true&&d.journeys===manifest.ui.length&&d.projects===4&&d.passed>=20&&d.failed===0&&d.skipped===0);
 else if(gate==='benchmark')requireEvidence(d=>d.results?.length===7&&d.quotaResets===0&&d.externalProviderCalls===0&&manifest.performanceClasses.every(name=>d.results.some((r:any)=>r.class===name&&r.operations===100&&r.p95Ms<1000&&r.quotaResets===0)));
 else if(gate==='regressions')requireEvidence(d=>d.results?.length===5&&d.paidCalls===0&&d.results.every((r:any)=>r.passed>0||r.receipt));
-else if(gate==='recovery')requireEvidence(d=>d.results?.length===2&&d.paidCalls===0&&d.results.every((r:any)=>r.to===54&&r.activationSnapshot&&r.oldWriterDenied&&r.runtimeGrants&&r.workerCrashAndSigterm&&r.authenticatedNativeAppRestarts===2&&r.sameDatabaseAndWorkflow&&r.unknownCostHeld&&r.earliestDeadlinePreserved&&r.domainChecks>0));
+else if(gate==='recovery')requireEvidence(d=>d.results?.length===2&&d.paidCalls===0&&d.results.every((r:any)=>r.to===55&&r.activationSnapshot&&r.oldWriterDenied&&r.runtimeGrants&&r.workerCrashAndSigterm&&r.authenticatedNativeAppRestarts===2&&r.sameDatabaseAndWorkflow&&r.unknownCostHeld&&r.earliestDeadlinePreserved&&r.domainChecks>0));
 else if(gate==='evaluation-fixture')requireEvidence(d=>d.complete===true&&d.actualConfiguredProvider===false&&d.arms?.length===16&&d.automaticPaidRetries===0);
 else throw Error('Unknown learning CI gate');
 console.info(JSON.stringify({gate,sourceDigest,complete:true,hostedProof:false}));

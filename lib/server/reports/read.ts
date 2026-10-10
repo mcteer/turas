@@ -1,5 +1,9 @@
+import {reportSourceClosure} from './sources';
+import {lockLearningOriginalClosure} from '../learning/sources';
+import {knowledgeLineageIsCurrent} from '../profiles/eligibility';
 import type {PoolClient} from 'pg';
 import type {CurrentSession} from '../auth/sessions';
+import type {CurrentReadActor} from '../auth/read-actor';
 import {z} from 'zod';
 import {HttpFailure,hiddenRecord} from '../../contracts/http';
 import {reportTransaction,reportDigest} from './commands';
@@ -11,6 +15,38 @@ import {chargeReportRate} from './rates';
 import {createReportCursor,readReportCursor} from './cursors';
 import {requireReportGlyphs,reportDocumentText} from './fonts';
 const listSchema=z.strictObject({kind:z.enum(['weekly','monthly','quarterly']).optional(),audience:z.enum(['delivery','account_team','leadership']).optional(),limit:z.coerce.number().int().min(1).max(50).default(20),cursor:z.string().max(2000).optional()});
+/** Current publication only, with the same source/brand fence as browser reads.
+ * It never retrieves export artifacts or invokes the renderer/delivery path. */
+export async function readCurrentPublishedReport(db:PoolClient,actor:CurrentReadActor,customerId:string,reportId:string){
+ const head=await reportHead(db,actor,reportId);
+ if(head.customer_id!==customerId)return null;
+ await lockReportActor(db,actor,customerId,'read',head.audience,true);
+ const published=(await db.query(`SELECT id,revision_id,publication_number,correction_of,audience
+   FROM report_publications WHERE report_id=$1 ORDER BY publication_number DESC LIMIT 1`,[reportId])).rows[0];
+ if(!published)return null;
+ try{
+  const fence=await reportRevisionFence(db,actor.workspaceId,published.revision_id,{published:true});
+  if(fence.state!=='published'||fence.reviewRequired)return null;
+  const closure=await reportSourceClosure(db,{environmentId:process.env.TURAS_ENVIRONMENT_ID!,workspaceId:actor.workspaceId,customerId,audience:head.audience},fence.sources);
+  if(closure.some(source=>source.kind==='approved_time'))return null;
+  for(const source of closure){
+   if(source.kind==='shared_knowledge'){if(!await knowledgeLineageIsCurrent(db,source.revisionId,true))return null;}
+   else if(['accepted_profile','workload_identity','approved_excerpt','verified_research'].includes(source.kind)){
+    const originals=await lockLearningOriginalClosure(db,actor.workspaceId,customerId,[{sourceKind:(source.kind==='workload_identity'?'accepted_profile':source.kind) as 'accepted_profile'|'approved_excerpt'|'verified_research',sourceRevisionId:source.revisionId}]);
+    if(originals.some(original=>['commercial','personnel'].includes(String(original.rights.data_category))))return null;
+   }
+  }
+  const financial=(await db.query(`SELECT 1 FROM execution_record_revisions v JOIN execution_records r ON r.id=v.record_id WHERE v.id=ANY($1::uuid[])
+      AND r.kind IN ('estimate','effort_budget') LIMIT 1`,[closure.filter(source=>source.kind==='execution_record').map(source=>source.revisionId)])).rowCount;
+  if(financial)return null;
+  const payload=(await db.query('SELECT document FROM report_revision_payloads WHERE revision_id=$1',[published.revision_id])).rows[0];
+  if(!payload)return null;
+  const document=validateReportDocument(payload.document);
+  if(reportDigest(document)!==fence.content_digest)return null;
+  await requireReportGlyphs(reportDocumentText(document));
+  return {published,fence,document};
+ }catch(error){if(error instanceof HttpFailure&&(error.status===404||['source_changed','brand_unapproved','font_unavailable'].includes(error.code)))return null;throw error;}
+}
 export async function reportReadProjection(db:PoolClient,actor:CurrentSession,reportId:string,revisionId?:string){
  const head=await reportHead(db,actor,reportId);
  const published=(await db.query(`SELECT * FROM report_publications WHERE report_id=$1 ${revisionId?'AND revision_id=$2':''} ORDER BY publication_number DESC LIMIT 1`,revisionId?[reportId,revisionId]:[reportId])).rows[0];

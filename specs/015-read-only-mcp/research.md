@@ -10,8 +10,9 @@ package to 2.3.1 during implementation. Use a dedicated Node Next route
 responses and an authenticated tools allowlist. No initialize/session assumptions,
 legacy SSE, subscriptions, prompts, resources, roots, sampling or elicitation.
 
-**Rationale**: Installed eve 0.67.1 documents outbound MCP connections, not a native
-policy-aware inbound service. Current SDK v2 has a fetch-native request handler;
+**Rationale**: Installed eve 0.67.1 supports outbound MCP connections and an inbound
+MCP channel for durable agent work (`agent_start/get/update/cancel`). That channel
+does not fit this governed read-only tool contract. Current SDK v2 has a fetch-native request handler;
 Next 16.3.4 supports Request/Response routes. Neither SDK package is installed.
 The handler does not supply authorization or Host/Origin checks.
 

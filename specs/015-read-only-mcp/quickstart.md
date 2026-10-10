@@ -1,7 +1,7 @@
 # 015 Validation and Release Guide
 
-Planning artifact: commands below must be implemented by tasks before they exist.
-No claim of current local/hosted MCP behavior. Use the canonical core checkout;
+Implementation validation guide: the commands below now exist. Acceptance evidence
+is recorded separately; no hosted MCP behavior is claimed. Use the canonical core checkout;
 never create sibling worktrees or run tests against selected Preview/Production.
 
 ## Implementation prerequisites
@@ -15,7 +15,7 @@ to 2026-07-28 (the SDK default still requests the legacy era). No legacy handsha
 
 ## Owned complete gates
 
-Planned commands:
+Complete commands:
 
 ```sh
 npm run typecheck:mcp

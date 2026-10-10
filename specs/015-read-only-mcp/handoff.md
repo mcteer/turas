@@ -2,7 +2,17 @@
 
 Planning completed 2026-10-10 on `015-read-only-mcp` in the canonical checkout.
 Select `SPECIFY_FEATURE_DIRECTORY=specs/015-read-only-mcp`. Read spec, plan, tasks,
-contracts and quickstart; implementation has not begun and all 46 tasks are open.
+contracts and quickstart. The implementation is on this feature branch; task markers
+and the validation record distinguish local acceptance from hosted release.
+
+T001 setup checked against main `80c8f3422abd1e0978960bc0531ad5f0df5a1038`.
+055 was available. Official server/client packages are pinned to 2.3.1; their
+Apache-2.0 license and Node >=20 engines fit this Node 24 application. Installed
+Next route-handler guide and SDK fetch-handler/registerTool definitions were read.
+The installed eve MCP channel exposes durable agent operations, so it is not used
+for the twelve governed read tools. No integration, model, selected config or root
+workflow change was made. Initial owned-local schema 055 initialization and runtime
+role setup passed, and owned app/database resources were removed afterward.
 
 ## Authorized scope and decisions
 
@@ -47,7 +57,7 @@ records were fabricated. All private evidence remains ignored under local-artifa
 
 Do not run root dev or tests against selected Preview/Production; owned local
 resources only, no sibling directories. Preserve `.env.local` and workflow state.
-055 is proposed, not applied. Pin dependencies only in T001; follow installed docs
+055 is implemented and exercised in owned local databases; it is not applied to hosted targets. Pin dependencies only in T001; follow installed docs
 before writing Next/eve code. Common browser/native authority regressions are
 mandatory because the shared read guard changes. Quotas and owned harness precede
 story checks; do not release an unlimited incomplete checkpoint.
@@ -59,4 +69,4 @@ explicit enablement and Production checks with honest record-dependent limits.
 Use eve for any authorized Vercel operation and preserve selected local config when
 it pulls hosted variables. Roll back exposure with disable/revoke, not domain loss.
 
-Next action after model switch: `$speckit-implement` with this feature selected.
+Current work: finish complete local gates and prepare a reviewable PR. Release remains separately authorized.

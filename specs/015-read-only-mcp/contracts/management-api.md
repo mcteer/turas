@@ -11,6 +11,7 @@ Strict requests follow C01–C08; private values never appear in URLs/logs/stora
 | `POST /api/mcp/connections/[id]/revoke` | Owner + CSRF, or canonical mcteer for same workspace; requestKey and expected connection identity | Idempotent revocation receipt; never recovers secret |
 | `GET /api/mcp/connections/admin` | Canonical mcteer only | Paginated workspace revocation metadata, not another member's secret or raw read arguments |
 | `GET /api/mcp/connections/[id]/usage` | Owner; canonical mcteer may inspect fixed operational categories only | At most 20 safe receipt rows; no customer names/query/prose/source location/hidden totals |
+| `GET /api/mcp/connections/requests/[requestKey]` | Current browser actor; exact UUID scoped to that actor/workspace/environment | Confirmed receipt and safe connection metadata, or unconfirmed; never plaintext or authority to retry automatically |
 
 Creation limits: at most 10 active per membership, fixed maximum 10 management
 writes per membership per UTC minute, 60 per workspace. Creation customer ceiling

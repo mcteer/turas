@@ -9,7 +9,7 @@ if (!["localhost", "127.0.0.1", "[::1]"].includes(hostname)) {
 export default defineConfig({
   testDir: "./tests/ui",
   testIgnore: process.env.TURAS_UI_LEGACY_ONLY === "1" ?
-    ["**/knowledge.spec.ts", "**/research.spec.ts", "**/retrieval.spec.ts", "**/staffing-*.spec.ts", "**/execution-*.spec.ts", "**/report-*.spec.ts", "**/support-*.spec.ts", "**/expansion-*.spec.ts", "**/gap-*.spec.ts", "**/partner-*.spec.ts", "**/learning-*.spec.ts"] : [],
+    ["**/knowledge.spec.ts", "**/research.spec.ts", "**/retrieval.spec.ts", "**/staffing-*.spec.ts", "**/execution-*.spec.ts", "**/report-*.spec.ts", "**/support-*.spec.ts", "**/expansion-*.spec.ts", "**/gap-*.spec.ts", "**/partner-*.spec.ts", "**/learning-*.spec.ts", "**/mcp-*.spec.ts"] : [],
   timeout: 30_000,
   // UI scenarios share the local demo database, including mutable customer grants.
   workers: 1,
@@ -22,7 +22,7 @@ export default defineConfig({
   ],
   // Feature runners own and supervise their already-started app.
    webServer: process.env.TURAS_EXECUTION_FIXTURE_READY === "1" || process.env.TURAS_REPORT_UI_READY === "1" ||
-     process.env.TURAS_SUPPORT_UI_FIXTURE_READY === "1" || process.env.TURAS_EXPANSION_UI_FIXTURE_READY === "1" || process.env.TURAS_GAPS_UI_FIXTURE_READY === "1" || process.env.TURAS_PARTNERS_UI_FIXTURE_READY === "1" || process.env.TURAS_LEARNING_UI_FIXTURE_READY === "1" ? undefined : {
+     process.env.TURAS_SUPPORT_UI_FIXTURE_READY === "1" || process.env.TURAS_EXPANSION_UI_FIXTURE_READY === "1" || process.env.TURAS_GAPS_UI_FIXTURE_READY === "1" || process.env.TURAS_PARTNERS_UI_FIXTURE_READY === "1" || process.env.TURAS_LEARNING_UI_FIXTURE_READY === "1" || process.env.TURAS_MCP_UI_FIXTURE_READY === "1" ? undefined : {
     command: "npm run dev",
     url: baseURL,
     reuseExistingServer: !process.env.CI,

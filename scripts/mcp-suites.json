@@ -1,0 +1,43 @@
+{
+  "version": "mcp-suites-v1",
+  "feature": "015-read-only-mcp",
+  "protocol": "2026-07-28",
+  "domain": [
+    "tests/contracts/mcp/inputs.test.ts",
+    "tests/contracts/mcp/bounds.test.ts",
+    "tests/contracts/mcp/management.test.ts",
+    "tests/contracts/mcp/transport.test.ts",
+    "tests/integration/mcp/authority.test.ts",
+    "tests/integration/mcp/limits.test.ts",
+    "tests/integration/mcp/credentials.test.ts",
+    "tests/integration/mcp/consumer-identity.test.ts",
+    "tests/integration/mcp/profiles.test.ts",
+    "tests/integration/mcp/evidence.test.ts",
+    "tests/integration/mcp/knowledge.test.ts",
+    "tests/integration/mcp/consumer-context.test.ts",
+    "tests/integration/mcp/plans.test.ts",
+    "tests/integration/mcp/reports.test.ts",
+    "tests/integration/mcp/consumer-delivery.test.ts",
+    "tests/integration/mcp/audit.test.ts",
+    "tests/integration/mcp/recovery.test.ts",
+    "tests/integration/mcp/learning-compatibility.test.ts",
+    "tests/integration/mcp/handles.test.ts"
+  ],
+  "ui": [
+    "tests/ui/mcp-connections.spec.ts",
+    "tests/ui/mcp-accessibility.spec.ts"
+  ],
+  "performanceClasses": [
+    "profiles",
+    "evidence",
+    "knowledge",
+    "plans",
+    "reports"
+  ],
+  "uiConfigurations": [
+    "desktop-light",
+    "desktop-dark",
+    "mobile-light",
+    "mobile-dark"
+  ]
+}

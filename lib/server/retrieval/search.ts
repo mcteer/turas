@@ -2,7 +2,7 @@ import { createHmac, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { HttpFailure } from "../../contracts/http";
 import { citationLocatorSchema, retrievalResponseSchema, retrievalSearchSchema,
-  retrievalContractVersion, retrievalLimits, evidenceQualitySchema,
+  retrievalContractVersion, retrievalLimits,
   type RetrievalSearchInput } from
   "../../contracts/retrieval";
 import type { CurrentSession } from "../auth/sessions";
@@ -10,7 +10,8 @@ import { getServerConfig } from "../config";
 import { withTransaction } from "../db/client";
 import { knowledgeLineageHasMaterialConflict } from "../profiles/eligibility";
 import { passageDigest } from "./chunker";
-import { currentFactEligible, retrievalCoverageWarnings, retrievalQuality } from "./context";
+import { currentFactEligible, retrievalCoverageWarnings } from "./context";
+import { readRetrievalQuality } from "./quality-read";
 import { embedRetrievalTexts } from "./embeddings";
 import { authorizeRetrievalScope, recheckRetrievalSource } from "./policy";
 import { recordRetrievalMetric } from "./telemetry";
@@ -109,33 +110,6 @@ export async function rankPassages(client: PoolClient, sources: readonly Source[
   return ranked.rows;
 }
 
-async function qualityFor(client: PoolClient, row: Ranked, asOf: Date) {
-  if (row.source_kind === "published_shared") {
-    const shared = await client.query<{ public_quality: unknown }>(
-      "SELECT public_quality FROM knowledge_publications WHERE revision_id=$1 AND state='published'",
-      [row.source_revision_id]);
-    return evidenceQualitySchema.safeParse(shared.rows[0]?.public_quality).data ??
-      retrievalQuality(null,{},asOf);
-  }
-  if (row.source_kind === "verified_research") {
-    const found = await client.query<{ quality_input: unknown; observation_at: Date | null;
-      publication_at: Date | null }>(`SELECT quality_input,observation_at,publication_at
-      FROM evidence_source_revisions WHERE id=$1`,[row.source_revision_id]);
-    return retrievalQuality(found.rows[0]?.quality_input,{
-      observationAt: found.rows[0]?.observation_at,
-      publicationAt: found.rows[0]?.publication_at },asOf);
-  }
-  const found = await client.query<{ quality_input: unknown; payload: Record<string, unknown> }>(`
-    SELECT v.quality_input,v.payload FROM profile_revisions v
-    WHERE v.id=${row.source_kind === "approved_excerpt" ?
-      "(SELECT s.profile_revision_id FROM artifact_evidence_selections s WHERE s.id=$1)" : "$1"}`,
-  [row.source_revision_id]);
-  const payload = found.rows[0]?.payload ?? {};
-  const observed = payload.observedAt ?? payload.observationEnd;
-  return retrievalQuality(found.rows[0]?.quality_input,{
-    observationAt: typeof observed === "string" ? new Date(observed) : null,
-    reviewAt: typeof payload.reviewAt === "string" ? new Date(payload.reviewAt) : null },asOf);
-}
 
 async function hasMaterialConflict(client: PoolClient, row: Ranked,
   actor: CurrentSession,input: RetrievalSearchInput): Promise<boolean> {
@@ -192,7 +166,7 @@ export async function searchEvidence(actor: CurrentSession, raw: unknown,
       const bySource = new Map<string,number>();
       const seen = new Set<string>();
       const selections: Array<{ row: Ranked; citationId: string;
-        quality: Awaited<ReturnType<typeof qualityFor>>; locators: unknown[];
+        quality: Awaited<ReturnType<typeof readRetrievalQuality>>; locators: unknown[];
         warnings: string[]; caveats: string[]; title: string;
         productVersion: string | null }> = [];
       for (const row of ranked) {
@@ -202,7 +176,7 @@ export async function searchEvidence(actor: CurrentSession, raw: unknown,
             passageDigest(row.passage_text) !== row.passage_digest) continue;
         const locators = citationLocatorSchema.array().min(1).max(50).safeParse(row.locators);
         if (!locators.success) continue;
-        const quality = await qualityFor(client,row,asOf);
+        const quality = await readRetrievalQuality(client,row,asOf);
         const conflict = await hasMaterialConflict(client,row,actor,scopedInput);
         if (input.use === "current_fact" && !currentFactEligible(quality,conflict,asOf)) continue;
         const caveats = [

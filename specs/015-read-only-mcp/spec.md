@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-10
 
-**Status**: Planned; awaiting implementation
+**Status**: Implemented on feature branch; acceptance recorded in validation.md; hosted release pending
 
 **Input**: Start roadmap 015 after release validation: versioned profile, evidence,
 plan and report reads through shared policy; scopes, pagination, current

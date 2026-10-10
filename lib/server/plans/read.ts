@@ -5,6 +5,9 @@ import { planPageQuerySchema } from "../../contracts/plans";
 import { getServerConfig } from "../config";
 import { withTransaction } from "../db/client";
 import type { PlanActor } from "./policy";
+import type { CurrentReadActor } from '../auth/read-actor';
+import {lockLearningOriginalClosure} from '../learning/sources';
+import {knowledgeLineageIsCurrent} from '../profiles/eligibility';
 import { lockPlanActor,requirePlanCapability } from "./policy";
 import { loadPlan,latestPlanRevision } from "./repository";
 import { currentPlanSourceDigest } from "./sources";
@@ -58,6 +61,39 @@ async function revisionState(client:PoolClient,revisionId:string):Promise<string
   const result=await client.query<{state:string}>(`SELECT state FROM plan_revision_events
     WHERE revision_id=$1 ORDER BY event_order DESC LIMIT 1`,[revisionId]);
   return result.rows[0]?.state ?? "draft";
+}
+
+/** Explicit accepted head for governed external readers. Never falls back to a
+ * working draft or an author-owned historical revision. */
+export async function readAcceptedPlan(client:PoolClient,actor:CurrentReadActor,customerId:string,planId:string){
+  await lockPlanActor(client,actor,customerId,false);
+  const plan=(await client.query<import('./policy').PlanScope>(`SELECT * FROM delivery_plans
+    WHERE id=$1 AND environment_id=$2 AND workspace_id=$3 AND customer_id=$4 FOR SHARE`,
+    [planId,getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,customerId])).rows[0];
+  if(!plan || !plan.accepted_revision_id)return null;
+  requirePlanCapability(actor,plan,'read');
+  const revision=await latestPlanRevision(client,plan.id,plan.accepted_revision_id);
+  if(await revisionState(client,revision.id)!=='accepted')return null;
+  try{
+    const sources=(await client.query<{source_kind:string;source_revision_id:string}>(`SELECT source_kind,source_revision_id FROM plan_source_dependencies WHERE revision_id=$1
+      ORDER BY source_kind,source_revision_id`,[revision.id])).rows;
+    for(const source of sources){
+      if(source.source_kind==='shared_knowledge'){if(!await knowledgeLineageIsCurrent(client,source.source_revision_id,true))return null;}
+      else if(['accepted_profile','approved_excerpt','verified_research'].includes(source.source_kind)){
+        const originals=await lockLearningOriginalClosure(client,actor.workspaceId,customerId,[{sourceKind:source.source_kind as 'accepted_profile'|'approved_excerpt'|'verified_research',sourceRevisionId:source.source_revision_id}]);
+        if(originals.some(original=>['commercial','personnel'].includes(String(original.rights.data_category))))return null;
+      }else return null;
+    }
+    await currentPlanSourceDigest(client,actor,revision.id,customerId,plan.workload_id,plan.audience,true,true);
+    const payload=(await client.query<{content:Record<string,unknown>}>('SELECT content FROM plan_revision_payloads WHERE revision_id=$1 FOR SHARE',[revision.id])).rows[0];
+    if(!payload)return null;
+    const editable={...payload.content,sections:Array.isArray(payload.content.sections)?payload.content.sections.filter(section=>
+      section&&typeof section==='object'&&!['evidence','decision'].includes((section as {key:string}).key)):[]};
+    const parsed=planDraftContentSchema.safeParse(editable);if(!parsed.success)return null;
+    const evidence=await assessPlanEvidence(client,actor,customerId,parsed.data);
+    if(evidence.historicalWarning || evidence.issues.length)return null;
+    return {plan,revision,content:parsed.data};
+  }catch(error){if(error instanceof HttpFailure&&[404,409].includes(error.status))return null;throw error;}
 }
 
 export async function readPlan(actor:PlanActor,planId:string,revisionId?:string,

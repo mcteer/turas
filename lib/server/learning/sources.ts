@@ -43,6 +43,14 @@ async function collect(db:PoolClient,actor:Pick<CurrentSession,'workspaceId'|'ki
  }
  return [...seen.values()].sort((a,b)=>`${a.kind}:${a.revisionId}`.localeCompare(`${b.kind}:${b.revisionId}`));
 }
+/** Metadata-only closure locks for a governed shared-publication reader. This
+ * does not confer the originating member's customer visibility. */
+export async function lockLearningOriginalClosure(db:PoolClient,workspaceId:string,customerId:string,
+ refs:readonly {sourceKind:Kind;sourceRevisionId:string}[]){
+ const originals=await collect(db,{workspaceId,kind:'internal'},customerId,refs,new Date());
+ for(const source of originals)await lockOriginalHeader(db,source.kind,source.revisionId);
+ return originals;
+}
 /** Resolve already-authorized execution evidence to exact original headers,
  * keeping retrieval projection digests distinct from original content digests. */
 export async function learningSupportingOriginals(db:PoolClient,actor:CurrentSession,customerId:string,raw:readonly unknown[]){
