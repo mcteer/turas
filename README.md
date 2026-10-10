@@ -92,8 +92,11 @@ Product expansion opportunities (011) now have a [specification](specs/011-produ
 Migrations 046–047 are explicit deployment prerequisites. `TURAS_011_DISABLED=1` disables new authoring, decisions and advice while governed retention continues. Recovery uses forward migrations and the same database/workflow pair. See the [validation record](specs/011-product-expansion/validation.md) for passing local, eight-case actual-model independent review and CI evidence. Feature 011 merged in [PR 22](https://github.com/mcteer/turas/pull/22); Preview/Production release and hosted acceptance remain separate.
 
 
-MCP access and further delivery/learning automation remain roadmap work, not
-available integrations. There is no external support-ticket connector. See the
+Read-only MCP access (015) has a [specification](specs/015-read-only-mcp/spec.md),
+[plan](specs/015-read-only-mcp/plan.md) and [tasks](specs/015-read-only-mcp/tasks.md),
+awaiting implementation. It is designed for internal users and assigned partners
+through scoped revocable access; no MCP integration is available yet. Further
+delivery/learning automation remains roadmap work. There is no external support-ticket connector. See the
 [roadmap](ROADMAP.md) for proposed slices and dependencies.
 
 ### Product Gaps and Engineering Feedback
