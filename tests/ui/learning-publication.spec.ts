@@ -53,8 +53,11 @@ test('administrator explicitly reviews exact sanitized words while partners cann
  await withLearningDatabase(async db=>{expect((await db.query('SELECT count(*)::int n FROM learning_budget_reservations r JOIN learning_attempts a ON a.id=r.attempt_id WHERE a.workspace_id=$1',[fixture.workspaceId])).rows[0].n).toBe(0);});
 });
 
+let withdrawalStage='fixture';
+test.afterEach(({},info)=>{if(info.title.startsWith('administrator withdraws')&&info.status!==info.expectedStatus)console.log('LEARNING_WITHDRAWAL_STAGE '+withdrawalStage);});
 test('administrator withdraws the actual head while a newer draft has lost its original and new work is disabled',async({page})=>{
  test.setTimeout(90000); // Original loss, disable/withdrawal, reload and a separately reviewed rollback draft.
+ withdrawalStage='fixture';
  const fixture=await withLearningDatabase(async db=>{
   const scope=await learningScopedFixture(db),lineage=await learningAcceptedOriginal(db,scope.actors.member,scope.actors.admin,scope.customerId);
   const payload={title:'Synthetic retained published practice',productVersion:'Unknown',problem:'Observed concern',prerequisites:'Check applicability',solution:'Measure accepted evidence',reasoning:'Use reviewed observations',applicability:'Engineering workflows',limitations:'No causal claim',validation:'Verify originals'};
@@ -65,16 +68,23 @@ test('administrator withdraws the actual head while a newer draft has lost its o
   await db.query('UPDATE profile_records SET current_accepted_revision_id=NULL WHERE current_accepted_revision_id=$1',[newer.sourceRevisionId]);await activateLearning(process.env.TURAS_ENVIRONMENT_ID!,scope.workspaceId,false,requireOwnedLearningDatabase(process.env,true));
   return {...scope,candidate};
  });
+ withdrawalStage='open-current-head';
  await page.context().addCookies([{name:'turas_session',value:fixture.actors.admin.token,url:process.env.TURAS_UI_BASE_URL!,httpOnly:true,sameSite:'Lax'}]);await page.goto(`/learning/candidates/${fixture.candidate.id}`);
  await expect(page.getByRole('heading',{name:'PRIVATE_SYNTHETIC_UNAVAILABLE_DRAFT',exact:true})).toHaveCount(0);await expect(page.getByText('Actual published head: revision 1, generation 1 · published',{exact:true})).toBeVisible();
+ withdrawalStage='withdraw';
  await page.getByRole('textbox',{name:'Withdrawal Rationale',exact:true}).fill('PRIVATE_SYNTHETIC_WITHDRAWAL_REASON');await page.getByRole('button',{name:'Withdraw Published Practice',exact:true}).click();await expect(page.getByText('Actual published head: revision 1, generation 2 · withdrawn',{exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Withdraw Published Practice',exact:true})).toHaveCount(0);
+ withdrawalStage='accessibility';
  expect((await new AxeBuilder({page}).analyze()).violations.filter(v=>['serious','critical'].includes(v.impact??'')).map(v=>v.id)).toEqual([]);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  expect(await page.evaluate(()=>JSON.stringify({local:{...localStorage},session:{...sessionStorage}}))).not.toContain('PRIVATE_SYNTHETIC');
+ withdrawalStage='reload-withdrawn';
  await page.reload();await expect(page.getByText('Actual published head: revision 1, generation 2 · withdrawn',{exact:true})).toBeVisible();
+ withdrawalStage='reactivate';
  await withLearningDatabase(async db=>{await activateLearning(process.env.TURAS_ENVIRONMENT_ID!,fixture.workspaceId,true,requireOwnedLearningDatabase(process.env,true));});await page.reload();
+ withdrawalStage='rollback-review';
  await page.getByRole('combobox',{name:'Historical Published Revision',exact:true}).selectOption({label:'Published Revision 1'});
  const originals=page.getByRole('group',{name:'Current Rollback Originals',exact:true});await expect(originals.getByRole('checkbox')).toHaveCount(1);await originals.getByRole('checkbox').check();
  await page.getByRole('textbox',{name:'Rollback Reuse Basis',exact:true}).fill('Current original permission requires independent review');await page.getByRole('textbox',{name:'Rollback Rationale',exact:true}).fill('PRIVATE_SYNTHETIC_ROLLBACK_REASON');await page.getByRole('button',{name:'Create Private Rollback Revision',exact:true}).click();
+ withdrawalStage='rollback-refresh';
  await expect(page.getByRole('textbox',{name:'Rollback Rationale',exact:true})).toHaveValue('');await page.getByRole('button',{name:'Refresh Candidate',exact:true}).click();await expect(page.getByRole('heading',{name:'Synthetic retained published practice',exact:true})).toBeVisible();await expect(page.getByText('Draft · Revision 3',{exact:true})).toBeVisible();await expect(page.getByText('Actual published head: revision 1, generation 2 · withdrawn',{exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Publish Exact Evaluated Revision',exact:true})).toHaveCount(0);
  expect(await page.evaluate(()=>JSON.stringify({local:{...localStorage},session:{...sessionStorage}}))).not.toContain('PRIVATE_SYNTHETIC');
 });
