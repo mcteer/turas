@@ -9,7 +9,7 @@ import {LearningRollback} from './rollback';
 import type {readLearningCandidateControl} from '../../../lib/server/learning/reviews';
 
 export function LearningPublicationControl({id,candidateState}:{id:string;candidateState?:string}){
- const client=useLearningView<Awaited<ReturnType<typeof readLearningCandidateControl>>>(`/api/learning/candidates/${id}/control`),command=useLearningMutation(client.auth,`publication:${id}`,client.refresh),[rationale,setRationale]=useState(''),[error,setError]=useState('');
+ const client=useLearningView<Awaited<ReturnType<typeof readLearningCandidateControl>>>(`/api/learning/candidates/${id}/control`,true),command=useLearningMutation(client.auth,`publication:${id}`,client.refresh),[rationale,setRationale]=useState(''),[error,setError]=useState('');
  const head=client.view?.publication;
  useEffect(()=>{if(candidateState)void client.refresh();},[candidateState,client.refresh]);
  useEffect(()=>{setRationale('');},[head?.generation,client.view?.id]);

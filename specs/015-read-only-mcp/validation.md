@@ -125,3 +125,17 @@ a readiness race; the original CI failure did not capture enough detail to prove
 its cause. Complete CI on the corrected source remains required before merge.
 Earlier seven-gate local evidence above remains tied to its stated source, not
 relabeled as evidence for this harness correction. No domain behavior changed.
+
+The corrected-source CI again hit the known 014 mobile-light rollback-review
+failure. A targeted browser regression then reproduced an actual form-unmount bug:
+a visible-document window blur cleared the metadata-only publication control and
+removed its historical revision picker. Publication control now preserves metadata
+on such blur and refreshes without unmounting on focus. Private views retain their
+blur clearing; every view still clears when the document is hidden. The rollback
+journey checks picker survival and hidden-document withholding before completing
+rollback. The complete five-file/four-configuration learning WebKit gate passed
+32/32, zero skipped, on 014 fingerprint
+`d3a215f71beab1b96cf09cc1444b04f041c01f98eaef041b8ec564831baa575c`.
+This establishes the reproduced focus defect and its fix, without pretending the
+older timeout-only captures identify their exact failing action. Finer fixed
+rollback phases are now reported on failure. Full final-source CI is required.
