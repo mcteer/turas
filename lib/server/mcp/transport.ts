@@ -62,7 +62,7 @@ async function dispatchMcpRequest(request:Request):Promise<Response>{
         let text=await response.text();signal.throwIfAborted();
         const reply=JSON.parse(text);
         if(reply.error){reply.error={code:reply.error.code,message:'Request unavailable'};result='invalid_input';text=JSON.stringify(reply);}
-        else if(reply.result?.isError){reply.result={isError:true,content:[{type:'text',text:'Request unavailable'}]};result='invalid_input';text=JSON.stringify(reply);}
+        else if(reply.result?.isError){reply.result={resultType:'complete',isError:true,content:[{type:'text',text:'Request unavailable'}]};result='invalid_input';text=JSON.stringify(reply);}
         else{const status=reply.result?.structuredContent?.status;result=['available','empty','unavailable'].includes(status)?status:response.ok?'available':'failed';}
         await lockWorkspaceActor(db,authenticated,undefined,true,2000);signal.throwIfAborted();
         if(new TextEncoder().encode(text).byteLength>mcpLimits.responseBytes)return denied(503,-32603,'Response unavailable',id);
