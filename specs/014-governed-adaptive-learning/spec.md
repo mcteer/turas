@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-09
 
-**Status**: Implementation in progress; acceptance and release pending
+**Status**: Implemented; local and actual-model acceptance recorded; CI and hosted release tracked separately
 
 **Input**: Proceed with specify, clarify, plan, tasks and analyze for roadmap 014,
 then stop before implementation for a model switch. Extend reviewed shared
