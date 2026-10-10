@@ -6,12 +6,24 @@ import { createMcpConnection } from '../../../lib/server/mcp/management';
 import { materializeCurrentProjection } from '../../../lib/server/retrieval/projections';
 import { mcpToolOutputs } from '../../../lib/contracts/mcp';
 import { mcpPublishedKnowledge } from '../../fixtures/mcp/knowledge';
+import { ingestVerifiedResearch } from '../../../lib/server/profiles/research';
 describe('MCP real consumer context parity',()=>{
   it('reads current profiles, passages and credential-bound citations and rejects withdrawn prose',async()=>withMcpDatabase(async db=>{
     const {browser,customerId}=await mcpFixture(db),reviewer=await mcpInternalPeer(db,browser.workspaceId,false,'admin');
     const fact=await mcpAcceptedFact(db,browser,reviewer,customerId);
     const practice=await mcpPublishedKnowledge(db,browser,reviewer,customerId);
     await materializeCurrentProjection(db,'accepted_profile',fact.revisionId,'internal');
+    const at=new Date(Date.now()-1000).toISOString(),research=await ingestVerifiedResearch({
+      workspaceId:browser.workspaceId,customerId,trustedIdentity:'synthetic-fixture-v1',
+      location:'https://synthetic.invalid/mcp-research',title:'Synthetic current research',
+      passage:'Synthetic independently checked research passage.',supportedClaim:'Synthetic research only',
+      observationAt:at,retrievalAt:at,rights:'Synthetic public fixture',audience:'internal',
+      qualityInput:{rubricVersion:'evidence-quality-v1',R:4,D:4,C:2,reliabilityRationale:'Synthetic original',
+        directnessRationale:'Exact synthetic passage',corroborationRationale:'Synthetic independent check',
+        informationType:'adoption_process',dateBasis:'observation'},
+      checks:{identity:true,scope:true,integrity:true,content:true,rationale:'Synthetic independently verified fixture',checkVersion:'research-check-v1'},
+    },db);
+    await materializeCurrentProjection(db,'verified_research',research.sourceRevisionId,'internal');
     const created=await createMcpConnection(browser,{requestKey:randomUUID(),name:'Synthetic context consumer',categories:['profiles','evidence','knowledge'],customerIds:[customerId],lifetimeDays:7});
     if(!created.secretAvailable)throw Error('No synthetic credential');
     await withMcpConsumer(process.env.TURAS_APP_ORIGIN!,created.credential,async client=>{
@@ -33,7 +45,18 @@ describe('MCP real consumer context parity',()=>{
       expect(sharedCitation.status).toBe('available');if(sharedCitation.status==='available')expect(sharedCitation.data).toHaveProperty('publicationId',practice.publicationId);
       const listing=mcpToolOutputs.turas_evidence_list_v1.parse((await client.callTool({name:'turas_evidence_list_v1',arguments:{customerId,limit:20}})).structuredContent);
       expect(listing.status).toBe('available');if(listing.status!=='available')throw Error('No synthetic evidence');
-      const first=listing.data.items[0],args={customerId,revisionId:first.revisionId,passageId:first.passageId};
+      const researchItem=listing.data.items.find(item=>item.revisionId===research.sourceRevisionId);
+      expect(researchItem).toBeDefined();if(!researchItem)throw Error('No synthetic research passage');
+      const researchRead=mcpToolOutputs.turas_evidence_read_v1.parse((await client.callTool({name:'turas_evidence_read_v1',arguments:{customerId,revisionId:researchItem.revisionId,passageId:researchItem.passageId}})).structuredContent);
+      expect(researchRead.status).toBe('available');if(researchRead.status!=='available')throw Error('Research unavailable');
+      expect(researchRead.data.text).toBe('Synthetic independently checked research passage.');
+      const researchCitation=mcpToolOutputs.turas_citation_resolve_v1.parse((await client.callTool({name:'turas_citation_resolve_v1',arguments:{citationHandle:researchRead.data.citationHandle}})).structuredContent);
+      expect(researchCitation.status).toBe('available');
+      await db.query(`UPDATE retrieval_passages SET locators=jsonb_set(locators,'{0,canonicalUrl}','"https://synthetic.invalid/changed"'::jsonb) WHERE id=$1`,[researchItem.passageId]);
+      const changedResearch=mcpToolOutputs.turas_citation_resolve_v1.parse((await client.callTool({name:'turas_citation_resolve_v1',arguments:{citationHandle:researchRead.data.citationHandle}})).structuredContent);
+      expect(changedResearch.status).toBe('unavailable');expect(changedResearch.data).toBeNull();
+      const first=listing.data.items.find(item=>item.revisionId===fact.revisionId)!;
+      const args={customerId,revisionId:first.revisionId,passageId:first.passageId};
       const passage=mcpToolOutputs.turas_evidence_read_v1.parse((await client.callTool({name:'turas_evidence_read_v1',arguments:args})).structuredContent);
       expect(passage.status).toBe('available');if(passage.status!=='available')throw Error('No synthetic passage');
       const citation=mcpToolOutputs.turas_citation_resolve_v1.parse((await client.callTool({name:'turas_citation_resolve_v1',arguments:{citationHandle:passage.data.citationHandle}})).structuredContent);
