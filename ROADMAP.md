@@ -151,7 +151,7 @@ budgeted Turi drafting and fixed paired evaluation, administrator publication an
 reviewed rollback, internal-only fixed-quarter metrics and bounded refresh/quality
 views. Two user decisions are recorded: internal-only aggregate metrics; Turi drafts
 and evaluates while administrators publish. Existing 005 authorities are preserved.
-Implementation acceptance includes explicit 052–054 migrations, workspace activation, complete owned CI gates and authorized actual-model review. Production schema 054 is activated; internal hosted read checks passed, with partner and record-dependent write coverage limits documented in the [validation record](specs/014-governed-adaptive-learning/validation.md). The [handoff](specs/014-governed-adaptive-learning/handoff.md)
+Implementation acceptance includes explicit 052–054 migrations, workspace activation, complete owned CI gates and authorized actual-model review. Production schema 054 is activated; internal hosted read checks passed, with partner login/access boundaries validated and record-dependent write coverage limits documented in the [validation record](specs/014-governed-adaptive-learning/validation.md). The [handoff](specs/014-governed-adaptive-learning/handoff.md)
 provides feature selection and acceptance requirements.
 
 ## Build sequence
