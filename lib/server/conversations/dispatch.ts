@@ -2,6 +2,7 @@ import { prepareExecutionNativeAttempt, claimExecutionNativeDispatch } from "../
 import { prepareExpansionNativeAttempt, claimExpansionNativeDispatch } from "../expansion/native";
 import { prepareSupportNativeAttempt, claimSupportNativeDispatch } from "../support/native";
 import { conversationFeature } from "./feature";
+import { prepareLearningNativeAttempt,claimLearningNativeDispatch } from '../learning/native';
 import { createHash, randomUUID } from "node:crypto";
 import type { CurrentSession } from "../auth/sessions";
 import { getServerConfig } from "../config";
@@ -42,6 +43,7 @@ export async function prepareAttempt(
   existingClient?: PoolClient,
 ): Promise<{ attemptId: string; created: boolean; dispatchState: string; governed?: boolean }> {
   const feature = existingClient ? await conversationFeature(existingClient, conversationId) : await withTransaction(db => conversationFeature(db, conversationId));
+  if(feature.kind==='learning')return {...await prepareLearningNativeAttempt(session,conversationId,nativeSessionId,requestKey,rawText,selections.length>0,existingClient),governed:true};
   if (feature.kind === "execution") return { ...await prepareExecutionNativeAttempt(session, conversationId, nativeSessionId, requestKey, rawText, selections.length > 0, existingClient), governed: true };
   if(feature.kind==="expansion")return {...await prepareExpansionNativeAttempt(session,conversationId,nativeSessionId,requestKey,rawText,selections.length>0,existingClient),governed:true};
   if (feature.kind === "support") return { ...await prepareSupportNativeAttempt(session, conversationId, nativeSessionId, requestKey, rawText, selections.length > 0, existingClient), governed: true };
@@ -58,7 +60,7 @@ export async function prepareAttempt(
     const conversation = await lockOwnedBinding(client, session, conversationId);
     // A first feature binder can win after the metadata preflight. Never let
     // an ordinary send cross that committed scope under the conversation lock.
-    if (["execution", "staffing"].includes((await conversationFeature(client, conversationId)).kind))
+    if (["execution", "staffing", "support", "expansion", "learning"].includes((await conversationFeature(client, conversationId)).kind))
       throw new HttpFailure(409, "conversation_already_bound", "Use the bound workflow to start this explanation");
     if (conversation.customer_id === null && (selections.length || process.env.TURAS_GENERAL_CHAT_DISABLED === "1")) {
       throw new HttpFailure(422,"general_scope_only","Customer sources require a customer-scoped conversation");
@@ -167,6 +169,7 @@ export async function claimDispatch(
     throw new HttpFailure(503, "invalid_native_cursor", "Service unavailable");
   }
   const feature = await withTransaction(db => conversationFeature(db, conversationId));
+  if(feature.kind==='learning')return claimLearningNativeDispatch(session,conversationId,attemptId,dispatchStartIndex);
   if (feature.kind === "execution") return claimExecutionNativeDispatch(session, conversationId, attemptId, dispatchStartIndex);
   if(feature.kind==="expansion")return claimExpansionNativeDispatch(session,conversationId,attemptId,dispatchStartIndex);
   if (feature.kind === "support") return claimSupportNativeDispatch(session, conversationId, attemptId, dispatchStartIndex);
@@ -241,6 +244,7 @@ export async function recordNativePreAdmissionRejection(
     [attemptId, JSON.stringify(receipt), conversationId]);
     if (!changed.rowCount) throw new HttpFailure(409, "dispatch_claimed", "Dispatch state changed");
     const governedFeature = await conversationFeature(client, conversationId);
+    if(governedFeature.kind==='learning')await client.query("UPDATE learning_attempts SET state='failed',failure_code='native_pre_admission_rejected',settled_at=clock_timestamp(),version=version+1 WHERE response_attempt_id=$1 AND conversation_id=$2 AND state='running'",[attemptId,conversationId]);
     if (governedFeature.kind === "staffing" || governedFeature.kind === "execution") await client.query(`UPDATE ${governedFeature.kind === "staffing" ? "staffing_advisory_attempts" : "execution_advice_attempts"} SET state='failed',
       failure_code='native_pre_admission_rejected',settled_at=clock_timestamp(),updated_at=clock_timestamp()
       WHERE response_attempt_id=$1 AND conversation_id=$2 AND state='running'`, [attemptId, conversationId]);
@@ -302,6 +306,7 @@ export async function markDispatchUncertain(
       WHERE id = $1 AND conversation_id = $3 AND dispatch_state = 'dispatching'`,
     [attemptId, code, conversationId]);
     const governedFeature = await conversationFeature(client, conversationId);
+    if(governedFeature.kind==='learning')await client.query("UPDATE learning_attempts SET state='unconfirmed',failure_code='native_completion_unconfirmed',version=version+1 WHERE response_attempt_id=$1 AND conversation_id=$2 AND state='running'",[attemptId,conversationId]);
     if (governedFeature.kind === "staffing" || governedFeature.kind === "execution") await client.query(`UPDATE ${governedFeature.kind === "staffing" ? "staffing_advisory_attempts" : "execution_advice_attempts"} SET state='unconfirmed',
       failure_code='native_completion_unconfirmed',settled_at=clock_timestamp(),updated_at=clock_timestamp()
       WHERE response_attempt_id=$1 AND conversation_id=$2 AND state='running'`, [attemptId, conversationId]);
@@ -316,7 +321,7 @@ export async function deriveNativeAttempt(
       JOIN conversations c ON c.id=a.conversation_id WHERE c.eve_session_id=$1 AND c.owner_principal_id=$2 AND c.environment_id=$3
       AND sm.request_key=$4 AND a.dispatch_state='dispatching'`,
       [nativeSessionId, session.principalId, getServerConfig().TURAS_ENVIRONMENT_ID, requestKey])).rows[0];
-    return row && ["staffing", "execution", "support", "expansion"].includes((await conversationFeature(db, row.conversation_id)).kind) ? row as { id: string; conversation_id: string } : null;
+    return row && ["staffing", "execution", "support", "expansion", "learning"].includes((await conversationFeature(db, row.conversation_id)).kind) ? row as { id: string; conversation_id: string } : null;
   });
   if (staffingAttempt) {
     const prepared = await prepareGovernedNativeRelease(staffingAttempt.conversation_id,

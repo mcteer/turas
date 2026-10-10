@@ -55,7 +55,9 @@ const decisionBase = { ...writeEnvelopeFields,
   sanitizationRationale: longText };
 export const knowledgeDecisionSchema = z.discriminatedUnion("action", [
   z.object({ ...decisionBase,action: z.literal("publish"),
-    rightsAttested: z.literal(true),checklist: reviewChecklist }).strict(),
+    rightsAttested: z.literal(true),checklist: reviewChecklist,
+    learningEvaluationId: governedIdSchema.optional(),learningReviewId: governedIdSchema.optional(),
+    expectedBaselineGeneration: positiveRevisionSchema.nullable().optional() }).strict(),
   z.object({ ...decisionBase,action: z.literal("reject"),
     rightsAttested: z.literal(false).optional() }).strict(),
 ]);

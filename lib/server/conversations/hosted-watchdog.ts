@@ -1,3 +1,5 @@
+import {runLearningMaintenanceTick} from '../learning/maintenance';
+import {learningOperationalMetric} from '../learning/observability';
 import { randomUUID, timingSafeEqual } from "node:crypto";
 import type { AttachSessionFn } from "eve/channels";
 import { HttpFailure } from "../../contracts/http";
@@ -29,7 +31,7 @@ export function authorizeHostedWatchdog(request: Request, secret = process.env.C
  * This performs no schema initialization and never dispatches model work. */
 export async function runHostedWatchdog(attachSession: AttachSessionFn): Promise<void> {
   const workerId = randomUUID();
-  const end = Date.now() + 65_000;
+  const end = Date.now() + 65_000;let nextLearningAt=0;
   while (Date.now() < end) {
     const started = Date.now();
     const jobs = await claimDueJobs(workerId, 1);
@@ -43,6 +45,7 @@ export async function runHostedWatchdog(attachSession: AttachSessionFn): Promise
         await finishDueJob(workerId, job.attemptId, "retry", "maintenance_call_failed");
       }
     }
+    if(Date.now()>=nextLearningAt){try{const result=await runLearningMaintenanceTick({attachSession});learningOperationalMetric('maintenance_duration_ms',Math.min(1000000,result.durationMs));learningOperationalMetric('maintenance_records',result.processed);}catch{learningOperationalMetric('maintenance_failed',1);}nextLearningAt=Date.now()+30000;}
     const remaining = Math.min(end - Date.now(), Math.max(0, 5_000 - (Date.now() - started)));
     if (remaining > 0) await new Promise(resolve => setTimeout(resolve, remaining));
   }

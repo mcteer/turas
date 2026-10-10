@@ -28,6 +28,13 @@ export async function restoreOwnedExecutionPair(environment:ExecutionEvalEnviron
   const drained=async()=>{await closeRuntimePool();const deadline=Date.now()+10000;
     while(Date.now()<deadline){if(Number((await admin.query("SELECT count(*) AS n FROM pg_stat_activity WHERE datname=$1",[original])).rows[0].n)===0)return;
       await new Promise(resolve=>setTimeout(resolve,100));}
+    const connections=(await admin.query(`SELECT backend_type,state,wait_event_type,CASE WHEN usename='turas_runtime' THEN 'runtime' ELSE 'owner' END AS login_class,application_name,
+      CASE WHEN query LIKE '%current_database() AS database%' THEN 'pair_read'
+           WHEN query ILIKE '%learning_%' THEN 'learning'
+           WHEN query ILIKE '%execution_%' THEN 'execution'
+           ELSE 'other' END AS query_class
+      FROM pg_stat_activity WHERE datname=$1`,[original])).rows;
+    await writeFile(join(backupRoot,"active-connections.json"),JSON.stringify(connections),{mode:0o600});
     throw new Error("Owned snapshot database still has active connections");};
   let restored=false,created=false;
   try{

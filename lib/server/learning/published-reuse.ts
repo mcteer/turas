@@ -1,0 +1,15 @@
+import type {PoolClient} from 'pg';
+import {getServerConfig} from '../config';
+import {learningIndependentClosureCurrent} from './sources';
+/** This projection is boolean-only. Never disclose grant, source or evaluation coordinates. */
+export async function learningPublishedReuseState(db:PoolClient,revisionId:string):Promise<{eligible:boolean;independentRights:boolean}>{
+ const marker=(await db.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];if(Number(marker?.schema_version??0)<54)return {eligible:true,independentRights:false};
+ const row=(await db.query(`SELECT c.workspace_id,c.customer_id,c.id AS contribution_id,s.gate_activated_at,p.id AS publication_id,p.head_generation,p.state,r.content_digest FROM knowledge_revisions r JOIN knowledge_contributions c ON c.id=r.contribution_id JOIN learning_workspace_state s ON s.environment_id=c.environment_id AND s.workspace_id=c.workspace_id LEFT JOIN knowledge_publications p ON p.contribution_id=c.id AND p.revision_id=r.id WHERE r.id=$1 AND c.environment_id=$2`,[revisionId,getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
+ if(!row||!row.gate_activated_at)return {eligible:true,independentRights:false};
+ if(!row.publication_id||row.state!=='published')return {eligible:false,independentRights:false};
+ const legacy=(await db.query('SELECT 1 FROM learning_legacy_heads WHERE publication_id=$1 AND publication_generation=$2 AND revision_id=$3',[row.publication_id,row.head_generation,revisionId])).rowCount;
+ if(legacy)return {eligible:true,independentRights:false};
+ const release=(await db.query(`SELECT r.closure_digest,r.rights_digest FROM learning_release_decisions d JOIN learning_candidate_reviews r ON r.id=d.review_id JOIN learning_review_states s ON s.review_id=r.id JOIN learning_evaluations e ON e.id=d.evaluation_id WHERE d.publication_id=$1 AND d.publication_generation=$2 AND d.revision_id=$3 AND d.environment_id=$4 AND d.workspace_id=$5 AND r.content_digest=$6 AND r.decision='accept' AND s.revoked_at IS NULL AND e.state='passed' AND e.invalidated_at IS NULL AND e.revision_id=d.revision_id AND e.review_id=d.review_id AND e.closure_digest=r.closure_digest`,[row.publication_id,row.head_generation,revisionId,getServerConfig().TURAS_ENVIRONMENT_ID,row.workspace_id,row.content_digest])).rows[0];if(!release)return {eligible:false,independentRights:true};
+ const refs=(await db.query('SELECT source_kind,source_revision_id,source_generation,source_digest,rights_basis FROM knowledge_lineage WHERE revision_id=$1 ORDER BY ordinal',[revisionId])).rows.map(r=>({sourceKind:r.source_kind,sourceRevisionId:r.source_revision_id,sourceGeneration:Number(r.source_generation),sourceDigest:r.source_digest,rightsBasis:r.rights_basis}));
+ return {eligible:await learningIndependentClosureCurrent(db,row.workspace_id,row.customer_id,refs,release.closure_digest,release.rights_digest),independentRights:true};
+}

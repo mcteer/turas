@@ -31,6 +31,11 @@ templates and agent skills; do not rerun initialization over project policy.
 7. Open a PR using the template, link the spec, and explain resulting behavior.
    Obtain maintainer review, address comments, and merge after checks pass. Do not
    bypass protection or self-report an independent review that did not occur.
+8. Complete the authorized release: apply required database migrations and runtime
+   grants in compatibility-safe order, confirm the deployed commit, and validate
+   the changed behavior in Production. Use authenticated HTTP and CLI WebKit for
+   pages and their backing requests. Record outcomes and remaining hosted limits;
+   green CI and a successful merge do not establish release completion.
 
 For a narrow bug fix, reference the governing spec and add a regression test when
 behavior warrants it. Documentation and cosmetic fixes can use `docs/` or `fix/`
@@ -80,12 +85,22 @@ upstream tooling's required license and provenance metadata.
 | State or financial/capacity logic | Boundary, zero/missing input, concurrency, replay, deterministic formula tests |
 | UI | CLI Playwright/WebKit, keyboard/responsive checks, synthetic visual evidence |
 | Agent instructions/tools/retrieval | Representative evals, source fidelity, failure behavior, cost/latency limits |
-| Database/deployment | Disposable migration validation, preview verification, recovery procedure |
+| Database/deployment | Disposable migration validation, preview verification, recovery procedure, required target migrations/grants and post-merge Production checks |
 
 Feature 002 adds unit, integration, contract, WebKit UI, local performance, and
 opt-in live evaluation commands. Report only checks actually run for the change.
 CI uses generated disposable credentials and no model key. Live evals require an
 explicit `--live` flag, a local environment, and a recorded budget.
+
+For each schema-dependent release, record the current and required migration
+versions, target environment marker, backup/restore rehearsal, runtime privileges,
+compatibility order and forward-recovery procedure. Use the explicit migration
+operator and checked-in manifest; never initialize an existing database or migrate
+inside request handlers. Preserve the selected local environment and workflow data.
+Keep backups, credentials and customer content private. Verify the live schema and
+changed user workflows after release, including authorization boundaries when
+credentials are available. If a required hosted check cannot run, state precisely
+what remains unverified and do not mark full hosted acceptance complete.
 
 ## Documentation and merge hygiene
 

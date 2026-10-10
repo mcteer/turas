@@ -181,3 +181,10 @@ export async function recordResearchRefresh(client: PoolClient,actor: CurrentSes
   }
   return { refreshId: id,outcome,replayed: false };
 }
+
+/** Learning handoffs expose only the existing, independently attributed refresh
+ * catalog. The normal research preview/start contract still admits every call. */
+export async function listScopedDueResearch(client:PoolClient,actor:CurrentSession,customerId:string,sourceIds:readonly string[]){
+ if(sourceIds.length>200||new Set(sourceIds).size!==sourceIds.length||sourceIds.some(id=>!governedIdSchema.safeParse(id).success))throw new HttpFailure(422,'scope_too_large','Narrow the original research scope');
+ const scoped=new Set(sourceIds);return (await listDueResearch(client,actor,customerId)).filter(source=>scoped.has(source.sourceRevisionId)&&source.state==='due').slice(0,20).map(source=>({id:source.sourceRevisionId,title:source.title,dueAt:source.dueAt,canPrepare:!!source.mode&&!!source.publicFields}));
+}

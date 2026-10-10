@@ -1,4 +1,5 @@
 import { conversationFeature } from "./feature";
+import { reconcileLearningNativeEvents } from '../learning/native-reconcile';
 import { reconcileExecutionNativeEvents } from "../execution/native-reconcile";
 import {reconcileExpansionNativeEvents} from "../expansion/native-reconcile";
 import { reconcileSupportNativeEvents } from "../support/native-reconcile";
@@ -23,6 +24,7 @@ export async function reconcileFromEvents(
     return row ? conversationFeature(db, row.conversation_id) : null;
   });
   if (staffing?.kind === "execution") return reconcileExecutionNativeEvents(nativeSessionId, attemptId, inputEvents);
+  if(staffing?.kind==='learning')return reconcileLearningNativeEvents(nativeSessionId,attemptId,inputEvents);
   if(staffing?.kind==="expansion")return reconcileExpansionNativeEvents(nativeSessionId,attemptId,inputEvents);
   if (staffing?.kind === "support") return reconcileSupportNativeEvents(nativeSessionId, attemptId, inputEvents);
   if (staffing?.kind === "staffing") return reconcileStaffingNativeEvents(nativeSessionId, attemptId, inputEvents);

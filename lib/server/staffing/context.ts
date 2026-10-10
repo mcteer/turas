@@ -28,7 +28,7 @@ export async function staffingScopeForConversation(db: PoolClient, conversationI
  * Capture alone is insufficient: existing/uncertain sessions can reach history,
  * reconnect, event projection or an exact dispatch replay without capture. */
 export async function rejectUnbridgedStaffingNative(db: PoolClient, conversationId: string) {
-  if (["staffing", "execution", "support", "expansion"].includes((await conversationFeature(db, conversationId)).kind)) {
+  if (["staffing", "execution", "support", "expansion", "learning"].includes((await conversationFeature(db, conversationId)).kind)) {
     throw new HttpFailure(503, "staffing_native_unavailable", "Staffing explanation context is not available");
   }
 }

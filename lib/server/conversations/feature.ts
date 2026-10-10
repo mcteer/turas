@@ -4,6 +4,7 @@ import { HttpFailure, hiddenRecord } from "../../contracts/http";
 import type { ExecutionAdviceScope } from "../../execution/advice";
 import type { ExpansionAdviceScope } from "../expansion/context";
 import type { SupportAdviceScope } from "../support/context";
+import type { LearningScope } from "../learning/context";
 import { getServerConfig } from "../config";
 import { withTransaction } from "../db/client";
 import { planningScopeForConversation, type PlanningScope } from "../plans/context";
@@ -11,7 +12,8 @@ import { staffingScopeForConversation, type StaffingScope } from "../staffing/co
 
 export type ConversationFeature = { kind: "normal" } | { kind: "planning"; scope: PlanningScope } |
   { kind: "staffing"; scope: StaffingScope } | { kind: "execution"; scope: ExecutionAdviceScope } |
-  { kind: "support"; scope: SupportAdviceScope } | { kind: "expansion"; scope: ExpansionAdviceScope };
+  { kind: "support"; scope: SupportAdviceScope } | { kind: "expansion"; scope: ExpansionAdviceScope } |
+  { kind: "learning"; scope: LearningScope };
 export type FeaturePrincipal = { principalId?: string; attributes?: Record<string, unknown> } | null | undefined;
 /** Association metadata only. Each content path still performs current authority
  * and its complete dependency fence. Ambiguous bindings never fall through. */
@@ -26,7 +28,10 @@ export async function conversationFeature(db: PoolClient, conversationId: string
      FROM support_advice_bindings WHERE conversation_id=$1 AND environment_id=$2`, [conversationId, getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0] : null;
    const expansion=marker>=47?(await db.query(`SELECT id,scope_id,customer_id,workload_id,owner_membership_id,selected_engagement_ids,selected_hypothesis_ids
      FROM expansion_advice_bindings WHERE conversation_id=$1 AND environment_id=$2`,[conversationId,getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0]:null;
-   if ([planning, staffing, execution, support, expansion].filter(Boolean).length > 1) throw new HttpFailure(409, "conversation_feature_conflict", "Conversation scope is unavailable");
+   const learning=marker>=54?(await db.query(`SELECT id,customer_id,actor_membership_id,purpose,evaluation_id,case_id,closure_digest
+     FROM learning_bindings WHERE conversation_id=$1 AND environment_id=$2`,[conversationId,getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0]:null;
+   if ([planning, staffing, execution, support, expansion, learning].filter(Boolean).length > 1) throw new HttpFailure(409, "conversation_feature_conflict", "Conversation scope is unavailable");
+   if(learning)return {kind:'learning',scope:{bindingId:learning.id,conversationId,customerId:learning.customer_id,ownerMembershipId:learning.actor_membership_id,purpose:learning.purpose,evaluationId:learning.evaluation_id,caseId:learning.case_id,closureDigest:learning.closure_digest,audience:'internal'}};
    if(expansion)return {kind:'expansion',scope:{bindingId:expansion.id,scopeId:expansion.scope_id,conversationId,customerId:expansion.customer_id,workloadId:expansion.workload_id,ownerMembershipId:expansion.owner_membership_id,audience:'internal',selectedEngagementIds:expansion.selected_engagement_ids,selectedHypothesisIds:expansion.selected_hypothesis_ids}};
    if (support) return { kind: "support", scope: { bindingId: support.id, conversationId, customerId: support.customer_id,
      ownerMembershipId: support.owner_membership_id, workloadId: support.workload_id, audience: support.audience,

@@ -1,3 +1,5 @@
+import {recordLearningRelease,assertLearningPublicationReplay,admitLearningWithdrawal} from '../learning/releases';
+import {admitLearningKnowledgeDecision,finishLearningKnowledgeDecision} from '../learning/knowledge-receipts';
 import { createHash, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { z, ZodError } from "zod";
@@ -206,15 +208,18 @@ export async function decideKnowledgeCandidate(client: PoolClient,actor: Current
   parse(governedIdSchema,id);
   const command = parse(knowledgeDecisionSchema,input);
   requireKnowledgePublisher(actor);
+  const learningAdmission=command.action==='publish'?await admitLearningKnowledgeDecision(client,actor,id,'publish',command):null;
   const found = await candidate(client,id);
   await lockKnowledgeAuthor(client,actor,found.customer_id);
   const requestDigest = digest(command);
   const prior = await client.query<{ id: string; request_digest: string; revision_id: string;
-    action: string }>(`SELECT id,request_digest,revision_id,action FROM knowledge_decisions
+    action: string;contribution_id:string }>(`SELECT id,request_digest,revision_id,action,contribution_id FROM knowledge_decisions
     WHERE actor_membership_id=$1 AND action=$2 AND idempotency_key=$3`,
   [actor.membershipId,command.action,command.idempotencyKey]);
   if (prior.rows[0]) {
-    if (prior.rows[0].request_digest !== requestDigest) throw new HttpFailure(409,"idempotency_conflict","Request key reused");
+    if (prior.rows[0].request_digest !== requestDigest || prior.rows[0].contribution_id!==id) throw new HttpFailure(409,"idempotency_conflict","Request key reused");
+    if(command.action==='publish')await assertLearningPublicationReplay(client,actor,id,prior.rows[0].revision_id,command);
+    await finishLearningKnowledgeDecision(client,actor,learningAdmission,prior.rows[0].id,(command.expectedPublicationGeneration??0)+1);
     return { decisionId: prior.rows[0].id,revisionId: prior.rows[0].revision_id,
       action: prior.rows[0].action,replayed: true };
   }
@@ -237,6 +242,8 @@ export async function decideKnowledgeCandidate(client: PoolClient,actor: Current
       (!head && command.expectedPublicationGeneration !== undefined)) {
     throw new HttpFailure(409,"publication_changed","Publication changed");
   }
+  const publicationId=head?.id??randomUUID();
+  if(command.action==='publish')await recordLearningRelease(client,actor,id,revision.id,revision.content_digest,publicationId,head?Number(head.head_generation)+1:1,command);
   const decisionId = randomUUID();
   await client.query(`INSERT INTO knowledge_decisions
     (id,contribution_id,revision_id,actor_membership_id,action,expected_revision,
@@ -261,7 +268,7 @@ export async function decideKnowledgeCandidate(client: PoolClient,actor: Current
       await client.query(`INSERT INTO knowledge_publications
         (id,environment_id,contribution_id,revision_id,head_generation,state,
          public_quality,published_at) VALUES($1,$2,$3,$4,1,'published',$5,$6)`,
-      [randomUUID(),getServerConfig().TURAS_ENVIRONMENT_ID,id,revision.id,
+      [publicationId,getServerConfig().TURAS_ENVIRONMENT_ID,id,revision.id,
         JSON.stringify(quality),at]);
     }
     await client.query("UPDATE knowledge_contributions SET state='closed',updated_at=now() WHERE id=$1",[id]);
@@ -271,6 +278,7 @@ export async function decideKnowledgeCandidate(client: PoolClient,actor: Current
   } else {
     await client.query("UPDATE knowledge_contributions SET state='rejected',updated_at=now() WHERE id=$1",[id]);
   }
+  await finishLearningKnowledgeDecision(client,actor,learningAdmission,decisionId,head?Number(head.head_generation)+1:1);
   return { decisionId,revisionId: revision.id,action: command.action,replayed: false };
 }
 
@@ -279,6 +287,7 @@ export async function withdrawKnowledge(client: PoolClient,actor: CurrentSession
   parse(governedIdSchema,publicationId);
   const command = parse(knowledgeWithdrawSchema,input);
   requireKnowledgePublisher(actor);
+  const learningAdmission=await admitLearningKnowledgeDecision(client,actor,publicationId,'withdraw',command);
   const found = await client.query<{ id: string; contribution_id: string; revision_id: string;
     head_generation: string; state: string; customer_id: string }>(`
     SELECT p.id,p.contribution_id,p.revision_id,p.head_generation,p.state,c.customer_id
@@ -289,20 +298,23 @@ export async function withdrawKnowledge(client: PoolClient,actor: CurrentSession
   if (!row) throw hiddenRecord();
   await lockKnowledgeAuthor(client,actor,row.customer_id);
   const requestDigest = digest(command);
-  const prior = await client.query<{ id: string; request_digest: string }>(`
-    SELECT id,request_digest FROM knowledge_decisions
+  const prior = await client.query<{ id: string; request_digest: string;contribution_id:string }>(`
+    SELECT id,request_digest,contribution_id FROM knowledge_decisions
     WHERE actor_membership_id=$1 AND action='withdraw' AND idempotency_key=$2`,
   [actor.membershipId,command.idempotencyKey]);
   if (prior.rows[0]) {
-    if (prior.rows[0].request_digest !== requestDigest) throw new HttpFailure(409,"idempotency_conflict","Request key reused");
+    if (prior.rows[0].request_digest !== requestDigest || prior.rows[0].contribution_id!==row.contribution_id) throw new HttpFailure(409,"idempotency_conflict","Request key reused");
+    await finishLearningKnowledgeDecision(client,actor,learningAdmission,prior.rows[0].id,command.expectedPublicationGeneration+1);
     return { decisionId: prior.rows[0].id,replayed: true };
   }
-  const revision = await latest(client,row.contribution_id);
+  const revision=(await client.query<{id:string;revision_number:number;content_digest:string}>('SELECT id,revision_number,content_digest FROM knowledge_revisions WHERE id=$1 AND contribution_id=$2',[row.revision_id,row.contribution_id])).rows[0];
+  if(!revision)throw hiddenRecord();
   if (row.state !== "published" || Number(row.head_generation) !== command.expectedPublicationGeneration ||
       revision.revision_number !== command.expectedRevision ||
       revision.content_digest !== command.expectedDigest || row.revision_id !== revision.id) {
     throw new HttpFailure(409,"publication_changed","Publication changed");
   }
+  await admitLearningWithdrawal(client,actor);
   const decisionId = randomUUID();
   await client.query(`INSERT INTO knowledge_decisions
     (id,contribution_id,revision_id,actor_membership_id,action,expected_revision,
@@ -316,5 +328,6 @@ export async function withdrawKnowledge(client: PoolClient,actor: CurrentSession
     head_generation=head_generation+1,updated_at=now() WHERE id=$1`,[publicationId]);
   await retireRetrievalProjection(client,"published_shared",row.revision_id);
   await enqueuePlanCleanupForSource(client,"shared_knowledge",row.revision_id);
+  await finishLearningKnowledgeDecision(client,actor,learningAdmission,decisionId,Number(row.head_generation)+1);
   return { decisionId,replayed: false };
 }

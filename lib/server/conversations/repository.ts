@@ -339,7 +339,7 @@ export async function getOwnedAttemptStatus(
 
 export async function getOwnedConversationDetail(session: CurrentSession, id: string) {
   const feature = await withTransaction(db => conversationFeature(db, id));
-  if (feature.kind === "staffing" || feature.kind === "execution" || feature.kind === "support" || feature.kind === "expansion") {
+  if (feature.kind === "staffing" || feature.kind === "execution" || feature.kind === "support" || feature.kind === "expansion" || feature.kind==='learning') {
     const prepared = await prepareGovernedNativeRelease(id, { actor: session });
     if (!prepared) throw hiddenRecord();
     return withTransaction(async db => {

@@ -63,7 +63,7 @@
     "start": "eve start",
     "typecheck": "tsc",
     "test:unit": "vitest run tests/unit --exclude 'tests/unit/execution-*.test.ts' --exclude 'tests/unit/gap-*.test.ts' --exclude 'tests/unit/partner-*.test.ts'",
-    "test:integration": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/reset-test-profile-rates.ts && node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run tests/integration --exclude 'tests/integration/plan-*.test.ts' --exclude 'tests/integration/staffing-*.test.ts' --exclude 'tests/integration/execution-*.test.ts' --exclude 'tests/integration/report-*.test.ts' --exclude 'tests/integration/support-*.test.ts' --exclude 'tests/integration/expansion-*.test.ts' --exclude 'tests/integration/gap-*.test.ts' --exclude 'tests/integration/partner-*.test.ts'",
+    "test:integration": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/reset-test-profile-rates.ts && node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run tests/integration --exclude 'tests/integration/plan-*.test.ts' --exclude 'tests/integration/staffing-*.test.ts' --exclude 'tests/integration/execution-*.test.ts' --exclude 'tests/integration/report-*.test.ts' --exclude 'tests/integration/support-*.test.ts' --exclude 'tests/integration/expansion-*.test.ts' --exclude 'tests/integration/gap-*.test.ts' --exclude 'tests/integration/partner-*.test.ts' --exclude 'tests/integration/learning-*.test.ts'",
     "test:performance": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/benchmark-shell.ts",
     "smoke:local:live": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/smoke-local-live.ts",
     "eval:behavior:local": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/eval-behavior-local.ts",
@@ -121,7 +121,17 @@
     "benchmark:partners": "node --import tsx scripts/partners-benchmark.ts",
     "test:partners:regressions": "node --import tsx scripts/partners-regressions.ts",
     "typecheck:partners": "tsc -p tsconfig.partner-enablement.json",
-    "build:partners:check": "node --import tsx scripts/partners-build-check.ts"
+    "build:partners:check": "node --import tsx scripts/partners-build-check.ts",
+    "test:learning": "node --import tsx scripts/test-learning.ts",
+    "learning:native:check": "node --import tsx scripts/check-learning-native.ts",
+    "learning:ui:check": "node --import tsx scripts/check-learning-ui.ts",
+    "learning:recovery:check": "node --import tsx scripts/learning-recovery-check.ts",
+    "test:learning:regressions": "node --import tsx scripts/check-learning-regression.ts",
+    "benchmark:learning": "node --import tsx scripts/benchmark-learning.ts",
+    "eval:learning": "node --import tsx scripts/eval-learning.ts",
+    "learning:review:verify": "node --import tsx scripts/verify-learning-review.ts",
+    "typecheck:learning": "tsc -p tsconfig.learning.json",
+    "build:learning:check": "node --import tsx scripts/learning-build-check.ts"
   },
   "dependencies": {
     "@js-temporal/polyfill": "0.5.1",

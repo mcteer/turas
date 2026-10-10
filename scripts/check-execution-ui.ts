@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { supportUiGlobalDiagnostic, supportUiCaseDiagnostic } from "./support-ui-diagnostic";
 import { mkdir, mkdtemp, writeFile, chmod, readdir, lstat } from "node:fs/promises";
 import { existsSync, readdirSync } from "node:fs";
@@ -9,6 +9,18 @@ import { assertDeterministicTestMode } from "../tests/fixtures/runtime";
 import { executionUiDiscovery, verifyExecutionUiReport } from "./execution-ui-report";
 import { executionSourceDigest } from "./execution-source-digest";
 
+// Keep the event loop draining the owned app's output while Playwright runs.
+// A synchronous child blocks the app supervisor's pipe consumers.
+function captureExecutionUi(args:string[],env:NodeJS.ProcessEnv):Promise<{status:number|null;stdout:string;stderr:string;error:boolean}>{
+  return new Promise(resolve=>{
+    const child=spawn(process.execPath,args,{env,stdio:["ignore","pipe","pipe"]});
+    let stdout="",stderr="",error=false;const timer=setTimeout(()=>{error=true;child.kill("SIGKILL");},1_200_000);
+    child.stdout.on("data",chunk=>{stdout+=chunk.toString();if(stdout.length>10_000_000){error=true;child.kill("SIGKILL");}});
+    child.stderr.on("data",chunk=>{stderr=(stderr+chunk.toString()).slice(-1_000_000);});
+    child.once("error",()=>{error=true;});
+    child.once("close",status=>{clearTimeout(timer);resolve({status,stdout,stderr,error});});
+  });
+}
 async function privateCaptureTree(path:string):Promise<void>{
   const stat=await lstat(path);if(stat.isSymbolicLink())throw new Error("UI capture symlink refused");
   await chmod(path,stat.isDirectory()?0o700:0o600);
@@ -63,18 +75,27 @@ for (const project of selectedProject ? [selectedProject] : projects) {
   const runtimeUrl = new URL(ownerUrl);
   runtimeUrl.searchParams.set("options", "-c role=turas_runtime");
   process.env.DATABASE_URL = runtimeUrl.toString();
-  try { await environment.start(); }
+  try {
+    await environment.start();
+    // Compile the unauthenticated command route before timed browser saves.
+    // No identity, CSRF token or customer data is supplied; dispatch must deny.
+    const response=await fetch(`${environment.origin}/api/execution/engagements/00000000-0000-4000-8000-000000000000/commands`,{
+      method:"POST",headers:{"content-type":"application/json"},body:"{}",signal:AbortSignal.timeout(90000),
+    });
+    await response.body?.cancel();
+    if(![401,403].includes(response.status))throw Error("Owned execution route did not deny unauthenticated preparation");
+  }
   finally { process.env.DATABASE_URL = ownerUrl; }
   try {
     await unchanged();
     const caseArgs = ["node_modules/@playwright/test/cli.js", "test", `${testCase.file}:${testCase.line}`, `--project=${project}`,
       "--reporter=json", `--output=${captures}/case-${caseIndex}`, "--forbid-only", "--retries=0", "--repeat-each=1"];
-    const result = spawnSync(process.execPath, caseArgs, {
-      env: { ...process.env, TURAS_UI_BASE_URL: environment.origin, TURAS_UI_FIXTURE_DATABASE_URL: process.env.DATABASE_URL_UNPOOLED,
-        AI_GATEWAY_API_KEY: "", TURAS_ALLOW_LIVE_MODEL_TESTS: "0",
-        TURAS_EXECUTION_FIXTURE_READY: "1", TURAS_EXECUTION_NATIVE_FIXTURE_READY: !focused || focusMode === "--us5" ? "1" : "0", CI: process.env.CI ?? "" },
-      encoding: "utf8", timeout: 1_200_000, maxBuffer: 10_000_000,
+    const result = await captureExecutionUi(caseArgs, {
+      ...process.env, TURAS_UI_BASE_URL: environment.origin, TURAS_UI_FIXTURE_DATABASE_URL: process.env.DATABASE_URL_UNPOOLED,
+      AI_GATEWAY_API_KEY: "", TURAS_ALLOW_LIVE_MODEL_TESTS: "0",
+      TURAS_EXECUTION_FIXTURE_READY: "1", TURAS_EXECUTION_NATIVE_FIXTURE_READY: !focused || focusMode === "--us5" ? "1" : "0", CI: process.env.CI ?? "",
     });
+    await writeFile(join(directory, `${project}-case-${caseIndex}-runtime.log`),environment.privateLogTail(),{mode:0o600,flag:"wx"});
     await writeFile(join(directory, `${project}-case-${caseIndex}.json`), result.stdout ?? "", { mode: 0o600, flag: "wx" });
     await writeFile(join(directory, `${project}-case-${caseIndex}-stderr.log`), result.stderr ?? "", { mode: 0o600, flag: "wx" });
     await privateCaptureTree(captures);

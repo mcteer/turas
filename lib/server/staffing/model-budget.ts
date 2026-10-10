@@ -1,4 +1,5 @@
 import { wrapExecutionModel } from "../execution/model-budget";
+import { wrapLearningModel } from '../learning/model-budget';
 import { wrapExpansionModel } from "../expansion/model-budget";
 import { wrapSupportModel } from "../support/model-budget";
 import { wrapLanguageModel } from "ai";
@@ -24,8 +25,9 @@ export function staffingContextCharge(current: { contextBytes: number; readCalls
 
 /** Both provider paths receive a finite output limit. Durable admission and
  * current dependency fencing must run before calling this wrapped model. */
-export function wrapStaffingModel(model: Model, mode: "operational" | "finance" | "execution" | "support" | "expansion" = "operational",
+export function wrapStaffingModel(model: Model, mode: "operational" | "finance" | "execution" | "support" | "expansion" | 'learning' = "operational",
   governance?: { deadlineAt: Date; beforeProvider: () => Promise<void> }): ReturnType<typeof wrapLanguageModel> {
+  if(mode==='learning')return wrapLearningModel(model,governance);
   if (mode === "execution") return wrapExecutionModel(model, governance);
   if (mode === "expansion") return wrapExpansionModel(model, governance);
   if (mode === "support") return wrapSupportModel(model, governance);

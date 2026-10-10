@@ -29,6 +29,7 @@ function stableJson(value: unknown): string {
 export async function captureAttemptContext(client: PoolClient, actor: CurrentSession,
   conversationId: string, attemptId: string, customerId: string): Promise<Snapshot> {
   const feature = await conversationFeature(client, conversationId);
+  if(feature.kind==='learning')throw hiddenRecord();
   if (feature.kind === "execution") {
     const { captureExecutionInitialContext } = await import("../execution/initial-context");
     return captureExecutionInitialContext(client, actor, conversationId, attemptId);

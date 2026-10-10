@@ -162,3 +162,12 @@ demo's five-independent-customer threshold is a proposal for those aggregates, n
 a prerequisite for publishing an individually reviewed reusable solution. Review
 privacy and differencing risks in 012/014. Product-gap counts use their own role-scoped
 authorization; shared-knowledge access never reveals hidden customer identities/counts.
+
+014 learning proposals remain private and unaccepted until their governing review.
+Feedback and model wording never create accepted customer facts. Shared publication
+requires exact current rights/closure review and a complete independently assessed
+paired evaluation; Turi cannot publish. Fixed quarterly cross-customer metrics are
+internal only, require five independently accepted populations and omit participant
+identities and counts. Source or rights loss withholds the whole released family
+without corrected-subset disclosure. Due review preserves original dates and needs
+fresh research scope/budget admission. See [operations](learning-operations.md).

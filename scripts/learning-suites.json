@@ -1,0 +1,57 @@
+{
+  "version": "learning-suites-v1",
+  "feature": "014-governed-adaptive-learning",
+  "domain": [
+    "tests/contracts/learning-feedback.test.ts",
+    "tests/contracts/learning-evaluation.test.ts",
+    "tests/unit/learning-metrics.test.ts",
+    "tests/unit/learning-budget.test.ts",
+    "tests/unit/learning-model-budget.test.ts",
+    "tests/integration/learning-foundation.test.ts",
+    "tests/integration/learning-policy.test.ts",
+    "tests/integration/learning-sources.test.ts",
+    "tests/integration/learning-budget-guards.test.ts",
+    "tests/integration/learning-feedback.test.ts",
+    "tests/integration/learning-draft.test.ts",
+    "tests/integration/learning-publication.test.ts",
+    "tests/integration/learning-cohorts.test.ts",
+    "tests/integration/learning-maintenance.test.ts",
+    "tests/unit/learning-native-store.test.ts",
+    "tests/unit/learning-review-verifier.test.ts"
+  ],
+  "native": [
+    "tests/integration/learning-native-draft.test.ts",
+    "tests/integration/learning-native-evaluation.test.ts"
+  ],
+  "ui": [
+    "tests/ui/learning-feedback.spec.ts",
+    "tests/ui/learning-draft.spec.ts",
+    "tests/ui/learning-publication.spec.ts",
+    "tests/ui/learning-metrics.spec.ts",
+    "tests/ui/learning-health.spec.ts"
+  ],
+  "acceptance": {
+    "native": "scripts/check-learning-native.ts",
+    "ui": "scripts/check-learning-ui.ts",
+    "recovery": "scripts/learning-recovery-check.ts",
+    "regressions": "scripts/check-learning-regression.ts",
+    "performance": "scripts/benchmark-learning.ts",
+    "actualModel": "scripts/eval-learning.ts",
+    "independentReview": "scripts/verify-learning-review.ts"
+  },
+  "performanceClasses": [
+    "feedback-read",
+    "feedback-write",
+    "candidate-review",
+    "evaluation-admission",
+    "publication",
+    "cohort-read",
+    "dashboard-read"
+  ],
+  "uiConfigurations": [
+    "desktop-light",
+    "desktop-dark",
+    "mobile-light",
+    "mobile-dark"
+  ]
+}

@@ -6,11 +6,11 @@ import { authorizeHostedWatchdog, runHostedWatchdog } from "../../lib/server/con
 
 export default defineChannel({
   routes: [
-    GET("/eve/v1/turas/watchdog", async (request, { attachSession }) => {
+    GET("/eve/v1/turas/watchdog", async (request, { attachSession,waitUntil }) => {
       try {
         authorizeHostedWatchdog(request);
-        await runHostedWatchdog(attachSession);
-        return success({ status: "completed" });
+        waitUntil(runHostedWatchdog(attachSession).catch(()=>{console.error(JSON.stringify({kind:'turas_hosted_watchdog_failed'}));}));
+        return success({ status: "accepted" });
       } catch (error) { return failure(error); }
     }),
     POST("/internal/turas/maintenance", async (request, { attachSession }) => {

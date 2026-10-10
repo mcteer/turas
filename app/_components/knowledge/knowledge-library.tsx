@@ -1,5 +1,7 @@
 "use client";
 
+import { LearningFeedbackButton } from "../learning/feedback-button";
+
 import { titleCaseLabel } from "../title-case-label";
 
 import { EmptyState } from "../empty-state";
@@ -230,6 +232,7 @@ export function KnowledgeLibrary() {
             <button type="button" className="secondary-button" onClick={() => {
               publicationRequest.current += 1;setSelectedPublic(null);
               setPublicState("idle"); }}>Close</button></div>
+          <LearningFeedbackButton kind="shared_practice" id={selectedPublic.id}/>
           <p className="muted">Product version {selectedPublic.payload.productVersion} · Published {selectedPublic.publishedAt}</p>
           {fields.filter(({ key }) => key !== "title" && key !== "productVersion").map(({ key,label }) =>
             <section key={key}><h4>{titleCaseLabel(label)}</h4><p>{selectedPublic.payload[key]}</p></section>)}
