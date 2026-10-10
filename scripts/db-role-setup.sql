@@ -259,6 +259,19 @@ DO $$ DECLARE t text; BEGIN
 END $$;
 
 -- Row locks require an UPDATE privilege; immutable triggers still reject any write.
+DO $$ DECLARE t text; BEGIN
+ IF to_regclass('public.mcp_connections') IS NOT NULL THEN
+  FOREACH t IN ARRAY ARRAY['mcp_connections','mcp_connection_customers','mcp_handles','mcp_rate_windows','mcp_read_leases','mcp_management_receipts','mcp_access_receipts','mcp_management_cursors'] LOOP
+   EXECUTE format('REVOKE ALL ON TABLE %I FROM turas_runtime',t);
+   EXECUTE format('GRANT SELECT,INSERT ON TABLE %I TO turas_runtime',t);
+  END LOOP;
+  GRANT UPDATE(credential_hash,revoked_at,revoker_membership_id,last_used_at) ON mcp_connections TO turas_runtime;
+  GRANT UPDATE(customer_id) ON mcp_connection_customers TO turas_runtime;
+  GRANT UPDATE(count) ON mcp_rate_windows TO turas_runtime;
+  GRANT DELETE ON mcp_handles,mcp_rate_windows,mcp_read_leases,mcp_access_receipts,mcp_management_cursors TO turas_runtime;
+ END IF;
+END $$;
+
 DO $$ BEGIN
  IF to_regclass('public.learning_budget_reservations') IS NOT NULL THEN
   GRANT UPDATE(id) ON learning_budget_reservations TO turas_runtime;

@@ -1,4 +1,5 @@
 import {learningPublishedReuseState} from '../learning/published-reuse';
+import {lockLearningOriginalClosure} from '../learning/sources';
 import { createHash } from "node:crypto";
 import type { PoolClient } from "pg";
 import type { ProfilePayload } from "../../contracts/profile-payloads";
@@ -15,7 +16,7 @@ export function evidenceIds(payload: ProfilePayload, separate: readonly string[]
 }
 
 export async function unsupportedProfileRevisionIds(client: PoolClient, ids: readonly string[],
-  includeRootCurrent = false, ignoringConflictId: string | null = null): Promise<Set<string>> {
+  includeRootCurrent = false, ignoringConflictId: string | null = null, excludedCategories:readonly string[]=[]): Promise<Set<string>> {
   if (!ids.length) return new Set();
   const marker = await client.query<{ schema_version: number }>(
     "SELECT schema_version FROM turas_environment LIMIT 1");
@@ -32,7 +33,8 @@ export async function unsupportedProfileRevisionIds(client: PoolClient, ids: rea
      OR av.sha256_digest<>s.original_digest
      OR ar.state<>'published'
      OR ep.selection_id IS NULL
-     OR s.profile_revision_id IS DISTINCT FROM chain.revision_id` : "";
+     OR s.profile_revision_id IS DISTINCT FROM chain.revision_id
+     OR s.data_category=ANY($4::text[])` : "";
   const result = await client.query<{ id: string }>(`WITH RECURSIVE support_chain(root_id,revision_id,path) AS (
     SELECT id,id,ARRAY[id] FROM unnest($1::uuid[]) AS roots(id)
     UNION ALL
@@ -45,23 +47,24 @@ export async function unsupportedProfileRevisionIds(client: PoolClient, ids: rea
   SELECT DISTINCT chain.root_id AS id FROM support_chain chain
   JOIN profile_revisions v ON v.id=chain.revision_id
   JOIN profile_records r ON r.id=v.record_id
-  WHERE (chain.revision_id<>chain.root_id OR $2::boolean)
+  WHERE ((chain.revision_id<>chain.root_id OR $2::boolean)
     AND (r.current_accepted_revision_id IS DISTINCT FROM chain.revision_id
       OR EXISTS (SELECT 1 FROM evidence_conflicts c WHERE c.state='confirmed'
         AND ($3::uuid IS NULL OR c.id<>$3::uuid)
-        AND (c.first_revision_id=chain.revision_id OR c.second_revision_id=chain.revision_id)))
+        AND (c.first_revision_id=chain.revision_id OR c.second_revision_id=chain.revision_id))))
+    OR v.data_category=ANY($4::text[])
   UNION
   SELECT DISTINCT chain.root_id AS id FROM support_chain chain
   JOIN profile_evidence_links l ON l.profile_revision_id=chain.revision_id
   JOIN evidence_source_events e ON e.source_revision_id=l.source_revision_id
     AND e.event_type IN ('withdraw','supersede')
   ${artifactUnion}`,
-  [ids, includeRootCurrent, ignoringConflictId]);
+  [ids, includeRootCurrent, ignoringConflictId,excludedCategories]);
   return new Set(result.rows.map((row) => row.id));
 }
 
 /** Shared readers never receive these rows; this checks private lineage only. */
-export async function knowledgeLineageIsCurrent(client: PoolClient, revisionId: string): Promise<boolean> {
+export async function knowledgeLineageIsCurrent(client: PoolClient, revisionId: string,lockForRead=false): Promise<boolean> {
   const lineage = await client.query<{
     source_kind: string; source_revision_id: string; source_generation: string;
     source_digest: string; workspace_id: string; customer_id: string;
@@ -71,7 +74,18 @@ export async function knowledgeLineageIsCurrent(client: PoolClient, revisionId: 
     FROM knowledge_lineage l JOIN knowledge_contributions c ON c.id=l.contribution_id
     WHERE l.revision_id=$1 ORDER BY l.ordinal`, [revisionId]);
   if (lineage.rows.length < 1 || lineage.rows.length > 20) return false;
-  const reuse=await learningPublishedReuseState(client,revisionId);
+  if(lockForRead){
+    const author=lineage.rows[0];
+    await client.query('SELECT id FROM workspaces WHERE id=$1 FOR SHARE',[author.workspace_id]);
+    await client.query('SELECT id FROM memberships WHERE id=$1 FOR SHARE',[author.author_membership_id]);
+    await client.query('SELECT p.id FROM principals p JOIN memberships m ON m.principal_id=p.id WHERE m.id=$1 FOR SHARE OF p',[author.author_membership_id]);
+    await client.query('SELECT o.id FROM partner_organizations o JOIN memberships m ON m.partner_org_id=o.id WHERE m.id=$1 FOR SHARE OF o',[author.author_membership_id]);
+    await client.query('SELECT id FROM customer_grants WHERE membership_id=$1 AND customer_id=$2 ORDER BY id FOR SHARE',[author.author_membership_id,author.customer_id]);
+    try{await lockLearningOriginalClosure(client,author.workspace_id,author.customer_id,lineage.rows.map(row=>({
+      sourceKind:row.source_kind as 'accepted_profile'|'verified_research',sourceRevisionId:row.source_revision_id})));}
+    catch(error){if(error instanceof HttpFailure && error.status<500)return false;throw error;}
+  }
+  const reuse=await learningPublishedReuseState(client,revisionId,lockForRead);
   if(!reuse.eligible)return false;
   if(reuse.independentRights)return true;
   const author = lineage.rows[0];

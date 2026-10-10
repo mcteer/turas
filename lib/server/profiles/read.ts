@@ -1,9 +1,11 @@
 import { readPublicCustomerCoverage } from "../research/public-read";
+import {lockLearningOriginalClosure} from '../learning/sources';
 import { getServerConfig } from "../config";
 import type { PoolClient } from "pg";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
 import { profileListQuerySchema } from "../../contracts/profiles";
 import type { ProfileActor } from "./policy";
+import type { CurrentReadActor } from "../auth/read-actor";
 import { lockProfileActor, requireSteward } from "./policy";
 import { projectRevision, stripPrivateLineage, type ProjectionRow, type ReviewState } from "./projection";
 import { withTransaction } from "../db/client";
@@ -33,7 +35,7 @@ function projectionRow(row: RecordRow): ProjectionRow {
     createdAt: row.created_at.toISOString(),
     ...(row.has_quality_snapshot ? { ratingEvidenceAt: row.rating_evidence_at ?? null } : {}) };
 }
-async function supportMetadata(client: PoolClient, actor: ProfileActor,
+async function supportMetadata(client: PoolClient, actor: CurrentReadActor,
   rows: readonly RecordRow[]): Promise<Map<string, { restrictedSupport: boolean;
     safeAttestation: string | null; visibleEvidenceIds: string[] }>> {
   const metadata = new Map<string, { restrictedSupport: boolean;
@@ -70,6 +72,43 @@ async function supportMetadata(client: PoolClient, actor: ProfileActor,
   [rows.map((row) => row.id)]);
   for (const row of visible.rows) metadata.get(row.id)?.visibleEvidenceIds.push(row.evidence_id);
   return metadata;
+}
+
+/** Bounded current accepted sections; deliberately separate from UI history/drafts. */
+export async function readAcceptedProfilePage(client:PoolClient,actor:CurrentReadActor,customerId:string,
+  section:'summary'|'workloads'|'facts',limit:number,afterId?:string){
+  if(!Number.isInteger(limit)||limit<1||limit>20)throw new HttpFailure(422,'invalid_input','Invalid page size');
+  await lockProfileActor(client,actor,customerId,undefined,true);
+  const state=(await client.query('SELECT internal_generation,delivery_generation FROM customer_profile_state WHERE customer_id=$1 AND workspace_id=$2',[customerId,actor.workspaceId])).rows[0];
+  const generation=Number(actor.kind==='partner'?state.delivery_generation:state.internal_generation);
+  const sections=section==='summary'?['customer_details','maturity_assessment']:section==='workloads'?['workload_details']:['stakeholder','product_use','risk','engagement_reference','decision','outcome','next_review','claim'];
+  const result=await client.query<RecordRow>(`SELECT v.id,v.record_id,r.workload_id,r.kind,v.audience,v.data_category,v.author_membership_id,
+    v.payload,v.quality_input,v.source_references,v.revision_number,q.input->>'evidenceAt' AS rating_evidence_at,(q.id IS NOT NULL) AS has_quality_snapshot,
+    NULL::text AS decision_rationale,NULL::text AS partner_safe_reason,v.created_at,'accepted'::text AS review_state
+    FROM profile_records r JOIN profile_revisions v ON v.id=r.current_accepted_revision_id
+    LEFT JOIN LATERAL(SELECT id,input FROM evidence_quality_snapshots WHERE profile_revision_id=v.id ORDER BY created_at DESC,id DESC LIMIT 1) q ON true
+    WHERE r.workspace_id=$1 AND r.customer_id=$2 AND r.kind=ANY($3::text[]) AND v.data_category NOT IN('commercial','personnel')
+      AND ($4='internal' OR(v.audience='delivery' AND v.data_category='delivery_context'))
+      AND ($5::uuid IS NULL OR r.id>$5) ORDER BY r.id LIMIT 101 FOR SHARE OF r`,[actor.workspaceId,customerId,sections,actor.kind,afterId??null]);
+  const candidates=result.rows.slice(0,100);
+  for(const row of candidates)await lockLearningOriginalClosure(client,actor.workspaceId,customerId,[{sourceKind:'accepted_profile',sourceRevisionId:row.id}]);
+  const unsupported=await unsupportedProfileRevisionIds(client,candidates.map(row=>row.id),true,null,['commercial','personnel']);
+  const support=await supportMetadata(client,actor,candidates),eligible:Array<Record<string,unknown>&{supportStatus:string}>=[];
+  let scanned:string|undefined=afterId;
+  for(const row of candidates){
+    scanned=row.record_id;
+    if(unsupported.has(row.id))continue;
+    const typedConflict=await client.query(`SELECT 1 FROM evidence_conflict_targets WHERE environment_id=$1 AND state='confirmed'
+      AND ((first_kind='accepted_profile' AND first_revision_id=$2) OR(second_kind='accepted_profile' AND second_revision_id=$2)) LIMIT 1`,[getServerConfig().TURAS_ENVIRONMENT_ID,row.id]);
+    if(typedConflict.rowCount)continue;
+    const item=projectRevision({...projectionRow(row),...support.get(row.id)},actor.kind,actor.membershipId);
+    if(item){eligible.push({...item,supportStatus:support.get(row.id)?.restrictedSupport?'restricted_source':'settled'});if(eligible.length===limit)break;}
+  }
+  const lastIndex=candidates.findIndex(row=>row.record_id===scanned);
+  const hasMore=lastIndex<candidates.length-1 || result.rows.length>100;
+  if(eligible.length<limit && result.rows.length>100)throw new HttpFailure(503,'incomplete','Section eligibility is incomplete');
+  await lockProfileActor(client,actor,customerId,undefined,true);
+  return {generation,items:eligible,nextPosition:hasMore?scanned:null};
 }
 
 function decodeCursor(raw: string | undefined, actor: ProfileActor, customerId: string,

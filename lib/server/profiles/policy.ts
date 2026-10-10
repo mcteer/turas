@@ -1,12 +1,19 @@
 import type { PoolClient } from "pg";
 import type { CurrentSession } from "../auth/sessions";
+import { isMcpReadActor, type CurrentReadActor } from "../auth/read-actor";
+import { assertMcpReady } from "../mcp/schema";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
 import { getServerConfig } from "../config";
 import { requiredSchemaVersion } from "../db/readiness";
 
 export type ProfileActor = CurrentSession;
 
-export async function lockWorkspaceActor(client: PoolClient, actor: ProfileActor, affectedMembershipId?: string | readonly string[], readOnly = false, lockTimeoutMs = 3000): Promise<void> {
+export async function lockWorkspaceActor(client: PoolClient, actor: CurrentReadActor, affectedMembershipId?: string | readonly string[], readOnly = false, lockTimeoutMs = 3000): Promise<void> {
+  if(isMcpReadActor(actor)) {
+    if(!readOnly || affectedMembershipId!==undefined)throw new HttpFailure(403,"forbidden","Action not allowed");
+    lockTimeoutMs=2000;
+    await assertMcpReady(client,true);
+  }
   await client.query("SELECT set_config('lock_timeout',CASE WHEN current_setting('turas.partner_operation',true)='013' OR current_setting('turas.learning_operation',true)='014' THEN '2000ms' ELSE $1 END,true)",[`${lockTimeoutMs}ms`]);
   await client.query("SET LOCAL statement_timeout = '5000ms'");
   const lock = readOnly ? "FOR SHARE" : "FOR UPDATE";
@@ -25,9 +32,14 @@ export async function lockWorkspaceActor(client: PoolClient, actor: ProfileActor
     const principal=await client.query<{active:boolean}>(`SELECT active FROM principals WHERE id=$1 ${lock}`,[principalId]);
     if(principal.rows[0])principals.set(principalId,principal.rows[0].active);
   }
-  const session = await client.query<{ revoked_at: Date | null; expires_at: Date }>(
-    `SELECT revoked_at,expires_at FROM login_sessions WHERE id=$1 AND principal_id=$2 ${lock}`,
-    [actor.sessionId, actor.principalId]);
+  const session = isMcpReadActor(actor)
+    ? await client.query<{revoked_at:Date|null;expires_at:Date}>(
+      `SELECT revoked_at,expires_at FROM mcp_connections WHERE id=$1 AND principal_id=$2 AND membership_id=$3
+       AND workspace_id=$4 AND environment_id=$5 AND scope_digest=$6 AND credential_hash IS NOT NULL FOR SHARE`,
+      [actor.connectionId,actor.principalId,actor.membershipId,actor.workspaceId,actor.environmentId,actor.scopeDigest])
+    : await client.query<{ revoked_at: Date | null; expires_at: Date }>(
+      `SELECT revoked_at,expires_at FROM login_sessions WHERE id=$1 AND principal_id=$2 ${lock}`,
+      [actor.sessionId, actor.principalId]);
   const workspace = await client.query<{ active: boolean }>(`SELECT active FROM workspaces WHERE id=$1 ${lock}`, [actor.workspaceId]);
   if (!principals.get(actor.principalId) || !session.rows[0] || session.rows[0].revoked_at ||
       session.rows[0].expires_at.getTime() <= Date.now() || !workspace.rows[0]?.active) {
@@ -45,8 +57,12 @@ export async function lockWorkspaceActor(client: PoolClient, actor: ProfileActor
       marker.rows[0].schema_version < requiredSchemaVersion) throw new HttpFailure(503, "unavailable", "Service unavailable");
 }
 
-export async function lockProfileActor(client: PoolClient, actor: ProfileActor, customerId: string, affectedMembershipId?: string | readonly string[], readOnly = false): Promise<void> {
+export async function lockProfileActor(client: PoolClient, actor: CurrentReadActor, customerId: string, affectedMembershipId?: string | readonly string[], readOnly = false): Promise<void> {
   await lockWorkspaceActor(client, actor, affectedMembershipId, readOnly);
+  if(isMcpReadActor(actor)) {
+    const selected=await client.query("SELECT customer_id FROM mcp_connection_customers WHERE connection_id=$1 AND workspace_id=$2 AND customer_id=$3 FOR SHARE",[actor.connectionId,actor.workspaceId,customerId]);
+    if(!selected.rowCount)throw hiddenRecord();
+  }
   const lock = readOnly ? "FOR SHARE" : "FOR UPDATE";
   const state = await client.query(`SELECT customer_id FROM customer_profile_state WHERE customer_id=$1 AND workspace_id=$2 ${lock}`,
     [customerId, actor.workspaceId]);
@@ -60,6 +76,7 @@ export async function lockProfileActor(client: PoolClient, actor: ProfileActor, 
 }
 
 export async function requireSteward(client: PoolClient, actor: ProfileActor, customerId: string): Promise<void> {
+  if(isMcpReadActor(actor))throw new HttpFailure(403,"forbidden","Action not allowed");
   if (actor.kind !== "internal") throw new HttpFailure(403, "forbidden", "Action not allowed");
   if (actor.role === "admin") return;
   const steward = await client.query<{ active: boolean }>(

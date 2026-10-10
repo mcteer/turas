@@ -339,3 +339,16 @@ input[type="file"]::file-selector-button { font: inherit; color: var(--foregroun
 .profile-page .partner-evidence-option { display: grid; grid-template-columns: 1rem minmax(0, 1fr); gap: .5rem; margin: .8rem 0; cursor: pointer; }
 .partner-evidence-option > input { grid-column: 1; grid-row: 1; align-self: start; margin: .2rem 0 0; }
 .partner-evidence-option > :not(input) { grid-column: 2; min-width: 0; overflow-wrap: anywhere; }
+
+.mcp-dialog { width: min(32rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); overflow: auto; padding: 1.5rem; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--foreground); }
+.mcp-dialog::backdrop { background: #0008; }
+.mcp-dialog button { margin: .4rem .4rem .4rem 0; }
+
+.mcp-form { margin-top: 1.5rem; display: grid; gap: 1rem; }
+.mcp-form > label { display: grid; gap: .4rem; }
+.mcp-form > label:has(input[type="checkbox"]), .mcp-form fieldset label { display: flex; align-items: center; gap: .5rem; }
+.mcp-form fieldset { min-width: 0; display: flex; flex-wrap: wrap; gap: 1rem; padding: 1rem; border: 1px solid var(--border); border-radius: 8px; background: var(--subtle); }
+.mcp-form p, .mcp-form h2 { margin: 0; }
+.mcp-form > button { justify-self: start; }
+.mcp-connections .profile-actions { display: flex; flex-wrap: wrap; gap: .6rem; }
+.mcp-connections .profile-card { overflow-wrap: anywhere; }

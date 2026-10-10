@@ -1,5 +1,5 @@
 {
-  "version": 54,
+  "version": 55,
   "migrations": [
     {
       "file": "001-identity-foundation.cjs",
@@ -216,6 +216,10 @@
     {
       "file": "054-learning-metrics.cjs",
       "sha256": "7c006735b76b7394bcd9a8329fda4bfc87c59237d19a39da1fb86aaa9345bce0"
+    },
+    {
+      "file": "055-mcp-read-access.cjs",
+      "sha256": "49f3f2b3b9faee96c4009351f3369e498380aab0498026111d261513ee3576f9"
     }
   ]
 }

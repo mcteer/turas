@@ -27,7 +27,7 @@ async function main(){
   const seeded=await withLearningDatabase(seedLearningPublicPractice),before=await predecessorDigest(),marker=randomUUID(),markerPath=join(environment.workflowRoot,'014-recovery-marker');await writeFile(markerPath,marker,{mode:0o600});
   if(priorSchema){await environment.startWorker();await environment.stop();assert.equal(await predecessorDigest(),before);await environment.upgradeToCurrent();}
   assert.equal(await predecessorDigest(),before);
-  await withLearningDatabase(async db=>{assert.equal(Number((await db.query('SELECT schema_version FROM turas_environment')).rows[0].schema_version),54);assert.equal(Number((await db.query('SELECT count(*)::int n FROM turas_migrations')).rows[0].n),54);});
+  await withLearningDatabase(async db=>{assert.equal(Number((await db.query('SELECT schema_version FROM turas_environment')).rows[0].schema_version),55);assert.equal(Number((await db.query('SELECT count(*)::int n FROM turas_migrations')).rows[0].n),55);});
   const publication=await withLearningDatabase(async db=>(await db.query('SELECT id FROM knowledge_publications WHERE contribution_id=$1',[seeded.draft.id])).rows[0].id);
   await activateLearning(environment.environmentId,seeded.actors.admin.workspaceId,true,requireOwnedLearningDatabase(process.env,true));
   const first=await withLearningDatabase(async db=>(await db.query('SELECT gate_activated_at FROM learning_workspace_state WHERE workspace_id=$1',[seeded.actors.admin.workspaceId])).rows[0].gate_activated_at);
@@ -52,7 +52,7 @@ async function main(){
   // Exact registered recovery assertions exercise disabled reads, source loss,
   // unknown holds and interrupted final retirement claims against this database.
   const files=['tests/integration/learning-maintenance.test.ts'],report=join(directory,`schema-${priorSchema??'empty'}.json`),run=await capturePartnerProcess(['node_modules/vitest/vitest.mjs','run',...files,'--reporter=json','--outputFile='+report,'--testTimeout=120000'],240000,environment.signal);await writeFile(report+'.log',run.stdout+run.stderr,{mode:0o600});if(run.status!==0||run.error)throw Error('Recovery domain checks failed; inspect '+directory);const passed=verifyLearningTestReport(JSON.parse(await readFile(report,'utf8')),files);
-  results.push({from:priorSchema??'empty',to:54,domainChecks:passed,activationSnapshot:true,oldWriterDenied:true,runtimeGrants:true,workerCrashAndSigterm:true,authenticatedNativeAppRestarts:2,sameDatabaseAndWorkflow:true,unknownCostHeld:true,earliestDeadlinePreserved:true});
+  results.push({from:priorSchema??'empty',to:55,domainChecks:passed,activationSnapshot:true,oldWriterDenied:true,runtimeGrants:true,workerCrashAndSigterm:true,authenticatedNativeAppRestarts:2,sameDatabaseAndWorkflow:true,unknownCostHeld:true,earliestDeadlinePreserved:true});
  },{priorSchema,deadlineMs:600000});
  assert.equal(await featureSourceDigest('014'),sourceDigest);const summary={sourceDigest,results,paidCalls:0,hostedProof:false};await writeFile(join(directory,'summary.json'),JSON.stringify(summary),{mode:0o600});console.info(JSON.stringify(summary));
 }

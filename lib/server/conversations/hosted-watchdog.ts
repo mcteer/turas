@@ -1,3 +1,4 @@
+import {runMcpMaintenanceTick} from '../mcp/retention';
 import {runLearningMaintenanceTick} from '../learning/maintenance';
 import {learningOperationalMetric} from '../learning/observability';
 import { randomUUID, timingSafeEqual } from "node:crypto";
@@ -31,8 +32,10 @@ export function authorizeHostedWatchdog(request: Request, secret = process.env.C
  * This performs no schema initialization and never dispatches model work. */
 export async function runHostedWatchdog(attachSession: AttachSessionFn): Promise<void> {
   const workerId = randomUUID();
-  const end = Date.now() + 65_000;let nextLearningAt=0;
-  while (Date.now() < end) {
+  const end = Date.now() + 65_000;let nextLearningAt=0,stopping=false,mcpTick:Promise<unknown>|null=null;
+  const maintainMcp=()=>{if(stopping||mcpTick)return;mcpTick=runMcpMaintenanceTick().catch(()=>{console.warn(JSON.stringify({kind:'mcp_maintenance_failed'}));}).finally(()=>{mcpTick=null;});};
+  const mcpTimer=setInterval(maintainMcp,30000);maintainMcp();
+  try{while (Date.now() < end) {
     const started = Date.now();
     const jobs = await claimDueJobs(workerId, 1);
     await heartbeatWorker(workerId);
@@ -48,5 +51,5 @@ export async function runHostedWatchdog(attachSession: AttachSessionFn): Promise
     if(Date.now()>=nextLearningAt){try{const result=await runLearningMaintenanceTick({attachSession});learningOperationalMetric('maintenance_duration_ms',Math.min(1000000,result.durationMs));learningOperationalMetric('maintenance_records',result.processed);}catch{learningOperationalMetric('maintenance_failed',1);}nextLearningAt=Date.now()+30000;}
     const remaining = Math.min(end - Date.now(), Math.max(0, 5_000 - (Date.now() - started)));
     if (remaining > 0) await new Promise(resolve => setTimeout(resolve, remaining));
-  }
+  }}finally{stopping=true;clearInterval(mcpTimer);await mcpTick;}
 }

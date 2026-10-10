@@ -1,11 +1,13 @@
 'use client';
 import { useCallback,useEffect,useRef,useState } from 'react';
 import { learningFetch,learningPost,type LearningAuth,type LearningReceipt } from './client';
-export function useLearningView<T>(url:string|null){
+// Metadata-only publication controls must survive native picker window blur.
+// All views still clear when hidden; private views also clear on window blur.
+export function useLearningView<T>(url:string|null,metadataOnly=false){
  const [view,setView]=useState<T|null>(null),[auth,setAuth]=useState<LearningAuth|null>(null),[notice,setNotice]=useState(''),[loading,setLoading]=useState(true),generation=useRef(0);
  const clear=useCallback(()=>{++generation.current;setView(null);setAuth(null);},[]);
  const refresh=useCallback(async(withhold=true)=>{const ticket=++generation.current;if(withhold){setView(null);setAuth(null);}if(!url){setView(null);setAuth(null);setLoading(false);return;}setLoading(true);try{const [current,data]=await Promise.all([learningFetch<LearningAuth>('/api/auth/session'),learningFetch<T>(url)]);if(ticket!==generation.current||document.visibilityState==='hidden')return;setAuth(current);setView(data);setNotice('');}catch(error){if(ticket===generation.current){setView(null);setAuth(null);setNotice(error instanceof Error?error.message:'Learning unavailable');}}finally{if(ticket===generation.current)setLoading(false);}},[url]);
- useEffect(()=>{void refresh();const focus=()=>void refresh(),visibility=()=>document.visibilityState==='hidden'?clear():void refresh();window.addEventListener('focus',focus);window.addEventListener('blur',clear);document.addEventListener('visibilitychange',visibility);const timer=setInterval(()=>{if(document.visibilityState==='visible')void refresh(false);},30000);return()=>{clearInterval(timer);window.removeEventListener('focus',focus);window.removeEventListener('blur',clear);document.removeEventListener('visibilitychange',visibility);++generation.current;};},[refresh,clear]);
+ useEffect(()=>{void refresh();const focus=()=>void refresh(!metadataOnly),blur=()=>{if(!metadataOnly||document.visibilityState==='hidden')clear();},visibility=()=>document.visibilityState==='hidden'?clear():void refresh();window.addEventListener('focus',focus);window.addEventListener('blur',blur);document.addEventListener('visibilitychange',visibility);const timer=setInterval(()=>{if(document.visibilityState==='visible')void refresh(false);},30000);return()=>{clearInterval(timer);window.removeEventListener('focus',focus);window.removeEventListener('blur',blur);document.removeEventListener('visibilitychange',visibility);++generation.current;};},[refresh,clear,metadataOnly]);
  return {view,auth,notice,loading,refresh,clear};
 }
 export function useLearningMutation(auth:LearningAuth|null,scope:string,onRefresh:()=>Promise<void>){

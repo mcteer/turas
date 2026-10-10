@@ -1,0 +1,10 @@
+import { mkdir,writeFile } from 'node:fs/promises';
+import { featureSourceDigest } from './execution-source-digest';
+import { withMcpEnvironment } from './mcp-environment';
+if(process.argv.length!==2)throw Error('MCP build acceptance takes no overrides');
+const sourceDigest=await featureSourceDigest('015');
+await withMcpEnvironment(async environment=>{await environment.startProduction();await environment.stop();},{deadlineMs:660000});
+if(await featureSourceDigest('015')!==sourceDigest)throw Error('MCP source changed during build');
+await mkdir('local-artifacts/015',{recursive:true,mode:0o700});
+const summary={sourceDigest,web:true,eve:true,productionRuntime:true,paidCalls:0,hostedProof:false};
+await writeFile('local-artifacts/015/build.json',JSON.stringify(summary),{mode:0o600});console.info(JSON.stringify(summary));

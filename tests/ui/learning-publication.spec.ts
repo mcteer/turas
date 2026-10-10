@@ -80,10 +80,18 @@ test('administrator withdraws the actual head while a newer draft has lost its o
  await page.reload();await expect(page.getByText('Actual published head: revision 1, generation 2 · withdrawn',{exact:true})).toBeVisible();
  withdrawalStage='reactivate';
  await withLearningDatabase(async db=>{await activateLearning(process.env.TURAS_ENVIRONMENT_ID!,fixture.workspaceId,true,requireOwnedLearningDatabase(process.env,true));});await page.reload();
- withdrawalStage='rollback-review';
- await page.getByRole('combobox',{name:'Historical Published Revision',exact:true}).selectOption({label:'Published Revision 1'});
+ withdrawalStage='rollback-picker';
+ const historical=page.getByRole('combobox',{name:'Historical Published Revision',exact:true});await expect(historical).toBeVisible();
+ // Native browser pickers can blur the window without hiding the document.
+ await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await expect(historical).toBeVisible({timeout:2000});
+ await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await expect(historical).toBeVisible();
+ // Backgrounding still withholds controls and private content until refresh.
+ await page.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,value:'hidden'});document.dispatchEvent(new Event('visibilitychange'));});await expect(historical).toHaveCount(0);
+ await page.evaluate(()=>{delete (document as unknown as {visibilityState?:string}).visibilityState;document.dispatchEvent(new Event('visibilitychange'));});await expect(historical).toBeVisible();await historical.selectOption({label:'Published Revision 1'});
+ withdrawalStage='rollback-originals';
  const originals=page.getByRole('group',{name:'Current Rollback Originals',exact:true});await expect(originals.getByRole('checkbox')).toHaveCount(1);await originals.getByRole('checkbox').check();
- await page.getByRole('textbox',{name:'Rollback Reuse Basis',exact:true}).fill('Current original permission requires independent review');await page.getByRole('textbox',{name:'Rollback Rationale',exact:true}).fill('PRIVATE_SYNTHETIC_ROLLBACK_REASON');await page.getByRole('button',{name:'Create Private Rollback Revision',exact:true}).click();
+ withdrawalStage='rollback-rationale';
+ await page.getByRole('textbox',{name:'Rollback Reuse Basis',exact:true}).fill('Current original permission requires independent review');await page.getByRole('textbox',{name:'Rollback Rationale',exact:true}).fill('PRIVATE_SYNTHETIC_ROLLBACK_REASON');withdrawalStage='rollback-submit';await page.getByRole('button',{name:'Create Private Rollback Revision',exact:true}).click();
  withdrawalStage='rollback-refresh';
  await expect(page.getByRole('textbox',{name:'Rollback Rationale',exact:true})).toHaveValue('');await page.getByRole('button',{name:'Refresh Candidate',exact:true}).click();await expect(page.getByRole('heading',{name:'Synthetic retained published practice',exact:true})).toBeVisible();await expect(page.getByText('Draft · Revision 3',{exact:true})).toBeVisible();await expect(page.getByText('Actual published head: revision 1, generation 2 · withdrawn',{exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Publish Exact Evaluated Revision',exact:true})).toHaveCount(0);
  expect(await page.evaluate(()=>JSON.stringify({local:{...localStorage},session:{...sessionStorage}}))).not.toContain('PRIVATE_SYNTHETIC');

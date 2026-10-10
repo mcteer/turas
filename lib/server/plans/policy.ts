@@ -1,4 +1,5 @@
 import type { PoolClient } from "pg";
+import { isMcpReadActor,type CurrentReadActor } from "../auth/read-actor";
 import type { CurrentSession } from "../auth/sessions";
 import { HttpFailure,hiddenRecord } from "../../contracts/http";
 import { getServerConfig } from "../config";
@@ -25,7 +26,7 @@ export async function requirePlanEnvironment(client:PoolClient,write:boolean):Pr
   }
 }
 
-export async function requireActivePlanWorkload(client:PoolClient,actor:PlanActor,
+export async function requireActivePlanWorkload(client:PoolClient,actor:CurrentReadActor,
   customerId:string,workloadId:string|null):Promise<void> {
   if (!workloadId) return;
   const workload = await client.query(`SELECT 1 FROM customer_workloads workload
@@ -38,7 +39,7 @@ export async function requireActivePlanWorkload(client:PoolClient,actor:PlanActo
   if (!workload.rowCount) throw hiddenRecord();
 }
 
-export async function requireEligiblePlanOwner(client:PoolClient,actor:PlanActor,
+export async function requireEligiblePlanOwner(client:PoolClient,actor:CurrentReadActor,
   customerId:string,ownerMembershipId:string):Promise<void> {
   const owner = await client.query<{kind:string;active:boolean;principal_active:boolean;
     grant_active:boolean;org_active:boolean}>(`SELECT member.kind,member.active,
@@ -58,17 +59,19 @@ export async function requireEligiblePlanOwner(client:PoolClient,actor:PlanActor
   }
 }
 
-export async function lockPlanActor(client:PoolClient,actor:PlanActor,
+export async function lockPlanActor(client:PoolClient,actor:CurrentReadActor,
   customerId:string,write:boolean,ownerMembershipId?:string,
   shareActorRows=false):Promise<void> {
+  if(isMcpReadActor(actor) && (write || ownerMembershipId!==undefined))throw new HttpFailure(403,"forbidden","Action not allowed");
   await lockProfileActor(client,actor,customerId,ownerMembershipId,
     !write || shareActorRows);
   await requirePlanEnvironment(client,write);
   if (ownerMembershipId) await requireEligiblePlanOwner(client,actor,customerId,ownerMembershipId);
 }
 
-export function requirePlanCapability(actor:PlanActor,plan:PlanScope|null,
+export function requirePlanCapability(actor:CurrentReadActor,plan:PlanScope|null,
   capability:PlanCapability):void {
+  if(isMcpReadActor(actor) && capability!=="read")throw new HttpFailure(403,"forbidden","Action not allowed");
   if (capability === "create") return;
   if (!plan || plan.workspace_id !== actor.workspaceId ||
       plan.environment_id !== getServerConfig().TURAS_ENVIRONMENT_ID) throw hiddenRecord();
@@ -85,5 +88,6 @@ export function requirePlanCapability(actor:PlanActor,plan:PlanScope|null,
 }
 
 export function requireCreateAudience(actor:PlanActor,audience:"internal"|"delivery"):void {
+  if(isMcpReadActor(actor))throw new HttpFailure(403,"forbidden","Action not allowed");
   if (actor.kind === "partner" && audience !== "delivery") throw hiddenRecord();
 }

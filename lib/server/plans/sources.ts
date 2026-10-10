@@ -12,6 +12,7 @@ import { authorizeRetrievalScope,recheckRetrievalSource } from "../retrieval/pol
 import { resolveRetrievalCitation } from "../retrieval/citations";
 import { originalCurrent } from "../retrieval/fences";
 import type { PlanActor } from "./policy";
+import {isMcpReadActor,type CurrentReadActor} from "../auth/read-actor";
 
 type SourceReference = PlanDraftContent["sourceDependencies"][number];
 type SourceRow = {id:string;source_kind:string;source_revision_id:string;
@@ -72,7 +73,7 @@ export async function lockPlanRevisionSourceHeaders(client: PoolClient, revision
 }
 
 /** Resolve original identities under the reader's current scope, never receipt TTL. */
-export async function verifyPlanSources(client:PoolClient,actor:PlanActor,
+export async function verifyPlanSources(client:PoolClient,actor:CurrentReadActor,
   customerId:string,workloadId:string|null,audience:"internal"|"delivery",
   references:readonly SourceReference[],lock=false,
   alreadyAuthorized=false):Promise<string> {
@@ -91,6 +92,7 @@ export async function verifyPlanSources(client:PoolClient,actor:PlanActor,
     if (lock) await lockOriginalHeader(client,reference.kind,
       reference.sourceRevisionId);
     if (reference.citationId) {
+      if(isMcpReadActor(actor))throw hiddenRecord();
       const citation = await resolveRetrievalCitation(client,actor,reference.citationId);
       const receipt = await client.query<{source_kind:string;source_revision_id:string;
         source_generation:string}>(`SELECT citation.source_kind,citation.source_revision_id,
@@ -175,7 +177,7 @@ export async function persistPlanSources(client:PoolClient,revisionId:string,
   }
 }
 
-export async function currentPlanSourceDigest(client:PoolClient,actor:PlanActor,
+export async function currentPlanSourceDigest(client:PoolClient,actor:CurrentReadActor,
   revisionId:string,customerId:string,workloadId:string|null,
   audience:"internal"|"delivery",lock=false,
   alreadyAuthorized=false):Promise<string> {
@@ -290,7 +292,7 @@ async function sourceQuality(client:PoolClient,reference:SourceReference,at:Date
     reviewAt:typeof payload.reviewAt==="string" ? new Date(payload.reviewAt):null},at);
 }
 
-async function materialConflict(client:PoolClient,actor:PlanActor,
+async function materialConflict(client:PoolClient,actor:CurrentReadActor,
   customerId:string,reference:SourceReference):Promise<boolean> {
   const kind=retrievalKind(reference.kind);
   const target=await client.query(`SELECT 1 FROM evidence_conflict_targets
@@ -314,7 +316,7 @@ async function materialConflict(client:PoolClient,actor:PlanActor,
   return false;
 }
 
-export async function assessPlanEvidence(client:PoolClient,actor:PlanActor,
+export async function assessPlanEvidence(client:PoolClient,actor:CurrentReadActor,
   customerId:string,content:Pick<PlanDraftContent,"sourceDependencies"|"assertions">):Promise<{
     issues:PlanIssue[];historicalWarning:boolean}> {
   const at=new Date();

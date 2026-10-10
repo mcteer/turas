@@ -2,9 +2,9 @@ import type { PoolClient } from "pg";
 import { HttpFailure } from "../../contracts/http";
 import { embeddingContractVersion, retrievalContractVersion } from "../../contracts/retrieval";
 import { getServerConfig } from "../config";
-import type { CurrentSession } from "../auth/sessions";
+import type { CurrentReadActor } from "../auth/read-actor";
 import { hiddenRecord } from "../../contracts/http";
-import { lockProfileActor } from "../profiles/policy";
+import { lockProfileActor,lockWorkspaceActor } from "../profiles/policy";
 import { knowledgeLineageIsCurrent, unsupportedProfileRevisionIds } from "../profiles/eligibility";
 
 export const retrievalSchemaVersion = 28;
@@ -64,22 +64,11 @@ export type AuthorizedRetrievalScope = {
   includeShared: boolean;
 };
 
-export async function authorizeRetrievalScope(client: PoolClient, actor: CurrentSession,
+export async function authorizeRetrievalScope(client: PoolClient, actor: CurrentReadActor,
   scope: "customer" | "shared" | "combined", customerId?: string,
   effectiveAudience?:"internal"|"delivery",readOnly=false): Promise<AuthorizedRetrievalScope> {
   await assertRetrievalReady(client);
-  const active = await client.query(`SELECT 1 FROM memberships m
-    JOIN principals p ON p.id=m.principal_id AND p.active
-    JOIN workspaces w ON w.id=m.workspace_id AND w.active
-    JOIN login_sessions ls ON ls.id=$2 AND ls.principal_id=p.id
-      AND ls.revoked_at IS NULL AND ls.expires_at>now()
-    LEFT JOIN partner_organizations o ON o.id=m.partner_org_id
-      AND o.workspace_id=m.workspace_id
-    WHERE m.id=$1 AND m.principal_id=$3 AND m.workspace_id=$4 AND m.active
-      AND m.kind=$5 AND m.role=$6 AND (m.kind='internal' OR o.active)`,
-    [actor.membershipId, actor.sessionId, actor.principalId, actor.workspaceId,
-      actor.kind, actor.role]);
-  if (!active.rowCount) throw new HttpFailure(401, "unauthorized", "Sign in again");
+  await lockWorkspaceActor(client,actor,undefined,readOnly);
   if (actor.kind==="partner" && effectiveAudience==="internal") throw hiddenRecord();
   if (scope !== "shared") {
     if (!customerId) throw hiddenRecord();
