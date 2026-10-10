@@ -1,0 +1,35 @@
+# Deployment exclusions: private files must not enter Vercel uploads.
+.git/
+# Secrets and local runtime state
+.env*
+.eve/
+.vercel/
+.codex/
+.specify/feature.json
+
+# Dependencies and generated output
+node_modules/
+node_modules
+**/node_modules
+.next/
+.output/
+dist/
+build/
+coverage/
+test-results/
+playwright-report/
+.vitest/
+*.tsbuildinfo
+*.log
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
+
+# Private customer data and local artifacts
+demo-artifacts/
+local-artifacts/
+**/.turas-artifact-store.json
+tmp/

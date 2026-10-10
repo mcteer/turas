@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-09
 
-**Status**: Implemented; local and actual-model acceptance recorded; CI and hosted release tracked separately
+**Status**: Released; local, actual-model and CI acceptance recorded; Production read-only checks passed for internal and partner roles, record-dependent hosted limits recorded
 
 **Input**: Proceed with specify, clarify, plan, tasks and analyze for roadmap 014,
 then stop before implementation for a model switch. Extend reviewed shared

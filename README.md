@@ -135,7 +135,9 @@ Feature 014 has a [specification](specs/014-governed-adaptive-learning/spec.md),
 private feedback, budgeted Turi improvements and paired evaluation, administrator
 publication/rollback, internal-only quarterly outcome metrics and bounded refresh
 monitoring. Implementation and acceptance evidence are tracked in the validation
-record. Schema 052–054, runtime
+record. Production login and read boundaries were checked for internal and partner
+roles; record-dependent hosted limits remain in the validation record.
+Schema 052–054, runtime
 grants and explicit workspace activation are required; new workspaces start
 disabled. See [learning operations](docs/learning-operations.md), the
 [validation record](specs/014-governed-adaptive-learning/validation.md) and
@@ -328,6 +330,11 @@ on the project; the app integrates `@vercel/analytics` with page URL redaction
 for customer, engagement, plan, resource, import and conversation identifiers.
 Query strings and fragments are removed; unknown routes and custom events are
 discarded. Local development uses the SDK's development mode.
+
+CLI deployments use the checked-in `.vercelignore` to exclude credentials,
+private local artifacts, workflow stores, dependencies and generated output.
+Preserve the selected `.env.local` when eve pulls hosted environment variables;
+Production credential changes require a new compatible deployment and live login checks.
 
 Hosted chat requires an active watchdog: admission fails closed when no worker
 heartbeat is newer than 15 seconds. The minute cron at `/eve/v1/turas/watchdog`
