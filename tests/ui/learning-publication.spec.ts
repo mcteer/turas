@@ -30,6 +30,7 @@ test('human reviews all eight immutable capture pairs before final exact publica
  await page.reload();await expect(page.getByText('Actual published head: revision 1, generation 1 · published',{exact:true})).toBeVisible();
 });
 test('administrator explicitly reviews exact sanitized words while partners cannot open the private queue',async({page})=>{
+ test.setTimeout(90000); // Fixture, sanitization review, evaluation cancellation and role denial.
  const fixture=await withLearningDatabase(async db=>{
   const scope=await learningScopedFixture(db),lineage=await learningAcceptedOriginal(db,scope.actors.member,scope.actors.admin,scope.customerId);
   const payload={title:'Synthetic browser review practice',productVersion:'Unknown',problem:'An observed concern',prerequisites:'Review current original evidence',solution:'Measure accepted engineering evidence',reasoning:'Ground proposals in observations',applicability:'Applicable engineering contexts',limitations:'No causal attribution',validation:'Verify complete evidence'};
@@ -53,6 +54,7 @@ test('administrator explicitly reviews exact sanitized words while partners cann
 });
 
 test('administrator withdraws the actual head while a newer draft has lost its original and new work is disabled',async({page})=>{
+ test.setTimeout(90000); // Original loss, disable/withdrawal, reload and a separately reviewed rollback draft.
  const fixture=await withLearningDatabase(async db=>{
   const scope=await learningScopedFixture(db),lineage=await learningAcceptedOriginal(db,scope.actors.member,scope.actors.admin,scope.customerId);
   const payload={title:'Synthetic retained published practice',productVersion:'Unknown',problem:'Observed concern',prerequisites:'Check applicability',solution:'Measure accepted evidence',reasoning:'Use reviewed observations',applicability:'Engineering workflows',limitations:'No causal claim',validation:'Verify originals'};

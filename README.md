@@ -134,12 +134,12 @@ Feature 014 has a [specification](specs/014-governed-adaptive-learning/spec.md),
 [66 implementation tasks](specs/014-governed-adaptive-learning/tasks.md). It adds
 private feedback, budgeted Turi improvements and paired evaluation, administrator
 publication/rollback, internal-only quarterly outcome metrics and bounded refresh
-monitoring. Implementation acceptance is in progress. Schema 052–054, runtime
+monitoring. Implementation and acceptance evidence are tracked in the validation
+record. Schema 052–054, runtime
 grants and explicit workspace activation are required; new workspaces start
 disabled. See [learning operations](docs/learning-operations.md), the
 [validation record](specs/014-governed-adaptive-learning/validation.md) and
-[handoff](specs/014-governed-adaptive-learning/handoff.md) for local evidence and
-remaining actual-model and hosted acceptance.
+[handoff](specs/014-governed-adaptive-learning/handoff.md) for current local, actual-model, CI and hosted validation status.
 
 ## Technology
 
