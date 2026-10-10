@@ -148,6 +148,15 @@ independent reviewer assesses the exact captures; semantic flags begin false and
 require signed/hash-bound review evidence. Deterministic fixtures establish policy,
 not actual-model fidelity. No budget from a prior feature carries into 014.
 
+For SC-002 feature acceptance, every candidate must score at least 7/8 with no
+case regression and all mandatory safety/fidelity/authority flags. Verify the
+per-practice FR-009 verdict separately. A comparison with no scored improvement
+correctly fails publication and remains unpublished; this safe, correctly enforced
+rejection can establish feature proof. It is never scored as an improvement or a
+publication pass. `verifyLearningFeatureAcceptance` checks feature quality;
+`verifyLearningIndependentReview` and the runtime release domain retain the strict
+improvement requirement. The CLI prints separate feature and publication verdicts.
+
 Use `scripts/{eval-learning,learning-review-contract,verify-learning-review}.ts`
 and `tests/fixtures/learning/evaluation.ts`. An implementation handoff cannot claim
 actual-model acceptance with pending output review or unresolved accounting.

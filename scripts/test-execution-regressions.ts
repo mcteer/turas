@@ -11,7 +11,7 @@ if(process.argv.length!==2)throw new Error("Execution regressions take no overri
 assertDeterministicTestMode();
 const staffing=verifyStaffingSuiteCoverage();
 const earlier=["unit","contracts","integration"].flatMap(group=>readdirSync(resolve("tests",group))
-  .filter(name=>name.endsWith(".test.ts")&&!/^(staffing|execution|report|support|expansion|gap|partner)-/.test(name)&&name!=="runtime-restart.test.ts")
+  .filter(name=>name.endsWith(".test.ts")&&!/^(staffing|execution|report|support|expansion|gap|partner|learning)-/.test(name)&&name!=="runtime-restart.test.ts")
   .map(name=>`tests/${group}/${name}`));
 const plans=earlier.filter(file=>file.startsWith("tests/integration/plan-"));
 await mkdir("local-artifacts/008",{recursive:true,mode:0o700});

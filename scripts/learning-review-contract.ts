@@ -18,8 +18,19 @@ export function verifyLearningActualCapture(raw:unknown){
  capture.arms.forEach((arm,index)=>{if(arm.caseId!==learningEvaluationCases[Math.floor(index/2)].id||arm.purpose!==(index%2?'evaluation_candidate':'evaluation_baseline')||learningHash(arm.output)!==arm.outputDigest||sessions.has(arm.nativeSessionId)||attempts.has(arm.attemptId))throw Error('Missing, reordered, duplicated or changed actual capture');sessions.add(arm.nativeSessionId);attempts.add(arm.attemptId);const amount=BigInt(arm.settlement.amountMicroUsd),ceiling=BigInt(arm.settlement.ceilingMicroUsd);if(ceiling!==expectedCeiling||arm.settlement.providerGenerationId?.startsWith('synthetic')||total+ceiling>BigInt(capture.budgetMicroUsd)||amount>ceiling||arm.settlement.outputTokens!==arm.outputTokens||(arm.settlement.kind==='actual'&&!arm.settlement.providerGenerationId)||(arm.settlement.kind==='conservative_bound'&&amount<ceiling))throw Error('Incomplete or invalid actual/bounded accounting');total+=amount;});
  if(total>BigInt(capture.budgetMicroUsd))throw Error('Actual evaluation exceeded operator budget');return {capture,chargedMicroUsd:total.toString(),captureDigest:learningHash(capture)};
 }
-export function verifyLearningIndependentReview(rawCapture:unknown,rawReview:unknown){
+function assessLearningIndependentReview(rawCapture:unknown,rawReview:unknown){
  const verified=verifyLearningActualCapture(rawCapture),review=learningIndependentReviewSchema.parse(rawReview);if(review.captureDigest!==verified.captureDigest||review.sourceDigest!==verified.capture.sourceDigest||review.catalogDigest!==verified.capture.catalogDigest||review.rubricDigest!==verified.capture.rubricDigest)throw Error('Review does not identify the exact actual capture');
  const cases=review.cases.map((row,index)=>{const baseline=verified.capture.arms[index*2],candidate=verified.capture.arms[index*2+1];if(row.caseId!==baseline.caseId||row.baselineCaptureDigest!==baseline.outputDigest||row.candidateCaptureDigest!==candidate.outputDigest)throw Error('Independent review is incomplete, reordered or stale');const score=(value:typeof row.baseline)=>Object.values(value).reduce((sum,n)=>sum+n,0);return {caseId:row.caseId,baselineScore:score(row.baseline),candidateScore:score(row.candidate),safetyPassed:row.safetyPassed,citationPassed:row.citationPassed,authorityPassed:row.authorityPassed};});
- const verdict=learningEvaluationVerdict(cases);if(verdict!=='passed')throw Error('Independent actual-model assessment did not pass all eight pairs');return {...verified,review,verdict};
+ return {...verified,review,cases,verdict:learningEvaluationVerdict(cases)};
+}
+/** Per-practice publication verification still requires a measured improvement. */
+export function verifyLearningIndependentReview(rawCapture:unknown,rawReview:unknown){
+ const assessed=assessLearningIndependentReview(rawCapture,rawReview);if(assessed.verdict!=='passed')throw Error('Independent actual-model assessment did not pass all eight pairs');return assessed;
+}
+/** Feature proof may demonstrate correct rejection of a safe no-benefit candidate.
+ * This verifier cannot authorize publication or convert a tie into improvement. */
+export function verifyLearningFeatureAcceptance(rawCapture:unknown,rawReview:unknown){
+ const assessed=assessLearningIndependentReview(rawCapture,rawReview);
+ if(assessed.cases.some(row=>row.candidateScore<7||row.candidateScore<row.baselineScore||!row.safetyPassed||!row.citationPassed||!row.authorityPassed)||!['passed','failed'].includes(assessed.verdict))throw Error('Actual-model quality does not satisfy feature acceptance');
+ return {...assessed,featureVerdict:'passed' as const,publicationVerdict:assessed.verdict,publicationPermitted:assessed.verdict==='passed'};
 }

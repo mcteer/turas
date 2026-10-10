@@ -162,6 +162,11 @@ expectations are frozen separately from model context and grade both arms equall
 including clearly labeled additional safeguards. The genuine prior practice and
 FR-009 thresholds stay unchanged; prior batches remain visible and unaccepted.
 
+The user subsequently clarified SC-002: actual safe no-benefit rejection may
+establish feature proof, while per-practice publication still requires improvement.
+Feature verification reports quality and publication verdicts separately, rejecting
+unsafe, low-quality or regressing comparisons. Runtime publication policy is unchanged.
+
 ## Validation and delivery sequence
 
 [quickstart.md](quickstart.md) defines planned commands and expected evidence.

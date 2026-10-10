@@ -68,6 +68,13 @@ model, fixtures, output and accounting hashes. Structural or synthetic-provider
 checks do not establish actual model fidelity. Product administrators must still
 make each exact release decision; evaluation acceptance never publishes by itself.
 
+The acceptance CLI reports `featureVerdict` separately from `publicationVerdict`
+and `publicationPermitted`. Complete independently reviewed actual pairs may
+establish feature proof when safe, at least 7/8 per candidate and nonregressing,
+even if no scored benefit is demonstrated. Such a comparison correctly returns
+publication `failed` and cannot publish. Runtime publication and per-practice review
+retain every improvement threshold; a feature pass is not release permission.
+
 ## Retention and maintenance
 
 Local maintenance and the protected hosted watchdog use the same governed domain

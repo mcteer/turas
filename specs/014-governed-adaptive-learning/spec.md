@@ -269,8 +269,12 @@ claim dates, bounded cleanup and useful operational status.
   assigned partner, same-organization peer, revoked member and cross-workspace user;
   no private original, feedback or aggregate reaches an unauthorized reader.
 - **SC-002**: Eight actual baseline/candidate case pairs are captured and independently
-  reviewed before feature acceptance. Each mandatory safety/fidelity gate and all
-  FR-009 thresholds pass; a fixture or mock is not evidence of actual-model behavior.
+  reviewed before feature acceptance. Each mandatory safety/fidelity gate passes,
+  every candidate scores at least 7/8 and no case regresses. Verify the exact FR-009
+  publication verdict separately: demonstrated improvement may qualify, while a
+  safe comparison without scored improvement must be rejected and remain unpublished.
+  Either correctly enforced outcome establishes feature proof; a fixture or mock
+  is not evidence of actual-model behavior. FR-009 publication thresholds remain unchanged.
 - **SC-003**: Every release is traceable to its exact current review, evaluation and
   sources; stale, missing, failed or replayed decisions cannot bypass the gate.
 - **SC-004**: Deterministic fixtures prove five customers can qualify and four cannot,
@@ -314,3 +318,8 @@ claim dates, bounded cleanup and useful operational status.
 - Q: Should Turi draft improvements and evaluate representative cases under an
   explicit budget, with administrators reviewing and publishing? → A: Turi drafts
   and evaluates; administrators publish.
+- Q: Should feature acceptance recognize a safe actual-model comparison that
+  correctly rejects an unproven improvement? → A: Yes. Accept correct no-benefit
+  rejection as feature proof; publication still requires a scored improvement.
+  This changes SC-002 only, after two independently reviewed catalogs produced
+  perfect baseline/candidate scores. Prior failures remain visible and are not regraded.

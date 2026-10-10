@@ -77,7 +77,10 @@ Use `0 < approved-cap <= 25`; `<approved-cap>` is a placeholder, not authorizati
 Validate current provider pricing and a defensible per-call reservation before the
 first paid arm. Capture all eight actual baseline/candidate pairs, exact source/
 model/prompt/fixture/rubric hashes and usage/accounting. An independent reviewer
-assesses the actual captures under C08 and mandatory safety flags. Stop on unknown
+assesses the actual captures under C08 and mandatory safety flags. SC-002 feature
+proof can include a safe, nonregressing comparison correctly rejected for no scored
+benefit; this does not qualify it for publication under FR-009. The verifier reports
+feature and publication verdicts separately. Stop on unknown
 cost/dispatch, failure or insufficient budget; retain all failed/missing arms.
 After reviewing a failed run, a new full rerun needs fresh budget admission, never
 a silent paid retry. Existing authorization may cover manually admitted revisions

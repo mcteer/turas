@@ -9,6 +9,7 @@ import {requireOwnedLearningDatabase} from '../../scripts/learning-environment';
 import {learningCompletedEvaluation} from '../fixtures/learning/completed-evaluation';
 test.beforeEach(()=>{if(process.env.TURAS_LEARNING_UI_FIXTURE_READY!=='1')throw Error('Owned learning UI runner required');});
 test('human reviews all eight immutable capture pairs before final exact publication',async({page})=>{
+ test.setTimeout(120000); // Sixteen prepared arms and eight immutable human reviews in one journey.
  const fixture=await withLearningDatabase(learningCompletedEvaluation);
  await page.context().addCookies([{name:'turas_session',value:fixture.actors.admin.token,url:process.env.TURAS_UI_BASE_URL!,httpOnly:true,sameSite:'Lax'}]);
  await page.goto(`/learning/candidates/${fixture.candidate.id}`);await expect(page.getByRole('button',{name:'Publish Exact Evaluated Revision',exact:true})).toHaveCount(0);

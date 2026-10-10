@@ -433,3 +433,51 @@ under the original authorization after reviewed catalog/rubric correction.
 Prior confirmed spend plus this new cap is $24.993166, below $25, with no unknown
 reservations. No improved grade is predicted. Final-source build and seven-class
 benchmark checks are running; no completion is claimed for those checks yet.
+
+The final-source owned production build completed: actual eve compilation and
+Next production compilation both passed at
+`d439f5d3da4761280fc84819c027ae850f15daad90fcb56aced8ed3653c388c3`.
+The runtime copy was cleaned without changing the selected environment or workflow.
+
+### Reviewed v2 actual result and authorized feature-proof clarification
+
+The complete v2 actual batch captured sixteen arms at the `d439f5d...388c3`
+source above. Independent exact raw/context/output/session/accounting review scored
+every pair 8/8 with all safety/citation/authority flags passing. E01's baseline
+independently supplied the requested reproducibility safeguards and legitimately
+earned full marks. Batch cost was **$0.165310**, aggregate **$0.528476** across four
+retained batches, with zero unknown reservations. The strict publication verifier
+correctly rejected the comparison for no scored improvement; it was not accepted
+or regraded.
+
+The user explicitly clarified SC-002 to accept safe, correctly enforced no-benefit
+rejection as feature proof while retaining FR-009/C08 publication improvement gates.
+The feature verifier now checks complete exact reviewed captures, candidate minimum
+quality, no regression and mandatory flags, and reports feature and publication
+verdicts separately. The strict per-practice verifier and runtime release domain
+remain unchanged. Added tests reject unsafe/stale/low-quality/regressing feature
+captures and prove a perfect tie is still denied publication. A fresh final-source
+complete capture/review remains required after these changes; prior failures stay
+visible and do not become retrospective feature passes.
+
+### Final-source benchmark and first CI findings
+
+The completed `d439f5d...388c3` benchmark ran all seven classes with 100 operations
+each, no quota resets or paid provider calls. Respective p95 milliseconds were
+13.924, 27.983, 62.628, 41.589, 36.647, 43.815 and 13.775. The publication fixture
+setup took 567657.760 ms and is explicitly excluded from measured operations.
+All owned benchmark resources were cleaned.
+
+Draft PR 25 is open. First CI found generic discovery admitting owned-only learning
+suites, a 013 recovery runner initializing through 054 despite its 051 assertion,
+and WebKit timeouts. Corrections exclude learning suites only from earlier/generic
+integration discovery (the strict 18-suite owned learning gate still covers them),
+pin the owned 013 manifest to its specified 049→051 contract, and give the sixteen-
+arm/eight-review browser journey a bounded 120-second test deadline. Diagnostics
+now retain test definition locations when a timeout has no stack, without printing
+private DOM/assertion prose. The partner guide subset passed all twelve local
+checks across four projects before correction; its CI identity-refresh assertion
+now allows a bounded 15-second reload convergence without weakening the expected
+identity or authority check. Full learning UI and 013 recovery are running. Root/
+feature types and documentation hygiene passed. CI and final actual acceptance
+remain pending; these corrections do not establish hosted behavior.
