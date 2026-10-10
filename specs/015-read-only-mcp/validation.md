@@ -146,3 +146,15 @@ that cohort's fixed diagnostics in a private capture. It now forwards only the
 bounded project, phase, public test filename/line, fixed failure status/signatures
 and process-failure flag. It never forwards assertion messages, DOM snapshots,
 arguments or source prose. No retry or acceptance gate was relaxed.
+
+Release review found MCP retention wired only into the local worker. The protected
+hosted watchdog now starts an independent nonoverlapping thirty-second MCP cleanup
+timer, clears it on exit and drains its active tick. Six hosted-watchdog unit checks
+pass, including independence while conversation claiming stalls. The complete real
+eve native gate passed 25 checks with `hostedMcpCleanup:true`: after stopping the
+local worker, it created/revoked an owned synthetic credential, confirmed its hash
+was retained, then observed the disabled hosted adapter purge that hash while
+retaining both permanent management receipts. No model/provider call was introduced.
+This operational correction needs final-source CI and a renewed rehearsal before
+Production activation. The local nested learning WebKit cohort also passed with the
+focus regression; the remaining full regression cohorts are running.

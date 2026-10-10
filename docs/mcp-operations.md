@@ -57,7 +57,8 @@ worker deletes expired handles and leases in batches of at most 100 and purges
 revoked/expired credential hashes within twenty-four hours. Permanent minimal
 connection identities and exact create/revoke receipts remain; cleanup never revives
 access. Audit excludes arguments, credentials, private prose, source locations and
-customer names. An outage can leave usage incomplete; never replay a read to repair it.
+customer names. Cleanup runs independently every thirty seconds in the local worker
+and the protected hosted watchdog, including while exposure is disabled. An outage can leave usage incomplete; never replay a read to repair it.
 
 ## Validation and authorized release
 
