@@ -139,3 +139,10 @@ rollback. The complete five-file/four-configuration learning WebKit gate passed
 This establishes the reproduced focus defect and its fix, without pretending the
 older timeout-only captures identify their exact failing action. Finer fixed
 rollback phases are now reported on failure. Full final-source CI is required.
+
+On `ad9cc9a`, standalone learning WebKit passed in CI, but the nested MCP
+regression wrapper failed its learning WebKit cohort. The wrapper previously hid
+that cohort's fixed diagnostics in a private capture. It now forwards only the
+bounded project, phase, public test filename/line, fixed failure status/signatures
+and process-failure flag. It never forwards assertion messages, DOM snapshots,
+arguments or source prose. No retry or acceptance gate was relaxed.
