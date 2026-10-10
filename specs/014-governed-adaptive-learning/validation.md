@@ -481,3 +481,37 @@ now allows a bounded 15-second reload convergence without weakening the expected
 identity or authority check. Full learning UI and 013 recovery are running. Root/
 feature types and documentation hygiene passed. CI and final actual acceptance
 remain pending; these corrections do not establish hosted behavior.
+
+The corrected source
+`256062620c128852d6429423372b8d5d6714c28fa8a67d590b36bc6c971db861`
+passed all 77 domain checks and all 32 learning WebKit checks (five files, four
+projects, zero skips/failures). The pinned 013 recovery passed both empty→051 and
+049→051 paths at its own source fingerprint
+`8f148eaed9d6e4ad373b938d88ed4f929665fa6b44d1b9474c41ad5155cfe92c`.
+Workflow identities, committed replay, before-commit rollback, late admission
+denial, disabled retention and crash recovery all passed. Owned resources were
+cleaned. Independent review confirmed the feature/publication verifier separation
+does not loosen runtime release authority. The acceptance CLI computes the exact
+publication verdict; domain tests separately prove enforcement, and no CLI
+publication attempt is claimed.
+
+A fresh complete final-source actual batch is admitted at $24.47 within the original
+$25 authorization: prior confirmed spend $0.528476 plus the new cap is $24.998476.
+There are no unknown reservations or automatic paid retries. The corrected PR CI
+run is pending; no hosted release has been performed.
+
+### Final-source actual-model acceptance
+
+The complete fifth batch captured sixteen actual Grok 4.7 arms at source `256062620c128852d6429423372b8d5d6714c28fa8a67d590b36bc6c971db861`. Separate independent review verified exact capture/context/output identities and single-call accounting. All eight baseline/candidate pairs scored 8/8 with all safety, citation and authority checks passing. The exact-source verifier passed feature acceptance under the user-approved SC-002 clarification and returned `publicationVerdict: failed`, `publicationPermitted: false`; no publication was attempted. Runtime publication enforcement is established separately by deterministic checks, and hosted acceptance remains pending.
+
+Confirmed batch spend was $0.173692; all five retained batches total $0.702168 of the original $25 authorization, with no unknown reservations. Prior failed batches remain failed and were not regraded.
+
+CI run 38021143179 passed the current learning WebKit and regression gates. The existing execution WebKit gate timed out at the register submission transition (`tests/ui/execution-changes.spec.ts:19`); focused owned reproduction is in progress. This CI failure is not waived.
+
+### Required execution CI corrections
+
+Run 38021143179 also failed interrupted-provider paired restore because detached eve dev servers retained ten idle database connections after the Next supervisor stopped. The owned environment now isolates its supervisor process group and stops remaining processes only after matching their current directory to the still-owned disposable app. It preserves the selected root app/DB/workflow and does not terminate database sessions to force a snapshot. The real two-case recovery suite passed with exact matched stores and interrupted-provider no-redispatch assertions (008 source `14624f0cef45ef313f45a61267a8b84632d70bf103a368adfe6214bf6c00f6d6`). Fixed-category connection diagnostics remain private on failure.
+
+The browser runner drains app output asynchronously and prepares the unauthenticated command route before timed saves, asserting denial without actor/CSRF/customer data. Both focused register journeys passed against owned local Postgres; original assertions and save deadlines remain unchanged. The original runner also passed locally, so the CI timeout is not attributed solely to synchronous capture. An attempted Preview-backed local reproduction failed because its owner login cannot SET ROLE to runtime; using existing runtime credentials reached later workflow steps but exceeded the whole-case limit. These attempts are not acceptance evidence. Owned local Postgres establishes the focused proof without changing Preview/Production permissions.
+
+The current 014 source is `8ea08080acd70c7927332140c2279bc7d32f38f619e7d3fbeeb6e8d3305f5a2f`. Previous actual-model feature proof remains bound to source 25606262, and final-current-source acceptance is pending a complete capture and independent review after CI source corrections stabilize.

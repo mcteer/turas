@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { spawn,spawnSync,type ChildProcess } from "node:child_process";
-import { mkdir,mkdtemp,rm,symlink,writeFile } from "node:fs/promises";
+import { mkdir,mkdtemp,rm,symlink,writeFile,readdir,readlink } from "node:fs/promises";
 import {mkdirSync,writeFileSync,readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import { reserveOwnedEvalPort } from "./eval-port";
@@ -39,14 +39,43 @@ const sourceFiles = ["app","agent","lib","migrations","scripts","public","evals"
   "packages","report-templates","report-renderer","next.config.ts","next-env.d.ts","tsconfig.json","package.json"] as const;
 
 async function stopChild(child: ChildProcess | null): Promise<void> {
-  if (!child || child.exitCode !== null || child.signalCode !== null) return;
+  if (!child?.pid) return;
+  // The owned supervisor has its own process group. A parent exit alone does
+  // not prove Next/eve and maintenance descendants released their DB sockets.
+  const terminate=(signal:NodeJS.Signals)=>{try{process.kill(-child.pid!,signal);}catch(error){if((error as NodeJS.ErrnoException).code!=="ESRCH")throw error;}};
+  if(child.exitCode!==null||child.signalCode!==null){terminate("SIGKILL");return;}
   await new Promise<void>((done) => {
     let complete = false;
-    const finish = () => { if (complete) return;complete = true;clearTimeout(timer);done(); };
-    const timer = setTimeout(() => { child.kill("SIGKILL");finish(); },5_000);
+    const finish = () => { if (complete) return;complete = true;clearTimeout(timer);terminate("SIGKILL");done(); };
+    const timer = setTimeout(finish,5_000);
     child.once("exit",finish);
-    child.kill("SIGTERM");
+    terminate("SIGTERM");
   });
+}
+
+/** eve's dev server can detach from the Next supervisor. Match only processes
+ * whose current directory is the still-owned disposable app before signalling. */
+async function stopOwnedAppProcesses(appRoot:string):Promise<void>{
+  const within=(cwd:string)=>cwd===appRoot||cwd.startsWith(appRoot+"/");
+  const owned=async()=>{
+    const pids:number[]=[];
+    if(process.platform==="linux"){
+      for(const name of await readdir("/proc"))if(/^\d+$/.test(name)){
+        const pid=Number(name);if(pid===process.pid)continue;
+        const cwd=await readlink(`/proc/${pid}/cwd`).catch(()=>"");if(within(cwd))pids.push(pid);
+      }
+    }else{
+      const result=spawnSync("lsof",["-a","-d","cwd","+d",appRoot,"-Fpn"],{encoding:"utf8",timeout:10000});
+      if(result.error||![0,1].includes(result.status??-1))throw Error("Owned process inventory unavailable");
+      let pid=0;for(const line of result.stdout.split("\n")){if(/^p\d+$/.test(line))pid=Number(line.slice(1));else if(line.startsWith("n")&&within(line.slice(1))&&pid!==process.pid)pids.push(pid);}
+    }
+    return [...new Set(pids)];
+  };
+  const signal=(pid:number,value:NodeJS.Signals)=>{try{process.kill(pid,value);}catch(error){if((error as NodeJS.ErrnoException).code!=="ESRCH")throw error;}};
+  for(const pid of await owned())signal(pid,"SIGTERM");
+  const deadline=Date.now()+5000;
+  while(Date.now()<deadline){if(!(await owned()).length)return;await new Promise(done=>setTimeout(done,100));}
+  for(const pid of await owned())signal(pid,"SIGKILL");
 }
 
 function runGuardedScript(file: string,cwd: string,env: NodeJS.ProcessEnv,
@@ -209,7 +238,7 @@ export async function withPlanEvalEnvironment<T>(
       await portLease.release();
       child = spawn(process.execPath,["scripts/dev.mjs"],{
         cwd:appRoot,env:{...process.env,NODE_ENV:"development",PORT:port,NODE_OPTIONS:""},
-        stdio:["ignore","pipe","pipe"],
+        stdio:["ignore","pipe","pipe"],detached:true,
       });
       const capture = (chunk: Buffer) => { startupTail =
         (startupTail+chunk.toString("utf8")).slice(-200_000); };
@@ -233,7 +262,7 @@ export async function withPlanEvalEnvironment<T>(
         startupTail,{mode:0o600});
       throw new Error("Disposable app failed readiness");
     }
-    async function stop(): Promise<void> { await stopChild(child);child = null; }
+    async function stop(): Promise<void> { await stopChild(child);child = null;await stopOwnedAppProcesses(appRoot); }
     remaining();
     return await run({databaseName:name,appRoot,storeRoot,origin,start,stop,
       restart:async () => { await stop();await start(); },
@@ -251,6 +280,7 @@ export async function withPlanEvalEnvironment<T>(
   } finally {
     await portLease.release();
     await stopChild(child);
+    await stopOwnedAppProcesses(appRoot);
     await closeRuntimePool();
     for (const [key,value] of Object.entries(prior)) {
       if (value === undefined) delete process.env[key]; else process.env[key] = value;
