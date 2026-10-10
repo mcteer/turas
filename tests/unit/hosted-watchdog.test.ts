@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ heartbeat: vi.fn(), claim: vi.fn(), finish: vi.fn(), maintain: vi.fn() }));
+const mocks = vi.hoisted(() => ({ heartbeat: vi.fn(), claim: vi.fn(), finish: vi.fn(), maintain: vi.fn(),learning:vi.fn() }));
 vi.mock("../../lib/server/conversations/watchdog", () => ({ heartbeatWorker: mocks.heartbeat,
   claimDueJobs: mocks.claim, finishDueJob: mocks.finish }));
 vi.mock("../../lib/server/conversations/maintenance", () => ({ performMaintenance: mocks.maintain }));
+vi.mock("../../lib/server/learning/maintenance",()=>({runLearningMaintenanceTick:mocks.learning}));
 vi.mock("../../lib/server/config", () => ({ getServerConfig: () => ({ TURAS_ENVIRONMENT_ID: "synthetic-production" }) }));
 import { authorizeHostedWatchdog, runHostedWatchdog } from "../../lib/server/conversations/hosted-watchdog";
 afterEach(() => { vi.useRealTimers(); vi.resetAllMocks(); });
@@ -32,11 +33,14 @@ describe("hosted watchdog authentication", () => {
 describe("bounded hosted watchdog", () => {
   it("refreshes every five seconds for 65 seconds and records cancellation retries", async () => {
     vi.useFakeTimers();
+    mocks.learning.mockResolvedValue({processed:0,durationMs:0});
     mocks.claim.mockResolvedValue([]).mockResolvedValueOnce([{ attemptId: "synthetic-attempt" }]);
     mocks.maintain.mockRejectedValueOnce(new Error("synthetic native failure"));
     const running = runHostedWatchdog((() => { throw new Error("unused"); }) as Parameters<typeof runHostedWatchdog>[0]);
     await vi.advanceTimersByTimeAsync(65_000);
     await running;
+    expect(mocks.learning).toHaveBeenCalledTimes(3);
+    expect(mocks.learning.mock.calls.every(args=>typeof args[0].attachSession==='function')).toBe(true);
     expect(mocks.heartbeat).toHaveBeenCalledTimes(13);
     expect(mocks.claim).toHaveBeenCalledTimes(13);
     expect(mocks.claim.mock.calls.every(args => args[1] === 1)).toBe(true);

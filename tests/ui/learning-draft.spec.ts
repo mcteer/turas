@@ -1,0 +1,13 @@
+import AxeBuilder from '@axe-core/playwright';
+import {test,expect} from '@playwright/test';
+import {withLearningDatabase} from '../fixtures/learning/environment';
+import {learningTestActors} from '../fixtures/learning/setup';
+import {DEMO_IDS} from '../../lib/server/bootstrap-ids';
+test.beforeEach(()=>{if(process.env.TURAS_LEARNING_UI_FIXTURE_READY!=='1')throw Error('Owned learning UI runner required');});
+test('internal author prepares and cancels a current-original draft without a paid call',async({page})=>{
+ const actors=await withLearningDatabase(learningTestActors);await page.context().addCookies([{name:'turas_session',value:actors.member.token,url:process.env.TURAS_UI_BASE_URL!,httpOnly:true,sameSite:'Lax'}]);await page.goto('/learning/drafts/new');await page.getByRole('combobox',{name:'Customer',exact:true}).selectOption(DEMO_IDS.sharedCustomer);await page.getByRole('group',{name:'Selected Accepted Originals',exact:true}).getByRole('checkbox').first().check();await page.getByRole('textbox',{name:'Proposed Reuse Basis',exact:true}).fill('Synthetic permission, subject to independent rights review');await page.getByRole('textbox',{name:'Question for Turi',exact:true}).fill('Propose a sanitized practice from the selected original');await page.getByRole('textbox',{name:'Maximum Spend (USD)',exact:true}).fill('25');await page.getByRole('button',{name:'Prepare Draft',exact:true}).click();await expect(page.getByRole('button',{name:'Start Prepared Draft',exact:true})).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);expect((await new AxeBuilder({page}).analyze()).violations.filter(v=>['serious','critical'].includes(v.impact??'')).map(v=>v.id)).toEqual([]);
+ const id=new URL(page.url()).pathname.split('/').at(-1);await page.getByRole('button',{name:'Cancel Draft',exact:true}).click();await expect(page.getByRole('heading',{name:'Cancelled',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Start Prepared Draft',exact:true})).toHaveCount(0);
+ await withLearningDatabase(async db=>{expect((await db.query('SELECT count(*)::int n FROM learning_budget_reservations r JOIN learning_attempts a ON a.id=r.attempt_id WHERE a.id=$1',[id])).rows[0].n).toBe(0);});
+ await page.context().addCookies([{name:'turas_session',value:actors.partner.token,url:process.env.TURAS_UI_BASE_URL!,httpOnly:true,sameSite:'Lax'}]);await page.goto('/learning/drafts/new');await expect(page.getByText('Draft preparation is available to internal members.',{exact:true})).toBeVisible();await expect(page.getByRole('textbox',{name:'Maximum Spend (USD)',exact:true})).toHaveCount(0);
+});

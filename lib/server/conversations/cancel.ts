@@ -8,6 +8,9 @@ import { readOwnedBinding } from "./binding";
 import type { PoolClient } from "pg";
 import { staffingScopeForConversation } from "../staffing/context";
 import { lockStaffingActor } from "../staffing/policy";
+import { enqueueLearningRetirement } from '../learning/invalidation';
+import { scheduleLearningPayloadPurge } from '../learning/retention';
+import { lockInternalLearningActor } from '../learning/policy';
 
 export async function requestCancellation(
   session: CurrentSession, nativeSessionId: string, turnId: string,
@@ -27,6 +30,11 @@ export async function requestCancellation(
       "SELECT schema_version FROM turas_environment LIMIT 1");
     if ((marker.rows[0]?.schema_version ?? 0) >= 34) {
       const feature = await conversationFeature(client, id);
+      if(feature.kind==='learning'){
+        if(feature.scope.ownerMembershipId!==session.membershipId)throw hiddenRecord();
+        await lockInternalLearningActor(client,session,feature.scope.customerId);
+        await client.query("SET LOCAL lock_timeout='2000ms'");await client.query("SET LOCAL statement_timeout='5000ms'");
+      }
       if (feature.kind === "execution") {
         if (feature.scope.ownerMembershipId !== session.membershipId) throw hiddenRecord();
         await lockExecutionActor(client, session, feature.scope.customerId, "read");
@@ -66,6 +74,11 @@ export async function requestCancellation(
       await client.query(`UPDATE expansion_advice_attempts SET state='cancelled',failure_code='cancelled',settled_at=COALESCE(settled_at,clock_timestamp()),updated_at=clock_timestamp()
         WHERE response_attempt_id=$1 AND conversation_id=$2 AND environment_id=$3 AND workspace_id=$4 AND owner_membership_id=$5 AND state IN ('prepared','running','unconfirmed')`,
       [attempt.rows[0].id,id,getServerConfig().TURAS_ENVIRONMENT_ID,session.workspaceId,session.membershipId]);
+    }
+    if((marker.rows[0]?.schema_version??0)>=54){
+      const learning=(await client.query(`UPDATE learning_attempts SET state='cancelled',failure_code='cancelled',settled_at=COALESCE(settled_at,clock_timestamp()),version=version+1
+        WHERE response_attempt_id=$1 AND conversation_id=$2 AND environment_id=$3 AND workspace_id=$4 AND actor_membership_id=$5 AND state IN('prepared','admitted','running','unconfirmed') RETURNING id`,[attempt.rows[0].id,id,getServerConfig().TURAS_ENVIRONMENT_ID,session.workspaceId,session.membershipId])).rows;
+      for(const item of learning){await scheduleLearningPayloadPurge(client,item.id,'attempt','obsolete');await enqueueLearningRetirement(client,session.workspaceId,item.id,new Date());}
     }
     if ((marker.rows[0]?.schema_version ?? 0) >= 43) {
       await client.query(`UPDATE support_advice_attempts SET state='cancelled',failure_code='cancelled',settled_at=clock_timestamp(),updated_at=clock_timestamp()

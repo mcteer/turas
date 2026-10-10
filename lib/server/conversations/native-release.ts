@@ -8,10 +8,12 @@ import { prepareStaffingNativeRelease, assertStaffingNativeRelease, type Staffin
 import { prepareExecutionNativeRelease, assertExecutionNativeRelease, type ExecutionNativeRelease } from "../execution/native-release";
 import { prepareSupportNativeRelease, assertSupportNativeRelease, type SupportNativeRelease } from "../support/native-release";
 import {prepareExpansionNativeRelease,assertExpansionNativeRelease,type ExpansionNativeRelease} from "../expansion/native-release";
-export type GovernedNativeRelease = (StaffingNativeRelease & { kind: "staffing" }) | (ExecutionNativeRelease & { kind: "execution" }) | (SupportNativeRelease & { kind: "support" }) | (ExpansionNativeRelease & {kind:"expansion"});
+import { prepareLearningNativeRelease,assertLearningNativeRelease,type LearningNativeRelease } from '../learning/native-release';
+export type GovernedNativeRelease = (StaffingNativeRelease & { kind: "staffing" }) | (ExecutionNativeRelease & { kind: "execution" }) | (SupportNativeRelease & { kind: "support" }) | (ExpansionNativeRelease & {kind:"expansion"}) | (LearningNativeRelease & {kind:'learning'});
 type Expected = { actor?: CurrentSession; nativeSessionId?: string; responseAttemptId?: string; incomingTurnId?: string; allowUnclaimedTurn?: boolean };
 export async function prepareGovernedNativeRelease(conversationId: string, expected?: Expected): Promise<GovernedNativeRelease | null> {
   const feature = await withTransaction(db => conversationFeature(db, conversationId));
+  if(feature.kind==='learning'){const release=await prepareLearningNativeRelease(conversationId,expected);if(!release)throw hiddenRecord();return {...release,kind:'learning'};}
   if(feature.kind==="expansion"){const release=await prepareExpansionNativeRelease(conversationId,expected);if(!release)throw hiddenRecord();return {...release,kind:"expansion"};}
   if (feature.kind === "support") { const release = await prepareSupportNativeRelease(conversationId, expected); if (!release) throw hiddenRecord(); return { ...release, kind: "support" }; }
   if (feature.kind === "execution") { const release = await prepareExecutionNativeRelease(conversationId, expected); if (!release) throw hiddenRecord(); return { ...release, kind: "execution" }; }
@@ -29,6 +31,7 @@ export async function prepareGovernedReleaseForNative(nativeSessionId: string, e
 export async function assertGovernedNativeRelease(db: PoolClient, prepared: GovernedNativeRelease, actor?: CurrentSession) {
   const feature = await conversationFeature(db, prepared.conversationId);
   if (feature.kind !== prepared.kind) throw hiddenRecord();
+  if(prepared.kind==='learning')return assertLearningNativeRelease(db,prepared,actor);
   if(prepared.kind==="expansion")return assertExpansionNativeRelease(db,prepared,actor);
   if (prepared.kind === "support") return assertSupportNativeRelease(db, prepared, actor);
   return prepared.kind === "execution" ? assertExecutionNativeRelease(db, prepared, actor) : assertStaffingNativeRelease(db, prepared, actor);

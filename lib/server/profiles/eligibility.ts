@@ -1,3 +1,4 @@
+import {learningPublishedReuseState} from '../learning/published-reuse';
 import { createHash } from "node:crypto";
 import type { PoolClient } from "pg";
 import type { ProfilePayload } from "../../contracts/profile-payloads";
@@ -70,6 +71,9 @@ export async function knowledgeLineageIsCurrent(client: PoolClient, revisionId: 
     FROM knowledge_lineage l JOIN knowledge_contributions c ON c.id=l.contribution_id
     WHERE l.revision_id=$1 ORDER BY l.ordinal`, [revisionId]);
   if (lineage.rows.length < 1 || lineage.rows.length > 20) return false;
+  const reuse=await learningPublishedReuseState(client,revisionId);
+  if(!reuse.eligible)return false;
+  if(reuse.independentRights)return true;
   const author = lineage.rows[0];
   const authority = await client.query(`SELECT 1 FROM memberships m
     JOIN principals p ON p.id=m.principal_id AND p.active

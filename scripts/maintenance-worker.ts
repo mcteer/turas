@@ -1,3 +1,5 @@
+import {learningOperationalMetric} from '../lib/server/learning/observability';
+import {runLearningMaintenanceTick} from '../lib/server/learning/maintenance';
 import {processExpansionNativeRetirement} from "../lib/server/expansion/native-retirement";
 import {runExpansionCleanupTick,expireExpansionReceipts,settleDueExpansionAdvice,runExpansionAdviceCleanupTick,minimizeExpansionAdviceMetadata} from "../lib/server/expansion/maintenance";
 import { randomUUID } from "node:crypto";
@@ -36,6 +38,10 @@ let executionScanning = false;
 let supportScanning = false;
 let scanning = false;
 let stopping = false;
+let learningTick:Promise<unknown>|null=null;
+function scheduleLearningMaintenance(){if(stopping||learningTick)return;learningTick=runLearningMaintenanceTick().then(result=>{learningOperationalMetric('maintenance_duration_ms',Math.min(1000000,result.durationMs));learningOperationalMetric('maintenance_records',result.processed);}).catch(()=>{learningOperationalMetric('maintenance_failed',1);}).finally(()=>{learningTick=null;});}
+const learningTimer=setInterval(scheduleLearningMaintenance,30000);
+void scheduleLearningMaintenance();
 let partnerTick:Promise<unknown>|null=null;
 function schedulePartnerMaintenance(){if(stopping||partnerTick)return;partnerTick=runPartnerMaintenanceTick().catch(()=>undefined).finally(()=>{partnerTick=null;});}
 const partnerTimer=setInterval(schedulePartnerMaintenance,30000);
@@ -51,6 +57,7 @@ function fatal(error:unknown): void {
   const permission=error instanceof Error?/^permission denied for (?:table|relation|schema) ([a-z_]+)$/.exec(error.message)?.[1]:undefined;
   console.error(JSON.stringify({kind:'turas_worker_failure',worker:'maintenance',code,...(permission?{relation:permission}:{})}));
   clearInterval(timer);
+  clearInterval(learningTimer);
   clearInterval(retrievalTimer);
   clearInterval(cleanupTimer);
   clearInterval(workforceTimer);
@@ -166,6 +173,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
     stopping = true;
     clearInterval(timer);
     clearInterval(partnerTimer);
+    clearInterval(learningTimer);
     clearInterval(retrievalTimer);
     clearInterval(cleanupTimer);
     clearInterval(workforceTimer);
@@ -173,6 +181,6 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
     clearInterval(workforceHeartbeatTimer);
     clearInterval(executionTimer);
     clearInterval(supportTimer);
-    void Promise.resolve(partnerTick).finally(()=>closeRuntimePool()).finally(() => process.exit());
+    void Promise.allSettled([partnerTick,learningTick]).finally(()=>closeRuntimePool()).finally(() => process.exit());
   });
 }

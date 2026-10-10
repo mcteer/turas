@@ -20,6 +20,6 @@ sources. Never invent a citation or imply complete coverage.`,
 
 export default defineDynamic({ events: {
   async "turn.started"(_event, ctx) {
-    return ["staffing", "execution", "expansion"].includes((await responseFeature(ctx.session.auth.current))?.kind ?? "") ? null : instructions;
+    return ["staffing", "execution", "expansion", "learning"].includes((await responseFeature(ctx.session.auth.current))?.kind ?? "") ? null : instructions;
   },
 } });

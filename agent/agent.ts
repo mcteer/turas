@@ -13,6 +13,9 @@ import { wrapStaffingModel } from "../lib/server/staffing/model-budget";
 const selectedModel = "spacexai/grok-4.7";
 
 export default defineAgent({
+  // Turas owns durable, authorized captures. Retiring a native session must
+  // also remove eve's model/tool payloads and replay log.
+  experimental: { workflow: { retention: 0 } },
   model: defineDynamic({ events: {
     "session.started": () => selectedModel,
     async "step.started"(event, ctx) {

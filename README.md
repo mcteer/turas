@@ -127,15 +127,19 @@ See [operations](docs/partner-operations.md), the
 internal Partner Delivery page/API checks passed; full partner-role and workflow
 acceptance remains unverified. See the [recovery record](docs/production-recovery-2026-10-09.md).
 
-### Governed Adaptive Learning — Planning
+### Governed Adaptive Learning
 
 Feature 014 has a [specification](specs/014-governed-adaptive-learning/spec.md),
 [design](specs/014-governed-adaptive-learning/plan.md) and
-[66 implementation tasks](specs/014-governed-adaptive-learning/tasks.md). It plans
+[66 implementation tasks](specs/014-governed-adaptive-learning/tasks.md). It adds
 private feedback, budgeted Turi improvements and paired evaluation, administrator
 publication/rollback, internal-only quarterly outcome metrics and bounded refresh
-monitoring. Implementation has not started; see the
-[model-switch handoff](specs/014-governed-adaptive-learning/handoff.md).
+monitoring. Implementation acceptance is in progress. Schema 052–054, runtime
+grants and explicit workspace activation are required; new workspaces start
+disabled. See [learning operations](docs/learning-operations.md), the
+[validation record](specs/014-governed-adaptive-learning/validation.md) and
+[handoff](specs/014-governed-adaptive-learning/handoff.md) for local evidence and
+remaining actual-model and hosted acceptance.
 
 ## Technology
 

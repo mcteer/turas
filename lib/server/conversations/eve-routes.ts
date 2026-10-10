@@ -14,6 +14,7 @@ import { authorizeExecutionRetirement } from "../execution/native-retirement";
 import {authorizeExpansionRetirement} from "../expansion/native-retirement";
 import { authorizeSupportRetirement } from "../support/native-retirement";
 import { authorizeNativeRetirement } from "../artifacts/native-retirement";
+import { authorizeLearningRetirement } from '../learning/native-retirement';
 
 const createSchema = z.object({ operationId: z.uuid() }).strict();
 const sendSchema = z.object({ message: z.string(),
@@ -287,7 +288,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
           try {
             const sessionId = args.params.sessionId;
             if (!sessionId || !/^wrun_[A-Za-z0-9_-]+$/.test(sessionId) ||
-                !await authorizeNativeRetirement(request,sessionId) && !await authorizeExecutionRetirement(request,sessionId) && !await authorizeSupportRetirement(request,sessionId) && !await authorizeExpansionRetirement(request,sessionId)) return closed();
+                !await authorizeNativeRetirement(request,sessionId) && !await authorizeExecutionRetirement(request,sessionId) && !await authorizeSupportRetirement(request,sessionId) && !await authorizeExpansionRetirement(request,sessionId) && !await authorizeLearningRetirement(request,sessionId)) return closed();
             return native(request,args);
           } catch (error) { return nativeFailure(error); }
         } };

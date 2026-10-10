@@ -243,3 +243,30 @@ DO $$ DECLARE t text; BEGIN
   IF to_regclass('public.partner_learning_assignments') IS NOT NULL THEN GRANT EXECUTE ON FUNCTION turas_partner_purge_learning(text,integer) TO turas_runtime;END IF;
  END IF;
 END $$;
+
+DO $$ DECLARE t text; BEGIN
+ IF to_regclass('public.learning_feedback') IS NOT NULL THEN
+  REVOKE INSERT,UPDATE,DELETE ON learning_workspace_state FROM turas_runtime;
+  REVOKE INSERT,UPDATE,DELETE ON learning_legacy_heads FROM turas_runtime;
+  GRANT EXECUTE ON FUNCTION turas_learning_purge(text,integer) TO turas_runtime;
+  FOR t IN SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename LIKE 'learning_%' LOOP
+   EXECUTE format('REVOKE DELETE ON TABLE %I FROM turas_runtime',t);
+  END LOOP;
+  FOREACH t IN ARRAY ARRAY['learning_feedback_revisions','learning_feedback_payloads','learning_feedback_dispositions','learning_disposition_payloads','learning_feedback_links','learning_candidate_reviews','learning_review_payloads','learning_rollback_records','learning_rollback_payloads','learning_dependencies','learning_command_receipts','learning_bindings','learning_evaluation_cases','learning_evaluation_payloads','learning_attempt_payloads','learning_read_receipts','learning_native_event_receipts','learning_budget_reservations','learning_reservation_releases','learning_budget_settlements','learning_settlement_payloads','learning_model_dispatches','learning_case_reviews','learning_case_review_payloads','learning_release_decisions','learning_measurement_revisions','learning_measurement_payloads','learning_measurement_approvals','learning_measurement_review_payloads','learning_cohort_releases','learning_cohort_dependencies','learning_native_retirement_receipts'] LOOP
+   EXECUTE format('REVOKE UPDATE ON TABLE %I FROM turas_runtime',t);
+  END LOOP;
+ END IF;
+END $$;
+
+-- Row locks require an UPDATE privilege; immutable triggers still reject any write.
+DO $$ BEGIN
+ IF to_regclass('public.learning_budget_reservations') IS NOT NULL THEN
+  GRANT UPDATE(id) ON learning_budget_reservations TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.learning_workspace_state') IS NOT NULL THEN
+  GRANT EXECUTE ON FUNCTION turas_learning_lock_state(text,uuid) TO turas_runtime;
+ END IF;
+END $$;

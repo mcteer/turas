@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.cache/turas-learning.tsbuildinfo"
+  },
+  "include": [
+    "next-env.d.ts",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "agent/**/*.ts",
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "lib/**/*.ts",
+    "evals/**/*.ts",
+    "next.config.ts",
+    "vitest.config.ts",
+    "playwright.config.ts",
+    "report-renderer/render.ts",
+    "report-renderer/layout.ts",
+    "tests/**/*.ts",
+    "scripts/*learning*.ts"
+  ]
+}

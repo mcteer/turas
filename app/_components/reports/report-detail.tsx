@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import {LearningFeedbackButton} from '../learning/feedback-button';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import type {ReportDocument} from '../../../lib/reports/document';
 import {WeeklyReportContent} from './weekly-review';
@@ -41,7 +42,7 @@ export function ReportDetail({customerId,reportId,revisionId}:{customerId:string
   {detail && <><dl className="report-summary"><div><dt>Period</dt><dd>{detail.period.fromDate} — {detail.period.toDate}</dd></div><div><dt>Audience</dt><dd>{detail.audience.replaceAll('_',' ')}</dd></div><div><dt>Snapshot</dt><dd>Revision {detail.revisionNumber}{detail.partial?' · Partial Period':''}</dd></div><div><dt>Captured</dt><dd>{new Date(detail.asOf).toLocaleString()} · {detail.timezone}</dd></div></dl>
    {detail.visibility==='review_required' && <div className="profile-state"><h2>New Delivery Inputs</h2><p>This dated snapshot has new eligible inputs. Create and review a fresh revision before sending.</p></div>}
    {!detail.document && <div className="profile-state"><h2>Content Withheld</h2><p>Current evidence or brand approval no longer permits release of this content.</p></div>}
-   {detail.document && <><div className="report-actions">
+   {detail.document && <>{detail.visibility==='current'&&<LearningFeedbackButton kind="report" id={reportId} revisionId={detail.revisionId}/>}<div className="report-actions">
      {!revisionId&&session?.membership.kind==='internal' && detail.state==='draft' && <button className="primary-button" disabled={commands.busy||commands.uncertain} onClick={()=>void commands.save(`/api/reports/${reportId}/commands`,{action:'render',expectedVersion:detail.version,rationale:'Validate the exact report for review'})}>Prepare Review</button>}
     {detail.canReview && detail.state==='review_ready' && <button className="primary-button" disabled={commands.busy||commands.uncertain} onClick={()=>void openPreview('publish')}>Review Publication</button>}
     {detail.canReview && !detail.publicationId && <button className="secondary-button" disabled={commands.busy||commands.uncertain} onClick={()=>void openPreview('reject')}>Reject Revision</button>}

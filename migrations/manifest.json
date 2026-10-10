@@ -1,5 +1,5 @@
 {
-  "version": 51,
+  "version": 54,
   "migrations": [
     {
       "file": "001-identity-foundation.cjs",
@@ -204,6 +204,18 @@
     {
       "file": "051-partner-learning.cjs",
       "sha256": "44084ee30c7f53c75fa25aa8d8b0ce6f34f5bb30ddcbb8e63d52087b8960b7a2"
+    },
+    {
+      "file": "052-learning-governance.cjs",
+      "sha256": "02cc4f6e00df34c8dde47aacc7eb865249feffaa831240ea9eb7356f9249cbec"
+    },
+    {
+      "file": "053-learning-evaluation.cjs",
+      "sha256": "fe2e9705af49c115f0010cbf3319c320f763c2a0e4202aa712262be0aede0c85"
+    },
+    {
+      "file": "054-learning-metrics.cjs",
+      "sha256": "7c006735b76b7394bcd9a8329fda4bfc87c59237d19a39da1fb86aaa9345bce0"
     }
   ]
 }

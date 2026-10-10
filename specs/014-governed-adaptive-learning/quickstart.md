@@ -1,7 +1,7 @@
 # 014 Implementation Validation Guide
 
-This is a planned command contract. New `learning:*` commands below do not exist
-until implementation; this planning turn does not run them or claim their results.
+These commands use owned synthetic environments. See [validation](validation.md)
+for actual outcomes; the commands themselves do not establish acceptance.
 
 ## Prerequisites and feature selection
 
@@ -21,7 +21,7 @@ approval does not carry forward.
 
 ## Owned acceptance commands
 
-Implement one canonical `scripts/learning-suites.json` manifest. Each runner must
+The canonical `scripts/learning-suites.json` manifest defines the required suites. Each runner must
 fail if its suite is empty, skips mandatory tests or omits a registered test. Every
 mutable fixture uses an owned synthetic database and private runtime copy beneath
 ignored `local-artifacts/014/`; stop/remove owned resources on normal/error/signal
@@ -32,11 +32,11 @@ npm run test:learning
 npm run learning:native:check
 npm run learning:ui:check
 npm run learning:recovery:check
-npm run learning:regression:check
+npm run test:learning:regressions
 npm run benchmark:learning
 npm run typecheck
-npm run build:eve:check
-npm run build:web:check
+npm run typecheck:learning
+npm run build:learning:check
 npm run check:docs
 ```
 
@@ -66,11 +66,11 @@ Expected evidence:
 
 ## Actual-model acceptance and review
 
-After explicit new operator budget approval, the planned invocation is:
+After explicit operator authorization, admit a fresh evaluation budget:
 
 ```sh
-npm run eval:learning -- --live --budget-usd <approved-cap>
-npm run eval:learning:verify -- --review <private-reviewed-capture-path>
+TURAS_ALLOW_LIVE_MODEL_TESTS=1 npm run eval:learning -- --live --budget-usd <approved-cap>
+npm run learning:review:verify -- --capture <private-capture-path> --review <private-review-path>
 ```
 
 Use `0 < approved-cap <= 25`; `<approved-cap>` is a placeholder, not authorization.
@@ -79,7 +79,10 @@ first paid arm. Capture all eight actual baseline/candidate pairs, exact source/
 model/prompt/fixture/rubric hashes and usage/accounting. An independent reviewer
 assesses the actual captures under C08 and mandatory safety flags. Stop on unknown
 cost/dispatch, failure or insufficient budget; retain all failed/missing arms.
-A new full rerun needs its own explicit budget, never a silent paid retry.
+After reviewing a failed run, a new full rerun needs fresh budget admission, never
+a silent paid retry. Existing authorization may cover manually admitted revisions
+when aggregate confirmed spend plus the new cap stays within the authorized total;
+retain prior accounting and stop if any cost or dispatch is unknown.
 
 ## Walkthrough checkpoints
 

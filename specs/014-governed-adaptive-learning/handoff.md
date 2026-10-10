@@ -1,4 +1,4 @@
-# 014 Planning Handoff
+# 014 Implementation Handoff
 
 Date: 2026-10-09. Canonical checkout `/Users/mcteer/Projects/turas`, branch
 `014-governed-adaptive-learning`, based on merged 013 at
@@ -12,10 +12,13 @@ export SPECIFY_FEATURE_DIRECTORY=specs/014-governed-adaptive-learning
 
 Invoke `$speckit-implement`. Read [spec](spec.md), [plan](plan.md),
 [tasks](tasks.md), [data model](data-model.md) and all four [contracts](contracts/).
-There are 66 unchecked tasks: 3 setup, 7 foundation, 12 US1, 12 US2, 10 US3,
+The original plan contains 66 tasks: 3 setup, 7 foundation, 12 US1, 12 US2, 10 US3,
 7 US4 and 15 acceptance/release. All 26 functional requirements and 7 buildable
 success criteria have task mappings. US1 is the first MVP checkpoint; full completion
 requires all four stories and the documented acceptance gates.
+Implementation has since resumed. Only T062 (actual-model acceptance), T065
+(reviewable PR) and conditional T066 (authorized hosted release) remain unchecked.
+Consult [validation](validation.md) for current source-bound outcomes.
 
 ## Clarification and readiness
 
@@ -80,3 +83,25 @@ This was an authorized repair of already merged features, not 014 implementation
 No 014 runtime, migration or model call was made. Release instructions now require
 required database changes and actual post-merge Production verification. Keep those
 changes in the next reviewed documentation/feature PR; do not lose them at model switch.
+
+## Implementation preflight
+
+Implementation resumed in this canonical checkout on 2026-10-09. Feature selection
+is `specs/014-governed-adaptive-learning`; Git branch remains
+`014-governed-adaptive-learning`, based on main's schema 051. Installed Next route
+and client/server guides and eve context/lifecycle routing were read before edits.
+No sibling checkout, hosted release or root model change was made. The owned
+fixture runner checks root environment/model identity before and after cleanup and
+uses its own copied workflow runtime. See [validation](validation.md) for narrow
+checks already completed; the full implementation and acceptance gates remain open.
+
+## Current acceptance handoff
+
+The $25 actual-model budget and a separate independent output review agent are
+explicitly authorized for 014. Do not reuse 011 authorization or start a paid retry.
+The capture runner and verifier are implemented and its sixteen-arm synthetic
+runner check passed. The complete domain/native manifest passes 75 checks in
+18 suites. Production remains schema 051; no 014 hosted acceptance is claimed.
+Read [operations](../../docs/learning-operations.md) before a separately authorized
+release. Source loss retention uses original lifecycle event times and preserves
+earlier captured deadlines. All owned resources remain inside this checkout.

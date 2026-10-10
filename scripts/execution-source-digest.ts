@@ -8,17 +8,17 @@ export async function executionSourceDigest(root = process.cwd()) {
   return featureSourceDigest("008", root);
 }
 
-export async function featureSourceDigest(feature: "008" | "010" | "011" | "012" | "013", root = process.cwd()) {
+export async function featureSourceDigest(feature: "008" | "010" | "011" | "012" | "013" | "014", root = process.cwd()) {
   const digest = createHash("sha256");
   const ignored = new Set(["node_modules", ".eve", ".next", "dist", "build", "coverage", "test-results", "playwright-report"]);
   const roots = ["app", "agent", "lib", "migrations", "scripts", "public", "evals", "tests", "packages", "infra", "docs", ".github",
-    `specs/${feature === "008" ? "008-engagement-execution" : feature === "010" ? "010-tam-support-guidance" : feature === "011" ? "011-product-expansion" : feature === "013" ? "013-partner-enablement" : "012-product-gap-feedback"}`, "package.json", "package-lock.json", "next.config.ts", "tsconfig.json", "tsconfig.execution.json", "tsconfig.expansion.json", ...(feature === "012" ? ["tsconfig.product-gaps.json"] : feature === "013" ? ["tsconfig.partner-enablement.json"] : []), "vitest.config.ts",
+    `specs/${feature === "008" ? "008-engagement-execution" : feature === "010" ? "010-tam-support-guidance" : feature === "011" ? "011-product-expansion" : feature === "013" ? "013-partner-enablement" : feature === "014" ? "014-governed-adaptive-learning" : "012-product-gap-feedback"}`, "package.json", "package-lock.json", "next.config.ts", "tsconfig.json", "tsconfig.execution.json", "tsconfig.expansion.json", ...(feature === "012" ? ["tsconfig.product-gaps.json"] : feature === "013" ? ["tsconfig.partner-enablement.json"] : feature === "014" ? ["tsconfig.learning.json"] : []), "vitest.config.ts",
     "playwright.config.ts", "AGENTS.md", "README.md", "ROADMAP.md", "CONTRIBUTING.md", ".specify/memory/constitution.md"];
   async function visit(path: string): Promise<void> {
     const full = join(root, path), info = await lstat(full).catch(error => {
       if (error.code === "ENOENT") return null; throw error;
     });
-    const featureDirectory = `specs/${feature === "008" ? "008-engagement-execution" : feature === "010" ? "010-tam-support-guidance" : feature === "011" ? "011-product-expansion" : feature === "013" ? "013-partner-enablement" : "012-product-gap-feedback"}`;
+    const featureDirectory = `specs/${feature === "008" ? "008-engagement-execution" : feature === "010" ? "010-tam-support-guidance" : feature === "011" ? "011-product-expansion" : feature === "013" ? "013-partner-enablement" : feature === "014" ? "014-governed-adaptive-learning" : "012-product-gap-feedback"}`;
     if (!info || path === `${featureDirectory}/validation.md`) return;
     if (info.isSymbolicLink()) throw new Error("Live source fingerprint refuses symlinks");
     if (info.isDirectory()) {

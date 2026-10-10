@@ -7,12 +7,15 @@ import { loadSkill } from "eve/tools/load_skill";
 import { z } from "zod";
 import { authorizeStaffingSkill } from "../../lib/server/staffing/skill-scope";
 import { loadStaffingSkill } from "../../lib/server/staffing/skill-load";
+import { runLearningRead } from '../../lib/server/learning/tools';
 
 export default defineTool({ ...loadSkill,
   inputSchema: z.object({ skill: z.string().min(1).max(120) }).strict(),
   outputSchema: z.string(),
   availableInSubagents: false,
   async execute(input, ctx) {
+    if ((await responseFeature(ctx.session.auth.current))?.kind === 'learning')
+      return z.string().parse(await runLearningRead(ctx.session.auth.current,'load_skill',input,ctx.callId));
     if ((await responseFeature(ctx.session.auth.current))?.kind === "expansion")
       return z.string().parse(await runExpansionRead(ctx.session.auth.current,"load_skill",{name:input.skill},ctx.callId));
     if ((await responseFeature(ctx.session.auth.current))?.kind === "support")

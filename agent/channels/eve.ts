@@ -8,11 +8,12 @@ import { authorizeExecutionRetirement } from "../../lib/server/execution/native-
 import {authorizeExpansionRetirement} from "../../lib/server/expansion/native-retirement";
 import { authorizeSupportRetirement } from "../../lib/server/support/native-retirement";
 import { authorizeNativeRetirement } from "../../lib/server/artifacts/native-retirement";
+import { authorizeLearningRetirement } from '../../lib/server/learning/native-retirement';
 
 const appCookieAuth: AuthFn<Request> = async (request): Promise<Awaited<ReturnType<AuthFn<Request>>>> => {
   const retirementSession = new URL(request.url).pathname.match(/^\/eve\/v1\/session\/(wrun_[A-Za-z0-9_-]+)\/reset$/);
   if (request.method === "POST" && retirementSession) {
-    const principalId = await authorizeNativeRetirement(request,retirementSession[1]) ?? await authorizeExecutionRetirement(request,retirementSession[1]) ?? await authorizeSupportRetirement(request,retirementSession[1]) ?? await authorizeExpansionRetirement(request,retirementSession[1]);
+    const principalId = await authorizeNativeRetirement(request,retirementSession[1]) ?? await authorizeExecutionRetirement(request,retirementSession[1]) ?? await authorizeSupportRetirement(request,retirementSession[1]) ?? await authorizeExpansionRetirement(request,retirementSession[1]) ?? await authorizeLearningRetirement(request,retirementSession[1]);
     if (principalId) return { authenticator: "turas-source-retirement",
       principalId, principalType: "user", attributes: {} };
   }

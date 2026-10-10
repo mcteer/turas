@@ -1,7 +1,9 @@
 # Bounded Turi Drafting and Paired Evaluation
 
-Versions `learning-v1`, `learning-evaluation-v1`, `learning-rubric-v1`.
-The selected model in `agent/agent.ts` remains byte-identical. Use eve's existing
+Versions `learning-v1`, `learning-evaluation-v1`, `learning-catalog-v2`,
+`learning-rubric-v2`. The evaluation envelope remains v1; catalog and rubric
+digests independently version its frozen inputs and review expectations.
+The selected model and model-admission logic in `agent/agent.ts` remain unchanged. Use eve's existing
 native lifecycle and the shared domain; do not add a separate direct-provider chat
 engine. Read the installed context/control and native docs before modifying hooks.
 
@@ -82,6 +84,18 @@ selected eligible case evidence, time and parameters; only the supplied practice
 revision differs. Cases are product-neutral; applicability/limitations are exercised
 through explicit scenario fields. The catalog is code-reviewed and cannot be edited
 by the candidate author through an app request or selected by model output.
+
+Catalog v2 makes the applicable E01 scenario exercise reproducibility: different
+workloads and measurement boundaries, unverified timezone and a missing completion
+within a retained complete population. No timestamp values or elapsed-time result
+are supplied. Review-only usefulness anchors require an actionable reproducible
+plan covering comparability, boundary/timezone, population/missingness, calculation
+prerequisites and independent review. Both arms may earn full marks through clearly
+labeled additional proposed safeguards; the model is not restricted to reproducing
+practice wording. Abstaining from an unsupported improvement conclusion is correct,
+but does not substitute for the supported review plan. The genuine prior practice
+and all acceptance thresholds are unchanged. E02–E08 remain unchanged. Earlier
+catalog captures remain retained failures and cannot be regraded under this rubric.
 
 1. Applicable supported problem: grounded steps and a verifiable improvement.
 2. Missing prerequisite or incompatible scope: explicit limitation and alternative.

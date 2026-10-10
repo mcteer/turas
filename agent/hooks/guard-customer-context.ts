@@ -5,6 +5,7 @@ import { readCurrentArtifactDraft } from "../../lib/server/artifacts/context";
 import { readStaffingInitialContext } from "../../lib/server/staffing/native-context";
 import { readExecutionInitialContext } from "../../lib/server/execution/initial-context";
 import { responseFeature } from "../../lib/server/conversations/feature";
+import { readLearningDraftInitialContext } from '../../lib/server/learning/native-context';
 
 export default defineHook({
   events: {
@@ -15,6 +16,9 @@ export default defineHook({
         throw new Error("Customer context was not bound to this turn");
       }
       const feature = await responseFeature(principal);
+      if(feature?.kind==='learning'){
+        await readLearningDraftInitialContext(principal,event.data.turnId,ctx.session.id,false);return;
+      }
       if (feature?.kind === "support" || feature?.kind === "expansion") {
         // Hooks observe events; they are not the paid-call authorization boundary.
         // Support admission validates exact injection and current sources, and

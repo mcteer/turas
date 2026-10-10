@@ -1,0 +1,54 @@
+import {it,expect} from 'vitest';
+import {randomUUID} from 'node:crypto';
+import {withLearningDatabase} from '../fixtures/learning/environment';
+import {learningMeasurementPopulation} from '../fixtures/learning/accepted-measurements';
+import {createLearningMeasurement,readLearningMeasurement,reviewLearningMeasurement,withdrawLearningMeasurement,reviseLearningMeasurement} from '../../lib/server/learning/measurements';
+import {releaseLearningCohort,readLearningCohort} from '../../lib/server/learning/cohorts';
+it('rejects invented values, windows and locators, preserves duplicate identity, and withholds private mappings after original loss',()=>withLearningDatabase(async db=>{
+ const f=await learningMeasurementPopulation(db,1),input=f.measurements[0].input;
+ await expect(createLearningMeasurement(f.actors.member,{...input,current:{...input.current,totalMinutes:'1001'}})).rejects.toMatchObject({status:409});
+ await expect(createLearningMeasurement(f.actors.member,{...input,current:{...input.current,start:'2026-09-18T00:00:00Z'}})).rejects.toMatchObject({status:422});
+ await expect(createLearningMeasurement(f.actors.member,{...input,quarter:'2026-Q4'})).rejects.toMatchObject({status:422});
+ await expect(createLearningMeasurement(f.actors.member,{...input,baseline:{...input.baseline,fieldLocators:[{...input.baseline.fieldLocators[0],generation:2}]}})).rejects.toMatchObject({status:409});
+ const first=await createLearningMeasurement(f.actors.member,input),duplicate=await createLearningMeasurement(f.actors.member,{...input,requestId:randomUUID()});expect(duplicate).toMatchObject({targetId:first.targetId,version:1});
+ await expect(readLearningMeasurement(f.actors.partner,first.targetId!)).rejects.toMatchObject({status:403});
+ expect((await reviseLearningMeasurement(f.actors.member,first.targetId!,{...input,requestId:randomUUID(),expectedVersion:1})).version).toBe(1);
+ await db.query('UPDATE profile_records SET current_accepted_revision_id=NULL WHERE current_accepted_revision_id=$1',[f.measurements[0].original.sourceRevisionId]);expect((await readLearningMeasurement(f.actors.member,first.targetId!)).content).toBeNull();
+}));
+it('requires five independent accepted populations and permanently withholds the entire released family after withdrawal',()=>withLearningDatabase(async db=>{
+ const f=await learningMeasurementPopulation(db),created=[];
+ const release={contractVersion:'learning-v1',requestId:randomUUID(),expectedVersion:0,metricId:'deployment_lead_time',protocolVersion:'deployment-lead-time-v1',quarter:'2026-Q3'};
+ for(let index=0;index<5;index++){
+  const m=f.measurements[index];await expect(createLearningMeasurement(f.actors.partner,m.input)).rejects.toMatchObject({status:index===0?403:404});
+  const receipt=await createLearningMeasurement(f.actors.member,m.input);created.push(receipt.targetId!);expect((await createLearningMeasurement(f.actors.member,m.input)).targetId).toBe(receipt.targetId);
+  const view=await readLearningMeasurement(f.actors.admin,receipt.targetId!);expect(view.content).not.toBeNull();await reviewLearningMeasurement(f.actors.admin,view.id,{contractVersion:'learning-v1',requestId:randomUUID(),expectedVersion:view.version,revisionId:view.revisionId,closureDigest:view.closureDigest,decision:'approve',reuseApproved:true,rationale:'Separately reviewed complete comparable population and original reuse rights'});
+  if(index===3){await expect(releaseLearningCohort(f.actors.admin,release)).rejects.toMatchObject({status:409});expect(await readLearningCohort(f.actors.member,{metricId:'deployment_lead_time',quarter:'2026-Q3'})).toMatchObject({status:'unavailable'});}
+ }
+ await expect(releaseLearningCohort(f.actors.member,release)).rejects.toMatchObject({status:403});await expect(readLearningCohort(f.actors.partner,{metricId:'deployment_lead_time',quarter:'2026-Q3'})).rejects.toMatchObject({status:403});
+ const released=await releaseLearningCohort(f.actors.admin,release);expect((await releaseLearningCohort(f.actors.admin,release)).targetId).toBe(released.targetId);
+ const output=await readLearningCohort(f.actors.member,{metricId:'deployment_lead_time',quarter:'2026-Q3'});expect(output).toMatchObject({status:'released',meanChange:'2.00',unit:'minutes'});expect(output).not.toHaveProperty('participantCount');expect(JSON.stringify(output)).not.toContain(f.customerId);
+ const view=await readLearningMeasurement(f.actors.admin,created[0]);await db.query('UPDATE learning_workspace_state SET enabled=false WHERE workspace_id=$1',[f.workspaceId]);await withdrawLearningMeasurement(f.actors.admin,view.id,{contractVersion:'learning-v1',requestId:randomUUID(),expectedVersion:view.version,rationale:'Withdraw synthetic reuse permission'});
+ expect(await readLearningCohort(f.actors.member,{metricId:'deployment_lead_time',quarter:'2026-Q3'})).toMatchObject({contractVersion:'learning-metrics-v1',metricId:'deployment_lead_time',quarter:'2026-Q3',status:'unavailable'});
+ expect((await db.query('SELECT state FROM learning_cohort_families WHERE id=$1',[released.targetId])).rows[0].state).toBe('withheld');await db.query('UPDATE learning_workspace_state SET enabled=true WHERE workspace_id=$1',[f.workspaceId]);await expect(releaseLearningCohort(f.actors.admin,{...release,requestId:randomUUID()})).rejects.toMatchObject({status:409});await expect(db.query("UPDATE learning_cohort_families SET state='released' WHERE id=$1",[released.targetId])).rejects.toMatchObject({code:'23514'});
+}));
+
+it('serializes concurrent first disclosure and replays one exact release without extra quota or a second family',()=>withLearningDatabase(async db=>{
+ const f=await learningMeasurementPopulation(db),command={contractVersion:'learning-v1',requestId:randomUUID(),expectedVersion:0,metricId:'deployment_lead_time',protocolVersion:'deployment-lead-time-v1',quarter:'2026-Q3'};
+ for(const m of f.measurements){const receipt=await createLearningMeasurement(f.actors.member,m.input),view=await readLearningMeasurement(f.actors.admin,receipt.targetId!);await reviewLearningMeasurement(f.actors.admin,view.id,{contractVersion:'learning-v1',requestId:randomUUID(),expectedVersion:view.version,revisionId:view.revisionId,closureDigest:view.closureDigest,decision:'approve',reuseApproved:true,rationale:'Synthetic independently reviewed complete population'});}
+ const before=Number((await db.query("SELECT coalesce(sum(count),0)::int n FROM learning_rate_windows WHERE workspace_id=$1 AND scope_key='workspace'",[f.workspaceId])).rows[0].n),results=await Promise.all([releaseLearningCohort(f.actors.admin,command),releaseLearningCohort(f.actors.admin,command)]);expect(results[0]).toEqual(results[1]);expect(Number((await db.query("SELECT coalesce(sum(count),0)::int n FROM learning_rate_windows WHERE workspace_id=$1 AND scope_key='workspace'",[f.workspaceId])).rows[0].n)).toBe(before+1);
+ expect((await db.query('SELECT count(*)::int n FROM learning_cohort_releases r JOIN learning_cohort_families f ON f.id=r.family_id WHERE f.workspace_id=$1',[f.workspaceId])).rows[0].n).toBe(1);
+ const reads=await Promise.all([f.actors.admin,f.actors.member].map(actor=>readLearningCohort(actor,{metricId:'deployment_lead_time',quarter:'2026-Q3'})));expect(reads[0]).toEqual(reads[1]);expect(JSON.stringify(reads[0])).not.toContain('participant');
+ await expect(releaseLearningCohort(f.actors.admin,{...command,requestId:randomUUID(),protocolVersion:'deployment-lead-time-v2'})).rejects.toBeDefined();await expect(readLearningCohort(f.actors.member,{metricId:'deployment_lead_time',quarter:'2026-Q3',customerIds:[f.customerId]})).rejects.toBeDefined();
+}));
+
+import {saveRegister,submitRegister,reviewRegister} from '../fixtures/execution/registers';
+import {learningMeasurementFrame} from '../../lib/server/learning/measurement-sources';
+it('requires an independently accepted correction and permanently withholds the previously disclosed family instead of publishing a corrected subset',()=>withLearningDatabase(async db=>{
+ const f=await learningMeasurementPopulation(db),ids:string[]=[],command={contractVersion:'learning-v1',requestId:randomUUID(),expectedVersion:0,metricId:'deployment_lead_time',protocolVersion:'deployment-lead-time-v1',quarter:'2026-Q3'};
+ for(const m of f.measurements){const saved=await createLearningMeasurement(f.actors.member,m.input),view=await readLearningMeasurement(f.actors.admin,saved.targetId!);ids.push(view.id);await reviewLearningMeasurement(f.actors.admin,view.id,{contractVersion:'learning-v1',requestId:randomUUID(),expectedVersion:view.version,revisionId:view.revisionId,closureDigest:view.closureDigest,decision:'approve',reuseApproved:true,rationale:'Synthetic complete source population'});}
+ const release=await releaseLearningCohort(f.actors.admin,command),m=f.measurements[0],prior=(await db.query('SELECT engagement_id,baseline_id,version FROM execution_records WHERE id=$1',[m.record.id])).rows[0],execution={author:f.actors.member,reviewer:f.reviewer,engagementId:prior.engagement_id,baselineId:prior.baseline_id},input={...m.input,requestId:randomUUID(),expectedVersion:2,current:{...m.input.current,totalMinutes:'0'}};
+ const revised=await saveRegister(execution,{...m.record.content,narrative:JSON.stringify(learningMeasurementFrame({...input,expectedVersion:0})),currentValue:'0'},{id:m.record.id,version:Number(prior.version)});await reviewRegister(execution,await submitRegister(execution,revised));const locator={sourceKind:'accepted_execution' as const,revisionId:revised.revisionId,generation:revised.revisionNumber,digest:revised.contentDigest,fieldPath:'/narrative'};input.outcomeRevisionIds=[revised.revisionId];input.baseline={...input.baseline,fieldLocators:[locator]};input.current={...input.current,fieldLocators:[locator]};
+ expect((await readLearningCohort(f.actors.member,{metricId:'deployment_lead_time',quarter:'2026-Q3'})).status).toBe('unavailable');
+ const changed=await reviseLearningMeasurement(f.actors.member,ids[0],input);expect(changed.version).toBe(3);const view=await readLearningMeasurement(f.actors.admin,ids[0]);expect(view.state).toBe('proposed');expect(view.content?.current.totalMinutes).toBe('0');await reviewLearningMeasurement(f.actors.admin,view.id,{contractVersion:'learning-v1',requestId:randomUUID(),expectedVersion:view.version,revisionId:view.revisionId,closureDigest:view.closureDigest,decision:'approve',reuseApproved:true,rationale:'Synthetic accepted correction with fresh reuse review'});
+ await expect(releaseLearningCohort(f.actors.admin,{...command,requestId:randomUUID(),expectedVersion:2})).rejects.toMatchObject({status:409});expect((await db.query('SELECT state FROM learning_cohort_families WHERE id=$1',[release.targetId])).rows[0].state).toBe('withheld');expect((await db.query('SELECT count(*)::int n FROM learning_cohort_releases WHERE family_id=$1',[release.targetId])).rows[0].n).toBe(1);
+}));

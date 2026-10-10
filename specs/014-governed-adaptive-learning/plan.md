@@ -3,7 +3,9 @@
 **Branch**: `014-governed-adaptive-learning` | **Date**: 2026-10-09 | **Spec**: [spec.md](spec.md)
 
 **Input**: Feature specification from `specs/014-governed-adaptive-learning/spec.md`.
-Planning is authorized; implementation waits for the user's model switch.
+Planning is complete and implementation is authorized. Historical design-stage
+checks below record planning readiness; current implementation evidence and
+remaining acceptance gates are recorded in [validation](validation.md).
 
 ## Summary
 
@@ -20,7 +22,7 @@ Use existing maintenance/native execution infrastructure and explicit migrations
 
 **Primary Dependencies**: Installed Next.js 16.3.4, eve from the existing lockfile
 (package range ^0.67.1), pg 8.23.0, Zod 4.5.4, existing Vitest/Playwright. No new
-external integration or speculative dependency. Preserve `agent/agent.ts`.
+external integration or speculative dependency. Preserve the selected model and model-admission logic in `agent/agent.ts`. Configure documented zero retention for finished native runs so reset does not leave encrypted model/tool payloads behind; Turas retains its governed captures.
 
 **Storage**: Existing isolated PostgreSQL/pgvector environments, explicit owner-run
 migrations and least-privilege runtime grants. Purgeable private payload tables,
@@ -152,6 +154,13 @@ are resolved; two consequential choices were answered by the user.
    005 research admission remains the only route to external refresh.
 8. Ship protected accessible UI and acceptance runners; complete code/schema release
    sequencing and actual Production verification after a separately authorized merge.
+
+During implementation, independent actual-output review identified a ceiling effect
+in the original general-guidance E01. Catalog/rubric v2 tests an actionable measurement
+review with workload/boundary/timezone/missingness differences instead. Review
+expectations are frozen separately from model context and grade both arms equally,
+including clearly labeled additional safeguards. The genuine prior practice and
+FR-009 thresholds stay unchanged; prior batches remain visible and unaccepted.
 
 ## Validation and delivery sequence
 
