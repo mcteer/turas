@@ -112,3 +112,16 @@ After authorization follow [MCP operations](../../docs/mcp-operations.md): selec
 backup/restore rehearsal, explicit 055/grants, disabled compatible deployment,
 activation, actual Production HTTP/SDK/CLI WebKit checks, disposable credential
 revocation, exact deployment/coverage record and merged-branch cleanup.
+
+## Authorized release preparation
+
+The maintainer authorized release on 2026-10-10. PR28 CI on `b571213` passed
+six MCP gates but the earlier standalone learning native job denied dispatch
+without reporting a status/code. The owned learning harness now waits for a real
+fresh maintenance heartbeat instead of assuming readiness after 250 ms; failed
+dispatch reports only fixed HTTP status and a bounded error code. The complete
+standalone native gate passed all 25 checks locally after this change. This addresses
+a readiness race; the original CI failure did not capture enough detail to prove
+its cause. Complete CI on the corrected source remains required before merge.
+Earlier seven-gate local evidence above remains tied to its stated source, not
+relabeled as evidence for this harness correction. No domain behavior changed.
