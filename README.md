@@ -147,6 +147,17 @@ disabled. See [learning operations](docs/learning-operations.md), the
 [validation record](specs/014-governed-adaptive-learning/validation.md) and
 [handoff](specs/014-governed-adaptive-learning/handoff.md) for current local, actual-model, CI and hosted validation status.
 
+### Pilot Hardening and Launch Readiness
+
+Feature 016 has a [specification](specs/016-pilot-hardening/spec.md),
+[implementation plan](specs/016-pilot-hardening/plan.md) and
+[84 tasks](specs/016-pilot-hardening/tasks.md) for a controlled internal and
+assigned-partner pilot. The plan covers a synthetic Production pilot workspace,
+workspace-bound sessions, durable private files and hosted processing, recovery,
+retention, access, operating limits and attributable user feedback. Implementation
+has not started; this planning record does not establish pilot readiness. See the
+[handoff](specs/016-pilot-hardening/handoff.md) for scope and execution gates.
+
 ## Technology
 
 TypeScript, Next.js 16, React 19, eve and PostgreSQL 17 with pgvector. Development
