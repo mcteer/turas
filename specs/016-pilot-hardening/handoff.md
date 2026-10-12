@@ -124,6 +124,13 @@ pilot catalog, four-project WebKit, full predecessor compositions and builds.
 T081/T082 are checked on this actual source-bound proof. No failed attempt is
 removed or promoted, and no skipped/flaky case is counted as acceptance.
 
+The documentation follow-up at `eab14f6` then passed 42/43 CI jobs; Product Gaps
+mobile-dark cancellation lacked a completed response before its UI assertion.
+The case now requires the exact HTTP 200 cancellation acknowledgment before all
+existing race/download/receipt checks. Actual focused desktop-light/mobile-dark
+WebKit passed 2/2 without retries or flaky acceptance. The changed source must
+complete fresh required CI; the older 43/43 receipt stays on `08ef152`.
+
 Next: finish unchecked storage/capture/current-authority/restore/runbook work
 (T045/T051–T059), then the required actual-model/operator and hosted journey
 requirements. Apply only concrete authorized infrastructure/budget scope; do not

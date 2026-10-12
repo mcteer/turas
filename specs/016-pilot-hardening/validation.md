@@ -1699,3 +1699,21 @@ remains on its existing deployment/schema; no merge, migration, enablement,
 provider deployment, paid evaluation, user impersonation or release occurred.
 Selected configuration, root workflow data and the authored agent model were
 preserved. PR 32 remains draft while those requirements are unfinished.
+
+### Documentation follow-up and explicit cancellation acknowledgment
+
+Documentation commit `eab14f6` ran fresh CI `38310369273`: 42/43 jobs passed,
+including the full Linux pilot and all predecessor compositions. Product Gaps
+WebKit passed all 21 cases in desktop light/dark and mobile light, but the mobile
+dark in-flight export case timed out awaiting its cancellation status. Bounded
+diagnostics had no completed cancellation response at that assertion. This is
+retained failure evidence, not accepted as a flaky pass or waived by `08ef152`.
+
+The existing case now waits for the exact cancellation POST response and requires
+HTTP 200 before checking its UI acknowledgment. Its cancellation route wait has
+a finite 30-second bound; no assertions or cases are removed and there is no
+retry. The held GET/abort-release race, zero browser download, persisted cancelled
+receipt and no-reusable-identity assertions remain. An actual owned CLI WebKit
+check passed the case in desktop light and mobile dark: 2/2, zero skipped,
+unexpected or flaky results. Root/pilot types and diff checks passed. This focused
+proof does not replace the fresh complete CI still required on the changed source.
