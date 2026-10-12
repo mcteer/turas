@@ -706,3 +706,46 @@ jobs:
           npm run test:mcp:regressions
       - name: Require complete evidence with the same source fingerprint
         run: node --import tsx scripts/mcp-ci-evidence.ts "${{ matrix.gate }}"
+
+  pilot-hardening:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        gate: [deterministic, webkit, regressions]
+    env:
+      AI_GATEWAY_API_KEY: ''
+      TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
+      TURAS_PILOT_UI_PREPARATION_FILE: ${{ github.workspace }}/local-artifacts/016/ci-images/preparation.json
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix packages/artifact-extractor
+      - name: Validate current pilot design artifacts
+        env:
+          SPECIFY_FEATURE_DIRECTORY: specs/016-pilot-hardening
+          SPECIFY_FEATURE_NO_PERSIST: '1'
+        run: .specify/scripts/bash/check-prerequisites.sh --json --require-spec --require-tasks
+      - name: Prepare actual owned scanner, parser and renderer images
+        run: node --import tsx scripts/prepare-pilot-images.ts --output "${{ github.workspace }}/local-artifacts/016/ci-images"
+      - name: Complete registered pilot catalog and exact CI evidence
+        if: matrix.gate == 'deterministic'
+        run: |
+          npm run typecheck:pilot
+          npm run check:docs
+          npm run test:pilot
+          npm run mcp:build:check
+      - name: Install CLI WebKit dependencies
+        if: matrix.gate != 'deterministic'
+        run: npx playwright install --with-deps webkit
+      - name: Complete four-project pilot browser journeys
+        if: matrix.gate == 'webkit'
+        run: npm run pilot:ui:check
+      - name: Complete affected predecessor composition and fresh browser journeys
+        if: matrix.gate == 'regressions'
+        run: npm run pilot:regressions

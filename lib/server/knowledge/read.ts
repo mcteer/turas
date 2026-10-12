@@ -1,3 +1,4 @@
+import { sharedOriginSql } from "../access/policy";
 import type { PoolClient } from "pg";
 import { ZodError } from "zod";
 import { hiddenRecord } from "../../contracts/http";
@@ -17,8 +18,8 @@ export async function currentKnowledgeHeaders(client:PoolClient,actor:CurrentRea
   return (await client.query<CurrentKnowledgeHeader>(`SELECT p.id,p.revision_id,p.head_generation,r.content_digest,p.published_at
     FROM knowledge_publications p JOIN knowledge_revisions r ON r.id=p.revision_id
     WHERE p.environment_id=$1 AND p.state='published' AND ($2::uuid IS NULL OR p.id>$2)
-      AND ($3::uuid IS NULL OR p.id=$3) ORDER BY p.id LIMIT 101`,
-    [getServerConfig().TURAS_ENVIRONMENT_ID,afterId??null,publicationId??null])).rows;
+      AND ($3::uuid IS NULL OR p.id=$3) AND ${sharedOriginSql("p","$4")} ORDER BY p.id LIMIT 101`,
+    [getServerConfig().TURAS_ENVIRONMENT_ID,afterId??null,publicationId??null,actor.workspaceId])).rows;
 }
 export async function readCurrentKnowledge(client:PoolClient,actor:CurrentReadActor,header:CurrentKnowledgeHeader){
   await authorizeRetrievalScope(client,actor,'shared',undefined,undefined,true);
@@ -27,8 +28,8 @@ export async function readCurrentKnowledge(client:PoolClient,actor:CurrentReadAc
     FROM knowledge_publications p JOIN knowledge_revisions r ON r.id=p.revision_id
     JOIN knowledge_revision_payloads payload ON payload.revision_id=r.id
     WHERE p.id=$1 AND p.environment_id=$2 AND p.revision_id=$3 AND p.head_generation=$4
-      AND r.content_digest=$5 AND p.state='published' FOR SHARE OF p`,
-    [header.id,getServerConfig().TURAS_ENVIRONMENT_ID,header.revision_id,header.head_generation,header.content_digest])).rows[0];
+      AND r.content_digest=$5 AND p.state='published' AND ${sharedOriginSql("p","$6")} FOR SHARE OF p`,
+    [header.id,getServerConfig().TURAS_ENVIRONMENT_ID,header.revision_id,header.head_generation,header.content_digest,actor.workspaceId])).rows[0];
   if(!exact)return null;
   const dto=await publicDto(client,exact),quality=evidenceQualitySchema.safeParse(exact.public_quality);
   if(dto.caveats.length || !quality.success || !currentFactEligible(quality.data))return null;
@@ -66,8 +67,8 @@ export async function readPublishedKnowledge(client: PoolClient,actor: CurrentRe
     FROM knowledge_publications p
     JOIN knowledge_revisions r ON r.id=p.revision_id
     JOIN knowledge_revision_payloads payload ON payload.revision_id=r.id
-    WHERE p.id=$1 AND p.environment_id=$2 AND p.state='published'`,
-  [id,getServerConfig().TURAS_ENVIRONMENT_ID]);
+    WHERE p.id=$1 AND p.environment_id=$2 AND p.state='published' AND ${sharedOriginSql("p","$3")} FOR SHARE OF p`,
+  [id,getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId]);
   const row = result.rows[0];
   if (!row || !await knowledgeLineageIsCurrent(client,row.revision_id)) throw hiddenRecord();
   return publicDto(client,row);
@@ -88,8 +89,8 @@ export async function listPublishedKnowledge(client: PoolClient,actor: CurrentRe
       JOIN knowledge_revisions r ON r.id=p.revision_id
       JOIN knowledge_revision_payloads payload ON payload.revision_id=r.id
       WHERE p.environment_id=$1 AND p.state='published'
-        AND ($2::uuid IS NULL OR p.id<$2)
-      ORDER BY p.id DESC LIMIT 100`,[getServerConfig().TURAS_ENVIRONMENT_ID,scanCursor]);
+        AND ($2::uuid IS NULL OR p.id<$2) AND ${sharedOriginSql("p","$3")}
+      ORDER BY p.id DESC LIMIT 100`,[getServerConfig().TURAS_ENVIRONMENT_ID,scanCursor,actor.workspaceId]);
     if (!rows.rows.length) break;
     for (const row of rows.rows) {
       scanCursor = row.id;

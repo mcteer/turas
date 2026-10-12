@@ -1,0 +1,103 @@
+{
+  "contract": "pilot-images-v1",
+  "platform": "linux/amd64",
+  "programs": {
+    "artifact-scan": {
+      "image": "scanner",
+      "cmd": "/usr/local/bin/scan-artifact"
+    },
+    "artifact-parse": {
+      "image": "parser",
+      "cmd": "/usr/local/bin/node",
+      "entry": "/opt/artifact-extractor/dist/main.js"
+    },
+    "workforce-parse": {
+      "image": "parser",
+      "cmd": "/usr/local/bin/node",
+      "entry": "/opt/artifact-extractor/dist/main.js",
+      "mode": "workforce-table-v1"
+    },
+    "report-render": {
+      "image": "renderer",
+      "cmd": "/usr/local/bin/turas-render-report",
+      "entry": "/app/report-renderer/render.ts"
+    },
+    "report-office-check": {
+      "image": "renderer",
+      "cmd": "/usr/local/bin/turas-check-office",
+      "entry": "/app/report-renderer/office-check.py"
+    }
+  },
+  "scanner": {
+    "engine": "ClamAV 1.5.4",
+    "policy": "004-scan-v1",
+    "signatureMaxAgeDays": 7,
+    "signatureVersion": "28149",
+    "signatures": [
+      {
+        "name": "bytecode.cvd",
+        "sizeBytes": 281702,
+        "digest": "6d4aa01f219e988060fc419f495d07f27e0cdf1a2cccc065971da922c76f7ffb"
+      },
+      {
+        "name": "daily.cvd",
+        "sizeBytes": 23442295,
+        "digest": "d4117485e03b333d4b40d77b9280750a14555ae84978f43de676cf5ff0810fd8"
+      },
+      {
+        "name": "main.cvd",
+        "sizeBytes": 89072577,
+        "digest": "0b2182d229f46981ec8f535382222f7c9dfdd656b250ad47988b910a8d302365"
+      }
+    ]
+  },
+  "parser": {
+    "artifactContract": "artifact-intake-v1",
+    "workforceContract": "workforce-table-v1",
+    "ocr": {
+      "digest": "7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2",
+      "license": "Apache-2.0",
+      "source": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd/eng.traineddata"
+    }
+  },
+  "renderer": {
+    "formats": [
+      "pdf",
+      "pptx"
+    ],
+    "validateActualOutputs": true
+  },
+  "runtime": {
+    "persistent": false,
+    "networkPolicy": "deny-all",
+    "ports": [],
+    "maximumDeadlineMs": 300000,
+    "region": "iad1"
+  },
+  "preparedImages": [
+    {
+      "kind": "scanner",
+      "oci": "vcr.vercel.com/turas-6e414af3/turas/turas-016-scanner@sha256:6620aa9b998376e8c26e8a625ef1628846482ad875bef571e02c00285e5523a7",
+      "platformOci": "vcr.vercel.com/turas-6e414af3/turas/turas-016-scanner@sha256:1f08ba3e4045132135be3cf9b8c932d997647ba37d76a52235044b41d473bb9f",
+      "configDigest": "sha256:7e57299fa7ca2256eabcba6c76d5420d9b19f0a1f45674ec46e80f9c889824aa",
+      "recipeDigest": "cc8a92023de92e2ec0135b38af18c42d786e0ea72c0f7dfb07c56e0534c8ec66",
+      "baseRecipeDigest": "37ccf043778958437b355af30577e61b188bfd49048ab1cfff00731a2d93822a"
+    },
+    {
+      "kind": "parser",
+      "oci": "vcr.vercel.com/turas-6e414af3/turas/turas-016-parser@sha256:ba763d6a914d5472e0c4c9901d1fded78098fbc86ea64b28b5d771c42a44e3bb",
+      "platformOci": "vcr.vercel.com/turas-6e414af3/turas/turas-016-parser@sha256:76a1d098fcd3ebe090fe0b7a350c5ace84800a7d039840c46079b702e9a56802",
+      "configDigest": "sha256:c816f651d6aaa8a86546eb1e60a8de971c4530d1063acb0b0b82a7eb07829929",
+      "recipeDigest": "a24cb887fcea670419e22e819472b8aaca9df20348d33d93e587bcd27605d26f",
+      "baseRecipeDigest": "7b84a446f89c465461ee340bea245a222a73047a607bf6ea6180e2daf94b6728"
+    },
+    {
+      "kind": "renderer",
+      "oci": "vcr.vercel.com/turas-6e414af3/turas/turas-016-renderer@sha256:a00038b0252fca8e357ec6f0ff4657d3c34c99733acbac62156400d0f2f7dc11",
+      "platformOci": "vcr.vercel.com/turas-6e414af3/turas/turas-016-renderer@sha256:b4dd8a29a7e7ae61b3e7629ed9392a77152fa161e0add7cc6d686345694052e9",
+      "configDigest": "sha256:963ea53a007570bec35ac77afecc0c7509c71f6888c10cfc5f604712af835cbd",
+      "recipeDigest": "b84d14a196b770e373e4d07987dcb2a222948e81a53c1e88c6e3409fa86dfeb0",
+      "baseRecipeDigest": "652f81ce111e6a76917a1de9774aa6a5e30d6b252b7060842bbb26d7a1266b30"
+    }
+  ]
+}

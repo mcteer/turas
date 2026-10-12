@@ -1,12 +1,11 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
-import { open } from "node:fs/promises";
+import { createHmac, timingSafeEqual, createHash } from "node:crypto";
 import type { PoolClient } from "pg";
 import type { CurrentSession } from "../auth/sessions";
 import { getServerConfig, parseArtifactStoreConfig } from "../config";
 import { withTransaction } from "../db/client";
-import { hiddenRecord, HttpFailure } from "../../contracts/http";
+import { hiddenRecord, HttpFailure, versionedHeaders } from "../../contracts/http";
 import { artifactUnitsQuerySchema } from "../../contracts/artifacts";
-import { LocalArtifactStore } from "./local-store";
+import { createArtifactStore } from "./store-factory";
 import { requireArtifactSourceReader } from "./policy";
 import { lockProfileActor } from "../profiles/policy";
 
@@ -14,7 +13,7 @@ type Version = {
   id: string; artifact_id: string; version_number: number; lifecycle_generation: string;
   environment_id: string; workspace_id: string; customer_id: string; owner_principal_id: string;
   submitted_at: Date | null; state: string; detected_format: string | null;
-  actual_size_bytes: string; filename: string; safe_error_code: string | null; object_key: string;
+  actual_size_bytes: string; sha256_digest: string; filename: string; safe_error_code: string | null; object_key: string;
   coverage: unknown | null; run_id: string | null;
 };
 
@@ -140,11 +139,14 @@ export async function streamArtifactOriginal(actor: CurrentSession, id: string, 
     readableContent(found);
     return found;
   });
-  const path = await new LocalArtifactStore(parseArtifactStoreConfig(process.env)).readPath(row.object_key);
-  const file = await open(path, "r");
-  let position = 0;
-  let closed = false;
-  const close = async () => { if (!closed) { closed = true; await file.close(); } };
+  const parts:Buffer[]=[];let received=0;const hash=createHash("sha256");
+  for await(const chunk of await createArtifactStore().read(row.object_key)){
+    received+=chunk.byteLength;if(received>Number(row.actual_size_bytes))throw new HttpFailure(503,"dependency_unavailable","Original unavailable");
+    const copy=Buffer.from(chunk);parts.push(copy);hash.update(copy);
+  }
+  if(received!==Number(row.actual_size_bytes)||hash.digest("hex")!==row.sha256_digest)throw new HttpFailure(503,"dependency_unavailable","Original unavailable");
+  let bytes=Buffer.concat(parts,received),position=0;
+  const close=async()=>{bytes=Buffer.alloc(0);};
   const stream = new ReadableStream<Uint8Array>({
     async pull(controller) {
       try {
@@ -155,17 +157,15 @@ export async function streamArtifactOriginal(actor: CurrentSession, id: string, 
             throw hiddenRecord();
           }
         });
-        const buffer = Buffer.allocUnsafe(Math.min(65_536, Number(row.actual_size_bytes) - position));
-        if (!buffer.length) { await close(); controller.close(); return; }
-        const { bytesRead } = await file.read(buffer, 0, buffer.length, position);
-        if (!bytesRead) { await close(); controller.close(); return; }
-        position += bytesRead;
-        controller.enqueue(buffer.subarray(0,bytesRead));
+        if(position>=bytes.length){await close();controller.close();return;}
+        const chunk=bytes.subarray(position,Math.min(position+65_536,bytes.length));position+=chunk.length;
+        controller.enqueue(chunk);
+
       } catch (error) { await close(); controller.error(error); }
     },
     async cancel() { await close(); },
   });
-  const headers = new Headers({ "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
+  const headers = versionedHeaders({ "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
     "Content-Type": "application/octet-stream", "Content-Disposition": `attachment; filename="download"; filename*=UTF-8''${encodeURIComponent(row.filename)}`,
     "Content-Length": row.actual_size_bytes });
   return new Response(stream, { status: 200, headers });

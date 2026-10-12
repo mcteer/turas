@@ -1,0 +1,3 @@
+import {it,expect} from 'vitest';
+import {executionBackend,hostedExecutionCredentials} from '../../../lib/server/jobs/governed';
+it('requires explicit hosted processing without a local fallback',()=>{expect(executionBackend({NODE_ENV:'test'})).toBe('local');for(const backend of [undefined,'local'])expect(()=>executionBackend({NODE_ENV:'production',VERCEL:'1',TURAS_JOB_EXECUTOR:backend})).toThrow('Hosted processing');expect(executionBackend({NODE_ENV:'production',VERCEL:'1',TURAS_JOB_EXECUTOR:'sandbox'})).toBe('sandbox');expect(()=>hostedExecutionCredentials({NODE_ENV:'production'})).toThrow('credentials required');expect(()=>executionBackend({NODE_ENV:'test',TURAS_JOB_EXECUTOR:'unknown'})).toThrow('Unknown job executor');});

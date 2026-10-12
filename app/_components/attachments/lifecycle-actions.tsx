@@ -1,4 +1,5 @@
 "use client";
+import {uploadPrivateOriginal} from "../direct-upload";
 
 import { useEffect, useState } from "react";
 
@@ -84,9 +85,7 @@ export function LifecycleActions({ source, onChanged }: { source: Source; onChan
       if (!created.ok || !createdBody.data) throw new Error(createdBody.error?.message ?? "Replacement unavailable");
       const intent = createdBody.data.intent;
       if (!intent.versionId) {
-        const bytes = await fetch(`/api/artifacts/intents/${intent.id}/bytes`, { method: "PUT",
-          headers: { "content-type": "application/octet-stream","x-csrf-token": auth.data.csrfToken },
-          body: replacementFile });
+        const bytes = await uploadPrivateOriginal({domain:"artifact",id:intent.id,file:replacementFile,csrfToken:auth.data.csrfToken,localContentType:"application/octet-stream"});
         if (!bytes.ok) throw new Error("Replacement bytes were not accepted");
         const completed = await fetch(`/api/artifacts/intents/${intent.id}/complete`, {
           method: "POST",cache: "no-store",headers: { "content-type": "application/json",

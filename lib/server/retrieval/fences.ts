@@ -1,3 +1,4 @@
+import { sharedOriginSql } from "../access/policy";
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
@@ -69,13 +70,13 @@ export async function originalProfilesCurrent(client:PoolClient,dependencies:rea
   return found.rowCount===dependencies.length && (await unsupportedProfileRevisionIds(client,ids,true)).size===0;
 }
 
-export async function originalCurrent(client: PoolClient, dependency: Dependency): Promise<boolean> {
+export async function originalCurrent(client: PoolClient, dependency: Dependency, workspaceId?:string): Promise<boolean> {
   const values = [dependency.source_revision_id,dependency.source_generation,
-    dependency.source_digest];
+    dependency.source_digest,workspaceId??null];
   if (dependency.source_kind === "accepted_profile") {
     const found = await client.query(`SELECT 1 FROM profile_revisions v
       JOIN profile_records r ON r.id=v.record_id AND r.current_accepted_revision_id=v.id
-      WHERE v.id=$1 AND v.revision_number=$2 AND v.content_digest=$3`,values);
+      WHERE v.id=$1 AND v.revision_number=$2 AND v.content_digest=$3`,values.slice(0,3));
     return Boolean(found.rowCount) && !(await unsupportedProfileRevisionIds(client,
       [dependency.source_revision_id],true)).has(dependency.source_revision_id);
   }
@@ -89,7 +90,7 @@ export async function originalCurrent(client: PoolClient, dependency: Dependency
       JOIN profile_revisions pr ON pr.id=s.profile_revision_id
       JOIN profile_records record ON record.id=pr.record_id
         AND record.current_accepted_revision_id=pr.id
-      WHERE s.id=$1 AND s.lifecycle_generation=$2 AND s.excerpt_digest=$3`,values);
+      WHERE s.id=$1 AND s.lifecycle_generation=$2 AND s.excerpt_digest=$3`,values.slice(0,3));
     return Boolean(found.rowCount);
   }
   if (dependency.source_kind === "verified_research") {
@@ -99,7 +100,7 @@ export async function originalCurrent(client: PoolClient, dependency: Dependency
         AND c.identity_result AND c.scope_result AND c.integrity_result AND c.content_result
       WHERE v.id=$1 AND v.version=$2 AND v.passage_digest=$3
         AND NOT EXISTS (SELECT 1 FROM evidence_source_events e
-          WHERE e.source_revision_id=v.id AND e.event_type IN ('withdraw','supersede'))`,values);
+          WHERE e.source_revision_id=v.id AND e.event_type IN ('withdraw','supersede'))`,values.slice(0,3));
     return Boolean(found.rowCount);
   }
   if (dependency.source_kind === "published_shared") {
@@ -107,7 +108,7 @@ export async function originalCurrent(client: PoolClient, dependency: Dependency
       JOIN knowledge_revisions r ON r.id=p.revision_id
       JOIN knowledge_revision_payloads payload ON payload.revision_id=r.id
       WHERE p.revision_id=$1 AND p.head_generation=$2 AND r.content_digest=$3
-        AND p.state='published'`,values);
+        AND p.state='published' AND ${sharedOriginSql("p","$4")}`,values);
     return Boolean(found.rowCount) && await knowledgeLineageIsCurrent(client,
       dependency.source_revision_id);
   }
@@ -118,6 +119,7 @@ export async function originalCurrent(client: PoolClient, dependency: Dependency
 export async function assertRetrievalDependenciesCurrent(client: PoolClient,
   conversationId: string): Promise<void> {
   if (!await schemaReady(client)) return;
+  const workspace=(await client.query<{workspace_id:string}>("SELECT workspace_id FROM conversations WHERE id=$1",[conversationId])).rows[0]?.workspace_id;
   const dependencies = await client.query<Dependency & { valid_until: Date;
     receipt_as_of: Date | null }>(`
     SELECT dependency.source_kind,dependency.source_revision_id,
@@ -136,7 +138,7 @@ export async function assertRetrievalDependenciesCurrent(client: PoolClient,
     if (!dependency.receipt_as_of || dependency.valid_until.getTime() <= Date.now() ||
         await confirmedConflictAfter(client,dependency.source_kind,
           dependency.source_revision_id,dependency.receipt_as_of) ||
-        !await originalCurrent(client,dependency)) {
+        !workspace || !await originalCurrent(client,dependency,workspace)) {
       throw new HttpFailure(409,"retrieval_context_changed",
         "Start a new conversation for current evidence");
     }
@@ -162,10 +164,10 @@ async function originalDependency(client: PoolClient, kind: string,
 }
 
 export async function exactRetrievalOriginalCurrent(client: PoolClient,kind: string,
-  revisionId: string,generation: string): Promise<boolean> {
+  revisionId: string,generation: string,workspaceId?:string): Promise<boolean> {
   const original = await originalDependency(client,kind,revisionId);
   return Boolean(original && original.source_generation === generation &&
-    await originalCurrent(client,original));
+    await originalCurrent(client,original,workspaceId));
 }
 
 async function expandDependencies(client: PoolClient,
@@ -261,7 +263,7 @@ export async function recordRetrievalConsumption(client: PoolClient, actor: Curr
   }
   for (const source of await expandDependencies(client,direct)) {
     if (await confirmedConflictAfter(client,source.source_kind,
-      source.source_revision_id,selected.as_of) || !await originalCurrent(client,source)) {
+      source.source_revision_id,selected.as_of) || !await originalCurrent(client,source,actor.workspaceId)) {
       throw new HttpFailure(409,"retrieval_context_changed","Evidence changed before use");
     }
     await client.query(`INSERT INTO session_evidence_dependencies

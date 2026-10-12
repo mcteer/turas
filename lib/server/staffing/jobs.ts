@@ -17,7 +17,7 @@ async function workerActor(db: PoolClient, sourceId: string): Promise<StaffingAc
     kind: "internal" | "partner"; role: "admin" | "member"; session_id: string; expires_at: Date }>(`
     SELECT m.principal_id,m.id AS membership_id,m.workspace_id,m.kind,m.role,s.owner_session_id AS session_id,l.expires_at
     FROM workforce_sources s JOIN memberships m ON m.id=s.owner_membership_id AND m.workspace_id=s.workspace_id
-    JOIN login_sessions l ON l.id=s.owner_session_id AND l.principal_id=m.principal_id
+    JOIN login_sessions l ON l.id=s.owner_session_id AND l.principal_id=m.principal_id AND l.membership_id=m.id AND l.workspace_id=m.workspace_id
     WHERE s.id=$1 AND s.environment_id=$2`, [sourceId, getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
   return row ? { principalId: row.principal_id, membershipId: row.membership_id, workspaceId: row.workspace_id,
     kind: row.kind, role: row.role, sessionId: row.session_id, expiresAt: row.expires_at,
@@ -55,9 +55,9 @@ export async function claimWorkforceImport(): Promise<WorkforceClaim | null> {
           WHERE id=$1 AND environment_id=$2 AND workspace_id=$3 FOR UPDATE`,
           [candidate.source_id, getServerConfig().TURAS_ENVIRONMENT_ID, actor.workspaceId])).rows[0];
         const job = (await db.query(`SELECT id,source_version_id,source_generation,state,lease_expires_at,
-          attempt_number,parser_image_digest,scanner_image_digest FROM workforce_import_jobs WHERE id=$1 FOR UPDATE SKIP LOCKED`, [candidate.id])).rows[0];
+          attempt_number,deadline_at,parser_image_digest,scanner_image_digest FROM workforce_import_jobs WHERE id=$1 FOR UPDATE SKIP LOCKED`, [candidate.id])).rows[0];
         if (!source || !job || (job.state !== "queued" && !(job.state === "running" && job.lease_expires_at?.getTime() <= Date.now()))) return null;
-        if (job.attempt_number >= 4 || !["quarantined", "processing", "failed"].includes(source.state) ||
+        if (job.attempt_number >= 4 || (job.deadline_at && job.deadline_at.getTime() <= Date.now()) || !["quarantined", "processing", "failed"].includes(source.state) ||
           source.generation !== job.source_generation || source.current_version_id !== job.source_version_id ||
           job.parser_image_digest && job.parser_image_digest !== images.parserDigest ||
           job.scanner_image_digest && job.scanner_image_digest !== images.scannerDigest) {
@@ -69,7 +69,7 @@ export async function claimWorkforceImport(): Promise<WorkforceClaim | null> {
         if (!original) return null;
         const leaseToken = randomUUID();
         const claimed = (await db.query(`UPDATE workforce_import_jobs SET state='running',attempt_number=attempt_number+1,
-          lease_token=$2,lease_expires_at=now()+interval '30 seconds',heartbeat_at=now(),deadline_at=now()+interval '120 seconds',
+          lease_token=$2,lease_expires_at=LEAST(now()+interval '30 seconds',COALESCE(deadline_at,now()+interval '120 seconds')),heartbeat_at=now(),deadline_at=COALESCE(deadline_at,now()+interval '120 seconds'),
           parser_image_digest=$3,scanner_image_digest=$4,updated_at=now() WHERE id=$1 RETURNING deadline_at`,
           [job.id, leaseToken, images.parserDigest, images.scannerDigest])).rows[0];
         await db.query("UPDATE workforce_sources SET state='processing' WHERE id=$1", [candidate.source_id]);
@@ -117,7 +117,10 @@ async function lockClaim(db: PoolClient, claim: WorkforceClaim) {
     job.source_version_id !== claim.sourceVersionId || job.parser_image_digest !== claim.parserImageDigest ||
     job.scanner_image_digest !== claim.scannerImageDigest) throw new HttpFailure(409, "source_changed", "Import lease changed");
 }
-export async function publishWorkforceImport(claim: WorkforceClaim, raw: unknown, rawReceipt: unknown) {
+export async function fenceWorkforceImport(db:PoolClient,claim:WorkforceClaim):Promise<boolean>{
+ await lockClaim(db,claim);return true;
+}
+export async function publishWorkforceImport(claim: WorkforceClaim, raw: unknown, rawReceipt: unknown, existingClient?:PoolClient) {
   const manifest = workforceExtractionSchema.parse(raw), receipt = artifactScanReceiptSchema.parse(rawReceipt);
   const scanDigest = staffingSha256(receipt);
   if (manifest.originalDigest !== claim.originalDigest || receipt.originalDigest !== claim.originalDigest ||
@@ -127,7 +130,7 @@ export async function publishWorkforceImport(claim: WorkforceClaim, raw: unknown
   const digest = staffingSha256(manifest), extractionId = randomUUID();
   const cells = manifest.cells.map(cell => ({ id: randomUUID(), sheet_index: cell.sheetIndex,
     row_number: cell.rowNumber, column_number: cell.columnNumber, content_digest: staffingSha256(cell), cell }));
-  await withTransaction(async db => {
+  const execute=async(db:PoolClient)=>{
     await lockClaim(db, claim);
     await db.query(`INSERT INTO workforce_extractions(id,environment_id,workspace_id,source_version_id,job_id,attempt_token,
       extraction_version,content_digest,complete,scan_clean,sheet_count,cell_count,code_point_count)
@@ -151,7 +154,8 @@ export async function publishWorkforceImport(claim: WorkforceClaim, raw: unknown
     await db.query("UPDATE workforce_import_jobs SET state=$2,lease_token=NULL,lease_expires_at=NULL,updated_at=now() WHERE id=$1",
       [claim.jobId, manifest.status]);
     await db.query("UPDATE workforce_sources SET state=$2 WHERE id=$1", [claim.sourceId, manifest.status]);
-  });
+  };
+  if(existingClient)await execute(existingClient);else await withTransaction(execute);
   return { extractionId, contentDigest: digest, state: manifest.status };
 }
 const safeFailures = new Set(["unsafe_content", "scan_unavailable", "scan_stale", "parser_timeout", "parser_failed", "limit_exceeded", "source_changed"]);
@@ -166,7 +170,7 @@ export async function failWorkforceImport(claim: WorkforceClaim, rawCode: string
       AND environment_id=$2 AND workspace_id=$3 FOR UPDATE`, [claim.jobId, getServerConfig().TURAS_ENVIRONMENT_ID, claim.workspaceId])).rows[0];
     if (!source || !job || job.state !== "running" || job.lease_token !== claim.leaseToken) return;
     const eligible = Number(source.generation) === claim.generation && source.current_version_id === claim.sourceVersionId && source.state === "processing";
-    const retry = eligible && transient && ["scan_unavailable", "scan_stale", "parser_timeout"].includes(code) && job.attempt_number < 4 && process.env.TURAS_007_DISABLED !== "1";
+    const retry = eligible && Date.parse(claim.deadlineAt)>Date.now() && transient && ["scan_unavailable", "scan_stale", "parser_timeout"].includes(code) && job.attempt_number < 4 && process.env.TURAS_007_DISABLED !== "1";
     await db.query(`UPDATE workforce_import_jobs SET state=$2,error_code=$3,lease_token=NULL,lease_expires_at=NULL,updated_at=now() WHERE id=$1`,
       [claim.jobId, retry ? "queued" : eligible ? "failed" : "cancelled", code]);
     if (eligible) await db.query("UPDATE workforce_sources SET state=$2 WHERE id=$1", [claim.sourceId, retry ? "quarantined" : "failed"]);

@@ -1,8 +1,8 @@
 import {randomUUID,randomBytes} from 'node:crypto';
 import type {PoolClient} from 'pg';
-import {learningScopedFixture,learningAcceptedOriginal} from './setup';
+import {learningScopedFixture,learningAcceptedOriginal,insertLearningFixtureSession} from './setup';
 import {DEMO_IDS} from '../../../lib/server/bootstrap-ids';
-import {hashSessionToken,type CurrentSession} from '../../../lib/server/auth/sessions';
+import {type CurrentSession} from '../../../lib/server/auth/sessions';
 import {syntheticPlanContent} from '../plans/seed';
 import type {PlanDraftContent} from '../../../lib/contracts/plan-content';
 import {submitPlanCommand} from '../../../lib/server/plans/commands';
@@ -15,11 +15,11 @@ import {learningQuarterWindows} from '../../../lib/learning/metric-protocols';
 import {learningMeasurementSchema} from '../../../lib/contracts/learning';
 import {learningMeasurementFrame} from '../../../lib/server/learning/measurement-sources';
 import {requireOwnedLearningDatabase} from '../../../scripts/learning-environment';
-export async function learningMeasurementPopulation(db:PoolClient,count=5){
+export async function learningMeasurementPopulation(db:PoolClient,count=5,existingPilotWorkspaceId?:string){
  requireOwnedLearningDatabase(process.env,true);if(!Number.isInteger(count)||count<1||count>6)throw Error('Bounded synthetic measurement population');
- const scope=await learningScopedFixture(db),membershipId=randomUUID(),sessionId=randomUUID(),token=randomBytes(32).toString('base64url');
+ const scope=await learningScopedFixture(db,existingPilotWorkspaceId),sessionId=randomUUID(),token=randomBytes(32).toString('base64url');
  // 008 retains its existing mcteer-only review authority. Do not change that domain.
- await db.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role) VALUES($1,$2,$3,'internal','admin')",[membershipId,DEMO_IDS.mcteer,scope.workspaceId]);await db.query("INSERT INTO login_sessions(id,principal_id,token_hash,expires_at) VALUES($1,$2,$3,clock_timestamp()+interval '1 hour')",[sessionId,DEMO_IDS.mcteer,hashSessionToken(token)]);
+ await db.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role) VALUES($1,$2,$3,'internal','admin') ON CONFLICT(principal_id,workspace_id) DO NOTHING",[randomUUID(),DEMO_IDS.mcteer,scope.workspaceId]);const membershipId=(await db.query('SELECT id FROM memberships WHERE principal_id=$1 AND workspace_id=$2',[DEMO_IDS.mcteer,scope.workspaceId])).rows[0].id as string;await insertLearningFixtureSession(db,{sessionId,principalId:DEMO_IDS.mcteer,token,membershipId,workspaceId:scope.workspaceId});
  const reviewer:CurrentSession={...scope.actors.admin,principalId:DEMO_IDS.mcteer,membershipId,sessionId,token,loginName:'mcteer'};
  const examples=[[100,'2000','1000'],[1,'10','30'],[1,'7','7'],[1,'20','15'],[1,'10','15'],[1,'1','2']] as const,measurements=[];
  for(let index=0;index<count;index++){

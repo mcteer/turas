@@ -1,3 +1,4 @@
+import {insertBoundFixtureSession} from "../fixtures/bound-session";
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import { withTestDatabase } from "../fixtures/database";
@@ -65,9 +66,7 @@ describe("monotonic retrieval context fence", () => {
              eve_session_id,creation_operation_id,binding_state,title)
             VALUES($1,$2,$3,$4,$5,$6,$7,'bound','Synthetic fence conversation')`,
           [conversation,environment,workspace,customer,principal,session,randomUUID()]);
-          await client.query(`INSERT INTO login_sessions(id,principal_id,token_hash,expires_at)
-            VALUES($1,$2,$3,now()+interval '1 hour')`,
-          [loginSession,principal,"a".repeat(64)]);
+          await insertBoundFixtureSession(client,{id:loginSession,principalId:principal,membershipId:membership,workspaceId:workspace,tokenHash:"a".repeat(64),expiresAt:new Date(Date.now()+3600000)});
           await client.query(`UPDATE conversations SET context_snapshot_schema='customer-context-v1',
             context_login_session_id=$2,context_membership_id=$3,
             context_audience='internal',context_generation=(SELECT internal_generation

@@ -1,0 +1,1395 @@
+# 016 Validation Record
+
+## Baseline
+
+Implementation began in the canonical checkout on `016-pilot-hardening`, planning
+commit `699f6f4`, main `db6c0b9a721fcf5f6311b5be8ecd18846e38a8c9`.
+Migration manifest is 055; 056/057 are available. Private preservation receipt records
+selected configuration, model and all 40,615 root workflow files. No selected database
+or Production record was changed. Requirements checklist is 16/16 passing; no
+extension hooks are installed. Ignore patterns cover Node/Python/Docker generated
+state, private evidence/configuration and credentials.
+
+## Current acceptance
+
+Implementation in progress. No 016 runtime acceptance, hosted provisioning, paid
+execution, participant feedback, pilot readiness or release is claimed by this record.
+Results will be appended with exact source/environment and truthful gate states.
+
+## Initial implementation checkpoint
+
+- T001: canonical source and preservation baseline recorded privately; no selected
+  database, model or root workflow writes performed.
+- T004: checked in actual local/hosted capability inventory and lifecycle policy
+  references. Missing hosted adapters, classes, matched restore and backup cadence
+  are explicitly pending, not readiness passes.
+- T015: added dedicated 016 source digest selection, including operational config,
+  catalog, tests, contracts and renderer assets; predecessor feature mappings retain
+  their own feature identity.
+- Narrow verification: 15 readiness contract/selection cases and eight private
+  evidence IO cases pass (23 total). `tsc -p tsconfig.pilot.json` passes.
+- Private evidence IO rejects unsafe modes, traversal, symlinks, overwrite, altered
+  bytes and metadata beyond 1 MiB. A partial run remains technically ineligible;
+  checker results never grant human approval.
+- These checks cover the initial implementation only. Full US1, migration, owned
+  harness, runtime, UI, CI and hosted acceptance remain incomplete. No release or
+  production readiness claim is made.
+
+## Owned migration checkpoint
+
+T009/T010/T013: migrations 056/057 initialize an empty owned database and upgrade
+an owned 055 database. Six integration cases pass: exact 57-entry ledger and repeat
+forward application; unambiguous primary session backfill; ambiguous session
+revocation; foreign-principal FK denial; contribution-derived immutable publication
+provenance; runtime denial of control writes, workspace provisioning and DDL.
+
+The initial fixture run found bootstrap's runtime workspace INSERT, corrected by
+requiring its explicit owner connection. A subsequent fixture SQL parameter typing
+failure was corrected and the complete six-case catalog rerun passed. Owned
+containers/directories were removed by the harness. No hosted schema was changed.
+
+## Foundation implementation
+
+T002/T003/T005/T006/T008/T011/T012/T014: pinned SDK decisions, fixed named case
+inventory and required method/role pairs, planned private command configuration,
+strict schemas, owned 016 harness, exact schema/ledger/grant validation, explicit
+054–057 learning activation compatibility and finite maintenance status registry
+are implemented. Planned command entry points are wired as their implementations
+are completed; their presence does not assert readiness. No production configuration
+was edited. Remaining story implementations and full catalog execution are pending.
+
+Current narrow checks: 18 readiness cases, eight evidence IO cases, five maintenance
+cases (31 total) and six owned migration cases pass. The latter also verifies exact
+runtime readiness and owner learning activation on 057. Typecheck passes. The harness
+verifies protected model/configuration/root-workflow byte digests after cleanup and
+creates separate owned artifact/workforce/report stores without provider credentials.
+
+## US1 scoped checkpoint and session binding
+
+T007/T016–T021: explicit private proof validation, immutable complete-attempt resume,
+fixed named-suite execution/conversion and separate explicit CI artifact aggregation
+are implemented. Forty-five deterministic contract/evidence/maintenance/result/resume
+cases pass. A real Vitest JSON capture was verified against the complete named
+readiness inventory. The full runner reports blocked for the thirteen unbuilt
+required story suites; this is not full pilot eligibility or actual CI acceptance.
+Local receipts cannot satisfy hosted/model/human requirements. Failed attempts and
+changed/tampered proof cannot be hidden by an older selection or partial replacement.
+
+T022/T024: eight owned session cases first exposed six failures, then passed after
+binding issue/resolve/logout to exact membership/workspace. Tests cover primary
+selection, explicit pilot selection, unassigned denial, immediate membership
+revocation, stable existing sessions, unresolved legacy denial, exact logout audit
+scope and private conversation isolation. Authentication defaults to the existing
+canonical primary workspace. Identity and model selection remain unchanged.
+
+## Workspace isolation and private object checkpoint
+
+The exact session and isolation catalogs pass 16/16 in an owned 057 database.
+Isolation exercises actual domain authorization, shared projection search and
+consumption, scoped metrics, publication eligibility and personal MCP authorization.
+The native dependency test uses a controlled owned binding to exercise the source
+fence; it does not claim an actual eve turn or model evaluation. Primary sanitized
+practices remain readable and consumable in the synthetic pilot.
+
+The five provisioning cases pass: exact scoped synthetic workspace, idempotent
+memberships/grants, wrong-environment refusal, unknown-principal/primary-overwrite
+refusal and no accepted or published facts. A replay never restores revoked grants.
+The provisioner requires the migration owner and an explicit private manifest;
+no Production provisioning was performed.
+
+The eight private-object contract cases pass against the local adapter: verified
+size/digest, immutable conflict reconciliation, identity/traversal denial, private
+read and exact scoped deletion. Blob adapter code uses private access and uncached
+reads; actual provider validation and domain store cutover remain pending.
+
+A production-build CLI WebKit workspace run passed 20/20 with zero retries, skips
+or flaky cases across the four projects. Screenshot inspection then identified
+that the mobile pilot label should remain visible with navigation closed; a
+persistent banner was added and a fresh complete workspace run is in progress.
+The upload UI catalog and the full 40-case UI acceptance remain pending.
+Owned resources were removed, and protected model/configuration/workflow hashes
+were verified by the harness after each completed owned run.
+
+The persistent-banner correction passed a fresh complete 20/20 workspace WebKit
+run (zero skips/retries/flaky results), including closed-navigation mobile context.
+Safe mobile screenshots were inspected. The earlier failures were login-navigation
+races and incorrect empty-state/alert locators, corrected in the tests. Removed an
+unconditional customer-page synthetic badge so workspace classification comes
+from the authenticated shell rather than a static page label.
+
+The private-object catalog also passes all eight cases against both local storage
+and a controlled SDK mock. The mock asserts private access, bypassed cache, fixed
+paths and overwrite refusal; it is adapter-mechanics proof only. Local inventory
+walks have a finite 10,000-entry bound and refuse excess rather than returning a
+partial successful inventory. Blob pages are capped at 100. Domain factory/refactor
+work is underway; provider validation, verified cutover and the full store/runtime
+regression catalog remain pending.
+
+Migration cases were rerun after adding projection origin derivation and immutable
+provenance assertions to the contribution-origin case: all six passed.
+
+## Artifact regression checkpoint
+
+The predecessor artifact HTTP catalog initially refused the unowned invocation.
+In the owned environment it passes two cases but rejects the scan/parse positive
+case: the existing 004 preparation manifest does not match either currently
+installed image ID. This remains a failed regression, not a accepted-file proof;
+preparation must be reviewed and regenerated in owned state before rerunning.
+No existing preparation or image tag was overwritten.
+
+That failure exposed a pre-existing transient-retry defect: the worker attempted
+a forbidden processing→quarantined transition and failed to advance attempts.
+Retries now use the allowed failed state, advance the scheduled attempt counter
+and stop after three attempts. Both artifact job integration cases pass in an
+owned database, including the new three-attempt regression. The common profile
+fixture now creates explicitly membership-bound sessions required by 056.
+
+The artifact, workforce, report and gap stores are being adapted for explicit Blob
+selection. Artifact downloads verify size/digest before returning chunks and
+recheck current authorization/generation for each chunk. Local formats remain
+unchanged. Full cutover/executor/cleanup and direct-upload validation is pending;
+T030 is not marked complete.
+
+## Direct-upload and scanner freshness work
+
+057 now includes immutable session/membership-bound staging capability headers,
+ten-minute expiry constraints and runtime admission grants. It also supplies
+immutable artifact-header UPDATE triggers; the grant setup permits UPDATE(id)
+only for PostgreSQL row locks on artifacts and upload batches. Original column
+writes and header deletion remain denied. Full migration validation must be
+rerun against this latest amendment before acceptance.
+
+Direct staging preparation, token admission and authenticated actual-byte finish
+are implemented for artifacts/workforce, with the client transport preserving
+local uploads. Signed provider callbacks perform no fact acceptance. The new
+eight-case upload catalog is being executed under actual runtime grants with
+controlled SDK storage; provider signature/network behavior is not claimed.
+It respects natural intake pacing rather than rewriting production rate limits.
+
+The existing scanner freshness check used filesystem modification time alone,
+which could make copied old signatures appear fresh. It now also checks the CVD
+build epoch. Two unit regressions pass for copied stale data, old file age and
+future build time. The existing 004 signatures are dated September 28 and need
+actual refresh; no timestamps or signature bytes were changed to manufacture
+a scanner pass.
+
+The latest eight-case upload catalog passes under runtime grants. It covers both
+maximum-size artifact/workforce staging and replay, exact single-path token
+admission (private upload, no overwrite/suffix, declared maximum and ten-minute
+expiry), foreign token/completion denial, expiry/cancellation, oversized bytes,
+revoked chunked reads and callbacks that accept no evidence. Controlled SDK mocks
+exercise adapter/token-option mechanics after simulated signature verification;
+actual provider signature verification and >4.5 MiB hosted transfer remain pending.
+The catalog waits for natural artifact intake windows without resetting counters.
+The latest six-case migration catalog also passed after capability/header changes.
+
+Workspace binding was additionally enforced in staffing policies/job actors/tool
+actors/decision settlement, support policy and gap-report job actors. A wider
+affected predecessor regression composition remains required before merge.
+
+Registry search and installed eve Vercel sandbox documentation were reviewed:
+the framework adapter prepares persistent session sandboxes. Heavy domain jobs
+use the pinned SDK behind their own nonpersistent governed executor, not a fabricated
+agent turn or additional speculative integration. Fixed execution contracts/local
+adapter implementation is underway and is not yet recorded as validated.
+
+### Fixed execution adapters — local checkpoint
+
+Eight controlled Sandbox SDK unit cases pass: fixed command and byte checks, denied network/ports/persistence, no in-execution credentials, mismatched isolation rejection, uncertain creation held without retry, lost lease denial, transfer mismatch, immediate oversized-output abort and cleanup uncertainty. These use a controlled SDK fixture and do not establish provider behavior. An explicit actual local Docker case also passed using the installed parser image resolved to its immutable image ID: verified synthetic text produced the expected manifest and its owned container was absent afterward. T033 is complete; image provenance, durable admission/reconciliation and actual hosted execution remain pending.
+
+### Durable heavy-job control — local checkpoint
+
+The eight frozen hosted-job integration cases passed in an owned disposable PostgreSQL environment under runtime grants. They cover SDK isolation rejection, original-deadline fencing, uncertain creation without a second dispatch, lost lease and stale-source denial, missing input, class failure isolation and exact tagged orphan reconciliation. Service-budget and provider behavior are controlled fixtures, so this proves database/control mechanics only; actual service admission, SDK provider behavior and charge settlement remain pending. The first run exposed a runtime lock privilege error; control synchronization now uses a shared advisory fence paired with an owner-update trigger, preserving SELECT-only runtime control privileges. Migration 057 also enforces immutable leases/state transitions and preserves the existing 50 MiB parser output bound. T036 and T040 remain open until the complete wired behavior is verified.
+
+### Actual local artifact processing — checkpoint
+
+The existing three-case upload HTTP contract passed in an owned disposable environment under runtime grants using newly prepared immutable scanner/parser image IDs and a genuine fresh signature snapshot (daily version 28149). The positive case performed actual ClamAV scanning and parsing, published the verified extraction, and kept intent completion atomic. Cancellation/expiry and revoked-stream cases also passed. The complete selected local report is `local-artifacts/016/artifact-real-eNMWQS/result.json`; earlier failed reports remain preserved. This is local processing proof, not hosted Blob/Sandbox or production acceptance. Preparation records retain `hostedVerified:false` and no hosted OCI assertion.
+
+Ten controlled executor cases plus four provider-reconciliation cases and four container-policy cases now pass. These cover original-deadline shutdown/deletion and deletion attempts after a failed stop, in addition to the earlier execution checks. The provider adapter performs metadata lookup with `resume:false`, rejects foreign ownership, treats partial inventory as incomplete and requires confirmed deletion. Actual SDK provider behavior and service-cost authority remain unverified.
+
+### Renderer and binding follow-up — checkpoint
+
+The complete two-case actual local executor rerun passed (`local-artifacts/016/executor-real-iBw3MD/result.json`): immutable-image parsing and real PDF/native PPTX rendering, digest/font/format inspection inside isolated execution, and LibreOffice edit/save/reopen validation. Both rendering and Office checks shared the original 120-second deadline. Earlier renderer failures exposed root-only copied static directories, including permissions masked by an operator umask of 077; preparation now explicitly makes static build directories readable while retaining its private parent. The current preparation is `local-artifacts/016/images-20261010-d/preparation.json`, with genuine signatures/OCR digests and `hostedVerified:false`. Hosted OCI references remain unverified, so T034 stays open.
+
+Retired all 18 image tags from superseded preparations plus three current base tags after exact image-ID checks; removed superseded downloaded static assets and build contexts. Historical proof/failed reports remain private. Only the three current candidate image tags and their reviewed static preparation remain for the next checks. No owned 016 DB or artifact-processing containers remained at this checkpoint.
+
+The session/workspace isolation/hosted-control rerun passed 24 cases (`local-artifacts/016/bindings-Z2K3YH/result.json`), and the additional customer-context/customer-create/general-chat regression passed six cases (`local-artifacts/016/profile-binding-mKg7OJ/result.json`). Native actor resolution, snapshot/conversation matching, conversation queries, customer creation and grant decisions now require the exact stored session membership/workspace; actor-loss maintenance recognizes a missing or mismatched session as unavailable. Complete predecessor/native catalogs and fresh quality applicability review remain required, so T026 is still open.
+
+### Upload identity, object cleanup and diagnostic/deadline follow-up
+
+The complete eight-case direct-upload rerun passed (`local-artifacts/016/uploads-MtyTMp/result.json`). Blob selection now checks the declared store against the identity encoded by the pinned SDK read/write token before provider operations. Private report readiness uses bounded metadata; exact cleanup reconciles already-absent objects and refuses conflicting bytes. Two controlled storage units passed; these do not establish actual hosted storage behavior.
+
+Twelve controlled executor cases pass, including exact safe parser diagnostic classification without returning raw stderr. The complete two-case artifact lease regression passed (`local-artifacts/016/deadlines-9JxaUx/result.json`), including unchanged deadlines across all retries and expired-work cancellation. Earlier expanded-case failures were invalid fixture timestamps under the existing exact 120-second constraint; those failed reports remain preserved. Artifact claims retain their original start/deadline, and workforce claims preserve the original deadline and deny expired retries. Typecheck passes. Full worker integration, real service-cost authority and hosted/recovery/acceptance catalogs remain pending.
+
+The render retry regression passed under owned runtime grants (`local-artifacts/016/render-deadlines-rRi2cZ/result.json`): a retry retains the first deadline, and expired queued render work becomes failed without another execution. Draft/send behavior retains its governing feature contract. The complete eight-case hosted-control rerun passed (`local-artifacts/016/capacity-Nt0lbU/result.json`), now also rejecting a third active heavy-job admission. These database/controlled-provider checks are not paid-service or hosted acceptance.
+
+T035's fixed Sandbox adapter implementation is complete with bounded verified transfers/output, original deadlines, denied network/ports/persistence and finally stop/delete behavior covered by twelve controlled SDK cases. Actual provider configuration/images/charges and full routed-domain verification remain separate open tasks (T034/T036/T037/T073). No after-implement hooks are registered; `.specify/extensions.yml` remains absent.
+
+### Governed domain execution and durable service authority — local checkpoint
+
+T036–T038 are implemented. The original job lease, two-job environment capacity, exact creation/provider identity and current source locks govern hosted execution. Runtime consumes an owner-provisioned service budget but cannot create, enlarge or settle it. Unknown dispatch holds the original reservation and prevents further admission. Eight cost contract cases and four actual owned-database authority cases passed (`local-artifacts/016/cost-authority-rW0XxM/result.json`); migration/grant upgrade and reapply checks passed six cases. These synthetic accounting records are not service authorization or actual charges.
+
+All three domain runners now use the governed executor. Actual local regressions passed three artifact cases (`local-artifacts/016/artifact-governed-A01m3G/result.json`), six workforce cases including EICAR rejection (`local-artifacts/016/workforce-governed-3hPNVY/result.json`) and two real PDF/PPTX rendering/download cases (`local-artifacts/016/report-governed-MNXlXh/result.json`). Earlier origin/static-store fixture failures remain retained. Report bytes are validated inside isolated execution, cataloged before store IO and accepted under current domain locks. Approval and email dispatch retain their existing boundaries.
+
+Four governed SDK/actual-database integration cases passed (`local-artifacts/016/governed-sdk-T881XX/result.json`): accepted domain publication, uncertain creation held without another paid dispatch, withdrawn-source output withheld and changed provider/pricing scope denied before creation. The first SDK run retained an active domain lease between cases; fixture isolation now cancels those synthetic leases before each case. The failed report remains preserved. These SDK results use controlled responses and do not establish hosted provider behavior.
+
+Protected heavy dispatch accepts only the fixed cron route and fixed artifact/workforce/report catalog, with a 360-second cancellation signal passed through each runner; their shorter original domain deadlines remain enforced. A separate watchdog cleanup path uses the original cost reservation and exact provider ownership, stays independent of authoring enablement and holds a changed provider scope. Thirteen dispatch/reconciliation/provider unit cases pass. Shared maintenance registry wiring, full acceptance composition, actual hosted SDK/images/charges, recovery and participant proof remain open. Typecheck passes. No deployment, merge, selected-database mutation or paid dispatch occurred.
+
+### Shared maintenance and durable local execution (T039–T040)
+
+The fresh composed run passed 67 cases with zero failures or skips in `local-artifacts/016/registry-current-r1xjke/result.json`. It covers all 15 actual maintenance bindings under runtime grants, owned worker start/crash/restart, independent class failure, local/hosted combined capacity, immutable original deadlines and source publication fences, controlled SDK uncertainty, exact owned compute reconciliation and durable cost holds. The separate complete eight-case hosted failure catalog passed in `local-artifacts/016/hosted-failures-current-tugzyq/result.json`. These controlled SDK results do not establish actual hosted service acceptance or authorize spend.
+
+Retrieval lifecycle claims are restricted to cleanup/invalidation while authoring is disabled; they cannot claim index work or trigger embeddings. The composed run includes an actual retired projection purge under runtime grants, with indexing left queued. Mutable parent locks replace invalid runtime locks on immutable retrieval payload rows; a missing lifecycle SQL argument is corrected. A stale startup-generation fixture assertion was corrected to require a fresh completed tick, current code version and no outstanding lease; the earlier failed report is preserved.
+
+Migration 055→057, role setup and forward reapplication passed all six cases after adding `operations_local_jobs` (`local-artifacts/016/migrations-current.log`). Local and hosted jobs share the two-heavy-job bound. Local compute has exact job/environment labels, a fixed image-level deadline and durable reconciliation before releasing uncertain capacity. Owner settlement of a charge permits stopping its original orphan without reopening the immutable ledger. Full TypeScript checking passed (`local-artifacts/016/typecheck-current.log`). No selected database, deployment, merge or paid provider dispatch was changed.
+
+Real routed local artifact intake/scanning/parsing passed three cases, the two-sheet workforce/review catalog passed nine, and genuine PDF/PPTX rendering and download passed two (`local-artifacts/016/routed-local-CQ1TgP/suite-{0,1,2}.json`). An earlier run selected a nonexistent report test filename; its partial scope is retained and does not count as routed report acceptance. The current UI run uses actual prepared immutable local images and fresh assets; its earlier failures remain preserved. UI expiry display uses a controlled error response; server capability expiry is separately tested by the upload integration catalog. Full hosted, lifecycle/access, recovery, load, quality and human acceptance remain pending.
+
+The current workforce original admission/EICAR regression passed all six cases in `local-artifacts/016/workforce-current-YD2YPw/result.json`: exact-byte admission/replay, actual clean scan, immediate withdrawal denial, and actual EICAR blocking before parsing/publication. The preceding run copied scanner assets into the personnel store rather than the shared artifact infrastructure root; its failed report (`workforce-current-qV9PMz`) is retained. Correcting the owned runner's asset placement required no product-code change or widened permission.
+
+### Dependency review in progress (T047)
+
+The pinned-tree audit (`local-artifacts/016/dependency-audit.json`) reports Next 16.3.4, source-map-js 1.2.1 and eve's exactly pinned undici 8.9.0 as affected. The [Next ImageResponse advisory](https://github.com/advisories/GHSA-vcvr-r3jv-pc5j) identifies a fix in 16.3.6; the [later cache-poisoning advisory](https://github.com/advisories/GHSA-mcj8-r9mp-w47p) identifies 16.3.8. The application does not use attacker-controlled next/og SVG generation; that applicability finding does not clear the dependency audit. A bounded patch-level remediation and native regression review remain pending. No speculative eve upgrade has been made.
+
+### Complete CLI WebKit workspace/upload catalog (T044)
+
+All 40 frozen journeys passed once with zero failed/skipped/flaky cases across desktop/mobile and light/dark (`local-artifacts/016/ui-0Ke1oH/summary.json` and four project reports). The runner checks exact file/title/project discovery, original immutable prepared image IDs, scanner/OCR asset digests, uncached domain completion and maximum 10 MiB bytes recorded in the owned database. It owns and removes its clone, database and local workflow state, preserving the selected root state. No browser on the host was operated.
+
+Keyboard navigation/removal, responsive controls, serious/critical accessibility, assigned synthetic context, denied login, empty/error states and primary-workspace behavior passed. Safe light/dark desktop/mobile upload screenshots were visually inspected; their layout has no horizontal overflow. They contain only synthetic fixtures. Next's development indicator is visible because the CLI harness starts the local native eve service through Next development; this is local UI evidence, not a Production appearance claim. Maximum-size originals remain quarantined until governed scanning; successful transport is not evidence acceptance. The controlled expiry/error display and foreign-owner denial are explicitly distinct from actual hosted Blob proof.
+
+Previous UI failures remain in their private directories. Corrected fixture errors include an ambiguous button/file-input selector, starting the native eve service, actual infrastructure assets rather than an unprepared transport fixture, WebKit keyboard-button activation and cancelling each exact interrupted fixture upload. Quotas are paced naturally; no governing quota is reset or weakened. The current result binds source digest `69cfce311e544e5e2b918d27084be13cf52d26bc04cf4b79c4eba0f44f312598`; subsequent source/dependency changes require a fresh complete acceptance run.
+
+### Recovery contracts, control and access admission (in progress)
+
+The matched-recovery contract rejects mismatched checkpoints, partial inventories, unsupported workflow capabilities, missing key availability, wrong environment/ledger, snapshot-derived or stale denial authority, and an unverified outside-domain copy. Its encrypted bundle digest covers the full matched archive; database dump identity and object inventories remain separate checks. Eight required contract cases and four actual AES-256-GCM cases passed (`local-artifacts/016/recovery-crypto-current-2.json`). Authentication failure removes partial plaintext; wrong capture context, symlink inputs and an existing destination are refused. The first stream implementation failed to close file handles reliably; bounded explicit chunk reads/writes replaced it and the hung run was stopped. Its owned temporary directories were removed, preserving selected state.
+
+An owned run passed 24 recovery contract/control/admission cases (`local-artifacts/016/recovery-admission-MBaMxg/result.json`) before the subsequent crypto/bundle additions. This proves current session issuance/read denial, domain and MCP actor denial, nonserializable protected cancellation authority, exact owned upload cancellation and all 15 cleanup classes remaining executable while locked. Control receipts and owner verification records are immutable; runtime cannot provision verification or unlock. Verification and control are separate from participant/release approval. A combined follow-up exposed missing fixture directories and a microsecond fixture lease/deadline mismatch; failed reports are retained and corrected fixtures require a fresh complete run.
+
+The control/capture/restore workflow is not yet complete: physical IO/capture fencing, current verification invalidation, actual matched capture and independent denial/replay reconciliation remain open. T049–T059 are not satisfied by owner-inserted synthetic verification rows. No Production or Preview database was changed. The patch remediation preserves eve 0.67.1 and the selected agent model, using Next 16.3.8, an eve-only undici 8.10.2 override and source-map-js 1.2.2. The current npm audit reports zero vulnerabilities (`local-artifacts/016/dependency-audit-patched.json`); required build/native/browser acceptance after these changes remains pending.
+
+### Current recovery IO, state invalidation and lifecycle engineering checks
+
+The complete owned recovery/control/admission/crypto/maintenance composition passed 38 cases with zero failed or pending cases (`local-artifacts/016/recovery-io-current-SyKD2i/result.json`). Quiescing closes admission without waiting for ongoing IO; the exclusive locked transition waits for its capture fence. A separate single database connection holds the process's collective IO fence, so fifteen concurrent cleanup callbacks can still query through the ten-connection runtime pool. Guards cover upload staging/finalization, report/gap object writes and exact cleanup, governed output preparation, the cleanup registry and independent hosted orphan reconciliation. HTTP upload bodies have a finite five-minute deadline. A subsequent source change still requires complete acceptance composition; this engineering run is not full recovery proof.
+
+Owner verification now binds a SHA-256 digest of current database content and schema/grants/constraints/functions/triggers under table SHARE locks. Unlock rejects an accepted-state or denial-state change after verification, even within its thirty-minute freshness window. Observational control/health rows are excluded; authoritative content and replay state are included. Actual object restoration and independently current denial/replay reconciliation remain required and unimplemented; this digest cannot replace either.
+
+The worker/executor/cleanup regression composition passed all 76 cases across fourteen files (`local-artifacts/016/registry-io-current-MprJ8w/`). The first runner named an incorrect existing test path; that failed attempt remains recorded rather than being counted. Actual private inventory/copy tests passed eight cases, plus the existing report-object test: actual stream bytes, exact immutable resume, destination mismatch, foreign scope, unavailable provider without fallback, interrupted enumeration and retained originals. The new inventory helper changes no configuration and performs no original deletion; the complete operator cutover procedure remains open.
+
+Eight owned lifecycle cases passed (`local-artifacts/016/lifecycle-current-pZgms4/result.json`): synchronous knowledge/search/citation/native/MCP withholding before projection cleanup, disabled-authoring purge without embedding dispatch, retained withdrawal replay authority, and immediate MCP revocation followed by hash minimization with its management receipt retained. These cases cover the shared-knowledge/MCP portion; the required cross-feature original/report/Blob/interruption matrix remains open. The fixed lifecycle command invokes all existing finite cleanup bindings and reports active-store execution separately from backup expiry.
+
+A fresh owned eve/Next production build passed after the dependency patch and recovery IO changes (`local-artifacts/016/build-recovery-current-2.log`). Its first attempt caught a missing named catalog entry and an intentionally partial fixture needing an explicit unknown conversion; both were corrected, and the failed log remains retained. This proves an owned local build, not deployment or Production behavior. Owned application/database/workflow resources were removed and selected configuration, model and workflow state preserved. No selected database, Production deployment, actual provider budget or email was changed.
+
+### Post-drain snapshot and schedule checks
+
+Six actual PostgreSQL checkpoint cases passed (`local-artifacts/016/checkpoint-current-qqgwGm/result.json`). The capture now takes its session-exclusive IO fence before beginning repeatable read, so a cleanup update drained before capture appears in the exported snapshot. The prior ordering could freeze database state before cleanup completed. The actual compatible dump, authenticated encryption and matched archive byte tests also pass. The broader recovery composition passed 59 cases (`local-artifacts/016/backup-composed-current-aNTIUd/result.json`) before this final snapshot-order change; it is engineering evidence, not full restoration acceptance.
+
+Seven schedule policy/CLI cases passed (`local-artifacts/016/backup-schedule-command-current.json`). The private inventory command enforces fixed cadence/freshness/retention policy, preserves failed foreign-scope attempts, distinguishes expired managed captures from operator archives, and grants no deletion or restore authority. Inventory timestamps cannot establish actual scheduled execution; the scheduler, managed expiry execution, independent current authority, outside-domain copy, complete isolated restore and two actual scheduled captures remain open. T051–T059 remain unchecked.
+
+The read-only legacy-store bridge and current private inventory passed 22 cases (`local-artifacts/016/legacy-inventory-current-2.json`). Actual artifact/workforce/report/gap files, including legitimate workforce hardlinks, copy into verified immutable namespaces with original bytes retained. Missing/foreign/unsafe stores, unknown report classification, symlink originals and changed expectations fail closed. A listed object disappearing during enumeration now fails instead of silently reducing the inventory. The first legacy test attempt failed because its fixture removed a directory without the recursive option; that report remains retained. This bridge neither changes configuration nor constitutes a complete operator cutover, full matched backup or hosted proof; T045 and T051 remain open.
+
+The owner drain now inspects all actual domain lease columns and report `dispatching` state, beyond the new processing registries. The complete owned recovery composition passed 61 cases (`local-artifacts/016/backup-composed-current-VMMSHJ/result.json`), including an independently leased domain table preventing a locked transition until its lease drains. Terminal work and expired leases are distinguished conservatively; old unfenced deployments still require explicit protection before capture.
+
+Actual PostgreSQL dump plus object checkpoint/archive/encryption cases passed six cases (`local-artifacts/016/checkpoint-current-aBY6wV/result.json`). The checkpoint copies verified immutable originals into private single-link files, verifies the full inventory again, retains originals and removes partial staging after byte/inventory failure. The combined storage/checkpoint tests passed 27 cases (`local-artifacts/016/object-checkpoint-current.json`). Capture deadlines now propagate to Blob inventory/read/write calls. No actual Blob calls occurred. This remains capture engineering proof, not complete workflow/current-authority/outside-domain/isolated database restoration acceptance.
+
+The current storage/checkpoint/schedule composition passed 35 cases (`local-artifacts/016/capture-storage-schedule-current-2.json`), including propagation of a capture deadline into a stalled simulated Blob request. This SDK contract case does not claim actual Blob behavior. A fresh owned eve/Next build passed (`local-artifacts/016/build-backup-current-2.log`) after fixing two incomplete typed test doubles; the failed first build remains recorded. Subsequent restore/authority additions still need complete acceptance validation.
+
+One actual owned encrypted PostgreSQL restore case passed (`local-artifacts/016/owned-database-restore-current-3.json`). It rejects the source database as a target, requires a separately created locked marker, verifies input dump bytes, uses the fixed PostgreSQL 17 client, checks restored marker/identity content, reapplies explicit runtime grants and denies runtime unlock. The first attempt exposed pre-existing target default grants admitting restored table reads before the grant step; the helper now closes those defaults and retains original function ACLs, with runtime table privileges withheld pending explicit grant refresh. The second attempt preceded the function-ACL preservation correction; only the third result covers the final restore helper. All databases/clients/containers and private plaintext/key buffers were cleaned after the owned run. The helper supports disposable owned targets only and never starts an app, reconciles independent current authority, publishes an alias or authorizes unlock. Full T053/T058 recovery acceptance remains open.
+
+The recovery/control/checkpoint/crypto composition passed 62 cases (`local-artifacts/016/backup-composed-current-I9Pdbe/result.json`). Owner verification invalidation now includes schema/default grants, relation ownership/ACL/RLS, row policies, routine ownership/ACL/security/configuration and installed extension metadata. An actual change to function execution authority after a fresh verification rejects unlock. Full source-to-target semantic grant comparison and independent current denial/replay reconciliation remain separate outstanding requirements.
+
+Four actual database sample cases passed (`local-artifacts/016/health-samples-current-onXJ9x/result.json`). Draft migration 057 now includes the missing payload-free sample table with fixed typed fields, server-owned 90-day expiry, immutable observations and bounded idempotent expiry. Runtime cannot supply timestamps or directly update/delete samples; the fixed expiry function rejects NULL/unbounded/foreign input and preserves permanent control receipts. Its checked-in checksum and explicit role grants were updated. Full health checks, scheduler placement and outage-detection proof remain open under T060–T062. Migration 056 remains unchanged and neither migration was applied to a selected or hosted database.
+
+The updated owned 055→056→057/repeat migration catalog passed all six cases (`local-artifacts/016/migrations-samples-current.log`). A fresh actual PostgreSQL checkpoint composition passed six cases (`local-artifacts/016/checkpoint-current-Z9V6Hl/result.json`) with a canonical permission digest included in the post-drain boundary. The fresh encrypted owned restore case passed (`local-artifacts/016/owned-database-restore-current-4.json`) and compared actual source/target relation, column, routine, schema/default grants and relevant role/membership attributes after explicit grant refresh. Database/catalog OIDs and database names are excluded from that portable permission comparison. This proves the owned permission comparison; independently current denial/replay and full feature-history/workflow restoration remain open.
+
+T030's storage integration is implemented: artifact intake/read/processing/cleanup use the selected store factory; workforce and report/gap paths select uncached private Blob or validated existing local storage; processing receives verified bytes instead of persistent source paths. Hosted deployments require explicit Blob/Sandbox selection, including prepared image/brand selection, and cannot select ephemeral local storage/processing as a fallback. The fresh worker/executor/store regression composition passed 77 cases across fourteen files (`local-artifacts/016/registry-io-current-s8pkhq/`); private store/config/report contracts passed twelve cases (`local-artifacts/016/hosted-store-selection-current.json`), with additional executor/dispatcher configuration checks passing (`local-artifacts/016/hosted-backend-config-current.json`). Earlier genuine local extraction/rendering and routed storage checks remain scoped predecessor evidence. Actual hosted Blob/Sandbox, image publication, inventory cutover and restart/revocation proof remain mandatory under T034/T045/T073 and are not claimed by T030 completion.
+
+### Valid pilot measurement isolation (continued implementation)
+
+The fresh owned `isolation-metrics-current-AOBq9X/result.json` catalog passed all
+eight required isolation cases. The metric case now creates five normally reviewed
+profile/plan/execution/measurement chains in the synthetic pilot workspace, releases
+the cohort there and checks its independently expected mean change of `2.00`. A
+valid primary session cannot release that population, sees an unavailable cohort,
+and has no primary release row. The remaining cases cover knowledge, retrieval,
+citations, native dependencies, job eligibility and MCP, including permitted primary
+shared knowledge in the pilot. Shared origin eligibility derives from immutable
+database provenance, and downstream source checks retain the requesting workspace.
+
+The first fresh attempt (`isolation-metrics-current-ZCu3RD`) exposed outdated owned
+learning fixture sessions; it was not accepted. Fixtures now bind membership and
+workspace on schema 056+, preserving their owned predecessor-schema path. Domain
+session authorization was not relaxed. The subsequent typecheck passed. This is
+local implementation evidence for T026, not Production or launch acceptance.
+
+### Maintenance observation and sample cleanup
+
+The fresh owned `health-samples-current-P0x3of/result.json` run passed all ten
+cases across sample retention, maintenance health assessment and actual worker
+start/crash/restart. The independent sixty-second worker lane observes all fifteen
+classes, persists only typed bounded samples, expires at most 100 ninety-day-old
+samples, and emits only class IDs and enumerated states. Missing/stale/failed/wrong
+version/future/incomplete observations cannot become successful ticks. Each stopped
+class is detected at its existing threshold plus the sixty-second check interval,
+no more than 240 seconds. The actual database case verifies one stale class, fourteen
+healthy classes, fifteen new observations, and an unchanged success timestamp.
+
+The first composed attempt (`health-samples-current-ZXC61Z`) failed an assertion
+that assumed no observations existed after the worker-restart test. The corrected
+assertion measures the exact fifteen-row increment; the original failure is retained.
+`pilot-health.ts --environment E --output NEW_PRIVATE_DIRECTORY --observe` records
+one source-bound maintenance observation and explicitly does not claim full
+readiness. T060–T062 remain incomplete pending full readiness/status and incident
+observation checks; this implementation does not establish hosted health.
+
+### Owner recovery-control implementation
+
+T049 is implemented. The fresh `backup-composed-current-qcwWS3/result.json` run
+passed all 62 cases, including eleven actual owner/runtime control cases: permitted
+transition order, exact revision and identity, immutable operation replay, incomplete
+or stale verification rejection, runtime denial, bounded lease drain, and invalidation
+after current state or function authority changes. Advisory admission fences remain
+held through transition and capture boundaries. The operator CLI requires an exact
+environment and separately supplied owner connection; local targets must be owned
+016 databases and remote transport must use verify-full. Actual full recovery
+reconciliation and hosted restore acceptance remain separate unfinished tasks.
+
+### Original-source retraction across shared consumers
+
+The fresh owned `lifecycle-current-w7wxnk/result.json` run passed all nine cases.
+The added case retracts a normally accepted profile original through its governed
+command, then denies the downstream published practice, search result, existing
+citation, native dependency and existing MCP actor while derived passages still
+exist. The separate knowledge suspension sweep retires that publication; retrieval
+cleanup then removes its passages with authoring disabled. Replaying the exact
+profile retraction after cleanup returns its retained receipt and produces no
+second lifecycle event. Existing withdrawal and MCP revocation cases still pass.
+
+The first attempt (`lifecycle-original-current.log`) incorrectly expected retrieval
+cleanup alone to suspend an active dependent publication. It was retained as a
+failure. The corrected case executes the real separate knowledge and retrieval
+maintenance authorities, while keeping the immediate source-denial assertions
+before either cleanup. T042 still needs the remaining original/report/store-fault
+and interrupted-expiry matrix; nine passing cases do not establish that matrix.
+
+### Lifecycle execution tooling and current build
+
+T041 is implemented. The executable lifecycle command was run against a fresh owned
+016 database from the canonical source checkout (`lifecycle-command-current.log`).
+All fifteen fixed cleanup class executions passed under runtime grants, using the
+existing domain functions and tighter step bounds. The expanded lifecycle inventory
+identifies originals, derivatives, native copies, governing withdrawal authority,
+original TTLs, cleanup functions, permanent receipts and separate backup outcomes.
+It corrects the earlier coarse table that incorrectly grouped the 730-day report
+audit policy with gap audit retention (365 days followed by its keyed fence).
+No global TTL or deletion authority was introduced. The command honestly records
+backup expiry as not executed, permanent replay catalog as not verified and full
+lifecycle verification as false; T042 and hosted/lifecycle acceptance remain open.
+
+The fresh owned eve and Next production build (`build-health-original-current.log`)
+passed with the monitoring and original-source test changes. Selected configuration
+and root workflow state were preserved. This is an owned build/start check, not a
+Production deployment or launch readiness claim. The later inventory-only change
+passed documentation validation and `git diff --check`.
+
+### Report image compatibility and interrupted physical cleanup
+
+The first composed report/lifecycle run (`report-lifecycle-current-DEolOv`) exposed
+a real predecessor-image regression: the new executor invokes fixed render/office
+commands, while the existing CI-built report image lacked those programs. The
+`report-renderer/Dockerfile` now includes the same fixed scripts as the pilot image;
+the actual image was rebuilt (`renderer-fixed-program-build.log`). The complete
+actual report cleanup plus nine-case lifecycle composition passed ten cases in
+`report-lifecycle-current-cTlAfz/result.json`.
+
+The expanded fresh composition (`report-lifecycle-current-uLtzGi/result.json`) also
+passed all ten cases. It renders real PDF/PPTX outputs, then mirrors those exact
+bytes into a deterministic Blob fault adapter: one deletion succeeds, the second
+fails, the database cleanup transaction rolls back and downloads remain denied.
+Retry accepts the verified missing object, removes the remaining exact object and
+is repeat-safe. Local originals remain intact through the adapter fault exercise
+and are then actually deleted through their own fresh exact cause; unrelated
+objects survive. This modeled Blob interruption is not an actual hosted Blob claim.
+An intermediate expanded attempt failed because the fixture did not restore its
+local-copy catalog after the mirror exercise; its failure was retained.
+
+### Maintenance cadence and immutable cost accounting
+
+The maintenance catalog now records the actual existing two/five/thirty-second
+schedules instead of keeping accelerated intervals in a separate map. Each stale
+threshold is at most three actual intervals, capped at 180 seconds; the catalog
+schema rejects longer thresholds. The fresh `maintenance-cadence-current.json`
+composition passed all 39 contract/suite-result/health/scheduler cases and the fresh
+`health-samples-current-EvBKEo/result.json` owned ten-case observation/worker catalog
+passed after this correction.
+
+T064 implementation is complete. `cost-command-current-p7PoNC/result.json` passed
+all 21 contract and actual owned database cases. The owner command supports strict
+status/provision/reconcile records across eight separately scoped categories; caps
+are immutable, revoked authority cannot be revived, unknown dispatch holds admission,
+estimates retain the full reserved bound and actual charges are distinct. Draft 057
+now requires an immutable exact evidence/review receipt for settlement; runtime
+cannot provision, settle or alter those receipts. Idempotent replay binds the whole
+request, including evidence/review digests. The command makes no provider calls and
+does not approve release. No actual 016 paid budget was provisioned or consumed.
+Fresh full migration/recovery/grant composition is still required after this draft
+schema addition; selected and hosted databases remain untouched in this turn.
+
+- Current encrypted owned database restoration: `owned-database-restore-current-5.json`, 1/1; draft 057 cost receipt schema restored, grants explicitly refreshed, portable source/target grants match. No Production restore or release permission established.
+- Updated maintenance clock/cadence/sample composition: `health-samples-current-NDyB4Z/result.json`, 10/10.
+- Real elapsed worker crash/outage/restart composition: `health-samples-current-HRfUdm/result.json`, 10/10. After SIGKILL, independent observations waited for all 15 actual completion timestamps to become stale naturally (no fake clocks or timestamp rewriting), within five minutes, then verified restarted actual worker ticks. This proves owned outage observation and retention, not a configured hosted monitor or full readiness endpoint.
+- Private feedback contract/current database membership tests: `feedback-current-hFTHAu/result.json`, 13/13. Actual root CLI record → immutable triage append and revoked partner refusal: `feedback-command-current-JrEsfJ`. Observations were explicitly synthetic fixtures; G21 real human feedback remains unverified.
+- Refreshed all three amd64 scanner/parser/renderer images after the fixed report programs changed: `images-current-20261011/preparation.json`; ClamAV signature version 28149, pinned OCR digest, exact actual local image IDs. No OCI publication or actual hosted execution.
+- Owned eve and Next production build after cost/cadence changes: `build-cost-cadence-current.log`, passed. This precedes feedback additions; final fresh build still required.
+
+- Current bounded access review: `access-current-QyPUoF/result.json`, 8/8. The actual newly prepared pinned ClamAV image detected harmless EICAR bytes through `runArtifactJob`; the original became failed/unsafe-content, could not be read as usable content or retried, and produced no extracted units. Actual database cases verified Pending claims cannot enter accepted context, forged tool attributes cannot establish an attempt, partner foreign-customer and internal foreign-workspace reads are denied, conversations remain owner-private, runtime control/schema/cost-receipt mutations fail, and diagnostics omit synthetic private sentinels. Original-withdrawal/shared source eligibility is additionally exercised by the 9-case lifecycle proof and 8-case isolation proof above. This is local engineering review, not actual-model prompt-injection evaluation or hosted acceptance.
+- Current production dependency audit: `security-audit-production-current.json`, zero vulnerabilities. `git ls-files .env.local .eve local-artifacts` returns no tracked private runtime artifacts; `git diff --check` passes. Full tracked-output and independent release security review remains in progress.
+- Feedback/contract/readiness result-validation composition: `feedback-contracts-current.json`, 40/40.
+
+- Stable private workflow byte staging: `workflow-checkpoint-current-2.json`, 8/8, covering nested/empty inventories, symlink/hardlink and permission refusal, actual filesystem case semantics, unsupported names, retained existing operator destinations, pre-abort and real mid-copy interruption with original-byte preservation. The helper explicitly does not establish a stopped native runtime or full matched checkpoint.
+- Current PostgreSQL exported snapshot + all four object-store kinds + nested workflow fixture archive encryption/extraction: `checkpoint-current-DN2Nth/result.json`, 6/6. Every restored archive entry matches its original SHA-256. Full native restart/current authority/outside-failure-domain/scheduled cadence remains unverified.
+- Bounded tracked-output/security audit reviewed 2,295 tracked/new nonignored files. No `.env.local`, `.eve/` or `local-artifacts/` paths are tracked. Four credential-pattern files were reviewed: they contain explicitly synthetic/controlled mocked Blob fixtures, not selected credentials. Full production and development dependency audit `security-audit-all-current.json` reports zero vulnerabilities. New feedback stdout exposes state/digests only; observation prose, participants and customer identities remain in guarded private artifacts. Existing access diagnostics tests retain only safe enumerated metadata.
+- Unresolved release security blockers from this bounded audit: the public readiness route still uses its older broad readiness behavior (T061); actual hosted store/image cutover, protected status and full current-denial reconciliation are not yet established. Those gates remain open and 016 is not launch-approved. Independent operator review remains T068.
+
+- Read-only actual hosted metadata inventory: `target-inventory-current-KDbrjU/targets.json`. Preview is schema 38, Production 55; both servers are PostgreSQL 18 and explicit supplied owner connections were verified. No migrations, provisioning, record changes, deployment or provider calls were performed. This exposed and prompted removal of the PostgreSQL-17-only recovery assumption.
+- Protected health/status implementation: `health-status-current-noc1qm/result.json`, 7/7, including actual bound canonical login versus member/partner/MCP/header impersonation, locked diagnostics, minimal public 503, no anonymous sample writes, actual maintenance bindings, missing/failed tick handling and actual wrong-schema/wrong-grant refusal. Actual infrastructure/backups remain explicitly unverified; T060/T061 and the mandatory full health suite remain open.
+- Exact completion timestamp and real elapsed worker outage/restart: `health-samples-current-YuYkgI/result.json`, 10/10. A single database clock value now records success/completion, removing a millisecond-boundary race between two separate clock calls.
+- Owned eve/Next production build through health, feedback and workflow changes: `build-health-feedback-current.log`, passed, selected environment and original workflow state preserved. PostgreSQL-18 support was added afterward; fresh final build still required.
+
+### Current-schema predecessor composition (2026-10-11)
+
+The owned PostgreSQL 18 run `combined-predecessor-current-7KQqCC` passed all 39 foundation, conversation, membership/grant and MCP profile/evidence/knowledge/plan/report/authority cases with zero failures or skipped cases. Earlier fixture-origin failures remain in their private reports. Older load fixtures now create actual membership-bound sessions on schema 056+ while retaining pre-056 compatibility; runtime admission is unchanged. The new `check:pilot-regressions` command composes complete predecessor gates, all 39 current-schema cases, and fresh four-project pilot WebKit acceptance. Its complete composition has not yet passed; T081 remains open. This local evidence does not establish hosted behavior.
+
+The subsequent full predecessor checks passed 77 learning domain/native fixture cases, 25 actual local eve native checks without paid calls, 198 cases across the 40-suite gap regression composition, 120 complete gap cases and 57 complete partner cases. Their immutable private reports retain prior failures. Ordinary gap/partner harnesses now upgrade their owned databases to the installed schema; explicit predecessor migration rehearsals retain their original 047→049 and 049→051 boundaries. Disposable learning/partner/MCP/gap environments supply the actual Git commit required by maintenance. The scheduler unit fixture now supplies its physical IO fence dependency instead of silently preventing every mocked tick. Current cross-workspace tests separately prove rejection of a forged session scope and concealment for a genuinely bound foreign-workspace session. Full T081 composition, including fresh pilot UI, remains pending.
+
+Read-only scoped Vercel inspection found an existing private Blob store connected to Turas in `iad1` and no container repositories. Hosted configuration lacks the new explicit Blob/job backend settings. Sensitive Production environment values are masked by Vercel when pulled; the private placeholder file is not a usable runtime connection or proof of deployed runtime grants. No selected configuration, hosted database, store, image or deployment was changed by these inspections.
+
+### Complete predecessor composition and quality applicability (2026-10-11 continuation)
+
+The complete `check:pilot-regressions` attempt passed all three groups in
+`local-artifacts/016/regressions-ebbf6895-9d26-4a35-bddf-21206e033b3b/completed.json`: the eight required predecessor gates, 39 current-schema PostgreSQL 18 cases, and 40 fresh WebKit cases across four projects. Paid calls were zero; hosted proof is false. Earlier failed attempts remain preserved. This result represents its recorded source digest; subsequent quality-index changes require a fresh final composition. T081 remains open until the final source is verified.
+
+The new `pilot:quality -- --base <full-commit> --output <new-private-directory>` command records source-bound applicability for nine governing evaluation catalogs: capability/context/artifact honesty, retrieval, research, plans, staffing, execution, support, expansion, and learning. Shared domain, authentication, recovery, API, migration, model/package, or evaluation-fixture changes conservatively require fresh evaluations. An apparently unchanged path still requires historical-proof review; no historical capture is accepted automatically. Each entry maps evidence/citation/abstention, owner, or publication boundaries to its existing full evaluation/verifier commands. The command neither executes providers nor grants budget or release authority.
+
+`local-artifacts/016/quality-unit-current.json` passed all five applicability cases; `typecheck-quality-current.log` passed and `git diff --check` was clean. The actual private index in `local-artifacts/016/quality-applicability-current/quality.json` identifies nine fresh-required catalogs, with actual-model quality, hosted proof, historical acceptance and budget admission explicitly unverified/false. Earlier 011/014 budgets are not reused. T069 stays open: current live evaluations and governing reviews have not been run. T065's index is implemented; final-source indexing remains part of closeout.
+
+### Exact owner recovery boundary (2026-10-11 continuation)
+
+Recovery control and database checkpoint now require `current_user` to match the actual `operations_control` table owner, rather than accepting any role with UPDATE permission. The added actual PostgreSQL regression creates a delegated NOLOGIN writer, proves its UPDATE grant exists, and verifies both control transition and capture reject it before any callback or mode change. The owned PostgreSQL 18 control/checkpoint cohort passed all 18 cases (12 control, six checkpoint) in the private `recovery-owner-current-*/result.json` attempt, with original resources and selected state preserved. This fixes the owner boundary; it does not claim full matched capture/restore or current-authority reconciliation is implemented.
+
+`docs-quality-current.log` passed the documentation check, `build-quality-current.log` passed the web/eve build, and `typecheck-owner-current.log` passed the pilot typecheck. The build preceded the last owner-check change; the final-source build remains a release gate.
+
+### Portable content proof, isolated restore and conservative authority recovery
+
+The owned PostgreSQL 17/18 restore case now creates normally reviewed profile/knowledge content, captures a portable all-domain content and sequence digest under the actual source checkpoint fence, and compares the restored content rather than just principal counts. It passed in `local-artifacts/016/recovery-content-cross-major-current.json` (one complete case exercising both majors). Recovery/archive manifests now bind `acceptedContentDigest`; schema/grant authority remains a separate check. Object recovery hashes canonicalize JSON property order after the real composed fixture exposed different hashes for identical object descriptors. Earlier failed attempts remain private evidence.
+
+`pilot:recovery:check -- --restore-isolated` now restores authenticated archives into an already locked, separately named owned 016 database only. It validates all captured content, exact installed ledger, explicit runtime grants, and six object namespaces/four store kinds, preserving authenticated workflow bytes without starting or claiming to resume a runtime. Actual fresh authority reconciliation and outside-domain proof remain unverified. PostgreSQL cleanup stops the owned restore container before removing runtime grants, including on partial failure, and no command promotes or unlocks. This is not a Production/Preview restore CLI or a 055 prechange backup. T051–T058 remain open for full scope.
+
+`local-artifacts/016/isolated-restore-current-5.json` passed all three composed cases: successful physical restore of accepted content plus four real object kinds; wrong-key rejection before target replacement; and validly encrypted but wrong content proof rejected after restore with runtime access removed. The synthetic workflow/outside-copy/current-authority manifest flags in this fixture establish contract mechanics only. The returned full readiness/current-authority flags are false. No actual provider, accepted report rendering, partner training recovery or managed Workflow restoration is claimed by these three cases.
+
+The absent-current-proof fallback now revokes restored sessions, permanently removes MCP credential hashes, revokes active partner grants, and preserves captured fact histories and permanent receipts while every required scope stays globally fenced. MCP credential tombstoning uses its existing irreversible identity trigger; it does not fabricate a human revoker membership. Management metadata reports an unexpired credential with a permanently removed hash as revoked and excludes it from active-credential limits. `pilot:recovery:authority -- --quarantine` records actual owner-bound, exact marker/recovery/revision scope. It cannot produce full current-denial/replay verification or unlock. The composed restore invokes this fallback automatically.
+
+Migration 057 also denies runtime login-session INSERTs in quiescing/locked modes at the database boundary, including legacy inserts without bound-workspace columns. Owner migration/restore operations retain their explicit owner path. This closes a legacy login-write bypass; externally stopping/protecting older deployments and unfenced workers remains required before release/capture. The draft 057 manifest checksum was refreshed, with no hosted migration applied.
+
+`local-artifacts/016/recovery-quarantine-current-PTGWke/result.json` passed all 35 actual PostgreSQL 18 cases (12 control, 12 admission, six database checkpoint, five authority quarantine). Quarantine cases cover runtime denial, actual credential/grant revocation, wrong scope, idempotence and the owner CLI retaining histories/receipts. The eight-case full current-authority catalog is still unimplemented and is not replaced by these fallback cases.
+
+### Due-work maintenance health (continued implementation)
+
+- `maintenance-backlog-current-6cUXBW/result.json`: 37/37 actual owned PostgreSQL 18 cases across all fifteen bindings, typed observations, scheduler behavior and new due-work cases. Future retention/retry times are excluded; overdue work is ordered before the 1,001-row cap; the returned oldest timestamp comes from the queue. Healthy knowledge publications receive an actual persisted inspection timestamp rather than remaining permanently overdue. Draft migration 057 and its manifest were updated explicitly; no hosted schema was changed.
+- `health-current-wYM7Fu/result.json`: 8/8 actual owner/runtime and bound-session health/status cases. Public output remains only `{ready:false}` with 503. Internal members, partners, MCP credentials and role headers cannot obtain operational diagnostics. A fresh successful tick with an overdue backlog fails its class without masking healthy independent classes. Infrastructure and backup acceptance remain unverified; these checks do not establish hosted readiness or replace a stale-backup restore exercise.
+- Health observations now retain the actual oldest due timestamp alongside bounded counts for the existing ninety-day retention window. Runtime may insert that typed field but cannot supply sample clocks or edit/delete observations. This last sample-column change requires the subsequent verification recorded separately below.
+- T060/T061 remain open pending the complete stopped-class/backup and actual infrastructure readiness acceptance. No pilot-ready, merge or deployment claim is made.
+
+- `maintenance-backlog-current-u03KRm/result.json`: 38/38, rerun with the explicit oldest-due sample column/runtime grants, including immutable typed age observation without clearing queues or changing success clocks.
+- `maintenance-worker-refresh-bjlIxa/result.json`: actual SIGKILL, real stopped-clock observation and restart, 1/1. All fifteen required classes became stale through actual polling in about 92 seconds, then completed fresh ticks under the restarted worker. Together with the 8/8 `health-current-wYM7Fu` authorization/readiness diagnostics cohort, this completes T060's health/status/stopped-class/safe-output tests. T061's actual infrastructure/backup readiness remains open.
+- Fixed load measurement mechanics: `load-measurements-current.json`, 8/8 unit cases. Eighteen immutable classes, ≥100 completed measured samples each, exact fixture population and 25 observed actors, strict overall/per-class failure rates, all slow/error samples retained, admitted MCP versus client latency separated, natural quota waiting counted, no quota resets/provider calls. Pure assessment is not a performed benchmark or platform resource proof.
+- Actual owned population: `load-fixture-current-yuVHWL/result.json`, 1/1 in about 35 seconds. Exactly 25 normally issued bound sessions (15 internal/10 partner), 250 synthetic customer references, 2,500 normally proposed/accepted manual evidence records, 10,000 materialized eligible delivery passages, 2,500 ordinary administrator partner grants, and zero embedding dispatches. Owner scaffolding creates synthetic identities/customer references only; no acceptance state or grants are inserted directly. Other accepted/published read-class fixtures and the complete timed workload are still pending; T063/T066 remain open. The preceding duplicate-state fixture failure is retained in `load-fixture-current-AuC8Rj` and was corrected by respecting the customer creation trigger's existing profile state.
+- Main and pilot typechecks and documentation checks pass after these changes. Protected selected configuration, root model and workflow state were preserved by the owning harnesses; no Production/Preview mutation, paid dispatch or deployment occurred.
+
+#### Load corpus eligibility correction
+
+The initial population result above proved reviewed rows and current materialized
+passages, not freshness eligibility: most manual claims had unknown observation
+dates. It is **not** acceptance of the required eligible-passage population and
+must not be selected for the load gate. The fixture now proposes dated synthetic
+product-use observations, reviews each normally, and calls the actual retrieval
+quality reader and `currentFactEligible` for every revision before materializing
+its four passages. A fresh run is required; previous population/delivery/training
+prototype captures remain historical mechanics only.
+
+The initial actual SDK attempt rejected a large profile page. Ten large record
+payloads plus the duplicated MCP text/structured envelope exceed the unchanged
+131,072-byte response ceiling. The fixed positive read uses one-record profile
+pages within the existing limit; no server cap, scope, role or quota is relaxed.
+Failures are retained in `load-mcp-current-xndt2A` and
+`load-mcp-current-3fgOcK`; a fresh complete SDK attempt must pass all 25 consumers
+and five categories. This is separate from the required timed workload.
+
+### Fixed-load fixture and instrumentation follow-up (2026-10-11)
+
+The owned PostgreSQL 18 evidence-fixture check
+`local-artifacts/016/load-fixture-current-SDBhcV/result.json` passed its one case:
+25 normally issued membership-bound sessions, 250 synthetic customers, 2,500
+explicit ordinary partner grants and 10,000 individually reviewed, currently
+fact-eligible customer passages. This capture precedes the later heterogeneous
+compact report fixture and is retained as fixture mechanics evidence only.
+
+The corrected actual pinned-SDK fixture capture
+`local-artifacts/016/load-mcp-current-r2CIht/result.json` passed its one case,
+including all 25 consumers and all five positive categories (125 read receipts).
+The report sample was made compact without increasing the existing 40-slide or
+128-KiB MCP response limits. The fixed corpus now has 60/30/30 passages in its first
+three customers and 40 in each remaining customer, totaling exactly 10,000; each
+passage still originates in a normally reviewed, currently eligible observation.
+This capture precedes the subsequent compact lexical-terminology adjustment and
+benchmark request changes; it is not a fresh full-source acceptance receipt.
+
+`local-artifacts/016/load-statistics-current-jYnxfq/result.json` passed all nine
+instrumentation/measurement cases. Disposable PostgreSQL 18 uses owner-only
+`pg_stat_statements` instrumentation and counts successful top-level runtime
+statements without capturing query text. Reset/eviction invalidates the count;
+unknown per-request counts remain null. Class aggregate counts are separately
+attributed to each serial request wave. These tests do not establish workload
+performance or hosted capacity.
+
+The actual benchmark now exercises 13 ordinary HTTP classes and five pinned-SDK
+classes with real actor sessions, ordinary reviewed delivery/training/knowledge/
+learning records, exact MCP admission receipts, actual quota pacing, observed
+Docker/app resources and a two-minute warmup plus ten-minute measurement. Search
+uses the unchanged five-active ceiling, MCP waves respect the unchanged concurrent
+workspace ceiling, and queue/client/admitted time remain separate. Natural quota
+pacing may extend measured sampling only up to the fixed 60-minute bound. No model
+or embedding provider credential is admitted, and quotas are never reset.
+
+Initial owned warmup attempts were stopped rather than accepted: an oversized
+customer-wide report exceeded its existing slide cap; a deferred hypothesis was
+incorrectly read through an active-only list; and compact lexical observations
+omitted a required search term, causing missing search/citation results. The
+benchmark now requests the exact deferred record and retains every actual sample
+and safe class failure diagnostic, including on interruption. Final reports are
+prepared after the normally reviewed synthetic learning outcome so their source
+snapshot is current. T063 and T066 remain open pending the complete timed capture
+and complete fault catalog. No hosted migration/deployment, paid call, external
+message or Production pilot approval occurred in these checks.
+
+### Complete owned fixed-load capture (2026-10-11)
+
+`local-artifacts/016/load-sF3VHG/completed.json` records a source-bound successful
+actual HTTP/pinned-SDK benchmark. Its source digest is
+`17eef05cdc30a679caf018307cd3ef5c332471b82ae06d8e5c05a0020e02693f`.
+The 120,000-ms warmup was followed by 603,560.889625 ms of measured work (total
+723,560.889625 ms). All 18 required classes passed, with 3,370 completed measured
+reads, at least 120 per class, zero unexpected failures and zero quota denials.
+The largest ordinary-class p95 was 341.391 ms; the largest actual admitted MCP
+category p95 was 261 ms. All five MCP categories used exact persisted admission
+receipts; client latency and queue wait remain separately captured. No quota state
+was reset and no paid model/embedding call was admitted.
+
+The benchmark captured 354,442 successful top-level runtime SQL statements across
+its measured class waves, without SQL text, and actual owned database/app resource
+observations in `resources.json`. It verified unchanged source after the run and
+completed its owned cleanup/protected-state checks. No labelled owned pilot
+container remained. These are observed local resources and performance, not
+hosted capacity or hosted readiness. Samples, full class results and any earlier
+failed/interrupted attempts remain private and distinct. T063 is complete; T066
+remains open for the complete fault catalog. Later implementation changes require
+fresh final source-bound acceptance before release.
+
+### Storage rehearsal and complete owned fault follow-up (2026-10-11)
+
+The compact fixed corpus passed its fresh one-case verification in
+`local-artifacts/016/load-fixture-current-raEViO/result.json`: all 25 issued bound
+sessions, 250 synthetic customers, 2,500 partner grants, 2,510 ordinary accepted
+revisions and exactly 10,000 currently eligible customer passages. No provider
+embedding operation was created.
+
+`local-artifacts/016/isolated-restore-current-6.json` passed all three fresh physical
+restore cases, including the bounded transaction change. This remains content/
+object restoration with locked quarantined authority, not service restoration.
+
+`local-artifacts/016/storage-copy-current-F7DKBT/result.json` passed all five new
+fenced local-copy cases: six namespaces and cold parity, idempotent retry, changed
+revision/open-fence refusal, destination conflict and missing-source refusal.
+Source bytes remain intact; no configuration or hosted store was changed. The
+first attempt failed because the owned test artifact parent was absent; its failed
+capture is retained separately. T045 remains open for actual legacy/hosted copying,
+reconciliation and authorized cutover.
+
+`local-artifacts/016/faults-J3bHvu/completed.json` records a source-bound full owned
+fault catalog: nine complete suites (64 cases) plus actual PostgreSQL stop/start
+with HTTP denial, minimal 503 readiness, and verified profile/session recovery.
+Controlled SDK/domain cases cover storage unavailability, network/port denial,
+original deadline, uncertain launch, lease/source loss, orphan reconciliation,
+cost scope/exhaustion/unknown dispatch, all 15 class bindings, health access and an
+actual worker crash/restart. No paid provider dispatch occurred. The earlier
+`faults-q2YY9N` attempt failed solely because its outage verifier mistakenly required
+a 5xx instead of recognizing the actual 401 admission denial; it is not selected
+as acceptance or combined with the later pass.
+
+Remote fault mechanics remain explicitly controlled fixtures; this is not hosted
+Blob/Sandbox fault proof or the independent operator exercise. The actual database
+outage timing is recorded separately in `database-outage.json` and is not full RPO/
+RTO. Later CLI registration/evaluation-fixture changes invalidate selecting these
+captures as the final current-source bundle; final acceptance remains fresh after
+the last implementation change. T066 remains open for that final complete bundle.
+
+The owned encrypted candidate capture executed three real PostgreSQL 18 cases in `local-artifacts/016/capture-candidate-current.json`, all passed: matched pinned dump/stable workflow capture with authenticated decryption; incorrect locked revision rejection with no retained partial bytes; captured-key/pre-interrupted rejection preserving originals. The command emits only a candidate, with current authority, workflow stop/resumption, outside-domain copy, scheduled execution and restoration readiness unverified. T051 remains pending. The completion receipt now follows successful checkpoint commit/fence release; failed completion removes its new partial receipt and encrypted output. Catalog registration and this failure-cleanup adjustment require a fresh check before final source acceptance.
+
+T067's incident/withdrawal/revocation/worker/budget/uncertain-send/release procedures now identify actual owner authority, evidence, safe action, rechecks and stop conditions. The registered control command and existing readiness command are linked explicitly. This completes procedure authoring only; T068's independent operator exercise remains pending. Task completion is now 52/84.
+
+Four real owned capture cases passed in `local-artifacts/016/capture-candidate-interruption-current.json`. The added case observes an actual exported Postgres checkpoint before interrupting, requires failed capture, retained locked control, absent partial output and successful acquisition/release of the prior capture fence. Three physical restore cases also passed after restore command cancellation was added; the previous restore result is retained separately. Four actual child-process cancellation cases passed in `local-artifacts/016/recovery-cancellation-repeated-current.json`, including repeated SIGTERM while cleanup is still running. Capture, restore and integrity verification now retain signal handlers until bounded cleanup settles. These checks do not replace the unfinished eight-case full recovery/current-authority catalogs.
+
+A private hosted preparation draft is retained at `local-artifacts/016/hosted-release-preparation-draft.json`: existing target identities, dated PostgreSQL/schema observations, local image preparation, exact disabled-first migration/service order, required protected configuration names, actual participant input and missing cost/recovery/hosted prerequisites. It explicitly admits no execution, budget or hosted proof; T072 remains open until the concrete measurable cost/credential and full recovery prerequisites are resolved. No external service was provisioned and no model/send request was dispatched.
+
+The protected database health check now also rejects runtime CREATEDB/REPLICATION, database CREATE and direct/indirect membership in owners of public relations/routines, including NOINHERIT memberships that permit SET ROLE. The real PostgreSQL 18 health catalog passed all eight frozen cases in `local-artifacts/016/health-privileges-current-YNQuUq/result.json`; its existing schema/grants case now changes each privilege and restores it, including a two-hop owner membership. This expands actual grant validation without claiming store/image/backup health. T061 remains pending for those actual producers.
+
+The operator selected an existing operator-controlled backup destination for 016. Its actual path/bucket and access method remain requested; neither the selection nor the preparation draft proves a reachable destination or outside-failure-domain copy.
+
+After the current capture/cancellation/privilege changes, `npm run build:web:check`, `npm run build:eve:check`, main typecheck, pilot typecheck and `git diff --check` passed. The eve build used the existing `--skip-sandbox-prewarm` command and did not dispatch an actual model request. The full predecessor/current-schema/WebKit regression composition is running with the prepared owned images; source edits are held during that source-bound capture. These checks remain local and do not satisfy CI, hosted deployment or full recovery acceptance.
+
+The current actual AI Gateway catalog was queried read-only for the unchanged `spacexai/grok-4.7` model. Its selected published input/output rates were $2/$6 per million tokens, respectively; the existing conservative 500k input plus 500k billed-output ceiling reserves $4 per model step. Metadata is private at `local-artifacts/016/model-pricing-preparation-current.json`. This made zero paid generation calls and admitted no 016 evaluation budget. The legacy governing runners still need one consistent finite admission/accounting boundary for the full fresh catalog before any new model batch; the earlier 011/014 budgets have not been repurposed.
+
+The fresh regression composition `regressions-fde8ba6a-93ed-4b4d-9acd-60e0b811136d` failed before browser execution at 014 WebKit's owned production build. Its domain/native gates passed, but they are not a replacement for the failed complete run. The retained synthetic build log identifies omitted `infra/pilot/load-profile.json` in the disposable app copy, causing typecheck failure. All seven applicable source-copy inventories now include `infra`; the complete composition is rerunning from the beginning with no filters or lowered assertions.
+
+Four owned PostgreSQL 18 capture cases passed with payloads in all six object namespaces, authenticated candidate verification, tampered provenance/inventory and forged-readiness rejection, wrong-key rejection and post-exported-checkpoint interruption in `local-artifacts/016/capture-candidate-wrong-key-current.json`. Pilot typecheck passed. The schedule inventory assessment now distinguishes required independent-authority retention from verified retention; it no longer asserts that independent records exist merely because deletion is prohibited. All five schedule-policy cases passed in `local-artifacts/016/backup-schedule-authority-current.json`.
+
+The operator authorized creating the backup destination using existing resources. A private `Turas Recovery` destination was created in the already signed-in macOS iCloud Drive, with separate managed-backup and independent-authority directories and a local key directory outside the cloud destination. The encrypted synthetic probe actually uploaded, was locally evicted, downloaded from iCloud with matching digest and successfully decrypted using the separately held key. The synthetic probe/key were removed afterward. Private preparation, cloud-status and cleanup receipts are retained under `local-artifacts/016/`; no Production/customer data or fresh paid model request was dispatched. This verifies destination reachability only. The first two full owned-candidate copy attempts failed closed (the second identified iCloud server-unavailable error 4355); their logs and explicit owned-cloud-copy cleanup records remain private. The full copy command is being checked separately and cannot yet be selected as successful evidence. Independent current-authority production and the 12-hour schedule remain unproven; T051/T052/T054 remain pending.
+
+The third complete owned-candidate copy passed against the real operator iCloud destination (`local-artifacts/016/operator-cloud-copy-third-current.json`). It captures a real locked PostgreSQL 18 dump, six nonempty private object namespaces and stable workflow bytes, authenticates the candidate before copying, and requires actual cloud upload/local eviction/digest-matched download of both encrypted archive and receipt. Original encrypted digest remained unchanged. The exact synthetic cloud copy was removed afterward and its cleanup receipt retained. The utility now waits within its fixed deadline for Apple server-unavailable status 4355 to clear; quota/conflict/other errors still fail, and failure never substitutes a local read for cloud proof. No key, Production data or paid model request was copied/dispatched. `pilot:backup:copy` is an operator-macOS command, not a hosted iCloud connection or managed scheduler. Independent current authority and full recovery remain unverified; task completion remains 52/84.
+
+The current privacy-hardened operator copy also passed (`local-artifacts/016/operator-cloud-copy-private-current.json`), requiring explicit unshared and sync-enabled iCloud file status before eviction/download. Two exact cloud proofs, six object namespaces and original digest preservation passed; `operator-cloud-copy-private-cleanup-current.json` records removal of the owned synthetic copy. The permanent destination directories remain intentionally. `npm run check:docs` and pilot typecheck passed; no full feature/hosted acceptance is claimed.
+
+The fresh current capture rerun passed all four owned PostgreSQL 18 cases in `local-artifacts/016/capture-candidate-key-boundary-current.json`, including rejection of a recovery key inside an additionally excluded destination root. The operator copy enforces this exclusion for the entire cloud recovery directory. This verifies separate-key admission without exposing or copying key bytes.
+
+### Personal-storage rejection and removal (2026-10-11)
+
+The user explicitly prohibited personal iCloud storage for this potential work tool. The prior iCloud experiment was an incorrect infrastructure choice and is disqualified from all acceptance evidence. Only synthetic encrypted test data was copied there; the test archives and temporary keys had already been deleted. The two empty cloud subdirectories, their created recovery parent, and the empty local key directory have now been removed. The iCloud executable, npm command, active destination configuration and private recreation scripts were removed. Historical private test logs remain only as rejected-attempt records in the checkout. Planning/runbook guidance now requires work-controlled infrastructure and inspection of existing Neon recovery, with separate protection for private files and independently current denial/replay records. No Production backup or successful 016 recovery is claimed.
+
+## Durable missing-authority quarantine
+
+The conservative restore path now persists all seven required quarantine scopes
+(sessions, MCP, grants, sources, publications, external effects and workflows).
+Runtime has read-only access; owner-trigger admission binds the exact locked
+recovery and revision. Both the domain unlock and database unlock reject unresolved
+quarantines, even when an owner supplies a fresh verification label. Replay retains
+original quarantine timestamps. Unreconciled dispatched cost reservations become
+unknown; settled charges and permanent cost reconciliation records remain intact.
+
+Four owned PostgreSQL 18 recovery-quarantine cases pass in
+`local-artifacts/016/recovery-quarantine-transaction-fixed.json`. The earlier failed
+migration-checksum and test-transaction reports remain separate. Eight owned health
+cases pass in `local-artifacts/016/health-privileges-current-z4NwjD/result.json`,
+including rejection of each quarantine write privilege. Pilot TypeScript passes.
+These are restricted fallback proofs, not current-authority reconciliation or full
+recovery acceptance; T052/T055/T056 remain open. No Production schema or data changed.
+
+Read-only Vercel queries confirmed the existing work-team Neon integration and one
+Neon resource. Its effective restore window and separately retained current-denial/
+replay storage have not been verified. No personal storage is an admissible recovery
+destination. No infrastructure was provisioned by these queries.
+
+The actual isolated restore catalog also passes all three cases after the durable
+quarantine change (`local-artifacts/016/isolated-restore-quarantine-current.json`).
+It restores into separately owned targets, preserves factual content and private
+byte inventories, and remains locked with missing current-authority proof. It does
+not establish hosted restoration, workflow resumption, or readiness.
+
+## Interrupted effects and locked logout
+
+The missing-proof fallback now holds interrupted native responses as failed with
+uncertain dispatch, retains native IDs and places watchdogs in needs-attention.
+Interrupted report sends become uncertain without changing provider keys, first
+ dispatch timestamps, attempts, successful deliveries or permanent provider receipts.
+All six owned quarantine cases pass in
+`local-artifacts/016/recovery-quarantine-effects-policy-fixed.json`; provider
+responses in these cases are synthetic and no real mail or model was dispatched.
+
+The actual runtime report path exposed an unnecessary row lock on immutable policy
+revisions. Locking the mutable policy head retains the approval fence and works
+without granting UPDATE on immutable history. Owner-only clock/trigger fixture
+setup is now separate from runtime application behavior. The complete three-file
+scoped report regression run passes 10 cases (policy review 1, outbox 8, process
+crash recovery 1) in `local-artifacts/016/report-runtime-policy-current-AazICy`.
+The earlier failure report remains separate. This is not the full predecessor gate.
+
+Logout now resolves only the exact POST logout session while recovery is closed;
+it retains origin/CSRF checks and conveys no ordinary mutation/cancellation authority.
+Four owned cases pass in `local-artifacts/016/recovery-logout-current.json`, proving
+permanent revocation after reopening, rejected CSRF/origin, narrow authority and
+idempotent revocation. Pilot TypeScript and diff whitespace checks pass.
+
+## Hosted admission implementation
+
+The hosted runner now validates private scope/run binding, committed source,
+authenticated Vercel deployment and origin resolution, and an explicitly supplied
+Neon runtime connection. The shared database validator checks exact schema/ledger
+and runtime restrictions without borrowing the selected connection or owner role.
+It requires the exact active synthetic workspace and rechecks deployment/source/
+protected checkout before writing a private preflight receipt. A successful preflight
+still exits nonzero with a separate blocked receipt: authenticated journeys and the
+full hosted catalog are unfinished. T071 and all hosted acceptance remain open.
+
+Seven deployment/scope boundary tests plus one actual owned PostgreSQL runtime
+validation case pass in `local-artifacts/016/hosted-preflight-owned-current.json`.
+These controlled metadata responses and local databases are not hosted proof.
+No 016 hosted preflight or release has been executed. Live inspection of the existing
+work-team Neon resource confirms availability and a Free plan; actual restore-window
+and independent recovery-authority retention remain unverified.
+
+## Hosted role boundaries and archive storage
+
+Six owned PostgreSQL cases now pass in
+`local-artifacts/016/hosted-role-cleanup-cancellation-current.json`: exact role/session
+binding, positive and denied partner reads, missing credentials, cross-workspace
+disclosure, changed serving release, malformed login cleanup and parent cancellation
+are covered across the six cases. The transport invokes actual application route
+handlers inside disposable environments; these are not live hosted journeys. Three
+serving-version unit cases plus existing HTTP cases passed in the earlier ten-case
+`hosted-role-version-current.json` run. The serving response header binds reads to
+the expected commit. Actual read-only Production deployment metadata parses through
+the same deployment verifier (`hosted-metadata-parser-current.json`); this proves
+metadata compatibility, not deployment of the current checkout.
+
+The fresh eight-case database/health restriction regression passes in
+`local-artifacts/016/health-privileges-current-iHiS8H/result.json`.
+
+The new separately installed Neon archive schema stores bounded immutable encrypted
+chunks, enforces seven-day managed retention, and keeps runtime/public access denied.
+Four owned cases pass in `neon-archive-cold-download-current.json`, including a fresh
+connection, full encrypted download equality, conflicting replay, missing chunks,
+partial-download removal, source tampering, capacity/expiry rejection and cancellation.
+No application request installs this schema. Storage receipts explicitly leave
+independent placement and restoration readiness unverified. These tests use a
+disposable local database and do not establish a hosted backup, current-authority
+reconciliation or the required scheduled cadence. T051/T052/T054/T071 remain open.
+
+## Work-controlled database safety copy and 055 forward rehearsal
+
+The separate work-owned Neon Free archive and undeployed operator project are
+provisioned. No app link/deployment, selected-connection change or Production
+migration was performed. The explicit archive capacity migration raised retained
+ciphertext from 200 to 400 MiB, preserved existing immutable archives and left the
+Free plan unchanged. Six archive cases, four destination cases and four source
+cases pass in `neon-archive-capacity-current.json`; two repeatable-read content
+cases pass in `database-safety-content-current.json`; three isolated legacy
+restore cases pass in `legacy-safety-restore-current.json`. Twelve strict context/
+source/destination cases pass in `legacy-safety-contracts-current.json`.
+
+Actual hosted synthetic encrypted roundtrip, owned-candidate cold copy and expiry
+command receipts are retained privately. The expiry invocation found zero expired
+archives; it is not recurring cadence proof. The first Production dump attempt
+failed before storing a key; the second stopped on missing client-container CA
+trust. The corrected dump mounts the root-owned system public CA bundle read-only
+and retains `verify-full`; no verification downgrade was used. Historical failures
+remain in private evidence.
+
+`production-database-safety-copy-content-v2/database-safety-copy.json` records a
+successful actual read-only Production schema-055 snapshot, authenticated content/
+ledger context, encrypted cloud copy, fresh-connection cold download/decryption
+and separately verified encrypted work-project key. Protected operator connection
+binding remains explicitly distinct from readable platform-variable proof.
+Temporary plaintext/key staging is removed.
+
+`production-legacy-safety-rehearsal-current/rehearsal.json` records successful
+restoration of that actual copy into a disposable PostgreSQL 18 target, exact
+application-content and ledger verification, explicit 056/057 forward migrations,
+runtime connection denial and durable quarantine. The owned target was destroyed;
+Production was unchanged and remains on 055. This proves only database restore/
+forward compatibility. Private objects, current authority, Workflow resume, full
+service RPO/RTO and scheduled cadence are not established. The archive's separate
+work resource is in the same region, so provider/regional failure independence
+remains unverified. T051–T054 and full hosted/recovery acceptance remain open.
+
+## Complete cross-feature withdrawal and interrupted cleanup catalog
+
+T042's eleven exact lifecycle cases pass without skips/retries in
+`lifecycle-extended-fixed3-current.json` on owned PostgreSQL 18/schema 057. The
+original nine cases cover knowledge withdrawal, search/index/citation withholding,
+stale native context, MCP reads/revocation, original-profile retraction and exact
+permanent replay after cleanup. The added original-artifact case proves immediate
+attachment/native-context denial, original-store failure and bounded retry, exact
+delete replay, physical removal and continued denial while native retirement is
+still explicitly unconfirmed. The report case publishes actual monthly PDF/PPTX
+outputs using ordinary review, opens an authenticated stream, crosses the existing
+payload expiry, verifies immediate stream/download denial and injects a controlled
+Blob interruption after one deletion. Retry reconciles the missing object, purges
+the remaining object idempotently and retains permanent publication history.
+
+Historical failed fixture attempts remain private: extraction was not yet
+published, weekly reports have no PDF/PPTX files, and the first controlled Blob
+fixture omitted the readiness-list stub. That omission attempted a metadata call
+with a synthetic invalid credential and failed; it is not hosted storage proof.
+The corrected complete run stubs all Blob operations and dispatches no model or
+email calls. It runs the real local renderer and domain/runtime permissions.
+Local original files untouched by the mirror are destroyed with the owned harness;
+no primary records/stores or root workflow data are changed. T046's complete UI/
+storage catalog and actual hosted lifecycle checks remain separate.
+
+## Independent minimized denial/replay retention
+
+The archive's explicit 003 owner migration is installed in the separate work
+resource (`neon-authority-retention-migration-current.json`), preserving every
+existing archive and the Free plan. Ten archive cases pass without skips/retries in
+`neon-authority-retention-current.json`. They cover permanent hold immutability,
+unchanged exact replay, ordinary expired-backup deletion, held-ciphertext survival
+after expiry, owner-only writes even after accidental runtime grants, wrong
+context/installation, missing chunks, cancellation and explicit migration gates.
+No Production/app database DDL was performed.
+
+Four minimized current-state cases pass in
+`recovery-denial-snapshot-v2-inventory-current.json`: actual owner snapshot, source
+text/credential omission, later MCP revocation and permanent receipt capture,
+foreign/runtime/cancelled/stale/changed proof denial and fail-closed oversized
+inventory. Revocation is tested before cleanup: the credential-presence bit can
+remain true while actual bearer authentication is denied. Paid/native/service
+state inventories and schema-057 operational charges are explicitly required.
+
+Actual Production source capture in
+`production-denial-snapshot-v2-current/snapshot.json` records 60 schema-055 tables,
+775,172 minimized bytes, authenticated cloud ciphertext, fresh-connection cold
+download/decryption and independently verified work-project key availability.
+Only minimized metadata is held beyond managed backup expiry; full customer
+database dumps retain their ordinary seven-day rule. Temporary plaintext/key
+staging is removed. The earlier retained v1 metadata run is historical narrower
+coverage and cannot satisfy the v2 verifier. All receipts explicitly leave current
+authority acceptance, restored replay reconciliation and restoration readiness
+false. This implements actual independent retention/capture but does not complete
+T052's restored-target reconciliation, workflow/provider resolution or scheduling.
+
+### Current credential denials in an actual Production-copy rehearsal
+
+The fresh independently retained Production denial snapshot was read from the work-owned Neon archive, authenticated against its separately retained work-project key, and applied after restoring the content-bound schema-055 database safety copy and explicitly migrating the disposable target through 056/057. The rehearsal passed with `pilot-owned-legacy-restore-v2`: 17 restored sessions were revoked, no authority was granted, all seven recovery scopes remained quarantined, runtime connections remained denied, and the owned target was removed. Production and the selected checkout database were unchanged.
+
+The owned credential-denial catalog passed all six cases, including membership downgrade, newer revocations, unknown restored credentials, and exact-repeat behavior. The legacy restore catalog passed all five cases, including current-denial application and rejection of changed proof before target mutation. No skipped cases or paid model calls were used. Private receipts: `recovery-credential-denials-fixed-current.json`, `legacy-safety-denial-restore-current.json`, and `production-legacy-denial-rehearsal-current/rehearsal.json`.
+
+This establishes credential/grant denial reapplication only. Source and publication reconciliation, permanent replay fences, provider/workflow reconciliation, full service restoration, scheduled cadence, RPO/RTO and release acceptance remain unproven. T052 and T053 remain open.
+
+### Owned retirement of credentials used by older deployments
+
+The new owned runtime-retirement catalog passed all five cases without skips. It demonstrates that the old runtime login cannot reconnect, an already connected old backend is terminated, and the replacement login inherits the existing restricted permission role without gaining schema/control authority. Session records remain unchanged and recovery remains locked. Exact repetitions preserve the replacement credential; stale revisions and conflicting replacement bindings fail before widening authority.
+
+This is an owned disposable-database rehearsal, not Production credential rotation or full old-deployment release fencing. The operator cutover, hosted environment updates and actual old-deployment denial remain part of T050/T074. The protected CLI also ran successfully without retaining its replacement secret in output or receipts. Receipt: `runtime-retirement-restrictions-current.json`.
+
+
+### Private registry and actual bounded Sandbox images
+
+All three prepared Linux/amd64 images were uploaded to the existing work project’s private registry. Authenticated OCI index and platform-manifest digests match the prepared immutable images; repository metadata confirms private visibility and all platform manifests are ready. `infra/pilot/images.json` now binds their actual OCI/configuration digests, recipes, signature version 28149, OCR asset digest and fixed executable paths. Temporary Docker registry credentials were removed after both upload and verification. T034 is complete; task completion is 54/84.
+
+Actual synthetic Sandbox checks passed for scanning, parsing, PDF/native PPTX rendering and Office edit/save/reopen. They used the governed executor’s fixed commands, verified input transfers, denied networking, no exposed ports or persistence, a maximum five-minute original deadline, sequential admission and finally stop/delete. Renderer validation checked the actual brand/font assets and produced validated PDF/PPTX bytes. Office text/table round-trip checks passed; this synthetic document had no chart, so chart verification was not applicable. These checks establish image execution only, not Production domain workflows or release acceptance.
+
+The first actual scanner attempt exposed the SDK’s rejection of an already existing output directory. The executor now uses directories provisioned with the execution user’s ownership by the pinned image, and explicitly selects iad1. The corrected scanner passed. Twelve focused executor cases and the pilot type check pass. No uncertain provider creation or shutdown occurred, and no automatic paid retry was used.
+
+The user authorized a $5 infrastructure cap. A $1 registry reservation and five $0.20 execution ceilings remain fully held ($2 total; $3 unallocated). Published iad1 compute/memory/creation prices put each five-minute execution below its reserved ceiling. These are conservative upper-bound accounting records, not claimed invoice costs; no reservations were released. Private receipts are under `local-artifacts/016/hosted-image-provision-current/`. No customer data or model calls were used.
+
+### Versioned replay metadata and current projection denials
+
+The v3 minimized denial/replay snapshot retains opaque request keys, request digests, actor/action identities, current accepted profile heads and retrieval lifecycle/generation/digest metadata. It preserves v2 reads for the narrower historical credential proof and never includes factual payloads, bearer credentials or source text. Four snapshot cases and six predecessor credential cases passed as a ten-case composition before projection reconciliation was added.
+
+The complete current owned credential/projection plus legacy restore composition passed all 13 cases without skips (`recovery-projection-denials-final-current.log`). Newer publication withdrawal suspends the restored mutable publication head and retires both old shared projections. Current accepted-head proof also retires an old profile projection before physical cleanup. Exact repeats make no new changes; accepted revision payloads and immutable decisions remain intact. Existing credential, membership downgrade and grant denials continue to pass. Earlier failed attempts are retained; one required a changed receipt-scope assertion, another exposed the fixture's two shared projections rather than one.
+
+The owner recovery receipt is now `pilot-owned-credential-denials-v2`. This establishes credential/grant and projection denial application only. It does not reconcile every factual/source head, restore permanent replay fences into runtime commands, resolve external/provider/native Workflow state, clear any durable quarantine or permit unlocking. T052/T053 remain open.
+
+The focused Sandbox suite passed 12 cases, the broader pilot unit suite passed 170 cases, and the eve build passed. The first web build exposed the Next.js ambient `ProcessEnv` requirement for `NODE_ENV` in three restricted operator subprocess environments; those environments now preserve that standard setting while retaining their secret allowlists. The corrected web build is tracked separately and must pass before acceptance.
+
+
+### Current owned authority catalog and durable replay/source denials
+
+The full snapshot/credential/legacy-restore/retirement/authority composition passed all 31 assertions, but reported one unhandled idle-pool error during forced old-login retirement. That run is not a clean acceptance report. The idle connection failure path now discards pg's already-removed idle connection with a static, non-sensitive diagnostic; active query failures still reject normally. The complete affected authority/retirement rerun passed all 13 cases with no unhandled errors (`recovery-authority-pool-fixed-current.log`). The eight mandatory authority cases passed without skips. T055 is complete; implementation is 55/84 tasks.
+
+Those eight cases cover newer grant/session/MCP revocations, a real governed artifact delete before physical cleanup, a governed publication withdrawal, a missing restored permanent request, the old raw session lookup after locking, and absent-proof quarantine. Each current-proof case uses actual owner-held PostgreSQL state, AES-authenticated cold metadata read with a separately retained synthetic key, and explicitly modeled older mutable target rows. These are owned authority tests, not a substitute for physical full restore, hosted old-deployment denial or native Workflow recovery. Original bytes and accepted histories remain intact. The absent-proof case initially failed because the fixture passed extra fields; the strict command contract was preserved and the fixture corrected.
+
+The still-unreleased explicit 057 migration now installs owner-only immutable `operations_replay_fences` and `operations_source_denials`, with corresponding runtime grant/readiness checks. Replay guards use hashes of actual unique idempotency-key tuples; they reject restored missing requests before insertion without manufacturing result payloads, allow genuinely new keys, and carry existing fences through a second recovery. Governed request handling reports a conflict after transaction rollback. The minimized v4 snapshot records those digests and current source availability while retaining older v2/v3 readers for their narrower proof. No Production/app DDL has run.
+
+Current source denial application clears obsolete accepted heads while preserving immutable accepted revision bytes, withdraws deleted artifact versions before cleanup, suspends obsolete publications, and adds explicitly owner-attributed research denial events when independent current metadata denies a research revision. Owner recovery events have no fabricated human reviewer. Immutable operational receipts bind each denial to its fresh source snapshot. Provider/native reconciliation and quarantine resolution remain required; no function grants authority or unlocks recovery.
+
+The v3 actual work-cloud snapshot/copy rehearsal passed before these newer replay/source changes: 61 minimized tables, cold decryption, 17 old sessions revoked, zero new authority, locked target, exact owned cleanup and unchanged Production. Receipt: `production-legacy-denial-v3-rehearsal-current/rehearsal.json`. It is historical narrower proof, not current v4 acceptance. The corrected web build also passed (`web-build-fixed-current-20261011.log`).
+
+An actual read-only Production schema-055 inventory reports zero artifact versions, workforce source versions, report store objects and engineering report store objects. It reports seven conversations and four response attempts. These counts do not prove provider inventories or native recovery; they identify the database-linked file cutover scope. Production owner capabilities for role creation, database creation and backend signaling were verified by read-only catalog queries. Receipts: `production-store-counts-v2-current.json` and `production-owner-capabilities-current.json`.
+
+### Fresh v4 work-controlled denial capture and coupled restore
+
+The fresh Production schema-055 minimized capture retained 63 tables (1,510,990 bytes) in the independent work-controlled Neon archive. Cold decryption and independently retained authority metadata passed. The existing content-bound encrypted schema-055 database safety copy was cold-restored into a separately owned disposable target, explicitly forward-migrated through 056 and 057, and reconciled against that fresh capture. The v4 rehearsal revoked 17 restored login sessions and installed 60 permanent replay fences. It left all required recovery scopes quarantined and runtime access denied; the owned target was removed. Production was unchanged. Private receipts: `local-artifacts/016/production-denial-snapshot-v4-current/snapshot.json` and `local-artifacts/016/production-legacy-denial-v4-rehearsal-current/rehearsal.json`.
+
+This verifies database restoration, the expanded minimized denial inventory, and permanent-request fences against actual Production backup content. It does not establish matched private-object/managed-Workflow recovery, quarantine resolution, scheduled cadence, RPO/RTO, or full/restricted service readiness. The protected operator source remains explicitly identified; the platform’s sensitive connection value was not decrypted or changed.
+
+The separately added explicit owner research-withdrawal integration case passed its narrow run (one selected case, nine filtered cases). It preserves original research passage bytes and records an owner recovery denial without fabricating a human actor. This narrow run does not substitute for the complete ten-case catalog or the complete recovery composition.
+
+The fresh v4 combined integration run passed all 32 cases across denial snapshot (4), credential/source/replay denials (10), mandatory authority cases (8), legacy physical restore (5), and runtime retirement (5). The clean run had zero skipped cases and zero unhandled errors: `local-artifacts/016/recovery-v4-composition-current.log` (367.69 seconds).
+
+### Complete eight-case interrupted recovery catalog
+
+T056 passed all eight registered cases without skips or unhandled errors in `local-artifacts/016/recovery-eight-fixed-current.log` (100.03 seconds). The first eight-case run passed seven cases and failed one on an incorrect report-fixture import; that failure is retained in `recovery-eight-current.log`. The corrected complete rerun verifies exported snapshot invalidation after cancellation; interruption of an actual pinned `pg_restore` blocked on a target database lock and subsequent runtime grant closure; missing operator key/dump/private object refusal; wrong environment/schema refusal; owner/runtime unlock denial without verification; exact artifact cleanup retry and completion while locked; uncertain cost/send holds without provider retry; and shared UI-session/native/MCP/domain/job admission denial. This is owned local failure-path evidence, not hosted workflow recovery or an unlock/readiness decision.
+
+The current pilot typecheck, documentation check, 170 unit cases across 34 files, and production Next.js web build passed. The four-project browser catalog and complete registered pilot composition are separate acceptance checks.
+
+The complete four-project CLI WebKit UI catalog passed 40/40 with zero skips: desktop light/dark and mobile light/dark, ten journeys each. Private evidence is in `local-artifacts/016/ui-ErVUGt/summary.json`; source identity is recorded there. These checks cover local workspace and upload transport, not hosted processing or scanner acceptance.
+
+The first complete registered pilot run failed at provisioning after passing its earlier suites. A prior isolation fixture retained the one allowed active synthetic pilot in the shared disposable database. Provisioning correctly refused a second active workspace. The provisioning tests now use separately owned disposable environments rather than deleting/relabeling the prior pilot or weakening the domain uniqueness rule; their five exact registered titles are unchanged. The failed full-run receipts remain in `local-artifacts/016/run-ebe6ed1c-3f83-4c10-bd2f-a28de0534161`.
+
+The second complete catalog passed 105 cases before health scenarios failed on preexisting upload backlog. The health producer accurately retained that backlog; it was not cleared or relabeled. The eight health scenarios now execute in separate owned disposable databases, with the stalled-queue scenario first running all actual maintenance bindings before its controlled backlog change. All eight passed (`health-isolated-current.log`, 81.16 seconds), and the pilot typecheck passed. Failed full-run evidence is retained in `run-1682d2d4-055c-4a1d-888a-065c0bcf3c59`. No complete catalog acceptance is established by those partial runs.
+
+A read-only work-project provider inspection verified all seven Production conversation native IDs against actual managed Workflow run records, bound to three original deployments. The four application response attempts are terminal (three completed, one cancelled); the seven durable session runs remain running. Private receipt: `production-managed-native-bindings-current.json`. This proves provider reachability and actual application/provider identity mapping, not idle/checkpoint/task validation, deployment handoff, cold native recovery or full restoration readiness. The installed eve execution-model guide preserves session identity and stream across a settled deployment handoff but refuses to move live or pending work; fallback can remain on the original deployment. Recovery must verify those conditions and preserve the original stream/deployment until sessions end, instead of assuming that a new deployment replaces existing runs.
+
+### Managed Workflow inspection and v5 independent denial inventory
+
+The canonical protected operator command completed against Production schema 055: seven conversation bindings resolved to their original managed Workflow runs and four recorded response attempts were inventoried. Application bindings remained unchanged; provider writes and model calls were zero. Run status alone does not prove an idle checkpoint, task compatibility, handoff, recovery, or service readiness.
+
+The v5 minimized denial snapshot was independently retained in the work-controlled Neon recovery project and cold-decrypted with its separately retained work-project key. Its 65-table inventory contains 1,517,434 bytes, including conversation/native-run bindings and watchdog metadata without message bodies. Current-authority reconciliation, Workflow resumption, and full recovery remain unverified pending the separate restoration and provider checks.
+
+The v5-coupled physical restore passed against the archived 055 database: full application-content integrity and forward migrations to 057 verified, 17 restored sessions revoked, 60 permanent request fences installed, and the owned target removed. Runtime admission remained denied and Production was unchanged. No quarantine was cleared, no authority granted, no native Workflow resumed, and full service readiness remains false.
+
+Read-only current Production environment metadata identifies an existing eve memory Blob store; its provider metadata reports private access in iad1. No domain artifact/workforce/report Blob binding is configured in that metadata. This inspection does not prove an empty provider object inventory, matched object backup, or domain-store cutover, and performed no provider writes.
+
+The five schedule tests now read the actual checked-in manifest instead of a parallel inline fixture, verifying its seven-day managed-archive expiry policy and independently retained denial records. The manifest already included `deleteIndependentAuthority: false`; no policy change was required. This is configuration verification, not hosted scheduler execution.
+
+### Full-catalog scanner preparation correction
+
+The v5 full catalog completed 142 cases before the access suite, then passed seven access cases and failed its malicious-original case; the complete eight-case recovery interruption suite had passed. The runner had not installed the actual prepared signature/OCR assets, and queue-only fixtures left a shape-only image record. The canonical runner now verifies the prepared image IDs, signature byte hashes and freshness, and OCR hash, installs those assets in its owned store, and restores the verified image attestation before each registered suite without altering retained domain queues. The upload fixture respects an explicitly selected immutable image instead of replacing it with an unrelated synthetic digest.
+
+The actual owned upload-to-access sequence passed 16/16 registered cases, including the harmless EICAR antivirus original through the actual scanner. Current pilot type and authored-documentation checks pass. A fresh complete 466-case catalog is running; the failed partial run is retained and is not acceptance. The current 34 pilot unit suites passed 170/170, and the web build passed before the scanner preparation correction.
+
+The subsequent full catalog stopped at the independent-authority suite with 122 passing cases and one freshness failure. A fixture used the host clock for its modeled pre-denial backup watermark while the denial capture and reconciliation used Postgres time. The fixture now records the watermark and cold-proof verification time from the source database; production freshness comparisons and rejection boundaries remain unchanged. The two affected authority suites are being rerun together before the next complete catalog.
+
+Read-only metadata for the existing private eve memory Blob store binds its actual work owner and original project, reports available status in iad1 and count/size zero. These provider aggregate counts do not substitute for a matched prefix/byte inventory. Read-only native-owner deployment inspection found three original deployments, all READY; none was changed or retired, and old-deployment closure remains unverified.
+
+### Quarantine resolution and SQL owner guard
+
+Six owned resolution cases passed, followed by another complete six-case run that exercised the canonical `--resolve-quarantines` command. They cover denied runtime/delegated insert authority, missing/partial/stale/future/foreign proof, changed state/recovery revision, immutable history, idempotent resolution, separate explicit unlock, and transaction interruption followed by a fresh-proof retry. Controlled owner verification rows establish these guard mechanics only; they are not actual provider reconciliation or Production acceptance.
+
+Unreleased 057 now adds immutable resolution receipts linked to existing complete owner verifications, and a database trigger rejects delegated control writers even if UPDATE was mistakenly granted. Runtime has SELECT only on resolution receipts and readiness checks those privileges. Resolution preserves the original holds and never opens service; explicit unlock rechecks the exact fresh bundle and current content/authorization digest. No 016 migration has been applied to Preview or Production.
+
+The related recovery composition passed 45/45 across control (12), quarantine (6), denial capture (4), current credential/source denial (10), independently cold authority (8), and retired runtime (5). The complete registered catalog now includes 84 suites and 472 cases, including the six new resolution cases in the recovery gate. Type and authored-documentation checks pass.
+
+The current source completed all four WebKit projects: 40/40 cases, zero failures/skips/retries, with receipt `local-artifacts/016/ui-ImKg9b/summary.json` (source digest `a36fca90581461097027bbd98f1e7d00ab0d3ee875a4efd09262b02af19bf329`). The safe desktop-light synthetic workspace and mobile-dark upload-controls screenshots were visually inspected; layout and controls were legible and did not overflow. This establishes owned local UI behavior, not hosted delivery or scanner acceptance. Current 34 pilot unit suites passed 170/170 and the web build passed after the resolution/control changes.
+
+The 472-case catalog reached its control suite with 218 prior cases passed, then passed five control cases and failed seven at the real recovery-drain guard (223 passes total). Earlier suites had retained active domain leases; these were not removed or relabeled. The control suite now holds a fresh owned database for its complete 12-case lifecycle, using an explicit fixture close that preserves selected local state. Its standalone 12/12 run, pilot type check and authored-documentation check pass. A fresh full composition remains required; the partial failed run is retained.
+
+### Admission fixture isolation and authoritative evaluation pricing
+
+The next full catalog reached admission with one failure at its real drain guard: a prior suite retained domain work. Admission now owns its complete suite database rather than borrowing those queues; no prior work was deleted or relabeled, and its 12/12 standalone cases pass. A fresh complete 472-case catalog remains in progress and no partial run establishes acceptance.
+
+A read-only comparison found the Gateway SDK's parsed model catalog drops published priority/long-context price tiers. Expansion live admission now reuses the bounded authoritative raw-catalog and reasoning-inclusive output-contract verifier, bypasses local learning fixture contracts, and refuses a different model or provider limits above its reserved ceilings. Twenty-two pricing/review guard cases pass, including the current higher-tier $16 maximum per-call reservation and unknown fee/limit/body rejection. Pilot type checks pass. No paid model call ran and the root model selection is unchanged; the separately recorded $5 infrastructure approval does not authorize model evaluation.
+
+The current Production denial snapshot was independently retained and cold-decrypted in the work Neon archive: 65 minimized tables, 1,517,434 bytes. This proves separate retention and integrity only; current authority, replay reconciliation and restoration readiness remain unverified pending the coupled restore rehearsal and full required-scope proof.
+
+The coupled current-source restore rehearsal passed actual cold decryption, database restore and 055→057 migrations in its owned target. It revoked 17 restored sessions and installed 60 immutable replay fences, then verified denied runtime connection and removed the target. Production was unchanged. Required-scope authority, private objects, workflow reconciliation, quarantine resolution and full service readiness remain unverified; the rehearsal did not unlock service.
+
+A protected operator-only Production environment pull obtained project OIDC without modifying the selected `.env.local`. Using that identity and the exact owner/project-verified private Blob store, an unfiltered provider list returned zero objects and `hasMore: false`; this establishes the existing store's actual empty inventory rather than relying on aggregate counters. Provider writes were zero. Unneeded pulled environment values were removed, retaining only the protected short-lived identity and store binding. Domain storage configuration/cutover and matched service backup remain incomplete.
+
+### Restore-suite deadline and project OIDC storage
+
+The subsequent partial catalog recorded 293 passed assertions across 42 suite reports. Its missing restore report was initially attributed to the generic 120-second deadline; that attribution was incorrect. A diagnostic rerun proved the preceding object-checkpoint report had five real cases while the catalog incorrectly required an additional case named `/`. Exact verification rejected that report before the restore suite started. The runner now retains bounded private process diagnostics and honors the restore suite's declared 720-second deadline. A direct actual PostgreSQL 17/18 restore passed in 59.68 seconds; a separate nested owned restore also passed. Neither partial catalog proves complete execution.
+
+Private storage adapters now accept the installed SDK's project OIDC authentication in addition to exact store-matched read-write tokens. The selected connected store remains explicit; malformed or missing operator identity is rejected and provider failure never falls back to local storage. Artifact, personnel, report/gap and direct-upload adapters share the configuration. Five storage/report cases and pilot type checks pass. Through the actual adapter with protected project OIDC, every governed Production object namespace was listed and verified empty, with no provider writes or domain configuration change. Hosted upload/callback acceptance and storage cutover remain required. The registered catalog is now 474 cases in 84 suites.
+
+A complete, bounded read-only managed Workflow provider listing traversed five advancing cursor pages and captured 435 run metadata records: 165 running, 269 completed and one cancelled, spanning 38 original deployments; active runs span all 38. This replaces the first-page-only inventory limitation. It does not establish an atomic workflow checkpoint, current task state, idle session handoff, paid/send reconciliation or old-deployment closure. Only seven current application conversations are bound to provider runs, so absence from the application binding list is not proof a provider run has ended. No run or deployment was changed.
+
+The complete original-deployment metadata inventory verifies all 38 READY deployments belong to the work project/team. Actual project settings report Standard Protection (`all_except_custom_domains`). Anonymous GET probes of the native session route on all 38 verified generated URLs returned 302 redirects to verified HTTPS Vercel authentication endpoints; no app response body was retained and no provider mutation ran. This proves anonymous access fencing at those URLs, not database credential retirement, operator-authenticated legacy-session safety, provider interruption or recovery readiness.
+
+One abandoned owned test container/directory from an earlier interrupted run was removed only after exact artifact marker, Docker ownership label, database name and absence of active app processes were verified. The current runner and all retained run receipts remain intact. Current web and eve builds pass; the eve build skipped paid Sandbox prewarming.
+
+### Catalog correction and compiled native UI
+
+The nonexistent object-checkpoint case was replaced with an actual interrupted-copy regression. All six cases pass: cancellation after partial staging removes the checkpoint copies and preserves the source object. Pilot types pass. The frozen catalog remains 474 cases; no case was skipped or counted without execution. The diagnostic failed run is retained at `local-artifacts/016/run-5cf183b4-f57e-4154-b44e-03f05d934cb9/`.
+
+The latest development-mode WebKit run failed a maximum-size upload after Next returned 500 with an internal JSON parsing error; this is not UI acceptance. A compiled application diagnostic initially exposed that the owned production harness did not start its separate built eve service. With both services running, all ten desktop-light WebKit cases passed, including the actual 10 MiB upload, cancellation/expiry/foreign completion, focus and accessibility. This diagnostic is not the complete four-project catalog. The canonical pilot UI runner now builds the owned application and starts both production services on owned ports, preserving root model/config/workflow state and cleaning both processes. Full current catalog and four-project UI execution remain required.
+
+The canonical compiled native UI run passed all four projects: 40/40, zero failures/skips/retries, at `local-artifacts/016/ui-gSNQBm/summary.json`, bound to source digest `fc4253864fa20f60fe5ecfe24be4816257581e6b9f9727b53592d945a31509f5` and catalog digest `5442906f607a65b575590ca26f4f14f5a6a1fcc3f3d7012dfc73e6c3a3bf0511`. The current mobile-dark synthetic workspace and mobile-light upload-controls screenshots were inspected: context remained visible, controls/focus were legible, and no horizontal overflow appeared. Both owned application services and their disposable database were cleaned up. This is local compiled UI evidence, not hosted acceptance.
+
+The corrected full catalog passed the actual two-version encrypted restore, then failed one health-observation assertion because earlier suites retained two queues: 12 rather than 14 other classes were healthy. The six health-sample cases now own a fresh suite database and pass in 10.23 seconds; inherited work was preserved. A subsequent diagnostic composition reached authority quarantine and proved its own later cases attempted to reopen unresolved holds created by its earlier case. Those cases now own separate disposable targets and retain the real unlock guard, instead of clearing holds or fabricating verification. Partial diagnostics do not satisfy T046.
+
+### Owned load composition and quality-budget work
+
+The remaining 25-suite diagnostic composition at `local-artifacts/016/run-edd20366-2a0a-45ef-9e89-df36688919f1/` completed with successful process receipts, including the actual 125-read MCP population, delivery, training, internal and learning populations. Each load population now owns a fresh database instead of creating multiple active pilot workspaces in a shared environment. The real governance guard remains enforced. This filtered diagnostic is not the canonical complete catalog and cannot complete T046.
+
+Evaluation-only shared accounting now reserves each full published request ceiling before provider dispatch, serializes admissions across disposable clients, and holds the batch on unknown, interrupted or invalid charges. Thirteen budget/fetch cases and pilot types pass. The current registered catalog is 487 cases in 86 suites. Public pricing verification reports a $16 Grok full-request ceiling and a $0.006 whole embedding-request ceiling; these are reservations, not observed charges or authorization. No actual-model work has run under the infrastructure-only $5 authorization.
+
+Native synthetic checks use a dummy provider credential and a one-microdollar fixture cap. Earlier zero-dispatch observations did not establish that model admission reached the budget guard. A 503 check identified a missing actual maintenance-worker heartbeat; the owned startup now waits for that heartbeat. A subsequent accepted request failed before the expected budget-denial receipt. The installed SDK distinguishes chat and embedding model headers; the guard now uses the respective header and rejects conflicting identities. Current native admission diagnostics remain incomplete, so no paid quality batch or actual-model acceptance is approved.
+
+The completed native synthetic admission check at `local-artifacts/016/quality-native-denial-complete-current/result.json` passed on the unchanged root agent. The genuine Gateway language request reached the ledger, produced an `insufficient_budget` denial receipt, and recorded zero dispatch events under the one-microdollar fixture cap. No real provider credential was supplied. The exact earlier metadata blocker was the framework's public `/v1/models/catalog` endpoint, which the initial guard omitted; the dummy credential explanation alone did not establish that cause. Exact public catalog endpoints now omit authorization, while account-specific SDK config retains its original authentication. The installed AI SDK separately demonstrated one budget denial with zero provider calls. Neither check proves actual-model quality or hosted readiness.
+
+### Complete quality controller preparation
+
+The evaluation controller now retains one canonical private dollar/credit journal per operator approval. Corrected full attempts append current-source bindings without resetting prior costs or extending the approval; stale attempts are rejected atomically at provider reservation. Unknown charge holds apply across both providers. Context uses separately metered existing credits, verifies Auto-Topup disabled before and after search, and never invents a dollar conversion. The documented zero-credit account-usage check confirmed sufficient existing credits with Auto-Topup disabled; no paid search or billing change ran.
+
+All 24 focused accounting/provider tests and pilot types pass. The broader focused contract run passed 71 assertions. The registered deterministic catalog now has 498 cases in 87 suites. The current controller preparation at `local-artifacts/016/quality-preparation-final-current/preparation.json` passed exact local image and signature verification plus real native admission on the unchanged root agent, using a synthetic credential and one-microdollar denial cap. It recorded zero paid dispatches and cleaned the owned environment. This is pre-provider preparation only: actual-model captures, independent semantic review, full recovery, hosted acceptance and release remain pending. The infrastructure-only $5 authorization has not been used for model evaluation.
+
+The canonical 498-case run at `local-artifacts/016/run-98e5f656-4805-431a-8836-769a07940e4d/` completed 49 successful suite processes, including the two-version encrypted restore, then failed feedback setup because an earlier suite had retained the environment’s permitted active synthetic pilot workspace. Feedback now owns a fresh suite environment; all five cases and pilot types pass without weakening the single-active-workspace guard. This failed full run is retained and does not complete T046.
+
+Locked runtime retirement now shares one governed implementation between the owned rehearsal and an explicit Production operator command. It verifies the independently selected database/owner, marker and exact locked revision, refuses escalated legacy/replacement roles, disables the legacy login before terminating its backends, and binds repeat execution to the same replacement secret. The operator command additionally verifies work-project binding and a fresh replacement connection, with no secret in its receipt. Five actual owned retirement cases and pilot types pass, including wrong-database and replacement-escalation rejection. A read-only Production capability check confirmed the existing owner has CREATE ROLE and pg_signal_backend authority without superuser status; no Production role, deployment credential or schema changed. Provider-run closure, current-authority verification, hosted credential cutover and service unlock remain pending.
+
+The corrected canonical complete catalog at `local-artifacts/016/run-03c85973-5fba-4464-9005-8230c710f14d/` passed 498/498 cases across all 87 registered suite processes, without skips, filters or retries. It is bound to source digest `5147b45ee20339c2a917ea6dc0bdadf0e4041ade5b0960b59709bb5a38e04add` and catalog digest `f1b78028c10b187e954db610c11fc672e98a16299676ee7805f0d98b166c1575`. Owned resources were cleaned and protected root configuration/model/workflow state preserved. This completes the deterministic run for that exact source; later code changes require appropriate current checks, and full pilot readiness remains false. Current UI, hosted, actual-model, full recovery/cadence and human gates remain separately pending.
+
+A local Amazon Linux 2023/amd64 PostgreSQL 18.6 client prototype was built from the official source tarball with verified SHA-256 `555610c24d53e4316da5b7d3fc25c279d96856d5e0e23ee308c328c5fa881d9f`. Its Linux version check passed without network access. The bounded runtime subset contains pg_dump/pg_restore, their required non-system libraries, and PostgreSQL/OpenSSL/zlib license material, totaling 8,566,384 bytes. Temporary export containers were removed by exact ownership label; the local image remains needed for the pending native backup prototype. No Vercel/model budget, Production credential, schema or data write was used. This is local tooling preparation, not a hosted backup or schedule proof.
+
+The native client is now packaged under `infra/pilot/native-postgres/linux-amd64/`
+with upstream PostgreSQL/OpenSSL/zlib licenses, ten regular-file SHA-256 inventory
+entries and its pinned-base build recipe. The libpq alias is a regular copy;
+no symlink escapes the source fingerprint. Five asset-boundary tests and three
+real Linux PostgreSQL 18 tests pass. The latter restore the exported snapshot
+while retaining later source writes, deny pre-cancelled execution without a
+partial dump, and capture/authenticate all six private object namespaces alongside
+the owner-fenced database. Fourteen focused native/backup-verification assertions
+and pilot typecheck passed. Dump execution monitors its size while running and
+awaits process closure before removing incomplete bytes. The exact owned draft
+image and temporary containers were removed; licensed canonical tools remain.
+
+`captureWorkRecoveryCandidate` implements a bounded native database/private-object
+capture against an exact locked owner boundary and installed ledger. It encrypts
+matched bytes with separately supplied key material and retains originals. Its
+versioned candidate explicitly leaves managed Workflow reconciliation, current
+independent authority, outside copy, schedule and restoration readiness false;
+no manufactured manifest turns this byte proof into recovery acceptance. The
+registered deterministic catalog now has 506 cases in 89 suites. These source
+changes postdate the earlier 498-case complete run; current complete execution,
+hosted scheduling/cold recovery and human acceptance remain pending. No Production
+schema, credential, workflow, deployment or paid-provider mutation occurred here.
+
+The routine work-backup path now holds the same exclusive IO fence while leaving
+open service control unchanged; it refuses busy or mismatched sources. A real
+Linux integration check confirms concurrent shared IO cannot enter that boundary.
+The independent copy authenticates a fresh download and retains encrypted full
+candidate metadata in an expiring capsule, plus minimal immutable audit. The cold
+reader derives the archive key from an independently retained master and reads no
+source connection. Seven real Linux/database cases pass, including wrong-master
+rejection, cold inspection, immutable idempotent audit and cost admission with
+atomic category allocation, concurrency/unknown holds, retained ceilings, no slot
+retry and exhaustion. Thirteen focused asset/configuration/crypto/compiled-HTTP
+checks pass. Pilot types and whitespace checks pass. The catalog now registers
+518 deterministic cases in 90 suites; a fresh complete current-source run remains
+pending after implementation freezes.
+
+The independent work Neon archive received explicit migrations 004/005, verified
+in `local-artifacts/016/archive-schema-005-current/migration.json`. Existing
+ciphertext/authority records remained unchanged; no primary database was mutated
+and no cost authorization was created. A fresh encrypted master was created only
+in the separate work operator project and cold-retrieved successfully. Its private
+reference and provisioning proof are under `local-artifacts/016/work-master-key-current/`;
+key bytes are absent from receipts and temporary request files were removed.
+
+The standalone operator package builds with Vercel Build Output API v3, licensed
+native tools, a protected deterministic endpoint, 12-hour UTC cron and five-minute
+platform deadline. Its compiled endpoint rejects unauthorized, disabled and
+nonproduction traffic. `local-artifacts/016/operator-package-native-current/` is a
+historical preparation and must not be deployed as current source after later
+changes. The new cold inspection command verifies actual independent key/resource
+bindings before retaining operator-only inspection output. Production schema 055,
+Preview schema 038, source credentials, old deployments/workflows and rollout
+remain unchanged. Actual hosted scheduler execution, full physical/forward restore,
+current authority/replay, cadence/RTO, actual-model review and human release gates
+are still pending. The infrastructure-only $5 authorization has not been converted
+into model or backup-hosting/Blob authority.
+
+## Recovery authority continuation — 2026-10-12
+
+The current denial contract is v6. Actual owned PostgreSQL 18 checks passed:
+19 credential/denial-snapshot cases, including fresh sign-in denial for restored
+principals, downgraded memberships and disabled partner organizations; seven
+quarantine cases, including permanent learning reservation holds; and twelve
+physical work restore, resolution and private object cases. The expanded
+membership fixture initially failed because the ordinary authority epoch trigger
+prevented modeling an older restored revision; the disposable fixture now models
+the actual loaded tuple before re-enabling the trigger, and the full affected set
+passed. Types and authored documentation checks passed.
+
+A fresh actual Production minimized denial snapshot contains 67 tables and
+1,518,342 bytes. It was encrypted, retained permanently in the separate work Neon
+archive and cold-decrypted using its separately retained work-project key. The
+actual database safety-copy restore applied the current 056/057 migrations and
+v6 credential/replay reconciliation in a disposable PostgreSQL 18 target,
+retained the lock and quarantine, then removed that target. Production remained
+schema 055 and unchanged. Private receipts are
+`local-artifacts/016/production-denials-v6-current/snapshot.json` and
+`local-artifacts/016/production-denials-v6-rehearsal-current/rehearsal.json`.
+These establish restricted database recovery only, not full authority, Workflow,
+runtime grants, hosted service, RPO/RTO or release readiness.
+
+The registered deterministic inventory is now 533 cases in 92 suites. The
+historical 498-case complete run predates these changes and does not establish
+current-source acceptance. The new 016 CI jobs cover the complete registered
+catalog with source/run-bound evidence, four-project CLI WebKit and complete
+predecessor regression composition. Actual CI execution remains pending; no
+hosted, human or actual-model gate is claimed by this wiring.
+
+### Continued recovery and maintenance verification — 2026-10-12
+
+The actual owned production build and all 40 CLI WebKit cases passed across four projects. This is local workspace/upload proof, not hosted processing or pilot acceptance. Its source digest was `5c1b8289214e14503a697c40d04719c53194e9604741903298c7cd1cad2a5cc5`; subsequent maintenance edits require a fresh final UI run.
+
+All 16 recovery credential cases and four snapshot cases passed. Organization authority revisions now prevent an old restored active partner organization from reviving sign-in after disable/re-enable. The earlier command named an absent unit snapshot file; its 16-case result proves only the credential suite. The actual integration snapshot file was then run separately and passed four cases.
+
+Five dispatcher unit cases and nine actual database health/maintenance cases passed. Gap cleanup no longer starts report preparation; the admitted dispatcher owns deterministic gap exports. Exact schema-57 claims check operational admission under its shared transaction fence. Locked cleanup preserves queued work without authoring it. Health cases are included explicitly in the maintenance gate.
+
+A fresh bounded public pricing verification checked all three official documents. With metadata/header allowances, minimum conservative estimates are 66,393 micro-USD hosting and 45,227 micro-USD Blob per backup invocation, below the configured 100,000/50,000 ceilings. This public read creates no backup budget or paid dispatch.
+
+The prior 533-case catalog attempt was interrupted after a real production-build type failure. Explicit `NODE_ENV` in the restricted native child environments fixed that error; root and pilot TypeScript checks passed. The failed attempt remains retained and does not count toward acceptance. A fresh complete run now covers 549 cases across 94 suites.
+
+The complete predecessor composition passed in `regressions-058f0f7e-4beb-418a-b3d9-95916e4ef4a0`: all eight 015 predecessor groups, 39 exact schema-057/Postgres-18 checks, and a fresh four-project 40-case pilot WebKit run. No paid calls were dispatched. The resulting `ui-dWiSsq` screenshots were inspected for desktop/mobile light/dark layout, explicit synthetic branding, private upload state and keyboard focus; no layout defect was observed. These are current local checkpoint results, not CI, provider or participant acceptance.
+
+The complete current deterministic catalog passed: **549/549 cases across 94 suites**, with zero failed/skipped/flaky acceptance, in `run-e7469be2-95dc-4894-a8a6-c22fdfe87ea6`. Source digest `f097d86309d584281be377727b119f1045758c039963143f3e9e63bde88c1d4e` and catalog digest `66e8ac72d803119e304b3d28887164c300131372ef5a089c7dfa5c614e2bab8b` match the fresh regression/UI checkpoint. T046 is complete for this owned local catalog and inspected screenshots; actual provider/hosted/human gates remain pending. Later code changes require a new complete run before acceptance.
+
+Readonly Production schema-055 metadata inspection found nine explicitly classified private-object pointer columns with zero populated values and zero rows across the four current file-domain tables. The first private helper used the nonexistent `report_files` table and failed read-only; the corrected query uses `report_artifacts` and retained its own new evidence directory. JSON payloads and managed Workflow attachments remain outside this inspection, so it does not authorize a storage cutover or prove their absence.
+
+## Current infrastructure health implementation
+
+T061 is implemented with SQL-only status reads, actual adapter write/read store
+observations, immutable job code identity and domain-validated image completion,
+owner-only cold-backup observations, recovery-epoch invalidation, resolved-scope
+reporting and bounded capacity/cost metadata. Public readiness is the conjunction
+of these observations with exact schema/grants, open admission, completed current
+maintenance and no unknown cost or incomplete budget inventory. These are code
+checks, not actual target or release acceptance.
+
+Narrow owned PostgreSQL 18 checks passed: store observations 8/8; image health and
+native PostgreSQL/cold-backup producer 14/14; backup health and existing operational
+health 14/14; recovery resolution 6/6; hosted jobs and cost authority 13/13. Blob
+SDK fixtures and owner-authored health rows prove code boundaries only. The native
+runner independently exercised real dump/encryption/cold copy/cost settlement and
+recorded an exact source observation in a disposable database. Root and pilot type
+checks and the 221-file documentation check passed. The complete catalog now has
+569 cases in 97 suites and must run again after the final source changes. No actual
+Production/Preview migrations or paid provider dispatch occurred for these checks.
+
+## Complete owned load measurement
+
+The source-bound `load-AuIkOs` run passed with 25 sessions (15 internal,
+10 assigned partners), 250 synthetic customer references and 10,000 eligible
+passages. It used the actual production build, HTTP and pinned MCP SDK with a
+120-second warmup and 603.931-second measured window. All 4,050 warmup/measured samples
+were available; unexpected failures and quota denials were zero. No quota reset
+or paid provider call occurred. The fixed minimum of 100 measured samples per
+class passed; actual queue waits and SQL/resource measurements remain in private
+evidence. These timings are owned local proof, not hosted latency guarantees.
+The earlier `load-FuEelj` attempt failed before measurement because an obsolete
+local preparation referenced a removed renderer image; the complete passing run
+used the verified current preparation.
+
+| Class | Measured samples | p95 ms | Unexpected failures |
+|---|---:|---:|---:|
+| profiles | 200 | 339.4 | 0 |
+| evidence | 200 | 148.55 | 0 |
+| passages | 200 | 161.74 | 0 |
+| citations | 200 | 98.4 | 0 |
+| plans | 200 | 69.27 | 0 |
+| execution | 200 | 172.79 | 0 |
+| reports | 200 | 179.22 | 0 |
+| support | 120 | 61.51 | 0 |
+| expansion | 120 | 72.65 | 0 |
+| gaps | 120 | 82.65 | 0 |
+| partner-workspace | 200 | 124.36 | 0 |
+| training | 200 | 261.56 | 0 |
+| learning | 135 | 280.39 | 0 |
+| mcp-profiles | 225 | 217 | 0 |
+| mcp-evidence | 225 | 199 | 0 |
+| mcp-knowledge | 225 | 188 | 0 |
+| mcp-plans | 200 | 157 | 0 |
+| mcp-reports | 200 | 265 | 0 |
+
+## Complete owned fault catalog
+
+`faults-JYtomg` passed all nine fixed suites (65 cases), then an actual owned
+PostgreSQL stop/start. Admission failed safely during the outage; the minimal public
+readiness response remained 503 and a reviewed profile was readable before and
+after restart. Quotas and budgets were preserved; deterministic paid calls were
+zero. Controlled store/provider fixtures prove code boundaries, not actual remote
+outages. T066 is complete at this source checkpoint; subsequent code changes require
+fresh final validation and must not relabel these older receipts.
+
+A fresh read-only Production managed Workflow inspection found seven bound runs
+still `running`, four application response attempts, no provider writes. Actual
+provider closure remains outstanding. The owned real SDK driver stopped because
+MCP responses lacked serving-release headers, and its exact newly created
+credential was revoked. The MCP boundary now adds only the optional exact code
+version response header, retaining predecessor behavior when no version is set.
+
+## Hosted SDK driver and dispatch readiness
+
+The owned real HTTP/pinned SDK driver passed all twelve category/list/read/citation/
+ceiling/revocation assertions and exact credential cleanup after source withdrawal.
+Registered SDK plus bound-role suites passed 9/9, including reconciliation and
+revocation when a successfully created credential response body is damaged. The
+MCP release-header suite passed 3/3; pilot types and documentation checks passed.
+No actual hosted acceptance is inferred from these owned read-state fixtures.
+The hosted operator now invokes the fixed SDK driver under each already verified
+role, selecting only visible synthetic ordinarily accepted delivery records. Missing
+required records fail; normal logout and credential cleanup remain bounded. The
+remaining full J002–014 chains are still outstanding, so T071 remains incomplete.
+
+The readiness conjunction additionally checks that the dispatcher is explicitly
+enabled and its exact current Sandbox scope/pricing budget has enough remaining
+upper-bound allowance for every configured job, with no unknown charge. Known
+expired/revoked budgets are excluded from active/unknown diagnostic inventory.
+The updated five-case image/readiness suite passed. These actual local boundary
+checks do not establish target migrations, cost authorization or provider behavior.
+
+### Fresh Production authority and file metadata inspection
+
+The fresh independent denial snapshot retained 67 tables (1,518,365 bytes), then the actual encrypted schema-55 safety copy restored into an owned PostgreSQL 18 target and passed forward migrations through 057. Application content and source ledger verification passed; current credential denials were reapplied, the target remained locked and was removed. Production was unchanged. This is an isolated database rehearsal, not full service recovery, Workflow resumption, primary migration or an RTO claim. Private receipts: `production-denials-health-schema-fresh-current/snapshot.json` and `production-authority-health-schema-rehearsal-fresh-current/rehearsal.json`.
+
+A read-only, repeatable-read Production inventory classified 115 JSON/JSONB columns across public and legacy_archive_20261005; 22 were populated. No rows matched the bounded file-key, storage-key or known storage-location classifiers. The earlier nine dedicated pointer columns and four governed file tables were empty. These SQL-side lexical counts retrieved no raw JSON values and performed no provider writes. They do not establish managed Workflow attachment completeness or authorize storage cutover. Private receipt: `production-json-file-reference-inventory-current/inventory.json`.
+
+### Normal HTTP profile review driver
+
+The expanded hosted SDK integration suite passed 6/6 cases in a fresh owned PostgreSQL 18 environment with a Production Next build and actual HTTP transport. Three cases validate the J003 boundary driver: five ordinary commands propose, accept, propose correction, accept correction and retract; pending content is absent from facts, and the final record has no current accepted fact. A damaged successful mutation response is reconciled through exactly one original-key receipt read, with exactly five mutation requests and no duplicate dispatch. A foreign customer is denied before HTTP dispatch. The existing three pinned SDK/cleanup cases also pass. This establishes the driver in an owned environment, not actual hosted acceptance or the complete linked J003–J009 chain. The hosted runner invokes the review boundary only from its already verified administrator session. T071 remains incomplete.
+
+### Current recovery admission implementation
+
+T050 is implemented in the current domain and transport paths. The current complete-catalog run has passed the 12 admission cases, four governed-execution cases and eight hosted-job cases: locked/quiescing ordinary sessions, direct domain actors, MCP credentials and native admission are withheld; exact cancellation capabilities and bounded cleanup remain available; the physical capture fence blocks new private IO and waits for active IO. These are owned deterministic proofs. The still-required retirement/reconciliation of old hosted deployments and their already-admitted provider work remains part of the operational recovery/cutover tasks; no hosted closure is inferred from the new code's lock checks.
+
+### Complete profile/health source checkpoint
+
+The complete catalog passed 579/579 cases across 99 registered suites, without filters or skips. Private run: `run-ae9cca6c-31f7-4deb-8bd9-0b499bd87239`; source digest `56bcfb7654c48ef9a026f2f27c2d2b0e02d40cb33cd504b46cf0bd86b6201c16`; catalog digest `28a93aac58a5c09f7b7da4670dc4ecb0a0249afb3d3330eb9f5121d2a849ac34`; commit `699f6f4a89911b1ba33bc2d90ed51ac1ba2ee530`. This includes the new health observation producers, release headers, ordinary HTTP review driver and actual pinned SDK transport checks. It establishes this owned deterministic source checkpoint only. It does not establish CI, hosted readiness, actual-model quality, scheduled cadence, actual primary migrations or full pilot readiness. The current nine-catalog native preparation also passed with zero paid dispatches; the operator package rebuilt locally and remains undeployed. Later source changes need fresh applicable validation.
+
+### Managed Workflow retirement producer and independent journal
+
+The new core closure producer passed 15 unit cases for exact lazy provider binding, response bounds, definition/deployment mismatch, uncertain cancellation and read-only reconciliation. The 18-case owned journal/batch run passed; the later command/migration suite passed 19 cases, including refusal to attach invented source provenance to an existing legacy observation. These use controlled provider responses and actual PostgreSQL 18; they are not actual provider retirement proof. The trusted operator command requires schema 57, the exact locked/drained owner boundary, retired legacy login/backends, fresh source/catalog identity and at most 50 unique eve run bindings. It writes an independently committed immutable intent before cancellation, reads terminal state independently afterward and preserves unknown attempts without retries. Terminal observations bind source commit plus content/catalog digests.
+
+Explicit independent work archive migrations 007 and 008 were applied and verified against the existing Free Neon destination. The encrypted archives, current-authority holds, capture receipts/capsules and cost records were unchanged; no cost authority was created, operator deployment performed, primary database changed or real provider run cancelled. Private receipts: `archive-schema-007-current/migration.json` and `archive-schema-008-current/migration.json`. Primary remains schema 55, so the new closure command refuses it until the controlled migration/retirement stage.
+
+Fresh read-only managed metadata inspection still found 435 provider runs (165 running, 269 completed, one cancelled). Running definitions comprise 82 eve session entries, 82 session timeout workflows and one task workflow. The task's one listed step was completed; this snapshot does not prove no future work/charge or terminal workflow closure. Native input/output bodies were not captured. All project-wide closure, paid/send reconciliation and full service recovery claims remain withheld.
+
+The final batch suite passed 6/6, including actual termination of the owned source backend during cancellation. No second provider read or cancellation occurred after fence loss, the independent intent remained, and no terminal observation was written. The current registered catalog is 619 cases across 104 suites; it has expanded since the complete 579-case checkpoint and requires a fresh complete run.
+
+### Current read-only text inventory and operator rebuild (2026-10-12)
+
+The bounded SQL-side Production text inventory inspected 1,143 text columns,
+196 populated, without retrieving raw text values or writing to the provider.
+Three legacy evidence passages matched `/workspace/`; separate category checks
+found zero matching Blob, local-artifact, `.eve`, personal-directory, temporary,
+or governed namespace paths. These lexical matches require structural review;
+they do not establish storage cutover or managed Workflow attachment completeness.
+Private evidence: `production-text-file-reference-inventory-batched-current` and
+`production-legacy-location-classification-current`. The source uses a protected
+operator connection: the sensitive platform variable cannot be decrypted, so
+platform connection equality is not asserted.
+
+The independent backup package was rebuilt from the current 619-case catalog
+source in `operator-managed-closure-current-20261012`. Local package preparation
+passed. It remains undeployed; no scheduled invocation or restoration readiness
+is claimed.
+
+The 619-case full catalog attempt `run-0063d218-2182-4e47-afc9-7c149183fc30`
+failed during the owned production build for `load-mcp.test.ts`; its test body
+did not run. The complete catalog is not accepted. Diagnosis runs are tracked
+separately and cannot replace the required full rerun. Earlier progress messages
+incorrectly checked an `exitCode` property; the runner records `code`. The final
+runner correctly rejected the failing suite.
+
+The failed owned build was reproduced with retained private diagnostics. Its
+TypeScript error identified absent named-case inventories in five new Workflow
+closure suites. The expanded SDK suite also still listed only its original three
+names. All six registrations now contain exact complete names; the verifier and
+full runner reject incomplete or duplicate registered names before admission.
+The five closure suites passed 40/40 cases with their actual JSON inventories,
+and the catalog verifier passed 6/6. Pilot and root type checking passed after
+the correction. The failed full attempt remains failed; no partial result is
+substituted for its required full rerun.
+
+The isolated `load-mcp.test.ts` rerun passed after the named-inventory fix,
+including the real owned production build and 25 pinned SDK consumers reading
+all five categories (125 available access receipts), with normal reviewed load
+records and actual PostgreSQL ownership. This is local proof. The fresh complete
+619-case catalog is running as `run-e4be3b0e-5bf2-4099-8951-7015a95857b7`;
+completion and hosted readiness are not claimed.
+
+Current native preparation `quality-named-catalog-preparation-current` passed
+for all nine applicable catalogs with zero paid dispatches. The independent
+operator package `operator-named-catalog-current-20261012` also prepared locally
+from the corrected source. Actual-model comparisons, independent output review,
+operator deployment and scheduled captures remain unverified.
+
+Owned linked-journey prototypes (kept private until integration into the feature)
+passed the ordinary HTTP profile/plan/delivery diagnostic. Five normal profile
+commands, a real lexical citation, four normal plan commands and four delivery
+commands produced accepted synthetic revisions, an accepted engagement baseline
+and a reviewed activity. The activity did not become milestone completion.
+No accepted states were inserted by SQL: SQL provisioned the synthetic scope,
+materialized the governed eligible projection and checked the resulting baseline.
+These prototypes remain outside committed implementation and do not complete
+T071 or prove hosted behavior, file workflows, human feedback or full J008.
+
+Two completed owned scopes that retained only late trace files were cleaned up
+after exact private-log attribution, direct owner checks, bounded trace-only
+inventory and absence of active Node working directories. Eight trace files
+were removed. The protected selected database configuration and root Workflow
+state were verified unchanged. Private receipt: `completed-trace-scope-cleanup-current`.
+
+### Cited-plan report regression and source-clock fixtures (2026-10-12)
+
+The 619-case attempt `run-e4be3b0e-5bf2-4099-8951-7015a95857b7` failed
+in suite 96, `image-health.test.ts`. A controlled owner backup observation used
+the client clock, which could be ahead of the actual PostgreSQL capture/sample
+clock and correctly violated the future-capture constraint. Positive observation
+fixtures now obtain their capture timestamp from the source database; the stale
+and future timestamp denial tests remain intact. The failed attempt is retained
+and is not replaced with a selective test result.
+
+The ordinary linked HTTP prototype also reproduced a report-source defect for
+plans carrying governed retrieval citation digests. Report source checks previously
+compared accepted-profile dependencies only against original revision digests.
+The shared report domain now reconciles an exact current retrieval projection
+when the direct original digest does not match, retaining current original/source
+eligibility, exact generation/digest/customer/audience checks and prohibited
+commercial-context checks. Native original references still work.
+
+The new eight-case actual PostgreSQL regression covers both digest forms, wrong
+digests/generations, foreign customers, commercial exclusion, internal audience
+fences and normal source withdrawal before passage cleanup. All eight passed.
+Together with image and backup health, the targeted run passed 18/18, with zero
+pending tests, in `report-source-clock-regression-current.json`. These are local
+checks; Production was unchanged. The complete registered catalog is now 627
+cases across 105 suites and requires a fresh full run after source integration.
+
+### Linked cited-plan and real report HTTP regression (owned checkpoint)
+
+The normal-command diagnostic completed profile acceptance (five commands), cited plan review and acceptance (four), delivery activity review (four), and report rendering/brand approval/publication (ten). Two actual queued renderer jobs produced four published PDF/PPTX artifacts; authenticated HTTP reads verified their exact sizes, hashes, file signatures and release headers. `hosted-linked-report-release-fix-current.log` records the successful owned Production-build checkpoint, with zero paid calls. Activity remained distinct from milestone completion. This is local proof, not actual hosted deployment or completion of the full linked journey.
+
+The check exposed missing release headers in report JSON/error and artifact responses. Those responses now use the existing versioned-header helper while retaining their private cache, error and retry semantics; three focused unit cases passed. The linked drivers now live in `scripts/pilot-hosted-{foundation,plan,delivery}.ts` and the explicitly local-only `scripts/pilot-owned-report.ts`, with a registered ordinary-HTTP regression. Its first promoted attempt failed the Production build because prototype schema defaults and command helper parameter types did not typecheck; those types were corrected without weakening schemas. That failed attempt is retained separately. The first corrected promoted check passed (`linked-http-reports-promoted-v2-current.json`, one actual linked case, zero pending). A bounded streaming transport is now installed and is receiving a fresh run; neither run supersedes the failed complete catalog attempts.
+
+The bounded transport linked run also passed (`linked-http-reports-bounded-v2-current.json`), one complete owned case with zero failures or pending cases. Its initial attempt failed because the retrieval envelope had not yet been parsed from `unknown`; explicit schema parsing fixed the build. Six transport cases prove release binding, streaming limits, cancellation, same-origin/API path admission and no mutation retries. Together with the six exact catalog-result cases, all twelve focused tests passed. Current registered inventory is 637 cases across 108 suites; a fresh complete run is still required. No T071 completion or hosted readiness is claimed.
+
+The owned upload prototype (`owned-linked-upload-current.log`) also completed normal conversation creation, original-byte upload, completion and actual governed scan/parse before reading located units, followed by the linked plan/delivery/report chain. Scanner and parser work ran locally with prepared immutable images; no paid calls occurred. The successful 204 upload response lacked `X-Turas-Code-Version`, recorded as `uploadReleaseHeaderVerified:false`; it is not accepted as exact-release upload proof. That header fix and the next exact uploaded-passage/review/withdrawal prototype remain pending. This private prototype is not the full hosted file-job acceptance catalog.
+
+The uploaded-source prototypes completed exact located-passage proposal and normal claim review before cited plan acceptance (`owned-linked-located-source-current.log`). Ordinary source withdrawal then denied the citation and all four published report file reads (`owned-linked-source-withdrawal-current.log`). An authenticated original read verified exact original bytes while identifying a second missing artifact release header (`owned-linked-original-current.log`). Both upload and original read header omissions are explicitly pending, so these diagnostics do not claim exact-release file transport acceptance. A typed source driver passed the same chain (`owned-linked-typed-source-v3-current.log`); its earlier draft failures were an incorrect workload table name and rejection of the valid initial record version zero, both corrected to existing schema contracts. This is still an ignored prototype awaiting registered integration, and T071 stays incomplete.
+
+The complete 637-case / 108-suite owned catalog passed in `run-e9b78bfd-904e-4b07-ac25-0d5d152abcb7`, with zero failed/skipped acceptance and `fullPilotReady:false`. This checkpoint precedes the subsequent artifact release-header and restored service-budget fixes. Its proof remains attributed to its recorded source; it is not silently relabeled for those changes.
+
+The registered source/report case now uses the typed `scripts/pilot-owned-source.ts` driver, prepared scanner/parser assets, real byte upload and original reads with exact release headers, located-source proposal and normal review, cited plan/delivery/report decisions, and normal source withdrawal followed by denied citation and report-file reads. The source images are explicitly supplied to both standalone and complete catalog runs; the nested owned runner does not borrow unverified assets. Upload and original responses use the existing versioned-header helper without changing byte authorization or streaming revocation checks.
+
+Recovery now revokes every restored service cost budget, including apparently unused budgets whose post-capture charges could be missing, and prevents automatic runtime release under revoked authority. Original authorizations, caps and permanent accounting remain intact. Explicit owner charge reconciliation remains possible and leaves the authority revoked. Two actual owned database regression cases cover unused/reserved caps, immutable revocation, idempotent quarantine, denied worker release and post-quarantine charge accounting. No source schema migration is needed for these changes: they use the existing versioned budget state contracts.
+
+`source-budget-regressions-current.json` passed all 12 registered focused cases, with no failures or pending cases and zero paid calls. Root/pilot typechecks and the 221-file documentation check passed. Current deterministic inventory is 639 cases / 108 suites; its fresh complete execution is pending. T071 and full current recovery verification remain incomplete; these changes do not establish hosted release or human acceptance.
+
+### Current source budget and linked-source regression composition
+
+The complete predecessor composition passed in `regressions-e5335277-0d8d-44db-a5ef-d25f6d5e945a`: eight original predecessor groups, 39 actual schema-057/PostgreSQL-18 authority cases and 40 CLI WebKit cases across four projects. Source digest `7131724b790301512fffeabf8b6535967966fe5673cd13f25b887d0a3fcb351e`, catalog digest `ddc87e91ecc9e0e90bcb44987424ebc5bbf8d39cc352a17fd7e8b18f0ebdbdf6`; zero paid calls, local only. Current synthetic-workspace screenshots were inspected in desktop/mobile light/dark; clear test-data labels and responsive layout were retained. The separate operator package prepared successfully against the same source in `operator-source-budget-current-20261012`; no deployment or scheduled capture occurred. Fresh quality applicability identifies all nine catalogs as requiring actual-model evaluation; the index is not output-review proof. The 639-case complete pilot run remains active.
+
+The matching complete pilot catalog finished successfully: `run-a02cae32-f054-4e05-b980-656aefac525c`, 639/639 named cases in 108 suites, zero failed/skipped cases, process exit 0 after owned cleanup. This validates the artifact release headers, current linked-source/report withdrawal path and restored service-budget changes at the source identity above. `fullPilotReady` remains false; actual CI, hosted full workflow/recovery, scheduled cadence and participant feedback are separate outstanding requirements.
+
+### Normal HTTP partner training implementation
+
+The ignored owned prototype completed normal guide authoring/submission, exact mcteer publication preview/decision, exact individual assignment preview/decision, partner draft/submission and mcteer checkpoint verification. The first attempt failed only its final unavailable-progress assertion: after source withdrawal the governed projection returns `progress:null`, not a displayed zero percentage. That failed receipt remains failed. The corrected prototype and reusable guide helper each passed, followed by the registered `linked-http-training.test.ts` (1/1, process exit 0) with actual unassigned-customer denial before the normal administrative grant. All used isolated PostgreSQL 18, a production-built HTTP application, real owned extraction and no model/provider calls. SQL only initialized the synthetic workspace/principals/memberships/customer; facts, plan, activity, guide, assignment and demonstration decisions used ordinary governed commands. The new named case is registered in G18; inventory is now 640 cases/109 suites. The prior 639-case complete run remains proof for its original source only. T071 remains incomplete pending the full hosted catalog.
+
+The registered linked source/report and partner training checks subsequently passed
+2/2 with explicit milestone review in the report chain. The report remains grounded
+in reviewed activity; three separate milestone preview/decisions establish its
+controlled acceptance without asserting a customer outcome. Root and pilot
+TypeScript checks and the 221-document check passed. Review also identified local
+renderer-image literals in the two linked tests; both now select the immutable
+renderer ID from the validated prepared-image manifest so a fresh CI build need not
+have this machine's Docker image ID.
+
+### Permanent recovered request audit
+
+`recovery-replay-audit.ts` adds actual owner inspection of captured/inherited request
+fences. The initial complete credential-denial suite passed 16/16, including missing
+fence, disabled guard, stale revision and runtime-authority rejection. A subsequent
+focused case passed after checking the actual replay function body/configuration
+against the authored migration and rejecting a changed implementation (1 selected
+case, 15 intentionally unselected; not a complete-suite claim). Additional immutable
+fence protection and runtime-write checks are being verified. The CLI consumes
+actual independent encrypted archive bytes through the existing cold reader and
+never accepts a raw healthy flag or creates complete recovery-verification rows.
+T052 remains incomplete for current full source, provider/send/charge and workflow
+reconciliation. No primary migration, provider cancellation, model call, paid job or
+service unlock occurred in these implementation checks.
+
+The strengthened permanent-request audit focused case passed (1 selected, 15 unselected), including altered function body, disabled request trigger, disabled immutable-fence trigger, runtime-owner denial and stale revision. Authored function SQL is obtained from the existing migration static emitter without executing schema changes. The CLI re-authenticates independently retained encrypted current bytes and does not manufacture complete verification rows. Final root/pilot TypeScript, document and diff checks passed; credential hygiene found no protected `.env.local` values or private candidates among 505 changed/new paths. The upcoming draft checkpoint/CI remains separate from full feature completion and Production release.

@@ -1,3 +1,4 @@
+import {insertBoundFixtureSession} from "../fixtures/bound-session";
 import { createHash, randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { withTransaction } from "../../lib/server/db/client";
@@ -266,9 +267,7 @@ describe("fresh owner-private staffing binding", () => {
         [principalId, loginName, "Synthetic admission member"]);
       await db.query(`INSERT INTO memberships(id,principal_id,workspace_id,kind,role)
         VALUES($1,$2,$3,'internal','member')`, [membershipId, principalId, panel.workspaceId]);
-      await db.query(`INSERT INTO login_sessions(id,principal_id,token_hash,expires_at)
-        VALUES($1,$2,$3,now()+interval '1 hour')`,
-        [sessionId, principalId, createHash("sha256").update(sessionId).digest("hex")]);
+      await insertBoundFixtureSession(db,{id:sessionId,principalId:principalId,membershipId:membershipId,workspaceId:panel.workspaceId,tokenHash:createHash("sha256").update(sessionId).digest("hex"),expiresAt:new Date(Date.now()+3600000)});
       const actor = { ...panel, principalId, membershipId, sessionId, loginName };
       const draft = await createDemand(actor, { requestKey: randomUUID(), rationale: "Synthetic admission demand", demand: baseline.demand }, db);
       const qualified = await qualifyDemand(actor, draft.demandId, { ...staffingExact(draft), requestKey: randomUUID(), rationale: "Synthetic admission qualification" }, db);

@@ -1,12 +1,11 @@
-import {runMcpMaintenanceTick} from '../mcp/retention';
-import {runLearningMaintenanceTick} from '../learning/maintenance';
-import {learningOperationalMetric} from '../learning/observability';
-import { randomUUID, timingSafeEqual } from "node:crypto";
+import {startMaintenanceScheduler} from '../operations/maintenance';
+import {createMaintenanceBindings} from '../operations/maintenance-bindings';
+import {operationalCodeVersion} from '../operations/code-version';
+import { timingSafeEqual } from "node:crypto";
 import type { AttachSessionFn } from "eve/channels";
 import { HttpFailure } from "../../contracts/http";
 import { getServerConfig } from "../config";
-import { heartbeatWorker, claimDueJobs, finishDueJob } from "./watchdog";
-import { performMaintenance } from "./maintenance";
+import {runHostedReconciliation} from '../operations/hosted-reconciliation';
 
 export function authorizeHostedWatchdog(request: Request, secret = process.env.CRON_SECRET): void {
   const supplied = request.headers.get("authorization") ?? "";
@@ -27,29 +26,13 @@ export function authorizeHostedWatchdog(request: Request, secret = process.env.C
   }
 }
 
-/** Minute cron invocations overlap by five seconds. Existing SKIP LOCKED job
- * leases fence duplicate cancellation; readiness expires if execution stops.
- * This performs no schema initialization and never dispatches model work. */
-export async function runHostedWatchdog(attachSession: AttachSessionFn): Promise<void> {
-  const workerId = randomUUID();
-  const end = Date.now() + 65_000;let nextLearningAt=0,stopping=false,mcpTick:Promise<unknown>|null=null;
-  const maintainMcp=()=>{if(stopping||mcpTick)return;mcpTick=runMcpMaintenanceTick().catch(()=>{console.warn(JSON.stringify({kind:'mcp_maintenance_failed'}));}).finally(()=>{mcpTick=null;});};
-  const mcpTimer=setInterval(maintainMcp,30000);maintainMcp();
-  try{while (Date.now() < end) {
-    const started = Date.now();
-    const jobs = await claimDueJobs(workerId, 1);
-    await heartbeatWorker(workerId);
-    for (const job of jobs) {
-      try {
-        const result = await performMaintenance({ action: "cancel_due", attemptId: job.attemptId,
-          environmentId: getServerConfig().TURAS_ENVIRONMENT_ID }, attachSession);
-        await finishDueJob(workerId, job.attemptId, result);
-      } catch {
-        await finishDueJob(workerId, job.attemptId, "retry", "maintenance_call_failed");
-      }
-    }
-    if(Date.now()>=nextLearningAt){try{const result=await runLearningMaintenanceTick({attachSession});learningOperationalMetric('maintenance_duration_ms',Math.min(1000000,result.durationMs));learningOperationalMetric('maintenance_records',result.processed);}catch{learningOperationalMetric('maintenance_failed',1);}nextLearningAt=Date.now()+30000;}
-    const remaining = Math.min(end - Date.now(), Math.max(0, 5_000 - (Date.now() - started)));
-    if (remaining > 0) await new Promise(resolve => setTimeout(resolve, remaining));
-  }}finally{stopping=true;clearInterval(mcpTimer);await mcpTick;}
+/** Protected minute invocations overlap by five seconds. Durable per-class leases
+ * fence duplicate work, and each cleanup class runs independently of heavy jobs. */
+export async function runHostedWatchdog(attachSession:AttachSessionFn):Promise<void>{
+ const scheduler=startMaintenanceScheduler(getServerConfig().TURAS_ENVIRONMENT_ID,operationalCodeVersion(),createMaintenanceBindings({attachSession}));
+ let stopping=false,pending:Promise<unknown>|null=null;
+ const reconcile=()=>{if(stopping||pending)return;pending=runHostedReconciliation({limit:20,signal:AbortSignal.timeout(30000)}).catch(()=>{console.warn(JSON.stringify({kind:'hosted_reconciliation_failed'}));}).finally(()=>{pending=null;});};
+ const timer=setInterval(reconcile,30000);reconcile();
+ try{await new Promise(resolve=>setTimeout(resolve,65000));}
+ finally{stopping=true;clearInterval(timer);await Promise.allSettled([scheduler.stop(),pending]);}
 }

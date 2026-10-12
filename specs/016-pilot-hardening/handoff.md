@@ -3,7 +3,9 @@
 Planning prepared 2026-10-10 on `016-pilot-hardening` in the canonical checkout.
 Baseline main is `db6c0b9a721fcf5f6311b5be8ecd18846e38a8c9`; 015 is released on
 schema 055. No runtime, migration, dependency, environment or Production changes
-were made during this planning run. All 84 implementation tasks remain unchecked.
+were made during this planning run. Implementation has since begun in this checkout. Current checked tasks and
+private local validation are recorded in `tasks.md` and `validation.md`; full
+016 acceptance and hosted release remain pending.
 
 Select `SPECIFY_FEATURE_DIRECTORY=specs/016-pilot-hardening` independently of the
 Git branch. Read spec, plan, tasks, data model, contracts and quickstart before code.
@@ -16,6 +18,9 @@ message; it does not create an implementation or hosted acceptance record.
    authentication, federation and broad onboarding remain deferred.
 2. A clearly labeled synthetic Production pilot workspace, using normal reviews
    and explicit partner assignments, followed by actual participant feedback.
+3. Backups must use work-controlled infrastructure. Personal iCloud and other
+   personal storage are prohibited. Inspect the existing Neon recovery setup;
+   separately protect private files and current denial/replay records.
 
 Existing canonical mcteer review/release ownership, private conversations, partner
 grants, source acceptance and model selection remain authoritative. No approval

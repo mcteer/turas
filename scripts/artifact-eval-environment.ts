@@ -1,6 +1,8 @@
+import {qualityChildEnvironment} from "./pilot-quality-runtime";
 import { randomUUID } from "node:crypto";
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
-import { chmod, cp, mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import { chmod, cp, mkdir, mkdtemp, rm, symlink, writeFile, readFile } from "node:fs/promises";
+import {copyOwnedEvalFiles} from './eval-owned-copy';
 import { createServer } from "node:net";
 import { resolve, join } from "node:path";
 import { Client } from "pg";
@@ -39,13 +41,15 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
     throw new Error("Invalid local evaluation database identifier");
   }
   const marker = process.env.TURAS_TEST_ENVIRONMENT_ID!;
+  const manifest = JSON.parse(await readFile(resolve('migrations/manifest.json'),'utf8')) as {version:number};
+  if(!Number.isSafeInteger(manifest.version)||manifest.version<18)throw Error('Current artifact migration manifest required');
   const probe = new Client({ connectionString: testUrl.toString() });
   await probe.connect();
   try {
     const current = await probe.query<{ environment_id: string; schema_version: number }>(
       "SELECT environment_id,schema_version FROM turas_environment");
     if (current.rows.length !== 1 || current.rows[0].environment_id !== marker ||
-        current.rows[0].schema_version !== 18) throw new Error("Artifact test schema 018 required");
+        current.rows[0].schema_version !== manifest.version) throw new Error("Current artifact test schema required");
   } finally { await probe.end(); }
   process.env.TURAS_ARTIFACT_STORE_ROOT ??= resolve("local-artifacts/004/store");
   const preparedStore = parseArtifactStoreConfig(process.env).root;
@@ -61,6 +65,7 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
   }
   const old = { DATABASE_URL: process.env.DATABASE_URL,
     DATABASE_URL_UNPOOLED: process.env.DATABASE_URL_UNPOOLED,
+    TURAS_TEST_DATABASE_URL: process.env.TURAS_TEST_DATABASE_URL,
     TURAS_ENVIRONMENT_ID: process.env.TURAS_ENVIRONMENT_ID,
     TURAS_APP_ORIGIN: process.env.TURAS_APP_ORIGIN,
     TURAS_ARTIFACT_STORE_ROOT: process.env.TURAS_ARTIFACT_STORE_ROOT };
@@ -73,12 +78,13 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
       { mode: 0o600 });
     await chmod(join(store,".turas-artifact-store.json"),0o600);
     await mkdir(app,{ mode: 0o700 });
-    for (const name of ["app","agent","lib","migrations","scripts","public","evals",
+    for (const name of ["app","agent","lib","migrations","scripts","public","evals","infra","tests","packages","report-renderer","report-templates",
       "next.config.ts","next-env.d.ts","tsconfig.json","package.json"]) {
-      await cp(resolve(name),join(app,name),{ recursive: true });
+      copyOwnedEvalFiles(resolve(name),join(app,name),{excludeRuntime:true});
     }
     await cp(resolve("scripts/fixtures/artifact-eval-agent.ts"),join(app,"agent/agent.ts"));
     await symlink(resolve("node_modules"),join(app,"node_modules"));
+    await symlink(resolve("packages/artifact-extractor/node_modules"),join(app,"packages/artifact-extractor/node_modules"));
     const dump = execFileSync("docker",["exec",container,"pg_dump","-U",username,
       "-d",database,"-Fc","--no-owner","--no-acl"],{ timeout: 60_000,maxBuffer: 100*1024*1024 });
     execFileSync("docker",["exec",container,"createdb","-U",username,cloneName],{
@@ -91,11 +97,12 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
     const origin = `http://127.0.0.1:${port}`;
     process.env.DATABASE_URL = cloneUrl.toString();
     process.env.DATABASE_URL_UNPOOLED = cloneUrl.toString();
+    process.env.TURAS_TEST_DATABASE_URL = cloneUrl.toString();
     process.env.TURAS_ENVIRONMENT_ID = marker;
     process.env.TURAS_APP_ORIGIN = origin;
     process.env.TURAS_ARTIFACT_STORE_ROOT = store;
     dev = spawn(process.execPath,["scripts/dev.mjs"],{
-      cwd: app,env: { ...process.env,PORT: String(port) },stdio: ["ignore","pipe","pipe"] });
+      cwd: app,env: { ...process.env,PORT: String(port),...await qualityChildEnvironment() },stdio: ["ignore","pipe","pipe"] });
     const capture = (chunk: Buffer) => { startupOutput =
       (startupOutput+chunk.toString("utf8")).slice(-1_500); };
     dev.stdout?.on("data",capture); dev.stderr?.on("data",capture);

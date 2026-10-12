@@ -1,3 +1,4 @@
+import {insertBoundFixtureSession} from "../fixtures/bound-session";
 import { createHash, randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import type { CurrentSession } from "../../lib/server/auth/sessions";
@@ -44,8 +45,7 @@ describe("owned bounded research admission", () => {
             [principal,`research-${principal}`]);
           await client.query(`INSERT INTO memberships(id,principal_id,workspace_id,kind,role)
             VALUES($1,$2,$3,'internal','member')`,[membership,principal,workspace]);
-          await client.query(`INSERT INTO login_sessions(id,principal_id,token_hash,expires_at)
-            VALUES($1,$2,$3,now()+interval '1 hour')`,[sessionId,principal,sha(sessionId)]);
+          await insertBoundFixtureSession(client,{id:sessionId,principalId:principal,membershipId:membership,workspaceId:workspace,tokenHash:sha(sessionId),expiresAt:new Date(Date.now()+3600000)});
           await client.query(`INSERT INTO customer_references(id,workspace_id,display_name,synthetic)
             VALUES($1,$2,'Synthetic public identity',true)`,[customer,workspace]);
           await client.query(`INSERT INTO conversations
@@ -409,9 +409,7 @@ describe("owned bounded research admission", () => {
             { idempotencyKey: "cancel-1" })).replayed).toBe(true);
           expect((await readResearchRun(client,actor,admitted.runId)).state).toBe("cancelled");
           const laterSessionId = randomUUID();
-          await client.query(`INSERT INTO login_sessions(id,principal_id,token_hash,expires_at)
-            VALUES($1,$2,$3,now()+interval '1 hour')`,
-          [laterSessionId,principal,sha(laterSessionId)]);
+          await insertBoundFixtureSession(client,{id:laterSessionId,principalId:principal,membershipId:membership,workspaceId:workspace,tokenHash:sha(laterSessionId),expiresAt:new Date(Date.now()+3600000)});
           expect((await readResearchRun(client,{ ...actor,sessionId: laterSessionId },
             admitted.runId)).state).toBe("cancelled");
           const cancelledAttempt = await client.query<{ dispatch_state: string;

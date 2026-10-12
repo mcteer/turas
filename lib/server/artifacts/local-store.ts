@@ -98,6 +98,8 @@ export class LocalArtifactStore implements ArtifactStore {
     return objectKey;
   }
 
+  async read(objectKey: string): Promise<AsyncIterable<Uint8Array>> { return createReadStream(await this.checkedPath("objects",objectKey)); }
+
   async readPath(objectKey: string): Promise<string> {
     return this.checkedPath("objects", objectKey);
   }

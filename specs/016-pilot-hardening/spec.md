@@ -4,13 +4,13 @@
 
 **Created**: 2026-10-10
 
-**Status**: Planned — implementation not started
+**Status**: Implementation in progress — full pilot acceptance remains pending
 
 **Input**: Complete roadmap slice 016: restore/recovery, retention/deletion,
 security/access review, scale/cost tests, operational runbooks, pilot feedback and
 approved release. Carry forward record-dependent hosted gaps from 002–015 and
-validate changed behavior in Production after merge. This turn prepares specify,
-clarify, plan, tasks and analyze; implementation follows separately.
+validate changed behavior in Production after merge. Implementation is authorized; actual hosted, recovery, quality and participant
+proof remain separate required acceptance gates.
 
 ## Context and scope
 
@@ -39,6 +39,12 @@ onboarding and authentication/federation remain deferred.
   partner assignments, followed by separately recorded real-user feedback.
 
 ## User Scenarios & Testing *(mandatory)*
+
+**Work-storage constraint (2026-10-11)**: Backups and independently retained
+recovery authority must use work-controlled infrastructure. Personal iCloud and
+other personal storage are prohibited. Inspect the existing Neon recovery setup
+for database recovery; private files and current denial/replay records require
+their own verified protection.
 
 ### User Story 1 - Decide readiness from current evidence (Priority: P1)
 

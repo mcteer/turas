@@ -1,3 +1,4 @@
+import { sharedOriginSql } from "../access/policy";
 import type { PoolClient } from "pg";
 import { HttpFailure } from "../../contracts/http";
 import { embeddingContractVersion, retrievalContractVersion } from "../../contracts/retrieval";
@@ -20,8 +21,9 @@ export function retrievalIntakeEnabled(): boolean {
 export async function assertRetrievalReady(
   client: Pick<PoolClient, "query">,
   expectedEnvironment = getServerConfig().TURAS_ENVIRONMENT_ID,
+  maintenance = false,
 ): Promise<void> {
-  if (!retrievalIntakeEnabled()) {
+  if (!maintenance && !retrievalIntakeEnabled()) {
     throw new HttpFailure(503,"unavailable","Retrieval unavailable");
   }
   try {
@@ -59,6 +61,7 @@ export async function assertRetrievalReady(
 export type AuthorizedRetrievalScope = {
   environmentId: string;
   workspaceId: string | null;
+  actorWorkspaceId?: string;
   customerId: string | null;
   audience: "internal" | "delivery";
   includeShared: boolean;
@@ -76,6 +79,7 @@ export async function authorizeRetrievalScope(client: PoolClient, actor: Current
   }
   return {
     environmentId: getServerConfig().TURAS_ENVIRONMENT_ID,
+    actorWorkspaceId: actor.workspaceId,
     workspaceId: scope === "shared" ? null : actor.workspaceId,
     customerId: scope === "shared" ? null : customerId ?? null,
     audience: effectiveAudience ?? (actor.kind === "internal" ? "internal" : "delivery"),
@@ -158,8 +162,8 @@ export async function recheckRetrievalSource(client: PoolClient,
     const current = await client.query(`SELECT 1 FROM knowledge_publications p
       JOIN knowledge_revision_payloads payload ON payload.revision_id=p.revision_id
       WHERE p.revision_id=$1 AND p.environment_id=$2 AND p.state='published'
-        AND p.head_generation=$3`,
-    [source.revisionId, scope.environmentId, source.generation]);
+        AND p.head_generation=$3 AND ${sharedOriginSql("p","$4")}`,
+    [source.revisionId, scope.environmentId, source.generation,scope.actorWorkspaceId??scope.workspaceId]);
     return Boolean(current.rowCount) && await knowledgeLineageIsCurrent(client, source.revisionId);
   }
   return false;

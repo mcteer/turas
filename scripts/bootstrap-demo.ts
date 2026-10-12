@@ -3,7 +3,9 @@ import { getServerConfig } from "../lib/server/config.ts";
 import { DEMO_IDS } from "../lib/server/bootstrap-ids.ts";
 
 const config = getServerConfig();
-const client = new Client({ connectionString: config.DATABASE_URL, connectionTimeoutMillis: 5_000 });
+const ownerUrl = process.env.DATABASE_URL_UNPOOLED;
+if (!ownerUrl) throw new Error("Explicit bootstrap owner database required");
+const client = new Client({ connectionString: ownerUrl, connectionTimeoutMillis: 5_000 });
 
 async function main(): Promise<void> {
   await client.connect();

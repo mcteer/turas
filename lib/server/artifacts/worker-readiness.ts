@@ -3,11 +3,14 @@ import { join } from "node:path";
 import { getServerConfig, parseArtifactStoreConfig } from "../config";
 import { preparedArtifactImages } from "./prepared";
 import { assertFreshArtifactSignatures } from "./scan";
+import {executionBackend} from '../jobs/governed';
+import {hostedFileWorkerReady} from '../operations/worker-readiness';
 
 const heartbeatFile = "worker-heartbeat.json";
 
 export async function artifactInfrastructureReady(): Promise<boolean> {
   try {
+    if(executionBackend()==='sandbox'){await (await import('../operations/dispatch')).assertHostedDispatchReady();return true;}
     const root = parseArtifactStoreConfig(process.env).root;
     preparedArtifactImages();
     await assertFreshArtifactSignatures(join(root, "signatures"));
@@ -17,6 +20,7 @@ export async function artifactInfrastructureReady(): Promise<boolean> {
 }
 
 export async function heartbeatArtifactWorker(): Promise<void> {
+  if(executionBackend()==='sandbox')throw Error('Hosted worker status requires a completed registry tick');
   const root = parseArtifactStoreConfig(process.env).root;
   await writeFile(join(root, heartbeatFile), JSON.stringify({
     environmentId: getServerConfig().TURAS_ENVIRONMENT_ID, at: new Date().toISOString(),
@@ -25,6 +29,7 @@ export async function heartbeatArtifactWorker(): Promise<void> {
 
 export async function artifactWorkerReady(): Promise<boolean> {
   if (!(await artifactInfrastructureReady())) return false;
+  if(executionBackend()==='sandbox')return hostedFileWorkerReady('artifacts');
   try {
     const root = parseArtifactStoreConfig(process.env).root;
     const path = join(root, heartbeatFile);

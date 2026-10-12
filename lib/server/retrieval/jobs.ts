@@ -15,7 +15,7 @@ export type RetrievalJobClaim = {
 
 export async function enqueueRetrievalJob(client: PoolClient, sourceId: string,
   kind: RetrievalJobKind, environmentId = getServerConfig().TURAS_ENVIRONMENT_ID): Promise<string | null> {
-  await assertRetrievalReady(client,environmentId);
+  await assertRetrievalReady(client,environmentId,kind!=='index');
   const source = await client.query<{ environment_id: string; source_generation: string;
     contract_digest: string; lifecycle_state: string }>(
     `SELECT environment_id,source_generation,contract_digest,lifecycle_state
@@ -40,9 +40,9 @@ export async function retryFailedRetrievalJob(client: PoolClient,jobId: string):
   const found = await client.query<{ state: string; attempts: number; kind: RetrievalJobKind;
     source_generation: string; contract_digest: string; source_kind: string;
     source_revision_id: string; lifecycle_state: string;
-    current_generation: string; current_contract_digest: string }>(`
+    current_generation: string; current_contract_digest: string; origin_workspace_id:string|null }>(`
     SELECT j.state,j.attempts,j.kind,j.source_generation,j.contract_digest,
-      s.source_kind,s.source_revision_id,s.lifecycle_state,
+      s.source_kind,s.source_revision_id,s.lifecycle_state,s.origin_workspace_id,
       s.source_generation AS current_generation,s.contract_digest AS current_contract_digest
     FROM retrieval_jobs j JOIN retrieval_sources s ON s.id=j.source_id
     WHERE j.id=$1 AND j.environment_id=$2 AND s.environment_id=$2
@@ -56,7 +56,7 @@ export async function retryFailedRetrievalJob(client: PoolClient,jobId: string):
   if (ambiguous.rowCount) return false;
   if (row.kind === "index" && (row.lifecycle_state !== "current" ||
       !await exactRetrievalOriginalCurrent(client,row.source_kind,
-        row.source_revision_id,row.source_generation))) return false;
+        row.source_revision_id,row.source_generation,row.origin_workspace_id??undefined))) return false;
   const retried = await client.query(`UPDATE retrieval_jobs SET state='queued',
     last_error_code='operator_retry',updated_at=now()
     WHERE id=$1 AND state='failed' AND attempts<3`,[jobId]);
@@ -65,11 +65,12 @@ export async function retryFailedRetrievalJob(client: PoolClient,jobId: string):
 
 export async function claimRetrievalJobs(limit = 2, existingClient?: PoolClient,
   environmentId = getServerConfig().TURAS_ENVIRONMENT_ID,
-  sourceIds?: readonly string[]): Promise<RetrievalJobClaim[]> {
+  sourceIds?: readonly string[], kinds?:readonly RetrievalJobKind[]): Promise<RetrievalJobClaim[]> {
   if (!Number.isInteger(limit) || limit < 1 || limit > 2) throw new Error("Invalid retrieval worker concurrency");
   const selected = sourceIds === undefined ? null : z.array(z.uuid()).max(1000).parse(sourceIds);
+  const selectedKinds=kinds===undefined?null:z.array(z.enum(['index','invalidate','cleanup'])).min(1).max(3).parse(kinds);
   const execute = async (client: PoolClient) => {
-    await assertRetrievalReady(client,environmentId);
+    await assertRetrievalReady(client,environmentId,Boolean(selectedKinds&&!selectedKinds.includes('index')));
     const candidates = await client.query<{
       id: string; source_id: string; source_generation: string; contract_digest: string;
       kind: RetrievalJobKind; state: string; attempts: number;
@@ -77,7 +78,8 @@ export async function claimRetrievalJobs(limit = 2, existingClient?: PoolClient,
       FROM retrieval_jobs WHERE environment_id=$1 AND
         (state='queued' OR (state='leased' AND lease_until<=now()))
         AND ($3::uuid[] IS NULL OR source_id=ANY($3::uuid[]))
-      ORDER BY created_at,id FOR UPDATE SKIP LOCKED LIMIT $2`, [environmentId,limit,selected]);
+        AND ($4::text[] IS NULL OR kind=ANY($4::text[]))
+      ORDER BY created_at,id FOR UPDATE SKIP LOCKED LIMIT $2`, [environmentId,limit,selected,selectedKinds]);
     const claims: RetrievalJobClaim[] = [];
     for (const job of candidates.rows) {
       const source = await client.query<{ source_generation: string; contract_digest: string;

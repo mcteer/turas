@@ -22,6 +22,7 @@ export function LoginForm() {
         credentials: "same-origin",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
+          workspace: String(form.get("workspace") ?? "primary"),
           username: String(form.get("username") ?? ""),
           password: String(form.get("password") ?? ""),
           returnTo: new URLSearchParams(window.location.search).get("returnTo") ?? "/",
@@ -45,6 +46,7 @@ export function LoginForm() {
     <form className="login-form" onSubmit={submit}>
       <p><label className="field-label" htmlFor="username">Username</label><input className="field" id="username" name="username" autoComplete="username" required /></p>
       <p><label className="field-label" htmlFor="password">Password</label><input className="field" id="password" name="password" type="password" autoComplete="current-password" required /></p>
+      <p><label className="field-label" htmlFor="workspace">Workspace</label><select className="field" id="workspace" name="workspace" defaultValue="primary"><option value="primary">Primary Workspace</option><option value="pilot">Synthetic Pilot</option></select></p>
       {error && <p role="alert">{error}</p>}
       <button className="primary-button" type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
     </form>

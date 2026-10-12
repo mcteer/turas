@@ -58,6 +58,12 @@ the database at its start; it does not coordinate separate private files. See
 **Alternatives**: A database-only dump omits originals and workflows. A copied local
 `.eve/.workflow-data` directory does not establish hosted Workflow recovery.
 
+**Destination constraint (2026-10-11)**: Personal iCloud and other personal
+storage are prohibited for this work tool. Inspect the existing Neon recovery
+configuration for database recovery. Files, independently current denial/replay
+records and any independent archive must use work-controlled infrastructure.
+The personal-iCloud experiment is rejected and supplies no acceptance evidence.
+
 ## R04 — Reconcile authority newer than the backup
 
 **Decision**: Preserve a separate private denial/replay reconciliation manifest
@@ -212,3 +218,11 @@ Synthetic populations must remain outside primary learning metrics and gap count
 operational evidence. Silently treating a second workspace as a second active
 membership without session binding breaks authorization. Creating new fake users
 cannot prove the existing canonical review paths.
+
+## Implementation dependency verification
+
+Public SDKs pinned to `@vercel/blob` 2.8.1 and `@vercel/sandbox` 3.6.1, both
+Apache-2.0; Blob supports Node ≥20 and this project runs Node 24. Registry discovery
+was repeated; no domain-store adapter was installed. Existing eve/model selection
+is unchanged. The private dependency audit is recorded for the security gate;
+pre-existing framework advisories will be assessed against the scoped runtime.

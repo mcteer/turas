@@ -1,3 +1,4 @@
+import {qualityChildEnvironment} from "./pilot-quality-runtime";
 import { randomUUID } from "node:crypto";
 import { execFileSync,spawn,type ChildProcess } from "node:child_process";
 import { chmod,cp,mkdir,mkdtemp,rm,symlink,writeFile } from "node:fs/promises";
@@ -85,7 +86,7 @@ export async function withRetrievalEvalEnvironment<T>(
     await writeFile(join(store,".turas-artifact-store.json"),
       JSON.stringify({ environmentId: marker }),{ mode: 0o600 });
     await chmod(join(store,".turas-artifact-store.json"),0o600);
-    for (const name of ["app","agent","lib","migrations","scripts","public","evals","tests",
+    for (const name of ["app","agent","lib","migrations","scripts","public","evals","infra","tests",
       "next.config.ts","next-env.d.ts","tsconfig.json","package.json"]) {
       await cp(resolve(name),join(app,name),{ recursive: true });
     }
@@ -140,7 +141,7 @@ export async function withRetrievalEvalEnvironment<T>(
     async function startDev(): Promise<void> {
       startupOutput = "";
       dev = spawn(process.execPath,["scripts/dev.mjs"],{
-        cwd: app,env: { ...process.env,PORT: String(port),NODE_OPTIONS: "" },
+        cwd: app,env: { ...process.env,PORT: String(port),...await qualityChildEnvironment() },
         stdio: ["ignore","pipe","pipe"] });
       dev.stdout?.on("data",capture);dev.stderr?.on("data",capture);
       const started = Date.now();

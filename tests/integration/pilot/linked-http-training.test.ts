@@ -1,0 +1,92 @@
+import {runPartnerTraining,runPartnerGuide} from '../../../scripts/pilot-hosted-partners';
+import {syntheticPartnerGuide} from '../../../tests/fixtures/partners/originals';
+import {partnerSourceSchema,partnerContractVersion} from '../../../lib/contracts/partners';
+import {cp,readFile,writeFile} from 'node:fs/promises';
+import {join,dirname} from 'node:path';
+import {parsePilotImagePreparation} from '../../../lib/contracts/pilot-images';
+import {runOwnedSourceJourney,sourceWithdrawalCommand} from '../../../scripts/pilot-owned-source';
+import {claimArtifactRun} from '../../../lib/server/artifacts/jobs';
+import {runArtifactJob} from '../../../lib/server/artifacts/runner';
+import {z} from 'zod';
+import {pilotHostedRequest} from '../../../scripts/pilot-hosted-request';
+import {it,expect} from 'vitest';
+import {Client,type PoolClient} from 'pg';
+import {createHash} from 'node:crypto';
+import {randomUUID} from 'node:crypto';
+import {withPilotEnvironment,requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
+import {DEMO_IDS} from '../../../lib/server/bootstrap-ids';
+import {issueSession,sessionCookieName} from '../../../lib/server/auth/sessions';
+import {csrfTokenForSession} from '../../../lib/server/auth/csrf';
+import {closeRuntimePool} from '../../../lib/server/db/client';
+import {materializeCurrentProjection} from '../../../lib/server/retrieval/projections';
+import {retrievalResponseSchema} from '../../../lib/contracts/retrieval';
+import type {PilotHostedScope} from '../../../lib/contracts/pilot-hosted';
+import {runHostedProfileFoundation} from '../../../scripts/pilot-hosted-foundation';
+import {runHostedPlanJourney} from '../../../scripts/pilot-hosted-plan';
+import {runHostedDeliveryReview} from '../../../scripts/pilot-hosted-delivery';
+it('publishes and assigns a guide through normal HTTP, verifies the partner demonstration and removes credit after source withdrawal',async()=>{
+const preparationFile=process.env.TURAS_PILOT_UI_PREPARATION_FILE;if(!preparationFile)throw Error('Explicit prepared source images required');
+const preparation=parsePilotImagePreparation(await readFile(preparationFile)),preparedStore=join(dirname(preparationFile),'store');
+await withPilotEnvironment(async environment=>{
+ process.env.TURAS_REPORTS_ENABLED='true';process.env.TURAS_PILOT_RENDERER_IMAGE=preparation.images.find(row=>row.kind==='renderer')!.localImageId;
+ const parser=preparation.images.find(row=>row.kind==='parser')!,scanner=preparation.images.find(row=>row.kind==='scanner')!;
+ process.env.TURAS_PILOT_PARSER_IMAGE=parser.localImageId;process.env.TURAS_PILOT_SCANNER_IMAGE=scanner.localImageId;
+ for(const asset of preparation.scanner.signatures){const bytes=await readFile(join(preparedStore,'signatures',asset.name));if(bytes.length!==asset.sizeBytes||createHash('sha256').update(bytes).digest('hex')!==asset.digest)throw Error('Exact prepared scanner assets required');}
+ if(createHash('sha256').update(await readFile(join(preparedStore,'assets/eng.traineddata'))).digest('hex')!==preparation.ocr.digest)throw Error('Exact prepared OCR asset required');
+ await cp(join(preparedStore,'signatures'),join(process.env.TURAS_ARTIFACT_STORE_ROOT!,'signatures'),{recursive:true});
+ await cp(join(preparedStore,'assets'),join(process.env.TURAS_ARTIFACT_STORE_ROOT!,'assets'),{recursive:true});
+ await writeFile(join(process.env.TURAS_ARTIFACT_STORE_ROOT!,'runtime-images.json'),JSON.stringify({contract:'artifact-intake-v1',parserImage:parser.localImageId,parserDigest:parser.localImageId.slice(7),scannerImage:scanner.localImageId,scannerDigest:scanner.localImageId.slice(7)}),{mode:0o600});
+ const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
+ try{
+  const workspaceId=randomUUID(),membershipId=randomUUID(),customerId=randomUUID();
+  await owner.query("INSERT INTO workspaces(id,name,classification,pilot_environment_id,pilot_provisioning_id) VALUES($1,'Synthetic linked HTTP validation','synthetic_pilot',$2,$3)",[workspaceId,environment.environmentId,randomUUID()]);
+  await owner.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role) VALUES($1,$2,$3,'internal','admin')",[membershipId,DEMO_IDS.mcteer,workspaceId]);
+  await owner.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,'Synthetic linked HTTP customer',true)",[customerId,workspaceId]);
+  await owner.query('INSERT INTO customer_profile_state(customer_id,workspace_id) VALUES($1,$2) ON CONFLICT DO NOTHING',[customerId,workspaceId]);
+  const memberId=randomUUID();await owner.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role) VALUES($1,$2,$3,'internal','member')",[memberId,DEMO_IDS.panel,workspaceId]);
+  const memberSession=await issueSession({principalId:DEMO_IDS.panel,loginName:'panel',displayName:'panel',membershipId:memberId,workspaceId,kind:'internal',role:'member'});
+  const memberHeaders=new Headers({cookie:sessionCookieName()+'='+memberSession.token,origin:environment.origin,'content-type':'application/json','x-csrf-token':csrfTokenForSession(memberSession.token)});
+  const issued=await issueSession({principalId:DEMO_IDS.mcteer,loginName:'mcteer',displayName:'mcteer',membershipId,workspaceId,kind:'internal',role:'admin'});
+  const headers=new Headers({cookie:sessionCookieName()+'='+issued.token,origin:environment.origin,'content-type':'application/json','x-csrf-token':csrfTokenForSession(issued.token)});
+  const scope:PilotHostedScope={contract:'pilot-hosted-scope-v1',runId:randomUUID(),projectId:'prj_synthetic',teamId:'team_synthetic',deploymentId:'dpl_synthetic',origin:environment.origin,environmentMarker:environment.environmentId,workspaceId,target:'production',sourceCommit:process.env.TURAS_CODE_VERSION!,sourceDigest:'a'.repeat(64),catalogDigest:'b'.repeat(64)};
+  await closeRuntimePool();await environment.startProduction();
+  const request=pilotHostedRequest({scope,headers,signal:environment.signal}),authorRequest=pilotHostedRequest({scope,headers:memberHeaders,signal:environment.signal});
+  const foundation=await runHostedProfileFoundation({scope,db:owner,customerId,signal:environment.signal,request});
+  const uploaded=await runOwnedSourceJourney({scope,db:owner,customerId,workloadId:foundation.workloadId,signal:environment.signal,request,uploadBytes:async(intentId,bytes)=>{
+   const binaryHeaders=new Headers(headers);binaryHeaders.set('content-type','application/octet-stream');binaryHeaders.set('content-length',String(bytes.length));
+   const response=await fetch(environment.origin+'/api/artifacts/intents/'+intentId+'/bytes',{method:'PUT',headers:binaryHeaders,body:new Uint8Array(bytes),redirect:'manual',signal:environment.signal});
+   expect(response.status).toBe(204);expect(response.headers.get('x-turas-code-version')).toBe(scope.sourceCommit);await response.body?.cancel();
+  },runQueuedExtraction:async(versionId)=>{const claim=await claimArtifactRun();if(!claim||claim.versionId!==versionId)throw Error('Exact normal queued extraction required');await runArtifactJob(claim,environment.signal);},readOriginal:async(versionId,expected)=>{
+   const response=await fetch(environment.origin+'/api/artifacts/'+versionId+'/original',{headers,redirect:'manual',signal:environment.signal});expect(response.status).toBe(200);expect(response.headers.get('x-turas-code-version')).toBe(scope.sourceCommit);
+   const reader=response.body?.getReader();if(!reader)throw Error('Actual original body required');const parts:Uint8Array[]=[];let size=0;try{for(;;){const part=await reader.read();if(part.done)break;size+=part.value.byteLength;if(size>expected.length)throw Error('Actual original exceeds expected bound');parts.push(part.value);}}finally{await reader.cancel().catch(()=>undefined);reader.releaseLock();}expect(Buffer.concat(parts).equals(expected)).toBe(true);
+  }});
+  await owner.query('BEGIN');try{const source=await materializeCurrentProjection(owner as unknown as PoolClient,'accepted_profile',uploaded.profileRevisionId,'delivery');if(!source)throw Error('Current projection unavailable');await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}
+  const search=retrievalResponseSchema.parse(z.object({data:z.unknown()}).parse(await request('/api/retrieval/search','POST',{scope:'customer',customerId,workloadId:foundation.workloadId,query:'controlled synthetic workload serves synthetic public web requests',use:'discovery',limit:5})).data);
+  if(search.mode!=='lexical_degraded')throw Error('No paid embedding admitted');
+  const source=search.results.find(x=>x.sourceRevisionId===uploaded.profileRevisionId);if(!source)throw Error('Current governed linked citation unavailable');
+  const plan=await runHostedPlanJourney({scope,db:owner,customerId,workloadId:foundation.workloadId,ownerMembershipId:membershipId,citationId:source.citationId,expectedSourceRevisionId:uploaded.profileRevisionId,signal:environment.signal,request});
+  const baseline=(await owner.query('SELECT revision_id FROM milestone_baselines WHERE id=$1 AND engagement_id=$2',[plan.baselineId,plan.engagementId])).rows;
+  if(baseline.length!==1||baseline[0].revision_id!==plan.revisionId)throw Error('Ordinary accepted baseline unavailable');
+  const delivery=await runHostedDeliveryReview({scope,db:owner,customerId,engagementId:plan.engagementId,baselineId:plan.baselineId,signal:environment.signal,request});
+  const organizationId=randomUUID(),partnerMembershipId=randomUUID();
+  await owner.query("INSERT INTO partner_organizations(id,workspace_id,name) VALUES($1,$2,'Synthetic controlled training partner')",[organizationId,workspaceId]);
+  await owner.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role,partner_org_id) VALUES($1,$2,$3,'partner','member',$4)",[partnerMembershipId,DEMO_IDS.partner,workspaceId,organizationId]);
+  const partnerSession=await issueSession({principalId:DEMO_IDS.partner,loginName:'partner',displayName:'partner',membershipId:partnerMembershipId,workspaceId,kind:'partner',role:'member'});
+  const partnerHeaders=new Headers({cookie:sessionCookieName()+'='+partnerSession.token,origin:environment.origin,'content-type':'application/json','x-csrf-token':csrfTokenForSession(partnerSession.token)});
+  const partnerRequest=pilotHostedRequest({scope,headers:partnerHeaders,signal:environment.signal});
+  const unassigned=await fetch(environment.origin+'/api/customers/'+customerId+'/profile',{headers:partnerHeaders,redirect:'manual',signal:environment.signal});expect(unassigned.status).toBe(404);await unassigned.body?.cancel();
+  const grant=await fetch(environment.origin+'/api/admin/grants/'+partnerMembershipId+'/'+customerId,{method:'PUT',headers,body:JSON.stringify({state:'active',expectedRevision:0,requestKey:randomUUID()}),redirect:'manual',signal:environment.signal});
+  expect(grant.status).toBe(200);expect(grant.headers.get('x-turas-code-version')).toBe(scope.sourceCommit);await grant.body?.cancel();
+  const unwrap=(raw:unknown)=>z.object({data:z.unknown()}).parse(raw).data;
+  const evidence=z.object({items:z.array(z.object({reference:partnerSourceSchema}))}).parse(unwrap(await request('/api/partners/evidence?customerId='+customerId+'&engagementId='+plan.engagementId+'&limit=50','GET')));
+  const reference=evidence.items.find(x=>x.reference.sourceRevisionId===uploaded.profileRevisionId)?.reference;if(!reference)throw Error('Exact normal eligible guide evidence unavailable');
+  const content=syntheticPartnerGuide(reference,'Synthetic normal HTTP partner training');
+  const assigned=await runPartnerGuide({db:owner,workspaceId,customerId,engagementId:plan.engagementId,baselineId:plan.baselineId,acceptedRevisionId:plan.revisionId,membershipId:partnerMembershipId,content,authorRequest,reviewerRequest:request,signal:environment.signal});
+  const training=await runPartnerTraining({db:owner,workspaceId,customerId,assignmentId:assigned.assignmentId,membershipId:partnerMembershipId,partnerRequest,reviewerRequest:request,signal:environment.signal,content:{attempted:'Controlled synthetic demonstration of the reviewed practice',result:'Controlled synthetic retained source was independently reviewed',blockers:[],observedAt:new Date(Date.now()-1000).toISOString(),sources:[reference]}});
+  expect(training.normalCommands).toBe(3);expect(training.providerCalls).toBe(0);
+  await request('/api/artifacts/'+uploaded.versionId+'/actions','POST',sourceWithdrawalCommand(uploaded.lifecycleGeneration));
+  const invalidated=z.object({availability:z.literal('source_unavailable'),progress:z.object({verifiedRequired:z.number().int(),percentage:z.number()}).nullable(),checkpoints:z.array(z.object({attempts:z.array(z.object({currentCredit:z.boolean()}))}))}).parse(unwrap(await partnerRequest('/api/partners/assignments/'+assigned.assignmentId,'GET')));
+  expect(invalidated.progress).toBeNull();expect(invalidated.checkpoints[0]?.attempts[0]?.currentCredit).toBe(false);
+ }finally{await owner.end();await closeRuntimePool();}
+},{postgresMajor:18,deadlineMs:300000});
+},300000);

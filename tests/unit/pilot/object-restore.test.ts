@@ -1,0 +1,27 @@
+import {it,beforeEach,afterEach,expect,vi} from 'vitest';
+import {mkdir,mkdtemp,rm,readFile,writeFile,readdir,symlink} from 'node:fs/promises';
+import {join,resolve} from 'node:path';
+import {randomUUID,createHash} from 'node:crypto';
+import {restoreOwnedRecoveryObjects} from '../../../lib/server/operations/object-restore';
+import type {BackupArchiveHeader} from '../../../lib/server/operations/backup-archive';
+import {LocalPrivateObjects} from '../../../lib/server/storage/local-objects';
+import {objectKey} from '../../../lib/server/storage/private-objects';
+let root:string,header:BackupArchiveHeader,path:string;
+const bytes=Buffer.from('Synthetic archived private object');
+beforeEach(async()=>{
+ vi.stubEnv('TURAS_PILOT_OWNED','1');vi.stubEnv('TURAS_ENVIRONMENT_ID','test-pilot-0123456789ab');vi.stubEnv('TURAS_TEST_ENVIRONMENT_ID','test-pilot-0123456789ab');vi.stubEnv('DATABASE_URL','postgres://runtime:synthetic@127.0.0.1/turas_test_016_eval_0123456789ab');
+ await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});root=await mkdtemp(resolve('local-artifacts/016/object-restore-'));
+ const name='objects/artifact/'+randomUUID();path=join(root,'unpacked',name);await mkdir(join(root,'unpacked','objects','artifact'),{recursive:true,mode:0o700});await writeFile(path,bytes,{mode:0o600});
+ header={contract:'pilot-archive-v1',checkpointId:randomUUID(),environmentId:'Synthetic-Production-workspace',capturedAt:new Date().toISOString(),provenance:{recoveryId:randomUUID(),controlRevision:1,sourceCommit:'a'.repeat(40),sourceDigest:'b'.repeat(64),schemaVersion:57,ledgerDigest:'c'.repeat(64),runtimeGrantsDigest:'d'.repeat(64),configurationDigest:'e'.repeat(64),acceptedContentDigest:'f'.repeat(64),keyReference:'synthetic-key',keyVersion:'1'},entries:[{name:'database.dump',sizeBytes:1,digest:'a'.repeat(64)},{name,sizeBytes:bytes.length,digest:createHash('sha256').update(bytes).digest('hex')}]};
+});
+afterEach(async()=>{vi.unstubAllEnvs();await rm(root,{recursive:true,force:true});});
+const input=()=>({header,unpacked:join(root,'unpacked'),target:join(root,'restored'),signal:AbortSignal.timeout(5000)});
+it('restores exact object identities and bytes while retaining the original archive',async()=>{
+ const result=await restoreOwnedRecoveryObjects(input());expect(result).toMatchObject({objectCount:1,sizeBytes:bytes.length,objectBytesVerified:true,originalsRetained:true,currentAuthorityVerified:false,restorationReady:false});
+ const store=new LocalPrivateObjects(join(root,'restored'),header.environmentId,10485760),key=objectKey(header.environmentId,'artifact',header.entries[1].name.split('/').at(-1)!);
+ expect(await store.stat(key)).toMatchObject({sizeBytes:bytes.length,digest:header.entries[1].digest});expect(await readFile(path)).toEqual(bytes);
+});
+it('rejects corrupt archive bytes before creating any destination',async()=>{await writeFile(path,Buffer.alloc(bytes.length));await expect(restoreOwnedRecoveryObjects(input())).rejects.toThrow('integrity');expect(await readdir(root)).not.toContain('restored');});
+it('preserves an existing destination without overwriting it',async()=>{await mkdir(join(root,'restored'),{mode:0o700});await writeFile(join(root,'restored','retained'),'retained',{mode:0o600});await expect(restoreOwnedRecoveryObjects(input())).rejects.toThrow();expect(await readFile(join(root,'restored','retained'),'utf8')).toBe('retained');});
+it('rejects indirect source objects before creating a destination',async()=>{await rm(path);await writeFile(join(root,'outside'),bytes,{mode:0o600});await symlink(join(root,'outside'),path);await expect(restoreOwnedRecoveryObjects(input())).rejects.toThrow();expect(await readdir(root)).not.toContain('restored');});
+it('requires disposable ownership and refuses an already cancelled restore',async()=>{vi.stubEnv('TURAS_PILOT_OWNED','0');await expect(restoreOwnedRecoveryObjects(input())).rejects.toThrow('owning runner');vi.stubEnv('TURAS_PILOT_OWNED','1');await expect(restoreOwnedRecoveryObjects({...input(),signal:AbortSignal.abort()})).rejects.toThrow();expect(await readdir(root)).not.toContain('restored');});

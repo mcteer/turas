@@ -102,11 +102,25 @@ A creation tag with the local job UUID supports finding a created sandbox after 
 lost response; inability to reconcile blocks retry. Domain publish requires current
 lease/source/generation and accepts only bounded validated outputs.
 
+`operations_local_jobs` records immutable job/environment/source/image identities, original deadline, exact lease and `running | reconciling | succeeded | failed | cancelled` state. Local admission and hosted admission share one serialized two-heavy-job capacity fence. A crashed local command has fixed image-level timeout and exact environment/job container labels; uncertain cleanup keeps capacity held until ownership and absence are verified. Terminal rows cannot change or lose their replay identity.
+
 Runtime privileges allow bounded worker status/job writes, never control unlock or
 schema initialization. Owner provisioning is separate. Add indexes for due leases,
 old samples and per-environment admission. Retain minimal terminal identity/replay
 metadata under the domain's existing policy; C12 removes operational payload-free
 samples, not domain tombstones.
+
+`operations_cost_budgets` and `operations_cost_reservations` hold only durable
+operational admission/reconciliation metadata, separate from customer truth.
+Owner-provisioned budgets bind environment, service category, authorization/scope/
+pricing digests, expiry and an integer micro-USD cap. Runtime cannot provision,
+increase, revoke or settle budget authority. Serialized reservations bind each
+program/image/source/deadline operation digest, its documented upper bound and
+one hosted job. Dispatch is recorded before provider contact. Unknown charges
+hold new admissions; only an explicit owner reconciliation can settle them.
+Estimates retain at least the original upper bound and are never invoices. The
+actual instruction, documented pricing and charge evidence remain private operator
+records; a digest or owner-name string cannot create release authority.
 
 ## Private bytes and adapter objects
 
@@ -182,3 +196,63 @@ reference, time, outcome `approved | declined | pending`, explicit exclusions an
 post-merge evidence. It is an operator record of an actual human decision, not a
 server permission or a trusted JSON `actor` claim. Merge authorization and launch
 approval are separately recorded according to their actual scope.
+
+### Direct staging upload capabilities (057)
+
+`operations_upload_capabilities` binds an opaque staging identity to environment,
+workspace, existing principal, exact membership/session, artifact/workforce intent,
+source generation and declared size. Immutable issue/expiry timestamps limit each
+upload capability to ten minutes. One prepared capability is admitted per intent;
+replacement revokes the old header rather than changing its identity. Provider
+callbacks accept no facts. A current authenticated completion verifies actual
+bytes through the governed domain service before marking the capability finished.
+No private read URL, token, filename or customer content is stored in this header.
+Runtime receives SELECT/INSERT/UPDATE, no DELETE; session binding and open-operation
+admission are enforced by the database.
+
+### Immutable operator cost reconciliation
+
+Draft migration 057 also stores `operations_cost_reconciliations`, keyed permanently
+by reservation UUID. Each receipt binds the exact parsed request digest, charge
+evidence digest, operator review digest, integer micro-USD amount and charge kind
+`actual | estimate`, with a server timestamp. Owner accounting inserts the receipt
+and settles its matching reservation in one transaction. Settlement without an
+exact receipt is rejected; runtime has read-only receipt access and cannot settle
+charges. Update/delete is forbidden, and a changed evidence/review digest is not an
+exact replay. These metadata receipts are not ninety-day health samples.
+
+### Private feedback records
+
+`pilot-feedback-record-v1` binds a fixed `pilot-feedback-scope-v1` (actual environment, synthetic workspace, customer UUIDs and distinct internal/assigned-partner principal/member references) to one immutable observed-journey item. New private artifacts append one transition and the canonical previous-record digest; exact file digests separately protect bytes on disk. Current active database memberships and partner assignments are rechecked before recording. Blockers require correction/recheck; other deferrals retain rationale, internal owner and future follow-up. Recorded human assertions and recheck references are not accepted domain facts or release approval.
+
+## Immutable recovery quarantine resolution
+
+`operations_recovery_quarantine_resolutions` appends a scope resolution to its original environment/recovery/scope quarantine and an existing owner verification UUID. Original quarantine and resolution rows are immutable. Runtime receives SELECT only; the insert trigger also denies delegated writers. Admission requires the target to remain locked at the verification's exact recovery UUID/revision, with all required verification dimensions true and a timestamp within the existing 30-minute window.
+
+The owner domain operation verifies the unchanged current state before appending resolutions. Resolution rows are observational receipts excluded from the content-state hash to avoid a circular proof; their table schema, grants, functions and triggers remain part of that hash. The subsequent explicit control transition rechecks current state and requires a qualifying resolution for every retained quarantine. A resolution does not create verification, revive credentials, open service, or prove an actual hosted recovery.
+
+### Infrastructure health observations (migration 057)
+
+`operations_store_observations` retains environment, active namespace, exact store
+binding hash, code version and verified-write proof hash with database sample time
+and 90-day expiry. Runtime can insert proof fields, never sample timestamps, update
+or delete retained proof. The adapter produces proof only after actual immutable
+write/read verification. All six namespaces must have current observations within
+24 hours and after the most recent recovery lock.
+
+`operations_backup_observations` retains archive UUID, environment/store binding,
+source code version, capture time and a hash binding the authenticated encrypted
+archive, capture candidate and settled operator reservation IDs. Only the source
+owner records it after the complete cold-copy pipeline. Runtime reads it and can
+invoke bounded expiry, but cannot author or modify it. Current capture is required
+within 24 hours and after recovery. Both observation tables expire in batches of
+at most 100 and are excluded from accepted-content/current-authority hashes.
+
+Hosted job identity includes immutable `code_version`. Image health requires the
+latest job for each configured image to have succeeded through domain validation
+on that code version after recovery and within 24 hours. No observation implies
+scheduled invocation, provider invoice verification or recovery acceptance.
+
+## Independent managed Workflow replay metadata
+
+The work-controlled Neon archive retains immutable `native_cancel_intents` keyed by project/run. An exact environment/recovery/control/deployment/Workflow binding digest admits at most one automatic cancellation attempt; a repeated claim authorizes reads only. Terminal `native_closure_observations` retain exact binding, current source commit/source/catalog digests and terminal metadata proof digest. They contain no conversation or model payloads and do not settle paid effects or grant readiness. Both collections have a 10,000-row bound and explicit owner migrations; runtime has no access. The trusted closure producer holds the exact primary recovery fence and requires retired legacy database admission before provider operations.

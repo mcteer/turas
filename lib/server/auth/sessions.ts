@@ -1,7 +1,9 @@
+import {requireOperationalOpen,operationalAdmissionOpen,protectedCancellationRequest,registerProtectedCancellation} from '../operations/admission';
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { getServerConfig, type ServerConfig } from "../config";
 import { query, withTransaction } from "../db/client";
 import { appendAccessAudit } from "../access/audit";
+import { HttpFailure } from "../../contracts/http";
 import type { DemoIdentity } from "./credentials";
 
 export type CurrentSession = DemoIdentity & {
@@ -50,10 +52,18 @@ export async function issueSession(identity: DemoIdentity): Promise<{ token: str
   const expiresAt = sessionExpiresAt(createdAt);
   const sessionId = randomUUID();
   await withTransaction(async (client) => {
+    await requireOperationalOpen(client);
+    const eligible=await client.query(`SELECT m.id FROM memberships m JOIN principals p ON p.id=m.principal_id
+      JOIN workspaces w ON w.id=m.workspace_id LEFT JOIN partner_organizations o ON o.id=m.partner_org_id AND o.workspace_id=m.workspace_id
+      WHERE m.id=$1 AND m.principal_id=$2 AND m.workspace_id=$3 AND m.kind=$4 AND m.role=$5
+       AND m.active AND p.active AND w.active AND (m.kind='internal' OR o.active)
+       AND (w.classification='primary' OR w.pilot_environment_id=$6) FOR SHARE OF m,p,w`,
+      [identity.membershipId,identity.principalId,identity.workspaceId,identity.kind,identity.role,getServerConfig().TURAS_ENVIRONMENT_ID]);
+    if(eligible.rowCount!==1)throw new HttpFailure(401,"authentication_required","Sign in required");
     await client.query(
-      `INSERT INTO login_sessions (id, principal_id, token_hash, created_at, expires_at)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [sessionId, identity.principalId, hashSessionToken(token), createdAt, expiresAt],
+      `INSERT INTO login_sessions (id, principal_id, token_hash, created_at, expires_at, membership_id, workspace_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [sessionId, identity.principalId, hashSessionToken(token), createdAt, expiresAt, identity.membershipId, identity.workspaceId],
     );
     await appendAccessAudit(client, { actorPrincipalId: identity.principalId,
       actorSessionId: sessionId, workspaceId: identity.workspaceId,
@@ -62,28 +72,34 @@ export async function issueSession(identity: DemoIdentity): Promise<{ token: str
   return { token, expiresAt };
 }
 
-export async function getCurrentSession(request: Request): Promise<CurrentSession | null> {
+export async function getCurrentSession(request: Request, purpose:"ordinary"|"operations-status"|"cancellation"|"session-revocation"="ordinary"): Promise<CurrentSession | null> {
+  const protectedStatus=purpose==='operations-status'&&request.method==='GET'&&new URL(request.url).pathname==='/api/operations/status';
+  const protectedCancel=purpose==='cancellation'&&protectedCancellationRequest(request);
+  const protectedRevocation=purpose==='session-revocation'&&request.method==='POST'&&new URL(request.url).pathname==='/api/auth/logout';
+  if(purpose!=='ordinary'&&!protectedStatus&&!protectedCancel&&!protectedRevocation)return null;
+  if(!protectedStatus&&!protectedCancel&&!protectedRevocation&&!await operationalAdmissionOpen())return null;
   const token = tokenFromRequest(request);
   if (!token) return null;
   const result = await query<{
     session_id: string; principal_id: string; login_name: string; display_name: string;
     membership_id: string; workspace_id: string; kind: "internal" | "partner";
-    role: "admin" | "member"; expires_at: Date;
+    role: "admin" | "member"; expires_at: Date; workspace_classification:"primary"|"synthetic_pilot";
   }>(`
     SELECT s.id AS session_id, s.expires_at, p.id AS principal_id, p.login_name,
-           p.display_name, m.id AS membership_id, m.workspace_id, m.kind, m.role
+           p.display_name, m.id AS membership_id, m.workspace_id, m.kind, m.role, w.classification AS workspace_classification
     FROM login_sessions s
     JOIN principals p ON p.id = s.principal_id
-    JOIN memberships m ON m.principal_id = p.id
+    JOIN memberships m ON m.principal_id = p.id AND m.id = s.membership_id AND m.workspace_id = s.workspace_id
     JOIN workspaces w ON w.id = m.workspace_id
     LEFT JOIN partner_organizations o ON o.id = m.partner_org_id AND o.workspace_id = m.workspace_id
     WHERE s.token_hash = $1 AND s.revoked_at IS NULL AND s.expires_at > now()
       AND p.active AND m.active AND w.active
+      AND (w.classification='primary' OR w.pilot_environment_id=$2)
       AND (m.kind = 'internal' OR (m.kind = 'partner' AND o.active))
     LIMIT 1
-  `, [hashSessionToken(token)]);
+  `, [hashSessionToken(token),getServerConfig().TURAS_ENVIRONMENT_ID]);
   const row = result.rows[0];
-  return row ? {
+  const actor:CurrentSession|null=row ? {
     sessionId: row.session_id,
     token,
     expiresAt: row.expires_at,
@@ -94,19 +110,22 @@ export async function getCurrentSession(request: Request): Promise<CurrentSessio
     workspaceId: row.workspace_id,
     kind: row.kind,
     role: row.role,
+    workspaceClassification: row.workspace_classification,
   } : null;
+  if(actor&&protectedCancel)registerProtectedCancellation(request,actor);
+  return actor;
 }
 
 export async function revokeSession(sessionId: string): Promise<void> {
   await withTransaction(async (client) => {
     const result = await client.query<{ principal_id: string; workspace_id: string }>(`
-      SELECT s.principal_id, m.workspace_id FROM login_sessions s
-      JOIN memberships m ON m.principal_id = s.principal_id
-      WHERE s.id = $1 LIMIT 1
+      SELECT s.principal_id, s.workspace_id FROM login_sessions s
+      WHERE s.id = $1 FOR UPDATE
     `, [sessionId]);
     const row = result.rows[0];
     if (!row) return;
     await client.query("UPDATE login_sessions SET revoked_at = COALESCE(revoked_at, now()) WHERE id = $1", [sessionId]);
+    if (!row.workspace_id) return;
     await appendAccessAudit(client, { actorPrincipalId: row.principal_id,
       actorSessionId: sessionId, workspaceId: row.workspace_id,
       action: "logout", outcome: "revoked" });

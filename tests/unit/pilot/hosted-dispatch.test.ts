@@ -1,0 +1,27 @@
+import {beforeEach,afterEach,it,expect,vi} from 'vitest';
+const calls=vi.hoisted(()=>({query:vi.fn(),artifact:vi.fn(),workforce:vi.fn(),report:vi.fn(),gap:vi.fn(),runGap:vi.fn(),runArtifact:vi.fn(),runWorkforce:vi.fn(),runReport:vi.fn()}));
+vi.mock('../../../lib/server/db/client',()=>({query:calls.query}));
+vi.mock('../../../lib/server/config',()=>({getServerConfig:()=>({TURAS_ENVIRONMENT_ID:'controlled-environment'})}));
+vi.mock('../../../lib/server/conversations/hosted-watchdog',()=>({authorizeHostedWatchdog:(r:Request)=>{if(r.method!=='GET'||r.headers.get('authorization')!=='Bearer controlled-fixture'||r.headers.get('cookie')?.includes('turas_session='))throw Error('denied');}}));
+vi.mock('../../../lib/server/artifacts/jobs',()=>({claimArtifactRun:calls.artifact}));
+vi.mock('../../../lib/server/artifacts/runner',()=>({runArtifactJob:calls.runArtifact}));
+vi.mock('../../../lib/server/artifacts/prepared',()=>({preparedArtifactImages:()=>({})}));
+vi.mock('../../../lib/server/staffing/jobs',()=>({claimWorkforceImport:calls.workforce}));
+vi.mock('../../../lib/server/staffing/runner',()=>({runWorkforceImport:calls.runWorkforce}));
+vi.mock('../../../lib/server/reports/jobs',()=>({claimReportJobs:calls.report}));
+vi.mock('../../../lib/server/reports/render-jobs',()=>({runReportRenderJob:calls.runReport}));
+vi.mock('../../../lib/server/reports/commands',()=>({reportTransaction:async(f:(db:unknown)=>unknown)=>f({})}));
+vi.mock('../../../lib/server/reports/config',()=>({reportConfig:()=>({enabled:true})}));
+vi.mock('../../../lib/server/jobs/governed',()=>({executionBackend:()=> 'sandbox',hostedExecutionCredentials:()=>({}),hostedCostConfiguration:()=>({budgetId:'controlled-budget',scopeDigest:'scope',pricingDigest:'price'})}));
+vi.mock('../../../lib/server/storage/factory',()=>({privateObjectBackend:()=> 'blob'}));
+vi.mock('../../../lib/server/gaps/report-jobs',()=>({claimGapReportJobs:calls.gap,runGapReportJob:calls.runGap}));
+import {authorizeHeavyDispatch,runHostedHeavyDispatch,heavyDispatchCatalog} from '../../../lib/server/operations/dispatch';
+const enabled=process.env.TURAS_PILOT_HOSTED_JOBS_ENABLED;
+beforeEach(()=>{vi.clearAllMocks();process.env.TURAS_PILOT_HOSTED_JOBS_ENABLED='1';calls.query.mockImplementation(async(sql:string)=>sql.includes('SELECT mode')?{rows:[{mode:'open'}]}:{rowCount:1});calls.artifact.mockResolvedValue(null);calls.workforce.mockResolvedValue(null);calls.report.mockResolvedValue([]);calls.gap.mockResolvedValue([]);});
+afterEach(()=>{if(enabled===undefined)delete process.env.TURAS_PILOT_HOSTED_JOBS_ENABLED;else process.env.TURAS_PILOT_HOSTED_JOBS_ENABLED=enabled;});
+it('accepts only the fixed scheduler route with no command inputs',()=>{const request=(path:string,headers:Record<string,string>={})=>new Request('https://controlled.invalid'+path,{headers:{authorization:'Bearer controlled-fixture',...headers}});expect(()=>authorizeHeavyDispatch(request('/eve/v1/turas/jobs'))).not.toThrow();for(const path of ['/eve/v1/turas/jobs?kind=research','/eve/v1/turas/jobs/extra','/eve/v1/turas/watchdog'])expect(()=>authorizeHeavyDispatch(request(path))).toThrow();expect(()=>authorizeHeavyDispatch(request('/eve/v1/turas/jobs',{'content-length':'1'}))).toThrow();expect(()=>authorizeHeavyDispatch(request('/eve/v1/turas/jobs',{cookie:'turas_session=controlled'}))).toThrow();expect(heavyDispatchCatalog).toEqual(['artifact','workforce','report','gap-report']);});
+it('does not claim work when disabled, locked, or cost authority is unavailable',async()=>{process.env.TURAS_PILOT_HOSTED_JOBS_ENABLED='0';await expect(runHostedHeavyDispatch()).rejects.toThrow();process.env.TURAS_PILOT_HOSTED_JOBS_ENABLED='1';calls.query.mockResolvedValue({rows:[{mode:'locked'}]});await expect(runHostedHeavyDispatch()).rejects.toThrow();calls.query.mockImplementation(async(sql:string)=>sql.includes('SELECT mode')?{rows:[{mode:'open'}]}:{rowCount:0});await expect(runHostedHeavyDispatch()).rejects.toThrow();expect(calls.artifact).not.toHaveBeenCalled();expect(calls.workforce).not.toHaveBeenCalled();expect(calls.report).not.toHaveBeenCalled();expect(calls.gap).not.toHaveBeenCalled();});
+it('dispatches at most one fixed job with a cancellation signal',async()=>{calls.artifact.mockResolvedValue({id:'controlled-artifact'});expect(await runHostedHeavyDispatch()).toEqual({state:'processed',kind:'artifact'});expect(calls.runArtifact).toHaveBeenCalledOnce();expect(calls.runArtifact.mock.calls[0][1]).toBeInstanceOf(AbortSignal);expect(calls.runWorkforce).not.toHaveBeenCalled();expect(calls.runReport).not.toHaveBeenCalled();});
+it('rejects a cancelled dispatcher before readiness or claiming',async()=>{await expect(runHostedHeavyDispatch(AbortSignal.abort())).rejects.toThrow();expect(calls.query).not.toHaveBeenCalled();expect(calls.artifact).not.toHaveBeenCalled();});
+
+it('prepares deterministic gap exports in the admitted lane without invoking file executors',async()=>{calls.gap.mockResolvedValue([{id:'controlled-gap'}]);expect(await runHostedHeavyDispatch()).toEqual({state:'processed',kind:'gap-report'});expect(calls.runGap).toHaveBeenCalledExactlyOnceWith({id:'controlled-gap'});expect(calls.runArtifact).not.toHaveBeenCalled();expect(calls.runWorkforce).not.toHaveBeenCalled();expect(calls.runReport).not.toHaveBeenCalled();});

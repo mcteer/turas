@@ -1,3 +1,4 @@
+import {insertBoundFixtureSession} from "../fixtures/bound-session";
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { describe, expect, it, vi } from "vitest";
@@ -40,8 +41,7 @@ describe("retrieval domain service", () => {
             [principal,`search-${principal}`]);
           await client.query(`INSERT INTO memberships(id,principal_id,workspace_id,kind,role)
             VALUES($1,$2,$3,'internal','admin')`,[member,principal,workspace]);
-          await client.query(`INSERT INTO login_sessions(id,principal_id,token_hash,expires_at)
-            VALUES($1,$2,$3,now()+interval '1 hour')`,[session,principal,"b".repeat(64)]);
+          await insertBoundFixtureSession(client,{id:session,principalId:principal,membershipId:member,workspaceId:workspace,tokenHash:"b".repeat(64),expiresAt:new Date(Date.now()+3600000)});
           for (const id of [customer,hiddenCustomer]) {
             await client.query(`INSERT INTO customer_references(id,workspace_id,display_name,synthetic)
               VALUES($1,$2,'Synthetic searchable customer',true)`,[id,workspace]);

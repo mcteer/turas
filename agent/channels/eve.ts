@@ -1,3 +1,4 @@
+import {protectedCancellationRequest} from '../../lib/server/operations/admission';
 import { eveChannel } from "eve/channels/eve";
 import type { AuthFn } from "eve/channels/auth";
 import { getCurrentSession } from "../../lib/server/auth/sessions";
@@ -17,7 +18,7 @@ const appCookieAuth: AuthFn<Request> = async (request): Promise<Awaited<ReturnTy
     if (principalId) return { authenticator: "turas-source-retirement",
       principalId, principalType: "user", attributes: {} };
   }
-  const session = await getCurrentSession(request);
+  const session = await getCurrentSession(request,protectedCancellationRequest(request)?"cancellation":"ordinary");
   if (!session) return null;
   return {
     authenticator: "turas-session",

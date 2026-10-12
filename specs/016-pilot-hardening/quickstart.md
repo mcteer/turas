@@ -48,14 +48,19 @@ supported; do not link/reconnect a different project or expose store tokens.
 ## 3. Recovery and lifecycle
 
 ```sh
-npm run pilot:recovery:check -- --disposable
-npm run pilot:lifecycle:check -- --disposable
+# Use the explicit owned capture/isolated restore inputs in docs/pilot-operations.md.
+# Lifecycle execution requires an admitted exact target and new private evidence directory:
+npm run pilot:lifecycle:check -- --environment <exact-marker> --output <new-private-directory> --execute
 ```
 
-Expected: all recovery cases in the contract, current denial state newer than the
+Acceptance requires all recovery cases in the contract, current denial state newer than the
 backup, zero duplicate paid/sent work, encrypted matched restore, tested missing
 key/object rejection, bounded interrupted cleanup, original deadlines and permanent
 request fences. Preserve owned run receipts after cleanup; never output backups.
+
+The current isolated restore remains locked and quarantined, and does not yet
+complete this acceptance catalog. Do not use the lifecycle execution receipt as
+proof of full lifecycle/backup expiry.
 
 Validate scheduled backup cadence separately: two actual scheduled runs ≥12h apart,
 one restore ≤24h old, measured ≤4h recovery and no >24h accepted-work loss. An
@@ -86,7 +91,33 @@ reviewer before asking for any missing budget. Reuse applicable existing
 permission; do not seek a second approval for the same admitted run. Unknown spend
 is held for reconciliation under the existing contract, never guessed to zero.
 
+`npm run pilot:quality:live -- --prepare --images <preparation.json> --output
+<new-private-directory>` exercises native admission with a synthetic credential
+and a one-microdollar denial budget; it dispatches no paid provider request.
+After the complete current deterministic catalog passes, `--live` requires
+`--images`, `--output`, `--authorization`, `--deterministic-proof`, `--preparation`
+and the exact `--budget-usd`. The authorization records the actual applicable
+operator instruction, expiry, dollar cap, four existing Context credits and
+independent review authorization. Infrastructure authorization does not admit
+model evaluations. Context Auto-Topup must be disabled; credits are recorded
+separately without an invented dollar conversion.
+
+All nine catalogs run in fresh owned synthetic environments. The canonical
+private `local-artifacts/016/quality-budgets/<approval-id>` journal survives failed
+attempts and retains their spending. Corrected full batches use the remaining
+original allowance; copying an authorization or selecting another output cannot
+reset it. An unresolved provider charge blocks both providers and corrected
+attempts. Captures remain awaiting independent review and cannot approve release.
+
 ## 5. Synthetic Preview and Production pilot
+
+Private Blob configuration always names the exact connected `BLOB_STORE_ID`.
+On Vercel, the pinned SDK obtains fresh project OIDC identity; no static read-write
+token is required. A protected operator outside Vercel supplies an explicit
+`VERCEL_OIDC_TOKEN`, or an exact store-matched `BLOB_READ_WRITE_TOKEN`. Verify the
+actual private store and all governed namespaces before cutover. These credentials
+never authorize domain records, and provider denial never selects a local store.
+
 
 After current CI is green and release/merge authorization covers the step:
 
@@ -94,6 +125,16 @@ After current CI is green and release/merge authorization covers the step:
    current matched backup, storage backend, image digests and worker placement.
 2. Use compatible disabled-first migration/code order; verify Preview first. Retire
    or protect historical unbound-session deployments before second memberships.
+   `pilot:recovery:authority -- --retire-work-runtime --source <private-source.json>
+   --input <private-retirement.json> --output <new-private-directory>` requires
+   the exact Production work project, schema 57 and locked recovery revision.
+   The private input contains the replacement secret; never put it in command
+   arguments. The operation disables the legacy login before terminating its
+   backends, preserves its restricted permission role, and verifies a fresh
+   replacement connection. Exact-input reconciliation cannot replace its password
+   or adopt an unrelated existing role. It does not update deployment credentials,
+   close provider runs, reconcile paid effects or unlock service. Complete those
+   separate steps before enabling the replacement deployment.
 3. Run the explicit idempotent provisioner against the admitted target to create
    the marked pilot workspace, existing-principal memberships, synthetic customers
    and reviewed scope of partner grants. Record receipts; never bootstrap over

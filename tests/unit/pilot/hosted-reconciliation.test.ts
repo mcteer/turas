@@ -1,0 +1,17 @@
+vi.mock('../../../lib/server/operations/admission',()=>({withOperationalIo:async(run:()=>Promise<unknown>)=>run()}));
+import {beforeEach,it,expect,vi} from 'vitest';
+const calls=vi.hoisted(()=>({query:vi.fn(),reconcile:vi.fn(),provider:vi.fn(),scope:vi.fn()}));
+vi.mock('../../../lib/server/db/client',()=>({query:calls.query,withTransaction:vi.fn()}));
+vi.mock('../../../lib/server/config',()=>({getServerConfig:()=>({TURAS_ENVIRONMENT_ID:'controlled-environment'})}));
+vi.mock('../../../lib/server/jobs/governed',()=>({hostedExecutionCredentials:()=>({token:'controlled-only',projectId:'controlled-project',teamId:'controlled-team'}),sandboxScopeDigest:calls.scope}));
+vi.mock('../../../lib/server/operations/hosted-jobs',()=>({reconcileHostedJob:calls.reconcile}));
+vi.mock('../../../lib/server/operations/sandbox-provider',()=>({sandboxProvider:calls.provider}));
+vi.mock('../../../lib/server/operations/cost',()=>({serviceBudgetAuthority:(binding:unknown)=>binding}));
+import {runHostedReconciliation} from '../../../lib/server/operations/hosted-reconciliation';
+const row={id:'controlled-job',environment_id:'controlled-environment',lease_id:'controlled-lease',creation_tag:'controlled-tag',deadline_at:new Date(),budget_id:'original-budget',category:'sandbox',scope_digest:'original-scope',pricing_digest:'original-price',operation_digest:'original-operation'};
+beforeEach(()=>{vi.clearAllMocks();calls.scope.mockReturnValue('original-scope');calls.reconcile.mockResolvedValue({state:'held'});calls.provider.mockReturnValue({});});
+it('does no provider lookup when there are no orphans',async()=>{calls.query.mockResolvedValue({rows:[]});expect(await runHostedReconciliation({limit:20,signal:AbortSignal.timeout(1000)})).toEqual({backlog:0,truncated:false,stopped:0});expect(calls.provider).not.toHaveBeenCalled();expect(calls.scope).not.toHaveBeenCalled();});
+it('uses original cost authority for cleanup despite disabled authoring',async()=>{calls.query.mockResolvedValue({rows:[row]});await runHostedReconciliation({limit:20,signal:AbortSignal.timeout(1000)});expect(calls.reconcile.mock.calls[0][2]).toEqual({budgetId:'original-budget',environmentId:row.environment_id,category:'sandbox',scopeDigest:'original-scope',pricingDigest:'original-price',operationDigest:'original-operation'});expect(calls.reconcile.mock.calls[0][0].creationTag).toBe(row.creation_tag);});
+it('holds changed project or image scope without provider access',async()=>{calls.query.mockResolvedValue({rows:[row]});calls.scope.mockReturnValue('changed-scope');expect(await runHostedReconciliation({limit:20,signal:AbortSignal.timeout(1000)})).toEqual({backlog:1,truncated:false,stopped:0});expect(calls.provider).not.toHaveBeenCalled();expect(calls.reconcile).not.toHaveBeenCalled();});
+it('bounds orphan work and reports incomplete inventory',async()=>{calls.query.mockResolvedValue({rows:[row,row]});calls.reconcile.mockResolvedValue({state:'stopped'});expect(await runHostedReconciliation({limit:1,signal:AbortSignal.timeout(1000)})).toEqual({backlog:1,truncated:true,stopped:1});expect(calls.reconcile).toHaveBeenCalledOnce();expect(calls.query.mock.calls[0][1]).toEqual([row.environment_id,2]);});
+it('rejects invalid bounds and cancelled execution before provider IO',async()=>{await expect(runHostedReconciliation({limit:101,signal:AbortSignal.timeout(1000)})).rejects.toThrow('Finite');calls.query.mockResolvedValue({rows:[row]});await expect(runHostedReconciliation({limit:20,signal:AbortSignal.abort()})).rejects.toThrow();expect(calls.provider).not.toHaveBeenCalled();});

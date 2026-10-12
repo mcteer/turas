@@ -1,3 +1,4 @@
+import {requestBytes} from '../../../../../../lib/server/artifacts/http';
 import { staffingId, staffingStandaloneRequest } from "../../../_shared";
 import { uploadImportOriginal, readImportOriginal } from "../../../../../../lib/server/staffing/imports";
 import { getCurrentSession } from "../../../../../../lib/server/auth/sessions";
@@ -9,12 +10,7 @@ export const PUT = async (request: Request, context: Context) => {
   return staffingStandaloneRequest(request, true, async actor => {
     if (!request.body) throw new HttpFailure(422, "invalid_input", "Original body required");
     const mime = request.headers.get("content-type")?.split(";")[0]?.trim() ?? "";
-    const reader = request.body.getReader();
-    async function* chunks() {
-      for (;;) { const part = await reader.read(); if (part.done) break; yield part.value; }
-    }
-    try { return await uploadImportOriginal(actor, staffingId(importId), chunks(), mime); }
-    finally { await reader.cancel().catch(() => undefined); reader.releaseLock(); }
+    return uploadImportOriginal(actor, staffingId(importId), requestBytes(request), mime);
   }, false);
 };
 export const GET = async (request: Request, context: Context) => {

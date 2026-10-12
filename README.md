@@ -12,6 +12,8 @@ facts and decisions become accepted.
 TAM/support guidance (010), product expansion (011), product gaps (012) and partner enablement (013) are implemented. Local validation and basic hosted smoke
 checks do not establish full Production workflow readiness. See the
 [roadmap](ROADMAP.md) and feature validation records under [`specs/`](specs/).
+Feature 016 pilot hardening is in progress; its local checkpoints do not establish
+full hosted pilot readiness.
 
 Recent Conversations provides owner-private Archive and Restore controls. Archived
 chats remain available in Archived Conversations and retain their history.
@@ -155,7 +157,34 @@ Feature 016 has a [specification](specs/016-pilot-hardening/spec.md),
 assigned-partner pilot. The plan covers a synthetic Production pilot workspace,
 workspace-bound sessions, durable private files and hosted processing, recovery,
 retention, access, operating limits and attributable user feedback. Implementation
-has not started; this planning record does not establish pilot readiness. See the
+is in progress, with 60 of 84 tasks complete. Owned load, dependency-fault and
+encrypted capture checks are recorded in the [validation record](specs/016-pilot-hardening/validation.md).
+A separate work-controlled Neon archive contains an authenticated encrypted
+Production database safety copy. Its disposable restore verified content and the
+055→057 migrations while keeping runtime access locked; this is database-only
+proof, not a completed Production backup service. Minimized Production denial/
+replay metadata is separately encrypted and retained beyond backup expiry;
+restored-target reconciliation remains unfinished. A separate locked-owner audit
+now checks request fences against independently authenticated current archive
+bytes and actual replay functions, triggers, indexes and immutable protections;
+it does not clear recovery holds or settle unknown provider effects.
+The independent archive also retains governed native cancellation intents and
+terminal provenance; old hosted native work has not yet been retired. The current
+runner covers exact HTTP profile review and the pinned MCP consumer, while the
+remaining linked hosted journeys are still being implemented. A registered owned
+HTTP check now links reviewed profiles and cited plans to delivery activity and
+normal report publication, with actual PDF/PPTX rendering and authenticated file reads.
+The extended check reviews a located uploaded source and verifies that normal
+withdrawal blocks its citations and derived report files. Separate milestone review
+now exercises explicit start, review request and acceptance against reviewed activity.
+An additional normal HTTP check publishes and assigns a partner guide, records a
+partner demonstration and requires mcteer verification; withdrawing its source
+removes current learning credit. These are owned synthetic checks, with no real
+participant feedback or skills certification.
+Report source checks now reconcile a cited plan's current retrieval digest as
+well as direct profile digests, preserving audience and withdrawal fences.
+Recovery authority, hosted services, scheduled backups and actual participant
+acceptance remain pending; local checks do not establish pilot readiness. See the
 [handoff](specs/016-pilot-hardening/handoff.md) for scope and execution gates.
 
 ## Technology

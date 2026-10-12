@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { getServerConfig } from '../config';
 import { withTransaction } from '../db/client';
 import { HttpFailure } from '../../contracts/http';
+import {optionalOperationalCodeVersion} from '../operations/code-version';
 import { mcpLimits } from '../../contracts/mcp';
 import { authenticateMcpBearer } from './credentials';
 import { admitMcpRequest,releaseMcpLease,type McpLease } from './limits';
@@ -98,5 +99,9 @@ export async function boundedMcpDispatch(request:Request,dispatch:(request:Reque
   finally{if(timer)clearTimeout(timer);signal.removeEventListener('abort',abort);}
 }
 export async function handleMcpRequest(request:Request):Promise<Response>{
-  return boundedMcpDispatch(request,dispatchMcpRequest);
+  const version=optionalOperationalCodeVersion();
+  const response=await boundedMcpDispatch(request,dispatchMcpRequest);
+  if(!version)return response;
+  const responseHeaders=new Headers(response.headers);responseHeaders.set('X-Turas-Code-Version',version);
+  return new Response(response.body,{status:response.status,statusText:response.statusText,headers:responseHeaders});
 }

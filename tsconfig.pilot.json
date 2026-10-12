@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "lib/contracts/pilot-readiness.ts",
+    "scripts/pilot-*.ts",
+    "scripts/benchmark-pilot.ts",
+    "scripts/execution-source-digest.ts",
+    "tests/contracts/pilot/**/*.ts",
+    "tests/unit/pilot/**/*.ts",
+    "lib/server/operations/**/*.ts",
+    "tests/integration/pilot/**/*.ts",
+    "scripts/eval-retrieval.ts",
+    "scripts/eval-research.ts",
+    "scripts/check-research-workflow-live.ts",
+    "infra/pilot/recovery-operator/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "local-artifacts"
+  ]
+}

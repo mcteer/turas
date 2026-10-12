@@ -1,3 +1,4 @@
+import {insertBoundFixtureSession} from "../fixtures/bound-session";
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import { withTestDatabase } from "../fixtures/database";
@@ -67,8 +68,7 @@ describe("retrieval source projection", () => {
         const sessionId = randomUUID();
         const receiptId = randomUUID();
         const citationId = randomUUID();
-        await client.query(`INSERT INTO login_sessions(id,principal_id,token_hash,expires_at)
-          VALUES($1,$2,$3,now()+interval '1 hour')`,[sessionId,principalId,"a".repeat(64)]);
+        await insertBoundFixtureSession(client,{id:sessionId,principalId:principalId,membershipId:membershipId,workspaceId:workspaceId,tokenHash:"a".repeat(64),expiresAt:new Date(Date.now()+3600000)});
         await client.query(`INSERT INTO retrieval_receipts
           (id,environment_id,actor_membership_id,scope,workspace_id,customer_id,
            mode,citation_ids,as_of,valid_until)

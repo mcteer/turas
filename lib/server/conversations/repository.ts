@@ -40,10 +40,10 @@ type ConversationRow = {
 };
 
 const scopedCustomer = `
-  EXISTS (
+  EXISTS(SELECT 1 FROM operations_control oc WHERE oc.environment_id=(SELECT environment_id FROM turas_environment LIMIT 1) AND oc.mode='open') AND EXISTS (
     SELECT 1 FROM login_sessions ls
     JOIN principals p ON p.id = ls.principal_id
-    JOIN memberships m ON m.id = $1 AND m.principal_id = p.id
+    JOIN memberships m ON m.id = $1 AND m.principal_id = p.id AND ls.membership_id=m.id AND ls.workspace_id=m.workspace_id
     JOIN workspaces w ON w.id = m.workspace_id
     LEFT JOIN partner_organizations o ON o.id = m.partner_org_id AND o.workspace_id = m.workspace_id
     WHERE ls.id = $2 AND ls.revoked_at IS NULL AND ls.expires_at > now()
@@ -55,9 +55,9 @@ const scopedCustomer = `
       )))
   )`;
 
-const scopedGeneral = `c.customer_id IS NULL AND c.context_snapshot_schema='general-context-v1' AND EXISTS (
+const scopedGeneral = `EXISTS(SELECT 1 FROM operations_control oc WHERE oc.environment_id=c.environment_id AND oc.mode='open') AND c.customer_id IS NULL AND c.context_snapshot_schema='general-context-v1' AND EXISTS (
   SELECT 1 FROM login_sessions ls JOIN principals p ON p.id=ls.principal_id
-  JOIN memberships m ON m.id=$1 AND m.principal_id=p.id
+  JOIN memberships m ON m.id=$1 AND m.principal_id=p.id AND ls.membership_id=m.id AND ls.workspace_id=m.workspace_id
   JOIN workspaces w ON w.id=m.workspace_id
   LEFT JOIN partner_organizations o ON o.id=m.partner_org_id AND o.workspace_id=m.workspace_id
   WHERE ls.id=$2 AND ls.revoked_at IS NULL AND ls.expires_at>now()

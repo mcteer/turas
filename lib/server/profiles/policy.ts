@@ -1,3 +1,4 @@
+import {requireOperationalOpen} from '../operations/admission';
 import type { PoolClient } from "pg";
 import type { CurrentSession } from "../auth/sessions";
 import { isMcpReadActor, type CurrentReadActor } from "../auth/read-actor";
@@ -16,6 +17,7 @@ export async function lockWorkspaceActor(client: PoolClient, actor: CurrentReadA
   }
   await client.query("SELECT set_config('lock_timeout',CASE WHEN current_setting('turas.partner_operation',true)='013' OR current_setting('turas.learning_operation',true)='014' THEN '2000ms' ELSE $1 END,true)",[`${lockTimeoutMs}ms`]);
   await client.query("SET LOCAL statement_timeout = '5000ms'");
+  await requireOperationalOpen(client,actor);
   const lock = readOnly ? "FOR SHARE" : "FOR UPDATE";
   const memberIds = [...new Set([actor.membershipId, ...(typeof affectedMembershipId === "string" ? [affectedMembershipId] : affectedMembershipId ?? [])].filter((id): id is string => Boolean(id)))].sort();
   const locked = new Map<string, { principal_id: string; workspace_id: string; kind: string; role: string; active: boolean; partner_org_id: string | null }>();
@@ -38,8 +40,8 @@ export async function lockWorkspaceActor(client: PoolClient, actor: CurrentReadA
        AND workspace_id=$4 AND environment_id=$5 AND scope_digest=$6 AND credential_hash IS NOT NULL FOR SHARE`,
       [actor.connectionId,actor.principalId,actor.membershipId,actor.workspaceId,actor.environmentId,actor.scopeDigest])
     : await client.query<{ revoked_at: Date | null; expires_at: Date }>(
-      `SELECT revoked_at,expires_at FROM login_sessions WHERE id=$1 AND principal_id=$2 ${lock}`,
-      [actor.sessionId, actor.principalId]);
+      `SELECT revoked_at,expires_at FROM login_sessions WHERE id=$1 AND principal_id=$2 AND membership_id=$3 AND workspace_id=$4 ${lock}`,
+      [actor.sessionId, actor.principalId,actor.membershipId,actor.workspaceId]);
   const workspace = await client.query<{ active: boolean }>(`SELECT active FROM workspaces WHERE id=$1 ${lock}`, [actor.workspaceId]);
   if (!principals.get(actor.principalId) || !session.rows[0] || session.rows[0].revoked_at ||
       session.rows[0].expires_at.getTime() <= Date.now() || !workspace.rows[0]?.active) {

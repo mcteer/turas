@@ -1,0 +1,986 @@
+{
+  "version": "pilot-readiness-v1",
+  "gates": [
+    {
+      "id": "G01",
+      "name": "Catalog and evidence",
+      "methods": [
+        "local"
+      ],
+      "dependsOn": [],
+      "mandatory": true,
+      "requiredRoles": [
+        "operator"
+      ],
+      "localCaseIds": [
+        "contracts.readiness.001",
+        "contracts.readiness.002",
+        "contracts.readiness.003",
+        "contracts.readiness.004",
+        "contracts.readiness.005",
+        "contracts.readiness.006",
+        "contracts.readiness.007",
+        "contracts.readiness.008",
+        "contracts.readiness.009",
+        "contracts.readiness.010",
+        "contracts.readiness.011",
+        "contracts.readiness.012",
+        "contracts.readiness.013",
+        "contracts.readiness.014",
+        "contracts.readiness.015",
+        "contracts.readiness.016",
+        "contracts.readiness.017",
+        "contracts.readiness.018",
+        "contracts.readiness.019",
+        "contracts.readiness.020",
+        "contracts.readiness.021",
+        "contracts.readiness.022",
+        "unit.evidence.001",
+        "unit.evidence.002",
+        "unit.evidence.003",
+        "unit.evidence.004",
+        "unit.evidence.005",
+        "unit.evidence.006",
+        "unit.evidence.007",
+        "unit.evidence.008",
+        "unit.evidence.009",
+        "unit.suite-results.001",
+        "unit.suite-results.002",
+        "unit.suite-results.003",
+        "unit.suite-results.004",
+        "unit.suite-results.005",
+        "unit.suite-results.006",
+        "unit.resume.001",
+        "unit.resume.002",
+        "unit.resume.003",
+        "unit.report-release-header.001",
+        "unit.report-release-header.002",
+        "unit.report-release-header.003",
+        "unit.hosted-request.001",
+        "unit.hosted-request.002",
+        "unit.hosted-request.003",
+        "unit.hosted-request.004",
+        "unit.hosted-request.005",
+        "unit.hosted-request.006"
+      ]
+    },
+    {
+      "id": "G02",
+      "name": "Workspace isolation",
+      "methods": [
+        "local",
+        "hosted"
+      ],
+      "dependsOn": [
+        "G01"
+      ],
+      "mandatory": true,
+      "requiredRoles": [
+        "internal-admin",
+        "internal-member",
+        "assigned-partner"
+      ],
+      "localCaseIds": [
+        "integration.sessions.001",
+        "integration.sessions.002",
+        "integration.sessions.003",
+        "integration.sessions.004",
+        "integration.sessions.005",
+        "integration.sessions.006",
+        "integration.sessions.007",
+        "integration.sessions.008",
+        "integration.isolation.001",
+        "integration.isolation.002",
+        "integration.isolation.003",
+        "integration.isolation.004",
+        "integration.isolation.005",
+        "integration.isolation.006",
+        "integration.isolation.007",
+        "integration.isolation.008",
+        "unit.mcp-release-header.001",
+        "unit.mcp-release-header.002",
+        "unit.mcp-release-header.003",
+        "integration.hosted-sdk.001",
+        "integration.hosted-sdk.002",
+        "integration.hosted-sdk.003",
+        "integration.hosted-sdk.004",
+        "integration.hosted-sdk.005",
+        "integration.hosted-sdk.006"
+      ]
+    },
+    {
+      "id": "G03",
+      "name": "Durable storage",
+      "methods": [
+        "local",
+        "hosted"
+      ],
+      "dependsOn": [
+        "G01"
+      ],
+      "mandatory": true,
+      "requiredRoles": [
+        "internal-admin",
+        "assigned-partner"
+      ],
+      "localCaseIds": [
+        "contracts.private-objects.001",
+        "contracts.private-objects.002",
+        "contracts.private-objects.003",
+        "contracts.private-objects.004",
+        "contracts.private-objects.005",
+        "contracts.private-objects.006",
+        "contracts.private-objects.007",
+        "contracts.private-objects.008",
+        "integration.uploads.001",
+        "integration.uploads.002",
+        "integration.uploads.003",
+        "integration.uploads.004",
+        "integration.uploads.005",
+        "integration.uploads.006",
+        "integration.uploads.007",
+        "integration.uploads.008",
+        "contracts.private-objects.009",
+        "unit.storage-config.001",
+        "unit.storage-config.002",
+        "unit.storage-config.003",
+        "unit.storage-config.004"
+      ]
+    },
+    {
+      "id": "G04",
+      "name": "Hosted processing",
+      "methods": [
+        "local",
+        "hosted"
+      ],
+      "dependsOn": [
+        "G03"
+      ],
+      "mandatory": true,
+      "requiredRoles": [
+        "automation"
+      ],
+      "localCaseIds": [
+        "integration.hosted-jobs.001",
+        "integration.hosted-jobs.002",
+        "integration.hosted-jobs.003",
+        "integration.hosted-jobs.004",
+        "integration.hosted-jobs.005",
+        "integration.hosted-jobs.006",
+        "integration.hosted-jobs.007",
+        "integration.hosted-jobs.008",
+        "unit.executors.001",
+        "unit.executors.002",
+        "unit.executors.003",
+        "unit.executors.004",
+        "unit.executors.005",
+        "unit.executors.006",
+        "unit.executors.007",
+        "unit.executors.008",
+        "unit.executors.009",
+        "unit.executors.010",
+        "unit.executors.011",
+        "unit.executors.012",
+        "unit.sandbox-provider.001",
+        "unit.sandbox-provider.002",
+        "unit.sandbox-provider.003",
+        "unit.sandbox-provider.004",
+        "unit.hosted-reconciliation.001",
+        "unit.hosted-reconciliation.002",
+        "unit.hosted-reconciliation.003",
+        "unit.hosted-reconciliation.004",
+        "unit.hosted-reconciliation.005",
+        "unit.hosted-dispatch.001",
+        "unit.hosted-dispatch.002",
+        "unit.hosted-dispatch.003",
+        "unit.hosted-dispatch.004",
+        "unit.hosted-dispatch.005",
+        "integration.governed-execution.001",
+        "integration.governed-execution.002",
+        "integration.governed-execution.003",
+        "integration.governed-execution.004",
+        "integration.local-jobs.001",
+        "integration.local-jobs.002",
+        "integration.local-jobs.003",
+        "integration.local-jobs.004",
+        "integration.local-jobs.005",
+        "unit.local-reconciliation.001",
+        "unit.local-reconciliation.002",
+        "unit.local-reconciliation.003",
+        "unit.local-reconciliation.004",
+        "unit.execution-config.001"
+      ]
+    },
+    {
+      "id": "G05",
+      "name": "Maintenance",
+      "methods": [
+        "local",
+        "hosted"
+      ],
+      "dependsOn": [
+        "G04"
+      ],
+      "mandatory": true,
+      "requiredRoles": [
+        "automation"
+      ],
+      "localCaseIds": [
+        "unit.maintenance.001",
+        "unit.maintenance.002",
+        "unit.maintenance.003",
+        "unit.maintenance.004",
+        "unit.maintenance.005",
+        "unit.maintenance.006",
+        "unit.maintenance.007",
+        "integration.maintenance-bindings.001",
+        "integration.maintenance-bindings.002",
+        "integration.maintenance-bindings.003",
+        "integration.maintenance-bindings.004",
+        "integration.maintenance-bindings.005",
+        "integration.maintenance-bindings.006",
+        "integration.maintenance-bindings.007",
+        "integration.maintenance-bindings.008",
+        "integration.maintenance-bindings.009",
+        "integration.maintenance-bindings.010",
+        "integration.maintenance-bindings.011",
+        "integration.maintenance-bindings.012",
+        "integration.maintenance-bindings.013",
+        "integration.maintenance-bindings.014",
+        "integration.maintenance-bindings.015",
+        "integration.maintenance-worker.001",
+        "integration.retrieval-maintenance.001",
+        "integration.health-samples.001",
+        "integration.health-samples.002",
+        "integration.health-samples.003",
+        "integration.health-samples.004",
+        "integration.health-samples.005",
+        "unit.maintenance-health.001",
+        "unit.maintenance-health.002",
+        "unit.maintenance-health.003",
+        "unit.maintenance-health.004",
+        "integration.health.001",
+        "integration.health.002",
+        "integration.health.003",
+        "integration.health.004",
+        "integration.health.005",
+        "integration.health.006",
+        "integration.health.007",
+        "integration.health.008",
+        "integration.health.009",
+        "integration.store-observations.001",
+        "integration.store-observations.002",
+        "integration.store-observations.003",
+        "integration.store-observations.004",
+        "integration.store-observations.005",
+        "integration.store-observations.006",
+        "integration.store-observations.007",
+        "integration.store-observations.008",
+        "integration.image-health.001",
+        "integration.image-health.002",
+        "integration.image-health.003",
+        "integration.image-health.004",
+        "integration.image-health.005",
+        "integration.backup-health.001",
+        "integration.backup-health.002",
+        "integration.backup-health.003",
+        "integration.backup-health.004",
+        "integration.backup-health.005"
+      ]
+    },
+    {
+      "id": "G06",
+      "name": "Recovery",
+      "methods": [
+        "local",
+        "hosted"
+      ],
+      "dependsOn": [
+        "G02",
+        "G03",
+        "G05"
+      ],
+      "mandatory": true,
+      "requiredRoles": [
+        "operator"
+      ],
+      "localCaseIds": [
+        "contracts.recovery.001",
+        "contracts.recovery.002",
+        "contracts.recovery.003",
+        "contracts.recovery.004",
+        "contracts.recovery.005",
+        "contracts.recovery.006",
+        "contracts.recovery.007",
+        "contracts.recovery.008",
+        "integration.recovery-authority.001",
+        "integration.recovery-authority.002",
+        "integration.recovery-authority.003",
+        "integration.recovery-authority.004",
+        "integration.recovery-authority.005",
+        "integration.recovery-authority.006",
+        "integration.recovery-authority.007",
+        "integration.recovery-authority.008",
+        "integration.recovery.001",
+        "integration.recovery.002",
+        "integration.recovery.003",
+        "integration.recovery.004",
+        "integration.recovery.005",
+        "integration.recovery.006",
+        "integration.recovery.007",
+        "integration.recovery.008",
+        "integration.control.001",
+        "integration.control.002",
+        "integration.control.003",
+        "integration.control.004",
+        "integration.control.005",
+        "integration.control.006",
+        "integration.control.007",
+        "integration.control.008",
+        "unit.backup-crypto.001",
+        "unit.backup-crypto.002",
+        "unit.backup-crypto.003",
+        "unit.backup-crypto.004",
+        "integration.admission.001",
+        "integration.admission.002",
+        "integration.admission.003",
+        "integration.admission.004",
+        "integration.admission.005",
+        "integration.admission.006",
+        "integration.admission.007",
+        "integration.admission.008",
+        "integration.admission.009",
+        "integration.admission.010",
+        "integration.control.009",
+        "integration.database-checkpoint.001",
+        "integration.database-checkpoint.002",
+        "integration.database-checkpoint.003",
+        "integration.database-checkpoint.004",
+        "integration.database-checkpoint.005",
+        "unit.recovery-key.001",
+        "unit.recovery-key.002",
+        "unit.recovery-key.003",
+        "unit.recovery-key.004",
+        "unit.backup-archive.001",
+        "unit.backup-archive.002",
+        "unit.backup-archive.003",
+        "unit.backup-archive.004",
+        "unit.backup-archive.005",
+        "unit.backup-verification.001",
+        "unit.backup-verification.002",
+        "unit.backup-verification.003",
+        "unit.backup-verification.004",
+        "unit.backup-verification.005",
+        "unit.backup-verification.006",
+        "integration.admission.011",
+        "integration.database-checkpoint.006",
+        "unit.backup-schedule.001",
+        "unit.backup-schedule.002",
+        "unit.backup-schedule.003",
+        "unit.backup-schedule.004",
+        "unit.backup-schedule.005",
+        "unit.backup-schedule-command.001",
+        "unit.backup-schedule-command.002",
+        "unit.storage-inventory.001",
+        "unit.storage-inventory.002",
+        "unit.storage-inventory.003",
+        "unit.storage-inventory.004",
+        "unit.storage-inventory.005",
+        "unit.storage-inventory.006",
+        "unit.storage-inventory.007",
+        "unit.storage-inventory.008",
+        "unit.storage-inventory.009",
+        "unit.legacy-local-objects.001",
+        "unit.legacy-local-objects.002",
+        "unit.legacy-local-objects.003",
+        "unit.legacy-local-objects.004",
+        "unit.legacy-local-objects.005",
+        "integration.control.010",
+        "unit.object-checkpoint.001",
+        "unit.object-checkpoint.002",
+        "unit.object-checkpoint.003",
+        "unit.object-checkpoint.004",
+        "unit.object-checkpoint.005",
+        "unit.object-checkpoint.006",
+        "integration.control.011",
+        "integration.owned-database-restore.001",
+        "integration.recovery-resolution.001",
+        "integration.recovery-resolution.002",
+        "integration.recovery-resolution.003",
+        "integration.recovery-resolution.004",
+        "integration.recovery-resolution.005",
+        "integration.recovery-resolution.006",
+        "unit.native-postgres.001",
+        "unit.native-postgres.002",
+        "unit.native-postgres.003",
+        "unit.native-postgres.004",
+        "unit.native-postgres.005",
+        "integration.native-postgres.001",
+        "integration.native-postgres.002",
+        "integration.native-postgres.003",
+        "integration.native-postgres.004",
+        "integration.native-postgres.005",
+        "integration.native-postgres.006",
+        "integration.native-postgres.007",
+        "unit.work-backup.001",
+        "unit.work-backup.002",
+        "unit.work-backup.003",
+        "unit.work-backup.004",
+        "unit.work-backup.005",
+        "unit.work-backup.006",
+        "unit.work-backup.007",
+        "unit.work-backup.008",
+        "integration.owned-database-restore.002",
+        "unit.object-restore.001",
+        "unit.object-restore.002",
+        "unit.object-restore.003",
+        "unit.object-restore.004",
+        "unit.object-restore.005",
+        "integration.work-isolated-restore.001",
+        "integration.recovery-credential-denials.011",
+        "integration.native-postgres.008",
+        "integration.native-postgres.009",
+        "integration.recovery-credential-denials.012",
+        "integration.recovery-credential-denials.013",
+        "integration.recovery-credential-denials.014",
+        "integration.recovery-credential-denials.015",
+        "integration.recovery-credential-denials.016",
+        "integration.recovery-quarantine.007",
+        "unit.work-backup-objects.001",
+        "unit.work-backup-objects.002",
+        "unit.work-backup-objects.003",
+        "unit.work-backup-objects.004",
+        "unit.work-backup-objects.005",
+        "unit.work-backup-objects.006",
+        "integration.recovery-quarantine.008",
+        "integration.recovery-quarantine.009",
+        "unit.managed-workflow-closure.001",
+        "unit.managed-workflow-closure.002",
+        "unit.managed-workflow-closure.003",
+        "unit.managed-workflow-closure.004",
+        "unit.managed-workflow-closure.005",
+        "unit.managed-workflow-closure.006",
+        "unit.managed-workflow-closure.007",
+        "unit.managed-workflow-closure.008",
+        "unit.managed-workflow-closure.009",
+        "unit.managed-workflow-provider.001",
+        "unit.managed-workflow-provider.002",
+        "unit.managed-workflow-provider.003",
+        "unit.managed-workflow-provider.004",
+        "unit.managed-workflow-provider.005",
+        "unit.managed-workflow-provider.006",
+        "integration.managed-workflow-journal.001",
+        "integration.managed-workflow-journal.002",
+        "integration.managed-workflow-journal.003",
+        "integration.managed-workflow-journal.004",
+        "integration.managed-workflow-journal.005",
+        "integration.managed-workflow-journal.006",
+        "integration.managed-workflow-journal.007",
+        "integration.managed-workflow-journal.008",
+        "integration.managed-workflow-journal.009",
+        "integration.managed-workflow-journal.010",
+        "integration.managed-workflow-journal.011",
+        "integration.managed-workflow-journal.012",
+        "integration.managed-workflow-batch.001",
+        "integration.managed-workflow-batch.002",
+        "integration.managed-workflow-batch.003",
+        "integration.managed-workflow-batch.004",
+        "integration.managed-workflow-batch.005",
+        "integration.managed-workflow-journal.013",
+        "integration.managed-workflow-journal.014",
+        "unit.managed-workflow-command.001",
+        "unit.managed-workflow-command.002",
+        "unit.managed-workflow-command.003",
+        "unit.managed-workflow-command.004",
+        "unit.managed-workflow-command.005",
+        "integration.managed-workflow-batch.006",
+        "integration.recovery-quarantine.010",
+        "integration.recovery-quarantine.011"
+      ]
+    },
+    {
+      "id": "G07",
+      "name": "Lifecycle",
+      "methods": [
+        "local",
+        "hosted"
+      ],
+      "dependsOn": [
+        "G05",
+        "G06"
+      ],
+      "mandatory": true,
+      "requiredRoles": [
+        "automation"
+      ],
+      "localCaseIds": [
+        "integration.lifecycle.001",
+        "integration.lifecycle.002",
+        "integration.lifecycle.003",
+        "integration.lifecycle.004",
+        "integration.lifecycle.005",
+        "integration.lifecycle.006",
+        "integration.lifecycle.007",
+        "integration.lifecycle.008",
+        "integration.lifecycle.009"
+      ]
+    },
+    {
+      "id": "G08",
+      "name": "Access and security",
+      "methods": [
+        "local",
+        "hosted"
+      ],
+      "dependsOn": [
+        "G02",
+        "G03"
+      ],
+      "mandatory": true,
+      "requiredRoles": [
+        "internal-admin",
+        "internal-member",
+        "assigned-partner"
+      ],
+      "localCaseIds": [
+        "integration.access.001",
+        "integration.access.002",
+        "integration.access.003",
+        "integration.access.004",
+        "integration.access.005",
+        "integration.access.006",
+        "integration.access.007",
+        "integration.access.008",
+        "integration.report-projection-sources.001",
+        "integration.report-projection-sources.002",
+        "integration.report-projection-sources.003",
+        "integration.report-projection-sources.004",
+        "integration.report-projection-sources.005",
+        "integration.report-projection-sources.006",
+        "integration.report-projection-sources.007",
+        "integration.report-projection-sources.008",
+        "integration.linked-http-reports.001"
+      ]
+    },
+    {
+      "id": "G09",
+      "name": "Quality",
+      "methods": [
+        "local",
+        "actual-model-reviewed"
+      ],
+      "dependsOn": [
+        "G08"
+      ],
+      "mandatory": true,
+      "requiredRoles": [
+        "reviewer"
+      ],
+      "localCaseIds": []
+    },
+    {
+      "id": "G10",
+      "name": "Load",
+      "methods": [
+        "local"
+      ],
+      "dependsOn": [
+        "G05",
+        "G08"
+      ],
+      "mandatory": true,
+      "requiredRoles": [
+        "automation"
+      ],
+      "localCaseIds": []
+    },
+    {
+      "id": "G11",
+      "name": "Costs",
+      "methods": [
+        "local",
+        "hosted"
+      ],
+      "dependsOn": [
+        "G04"
+      ],
+      "mandatory": true,
+      "requiredRoles": [
+        "operator"
+      ],
+      "localCaseIds": [
+        "contracts.cost.001",
+        "contracts.cost.002",
+        "contracts.cost.003",
+        "contracts.cost.004",
+        "contracts.cost.005",
+        "contracts.cost.006",
+        "contracts.cost.007",
+        "contracts.cost.008",
+        "integration.cost-authority.001",
+        "integration.cost-authority.002",
+        "integration.cost-authority.003",
+        "integration.cost-authority.004",
+        "integration.cost-authority.005",
+        "integration.cost-command.001",
+        "integration.cost-command.002",
+        "integration.cost-command.003",
+        "integration.cost-command.004",
+        "integration.cost-command.005",
+        "integration.cost-command.006",
+        "integration.cost-command.007",
+        "integration.cost-command.008",
+        "integration.cost-command.009",
+        "unit.quality-budget.001",
+        "unit.quality-budget.002",
+        "unit.quality-budget.003",
+        "unit.quality-budget.004",
+        "unit.quality-budget.005",
+        "unit.quality-budget.006",
+        "unit.quality-fetch.001",
+        "unit.quality-fetch.002",
+        "unit.quality-fetch.003",
+        "unit.quality-fetch.004",
+        "unit.quality-fetch.005",
+        "unit.quality-fetch.006",
+        "unit.quality-fetch.007",
+        "unit.quality-fetch.008",
+        "unit.quality-fetch.009",
+        "unit.quality-budget.007",
+        "unit.quality-budget.008",
+        "unit.quality-budget.009",
+        "unit.quality-context.001",
+        "unit.quality-context.002",
+        "unit.quality-context.003",
+        "unit.quality-context.004",
+        "unit.quality-context.005",
+        "unit.quality-budget.010",
+        "unit.work-backup-pricing.001",
+        "unit.work-backup-pricing.002",
+        "unit.work-backup-pricing.003",
+        "unit.work-backup-pricing.004",
+        "unit.work-backup-pricing.005",
+        "unit.work-backup-pricing.006",
+        "unit.work-backup-pricing.007"
+      ]
+    },
+    {
+      "id": "G12",
+      "name": "UI",
+      "methods": [
+        "local",
+        "hosted"
+      ],
+      "dependsOn": [
+        "G02",
+        "G03"
+      ],
+      "mandatory": true,
+      "requiredRoles": [
+        "internal-admin",
+        "internal-member",
+        "assigned-partner"
+      ],
+      "localCaseIds": []
+    },
+    {
+      "id": "G13",
+      "name": "Regressions",
+      "methods": [
+        "local"
+      ],
+      "dependsOn": [
+        "G06",
+        "G07",
+        "G08",
+        "G12"
+      ],
+      "mandatory": true,
+      "requiredRoles": [
+        "automation"
+      ],
+      "localCaseIds": []
+    },
+    {
+      "id": "G14",
+      "name": "Build and CI",
+      "methods": [
+        "ci"
+      ],
+      "dependsOn": [
+        "G13"
+      ],
+      "mandatory": true,
+      "requiredRoles": [
+        "automation"
+      ],
+      "localCaseIds": []
+    },
+    {
+      "id": "G15",
+      "name": "Preview",
+      "methods": [
+        "hosted"
+      ],
+      "dependsOn": [
+        "G14"
+      ],
+      "mandatory": true,
+      "requiredRoles": [
+        "operator"
+      ],
+      "localCaseIds": []
+    },
+    {
+      "id": "G16",
+      "name": "Production identity",
+      "methods": [
+        "hosted"
+      ],
+      "dependsOn": [
+        "G15"
+      ],
+      "mandatory": true,
+      "requiredRoles": [
+        "operator"
+      ],
+      "localCaseIds": []
+    },
+    {
+      "id": "G17",
+      "name": "Core hosted chain",
+      "methods": [
+        "hosted"
+      ],
+      "dependsOn": [
+        "G16"
+      ],
+      "mandatory": true,
+      "requiredRoles": [
+        "internal-admin",
+        "internal-member",
+        "assigned-partner"
+      ],
+      "localCaseIds": []
+    },
+    {
+      "id": "G18",
+      "name": "Partner and learning",
+      "methods": [
+        "hosted"
+      ],
+      "dependsOn": [
+        "G17"
+      ],
+      "mandatory": true,
+      "requiredRoles": [
+        "internal-admin",
+        "assigned-partner"
+      ],
+      "localCaseIds": [
+        "integration.linked-http-training.001"
+      ]
+    },
+    {
+      "id": "G19",
+      "name": "MCP consumer",
+      "methods": [
+        "hosted"
+      ],
+      "dependsOn": [
+        "G18"
+      ],
+      "mandatory": true,
+      "requiredRoles": [
+        "internal-member",
+        "assigned-partner"
+      ],
+      "localCaseIds": []
+    },
+    {
+      "id": "G20",
+      "name": "Operations",
+      "methods": [
+        "human-feedback"
+      ],
+      "dependsOn": [
+        "G06",
+        "G05"
+      ],
+      "mandatory": true,
+      "requiredRoles": [
+        "operator",
+        "reviewer"
+      ],
+      "localCaseIds": []
+    },
+    {
+      "id": "G21",
+      "name": "Human feedback",
+      "methods": [
+        "human-feedback"
+      ],
+      "dependsOn": [
+        "G18"
+      ],
+      "mandatory": true,
+      "requiredRoles": [
+        "internal-member",
+        "assigned-partner"
+      ],
+      "localCaseIds": []
+    },
+    {
+      "id": "G22",
+      "name": "Final release record",
+      "methods": [
+        "hosted"
+      ],
+      "dependsOn": [
+        "G16",
+        "G17",
+        "G18",
+        "G19",
+        "G20",
+        "G21"
+      ],
+      "mandatory": true,
+      "requiredRoles": [
+        "operator"
+      ],
+      "localCaseIds": []
+    }
+  ],
+  "journeys": [
+    "J002",
+    "J003",
+    "J004",
+    "J005",
+    "J006",
+    "J007",
+    "J008",
+    "J009",
+    "J010",
+    "J011",
+    "J012",
+    "J013",
+    "J014",
+    "J015"
+  ],
+  "maintenance": [
+    {
+      "id": "conversation",
+      "intervalMs": 5000,
+      "staleAfterMs": 15000,
+      "batchLimit": 1
+    },
+    {
+      "id": "artifacts",
+      "intervalMs": 2000,
+      "staleAfterMs": 6000,
+      "batchLimit": 20
+    },
+    {
+      "id": "workforce",
+      "intervalMs": 5000,
+      "staleAfterMs": 15000,
+      "batchLimit": 20
+    },
+    {
+      "id": "retrieval",
+      "intervalMs": 5000,
+      "staleAfterMs": 15000,
+      "batchLimit": 20
+    },
+    {
+      "id": "research-freshness",
+      "intervalMs": 5000,
+      "staleAfterMs": 15000,
+      "batchLimit": 100
+    },
+    {
+      "id": "knowledge",
+      "intervalMs": 5000,
+      "staleAfterMs": 15000,
+      "batchLimit": 100
+    },
+    {
+      "id": "plans",
+      "intervalMs": 5000,
+      "staleAfterMs": 15000,
+      "batchLimit": 100
+    },
+    {
+      "id": "execution",
+      "intervalMs": 5000,
+      "staleAfterMs": 15000,
+      "batchLimit": 100
+    },
+    {
+      "id": "support",
+      "intervalMs": 30000,
+      "staleAfterMs": 90000,
+      "batchLimit": 100
+    },
+    {
+      "id": "expansion",
+      "intervalMs": 30000,
+      "staleAfterMs": 90000,
+      "batchLimit": 100
+    },
+    {
+      "id": "reports",
+      "intervalMs": 2000,
+      "staleAfterMs": 6000,
+      "batchLimit": 100
+    },
+    {
+      "id": "gaps",
+      "intervalMs": 2000,
+      "staleAfterMs": 6000,
+      "batchLimit": 100
+    },
+    {
+      "id": "partners",
+      "intervalMs": 30000,
+      "staleAfterMs": 90000,
+      "batchLimit": 100
+    },
+    {
+      "id": "learning",
+      "intervalMs": 30000,
+      "staleAfterMs": 90000,
+      "batchLimit": 100
+    },
+    {
+      "id": "mcp",
+      "intervalMs": 30000,
+      "staleAfterMs": 90000,
+      "batchLimit": 100
+    }
+  ],
+  "roles": [
+    "internal-admin",
+    "internal-member",
+    "assigned-partner",
+    "operator",
+    "reviewer",
+    "automation"
+  ],
+  "optionalCapabilities": [
+    "outbound-report-delivery"
+  ],
+  "workload": {
+    "sessions": 25,
+    "customers": 250,
+    "passages": 10000,
+    "warmupMs": 120000,
+    "measurementMs": 600000,
+    "maxTotalMs": 3600000,
+    "samplesPerClass": 100,
+    "ordinaryP95Ms": 2000,
+    "mcpP95Ms": 1000,
+    "failureRateBelow": 0.01
+  }
+}

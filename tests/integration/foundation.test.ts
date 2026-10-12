@@ -11,13 +11,14 @@ import { heartbeatWorker } from "../../lib/server/conversations/watchdog";
 const runFile = promisify(execFile);
 
 describe("foundation database boundaries", () => {
-  it("recognizes the initialized local environment through readiness", async () => {
+  it("distinguishes initialized database access from complete pilot readiness", async () => {
     // CI does not start root dev; explicitly record the worker heartbeat that
     // readiness requires, rather than depending on another process on the host.
     await heartbeatWorker("foundation-readiness-fixture");
     const response = await GET();
-    expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({ data: { ready: true } });
+    await expect(assertDatabaseEnvironment()).resolves.toBeUndefined();
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ ready: false });
   });
 
   it("rejects a wrong marker, missing schema and unavailable database", async () => {
@@ -60,13 +61,14 @@ describe("foundation database boundaries", () => {
     });
   });
 
-  it("denies schema and migration ledger access to the runtime role", async () => {
+  it("allows ledger observation while denying runtime schema and ledger mutation", async () => {
     const client = new Client({ connectionString: process.env.DATABASE_URL });
     await client.connect();
     try {
       await expect(client.query("CREATE TABLE runtime_must_not_create (id integer)"))
         .rejects.toMatchObject({ code: "42501" });
-      await expect(client.query("SELECT name FROM turas_migrations LIMIT 1"))
+      expect((await client.query("SELECT name FROM turas_migrations LIMIT 1")).rowCount).toBe(1);
+      await expect(client.query("DELETE FROM turas_migrations WHERE false"))
         .rejects.toMatchObject({ code: "42501" });
     } finally {
       await client.end();

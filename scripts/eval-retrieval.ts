@@ -1,3 +1,4 @@
+import {insertBoundFixtureSession} from "../tests/fixtures/bound-session";
 import { createHash,randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { Pool } from "pg";
@@ -100,12 +101,10 @@ try {
       login_name: string;display_name: string }>(`
       SELECT m.id AS membership_id,m.workspace_id,m.kind,m.role,p.login_name,p.display_name
       FROM memberships m JOIN principals p ON p.id=m.principal_id
-      WHERE p.id=$1 AND m.active AND p.active`,[principalId]);
+      WHERE p.id=$1 AND m.workspace_id=$2 AND m.active AND p.active`,[principalId,DEMO_IDS.workspace]);
     if (!actor.rows[0]) throw new Error("Synthetic evaluation actor missing");
     const sessionId = randomUUID();sessions.push(sessionId);
-    await pool.query(`INSERT INTO login_sessions(id,principal_id,token_hash,expires_at)
-      VALUES($1,$2,$3,now()+interval '1 hour')`,
-    [sessionId,principalId,createHash("sha256").update(sessionId).digest("hex")]);
+    const sessionClient=await pool.connect();try{await insertBoundFixtureSession(sessionClient,{id:sessionId,principalId,tokenHash:createHash("sha256").update(sessionId).digest("hex"),expiresAt:new Date(Date.now()+3600000),membershipId:actor.rows[0].membership_id,workspaceId:actor.rows[0].workspace_id});}finally{sessionClient.release();}
     return { sessionId,principalId,membershipId: actor.rows[0].membership_id,
       workspaceId: actor.rows[0].workspace_id,kind: actor.rows[0].kind,
       role: actor.rows[0].role,loginName: actor.rows[0].login_name,

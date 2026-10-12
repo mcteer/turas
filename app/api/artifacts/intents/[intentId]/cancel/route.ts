@@ -8,7 +8,7 @@ type Context = { params: Promise<{ intentId: string }> };
 
 export async function POST(request: Request, context: Context): Promise<Response> {
   try {
-    const actor = await artifactSession(request, true);
+    const actor = await artifactSession(request, true,true);
     await artifactJson(request, artifactIntentCommandSchema);
     return success(await cancelArtifactUpload(actor, artifactId((await context.params).intentId)));
   } catch (error) { return failure(error); }

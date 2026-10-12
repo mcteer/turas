@@ -1,0 +1,8 @@
+import {it,expect} from 'vitest';
+import {randomUUID} from 'node:crypto';
+import {neonArchiveDestinationSchema} from '../../../scripts/pilot-neon-archive';
+const fixture=()=>({contract:'pilot-neon-operator-config-v1',teamId:'team_synthetic',operatorProject:'synthetic-recovery-operator',operatorProjectId:'prj_recovery',sourceProjectId:'prj_source',resourceId:'synthetic-resource',resourceName:'synthetic-recovery',neonProjectId:'synthetic-neon',installationId:randomUUID(),maximumBytes:209715200,databaseUrl:'postgresql://synthetic:synthetic@ep-synthetic.us-east-1.aws.neon.tech/neondb?sslmode=verify-full'});
+it('accepts an explicit separate bounded Neon recovery destination',()=>{expect(neonArchiveDestinationSchema.parse(fixture()).maximumBytes).toBe(209715200);});
+it('rejects an application project used as its own archive operator project',()=>{const value=fixture();value.operatorProjectId=value.sourceProjectId;expect(()=>neonArchiveDestinationSchema.parse(value)).toThrow();});
+it('rejects non Neon insecure or missing explicit archive transport',()=>{for(const databaseUrl of ['postgresql://synthetic@localhost/neondb?sslmode=verify-full','postgresql://synthetic@ep-synthetic.us-east-1.aws.neon.tech/neondb?sslmode=require','postgresql://synthetic@ep-synthetic.us-east-1.aws.neon.tech/neondb','https://synthetic.neon.tech/'])expect(()=>neonArchiveDestinationSchema.parse({...fixture(),databaseUrl})).toThrow();});
+it('rejects unbounded archive capacity and arbitrary command fields',()=>{for(const extra of [{maximumBytes:419430401},{maximumBytes:0},{command:'deploy'},{query:'DROP SCHEMA public CASCADE'}])expect(()=>neonArchiveDestinationSchema.parse({...fixture(),...extra})).toThrow();});

@@ -8,6 +8,8 @@ export async function createArtifactDatabaseFixture(
   actor: CurrentSession,
   customerId: string,
   sourcePublishedOn: string | null = null,
+  originalBytes: Buffer = Buffer.from("Synthetic artifact", "utf8"),
+  finalizedObjectKey?: string,
 ): Promise<{ conversationId: string; versionId: string; runId: string; originalDigest: string; imageDigest: string }> {
   const environmentId = process.env.TURAS_TEST_ENVIRONMENT_ID!;
   const conversationId = randomUUID();
@@ -24,7 +26,7 @@ export async function createArtifactDatabaseFixture(
       'customer-context-v1',$9,$10)`,
   [conversationId, environmentId, actor.workspaceId, customerId, actor.principalId,
     randomUUID(), audience, generation.rows[0].value, actor.sessionId, actor.membershipId]);
-  const bytes = Buffer.from("Synthetic artifact", "utf8");
+  const bytes = originalBytes;
   const originalDigest = createHash("sha256").update(bytes).digest("hex");
   const imageDigest = randomBytes(32).toString("hex");
   const batch = await createArtifactUploadBatch(actor, {
@@ -37,7 +39,7 @@ export async function createArtifactDatabaseFixture(
   const artifactId = randomUUID();
   const versionId = randomUUID();
   const runId = randomUUID();
-  const objectKey = randomBytes(32).toString("hex");
+  const objectKey = finalizedObjectKey ?? randomBytes(32).toString("hex");
   await client.query(`UPDATE artifact_upload_intents SET state='staged',staged_key=$2,
     staged_sha256_digest=$3,staged_actual_size_bytes=$4,updated_at=now() WHERE id=$1`,
   [intentId, randomBytes(32).toString("hex"), originalDigest, bytes.length]);

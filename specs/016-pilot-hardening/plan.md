@@ -2,8 +2,9 @@
 
 **Branch**: `016-pilot-hardening` | **Date**: 2026-10-10 | **Spec**: [spec.md](spec.md)
 
-**Input**: `specs/016-pilot-hardening/spec.md`. Planning only; no implementation or
-hosted action has run. Baseline is released 015 on schema 055.
+**Input**: `specs/016-pilot-hardening/spec.md`. Implementation is in progress. Baseline is released 015 on schema 055;
+016 migrations have been exercised only in owned disposable local environments.
+No 016 hosted release has run.
 
 ## Summary
 

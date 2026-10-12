@@ -1,3 +1,4 @@
+import {qualityChildEnvironment} from "./pilot-quality-runtime";
 import { randomUUID } from "node:crypto";
 import { spawn,spawnSync,type ChildProcess } from "node:child_process";
 import { mkdir,mkdtemp,rm,symlink,writeFile,readdir,readlink } from "node:fs/promises";
@@ -36,7 +37,7 @@ export type PlanEvalOptions = {
 };
 
 const sourceFiles = ["app","agent","lib","migrations","scripts","public","evals","tests",
-  "packages","report-templates","report-renderer","next.config.ts","next-env.d.ts","tsconfig.json","package.json"] as const;
+  "packages","infra","report-templates","report-renderer","next.config.ts","next-env.d.ts","tsconfig.json","package.json"] as const;
 
 async function stopChild(child: ChildProcess | null): Promise<void> {
   if (!child?.pid) return;
@@ -237,7 +238,7 @@ export async function withPlanEvalEnvironment<T>(
       const port = new URL(origin).port;
       await portLease.release();
       child = spawn(process.execPath,["scripts/dev.mjs"],{
-        cwd:appRoot,env:{...process.env,NODE_ENV:"development",PORT:port,NODE_OPTIONS:""},
+        cwd:appRoot,env:{...process.env,NODE_ENV:"development",PORT:port,...await qualityChildEnvironment()},
         stdio:["ignore","pipe","pipe"],detached:true,
       });
       const capture = (chunk: Buffer) => { startupTail =
