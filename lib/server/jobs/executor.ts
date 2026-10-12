@@ -6,7 +6,7 @@ export const executionFileNames=['original','report.json','report.pptx'] as cons
 export type ExecutionFile={name:typeof executionFileNames[number];bytes:Uint8Array;digest:string;sizeBytes:number};
 export type ExecutionRequest={id:string;kind:ExecutionKind;image:string;imageDigest:string;deadlineAt:string;inputs:ExecutionFile[];
  parser?:{filename:string;mime:string;scanReceiptDigest:string};signal?:AbortSignal};
-export const executionFailureCodes=['unsupported_format','encrypted','malformed','unsafe_content','limit_exceeded','scan_unavailable','scan_stale','parser_timeout','parser_failed'] as const;
+export const executionFailureCodes=['unsupported_format','encrypted','malformed','unsafe_content','limit_exceeded','scan_unavailable','scan_stale','parser_timeout','parser_failed','renderer_failed','renderer_browser_failed','renderer_validation_failed'] as const;
 export type ExecutionFailureCode=typeof executionFailureCodes[number];
 /** Only a complete known parser code may leave isolated diagnostics. */
 export function executionFailure(bytes:Uint8Array):ExecutionFailureCode|undefined{const value=Buffer.from(bytes).toString('utf8').trim();return executionFailureCodes.find(code=>code===value);}

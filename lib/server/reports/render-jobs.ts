@@ -42,7 +42,7 @@ export async function runReportRenderJob(claimed:{id:string;lease_token:string;i
  let result:ReturnType<typeof rendererResult.parse>,checks:ReturnType<typeof rendererChecks.parse>,files:{format:'pdf'|'pptx';bytes:Buffer;key:string;metadata:{digest:string;sizeBytes:number}}[];
  try{
   await runGovernedExecution({request:{id:randomUUID(),kind:'report-render',image,imageDigest,deadlineAt,inputs:[{name:'report.json',bytes,sizeBytes:bytes.length,digest:sha256(bytes)}],signal:controller.signal},domain:{domainKind:'report',domainJobId:claimed.id,sourceGeneration:1,sourceDigest:claimed.input_digest},localAssets:{signaturesPath:'',ocrAssetsPath:''},sourceCurrent:async db=>{await renderFence(db,claimed);return true;},prepareOutput:async output=>{
-   if(output.exitCode!==0||!output.files['renderer.json']||!output.files['checks.json'])throw new HttpFailure(503,'unavailable','Isolated report validation failed');
+   if(output.exitCode!==0||!output.files['renderer.json']||!output.files['checks.json'])throw new HttpFailure(503,'unavailable',`Isolated report validation failed (${output.safeFailure??'renderer_output_unavailable'})`);
    result=rendererResult.parse(JSON.parse(output.files['renderer.json'].toString()));checks=rendererChecks.parse(JSON.parse(output.files['checks.json'].toString()));
    const bundled=await verifiedBundledBrand();
    if(result.editingRequirement!==bundled.manifest.editingRequirement||result.fontDigests.regular!==bundled.manifest.assets.find(asset=>asset.path.endsWith('/Geist-Regular.ttf'))?.sha256||result.fontDigests.bold!==bundled.manifest.assets.find(asset=>asset.path.endsWith('/Geist-Bold.ttf'))?.sha256)throw new HttpFailure(409,'source_changed','Rendered font binding changed');

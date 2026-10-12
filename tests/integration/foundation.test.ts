@@ -82,6 +82,7 @@ describe("foundation database boundaries", () => {
         env: {
           ...process.env,
           DATABASE_URL: process.env.TURAS_TEST_DATABASE_URL,
+          DATABASE_URL_UNPOOLED: process.env.TURAS_TEST_DATABASE_URL,
           TURAS_ENVIRONMENT_ID: process.env.TURAS_TEST_ENVIRONMENT_ID,
         },
       });

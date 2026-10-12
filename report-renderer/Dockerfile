@@ -10,6 +10,7 @@ COPY report-renderer/ /app/report-renderer/
 COPY report-templates/ /app/report-templates/
 COPY lib/reports/ /app/lib/reports/
 COPY lib/contracts/http.ts /app/lib/contracts/http.ts
+COPY lib/server/operations/code-version.ts /app/lib/server/operations/code-version.ts
 COPY --chmod=0555 infra/pilot/render-report.sh /usr/local/bin/turas-render-report
 COPY --chmod=0555 infra/pilot/check-office.sh /usr/local/bin/turas-check-office
 ENV TURAS_RENDER_FONT_ROOT=/app/report-templates/fonts

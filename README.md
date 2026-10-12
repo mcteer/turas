@@ -13,7 +13,9 @@ TAM/support guidance (010), product expansion (011), product gaps (012) and part
 checks do not establish full Production workflow readiness. See the
 [roadmap](ROADMAP.md) and feature validation records under [`specs/`](specs/).
 Feature 016 pilot hardening is in progress; its local checkpoints do not establish
-full hosted pilot readiness.
+full hosted pilot readiness. [Draft PR 32](https://github.com/mcteer/turas/pull/32)
+is the implementation checkpoint. Required CI is not yet green; current recovery,
+hosted processing and participant acceptance remain release blockers.
 
 Recent Conversations provides owner-private Archive and Restore controls. Archived
 chats remain available in Archived Conversations and retain their history.

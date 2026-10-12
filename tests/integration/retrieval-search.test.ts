@@ -1,3 +1,4 @@
+import {insertRetrievalProfileOrigin} from '../fixtures/retrieval-profile-origin';
 import {insertBoundFixtureSession} from "../fixtures/bound-session";
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
@@ -82,6 +83,7 @@ describe("retrieval ranking prefilter", () => {
           const sourceId = randomUUID();
           const revisionId = randomUUID();
           const digest = passageDigest(text);
+          await insertRetrievalProfileOrigin(client,{workspaceId:workspace,customerId:customer,revisionId,text,digest});
           await client.query(`INSERT INTO retrieval_sources
             (id,environment_id,workspace_id,customer_id,scope,source_kind,
              source_revision_id,audience,projection_contract,contract_digest,

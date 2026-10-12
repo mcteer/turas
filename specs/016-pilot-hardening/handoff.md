@@ -82,6 +82,24 @@ feedback. No model can fabricate these observations. Missing prerequisites leave
 specific gates pending, not secretly waived. Observed local performance is not
 hosted load proof. Operational targets are 24h RPO/4h RTO, not current guarantees.
 
+## Current execution checkpoint — 2026-10-12
+
+Draft PR 32 contains the implementation checkpoint. The second CI run
+`38264825909` has failed jobs and is not acceptance. The latest local corrections
+fix current-schema recovery evidence, exact bootstrap targets, retrieval fixture
+provenance and the isolated renderer's missing code-version dependency. Focused
+local database, real render/publication, unit, type and WebKit checks passed;
+see the final section of `validation.md`. Product Gaps authoring passed locally
+but its Linux CI failure still needs the new content-free projection diagnostics.
+
+Next: complete current-source CI (including the full pilot and predecessor
+catalogs), resolve every failure, then resume the unchecked recovery and hosted
+journey tasks. Do not merge/deploy merely because the focused corrections pass.
+The 60 checked tasks are scoped implementation/local proof; 24 tasks still require
+implementation or operational acceptance. Independent operator/participant feedback,
+two real scheduled backups at least twelve hours apart and the actual scoped
+mcteer readiness decision cannot be supplied by automated fixtures.
+
 ## Resume and validation
 
 Follow [quickstart](quickstart.md). Node 24, owned local databases/stores and CLI

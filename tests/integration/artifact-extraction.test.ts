@@ -98,7 +98,9 @@ describe("constrained local scanner", () => {
     try {
       await expect(assertFreshArtifactSignatures(directory)).rejects.toThrow();
       const path = join(directory,"daily.cvd");
-      await writeFile(path,`ClamAV-VDB:synthetic:28137:1:90:controlled-hash:controlled-signature:controlled-builder:${Math.floor(Date.now()/1000)}`);
+      // A CVD has a 512-byte space-padded ASCII header, not a short file
+      // whose unread bytes become NULs in the scanner's header buffer.
+      await writeFile(path,`ClamAV-VDB:synthetic:28137:1:90:controlled-hash:controlled-signature:controlled-builder:${Math.floor(Date.now()/1000)}`.padEnd(512,' '));
       const old = new Date(Date.now()-8*86_400_000);
       await utimes(path,old,old);
       await expect(assertFreshArtifactSignatures(directory)).rejects.toThrow("scan_stale");

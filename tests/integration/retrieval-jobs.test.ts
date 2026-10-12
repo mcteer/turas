@@ -1,3 +1,4 @@
+import {insertRetrievalProfileOrigin} from '../fixtures/retrieval-profile-origin';
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import { withTestDatabase } from "../fixtures/database";
@@ -55,6 +56,7 @@ describe("retrieval lease compare-and-swap", () => {
         await client.query("INSERT INTO workspaces(id,name) VALUES($1,'Synthetic retrieval jobs')",[workspaceId]);
         await client.query(`INSERT INTO customer_references(id,workspace_id,display_name,synthetic)
           VALUES($1,$2,'Synthetic retrieval customer',true)`, [customerId,workspaceId]);
+        await insertRetrievalProfileOrigin(client,{workspaceId,customerId,revisionId,text:'Synthetic lease source',digest:'b'.repeat(64)});
         await client.query(`INSERT INTO retrieval_sources
           (id,environment_id,workspace_id,customer_id,scope,source_kind,source_revision_id,
            audience,projection_contract,contract_digest,source_generation,content_digest)

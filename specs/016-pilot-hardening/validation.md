@@ -1439,3 +1439,48 @@ Fresh CI will print bounded redacted failed-test metadata rather than lose every
 underlying assertion behind generic private-evidence errors.
 
 The configured current report-audience run completed successfully (1/1 registered case, exit 0), using generated synthetic credentials and a sanitized process environment; it is a focused check, not a complete report/CI claim. Complete gap worker recovery also exited 0 for empty/047 → 057. Current pilot/root TypeScript checks passed. The first CI run completed with failure and remains explicitly failed; the corrected checkpoint will be validated by a new run.
+
+### Resumed CI failure correction — 2026-10-12
+
+PR 32's second workflow, `38264825909`, ran against
+`1dbd8dc3af5b11583e3b1bfb9c1e31159e338be1` and has failing jobs; it is
+not acceptance. Completed job logs identified several remaining incompatibilities:
+
+- 012/013/014 recovery commands correctly reached schema 057, but their evidence
+  verifiers still required 049/051/055. Verification now requires the exact
+  supported current manifest (057), both distinct empty/predecessor paths and
+  every authority, replay, restart and retention outcome. Six regression cases
+  reject incomplete, historical, duplicate, future-schema and weakened receipts.
+- Two predecessor bootstrap tests still omitted the exact test owner connection.
+  Both now supply it explicitly without weakening the operator's target guard.
+- Two low-level retrieval fixtures referenced nonexistent original revisions.
+  They now create workspace-bound original provenance; they do not manufacture
+  factual acceptance or claim end-to-end retrieval eligibility.
+- The synthetic stale-signature fixture did not supply the required 512-byte,
+  space-padded CVD header. Its correction preserves the scanner's format and
+  freshness checks.
+- A nested owned recovery scope discarded the parent's explicitly prepared
+  immutable renderer. The narrow recovery fixture now carries that image binding,
+  not provider credentials or arbitrary inherited configuration.
+- The renderer image lacked `lib/server/operations/code-version.ts`, newly
+  imported by `lib/contracts/http.ts`. A fresh isolated render reproduced
+  `ERR_MODULE_NOT_FOUND`. Both the Docker recipe and the minimized preparation
+  context now include that content-free module. Renderer diagnostics expose
+  only fixed stage codes; Python validation tracebacks remain withheld.
+
+Owned verification passed 13/13 affected actual-database cases, the focused stale
+signature case (32 unrelated cases intentionally unselected), all focused unit
+cases in `resume-ci/unit-final.json`, root and pilot typechecks, and the document
+check. A fresh image rendered all four required output files, and ordinary
+report preparation, render, brand review and publication passed in an isolated
+owned database with restrictive umask and zero paid calls. The focused ordinary
+Product Gaps author/edit WebKit case also passed locally (1/1). Its Linux CI
+failure is not yet resolved; bounded availability/content-presence diagnostics
+were added without recording IDs, titles, source prose or response bodies.
+
+These are scoped local corrections, not a replacement complete 640-case catalog,
+complete predecessor composition, green CI, provider acceptance or release. No
+Production migration, deployment, unlock, paid evaluation, provider cancellation
+or participant feedback occurred during this resume. All incomplete tasks retain
+their unchecked state. PR 32 stays draft until its required current-source checks
+and review are complete.

@@ -10,7 +10,9 @@ export async function authorityCheckpointTime(owner:Client){return (await owner.
 /** Synthetic owner tests only. Cold encrypted metadata and its separate key are
  * outside the disposable database, not a hosted backup or a full restore claim. */
 export async function withAuthorityEnvironment(run:(owner:Client,runtime:Client,environmentId:string)=>Promise<void>){
- await withPilotEnvironment(async env=>{const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)}),runtime=new Client({connectionString:requireOwnedPilotDatabase()});runtime.on('error',()=>{});await owner.connect();await runtime.connect();try{await run(owner,runtime,env.environmentId);}finally{await runtime.end().catch(()=>{});await owner.end();}},{postgresMajor:18,deadlineMs:180000});
+ const renderer=process.env.TURAS_PILOT_RENDERER_IMAGE;
+ if(renderer&&!/^sha256:[a-f0-9]{64}$/.test(renderer))throw Error('Owned immutable renderer required');
+ await withPilotEnvironment(async env=>{if(renderer)process.env.TURAS_PILOT_RENDERER_IMAGE=renderer;const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)}),runtime=new Client({connectionString:requireOwnedPilotDatabase()});runtime.on('error',()=>{});await owner.connect();await runtime.connect();try{await run(owner,runtime,env.environmentId);}finally{await runtime.end().catch(()=>{});await owner.end();}},{postgresMajor:18,deadlineMs:180000});
 }
 export async function coldAuthorityProof(owner:Client,environmentId:string){
  const snapshot=await captureRecoveryDenialSnapshot(owner,environmentId,AbortSignal.timeout(60000)),root=await mkdtemp(resolve('local-artifacts/016/authority-test-')),keyRoot=await mkdtemp(resolve('local-artifacts/016/authority-key-')),key=randomBytes(32);
