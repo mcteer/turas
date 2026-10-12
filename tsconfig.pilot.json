@@ -12,7 +12,8 @@
     "scripts/eval-retrieval.ts",
     "scripts/eval-research.ts",
     "scripts/check-research-workflow-live.ts",
-    "infra/pilot/recovery-operator/*.ts"
+    "infra/pilot/recovery-operator/*.ts",
+    "scripts/recovery-legacy-seed.ts"
   ],
   "exclude": [
     "node_modules",

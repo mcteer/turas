@@ -30,6 +30,8 @@ jobs:
       TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: ${{ matrix.gate == 'recovery' && '0' || '1' }}
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -79,6 +81,10 @@ jobs:
       - name: Require complete evidence for the same source
         run: node --import tsx scripts/learning-ci-evidence.ts "${{ matrix.gate }}"
 
+      - name: Bounded redacted failed-test diagnostics
+        if: failure()
+        run: node --import tsx scripts/print-ci-test-failures.ts
+
   partner-enablement:
     runs-on: ubuntu-latest
     timeout-minutes: 100
@@ -91,6 +97,8 @@ jobs:
       TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: ${{ matrix.gate == 'recovery' && '0' || '1' }}
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -133,6 +141,10 @@ jobs:
           npm run test:partners:regressions
       - name: Require complete evidence for the same source
         run: node --import tsx scripts/partners-ci-evidence.ts "${{ matrix.gate }}"
+
+      - name: Bounded redacted failed-test diagnostics
+        if: failure()
+        run: node --import tsx scripts/print-ci-test-failures.ts
 
   expansion:
     runs-on: ubuntu-latest
@@ -230,6 +242,10 @@ jobs:
         if: matrix.gate == 'webkit'
         run: npm run expansion:ui:check
 
+      - name: Bounded redacted failed-test diagnostics
+        if: failure()
+        run: node --import tsx scripts/print-ci-test-failures.ts
+
   support-deterministic:
     runs-on: ubuntu-latest
     timeout-minutes: 120
@@ -311,6 +327,10 @@ jobs:
         if: matrix.gate == 'webkit'
         run: npm run support:ui:check
 
+      - name: Bounded redacted failed-test diagnostics
+        if: failure()
+        run: node --import tsx scripts/print-ci-test-failures.ts
+
   reporting:
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -360,6 +380,10 @@ jobs:
       - name: Exercise reporting in four WebKit projects
         if: matrix.gate == 'webkit'
         run: npm run reports:ui:check
+
+      - name: Bounded redacted failed-test diagnostics
+        if: failure()
+        run: node --import tsx scripts/print-ci-test-failures.ts
 
   verify:
     runs-on: ubuntu-latest
@@ -423,7 +447,7 @@ jobs:
           npm run db:bootstrap-demo
           DATABASE_URL_UNPOOLED="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:init
           DATABASE_URL_UNPOOLED="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:roles
-          DATABASE_URL="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:bootstrap-demo
+          DATABASE_URL="${TURAS_TEST_DATABASE_URL}" DATABASE_URL_UNPOOLED="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:bootstrap-demo
       - name: Prepare isolated artifact fixtures and images
         run: |
           echo "TURAS_ARTIFACT_STORE_ROOT=${GITHUB_WORKSPACE}/local-artifacts/004/store" >> "$GITHUB_ENV"
@@ -482,6 +506,10 @@ jobs:
           TURAS_UI_FIXTURE_DATABASE_URL="$TURAS_TEST_DATABASE_URL" \
           TURAS_UI_BASE_URL="$TURAS_APP_ORIGIN" \
           npm run test:ui -- tests/ui/knowledge.spec.ts tests/ui/research.spec.ts tests/ui/retrieval.spec.ts
+
+      - name: Bounded redacted failed-test diagnostics
+        if: failure()
+        run: node --import tsx scripts/print-ci-test-failures.ts
 
   execution:
     runs-on: ubuntu-latest
@@ -549,7 +577,7 @@ jobs:
           npm run db:bootstrap-demo
           DATABASE_URL_UNPOOLED="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:init
           DATABASE_URL_UNPOOLED="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:roles
-          DATABASE_URL="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:bootstrap-demo
+          DATABASE_URL="${TURAS_TEST_DATABASE_URL}" DATABASE_URL_UNPOOLED="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:bootstrap-demo
       - name: Prepare isolated artifact fixtures and images
         run: |
           echo "TURAS_ARTIFACT_STORE_ROOT=${GITHUB_WORKSPACE}/local-artifacts/004/store" >> "$GITHUB_ENV"
@@ -591,6 +619,10 @@ jobs:
           }
           JS
 
+      - name: Bounded redacted failed-test diagnostics
+        if: failure()
+        run: node --import tsx scripts/print-ci-test-failures.ts
+
   product-gaps:
     runs-on: ubuntu-latest
     timeout-minutes: 50
@@ -603,6 +635,8 @@ jobs:
       TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: ${{ matrix.gate == 'recovery' && '0' || '1' }}
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -645,6 +679,10 @@ jobs:
         run: npm run test:gaps:regressions
       - name: Require complete evidence with the same source fingerprint
         run: node --import tsx scripts/gaps-ci-evidence.ts "${{ matrix.gate }}"
+
+      - name: Bounded redacted failed-test diagnostics
+        if: failure()
+        run: node --import tsx scripts/print-ci-test-failures.ts
 
   read-only-mcp:
     runs-on: ubuntu-latest
@@ -707,6 +745,10 @@ jobs:
       - name: Require complete evidence with the same source fingerprint
         run: node --import tsx scripts/mcp-ci-evidence.ts "${{ matrix.gate }}"
 
+      - name: Bounded redacted failed-test diagnostics
+        if: failure()
+        run: node --import tsx scripts/print-ci-test-failures.ts
+
   pilot-hardening:
     runs-on: ubuntu-latest
     timeout-minutes: 300
@@ -749,3 +791,6 @@ jobs:
       - name: Complete affected predecessor composition and fresh browser journeys
         if: matrix.gate == 'regressions'
         run: npm run pilot:regressions
+      - name: Bounded redacted failed-test diagnostics
+        if: failure()
+        run: node --import tsx scripts/print-ci-test-failures.ts

@@ -1393,3 +1393,49 @@ reconciliation. No primary migration, provider cancellation, model call, paid jo
 service unlock occurred in these implementation checks.
 
 The strengthened permanent-request audit focused case passed (1 selected, 15 unselected), including altered function body, disabled request trigger, disabled immutable-fence trigger, runtime-owner denial and stale revision. Authored function SQL is obtained from the existing migration static emitter without executing schema changes. The CLI re-authenticates independently retained encrypted current bytes and does not manufacture complete verification rows. Final root/pilot TypeScript, document and diff checks passed; credential hygiene found no protected `.env.local` values or private candidates among 505 changed/new paths. The upcoming draft checkpoint/CI remains separate from full feature completion and Production release.
+
+### First actual CI checkpoint and discovered predecessor failures
+
+Draft PR 32 was created at `91287f288e79376d0127ed5dea0c4bbbace526c8`;
+workflow run `38254825028` is not acceptance. Early failed job logs revealed:
+(1) the second synthetic bootstrap in the base/execution workflows supplied the
+new test environment but retained the application owner connection; the now-explicit
+owner bootstrap correctly refused it; (2) legacy feature recovery checks expected
+schema 049/051/055 while default owned environments now initialize 057; and (3) the
+new authoritative expansion pricing suite was missing from the strict 011 manifest.
+The fix supplies both exact test connections, explicitly retains the historical
+feature schema only in those owned recovery rehearsals, and registers the pricing
+suite. Ordinary current-schema regressions still use 057. Base recursive test
+commands now exclude the dedicated pilot directories, which remain fully covered
+by the separate named 640-case catalog with its required image preparation. These
+changes do not loosen production readiness, bootstrap ownership or recovery guards.
+The failed CI run remains failed; the corrected recovery commands are being verified.
+
+The first local recovery correction attempt retained the old feature schema and
+failed correctly on missing `operations_control`; it is not acceptance. The final
+approach keeps the current guard, seeds predecessor records with the exact released
+base `699f6f4a89911b1ba33bc2d90ed51ac1ba2ee530` in a bounded, marked, loopback-only
+subprocess, waits for that writer to exit, and migrates the owned target through the
+complete installed manifest. Narrow seeding checks passed for 047/049/051 → 057.
+Complete partner recovery passed empty/049 → 057; complete learning recovery passed
+empty/051 → 057 with 11 domain cases each, authenticated native restarts, unknown-cost
+holds, immutable snapshot and deadline checks. The stale MCP activation case now
+checks explicit supported 054–057, rejects unknown versions/runtime authority and
+restores its actual original marker; its focused owned case passed.
+
+The initial gap recovery then exposed the local 012 worker removal: the report worker
+no longer ticked independent gap preparation/cleanup. The corrected local lane is
+separate from 009 enablement and is inactive for the hosted Sandbox backend; complete
+empty/047 → 057 recovery now passed disabled cleanup, crash recovery, no automatic
+retry, workflow marker preservation and lifetime tombstone checks.
+
+The standalone report-audience attempts did not reach their suite because required
+operator-independent test configuration was absent. An existing older failure
+receipt (`tests-IZA4mz`) diagnosed shared generation windows, but is historical and
+cannot prove this source. The verified owned report clone now isolates quota windows
+between independent cases only; normal generation limits and measured journeys are
+unchanged. A new run with sanitized, generated synthetic configuration is underway.
+Fresh CI will print bounded redacted failed-test metadata rather than lose every
+underlying assertion behind generic private-evidence errors.
+
+The configured current report-audience run completed successfully (1/1 registered case, exit 0), using generated synthetic credentials and a sanitized process environment; it is a focused check, not a complete report/CI claim. Complete gap worker recovery also exited 0 for empty/047 → 057. Current pilot/root TypeScript checks passed. The first CI run completed with failure and remains explicitly failed; the corrected checkpoint will be validated by a new run.

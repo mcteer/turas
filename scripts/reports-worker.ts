@@ -8,8 +8,10 @@ import {runReportRenderJob} from '../lib/server/reports/render-jobs';
 import {runReportDraftJob} from '../lib/server/reports/draft-jobs';
 import {tickReportSchedules} from '../lib/server/reports/schedules';
 import {claimReportDeliveries,dispatchReportDelivery} from '../lib/server/reports/outbox';
+import {executionBackend} from '../lib/server/jobs/backend';
+import {tickGapWorker} from '../lib/server/gaps/worker';
 
-const workerId=randomUUID();let stopping=false,ready=false,refreshing=false,working=false;
+const workerId=randomUUID();let stopping=false,ready=false,refreshing=false,working=false,gapWorking=false;
 async function refresh(){
  if(stopping||refreshing)return;refreshing=true;
  try{
@@ -34,11 +36,19 @@ async function work(){
   }finally{working=false;}
 }
 const heartbeat=setInterval(()=>{void refresh();},10000),tick=setInterval(()=>{void work();},2000);
+// Local 012 preparation is independent of 009 enablement. Hosted preparation
+// remains exclusively in the explicit, budgeted Sandbox dispatcher; maintenance
+// retains its separate cleanup-only registry binding.
+async function gapWork(){
+ if(stopping||gapWorking)return;gapWorking=true;
+ try{if(executionBackend()==='local')await tickGapWorker();}catch(error){const code=String((error as {code?:unknown})?.code??'unknown');console.error(JSON.stringify({kind:'report_worker_failure',phase:'local_gap_tick',code:/^[a-zA-Z0-9_]{1,64}$/.test(code)?code:'unknown'}));}finally{gapWorking=false;}
+}
+const gapTick=setInterval(()=>{void gapWork();},2000);void gapWork();
 void refresh();
 async function stop(){
- if(stopping)return;stopping=true;clearInterval(heartbeat);clearInterval(tick);
+ if(stopping)return;stopping=true;clearInterval(heartbeat);clearInterval(tick);clearInterval(gapTick);
  const shutdown=setTimeout(()=>process.exit(0),35000);shutdown.unref();
- while(working||refreshing)await new Promise(resolve=>setTimeout(resolve,100));
+ while(working||refreshing||gapWorking)await new Promise(resolve=>setTimeout(resolve,100));
  await closeRuntimePool();clearTimeout(shutdown);
 }
 for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>{void stop();});

@@ -189,7 +189,7 @@ acceptance remain pending; local checks do not establish pilot readiness. See th
 
 ## Technology
 
-TypeScript, Next.js 16, React 19, eve and PostgreSQL 17 with pgvector. Development
+TypeScript, Next.js 16, React 19, eve and PostgreSQL 17/18 with pgvector. Development
 uses Node.js 24 and npm. Versions are pinned in [`package-lock.json`](package-lock.json).
 
 ## Getting Started
