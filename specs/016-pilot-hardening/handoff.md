@@ -92,10 +92,14 @@ session fixtures and a second nested recovery helper dropping the prepared image
 All 22 focused cases passed locally; root/pilot types are green. The failed complete
 local attempt is retained. A subsequent full run at `c638b31` passed 640/640
 named cases in 109 suites (`run-67a89edc-4e35-4186-b8a3-83c07e1cc722`).
-CI `38270783944` still fails: the Linux pilot render is unresolved. Later fixes
-separate legacy/pilot UI discovery and use verified released-code seeding for
-034/035 execution upgrades (5/5 actual owned cases passed). See the final
-sections of `validation.md`; these later changes need fresh source-bound checks.
+Later CI still failed the Linux pilot render. Exact source diagnostics identified
+undefined parent environment values being stringified into a relative `TMPDIR`;
+the safe parent map now omits them. All 22 affected cases passed with `TMPDIR`
+unset. Other fixes separate legacy/pilot UI discovery and use verified released-
+code seeding for 034/035 execution upgrades (5/5 owned cases passed). A fresh
+40-case four-project WebKit run also passed before the latest environment change.
+See the final sections of `validation.md`; the latest source needs complete CI
+acceptance, not another relabeled earlier local receipt.
 
 Next: complete current-source CI (including the full pilot and predecessor
 catalogs), resolve every failure, then resume the unchecked recovery and hosted

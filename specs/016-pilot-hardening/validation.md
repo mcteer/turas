@@ -1543,3 +1543,31 @@ success cannot waive it. Unknown render exceptions now report only a fixed
 execution phase and an allowlisted system/contract category, with all arbitrary
 exception text withheld. These later source changes require fresh CI/full
 validation before acceptance. No hosted target or approval changed.
+
+### Linux execution root cause and absent-parent regression
+
+Fresh CLI WebKit at `2819483` passed all 40 cases in four projects in
+`ui-nT9fy5`. Synthetic desktop light/dark workspace and mobile dark upload
+screenshots were inspected: explicit test-data labeling, readable controls and
+responsive layout were retained. This predates later diagnostic/environment
+changes and remains attributed to its original source.
+
+CI `38276708605` at `80656e2` identified the failed render before output
+validation, at the executor's fixed mount guard. The owned harness constructed
+its safe environment with undefined parent entries, then assigned them to
+`process.env`; on Linux an absent `TMPDIR` became the string `"undefined"`.
+`os.tmpdir()` therefore produced a relative scratch path. The mount guard
+correctly refused it. Parent environment construction now omits absent values
+while retaining only the same explicit non-secret allowlist. Neither mount
+validation nor isolated execution permissions were relaxed.
+
+The actual owned access/staffing/quarantine composition passed 22/22 cases with
+`TMPDIR` explicitly unset, including actual report rendering and uncertain-send
+quarantine. Thirteen focused executor/environment cases passed; the environment
+case proves absent values and provider/database credentials cannot enter the
+safe parent map. Root/pilot typechecks and document checks passed after correcting
+a test-only Next ambient `ProcessEnv` typing issue. Failure diagnostics retain
+only fixed stages, allowlisted codes and specifically authored execution source
+locations; arbitrary exception text, private storage paths and original filenames
+remain withheld. These later changes still require fresh complete CI acceptance.
+Production, selected configuration, workflow state and agent model were unchanged.

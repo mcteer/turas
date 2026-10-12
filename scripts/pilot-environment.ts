@@ -24,6 +24,11 @@ export type PilotEnvironment = { appRoot: string; storeRoot: string; workflowRoo
  databaseContainer:string; databaseOwnerLabel:string; appPid:()=>number|null; databaseName: string; environmentId: string; signal:AbortSignal; start: () => Promise<void>; startProduction:()=>Promise<void>; startProductionNative:()=>Promise<void>; startNative:()=>Promise<void>; startWorker: () => Promise<void>; crashWorker: () => Promise<void>; startSupervisor: () => Promise<void>; stop: () => Promise<void>;
  backupRestore:()=>Promise<void>; stopDatabase:()=>Promise<void>; startDatabase:()=>Promise<void>; restartDatabase:()=>Promise<void>; upgradeToCurrent: () => Promise<void> };
 const safeParentKeys = ['PATH','HOME','TMPDIR','LANG','LC_ALL','SYSTEMROOT'] as const;
+export function pilotParentEnvironment(environment:Record<string,string|undefined>=process.env):NodeJS.ProcessEnv{
+ // Object.assign(process.env, {TMPDIR: undefined}) creates the string
+ // "undefined". On Linux that turns os.tmpdir() into a relative mount path.
+ return {...Object.fromEntries(safeParentKeys.filter(key=>environment[key]!==undefined).map(key=>[key,environment[key]])),NODE_ENV:'test'};
+}
 function command(cmd: string, args: string[], env: NodeJS.ProcessEnv, cwd = process.cwd(), timeout = 120_000) {
  const result = spawnSync(cmd,args,{cwd,env,encoding:'utf8',timeout,maxBuffer:1_000_000});
  if (result.error || result.status !== 0) { writeFileSync(resolve('local-artifacts/016/setup-error.log'),(result.stdout??'')+(result.stderr??''),{mode:0o600}); throw Error(`Owned pilot setup failed: ${cmd.split('/').pop()}`); }
@@ -36,7 +41,7 @@ export async function withPilotEnvironment<T>(run: (environment: PilotEnvironmen
  const agentDigest = await digest(), previous = { ...process.env };
  const codeVersion=command('git',['rev-parse','HEAD'],process.env);if(!/^[a-f0-9]{40}$/.test(codeVersion))throw Error('Exact owned source identity required');
  const selectedHash=async()=>{try{return createHash('sha256').update(await readFile('.env.local')).digest('hex');}catch(error){if((error as {code?:string}).code==='ENOENT')return null;throw error;}};const selectedBefore=await selectedHash();
- const safeEnv: NodeJS.ProcessEnv = { ...Object.fromEntries(safeParentKeys.map(k=>[k,process.env[k]])), NODE_ENV: 'test' };
+ const safeEnv=pilotParentEnvironment();
  const token = randomUUID().replaceAll('-','').slice(0,12), name = `turas_test_016_eval_${token}`,
   container = `turas-016-check-${token}`, environmentId = `test-pilot-${token}`, password = randomBytes(24).toString('hex');
  await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});
