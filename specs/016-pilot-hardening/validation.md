@@ -1603,3 +1603,21 @@ removed. Native preparation reports only its HTTP status, never an arbitrary
 response body, to distinguish authorization/admission failures from readiness.
 These changes need a new complete source-bound run; a passing standalone cohort
 cannot waive either composed failure.
+
+### Current-source attempts are retained, not promoted
+
+The new full local attempt at `e72f811`,
+`run-640b9113-b4be-40d1-a131-ecd98dc929cd`, failed at the 50th composed suite:
+the interrupted workflow-copy case exceeded its 10-second test bound. The
+large original's full-byte verification now uses `Buffer.equals`, avoiding an
+8-MiB recursive assertion traversal while still comparing every byte. All eight
+workflow-checkpoint cases passed after this change; no interruption, cleanup,
+retention assertion or timer bound was removed.
+
+CI `38288378778` also still failed the actual malicious-original scanner case.
+The public permission correction and isolated access proof do not waive that
+Linux failure. Its assertion now reports only a finite known state/error-code
+pair so the next run can distinguish deadline, stale-signature and execution
+failure without exposing document data or arbitrary diagnostics. Neither attempt
+is relabeled complete acceptance. PR 32 stays draft and operational/human gates
+remain pending.

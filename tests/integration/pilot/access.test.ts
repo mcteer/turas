@@ -33,7 +33,9 @@ it('quarantines malicious originals',async()=>{
   await db.query('UPDATE artifact_extraction_runs SET parser_image_digest=$2 WHERE id=$1',[f.runId,images.parserDigest]);await db.query('COMMIT');
  }catch(error){await db.query('ROLLBACK');throw error;}
  const claim=await claimArtifactRun(db);expect(claim?.runId).toBe(f.runId);await runArtifactJob(claim!);
- expect((await db.query('SELECT state,safe_error_code FROM artifact_versions WHERE id=$1',[f.versionId])).rows[0]).toEqual({state:'failed',safe_error_code:'unsafe_content'});
+ const outcome=(await db.query('SELECT state,safe_error_code FROM artifact_versions WHERE id=$1',[f.versionId])).rows[0];
+ const state=['failed','queued','ready','scanning','extracting'].find(value=>value===outcome.state)??'other',code=['unsafe_content','scan_unavailable','scan_stale','parser_timeout','parser_failed'].find(value=>value===outcome.safe_error_code)??'other';
+ expect(outcome,`Pinned scanner disposition (${state}; ${code})`).toEqual({state:'failed',safe_error_code:'unsafe_content'});
  expect((await db.query('SELECT count(*)::int AS n FROM artifact_extraction_units WHERE version_id=$1',[f.versionId])).rows[0].n).toBe(0);
  await expect(readArtifactUnits(admin,f.versionId,{})).rejects.toThrow();expect(await claimArtifactRun(db)).toBeNull();
 },60000);
