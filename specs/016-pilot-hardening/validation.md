@@ -1621,3 +1621,21 @@ pair so the next run can distinguish deadline, stale-signature and execution
 failure without exposing document data or arbitrary diagnostics. Neither attempt
 is relabeled complete acceptance. PR 32 stays draft and operational/human gates
 remain pending.
+
+The next Linux failure at `88ae9bd` reported the finite disposition
+`failed; scan_unavailable`, not a content rejection. The scanner previously had
+both a 30-second daemon-readiness loop and a 30-second outer stage kill, leaving
+no startup slack for cold AV loading. Its bounded readiness is now 60 seconds
+and its stage cap 90 seconds, still capped by the original immutable domain
+deadline (120 seconds for ordinary artifact work). Per-file AV limits, heartbeat,
+source/lease rechecks, non-root UID, 4-GiB memory, denied networking and fixed
+program/input rules are unchanged. Focused assertions prove a shorter original
+deadline remains the cap; no deadline is renewed after admission.
+
+New actual images were prepared in `images-resume-startup-20261012`. All eight
+owned access cases passed against those immutable images with absent `TMPDIR`
+and private umask; 21 focused executor/environment/checkpoint cases and both
+typechecks passed. The scanner case observes the real executor's response with
+a call-through spy only (no fake scanner or substituted output) and includes only
+the allowlisted failure code and finite exit status in failure diagnostics. This
+is diagnosis and local verification, not a claim the next Linux run is accepted.
