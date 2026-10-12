@@ -9,6 +9,16 @@ import {sha256} from '../jobs/executor';
 const fileMetadata=z.strictObject({digest:reportDigestSchema,sizeBytes:z.number().int().min(1).max(10485760)});
 const rendererResult=z.strictObject({schemaVersion:z.literal('report-render-result-v1'),rendererCodeDigest:reportDigestSchema,documentDigest:reportDigestSchema,brandDigest:reportDigestSchema,fontDigests:z.strictObject({regular:reportDigestSchema,bold:reportDigestSchema}),pages:z.number().int().positive(),slides:z.number().int().positive(),pdf:fileMetadata,pptx:fileMetadata,editingRequirement:z.string().min(1).max(500)});
 const rendererChecks=z.strictObject({pages:z.number().int().positive(),slides:z.number().int().positive(),nativeTables:z.number().int().positive(),nativeCharts:z.number().int().min(0),approvedEmbeddedFonts:z.literal(true)});
+type ReportRenderStage='execute'|'validate_output'|'store_output'|'publish_output';
+export function reportRenderFailureMessage(error:unknown,stage:ReportRenderStage){
+ const safe=['Execution output unavailable','Execution deadline exceeded','Local execution unavailable','Owned execution cleanup unverified','Execution requires the original finite deadline'];
+ const code=(error as {code?:unknown}|null)?.code;
+ const systemCode=typeof code==='string'&&['EACCES','ENOENT','ENOSPC','EPERM','ETIMEDOUT','ECONNRESET','ABORT_ERR','23503','23505','23514','42501','42P01','55000','55P03','57014','P0001'].includes(code)?code:null;
+ const category=error instanceof z.ZodError?'renderer_contract_invalid':error instanceof Error&&safe.includes(error.message)?error.message:systemCode??'renderer_failed';
+ // Authored source locations only, never arbitrary exception text or IO paths.
+ const location=error instanceof Error?error.stack?.match(/lib\/server\/(?:jobs\/(?:local-executor|executor|governed)|operations\/(?:local-jobs|admission|hosted-jobs|cost))\.ts:\d+:\d+/)?.[0]??'unlocated':'unlocated';
+ return `Executive rendering failed (${stage}: ${category}; ${location})`;
+}
 const inputSchema=z.strictObject({revisionId:reportId,documentDigest:reportDigestSchema,sourceSetDigest:reportDigestSchema,brandId:reportId,brandDigest:reportDigestSchema});
 export async function enqueueReportRender(db:PoolClient,actor:{workspaceId:string;membershipId:string},revisionId:string){
  const revision=await reportRevisionFence(db,actor.workspaceId,revisionId,{published:false});
@@ -39,7 +49,7 @@ export async function runReportRenderJob(claimed:{id:string;lease_token:string;i
  const deadlineAt=new Date(prepared.row.deadline_at).toISOString(),remaining=()=>Math.max(0,Date.parse(deadlineAt)-Date.now());
  const deadline=setTimeout(()=>controller.abort(),remaining());
  const heartbeat=setInterval(()=>{if(busy)return;busy=true;pending=reportTransaction(db=>heartbeatReportJob(db,claimed.id,claimed.lease_token)).then(valid=>{if(!valid)controller.abort();}).catch(()=>controller.abort()).finally(()=>{busy=false;});},15000);
- let renderStage='execute';
+ let renderStage:ReportRenderStage='execute';
  let result:ReturnType<typeof rendererResult.parse>,checks:ReturnType<typeof rendererChecks.parse>,files:{format:'pdf'|'pptx';bytes:Buffer;key:string;metadata:{digest:string;sizeBytes:number}}[];
  try{
   await runGovernedExecution({request:{id:randomUUID(),kind:'report-render',image,imageDigest,deadlineAt,inputs:[{name:'report.json',bytes,sizeBytes:bytes.length,digest:sha256(bytes)}],signal:controller.signal},domain:{domainKind:'report',domainJobId:claimed.id,sourceGeneration:1,sourceDigest:claimed.input_digest},localAssets:{signaturesPath:'',ocrAssetsPath:''},sourceCurrent:async db=>{await renderFence(db,claimed);return true;},prepareOutput:async output=>{
@@ -63,6 +73,6 @@ export async function runReportRenderJob(claimed:{id:string;lease_token:string;i
    for(const file of files){await db.query(`INSERT INTO report_artifacts(id,environment_id,workspace_id,customer_id,revision_id,render_attempt_id,format,content_digest,size_bytes,object_key,renderer_digest,font_digest,brand_digest,template_digest,validation_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,[randomUUID(),process.env.TURAS_ENVIRONMENT_ID,current.row.workspace_id,current.row.customer_id,current.input.revisionId,claimed.lease_token,file.format,file.metadata.digest,file.metadata.sizeBytes,file.key,imageDigest,current.brand.font_digest,current.brand.manifest_digest,current.brand.template_digest,validationId]);await db.query("UPDATE report_store_objects SET state='finalized',expires_at=$2 WHERE object_key=$1 AND state='staged'",[file.key,current.revision.expires_at]);}
    await db.query("UPDATE report_revision_states SET state='review_ready',updated_at=now() WHERE revision_id=$1 AND state='rendering'",[current.input.revisionId]);
   }});
- }catch(error){await reportTransaction(db=>failReportJob(db,claimed.id,claimed.lease_token,error instanceof HttpFailure?error.code:'renderer_failed')).catch(()=>{});const safe=['Execution output unavailable','Execution deadline exceeded','Local execution unavailable','Owned execution cleanup unverified','Execution requires the original finite deadline'];const code=(error as {code?:unknown}|null)?.code;const systemCode=typeof code==='string'&&['EACCES','ENOENT','ENOSPC','EPERM','ETIMEDOUT','ECONNRESET','55000','55P03'].includes(code)?code:null;const category=error instanceof z.ZodError?'renderer_contract_invalid':error instanceof Error&&safe.includes(error.message)?error.message:systemCode??'renderer_failed';throw error instanceof HttpFailure?error:new HttpFailure(503,'unavailable',`Executive rendering failed (${renderStage}: ${category})`);}
+ }catch(error){await reportTransaction(db=>failReportJob(db,claimed.id,claimed.lease_token,error instanceof HttpFailure?error.code:'renderer_failed')).catch(()=>{});throw error instanceof HttpFailure?error:new HttpFailure(503,'unavailable',reportRenderFailureMessage(error,renderStage));}
  finally{clearInterval(heartbeat);clearTimeout(deadline);parentSignal?.removeEventListener('abort',abort);if(pending)await pending;}
 }
