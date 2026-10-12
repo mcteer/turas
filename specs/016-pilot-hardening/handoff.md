@@ -84,13 +84,15 @@ hosted load proof. Operational targets are 24h RPO/4h RTO, not current guarantee
 
 ## Current execution checkpoint — 2026-10-12
 
-Draft PR 32 contains the implementation checkpoint. The second CI run
-`38264825909` has failed jobs and is not acceptance. The latest local corrections
-fix current-schema recovery evidence, exact bootstrap targets, retrieval fixture
-provenance and the isolated renderer's missing code-version dependency. Focused
-local database, real render/publication, unit, type and WebKit checks passed;
-see the final section of `validation.md`. Product Gaps authoring passed locally
-but its Linux CI failure still needs the new content-free projection diagnostics.
+Draft PR 32 contains the implementation checkpoint. CI runs `38264825909` and
+`38267585689` have failed jobs and are not acceptance. The third run confirms
+current-schema recovery evidence, reporting deterministic checks and Product Gaps
+WebKit are passing. The latest corrections address remaining predecessor owner/
+session fixtures and a second nested recovery helper dropping the prepared image.
+All 22 focused cases passed locally; root/pilot types are green. The complete
+local attempt `run-d44184b6-4aea-41be-abf4-98fd865aac7b` failed and is retained,
+not replaced by selective proof. See the final sections of `validation.md` for
+exact current-source status and the remaining Linux pilot render diagnosis.
 
 Next: complete current-source CI (including the full pilot and predecessor
 catalogs), resolve every failure, then resume the unchecked recovery and hosted

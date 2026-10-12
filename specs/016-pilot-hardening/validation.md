@@ -1484,3 +1484,33 @@ Production migration, deployment, unlock, paid evaluation, provider cancellation
 or participant feedback occurred during this resume. All incomplete tasks retain
 their unchecked state. PR 32 stays draft until its required current-source checks
 and review are complete.
+
+### Third CI checkpoint and complete-catalog failure
+
+Workflow `38267585689` at `991715e813f210d73ad133ff4f4aae34223d52e0`
+confirmed passing current-schema 012/013/014 recovery evidence, reporting
+deterministic checks and all Product Gaps WebKit projects. The Product Gaps
+failure from the prior run did not recur; the extra diagnostics remain minimized.
+Other failed jobs mean this run is still not acceptance.
+
+The workflow exposed another access-contract bootstrap using the application owner
+instead of the test owner, and a staffing authority fixture still inserting an
+unbound legacy session. Both are corrected to exact owner/session bindings; the
+staffing test retains its 403 canonical-reviewer and 401 forged-principal assertions.
+
+Fresh public-asset preparation completed in `images-resume-ci-20261012` with the
+corrected renderer dependency. The complete local catalog attempt
+`run-d44184b6-4aea-41be-abf4-98fd865aac7b` failed in
+`recovery-quarantine.test.ts`: its separate nested helper dropped the prepared
+image and rendered from an older tag, correctly failing binding verification.
+That helper now reuses the existing exact owned authority environment, including
+its explicitly admitted immutable renderer. The failed full attempt is retained.
+
+The three corrected suites passed 22/22 cases (access 6, staffing authority 5,
+recovery quarantine 11), with zero pending cases, in the private `resume-ci`
+receipts. The prior focused unit composition passed 25/25; root/pilot typechecks
+also passed. These do not replace a complete-catalog or current CI result. The
+Linux CI pilot recovery case separately encountered a non-HTTP render failure;
+only fixed execution/contract failure categories are now exposed for diagnosis,
+never renderer inputs, paths, filenames or arbitrary exception text. Current
+full-catalog acceptance remains pending.

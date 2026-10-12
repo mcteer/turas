@@ -1,8 +1,8 @@
+import {withAuthorityEnvironment} from '../../fixtures/pilot/recovery-authority';
 import {serviceBudgetAuthority} from '../../../lib/server/operations/cost';
 import {it,expect} from 'vitest';
 import {Client,type PoolClient} from 'pg';
 import {randomUUID} from 'node:crypto';
-import {withPilotEnvironment,requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
 import {quarantineRestoredAuthority,requiredRecoveryQuarantineScopes} from '../../../lib/server/operations/recovery-quarantine';
 import {transitionRecoveryControl} from '../../../lib/server/operations/control';
 import {currentRecoveryStateDigest} from '../../../lib/server/operations/recovery-state';
@@ -12,12 +12,7 @@ import {recordPilotCost} from '../../../scripts/pilot-cost';
 import {createOwnedConversation} from '../../../lib/server/conversations/repository';
 import {readOperationalHealth} from '../../../lib/server/operations/health';
 
-async function fixture(run:(owner:Client,runtime:Client,environmentId:string)=>Promise<void>){
- await withPilotEnvironment(async environment=>{
-  const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)}),runtime=new Client({connectionString:requireOwnedPilotDatabase()});await owner.connect();await runtime.connect();
-  try{await run(owner,runtime,environment.environmentId);}finally{await runtime.end();await owner.end();}
- },{postgresMajor:18,deadlineMs:180000});
-}
+const fixture=withAuthorityEnvironment;
 async function lock(owner:Client,environmentId:string){const recoveryId=randomUUID();const row=(await owner.query("UPDATE operations_control SET mode='locked',revision=revision+1,recovery_id=$2 WHERE environment_id=$1 RETURNING revision",[environmentId,recoveryId])).rows[0];return {environmentId,recoveryId,controlRevision:Number(row.revision)};}
 
 it('persists every required quarantine without extending its timestamps on replay',async()=>fixture(async(owner,_runtime,environmentId)=>{

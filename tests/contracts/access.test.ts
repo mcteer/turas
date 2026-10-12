@@ -32,7 +32,7 @@ describe("access contract", () => {
     process.env.DATABASE_URL = process.env.TURAS_TEST_DATABASE_URL;
     process.env.TURAS_ENVIRONMENT_ID = process.env.TURAS_TEST_ENVIRONMENT_ID;
     await runFile(process.execPath, ["--experimental-strip-types", "scripts/bootstrap-demo.ts"], {
-      cwd: process.cwd(), env: process.env,
+      cwd: process.cwd(), env: {...process.env,DATABASE_URL_UNPOOLED:process.env.TURAS_TEST_DATABASE_URL},
     });
   });
 
@@ -109,7 +109,7 @@ describe("access contract", () => {
       const visible = await customers(new Request(origin + "/api/customers", { headers: { cookie: partnerCookie } }));
       const ids = (await visible.json() as { data: { items: { id: string }[] } }).data.items.map((item) => item.id);
       expect(ids).not.toContain(DEMO_IDS.sharedCustomer);
-      await runFile(process.execPath, ["--experimental-strip-types", "scripts/bootstrap-demo.ts"], { cwd: process.cwd(), env: process.env });
+      await runFile(process.execPath, ["--experimental-strip-types", "scripts/bootstrap-demo.ts"], { cwd: process.cwd(), env: {...process.env,DATABASE_URL_UNPOOLED:process.env.TURAS_TEST_DATABASE_URL} });
       const afterBootstrap = await customers(new Request(origin + "/api/customers", { headers: { cookie: partnerCookie } }));
       expect((await afterBootstrap.json() as { data: { items: { id: string }[] } }).data.items.map((item) => item.id)).not.toContain(DEMO_IDS.sharedCustomer);
     } finally {
