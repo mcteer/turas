@@ -8,20 +8,26 @@ const schemas={'012':47,'013':49,'014':51} as const;
 /** Seed controlled predecessor records using the exact previously released
  * domain code, then terminate its writer before current forward migrations.
  * Current operation guards are never disabled to execute against older schemas. */
-export async function seedReleasedRecoveryFixture<T>(input:{feature:keyof typeof schemas;appRoot:string;signal:AbortSignal}):Promise<T>{
+export async function seedReleasedRecoveryFixture<T>(input:{feature:keyof typeof schemas|'008';priorSchema?:34|35;appRoot:string;signal:AbortSignal}):Promise<T>{
  const {feature,signal}=input;signal.throwIfAborted();
+ const priorSchema=feature==='008'?input.priorSchema:schemas[feature];
+ if(feature==='008'?![34,35].includes(priorSchema??0):input.priorSchema!==undefined)throw Error('Exact released fixture schema required');
  const ownerUrl=process.env.DATABASE_URL_UNPOOLED;
  if(!ownerUrl||ownerUrl!==process.env.TURAS_TEST_DATABASE_URL||process.env.TURAS_ENVIRONMENT_ID!==process.env.TURAS_TEST_ENVIRONMENT_ID)throw Error('Exact owned legacy seed connection required');
  const url=new URL(ownerUrl),token=new RegExp('^/turas_test_'+feature+'_eval_([a-f0-9]{12})$').exec(url.pathname)?.[1];
- const prefix={'012':'gap','013':'partner','014':'learning'}[feature];
- if(url.hostname!=='127.0.0.1'||!['postgres:','postgresql:'].includes(url.protocol)||!token||process.env.TURAS_ENVIRONMENT_ID!==`test-${prefix}-${token}`)throw Error('Actual owned legacy seed scope required');
- const inspected=execFileSync('docker',['inspect','--format',`{{index .Config.Labels "turas.${feature}.owner"}}`,`turas-${feature}-check-${token}`],{encoding:'utf8',timeout:5000});
- if(inspected.trim()!==token)throw Error('Owned legacy seed container marker differs');
+ if(url.hostname!=='127.0.0.1'||!['postgres:','postgresql:'].includes(url.protocol)||!token||!process.env.TURAS_ENVIRONMENT_ID?.startsWith('test-'))throw Error('Actual owned legacy seed scope required');
+ if(feature!=='008'){
+  const prefix={'012':'gap','013':'partner','014':'learning'}[feature];
+  if(process.env.TURAS_ENVIRONMENT_ID!==`test-${prefix}-${token}`)throw Error('Exact owned legacy environment required');
+  const inspected=execFileSync('docker',['inspect','--format',`{{index .Config.Labels "turas.${feature}.owner"}}`,`turas-${feature}-check-${token}`],{encoding:'utf8',timeout:5000});
+  if(inspected.trim()!==token)throw Error('Owned legacy seed container marker differs');
+ }
  const db=new Client({connectionString:ownerUrl,connectionTimeoutMillis:5000,statement_timeout:10000});
  await db.connect();
  try{
   const rows=(await db.query(`SELECT environment_id,schema_version,current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='turas_environment'::regclass)) AS owner FROM turas_environment`)).rows;
-  if(rows.length!==1||rows[0].owner!==true||rows[0].environment_id!==process.env.TURAS_ENVIRONMENT_ID||Number(rows[0].schema_version)!==schemas[feature])throw Error('Exact prior schema and actual seed owner required');
+  if(rows.length!==1||rows[0].owner!==true||rows[0].environment_id!==process.env.TURAS_ENVIRONMENT_ID||Number(rows[0].schema_version)!==priorSchema)throw Error('Exact prior schema and actual seed owner required');
+  if(feature==='008'){const marker=(await db.query("SELECT shobj_description(oid,'pg_database') AS marker FROM pg_database WHERE datname=current_database() AND pg_get_userbyid(datdba)=current_user")).rows[0]?.marker;if(typeof marker!=='string'||!/^turas-owned-008-[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(marker))throw Error('Actual owned execution database marker required');}
  }finally{await db.end();}
  execFileSync('git',['merge-base','--is-ancestor',releasedBase,'HEAD'],{timeout:5000});
  const root=await mkdtemp(join(resolve(input.appRoot),'released-seed-'));
@@ -56,7 +62,13 @@ import {closeRuntimePool} from './lib/server/db/client';
 async function main(){
  const [feature,output]=process.argv.slice(2);let seed;
  try{
-  if(feature==='012'){
+  if(feature==='008'){
+   const {withExecutionDatabase}=await import('./tests/fixtures/execution/environment');
+   const {createExecutionBaseline}=await import('./tests/fixtures/execution/baseline');
+   const {createResource}=await import('./lib/server/staffing/resources');
+   const {syntheticResource}=await import('./tests/fixtures/staffing/seed');
+   seed=await withExecutionDatabase(async db=>{await db.query('BEGIN');try{const baseline=await createExecutionBaseline(db),resource=await createResource(baseline.reviewer,{requestKey:randomUUID(),rationale:'Synthetic pre-upgrade reviewed resource identity',resource:syntheticResource()},db);await db.query('COMMIT');return {...baseline,resource};}catch(error){await db.query('ROLLBACK');throw error;}});
+  }else if(feature==='012'){
    const {gapActors}=await import('./tests/fixtures/gaps/seed');
    const {acceptedGapEvidence}=await import('./tests/fixtures/gaps/evidence');
    const actors=await gapActors(),evidence=await acceptedGapEvidence(actors.panel,actors.mcteer,DEMO_IDS.sharedCustomer,'corroboration','Synthetic predecessor source survives explicit upgrade.');seed={actors,evidence};

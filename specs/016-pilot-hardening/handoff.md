@@ -89,10 +89,13 @@ Draft PR 32 contains the implementation checkpoint. CI runs `38264825909` and
 current-schema recovery evidence, reporting deterministic checks and Product Gaps
 WebKit are passing. The latest corrections address remaining predecessor owner/
 session fixtures and a second nested recovery helper dropping the prepared image.
-All 22 focused cases passed locally; root/pilot types are green. The complete
-local attempt `run-d44184b6-4aea-41be-abf4-98fd865aac7b` failed and is retained,
-not replaced by selective proof. See the final sections of `validation.md` for
-exact current-source status and the remaining Linux pilot render diagnosis.
+All 22 focused cases passed locally; root/pilot types are green. The failed complete
+local attempt is retained. A subsequent full run at `c638b31` passed 640/640
+named cases in 109 suites (`run-67a89edc-4e35-4186-b8a3-83c07e1cc722`).
+CI `38270783944` still fails: the Linux pilot render is unresolved. Later fixes
+separate legacy/pilot UI discovery and use verified released-code seeding for
+034/035 execution upgrades (5/5 actual owned cases passed). See the final
+sections of `validation.md`; these later changes need fresh source-bound checks.
 
 Next: complete current-source CI (including the full pilot and predecessor
 catalogs), resolve every failure, then resume the unchecked recovery and hosted

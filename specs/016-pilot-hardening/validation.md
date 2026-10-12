@@ -1514,3 +1514,32 @@ Linux CI pilot recovery case separately encountered a non-HTTP render failure;
 only fixed execution/contract failure categories are now exposed for diagnosis,
 never renderer inputs, paths, filenames or arbitrary exception text. Current
 full-catalog acceptance remains pending.
+
+### Complete owned catalog on c638b31 and fourth CI diagnosis
+
+The fresh complete local catalog passed **640/640 named cases in 109 suites**,
+zero failed/skipped acceptance, in `run-67a89edc-4e35-4186-b8a3-83c07e1cc722`.
+Commit `c638b3158660397311c33158a1338e9aad711de0`, source digest
+`c7fdf77c84cc2db6ae2c8341adff4e3225900acecff50390c546882a6d0f1304`,
+catalog digest `93d9c32dcd5d3b886611dbcf09c2f02a300aee2db33e10404b9c15e35febb40a`.
+The owned runner exited 0 after cleanup. This is current local proof at that
+commit, not hosted or human acceptance; `fullPilotReady` remains false.
+
+Workflow `38270783944` at that commit still has failures. Its base UI runner
+incorrectly discovered the dedicated pilot journeys without their owning harness;
+the legacy-only discovery now excludes those two files while the independent
+four-project 016 job remains mandatory. Explicit discovery confirms no pilot
+files enter that legacy catalog. Its execution schema tests also attempted to
+run current domain code against schema 034/035, where operational controls do
+not exist. The locked current guard is retained: a verified loopback,
+owner-marked clone now uses the exact released code to create ordinary reviewed
+baseline/resource records, terminates that writer, then forward-migrates and
+compares the unchanged original metadata. CI fetches the required history for
+this deterministic gate. All five actual owned execution-schema cases passed,
+including both upgrades and current runtime grants/readiness.
+
+The Linux pilot recovery/render failure remains under diagnosis; local full
+success cannot waive it. Unknown render exceptions now report only a fixed
+execution phase and an allowlisted system/contract category, with all arbitrary
+exception text withheld. These later source changes require fresh CI/full
+validation before acceptance. No hosted target or approval changed.
