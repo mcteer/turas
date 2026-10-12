@@ -159,8 +159,13 @@ Feature 016 has a [specification](specs/016-pilot-hardening/spec.md),
 assigned-partner pilot. The plan covers a synthetic Production pilot workspace,
 workspace-bound sessions, durable private files and hosted processing, recovery,
 retention, access, operating limits and attributable user feedback. Implementation
-is in progress, with 60 of 84 tasks complete. Owned load, dependency-fault and
-encrypted capture checks are recorded in the [validation record](specs/016-pilot-hardening/validation.md).
+is in progress, with 62 of 84 tasks complete. The complete local catalog passed
+640/640 named cases and all 43 required CI jobs passed at `08ef152`; full
+predecessor composition, WebKit, recovery/lifecycle and build gates are green.
+Owned load, dependency-fault and encrypted capture checks are recorded in the
+[validation record](specs/016-pilot-hardening/validation.md). These checks do not
+finish the remaining storage/recovery/hosted journey implementation or authorize
+a pilot release.
 A separate work-controlled Neon archive contains an authenticated encrypted
 Production database safety copy. Its disposable restore verified content and the
 055→057 migrations while keeping runtime access locked; this is database-only

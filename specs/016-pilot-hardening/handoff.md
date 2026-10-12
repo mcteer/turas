@@ -114,11 +114,22 @@ time increases are reverted to the original bounds. Focused 21-unit/eight-access
 checks and both types passed. See final `validation.md` sections: complete fresh
 CI acceptance is required, not relabeled earlier receipts or isolated passes.
 
-Next: complete current-source CI (including the full pilot and predecessor
-catalogs), resolve every failure, then resume the unchecked recovery and hosted
-journey tasks. Do not merge/deploy merely because the focused corrections pass.
-The 60 checked tasks are scoped implementation/local proof; 24 tasks still require
-implementation or operational acceptance. Independent operator/participant feedback,
+### Green code checkpoint
+
+At `08ef152929a46d1bd3829c35f4d401814556e87d`, the complete owned local catalog
+passed 640/640 in `run-39221025-1741-48de-b800-56cee839499d`, with fresh actual
+images, absent `TMPDIR`, private umask and verified cleanup. Workflow
+`38301166639` completed **43/43 successful jobs**, including the complete Linux
+pilot catalog, four-project WebKit, full predecessor compositions and builds.
+T081/T082 are checked on this actual source-bound proof. No failed attempt is
+removed or promoted, and no skipped/flaky case is counted as acceptance.
+
+Next: finish unchecked storage/capture/current-authority/restore/runbook work
+(T045/T051–T059), then the required actual-model/operator and hosted journey
+requirements. Apply only concrete authorized infrastructure/budget scope; do not
+merge/deploy merely because local/CI corrections pass. The 62 checked tasks are
+scoped implementation/local/CI proof; 22 tasks still require implementation or
+operational acceptance. Independent operator/participant feedback,
 two real scheduled backups at least twelve hours apart and the actual scoped
 mcteer readiness decision cannot be supplied by automated fixtures.
 

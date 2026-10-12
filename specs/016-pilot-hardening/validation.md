@@ -1670,3 +1670,32 @@ mounted input versus `0600` report input, `0700` parent, retained bytes and
 refusal to overwrite existing files under umask `077`. Both typechecks passed.
 Fresh full-source CI acceptance is still mandatory; the earlier full local
 receipt is not moved to this changed source. Operational/human gates remain false.
+
+### Green complete local and required CI checkpoint
+
+Commit **`08ef152929a46d1bd3829c35f4d401814556e87d`** passed a fresh complete
+local catalog: **640/640 named cases in 109 suites**, zero failed/skipped
+acceptance, `run-39221025-1741-48de-b800-56cee839499d`.
+Source digest `8a3ecf5203a5e95a6dd4d2d214b44de5ac9b25435a15a9872bb6a9a1f8e5cc73`,
+catalog digest `93d9c32dcd5d3b886611dbcf09c2f02a300aee2db33e10404b9c15e35febb40a`.
+Fresh immutable images came from `images-resume-input-mode-20261012`. `TMPDIR`
+was explicitly absent; the runner retained its private umask and completed owned
+cleanup. No active owned database/job containers remained at final inspection.
+
+Required workflow **[38301166639](https://github.com/mcteer/turas/actions/runs/38301166639)**
+completed successfully with **43/43 jobs**, zero failed/cancelled jobs. The Linux
+complete pilot catalog, four-project WebKit, complete affected predecessor
+compositions, schema/recovery, access/lifecycle, native/SDK and build gates passed.
+This is an actual fresh full-source run, not a retry of selected failed cases.
+All prior failed runs remain recorded privately. T081 and T082 are checked on
+this evidence; documentation-only follow-up is not a relabeled new local receipt.
+
+Feature status is **62/84 tasks**, not completed/ready. Remaining verified
+cutover/capture/current-authority/restore/runbook implementation, hosted journeys,
+concrete infrastructure/budget scope, applicable actual-model independent review,
+actual scheduled backup cadence, participant/operator observations, cleanup and
+attributable mcteer release decision still require their own proof. Production
+remains on its existing deployment/schema; no merge, migration, enablement,
+provider deployment, paid evaluation, user impersonation or release occurred.
+Selected configuration, root workflow data and the authored agent model were
+preserved. PR 32 remains draft while those requirements are unfinished.

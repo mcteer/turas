@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-10
 
-**Status**: Implementation in progress — full pilot acceptance remains pending
+**Status**: Implementation in progress — complete local/CI catalog passed at `08ef152`; storage/recovery/hosted work and full pilot acceptance remain pending
 
 **Input**: Complete roadmap slice 016: restore/recovery, retention/deletion,
 security/access review, scale/cost tests, operational runbooks, pilot feedback and

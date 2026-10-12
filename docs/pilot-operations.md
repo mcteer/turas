@@ -1,6 +1,13 @@
 # Controlled pilot operations
 
 016 is in implementation. None of this document establishes hosted readiness.
+At `08ef152`, the owned complete local catalog passed 640/640 named cases and
+all 43 required CI jobs passed. The exact source and retained failed attempts
+are recorded in [validation](../specs/016-pilot-hardening/validation.md).
+Storage cutover, complete recovery/current-authority reconciliation and hosted
+journeys remain unfinished; the operational blockers below are not waived by CI.
+No Production migration, release enablement, participant feedback or scoped
+mcteer readiness decision is implied by this checkpoint.
 
 | Component | Current implementation | Required hosted capability | Readiness blocker |
 |---|---|---|---|

@@ -137,8 +137,8 @@ participants supply feedback, blockers are corrected, and mcteer decides on exac
 T081/T082 gate every merge that precedes T073–T080; their final completion is recorded
 after the last code change. Do not execute hosted release first because of task numbering.
 
-- [ ] T081 Implement and run complete affected predecessor regression composition in `scripts/check-pilot-regressions.ts`, including browser/native/MCP/session, store, extraction/rendering, retirement and source-policy catalogs; correct failures with their feature regression tests (FR-004, FR-010, FR-012, FR-017, FR-023, FR-024, FR-025).
-- [ ] T082 Wire `scripts/pilot-ci-evidence.ts` and complete deterministic/UI/recovery/lifecycle/load/regression/build gates into `.github/workflows/ci.yml`; run `npm run check:docs`, typecheck, web/eve builds and exact required CI with zero skips/flaky acceptance before each authorized merge (FR-002, FR-021).
+- [x] T081 Implement and run complete affected predecessor regression composition in `scripts/check-pilot-regressions.ts`, including browser/native/MCP/session, store, extraction/rendering, retirement and source-policy catalogs; correct failures with their feature regression tests (FR-004, FR-010, FR-012, FR-017, FR-023, FR-024, FR-025).
+- [x] T082 Wire `scripts/pilot-ci-evidence.ts` and complete deterministic/UI/recovery/lifecycle/load/regression/build gates into `.github/workflows/ci.yml`; run `npm run check:docs`, typecheck, web/eve builds and exact required CI with zero skips/flaky acceptance before each authorized merge (FR-002, FR-021).
 - [ ] T083 Update `README.md`, `ROADMAP.md`, `docs/pilot-operations.md` and `specs/016-pilot-hardening/{spec,validation,handoff}.md` with actual local/CI/provider/hosted/human status, schema/grants, configuration, rollback and unresolved limits; never call intermediate implementation a ready pilot (FR-001, FR-019, FR-021, FR-022).
 - [ ] T084 After each authorized green merge, leave PR closed, remove its local/remote branch, verify README on main, and confirm exact-version Production behavior from T074–T080; record closeout in `specs/016-pilot-hardening/validation.md` (FR-021, FR-022).
 
