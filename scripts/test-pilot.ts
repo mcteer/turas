@@ -1,3 +1,4 @@
+import {preparePilotAssetPermissions} from './pilot-asset-permissions';
 import {parsePilotImagePreparation} from "../lib/contracts/pilot-images";
 import { access,readFile,writeFile,cp } from "node:fs/promises";
 import {createHash} from 'node:crypto';
@@ -39,6 +40,7 @@ async function main(){
   process.env.TURAS_PILOT_PARSER_IMAGE=image('parser').localImageId;process.env.TURAS_PILOT_SCANNER_IMAGE=image('scanner').localImageId;
   await cp(path.join(preparedStore,'signatures'),path.join(process.env.TURAS_ARTIFACT_STORE_ROOT!,'signatures'),{recursive:true});
   await cp(path.join(preparedStore,'assets'),path.join(process.env.TURAS_ARTIFACT_STORE_ROOT!,'assets'),{recursive:true});
+  await preparePilotAssetPermissions(process.env.TURAS_ARTIFACT_STORE_ROOT!);
   let total=0;const passedCaseIds=new Set<string>();const caseTimes=new Map<string,{start:string;end:string}>();
   for(const [index,suite] of suites.suites.entries()){
    activeSuite=suite.file;failureStage='suite-preparation';

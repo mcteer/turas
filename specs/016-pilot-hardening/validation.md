@@ -1571,3 +1571,35 @@ only fixed stages, allowlisted codes and specifically authored execution source
 locations; arbitrary exception text, private storage paths and original filenames
 remain withheld. These later changes still require fresh complete CI acceptance.
 Production, selected configuration, workflow state and agent model were unchanged.
+
+### Completed sixth CI and public execution asset permissions
+
+CI `38278435669` completed at `90f8bfc` with **40 successful jobs and three
+failures**. Both pilot regression/WebKit jobs, the base verify job, all execution
+jobs, reporting, 012/013/014 recovery and most composed gates passed. The prior
+Linux report failure is resolved; the deterministic catalog reached its next
+actual scanner test instead of stopping at recovery rendering. No CI acceptance
+is claimed while the three failures remain.
+
+The scanner executes under its existing fixed non-root UID. Recursive copying
+public AV/OCR assets under the deliberately private `077` runner umask produced
+owner-only directories on Linux. A narrow CLI helper now validates only the
+public `signatures`/`assets` namespaces (rejecting symlinks and unexpected files),
+then restores `755` directory/`644` public-file permissions. Freshclam state is
+not modified. The private store root, originals, execution UID, network denial,
+mount validation and resource limits are unchanged. The eight actual pilot
+access cases passed with both `TMPDIR` absent and umask `077`, including the
+pinned scanner's harmless malicious-original detection and zero extracted units.
+The focused 13 executor/environment cases and both typechecks passed. The
+permission regression verifies that a private original remains `600` and a
+symlink to it is refused.
+
+The other failures were a composed 014 full eight-review WebKit journey timing
+out at its 120-second bound (standalone 014 WebKit passed), and an 008 native
+binding failing inside expansion's full regression cohort (standalone 008 gates
+and the pilot composition passed). The full 16-arm/eight-review journey now has
+a still-finite 180-second two-core CI bound; no assertions, reviews or cases are
+removed. Native preparation reports only its HTTP status, never an arbitrary
+response body, to distinguish authorization/admission failures from readiness.
+These changes need a new complete source-bound run; a passing standalone cohort
+cannot waive either composed failure.

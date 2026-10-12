@@ -1,3 +1,4 @@
+import {preparePilotAssetPermissions} from './pilot-asset-permissions';
 import { readFile,mkdir,mkdtemp,writeFile,readdir,cp } from 'node:fs/promises';
 import { resolve,join,dirname } from 'node:path';
 import {createHash} from 'node:crypto';
@@ -26,6 +27,7 @@ export async function checkPilotUi(){
   process.env.TURAS_PILOT_PARSER_IMAGE=image('parser').localImageId;process.env.TURAS_PILOT_SCANNER_IMAGE=image('scanner').localImageId;
   await cp(join(dirname(preparationFile),'store/signatures'),join(process.env.TURAS_ARTIFACT_STORE_ROOT!,'signatures'),{recursive:true});
   await cp(join(dirname(preparationFile),'store/assets'),join(process.env.TURAS_ARTIFACT_STORE_ROOT!,'assets'),{recursive:true});
+  await preparePilotAssetPermissions(process.env.TURAS_ARTIFACT_STORE_ROOT!);
   await writeFile(join(process.env.TURAS_ARTIFACT_STORE_ROOT!,'runtime-images.json'),JSON.stringify({contract:'artifact-intake-v1',parserImage:image('parser').localImageId,parserDigest:image('parser').localImageId.slice(7),scannerImage:image('scanner').localImageId,scannerDigest:image('scanner').localImageId.slice(7)}),{mode:0o600});
   process.env.TURAS_PILOT_UI_FIXTURE_READY='1';process.env.TURAS_UI_BASE_URL=environment.origin;
   await environment.startProductionNative();

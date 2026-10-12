@@ -98,8 +98,14 @@ the safe parent map now omits them. All 22 affected cases passed with `TMPDIR`
 unset. Other fixes separate legacy/pilot UI discovery and use verified released-
 code seeding for 034/035 execution upgrades (5/5 owned cases passed). A fresh
 40-case four-project WebKit run also passed before the latest environment change.
-See the final sections of `validation.md`; the latest source needs complete CI
-acceptance, not another relabeled earlier local receipt.
+CI `38278435669` then completed with 40 passed jobs and three failures: the
+pilot's next actual scanner check, a composed 014 review timeout and composed
+008 native binding. Narrow public AV/OCR copy permissions now preserve fixed
+non-root scanner access without exposing private originals (8/8 actual access
+cases passed under absent `TMPDIR`/private umask). The full eight-review journey
+retains all assertions with a finite 180-second bound; native-binding failures
+now report status only. See the final `validation.md` sections. Complete fresh
+CI acceptance is required, not relabeled earlier receipts or isolated passes.
 
 Next: complete current-source CI (including the full pilot and predecessor
 catalogs), resolve every failure, then resume the unchecked recovery and hosted

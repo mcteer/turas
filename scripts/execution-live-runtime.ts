@@ -61,7 +61,7 @@ export async function prepareExecutionLive(origin: string, auth: ExecutionLiveAu
   }
   const bound = await executionLivePost(origin, auth, "/eve/v1/session", { operationId: prepared.operationId }, deadline,
     { "x-turas-conversation-id": prepared.conversationId });
-  if (!bound.ok) throw new Error("Owned live native binding failed");
+  if (!bound.ok) throw new Error(`Owned live native binding failed (${bound.status})`);
   const nativeSessionId = (await bound.json()).sessionId as string;
   if (!/^wrun_[A-Za-z0-9_-]{1,160}$/.test(nativeSessionId)) throw new Error("Owned live native identity missing");
   return { prepared, nativeSessionId, admissionInput };
