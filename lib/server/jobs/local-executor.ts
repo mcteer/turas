@@ -1,8 +1,13 @@
 import {createHash} from 'node:crypto';
 import {spawn,execFile} from 'node:child_process';import {promisify} from 'node:util';
-import {mkdtemp,mkdir,writeFile,readFile,lstat,rm} from 'node:fs/promises';import {join} from 'node:path';import {tmpdir} from 'node:os';
+import {mkdtemp,mkdir,open,readFile,lstat,rm} from 'node:fs/promises';import {join} from 'node:path';import {tmpdir} from 'node:os';
 import {validateExecution,executionFailure,fixedProgram,executionOutputNames,type JobExecutor,type ExecutionRequest,type ExecutionOutput} from './executor';
 const inspect=promisify(execFile);
+/** Exact private scratch inode: fixed image UIDs read only the mounted file. */
+export async function writeLocalExecutionInput(path:string,bytes:Uint8Array,report:boolean){
+ const mode=report?0o600:0o444,handle=await open(path,'wx',mode);
+ try{await handle.writeFile(bytes);await handle.chmod(mode);}finally{await handle.close();}
+}
 /** Finite local adapter. Paths exist only inside its owned temporary root. */
 export class LocalJobExecutor implements JobExecutor {
  constructor(private assets:{signaturesPath:string;ocrAssetsPath:string},private stopped?:()=>void){}
@@ -11,7 +16,7 @@ export class LocalJobExecutor implements JobExecutor {
  const environmentId=process.env.TURAS_ENVIRONMENT_ID;if(!environmentId)throw Error('Explicit local execution environment required');
  const root=await mkdtemp(join(tmpdir(),'turas-job-')),input=join(root,'input'),output=join(root,'output'),name='turas-job-'+request.id;let created=false;
  const mount=(path:string,target:string,readonly=true)=>{if(!path.startsWith('/')||/[\x00-\x1f,]/.test(path))throw Error('Invalid fixed mount');return `type=bind,src=${path},dst=${target}${readonly?',readonly':''}`;};
- try{await mkdir(input,{mode:0o700});await mkdir(output,{mode:0o700});const original=request.inputs[0],file=join(input,original.name);await writeFile(file,original.bytes,{flag:'wx',mode:request.kind.startsWith('report')?0o600:0o444});
+ try{await mkdir(input,{mode:0o700});await mkdir(output,{mode:0o700});const original=request.inputs[0],file=join(input,original.name);await writeLocalExecutionInput(file,original.bytes,request.kind.startsWith('report'));
  const single=request.kind.startsWith('artifact')||request.kind==='workforce-parse',program=fixedProgram(request),scan=request.kind==='artifact-scan';
  const args=['run','--rm','--name',name,'--label',`turas.job.owner=${request.id}`,'--label',`turas.job.environment=${createHash('sha256').update(environmentId).digest('hex')}`,'--network','none','--ipc','none','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges:true','--user',scan?'100:101':single?'65532:65532':`${process.getuid?.()}:${process.getgid?.()}`,'--memory',scan?'4g':single?'1g':'2g','--cpus','2','--pids-limit',single?'64':'256','--tmpfs','/tmp:rw,nosuid,size=512m','--mount',mount(single?file:input,'/input'),...(!single?['--mount',mount(output,'/output',false),'--env','HOME=/tmp/report-home']:['--tmpfs','/output:rw,noexec,nosuid,size=50m']),...(scan?['--mount',mount(this.assets.signaturesPath,'/signatures')]:single?['--mount',mount(this.assets.ocrAssetsPath,'/assets')]:[]),'--entrypoint','/usr/bin/timeout',request.image,'--signal=KILL',String(Math.max(1,Math.floor(Math.min(deadline,Date.parse(request.deadlineAt)-Date.now())/1000))),program.cmd,...program.args];
  const result=await new Promise<{exitCode:number;stdout:Buffer;safeFailure?:ExecutionOutput['safeFailure']}>((resolve,reject)=>{let count=0,diagnostics=0;const chunks:Buffer[]=[],errors:Buffer[]=[];const child=spawn('docker',args,{stdio:['ignore','pipe','pipe'],signal:request.signal});created=true;let error:Error|undefined;const stop=(reason:string)=>{error??=Error(reason);child.kill('SIGKILL');};const timer=setTimeout(()=>stop('Execution deadline exceeded'),Math.max(1,Math.min(deadline,Date.parse(request.deadlineAt)-Date.now())));child.stdout.on('data',(b:Buffer)=>{count+=b.length;if(count>(scan?65536:52428800))stop('Execution output exceeds limit');else chunks.push(b);});child.stderr.on('data',(b:Buffer)=>{diagnostics+=b.length;if(diagnostics>65536)stop('Execution diagnostics exceed limit');else errors.push(b);});child.once('error',()=>{clearTimeout(timer);reject(Error('Local execution unavailable'));});child.once('close',code=>{clearTimeout(timer);if(error)reject(error);else resolve({exitCode:code??2,stdout:Buffer.concat(chunks,count),safeFailure:executionFailure(Buffer.concat(errors,diagnostics))});});});

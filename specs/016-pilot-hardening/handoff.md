@@ -104,7 +104,14 @@ pilot's next actual scanner check, a composed 014 review timeout and composed
 non-root scanner access without exposing private originals (8/8 actual access
 cases passed under absent `TMPDIR`/private umask). The full eight-review journey
 retains all assertions with a finite 180-second bound; native-binding failures
-now report status only. See the final `validation.md` sections. Complete fresh
+now report status only. A fresh full local run at `a88489f` also passed 640/640
+(`run-91f16647-6acb-4543-b6c0-17f3a0e62505`). CI `38292390500` passed 41 of 43
+jobs; the remaining failures were missing Git history for expansion's composed
+034/035 upgrades and a scanner scratch inode reduced to `0400` by umask `077`.
+The regression checkout now fetches history; exact open-handle input permissions
+now preserve private parents and fixed non-root execution. The attempted scanner
+time increases are reverted to the original bounds. Focused 21-unit/eight-access
+checks and both types passed. See final `validation.md` sections: complete fresh
 CI acceptance is required, not relabeled earlier receipts or isolated passes.
 
 Next: complete current-source CI (including the full pilot and predecessor

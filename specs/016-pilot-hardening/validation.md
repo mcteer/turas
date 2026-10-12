@@ -1639,3 +1639,34 @@ typechecks passed. The scanner case observes the real executor's response with
 a call-through spy only (no fake scanner or substituted output) and includes only
 the allowlisted failure code and finite exit status in failure diagnostics. This
 is diagnosis and local verification, not a claim the next Linux run is accepted.
+
+### Fresh complete local run and two remaining exact CI failures
+
+At `a88489feafc196eda1f4901e1116b8df7490d522`, the complete local run
+`run-91f16647-6acb-4543-b6c0-17f3a0e62505` passed **640/640 in 109 suites**,
+with `TMPDIR` unset, actual prepared images and cleanup completed.
+Source digest `2c19e7da7a3572864ef14f35d1795d0553fc81b102f7d693fd7d7c487cf0d972`,
+catalog digest `93d9c32dcd5d3b886611dbcf09c2f02a300aee2db33e10404b9c15e35febb40a`.
+CI `38292390500` completed with **41 successful jobs and two failures**. The
+full 014 review journey and native 008 case passed in their compositions; the
+remaining expansion failures were both historical 034/035 seeds missing the
+released Git commit in a shallow checkout. Expansion's full regression job now
+fetches the required history, retaining the exact ancestor/ownership checks.
+
+The actual Linux scanner response was exit 2 with no known isolated failure
+code, not an executor deadline failure. The runner's private `077` umask reduced
+the requested `0444` scratch-original permissions to `0400`; its fixed scanner
+UID could not read that bind-mounted inode. The adapter now creates the exact
+exclusive scratch file and sets its final permissions on its open handle,
+independent of umask. Enclosing scratch/input roots stay `0700`, report inputs
+stay `0600`, and stored private originals are not changed. Scanner/parser UIDs,
+read-only bind, denied networking and existing resource limits remain intact.
+The attempted startup allowance was not the remedy: the original 30-second
+scan stage/readiness limits and 60-second scanner case bound are restored.
+
+All 21 focused executor/environment/checkpoint cases and eight actual owned
+access cases passed after this correction. The regression checks exact `0444`
+mounted input versus `0600` report input, `0700` parent, retained bytes and
+refusal to overwrite existing files under umask `077`. Both typechecks passed.
+Fresh full-source CI acceptance is still mandatory; the earlier full local
+receipt is not moved to this changed source. Operational/human gates remain false.
