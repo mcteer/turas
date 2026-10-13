@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {qualityStepAuthorization,verifyQualityStepAuthorization} from './pilot-quality-step-authorization';
 import {resolve,dirname,basename,join} from 'node:path';
 import {realpath} from 'node:fs/promises';
 import {Client} from 'pg';
@@ -12,7 +13,7 @@ import {budgetedQualityContextFetch} from './pilot-quality-context';
 
 const incomingFile=process.env.TURAS_016_QUALITY_RUNTIME_FILE;
 const digest=z.string().regex(/^[a-f0-9]{64}$/);
-const runtimeSchema=z.strictObject({contract:z.literal('pilot-quality-runtime-v1'),id:z.uuid(),attemptId:z.uuid().optional(),sourceRoot:z.string().min(1),ledgerRoot:z.string().min(1),sourceCommit:z.string().regex(/^[a-f0-9]{40}$/),sourceDigest:digest,catalogDigest:digest,authorizationDigest:digest,capMicroUsd:z.number().int().positive().safe(),contextCreditCap:z.number().int().min(0).max(4).optional(),expiresAt:z.iso.datetime({offset:true})});
+const runtimeSchema=z.strictObject({contract:z.literal('pilot-quality-runtime-v1'),id:z.uuid(),attemptId:z.uuid().optional(),stepAuthorization:qualityStepAuthorization.optional(),sourceRoot:z.string().min(1),ledgerRoot:z.string().min(1),sourceCommit:z.string().regex(/^[a-f0-9]{40}$/),sourceDigest:digest,catalogDigest:digest,authorizationDigest:digest,capMicroUsd:z.number().int().positive().safe(),contextCreditCap:z.number().int().min(0).max(4).optional(),expiresAt:z.iso.datetime({offset:true})});
 async function configuration(){
  const file=process.env.TURAS_016_QUALITY_RUNTIME_FILE??incomingFile;
  if(!file)return null;
@@ -22,6 +23,7 @@ async function configuration(){
  const authority=await readEvidence(config.ledgerRoot,'authorization.json') as Record<string,unknown>;
  const scope=await new QualityBudgetLedger(config.ledgerRoot).currentSource();
  if(authority.id!==config.id||scope.sourceDigest!==config.sourceDigest||scope.catalogDigest!==config.catalogDigest||scope.attemptId!==config.attemptId||scope.sourceCommit!==undefined&&scope.sourceCommit!==config.sourceCommit||authority.authorizationDigest!==config.authorizationDigest||authority.capMicroUsd!==config.capMicroUsd||(authority.contextCreditCap??0)!==(config.contextCreditCap??0)||authority.expiresAt!==config.expiresAt||authority.modelId!=='spacexai/grok-4.7')throw Error('Evaluation runtime budget differs');
+ if(config.stepAuthorization)verifyQualityStepAuthorization(config.stepAuthorization,{id:config.id,authorizationDigest:config.authorizationDigest,expiresAt:config.expiresAt});
  return {file,config};
 }
 /** Only the explicit operator runtime can add these options to child processes.
@@ -64,4 +66,11 @@ export async function installQualityRuntime(){
  }});
  await writeEvidence(dirname(runtime.file),`model-guard-installed-${randomUUID()}.json`,{contract:'pilot-quality-guard-v1',budgetId:runtime.config.id,processId:process.pid,sourceDigest:runtime.config.sourceDigest,providerDispatched:false,installedAt:new Date().toISOString()});
  return {installed:true,providerCalls:0};
+}
+
+/** Expanded steps require the current 016 runtime and its separate operator approval. */
+export async function qualityProfileModelStepCap(feature:string,caseFilter:string|null){
+ if(feature!=='003'||caseFilter)return 14;
+ const runtime=await configuration();
+ return runtime?.config.stepAuthorization?.modelStepCap??14;
 }

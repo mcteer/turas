@@ -473,3 +473,7 @@ its immutable batch receipt and current source eligibility agree. A bounded sour
 selector keeps operator indexing within this public inventory; existing private
 source and synthetic-worker restrictions remain in place.
 This command neither approves private context nor publishes cross-customer learning.
+
+The 016 full 003 evaluation may use its separately authorized 32-step allowance;
+ordinary 003 evaluation retains 14 steps. This supplement preserves the original
+shared model/research budget and requires fresh committed deterministic proof.

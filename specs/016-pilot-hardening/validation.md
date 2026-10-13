@@ -1952,3 +1952,28 @@ current-record-version input passed, without changing the domain contract.
 The case is registered under G09. Full inventory is **663 cases / 116 suites**.
 Fresh committed deterministic/native proof and the corrected full paid batch remain
 pending; the prior failed attempt and its captures/costs remain retained.
+
+### Current deterministic proof and second actual-model attempt
+
+Committed `0b7712fda97ad2452afebb0873338e60e707057d` passed **663/663 cases in
+116 suites**, run `run-684d8a59-055a-4f3a-9b11-14a1c648ad30`, source digest
+`6a070b164394e14e2cffcb3b8caeff1e1d3084de94f3384267d9e1adea5bde7b`, catalog
+`c0bf9a2bd96e43383b01ae5e64333cfc090b7b849657599f4534bed801849048`.
+Current native preparation also passed with zero paid dispatches.
+
+`quality-live-identifiers-20261013` completed 002 and seven 003 responses, all
+completed 003 hard gates passing, then stopped at the inherited 14-model-step
+limit. The incomplete attempt remains failed. Across both paid attempts, the
+same original journal reports **$0.806589 charged**, no held/unknown charges,
+66 Gateway dispatches and zero Context credit dispatches/consumption. Remaining
+allowance is $24.193411 and four Context credits; no spend reset is permitted.
+
+mcteer explicitly authorized **32 steps for the full 003 catalog only in 016**,
+retaining all cases, domain limits, original $25 total/four-credit cap and disabled
+automatic billing. A separate strict step authorization binds the original budget
+ID/digest/expiry. Its runtime supplement does not change the monetary authority;
+ordinary 003 runs and filtered cases retain their prior 14-step cap. Expanded
+captures record their actual cap. Wrong budget/digest/expiry, other catalogs,
+future/expired approvals, excessive caps and extra money fields fail validation.
+The catalog now contains **664 cases / 116 suites**. Fresh full committed proof,
+native preparation and the whole corrected paid batch are required again.

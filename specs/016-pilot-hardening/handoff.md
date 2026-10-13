@@ -215,3 +215,13 @@ retraction commands lacked the required current record version; that setup was
 corrected without changing domain behavior. Complete inventory is 663/116.
 A corrected whole batch needs fresh committed deterministic/native proof and must
 retain the original approval journal and $0.349202 spending.
+
+
+Latest continuation: current 0b7712f local proof passed 663/663 in 116 suites.
+The second paid attempt stopped at 003's inherited 14-step cap after seven
+hard-gate-passing responses; both attempts remain failed and retained. Original
+budget cumulative charge is $0.806589, no unknown/held charges and no Context
+credits used. mcteer authorized a separate 016-only full-003 32-step supplement,
+bound to the unchanged original budget ID/digest/expiry. Current inventory becomes
+664 cases / 116 suites; fresh committed local/native proof is required before the
+whole corrected paid attempt. This does not authorize infrastructure or deployment.

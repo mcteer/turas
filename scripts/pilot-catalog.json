@@ -600,7 +600,8 @@
         "reviewer"
       ],
       "localCaseIds": [
-        "integration.evaluation-visible-identifiers.001"
+        "integration.evaluation-visible-identifiers.001",
+        "unit.quality.006"
       ]
     },
     {

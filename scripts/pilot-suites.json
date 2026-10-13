@@ -694,13 +694,14 @@
     },
     {
       "file": "tests/unit/pilot/quality.test.ts",
-      "expectedCases": 5,
+      "expectedCases": 6,
       "cases": [
         "requires fresh review for shared session or recovery changes",
         "requires fresh review when the actual evaluation fixtures change",
         "never accepts historical captures just because behavior appears unchanged",
         "retains all governing boundaries and verifier commands",
-        "rejects malformed or excessive inventories"
+        "rejects malformed or excessive inventories",
+        "binds the 016 full-profile step supplement to its original unexpanded budget"
       ]
     },
     {

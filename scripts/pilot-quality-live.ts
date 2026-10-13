@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {verifyQualityStepAuthorization} from './pilot-quality-step-authorization';
 import {randomUUID} from 'node:crypto';
 import {spawn} from 'node:child_process';
 import {readFile,mkdir,cp,writeFile,readdir,lstat} from 'node:fs/promises';
@@ -38,9 +39,9 @@ export const qualityStages:readonly Stage[]=[
 
 function parse(args:string[]){
  const mode=args[0];if(!['--prepare','--live'].includes(mode))throw Error('Explicit quality mode required');
- const allowed=new Set(mode==='--prepare'?['images','output']:['images','output','authorization','deterministic-proof','preparation','budget-usd']),values:Record<string,string>={};
+ const allowed=new Set(mode==='--prepare'?['images','output']:['images','output','authorization','deterministic-proof','preparation','budget-usd','step-authorization']),values:Record<string,string>={};
  for(let i=1;i<args.length;i+=2){const key=args[i].replace(/^--/,'');if(!args[i].startsWith('--')||!allowed.has(key)||values[key]||!args[i+1]||args[i+1].startsWith('--'))throw Error('Invalid quality inputs');values[key]=args[i+1];}
- if(Object.keys(values).length!==allowed.size)throw Error('Complete explicit quality inputs required');
+ if(Object.keys(values).length!==allowed.size-(mode==='--live'&&!values['step-authorization']?1:0))throw Error('Complete explicit quality inputs required');
  return {mode,values};
 }
 async function privateReceipt(file:string){const absolute=resolve(file);return readEvidence(dirname(absolute),basename(absolute));}
@@ -122,9 +123,11 @@ export async function pilotQualityLive(args=process.argv.slice(2)){
   // using this approval retains the same original dollar and credit journal.
   budget=await QualityBudgetLedger.create(ledgerRoot,{contract:'pilot-quality-budget-v1',id:approval.id,capMicroUsd:approval.capMicroUsd,contextCreditCap:approval.contextCreditCap,authorizationDigest,sourceDigest:source.sourceDigest,catalogDigest:source.catalogDigest,modelId:approval.modelId,expiresAt:approval.expiresAt});
  }
+ const stepAuthorization=values['step-authorization']?verifyQualityStepAuthorization(await privateReceipt(values['step-authorization']),{id:approval.id,authorizationDigest,expiresAt:approval.expiresAt}):undefined;
  const attemptId=await budget.beginAttempt(source);
- await writeEvidence(root,'runtime.json',{contract:'pilot-quality-runtime-v1',id:approval.id,attemptId,sourceRoot,ledgerRoot:budget.root,...source,authorizationDigest,capMicroUsd:approval.capMicroUsd,contextCreditCap:approval.contextCreditCap,expiresAt:approval.expiresAt});
+ await writeEvidence(root,'runtime.json',{contract:'pilot-quality-runtime-v1',id:approval.id,attemptId,...(stepAuthorization?{stepAuthorization}:{}),sourceRoot,ledgerRoot:budget.root,...source,authorizationDigest,capMicroUsd:approval.capMicroUsd,contextCreditCap:approval.contextCreditCap,expiresAt:approval.expiresAt});
  await writeEvidence(root,'operator-authorization.json',approval);
+ if(stepAuthorization)await writeEvidence(root,'step-authorization.json',stepAuthorization);
  const completed:string[]=[];
  try{
   for(const stage of qualityStages){await assertSource();if((await budget.status()).admissionHeld)throw Error('Provider accounting requires review');const stageRoot=join(root,stage.id);await createEvidenceDirectory(stageRoot);
