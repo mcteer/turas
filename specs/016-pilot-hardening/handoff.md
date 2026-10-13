@@ -337,3 +337,14 @@ remains required; no paid evaluation or feature/release acceptance follows from
 the partial run or selected recheck. CI 38447453887 remained in progress with
 38 successful jobs and no reported failure at this observation. Original spend
 remains $1.474879, zero Context credits consumed, with the same expiry and cap.
+
+
+### Fresh full checkpoint and independent review — 2026-10-13
+
+At 24cd0d9, owned full run e1df4931 passed all 672 cases across 118 suites, with cleanup exit zero and protected selected state preserved. Native preparation also passed. This is local evidence only; CI 38452989321 failed its composed learning publication navigation check and does not establish acceptance.
+
+The next actual-model batch completed 002 but stopped in 003 on an unknown citation in accepted-source-fidelity run 2. Independent LLM review of the fresh 002 replies passed eleven of twelve: save-profile run 1 omitted the required explanation of unavailable chat profile saving. Neither catalog is accepted. The original journal now records $1.806543 charged, no held/unknown charges, and zero Context credits consumed; the original $25/four-credit cap and expiry remain unchanged. Raw captures and failed reviews are retained.
+
+Turi instructions now explicitly explain unavailable accepted-profile saving through chat while permitting governed Pending proposals, and omit operational search receipts from evidence citations. A fresh full model catalog is required to demonstrate the changed behavior. The publication UI test now waits for the actual candidate payload heading before asserting absent controls and navigating; this strengthens the assertion but does not prove the exact CI failure cause. Fresh verification remains pending.
+
+The strengthened publication journey passes all twelve cases in four CLI WebKit configurations with no retries or skips in the frozen-tree recheck. It is a development subset, acceptance false. The earlier twelve-case run was correctly rejected because documentation changed during execution; it remains invalid evidence. Pilot types and authored-document hygiene pass.
