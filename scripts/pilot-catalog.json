@@ -107,7 +107,17 @@
         "integration.hosted-sdk.003",
         "integration.hosted-sdk.004",
         "integration.hosted-sdk.005",
-        "integration.hosted-sdk.006"
+        "integration.hosted-sdk.006",
+        "integration.hosted-role-reads.001",
+        "integration.hosted-role-reads.002",
+        "integration.hosted-role-reads.003",
+        "integration.hosted-role-reads.004",
+        "integration.hosted-role-reads.005",
+        "integration.hosted-role-reads.006",
+        "integration.hosted-role-reads.007",
+        "integration.hosted-role-reads.008",
+        "integration.hosted-role-reads.009",
+        "integration.hosted-browser.001"
       ]
     },
     {

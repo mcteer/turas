@@ -13,6 +13,8 @@ import {pilotProtectedSnapshot} from './pilot-preservation';
 import {runHostedReadChecks} from './pilot-hosted-http';
 import {runHostedMcpJourney} from './pilot-hosted-mcp';
 import {runHostedProfileReviewJourney} from './pilot-hosted-profile';
+import {runHostedConversationBoundary} from './pilot-hosted-conversations';
+import {runHostedConversationBrowser} from './pilot-hosted-browser';
 import {withRecoveryCancellation} from '../lib/server/operations/recovery-cancellation';
 const execute=promisify(execFile);
 async function platformDeployment(scope:PilotHostedScope,origin=false,signal?:AbortSignal){
@@ -74,7 +76,16 @@ export async function pilotHosted(args=process.argv.slice(2)){
   let reads:Awaited<ReturnType<typeof runHostedReadChecks>>;
   const sdkJourneys:(Awaited<ReturnType<typeof runHostedMcpJourney>>&{role:string})[]=[];
   const profileJourneys:Awaited<ReturnType<typeof runHostedProfileReviewJourney>>[]=[];
+  const conversationJourneys:(Awaited<ReturnType<typeof runHostedConversationBoundary>>&{role:string})[]=[];
+  const browserJourneys:(Awaited<ReturnType<typeof runHostedConversationBrowser>>&{role:string})[]=[];
   try{await readDb.connect();reads=await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async context=>{
+    stage='conversation_boundary';
+    conversationJourneys.push({...await runHostedConversationBoundary({scope,db:readDb,headers:context.headers,customerId:context.partnerCustomerIds[0],signal,foreignConversationIds:conversationJourneys.map(row=>row.conversationId)}),role:context.role});
+    await writeEvidence(root,'conversation-'+context.role+'.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...conversationJourneys.at(-1)});
+    stage='browser_boundary';
+    browserJourneys.push({...await runHostedConversationBrowser({scope,headers:context.headers,conversationId:conversationJourneys.at(-1)!.conversationId,foreignConversationIds:conversationJourneys.slice(0,-1).map(row=>row.conversationId),signal}),role:context.role});
+    await writeEvidence(root,'browser-'+context.role+'.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...browserJourneys.at(-1)});
+    stage='profile_boundary';
     if(context.role==='internal-admin')profileJourneys.push(await runHostedProfileReviewJourney({scope,db:readDb,headers:context.headers,customerId:context.customerIds[0],signal}));
     const positive=(await readDb.query(`SELECT c.id FROM customer_references c WHERE c.workspace_id=$1 AND c.synthetic AND c.id=ANY($2::uuid[])
      AND EXISTS(SELECT 1 FROM profile_records p WHERE p.customer_id=c.id AND p.current_accepted_revision_id IS NOT NULL)
@@ -83,10 +94,11 @@ export async function pilotHosted(args=process.argv.slice(2)){
      ORDER BY c.id LIMIT 1`,[scope.workspaceId,context.customerIds])).rows[0]?.id;
     const denied=context.allCustomerIds.find(id=>id!==positive);
     if(!positive||!denied)throw Error('Ordinarily accepted hosted SDK chain required');
+    stage='sdk_boundary';
     sdkJourneys.push({...await runHostedMcpJourney({scope,db:readDb,headers:context.headers,customerId:String(positive),deniedCustomerId:denied,signal}),role:context.role});
    });}finally{await readDb.end();}
   if(JSON.stringify(await platformDeployment(scope,true,signal))!==JSON.stringify(deployment)||JSON.stringify(await pilotSource())!==JSON.stringify(source)||JSON.stringify(await pilotProtectedSnapshot())!==JSON.stringify(protectedBefore))throw Error('Hosted identity or protected checkout changed');
-  await writeEvidence(root,'reads.json',{id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,startedAt,completedAt:new Date().toISOString(),...reads,sdkJourneys,profileJourneys,normalProfileCommands:profileJourneys.reduce((sum,row)=>sum+row.normalProfileCommands,0)});
+  await writeEvidence(root,'reads.json',{id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,startedAt,completedAt:new Date().toISOString(),...reads,sdkJourneys,profileJourneys,conversationJourneys,browserJourneys,normalProfileCommands:profileJourneys.reduce((sum,row)=>sum+row.normalProfileCommands,0)});
   // Required journeys are not yet dispatched: do not return acceptance success.
   await writeEvidence(root,'blocked.json',{id,runId:run.id,...source,state:'blocked',safeFailure:'hosted_core_journey_catalog_not_complete',hostedCatalogVerified:false});
   console.info(JSON.stringify({preflight:'pass',roleReads:reads.passedCases,sdkCases:sdkJourneys.reduce((sum,row)=>sum+row.passedCases,0),hostedCatalog:'blocked',paidCalls:0}));process.exitCode=1;return receipt;

@@ -482,8 +482,9 @@ The 016 full 003 evaluation may use its separately authorized 32-step allowance;
 ordinary 003 evaluation retains 14 steps. This supplement preserves the original
 shared model/research budget and requires fresh committed deterministic proof.
 Capture and independent review both validate this allowance through the explicit
-private operator runtime; the current deterministic inventory is 677 cases in
-120 suites. The new capture and CI-diagnostic cases require fresh complete proof.
+private operator runtime; the current deterministic inventory is 680 cases in
+121 suites. The complete 677-case checkpoint passes at f988c93; fresh complete
+proof is required for the added hosted conversation and browser checks.
 
 Independent semantic evaluation may use the separately requested LLM judge with
 actual captures and governing rubrics. Human operator and pilot observations remain

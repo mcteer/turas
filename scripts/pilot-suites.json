@@ -887,7 +887,7 @@
     },
     {
       "file": "tests/integration/pilot/hosted-role-reads.test.ts",
-      "expectedCases": 7,
+      "expectedCases": 9,
       "cases": [
         "proves actual bound roles positive partner listing denied gaps and exact session cleanup",
         "refuses missing role credentials before creating sessions or making HTTP calls",
@@ -895,7 +895,9 @@
         "rejects a changed serving release and revokes the exact session before failing",
         "revokes a created session after a malformed login response without logging in again",
         "revokes the exact newly created session when its parent run is cancelled",
-        "cleans its exact bound session when a trusted journey callback fails"
+        "cleans its exact bound session when a trusted journey callback fails",
+        "exercises actual parked conversation replay ownership archive and restore without native dispatch",
+        "archives the original parked conversation after an uncertain creation response without replacement or native work"
       ]
     },
     {
@@ -1396,6 +1398,13 @@
         "rejects a changed sidecar or underlying event when verifying an actual review reference",
         "retains actual event arguments/results privately, redacts credentials and rejects changed replay",
         "rejects the selected app, changed environment and indirect attempt directories"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/hosted-browser.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "uses actual served role sessions and four CLI WebKit configurations for parked ownership and lifecycle boundaries"
       ]
     }
   ],

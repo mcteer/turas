@@ -16,7 +16,7 @@ async function boundedJson(response:Response){
 /** Base role/read probes author no domain decisions or paid work. A trusted
  * fixed journey hook may use normally scoped management requests; the exact
  * role session is always revoked. Transport follows verified platform binding. */
-export type HostedRoleProofHook=(context:{role:typeof roles[number]['name'];headers:Headers;customerIds:string[];allCustomerIds:string[]})=>Promise<void>;
+export type HostedRoleProofHook=(context:{role:typeof roles[number]['name'];headers:Headers;customerIds:string[];allCustomerIds:string[];partnerCustomerIds:string[]})=>Promise<void>;
 export async function runHostedReadChecks(scope:PilotHostedScope,db:Client,signal:AbortSignal,transport:typeof fetch=fetch,env:NodeJS.ProcessEnv=process.env,proveRole?:HostedRoleProofHook){
  if(roles.some(role=>!env[role.password]))throw Error('All explicit hosted role credentials required');
  await assertPilotDatabaseOnConnection(scope.environmentMarker,<Row extends QueryResultRow=QueryResultRow>(sql:string,values:readonly unknown[]=[])=>db.query<Row>(sql,[...values]));
@@ -73,7 +73,7 @@ export async function runHostedReadChecks(scope:PilotHostedScope,db:Client,signa
    if(gaps.status!==expectedGaps)throw Error('Hosted Product Gaps read failed or disclosed partner content');
    if(role.kind==='internal'){const payload=z.object({data:z.object({contractVersion:z.literal('product-gaps-v1')})}).parse(await boundedJson(gaps));void payload;}else await gaps.body?.cancel();
    cases.push({id:'product-gaps-read-boundary',role:role.name,state:'pass',status:expectedGaps});
-   if(proveRole)await proveRole({role:role.name,headers:new Headers(headers),customerIds:expectedIds,allCustomerIds:allIds});
+   if(proveRole)await proveRole({role:role.name,headers:new Headers(headers),customerIds:expectedIds,allCustomerIds:allIds,partnerCustomerIds:[...assigned]});
   }finally{
    // A successful login can create a session before its body is damaged. Recover
    // only this cookie's CSRF through normal session admission, never log in again

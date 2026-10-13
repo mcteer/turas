@@ -5,6 +5,7 @@ import {withPilotEnvironment,requireOwnedPilotDatabase} from '../../../scripts/p
 import {provisionPilotWorkspace} from '../../../scripts/provision-pilot-workspace';
 import {pilotHostedScopeSchema,type PilotHostedScope} from '../../../lib/contracts/pilot-hosted';
 import {runHostedReadChecks} from '../../../scripts/pilot-hosted-http';
+import {runHostedConversationBoundary} from '../../../scripts/pilot-hosted-conversations';
 import {DEMO_IDS} from '../../../lib/server/bootstrap-ids';
 import {POST as login} from '../../../app/api/auth/login/route';
 import {POST as logout} from '../../../app/api/auth/logout/route';
@@ -12,6 +13,8 @@ import {GET as session} from '../../../app/api/auth/session/route';
 import {GET as customers} from '../../../app/api/customers/route';
 import {GET as status} from '../../../app/api/operations/status/route';
 import {GET as gaps} from '../../../app/api/product-gaps/route';
+import {POST as createConversation} from '../../../app/api/conversations/route';
+import {GET as readConversation,PATCH as archiveConversation} from '../../../app/api/conversations/[id]/route';
 const transport:typeof fetch=async(input,options)=>{
  const request=new Request(String(input),options),path=new URL(request.url).pathname;
  if(path==='/api/auth/login'&&request.method==='POST')return login(request);
@@ -20,6 +23,10 @@ const transport:typeof fetch=async(input,options)=>{
  if(path==='/api/customers'&&request.method==='GET')return customers(request);
  if(path==='/api/operations/status'&&request.method==='GET')return status(request);
  if(path==='/api/product-gaps'&&request.method==='GET')return gaps(request);
+ if(path==='/api/conversations'&&request.method==='POST')return createConversation(request);
+ const conversation=/^\/api\/conversations\/([a-f0-9-]+)$/.exec(path);
+ if(conversation&&request.method==='GET')return readConversation(request,{params:Promise.resolve({id:conversation[1]})});
+ if(conversation&&request.method==='PATCH')return archiveConversation(request,{params:Promise.resolve({id:conversation[1]})});
  throw Error('No unregistered transport or external provider is allowed');
 };
 async function fixture(run:(scope:PilotHostedScope,runtime:Client,owner:Client)=>Promise<void>){
@@ -102,5 +109,35 @@ it('cleans its exact bound session when a trusted journey callback fails',async(
   expect(context.role).toBe('internal-admin');expect(context.customerIds).toHaveLength(2);expect(context.allCustomerIds).toHaveLength(2);
   context.headers.set('cookie','tampered-copy');throw Error('Synthetic journey interruption');
  })).rejects.toThrow('Synthetic journey interruption');
+ expect((await owner.query('SELECT count(*)::int AS n FROM login_sessions WHERE workspace_id=$1 AND revoked_at IS NULL',[scope.workspaceId])).rows[0].n).toBe(0);
+}),210000);
+it('exercises actual parked conversation replay ownership archive and restore without native dispatch',async()=>fixture(async(scope,runtime,owner)=>{
+ const conversations:string[]=[],proofs:Awaited<ReturnType<typeof runHostedConversationBoundary>>[]=[];
+ await runHostedReadChecks(scope,runtime,AbortSignal.timeout(60000),transport,process.env,async context=>{
+  const proof=await runHostedConversationBoundary({scope,db:runtime,headers:context.headers,customerId:context.partnerCustomerIds[0],signal:AbortSignal.timeout(30000),transport,foreignConversationIds:conversations});
+  proofs.push(proof);conversations.push(proof.conversationId);
+ });
+ expect(proofs.map(row=>row.foreignOwnerDenials)).toEqual([0,1,2]);
+ expect(proofs.every(row=>row.parkedOnly&&row.providerCalls===0&&!row.streamResumeStopVerified&&!row.fullHostedCatalogVerified)).toBe(true);
+ const rows=(await owner.query('SELECT customer_id,archived_at,binding_state,eve_session_id FROM conversations WHERE id=ANY($1::uuid[])',[conversations])).rows;
+ expect(rows).toHaveLength(3);expect(rows.every(row=>row.archived_at&&row.binding_state==='unbound'&&row.eve_session_id===null)).toBe(true);
+ expect(new Set(rows.map(row=>row.customer_id)).size).toBe(1);
+ expect((await owner.query('SELECT count(*)::int AS n FROM submitted_messages WHERE conversation_id=ANY($1::uuid[])',[conversations])).rows[0].n).toBe(0);
+ expect((await owner.query('SELECT count(*)::int AS n FROM login_sessions WHERE workspace_id=$1 AND revoked_at IS NULL',[scope.workspaceId])).rows[0].n).toBe(0);
+}),210000);
+it('archives the original parked conversation after an uncertain creation response without replacement or native work',async()=>fixture(async(scope,runtime,owner)=>{
+ let creates=0,cleanup=0;
+ const damaged:typeof fetch=async(input,options)=>{
+  const response=await transport(input,options),path=new URL(String(input)).pathname;
+  if(path==='/api/conversations'&&options?.method==='POST'){creates++;await response.body?.cancel();return new Response('{invalid',{status:response.status,headers:response.headers});}
+  if(path.startsWith('/api/conversations/')&&options?.method==='PATCH')cleanup++;
+  return response;
+ };
+ await expect(runHostedReadChecks(scope,runtime,AbortSignal.timeout(60000),transport,process.env,async context=>{
+  await runHostedConversationBoundary({scope,db:runtime,headers:context.headers,customerId:context.customerIds[0],signal:AbortSignal.timeout(30000),transport:damaged});
+ })).rejects.toThrow();
+ expect(creates).toBe(1);expect(cleanup).toBe(1);
+ const rows=(await owner.query('SELECT archived_at,binding_state,eve_session_id FROM conversations WHERE workspace_id=$1',[scope.workspaceId])).rows;
+ expect(rows).toHaveLength(1);expect(rows[0].archived_at).not.toBeNull();expect(rows[0].binding_state).toBe('unbound');expect(rows[0].eve_session_id).toBeNull();
  expect((await owner.query('SELECT count(*)::int AS n FROM login_sessions WHERE workspace_id=$1 AND revoked_at IS NULL',[scope.workspaceId])).rows[0].n).toBe(0);
 }),210000);

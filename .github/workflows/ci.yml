@@ -779,6 +779,8 @@ jobs:
         run: .specify/scripts/bash/check-prerequisites.sh --json --require-spec --require-tasks
       - name: Prepare actual owned scanner, parser and renderer images
         run: node --import tsx scripts/prepare-pilot-images.ts --output "${{ github.workspace }}/local-artifacts/016/ci-images"
+      - name: Install CLI WebKit dependencies
+        run: npx playwright install --with-deps webkit
       - name: Complete registered pilot catalog and exact CI evidence
         if: matrix.gate == 'deterministic'
         run: |
@@ -786,9 +788,6 @@ jobs:
           npm run check:docs
           npm run test:pilot
           npm run mcp:build:check
-      - name: Install CLI WebKit dependencies
-        if: matrix.gate != 'deterministic'
-        run: npx playwright install --with-deps webkit
       - name: Complete four-project pilot browser journeys
         if: matrix.gate == 'webkit'
         run: npm run pilot:ui:check

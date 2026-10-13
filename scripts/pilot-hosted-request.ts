@@ -4,7 +4,7 @@ import type {PilotHostedScope} from '../lib/contracts/pilot-hosted';
  * mutation admission and original-key reconciliation; this never retries. */
 export function pilotHostedRequest(input:{scope:PilotHostedScope;headers:Headers;signal:AbortSignal;transport?:typeof fetch}){
  const origin=new URL(input.scope.origin).origin,transport=input.transport??fetch;
- return async(path:string,method:'GET'|'POST',body?:unknown):Promise<unknown>=>{
+ return async(path:string,method:'GET'|'POST'|'PATCH',body?:unknown):Promise<unknown>=>{
   input.signal.throwIfAborted();
   const target=new URL(path,origin);
   if(!path.startsWith('/api/')||path.includes('\\')||target.origin!==origin||!target.pathname.startsWith('/api/'))throw Error('Fixed same-origin pilot API path required');
