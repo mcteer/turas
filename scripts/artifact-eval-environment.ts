@@ -1,4 +1,5 @@
 import {stopOwnedAppProcesses} from './plan-eval-environment';
+import {installBehaviorReviewCapture} from './pilot-behavior-review-capture';
 import {qualityChildEnvironment} from "./pilot-quality-runtime";
 import { randomUUID } from "node:crypto";
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
@@ -103,6 +104,7 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
     process.env.TURAS_ENVIRONMENT_ID = marker;
     process.env.TURAS_APP_ORIGIN = origin;
     process.env.TURAS_ARTIFACT_STORE_ROOT = store;
+    if(process.env.TURAS_016_BEHAVIOR_CAPTURE_ROOT)await installBehaviorReviewCapture(app,process.env.TURAS_016_BEHAVIOR_CAPTURE_ROOT);
     dev = spawn(process.execPath,["scripts/dev.mjs"],{
       cwd: app,env: { ...process.env,NODE_ENV:"development",PORT: String(port),...await qualityChildEnvironment() },stdio: ["ignore","pipe","pipe"] });
     const capture = (chunk: Buffer) => { startupOutput =

@@ -61,7 +61,9 @@
         "unit.hosted-request.003",
         "unit.hosted-request.004",
         "unit.hosted-request.005",
-        "unit.hosted-request.006"
+        "unit.hosted-request.006",
+        "unit.ci-browser-diagnostics.001",
+        "unit.ci-browser-diagnostics.002"
       ]
     },
     {
@@ -609,7 +611,10 @@
         "unit.evaluation-source.004",
         "integration.evaluation-source.001",
         "integration.evaluation-source.002",
-        "integration.evaluation-source.003"
+        "integration.evaluation-source.003",
+        "unit.behavior-review-capture.001",
+        "unit.behavior-review-capture.002",
+        "unit.behavior-review-capture.003"
       ]
     },
     {

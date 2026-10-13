@@ -1380,6 +1380,23 @@
         "seeds the governing behavior demo separately from the judged retrieval walkthrough",
         "installs the actual budget guard in the owned maintenance process before readiness"
       ]
+    },
+    {
+      "file": "tests/unit/ci-browser-diagnostics.test.ts",
+      "expectedCases": 2,
+      "cases": [
+        "reports the failed source location and timeout class without private error or page content",
+        "ignores unapproved files and bounds records, projects and numeric metadata"
+      ]
+    },
+    {
+      "file": "tests/unit/behavior-review-capture.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "rejects a changed sidecar or underlying event when verifying an actual review reference",
+        "retains actual event arguments/results privately, redacts credentials and rejects changed replay",
+        "rejects the selected app, changed environment and indirect attempt directories"
+      ]
     }
   ],
   "ui": {

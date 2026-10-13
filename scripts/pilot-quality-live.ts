@@ -19,6 +19,7 @@ import {qualityCatalog} from './pilot-quality';
 import suites from './pilot-suites.json';
 import {verifyPilotSuiteResult} from './pilot-suite-results';
 import {prepareQualityWorkspace,verifyQualityWorkspace} from './pilot-quality-workspace';
+import {installBehaviorReviewCapture} from './pilot-behavior-review-capture';
 
 const authorization=z.strictObject({contract:z.literal('pilot-quality-operator-v1'),id:z.uuid(),feature:z.literal('016'),category:z.literal('model-evaluation'),modelId:z.literal('spacexai/grok-4.7'),capMicroUsd:z.number().int().positive().max(100000000),contextCreditCap:z.literal(4),automaticBillingAllowed:z.literal(false),independentReviewAuthorized:z.literal(true),userInstructionReference:z.string().trim().min(1).max(512),recordedAt:z.iso.datetime({offset:true}),expiresAt:z.iso.datetime({offset:true})});
 type Stage={id:string;commands:string[][];native?:boolean;profileSeed?:'demo';deadlineMs:number};
@@ -142,6 +143,8 @@ export async function pilotQualityLive(args=process.argv.slice(2)){
     await command(qualitySeedCommand(stage),environment.appRoot,stageRoot,'seed',deadline,false);
     await command(['tests/fixtures/artifacts/generate.ts'],workspace,stageRoot,'artifact-fixtures',deadline,false);
     process.env.AI_GATEWAY_API_KEY=key;process.env.CONTEXT_API_KEY=contextKey;process.env.TURAS_ALLOW_LIVE_MODEL_TESTS='1';process.env.TURAS_016_QUALITY_RUNTIME_FILE=join(root,'runtime.json');process.env.EVE_SKIP_SANDBOX_PREWARM='1';
+    if(['002','003','004'].includes(stage.id))process.env.TURAS_016_BEHAVIOR_CAPTURE_ROOT=join(workspace,'local-artifacts/behavior-review');
+    if(stage.native)await installBehaviorReviewCapture(environment.appRoot,process.env.TURAS_016_BEHAVIOR_CAPTURE_ROOT!);
     if(stage.native){await environment.startWorker();await environment.startNative();}
     try{for(const [index,args] of stage.commands.entries()){await assertSource();await verifyQualityWorkspace(sourceRoot,workspace);await command(args,workspace,stageRoot,'command-'+index,deadline,true);await verifyQualityWorkspace(sourceRoot,workspace);if((await budget.status()).admissionHeld)throw Error('Provider accounting requires review');}}
     finally{const local=join(workspace,'local-artifacts');await mkdir(local,{recursive:true,mode:0o700});const inventory=await capturedFiles(local);await cp(local,join(stageRoot,'captures'),{recursive:true,filter:path=>!path.split(/[\\/]/).some(part=>['node_modules','.eve'].includes(part)||part.startsWith('.env'))});await writeEvidence(stageRoot,'captures.json',{...source,stage:stage.id,reviewWorkspace:workspace,retainedForIndependentReview:true,files:inventory,actualModelQualityVerified:false});}

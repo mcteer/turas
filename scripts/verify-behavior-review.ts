@@ -3,6 +3,7 @@ import dataset002 from "../evals/fixtures/002-capability-honesty.json";
 import dataset003 from "../evals/fixtures/003-context-governance.json";
 import dataset004 from "../evals/fixtures/004-artifact-governance.json";
 import type { BehaviorResult } from "../evals/driver";
+import {verifyBehaviorReviewEvidence} from './pilot-behavior-review-capture';
 
 const args = process.argv.slice(2);
 const feature = args.length === 3 && args[0] === "--feature" &&
@@ -43,6 +44,7 @@ for (const item of dataset.cases) {
   for (const run of feature === "004" ? [1] : [1, 2]) {
     const matches = review.results.filter((result) => result.caseId === item.id && result.run === run);
     const result = matches[0];
+    if(result?.reviewEvidence)await verifyBehaviorReviewEvidence(result.reviewEvidence,result);
     const dimensions = result?.semanticDimensions;
     const validDimensions = feature !== "004" || !!dimensions &&
       Object.values(dimensions).length === 4 &&
