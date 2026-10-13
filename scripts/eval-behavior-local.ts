@@ -27,7 +27,7 @@ await mkdir("local-artifacts", { recursive: true });
 const path = `local-artifacts/behavior-eval-${feature}-${caseFilter ?? "full"}-${Date.now()}.json`;
 const persist = () => writeFile(path, JSON.stringify({ feature, caseFilter,
   datasetVersion: dataset.version,
-  rubric: dataset.rubric, modelStepCap, results }, null, 2));
+  rubric: dataset.rubric, ...(feature === "003" ? {modelStepCap} : feature === "004" ? {modelStepCap:16} : {}), results }, null, 2));
 const evaluate = async () => {
 const evaluationStarted = Date.now();
 if (feature === "004" && selectedCases.some((item) => item.id === "partner-reviewed-excerpt")) {

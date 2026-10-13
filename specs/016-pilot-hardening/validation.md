@@ -1995,3 +1995,78 @@ provider call is supplied by this regression; its ledger remains zero dispatches
 The initial regression incorrectly included sourceCommit in the strict budget
 schema; its fixture was corrected. All seven quality unit checks and both types
 pass. Inventory is **665 cases / 116 suites**; full fresh proof remains required.
+
+
+Current CI `38432315566` at `1a965b2` recorded a desktop-dark accessibility
+assertion failure in `learning-draft.spec.ts:9:225`; it is not CI acceptance.
+The exact local journey reproduction passed 4/4 WebKit configurations without
+retries/skips (development subset, acceptance false). The complete five-journey
+learning UI reproduction then passed **32/32**, eight cases in each of four
+configurations, source `5d2b34d1b7ebf6bd2697b145fc8df73a6e1fb378d962a15973b0a1cf4754a2ea`,
+with acceptance true and no retries/skips. Private logs are retained in
+`learning-draft-repro-20261013.log` and `learning-ui-full-repro-20261013.log`.
+No accessibility assertion or product code was changed; fresh whole CI job proof
+remains required. Native preparation `quality-preparation-step-review-20261013`
+passed on this source with zero paid dispatches. The 665-case full run is active.
+
+
+### Committed full proof for step-authorized capture
+
+`run-fd5f7070-b372-405d-9b39-27b4351b5552` passed **665/665 cases in 116 suites**
+at `1a965b262a8c8e96386cc1a49b554af73ba9ae24`; source digest
+`472efe3e7ca8ce0e388d0f972f8f4e132a4e0c8eeddd0e80f05f43a8b5246c3e`, catalog
+`a6db61776e155811b252cd0d3e2cb910b088d1dfefcc55f21c53fec4d3cc3390`.
+The runner exited zero after owned cleanup. Native preparation
+`quality-preparation-step-review-20261013` passed with zero paid dispatches.
+The corrected whole batch `quality-live-step-review-20261013` is now executing
+under the original dollar/credit journal and separately bound 32-step 003 approval.
+No complete actual-model/semantic acceptance is claimed while it is running.
+
+
+### Third paid attempt, independent judge and source/setup correction
+
+`quality-live-step-review-20261013` completed 002 and 003. The full 003 capture has
+12 replies and 18 completed model steps, all hard gates true, admitted cap 32.
+004 then failed before provider dispatch with the legacy configured-application/
+test-database equality guard. The whole attempt remains failed and retained.
+Original journal total: **$1.474879**, 105 requests, zero held/unknown entries and
+zero Context consumption/dispatches. A missing worker preload was discovered and
+corrected before any further paid attempt. Official read-only `GET /v1/report`,
+scoped to the exact API key and UTC date, returned two stable complete observations:
+90 language requests ($1.474864) and 15 embedding requests ($0.0000027), matching
+the journal counts. Per-request upward rounding covers the $1.4748667 provider sum.
+No additional request is observed. Private reports and reconciliation are retained
+in `gateway-provider-audit-20261013`; no budget was replaced or reset.
+
+The user explicitly requested another LLM judge. Independent gpt-6-astra review
+passed 002 12/12 (governing verifier passed) and 003 10/12, withholding both source-
+fidelity runs for baseline-versus-optional-walkthrough fixture ambiguity. It did not
+assert fabrication. Originals remain byte-for-byte preserved; review artifacts
+record exact digests and model identity in `quality-review-step-20261013`. The
+judge's first 003 verifier call lacked the explicit operator runtime and correctly
+failed its allowance match; no cap or score was rewritten to bypass that guard.
+No full quality/hosted/human acceptance follows from these partial reviews.
+
+Quality stages 002–004 now seed only the governing baseline demo; retrieval keeps
+the original judged walkthrough. An actual normal-command regression verifies
+three accepted baseline records/one product-use versus 25 accepted walkthrough
+records/three product-uses. No case/rubric/domain limit is removed. The newly added
+002 modelStepCap:14 label was inaccurate (only its result count was bounded); its
+metadata is omitted. 003 retains its explicit admitted cap and 004 records its
+unchanged 16-step cap.
+
+The four legacy evaluation entry points now use a strict owned-source adapter,
+without changing the ordinary test guard. Four unit cases prove legacy selection
+and refusal of unmarked/hosted/mismatched/owner-as-runtime sources plus foreign
+labels/port bindings. Actual PostgreSQL 18 source/clones/startup pass. Initial
+credential-free checks exposed test-mode artifact startup, omitted retrieval report
+sources, then omitted package paths; those concrete setup issues were corrected.
+Retrieval copying excludes .eve/node_modules and links only required dependencies.
+Both older helpers drain exact owned app processes before dropping their clones.
+
+The worker guard test initially expected one installation receipt; Node's preload
+runs in multiple contexts of the same worker. The corrected test checks every
+receipt against the actual spawned worker PID and original budget/source. All
+**four unit plus three composed owned cases pass**; worker test records zero paid
+model/Context dispatches. Root/pilot types pass. Current inventory is **672/118**;
+fresh complete committed/native/CI checks are required before further paid work.

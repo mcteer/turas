@@ -315,3 +315,14 @@ production data in traces; pilot feedback containing private customer material.
   Unrelated features or policy changes require their own specification.
 - This planning run does not start paid evaluations, create the pilot workspace or change production records,
   assign partners, deploy, merge, or delete retained customer information.
+
+
+### Quality-review clarification — 2026-10-13
+
+mcteer explicitly requested another LLM as the independent semantic judge. Use a
+separate judge with the exact actual-output captures, available tool/fixture evidence
+and each governing rubric; record its model identity, capture digests, per-case
+scores, rationale and uncertainties. The target Turi model remains unchanged.
+Uncertain or failed cases stay failed/pending. Actual human operator exercises,
+internal/assigned-partner observations and the scoped mcteer release decision remain
+required under FR-019/FR-020. No simulated observation may substitute for them.

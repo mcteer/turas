@@ -602,7 +602,14 @@
       "localCaseIds": [
         "integration.evaluation-visible-identifiers.001",
         "unit.quality.006",
-        "unit.quality.007"
+        "unit.quality.007",
+        "unit.evaluation-source.001",
+        "unit.evaluation-source.002",
+        "unit.evaluation-source.003",
+        "unit.evaluation-source.004",
+        "integration.evaluation-source.001",
+        "integration.evaluation-source.002",
+        "integration.evaluation-source.003"
       ]
     },
     {

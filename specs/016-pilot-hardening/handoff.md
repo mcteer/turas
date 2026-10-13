@@ -234,3 +234,32 @@ retains 14 steps, and the capture's recorded cap must match. The 101ed5c full ru
 was interrupted before further paid work to include this correction. Synthetic
 subprocess verifier checks pass, with zero provider dispatches; complete inventory
 is now 665/116. The original spend/credit journal remains unchanged.
+
+
+Latest continuation: 1a965b2 passed 665/665 local cases in 116 suites. The corrected
+paid attempt completed 002 and 003 (003: 12 responses, 18 steps, all hard gates),
+then failed before 004 provider dispatch on legacy source-database assumptions.
+The original journal now records $1.474879 across 105 requests and zero Context
+credits. Two stable official key-scoped daily reports match all 90 language and
+15 embedding requests; provider cost $1.4748667 is covered by per-request journal
+rounding. No extra request was observed. All three incomplete paid attempts remain
+failed and retained; there is no full quality/release acceptance.
+
+mcteer requested a separate LLM semantic judge. The independent gpt-6-astra judge
+passed 002 12/12 and withheld two 003 source-fidelity cases for optional walkthrough
+contamination of the governing baseline fixture, without alleging fabrication.
+Actual judge artifacts preserve raw captures and state their limitations. Native
+002/003/004 setup now uses the baseline demo; retrieval retains its judged walkthrough.
+002 has no declared overall model-step cap, so its erroneous new 14-step metadata
+is omitted; 003 records its admitted cap, and 004 records its unchanged 16-step cap.
+
+A strict 016 source adapter preserves ordinary test separation and additionally
+checks actual Docker owner/name/loopback port and separate runtime login for the
+owning pilot source. Artifact/retrieval children now explicitly run in development;
+retrieval copies required report/package sources with runtime exclusion and explicit
+dependency links. Both drain only their owned app processes before clone deletion.
+The owned maintenance worker now inherits the same budget preload; an actual PID-
+bound installation check confirms it before readiness with zero paid dispatches.
+Four unit and three composed owned checks pass; inventory is 672 cases / 118 suites.
+Fresh committed full/native/CI proof precedes another whole paid batch under the
+same $25/four-credit journal, with $23.525121 remaining and no cap/id reset.

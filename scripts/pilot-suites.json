@@ -1361,6 +1361,25 @@
       "cases": [
         "recognizes accepted audience-visible workload references while denying foreign pending and withheld identifiers"
       ]
+    },
+    {
+      "file": "tests/unit/pilot/evaluation-source.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "preserves ordinary separated test database selection without inspecting containers",
+        "accepts only the actual owned pilot endpoint with a distinct runtime login",
+        "rejects hosted unmarked mismatched and owner-as-runtime sources before inspection",
+        "rejects missing containers foreign labels and mismatched actual port bindings"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/evaluation-source.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "admits actual owned sources and prepares artifact retrieval and plan clones without model dispatch",
+        "seeds the governing behavior demo separately from the judged retrieval walkthrough",
+        "installs the actual budget guard in the owned maintenance process before readiness"
+      ]
     }
   ],
   "ui": {

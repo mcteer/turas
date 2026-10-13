@@ -3,7 +3,7 @@ import { createHash,randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { Pool } from "pg";
 import { DEMO_IDS } from "../lib/server/bootstrap-ids";
-import { requireTestDatabaseUrl } from "../tests/fixtures/database";
+import { requireEvaluationSourceDatabase } from "./eval-source-database";
 
 const args = process.argv.slice(2);
 function numberArg(name: string,maximum: number): number {
@@ -17,7 +17,7 @@ function numberArg(name: string,maximum: number): number {
 if (!args.includes("--live")) throw new Error("Explicit --live admission required");
 const callLimit = numberArg("--max-embedding-calls",64);
 const characterLimit = numberArg("--max-input-characters",1_000_000);
-const testUrl = requireTestDatabaseUrl();
+const testUrl = requireEvaluationSourceDatabase();
 const environmentId = process.env.TURAS_TEST_ENVIRONMENT_ID!;
 const fixture = JSON.parse(readFileSync("evals/fixtures/005-retrieval-governance.json","utf8")) as {
   version: string;answerableQueries: Array<{ id: string;kind: string;query: string;

@@ -1,3 +1,4 @@
+import {stopOwnedAppProcesses} from './plan-eval-environment';
 import {qualityChildEnvironment} from "./pilot-quality-runtime";
 import { randomUUID } from "node:crypto";
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
@@ -6,7 +7,7 @@ import {copyOwnedEvalFiles} from './eval-owned-copy';
 import { createServer } from "node:net";
 import { resolve, join } from "node:path";
 import { Client } from "pg";
-import { requireTestDatabaseUrl } from "../tests/fixtures/database";
+import { requireEvaluationSourceDatabase } from "./eval-source-database";
 import { getServerConfig, parseArtifactStoreConfig } from "../lib/server/config";
 
 async function freePort(): Promise<number> {
@@ -32,7 +33,7 @@ async function stop(child: ChildProcess | null): Promise<void> {
 
 /** Clone only synthetic test state and run Eve with private workflow data. */
 export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Promise<T> {
-  const testUrl = new URL(requireTestDatabaseUrl());
+  const testUrl = new URL(requireEvaluationSourceDatabase());
   const database = decodeURIComponent(testUrl.pathname.slice(1));
   const adminUrl = new URL(getServerConfig().DATABASE_URL_UNPOOLED);
   const username = decodeURIComponent(adminUrl.username);
@@ -102,12 +103,13 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
     process.env.TURAS_APP_ORIGIN = origin;
     process.env.TURAS_ARTIFACT_STORE_ROOT = store;
     dev = spawn(process.execPath,["scripts/dev.mjs"],{
-      cwd: app,env: { ...process.env,PORT: String(port),...await qualityChildEnvironment() },stdio: ["ignore","pipe","pipe"] });
+      cwd: app,env: { ...process.env,NODE_ENV:"development",PORT: String(port),...await qualityChildEnvironment() },stdio: ["ignore","pipe","pipe"] });
     const capture = (chunk: Buffer) => { startupOutput =
-      (startupOutput+chunk.toString("utf8")).slice(-1_500); };
+      (startupOutput+chunk.toString("utf8")).slice(-100_000); };
     dev.stdout?.on("data",capture); dev.stderr?.on("data",capture);
     const started = Date.now();
     let ready = false;
+    let lastAuthStatus:number|null=null,lastEveStatus:number|null=null;
     while (Date.now()-started < 60_000) {
       if (dev.exitCode !== null) throw new Error(`Isolated evaluation app exited during startup: ${startupOutput}`);
       try {
@@ -115,14 +117,21 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
           fetch(`${origin}/api/auth/session`,{ signal: AbortSignal.timeout(2_000) }),
           fetch(`${origin}/eve/v1/health`,{ signal: AbortSignal.timeout(2_000) }),
         ]);
+        lastAuthStatus=auth.status;lastEveStatus=eve.status;
+        await Promise.all([auth.body?.cancel(),eve.body?.cancel()]);
         if (auth.status === 401 && eve.ok) { ready = true; break; }
       } catch { /* startup is still pending */ }
       await new Promise((wait) => setTimeout(wait,500));
     }
-    if (!ready) throw new Error("Isolated evaluation app did not become ready");
+    if (!ready) {
+      await writeFile(resolve('local-artifacts/004/eval-startup-failure.log'),startupOutput,{mode:0o600});
+      await writeFile(resolve('local-artifacts/004/eval-startup-failure.json'),JSON.stringify({lastAuthStatus,lastEveStatus}),{mode:0o600});
+      throw new Error("Isolated evaluation app did not become ready");
+    }
     return await run();
   } finally {
     await stop(dev);
+    await stopOwnedAppProcesses(app);
     for (const [key,value] of Object.entries(old)) {
       if (value === undefined) delete process.env[key]; else process.env[key] = value;
     }

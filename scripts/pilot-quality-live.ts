@@ -20,13 +20,13 @@ import suites from './pilot-suites.json';
 import {verifyPilotSuiteResult} from './pilot-suite-results';
 
 const authorization=z.strictObject({contract:z.literal('pilot-quality-operator-v1'),id:z.uuid(),feature:z.literal('016'),category:z.literal('model-evaluation'),modelId:z.literal('spacexai/grok-4.7'),capMicroUsd:z.number().int().positive().max(100000000),contextCreditCap:z.literal(4),automaticBillingAllowed:z.literal(false),independentReviewAuthorized:z.literal(true),userInstructionReference:z.string().trim().min(1).max(512),recordedAt:z.iso.datetime({offset:true}),expiresAt:z.iso.datetime({offset:true})});
-type Stage={id:string;commands:string[][];native?:boolean;deadlineMs:number};
+type Stage={id:string;commands:string[][];native?:boolean;profileSeed?:'demo';deadlineMs:number};
 /** Governing full commands only. No case omission, paid retry, fixture-model
  * replacement, historical review reuse, or self-issued semantic acceptance. */
 export const qualityStages:readonly Stage[]=[
- {id:'002',commands:[['scripts/eval-behavior-local.ts','--live']],native:true,deadlineMs:1800000},
- {id:'003',commands:[['scripts/eval-behavior-local.ts','--feature','003','--live']],native:true,deadlineMs:1800000},
- {id:'004',commands:[['scripts/eval-behavior-local.ts','--feature','004','--live']],deadlineMs:1800000},
+ {id:'002',profileSeed:'demo',commands:[['scripts/eval-behavior-local.ts','--live']],native:true,deadlineMs:1800000},
+ {id:'003',profileSeed:'demo',commands:[['scripts/eval-behavior-local.ts','--feature','003','--live']],native:true,deadlineMs:1800000},
+ {id:'004',profileSeed:'demo',commands:[['scripts/eval-behavior-local.ts','--feature','004','--live']],deadlineMs:1800000},
  {id:'005-retrieval',commands:[['scripts/eval-retrieval.ts','--live','--max-embedding-calls','64','--max-input-characters','1000000']],deadlineMs:1800000},
  {id:'005-research',commands:Array.from({length:12},(_,i)=>['scripts/eval-research.ts','--case','R'+String(i+1).padStart(2,'0'),'--live']),deadlineMs:3600000},
  {id:'006',commands:[['scripts/eval-plans.ts','--live','--disposable']],deadlineMs:3600000},
@@ -36,6 +36,8 @@ export const qualityStages:readonly Stage[]=[
  {id:'011',commands:[['scripts/eval-expansion.ts','--live','--budget-usd','25']],deadlineMs:3600000},
  {id:'014',commands:[['scripts/eval-learning.ts','--live','--budget-usd','25']],deadlineMs:3600000},
 ];
+
+export function qualitySeedCommand(stage:Stage){return ['scripts/seed-profile-demo.ts',...(stage.profileSeed==='demo'?[]:['--walkthrough'])];}
 
 function parse(args:string[]){
  const mode=args[0];if(!['--prepare','--live'].includes(mode))throw Error('Explicit quality mode required');
@@ -134,7 +136,7 @@ export async function pilotQualityLive(args=process.argv.slice(2)){
    await withPilotEnvironment(async environment=>{
     process.env.TURAS_TEST_POSTGRES_CONTAINER=environment.databaseContainer;await setupImages(images);
     const deadline=Date.now()+stage.deadlineMs;
-    await command(['scripts/seed-profile-demo.ts','--walkthrough'],environment.appRoot,stageRoot,'seed',deadline,false);
+    await command(qualitySeedCommand(stage),environment.appRoot,stageRoot,'seed',deadline,false);
     await command(['tests/fixtures/artifacts/generate.ts'],environment.appRoot,stageRoot,'artifact-fixtures',deadline,false);
     process.env.AI_GATEWAY_API_KEY=key;process.env.CONTEXT_API_KEY=contextKey;process.env.TURAS_ALLOW_LIVE_MODEL_TESTS='1';process.env.TURAS_016_QUALITY_RUNTIME_FILE=join(root,'runtime.json');process.env.EVE_SKIP_SANDBOX_PREWARM='1';
     if(stage.native){await environment.startWorker();await environment.startNative();}

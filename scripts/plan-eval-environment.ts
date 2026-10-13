@@ -8,7 +8,7 @@ import { reserveOwnedEvalPort } from "./eval-port";
 import { join,resolve } from "node:path";
 import { Client } from "pg";
 import { closeRuntimePool } from "../lib/server/db/client";
-import { requireTestDatabaseUrl } from "../tests/fixtures/database";
+import { requireEvaluationSourceDatabase } from "./eval-source-database";
 import { ownedEvalTimeout } from "./eval-deadline";
 import { copyOwnedEvalFiles } from "./eval-owned-copy";
 
@@ -56,7 +56,7 @@ async function stopChild(child: ChildProcess | null): Promise<void> {
 
 /** eve's dev server can detach from the Next supervisor. Match only processes
  * whose current directory is the still-owned disposable app before signalling. */
-async function stopOwnedAppProcesses(appRoot:string):Promise<void>{
+export async function stopOwnedAppProcesses(appRoot:string):Promise<void>{
   const within=(cwd:string)=>cwd===appRoot||cwd.startsWith(appRoot+"/");
   const owned=async()=>{
     const pids:number[]=[];
@@ -116,7 +116,7 @@ export async function withPlanEvalEnvironment<T>(
 ): Promise<T> {
   const remaining = (maximumMs = 5_000) => ownedEvalTimeout(options.deadlineAt,maximumMs);
   remaining();
-  const sourceUrl = new URL(requireTestDatabaseUrl(options.sourceDatabaseUrl ?
+  const sourceUrl = new URL(requireEvaluationSourceDatabase(options.sourceDatabaseUrl ?
     {...process.env,TURAS_TEST_DATABASE_URL:options.sourceDatabaseUrl}:process.env));
   const sourceName = decodeURIComponent(sourceUrl.pathname.slice(1));
   const testMarker = process.env.TURAS_TEST_ENVIRONMENT_ID;
