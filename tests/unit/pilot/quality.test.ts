@@ -1,4 +1,12 @@
 import {describe,it,expect} from 'vitest';
+import {mkdtemp,rm,writeFile} from 'node:fs/promises';
+import {join,resolve,relative} from 'node:path';
+import {randomUUID} from 'node:crypto';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import dataset003 from '../../../evals/fixtures/003-context-governance.json';
+import {QualityBudgetLedger} from '../../../scripts/pilot-quality-budget-ledger';
+import {writeEvidence} from '../../../scripts/pilot-evidence';
 import {verifyQualityStepAuthorization} from '../../../scripts/pilot-quality-step-authorization';
 import {qualityApplicability,qualityCatalog} from '../../../scripts/pilot-quality';
 describe('quality applicability',()=>{
@@ -28,4 +36,23 @@ describe('quality step authorization',()=>{
   for(const patch of [{budgetId:'22222222-2222-4222-8222-222222222222'},{authorizationDigest:'b'.repeat(64)},{expiresAt:'2026-10-15T00:00:00Z'},{recordedAt:'2026-10-13T02:00:00Z'},{catalog:'004'},{feature:'003'},{modelStepCap:33},{capMicroUsd:25000000}])expect(()=>verifyQualityStepAuthorization({...approval,...patch},authority,now)).toThrow();
   expect(()=>verifyQualityStepAuthorization(approval,authority,Date.parse(authority.expiresAt))).toThrow();
  });
+});
+
+it('verifies expanded profile review only under the exact approved pilot runtime',async()=>{
+ const root=await mkdtemp(resolve('local-artifacts/016/step-review-test-'));
+ try{
+  const id=randomUUID(),expiresAt=new Date(Date.now()+60000).toISOString(),authorizationDigest='a'.repeat(64),source={sourceCommit:'a'.repeat(40),sourceDigest:'b'.repeat(64),catalogDigest:'c'.repeat(64)};
+  const ledger=await QualityBudgetLedger.create(join(root,'budget'),{contract:'pilot-quality-budget-v1',id,authorizationDigest,sourceDigest:source.sourceDigest,catalogDigest:source.catalogDigest,capMicroUsd:25000000,contextCreditCap:4,modelId:'spacexai/grok-4.7',expiresAt});
+  const attemptId=await ledger.beginAttempt(source);
+  const stepAuthorization={contract:'pilot-quality-step-authorization-v1',feature:'016',catalog:'003',budgetId:id,authorizationDigest,modelStepCap:32,userInstructionReference:'Synthetic operator approval fixture',recordedAt:new Date().toISOString(),expiresAt};
+  await writeEvidence(root,'runtime.json',{contract:'pilot-quality-runtime-v1',id,attemptId,sourceRoot:process.cwd(),ledgerRoot:ledger.root,...source,authorizationDigest,capMicroUsd:25000000,contextCreditCap:4,expiresAt,stepAuthorization});
+  const results=dataset003.cases.flatMap(item=>[1,2].map(run=>({caseId:item.id,run,modelSteps:2,semanticScore:1,rationale:'Synthetic verifier test only',response:'Synthetic verifier test only',hardGates:{noSecretExposure:true}})));
+  const review=join(root,'review.json');await writeFile(review,JSON.stringify({feature:'003',modelStepCap:32,datasetVersion:dataset003.version,results}),{mode:0o600});
+  const run=(file?:string)=>promisify(execFile)(process.execPath,['--import','tsx','scripts/verify-behavior-review.ts','--feature','003',relative(process.cwd(),review)],{env:{...process.env,NODE_OPTIONS:'',TURAS_016_QUALITY_RUNTIME_FILE:file??''},timeout:15000});
+  await expect(run()).rejects.toThrow();
+  expect((await run(join(root,'runtime.json'))).stdout).toContain('12 of 12');
+  await writeEvidence(root,'wrong-runtime.json',{contract:'pilot-quality-runtime-v1',id,attemptId,sourceRoot:process.cwd(),ledgerRoot:ledger.root,...source,authorizationDigest,capMicroUsd:25000000,contextCreditCap:4,expiresAt,stepAuthorization:{...stepAuthorization,budgetId:randomUUID()}});
+  await expect(run(join(root,'wrong-runtime.json'))).rejects.toThrow();
+  expect(await ledger.status()).toMatchObject({dispatches:0,contextDispatches:0,chargedMicroUsd:0});
+ }finally{await rm(root,{recursive:true,force:true});}
 });

@@ -477,3 +477,6 @@ This command neither approves private context nor publishes cross-customer learn
 The 016 full 003 evaluation may use its separately authorized 32-step allowance;
 ordinary 003 evaluation retains 14 steps. This supplement preserves the original
 shared model/research budget and requires fresh committed deterministic proof.
+Capture and independent review both validate this allowance through the explicit
+private operator runtime; the current deterministic inventory is 665 cases in
+116 suites.

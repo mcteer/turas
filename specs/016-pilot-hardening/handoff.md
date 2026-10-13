@@ -225,3 +225,12 @@ credits used. mcteer authorized a separate 016-only full-003 32-step supplement,
 bound to the unchanged original budget ID/digest/expiry. Current inventory becomes
 664 cases / 116 suites; fresh committed local/native proof is required before the
 whole corrected paid attempt. This does not authorize infrastructure or deployment.
+
+
+Follow-up: capture and independent-review verification both require the same
+016 step supplement. Set TURAS_016_QUALITY_RUNTIME_FILE to the current attempt's
+private runtime file when running the governing 003 verifier; default verification
+retains 14 steps, and the capture's recorded cap must match. The 101ed5c full run
+was interrupted before further paid work to include this correction. Synthetic
+subprocess verifier checks pass, with zero provider dispatches; complete inventory
+is now 665/116. The original spend/credit journal remains unchanged.

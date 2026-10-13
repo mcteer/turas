@@ -601,7 +601,8 @@
       ],
       "localCaseIds": [
         "integration.evaluation-visible-identifiers.001",
-        "unit.quality.006"
+        "unit.quality.006",
+        "unit.quality.007"
       ]
     },
     {

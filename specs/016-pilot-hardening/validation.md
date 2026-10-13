@@ -1977,3 +1977,21 @@ captures record their actual cap. Wrong budget/digest/expiry, other catalogs,
 future/expired approvals, excessive caps and extra money fields fail validation.
 The catalog now contains **664 cases / 116 suites**. Fresh full committed proof,
 native preparation and the whole corrected paid batch are required again.
+
+
+The first step-supplement deterministic attempt at `101ed5c`,
+`run-3adb79cd-6086-4ab9-be4e-83684b6e2786`, was deliberately interrupted during
+load verification to correct the governing review verifier's remaining 14-step
+check before any further paid work. Its incomplete evidence is retained. The exact
+owned orphan container was removed after label/name and selected-connection checks;
+protected configuration/model/workflow state matched before and after.
+
+The 003 verifier now reads the same explicit private operator runtime as capture,
+requires the capture's recorded cap to match that authorization, and keeps the
+ordinary 14-step limit. A subprocess regression uses synthetic review fixtures
+only: 24 steps fail without the runtime, pass under its exact approved 32-step
+supplement, and fail under a foreign budget binding. No semantic observation or
+provider call is supplied by this regression; its ledger remains zero dispatches.
+The initial regression incorrectly included sourceCommit in the strict budget
+schema; its fixture was corrected. All seven quality unit checks and both types
+pass. Inventory is **665 cases / 116 suites**; full fresh proof remains required.
