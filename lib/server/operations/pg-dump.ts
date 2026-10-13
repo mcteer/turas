@@ -6,6 +6,7 @@ import {dirname,basename,resolve} from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
 import {operatorRecoveryDatabase} from '../../../scripts/pilot-control';
 import {recoveryPostgresImage,recoveryPostgresMajor,matchesRecoveryClient,type RecoveryPostgresMajor} from './postgres-version';
+import {cleanupOwnedBackupContainer} from './backup-container-cleanup';
 /** Fixed compatible client, no implicit image pull or credentials in arguments.
  * The caller holds the exporting transaction until this owned process stops. */
 export async function runRecoveryPgDump(input:{environmentId:string;serverMajor:RecoveryPostgresMajor;snapshot:string;output:string;signal:AbortSignal}){
@@ -44,7 +45,7 @@ async function runSnapshotPgDump(input:{environmentId:string;serverMajor:Recover
   input.signal.throwIfAborted();if(code!==0||!matchesRecoveryClient(version,'pg_dump',input.serverMajor))throw Error('Compatible snapshot dump incomplete: '+(/connection|connect to server|sslmode|could not translate host/i.test(diagnostic)?'connection_unavailable':/permission denied/i.test(diagnostic)?'permission_unavailable':/snapshot/i.test(diagnostic)?'snapshot_unavailable':/Error response from daemon|mounts denied|OCI runtime/i.test(diagnostic)?'client_unavailable':'dump_failed'));
   const handle=await open(output,constants.O_RDONLY|constants.O_NOFOLLOW);try{const info=await handle.stat();if(!info.isFile()||info.nlink!==1||(info.mode&0o777)!==0o600||info.uid!==process.getuid?.()||info.size<1||info.size>1024**4)throw Error('Snapshot dump integrity unavailable');const hash=createHash('sha256'),buffer=Buffer.alloc(65536);let position=0;while(position<info.size){input.signal.throwIfAborted();const read=await handle.read(buffer,0,Math.min(buffer.length,info.size-position),position);if(!read.bytesRead)throw Error('Snapshot dump changed');hash.update(buffer.subarray(0,read.bytesRead));position+=read.bytesRead;}if((await handle.stat()).size!==info.size)throw Error('Snapshot dump changed');complete=true;return {digest:hash.digest('hex'),sizeBytes:info.size,serverMajor:input.serverMajor,clientMajor:input.serverMajor};}finally{await handle.close();}
  }finally{
-  if(created){const inspected=spawnSync('docker',['inspect','--format','{{index .Config.Labels "turas.016.backup-owner"}}',container],{encoding:'utf8',timeout:10000});if(inspected.status===0){if(inspected.stdout.trim()!==marker)throw Error('Dump cleanup ownership differs');if(spawnSync('docker',['rm','--force',container],{stdio:'ignore',timeout:10000}).status!==0)throw Error('Dump cleanup unverified');}else if(!/No such (?:object|container)/i.test(inspected.stderr))throw Error('Dump cleanup unverified');}
+  if(created)cleanupOwnedBackupContainer(container,marker);
   if(!complete)await unlink(output).catch(()=>undefined);
  }
 }

@@ -191,3 +191,13 @@ The user also requested removal of unnecessary data and OrbStack containers once
 016 is implemented. T080 includes owned containers/volumes, unused owned images
 and temporary copied environments; preserve selected data/configuration/workflow,
 required recovery evidence and permanent/uncertain-effect records.
+
+The requested closeout inventory found that dump/restore clients removed their
+owned containers without anonymous-volume removal. Their shared cleanup now checks
+actual ownership before `docker rm --force --volumes`; named volumes remain. Four
+authority/failure unit cases and one real PostgreSQL 17/18 volume case pass. The
+complete inventory is now 662 cases / 115 suites. Run
+`run-b6e5f185-e2ae-4d68-b155-74ba5e341d62` was intentionally interrupted before paid
+evaluation to include this defect fix. The next committed deterministic/native
+proof must match the corrected source; the $25/four-credit approval retains its
+original identity and allowance. No paid dispatch has occurred.

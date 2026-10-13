@@ -513,7 +513,12 @@
         "integration.owned-denial-command.001",
         "integration.owned-denial-command.002",
         "integration.owned-denial-command.003",
-        "integration.owned-denial-command.004"
+        "integration.owned-denial-command.004",
+        "unit.backup-container-cleanup.001",
+        "unit.backup-container-cleanup.002",
+        "unit.backup-container-cleanup.003",
+        "unit.backup-container-cleanup.004",
+        "integration.backup-container-cleanup.001"
       ]
     },
     {

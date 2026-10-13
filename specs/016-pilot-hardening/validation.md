@@ -1872,3 +1872,30 @@ required before T069 can close. The user also required unnecessary data and
 OrbStack cleanup after implementation; T080 and operations now state that scope
 while preserving selected state, necessary recovery evidence and permanent/unknown
 effect protections.
+
+
+### Anonymous backup-client volume cleanup
+
+The user's closeout request prompted a read-only OrbStack inventory. It identified
+12 historical owned image tags as candidates (three current images retained) and
+856 unreferenced volumes without a verified 016 owner label. Inventory alone does
+not authorize removal of unclassified retained data. One owned interrupted-run
+container `turas-016-check-cc169e4f09c1` was removed with anonymous volumes after
+actual owner/name and selected-database-reference checks; protected hashes remained
+unchanged. Its failed run evidence is retained. No global prune was used.
+
+The dump/restore clients had omitted `--volumes` when removing their positively
+owned containers. `backup-container-cleanup.ts` now checks exact UUID/name and actual
+owner label, distinguishes positive absence from failed inspection, and removes
+anonymous volumes together with the owned client. Named volumes and bind-mounted
+stores are retained. All five focused cases passed: four ownership/failure cases
+and an actual Docker case covering both pinned PostgreSQL 17/18 images, anonymous
+volume removal and named-volume retention. Pilot types pass.
+
+The committed deterministic run `run-b6e5f185-e2ae-4d68-b155-74ba5e341d62` was
+intentionally interrupted to include this necessary cleanup correction. Its failure
+and cleanup remain retained, not acceptance. Native preparation at `0faa1c1` passed
+with zero paid dispatches but does not replace corrected-source preparation.
+Full inventory is now **662 cases / 115 suites**. Fresh committed proof is pending;
+the original evaluation authorization is unchanged and no paid dispatch has yet
+been admitted.

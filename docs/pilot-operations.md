@@ -489,3 +489,10 @@ recovery/acceptance evidence, permanent denial/replay records and unsettled paid
 journals. Backup expiry follows its existing managed policy. Do not use a global
 Docker prune or delete all local artifacts: unrelated services, selected stores
 and required recovery authority may share the host.
+
+The PostgreSQL dump/restore client cleanup verifies the actual immutable owner
+label and exact container identity, then removes that container with its anonymous
+volumes. Docker's named volumes and bind mounts are retained. Ownership/inspection
+or removal failure remains an error; absence must be positively recognized. The
+real PostgreSQL 17/18 cleanup check verifies anonymous volume removal and continued
+named-volume existence before removing only its explicitly created test volume.

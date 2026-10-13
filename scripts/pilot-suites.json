@@ -1335,6 +1335,23 @@
         "retains committed denials and a resumable failure when the actual replay audit fails",
         "withholds mutations for unavailable, older-schema or stale current proof"
       ]
+    },
+    {
+      "file": "tests/unit/pilot/backup-container-cleanup.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "removes anonymous volumes only after actual backup ownership inspection",
+        "rejects foreign labels and container identities without removing resources",
+        "distinguishes already absent containers from failed ownership inspection",
+        "retains failed cleanup as an error rather than claiming resource removal"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/backup-container-cleanup.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "removes real PostgreSQL client anonymous volumes while retaining named volumes"
+      ]
     }
   ],
   "ui": {

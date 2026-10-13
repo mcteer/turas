@@ -6,6 +6,7 @@ import {randomUUID,createHash} from 'node:crypto';
 import {requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
 import {Client} from 'pg';
 import {recoveryPostgresImage,recoveryPostgresMajor,matchesRecoveryClient,type RecoveryPostgresMajor} from './postgres-version';
+import {cleanupOwnedBackupContainer} from './backup-container-cleanup';
 /** Restore only into a separately created disposable 016 database. No app or
  * worker starts here; the caller must reapply roles and retain the recovery lock. */
 export async function restoreOwnedRecoveryDump(input:{dump:string;serverMajor:RecoveryPostgresMajor;clientMajor:RecoveryPostgresMajor;digest:string;sizeBytes:number;sourceDatabaseName:string;sourceEnvironmentId:string;signal:AbortSignal}){
@@ -49,9 +50,7 @@ async function restoreOwnedDump(input:{dump:string;serverMajor:RecoveryPostgresM
   // Stop the owned restore process before revoking grants: a still-running
   // pg_restore must not reapply privileges after the failure fence is checked.
   try{
-   const inspected=spawnSync('docker',['inspect','--format','{{index .Config.Labels "turas.016.backup-owner"}}',container],{encoding:'utf8',timeout:10000});
-   if(inspected.status===0){if(inspected.stdout.trim()!==marker)throw Error('Restore cleanup ownership differs');if(spawnSync('docker',['rm','--force',container],{stdio:'ignore',timeout:10000}).status!==0)throw Error('Restore cleanup unverified');}
-   else if(!/No such (?:object|container)/i.test(inspected.stderr))throw Error('Restore cleanup unverified');
+   cleanupOwnedBackupContainer(container,marker);
   }finally{
    const closed=new Client({connectionString:url.toString(),connectionTimeoutMillis:5000});
    try{await closed.connect();await closed.query("SET statement_timeout='5000ms'");await closed.query('REVOKE ALL ON ALL TABLES IN SCHEMA public FROM turas_runtime');if(sourceKind==='work-capture'){await closed.query('REVOKE ALL ON ALL TABLES IN SCHEMA public FROM turas_runtime_016');await closed.query('REVOKE ALL ON ALL FUNCTIONS IN SCHEMA public FROM PUBLIC,turas_runtime,turas_runtime_016');await closed.query('REVOKE ALL ON SCHEMA public FROM PUBLIC,turas_runtime,turas_runtime_016');await closed.query('REVOKE CONNECT ON DATABASE "'+target+'" FROM PUBLIC,turas_runtime,turas_runtime_016');}if((await closed.query("SELECT to_regclass('public.operations_control') AS control")).rows[0]?.control)await closed.query("UPDATE operations_control SET mode='locked' WHERE mode<>'locked'");}
