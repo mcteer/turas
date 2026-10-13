@@ -1744,3 +1744,131 @@ also passed against the actual owned native runtime and fake provider; its eight
 unrelated cases were explicitly unselected, not counted as full acceptance.
 Both types passed. No authored agent model, primary deployment or selected data
 changed. Fresh complete CI remains required on this source.
+
+
+### Resumed owned storage and physical recovery timing (2026-10-12)
+
+Resumed the existing clean `94d3dc3` checkpoint, without resetting tasks or
+relabeling retained proof. Read-only GitHub inspection confirms required workflow
+`38326648341` completed successfully: 43/43 jobs, zero unsuccessful jobs, exact
+head `94d3dc3eaeaedaf634e19c9e6c907797d6bf1f95`. This is prior committed-source CI,
+not CI for the new uncommitted changes.
+
+T045 now additionally supports `--copy-owned-legacy`: separate privately marked
+artifact/workforce/report roots, exact owner recovery lock and one database capture
+fence. Both report ledgers classify IDs with a 100,000-row bound. Cross-ledger
+collisions and unknown files are refused, immutable bytes are copied and checked
+through cold clients, and originals/configuration are retained. Failed copy attempts
+retain content-free failure receipts. Hosted Blob copying, admitted provider costs
+and actual cutover remain pending; T045 is not checked off.
+
+T057 now has strictly parsed physical timing diagnostics in both isolated restore
+commands. Exact capture age and physical restore duration are measured with
+24-hour/four-hour comparisons; backwards clocks fail. Incident start and verified
+service remain absent, and RPO/RTO/full readiness remain false. This does not resolve
+required quarantine, current authority, provider replay or authenticated recovery.
+T057 remains unchecked.
+
+Focused checks passed 24/24 unit cases and 3/3 actual owned-database legacy command
+cases. Root and pilot typechecks, authored docs and diff hygiene passed. New cases
+are registered in the complete suite catalog, with no filter or skipped/flaky
+acceptance. The final full local run passed **653/653 cases in 112 suites**:
+
+- Run `local-artifacts/016/run-0c4e47a4-40a0-4fd2-b9ac-aed3648b7315`.
+- Base commit `94d3dc3eaeaedaf634e19c9e6c907797d6bf1f95` with uncommitted changes.
+- Actual source digest `76a0751de1c0bbeeacfc186a237edcf985a0cd3a30ddbc02b1500793d8eedd48`.
+- Catalog digest `93d9c32dcd5d3b886611dbcf09c2f02a300aee2db33e10404b9c15e35febb40a`.
+- Exact owned marker `test-pilot-be295534f81b`; retained pinned local image
+  preparation `images-resume-input-mode-20261012/preparation.json`.
+- `TMPDIR` unset; owned harness cleanup completed. No owned database/job containers
+  remained at inspection. Unrelated host containers were not modified.
+
+Retained failures: `run-01ed6c7c-127d-442b-bca3-c409bc39d7e5` timed out the admission
+suite's 15-second setup hook, leaving all 12 cases unexecuted. Its explicit setup
+and cleanup budgets now fit the existing 120-second suite envelope; all actual
+admission assertions and operational deadlines are unchanged. Standalone 12/12
+passed. `run-33501ab4-1074-4649-a865-fc89f6b1f044` hit the recovery suite wrapper's
+120-second deadline, below that suite's existing 210-second setup/test allowances.
+The wrapper now allows 300 seconds; no domain timeout or assertion was removed.
+`run-67931829-e152-47d9-8ff3-23682d719d9d` then exposed the old incomplete-store test's
+expectation of an empty evidence directory. It now verifies the actual failure
+receipt and all retained-original/no-cutover boundaries. The next complete run
+passed. Failures were not deleted or counted as successful receipts.
+
+Documentation updates after this receipt have their own source identity; the
+receipt is not relabeled onto them. No commit/push/merge/deployment, Production
+migration/unlock, paid model call or new infrastructure provisioning was performed.
+Task inventory remains 62/84 checked; required hosted/human/release work and remaining
+implementation are not declared complete.
+
+
+### Owned current-denial operator reconciliation (2026-10-13)
+
+Resumed the existing uncommitted storage/timing changes and preserved the green
+`94d3dc3` / workflow `38326648341` checkpoint. Added
+`pilot:recovery:authority -- --reconcile-owned-work-denials`, using the existing
+independent encrypted snapshot reader, actual owned-target denial application and
+actual replay-function/trigger/index/immutability audit. Hosted and unowned targets
+are refused before archive reads. Complete schema-057 v6 proof is required; absent,
+older or stale proof cannot authorize mutations. The owning disposable connection
+and the restored source marker are checked independently. No credential/grant is
+revived, quarantine resolved, service opened or uncertain effect retried.
+
+Denial changes commit before the replay audit. `denials-applied.json` preserves that
+checkpoint; audit failure retains committed denials, a content-free failed attempt
+and the service lock. Full repetition is idempotent and writes successful
+`reconciliation.json` only after audit completion. Temporary decrypted staging is
+removed on both success and failure. T052 remains open for complete recovery,
+provider/uncertain-effect and service acceptance.
+
+Four actual owned PostgreSQL 18 command cases passed in 44.54 seconds, including
+normal denial/replay application and idempotent repetition, pre-read changed-lock
+rejection, failed-audit resume without denial rollback, and unavailable/older/stale
+proof rejection. The archive reader is stubbed in these command tests; they do not
+claim actual independent-provider authentication. Earlier focused composition
+passed 20/20 across the first three command cases, seven schedule cases, six timing
+cases and four legacy-classification cases. Initial attempts exposed the host's
+Node 26 selection and a bigint assertion expecting a number; Node 24 and an explicit
+query cast corrected those test setup issues, without changing domain safeguards.
+
+Registered the four cases in the complete suite inventory and bound all 17 new
+storage/classification/timing/command cases into G06. The initial full run
+`run-0feafba2-b4d1-4f2e-9917-1136609726bb` was deliberately interrupted to add that
+gate binding; its failure and cleanup are retained and never counted as acceptance.
+Fresh complete run `run-a4448b02-0921-46e4-b9a3-0218f9c3acd8` is pending against the
+updated source/catalog. Docs (221 authored files), root/pilot types and diff hygiene
+pass. No primary/Preview/Production schema, deployment, credential or provider
+change was made by this resumed work.
+
+The user nominated mcteer for the human operator/reviewer exercise. The concrete
+walkthrough is documented in operations; nomination is not an observation or
+participant acceptance. Distinct internal/assigned-partner feedback and the actual
+scoped release decision remain required. Task completion remains 62/84.
+
+
+The complete expanded local catalog passed **657/657 in 113 suites**, with no
+failed/skipped/flaky acceptance, in `run-a4448b02-0921-46e4-b9a3-0218f9c3acd8`.
+Base commit: `94d3dc3eaeaedaf634e19c9e6c907797d6bf1f95`; exact uncommitted source
+digest: `17c299c30d96055cb208ff41314a86e1862a5286eb94bc417a7d0d2005c71a5e`; catalog
+digest: `1e568e554aca63856e05fc7ec6e5e1b1567acb37c074b20c5434ee20a5dbdb36`; owned
+marker: `test-pilot-ec707cc40892`. Process exit 0 followed owned harness cleanup.
+This proves the recorded source only; subsequent status/cleanup documentation and
+deterministic directory-order assertions require their fresh committed checkpoint.
+
+T054 is complete as an implementation task: strict schedule policy and CLI tests,
+actual operator cron generation/transport checks, actual database managed-expiry
+and permanent independent-authority retention checks all passed. The implementation
+uses the fixed 12-hour/24-hour/seven-day policy and never deletes operator archives
+or independent authority. T077 remains open for two genuine hosted scheduled
+captures and full restore/service timing. Task completion is **63/84**.
+
+The user explicitly authorized a single **$25 total** T069 evaluation cap plus
+**four existing Context credits**, with automatic billing/top-up disabled. Its
+private authorization retains one UUID and a 24-hour validity window. No paid
+evaluation was dispatched before this authorization; Context credits fund bounded
+catalog research and cannot establish semantic review. Native preparation, current
+committed deterministic proof, actual accounting and independent review remain
+required before T069 can close. The user also required unnecessary data and
+OrbStack cleanup after implementation; T080 and operations now state that scope
+while preserving selected state, necessary recovery evidence and permanent/unknown
+effect protections.

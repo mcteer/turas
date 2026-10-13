@@ -138,6 +138,15 @@ cases prove no delegation/claim on the probe; actual native E08 also passed in a
 focused check. Current complete CI is still required; see the final validation
 section rather than treating standalone or selected proof as full acceptance.
 
+Latest resumed work: owned legacy storage copying and strict physical restore timing
+are implemented and documented. The expanded full local catalog passed 653/653 in
+112 suites (`run-0c4e47a4-40a0-4fd2-b9ac-aed3648b7315`), attributed to its exact
+uncommitted source digest in validation. Three failed full attempts are retained.
+Required CI `38326648341` passed 43/43 at committed `94d3dc3`; that does not validate
+subsequent uncommitted changes. No commit/push or hosted change was made. T045/T057
+remain pending for their complete cutover/recovery acceptance, and the task count
+remains 62/84. Do not restart the earlier unchanged CI investigation.
+
 Next: finish unchecked storage/capture/current-authority/restore/runbook work
 (T045/T051–T059), then the required actual-model/operator and hosted journey
 requirements. Apply only concrete authorized infrastructure/budget scope; do not
@@ -149,6 +158,18 @@ mcteer readiness decision cannot be supplied by automated fixtures.
 
 ## Resume and validation
 
+2026-10-13: `--reconcile-owned-work-denials` now connects independently retained
+encrypted v6/schema-057 metadata to actual owned-target denial application and
+permanent request-fence audit. Four owned integration cases pass, including
+idempotent resume, pre-read lock rejection, committed-denial preservation after
+audit failure and absent/older/stale-proof denial. The provider reader is stubbed
+in those command tests; actual independent archive authentication remains separate
+provider acceptance. T052 remains open for its complete provider/uncertain-effect
+and recovery acceptance. `mcteer` volunteered for the human operator/reviewer
+exercise; nomination supplies no completed observation. The concrete walkthrough
+is in `docs/pilot-operations.md`. Fresh full catalog/CI proof is still required for
+this changed source.
+
 Follow [quickstart](quickstart.md). Node 24, owned local databases/stores and CLI
 Playwright/WebKit only. Preserve `.env.local`, root workflow state and `agent/agent.ts`.
 Prepare 056/057 explicitly; verify free numbers, manifest and exact compatibility
@@ -156,3 +177,17 @@ before applying required target migrations/grants in release order. Validate act
 Preview services, then exact Production deployment and changed role/workspace/UI/
 SDK/file processing after merge. Every task checkbox needs the corresponding real
 proof; full participant/release tasks cannot complete from CI alone.
+
+
+2026-10-13 checkpoint: the complete owned catalog passed 657/657 in 113 suites
+(`run-a4448b02-0921-46e4-b9a3-0218f9c3acd8`). T054 is checked for the implemented
+schedule/age/expiry policy, operator cron manifest and independently retained
+authority protections; T077's real hosted cadence is still open. Completion is
+63/84. The user authorized T069's single $25 total evaluation cap plus four
+existing Context credits, with automatic billing/top-up disabled. Context credits
+fund bounded catalog research; independent semantic review remains separate.
+Retain the original approval journal across corrections and unknown effects.
+The user also requested removal of unnecessary data and OrbStack containers once
+016 is implemented. T080 includes owned containers/volumes, unused owned images
+and temporary copied environments; preserve selected data/configuration/workflow,
+required recovery evidence and permanent/uncertain-effect records.

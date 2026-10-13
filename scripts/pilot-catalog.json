@@ -496,7 +496,24 @@
         "unit.managed-workflow-command.005",
         "integration.managed-workflow-batch.006",
         "integration.recovery-quarantine.010",
-        "integration.recovery-quarantine.011"
+        "integration.recovery-quarantine.011",
+        "integration.storage-migrate.001",
+        "integration.storage-migrate.002",
+        "integration.storage-migrate.003",
+        "unit.legacy-report-classification.001",
+        "unit.legacy-report-classification.002",
+        "unit.legacy-report-classification.003",
+        "unit.legacy-report-classification.004",
+        "unit.recovery-timing.001",
+        "unit.recovery-timing.002",
+        "unit.recovery-timing.003",
+        "unit.recovery-timing.004",
+        "unit.recovery-timing.005",
+        "unit.recovery-timing.006",
+        "integration.owned-denial-command.001",
+        "integration.owned-denial-command.002",
+        "integration.owned-denial-command.003",
+        "integration.owned-denial-command.004"
       ]
     },
     {

@@ -17,7 +17,12 @@ import {withRecoveryCancellation} from '../lib/server/operations/recovery-cancel
 import {mkdtemp,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {z} from 'zod';
+import {pilotOwnedDenialReconciliation} from './pilot-owned-denial-reconciliation';
 export async function pilotRecoveryAuthority(args=process.argv.slice(2)){
+ if(args[0]==='--reconcile-owned-work-denials'){
+  const receipt=await pilotOwnedDenialReconciliation(args);
+  console.info(JSON.stringify({denialsApplied:true,permanentRequestFencesVerified:receipt.audit.permanentRequestFencesVerified,serviceOpened:false,restorationReady:false}));return receipt;
+ }
  if(args[0]==='--capture-work-denials')return pilotDenialSnapshot(args);
  if(args[0]==='--retire-owned-runtime')return pilotRuntimeRetirement(args);
  if(args[0]==='--retire-work-runtime')return pilotWorkRuntimeRetirement(args);

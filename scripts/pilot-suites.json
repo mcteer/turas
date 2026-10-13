@@ -448,6 +448,37 @@
       ]
     },
     {
+      "file": "tests/unit/pilot/legacy-report-classification.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "classifies exact report and gap identities from both ledgers",
+        "refuses cross-ledger collisions even for an identical object key",
+        "refuses repeated ledger identities and unknown classification fields",
+        "requires opaque UUID keys and explicit namespaces"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/storage-migrate.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "copies fenced legacy stores through the actual owner command and cold resume",
+        "retains content-free failure evidence and originals for unclassified legacy reports",
+        "denies a changed lock before copying legacy originals"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/recovery-timing.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "measures capture age and physical restore duration at exact objective boundaries",
+        "reports exceeded physical limits without manufacturing service recovery",
+        "never counts fast matched bytes as incident-to-verified-service proof",
+        "rejects future captures and backwards restore clocks",
+        "rejects malformed timestamps and claimed acceptance fields",
+        "normalizes offset timestamps using elapsed time rather than local clock text"
+      ]
+    },
+    {
       "file": "tests/unit/pilot/storage-inventory.test.ts",
       "expectedCases": 9,
       "cases": [
@@ -1293,6 +1324,16 @@
       "expectedCases": 1,
       "cases": [
         "publishes and assigns a guide through normal HTTP, verifies the partner demonstration and removes credit after source withdrawal"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/owned-denial-command.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "applies current denials and verifies permanent fences through the owned command without opening service",
+        "rejects a changed owner lock before fetching independent denial bytes",
+        "retains committed denials and a resumable failure when the actual replay audit fails",
+        "withholds mutations for unavailable, older-schema or stale current proof"
       ]
     }
   ],

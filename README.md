@@ -14,8 +14,14 @@ checks do not establish full Production workflow readiness. See the
 [roadmap](ROADMAP.md) and feature validation records under [`specs/`](specs/).
 Feature 016 pilot hardening is in progress; its local checkpoints do not establish
 full hosted pilot readiness. [Draft PR 32](https://github.com/mcteer/turas/pull/32)
-is the implementation checkpoint. Required CI is not yet green; current recovery,
-hosted processing and participant acceptance remain release blockers.
+is the implementation checkpoint. All 43 required CI jobs passed at `94d3dc3`
+(run `38326648341`); the subsequent uncommitted storage/recovery changes have a
+657-case local pass, not new CI proof. Current recovery, hosted processing and
+participant acceptance remain release blockers.
+The owned recovery command now applies independently retained current denials and
+audits actual permanent request fences, preserving committed denials across failed
+audits. It remains an isolated recovery step; service recovery and hosted acceptance
+are pending.
 
 Recent Conversations provides owner-private Archive and Restore controls. Archived
 chats remain available in Archived Conversations and retain their history.
@@ -159,7 +165,7 @@ Feature 016 has a [specification](specs/016-pilot-hardening/spec.md),
 assigned-partner pilot. The plan covers a synthetic Production pilot workspace,
 workspace-bound sessions, durable private files and hosted processing, recovery,
 retention, access, operating limits and attributable user feedback. Implementation
-is in progress, with 62 of 84 tasks complete. The complete local catalog passed
+is in progress, with 63 of 84 tasks complete. The complete local catalog passed
 640/640 named cases and all 43 required CI jobs passed at `08ef152`; full
 predecessor composition, WebKit, recovery/lifecycle and build gates are green.
 Owned load, dependency-fault and encrypted capture checks are recorded in the

@@ -220,11 +220,17 @@ The command binds the explicit work source/destination, encrypts the minimized s
 
 A snapshot establishes current state at its captured watermark only. Verification rejects a proof older than the recovery boundary, older than five minutes, in the future, in another environment, changed or incomplete. Capture/retention never updates a restored database, reconciles replay or clears quarantine. Current-provider reconciliation, replay reapplication, ongoing capture scheduling and full recovery verification remain required. The initial v1 retained metadata snapshot has narrower coverage and cannot substitute for the v2 verifier. Keys and independently retained metadata survive ordinary seven-day backup expiry.
 
+### Physical restore timing is not verified-service RTO
+
+Both isolated restore commands retain `startedAt`, `finishedAt` and a `pilot-physical-recovery-timing-v1` diagnostic. This measures the exact capture age at restore start and physical restore duration, with explicit comparisons to 24 hours and four hours. Capture age is only a conservative accepted-work boundary; the command start is not the incident start. The physical completion timestamp is not authenticated restricted service. Clock reversal or a capture later than restore start is rejected. `rpoVerified`, `rtoVerified` and `fullRecoveryReady` remain false even for a fast restore. Required quarantined scope, current denial/replay/provider reconciliation and actual incident-to-service checks must be resolved before T057 or full recovery acceptance can pass.
+
 ### Owned storage-copy rehearsal
 
 `npm run pilot:storage:copy -- --copy-owned --environment <test-pilot-marker> --recovery-id <uuid> --control-revision <locked-revision> --source-root <private-unified-source> --destination-root <private-unified-destination> --output <new-private-evidence-directory>` copies only a marked owned database's unified local object namespaces. The caller must provide separate existing private directories and the exact owner-locked recovery revision. Every source namespace must exist; missing directories are incomplete inventory. The command keeps the database IO fence throughout full byte verification and repeats parity checks through fresh clients. An exact retry uses a new evidence directory and reconciles the existing destination without replacing matching objects. Conflicting destination bytes stop the copy and are retained for operator review.
 
-This rehearsal retains all originals and leaves configuration unchanged. It does not perform legacy-store classification, hosted Blob copying, provider cost admission or a deployment cutover. Those parts of T045 remain pending. Do not use a local parity receipt to switch Production storage or to authorize an empty local fallback.
+For an owned legacy layout, use `--copy-owned-legacy` with the same environment/recovery/control/output arguments, replacing `--source-root` with `--artifact-root`, `--workforce-root` and `--report-root`. All source roots, destination and evidence must be separate direct private directories. Existing legacy environment markers are required; the command never initializes a source. Both report ledgers classify opaque report IDs under the exclusive database checkpoint, with a 100,000-row bound. Collisions, unknown report IDs, unsupported files and unfinished bytes fail closed. A fresh retry uses a new evidence directory and retains previous failure evidence and matching destination bytes. Failures after connection write a content-free `failure.json`; they do not delete partial copies or unlock service.
+
+This rehearsal retains all originals and leaves configuration unchanged. It supports owned legacy-store classification but does not perform hosted Blob copying, provider cost admission or a deployment cutover. Those parts of T045 remain pending. Do not use a local parity receipt to switch Production storage or to authorize an empty local fallback.
 
 ### Owned dependency-fault catalog
 
@@ -408,3 +414,78 @@ changed functions and incomplete keys fail. Temporary decrypted bytes and cold k
 buffers are removed on every exit. This proves the inspected request fences only;
 current source/access denials, uncertain sends and charges, managed workflow closure
 and complete owner verification remain separate required recovery work.
+
+## Apply independent denials to an owned isolated restore
+
+After isolated restore, retain its locked recovery UUID/revision and provide the
+owning disposable cluster's explicit owner configuration. Its owned database name
+and Docker ownership label remain the target identity; `--environment` names the
+actual restored source marker. Never replace that owner connection with the live
+source connection.
+
+```sh
+npm run pilot:recovery:authority -- --reconcile-owned-work-denials \
+  --environment <restored-source-marker> \
+  --recovery-id <locked-recovery-uuid> --expected-revision <locked-revision> \
+  --denials <private-retained-snapshot-receipt.json> \
+  --destination <private-independent-archive.json> \
+  --backup-captured-at <exact-original-capture-timestamp> \
+  --output <new-private-evidence-directory>
+```
+
+The command rejects hosted/unowned connections and checks actual owner, marker,
+schema and locked revision before contacting the independent archive. It retrieves
+and authenticates current encrypted bytes and their independently retained key,
+requires the complete schema-057 v6 inventory, applies credential/grant/source/
+publication denials and permanent request fences, then audits actual database
+functions, indexes, triggers and immutable protections. Proof older than the backup
+or five minutes, unavailable bytes and incomplete inventories cannot authorize
+mutations. It never grants authority, clears quarantine, starts providers or opens
+service. No primary or Preview database is changed by this owned-only command.
+
+`denials-applied.json` records committed denial changes before the audit. If a
+subsequent audit fails, those denials stay committed and `failure.json` records
+`denialsApplied:true`; there is no successful reconciliation receipt. Keep the lock,
+correct the actual guard defect and repeat the complete command with fresh proof
+and a new output directory. Repetition cannot revive credentials or repeat effects.
+Temporary decrypted files are removed on both success and failure. Successful
+`reconciliation.json` establishes this isolated denial/fence step only; unknown
+charges/sends, managed Workflow, full service verification and RPO/RTO remain
+separate requirements.
+
+## Human operator and participant walkthrough
+
+`mcteer` is the nominated human operator/reviewer for the next exercise. This is
+an assignment, not a completed observation. In an owned isolated environment,
+follow the capture, cold restore, current-denial application and failure/resume
+commands above. Record your actual start/end times, which step was unclear, the
+observed locked/denied behavior and whether another operator could repeat it.
+Keep observations and supporting receipts private under `local-artifacts/016/`.
+An unresolved quarantine or unavailable required scope remains a blocker; do not
+test unlock by bypassing the owner verification path.
+
+For hosted pilot feedback, use distinct current internal and assigned-partner
+member identities in the synthetic pilot workspace. Follow the linked journey
+catalog in [pilot journeys](../specs/016-pilot-hardening/contracts/pilot-journeys.md)
+with normal proposals, reviews and explicit grants. Each participant supplies
+their own observed result and difficulties. Bind each observation to its journey,
+time and exact deployment; assign an internal follow-up owner and severity.
+Record the protected `pilot-feedback-record-v1` input with
+`npm run pilot:feedback -- --environment <exact-marker> --input <private-input.json>
+--output <new-private-directory>`. Blockers require correction and an evidenced
+recheck; other dispositions require an owner. Automated synthetic outcomes and
+operator nomination cannot supply participant observations or release approval.
+
+
+## OrbStack and generated-data closeout
+
+At implemented-feature closeout, inventory the feature's owned OrbStack containers,
+volumes and image tags, and generated local environments. Remove unnecessary owned
+containers/volumes, unused owned images and temporary copies after their evidence
+has been captured. Verify ownership labels and active references before removal;
+record the exact cleanup inventory privately. Preserve the selected database and
+private stores, `.env.local`, the root workflow directory and model, required
+recovery/acceptance evidence, permanent denial/replay records and unsettled paid-work
+journals. Backup expiry follows its existing managed policy. Do not use a global
+Docker prune or delete all local artifacts: unrelated services, selected stores
+and required recovery authority may share the host.

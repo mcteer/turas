@@ -7,7 +7,7 @@ Owner-private chat archiving released in [PR 20](https://github.com/mcteer/turas
 The [public research remediation](https://github.com/mcteer/turas/pull/21) saved and
 indexed the authorized 184-entry public customer inventory in Production; its
 application release and hosted UI checks remain separate from the data proof.
-011 is merged with local/CI acceptance; hosted release remains separate. 012 is merged in PR 23; local and CI acceptance are tracked in its validation record. 013 merged in PR 24; 014 merged in PR 25, with schema 054 and internal Production read checks recorded; 015 merged in [PR 28](https://github.com/mcteer/turas/pull/28), with acceptance tracked in its validation record; Production is enabled on schema 055 with runtime grants and authenticated SDK/HTTP/CLI WebKit acceptance, including research passage/citation reads; 016 implementation is in progress (62/84 tasks), with [draft PR 32](https://github.com/mcteer/turas/pull/32); the complete local catalog passed 640/640 and all 43 required CI jobs passed at `08ef152`. Remaining storage/recovery/hosted implementation and actual participant/release acceptance remain pending.
+011 is merged with local/CI acceptance; hosted release remains separate. 012 is merged in PR 23; local and CI acceptance are tracked in its validation record. 013 merged in PR 24; 014 merged in PR 25, with schema 054 and internal Production read checks recorded; 015 merged in [PR 28](https://github.com/mcteer/turas/pull/28), with acceptance tracked in its validation record; Production is enabled on schema 055 with runtime grants and authenticated SDK/HTTP/CLI WebKit acceptance, including research passage/citation reads; 016 implementation is in progress (62/84 tasks), with [draft PR 32](https://github.com/mcteer/turas/pull/32); the prior complete local catalog passed 640/640 at `08ef152`, and all 43 required CI jobs passed at `94d3dc3`. Subsequent uncommitted storage/recovery work passed the expanded 653-case local catalog; it has no new CI proof. Remaining storage/recovery/hosted implementation and actual participant/release acceptance remain pending.
 
 005 now has [specification](specs/005-governed-rag-research/spec.md),
 [design](specs/005-governed-rag-research/plan.md) and
@@ -277,6 +277,10 @@ acceptance used real synthetic scan/parser fixtures, access/race tests, CLI
 WebKit and bounded agent evaluations, without a participant-count gate.
 
 ## Updating this roadmap
+
+016 now includes an owned isolated current-denial reconciliation command with
+resumable audit failure. Full recovery, hosted cadence and participant acceptance
+remain open; see its [operations walkthrough](docs/pilot-operations.md).
 
 Record a slice as in progress when its spec/plan exists, and complete only when
 its exit evidence and merged PR are linked. Distinguish local, CI, preview and
