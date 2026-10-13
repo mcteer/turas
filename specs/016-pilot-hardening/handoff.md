@@ -130,6 +130,13 @@ The case now requires the exact HTTP 200 cancellation acknowledgment before all
 existing race/download/receipt checks. Actual focused desktop-light/mobile-dark
 WebKit passed 2/2 without retries or flaky acceptance. The changed source must
 complete fresh required CI; the older 43/43 receipt stays on `08ef152`.
+The next run at `d2715a4` passed all Product Gaps projects but failed composed
+native E08 binding (503). The owned native harness now requires a non-mutating
+422 authenticated validation before conversation/advice admission, bounded to
+20 seconds without retrying creation, messages or providers. Three eve boundary
+cases prove no delegation/claim on the probe; actual native E08 also passed in a
+focused check. Current complete CI is still required; see the final validation
+section rather than treating standalone or selected proof as full acceptance.
 
 Next: finish unchecked storage/capture/current-authority/restore/runbook work
 (T045/T051–T059), then the required actual-model/operator and hosted journey

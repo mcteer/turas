@@ -1717,3 +1717,30 @@ receipt and no-reusable-identity assertions remain. An actual owned CLI WebKit
 check passed the case in desktop light and mobile dark: 2/2, zero skipped,
 unexpected or flaky results. Root/pilot types and diff checks passed. This focused
 proof does not replace the fresh complete CI still required on the changed source.
+
+### Native authenticated validation before mutation admission
+
+CI `38318332649` at `d2715a4` passed 42/43 jobs, including all Product Gaps
+WebKit projects with the explicit cancellation acknowledgment. Expansion's
+composed regression still failed the richer E08 actual native fake-provider
+capture while binding the local session (HTTP 503); standalone execution and the
+complete pilot composition passed. This composed failure is not waived.
+
+The installed eve authentication documentation confirms public health skips the
+auth walk. The owned execution harness now warms the actual authenticated native
+route with an intentionally invalid, empty body, requiring the governed wrapper's
+422 validation rejection before creating a conversation or admitting advice.
+The wrapper rejects that body before `claimBinding`. Only this non-mutating
+validation probe may repeat during a finite 20-second readiness interval,
+within the original overall deadline; real session creation, message dispatch,
+model/provider work and unknown effects are never retried by this change.
+Unauthorized/unexpected responses fail, and diagnostic binding failure categories
+are a fixed allowlist rather than arbitrary response bodies.
+
+All three actual owned eve boundary cases passed. The strengthened existing case
+proves rejection 422, zero native delegation and an unchanged unbound conversation
+before its ordinary successful bind. The previously failing richer E08 capture
+also passed against the actual owned native runtime and fake provider; its eight
+unrelated cases were explicitly unselected, not counted as full acceptance.
+Both types passed. No authored agent model, primary deployment or selected data
+changed. Fresh complete CI remains required on this source.

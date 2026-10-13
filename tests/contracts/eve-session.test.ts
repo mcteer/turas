@@ -147,6 +147,10 @@ describe("eve session boundary", () => {
         : entry),
     } as EveChannel;
     const guarded = composeEveRoutes(mocked);
+    const validation=await route(guarded,'POST','/eve/v1/session').handler(new Request(`${origin}/eve/v1/session`,{method:'POST',headers:{origin,cookie,'content-type':'application/json','x-csrf-token':payload.data.csrfToken,'x-turas-conversation-id':conversation.data.id},body:'{}'}),args);
+    expect(validation.status).toBe(422);expect(delegated).toBe(0);
+    const untouched=await readConversation(new Request(`${origin}/api/conversations/${conversation.data.id}`,{headers:{cookie}}),{params:Promise.resolve({id:conversation.data.id})});
+    expect((await untouched.json()).data.bindingState).toBe('unbound');
     const request = () => new Request(`${origin}/eve/v1/session`, {
       method: "POST", headers: { origin, cookie, "content-type": "application/json",
         "x-csrf-token": payload.data.csrfToken,
