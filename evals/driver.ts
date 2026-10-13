@@ -142,7 +142,7 @@ async function pendingExactArtifactProposal(config: Config,versionId: string,
   } finally { await client.end(); }
 }
 
-async function profileState(config: Config, customerId: string, role: BehaviorCase["role"]): Promise<{
+export async function profileEvaluationState(config: Config, customerId: string, role: BehaviorCase["role"]): Promise<{
   anchors: number; revisions: number; accepted: number; knownIds: Set<string>;
   allRevisionIds: Set<string>; allRecordIds: Set<string>; allReceiptKeys: Set<string> }> {
   const client = new Client({ connectionString: config.DATABASE_URL });
@@ -163,6 +163,11 @@ async function profileState(config: Config, customerId: string, role: BehaviorCa
       SELECT r.id FROM profile_records r JOIN profile_revisions v
         ON v.id=r.current_accepted_revision_id
       WHERE r.customer_id=$1 AND ($2::boolean OR
+        (v.audience='delivery' AND v.data_category='delivery_context'))
+      UNION
+      SELECT r.workload_id AS id FROM profile_records r JOIN profile_revisions v
+        ON v.id=r.current_accepted_revision_id
+      WHERE r.customer_id=$1 AND r.workload_id IS NOT NULL AND ($2::boolean OR
         (v.audience='delivery' AND v.data_category='delivery_context'))
       UNION
       SELECT v.id FROM evidence_source_revisions v
@@ -202,7 +207,7 @@ export async function runBehaviorCase(item: BehaviorCase, run: number,
     throw new Error("Behavior evaluation requires a local app origin");
   }
   const customerId = item.customerId ?? DEMO_IDS.sharedCustomer;
-  const before = await profileState(config, customerId, item.role);
+  const before = await profileEvaluationState(config, customerId, item.role);
   const signedIn = await fetch(new URL("/api/auth/login", origin), {
     method: "POST", headers: { origin: origin.origin, "content-type": "application/json" },
     body: JSON.stringify({ username: item.role, password: passwordFor(config, item.role) }),
@@ -402,7 +407,7 @@ export async function runBehaviorCase(item: BehaviorCase, run: number,
     staleSendStatus = staleSend.status;
     staleSessionBlocked = staleHistorySafe && staleSend.status === 409;
   }
-  const after = await profileState(config, customerId, item.role);
+  const after = await profileEvaluationState(config, customerId, item.role);
   const secretValues = [config.DATABASE_URL, config.DATABASE_URL_UNPOOLED,
     config.TURAS_MAINTENANCE_SECRET, config.TURAS_DEMO_PASSWORD,
     config.PANEL_PASSWORD, config.PARTNER_PASSWORD, process.env.AI_GATEWAY_API_KEY]

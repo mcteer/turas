@@ -1352,6 +1352,13 @@
       "cases": [
         "removes real PostgreSQL client anonymous volumes while retaining named volumes"
       ]
+    },
+    {
+      "file": "tests/integration/pilot/evaluation-visible-identifiers.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "recognizes accepted audience-visible workload references while denying foreign pending and withheld identifiers"
+      ]
     }
   ],
   "ui": {

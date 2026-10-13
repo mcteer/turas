@@ -599,7 +599,9 @@
       "requiredRoles": [
         "reviewer"
       ],
-      "localCaseIds": []
+      "localCaseIds": [
+        "integration.evaluation-visible-identifiers.001"
+      ]
     },
     {
       "id": "G10",

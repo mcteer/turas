@@ -23,6 +23,8 @@ audits actual permanent request fences, preserving committed denials across fail
 audits. It remains an isolated recovery step; service recovery and hosted acceptance
 are pending.
 
+The quality evaluator recognizes workload references attached to current, audience-eligible accepted records; unknown and withheld identifiers still fail.
+
 Recent Conversations provides owner-private Archive and Restore controls. Archived
 chats remain available in Archived Conversations and retain their history.
 Archive/restore requires migration 044. Apply the current migration manifest and

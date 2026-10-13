@@ -201,3 +201,17 @@ complete inventory is now 662 cases / 115 suites. Run
 evaluation to include this defect fix. The next committed deterministic/native
 proof must match the corrected source; the $25/four-credit approval retains its
 original identity and allowance. No paid dispatch has occurred.
+
+The first authorized actual-model attempt completed 002, then stopped on 003's
+accepted-source-fidelity hard gate. All 26 Gateway dispatches settled, totaling
+$0.349202; no unknown charge or Context credit consumption remains. Captures stay
+failed, not semantic acceptance. Its response contained legitimate workload IDs
+returned by the authorized accepted product-use read. The evaluator scanned all
+UUIDs but omitted those structural references from its known set. It now includes
+only workload IDs attached to current audience-eligible accepted records. One
+actual owned regression passes for visible references and negative foreign,
+pending, unknown, partner-withheld and retracted references. Its initial fixture
+retraction commands lacked the required current record version; that setup was
+corrected without changing domain behavior. Complete inventory is 663/116.
+A corrected whole batch needs fresh committed deterministic/native proof and must
+retain the original approval journal and $0.349202 spending.

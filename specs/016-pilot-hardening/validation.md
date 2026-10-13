@@ -1899,3 +1899,56 @@ with zero paid dispatches but does not replace corrected-source preparation.
 Full inventory is now **662 cases / 115 suites**. Fresh committed proof is pending;
 the original evaluation authorization is unchanged and no paid dispatch has yet
 been admitted.
+
+
+### Corrected committed deterministic checkpoint and admitted evaluation
+
+Complete run `run-b663b652-4459-4150-b89a-2dbb4f508313` passed **662/662 cases in
+115 suites**, zero failed/skipped/flaky acceptance, with process exit 0 after owned
+cleanup. Exact commit: `f81f6e4f095754f12f351c7f7ec529114fb6d233`; source digest:
+`29dfb6a11363af83ad2a74bf2c14f3977532fd043c85c5f38c792df85a4215e0`; catalog digest:
+`00e5feefbb437d111334351389c9341c7208728615fad09f7dea9125628bafec`. Current native
+preparation `quality-preparation-cleanup-20261013` passed on those same identities
+with zero paid dispatches. CI `38415271420` is still in progress; 37 jobs have passed
+and none failed at inspection. The superseded `38412679671` run was cancelled by
+the existing branch concurrency policy and is not acceptance.
+
+The actual-model batch was started with the user's original $25/four-credit
+authorization and these exact committed deterministic/preparation receipts.
+Private capture root: `local-artifacts/016/quality-live-20261013`. The global approval
+journal must survive corrections and unknown costs. The source remains fixed at
+`f81f6e4`; no semantic pass, independent review, T069 completion or pilot readiness
+is claimed from admission or captures.
+
+OrbStack accounting separately identifies 452 empty unreferenced anonymous-volume
+candidates and 414 unreferenced nonempty volumes. Both inventories are private and
+read-only; any deletion requires refreshed references and classification. Current
+images, selected stores/state and required recovery/accounting evidence remain
+preserved. The second interrupted-run orphan `turas-016-check-3b70d9da64c4` was
+also removed after owner/name and selected-database-reference checks; cleanup
+evidence and failed run results remain retained.
+
+
+### First actual-model attempt: accounted failure and evaluator correction
+
+`quality-live-20261013` completed 002 capture, then stopped on the first 003
+`accepted-source-fidelity` response at `noUnknownCitations:false`. All 26 Gateway
+dispatches are accounted: **$0.349202** reported charges, zero held/unknown charges,
+zero Context credits consumed/held, and admission unheld after shutdown. The
+original $25/four-credit journal remains unchanged. No replacement approval or
+spending reset is created. No complete actual-model or semantic pass is claimed.
+
+The retained reply cites actual accepted records and their attributed source, but
+also displays the actual workload IDs returned by the governed product-use tool.
+The evaluator matched every UUID and omitted workload references from its known
+identifier set. `profileEvaluationState` now recognizes workload IDs only through
+current audience-eligible accepted records for the exact customer. It does not
+whitelist all workloads, unknown IDs, other customers, Pending records or
+partner-withheld internal records. The actual owned regression passes those
+positive/negative cases and rechecks withholding after normal retraction. Two
+initial regression attempts used incomplete retraction version fields; corrected
+current-record-version input passed, without changing the domain contract.
+
+The case is registered under G09. Full inventory is **663 cases / 116 suites**.
+Fresh committed deterministic/native proof and the corrected full paid batch remain
+pending; the prior failed attempt and its captures/costs remain retained.
