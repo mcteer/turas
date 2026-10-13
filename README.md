@@ -23,8 +23,8 @@ audits actual permanent request fences, preserving committed denials across fail
 audits. It remains an isolated recovery step; service recovery and hosted acceptance
 are pending.
 
-The current full local checkpoint passes 672 cases across 118 suites at `24cd0d9`.
-Its subsequent actual-model batch failed 003's citation gate, and independent LLM
+The current full local checkpoint passes 672 cases across 118 suites at `5c6a6d5`.
+The earlier actual-model batch failed 003's citation gate, and independent LLM
 review failed one 002 capability reply. Instruction corrections require fresh
 verification; the capped evaluation has spent $1.806543 and no Context credits.
 Unknown and withheld identifiers still fail the evaluator.

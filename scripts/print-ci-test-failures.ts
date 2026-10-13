@@ -1,6 +1,7 @@
 import {readdir,lstat,readFile} from 'node:fs/promises';
 import {resolve,join,relative} from 'node:path';
 import {pathToFileURL} from 'node:url';
+import {browserFailureMetadata} from './ci-browser-diagnostics';
 export function redactTestDiagnostic(value:string){
  return value.replace(/\x1b\[[0-9;]*[A-Za-z]/g,'')
   .replace(/(?:postgres(?:ql)?|https?):\/\/[^\s'"<>]+/g,'[redacted-uri]')
@@ -13,6 +14,7 @@ export function redactTestDiagnostic(value:string){
 export async function printCiTestFailures(){
  if(process.env.CI!=='true'||process.env.GITHUB_ACTIONS!=='true'||resolve(process.env.GITHUB_WORKSPACE??'')!==process.cwd())throw Error('Actual CI workspace required');
  const root=resolve('local-artifacts'),skip=new Set(['node_modules','.git','.eve','app','store','objects','private-reports','runtime-assets','context','staging','images']);
+ const browserFiles=new Set((await readdir(resolve('tests/ui'))).filter(name=>/^[a-z-]+\.spec\.ts$/.test(name)));
  let visited=0,bytes=0,printed=0;const seen=new Set<string>();
  async function walk(directory:string,depth:number):Promise<void>{
   if(depth>8||visited>=2000||bytes>=67108864||printed>=30)return;
@@ -25,6 +27,11 @@ export async function printCiTestFailures(){
    if(!entry.isFile()||!entry.name.endsWith('.json'))continue;visited++;
    const size=(await lstat(file)).size;if(size>1048576)continue;bytes+=size;
    let report:any;try{report=JSON.parse(await readFile(file,'utf8'));}catch{continue;}
+   if(Array.isArray(report?.suites))for(const failure of browserFailureMetadata(report,browserFiles)){
+    if(printed>=30)break;
+    const key=JSON.stringify(['browser',failure]);if(seen.has(key))continue;seen.add(key);
+    console.info(JSON.stringify({kind:'ci_browser_failure',report:relative(root,file),...failure}));printed++;
+   }
    if(report?.numFailedTests>0&&Array.isArray(report.testResults))for(const suite of report.testResults)for(const test of suite.assertionResults??[]){
     if(test.status!=='failed'||printed>=30)continue;
     const title=redactTestDiagnostic(String(test.title??'')),key=JSON.stringify([suite.name,title]);if(seen.has(key))continue;seen.add(key);
