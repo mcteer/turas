@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {mkdtemp,rm,writeFile} from 'node:fs/promises';
+import {mkdtemp,rm,writeFile,readFile,access} from 'node:fs/promises';
 import {join,resolve,relative} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {execFile} from 'node:child_process';
@@ -9,6 +9,7 @@ import {QualityBudgetLedger} from '../../../scripts/pilot-quality-budget-ledger'
 import {writeEvidence} from '../../../scripts/pilot-evidence';
 import {verifyQualityStepAuthorization} from '../../../scripts/pilot-quality-step-authorization';
 import {qualityApplicability,qualityCatalog} from '../../../scripts/pilot-quality';
+import {prepareQualityWorkspace,verifyQualityWorkspace} from '../../../scripts/pilot-quality-workspace';
 describe('quality applicability',()=>{
  it('requires fresh review for shared session or recovery changes',()=>{
   const entries=qualityApplicability(['lib/server/auth/sessions.ts']);
@@ -18,10 +19,19 @@ describe('quality applicability',()=>{
  it('never accepts historical captures just because behavior appears unchanged',()=>{
   const entries=qualityApplicability(['docs/pilot-operations.md']);expect(entries.every(item=>item.applicability==='historical-review-required'&&!item.historicalProofAccepted&&item.currentActualModelProof==='unverified')).toBe(true);
  });
- it('retains all governing boundaries and verifier commands',()=>{
+ it('retains all governing boundaries and verifier commands',async()=>{
   expect(new Set(qualityCatalog.map(item=>item.feature)).size).toBe(9);
   expect(qualityCatalog.every(item=>item.boundaries.length===3&&item.evaluation&&item.verifier)).toBe(true);
- });
+  const root=await mkdtemp(resolve('local-artifacts/016/review-workspace-test-'));
+  try{
+   const workspace=join(root,'source');await prepareQualityWorkspace(process.cwd(),workspace);
+   await expect(access(join(workspace,'.env.local'))).rejects.toThrow();
+   await expect(access(join(workspace,'.eve'))).rejects.toThrow();
+   expect(await readFile(join(workspace,'next.config.ts'),'utf8')).toBe(await readFile('next.config.ts','utf8'));
+   await writeFile(join(workspace,'next.config.ts'),'// changed review source\n');
+   await expect(verifyQualityWorkspace(process.cwd(),workspace)).rejects.toThrow('Review workspace source differs');
+  }finally{await rm(root,{recursive:true,force:true});}
+ },120000);
  it('rejects malformed or excessive inventories',()=>{
   for(const paths of [['../secret'],['/private'],['lib/./source'],['lib/a\nsecret'],Array(10001).fill('lib/x')])expect(()=>qualityApplicability(paths)).toThrow();
  });

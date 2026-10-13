@@ -30,7 +30,12 @@ export async function checkPilotRegressions(){
  try{
   const predecessor=await capturePartnerProcess(['--import','tsx','scripts/test-mcp-regressions.ts'],10800000,signal);
   await writeFile(join(root,'predecessor.log'),predecessor.stdout+'\n'+predecessor.stderr,{flag:'wx',mode:0o600});
-  if(predecessor.status!==0||predecessor.error)throw Error('Complete predecessor gates failed');
+  if(predecessor.status!==0||predecessor.error){
+   const names=['014-domain-native','014-native','014-webkit','knowledge-retrieval-conversations-reports-support-expansion','012-domain','013-domain','private-conversations-earlier-authorities-and-webkit'];
+   const phases=(predecessor.stdout+'\n'+predecessor.stderr).split('\n').flatMap(line=>{try{const row=JSON.parse(line);if(names.includes(row.regression))return [{name:row.regression,state:'failed'}];if(names.includes(row.gate)&&row.status==='passed')return [{name:row.gate,state:'passed'}];}catch{}return [];});
+   console.error(JSON.stringify({gate:'pilot-regression-predecessor',state:'failed',exitCode:predecessor.status,processError:predecessor.error,phases}));
+   throw Error('Complete predecessor gates failed');
+  }
   const receipts=predecessor.stdout.split('\n').flatMap(line=>{try{return [JSON.parse(line)];}catch{return [];}}).filter(row=>row.paidCalls===0&&row.hostedProof===false&&Array.isArray(row.results)&&JSON.stringify(row.results.map((result:any)=>result.name))===JSON.stringify(['014-domain-native','014-native','014-webkit','knowledge-retrieval-conversations-reports-support-expansion','012-domain','013-domain','private-conversations-earlier-authorities-and-webkit','protected-hosted-watchdog']));
   if(receipts.length!==1||receipts[0].results.length!==8)throw Error('Exact predecessor completion receipt missing');
   results.push({gate:'complete-015-predecessors',receipt:receipts[0]});

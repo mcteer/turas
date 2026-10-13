@@ -18,6 +18,7 @@ import {issueSession,getCurrentSession,sessionCookieName} from '../lib/server/au
 import {qualityCatalog} from './pilot-quality';
 import suites from './pilot-suites.json';
 import {verifyPilotSuiteResult} from './pilot-suite-results';
+import {prepareQualityWorkspace,verifyQualityWorkspace} from './pilot-quality-workspace';
 
 const authorization=z.strictObject({contract:z.literal('pilot-quality-operator-v1'),id:z.uuid(),feature:z.literal('016'),category:z.literal('model-evaluation'),modelId:z.literal('spacexai/grok-4.7'),capMicroUsd:z.number().int().positive().max(100000000),contextCreditCap:z.literal(4),automaticBillingAllowed:z.literal(false),independentReviewAuthorized:z.literal(true),userInstructionReference:z.string().trim().min(1).max(512),recordedAt:z.iso.datetime({offset:true}),expiresAt:z.iso.datetime({offset:true})});
 type Stage={id:string;commands:string[][];native?:boolean;profileSeed?:'demo';deadlineMs:number};
@@ -126,6 +127,7 @@ export async function pilotQualityLive(args=process.argv.slice(2)){
   budget=await QualityBudgetLedger.create(ledgerRoot,{contract:'pilot-quality-budget-v1',id:approval.id,capMicroUsd:approval.capMicroUsd,contextCreditCap:approval.contextCreditCap,authorizationDigest,sourceDigest:source.sourceDigest,catalogDigest:source.catalogDigest,modelId:approval.modelId,expiresAt:approval.expiresAt});
  }
  const stepAuthorization=values['step-authorization']?verifyQualityStepAuthorization(await privateReceipt(values['step-authorization']),{id:approval.id,authorizationDigest,expiresAt:approval.expiresAt}):undefined;
+ await command(['scripts/check-docs.mjs'],sourceRoot,root,'original-source-hygiene',Date.now()+120000,false);
  const attemptId=await budget.beginAttempt(source);
  await writeEvidence(root,'runtime.json',{contract:'pilot-quality-runtime-v1',id:approval.id,attemptId,...(stepAuthorization?{stepAuthorization}:{}),sourceRoot,ledgerRoot:budget.root,...source,authorizationDigest,capMicroUsd:approval.capMicroUsd,contextCreditCap:approval.contextCreditCap,expiresAt:approval.expiresAt});
  await writeEvidence(root,'operator-authorization.json',approval);
@@ -133,15 +135,16 @@ export async function pilotQualityLive(args=process.argv.slice(2)){
  const completed:string[]=[];
  try{
   for(const stage of qualityStages){await assertSource();if((await budget.status()).admissionHeld)throw Error('Provider accounting requires review');const stageRoot=join(root,stage.id);await createEvidenceDirectory(stageRoot);
+   const workspace=join(stageRoot,'review-workspace');await prepareQualityWorkspace(sourceRoot,workspace);
    await withPilotEnvironment(async environment=>{
     process.env.TURAS_TEST_POSTGRES_CONTAINER=environment.databaseContainer;await setupImages(images);
     const deadline=Date.now()+stage.deadlineMs;
     await command(qualitySeedCommand(stage),environment.appRoot,stageRoot,'seed',deadline,false);
-    await command(['tests/fixtures/artifacts/generate.ts'],environment.appRoot,stageRoot,'artifact-fixtures',deadline,false);
+    await command(['tests/fixtures/artifacts/generate.ts'],workspace,stageRoot,'artifact-fixtures',deadline,false);
     process.env.AI_GATEWAY_API_KEY=key;process.env.CONTEXT_API_KEY=contextKey;process.env.TURAS_ALLOW_LIVE_MODEL_TESTS='1';process.env.TURAS_016_QUALITY_RUNTIME_FILE=join(root,'runtime.json');process.env.EVE_SKIP_SANDBOX_PREWARM='1';
     if(stage.native){await environment.startWorker();await environment.startNative();}
-    try{for(const [index,args] of stage.commands.entries()){await assertSource();await command(args,environment.appRoot,stageRoot,'command-'+index,deadline,true);if((await budget.status()).admissionHeld)throw Error('Provider accounting requires review');}}
-    finally{const local=join(environment.appRoot,'local-artifacts');await mkdir(local,{recursive:true,mode:0o700});const inventory=await capturedFiles(local);await cp(local,join(stageRoot,'captures'),{recursive:true,filter:path=>!path.split(/[\\/]/).some(part=>['node_modules','.eve'].includes(part)||part.startsWith('.env'))});await writeEvidence(stageRoot,'captures.json',{...source,stage:stage.id,files:inventory,actualModelQualityVerified:false});}
+    try{for(const [index,args] of stage.commands.entries()){await assertSource();await verifyQualityWorkspace(sourceRoot,workspace);await command(args,workspace,stageRoot,'command-'+index,deadline,true);await verifyQualityWorkspace(sourceRoot,workspace);if((await budget.status()).admissionHeld)throw Error('Provider accounting requires review');}}
+    finally{const local=join(workspace,'local-artifacts');await mkdir(local,{recursive:true,mode:0o700});const inventory=await capturedFiles(local);await cp(local,join(stageRoot,'captures'),{recursive:true,filter:path=>!path.split(/[\\/]/).some(part=>['node_modules','.eve'].includes(part)||part.startsWith('.env'))});await writeEvidence(stageRoot,'captures.json',{...source,stage:stage.id,reviewWorkspace:workspace,retainedForIndependentReview:true,files:inventory,actualModelQualityVerified:false});}
    },{postgresMajor:18,deadlineMs:stage.deadlineMs+300000});completed.push(stage.id);await writeEvidence(root,'stage-'+stage.id+'.json',{...source,stage:stage.id,state:'captured',accounting:await budget.status(),independentReviewComplete:false});
   }
   await assertSource();const receipt={contract:'pilot-quality-batch-v1',...source,completed,accounting:await budget.status(),state:'awaiting-independent-review',actualModelQualityVerified:false,independentReviewComplete:false};await writeEvidence(root,'batch.json',receipt);console.info(JSON.stringify({gate:'pilot-quality-capture',state:'awaiting-independent-review',stages:completed.length,actualModelQualityVerified:false}));return receipt;

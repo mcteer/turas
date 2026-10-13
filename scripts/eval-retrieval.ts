@@ -1,6 +1,8 @@
 import {insertBoundFixtureSession} from "../tests/fixtures/bound-session";
 import { createHash,randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
+import {mkdir,mkdtemp,writeFile} from 'node:fs/promises';
+import {resolve,join} from 'node:path';
 import { Pool } from "pg";
 import { DEMO_IDS } from "../lib/server/bootstrap-ids";
 import { requireEvaluationSourceDatabase } from "./eval-source-database";
@@ -55,6 +57,11 @@ const record = (texts: readonly string[]) => {
   }
   calls += 1;characters += count;
 };
+await mkdir('local-artifacts/005',{recursive:true,mode:0o700});
+const captureRoot=await mkdtemp(resolve('local-artifacts/005/retrieval-live-'));
+const capture:{contract:string;fixture:string;state:string;queries:unknown[];partnerScope:unknown[];embeddingCalls:number;inputCharacters:number}={contract:'retrieval-independent-review-v1',fixture:fixture.version,state:'incomplete',queries:[],partnerScope:[],embeddingCalls:0,inputCharacters:0};
+const persistCapture=async()=>{capture.embeddingCalls=calls;capture.inputCharacters=characters;await writeFile(join(captureRoot,'actual.json'),JSON.stringify(capture,null,2),{mode:0o600});};
+await persistCapture();
 try {
   const passages = await pool.query<{ id: string; passage_text: string;
     passage_digest: string; source_revision_id: string }>(`
@@ -125,33 +132,42 @@ try {
     recall += hit;
     if (hit < 1) failures.push(item.id);
     const client = await pool.connect();
+    const citations:unknown[]=[];
+    capture.queries.push({caseId:item.id,query:item.query,kind:item.kind,actor:{loginName:actors[index%2].loginName,kind:actors[index%2].kind},scope:{customerId:DEMO_IDS.deniedCustomer,use:'discovery',limit:5},expectedSourceRevisionIds:[...relevant],supportingPassages:passages.rows.filter(row=>item.relevantPassages.includes(row.passage_text)),response,citations,recallAt5:hit});
+    await persistCapture();
     try {
       for (const result of response.results) {
         const citation = await resolveRetrievalCitation(client,actors[index%2],result.citationId);
+        citations.push({citationId:result.citationId,resolved:citation});
         if (citation.text !== result.text || !citation.locators.length) {
           throw new Error(`Citation mismatch: ${item.id}`);
         }
       }
     } finally { client.release(); }
+    await persistCapture();
   }
   record(["Juniper deployment review workflow"]);
   const cedar = await searchEvidence(actors[2],{
     scope: "customer",customerId: DEMO_IDS.sharedCustomer,
     query: "Juniper deployment review workflow",use: "discovery",limit: 5 });
+  capture.partnerScope.push({kind:'assigned-customer-sentinel',actor:{loginName:actors[2].loginName,kind:actors[2].kind},customerId:DEMO_IDS.sharedCustomer,query:'Juniper deployment review workflow',response:cedar});await persistCapture();
   if (cedar.mode !== "hybrid" || cedar.results.length) {
     throw new Error("Cross-customer sentinel appeared in assigned partner scope");
   }
   let denied = false;
   try {
-    await searchEvidence(actors[2],{
+    const unexpected=await searchEvidence(actors[2],{
       scope: "customer",customerId: DEMO_IDS.deniedCustomer,
       query: "Juniper deployment review workflow",use: "discovery",limit: 5 });
+    capture.partnerScope.push({kind:'unassigned-customer-denial',customerId:DEMO_IDS.deniedCustomer,denied:false,response:unexpected});await persistCapture();
   } catch (error) {
     denied = Boolean(error && typeof error === "object" && "status" in error &&
       (error.status === 403 || error.status === 404));
+    capture.partnerScope.push({kind:'unassigned-customer-denial',customerId:DEMO_IDS.deniedCustomer,status:error&&typeof error==='object'&&'status' in error?error.status:null,denied});await persistCapture();
   }
   if (!denied) throw new Error("Unassigned partner customer scope was not denied");
   const recallAt5 = recall/fixture.answerableQueries.length;
+  capture.state=recallAt5>=0.85?'captured-awaiting-independent-review':'failed-recall';await persistCapture();
   console.log(JSON.stringify({ fixture: fixture.version,queries: fixture.answerableQueries.length,
     semanticQueries: fixture.answerableQueries.filter((item) => item.kind === "semantic").length,
     recallAt5: Number(recallAt5.toFixed(3)),allCitationsExact: true,
@@ -163,6 +179,7 @@ try {
   console.error(error instanceof Error ? error.message : "Retrieval evaluation failed");
   process.exitCode = 1;
 } finally {
+  await persistCapture();
   if (sessions.length) await pool.query("DELETE FROM login_sessions WHERE id=ANY($1::uuid[])",
     [sessions]).catch(() => undefined);
   await closeRuntimePool();

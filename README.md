@@ -485,3 +485,6 @@ Independent semantic evaluation may use the separately requested LLM judge with
 actual captures and governing rubrics. Human operator and pilot observations remain
 required. Quality setup verifies actual 016 container ownership, native clone startup,
 fixture scope and worker budget-guard inheritance before further paid execution.
+Quality stages retain private source-bound workspaces and native captures until
+independent review, including retrieval query, citation and partner-scope evidence.
+Temporary containers and app processes still clean up after each stage.

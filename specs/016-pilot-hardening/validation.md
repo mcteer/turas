@@ -2070,3 +2070,31 @@ receipt against the actual spawned worker PID and original budget/source. All
 **four unit plus three composed owned cases pass**; worker test records zero paid
 model/Context dispatches. Root/pilot types pass. Current inventory is **672/118**;
 fresh complete committed/native/CI checks are required before further paid work.
+
+
+### Independent-review evidence retention correction — 2026-10-13
+
+The separate LLM judge identified that transient evaluation cleanup invalidated
+native review roots and absolute capture paths. Each quality stage now retains a
+private review workspace with exact Git-tracked source, verified against feature
+008/010/011/014/016 and staffing source digests. Native artifact directories,
+preflight logs and raw arm files remain until independent review; transient app,
+database and worker resources still clean up normally. The original repository
+also receives its explicit tracked-file hygiene check. Fixtures are generated in
+the retained workspace. No capture/source digest is rewritten to simulate binding.
+
+005 retrieval now retains query/role/scope, expected source/passages, ordered
+results, resolved citations, recall, partner-scope outcomes and partial failure
+evidence for independent review. No embedding vectors or credentials are copied.
+The existing seven quality unit cases pass, including actual source-copy equality,
+credential/state exclusion and altered-source rejection; root/pilot types, docs
+and diff checks pass. Inventory remains 672 cases/118 suites.
+
+The 7a892bb full run de86644d was deliberately interrupted after 84 completed
+suites to apply these prerequisite corrections; it is failed/incomplete evidence,
+not a full pass. Its owned resources were removed. CI 38441833704 reports a pilot
+predecessor regression failure with no assertion-level diagnostic; a bounded
+fixed-name predecessor-phase diagnostic now makes future CI failure attributable.
+No paid calls occurred during this correction. Original cumulative spend remains
+$1.474879, 105 dispatches, zero Context credits; $23.525121/four credits remain.
+Fresh committed full/native proof is required before the next paid batch.
