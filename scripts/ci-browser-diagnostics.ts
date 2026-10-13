@@ -1,4 +1,6 @@
-type BrowserFailure={file:string;line:number;column:number;project:string;status:string;durationMs:number|null;category:string;signatures:string[]};
+import axe from 'axe-core';
+type BrowserFailure={file:string;line:number;column:number;project:string;status:string;durationMs:number|null;category:string;signatures:string[];mentionedAccessibilityRules:string[]};
+const accessibilityRules=new Set(axe.getRules().map(rule=>rule.ruleId));
 const projects=new Set(['webkit-desktop-light','webkit-desktop-dark','webkit-mobile-light','webkit-mobile-dark']);
 const signatures=['Test timeout','Timeout','toBeVisible','toBeFocused','toHaveCount','toEqual','strict mode violation','navigation interrupted','ERR_ABORTED','ECONNREFUSED','Execution context was destroyed'] as const;
 /** Fixed metadata only: never publish titles, error prose, DOM, attachments or stdout. */
@@ -24,7 +26,8 @@ export function browserFailureMetadata(raw:unknown,allowedFiles:ReadonlySet<stri
      if(match){location={file:match[1],line:integer(Number(match[2])),column:integer(Number(match[3]))};break;}
     }
     const matched=signatures.filter(signature=>prose.toLowerCase().includes(signature.toLowerCase()));
-    failures.push({...location,project:projects.has(test.projectName)?test.projectName:'unknown',status:result.status,durationMs:typeof result.duration==='number'&&Number.isFinite(result.duration)&&result.duration>=0&&result.duration<=3600000?result.duration:null,category:/test timeout/i.test(prose)?'test_timeout':/timeout|timed out/i.test(prose)?'operation_timeout':/strict mode violation/i.test(prose)?'ambiguous_locator':/navigation|ERR_ABORTED/i.test(prose)?'navigation':/expect|AssertionError/i.test(prose)?'assertion':'case_failure',signatures:matched});
+    const mentionedAccessibilityRules=[...new Set([...prose.matchAll(/"([a-z][a-z0-9-]{1,79})"/g)].map(match=>match[1]).filter(id=>accessibilityRules.has(id)))].slice(0,8);
+    failures.push({...location,project:projects.has(test.projectName)?test.projectName:'unknown',status:result.status,durationMs:typeof result.duration==='number'&&Number.isFinite(result.duration)&&result.duration>=0&&result.duration<=3600000?result.duration:null,category:/test timeout/i.test(prose)?'test_timeout':/timeout|timed out/i.test(prose)?'operation_timeout':/strict mode violation/i.test(prose)?'ambiguous_locator':/navigation|ERR_ABORTED/i.test(prose)?'navigation':/expect|AssertionError/i.test(prose)?'assertion':'case_failure',signatures:matched,mentionedAccessibilityRules});
    }
   }
   for(const key of ['suites','specs'])if(Array.isArray(row[key]))for(const child of row[key])walk(child,depth+1);

@@ -7,7 +7,7 @@ const roles=[{name:'internal-admin',login:'mcteer',kind:'internal',role:'admin',
  {name:'internal-member',login:'panel',kind:'internal',role:'member',password:'TURAS_PILOT_HOSTED_MEMBER_PASSWORD'},
  {name:'assigned-partner',login:'partner',kind:'partner',role:'member',password:'TURAS_PILOT_HOSTED_PARTNER_PASSWORD'}] as const;
 const sessionEnvelope=z.object({data:z.object({principal:z.object({id:z.uuid(),loginName:z.string()}),workspace:z.object({id:z.uuid(),classification:z.literal('synthetic_pilot')}),membership:z.object({id:z.uuid(),kind:z.string(),role:z.string()}),csrfToken:z.string().regex(/^[a-f0-9]{64}$/)})});
-async function boundedJson(response:Response){
+export async function boundedHostedJson(response:Response){
  if(!/^application\/json(?:;|$)/i.test(response.headers.get('content-type')??'')||!response.body)throw Error('Hosted JSON response unavailable');
  const reader=response.body.getReader(),chunks:Uint8Array[]=[];let size=0;
  try{for(;;){const part=await reader.read();if(part.done)break;size+=part.value.byteLength;if(size>1048576)throw Error('Hosted response exceeds private bound');chunks.push(part.value);}return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown;}
@@ -53,17 +53,17 @@ export async function runHostedReadChecks(scope:PilotHostedScope,db:Client,signa
    token=/^__Host-turas_session=([A-Za-z0-9_-]{43});/.exec(cookie)?.[1];
    if(token)headers.set('cookie','__Host-turas_session='+token);
    if(!token||!/(?:^|;)\s*Secure(?:;|$)/i.test(cookie)||!/(?:^|;)\s*HttpOnly(?:;|$)/i.test(cookie)||/(?:^|;)\s*Domain=/i.test(cookie))throw Error('Hosted session cookie boundary differs');
-   const body=z.object({data:z.object({csrfToken:z.string().regex(/^[a-f0-9]{64}$/)})}).parse(await boundedJson(login));csrf=body.data.csrfToken;
+   const body=z.object({data:z.object({csrfToken:z.string().regex(/^[a-f0-9]{64}$/)})}).parse(await boundedHostedJson(login));csrf=body.data.csrfToken;
    headers.set('cookie','__Host-turas_session='+token);headers.set('x-csrf-token',csrf);
    if(login.headers.get('x-turas-code-version')!==scope.sourceCommit)throw Error('Hosted response release version differs');
    const current=await call('/api/auth/session','GET',headers);if(current.status!==200)throw Error('Actual hosted session unavailable');
-   const session=sessionEnvelope.parse(await boundedJson(current)).data;
+   const session=sessionEnvelope.parse(await boundedHostedJson(current)).data;
    if(session.principal.id!==expected.principal_id||session.principal.loginName!==role.login||session.workspace.id!==scope.workspaceId||session.membership.id!==expected.id||session.membership.kind!==role.kind||session.membership.role!==role.role||session.csrfToken!==csrf)throw Error('Actual hosted membership differs');
    const row=(await db.query('SELECT principal_id,membership_id,workspace_id,revoked_at FROM login_sessions WHERE token_hash=$1',[createHash('sha256').update(token).digest('hex')])).rows[0];
    if(!row||row.principal_id!==expected.principal_id||row.membership_id!==expected.id||row.workspace_id!==scope.workspaceId||row.revoked_at!==null)throw Error('Hosted session belongs to another database or scope');
    cases.push({id:'session-bound',role:role.name,state:'pass',status:200});
    const listing=await call('/api/customers?limit=25','GET',headers);if(listing.status!==200)throw Error('Hosted customer read failed');
-   const list=z.object({data:z.object({items:z.array(z.object({id:z.uuid(),synthetic:z.literal(true)})).max(20),nextCursor:z.null()})}).parse(await boundedJson(listing)).data;
+   const list=z.object({data:z.object({items:z.array(z.object({id:z.uuid(),synthetic:z.literal(true)})).max(20),nextCursor:z.null()})}).parse(await boundedHostedJson(listing)).data;
    const ids=list.items.map(row=>row.id).sort(),expectedIds=[...(role.kind==='partner'?assigned:allIds)].sort();
    if(JSON.stringify(ids)!==JSON.stringify(expectedIds))throw Error('Hosted customer scope leaked or missed assigned records');
    cases.push({id:'positive-customer-scope',role:role.name,state:'pass',status:200});
@@ -71,7 +71,7 @@ export async function runHostedReadChecks(scope:PilotHostedScope,db:Client,signa
    if(status.status!==expectedStatus)throw Error('Hosted operational authority differs');await status.body?.cancel();cases.push({id:'operations-authority',role:role.name,state:'pass',status:expectedStatus});
    const gaps=await call('/api/product-gaps','GET',headers),expectedGaps=role.kind==='internal'?200:404;
    if(gaps.status!==expectedGaps)throw Error('Hosted Product Gaps read failed or disclosed partner content');
-   if(role.kind==='internal'){const payload=z.object({data:z.object({contractVersion:z.literal('product-gaps-v1')})}).parse(await boundedJson(gaps));void payload;}else await gaps.body?.cancel();
+   if(role.kind==='internal'){const payload=z.object({data:z.object({contractVersion:z.literal('product-gaps-v1')})}).parse(await boundedHostedJson(gaps));void payload;}else await gaps.body?.cancel();
    cases.push({id:'product-gaps-read-boundary',role:role.name,state:'pass',status:expectedGaps});
    if(proveRole)await proveRole({role:role.name,headers:new Headers(headers),customerIds:expectedIds,allCustomerIds:allIds,partnerCustomerIds:[...assigned]});
   }finally{
@@ -81,7 +81,7 @@ export async function runHostedReadChecks(scope:PilotHostedScope,db:Client,signa
    if(token&&!csrf){
     const current=await call('/api/auth/session','GET',headers,undefined,true);
     if(current.status!==200)throw Error('Exact hosted cleanup session unavailable');
-    const session=sessionEnvelope.parse(await boundedJson(current)).data;
+    const session=sessionEnvelope.parse(await boundedHostedJson(current)).data;
     if(session.principal.id!==expected.principal_id||session.workspace.id!==scope.workspaceId||session.membership.id!==expected.id)throw Error('Exact hosted cleanup membership differs');
     csrf=session.csrfToken;headers.set('x-csrf-token',csrf);
    }

@@ -1,5 +1,5 @@
 import {it,expect} from 'vitest';
-import {pilotHostedRequest} from '../../../scripts/pilot-hosted-request';
+import {pilotHostedRequest,PilotHostedResponseError} from '../../../scripts/pilot-hosted-request';
 import type {PilotHostedScope} from '../../../lib/contracts/pilot-hosted';
 const scope={origin:'https://synthetic.example',sourceCommit:'a'.repeat(40)} as PilotHostedScope;
 const response=(body:string,version=scope.sourceCommit,status=200)=>new Response(body,{status,headers:{'content-type':'application/json','x-turas-code-version':version}});
@@ -22,4 +22,14 @@ it('rejects foreign and non-API paths before dispatch',async()=>{
 });
 it('honors cancellation before dispatch',async()=>{
  let calls=0;const controller=new AbortController();controller.abort();const transport:typeof fetch=async()=>{calls++;return response('{}');};await expect(pilotHostedRequest({...input(transport),signal:controller.signal})('/api/synthetic','GET')).rejects.toThrow();expect(calls).toBe(0);
+});
+it('binds expected denial codes to the serving release without retaining private error prose',async()=>{
+ const privateText='Private synthetic customer and credential text';
+ const denied:typeof fetch=async()=>response(JSON.stringify({error:{code:'qualification_incomplete',message:privateText}}),scope.sourceCommit,409);
+ let error:unknown;try{await pilotHostedRequest(input(denied))('/api/synthetic','POST',{});}catch(value){error=value;}
+ expect(error).toBeInstanceOf(PilotHostedResponseError);expect(error).toMatchObject({status:409,releaseMatches:true,errorCode:'qualification_incomplete'});expect(String(error)).not.toContain(privateText);expect(JSON.stringify(error)).not.toContain(privateText);
+ const stale:typeof fetch=async()=>response(JSON.stringify({error:{code:'qualification_incomplete',message:privateText}}),'b'.repeat(40),409);
+ await expect(pilotHostedRequest(input(stale))('/api/synthetic','POST',{})).rejects.toMatchObject({status:409,releaseMatches:false,errorCode:null});
+ const untrusted:typeof fetch=async()=>response(JSON.stringify({error:{code:privateText,message:privateText}}),scope.sourceCommit,409);
+ await expect(pilotHostedRequest(input(untrusted))('/api/synthetic','POST',{})).rejects.toMatchObject({status:409,releaseMatches:true,errorCode:null});
 });

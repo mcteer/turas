@@ -25,6 +25,12 @@ import type {PilotHostedScope} from '../../../lib/contracts/pilot-hosted';
 import {runHostedProfileFoundation} from '../../../scripts/pilot-hosted-foundation';
 import {runHostedPlanJourney} from '../../../scripts/pilot-hosted-plan';
 import {runHostedDeliveryReview,runHostedMilestoneReview} from '../../../scripts/pilot-hosted-delivery';
+import {runHostedSupportBoundary} from '../../../scripts/pilot-hosted-support';
+import {runHostedExpansionBoundary} from '../../../scripts/pilot-hosted-expansion';
+import {expansionWorkspaceProjectionSchema} from '../../../lib/server/expansion/projection-schema';
+import {runHostedGapBoundary} from '../../../scripts/pilot-hosted-gaps';
+import {claimGapReportJobs,runGapReportJob} from '../../../lib/server/gaps/report-jobs';
+import {runHostedPrimaryExclusion} from '../../../scripts/pilot-hosted-primary';
 it('reviews an uploaded source through cited planning and delivery and denies published report files after normal withdrawal',async()=>{
 const preparationFile=process.env.TURAS_PILOT_UI_PREPARATION_FILE;if(!preparationFile)throw Error('Explicit prepared source images required');
 const preparation=parsePilotImagePreparation(await readFile(preparationFile)),preparedStore=join(dirname(preparationFile),'store');
@@ -51,7 +57,16 @@ await withPilotEnvironment(async environment=>{
   const headers=new Headers({cookie:sessionCookieName()+'='+issued.token,origin:environment.origin,'content-type':'application/json','x-csrf-token':csrfTokenForSession(issued.token)});
   const scope:PilotHostedScope={contract:'pilot-hosted-scope-v1',runId:randomUUID(),projectId:'prj_synthetic',teamId:'team_synthetic',deploymentId:'dpl_synthetic',origin:environment.origin,environmentMarker:environment.environmentId,workspaceId,target:'production',sourceCommit:process.env.TURAS_CODE_VERSION!,sourceDigest:'a'.repeat(64),catalogDigest:'b'.repeat(64)};
   await closeRuntimePool();await environment.startProduction();
-  const request=pilotHostedRequest({scope,headers,signal:environment.signal}),authorRequest=pilotHostedRequest({scope,headers:memberHeaders,signal:environment.signal});
+  const supportDiagnostics:typeof fetch=async(input,options)=>{
+   const response=await fetch(input,options);
+   if(new URL(String(input)).pathname.startsWith('/api/support/')&&!response.ok){
+    const code=(await response.clone().json().catch(()=>null))?.error?.code;
+    const known=['invalid_assessment','invalid_source','invalid_owner','invalid_disposition','source_changed','not_found','forbidden','invalid_date','unavailable','rate_limited'];
+    await response.body?.cancel();throw Error('Hosted support HTTP '+response.status+' '+(known.includes(code)?code:'other'));
+   }
+   return response;
+  };
+  const request=pilotHostedRequest({scope,headers,signal:environment.signal,transport:supportDiagnostics}),authorRequest=pilotHostedRequest({scope,headers:memberHeaders,signal:environment.signal,transport:supportDiagnostics});
   const foundation=await runHostedProfileFoundation({scope,db:owner,customerId,signal:environment.signal,request});
   const uploaded=await runOwnedSourceJourney({scope,db:owner,customerId,workloadId:foundation.workloadId,signal:environment.signal,request,uploadBytes:async(intentId,bytes)=>{
    const binaryHeaders=new Headers(headers);binaryHeaders.set('content-type','application/octet-stream');binaryHeaders.set('content-length',String(bytes.length));
@@ -71,9 +86,32 @@ await withPilotEnvironment(async environment=>{
   const delivery=await runHostedDeliveryReview({scope,db:owner,customerId,engagementId:plan.engagementId,baselineId:plan.baselineId,signal:environment.signal,request});
   const milestone=await runHostedMilestoneReview({scope,db:owner,customerId,engagementId:plan.engagementId,baselineId:plan.baselineId,activityRevisionId:delivery.revisionId,signal:environment.signal,request});
   expect(milestone).toMatchObject({normalCommands:3,explicitMilestoneAcceptanceVerified:true,customerOutcomeEstablished:false,providerCalls:0});
+  const support=await runHostedSupportBoundary({scope,db:owner,customerId,workloadId:foundation.workloadId,planId:plan.planId,revisionId:plan.revisionId,engagementId:plan.engagementId,ownerMembershipId:membershipId,authorRequest,reviewerRequest:request,signal:environment.signal});
+  expect(support).toMatchObject({normalCommands:6,providerCalls:0,externalHandoffRecorded:false,externalActionsDispatched:0,readiness:'unknown',syntheticOnly:true,fullHostedCatalogVerified:false});
+  const expansion=await runHostedExpansionBoundary({scope,db:owner,customerId,workloadId:foundation.workloadId,planId:plan.planId,revisionId:plan.revisionId,engagementId:plan.engagementId,ownerMembershipId:membershipId,authorRequest,reviewerRequest:request,signal:environment.signal});
+  expect(expansion).toMatchObject({normalCommands:6,qualificationDenied:true,providerCalls:0,benefit:'unknown',currentUse:'unknown',externalActionsDispatched:0,syntheticOnly:true,fullHostedCatalogVerified:false});
+  const gaps=await runHostedGapBoundary({scope,db:owner,customerId,workloadId:foundation.workloadId,planId:plan.planId,revisionId:plan.revisionId,engagementId:plan.engagementId,ownerMembershipId:membershipId,authorRequest,reviewerRequest:request,signal:environment.signal,waitForReport:async reportId=>{
+   const [job]=await claimGapReportJobs();if(!job||job.report_id!==reportId)throw Error('Exact normally queued gap report required');await runGapReportJob(job);
+  },verifyPrimaryIsolation:async(gapIds,reportId,query)=>{
+   const proof=await runHostedPrimaryExclusion({scope,db:owner,gapIds,reportId,query,signal:environment.signal,env:{...process.env,TURAS_PILOT_HOSTED_ADMIN_PASSWORD:process.env.TURAS_DEMO_PASSWORD}});
+   expect(proof).toMatchObject({directDenials:4,registryEmpty:true,sessionRevoked:true,primaryCustomerWrites:0,providerCalls:0});
+  },readExport:async artifact=>{
+   const response=await fetch(environment.origin+'/api/product-gaps/reports/'+artifact.reportId+'/exports/'+artifact.exportId,{headers,redirect:'manual',cache:'no-store',signal:environment.signal});
+   expect(response.status).toBe(200);expect(response.headers.get('x-turas-code-version')).toBe(scope.sourceCommit);const reader=response.body?.getReader();if(!reader)throw Error('Actual private gap export required');
+   const parts:Uint8Array[]=[];let size=0;try{for(;;){const next=await reader.read();if(next.done)break;size+=next.value.byteLength;if(size>5242880)throw Error('Gap export exceeds bound');parts.push(next.value);}}finally{await reader.cancel().catch(()=>undefined);reader.releaseLock();}return Buffer.concat(parts);
+  }});
+  expect(gaps).toMatchObject({actualExportReads:2,pilotCustomerCountsVerified:true,primaryCountsIsolationVerified:true,providerCalls:0,externalMessagesSent:0,syntheticOnly:true,humanFeedbackRecorded:false,fullHostedCatalogVerified:false});
   const publishedArtifactIds:string[]=[];
   const reports=await runOwnedReportJourney({scope,db:owner,customerId,engagementId:plan.engagementId,workloadId:foundation.workloadId,signal:environment.signal,request,authorRequest,runQueuedRender:async revisionId=>{const [job]=await reportTransaction(db=>claimReportJobs(db,'render'));if(!job||job.revision_id!==revisionId)throw Error('Exact normal queued render required');await runReportRenderJob(job,environment.signal);},readArtifact:async artifact=>{publishedArtifactIds.push(artifact.id);const response=await fetch(environment.origin+'/api/reports/artifacts/'+artifact.id,{headers,redirect:'manual',cache:'no-store',signal:AbortSignal.any([environment.signal,AbortSignal.timeout(30000)])});if(!response.ok||response.headers.get('x-turas-code-version')!==scope.sourceCommit){await response.body?.cancel();throw Error('Exact published file read unavailable');}const reader=response.body?.getReader();if(!reader)throw Error('Actual file body required');const parts:Uint8Array[]=[];let size=0;try{for(;;){const part=await reader.read();if(part.done)break;size+=part.value.length;if(size>10485760)throw Error('Published artifact exceeds bound');parts.push(part.value);}}finally{await reader.cancel().catch(()=>undefined);reader.releaseLock();}const bytes=Buffer.concat(parts);if(size!==artifact.sizeBytes||createHash('sha256').update(bytes).digest('hex')!==artifact.contentDigest||bytes.subarray(0,artifact.format==='pdf'?5:2).toString()!==(artifact.format==='pdf'?'%PDF-':'PK'))throw Error('Actual published file bytes differ');}});
+  z.object({data:z.object({effectiveReadiness:z.literal('unknown'),assessment:z.object({revisionId:z.literal(support.assessmentRevisionId),contentUnavailable:z.literal(false)})})}).parse(await request('/api/support/customers/'+customerId+'?workloadId='+foundation.workloadId+'&audience=delivery&limit=20','GET'));
+  const expansionPath='/api/expansion/customers/'+customerId+'?workloadId='+foundation.workloadId+'&recordId='+expansion.recordId+'&limit=20';
+  const beforeWithdrawal=expansionWorkspaceProjectionSchema.parse(z.object({data:z.unknown()}).parse(await request(expansionPath,'GET')).data);
+  expect(beforeWithdrawal.records[0]?.working.availability).toBe('eligible');
   await request('/api/artifacts/'+uploaded.versionId+'/actions','POST',sourceWithdrawalCommand(uploaded.lifecycleGeneration));
+  const unavailable=z.object({data:z.object({effectiveReadiness:z.literal('review_required'),assessment:z.object({revisionId:z.literal(support.assessmentRevisionId),contentUnavailable:z.literal(true),content:z.null()}),actions:z.array(z.object({recordId:z.uuid(),accepted:z.object({contentUnavailable:z.literal(true),content:z.null()}).nullable()}))})}).parse(await request('/api/support/customers/'+customerId+'?workloadId='+foundation.workloadId+'&audience=delivery&limit=20','GET')).data;
+  expect(unavailable.actions.some(row=>row.recordId===support.actionRecordId&&row.accepted?.contentUnavailable)).toBe(true);
+  const changed=expansionWorkspaceProjectionSchema.parse(z.object({data:z.unknown()}).parse(await request(expansionPath,'GET')).data);
+  expect(changed.records[0]?.id).toBe(expansion.recordId);expect(changed.records[0]?.working.availability).toBe('changed');expect(changed.records[0]?.working.payload).toBeNull();expect(changed.records[0]?.reviewRequired).toBe(true);
   for(const path of ['/api/retrieval/citations/'+source.citationId,...publishedArtifactIds.map(id=>'/api/reports/artifacts/'+id)]){
    const denied=await fetch(environment.origin+path,{headers,redirect:'manual',cache:'no-store',signal:environment.signal});expect([404,409]).toContain(denied.status);expect(denied.headers.get('x-turas-code-version')).toBe(scope.sourceCommit);await denied.body?.cancel();
   }

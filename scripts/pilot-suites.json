@@ -1313,14 +1313,15 @@
     },
     {
       "file": "tests/unit/pilot/hosted-request.test.ts",
-      "expectedCases": 6,
+      "expectedCases": 7,
       "cases": [
         "reads bounded JSON from the exact release without retrying or following redirects",
         "rejects a release mismatch before reading domain content",
         "rejects oversized streamed JSON before accumulating an unbounded body",
         "does not retry an uncertain mutation body",
         "rejects foreign and non-API paths before dispatch",
-        "honors cancellation before dispatch"
+        "honors cancellation before dispatch",
+        "binds expected denial codes to the serving release without retaining private error prose"
       ]
     },
     {
@@ -1405,6 +1406,14 @@
       "expectedCases": 1,
       "cases": [
         "uses actual served role sessions and four CLI WebKit configurations for parked ownership and lifecycle boundaries"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/gap-release-header.test.ts",
+      "expectedCases": 2,
+      "cases": [
+        "binds actual streamed gap exports to the serving deployment while preserving review and integrity headers",
+        "withholds stream bytes on a changed release fence and invents no absent code identity"
       ]
     }
   ],

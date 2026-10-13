@@ -15,6 +15,11 @@ import {runHostedMcpJourney} from './pilot-hosted-mcp';
 import {runHostedProfileReviewJourney} from './pilot-hosted-profile';
 import {runHostedConversationBoundary} from './pilot-hosted-conversations';
 import {runHostedConversationBrowser} from './pilot-hosted-browser';
+import {runHostedSupportBoundary} from './pilot-hosted-support';
+import {pilotHostedRequest} from './pilot-hosted-request';
+import {runHostedExpansionBoundary} from './pilot-hosted-expansion';
+import {runHostedGapBoundary} from './pilot-hosted-gaps';
+import {runHostedPrimaryExclusion} from './pilot-hosted-primary';
 import {withRecoveryCancellation} from '../lib/server/operations/recovery-cancellation';
 const execute=promisify(execFile);
 async function platformDeployment(scope:PilotHostedScope,origin=false,signal?:AbortSignal){
@@ -78,6 +83,9 @@ export async function pilotHosted(args=process.argv.slice(2)){
   const profileJourneys:Awaited<ReturnType<typeof runHostedProfileReviewJourney>>[]=[];
   const conversationJourneys:(Awaited<ReturnType<typeof runHostedConversationBoundary>>&{role:string})[]=[];
   const browserJourneys:(Awaited<ReturnType<typeof runHostedConversationBrowser>>&{role:string})[]=[];
+  const supportJourneys:Awaited<ReturnType<typeof runHostedSupportBoundary>>[]=[];
+  const expansionJourneys:Awaited<ReturnType<typeof runHostedExpansionBoundary>>[]=[];
+  const gapJourneys:Awaited<ReturnType<typeof runHostedGapBoundary>>[]=[];
   try{await readDb.connect();reads=await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async context=>{
     stage='conversation_boundary';
     conversationJourneys.push({...await runHostedConversationBoundary({scope,db:readDb,headers:context.headers,customerId:context.partnerCustomerIds[0],signal,foreignConversationIds:conversationJourneys.map(row=>row.conversationId)}),role:context.role});
@@ -96,9 +104,39 @@ export async function pilotHosted(args=process.argv.slice(2)){
     if(!positive||!denied)throw Error('Ordinarily accepted hosted SDK chain required');
     stage='sdk_boundary';
     sdkJourneys.push({...await runHostedMcpJourney({scope,db:readDb,headers:context.headers,customerId:String(positive),deniedCustomerId:denied,signal}),role:context.role});
+    if(context.role==='internal-admin'){
+     stage='support_boundary';
+     const linked=(await readDb.query(`SELECT p.id AS plan_id,p.accepted_revision_id,p.workload_id,p.engagement_id,m.id AS owner_id
+      FROM delivery_plans p JOIN customer_workloads w ON w.id=p.workload_id AND w.workspace_id=p.workspace_id AND w.customer_id=p.customer_id AND w.lifecycle='active'
+      JOIN memberships m ON m.workspace_id=p.workspace_id AND m.active AND m.kind='internal' AND m.role='admin'
+      JOIN principals a ON a.id=m.principal_id AND a.active AND a.login_name='mcteer'
+      WHERE p.workspace_id=$1 AND p.customer_id=$2 AND p.audience='delivery' AND p.accepted_revision_id IS NOT NULL AND p.engagement_id IS NOT NULL
+       AND NOT EXISTS(SELECT 1 FROM support_scopes s JOIN support_records r ON r.scope_id=s.id WHERE s.workspace_id=p.workspace_id AND s.customer_id=p.customer_id AND s.workload_id=p.workload_id AND r.audience='delivery')
+      ORDER BY p.id LIMIT 1`,[scope.workspaceId,positive])).rows[0];
+     if(!linked)throw Error('Fresh ordinarily accepted support baseline required');
+     const request=pilotHostedRequest({scope,headers:context.headers,signal});
+     supportJourneys.push(await runHostedSupportBoundary({scope,db:readDb,customerId:String(positive),workloadId:linked.workload_id,planId:linked.plan_id,revisionId:linked.accepted_revision_id,engagementId:linked.engagement_id,ownerMembershipId:linked.owner_id,authorRequest:request,reviewerRequest:request,signal}));
+     await writeEvidence(root,'support-internal-admin.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...supportJourneys.at(-1)});
+     stage='expansion_boundary';
+     expansionJourneys.push(await runHostedExpansionBoundary({scope,db:readDb,customerId:String(positive),workloadId:linked.workload_id,planId:linked.plan_id,revisionId:linked.accepted_revision_id,engagementId:linked.engagement_id,ownerMembershipId:linked.owner_id,authorRequest:request,reviewerRequest:request,signal}));
+     await writeEvidence(root,'expansion-internal-admin.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...expansionJourneys.at(-1)});
+     stage='gap_boundary';
+     gapJourneys.push(await runHostedGapBoundary({scope,db:readDb,customerId:String(positive),workloadId:linked.workload_id,planId:linked.plan_id,revisionId:linked.accepted_revision_id,engagementId:linked.engagement_id,ownerMembershipId:linked.owner_id,authorRequest:request,reviewerRequest:request,signal,waitForReport:async reportId=>{
+      const until=Date.now()+300000;
+      for(;;){signal.throwIfAborted();const result=await request('/api/product-gaps/reports/'+reportId,'GET') as {data?:{job?:{state?:unknown};availability?:unknown}};if(result.data?.job?.state==='prepared'&&result.data.availability==='eligible')return;if(['failed','cancelled'].includes(String(result.data?.job?.state))||Date.now()>=until)throw Error('Actual normally scheduled gap report unavailable');await new Promise<void>((done,reject)=>{const timer=setTimeout(()=>{signal.removeEventListener('abort',abort);done();},2000);const abort=()=>{clearTimeout(timer);reject(signal.reason);};signal.addEventListener('abort',abort,{once:true});});}
+     },verifyPrimaryIsolation:async(gapIds,reportId,query)=>{
+      const proof=await runHostedPrimaryExclusion({scope,db:readDb,gapIds,reportId,query,signal});await writeEvidence(root,'primary-gap-exclusion.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,deployment,completedAt:new Date().toISOString(),...proof});
+     },readExport:async artifact=>{
+      const response=await fetch(new URL('/api/product-gaps/reports/'+artifact.reportId+'/exports/'+artifact.exportId,scope.origin),{headers:context.headers,redirect:'manual',cache:'no-store',signal:AbortSignal.any([signal,AbortSignal.timeout(30000)])});
+      if(response.status!==200||response.headers.get('x-turas-code-version')!==scope.sourceCommit){await response.body?.cancel();throw Error('Exact private gap export unavailable or release differs');}
+      const reader=response.body?.getReader();if(!reader)throw Error('Actual private gap export body required');const parts:Uint8Array[]=[];let size=0;
+      try{for(;;){const next=await reader.read();if(next.done)break;size+=next.value.byteLength;if(size>artifact.sizeBytes||size>5242880)throw Error('Private gap export exceeds bound');parts.push(next.value);}}finally{await reader.cancel().catch(()=>undefined);reader.releaseLock();}return Buffer.concat(parts);
+     }}));
+     await writeEvidence(root,'gaps-internal-admin.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...gapJourneys.at(-1)});
+    }
    });}finally{await readDb.end();}
   if(JSON.stringify(await platformDeployment(scope,true,signal))!==JSON.stringify(deployment)||JSON.stringify(await pilotSource())!==JSON.stringify(source)||JSON.stringify(await pilotProtectedSnapshot())!==JSON.stringify(protectedBefore))throw Error('Hosted identity or protected checkout changed');
-  await writeEvidence(root,'reads.json',{id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,startedAt,completedAt:new Date().toISOString(),...reads,sdkJourneys,profileJourneys,conversationJourneys,browserJourneys,normalProfileCommands:profileJourneys.reduce((sum,row)=>sum+row.normalProfileCommands,0)});
+  await writeEvidence(root,'reads.json',{contract:'pilot-hosted-role-boundaries-v1',id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,startedAt,completedAt:new Date().toISOString(),roleReads:reads,sdkJourneys,profileJourneys,conversationJourneys,browserJourneys,supportJourneys,expansionJourneys,gapJourneys,normalProfileCommands:profileJourneys.reduce((sum,row)=>sum+row.normalProfileCommands,0),normalConversationCommands:conversationJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalSupportCommands:supportJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalExpansionCommands:expansionJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalGapCommands:gapJourneys.reduce((sum,row)=>sum+row.normalCommands,0),fullHostedCatalogVerified:false});
   // Required journeys are not yet dispatched: do not return acceptance success.
   await writeEvidence(root,'blocked.json',{id,runId:run.id,...source,state:'blocked',safeFailure:'hosted_core_journey_catalog_not_complete',hostedCatalogVerified:false});
   console.info(JSON.stringify({preflight:'pass',roleReads:reads.passedCases,sdkCases:sdkJourneys.reduce((sum,row)=>sum+row.passedCases,0),hostedCatalog:'blocked',paidCalls:0}));process.exitCode=1;return receipt;

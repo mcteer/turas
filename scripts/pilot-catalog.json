@@ -63,7 +63,10 @@
         "unit.hosted-request.005",
         "unit.hosted-request.006",
         "unit.ci-browser-diagnostics.001",
-        "unit.ci-browser-diagnostics.002"
+        "unit.ci-browser-diagnostics.002",
+        "unit.hosted-request.007",
+        "unit.gap-release-header.001",
+        "unit.gap-release-header.002"
       ]
     },
     {
