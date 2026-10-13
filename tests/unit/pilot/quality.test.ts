@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {mkdtemp,rm,writeFile,readFile,access} from 'node:fs/promises';
+import {mkdir,mkdtemp,rm,writeFile,readFile,access} from 'node:fs/promises';
 import {join,resolve,relative} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {execFile} from 'node:child_process';
@@ -22,14 +22,18 @@ describe('quality applicability',()=>{
  it('retains all governing boundaries and verifier commands',async()=>{
   expect(new Set(qualityCatalog.map(item=>item.feature)).size).toBe(9);
   expect(qualityCatalog.every(item=>item.boundaries.length===3&&item.evaluation&&item.verifier)).toBe(true);
+  await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});
   const root=await mkdtemp(resolve('local-artifacts/016/review-workspace-test-'));
   try{
-   const workspace=join(root,'source');await prepareQualityWorkspace(process.cwd(),workspace);
+   // The complete catalog runs unit files inside an ignored owned app copy.
+   // The controller always snapshots the canonical Git source, not that copy.
+   const sourceRoot=(await promisify(execFile)('git',['rev-parse','--show-toplevel'])).stdout.trim();
+   const workspace=join(root,'source');await prepareQualityWorkspace(sourceRoot,workspace);
    await expect(access(join(workspace,'.env.local'))).rejects.toThrow();
    await expect(access(join(workspace,'.eve'))).rejects.toThrow();
-   expect(await readFile(join(workspace,'next.config.ts'),'utf8')).toBe(await readFile('next.config.ts','utf8'));
+   expect(await readFile(join(workspace,'next.config.ts'),'utf8')).toBe(await readFile(join(sourceRoot,'next.config.ts'),'utf8'));
    await writeFile(join(workspace,'next.config.ts'),'// changed review source\n');
-   await expect(verifyQualityWorkspace(process.cwd(),workspace)).rejects.toThrow('Review workspace source differs');
+   await expect(verifyQualityWorkspace(sourceRoot,workspace)).rejects.toThrow('Review workspace source differs');
   }finally{await rm(root,{recursive:true,force:true});}
  },120000);
  it('rejects malformed or excessive inventories',()=>{
@@ -49,6 +53,7 @@ describe('quality step authorization',()=>{
 });
 
 it('verifies expanded profile review only under the exact approved pilot runtime',async()=>{
+ await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});
  const root=await mkdtemp(resolve('local-artifacts/016/step-review-test-'));
  try{
   const id=randomUUID(),expiresAt=new Date(Date.now()+60000).toISOString(),authorizationDigest='a'.repeat(64),source={sourceCommit:'a'.repeat(40),sourceDigest:'b'.repeat(64),catalogDigest:'c'.repeat(64)};

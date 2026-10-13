@@ -2098,3 +2098,28 @@ fixed-name predecessor-phase diagnostic now makes future CI failure attributable
 No paid calls occurred during this correction. Original cumulative spend remains
 $1.474879, 105 dispatches, zero Context credits; $23.525121/four credits remain.
 Fresh committed full/native proof is required before the next paid batch.
+
+
+### Canonical review-workspace test correction — 2026-10-13
+
+Run ac75a9cb at 6fb2a20 stopped at suite 55 (quality unit): the new test used the
+transient app copy as its snapshot source, whereas the controller supplies the
+canonical repository. Fifty-five prior suites passed; this run is not acceptance.
+The test now resolves the real Git source, creates its private parent explicitly,
+and passes all seven cases inside an actual owned PostgreSQL 18 app environment.
+The first isolated recheck lacked that test parent and is retained as failed.
+No runtime guard, fixture, rubric or product assertion is weakened.
+
+The independent judge confirmed 007's documented derivative annotation workflow:
+preserve original actual/pending files, independently fill only supported semantic
+flags in derivative files, bind new digests in a separate review and retain explicit
+original/derivative provenance. Other catalogs keep objective captures unchanged.
+Retrieval also retains the failed non-hybrid response before rejecting it.
+
+CI 38445284245 failed the same workspace test, composed 014 WebKit, and Product
+Gaps desktop-light authoring. Its standalone 014 WebKit job passed. Exact local
+Product Gaps authoring passed 5/5 (desktop-light subset, zero skips/flaky/retries,
+acceptance false). Neither that selected result nor earlier UI passes clears the
+failed CI gates. Bounded composed diagnostics now retain exact learning locations
+and fixed failure signatures; fresh full local/native/CI results remain required.
+Spending remains $1.474879, zero Context credits; no new paid run has started.

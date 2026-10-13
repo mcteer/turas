@@ -125,16 +125,16 @@ try {
     const response = await searchEvidence(actors[index%2],{
       scope: "customer",customerId: DEMO_IDS.deniedCustomer,
       query: item.query,use: "discovery",limit: 5 });
-    if (response.mode !== "hybrid") throw new Error(`Live embedding unavailable: ${item.id}`);
     const found = new Set(response.results.map((result) => result.sourceRevisionId));
     const relevant = expected.get(item.id)!;
     const hit = [...relevant].filter((id) => found.has(id)).length/relevant.size;
     recall += hit;
     if (hit < 1) failures.push(item.id);
-    const client = await pool.connect();
     const citations:unknown[]=[];
     capture.queries.push({caseId:item.id,query:item.query,kind:item.kind,actor:{loginName:actors[index%2].loginName,kind:actors[index%2].kind},scope:{customerId:DEMO_IDS.deniedCustomer,use:'discovery',limit:5},expectedSourceRevisionIds:[...relevant],supportingPassages:passages.rows.filter(row=>item.relevantPassages.includes(row.passage_text)),response,citations,recallAt5:hit});
     await persistCapture();
+    if (response.mode !== "hybrid") throw new Error(`Live embedding unavailable: ${item.id}`);
+    const client = await pool.connect();
     try {
       for (const result of response.results) {
         const citation = await resolveRetrievalCitation(client,actors[index%2],result.citationId);
