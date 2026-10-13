@@ -2123,3 +2123,24 @@ acceptance false). Neither that selected result nor earlier UI passes clears the
 failed CI gates. Bounded composed diagnostics now retain exact learning locations
 and fixed failure signatures; fresh full local/native/CI results remain required.
 Spending remains $1.474879, zero Context credits; no new paid run has started.
+
+
+### Clean owned evaluation roots — 2026-10-13
+
+The full 8199ace run 4f0ceeda reported 671 passing cases and one failure, across
+all 118 suite reports. It is failed evidence. The final composed source case
+exposed the older artifact helper's assumption that local-artifacts/004 already
+existed. The helper now creates its private parent before mkdtemp. Exact composed
+reverification inside an actual owned PostgreSQL 18 app passes all three cases,
+with zero paid calls. Individual durations were 50.316s, 53.370s and 6.608s.
+
+The deterministic runner's evaluation-source file allowance now covers its three
+existing declared test bounds (390+210+120 seconds), plus sixty seconds for
+process/report completion. The earlier successful direct composition took
+130.32s, exceeding the generic 120s file allowance. Domain deadlines, model
+steps, output limits, assertions, cases and money/credit caps are unchanged.
+Root/pilot types and diff checks pass. Fresh complete committed/native/CI proof
+remains required; no paid evaluation or feature/release acceptance follows from
+the partial run or selected recheck. CI 38447453887 remained in progress with
+38 successful jobs and no reported failure at this observation. Original spend
+remains $1.474879, zero Context credits consumed, with the same expiry and cap.

@@ -54,6 +54,7 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
   } finally { await probe.end(); }
   process.env.TURAS_ARTIFACT_STORE_ROOT ??= resolve("local-artifacts/004/store");
   const preparedStore = parseArtifactStoreConfig(process.env).root;
+  await mkdir(resolve("local-artifacts/004"),{recursive:true,mode:0o700});
   const root = await mkdtemp(resolve("local-artifacts/004/eval-"));
   const app = join(root,"app");
   const store = join(root,"store");

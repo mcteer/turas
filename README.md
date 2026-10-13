@@ -488,3 +488,4 @@ fixture scope and worker budget-guard inheritance before further paid execution.
 Quality stages retain private source-bound workspaces and native captures until
 independent review, including retrieval query, citation and partner-scope evidence.
 Temporary containers and app processes still clean up after each stage.
+Evaluation clones initialize their evidence roots in clean owned environments.
