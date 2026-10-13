@@ -2155,3 +2155,10 @@ The next actual-model batch completed 002 but stopped in 003 on an unknown citat
 Turi instructions now explicitly explain unavailable accepted-profile saving through chat while permitting governed Pending proposals, and omit operational search receipts from evidence citations. A fresh full model catalog is required to demonstrate the changed behavior. The publication UI test now waits for the actual candidate payload heading before asserting absent controls and navigating; this strengthens the assertion but does not prove the exact CI failure cause. Fresh verification remains pending.
 
 The strengthened publication journey passes all twelve cases in four CLI WebKit configurations with no retries or skips in the frozen-tree recheck. It is a development subset, acceptance false. The earlier twelve-case run was correctly rejected because documentation changed during execution; it remains invalid evidence. Pilot types and authored-document hygiene pass.
+
+
+### Compact learning input correction — 2026-10-13
+
+Fresh CI at e2f768c failed native learning and its composed MCP predecessor. The exact native check reproduced locally: the expanded root instructions exceeded the existing cumulative learning input bound on the normal two-step fixture. The full local run 32005bc2 was deliberately interrupted after this reproduced failure; its partial passes are not acceptance. No new paid evaluation occurred.
+
+The authored instructions now state the same capability, evidence and approval boundaries more concisely: 5,749 bytes versus 5,850 at the earlier passing 24cd0d9 and 6,282 at failed e2f768c. The original 24,576-byte cumulative input limit, model/output bounds, fixtures and assertions remain unchanged. The full native learning check passes all 25 checks with zero paid calls and verifies hosted MCP cleanup in the owned fixture. The selected model/configuration/workflow snapshot is preserved. Fresh committed complete local/native/CI verification remains required.
