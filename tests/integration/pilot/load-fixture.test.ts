@@ -7,10 +7,10 @@ import {openOwnedPilotLoadSuite} from '../../fixtures/pilot/environment';
 let owned:Awaited<ReturnType<typeof openOwnedPilotLoadSuite>>;
 beforeAll(async()=>{owned=await openOwnedPilotLoadSuite({});},120000);
 afterAll(async()=>{await owned?.close();});
-it('prepares exactly twenty-five issued sessions two hundred fifty synthetic customers and ten thousand currently eligible reviewed passages',async()=>{
+it('prepares exactly twenty-five issued sessions two hundred fifty synthetic customers and ten thousand distinct reviewed passages with separate audience projections',async()=>{
  const pool=new Pool({connectionString:requireOwnedPilotDatabase(process.env,true)}),db=await pool.connect();
  try{
-  const fixture=await pilotLoadEvidenceFixture(db,AbortSignal.timeout(600000));expect(fixture.population).toEqual({sessions:25,internalSessions:15,assignedPartnerSessions:10,customers:250,eligiblePassages:10000});expect(fixture).toMatchObject({acceptedReadClassesPrepared:false,providerCalls:0,quotaResets:0});
+  const fixture=await pilotLoadEvidenceFixture(db,AbortSignal.timeout(600000));expect(fixture.population).toEqual({sessions:25,internalSessions:15,assignedPartnerSessions:10,customers:250,eligiblePassages:10000,physicalPassages:20000,internalVisiblePassages:20000,deliveryVisiblePassages:10000});expect(fixture).toMatchObject({acceptedReadClassesPrepared:false,providerCalls:0,quotaResets:0});
   expect(Number((await db.query("SELECT count(*) FROM customer_grants WHERE workspace_id=$1 AND state='active'",[fixture.workspaceId])).rows[0].count)).toBe(2500);
   expect(Number((await db.query("SELECT count(*) FROM login_sessions WHERE workspace_id=$1 AND membership_id IS NOT NULL AND revoked_at IS NULL",[fixture.workspaceId])).rows[0].count)).toBe(25);
   expect(Number((await db.query("SELECT count(*) FROM profile_records WHERE workspace_id=$1 AND current_accepted_revision_id IS NOT NULL",[fixture.workspaceId])).rows[0].count)).toBe(2510);

@@ -1,3 +1,4 @@
+import {runHostedKnowledgeBaseline} from '../../../scripts/pilot-hosted-knowledge';
 import {cp,readFile,writeFile} from 'node:fs/promises';
 import {join,dirname} from 'node:path';
 import {parsePilotImagePreparation} from '../../../lib/contracts/pilot-images';
@@ -75,6 +76,8 @@ await withPilotEnvironment(async environment=>{
    const response=await fetch(environment.origin+'/api/artifacts/'+versionId+'/original',{headers,redirect:'manual',signal:environment.signal});expect(response.status).toBe(200);expect(response.headers.get('x-turas-code-version')).toBe(scope.sourceCommit);
    const reader=response.body?.getReader();if(!reader)throw Error('Actual original body required');const parts:Uint8Array[]=[];let size=0;try{for(;;){const part=await reader.read();if(part.done)break;size+=part.value.byteLength;if(size>expected.length)throw Error('Actual original exceeds expected bound');parts.push(part.value);}}finally{await reader.cancel().catch(()=>undefined);reader.releaseLock();}expect(Buffer.concat(parts).equals(expected)).toBe(true);
   }});
+  const knowledge=await runHostedKnowledgeBaseline({scope,db:owner,customerId,sourceRevisionId:uploaded.profileRevisionId,request,signal:environment.signal});
+  expect(knowledge).toMatchObject({normalCommands:3,providerCalls:0,preActivationBaseline:true,pairedEvaluationVerified:false});
   const search=retrievalResponseSchema.parse(z.object({data:z.unknown()}).parse(await request('/api/retrieval/search','POST',{scope:'customer',customerId,workloadId:foundation.workloadId,query:'controlled synthetic workload serves synthetic public web requests',use:'discovery',limit:5})).data);
   if(search.mode!=='lexical_degraded')throw Error('No paid embedding admitted');
   const source=search.results.find(x=>x.sourceRevisionId===uploaded.profileRevisionId);if(!source)throw Error('Current governed linked citation unavailable');
@@ -110,7 +113,7 @@ await withPilotEnvironment(async environment=>{
   expect(unavailable.actions.some(row=>row.recordId===support.actionRecordId&&row.accepted?.contentUnavailable)).toBe(true);
   const changed=expansionWorkspaceProjectionSchema.parse(z.object({data:z.unknown()}).parse(await request(expansionPath,'GET')).data);
   expect(changed.records[0]?.id).toBe(expansion.recordId);expect(changed.records[0]?.working.availability).toBe('changed');expect(changed.records[0]?.working.payload).toBeNull();expect(changed.records[0]?.reviewRequired).toBe(true);
-  for(const path of ['/api/retrieval/citations/'+source.citationId,...publishedArtifactIds.map(id=>'/api/reports/artifacts/'+id)]){
+  for(const path of ['/api/retrieval/citations/'+source.citationId,'/api/knowledge/'+knowledge.publicationId,...publishedArtifactIds.map(id=>'/api/reports/artifacts/'+id)]){
    const denied=await fetch(environment.origin+path,{headers,redirect:'manual',cache:'no-store',signal:environment.signal});expect([404,409]).toContain(denied.status);expect(denied.headers.get('x-turas-code-version')).toBe(scope.sourceCommit);await denied.body?.cancel();
   }
   expect(uploaded).toMatchObject({actualOriginalVerified:true,normalCommands:5,providerCalls:0,hostedProof:false});

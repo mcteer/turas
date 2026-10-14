@@ -767,7 +767,7 @@
       "file": "tests/integration/pilot/load-fixture.test.ts",
       "expectedCases": 1,
       "cases": [
-        "prepares exactly twenty-five issued sessions two hundred fifty synthetic customers and ten thousand currently eligible reviewed passages"
+        "prepares exactly twenty-five issued sessions two hundred fifty synthetic customers and ten thousand distinct reviewed passages with separate audience projections"
       ]
     },
     {

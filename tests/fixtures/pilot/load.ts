@@ -7,7 +7,6 @@ import {submitProfileCommand} from '../../../lib/server/profiles/service';
 import {setPartnerGrant} from '../../../lib/server/access/service';
 import {currentFactEligible} from '../../../lib/server/retrieval/context';
 import {readRetrievalQuality} from '../../../lib/server/retrieval/quality-read';
-import {materializeCurrentProjection} from '../../../lib/server/retrieval/projections';
 
 /** Disposable owner scaffolding only. Dated observations use proposal/review commands, grants
  * use the ordinary administrator operation, and every actor uses the session issuer.
@@ -44,12 +43,18 @@ export async function pilotLoadEvidenceFixture(db:PoolClient,signal:AbortSignal)
     const row=(await db.query('SELECT v.content_digest,r.version,r.current_accepted_revision_id FROM profile_revisions v JOIN profile_records r ON r.id=v.record_id WHERE v.id=$1',[proposal.revisionId])).rows[0];
     await submitProfileCommand(actors[0],customerId,{action:'accept_revision',requestKey:randomUUID(),revisionId:proposal.revisionId,digest:row.content_digest,expectedRecordVersion:Number(row.version),expectedAcceptedRevisionId:row.current_accepted_revision_id,rationale:'Reviewed synthetic load input only; no actual customer outcome'},db);
     if(!currentFactEligible(await readRetrievalQuality(db,{source_kind:'accepted_profile',source_revision_id:proposal.revisionId},new Date())))throw Error('Load evidence is accepted but not currently fact eligible');
-    const projection=await materializeCurrentProjection(db,'accepted_profile',proposal.revisionId,'delivery');if(!projection)throw Error('Accepted eligible load projection unavailable');revisionIds.push(proposal.revisionId);recordIds.push(proposal.recordId);await db.query('COMMIT');
+    const projection=(await db.query("SELECT id FROM retrieval_sources WHERE source_kind='accepted_profile' AND source_revision_id=$1 AND audience='delivery' AND lifecycle_state='current'",[proposal.revisionId])).rows;if(projection.length!==1)throw Error('Accepted eligible load projection unavailable');revisionIds.push(proposal.revisionId);recordIds.push(proposal.recordId);await db.query('COMMIT');
    }catch(error){await db.query('ROLLBACK');throw error;}
   }
   for(const partner of actors.slice(15))await setPartnerGrant({actorPrincipalId:actors[0].principalId,actorSessionId:actors[0].sessionId,membershipId:partner.membershipId,customerId,expectedRevision:0,state:'active',requestKey:randomUUID()});
   const passageIds=(await db.query("SELECT p.id FROM retrieval_passages p JOIN retrieval_sources s ON s.id=p.source_id WHERE s.workspace_id=$1 AND s.customer_id=$2 AND s.lifecycle_state='current' AND s.audience='delivery' ORDER BY s.source_revision_id,p.ordinal",[workspaceId,customerId])).rows.map(row=>String(row.id));if(passageIds.length!==(index===0?60:index<3?30:40))throw Error('Load customer passage population differs');customers.push({id:customerId,recordIds,revisionIds,passageIds});
  }
- const count=Number((await db.query("SELECT count(*) FROM retrieval_passages p JOIN retrieval_sources s ON s.id=p.source_id WHERE s.workspace_id=$1 AND s.lifecycle_state='current'",[workspaceId])).rows[0].count);if(count!==10000||actors.length!==25||customers.length!==250)throw Error('Fixed load population differs');
- return {workspaceId,actors,customers,population:{sessions:25,internalSessions:15,assignedPartnerSessions:10,customers:250,eligiblePassages:count},acceptedReadClassesPrepared:false,providerCalls:0,quotaResets:0};
+ // Normal review prepares separate internal/delivery copies of the fixed
+ // 10,000 distinct passages. Internal retrieval may consider both copies;
+ // retain and report this larger physical corpus rather than dropping one.
+ const populations=(await db.query("SELECT s.audience,count(*)::int AS count FROM retrieval_passages p JOIN retrieval_sources s ON s.id=p.source_id WHERE s.workspace_id=$1 AND s.lifecycle_state='current' GROUP BY s.audience ORDER BY s.audience",[workspaceId])).rows;
+ if(JSON.stringify(populations)!==JSON.stringify([{audience:'delivery',count:10000},{audience:'internal',count:10000}])||actors.length!==25||customers.length!==250)throw Error('Fixed load population differs');
+ const count=Number((await db.query("SELECT count(DISTINCT (s.source_revision_id,p.ordinal,p.passage_digest,p.locators::text))::int AS count FROM retrieval_passages p JOIN retrieval_sources s ON s.id=p.source_id WHERE s.workspace_id=$1 AND s.lifecycle_state='current'",[workspaceId])).rows[0].count);
+ if(count!==10000)throw Error('Fixed distinct load population differs');
+ return {workspaceId,actors,customers,population:{sessions:25,internalSessions:15,assignedPartnerSessions:10,customers:250,eligiblePassages:count,physicalPassages:20000,internalVisiblePassages:20000,deliveryVisiblePassages:10000},acceptedReadClassesPrepared:false,providerCalls:0,quotaResets:0};
 }
