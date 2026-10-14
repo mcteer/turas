@@ -1,6 +1,7 @@
 import type { EveChannel } from "eve/channels/eve";
 import { z } from "zod";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
+import { startPreviewChatWorker } from "./hosted-watchdog";
 import { checkSessionCsrf } from "../auth/csrf";
 import { getCurrentSession } from "../auth/sessions";
 import { bindNativeSession, claimBinding, markBindingUncertain } from "./binding";
@@ -162,6 +163,8 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             const selections = checkedSelections.data;
             const text = normalizeMessageText(parsed.data.message.trim() || (selections.length ?
               "Please discuss the selected customer source passages." : ""));
+            await getOwnedConversationByNativeSession(session, args.params.sessionId);
+            await startPreviewChatWorker(args.attachSession, args.waitUntil);
             const prepared = await prepareAttempt(session, conversationId!, args.params.sessionId,
               requestKey!, text, selections);
             attemptId = prepared.attemptId;

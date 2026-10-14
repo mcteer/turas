@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ heartbeat: vi.fn(), claim: vi.fn(), finish: vi.fn(), maintain: vi.fn(),learning:vi.fn(),mcp:vi.fn(),retrieval:vi.fn(),cleanup:vi.fn(),researchDue:vi.fn() }));
 vi.mock("../../lib/server/conversations/watchdog", () => ({ heartbeatWorker: mocks.heartbeat,
   claimDueJobs: mocks.claim, finishDueJob: mocks.finish }));
@@ -9,7 +9,7 @@ vi.mock("../../lib/server/mcp/retention",()=>({runMcpMaintenanceTick:mocks.mcp})
 vi.mock("../../scripts/retrieval-worker",()=>({runRetrievalWorkerTick:mocks.retrieval}));
 vi.mock("../../lib/server/retrieval/cleanup",()=>({runRetrievalCleanupTick:mocks.cleanup}));
 vi.mock("../../lib/server/research/refresh",()=>({markDueResearch:mocks.researchDue}));
-import { authorizeHostedWatchdog, runHostedWatchdog } from "../../lib/server/conversations/hosted-watchdog";
+import { authorizeHostedWatchdog, runHostedWatchdog, startPreviewChatWorker } from "../../lib/server/conversations/hosted-watchdog";
 afterEach(() => { vi.useRealTimers(); vi.resetAllMocks(); });
 
 describe("hosted watchdog authentication", () => {
@@ -77,4 +77,26 @@ describe("bounded hosted watchdog", () => {
     expect(mocks.cleanup).toHaveBeenCalledTimes(1);expect(mocks.researchDue).toHaveBeenCalledTimes(1);expect(vi.getTimerCount()).toBe(0);
   });
 
+});
+
+describe("Preview chat worker", () => {
+  beforeEach(() => { mocks.mcp.mockResolvedValue({processed:0});mocks.retrieval.mockResolvedValue(undefined);mocks.cleanup.mockResolvedValue(undefined);mocks.researchDue.mockResolvedValue(undefined); });
+  afterEach(() => vi.unstubAllEnvs());
+  it("does not start a request worker in Production", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");const wait=vi.fn();
+    await startPreviewChatWorker(vi.fn() as never,wait);
+    expect(wait).not.toHaveBeenCalled();expect(mocks.heartbeat).not.toHaveBeenCalled();
+  });
+  it("waits for a real heartbeat and continues past the response deadline", async () => {
+    vi.useFakeTimers();vi.stubEnv("VERCEL_ENV", "preview");mocks.claim.mockResolvedValue([]);mocks.learning.mockResolvedValue({processed:0,durationMs:0});
+    const wait=vi.fn();await startPreviewChatWorker(vi.fn() as never,wait);
+    expect(mocks.heartbeat).toHaveBeenCalledTimes(1);expect(wait).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(180000);await wait.mock.calls[0][0];
+    expect(mocks.heartbeat).toHaveBeenCalledTimes(36);expect(vi.getTimerCount()).toBe(0);
+  });
+  it("denies admission when actual worker startup fails", async () => {
+    vi.stubEnv("VERCEL_ENV", "preview");mocks.claim.mockRejectedValue(new Error("database unavailable"));
+    await expect(startPreviewChatWorker(vi.fn() as never,vi.fn())).rejects.toThrow("database unavailable");
+    expect(mocks.heartbeat).not.toHaveBeenCalled();
+  });
 });

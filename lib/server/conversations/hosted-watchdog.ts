@@ -34,9 +34,9 @@ export function authorizeHostedWatchdog(request: Request, secret = process.env.C
  * leases fence duplicate cancellation; readiness expires if execution stops.
  * This performs no schema initialization or new research/model generation.
  * The existing retrieval lane processes bounded queued embeddings and cleanup. */
-export async function runHostedWatchdog(attachSession: AttachSessionFn): Promise<void> {
+export async function runHostedWatchdog(attachSession: AttachSessionFn, options: { preview?: boolean; ready?: () => void } = {}): Promise<void> {
   const workerId = randomUUID();
-  const end = Date.now() + 65_000;let nextLearningAt=0,stopping=false,mcpTick:Promise<unknown>|null=null,researchTick:Promise<unknown>|null=null;
+  const end = Date.now() + (options.preview ? 180_000 : 65_000);let nextLearningAt=0,stopping=false,mcpTick:Promise<unknown>|null=null,researchTick:Promise<unknown>|null=null;
   const maintainMcp=()=>{if(stopping||mcpTick)return;mcpTick=runMcpMaintenanceTick().catch(()=>{console.warn(JSON.stringify({kind:'mcp_maintenance_failed'}));}).finally(()=>{mcpTick=null;});};
   const mcpTimer=setInterval(maintainMcp,30000);maintainMcp();
   const maintainResearch=()=>{
@@ -49,6 +49,7 @@ export async function runHostedWatchdog(attachSession: AttachSessionFn): Promise
     const started = Date.now();
     const jobs = await claimDueJobs(workerId, 1);
     await heartbeatWorker(workerId);
+    options.ready?.();
     for (const job of jobs) {
       try {
         const result = await performMaintenance({ action: "cancel_due", attemptId: job.attemptId,
@@ -62,4 +63,22 @@ export async function runHostedWatchdog(attachSession: AttachSessionFn): Promise
     const remaining = Math.min(end - Date.now(), Math.max(0, 5_000 - (Date.now() - started)));
     if (remaining > 0) await new Promise(resolve => setTimeout(resolve, remaining));
   }}finally{stopping=true;clearInterval(mcpTimer);clearInterval(researchTimer);await Promise.all([mcpTick,researchTick]);}
+}
+
+/** Preview has no platform cron. Start a real bounded worker before admitting
+ * an authenticated send, and retain it past the 120-second response deadline.
+ * The caller must already have checked ownership, CSRF and request shape. */
+export async function startPreviewChatWorker(
+  attachSession: AttachSessionFn, waitUntil: (task: Promise<unknown>) => void,
+): Promise<void> {
+  if (process.env.VERCEL_ENV !== "preview") return;
+  let ready!: () => void;
+  let failed!: (error: unknown) => void;
+  const admission = new Promise<void>((resolve, reject) => { ready = resolve; failed = reject; });
+  const running = runHostedWatchdog(attachSession, { preview: true, ready }).catch(error => {
+    failed(error);
+    console.warn(JSON.stringify({ kind: "preview_chat_worker_failed" }));
+  });
+  waitUntil(running);
+  await admission;
 }

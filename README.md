@@ -22,6 +22,8 @@ runtime grants as part of each schema-dependent release.
 
 ### Customer Profiles and Maturity
 
+Preview chat starts its bounded maintenance worker on authenticated sends because platform cron runs only in Production.
+
 Preview login supports both the immutable deployment URL and its exact Vercel branch alias.
 
 Customer Overview appears immediately below the customer heading, above workload controls.
