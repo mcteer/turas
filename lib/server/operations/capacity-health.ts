@@ -21,8 +21,9 @@ export async function readHostedDispatchHealth(db:PoolClient,environmentId:strin
  try{hostedExecutionCredentials();config=hostedCostConfiguration();}catch{return 'unavailable' as const;}
  const required=Math.max(...Object.values(config.bounds));
  const row=(await db.query(`SELECT b.cap_micro_usd-COALESCE(sum(CASE WHEN r.state='released' THEN 0 WHEN r.state='settled' THEN r.charged_micro_usd ELSE r.upper_bound_micro_usd END),0) AS remaining,
-  count(*) FILTER(WHERE r.state='unknown') AS unknown_count
+  count(*) FILTER(WHERE r.state='unknown') AS unknown_count,
+  count(*) FILTER(WHERE r.state<>'released') AS used_count
   FROM operations_cost_budgets b LEFT JOIN operations_cost_reservations r ON r.budget_id=b.id
   WHERE b.id=$1 AND b.environment_id=$2 AND b.category='sandbox' AND b.scope_digest=$3 AND b.pricing_digest=$4 AND b.state='active' AND b.expires_at>clock_timestamp() GROUP BY b.id`,[config.budgetId,environmentId,config.scopeDigest,config.pricingDigest])).rows[0];
- return row&&Number(row.unknown_count)===0&&BigInt(row.remaining)>=BigInt(required)?'ready' as const:'unavailable' as const;
+ return row&&Number(row.unknown_count)===0&&BigInt(row.remaining)>=BigInt(required)&&(config.maximumDispatches===undefined||Number(row.used_count)<config.maximumDispatches)?'ready' as const:'unavailable' as const;
 }

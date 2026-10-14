@@ -7,7 +7,7 @@ import {requireOperationalOpen} from './admission';
 
 type BudgetRow={id:string;environment_id:string;category:CostBudget['category'];authorization_digest:string;scope_digest:string;pricing_digest:string;cap_micro_usd:string;expires_at:Date;state:string;db_now:Date};
 type ReservationRow={id:string;budget_id:string;operation_digest:string;state:string;job_id:string|null;charged_micro_usd:string|null;charge_kind:string|null};
-export type CostBinding={budgetId:string;environmentId:string;category:CostBudget['category'];scopeDigest:string;pricingDigest:string;operationDigest:string};
+export type CostBinding={budgetId:string;environmentId:string;category:CostBudget['category'];scopeDigest:string;pricingDigest:string;operationDigest:string;maximumDispatches?:number};
 async function lockBudget(db:PoolClient,binding:CostBinding){
  await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16018))',[binding.budgetId]);
  const row=(await db.query<BudgetRow>('SELECT *,clock_timestamp() AS db_now FROM operations_cost_budgets WHERE id=$1 FOR UPDATE',[binding.budgetId])).rows[0];
@@ -28,6 +28,13 @@ export async function reserveServiceCost(db:PoolClient,binding:CostBinding,upper
  const existing=(await db.query<ReservationRow>('SELECT * FROM operations_cost_reservations WHERE budget_id=$1 AND operation_digest=$2 FOR UPDATE',[binding.budgetId,binding.operationDigest])).rows[0];
  if(existing){if(existing.state!=='reserved'||existing.job_id!==null)throw Error('Paid operation already admitted; reconcile before retry');return existing.id;}
  const id=randomUUID();
+ if(binding.maximumDispatches!==undefined){
+  if(!Number.isSafeInteger(binding.maximumDispatches)||binding.maximumDispatches<1||binding.maximumDispatches>100000)throw Error('Finite dispatch count required');
+  // The budget row is already locked. Held admissions consume capacity; only
+  // never-dispatched releases free it. Settlement cannot reset a job allowance.
+  const used=Number((await db.query("SELECT count(*) AS n FROM operations_cost_reservations WHERE budget_id=$1 AND state<>'released'",[binding.budgetId])).rows[0].n);
+  if(used>=binding.maximumDispatches)throw Error('Authorized dispatch count exhausted');
+ }
  await db.query('INSERT INTO operations_cost_reservations(id,budget_id,operation_digest,upper_bound_micro_usd) VALUES($1,$2,$3,$4)',[id,binding.budgetId,binding.operationDigest,upperBoundMicroUsd]);
  return id;
 }

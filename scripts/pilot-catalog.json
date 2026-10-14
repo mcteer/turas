@@ -120,7 +120,12 @@
         "integration.hosted-role-reads.007",
         "integration.hosted-role-reads.008",
         "integration.hosted-role-reads.009",
-        "integration.hosted-browser.001"
+        "integration.hosted-browser.001",
+        "unit.hosted-configuration.001",
+        "unit.hosted-configuration.002",
+        "unit.hosted-configuration.003",
+        "unit.hosted-configuration.004",
+        "integration.hosted-role-reads.010"
       ]
     },
     {
@@ -713,7 +718,9 @@
         "unit.work-backup-pricing.004",
         "unit.work-backup-pricing.005",
         "unit.work-backup-pricing.006",
-        "unit.work-backup-pricing.007"
+        "unit.work-backup-pricing.007",
+        "integration.cost-authority.006",
+        "integration.cost-authority.007"
       ]
     },
     {

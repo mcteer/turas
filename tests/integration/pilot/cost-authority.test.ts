@@ -64,3 +64,19 @@ it('stops an original orphan after owner cost settlement without reopening its l
  const result=await reconcileHostedJob(handle,withTransaction,a,{findByCreationTag:async tag=>({complete:true,items:[{id:'controlled-original-provider',persistent:false,tags:{turas_creation:tag,turas_job:handle.id,turas_environment:createHash('sha256').update(environmentId).digest('hex')}}]}),stopAndDelete:async id=>{expect(id).toBe('controlled-original-provider');stopped++;}},AbortSignal.timeout(1000));
  expect(result).toEqual({state:'stopped'});expect(stopped).toBe(1);expect((await owner.query('SELECT state FROM operations_cost_reservations WHERE id=$1',[reservationId])).rows[0].state).toBe('settled');
 });
+it('serializes the finite dispatch count and keeps settled calls in the allowance',async()=>{
+ const b={...await budget(),maximumDispatches:1};
+ const outcomes=await Promise.allSettled(['b','c'].map(value=>withTransaction(db=>reserveServiceCost(db,{...b,operationDigest:value.repeat(64)},40000))));
+ expect(outcomes.filter(x=>x.status==='fulfilled')).toHaveLength(1);expect(outcomes.filter(x=>x.status==='rejected')).toHaveLength(1);
+ const row=(await owner.query('SELECT id,operation_digest FROM operations_cost_reservations WHERE budget_id=$1',[b.budgetId])).rows[0];
+ const binding={...b,operationDigest:row.operation_digest},authority=serviceBudgetAuthority(binding);
+ await withTransaction(async db=>{await authority.verifyReserved(db,row.id,randomUUID());await authority.markDispatch(db,row.id);});
+ await recordPilotCost(owner,environmentId,{contract:'pilot-cost-operation-v1',action:'reconcile',budgetId:b.budgetId,reservationId:row.id,operationDigest:row.operation_digest,expectedState:'dispatched',chargedMicroUsd:40000,chargeKind:'estimate',chargeEvidenceDigest:digest,operatorReviewDigest:digest});
+ await expect(withTransaction(db=>reserveServiceCost(db,{...b,operationDigest:'d'.repeat(64)},1))).rejects.toThrow('dispatch count exhausted');
+});
+it('releases only never dispatched count capacity and rejects nonfinite count limits',async()=>{
+ const b={...await budget(),maximumDispatches:1},r=await withTransaction(db=>reserveServiceCost(db,b,40000));
+ await withTransaction(db=>serviceBudgetAuthority(b).releaseUndispatched(db,r));
+ expect(await withTransaction(db=>reserveServiceCost(db,{...b,operationDigest:'b'.repeat(64)},40000))).toBeTruthy();
+ for(const maximumDispatches of [0,Infinity,1.5,100001])await expect(withTransaction(db=>reserveServiceCost(db,{...b,operationDigest:'c'.repeat(64),maximumDispatches},1))).rejects.toThrow('Finite dispatch count');
+});

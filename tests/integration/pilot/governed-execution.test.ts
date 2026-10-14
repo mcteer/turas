@@ -11,6 +11,8 @@ import {claimArtifactRun,heartbeatArtifactRun,publishArtifactRun,type ArtifactJo
 import {runGovernedExecution,sandboxScopeDigest,hostedCostConfiguration} from '../../../lib/server/jobs/governed';
 import {sha256,type ExecutionRequest} from '../../../lib/server/jobs/executor';
 import {costOperationDigest} from '../../../lib/contracts/pilot-cost';
+import {reserveServiceCost,serviceBudgetAuthority} from '../../../lib/server/operations/cost';
+import {readHostedDispatchHealth} from '../../../lib/server/operations/capacity-health';
 const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)}),digest='a'.repeat(64);
 const original={...process.env};beforeAll(()=>owner.connect());afterAll(async()=>{await owner.end();await closeRuntimePool();});
 beforeEach(async()=>{fixture.create.mockReset();fixture.unknown=false;
@@ -34,4 +36,21 @@ function setup(claim:ArtifactJobClaim,afterCompute=async()=>{}){
 it('publishes a source-fenced domain result and records one reserved dispatch',async()=>{const f=await artifact(),s=setup(f.claim);await runGovernedExecution(s.input);expect((await owner.query('SELECT state FROM artifact_versions WHERE id=$1',[f.versionId])).rows[0].state).toBe('ready');expect((await owner.query('SELECT state FROM operations_hosted_jobs WHERE domain_job_id=$1',[f.runId])).rows[0].state).toBe('succeeded');expect(fixture.create).toHaveBeenCalledOnce();expect(s.stopped).toHaveBeenCalledOnce();expect(s.deleted).toHaveBeenCalledOnce();});
 it('holds an unknown creation and refuses another paid dispatch',async()=>{const f=await artifact(),s=setup(f.claim);fixture.unknown=true;await expect(runGovernedExecution(s.input)).rejects.toThrow('creation uncertain');await expect(runGovernedExecution(s.input)).rejects.toThrow('authority unavailable');expect(fixture.create).toHaveBeenCalledOnce();expect((await owner.query('SELECT state FROM operations_cost_reservations WHERE budget_id=$1',[hostedCostConfiguration().budgetId])).rows[0].state).toBe('unknown');});
 it('withholds computed output after current source withdrawal',async()=>{const f=await artifact(),s=setup(f.claim,async()=>{await owner.query("UPDATE artifact_versions SET state='withdrawn',lifecycle_generation=lifecycle_generation+1 WHERE id=$1",[f.versionId]);});await expect(runGovernedExecution(s.input)).rejects.toThrow('lease lost');expect((await owner.query('SELECT count(*)::int AS n FROM artifact_extraction_units WHERE version_id=$1',[f.versionId])).rows[0].n).toBe(0);expect(s.deleted).toHaveBeenCalledOnce();});
-it('rejects changed provider or price scope before provider creation',async()=>{const f=await artifact(),s=setup(f.claim);process.env.VERCEL_PROJECT_ID='foreign-project';await expect(runGovernedExecution(s.input)).rejects.toThrow('scope differs');expect(fixture.create).not.toHaveBeenCalled();});
+it('rejects changed provider or price scope before provider creation',async()=>{
+ const f=await artifact(),s=setup(f.claim);process.env.VERCEL_PROJECT_ID='foreign-project';await expect(runGovernedExecution(s.input)).rejects.toThrow('scope differs');
+ process.env.VERCEL_PROJECT_ID='controlled-project';const config=JSON.parse(process.env.TURAS_PILOT_JOB_COST_JSON!);config.maximumDispatches=1;
+ process.env.TURAS_PILOT_JOB_COST_JSON=JSON.stringify(config);expect(()=>hostedCostConfiguration()).toThrow('scope differs');
+ config.pricingDigest=costOperationDigest({contract:'pilot-sandbox-bounds-v1',costSourceDigest:config.costSourceDigest,bounds:config.bounds,maximumDispatches:1});
+ config.budgetId=randomUUID();
+ process.env.TURAS_PILOT_JOB_COST_JSON=JSON.stringify(config);expect(hostedCostConfiguration().maximumDispatches).toBe(1);
+ await owner.query("INSERT INTO operations_cost_budgets(id,environment_id,category,authorization_digest,scope_digest,pricing_digest,cap_micro_usd,expires_at) VALUES($1,$2,'sandbox',$3,$4,$5,1000000,clock_timestamp()+interval '1 hour')",[config.budgetId,process.env.TURAS_ENVIRONMENT_ID,digest,config.scopeDigest,config.pricingDigest]);
+ Object.assign(process.env,{TURAS_PILOT_HOSTED_JOBS_ENABLED:'1',TURAS_PRIVATE_OBJECT_BACKEND:'blob'});
+ expect(await readHostedDispatchHealth(owner as unknown as import('pg').PoolClient,process.env.TURAS_ENVIRONMENT_ID!)).toBe('ready');
+ const binding={budgetId:config.budgetId,environmentId:process.env.TURAS_ENVIRONMENT_ID!,category:'sandbox' as const,scopeDigest:config.scopeDigest,pricingDigest:config.pricingDigest,operationDigest:digest,maximumDispatches:1};
+ const reservation=await withTransaction(db=>reserveServiceCost(db,binding,100000));
+ expect(await readHostedDispatchHealth(owner as unknown as import('pg').PoolClient,binding.environmentId)).toBe('unavailable');
+ await withTransaction(db=>serviceBudgetAuthority(binding).releaseUndispatched(db,reservation));
+ expect(await readHostedDispatchHealth(owner as unknown as import('pg').PoolClient,binding.environmentId)).toBe('ready');
+ for(const maximumDispatches of [2,undefined]){process.env.TURAS_PILOT_JOB_COST_JSON=JSON.stringify({...config,maximumDispatches});expect(()=>hostedCostConfiguration()).toThrow('scope differs');}
+ expect(fixture.create).not.toHaveBeenCalled();
+});

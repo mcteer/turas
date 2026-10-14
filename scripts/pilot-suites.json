@@ -326,13 +326,15 @@
     },
     {
       "file": "tests/integration/pilot/cost-authority.test.ts",
-      "expectedCases": 5,
+      "expectedCases": 7,
       "cases": [
         "consumes owner authority once and denies runtime provisioning or settlement",
         "serializes reservations and retains dispatched upper bounds",
         "keeps estimates conservative and prevents release or replay after dispatch",
         "denies mismatched category scope pricing and revoked authority",
-        "stops an original orphan after owner cost settlement without reopening its ledger"
+        "stops an original orphan after owner cost settlement without reopening its ledger",
+        "serializes the finite dispatch count and keeps settled calls in the allowance",
+        "releases only never dispatched count capacity and rejects nonfinite count limits"
       ]
     },
     {
@@ -887,7 +889,7 @@
     },
     {
       "file": "tests/integration/pilot/hosted-role-reads.test.ts",
-      "expectedCases": 9,
+      "expectedCases": 10,
       "cases": [
         "proves actual bound roles positive partner listing denied gaps and exact session cleanup",
         "refuses missing role credentials before creating sessions or making HTTP calls",
@@ -897,7 +899,8 @@
         "revokes the exact newly created session when its parent run is cancelled",
         "cleans its exact bound session when a trusted journey callback fails",
         "exercises actual parked conversation replay ownership archive and restore without native dispatch",
-        "archives the original parked conversation after an uncertain creation response without replacement or native work"
+        "archives the original parked conversation after an uncertain creation response without replacement or native work",
+        "blocks journey writes on actual mismatched configuration and revokes the original session"
       ]
     },
     {
@@ -1414,6 +1417,16 @@
       "cases": [
         "binds actual streamed gap exports to the serving deployment while preserving review and integrity headers",
         "withholds stream bytes on a changed release fence and invents no absent code identity"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/hosted-configuration.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "reports only explicit runtime identities and limits without credential material",
+        "withholds configuration on missing identities, local fallback, tags or malformed enablement",
+        "rejects cross-target, changed store, image, enablement and job limit readbacks",
+        "verifies exact configured readback while refusing extra provider health claims"
       ]
     }
   ],

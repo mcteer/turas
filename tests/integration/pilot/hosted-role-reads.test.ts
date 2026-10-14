@@ -6,6 +6,7 @@ import {provisionPilotWorkspace} from '../../../scripts/provision-pilot-workspac
 import {pilotHostedScopeSchema,type PilotHostedScope} from '../../../lib/contracts/pilot-hosted';
 import {runHostedReadChecks} from '../../../scripts/pilot-hosted-http';
 import {runHostedConversationBoundary} from '../../../scripts/pilot-hosted-conversations';
+import {readHostedConfiguration} from '../../../lib/server/operations/hosted-configuration';
 import {DEMO_IDS} from '../../../lib/server/bootstrap-ids';
 import {POST as login} from '../../../app/api/auth/login/route';
 import {POST as logout} from '../../../app/api/auth/logout/route';
@@ -140,4 +141,18 @@ it('archives the original parked conversation after an uncertain creation respon
  const rows=(await owner.query('SELECT archived_at,binding_state,eve_session_id FROM conversations WHERE workspace_id=$1',[scope.workspaceId])).rows;
  expect(rows).toHaveLength(1);expect(rows[0].archived_at).not.toBeNull();expect(rows[0].binding_state).toBe('unbound');expect(rows[0].eve_session_id).toBeNull();
  expect((await owner.query('SELECT count(*)::int AS n FROM login_sessions WHERE workspace_id=$1 AND revoked_at IS NULL',[scope.workspaceId])).rows[0].n).toBe(0);
+}),210000);
+it('blocks journey writes on actual mismatched configuration and revokes the original session',async()=>fixture(async(scope,runtime,owner)=>{
+ const pinned='vcr.vercel.com/synthetic/turas/image@sha256:'+'a'.repeat(64);
+ const values={TURAS_ENVIRONMENT_ID:scope.environmentMarker,VERCEL_PROJECT_ID:scope.projectId,VERCEL_TEAM_ID:scope.teamId,BLOB_STORE_ID:'store_synthetic',TURAS_PRIVATE_OBJECT_BACKEND:'blob',TURAS_JOB_EXECUTOR:'sandbox',TURAS_PILOT_HOSTED_JOBS_ENABLED:'1',TURAS_PILOT_SCANNER_IMAGE:pinned,TURAS_PILOT_PARSER_IMAGE:pinned,TURAS_PILOT_RENDERER_IMAGE:pinned,TURAS_PILOT_JOB_COST_JSON:'{"maximumDispatches":32}'};
+ const previous=Object.fromEntries(Object.keys(values).map(key=>[key,process.env[key]]));let journeyCalls=0;
+ try{
+  Object.assign(process.env,values);const expected=readHostedConfiguration(values)!;
+  const matched=await runHostedReadChecks(scope,runtime,AbortSignal.timeout(60000),transport,process.env,async()=>{journeyCalls++;},expected);
+  expect(matched).toMatchObject({sessionsRevoked:3,fullHostedCatalogVerified:false,providerCalls:0});expect(journeyCalls).toBe(3);journeyCalls=0;
+  await expect(runHostedReadChecks(scope,runtime,AbortSignal.timeout(60000),transport,process.env,async()=>{journeyCalls++;},{...expected,storeId:'another-store'})).rejects.toThrow('runtime configuration differs');
+  expect(journeyCalls).toBe(0);
+  expect((await owner.query('SELECT count(*)::int AS n FROM login_sessions WHERE workspace_id=$1 AND revoked_at IS NULL',[scope.workspaceId])).rows[0].n).toBe(0);
+  expect((await owner.query('SELECT count(*)::int AS n FROM conversations WHERE workspace_id=$1',[scope.workspaceId])).rows[0].n).toBe(0);
+ }finally{for(const [key,value] of Object.entries(previous))if(value===undefined)delete process.env[key];else process.env[key]=value;}
 }),210000);

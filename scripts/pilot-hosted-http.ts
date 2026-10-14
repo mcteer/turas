@@ -3,6 +3,7 @@ import {z} from 'zod';
 import {createHash} from 'node:crypto';
 import type {PilotHostedScope} from '../lib/contracts/pilot-hosted';
 import {assertPilotDatabaseOnConnection} from '../lib/server/db/readiness';
+import {verifyHostedConfiguration,type HostedConfiguration} from '../lib/server/operations/hosted-configuration';
 const roles=[{name:'internal-admin',login:'mcteer',kind:'internal',role:'admin',password:'TURAS_PILOT_HOSTED_ADMIN_PASSWORD'},
  {name:'internal-member',login:'panel',kind:'internal',role:'member',password:'TURAS_PILOT_HOSTED_MEMBER_PASSWORD'},
  {name:'assigned-partner',login:'partner',kind:'partner',role:'member',password:'TURAS_PILOT_HOSTED_PARTNER_PASSWORD'}] as const;
@@ -17,7 +18,7 @@ export async function boundedHostedJson(response:Response){
  * fixed journey hook may use normally scoped management requests; the exact
  * role session is always revoked. Transport follows verified platform binding. */
 export type HostedRoleProofHook=(context:{role:typeof roles[number]['name'];headers:Headers;customerIds:string[];allCustomerIds:string[];partnerCustomerIds:string[]})=>Promise<void>;
-export async function runHostedReadChecks(scope:PilotHostedScope,db:Client,signal:AbortSignal,transport:typeof fetch=fetch,env:NodeJS.ProcessEnv=process.env,proveRole?:HostedRoleProofHook){
+export async function runHostedReadChecks(scope:PilotHostedScope,db:Client,signal:AbortSignal,transport:typeof fetch=fetch,env:NodeJS.ProcessEnv=process.env,proveRole?:HostedRoleProofHook,expectedConfiguration?:HostedConfiguration){
  if(roles.some(role=>!env[role.password]))throw Error('All explicit hosted role credentials required');
  await assertPilotDatabaseOnConnection(scope.environmentMarker,<Row extends QueryResultRow=QueryResultRow>(sql:string,values:readonly unknown[]=[])=>db.query<Row>(sql,[...values]));
  const workspace=(await db.query("SELECT classification,pilot_environment_id,active FROM workspaces WHERE id=$1",[scope.workspaceId])).rows[0];
@@ -68,7 +69,12 @@ export async function runHostedReadChecks(scope:PilotHostedScope,db:Client,signa
    if(JSON.stringify(ids)!==JSON.stringify(expectedIds))throw Error('Hosted customer scope leaked or missed assigned records');
    cases.push({id:'positive-customer-scope',role:role.name,state:'pass',status:200});
    const status=await call('/api/operations/status','GET',headers),expectedStatus=role.role==='admin'?200:403;
-   if(status.status!==expectedStatus)throw Error('Hosted operational authority differs');await status.body?.cancel();cases.push({id:'operations-authority',role:role.name,state:'pass',status:expectedStatus});
+   if(status.status!==expectedStatus)throw Error('Hosted operational authority differs');
+   if(role.role==='admin'&&expectedConfiguration){
+    const health=z.object({data:z.object({configuration:z.unknown()})}).parse(await boundedHostedJson(status));
+    verifyHostedConfiguration(health.data.configuration,expectedConfiguration);
+   }else await status.body?.cancel();
+   cases.push({id:'operations-authority',role:role.name,state:'pass',status:expectedStatus});
    const gaps=await call('/api/product-gaps','GET',headers),expectedGaps=role.kind==='internal'?200:404;
    if(gaps.status!==expectedGaps)throw Error('Hosted Product Gaps read failed or disclosed partner content');
    if(role.kind==='internal'){const payload=z.object({data:z.object({contractVersion:z.literal('product-gaps-v1')})}).parse(await boundedHostedJson(gaps));void payload;}else await gaps.body?.cancel();

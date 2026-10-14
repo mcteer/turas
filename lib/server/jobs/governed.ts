@@ -12,7 +12,7 @@ import {reserveServiceCost,serviceBudgetAuthority,sandboxOperationDigest} from '
 import {costOperationDigest} from '../../contracts/pilot-cost';
 import {admitLocalJob,fenceLocalJob,settleLocalJob,withLocalHeartbeat} from '../operations/local-jobs';
 
-const costConfig=z.strictObject({budgetId:z.uuid(),scopeDigest:z.string().regex(/^[a-f0-9]{64}$/),pricingDigest:z.string().regex(/^[a-f0-9]{64}$/),costSourceDigest:z.string().regex(/^[a-f0-9]{64}$/),bounds:z.strictObject({
+const costConfig=z.strictObject({budgetId:z.uuid(),scopeDigest:z.string().regex(/^[a-f0-9]{64}$/),pricingDigest:z.string().regex(/^[a-f0-9]{64}$/),costSourceDigest:z.string().regex(/^[a-f0-9]{64}$/),maximumDispatches:z.number().int().min(1).max(100000).optional(),bounds:z.strictObject({
  'artifact-scan':z.number().int().min(0).max(1e12),'artifact-parse':z.number().int().min(0).max(1e12),'workforce-parse':z.number().int().min(0).max(1e12),'report-render':z.number().int().min(0).max(1e12),'report-office-check':z.number().int().min(0).max(1e12),
 })});
 export function hostedExecutionCredentials(env:NodeJS.ProcessEnv=process.env){
@@ -27,7 +27,7 @@ export function sandboxScopeDigest(env:NodeJS.ProcessEnv=process.env){
 export function hostedCostConfiguration(env:NodeJS.ProcessEnv=process.env){
  const raw=env.TURAS_PILOT_JOB_COST_JSON;if(!raw||Buffer.byteLength(raw)>8192)throw Error('Explicit hosted cost configuration required');
  const costs=costConfig.parse(JSON.parse(raw));
- if(costs.scopeDigest!==sandboxScopeDigest(env)||costs.pricingDigest!==costOperationDigest({contract:'pilot-sandbox-bounds-v1',costSourceDigest:costs.costSourceDigest,bounds:costs.bounds}))throw Error('Hosted pricing or provider scope differs');return costs;
+ if(costs.scopeDigest!==sandboxScopeDigest(env)||costs.pricingDigest!==costOperationDigest({contract:'pilot-sandbox-bounds-v1',costSourceDigest:costs.costSourceDigest,bounds:costs.bounds,...(costs.maximumDispatches===undefined?{}:{maximumDispatches:costs.maximumDispatches})}))throw Error('Hosted pricing or provider scope differs');return costs;
 }
 type DomainExecution={domainKind:JobAdmission['domainKind'];domainJobId:string;sourceGeneration:number;sourceDigest:string};
 /** IO is outside SQL locks; publication and current source/lease checks share one transaction. */
@@ -44,7 +44,7 @@ export async function runGovernedExecution<T>(input:{request:ExecutionRequest;do
  const credentials=hostedExecutionCredentials(),costs=hostedCostConfiguration(),environmentId=process.env.TURAS_ENVIRONMENT_ID;
  if(!environmentId)throw Error('Explicit execution environment required');
  const admission={environmentId,...input.domain,imageDigest:input.request.imageDigest,inputDigest:input.request.inputs[0].digest,inputBytes:input.request.inputs[0].sizeBytes,deadlineAt:input.request.deadlineAt};
- const binding={budgetId:costs.budgetId,environmentId,category:'sandbox' as const,scopeDigest:costs.scopeDigest,pricingDigest:costs.pricingDigest,operationDigest:sandboxOperationDigest(admission,input.request.kind)};
+ const binding={budgetId:costs.budgetId,environmentId,category:'sandbox' as const,scopeDigest:costs.scopeDigest,pricingDigest:costs.pricingDigest,operationDigest:sandboxOperationDigest(admission,input.request.kind),maximumDispatches:costs.maximumDispatches};
  const budget=serviceBudgetAuthority(binding);
  const handle=await withTransaction(async db=>{const reservationId=await reserveServiceCost(db,binding,costs.bounds[input.request.kind]);return admitHostedJob(db,{...admission,reservationId},budget,input.sourceCurrent);});
  try{
