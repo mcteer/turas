@@ -7,7 +7,7 @@ import type {PilotHostedScope} from '../lib/contracts/pilot-hosted';
 /** Trusted role callback after actual cookie/membership/database binding.
  * Fixed normal management writes only; no model, mail, accepted-state writes,
  * paid retries, customer content captures or credential persistence. */
-export async function runHostedMcpJourney(input:{scope:PilotHostedScope;db:Database;headers:Headers;customerId:string;deniedCustomerId:string;signal:AbortSignal;transport?:typeof fetch}){
+export async function runHostedMcpJourney(input:{scope:PilotHostedScope;db:Database;headers:Headers;customerId:string;deniedCustomerId:string;signal:AbortSignal;transport?:typeof fetch;expectedEvidenceRevisionId?:string;expectedPublicationId?:string;expectedPlanId?:string;sourceBoundary?:()=>Promise<void>}){
  const {scope,db,headers,customerId,deniedCustomerId,signal}=input,transport=input.transport??fetch,origin=new URL(scope.origin).origin;
  const rows=(await db.query('SELECT id,synthetic FROM customer_references WHERE workspace_id=$1 AND id=ANY($2::uuid[])',[scope.workspaceId,[customerId,deniedCustomerId]])).rows;
  if(rows.length!==2||rows.some(row=>!row.synthetic))throw Error('Exact positive and denied synthetic MCP customer scope required');
@@ -46,17 +46,35 @@ export async function runHostedMcpJourney(input:{scope:PilotHostedScope;db:Datab
   const identity=mcpToolOutputs.turas_identity_v1.parse(await call('turas_identity_v1',{}));if(identity.status!=='available'||identity.data.workspaceId!==scope.workspaceId||identity.data.categories.length!==5)throw Error('SDK identity differs');cases.push('identity');
   const customers=mcpToolOutputs.turas_customers_list_v1.parse(await call('turas_customers_list_v1',{limit:20}));if(customers.status!=='available'||customers.data.items.length!==1||customers.data.items[0].customerId!==customerId)throw Error('SDK customer ceiling differs');cases.push('customers');
   const profile=mcpToolOutputs.turas_profile_read_v1.parse(await call('turas_profile_read_v1',{customerId,section:'facts',limit:20}));if(profile.status!=='available'||profile.data.customerId!==customerId||!profile.data.items.length)throw Error('Accepted SDK profile required');cases.push('profile');
-  const listing=mcpToolOutputs.turas_evidence_list_v1.parse(await call('turas_evidence_list_v1',{customerId,limit:20}));if(listing.status!=='available'||!listing.data.items.length)throw Error('Current SDK evidence required');const selected=listing.data.items[0];
+  const listing=mcpToolOutputs.turas_evidence_list_v1.parse(await call('turas_evidence_list_v1',{customerId,limit:20}));if(listing.status!=='available'||!listing.data.items.length)throw Error('Current SDK evidence required');const selected=input.expectedEvidenceRevisionId?listing.data.items.find(row=>row.revisionId===input.expectedEvidenceRevisionId):listing.data.items[0];if(!selected)throw Error('Exact ordinary SDK evidence required');
   const evidence=mcpToolOutputs.turas_evidence_read_v1.parse(await call('turas_evidence_read_v1',{customerId,revisionId:selected.revisionId,passageId:selected.passageId}));if(evidence.status!=='available'||evidence.data.revisionId!==selected.revisionId||evidence.data.passageId!==selected.passageId)throw Error('Evidence identity differs');cases.push('evidence');
   const citation=mcpToolOutputs.turas_citation_resolve_v1.parse(await call('turas_citation_resolve_v1',{citationHandle:evidence.data.citationHandle}));if(citation.status!=='available'||!('passageId'in citation.data)||citation.data.passageId!==selected.passageId||citation.data.text!==evidence.data.text)throw Error('Current citation differs');cases.push('evidence-citation');
-  const shared=mcpToolOutputs.turas_knowledge_list_v1.parse(await call('turas_knowledge_list_v1',{limit:20}));if(shared.status!=='available'||!shared.data.items.length)throw Error('Reviewed knowledge required');const publication=shared.data.items[0];
+  const shared=mcpToolOutputs.turas_knowledge_list_v1.parse(await call('turas_knowledge_list_v1',{limit:20}));if(shared.status!=='available'||!shared.data.items.length)throw Error('Reviewed knowledge required');const publication=input.expectedPublicationId?shared.data.items.find(row=>row.publicationId===input.expectedPublicationId):shared.data.items[0];if(!publication)throw Error('Exact ordinary SDK knowledge required');
   const knowledge=mcpToolOutputs.turas_knowledge_read_v1.parse(await call('turas_knowledge_read_v1',{publicationId:publication.publicationId}));if(knowledge.status!=='available'||knowledge.data.publicationId!==publication.publicationId)throw Error('Knowledge identity differs');cases.push('knowledge');
   const sharedCitation=mcpToolOutputs.turas_citation_resolve_v1.parse(await call('turas_citation_resolve_v1',{citationHandle:knowledge.data.citationHandle}));if(sharedCitation.status!=='available'||!('publicationId'in sharedCitation.data)||sharedCitation.data.publicationId!==publication.publicationId)throw Error('Knowledge citation differs');cases.push('knowledge-citation');
   const plans=mcpToolOutputs.turas_plans_list_v1.parse(await call('turas_plans_list_v1',{customerId,limit:20}));if(plans.status!=='available'||!plans.data.items.length)throw Error('Accepted plan required');
-  const plan=mcpToolOutputs.turas_plan_read_v1.parse(await call('turas_plan_read_v1',{customerId,planId:plans.data.items[0].planId}));if(plan.status!=='available'||plan.data.customerId!==customerId||plan.data.planId!==plans.data.items[0].planId)throw Error('Plan identity differs');cases.push('plan');
+  const selectedPlan=input.expectedPlanId?plans.data.items.find(row=>row.planId===input.expectedPlanId):plans.data.items[0];if(!selectedPlan)throw Error('Exact ordinary SDK plan required');
+  const plan=mcpToolOutputs.turas_plan_read_v1.parse(await call('turas_plan_read_v1',{customerId,planId:selectedPlan.planId}));if(plan.status!=='available'||plan.data.customerId!==customerId||plan.data.planId!==selectedPlan.planId)throw Error('Plan identity differs');cases.push('plan');
   const reports=mcpToolOutputs.turas_reports_list_v1.parse(await call('turas_reports_list_v1',{customerId,limit:20}));if(reports.status!=='available'||!reports.data.items.length)throw Error('Published report required');
   const report=mcpToolOutputs.turas_report_read_v1.parse(await call('turas_report_read_v1',{customerId,reportId:reports.data.items[0].reportId}));if(report.status!=='available'||report.data.customerId!==customerId||report.data.publicationId!==reports.data.items[0].publicationId)throw Error('Report identity differs');cases.push('report');
   const denied=await client.callTool({name:'turas_profile_read_v1',arguments:{customerId:deniedCustomerId,section:'facts'}},{signal,timeout:10000});if(!denied.isError||denied.structuredContent!==undefined)throw Error('Foreign SDK scope was disclosed');cases.push('denied-customer');
+  if(input.sourceBoundary){
+   if(!input.expectedEvidenceRevisionId||!input.expectedPublicationId||!input.expectedPlanId)throw Error('Exact linked identities required for current-source SDK boundary');
+   await input.sourceBoundary();
+   const stillBound=mcpToolOutputs.turas_identity_v1.parse(await call('turas_identity_v1',{}));if(stillBound.status!=='available'||stillBound.data.workspaceId!==scope.workspaceId)throw Error('Source denial requires a still-authorized SDK connection');cases.push('identity-after-source-withdrawal');
+   async function withheld(name:keyof typeof mcpToolOutputs,args:Record<string,unknown>,caseId:string=name){
+    const result=await client!.callTool({name,arguments:args},{signal,timeout:10000});
+    if(result.isError){if(result.structuredContent!==undefined)throw Error('Denied SDK content was disclosed');}
+    else z.object({status:z.literal('unavailable'),data:z.null()}).parse(result.structuredContent);
+    cases.push('current-source-denied-'+caseId);
+   }
+   await withheld('turas_evidence_read_v1',{customerId,revisionId:selected.revisionId,passageId:selected.passageId});
+   await withheld('turas_citation_resolve_v1',{citationHandle:evidence.data.citationHandle},'evidence-citation');
+   await withheld('turas_knowledge_read_v1',{publicationId:publication.publicationId});
+   await withheld('turas_citation_resolve_v1',{citationHandle:knowledge.data.citationHandle},'knowledge-citation');
+   await withheld('turas_plan_read_v1',{customerId,planId:selectedPlan.planId});
+   await withheld('turas_report_read_v1',{customerId,reportId:reports.data.items[0].reportId});
+  }
   await management('/api/mcp/connections/'+connectionId+'/revoke','POST',{requestKey:randomUUID(),expectedConnectionId:connectionId});revoked=true;
   lastStatus=undefined;let deniedAfterRevoke=false;try{await client.callTool({name:'turas_identity_v1',arguments:{}},{signal,timeout:10000});}catch{deniedAfterRevoke=lastStatus===401;}if(!deniedAfterRevoke)throw Error('SDK revocation denial unverified');cases.push('revoked-credential');
  }finally{

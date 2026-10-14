@@ -50,6 +50,7 @@ export async function runHostedLinkedJourney(input:{scope:PilotHostedScope;db:Cl
  const plan=await runHostedPlanJourney({...input,workloadId:foundation.workloadId,citationId:cited.citationId,expectedSourceRevisionId:source.profileRevisionId,request});
  const delivery=await runHostedDeliveryReview({...input,engagementId:plan.engagementId,baselineId:plan.baselineId,request});
  const milestone=await runHostedMilestoneReview({...input,engagementId:plan.engagementId,baselineId:plan.baselineId,activityRevisionId:delivery.revisionId,request});
+ const artifactIds:string[]=[];
  const reports=await runHostedReportJourney({...input,engagementId:plan.engagementId,workloadId:foundation.workloadId,request,authorRequest:request,
   runQueuedRender:async revisionId=>{
    const job=(await db.query("SELECT id,deadline_at FROM report_jobs WHERE environment_id=$1 AND revision_id=$2 AND kind='render'",[scope.environmentMarker,revisionId])).rows;
@@ -57,7 +58,7 @@ export async function runHostedLinkedJourney(input:{scope:PilotHostedScope;db:Cl
    for(;;){signal.throwIfAborted();const state=(await db.query('SELECT state FROM report_jobs WHERE id=$1',[job[0].id])).rows[0]?.state;
     if(state==='completed')return;if(['failed','cancelled'].includes(state)||Date.now()>=deadline)throw Error('Actual hosted report rendering incomplete');await pause(signal);
    }
-  },readArtifact:async artifact=>{const actual=await bytes('/api/reports/artifacts/'+artifact.id,artifact.sizeBytes);if(actual.length!==artifact.sizeBytes||createHash('sha256').update(actual).digest('hex')!==artifact.contentDigest||actual.subarray(0,artifact.format==='pdf'?5:2).toString()!==(artifact.format==='pdf'?'%PDF-':'PK'))throw Error('Actual hosted report artifact differs');},
+  },readArtifact:async artifact=>{artifactIds.push(artifact.id);const actual=await bytes('/api/reports/artifacts/'+artifact.id,artifact.sizeBytes);if(actual.length!==artifact.sizeBytes||createHash('sha256').update(actual).digest('hex')!==artifact.contentDigest||actual.subarray(0,artifact.format==='pdf'?5:2).toString()!==(artifact.format==='pdf'?'%PDF-':'PK'))throw Error('Actual hosted report artifact differs');},
  });
- return {contract:'pilot-hosted-linked-chain-v1',customerId:input.customerId,foundation,source,knowledge,plan,delivery,milestone,reports,citationId:cited.citationId,normalReviewOnly:true,modelCalls:0,outboundSendAttempts:0,humanFeedbackRecorded:false,fullHostedCatalogVerified:false};
+ return {contract:'pilot-hosted-linked-chain-v1',customerId:input.customerId,foundation,source,knowledge,plan,delivery,milestone,reports,artifactIds,citationId:cited.citationId,normalReviewOnly:true,modelCalls:0,outboundSendAttempts:0,humanFeedbackRecorded:false,fullHostedCatalogVerified:false};
 }

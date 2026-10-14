@@ -1,8 +1,10 @@
+import {runHostedMcpJourney} from '../../../scripts/pilot-hosted-mcp';
+import {runHostedSourceWithdrawal} from '../../../scripts/pilot-hosted-withdrawal';
 import {runHostedKnowledgeBaseline} from '../../../scripts/pilot-hosted-knowledge';
 import {cp,readFile,writeFile} from 'node:fs/promises';
 import {join,dirname} from 'node:path';
 import {parsePilotImagePreparation} from '../../../lib/contracts/pilot-images';
-import {runOwnedSourceJourney,sourceWithdrawalCommand} from '../../../scripts/pilot-owned-source';
+import {runOwnedSourceJourney} from '../../../scripts/pilot-owned-source';
 import {claimArtifactRun} from '../../../lib/server/artifacts/jobs';
 import {runArtifactJob} from '../../../lib/server/artifacts/runner';
 import {z} from 'zod';
@@ -50,6 +52,7 @@ await withPilotEnvironment(async environment=>{
   await owner.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role) VALUES($1,$2,$3,'internal','admin')",[membershipId,DEMO_IDS.mcteer,workspaceId]);
   await owner.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,'Synthetic linked HTTP customer',true)",[customerId,workspaceId]);
   await owner.query('INSERT INTO customer_profile_state(customer_id,workspace_id) VALUES($1,$2) ON CONFLICT DO NOTHING',[customerId,workspaceId]);
+  const deniedCustomerId=randomUUID();await owner.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,'Synthetic denied SDK customer',true)",[deniedCustomerId,workspaceId]);
   const memberId=randomUUID();await owner.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role) VALUES($1,$2,$3,'internal','member')",[memberId,DEMO_IDS.panel,workspaceId]);
   const memberSession=await issueSession({principalId:DEMO_IDS.panel,loginName:'panel',displayName:'panel',membershipId:memberId,workspaceId,kind:'internal',role:'member'});
   const memberHeaders=new Headers({cookie:sessionCookieName()+'='+memberSession.token,origin:environment.origin,'content-type':'application/json','x-csrf-token':csrfTokenForSession(memberSession.token)});
@@ -108,7 +111,11 @@ await withPilotEnvironment(async environment=>{
   const expansionPath='/api/expansion/customers/'+customerId+'?workloadId='+foundation.workloadId+'&recordId='+expansion.recordId+'&limit=20';
   const beforeWithdrawal=expansionWorkspaceProjectionSchema.parse(z.object({data:z.unknown()}).parse(await request(expansionPath,'GET')).data);
   expect(beforeWithdrawal.records[0]?.working.availability).toBe('eligible');
-  await request('/api/artifacts/'+uploaded.versionId+'/actions','POST',sourceWithdrawalCommand(uploaded.lifecycleGeneration));
+  const sdk=await runHostedMcpJourney({scope,db:owner,headers,customerId,deniedCustomerId,expectedEvidenceRevisionId:uploaded.profileRevisionId,expectedPublicationId:knowledge.publicationId,expectedPlanId:plan.planId,signal:environment.signal,sourceBoundary:async()=>{const withdrawal=await runHostedSourceWithdrawal({scope,db:owner,headers,customerId,versionId:uploaded.versionId,lifecycleGeneration:uploaded.lifecycleGeneration,citationId:source.citationId,publicationId:knowledge.publicationId,artifactIds:publishedArtifactIds,signal:environment.signal});expect(withdrawal).toMatchObject({normalCommands:1,authenticatedContentDenials:6,providerCalls:0,originalDeletionRequested:false});}});
+  expect(sdk.credentialRevoked).toBe(true);expect(sdk.cases.map(row=>row.id)).toContain('identity-after-source-withdrawal');
+  for(const name of ['turas_evidence_read_v1','turas_knowledge_read_v1','turas_plan_read_v1','turas_report_read_v1'])expect(sdk.cases.map(row=>row.id)).toContain('current-source-denied-'+name);
+  for(const name of ['evidence-citation','knowledge-citation'])expect(sdk.cases.map(row=>row.id)).toContain('current-source-denied-'+name);
+  expect(new Set(sdk.cases.map(row=>row.id)).size).toBe(sdk.passedCases);
   const unavailable=z.object({data:z.object({effectiveReadiness:z.literal('review_required'),assessment:z.object({revisionId:z.literal(support.assessmentRevisionId),contentUnavailable:z.literal(true),content:z.null()}),actions:z.array(z.object({recordId:z.uuid(),accepted:z.object({contentUnavailable:z.literal(true),content:z.null()}).nullable()}))})}).parse(await request('/api/support/customers/'+customerId+'?workloadId='+foundation.workloadId+'&audience=delivery&limit=20','GET')).data;
   expect(unavailable.actions.some(row=>row.recordId===support.actionRecordId&&row.accepted?.contentUnavailable)).toBe(true);
   const changed=expansionWorkspaceProjectionSchema.parse(z.object({data:z.unknown()}).parse(await request(expansionPath,'GET')).data);

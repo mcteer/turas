@@ -24,6 +24,8 @@ import {hostedConfigurationSchema} from '../lib/server/operations/hosted-configu
 import {previewInfrastructureAuthorizationSchema} from './pilot-hosted-paid';
 import {runHostedLinkedJourney} from './pilot-hosted-linked';
 import {runHostedTrainingJourney} from './pilot-hosted-training';
+import {runHostedSourceWithdrawal} from './pilot-hosted-withdrawal';
+import {z} from 'zod';
 import {withRecoveryCancellation} from '../lib/server/operations/recovery-cancellation';
 const execute=promisify(execFile);
 async function platformDeployment(scope:PilotHostedScope,origin=false,signal?:AbortSignal){
@@ -135,7 +137,17 @@ export async function pilotHosted(args=process.argv.slice(2)){
     const denied=context.allCustomerIds.find(id=>id!==positive);
     if(!positive||!denied)throw Error('Ordinarily accepted hosted SDK chain required');
     stage='sdk_boundary';
-    sdkJourneys.push({...await runHostedMcpJourney({scope,db:readDb,headers:context.headers,customerId:String(positive),deniedCustomerId:denied,signal}),role:context.role});
+    sdkJourneys.push({...await runHostedMcpJourney({scope,db:readDb,headers:context.headers,customerId:String(positive),deniedCustomerId:denied,signal,expectedEvidenceRevisionId:linkedJourneys[0].source.profileRevisionId,expectedPublicationId:linkedJourneys[0].knowledge.publicationId,expectedPlanId:linkedJourneys[0].plan.planId,sourceBoundary:context.role==='assigned-partner'?async()=>{
+     stage='current_source_boundary';const linked=linkedJourneys[0];let withdrawal:Awaited<ReturnType<typeof runHostedSourceWithdrawal>>|undefined;
+     const roles=await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async reviewer=>{
+      if(reviewer.role==='internal-admin')withdrawal=await runHostedSourceWithdrawal({scope,db:readDb,headers:reviewer.headers,customerId:linked.customerId,versionId:linked.source.versionId,lifecycleGeneration:linked.source.lifecycleGeneration,citationId:linked.citationId,publicationId:linked.knowledge.publicationId,artifactIds:linked.artifactIds,signal});
+     },configuration);
+     if(!withdrawal)throw Error('Ordinary current source withdrawal incomplete');
+     const training=trainingJourneys[0].training,request=pilotHostedRequest({scope,headers:context.headers,signal});
+     const changed=z.object({data:z.object({availability:z.literal('source_unavailable'),progress:z.null(),checkpoints:z.array(z.object({attempts:z.array(z.object({attemptId:z.uuid(),currentCredit:z.boolean()}))}))})}).parse(await request('/api/partners/assignments/'+training.assignmentId,'GET')).data;
+     if(!changed.checkpoints.some(row=>row.attempts.some(attempt=>attempt.attemptId===training.attemptId&&!attempt.currentCredit)))throw Error('Withdrawn source retained partner learning credit');
+     await writeEvidence(root,'current-source-withdrawal.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),withdrawal,roles,partnerCreditWithheld:true,fullHostedCatalogVerified:false});
+    }:undefined}),role:context.role});
     if(context.role==='internal-admin'){
      stage='support_boundary';
      const linked=(await readDb.query(`SELECT p.id AS plan_id,p.accepted_revision_id,p.workload_id,p.engagement_id,m.id AS owner_id

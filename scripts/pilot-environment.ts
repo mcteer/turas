@@ -31,7 +31,18 @@ export function pilotParentEnvironment(environment:Record<string,string|undefine
 }
 function command(cmd: string, args: string[], env: NodeJS.ProcessEnv, cwd = process.cwd(), timeout = 120_000) {
  const result = spawnSync(cmd,args,{cwd,env,encoding:'utf8',timeout,maxBuffer:1_000_000});
- if (result.error || result.status !== 0) { writeFileSync(resolve('local-artifacts/016/setup-error.log'),(result.stdout??'')+(result.stderr??''),{mode:0o600}); throw Error(`Owned pilot setup failed: ${cmd.split('/').pop()}`); }
+ if (result.error || result.status !== 0) {
+  writeFileSync(resolve('local-artifacts/016/setup-error.log'),(result.stdout??'')+(result.stderr??''),{mode:0o600});
+  // The full private diagnostic may belong to a clone removed by cleanup. Keep
+  // only a fixed classification in the parent suite report, never arguments,
+  // connection strings, environment values or arbitrary dependency error prose.
+  const binary=['docker','git','node'].includes(cmd.split('/').pop()??'')?cmd.split('/').pop():'command';
+  const operation=binary==='docker'&&['run','port','inspect','stop','start','restart','exec','rm'].includes(args[0])?args[0]:'setup';
+  const failureCode=(result.error as NodeJS.ErrnoException|undefined)?.code;
+  const text=(result.stderr??'')+'\n'+(result.stdout??'');
+  const detail=/address already in use|port is already allocated/i.test(text)?'port_collision':/is already in use by container/i.test(text)?'container_collision':/no space left on device/i.test(text)?'disk_exhausted':/Cannot connect to the Docker daemon|error during connect/i.test(text)?'daemon_unavailable':/No such image|Unable to find image/i.test(text)?'image_unavailable':failureCode==='ETIMEDOUT'?'command_timeout':failureCode==='ENOENT'?'client_unavailable':'dependency_failed';
+  throw Error(`Owned pilot setup failed: ${binary} ${operation} ${detail}`);
+ }
  return result.stdout.trim();
 }
 export async function withPilotEnvironment<T>(run: (environment: PilotEnvironment) => Promise<T>, options: { priorSchema?: 38|55; postgresMajor?:RecoveryPostgresMajor; queryStatistics?:boolean; deadlineMs?: number } = {}): Promise<T> {
