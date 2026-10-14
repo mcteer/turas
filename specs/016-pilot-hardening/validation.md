@@ -2340,3 +2340,41 @@ model evaluation, participant feedback, deployment or release is claimed.
 Original Preview deployment overage and exhausted count remain recorded; automatic
 Git deployment for this branch stays disabled. Full current-source validation,
 CI, recovery/hosted acceptance and human observations remain open.
+
+
+### 2026-10-14 user-directed resource cleanup and operator retirement
+
+No Turas test/app process was running at cleanup. The selected checkout database
+was verified remote. Three stopped, obsolete containers were removed:
+`turas-production-rehearsal-20261005`, `turas-007-pgvector` and
+`turas-007-postgres`, along with their three exclusively attached anonymous
+volumes. Other projects' containers and volumes were untouched. Twenty-four
+obsolete `turas-pilot-016-*` image tags were removed after checking current
+container references and the three current prepared image identities.
+
+Removed 140 obsolete cloned app/build/review/operator or test-asset directories
+and ten additional build/runtime/obsolete asset directories, about 14.96 GiB
+of logical file content. The clean disposable `hosted-worktree-f988` Git worktree
+was removed. Preserved current prepared assets, selected store paths, accepted
+validation/cost/authorization receipts, actual-model captures and recovery data.
+Before/after hashes of `agent/agent.ts`, `.env.local` and `.eve/.workflow-data`
+matched, including the workflow file count. No Turas containers remain.
+Private exact inventories are in `local-artifacts/cleanup-20261014/`.
+
+The Vercel project was actually named `turas-recovery-operator`, created during
+016 work for independent backup/key storage. It had no Git link, deployment or
+running scheduler. Before deletion, all 29 encrypted variables were retrieved and
+verified, including 13 recovery keys and archive credentials. They are retained
+in the mode-0700 work directory
+`/Users/mcteer/Projects/turas-recovery-retained/retired-operator-20261014`,
+with a mode-0600 secrets file, outside the application checkout. The project was
+deleted and a fresh project list confirmed its absence and the continued presence
+of the primary `turas` project. The separate Free Neon archive remained available
+with zero connected projects; existing recovery backups and permanently retained
+authority records were not deleted. Existing operator-project bindings are now
+retired and no automatic replacement is authorized. No application deployment,
+primary database mutation, hosted backup or recovery readiness is claimed.
+
+The completed local catalog at code checkpoint `072d2eb` passed 703/703 cases.
+This cleanup does not close T080's later release-time checks or any remaining
+016 acceptance gates.

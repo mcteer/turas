@@ -29,6 +29,9 @@ fresh complete proof. The earlier actual-model batch failed 003's citation gate,
 and independent LLM review failed one 002 capability reply. Instruction corrections
 require fresh verification; the capped evaluation has spent $1.806543 and no
 Context credits. Hosted recovery and participant acceptance remain open.
+The unused recovery operator project was removed on 2026-10-14 at the user's
+direction; recovery keys and the archive were preserved. See the
+[operations record](docs/pilot-operations.md#work-controlled-neon-archive-destination).
 
 Recent Conversations provides owner-private Archive and Restore controls. Archived
 chats remain available in Archived Conversations and retain their history.

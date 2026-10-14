@@ -1,5 +1,11 @@
 # Independent work backup operator
 
+The undeployed `turas-recovery-operator` project was retired on 2026-10-14 at the
+user's direction. Its recovery keys were preserved separately and its existing
+Neon archive remains. This package is retained source/reference; the preparation,
+linking and deployment examples below do not authorize recreation. No scheduled
+operator is currently deployed.
+
 The deterministic Function in this package is published separately from Turas.
 It takes no customer request body and exposes no conversation or model transport.
 Vercel Cron calls `/api/backup` every twelve hours in UTC. The handler requires the

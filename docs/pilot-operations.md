@@ -185,7 +185,18 @@ customer labels or payloads.
 
 ### Work-controlled Neon archive destination
 
-The work account now has a separate Neon Free resource, `turas-recovery-016`, connected only to the undeployed `turas-recovery-operator` project. The selected application project and `.env.local` are unchanged. Its explicitly installed schema is [neon-archive.sql](../infra/pilot/neon-archive.sql); application requests cannot install it. The current adapter bounds an encrypted archive to 64 MiB and total retained ciphertext to 400 MiB after the explicit owner migration [neon-archive-002-capacity.sql](../infra/pilot/neon-archive-002-capacity.sql). It rejects capacity exhaustion and never upgrades the plan automatically. This bounded destination is not a verified complete Production backup or a guarantee against a provider or regional failure.
+**Operator retired on 2026-10-14 at the user's direction.** The undeployed
+`turas-recovery-operator` Vercel project was removed after all 13 recovery keys
+and archive credentials were cold-read and retained in a private work directory
+outside this checkout. Its separate `turas-recovery-016` Neon archive remains
+available and is no longer connected to a Vercel project. The existing project
+references in historical receipts/configurations are retired; the platform-bound
+capture, key retrieval and scheduler commands below cannot establish current
+operator availability. Do not recreate or deploy an operator without a new user
+instruction. Retiring this project does not establish 016 recovery acceptance.
+
+
+During 016 preparation, the work account received a separate Neon Free resource, `turas-recovery-016`, previously connected only to the now-removed `turas-recovery-operator` project. The selected application project and `.env.local` are unchanged. Its explicitly installed schema is [neon-archive.sql](../infra/pilot/neon-archive.sql); application requests cannot install it. The current adapter bounds an encrypted archive to 64 MiB and total retained ciphertext to 400 MiB after the explicit owner migration [neon-archive-002-capacity.sql](../infra/pilot/neon-archive-002-capacity.sql). It rejects capacity exhaustion and never upgrades the plan automatically. This bounded destination is not a verified complete Production backup or a guarantee against a provider or regional failure.
 
 `npm run pilot:backup -- --copy-neon-candidate --environment <owned-marker> --candidate <private-candidate.json> --bundle <private-encrypted-bundle> --key-file <separate-private-key> --destination <private-operator-config.json> --output <new-private-evidence-directory>` accepts only the existing owned synthetic candidate contract. The strict private destination configuration binds the work team, separate operator/source project IDs, exact resource/name, Neon project, schema installation UUID, capacity and explicit `verify-full` database connection. Keep its credentials in protected operator configuration. Before and after copying, the command verifies actual platform/project/resource/credential bindings and the Free plan. It authenticates the candidate using the separately supplied key, preserves immutable chunk identity, verifies the complete ciphertext through a fresh connection and leaves restoration readiness false. It cannot capture or qualify Production recovery.
 
