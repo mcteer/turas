@@ -79,7 +79,7 @@ export async function persistPublicCustomerResearch(actor: CurrentSession, raw: 
       if(previous?.passage_digest===passageDigest&&!previous.retired){revisionIds.push(previous.id);continue;}
       const id=randomUUID();
       const quality=qualityInputSchema.parse({rubricVersion:"evidence-quality-v1", R:1,D:4,C:0,
-        reliabilityRationale:"Attributed public source; publisher, speaker and workload ownership remain claim-specific and require steward review",
+        reliabilityRationale:"Independently checked public source; factual acceptance is automatic, publisher and workload authority remain claim-specific",
         directnessRationale:"Exact retained quotation from checked public fetch",corroborationRationale:"No independent corroboration automatically counted",
         informationType:"adoption_process",dateBasis:page.publishedAt?"publication":"unknown"});
       await db.query(`INSERT INTO evidence_source_revisions(id,source_id,workspace_id,customer_id,version,location,title,passage,supported_claim,

@@ -483,6 +483,9 @@ jobs:
           TURAS_UI_BASE_URL="$TURAS_APP_ORIGIN" \
           npm run test:ui -- tests/ui/knowledge.spec.ts tests/ui/research.spec.ts tests/ui/retrieval.spec.ts
 
+      - name: Check customer profile bug fixes in owned WebKit environments
+        run: npm run profiles:ui:check
+
   execution:
     runs-on: ubuntu-latest
     timeout-minutes: 90

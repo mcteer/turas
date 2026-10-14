@@ -22,6 +22,13 @@ runtime grants as part of each schema-dependent release.
 
 ### Customer Profiles and Maturity
 
+Search the Customer Profiles directory and open profiles directly from customer
+names. The overview shows scoped maturity, current risks, active delivery and
+sourced products. Independently checked research is accepted factual context
+without human review; human-entered claims require review. Evidence search offers
+Accepted Facts, Fresh Decision Evidence and Discovery, preserving source dates,
+quality and workload scope.
+
 Maintain customer/workload profiles, stakeholders and operating context. Record
 maturity assessments against a versioned rubric, with evidence, unknowns and the
 next measurable capability. Review proposed changes and inspect their history;
@@ -376,7 +383,7 @@ summary never establishes employer-wide deployment or accepted internal facts.
 The authorized operator batch researches a reviewed official Vercel directory and
 paginated story inventory. It records six coverage areas, exact source passages,
 dates, caveats, unknowns and provider usage, with source signatures and checkpointed
-provider dispatches. Customer Profiles show attributed findings and public research
+provider dispatches. Customer Profiles show accepted, attributed research findings and public research
 coverage. Rejected or withdrawn evidence is not restored by a cached result.
 
 ```sh

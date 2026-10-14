@@ -111,8 +111,10 @@ export async function rankPassages(client: PoolClient, sources: readonly Source[
 }
 
 
-async function hasMaterialConflict(client: PoolClient, row: Ranked,
-  actor: CurrentSession,input: RetrievalSearchInput): Promise<boolean> {
+export async function retrievalSourceHasMaterialConflict(client: PoolClient,
+  row: Pick<Ranked, "source_kind" | "source_revision_id">,
+  actor: Pick<CurrentSession, "workspaceId">,
+  input: Pick<RetrievalSearchInput, "scope" | "customerId">): Promise<boolean> {
   const typed = await client.query(`SELECT 1 FROM evidence_conflict_targets WHERE state='confirmed'
     AND ((first_kind=$1 AND first_revision_id=$2) OR
       (second_kind=$1 AND second_revision_id=$2))
@@ -168,7 +170,7 @@ export async function searchEvidence(actor: CurrentSession, raw: unknown,
       const selections: Array<{ row: Ranked; citationId: string;
         quality: Awaited<ReturnType<typeof readRetrievalQuality>>; locators: unknown[];
         warnings: string[]; caveats: string[]; title: string;
-        productVersion: string | null }> = [];
+        productVersion: string | null; conflict: boolean }> = [];
       for (const row of ranked) {
         if (selections.length >= Math.min(input.limit,retrievalLimits.resultCount)) break;
         if ((bySource.get(row.source_revision_id) ?? 0) >= retrievalLimits.perSourceRevision) continue;
@@ -177,7 +179,11 @@ export async function searchEvidence(actor: CurrentSession, raw: unknown,
         const locators = citationLocatorSchema.array().min(1).max(50).safeParse(row.locators);
         if (!locators.success) continue;
         const quality = await readRetrievalQuality(client,row,asOf);
-        const conflict = await hasMaterialConflict(client,row,actor,scopedInput);
+        const conflict = await retrievalSourceHasMaterialConflict(client,row,actor,scopedInput);
+        // Original-source eligibility establishes acceptance: reviewed human
+        // claims or independently checked research. Freshness/quality are a
+        // separate, stricter gate for decision-current evidence.
+        if (input.use === "accepted_fact" && conflict) continue;
         if (input.use === "current_fact" && !currentFactEligible(quality,conflict,asOf)) continue;
         const caveats = [
           ...(quality.freshness === "Stale" || quality.freshness === "Unknown" ?
@@ -188,7 +194,7 @@ export async function searchEvidence(actor: CurrentSession, raw: unknown,
           await client.query<{ title: string; product_version: string }>(`
             SELECT payload->>'title' AS title,payload->>'productVersion' AS product_version
             FROM knowledge_revision_payloads WHERE revision_id=$1`,[row.source_revision_id]) : null;
-        selections.push({ row,citationId: randomUUID(),quality,
+        selections.push({ row,citationId: randomUUID(),quality,conflict,
           locators: locators.data,warnings: Array.isArray(row.extraction_warnings)
             ? row.extraction_warnings.filter((item): item is string => typeof item === "string").slice(0,10)
             : [],caveats,
@@ -211,6 +217,9 @@ export async function searchEvidence(actor: CurrentSession, raw: unknown,
         ],
         results: selections.map((item) => ({ citationId: item.citationId,
           sourceKind: item.row.source_kind,sourceRevisionId: item.row.source_revision_id,
+          acceptance: { state: item.conflict ? "discovery_only" : "accepted",
+            basis: item.row.source_kind === "verified_research" ? "independent_research" :
+              item.row.source_kind === "published_shared" ? "shared_publication" : "human_review" },
           passageDigest: item.row.passage_digest,
           title: item.title,
           text: item.row.passage_text,locators: item.locators,quality: item.quality,

@@ -17,7 +17,7 @@ test('public coverage distinguishes supported findings and research gaps accessi
  });
  await page.goto(`/customers/${DEMO_IDS.sharedCustomer}`);
  const summary=page.getByText('Public Research Coverage',{exact:true});await expect(summary).toBeVisible();await summary.focus();await page.keyboard.press('Enter');
- await expect(page.getByText('Synthetic attributed public company overview.',{exact:true})).toBeVisible();
+ await expect(page.locator('details').getByText('Synthetic attributed public company overview.',{exact:true})).toBeVisible();
  await expect(page.getByText('Company Identity',{exact:true})).toBeVisible();
  await expect(page.getByText(/No Finding Retained/)).toBeVisible();
  await expect(page.getByRole('heading',{name:'Unknowns',exact:true})).toBeVisible();

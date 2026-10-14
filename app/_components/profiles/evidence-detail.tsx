@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 type Source = { sourceRevisionId: string; state: string; title: string; location: string;
-  lifecycleVersion?: number;
+  lifecycleVersion?: number; acceptanceState?: "accepted" | "unavailable"; materialConflict?: boolean;
   passage: string; supportedClaim: string; publicationAt: string | null;
   observationAt: string | null; retrievalAt: string; rights: string;
   checks: { version: string; rationale?: string };
@@ -61,19 +61,21 @@ export function EvidenceDetail({ customerId, sourceRevisionId, canReview, onClos
     return () => controller.abort();
   }, [customerId, sourceRevisionId]);
   return <section className="profile-section profile-evidence-detail" aria-labelledby="source-detail-heading">
-    <div className="profile-section-head"><h2 id="source-detail-heading">Source Detail</h2>
+    <div className="profile-section-head"><h2 id="source-detail-heading" tabIndex={-1}>Source Detail</h2>
       <button type="button" className="secondary-button" onClick={onClose}>Close source</button></div>
     {state === "loading" && <p role="status">Loading source…</p>}
     {state === "unavailable" && <p role="alert">This source is unavailable to your account.</p>}
     {state === "ready" && source && <>
-      <h3>{source.title}</h3><p><span className="profile-badge">{source.state}</span> <span className="profile-badge">{source.quality.freshness}</span></p>
+      <h3>{source.title}</h3><p><span className="profile-badge">{source.acceptanceState === "accepted" ? "Accepted Research" : source.state}</span> <span className="profile-badge">{source.quality.freshness}</span></p>
+      {source.materialConflict && <p className="profile-caution">Confirmed material conflict: excluded from accepted factual context.</p>}
+      {source.acceptanceState === "accepted" && <p className="profile-note">Independently checked research is accepted factual context. Human review is not required; source dates, scope and quality still apply.</p>}
       <p><strong>Supported claim:</strong> {source.supportedClaim}</p>
       <blockquote>{source.passage}</blockquote>
       <p><a href={source.location} target="_blank" rel="noopener noreferrer">Open public source</a></p>
       <p className="muted">Published {source.publicationAt ?? "Unknown"} · Observed {source.observationAt ?? "Unknown"} · Retrieved {source.retrievalAt}</p>
       <p className="muted">Rights: {source.rights} · Check: {source.checks.version}</p>
       <p><strong>Evidence quality:</strong> {source.quality.Q}/100 ({source.quality.band}); R {source.quality.R}, F {source.quality.F}, D {source.quality.D}, C {source.quality.C}. Recheck by {source.quality.validUntil}.</p>
-      {source.quality.input && <p className="muted">Rating rationale: {source.quality.input.reliabilityRationale}; {source.quality.input.directnessRationale}; {source.quality.input.corroborationRationale}</p>}
+      {source.quality.input && <p className="muted">Original rating rationale: {source.quality.input.reliabilityRationale}; {source.quality.input.directnessRationale}; {source.quality.input.corroborationRationale}</p>}
       {source.checks.rationale && <p className="muted">Research check: {source.checks.rationale}</p>}
       {canReview && source.state === "researched" && source.lifecycleVersion !== undefined &&
         <div className="profile-withdraw-source"><label>Withdrawal reason<textarea className="field" rows={2}

@@ -24,8 +24,8 @@ export function EvidenceSearch({ customerId, workloadId }: {
   customerId: string; workloadId?: string;
 }) {
   const [query, setQuery] = useState("");
-  const [scope, setScope] = useState<"customer" | "combined" | "shared">("combined");
-  const [use, setUse] = useState<"discovery" | "current_fact">("discovery");
+  const [scope, setScope] = useState<"customer" | "combined" | "shared">("customer");
+  const [use, setUse] = useState<"discovery" | "accepted_fact" | "current_fact">("accepted_fact");
   const [state, setState] = useState<SearchState>("idle");
   const [message, setMessage] = useState("");
   const [response, setResponse] = useState<RetrievalResponse | null>(null);
@@ -39,6 +39,10 @@ export function EvidenceSearch({ customerId, workloadId }: {
 
   async function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    await runSearch();
+  }
+
+  async function runSearch(requestedUse = use) {
     if (!query.trim()) return;
     setState("loading"); setMessage(""); setResponse(null); setSelected(null);
     try {
@@ -49,7 +53,7 @@ export function EvidenceSearch({ customerId, workloadId }: {
         method: "POST",cache: "no-store",
         headers: { "content-type": "application/json", "x-csrf-token": auth.data.csrfToken },
         body: JSON.stringify({ scope, ...(scope === "shared" ? {} : { customerId,
-          ...(workloadId ? { workloadId } : {}) }),query: query.trim(),use,limit: 10 }),
+          ...(workloadId ? { workloadId } : {}) }),query: query.trim(),use: requestedUse,limit: 10 }),
       });
       const envelope = await searchResponse.json() as { data?: RetrievalResponse;
         error?: { message?: string } };
@@ -92,13 +96,15 @@ export function EvidenceSearch({ customerId, workloadId }: {
         <label htmlFor="evidence-use">Use</label>
         <select id="evidence-use" className="field" value={use}
           onChange={(event) => setUse(event.target.value as typeof use)}>
-          <option value="discovery">Discovery</option><option value="current_fact">Current fact</option>
+          <option value="accepted_fact">Accepted Facts</option><option value="current_fact">Fresh Decision Evidence</option><option value="discovery">Discovery</option>
         </select>
         <button type="submit" className="secondary-button" disabled={state === "loading"}>Search</button>
       </div>
     </form>
     {state === "loading" && <p role="status">Searching governed evidence…</p>}
-    {state === "empty" && <p role="status" className="profile-state">No eligible evidence found. Try a broader query or source scope.</p>}
+    {state === "empty" && <div className="profile-state"><p role="status">{use === "current_fact" ? "No fresh, decision-ready evidence found. Accepted research may still document this topic." : "No matching evidence found in this scope. Try another term or source scope."}</p>
+      {use === "current_fact" && <button type="button" className="secondary-button" onClick={() => { setUse("accepted_fact"); void runSearch("accepted_fact"); }}>Search Accepted Facts</button>}
+    </div>}
     {state === "denied" && <p role="alert" className="profile-state">These sources are unavailable to your account.</p>}
     {state === "unavailable" && <p role="alert" className="profile-state">{message} Retry the search.</p>}
     {response && <>
@@ -107,7 +113,7 @@ export function EvidenceSearch({ customerId, workloadId }: {
       <div className="profile-grid">{response.results.map((result) => <article className="profile-card" key={result.citationId}>
         <div className="profile-card-head"><h3>{result.title}</h3><span className="profile-badge">{result.quality.band}</span></div>
         <p className="evidence-passage">{result.text}</p>
-        <p className="muted">{result.sourceKind.replaceAll("_", " ")} · {result.quality.freshness} · Quality {result.quality.Q}/100</p>
+        <p className="muted">{result.sourceKind === "verified_research" ? "Accepted research" : result.sourceKind.replaceAll("_", " ")} · {result.quality.freshness} · Quality {result.quality.Q}/100</p>
         {result.productVersion && <p className="muted">Product version: {result.productVersion}</p>}
         {result.caveats.map((caveat, index) => <p key={index} className="profile-caution">{caveat}</p>)}
         {result.warnings.map((warning, index) => <p key={index} className="profile-caution">{warning}</p>)}

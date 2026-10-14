@@ -49,9 +49,10 @@ export async function readResearchFindings(client: PoolClient,actor: CurrentSess
       observationAt: item.observation_at,publicationAt: item.publication_at },asOf);
     results.push({ observationId: item.observation_id,sourceRevisionId: item.source_revision_id,
       origin: "independent_discovery" as const,canonicalUrl: item.canonical_url,
+      acceptanceState: "accepted" as const, acceptanceBasis: "independent_research" as const,
       title: item.title,verbatimPassage: item.passage_text,
       passageDigest: item.passage_digest,quality,
-      caveats: quality.R < 2 ? ["Public authority requires steward review"] : [] });
+      caveats: quality.R < 2 ? ["Limited source authority; retain attribution and scope"] : [] });
   }
   if (Buffer.byteLength(JSON.stringify(results)) > 24_576) {
     throw new HttpFailure(503,"unavailable","Research findings unavailable");

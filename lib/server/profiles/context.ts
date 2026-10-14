@@ -9,12 +9,12 @@ import { searchEvidence } from "../retrieval/search";
 /** Shared governed path for new customer factual-context retrieval. */
 export async function readGovernedEvidenceContext(actor: ProfileActor, customerId: string,
   query: string, options: { scope?: "customer" | "shared" | "combined";
-    use?: "discovery" | "current_fact"; limit?: number;
+    use?: "discovery" | "accepted_fact" | "current_fact"; limit?: number;
     audience?:"internal"|"delivery";workloadId?:string|null } = {}) {
   return searchEvidence(actor,{ scope: options.scope ?? "combined",
     customerId: options.scope === "shared" ? undefined : customerId,query,
     workloadId:options.scope === "shared" ? undefined:options.workloadId ?? undefined,
-    use: options.use ?? "current_fact",limit: options.limit ?? 5 },
+    use: options.use ?? "accepted_fact",limit: options.limit ?? 5 },
   options.audience ? {audience:options.audience,workloadId:options.workloadId ?? null}:undefined);
 }
 
@@ -61,6 +61,7 @@ export async function readEligibleContext(actor: ProfileActor, customerId: strin
     for (const source of profile.attributedResearch) {
       if (query && !JSON.stringify(source.supportedClaim).toLocaleLowerCase().includes(query)) continue;
       entries.push({ type: "attributed_research", citationId: source.sourceRevisionId,
+        acceptanceState: "accepted", acceptanceBasis: "independent_research",
         supportedClaim: source.supportedClaim, location: source.location, quality: source.quality });
     }
     const selected: Record<string, unknown>[] = [];

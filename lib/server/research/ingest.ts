@@ -77,7 +77,7 @@ export async function ingestCheckedObservation(client: PoolClient,actor: Current
     R: official ? 4 : 1,D: 4,C: 0,
     reliabilityRationale: official ?
       "Exact quotation from the versioned official product documentation allowlist" :
-      "Public source identity checked; authority awaits steward review",
+      "Independently checked public source; factual acceptance is automatic, source authority remains limited",
     directnessRationale: "Exact quotation retained from the fetched public page",
     corroborationRationale: "No independently verified corroborating origin counted",
     informationType: row.mode === "practices" ? "product_capability" : "account_status",

@@ -15,7 +15,7 @@ test.describe("customer profile", () => {
     });
     await page.goto(`/customers/${DEMO_IDS.sharedCustomer}`);
     await expect(page.getByRole("heading", { name: "Cedar (synthetic)" })).toBeVisible();
-    await expect(page.getByText("No Accepted Facts Yet")).toBeVisible();
+    await expect(page.getByText("No Reviewed Human Claims Yet")).toBeVisible();
     await expect(page.getByRole("link", { name: "Start Chat" })).toHaveAttribute(
       "href", `/s?customerId=${DEMO_IDS.sharedCustomer}`);
     await expect(page.locator("body")).not.toContainText("INTERNAL_OPERATIONS_SENTINEL_DO_NOT_PROJECT");
@@ -37,7 +37,7 @@ test.describe("customer profile", () => {
       contentType: "application/json", body: JSON.stringify({ error: { message: "Unavailable" } }) }));
     await page.goto(`/customers/${DEMO_IDS.sharedCustomer}`);
     await expect(page.getByRole("heading", { name: "Could Not Load This Profile" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "No Accepted Facts Yet" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "No Reviewed Human Claims Yet" })).toHaveCount(0);
     await page.unroute(`**${endpoint}`);
     await page.getByRole("button", { name: "Retry" }).click();
     await expect(page.getByRole("heading", { name: "Cedar (synthetic)" })).toBeVisible();
