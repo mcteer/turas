@@ -11,6 +11,7 @@ import {withRecoveryDatabaseCheckpoint} from './database-checkpoint';
 import {withPrivateRecoveryKey} from './recovery-key';
 import {runRecoveryPgDump} from './pg-dump';
 import {captureRecoveryObjects} from './object-checkpoint';
+import {requiredRecoveryObjects} from './required-objects';
 import {captureOwnedWorkflow} from './workflow-checkpoint';
 import {packBackupArchive,type BackupArchiveHeader} from './backup-archive';
 import {encryptRecoveryFile} from './backup-crypto';
@@ -31,7 +32,8 @@ export async function captureOwnedRecoveryCandidate(raw:z.infer<typeof inputSche
   const db=new Client({connectionString:connection,connectionTimeoutMillis:5000});await db.connect();
   try{return await withRecoveryDatabaseCheckpoint(db,{environmentId:input.environmentId,recoveryId:input.recoveryId,controlRevision:input.controlRevision,signal},async boundary=>{
    const id=randomUUID(),database=await runRecoveryPgDump({environmentId:input.environmentId,serverMajor:boundary.serverMajor,snapshot:boundary.snapshot,output:join(work,'database.dump'),signal});
-   const objects=await captureRecoveryObjects({store:new LocalPrivateObjects(sourceRoot,input.environmentId,10485760),environmentId:input.environmentId,target:join(work,'objects'),signal});
+   const requiredObjects=await requiredRecoveryObjects(db,input.environmentId);
+   const objects=await captureRecoveryObjects({store:new LocalPrivateObjects(sourceRoot,input.environmentId,10485760),environmentId:input.environmentId,target:join(work,'objects'),signal,requiredObjects});
    const workflow=await captureOwnedWorkflow({source:workflowRoot,target:join(work,'workflow'),signal});
    const ledgerDigest=recoveryDigest((await db.query('SELECT name FROM turas_migrations ORDER BY name')).rows),databaseName=String((await db.query('SELECT current_database() AS name')).rows[0].name);
    const configurationDigest=recoveryDigest({environmentId:input.environmentId,databaseName,backend:'owned-local',sourceRoot,workflowRoot});

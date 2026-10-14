@@ -16,13 +16,24 @@ export async function verifiedObjectInventory(store:PrivateObjects,environmentId
 }
 /** Caller owns the exclusive environment capture fence and separately admits any
  * provider costs. This procedure never deletes originals or changes configuration. */
-export async function copyVerifiedObjects(input:{source:PrivateObjects;destination:PrivateObjects;environmentId:string;namespaces?:readonly ObjectNamespace[];signal?:AbortSignal}){
+export function verifyRequiredObjects(inventory:readonly ObjectDescriptor[],required:readonly ObjectDescriptor[],environmentId:string){
+ const byKey=new Map(inventory.map(object=>[object.key,object])),seen=new Set<string>();
+ if(required.length>100000)throw Error('Required object inventory exceeds bound');
+ for(const expected of required){
+  if(!activeObjectNamespaces.includes(validateObjectKey(expected.key,environmentObjectId(environmentId)))||seen.has(expected.key))throw Error('Required object identity differs');
+  validateExpected(expected,10485760);seen.add(expected.key);const actual=byKey.get(expected.key);
+  if(!actual||actual.digest!==expected.digest||actual.sizeBytes!==expected.sizeBytes)throw Error('Required original missing or different');
+ }
+}
+export async function copyVerifiedObjects(input:{source:PrivateObjects;destination:PrivateObjects;environmentId:string;namespaces?:readonly ObjectNamespace[];signal?:AbortSignal;limits?:{maximumObjects?:number;maximumBytes?:number;pageSize?:number};requiredObjects?:readonly ObjectDescriptor[]}){
  const signal=input.signal??AbortSignal.timeout(300000),namespaces=input.namespaces??activeObjectNamespaces;
- const source=await verifiedObjectInventory(input.source,input.environmentId,namespaces,signal),destination=await verifiedObjectInventory(input.destination,input.environmentId,namespaces,signal),byKey=new Map(source.objects.map(object=>[object.key,object]));
+ const source=await verifiedObjectInventory(input.source,input.environmentId,namespaces,signal,input.limits);
+ if(input.requiredObjects)verifyRequiredObjects(source.objects,input.requiredObjects,input.environmentId);
+ const destination=await verifiedObjectInventory(input.destination,input.environmentId,namespaces,signal,input.limits),byKey=new Map(source.objects.map(object=>[object.key,object]));
  for(const object of destination.objects){const expected=byKey.get(object.key);if(!expected||expected.digest!==object.digest||expected.sizeBytes!==object.sizeBytes)throw Error('Destination inventory differs');}
  let copied=0;const existing=new Set(destination.objects.map(object=>object.key));
  for(const object of source.objects){signal.throwIfAborted();if(existing.has(object.key))continue;await input.destination.put(object.key,await input.source.stream(object.key,object,signal),object,signal);copied++;}
- const current=await verifiedObjectInventory(input.source,input.environmentId,namespaces,signal),result=await verifiedObjectInventory(input.destination,input.environmentId,namespaces,signal);
+ const current=await verifiedObjectInventory(input.source,input.environmentId,namespaces,signal,input.limits),result=await verifiedObjectInventory(input.destination,input.environmentId,namespaces,signal,input.limits);
  if(source.digest!==current.digest||source.digest!==result.digest)throw Error('Storage parity verification failed');
  return {inventoryDigest:source.digest,objectCount:source.objects.length,copied,originalsRetained:true as const,configurationChanged:false as const};
 }

@@ -15,7 +15,7 @@ export const hostedConfigurationSchema=z.strictObject({
 });
 export type HostedConfiguration=z.infer<typeof hostedConfigurationSchema>;
 /** Safe allowlist for the existing authenticated administrator diagnostics. */
-export function readHostedConfiguration(env:NodeJS.ProcessEnv=process.env):HostedConfiguration|null{
+export function readHostedConfiguration(env:Partial<NodeJS.ProcessEnv>=process.env):HostedConfiguration|null{
  let maximumSandboxDispatches:unknown;
  try{const raw=env.TURAS_PILOT_JOB_COST_JSON;if(!raw||Buffer.byteLength(raw)>8192)return null;maximumSandboxDispatches=JSON.parse(raw).maximumDispatches;}catch{return null;}
  const parsed=hostedConfigurationSchema.safeParse({

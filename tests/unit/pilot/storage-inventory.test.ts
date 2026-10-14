@@ -18,3 +18,16 @@ it('rejects a foreign environment and backup scope',async()=>{await expect(verif
 it('stops an unavailable destination without local fallback',async()=>{const unavailable={list:async()=>{throw Error('Provider unavailable');}} as unknown as PrivateObjects;await expect(copyVerifiedObjects({source,destination:unavailable,environmentId:environment})).rejects.toThrow('Provider unavailable');expect(await source.stat(key)).not.toBeNull();});
 it('rejects an interrupted or repeated-cursor inventory',async()=>{const signal=AbortSignal.abort();await expect(verifiedObjectInventory(source,environment,undefined,signal)).rejects.toThrow();await writeFile(join(root,'source',key+'.unfinished.tmp'),'Synthetic interrupted bytes',{mode:0o600});await expect(verifiedObjectInventory(source,environment)).rejects.toThrow('unfinished bytes');const repeated={list:async()=>({objects:[],cursor:'repeat'})} as unknown as PrivateObjects;await expect(verifiedObjectInventory(repeated,environment)).rejects.toThrow('cursor did not advance');});
 it('refuses to count a disappeared listed object as an empty inventory',async()=>{class InterruptedStore extends LocalPrivateObjects{override async stat(object:string){await rm(join(root,'source',object));return super.stat(object);}}const interrupted=new InterruptedStore(join(root,'source'),environment,10485760);await expect(verifiedObjectInventory(interrupted,environment,['artifact'])).rejects.toThrow('changed during enumeration');});
+it('refuses empty parity when the matched ledger requires an original',async()=>{
+ await source.delete(key);await expect(copyVerifiedObjects({source,destination,environmentId:environment,requiredObjects:[{key,...expected}]})).rejects.toThrow('Required original missing');
+ expect((await verifiedObjectInventory(destination,environment)).objects).toEqual([]);
+});
+it('rejects changed or duplicate required identities before copying',async()=>{
+ for(const requiredObjects of [[{key,...expected,digest:'b'.repeat(64)}],[{key,...expected},{key,...expected}]])await expect(copyVerifiedObjects({source,destination,environmentId:environment,requiredObjects})).rejects.toThrow();
+ expect(await destination.stat(key)).toBeNull();expect(await source.stat(key)).toMatchObject(expected);
+});
+it('enforces caller byte and object ceilings through every parity pass',async()=>{
+ await expect(copyVerifiedObjects({source,destination,environmentId:environment,limits:{maximumBytes:expected.sizeBytes-1,maximumObjects:1,pageSize:1}})).rejects.toThrow('operator bound');
+ expect(await destination.stat(key)).toBeNull();
+ expect(await copyVerifiedObjects({source,destination,environmentId:environment,limits:{maximumBytes:expected.sizeBytes,maximumObjects:1,pageSize:1},requiredObjects:[{key,...expected}]})).toMatchObject({copied:1,objectCount:1});
+});

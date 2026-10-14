@@ -9,6 +9,7 @@ import {recoveryDigest} from '../../contracts/pilot-recovery';
 import {withRecoveryDatabaseCheckpoint,withScheduledDatabaseCheckpoint} from './database-checkpoint';
 import {runNativeRecoveryPgDump} from './native-postgres';
 import {captureRecoveryObjects} from './object-checkpoint';
+import {requiredRecoveryObjects} from './required-objects';
 import {packBackupArchive,type BackupArchiveHeader} from './backup-archive';
 import {encryptRecoveryFile,verifyRecoveryKey} from './backup-crypto';
 import type {PrivateObjects} from '../storage/private-objects';
@@ -42,7 +43,8 @@ export async function captureWorkRecoveryCandidate(input:{scope:z.input<typeof s
    const native=await runNativeRecoveryPgDump({assetRoot:input.assetRoot,connectionString:input.connectionString,environmentId:scope.environmentId,serverMajor:18,snapshot:boundary.snapshot,output:join(work,'database.dump'),signal:input.signal});
    const database={digest:native.digest,sizeBytes:native.sizeBytes,serverMajor:native.serverMajor,clientMajor:native.clientMajor};
    // Reserve archive-header/encryption overhead within the 64 MiB archive cap.
-   const objects=await captureRecoveryObjects({store:input.objects,environmentId:scope.environmentId,target:join(work,'objects'),signal:input.signal,maximumBytes:Math.min(input.maximumObjectBytes??25165824,67108864-native.sizeBytes-1048576-80),maximumObjects:input.maximumObjects??256,pageSize:1});
+   const requiredObjects=await requiredRecoveryObjects(db,scope.environmentId);
+   const objects=await captureRecoveryObjects({store:input.objects,environmentId:scope.environmentId,target:join(work,'objects'),signal:input.signal,maximumBytes:Math.min(input.maximumObjectBytes??25165824,67108864-native.sizeBytes-1048576-80),maximumObjects:input.maximumObjects??256,pageSize:1,requiredObjects});
    const databaseName=String((await db.query('SELECT current_database() AS name')).rows[0].name);
    const id=input.archiveId??randomUUID(),configurationDigest=recoveryDigest({environmentId:scope.environmentId,databaseName,sourceProjectId:scope.sourceProjectId,storeId:scope.storeId,backend:'private-blob',workflow:'managed-workflow',clientManifestDigest:native.clientManifestDigest});
    const captureProvenance={recoveryId:scope.recoveryId,controlRevision:scope.controlRevision,sourceCommit:scope.sourceCommit,sourceDigest:scope.sourceDigest,schemaVersion:57 as const,ledgerDigest,runtimeGrantsDigest:boundary.runtimeGrantsDigest,configurationDigest,acceptedContentDigest:boundary.acceptedContentDigest};

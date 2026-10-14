@@ -11,6 +11,7 @@ import {legacyReportClassification} from '../lib/server/storage/legacy-report-cl
 import {LocalPrivateObjects} from '../lib/server/storage/local-objects';
 import {copyVerifiedObjects,activeObjectNamespaces} from '../lib/server/storage/inventory';
 import {environmentObjectId} from '../lib/server/storage/private-objects';
+import {requiredRecoveryObjects} from '../lib/server/operations/required-objects';
 async function privateDirectory(path:string){const stat=await lstat(path);if(!stat.isDirectory()||stat.isSymbolicLink()||stat.uid!==process.getuid?.()||(stat.mode&0o777)!==0o700||await realpath(path)!==path)throw Error('Direct private operator directory required');}
 /** Explicit local copy rehearsal only. No provider credential, hosted target,
  * implicit store initialization, configuration change or original deletion. */
@@ -34,10 +35,11 @@ export async function pilotStorageMigrate(args=process.argv.slice(2)){
    // A shared key is a collision, never permission to choose one audience.
    const reportNamespaces=legacy?legacyReportClassification((await db.query("SELECT object_key,'report'::text AS namespace FROM report_store_objects WHERE environment_id=$1 UNION ALL SELECT object_key,'gap-report'::text AS namespace FROM gap_report_store_objects WHERE environment_id=$1 LIMIT 100001",[values.environment])).rows):new Map<string,'report'|'gap-report'>();
    const sourceStore=()=>legacy?new LegacyLocalPrivateObjects({environmentId:values.environment,artifactRoot:sourceRoots[0],workforceRoot:sourceRoots[1],reportRoot:sourceRoots[2],reportNamespaces}):new LocalPrivateObjects(sourceRoots[0],values.environment,10485760);
-   const copied=await copyVerifiedObjects({source:sourceStore(),destination:new LocalPrivateObjects(destinationRoot,values.environment,10485760),environmentId:values.environment,signal});
+   const requiredObjects=await requiredRecoveryObjects(db,values.environment);
+   const copied=await copyVerifiedObjects({source:sourceStore(),destination:new LocalPrivateObjects(destinationRoot,values.environment,10485760),environmentId:values.environment,signal,requiredObjects});
    // Cold clients verify the full source and destination again; no warm cache or
    // metadata-only size check can authorize an operator cutover.
-   const cold=await copyVerifiedObjects({source:sourceStore(),destination:new LocalPrivateObjects(destinationRoot,values.environment,10485760),environmentId:values.environment,signal});
+   const cold=await copyVerifiedObjects({source:sourceStore(),destination:new LocalPrivateObjects(destinationRoot,values.environment,10485760),environmentId:values.environment,signal,requiredObjects});
    if(cold.copied!==0||cold.inventoryDigest!==copied.inventoryDigest)throw Error('Cold store parity differs');return copied;
   });
   if(JSON.stringify(await pilotSource())!==JSON.stringify(source))throw Error('Storage rehearsal source changed');

@@ -482,7 +482,7 @@
     },
     {
       "file": "tests/unit/pilot/storage-inventory.test.ts",
-      "expectedCases": 9,
+      "expectedCases": 12,
       "cases": [
         "copies exact bytes and retains the original store",
         "resumes only matching immutable destination objects",
@@ -492,7 +492,10 @@
         "rejects a foreign environment and backup scope",
         "stops an unavailable destination without local fallback",
         "rejects an interrupted or repeated-cursor inventory",
-        "refuses to count a disappeared listed object as an empty inventory"
+        "refuses to count a disappeared listed object as an empty inventory",
+        "refuses empty parity when the matched ledger requires an original",
+        "rejects changed or duplicate required identities before copying",
+        "enforces caller byte and object ceilings through every parity pass"
       ]
     },
     {
@@ -1427,6 +1430,13 @@
         "withholds configuration on missing identities, local fallback, tags or malformed enablement",
         "rejects cross-target, changed store, image, enablement and job limit readbacks",
         "verifies exact configured readback while refusing extra provider health claims"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/required-objects.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "withholds copy and backup for a live database original absent from an otherwise empty store"
       ]
     }
   ],
