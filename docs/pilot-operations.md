@@ -520,3 +520,11 @@ The linked infrastructure check refuses a configured embedding key; this plan
 adds no model allowance. Failed runs with potentially dispatched jobs record
 unknown paid-call counts and require scoped cost-ledger reconciliation. Completion
 of this partial chain does not satisfy the full hosted catalog or recovery gates.
+
+Automatic Git pushes count as real Preview deployments. The 016 branch disables
+that automation in `vercel.json`; verify the provider inventory after a push.
+The approved two-deployment count has been exceeded by one automatic deployment,
+and its original allowance is exhausted. Retain the actual retrospective record
+and build envelope; do not call unknown provider charges zero, reset the approval,
+or manually deploy until a concrete additional deployment is authorized after
+implementation/recovery prerequisites pass.

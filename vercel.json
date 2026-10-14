@@ -3,7 +3,18 @@
   "buildCommand": "npm run build:web:check",
   "installCommand": "npm ci && npm ci --prefix packages/artifact-extractor",
   "crons": [
-    { "path": "/eve/v1/turas/watchdog", "schedule": "* * * * *" },
-    { "path": "/eve/v1/turas/jobs", "schedule": "* * * * *" }
-  ]
+    {
+      "path": "/eve/v1/turas/watchdog",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/eve/v1/turas/jobs",
+      "schedule": "* * * * *"
+    }
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "016-pilot-hardening": false
+    }
+  }
 }
