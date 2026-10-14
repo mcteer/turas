@@ -33,6 +33,18 @@ describe('operator public research persistence',()=>{
    const claims=await claimRetrievalJobs(2,undefined,getServerConfig().TURAS_ENVIRONMENT_ID,projections.map(p=>p.id));
    expect(claims).toHaveLength(2);for(const claim of claims)expect(await currentIndexPassages(claim)).toHaveLength(1);
    const source=(await query('SELECT source_revision_id FROM research_checks JOIN evidence_source_revisions v ON v.id=source_revision_id WHERE v.customer_id=$1',[first.customerId])).rows[0].source_revision_id;
+   await withTransaction(async db=>{
+    await db.query('SAVEPOINT unchanged_checked_metadata');const successor=randomUUID();
+    await db.query(`INSERT INTO evidence_source_revisions(id,source_id,workspace_id,customer_id,version,location,title,passage,supported_claim,passage_digest,publication_at,retrieval_at,rights,audience,quality_input)
+      SELECT $1,source_id,workspace_id,customer_id,version+1,location,title,passage,supported_claim,passage_digest,publication_at,clock_timestamp(),rights,audience,quality_input FROM evidence_source_revisions WHERE id=$2`,[successor,source]);
+    await db.query(`INSERT INTO research_checks(source_revision_id,trusted_ingest_identity,check_version,identity_result,scope_result,integrity_result,content_result,rationale)
+      VALUES($1,$2,'research-check-v3',true,true,true,true,$3)`,[successor,'public-fetch-v1:observation:'+randomUUID(),JSON.stringify({normalizedDigest:publicDigest(text),retainedPreviousClaim:true})]);
+    await db.query("INSERT INTO evidence_source_events(id,source_revision_id,lifecycle_version,event_type,rationale) VALUES($1,$2,1,'supersede','Synthetic unchanged checked replacement')",[randomUUID(),source]);
+    expect((await readPublicCustomerCoverage(db,actor,first.customerId))?.description).toBe(dossier.description);
+    await db.query("INSERT INTO evidence_source_events(id,source_revision_id,lifecycle_version,event_type,rationale) VALUES($1,$2,2,'withdraw','Synthetic explicit original withdrawal')",[randomUUID(),source]);
+    expect(await readPublicCustomerCoverage(db,actor,first.customerId)).toBe(null);
+    await db.query('ROLLBACK TO SAVEPOINT unchanged_checked_metadata');await db.query('RELEASE SAVEPOINT unchanged_checked_metadata');
+   });
    await query("INSERT INTO evidence_source_events(id,source_revision_id,lifecycle_version,event_type,rationale) VALUES($1,$2,1,'withdraw','Synthetic withdrawal')",[randomUUID(),source]);
    expect(await withTransaction(db=>readPublicCustomerCoverage(db,actor,first.customerId))).toBe(null);
    for(const claim of claims)expect(await currentIndexPassages(claim)).toBe(null);

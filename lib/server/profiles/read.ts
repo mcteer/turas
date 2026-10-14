@@ -1,3 +1,4 @@
+import {communityAttributionWarning} from "../research/attribution";
 import { productsFromResearch } from "../../profiles/research-products";
 import { profileDeliverySummary } from "./delivery-summary";
 import { retrievalSourceHasMaterialConflict } from "../retrieval/search";
@@ -277,7 +278,7 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
         evidenceAt: date, asOf: new Date() });
       return { sourceRevisionId: row.id, state: "researched", title: row.title,
         acceptanceState: "accepted", acceptanceBasis: "independent_research",
-        productNames: productsFromResearch([{title:row.title,quote:row.passage}]),
+        productNames: input.informationType === "product_capability" || communityAttributionWarning({url:row.location}) ? [] : productsFromResearch([{title:row.title,quote:row.passage}]),
         location: row.location, supportedClaim: row.supported_claim,
         publicationAt: row.publication_at?.toISOString() ?? null,
         observationAt: row.observation_at?.toISOString() ?? null,

@@ -385,11 +385,30 @@ Checked independent research automatically updates shared customer knowledge, in
 an initially empty profile, without human claim review. A new checked observation
 creates a current source revision and both authorized retrieval projections; an
 unchanged recheck advances the observation time, while a replacement retires the
-old index projection. Recheck deadlines follow the latest successful check; evidence quality still uses
+old index projection. When the complete retained document is unchanged, rechecks
+keep the already checked customer quotations and their source-supported overview;
+changed documents and explicit withdrawals still invalidate old citations. Recheck deadlines follow the latest successful check; evidence quality still uses
 the original publication or observation date.
 Only human-entered claims use the manual review workflow. The protected hosted
 watchdog drains the existing retrieval queue and marks research recheck deadlines;
 checked ordinary research for real customers is eligible for vector indexing.
+
+Hosted Preview verification uses real customer data, not browser response replacements.
+`npm run profiles:preview:check -- --origin <Preview origin> --commit <PR SHA> --output local-artifacts/customer-profile-fixes/preview-check`
+checks the exact deployment, compares the real customer directory and checked
+1Password/Notion research with Production, and captures desktop/mobile WebKit views.
+It verifies name navigation, overview placement, researched products, source detail
+and Sandbox evidence search. Review the captures before merge.
+
+The operator-only `profiles:preview:sync` command copies a current, checked public
+research snapshot from an explicit protected Production connection descriptor to a
+distinct, migrated Preview descriptor. Both databases must be schema 055 and the
+Preview administrator must be active. Pass `--source`, `--target` and a private
+`--output` receipt. It preserves source dates and original evidence identities,
+reuses ready vectors, retires superseded copied projections, and creates no provider
+calls. Manual claims, private conversations and delivery records are not copied.
+Verify the Preview target, recovery backup and migration/grant rehearsal before
+refreshing its dataset; the sync command never migrates a database.
 
 The research reader, source passage boundaries, publication-date checks, community
 attribution warning and product catalog reuse the corresponding legacy behavior.

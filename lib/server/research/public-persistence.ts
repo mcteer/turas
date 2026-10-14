@@ -72,7 +72,7 @@ export async function persistPublicCustomerResearch(actor: CurrentSession, raw: 
       const supplied=await db.query(`SELECT 1 FROM research_observations o JOIN research_runs r ON r.id=o.run_id
         LEFT JOIN research_observation_payloads payload ON payload.observation_id=o.id
         WHERE r.environment_id=$1 AND r.workspace_id=$2 AND r.customer_id=$3 AND o.origin='user_submission'
-          AND (o.body_digest=$4 OR o.passage_digest=$5 OR o.normalized_digest=$6 OR payload.normalized_text=$7 OR o.canonical_url=$8)
+          AND (o.body_digest=$4 OR o.passage_digest=$5 OR o.normalized_digest=$6 OR payload.normalized_text=$7)
         UNION ALL SELECT 1 FROM evidence_sources WHERE workspace_id=$2 AND customer_id=$3 AND origin='manual' AND canonical_location=$8 LIMIT 1`,
         [getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,customerId,page.bodyDigest,passageDigest,page.fullNormalizedDigest??page.normalizedDigest,page.text,page.url]);
       if(supplied.rowCount)throw new HttpFailure(409,"submitted_origin","User-origin content cannot be promoted by public batch research");

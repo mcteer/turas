@@ -142,7 +142,9 @@
     "build:mcp:check": "node --import tsx scripts/check-mcp-build.ts",
     "test:mcp:regressions": "node --import tsx scripts/test-mcp-regressions.ts",
     "profiles:bugs:check": "vitest run tests/unit/customer-profile-summary.test.ts tests/integration/customer-profile-bugs.test.ts",
-    "profiles:ui:check": "node --import tsx scripts/check-customer-profile-ui.ts"
+    "profiles:ui:check": "node --import tsx scripts/check-customer-profile-ui.ts",
+    "profiles:preview:check": "node --env-file-if-exists=.env.local --import tsx scripts/check-customer-profile-preview.ts",
+    "profiles:preview:sync": "node --env-file-if-exists=.env.local --import tsx scripts/sync-preview-public-research.ts"
   },
   "dependencies": {
     "@js-temporal/polyfill": "0.5.1",

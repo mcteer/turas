@@ -27,4 +27,8 @@ describe('customer overview scope and unknowns', () => {
     expect(researchProductMentions([quoted]).map(product=>product.name)).toEqual(['Next.js','Vercel Sandbox']);
     expect(researchProductMentions([quoted])[0].sources).toEqual([quoted]);
   });
+ it('does not turn independently checked general product guidance into customer product use',()=>{
+  expect(researchProductMentions([{sourceRevisionId:'guidance',location:'https://example.com/guidance',title:'Vercel Sandbox guidance',supportedClaim:'Vercel Sandbox supports isolated execution.',productNames:[]}])).toEqual([]);
+ });
+
 });
