@@ -21,10 +21,22 @@ export async function currentIndexPassages(claim: RetrievalJobClaim,
       JOIN evidence_sources e ON e.id=v.source_id
       WHERE r.environment_id=s.environment_id AND r.workspace_id=s.workspace_id AND r.customer_id=s.customer_id
         AND v.id=ANY(r.source_revision_ids) AND e.origin='independent_research')`:"false";
-    const source = await client.query<{ synthetic: boolean | null; scope: string; public_batch:boolean;
+    const checkedResearchProof=marker?.schema_version>=26?`EXISTS(SELECT 1 FROM research_evidence_links link
+      JOIN research_observations observation ON observation.id=link.observation_id AND observation.origin='independent_discovery'
+        AND observation.identity_checked AND observation.scope_checked AND observation.integrity_checked AND observation.content_checked
+      JOIN research_checks checked ON checked.source_revision_id=link.source_revision_id
+        AND checked.trusted_ingest_identity='public-fetch-v1:observation:'||observation.id::text
+        AND checked.identity_result AND checked.scope_result AND checked.integrity_result AND checked.content_result
+      JOIN research_runs run ON run.id=observation.run_id
+      JOIN evidence_source_revisions revision ON revision.id=link.source_revision_id
+        AND revision.workspace_id=run.workspace_id AND revision.customer_id=run.customer_id
+      WHERE link.source_revision_id=s.source_revision_id AND link.linkage_state='attributed'
+        AND run.environment_id=s.environment_id AND run.workspace_id=s.workspace_id AND run.customer_id=s.customer_id)`: "false";
+    const source = await client.query<{ synthetic: boolean | null; scope: string; public_batch:boolean; checked_research:boolean;
       source_kind: string; source_revision_id: string; source_generation: string }>(`
       SELECT c.synthetic,s.scope,s.source_kind,s.source_revision_id,s.source_generation,
-        CASE WHEN s.source_kind='verified_research' THEN ${publicBatchProof} ELSE false END AS public_batch
+        CASE WHEN s.source_kind='verified_research' THEN ${publicBatchProof} ELSE false END AS public_batch,
+        CASE WHEN s.source_kind='verified_research' THEN ${checkedResearchProof} ELSE false END AS checked_research
       FROM retrieval_jobs j
       JOIN retrieval_sources s ON s.id=j.source_id AND s.source_generation=j.source_generation
         AND s.contract_digest=j.contract_digest AND s.lifecycle_state='current'
@@ -32,7 +44,7 @@ export async function currentIndexPassages(claim: RetrievalJobClaim,
       WHERE j.id=$1 AND j.lease_token=$2 AND j.lease_until>now()
         AND j.state='leased' AND j.kind='index'`, [claim.id,claim.leaseToken]);
     const row = source.rows[0];
-    if (!row || !(row.synthetic || row.scope === "shared" || row.public_batch) ||
+    if (!row || !(row.synthetic || row.scope === "shared" || row.public_batch || row.checked_research) ||
         !await exactRetrievalOriginalCurrent(client,row.source_kind,
           row.source_revision_id,row.source_generation)) return null;
     const passages = await client.query<IndexPassage>(`

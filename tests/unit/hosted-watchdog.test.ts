@@ -1,11 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ heartbeat: vi.fn(), claim: vi.fn(), finish: vi.fn(), maintain: vi.fn(),learning:vi.fn(),mcp:vi.fn() }));
+const mocks = vi.hoisted(() => ({ heartbeat: vi.fn(), claim: vi.fn(), finish: vi.fn(), maintain: vi.fn(),learning:vi.fn(),mcp:vi.fn(),retrieval:vi.fn(),cleanup:vi.fn(),researchDue:vi.fn() }));
 vi.mock("../../lib/server/conversations/watchdog", () => ({ heartbeatWorker: mocks.heartbeat,
   claimDueJobs: mocks.claim, finishDueJob: mocks.finish }));
 vi.mock("../../lib/server/conversations/maintenance", () => ({ performMaintenance: mocks.maintain }));
 vi.mock("../../lib/server/learning/maintenance",()=>({runLearningMaintenanceTick:mocks.learning}));
 vi.mock("../../lib/server/config", () => ({ getServerConfig: () => ({ TURAS_ENVIRONMENT_ID: "synthetic-production" }) }));
 vi.mock("../../lib/server/mcp/retention",()=>({runMcpMaintenanceTick:mocks.mcp}));
+vi.mock("../../scripts/retrieval-worker",()=>({runRetrievalWorkerTick:mocks.retrieval}));
+vi.mock("../../lib/server/retrieval/cleanup",()=>({runRetrievalCleanupTick:mocks.cleanup}));
+vi.mock("../../lib/server/research/refresh",()=>({markDueResearch:mocks.researchDue}));
 import { authorizeHostedWatchdog, runHostedWatchdog } from "../../lib/server/conversations/hosted-watchdog";
 afterEach(() => { vi.useRealTimers(); vi.resetAllMocks(); });
 
@@ -40,6 +43,7 @@ describe("bounded hosted watchdog", () => {
     const running = runHostedWatchdog((() => { throw new Error("unused"); }) as Parameters<typeof runHostedWatchdog>[0]);
     await vi.advanceTimersByTimeAsync(65_000);
     await running;
+    expect(mocks.retrieval).toHaveBeenCalledTimes(13);expect(mocks.cleanup).toHaveBeenCalledTimes(13);expect(mocks.researchDue).toHaveBeenCalledTimes(13);
     expect(mocks.learning).toHaveBeenCalledTimes(3);expect(mocks.mcp).toHaveBeenCalledTimes(3);
     expect(mocks.learning.mock.calls.every(args=>typeof args[0].attachSession==='function')).toBe(true);
     expect(mocks.heartbeat).toHaveBeenCalledTimes(13);
@@ -62,4 +66,15 @@ describe("bounded hosted watchdog", () => {
     releaseCleanup();await vi.advanceTimersByTimeAsync(30000);expect(mocks.mcp).toHaveBeenCalledTimes(2);expect(mocks.heartbeat).not.toHaveBeenCalled();
     releaseClaim();await vi.advanceTimersByTimeAsync(5000);await running;expect(vi.getTimerCount()).toBe(0);
   });
+  it("keeps retrieval ticks independent, prevents overlap and drains a pending index job",async()=>{
+    vi.useFakeTimers();let finishIndex!:()=>void;
+    mocks.claim.mockResolvedValue([]);mocks.learning.mockResolvedValue({processed:0,durationMs:0});mocks.mcp.mockResolvedValue({processed:0});
+    mocks.retrieval.mockReturnValueOnce(new Promise<void>(resolve=>{finishIndex=resolve;}));
+    const running=runHostedWatchdog((()=>{throw Error('unused');}) as Parameters<typeof runHostedWatchdog>[0]);
+    await vi.advanceTimersByTimeAsync(65000);
+    expect(mocks.retrieval).toHaveBeenCalledTimes(1);expect(mocks.heartbeat).toHaveBeenCalledTimes(13);expect(mocks.cleanup).not.toHaveBeenCalled();
+    finishIndex();await running;
+    expect(mocks.cleanup).toHaveBeenCalledTimes(1);expect(mocks.researchDue).toHaveBeenCalledTimes(1);expect(vi.getTimerCount()).toBe(0);
+  });
+
 });

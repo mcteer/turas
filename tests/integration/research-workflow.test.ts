@@ -13,6 +13,8 @@ import { ownResearchGenerationIsCurrent } from "../../lib/server/research/contex
 import { captureAttemptContext } from "../../lib/server/profiles/attempt-context";
 import { ingestCheckedObservation } from "../../lib/server/research/ingest";
 import { normalizePublicDocument, exactPublicPassage } from "../../lib/server/research/normalize";
+import {claimRetrievalJobs} from "../../lib/server/retrieval/jobs";
+import {currentIndexPassages} from "../../scripts/retrieval-worker";
 import {assertRetrievalDependenciesCurrent,exactRetrievalOriginalCurrent} from "../../lib/server/retrieval/fences";
 import { runRetrievalCleanupTick } from "../../lib/server/retrieval/cleanup";
 import { listDueResearch,markDueResearch,recordResearchRefresh } from "../../lib/server/research/refresh";
@@ -250,6 +252,17 @@ describe("owned bounded research admission", () => {
           expect(await ownResearchGenerationIsCurrent(client,{...bridge,membershipId:randomUUID()})).toBe(false);
           expect(await ownResearchGenerationIsCurrent(client,{...bridge,current:String(BigInt(generationAfter)+1n)})).toBe(false);
           expect((await client.query("SELECT 1 FROM retrieval_sources WHERE source_revision_id=$1 AND lifecycle_state='current'",[ingested.sourceRevisionId])).rowCount).toBeGreaterThan(0);
+          await client.query("SAVEPOINT real_customer_index");
+          await client.query("UPDATE customer_references SET synthetic=false WHERE id=$1",[customer]);
+          const sourceIds=(await client.query<{id:string}>("SELECT id FROM retrieval_sources WHERE source_revision_id=$1",[ingested.sourceRevisionId])).rows.map(row=>row.id);
+          const claims=await claimRetrievalJobs(2,client,environment,sourceIds);
+          expect(claims).toHaveLength(2);
+          for(const claim of claims)expect(await currentIndexPassages(claim,client)).toHaveLength(1);
+          await client.query("SAVEPOINT submitted_origin_index");
+          await client.query("UPDATE research_observations SET origin='user_submission' WHERE id=$1",[observationId]);
+          for(const claim of claims)expect(await currentIndexPassages(claim,client)).toBe(null);
+          await client.query("ROLLBACK TO SAVEPOINT submitted_origin_index");await client.query("RELEASE SAVEPOINT submitted_origin_index");
+          await client.query("ROLLBACK TO SAVEPOINT real_customer_index");await client.query("RELEASE SAVEPOINT real_customer_index");
           expect(ingested.attributed).toBe(true);
           const verified = await client.query<{ supported_claim: string;
             quality_input: { R: number; D: number } }>(`

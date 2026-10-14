@@ -387,7 +387,9 @@ creates a current source revision and both authorized retrieval projections; an
 unchanged recheck advances the observation time, while a replacement retires the
 old index projection. Recheck deadlines follow the latest successful check; evidence quality still uses
 the original publication or observation date.
-Only human-entered claims use the manual review workflow.
+Only human-entered claims use the manual review workflow. The protected hosted
+watchdog drains the existing retrieval queue and marks research recheck deadlines;
+checked ordinary research for real customers is eligible for vector indexing.
 
 The research reader, source passage boundaries, publication-date checks, community
 attribution warning and product catalog reuse the corresponding legacy behavior.

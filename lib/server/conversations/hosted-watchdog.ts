@@ -1,3 +1,6 @@
+import {runRetrievalWorkerTick} from '../../../scripts/retrieval-worker';
+import {runRetrievalCleanupTick} from '../retrieval/cleanup';
+import {markDueResearch} from '../research/refresh';
 import {runMcpMaintenanceTick} from '../mcp/retention';
 import {runLearningMaintenanceTick} from '../learning/maintenance';
 import {learningOperationalMetric} from '../learning/observability';
@@ -29,12 +32,19 @@ export function authorizeHostedWatchdog(request: Request, secret = process.env.C
 
 /** Minute cron invocations overlap by five seconds. Existing SKIP LOCKED job
  * leases fence duplicate cancellation; readiness expires if execution stops.
- * This performs no schema initialization and never dispatches model work. */
+ * This performs no schema initialization or new research/model generation.
+ * The existing retrieval lane processes bounded queued embeddings and cleanup. */
 export async function runHostedWatchdog(attachSession: AttachSessionFn): Promise<void> {
   const workerId = randomUUID();
-  const end = Date.now() + 65_000;let nextLearningAt=0,stopping=false,mcpTick:Promise<unknown>|null=null;
+  const end = Date.now() + 65_000;let nextLearningAt=0,stopping=false,mcpTick:Promise<unknown>|null=null,researchTick:Promise<unknown>|null=null;
   const maintainMcp=()=>{if(stopping||mcpTick)return;mcpTick=runMcpMaintenanceTick().catch(()=>{console.warn(JSON.stringify({kind:'mcp_maintenance_failed'}));}).finally(()=>{mcpTick=null;});};
   const mcpTimer=setInterval(maintainMcp,30000);maintainMcp();
+  const maintainResearch=()=>{
+    if(stopping||Date.now()>=end||researchTick)return;
+    researchTick=(async()=>{await runRetrievalWorkerTick();await runRetrievalCleanupTick();await markDueResearch();})()
+      .catch(()=>{console.warn(JSON.stringify({kind:'research_maintenance_failed'}));}).finally(()=>{researchTick=null;});
+  };
+  const researchTimer=setInterval(maintainResearch,5000);maintainResearch();
   try{while (Date.now() < end) {
     const started = Date.now();
     const jobs = await claimDueJobs(workerId, 1);
@@ -51,5 +61,5 @@ export async function runHostedWatchdog(attachSession: AttachSessionFn): Promise
     if(Date.now()>=nextLearningAt){try{const result=await runLearningMaintenanceTick({attachSession});learningOperationalMetric('maintenance_duration_ms',Math.min(1000000,result.durationMs));learningOperationalMetric('maintenance_records',result.processed);}catch{learningOperationalMetric('maintenance_failed',1);}nextLearningAt=Date.now()+30000;}
     const remaining = Math.min(end - Date.now(), Math.max(0, 5_000 - (Date.now() - started)));
     if (remaining > 0) await new Promise(resolve => setTimeout(resolve, remaining));
-  }}finally{stopping=true;clearInterval(mcpTimer);await mcpTick;}
+  }}finally{stopping=true;clearInterval(mcpTimer);clearInterval(researchTimer);await Promise.all([mcpTick,researchTick]);}
 }
