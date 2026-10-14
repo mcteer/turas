@@ -1,3 +1,4 @@
+import {readPublicResearchDocument} from "./public-reader";
 import { createHash, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
@@ -88,7 +89,7 @@ const operationDigest = (value: string) => createHash("sha256")
 export async function hasSubmittedContentOrigin(client: PoolClient,
   identity: { environmentId: string; workspaceId: string; customerId: string },
   content: { bodyDigest: string; passageDigest: string;
-    normalizedDigest: string; normalizedText: string }): Promise<boolean> {
+    normalizedDigest: string; normalizedText: string; canonicalUrl?:string }): Promise<boolean> {
   const prior = await client.query(`SELECT 1 FROM research_observations observation
     JOIN research_runs prior_run ON prior_run.id=observation.run_id
     LEFT JOIN research_observation_payloads payload
@@ -96,11 +97,11 @@ export async function hasSubmittedContentOrigin(client: PoolClient,
     WHERE prior_run.environment_id=$1 AND prior_run.workspace_id=$2
       AND prior_run.customer_id=$3 AND observation.origin='user_submission'
       AND (observation.body_digest=$4 OR observation.passage_digest=$5
-        OR observation.normalized_digest=$6 OR payload.normalized_text=$7)
+        OR observation.normalized_digest=$6 OR payload.normalized_text=$7 OR observation.canonical_url=$8)
     LIMIT 1`,
   [identity.environmentId,identity.workspaceId,identity.customerId,
     content.bodyDigest,content.passageDigest,content.normalizedDigest,
-    content.normalizedText]);
+    content.normalizedText,content.canonicalUrl??null]);
   return Boolean(prior.rowCount);
 }
 
@@ -266,8 +267,11 @@ export async function executeResearchFetch(actor: CurrentSession,runId: string,i
     return found.rows[0]?.id ?? null;
   });
   try {
-    const fetched = await fetchPublicDocument(url,{ ...options,deadline: operation.deadline });
-    const normalized = normalizePublicDocument(fetched.text,fetched.contentType);
+    const fetched = options.transport ? await fetchPublicDocument(url,{ ...options,deadline: operation.deadline }) :
+      await readPublicResearchDocument(url,{deadline:operation.deadline});
+    const publication = "publication" in fetched ? fetched.publication : null;
+    const normalized = options.transport ? normalizePublicDocument(fetched.text,fetched.contentType) :
+      {text:fetched.text,digest:createHash("sha256").update(fetched.text).digest("hex")};
     const scope = await withTransaction((client) => runRow(client,runId,false));
     const passage = exactPublicPassage(normalized.text,scope.mode === "recon" ?
       String(scope.public_fields.publicName ?? "") :
@@ -303,7 +307,7 @@ export async function executeResearchFetch(actor: CurrentSession,runId: string,i
         environmentId: getServerConfig().TURAS_ENVIRONMENT_ID,
         workspaceId: actor.workspaceId,customerId: current.customer_id,
       },{ bodyDigest: fetched.bodyDigest,passageDigest: passage.digest,
-        normalizedDigest: normalized.digest,normalizedText: normalized.text });
+        normalizedDigest: normalized.digest,normalizedText: normalized.text,canonicalUrl:fetched.canonicalUrl });
       const origin = (submitted && !refreshTarget) || copiedSubmission ?
         "user_submission" : "independent_discovery";
       if (!checked && origin === "independent_discovery") {
@@ -318,7 +322,7 @@ export async function executeResearchFetch(actor: CurrentSession,runId: string,i
       [observationId,runId,operation.id,origin,fetched.requestedUrl,
         fetched.canonicalUrl,JSON.stringify(fetched.aliases),identity,checked,checked,
         fetched.bodyDigest,passage.digest,passage.text,normalized.text.length,
-        fetched.retrievedAt,JSON.stringify({ retrieval: "server_clock" }),fetched.contentType,
+        fetched.retrievedAt,JSON.stringify({ retrieval: "server_clock",...(publication?{publication}:{}) }),fetched.contentType,
         normalized.digest]);
       await client.query(`INSERT INTO research_observation_payloads
         (observation_id,normalized_text,raw_body,raw_body_expires_at)

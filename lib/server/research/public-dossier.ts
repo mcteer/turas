@@ -61,12 +61,12 @@ export function checkedPublicPage(raw: { url: string; title: string; text: strin
 export function publicResearchQueries(customer: PublicCustomer): Array<{ purpose: string; query: string }> {
   const name = `"${customer.name.replaceAll('"', '')}"${customer.researchQualifier ? " " + customer.researchQualifier : ""}`;
   return [
-    { purpose: "identity", query: `${name} official company products website` },
-    { purpose: "vercel_relationship", query: `${name} Vercel customer architecture case study outcomes` },
-    { purpose: "architecture_outcomes", query: `${name} engineering architecture performance deployment measured outcomes` },
-    { purpose: "releases", query: `${name} official product releases changelog 2026` },
-    { purpose: "employee_testimony", query: `${name} engineer CTO conference presentation webinar architecture` },
-    { purpose: "practitioner_experience", query: `${name} product user experience limitations problems review firsthand` },
+    { purpose: "releases", query: `${name} product releases` },
+    { purpose: "employee_testimony", query: `${name} engineer conference presentation` },
+    { purpose: "practitioner_experience", query: `${name} firsthand workflow experience` },
+    { purpose: "vercel_relationship", query: `${name} Vercel customer stories documentation products workloads` },
+    { purpose: "architecture_outcomes", query: `${name} official engineering architecture performance deployment outcomes` },
+    { purpose: "identity", query: `${name} official company website` },
   ];
 }
 

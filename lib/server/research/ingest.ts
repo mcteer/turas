@@ -1,3 +1,5 @@
+import {publicationEvidence} from "./source-integrity";
+import {z} from "zod";
 import { createHash, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
@@ -25,13 +27,13 @@ export async function ingestCheckedObservation(client: PoolClient,actor: Current
     canonical_url: string; passage_text: string; passage_digest: string;
     body_digest: string; normalized_digest: string | null;
     normalized_text: string; raw_body: Buffer | null;
-    retrieval_at: Date;
+    retrieval_at: Date;date_provenance:Record<string,unknown>;
     identity_checked: boolean; scope_checked: boolean; integrity_checked: boolean;
     content_checked: boolean; customer_id: string; workspace_id: string;
     conversation_id: string; mode: string; public_fields: Record<string,unknown>;
     run_state: string; operation_state: string }>(`
     SELECT o.id,o.run_id,o.origin,o.canonical_url,o.passage_text,o.passage_digest,
-      o.body_digest,o.normalized_digest,p.normalized_text,p.raw_body,o.retrieval_at,
+      o.body_digest,o.normalized_digest,p.normalized_text,p.raw_body,o.retrieval_at,o.date_provenance,
       o.identity_checked,o.scope_checked,
       o.integrity_checked,o.content_checked,r.customer_id,r.workspace_id,
       req.conversation_id,req.mode,req.public_fields,r.state AS run_state,
@@ -73,6 +75,8 @@ export async function ingestCheckedObservation(client: PoolClient,actor: Current
   const url = new URL(row.canonical_url);
   const official = row.mode === "practices" &&
     officialProductAuthority(url,String(row.public_fields.product ?? ""));
+  const publication=z.object({date:z.iso.date(),quote:z.string().min(1).max(500)}).safeParse(row.date_provenance?.publication);
+  const publicationAt=publication.success&&row.normalized_text.includes(publication.data.quote)&&publicationEvidence(publication.data.quote)?.date===publication.data.date&&publication.data.date<=row.retrieval_at.toISOString().slice(0,10)?new Date(publication.data.date):null;
   const qualityInput = qualityInputSchema.parse({ rubricVersion: "evidence-quality-v1",
     R: official ? 4 : 1,D: 4,C: 0,
     reliabilityRationale: official ?
@@ -81,7 +85,7 @@ export async function ingestCheckedObservation(client: PoolClient,actor: Current
     directnessRationale: "Exact quotation retained from the fetched public page",
     corroborationRationale: "No independently verified corroborating origin counted",
     informationType: row.mode === "practices" ? "product_capability" : "account_status",
-    dateBasis: "observation" });
+    dateBasis: publicationAt ? "publication" : "observation" });
   const title = await client.query<{ title: string }>(`
     SELECT title FROM research_discovery_results
     WHERE run_id=$1 AND public_url=$2 ORDER BY created_at LIMIT 1`,
@@ -99,8 +103,8 @@ export async function ingestCheckedObservation(client: PoolClient,actor: Current
     VALUES($1,$2,$3,'independent_research',$4,$5)`,
   [sourceId,row.workspace_id,row.customer_id,row.canonical_url,trustedIdentity]);
   const prior = await client.query<{ id: string; version: string;
-    passage_digest: string; retired: boolean }>(`
-    SELECT revision.id,revision.version,revision.passage_digest,
+    passage_digest: string; retrieval_at: Date; retired: boolean }>(`
+    SELECT revision.id,revision.version,revision.passage_digest,revision.retrieval_at,
       EXISTS (SELECT 1 FROM evidence_source_events event
         WHERE event.source_revision_id=revision.id
           AND event.event_type IN ('withdraw','supersede')) AS retired
@@ -108,28 +112,29 @@ export async function ingestCheckedObservation(client: PoolClient,actor: Current
     WHERE revision.source_id=$1 ORDER BY revision.version DESC LIMIT 1`,[sourceId]);
   const previous = prior.rows[0];
   let revisionId: string;
-  if (previous?.passage_digest === row.passage_digest && !previous.retired) {
-    revisionId = previous.id;
-  } else {
+  if (previous && previous.retrieval_at.getTime() > row.retrieval_at.getTime()) {
+    throw new HttpFailure(409,"research_observation_outdated","A newer checked source is already current");
+  }
+  {
     revisionId = randomUUID();
     const version = Number(previous?.version ?? 0)+1;
     await client.query(`INSERT INTO evidence_source_revisions
       (id,source_id,workspace_id,customer_id,version,location,title,passage,
-       supported_claim,passage_digest,observation_at,retrieval_at,rights,audience,quality_input)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$8,$9,$10,$10,$11,'delivery',$12)`,
+       supported_claim,passage_digest,observation_at,retrieval_at,rights,audience,quality_input,publication_at)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$8,$9,$10,$10,$11,'delivery',$12,$13)`,
     [revisionId,sourceId,row.workspace_id,row.customer_id,version,row.canonical_url,
       sourceTitle,row.passage_text,row.passage_digest,row.retrieval_at,
-      "Public quotation with source attribution",JSON.stringify(qualityInput)]);
+      "Public quotation with source attribution",JSON.stringify(qualityInput),publicationAt]);
     await client.query(`INSERT INTO research_checks
       (source_revision_id,trusted_ingest_identity,check_version,identity_result,
        scope_result,integrity_result,content_result,rationale)
       VALUES($1,$2,'research-check-v2',true,true,true,true,$3)`,
-    [revisionId,trustedIdentity,official ?
+    [revisionId,`${trustedIdentity}:observation:${row.id}`,official ?
       `${publicAuthorityPolicy}: official product passage` :
-      `${publicAuthorityPolicy}: public identity, low authority pending review`]);
+      `${publicAuthorityPolicy}: checked public identity with limited source authority`]);
     const rated = rateEvidence({ R: qualityInput.R,D: qualityInput.D,C: qualityInput.C,
       informationType: qualityInput.informationType,dateBasis: qualityInput.dateBasis,
-      evidenceAt: row.retrieval_at,asOf: new Date() });
+      evidenceAt: publicationAt ?? row.retrieval_at,asOf: new Date() });
     await client.query(`INSERT INTO evidence_quality_snapshots
       (id,source_revision_id,rubric_version,rating_actor,input,information_type,
        date_basis,as_of,freshness,score,band)
@@ -145,7 +150,7 @@ export async function ingestCheckedObservation(client: PoolClient,actor: Current
       await retireRetrievalProjection(client,"verified_research",previous.id);
       await enqueuePlanCleanupForSource(client,"verified_research",previous.id);
     }
-    if (previous) await client.query(`UPDATE customer_profile_state SET version=version+1,
+    await client.query(`UPDATE customer_profile_state SET version=version+1,
       internal_generation=internal_generation+1,delivery_generation=delivery_generation+1,
       updated_at=now() WHERE customer_id=$1`,[row.customer_id]);
     await materializeCurrentProjection(client,"verified_research",revisionId,"delivery");

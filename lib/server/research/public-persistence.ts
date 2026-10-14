@@ -64,7 +64,7 @@ export async function persistPublicCustomerResearch(actor: CurrentSession, raw: 
       const sourceId=source?.id??randomUUID();
       if(!source)await db.query(`INSERT INTO evidence_sources(id,workspace_id,customer_id,origin,canonical_location,trusted_ingest_identity)
         VALUES($1,$2,$3,'independent_research',$4,'public-batch-fetch-v1')`,[sourceId,actor.workspaceId,customerId,page.url]);
-      const previous=(await db.query<{id:string;version:number;passage_digest:string;retired:boolean}>(`SELECT v.id,v.version,v.passage_digest,
+      const previous=(await db.query<{id:string;version:number;passage_digest:string;retrieval_at:Date;supported_claim:string;publication_at:Date|null;retired:boolean}>(`SELECT v.id,v.version,v.passage_digest,v.retrieval_at,v.supported_claim,v.publication_at,
         EXISTS(SELECT 1 FROM evidence_source_events e WHERE e.source_revision_id=v.id AND e.event_type IN('withdraw','supersede')) AS retired
         FROM evidence_source_revisions v WHERE source_id=$1 ORDER BY version DESC LIMIT 1`,[sourceId])).rows[0];
       if(previous?.retired)throw new HttpFailure(409,"research_source_retired","Withdrawn public evidence requires explicit source recovery");
@@ -72,11 +72,13 @@ export async function persistPublicCustomerResearch(actor: CurrentSession, raw: 
       const supplied=await db.query(`SELECT 1 FROM research_observations o JOIN research_runs r ON r.id=o.run_id
         LEFT JOIN research_observation_payloads payload ON payload.observation_id=o.id
         WHERE r.environment_id=$1 AND r.workspace_id=$2 AND r.customer_id=$3 AND o.origin='user_submission'
-          AND (o.body_digest=$4 OR o.passage_digest=$5 OR o.normalized_digest=$6 OR payload.normalized_text=$7)
+          AND (o.body_digest=$4 OR o.passage_digest=$5 OR o.normalized_digest=$6 OR payload.normalized_text=$7 OR o.canonical_url=$8)
         UNION ALL SELECT 1 FROM evidence_sources WHERE workspace_id=$2 AND customer_id=$3 AND origin='manual' AND canonical_location=$8 LIMIT 1`,
         [getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,customerId,page.bodyDigest,passageDigest,page.fullNormalizedDigest??page.normalizedDigest,page.text,page.url]);
       if(supplied.rowCount)throw new HttpFailure(409,"submitted_origin","User-origin content cannot be promoted by public batch research");
-      if(previous?.passage_digest===passageDigest&&!previous.retired){revisionIds.push(previous.id);continue;}
+      const supportedClaim=supported.map(f=>`${f.attribution}: ${f.statement}${f.caveats.length?` Caveats: ${f.caveats.join('; ')}`:''}`).join("\n");
+      if(previous && previous.retrieval_at.getTime()>Date.parse(page.retrievedAt))throw new HttpFailure(409,"research_observation_outdated","A newer checked source is already current");
+      if(previous?.passage_digest===passageDigest&&!previous.retired&&previous.supported_claim===supportedClaim&&previous.retrieval_at.getTime()===Date.parse(page.retrievedAt)){revisionIds.push(previous.id);continue;}
       const id=randomUUID();
       const quality=qualityInputSchema.parse({rubricVersion:"evidence-quality-v1", R:1,D:4,C:0,
         reliabilityRationale:"Independently checked public source; factual acceptance is automatic, publisher and workload authority remain claim-specific",
@@ -85,7 +87,7 @@ export async function persistPublicCustomerResearch(actor: CurrentSession, raw: 
       await db.query(`INSERT INTO evidence_source_revisions(id,source_id,workspace_id,customer_id,version,location,title,passage,supported_claim,
         passage_digest,publication_at,retrieval_at,rights,audience,quality_input) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'delivery',$14)`,
         [id,sourceId,actor.workspaceId,customerId,Number(previous?.version??0)+1,page.url,page.title||"Attributed public research",passage,
-          supported.map(f=>`${f.attribution}: ${f.statement}${f.caveats.length?` Caveats: ${f.caveats.join('; ')}`:''}`).join("\n"),passageDigest,page.publishedAt,page.retrievedAt,
+          supportedClaim,passageDigest,page.publishedAt,page.retrievedAt,
           "Public quotations with attribution; no license to redistribute full documents",JSON.stringify(quality)]);
       await db.query(`INSERT INTO research_checks(source_revision_id,trusted_ingest_identity,check_version,identity_result,scope_result,integrity_result,content_result,rationale)
         VALUES($1,'public-batch-fetch-v1','research-check-v3',true,true,true,true,$2)`,[id,JSON.stringify({batchDigest:input.batchDigest,bodyDigest:page.bodyDigest,

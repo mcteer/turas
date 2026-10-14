@@ -5,6 +5,7 @@ import {withTransaction,query} from '../../lib/server/db/client';
 import {createProfileTestSession} from '../fixtures/profiles';
 import {persistPublicCustomerResearch} from '../../lib/server/research/public-persistence';
 import {publicDigest,dossierAreas,signCheckedPublicPage} from '../../lib/server/research/public-dossier';
+import {markDueResearch} from '../../lib/server/research/refresh';
 import {readPublicCustomerCoverage} from '../../lib/server/research/public-read';
 import {claimRetrievalJobs} from '../../lib/server/retrieval/jobs';
 import {currentIndexPassages} from '../../scripts/retrieval-worker';
@@ -63,6 +64,29 @@ describe('operator public research persistence',()=>{
    expect(claims).toHaveLength(2);
    for(const claim of claims)expect(await currentIndexPassages(claim)).toHaveLength(1);
    expect((await query('SELECT trusted_ingest_identity FROM evidence_sources WHERE id=$1',[sourceId])).rows[0].trusted_ingest_identity).toBe('earlier-public-fetch');
+  },{deadlineAt:Date.now()+120000,sourceDatabaseUrl:process.env.TURAS_TEST_SOURCE_DATABASE_URL});
+ },150000);
+
+ it('preserves eligible knowledge when focused research adds products to an existing profile',async()=>{
+  await withPlanEvalEnvironment(async()=>{
+   const actor=await withTransaction(db=>createProfileTestSession(db,'mcteer'));
+   const first=await persistPublicCustomerResearch(actor,input(),pages());
+   const productText='Cedar Public Company reports using Vercel Sandbox for its public agent integration.';
+   const focusedPage=signCheckedPublicPage({...rawPages[0],url:'https://public.example.org/cedar-agent',publishedAt:'2020-01-01T00:00:00.000Z',text:productText,normalizedDigest:publicDigest(productText),bodyDigest:publicDigest(productText),retrievedAt:new Date().toISOString()});
+   const focused={...dossier,description:'',findings:[{...dossier.findings[0],area:'architecture_outcomes',statement:'Reports a Sandbox agent integration.',quote:productText}],coverage:dossierAreas.map(area=>({area,state:area==='architecture_outcomes'?'supported':'incomplete',explanation:'Focused product research'}))};
+   await persistPublicCustomerResearch(actor,{...input(),dossier:focused},[focusedPage],first.customerId);
+   await markDueResearch();
+   const refreshed=(await query("SELECT v.publication_at,due.state FROM evidence_source_revisions v JOIN research_review_due due ON due.source_revision_id=v.id WHERE v.customer_id=$1 AND v.location=$2",[first.customerId,focusedPage.url])).rows[0];
+   expect(refreshed.state).toBe('current');
+   expect(refreshed.publication_at.toISOString()).toBe('2020-01-01T00:00:00.000Z');
+   const coverage=await withTransaction(db=>readPublicCustomerCoverage(db,actor,first.customerId));
+   expect(coverage?.description).toBe(dossier.description);
+   expect(coverage?.coverage.filter(area=>area.state==='supported').map(area=>area.area)).toEqual(['identity','architecture_outcomes']);
+   const oldSource=(await query('SELECT source_revision_id FROM research_checks JOIN evidence_source_revisions v ON v.id=source_revision_id WHERE v.customer_id=$1 AND v.location=$2',[first.customerId,rawPages[0].url])).rows[0].source_revision_id;
+   await query("INSERT INTO evidence_source_events(id,source_revision_id,lifecycle_version,event_type,rationale) VALUES($1,$2,1,'withdraw','Synthetic stale description withdrawal')",[randomUUID(),oldSource]);
+   const withdrawn=await withTransaction(db=>readPublicCustomerCoverage(db,actor,first.customerId));
+   expect(withdrawn?.description).toBe('');
+   expect(withdrawn?.coverage.find(area=>area.area==='identity')?.state).toBe('incomplete');
   },{deadlineAt:Date.now()+120000,sourceDatabaseUrl:process.env.TURAS_TEST_SOURCE_DATABASE_URL});
  },150000);
 

@@ -1,3 +1,4 @@
+import {ownResearchGenerationIsCurrent} from "../research/context-generation";
 import { conversationFeature } from "./feature";
 import type { PoolClient } from "pg";
 import { hiddenRecord, HttpFailure } from "../../contracts/http";
@@ -48,8 +49,10 @@ export async function assertNativeContextCurrentInTransaction(client: PoolClient
   const audience = planning?.audience ??
     (session.kind === "internal" ? "internal" : "delivery");
   const current = audience === "internal" ? row?.internal_generation : row?.delivery_generation;
+  const activeAttempt=(await client.query<{id:string}>("SELECT id FROM response_attempts WHERE conversation_id=$1 AND response_state IN('pending','running','stopping') ORDER BY created_at DESC LIMIT 1",[conversation.id])).rows[0];
+  const generationCurrent=!!row&&row.context_generation!==null&&(row.context_generation===current||!!activeAttempt&&await ownResearchGenerationIsCurrent(client,{attemptId:activeAttempt.id,conversationId:conversation.id,customerId:conversation.customer_id!,workspaceId:session.workspaceId,membershipId:session.membershipId,sessionId:session.sessionId,generation:row.context_generation,current}));
   if (!row || row.context_snapshot_schema !== "customer-context-v1" ||
-      row.context_audience !== audience || row.context_generation !== current ||
+      row.context_audience !== audience || !generationCurrent ||
       (row.context_valid_until && row.context_valid_until.getTime() <= Date.now())) {
     throw new HttpFailure(409, "context_changed", "Start a new conversation for current customer context");
   }

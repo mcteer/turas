@@ -1,3 +1,4 @@
+import { productsFromResearch } from "../../profiles/research-products";
 import { profileDeliverySummary } from "./delivery-summary";
 import { retrievalSourceHasMaterialConflict } from "../retrieval/search";
 import { readPublicCustomerCoverage } from "../research/public-read";
@@ -246,8 +247,8 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
     const research = await client.query<{
       id: string; title: string; location: string; supported_claim: string;
       publication_at: Date | null; observation_at: Date | null; retrieval_at: Date;
-      quality_input: Record<string, unknown>;
-    }>(`SELECT v.id,v.title,v.location,v.supported_claim,v.publication_at,
+      quality_input: Record<string, unknown>; passage: string;
+    }>(`SELECT v.id,v.title,v.location,v.passage,v.supported_claim,v.publication_at,
       v.observation_at,v.retrieval_at,v.quality_input
       FROM evidence_source_revisions v
       JOIN evidence_sources s ON s.id=v.source_id AND s.origin='independent_research'
@@ -276,6 +277,7 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
         evidenceAt: date, asOf: new Date() });
       return { sourceRevisionId: row.id, state: "researched", title: row.title,
         acceptanceState: "accepted", acceptanceBasis: "independent_research",
+        productNames: productsFromResearch([{title:row.title,quote:row.passage}]),
         location: row.location, supportedClaim: row.supported_claim,
         publicationAt: row.publication_at?.toISOString() ?? null,
         observationAt: row.observation_at?.toISOString() ?? null,

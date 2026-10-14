@@ -20,12 +20,17 @@ export async function readPublicCustomerCoverage(db:PoolClient,actor:ProfileActo
         OR EXISTS(SELECT 1 FROM evidence_conflict_targets conflict WHERE conflict.environment_id=r.environment_id AND conflict.state='confirmed'
           AND ((conflict.first_kind='verified_research' AND conflict.first_revision_id=v.id)
             OR (conflict.second_kind='verified_research' AND conflict.second_revision_id=v.id))))
-  ORDER BY r.created_at DESC,r.id DESC LIMIT 1`,[getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,customerId]);
+  ORDER BY r.created_at DESC,r.id DESC LIMIT 20`,[getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,customerId]);
  if(!found.rows[0])return null;
- const parsed=publicDossierSchema.safeParse(found.rows[0].dossier);
- // Stored receipt includes provenance alongside the strict authored dossier.
- const raw=found.rows[0].dossier as Record<string,unknown>;
- const bounded=parsed.success?parsed:publicDossierSchema.safeParse({description:raw.description,findings:raw.findings,coverage:raw.coverage,unknowns:raw.unknowns});
- if(!bounded.success)return null;
- return {asOf:found.rows[0].created_at.toISOString(),description:bounded.data.description,coverage:bounded.data.coverage,unknowns:bounded.data.unknowns};
+ const eligible=found.rows.flatMap(row=>{
+  const raw=row.dossier as Record<string,unknown>;
+  const parsed=publicDossierSchema.safeParse({description:raw.description,findings:raw.findings,coverage:raw.coverage,unknowns:raw.unknowns});
+  return parsed.success?[{...parsed.data,asOf:row.created_at.toISOString()}]:[];
+ });
+ const latest=eligible[0];if(!latest)return null;
+ const described=eligible.find(row=>row.description.trim());
+ // Focused research augments current knowledge without erasing other eligible
+ // source coverage. Retired or conflicted receipt closures were excluded above.
+ const coverage=latest.coverage.map(area=>eligible.flatMap(row=>row.coverage).find(candidate=>candidate.area===area.area&&candidate.state==='supported')??area);
+ return {asOf:latest.asOf,description:described?.description??"",descriptionAsOf:described?.asOf??null,coverage,unknowns:latest.unknowns};
 }

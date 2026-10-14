@@ -35,10 +35,10 @@ export function renderResearchQueries(input: ResearchPreviewInput): string[] {
   if (input.mode === "recon") {
     const domain = publicDomain(input.publicDomain);
     const name = safeField(input.publicName);
-    return [`"${name}" "${domain}" company products architecture`,
-      `"${name}" Vercel case study outcomes`,
-      `"${name}" engineer conference webinar architecture`,
-      `"${name}" product releases user experience limitations`];
+    return [`"${name}" product releases "${domain}"`,
+      `"${name}" engineer conference presentation`,
+      `"${name}" firsthand workflow experience`,
+      `"${name}" Vercel customer stories documentation products workloads`];
   }
   const product = safeField(input.product);
   const version = safeField(input.version);

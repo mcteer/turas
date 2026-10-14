@@ -19,7 +19,7 @@ const refreshInput = z.object({ idempotencyKey: idempotencyKeySchema,
 
 type Source = { id: string; source_id: string; workspace_id: string;
   customer_id: string; version: string; location: string; passage_digest: string;
-  observation_at: Date | null; publication_at: Date | null;
+  observation_at: Date | null; publication_at: Date | null; retrieval_at: Date;
   quality_input: unknown };
 
 /** The maintenance worker only marks dates. It never starts external research. */
@@ -31,7 +31,7 @@ export async function markDueResearch(existingClient?: PoolClient): Promise<numb
     if ((marker.rows[0]?.schema_version ?? 0) < 26) return 0;
     const sources = await client.query<Source>(`
       SELECT v.id,v.source_id,v.workspace_id,v.customer_id,v.version,v.location,
-        v.passage_digest,v.observation_at,v.publication_at,v.quality_input
+        v.passage_digest,v.observation_at,v.publication_at,v.retrieval_at,v.quality_input
       FROM evidence_source_revisions v
       JOIN evidence_sources s ON s.id=v.source_id AND s.origin='independent_research'
       JOIN research_checks check_result ON check_result.source_revision_id=v.id
@@ -45,9 +45,11 @@ export async function markDueResearch(existingClient?: PoolClient): Promise<numb
     const now = new Date();
     for (const source of sources.rows) {
       const parsed = qualityInputSchema.safeParse(source.quality_input);
+      // Recheck scheduling follows the latest checked retrieval. Evidence quality
+      // still follows its original publication/observation date.
       const dueAt = parsed.success ? evidenceReviewDueAt({
-        informationType: parsed.data.informationType,dateBasis: parsed.data.dateBasis,
-        observationAt: source.observation_at,publicationAt: source.publication_at },now) : now;
+        informationType: parsed.data.informationType,dateBasis: "observation",
+        observationAt: source.retrieval_at },now) : now;
       await client.query(`INSERT INTO research_review_due
         (source_revision_id,environment_id,due_at,state)
         VALUES($1,$2,$3,$4) ON CONFLICT (source_revision_id) DO UPDATE

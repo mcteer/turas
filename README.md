@@ -381,6 +381,23 @@ reports outside the customer's own domain. Existing admitted requests retain the
 original host policy. Source text is quoted evidence; a host, mention or generated
 summary never establishes employer-wide deployment or accepted internal facts.
 
+Checked independent research automatically updates shared customer knowledge, including
+an initially empty profile, without human claim review. A new checked observation
+creates a current source revision and both authorized retrieval projections; an
+unchanged recheck advances the observation time, while a replacement retires the
+old index projection. Recheck deadlines follow the latest successful check; evidence quality still uses
+the original publication or observation date.
+Only human-entered claims use the manual review workflow.
+
+The research reader, source passage boundaries, publication-date checks, community
+attribution warning and product catalog reuse the corresponding legacy behavior.
+Customer Profiles derive product names from eligible retained source quotations,
+rather than requiring a product name in a generated summary. Focused public
+research preserves other still-eligible description and coverage receipts. An
+active research turn may finish after its own checked writes; changes from other
+actors, revoked access, expired receipts and superseded citations still fail their
+existing checks.
+
 The authorized operator batch researches a reviewed official Vercel directory and
 paginated story inventory. It records six coverage areas, exact source passages,
 dates, caveats, unknowns and provider usage, with source signatures and checkpointed

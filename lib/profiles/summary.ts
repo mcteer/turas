@@ -1,7 +1,8 @@
+import { productsFromResearch } from "./research-products";
 import { profilePayloadSchema } from "../contracts/profile-payloads";
 
 export type SummaryFact = { kind: string; workloadId: string | null; payload: unknown; supportStatus?: string };
-export type SummaryResearch = { sourceRevisionId: string; supportedClaim: string; location: string; title: string };
+export type SummaryResearch = { sourceRevisionId: string; supportedClaim: string; location: string; title: string; productNames?: string[] };
 const stages = ["Explore", "Activate", "Accelerate", "Optimize", "Scale", "Transform"];
 
 /** Presentation projection of already-authorized facts. Never turns product
@@ -26,33 +27,13 @@ export function profileSummary(facts: readonly SummaryFact[], workloadId: string
   };
 }
 
-// Product identity vocabulary only; a mention is shown as sourced research,
-// never as a maturity level, global deployment footprint or commercial purchase.
-const products = [
-  { name: "Vercel Sandbox", pattern: /\bvercel\s+sandbox(?:es)?\b/i },
-  { name: "Next.js", pattern: /\bnext\.js\b|\bnextjs\b/i },
-  { name: "AI SDK", pattern: /\b(?:vercel\s+)?ai[ -]sdk\b/i },
-  { name: "AI Gateway", pattern: /\b(?:vercel\s+)?ai gateway\b/i },
-  { name: "Fluid Compute", pattern: /\bfluid compute\b/i },
-  { name: "Vercel Blob", pattern: /\bvercel blob\b/i },
-  { name: "Edge Config", pattern: /\bedge config\b/i },
-  { name: "Vercel Firewall", pattern: /\bvercel firewall\b/i },
-  { name: "Vercel Analytics", pattern: /\bvercel (?:web )?analytics\b/i },
-  { name: "Speed Insights", pattern: /\bspeed insights\b/i },
-  { name: "Workflow SDK", pattern: /\bworkflow sdk\b|\bvercel workflows?\b/i },
-  { name: "Vercel Queues", pattern: /\bvercel queues\b/i },
-  { name: "Vercel Connect", pattern: /\bvercel connect\b/i },
-  { name: "Vercel Flags", pattern: /\bvercel flags\b/i },
-  { name: "v0", pattern: /\bv0\b/i },
-];
-function documentsUse(claim: string, product: RegExp) {
-  return claim.split(/(?<=[.!?])\s+|\n+/).some(sentence => product.test(sentence) &&
-    /\b(?:uses?|using|used|runs?|running|built|builds?|deployed|deploys?|hosts?|hosting|adopted|powered|migrated|integrated|executes?|executing)\b/i.test(sentence) &&
-    !/\b(?:does not|do not|did not|doesn't|don't|didn't|never|no longer|without|not using|plans? to|planning|evaluating|considering)\b/i.test(sentence));
-}
+// Keep the legacy product vocabulary and exact source references. The server
+// projects names from eligible retained quotations; summaries are a fallback
+// for older consumers that do not yet supply the quotation projection.
 export function researchProductMentions(research: readonly SummaryResearch[]) {
-  return products.flatMap(product => {
-    const sources = research.filter(source => documentsUse(source.supportedClaim, product.pattern));
-    return sources.length ? [{ name: product.name, sources }] : [];
-  });
+  const names = [...new Set(research.flatMap(source => source.productNames ??
+    productsFromResearch([{ title: source.title, quote: source.supportedClaim }])))];
+  const display: Record<string,string> = { Sandbox: "Vercel Sandbox", Blob: "Vercel Blob", Analytics: "Vercel Analytics", Workflows: "Workflow SDK", Queues: "Vercel Queues", Connect: "Vercel Connect", Flags: "Vercel Flags" };
+  return names.map(name => ({ name: display[name] ?? name, sources: research.filter(source =>
+    (source.productNames ?? productsFromResearch([{title:source.title,quote:source.supportedClaim}])).includes(name)) }));
 }
