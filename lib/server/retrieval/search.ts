@@ -1,3 +1,4 @@
+import { sharedOriginSql } from "../access/policy";
 import { createHmac, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { HttpFailure } from "../../contracts/http";
@@ -52,10 +53,10 @@ async function eligibleSources(client: PoolClient, actor: CurrentSession,
         AND ($4::uuid IS NULL OR workload_id IS NULL OR workload_id=$4)
         AND (NOT $7::boolean OR workload_id IS NULL)
         AND (audience='delivery' OR $5='internal'))
-        OR (scope='shared' AND $6::boolean AND audience='shared'))
+        OR (scope='shared' AND $6::boolean AND audience='shared' AND ${sharedOriginSql("retrieval_sources","$8")}))
     ORDER BY id LIMIT 10001`,
   [scope.environmentId,scope.workspaceId,scope.customerId,input.workloadId ?? null,
-    scope.audience,scope.includeShared,customerWideOnly]);
+    scope.audience,scope.includeShared,customerWideOnly,actor.workspaceId]);
   if (rows.rows.length > 10_000) throw new HttpFailure(503,"unavailable","Retrieval unavailable");
   const eligible: Source[] = [];
   for (const source of rows.rows) {

@@ -10,6 +10,7 @@ import { recordOperationalEvent } from "../../../../lib/server/observability";
 const loginInput = z.object({
   username: z.string().min(1).max(100),
   password: z.string().min(1).max(1_024),
+  workspace: z.enum(["primary", "pilot"]).optional(),
   returnTo: z.string().max(500).optional(),
 }).strict();
 
@@ -38,7 +39,7 @@ export async function POST(request: Request): Promise<Response> {
     const returnTo = safeReturnPath(input.data.returnTo, config.TURAS_APP_ORIGIN);
     const clientAddress = trustedLocalClientAddress();
     await checkLoginThrottle(input.data.username, clientAddress);
-    const identity = await authenticateDemoPrincipal(input.data.username, input.data.password);
+    const identity = await authenticateDemoPrincipal(input.data.username, input.data.password, input.data.workspace);
     if (!identity) {
       await recordFailedLogin(input.data.username, clientAddress);
       recordOperationalEvent({ action: "login", outcome: "denied", correlationId: crypto.randomUUID() });
@@ -47,7 +48,7 @@ export async function POST(request: Request): Promise<Response> {
     const { token, expiresAt } = await issueSession(identity);
     const response = success({
       principal: { id: identity.principalId, loginName: identity.loginName, displayName: identity.displayName },
-      workspace: { id: identity.workspaceId },
+      workspace: { id: identity.workspaceId, classification: identity.workspaceClassification },
       membership: { kind: identity.kind, role: identity.role },
       csrfToken: csrfTokenForSession(token, config),
       returnTo,

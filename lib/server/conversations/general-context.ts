@@ -36,7 +36,7 @@ export async function readGeneralAttemptContext(db: PoolClient, attemptId: strin
   const row = (await db.query<{ as_of: Date; valid_until: Date; session_id: string; membership_id: string; workspace_id: string; expires_at: Date; login_name: string; display_name: string; kind: "internal" | "partner"; role: "admin" | "member" }>(`
     SELECT r.as_of,r.valid_until,r.login_session_id AS session_id,r.membership_id,r.workspace_id,s.expires_at,p.login_name,p.display_name,m.kind,m.role
     FROM general_context_receipts r JOIN conversations c ON c.id=r.conversation_id
-    JOIN login_sessions s ON s.id=r.login_session_id AND s.principal_id=r.owner_principal_id
+    JOIN login_sessions s ON s.id=r.login_session_id AND s.principal_id=r.owner_principal_id AND s.membership_id=r.membership_id AND s.workspace_id=r.workspace_id
     JOIN memberships m ON m.id=r.membership_id AND m.principal_id=r.owner_principal_id AND m.workspace_id=r.workspace_id
     JOIN principals p ON p.id=r.owner_principal_id
     WHERE r.attempt_id=$1 AND r.owner_principal_id=$2 AND r.environment_id=$3

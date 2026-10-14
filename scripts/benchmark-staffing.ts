@@ -1,3 +1,4 @@
+import {insertBoundFixtureSession} from "../tests/fixtures/bound-session";
 import { createHash, randomUUID } from "node:crypto";
 import { openSync, closeSync, writeSync } from "node:fs";
 import { performance } from "node:perf_hooks";
@@ -185,8 +186,7 @@ try {
         await db.query("INSERT INTO principals(id,login_name,display_name) VALUES($1,$2,'Synthetic benchmark internal lead')", [principalId,loginName]);
         await db.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role) VALUES($1,$2,$3,'internal','member')",
           [membershipId,principalId,actor.workspaceId]);
-        await db.query("INSERT INTO login_sessions(id,principal_id,token_hash,expires_at) VALUES($1,$2,$3,now()+interval '1 hour')",
-          [sessionId,principalId,createHash("sha256").update(sessionId).digest("hex")]);
+        await insertBoundFixtureSession(db,{id:sessionId,principalId,membershipId,workspaceId:actor.workspaceId,tokenHash:createHash("sha256").update(sessionId).digest("hex"),expiresAt:new Date(Date.now()+3600000)});
         clients.push({ sessionId, token: "fixture", expiresAt: new Date(Date.now()+3_600_000), principalId, membershipId,
           workspaceId: actor.workspaceId, loginName, displayName: "Synthetic benchmark internal lead", kind: "internal", role: "member" });
       }

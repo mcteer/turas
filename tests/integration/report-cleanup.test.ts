@@ -1,4 +1,4 @@
-import {describe,it,expect} from 'vitest';
+import {describe,it,expect,vi} from 'vitest';
 import {publishedReportFixture} from '../fixtures/reports/published';
 import {reportTransaction} from '../../lib/server/reports/commands';
 import {queueReportRevisionCleanup,cleanupReportRevisionPayloads,cleanupReportFiles,cleanupStagedReportObjects,cleanupReportScratch} from '../../lib/server/reports/cleanup';
@@ -7,6 +7,45 @@ import {join} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {streamReportArtifact} from '../../lib/server/reports/artifacts';
 import {readReportObject,writeReportObject} from '../../lib/server/reports/store';
+import {BlobPrivateObjects} from '../../lib/server/storage/blob-objects';
+import {createHash} from 'node:crypto';
+import {objectKey} from '../../lib/server/storage/private-objects';
+
+/** Actual rendered bytes copied into a deterministic private-adapter fault model.
+ * This proves domain interruption/retry, not an actual hosted Blob operation. */
+async function verifyInterruptedBlobCleanup(fixture:Awaited<ReturnType<typeof publishedReportFixture>>,report:{reportId:string;revisionId:string},files:any[]){
+ const mirror=new Map<string,Buffer>();
+ for(const file of files)mirror.set(objectKey(process.env.TURAS_ENVIRONMENT_ID!,'report',file.object_key),await readReportObject(file.object_key,file.content_digest,Number(file.size_bytes)));
+ await reportTransaction(db=>queueReportRevisionCleanup(db,report.revisionId));
+ const prior=Object.fromEntries(['TURAS_PRIVATE_OBJECT_BACKEND','BLOB_STORE_ID','BLOB_READ_WRITE_TOKEN'].map(key=>[key,process.env[key]]));
+ let deleted=0,interrupt=true;
+ const headers=vi.spyOn(BlobPrivateObjects.prototype,'headers').mockResolvedValue({objects:[]});
+ const stat=vi.spyOn(BlobPrivateObjects.prototype,'stat').mockImplementation(async key=>{const bytes=mirror.get(key);return bytes?{key,sizeBytes:bytes.length,digest:createHash('sha256').update(bytes).digest('hex')}:null;});
+ const remove=vi.spyOn(BlobPrivateObjects.prototype,'delete').mockImplementation(async key=>{if(!mirror.has(key))throw Error('Unexpected cleanup key');if(interrupt&&++deleted===2)throw Error('Controlled private store interruption');mirror.delete(key);});
+ try{
+  Object.assign(process.env,{TURAS_PRIVATE_OBJECT_BACKEND:'blob',BLOB_STORE_ID:'controlled016',BLOB_READ_WRITE_TOKEN:'vercel_blob_rw_controlled016_SYNTHETIC_NOT_A_CREDENTIAL'});
+  await expect(reportTransaction(db=>cleanupReportFiles(db))).rejects.toThrow('Controlled private store interruption');
+  expect(mirror.size).toBe(files.length-1);
+  await expect(streamReportArtifact(fixture.reviewer,report.reportId,files[0].id)).rejects.toThrow();
+  expect((await reportTransaction(async db=>(await db.query("SELECT count(*)::int AS n FROM report_store_objects WHERE revision_id=$1 AND state='deleted'",[report.revisionId])).rows[0].n))).toBe(0);
+  interrupt=false;
+  expect((await reportTransaction(db=>cleanupReportFiles(db))).purged).toBe(files.length);
+  expect(mirror.size).toBe(0);
+  expect((await reportTransaction(db=>cleanupReportFiles(db))).purged).toBe(0);
+ }finally{
+  headers.mockRestore();stat.mockRestore();remove.mockRestore();
+  for(const [key,value] of Object.entries(prior)){if(value===undefined)delete process.env[key];else process.env[key]=value;}
+ }
+ // The fault model never deletes originals from another backend. Retire the
+ // real owned local copies under a new exact cause in the remaining check.
+ for(const file of files)expect(createHash('sha256').update(await readReportObject(file.object_key,file.content_digest,Number(file.size_bytes))).digest('hex')).toBe(file.content_digest);
+ await reportTransaction(async db=>{
+  // Restore only the fixture catalog for the untouched local copies after the
+  // mirrored adapter test, then use a fresh cause for their actual deletion.
+  await db.query("UPDATE report_store_objects SET state='finalized' WHERE revision_id=$1 AND object_key=ANY($2::uuid[]) AND state='deleted'",[report.revisionId,files.map(file=>file.object_key)]);
+  await db.query('UPDATE report_revision_states SET generation=generation+1 WHERE revision_id=$1',[report.revisionId]);
+ });
+}
 
 async function verifyArtifactCleanup(fixture:Awaited<ReturnType<typeof publishedReportFixture>>){
   await reportTransaction(db=>cleanupReportFiles(db));
@@ -26,6 +65,7 @@ async function verifyArtifactCleanup(fixture:Awaited<ReturnType<typeof published
    expect((await cleanupReportFiles(db)).purged).toBe(0);
   });
   expect((await readReportObject(files[0].object_key,files[0].content_digest,Number(files[0].size_bytes))).length).toBe(Number(files[0].size_bytes));
+  await verifyInterruptedBlobCleanup(fixture,report,files);
   await reportTransaction(async db=>{await queueReportRevisionCleanup(db,report.revisionId);expect((await cleanupReportFiles(db)).purged).toBe(files.length);});
   await expect(readReportObject(files[0].object_key,files[0].content_digest,Number(files[0].size_bytes))).rejects.toMatchObject({code:'ENOENT'});
   expect((await readReportObject(sentinel.objectKey,sentinel.contentDigest,sentinel.sizeBytes)).length).toBe(sentinel.sizeBytes);

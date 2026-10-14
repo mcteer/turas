@@ -1,3 +1,4 @@
+import {resolvePublishedLearningPrice} from '../lib/server/learning/pricing';
 import {z} from 'zod';
 export const expansionLiveBudgetSchema=z.number().finite().positive().max(1000);
 const decimal=z.string().regex(/^\d+(?:\.\d+)?$/).transform(Number).refine(value=>Number.isFinite(value)&&value>0);
@@ -13,3 +14,10 @@ export function admitExpansionLiveCase(budgetUsd:number,costs:readonly (number|n
 /** Case admission only permits its first step. The observer reserves anew before
  * every individual provider call, after settling prior actual charges. */
 export const expansionCaseReservation = expansionStepReservation;
+
+/** Preserve raw catalog tiers and verify reasoning-inclusive provider limits. */
+export async function resolveExpansionLivePricing(model:string){
+ const price=await resolvePublishedLearningPrice();
+ if(price.modelId!==model||price.providerInputLimit>500000||price.providerOutputLimit>500000)throw Error("Configured provider exceeds expansion reservation limits");
+ return {inputUsdPerToken:Number(price.inputMicroUsdPerMillion)/1e12,outputUsdPerToken:Number(price.outputMicroUsdPerMillion)/1e12};
+}

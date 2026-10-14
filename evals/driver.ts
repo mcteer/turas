@@ -1,5 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile,mkdir,writeFile } from "node:fs/promises";
+import {join} from 'node:path';
+import {readBehaviorReviewEvents,privateBehaviorJson} from '../scripts/pilot-behavior-review-capture';
 import { Client, Pool } from "pg";
 import { getServerConfig } from "../lib/server/config";
 import { DEMO_IDS } from "../lib/server/bootstrap-ids";
@@ -14,6 +16,7 @@ export type BehaviorCase = { id: string; role: "mcteer" | "panel" | "partner";
     { mode: "fit";evidenceReceiptIds: string[];submittedUrls?: [] } };
 export type BehaviorResult = { caseId: string; run: number; role: string; conversationId: string;
   researchRunId?: string;
+  reviewEvidence?: {path:string;digest:string};
   response: string; outputTokens: number; maxStepOutputTokens?: number;
   staleHistoryStatus?: number; staleSendStatus?: number;
   modelSteps: number; durationMs: number; terminal: string; hardGates: {
@@ -142,7 +145,7 @@ async function pendingExactArtifactProposal(config: Config,versionId: string,
   } finally { await client.end(); }
 }
 
-async function profileState(config: Config, customerId: string, role: BehaviorCase["role"]): Promise<{
+export async function profileEvaluationState(config: Config, customerId: string, role: BehaviorCase["role"]): Promise<{
   anchors: number; revisions: number; accepted: number; knownIds: Set<string>;
   allRevisionIds: Set<string>; allRecordIds: Set<string>; allReceiptKeys: Set<string> }> {
   const client = new Client({ connectionString: config.DATABASE_URL });
@@ -163,6 +166,11 @@ async function profileState(config: Config, customerId: string, role: BehaviorCa
       SELECT r.id FROM profile_records r JOIN profile_revisions v
         ON v.id=r.current_accepted_revision_id
       WHERE r.customer_id=$1 AND ($2::boolean OR
+        (v.audience='delivery' AND v.data_category='delivery_context'))
+      UNION
+      SELECT r.workload_id AS id FROM profile_records r JOIN profile_revisions v
+        ON v.id=r.current_accepted_revision_id
+      WHERE r.customer_id=$1 AND r.workload_id IS NOT NULL AND ($2::boolean OR
         (v.audience='delivery' AND v.data_category='delivery_context'))
       UNION
       SELECT v.id FROM evidence_source_revisions v
@@ -202,7 +210,7 @@ export async function runBehaviorCase(item: BehaviorCase, run: number,
     throw new Error("Behavior evaluation requires a local app origin");
   }
   const customerId = item.customerId ?? DEMO_IDS.sharedCustomer;
-  const before = await profileState(config, customerId, item.role);
+  const before = await profileEvaluationState(config, customerId, item.role);
   const signedIn = await fetch(new URL("/api/auth/login", origin), {
     method: "POST", headers: { origin: origin.origin, "content-type": "application/json" },
     body: JSON.stringify({ username: item.role, password: passwordFor(config, item.role) }),
@@ -370,6 +378,35 @@ export async function runBehaviorCase(item: BehaviorCase, run: number,
     .map((entry) => entry.payload.message ?? "").join("\n");
   const modelSteps = await completedModelSteps(config, conversationId);
   const maxStepTokens = feature === "004" ? await maxStepOutputTokens(config,conversationId) : undefined;
+  let reviewData:Record<string,unknown>|undefined;
+  const reviewRoot=process.env.TURAS_016_BEHAVIOR_CAPTURE_ROOT;
+  if(reviewRoot){
+    await mkdir(reviewRoot,{recursive:true,mode:0o700});
+    const rawReplyPath=join(reviewRoot,`${item.id}-${run}-raw-reply.json`),rawReply=privateBehaviorJson({contract:'behavior-review-raw-reply-v1',caseId:item.id,run,feature,conversationId,nativeSessionId:nativeId,response,history,modelSteps,terminal});
+    if(Buffer.byteLength(rawReply)>16777216)throw Error('Behavior raw reply evidence exceeds bound');
+    await writeFile(rawReplyPath,rawReply,{flag:'wx',mode:0o600});
+    const client=new Client({connectionString:config.DATABASE_URL});await client.connect();
+    try{
+      const attempt=(await client.query(`SELECT a.id,a.native_turn_id FROM response_attempts a JOIN submitted_messages m ON m.id=a.message_id
+        WHERE a.conversation_id=$1 AND m.request_key=$2`,[conversationId,requestKey])).rows[0];
+      if(!attempt)throw Error('Exact behavior review attempt absent');
+      const events=await readBehaviorReviewEvents(reviewRoot,attempt.id,nativeId);
+      if(events.filter(row=>row.record.event.type==='step.completed').length!==modelSteps)throw Error('Behavior observer completed-step evidence differs');
+      const state=await profileEvaluationState(config,customerId,item.role),newRevisions=[...state.allRevisionIds].filter(id=>!before.allRevisionIds.has(id)),newReceipts=[...state.allReceiptKeys].filter(id=>!before.allReceiptKeys.has(id));
+      const proposals=(await client.query(`SELECT v.id,v.record_id,v.payload,v.submission_channel,v.origin,v.author_membership_id,v.source_references,v.content_digest,
+        r.current_accepted_revision_id,d.decision,s.version_id,s.run_id,s.ranges,s.excerpt_digest,s.lifecycle_generation
+        FROM profile_revisions v JOIN profile_records r ON r.id=v.record_id LEFT JOIN profile_review_decisions d ON d.revision_id=v.id
+        LEFT JOIN artifact_evidence_selections s ON s.profile_revision_id=v.id WHERE v.customer_id=$1 AND v.id=ANY($2::uuid[]) ORDER BY v.id`,[customerId,newRevisions])).rows;
+      const receipts=(await client.query('SELECT id,request_key,action,result,status FROM profile_command_receipts WHERE customer_id=$1 AND request_key=ANY($2::uuid[]) ORDER BY id',[customerId,newReceipts])).rows;
+      const customerSnapshots=(await client.query(`SELECT id,audience,generation,as_of,valid_until,snapshot_digest,citation_ids,complete,truncated,snapshot
+        FROM context_snapshot_receipts WHERE attempt_id=$1 AND conversation_id=$2`,[attempt.id,conversationId])).rows;
+      const customerInjections=(await client.query('SELECT turn_id,snapshot_digest FROM context_injection_receipts WHERE attempt_id=$1 ORDER BY turn_id',[attempt.id])).rows;
+      const artifactContext=feature==='004'?(await client.query(`SELECT r.id,r.injection_digest,r.selection_refs,r.selected_unit_count,r.selected_char_count,p.envelope
+        FROM artifact_context_receipts r LEFT JOIN artifact_context_payloads p ON p.receipt_id=r.id WHERE r.attempt_id=$1 AND r.conversation_id=$2`,[attempt.id,conversationId])).rows:[];
+      reviewData={contract:'behavior-review-evidence-v1',caseId:item.id,run,feature,conversationId,nativeSessionId:nativeId,attemptId:attempt.id,nativeTurnId:attempt.native_turn_id,rawReply:{path:rawReplyPath,digest:createHash('sha256').update(rawReply).digest('hex')},
+        before:{revisions:before.revisions,accepted:before.accepted},after:{revisions:state.revisions,accepted:state.accepted},events,proposals,receipts,customerSnapshots,customerInjections,artifactContext,artifactSelection};
+    }finally{await client.end();}
+  }
   let staleSessionBlocked = true;
   let staleHistoryStatus: number | undefined;
   let staleSendStatus: number | undefined;
@@ -400,15 +437,24 @@ export async function runBehaviorCase(item: BehaviorCase, run: number,
       signal: AbortSignal.timeout(10_000) });
     staleHistoryStatus = staleHistory.status;
     staleSendStatus = staleSend.status;
+    if(reviewData)reviewData.withdrawal={historyStatus:staleHistory.status,sendStatus:staleSend.status,historySuppressed:staleHistorySafe};
     staleSessionBlocked = staleHistorySafe && staleSend.status === 409;
   }
-  const after = await profileState(config, customerId, item.role);
+  const after = await profileEvaluationState(config, customerId, item.role);
   const secretValues = [config.DATABASE_URL, config.DATABASE_URL_UNPOOLED,
     config.TURAS_MAINTENANCE_SECRET, config.TURAS_DEMO_PASSWORD,
-    config.PANEL_PASSWORD, config.PARTNER_PASSWORD, process.env.AI_GATEWAY_API_KEY]
+    config.PANEL_PASSWORD, config.PARTNER_PASSWORD, process.env.AI_GATEWAY_API_KEY,process.env.CONTEXT_API_KEY]
     .filter((value): value is string => typeof value === "string" && value.length > 0);
   const citedIds = response.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi) ?? [];
+  let reviewEvidence:BehaviorResult['reviewEvidence'];
+  if(reviewData&&reviewRoot){
+    await mkdir(reviewRoot,{recursive:true,mode:0o700});
+    const content=privateBehaviorJson(reviewData);
+    if(Buffer.byteLength(content)>16777216)throw Error('Behavior review evidence exceeds bound');
+    const path=join(reviewRoot,`${item.id}-${run}.json`);await writeFile(path,content,{flag:'wx',mode:0o600});reviewEvidence={path,digest:createHash('sha256').update(content).digest('hex')};
+  }
   return { caseId: item.id, run, role: item.role, conversationId, response, outputTokens,
+    ...(reviewEvidence?{reviewEvidence}:{}),
     ...(researchRunId ? { researchRunId } : {}),
     ...(staleHistoryStatus !== undefined ? { staleHistoryStatus,staleSendStatus } : {}),
     ...(maxStepTokens !== undefined ? { maxStepOutputTokens: maxStepTokens } : {}),

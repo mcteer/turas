@@ -1,3 +1,4 @@
+import {withOperationalIo} from '../operations/admission';
 import { createHash, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
@@ -80,7 +81,7 @@ export async function uploadImportOriginal(actor: StaffingActor, rawId: unknown,
     await reserveStaffingRate(db, actor, "write");
     return intent;
   });
-  const store = new WorkforceStore(), staged = await store.stage(bytes, Number(snapshot.expected_bytes));
+  const store = new WorkforceStore(), staged = await withOperationalIo(()=>store.stage(bytes, Number(snapshot.expected_bytes)));
   let retained = false;
   try {
     if (staged.contentDigest !== snapshot.expected_digest) throw new HttpFailure(422, "invalid_input", "Original digest differs from declaration");
@@ -95,7 +96,7 @@ export async function uploadImportOriginal(actor: StaffingActor, rawId: unknown,
       } else if (intent.uploaded_digest !== staged.contentDigest) throw new HttpFailure(409, "source_changed", "Uploaded original changed");
       return { importId, sourceId: intent.source_id, generation: Number(intent.generation), state: "uploaded" };
     });
-  } finally { if (!retained) await store.remove(staged.key, "staged"); }
+  } finally { if (!retained) await withOperationalIo(()=>store.remove(staged.key, "staged"),true); }
 }
 export async function completeImport(actor: StaffingActor, rawId: unknown, raw: unknown) {
   const importId = parseStaffing(staffingIdSchema, rawId), input = parseStaffing(workforceImportCompletionSchema, raw);
@@ -114,7 +115,7 @@ export async function completeImport(actor: StaffingActor, rawId: unknown, raw: 
     }
     try { await preflightArtifact(bytes, snapshot.filename, workforceMime(snapshot.format)); }
     catch { throw new HttpFailure(422, "invalid_input", "Unsupported or malformed workforce original"); }
-    await store.finalize(snapshot.staged_object_key, importId, input.contentDigest);
+    await withOperationalIo(()=>store.finalize(snapshot.staged_object_key!, importId, input.contentDigest));
   }
   // All filesystem/preflight work completed before opening the mutation transaction.
   return runStaffingCommand(actor, { ...input, importId, action: "import_complete" },
@@ -164,3 +165,5 @@ export async function readImportOriginal(actor: StaffingActor, rawId: unknown) {
   });
   return { bytes, filename: identity.filename, mime: workforceMime(identity.format) };
 }
+
+export async function workforceUploadSnapshot(actor:StaffingActor,importId:string){return withTransaction(async db=>{await lockStaffingActor(db,actor,'manager',{write:true});const intent=await lockImportIntent(db,actor,importId);requireUploadable(intent);return {sizeBytes:Number(intent.expected_bytes),expiresAt:intent.expires_at,generation:Number(intent.generation),mime:workforceMime(intent.format)};});}

@@ -36,7 +36,7 @@ export default function CustomersPage() {
     <main className="profile-page customer-directory">
       <header className="profile-header directory-header"><div><p className="profile-eyebrow">Workspace</p><h1>Customers</h1>
       <p className="muted">Customer knowledge, reviewed evidence, and delivery in one place.</p></div>
-      <span className="profile-badge">Synthetic workspace</span></header>
+      </header>
       {state === "loading" && <p role="status">Loading customers…</p>}
       {state === "unavailable" && <p role="alert">Customers are unavailable. <button onClick={() => void load()}>Retry</button></p>}
       {state === "ready" && items.length === 0 && <EmptyState icon="customers" title="No customers are assigned to this account.">Assigned customer profiles will appear here.</EmptyState>}

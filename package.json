@@ -62,13 +62,13 @@
     "eval": "eve eval",
     "start": "eve start",
     "typecheck": "tsc",
-    "test:unit": "vitest run tests/unit --exclude 'tests/unit/execution-*.test.ts' --exclude 'tests/unit/gap-*.test.ts' --exclude 'tests/unit/partner-*.test.ts'",
-    "test:integration": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/reset-test-profile-rates.ts && node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run tests/integration --exclude 'tests/integration/plan-*.test.ts' --exclude 'tests/integration/staffing-*.test.ts' --exclude 'tests/integration/execution-*.test.ts' --exclude 'tests/integration/report-*.test.ts' --exclude 'tests/integration/support-*.test.ts' --exclude 'tests/integration/expansion-*.test.ts' --exclude 'tests/integration/gap-*.test.ts' --exclude 'tests/integration/partner-*.test.ts' --exclude 'tests/integration/learning-*.test.ts' --exclude 'tests/integration/mcp/**'",
+    "test:unit": "vitest run tests/unit --exclude 'tests/unit/execution-*.test.ts' --exclude 'tests/unit/gap-*.test.ts' --exclude 'tests/unit/partner-*.test.ts' --exclude 'tests/unit/pilot/**'",
+    "test:integration": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/reset-test-profile-rates.ts && node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run tests/integration --exclude 'tests/integration/plan-*.test.ts' --exclude 'tests/integration/staffing-*.test.ts' --exclude 'tests/integration/execution-*.test.ts' --exclude 'tests/integration/report-*.test.ts' --exclude 'tests/integration/support-*.test.ts' --exclude 'tests/integration/expansion-*.test.ts' --exclude 'tests/integration/gap-*.test.ts' --exclude 'tests/integration/partner-*.test.ts' --exclude 'tests/integration/learning-*.test.ts' --exclude 'tests/integration/mcp/**' --exclude 'tests/integration/pilot/**'",
     "test:performance": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/benchmark-shell.ts",
     "smoke:local:live": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/smoke-local-live.ts",
     "eval:behavior:local": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/eval-behavior-local.ts",
     "eval:behavior:verify": "node node_modules/tsx/dist/cli.mjs scripts/verify-behavior-review.ts",
-    "test:contracts": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/reset-test-profile-rates.ts && node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run tests/contracts --exclude 'tests/contracts/plan-*.test.ts' --exclude 'tests/contracts/staffing-*.test.ts' --exclude 'tests/contracts/execution-*.test.ts' --exclude 'tests/contracts/report-*.test.ts' --exclude 'tests/contracts/support-*.test.ts' --exclude 'tests/contracts/expansion-*.test.ts' --exclude 'tests/contracts/gap-*.test.ts' --exclude 'tests/contracts/partner-*.test.ts' --exclude 'tests/contracts/mcp/**'",
+    "test:contracts": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/reset-test-profile-rates.ts && node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run tests/contracts --exclude 'tests/contracts/plan-*.test.ts' --exclude 'tests/contracts/staffing-*.test.ts' --exclude 'tests/contracts/execution-*.test.ts' --exclude 'tests/contracts/report-*.test.ts' --exclude 'tests/contracts/support-*.test.ts' --exclude 'tests/contracts/expansion-*.test.ts' --exclude 'tests/contracts/gap-*.test.ts' --exclude 'tests/contracts/partner-*.test.ts' --exclude 'tests/contracts/mcp/**' --exclude 'tests/contracts/pilot/**'",
     "test:ui": "node --env-file-if-exists=.env.local node_modules/@playwright/test/cli.js test",
     "workspace:ui:check": "node --env-file-if-exists=.env.local --import tsx scripts/check-workspace-ui.ts",
     "test:staffing": "node --env-file-if-exists=.env.local --import tsx scripts/test-staffing.ts",
@@ -140,17 +140,42 @@
     "mcp:recovery:check": "node --import tsx scripts/mcp-recovery.ts",
     "benchmark:mcp": "node --import tsx scripts/benchmark-mcp.ts",
     "build:mcp:check": "node --import tsx scripts/check-mcp-build.ts",
-    "test:mcp:regressions": "node --import tsx scripts/test-mcp-regressions.ts"
+    "test:mcp:regressions": "node --import tsx scripts/test-mcp-regressions.ts",
+    "pilot:check": "node --import tsx scripts/pilot-readiness.ts",
+    "typecheck:pilot": "tsc -p tsconfig.pilot.json",
+    "test:pilot": "node --import tsx scripts/test-pilot.ts",
+    "pilot:ui:check": "node --import tsx scripts/check-pilot-ui.ts",
+    "pilot:recovery:check": "node --import tsx scripts/pilot-recovery.ts",
+    "pilot:lifecycle:check": "node --import tsx scripts/pilot-lifecycle.ts",
+    "benchmark:pilot": "node --import tsx scripts/benchmark-pilot.ts",
+    "pilot:hosted:check": "node --import tsx scripts/pilot-hosted.ts",
+    "pilot:backup": "node --import tsx scripts/pilot-backup.ts",
+    "pilot:provision": "node --import tsx scripts/provision-pilot-workspace.ts",
+    "pilot:feedback": "node --import tsx scripts/pilot-feedback.ts",
+    "pilot:regressions": "node --import tsx scripts/check-pilot-regressions.ts",
+    "pilot:ci:evidence": "node --import tsx scripts/pilot-ci-evidence.ts",
+    "pilot:health": "node --import tsx scripts/pilot-health.ts",
+    "pilot:cost": "node --import tsx scripts/pilot-cost.ts",
+    "check:pilot-regressions": "node --import tsx scripts/check-pilot-regressions.ts",
+    "pilot:quality": "node --import tsx scripts/pilot-quality.ts",
+    "pilot:quality:live": "node --import tsx scripts/pilot-quality-live.ts",
+    "pilot:recovery:authority": "node --import tsx scripts/pilot-recovery-authority.ts",
+    "pilot:recovery:workflow": "node --import tsx scripts/pilot-managed-workflow-close.ts",
+    "pilot:storage:copy": "node --import tsx scripts/pilot-storage-migrate.ts",
+    "pilot:faults": "node --import tsx scripts/pilot-faults.ts",
+    "pilot:control": "node --import tsx scripts/pilot-control.ts"
   },
   "dependencies": {
     "@js-temporal/polyfill": "0.5.1",
     "@modelcontextprotocol/server": "2.3.1",
     "@vercel/analytics": "2.0.1",
+    "@vercel/blob": "2.8.1",
     "@vercel/connect": "2.2.0",
+    "@vercel/sandbox": "3.6.1",
     "ai": "^7.0.105",
     "eve": "^0.67.1",
     "ipaddr.js": "2.5.0",
-    "next": "16.3.4",
+    "next": "16.3.8",
     "node-pg-migrate": "9.0.0",
     "parse5": "8.0.0",
     "pg": "8.23.0",
@@ -168,6 +193,7 @@
     "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "axe-core": "4.13.0",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
     "vitest": "5.0.2"
@@ -178,6 +204,10 @@
   "overrides": {
     "pptxgenjs": {
       "image-size": "2.0.4"
-    }
+    },
+    "eve": {
+      "undici": "8.10.2"
+    },
+    "source-map-js": "1.2.2"
   }
 }

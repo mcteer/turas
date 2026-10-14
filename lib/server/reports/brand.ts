@@ -5,6 +5,7 @@ import type {PoolClient} from 'pg';
 import {z} from 'zod';
 import {HttpFailure} from '../../contracts/http';
 import {reportDigest} from './commands';
+import {executionBackend} from '../jobs/backend';
 const assetSchema=z.strictObject({path:z.string().regex(/^report-templates\/(?:assets|fonts)\/[a-zA-Z0-9._-]+\.(?:svg|png|ttf|otf)$|^report-templates\/[a-zA-Z0-9._-]+\.ts$/),sha256:z.string().regex(/^[a-f0-9]{64}$/),source:z.string().min(1).max(1000)});
 export const brandManifestSchema=z.strictObject({schemaVersion:z.literal('report-brand-v1'),name:z.string().min(1).max(200),version:z.number().int().positive(),state:z.literal('draft'),officialCorporateMaster:z.literal(false),editingRequirement:z.string().min(1).max(500),guidelines:z.literal('https://vercel.com/geist/brands'),assets:z.array(assetSchema).min(4).max(20)});
 export async function verifiedBundledBrand(){
@@ -17,7 +18,9 @@ export async function verifiedBundledBrand(){
    const bytes=await readFile(file);if(createHash('sha256').update(bytes).digest('hex')!==asset.sha256)throw new HttpFailure(503,'brand_unapproved','Brand asset changed');
   if(asset.path.endsWith('.svg') && /<(?:script|foreignObject)|(?:href|src)\s*=|on\w+\s*=/i.test(bytes.toString('utf8')))throw new HttpFailure(503,'brand_unapproved','Unsafe brand asset');
  }
- const rendererImage=process.env.TURAS_REPORT_RENDERER_IMAGE??null;if(rendererImage!==null && !/^sha256:[a-f0-9]{64}$/.test(rendererImage))throw new HttpFailure(503,'brand_unapproved','Immutable renderer image required');
+ const rendererImage=process.env.TURAS_PILOT_RENDERER_IMAGE??process.env.TURAS_REPORT_RENDERER_IMAGE??null;
+ const pinned=executionBackend()==='sandbox'?/^vcr\.vercel\.com\/[a-zA-Z0-9_/-]+@sha256:[a-f0-9]{64}$/:/^sha256:[a-f0-9]{64}$/;
+ if(rendererImage!==null&&!pinned.test(rendererImage))throw new HttpFailure(503,'brand_unapproved','Immutable renderer image required');
  const enginePaths=['report-renderer/layout.ts','report-renderer/render.ts','report-renderer/validate.py'];
   const rendererCodeDigest=reportDigest(await Promise.all(enginePaths.map(async path=>({path,sha256:createHash('sha256').update(await readFile(join(resolve('report-renderer'),path.slice('report-renderer/'.length)))).digest('hex')}))));
  const profileManifest={bundle:manifest,bundleDigest:reportDigest(manifest),rendererImage,rendererCodeDigest};

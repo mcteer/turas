@@ -3,8 +3,8 @@ import { HttpFailure } from "../../contracts/http";
 import { checkSessionCsrf } from "../auth/csrf";
 import { getCurrentSession, type CurrentSession } from "../auth/sessions";
 
-export async function artifactSession(request: Request, command = false): Promise<CurrentSession> {
-  const actor = await getCurrentSession(request);
+export async function artifactSession(request: Request, command = false, cancellation=false): Promise<CurrentSession> {
+  const actor = await getCurrentSession(request,cancellation?"cancellation":"ordinary");
   if (!actor) throw new HttpFailure(401, "authentication_required", "Sign in required");
   if (command) checkSessionCsrf(request, actor);
   return actor;
@@ -32,12 +32,15 @@ export function artifactId(id: string): string {
 
 export async function* requestBytes(request: Request): AsyncGenerator<Uint8Array> {
   if (!request.body) throw new HttpFailure(400, "missing_body", "Upload body required");
-  const reader = request.body.getReader();
+  const reader = request.body.getReader(),deadline=AbortSignal.timeout(300000),signal=AbortSignal.any([request.signal,deadline]);
+  const abort=()=>{void reader.cancel().catch(()=>undefined);};signal.addEventListener('abort',abort,{once:true});
   try {
+    signal.throwIfAborted();
     while (true) {
       const result = await reader.read();
+      if(signal.aborted)throw new HttpFailure(503,'upload_deadline','Upload deadline exceeded');
       if (result.done) break;
       yield result.value;
     }
-  } finally { reader.releaseLock(); }
+  } finally { signal.removeEventListener('abort',abort);await reader.cancel().catch(()=>undefined);reader.releaseLock(); }
 }

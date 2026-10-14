@@ -12,6 +12,26 @@ facts and decisions become accepted.
 TAM/support guidance (010), product expansion (011), product gaps (012) and partner enablement (013) are implemented. Local validation and basic hosted smoke
 checks do not establish full Production workflow readiness. See the
 [roadmap](ROADMAP.md) and feature validation records under [`specs/`](specs/).
+Feature 016 pilot hardening is in progress; its local checkpoints do not establish
+full hosted pilot readiness. [Draft PR 32](https://github.com/mcteer/turas/pull/32)
+is the implementation checkpoint. All 43 required CI jobs passed at `94d3dc3`
+(run `38326648341`); the subsequent storage/recovery checkpoint has a
+657-case local pass, not new CI proof. Current recovery, hosted processing and
+participant acceptance remain release blockers.
+The owned recovery command now applies independently retained current denials and
+audits actual permanent request fences, preserving committed denials across failed
+audits. It remains an isolated recovery step; service recovery and hosted acceptance
+are pending.
+
+The current complete local checkpoint passes 703 cases across 129 suites at
+`d3e8f8b`. Further staffing/runtime and hosted-chain implementation requires
+fresh complete proof. The earlier actual-model batch failed 003's citation gate,
+and independent LLM review failed one 002 capability reply. Instruction corrections
+require fresh verification; the capped evaluation has spent $1.806543 and no
+Context credits. Hosted recovery and participant acceptance remain open.
+The unused recovery operator project was removed on 2026-10-14 at the user's
+direction; recovery keys and the archive were preserved. See the
+[operations record](docs/pilot-operations.md#work-controlled-neon-archive-destination).
 
 Recent Conversations provides owner-private Archive and Restore controls. Archived
 chats remain available in Archived Conversations and retain their history.
@@ -147,9 +167,52 @@ disabled. See [learning operations](docs/learning-operations.md), the
 [validation record](specs/014-governed-adaptive-learning/validation.md) and
 [handoff](specs/014-governed-adaptive-learning/handoff.md) for current local, actual-model, CI and hosted validation status.
 
+### Pilot Hardening and Launch Readiness
+
+Feature 016 has a [specification](specs/016-pilot-hardening/spec.md),
+[implementation plan](specs/016-pilot-hardening/plan.md) and
+[91 tasks](specs/016-pilot-hardening/tasks.md) for a controlled internal and
+assigned-partner pilot. The plan covers a synthetic Production pilot workspace,
+workspace-bound sessions, durable private files and hosted processing, recovery,
+retention, access, operating limits and attributable user feedback. Implementation
+is in progress, with 63 of 91 tasks complete. The complete local catalog passed
+640/640 named cases and all 43 required CI jobs passed at `08ef152`; full
+predecessor composition, WebKit, recovery/lifecycle and build gates are green.
+Owned load, dependency-fault and encrypted capture checks are recorded in the
+[validation record](specs/016-pilot-hardening/validation.md). These checks do not
+finish the remaining storage/recovery/hosted journey implementation or authorize
+a pilot release.
+A separate work-controlled Neon archive contains an authenticated encrypted
+Production database safety copy. Its disposable restore verified content and the
+055→057 migrations while keeping runtime access locked; this is database-only
+proof, not a completed Production backup service. Minimized Production denial/
+replay metadata is separately encrypted and retained beyond backup expiry;
+restored-target reconciliation remains unfinished. A separate locked-owner audit
+now checks request fences against independently authenticated current archive
+bytes and actual replay functions, triggers, indexes and immutable protections;
+it does not clear recovery holds or settle unknown provider effects.
+The independent archive also retains governed native cancellation intents and
+terminal provenance; old hosted native work has not yet been retired. The current
+runner covers exact HTTP profile review and the pinned MCP consumer, while the
+remaining linked hosted journeys are still being implemented. A registered owned
+HTTP check now links reviewed profiles and cited plans to delivery activity and
+normal report publication, with actual PDF/PPTX rendering and authenticated file reads.
+The extended check reviews a located uploaded source and verifies that normal
+withdrawal blocks its citations and derived report files. Separate milestone review
+now exercises explicit start, review request and acceptance against reviewed activity.
+An additional normal HTTP check publishes and assigns a partner guide, records a
+partner demonstration and requires mcteer verification; withdrawing its source
+removes current learning credit. These are owned synthetic checks, with no real
+participant feedback or skills certification.
+Report source checks now reconcile a cited plan's current retrieval digest as
+well as direct profile digests, preserving audience and withdrawal fences.
+Recovery authority, hosted services, scheduled backups and actual participant
+acceptance remain pending; local checks do not establish pilot readiness. See the
+[handoff](specs/016-pilot-hardening/handoff.md) for scope and execution gates.
+
 ## Technology
 
-TypeScript, Next.js 16, React 19, eve and PostgreSQL 17 with pgvector. Development
+TypeScript, Next.js 16, React 19, eve and PostgreSQL 17/18 with pgvector. Development
 uses Node.js 24 and npm. Versions are pinned in [`package-lock.json`](package-lock.json).
 
 ## Getting Started
@@ -418,3 +481,21 @@ its immutable batch receipt and current source eligibility agree. A bounded sour
 selector keeps operator indexing within this public inventory; existing private
 source and synthetic-worker restrictions remain in place.
 This command neither approves private context nor publishes cross-customer learning.
+
+The 016 full 003 evaluation may use its separately authorized 32-step allowance;
+ordinary 003 evaluation retains 14 steps. This supplement preserves the original
+shared model/research budget and requires fresh committed deterministic proof.
+Capture and independent review both validate this allowance through the explicit
+private operator runtime; the current deterministic inventory is 697 cases in
+125 suites. The complete 683-case checkpoint passes at ef4ea5b; fresh complete
+proof is required for the linked journeys, streamed headers, configuration readback
+and finite dispatch-count changes.
+
+Independent semantic evaluation may use the separately requested LLM judge with
+actual captures and governing rubrics. Human operator and pilot observations remain
+required. Quality setup verifies actual 016 container ownership, native clone startup,
+fixture scope and worker budget-guard inheritance before further paid execution.
+Quality stages retain private source-bound workspaces and native captures until
+independent review, including retrieval query, citation and partner-scope evidence.
+Temporary containers and app processes still clean up after each stage.
+Evaluation clones initialize their evidence roots in clean owned environments.

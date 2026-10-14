@@ -1,3 +1,4 @@
+import {insertBoundFixtureSession} from "../bound-session";
 import { randomUUID, createHash } from "node:crypto";
 import type { PoolClient } from "pg";
 import { withTransaction } from "../../../lib/server/db/client";
@@ -31,7 +32,7 @@ export async function seedSupportBenchmark() {
       const loginName = `support_load_${randomUUID().slice(0, 8)}`;
       await db.query("INSERT INTO principals(id,login_name,display_name) VALUES($1,$2,'Synthetic support load user')", [principalId, loginName]);
       await db.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role) VALUES($1,$2,$3,'internal','member')", [membershipId, principalId, reviewer.workspaceId]);
-      await db.query("INSERT INTO login_sessions(id,principal_id,token_hash,expires_at) VALUES($1,$2,$3,now()+interval '2 hours')", [sessionId, principalId, createHash("sha256").update(sessionId).digest("hex")]);
+      await insertBoundFixtureSession(db,{id:sessionId,principalId,membershipId,workspaceId:reviewer.workspaceId,tokenHash:createHash("sha256").update(sessionId).digest("hex"),expiresAt:new Date(Date.now()+7200000)});
       users.push({ ...users[0], principalId, membershipId, sessionId, loginName, displayName: "Synthetic support load user", expiresAt: new Date(Date.now() + 7200000), token: "fixture" });
     }
     const observationDate = new Date().toISOString().slice(0, 10);

@@ -62,12 +62,12 @@ async function cleanupCauseCurrent(db:PoolClient,j:ExecutionCleanupJob) {
   if(j.cause_kind==="milestone_baseline")return !!(await db.query(`SELECT 1 FROM milestone_baselines b JOIN engagements e ON e.id=b.engagement_id
     WHERE b.id=$1 AND b.baseline_number=$2 AND b.content_digest=$3 AND e.active_baseline_id=b.id`,[id,j.source_generation,j.cause_digest])).rowCount;
   if(j.cause_kind==="advice")return !!(await db.query(`SELECT 1 FROM execution_advice_attempts a JOIN execution_advice_bindings b ON b.id=a.binding_id
-    JOIN conversations c ON c.id=a.conversation_id JOIN login_sessions s ON s.id=c.context_login_session_id
+    JOIN conversations c ON c.id=a.conversation_id JOIN login_sessions s ON s.id=c.context_login_session_id AND s.membership_id=a.owner_membership_id AND s.workspace_id=c.workspace_id AND s.principal_id=c.owner_principal_id
     JOIN execution_workspaces w ON w.engagement_id=b.engagement_id JOIN engagements e ON e.id=b.engagement_id
     WHERE a.id=$1 AND b.generation=$2 AND a.request_digest=$3 AND a.state IN('prepared','running','completed') AND s.revoked_at IS NULL
       AND s.expires_at>clock_timestamp() AND c.context_valid_until>clock_timestamp() AND w.generation=b.generation AND e.active_baseline_id=b.baseline_id`,[id,j.source_generation,j.cause_digest])).rowCount;
   const kind=j.cause_kind==="shared_knowledge"?"published_shared":j.cause_kind;
-  return await originalCurrent(db,{source_kind:kind,source_revision_id:id,source_generation:j.source_generation,source_digest:j.cause_digest}) &&
+  return await originalCurrent(db,{source_kind:kind,source_revision_id:id,source_generation:j.source_generation,source_digest:j.cause_digest},j.workspace_id) &&
     !await confirmedConflictAfter(db,kind,id,new Date(0));
 }
 export async function finishExecutionCleanup(job:ExecutionCleanupJob):Promise<boolean> {
@@ -103,9 +103,9 @@ export async function queueExpiredExecutionAdvice():Promise<number> {
     if(!await executionMaintenanceReady(db))return 0;
     const rows=(await db.query(`SELECT a.id FROM execution_advice_attempts a JOIN execution_advice_bindings b ON b.id=a.binding_id
       JOIN conversations c ON c.id=a.conversation_id JOIN execution_workspaces w ON w.engagement_id=b.engagement_id
-      LEFT JOIN login_sessions s ON s.id=c.context_login_session_id
+      LEFT JOIN login_sessions s ON s.id=c.context_login_session_id AND s.membership_id=a.owner_membership_id AND s.workspace_id=c.workspace_id AND s.principal_id=c.owner_principal_id
       WHERE a.environment_id=$1 AND (a.state IN('failed','cancelled','expired') OR c.context_valid_until<=clock_timestamp()
-        OR s.revoked_at IS NOT NULL OR s.expires_at<=clock_timestamp() OR w.generation<>b.generation)
+        OR s.id IS NULL OR s.revoked_at IS NOT NULL OR s.expires_at<=clock_timestamp() OR w.generation<>b.generation)
         AND NOT EXISTS(SELECT 1 FROM execution_advice_retirements r WHERE r.attempt_id=a.id)
         AND NOT EXISTS(SELECT 1 FROM execution_cleanup_jobs j WHERE j.payload_kind='advice' AND j.revision_id=a.id AND j.state<>'stale')
       ORDER BY a.created_at,a.id LIMIT 100`,[getServerConfig().TURAS_ENVIRONMENT_ID])).rows;

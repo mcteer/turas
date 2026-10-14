@@ -1,0 +1,126 @@
+import {qualityChildEnvironment} from "./pilot-quality-runtime";
+import {recoveryPostgresImage,type RecoveryPostgresMajor} from '../lib/server/operations/postgres-version';
+import { pilotProtectedSnapshot } from "./pilot-preservation";
+import { randomBytes, randomUUID, createHash } from 'node:crypto';
+import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
+import { mkdir, mkdtemp, rm, symlink, readFile, writeFile, rename } from 'node:fs/promises';
+import { resolve, join } from 'node:path';
+import { Pool } from 'pg';
+import { copyOwnedEvalFiles } from './eval-owned-copy';
+import { reserveOwnedEvalPort } from './eval-port';
+import { closeRuntimePool } from '../lib/server/db/client';
+
+export function requireOwnedPilotDatabase(env: NodeJS.ProcessEnv = process.env, owner = false) {
+ const raw = env[owner ? 'DATABASE_URL_UNPOOLED' : 'DATABASE_URL'];
+ if (!raw || env.TURAS_PILOT_OWNED !== '1' || !env.TURAS_ENVIRONMENT_ID?.startsWith('test-pilot-') ||
+     env.TURAS_TEST_ENVIRONMENT_ID !== env.TURAS_ENVIRONMENT_ID) throw Error('Pilot checks require the owning runner');
+ const url = new URL(raw);
+ if (!['postgres:', 'postgresql:'].includes(url.protocol) || url.hostname !== '127.0.0.1' ||
+     !/^\/turas_test_016_eval_[a-f0-9]{12}$/.test(url.pathname)) throw Error('Pilot checks require an owned loopback database');
+ return raw;
+}
+export type PilotEnvironment = { appRoot: string; storeRoot: string; workflowRoot: string; origin: string;
+ databaseContainer:string; databaseOwnerLabel:string; appPid:()=>number|null; workerPid:()=>number|null; databaseName: string; environmentId: string; signal:AbortSignal; start: () => Promise<void>; startProduction:()=>Promise<void>; startProductionNative:()=>Promise<void>; startNative:()=>Promise<void>; startWorker: () => Promise<void>; crashWorker: () => Promise<void>; startSupervisor: () => Promise<void>; stop: () => Promise<void>;
+ backupRestore:()=>Promise<void>; stopDatabase:()=>Promise<void>; startDatabase:()=>Promise<void>; restartDatabase:()=>Promise<void>; upgradeToCurrent: () => Promise<void> };
+const safeParentKeys = ['PATH','HOME','TMPDIR','LANG','LC_ALL','SYSTEMROOT'] as const;
+export function pilotParentEnvironment(environment:Record<string,string|undefined>=process.env):NodeJS.ProcessEnv{
+ // Object.assign(process.env, {TMPDIR: undefined}) creates the string
+ // "undefined". On Linux that turns os.tmpdir() into a relative mount path.
+ return {...Object.fromEntries(safeParentKeys.filter(key=>environment[key]!==undefined).map(key=>[key,environment[key]])),NODE_ENV:'test'};
+}
+function command(cmd: string, args: string[], env: NodeJS.ProcessEnv, cwd = process.cwd(), timeout = 120_000) {
+ const result = spawnSync(cmd,args,{cwd,env,encoding:'utf8',timeout,maxBuffer:1_000_000});
+ if (result.error || result.status !== 0) {
+  writeFileSync(resolve('local-artifacts/016/setup-error.log'),(result.stdout??'')+(result.stderr??''),{mode:0o600});
+  // The full private diagnostic may belong to a clone removed by cleanup. Keep
+  // only a fixed classification in the parent suite report, never arguments,
+  // connection strings, environment values or arbitrary dependency error prose.
+  const binary=['docker','git','node'].includes(cmd.split('/').pop()??'')?cmd.split('/').pop():'command';
+  const operation=binary==='docker'&&['run','port','inspect','stop','start','restart','exec','rm'].includes(args[0])?args[0]:'setup';
+  const failureCode=(result.error as NodeJS.ErrnoException|undefined)?.code;
+  const text=(result.stderr??'')+'\n'+(result.stdout??'');
+  const detail=/address already in use|port is already allocated/i.test(text)?'port_collision':/is already in use by container/i.test(text)?'container_collision':/no space left on device/i.test(text)?'disk_exhausted':/Cannot connect to the Docker daemon|error during connect/i.test(text)?'daemon_unavailable':/No such image|Unable to find image/i.test(text)?'image_unavailable':failureCode==='ETIMEDOUT'?'command_timeout':failureCode==='ENOENT'?'client_unavailable':'dependency_failed';
+  throw Error(`Owned pilot setup failed: ${binary} ${operation} ${detail}`);
+ }
+ return result.stdout.trim();
+}
+export async function withPilotEnvironment<T>(run: (environment: PilotEnvironment) => Promise<T>, options: { priorSchema?: 38|55; postgresMajor?:RecoveryPostgresMajor; queryStatistics?:boolean; deadlineMs?: number } = {}): Promise<T> {
+ if (Number(process.versions.node.split('.')[0]) !== 24) throw Error('Pilot checks require Node 24');
+ if(options.priorSchema!==undefined&&![38,55].includes(options.priorSchema))throw Error('Explicit supported owned prior schema required');
+ const protectedBefore=await pilotProtectedSnapshot();
+ const digest = async () => createHash('sha256').update(await readFile('agent/agent.ts')).digest('hex');
+ const agentDigest = await digest(), previous = { ...process.env };
+ const codeVersion=command('git',['rev-parse','HEAD'],process.env);if(!/^[a-f0-9]{40}$/.test(codeVersion))throw Error('Exact owned source identity required');
+ const selectedHash=async()=>{try{return createHash('sha256').update(await readFile('.env.local')).digest('hex');}catch(error){if((error as {code?:string}).code==='ENOENT')return null;throw error;}};const selectedBefore=await selectedHash();
+ const safeEnv=pilotParentEnvironment();
+ const token = randomUUID().replaceAll('-','').slice(0,12), name = `turas_test_016_eval_${token}`,
+  container = `turas-016-check-${token}`, environmentId = `test-pilot-${token}`, password = randomBytes(24).toString('hex');
+ await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});
+ const root = await mkdtemp(resolve('local-artifacts/016/owned-')), appRoot=join(root,'app'),storeRoot=join(root,'reports'),artifactRoot=join(root,'artifacts'),workforceRoot=join(root,'workforce'),workflowRoot=join(appRoot,'.eve/.workflow-data');
+ const portLease = await reserveOwnedEvalPort();
+ const databasePortLease = await reserveOwnedEvalPort();
+ let created=false, child: ChildProcess | undefined,worker:ChildProcess|undefined,nativeChild:ChildProcess|undefined,appLog="",nativeLog="";
+ let nativePortLease:Awaited<ReturnType<typeof reserveOwnedEvalPort>>|undefined;
+ const cancellation=new AbortController();
+ const deadline=Date.now()+(options.deadlineMs ?? 300_000);
+ const remaining=()=>{cancellation.signal.throwIfAborted();const value=deadline-Date.now();if(value<=0)throw Error('Owned pilot check deadline exceeded');return value;};
+ let stopping:Promise<void>|null=null;
+ function stop(){if(stopping)return stopping;stopping=drainStop().finally(()=>{stopping=null;});return stopping;}
+ async function drainStop(){for(const current of [worker,child,nativeChild]){if(current&&current.exitCode===null&&current.signalCode===null)await new Promise<void>(done=>{const timer=setTimeout(()=>{current.kill('SIGKILL');done();},5000);current.once('exit',()=>{clearTimeout(timer);done();});current.kill('SIGTERM');});}worker=undefined;child=undefined;nativeChild=undefined;}
+ const interrupt=()=>{cancellation.abort(Error('Owned pilot check interrupted'));void stop();};process.once('SIGINT',interrupt);process.once('SIGTERM',interrupt);const watchdog=setTimeout(interrupt,Math.max(1,deadline-Date.now()));
+ try {
+  await databasePortLease.release();
+  created=true;command('docker',['run','--detach','--name',container,'--label',`turas.016.owner=${token}`,'--publish',`127.0.0.1:${databasePortLease.port}:5432`,'--env',`POSTGRES_PASSWORD=${password}`,'--env',`POSTGRES_DB=${name}`,recoveryPostgresImage(options.postgresMajor??17),...(options.queryStatistics?['postgres','-c','shared_preload_libraries=pg_stat_statements','-c','pg_stat_statements.track=all','-c','pg_stat_statements.max=10000']:[])],safeEnv);created=true;
+  const port=command('docker',['port',container,'5432/tcp'],safeEnv).split(':').at(-1)!;
+  const ownerUrl=`postgresql://postgres:${password}@127.0.0.1:${port}/${name}`;
+  const runtimeUrl=`postgresql://turas_runtime:${password}@127.0.0.1:${port}/${name}`;
+  const pool=new Pool({connectionString:ownerUrl,connectionTimeoutMillis:1000});
+  try{for(;;){remaining();try{await pool.query('SELECT 1');break;}catch{await new Promise(r=>setTimeout(r,250));}}
+   const sql=(await pool.query("SELECT format('CREATE ROLE turas_runtime LOGIN PASSWORD %L',$1::text) AS sql",[password])).rows[0].sql;await pool.query(sql);
+  }finally{await pool.end();}
+  await mkdir(artifactRoot,{mode:0o700});await writeFile(join(artifactRoot,'.turas-artifact-store.json'),JSON.stringify({version:1,environmentId}),{mode:0o600});await mkdir(workforceRoot,{mode:0o700});await writeFile(join(workforceRoot,'.turas-workforce-store.json'),JSON.stringify({environmentId}),{mode:0o600});
+  await mkdir(appRoot,{mode:0o700});await mkdir(storeRoot,{mode:0o700});await mkdir(workflowRoot,{recursive:true,mode:0o700});
+  for(const file of ['app','agent','lib','migrations','scripts','public','evals','tests','packages','infra','report-renderer','report-templates','next.config.ts','next-env.d.ts','playwright.config.ts','vitest.config.ts','tsconfig.json','tsconfig.pilot.json','package.json'])copyOwnedEvalFiles(resolve(file),join(appRoot,file),{excludeRuntime:true,deadlineAt:deadline});
+  await symlink(resolve('node_modules'),join(appRoot,'node_modules'));
+  await symlink(resolve('packages/artifact-extractor/node_modules'),join(appRoot,'packages/artifact-extractor/node_modules'));
+  await writeFile(join(storeRoot,'.turas-report-store.json'),JSON.stringify({environmentId}),{mode:0o600});await mkdir(join(storeRoot,'objects'),{mode:0o700});
+  const configPath=join(appRoot,'next.config.ts');const config=await readFile(configPath,'utf8');
+  // Nested owned scopes inherit the same physical dependency root.
+  // Add this configuration once; duplicate object keys fail production builds.
+  if(!config.includes('// owned-pilot-next-config-v1'))await writeFile(configPath,config.replace('const nextConfig: NextConfig = {',`const nextConfig: NextConfig = {\n  // owned-pilot-next-config-v1\n  devIndicators: false,\n  turbopack: { root: ${JSON.stringify(resolve('.'))} },`));
+  const origin=`http://127.0.0.1:${portLease.port}`;
+  const env={...safeEnv,TURAS_CODE_VERSION:codeVersion,DATABASE_URL:runtimeUrl,DATABASE_URL_UNPOOLED:ownerUrl,TURAS_TEST_DATABASE_URL:ownerUrl,TURAS_ENVIRONMENT_ID:environmentId,TURAS_TEST_ENVIRONMENT_ID:environmentId,TURAS_PILOT_OWNED:'1',TURAS_015_DISABLED:'0',TURAS_PRIVATE_OBJECT_BACKEND:'local',TURAS_JOB_EXECUTOR:'local',TURAS_APP_ORIGIN:origin,TURAS_EVE_INTERNAL_ORIGIN:origin+'/',TURAS_REPORT_STORE_ROOT:storeRoot,TURAS_ARTIFACT_STORE_ROOT:artifactRoot,TURAS_WORKFORCE_STORE_ROOT:workforceRoot,TURAS_MAINTENANCE_SECRET:randomBytes(32).toString('hex'),TURAS_012_RECEIPT_HASH_KEYS:JSON.stringify([randomBytes(32).toString('hex')]),TURAS_DEMO_USERNAME:'mcteer',TURAS_DEMO_PASSWORD:'SyntheticPilotPassword1!',PANEL_USERNAME:'panel',PANEL_PASSWORD:'SyntheticPilotPassword2!',PARTNER_USERNAME:'partner',PARTNER_PASSWORD:'SyntheticPilotPassword3!',TURAS_TEST_MODEL_MODE:'deterministic',NODE_ENV:'test',TURAS_REPORTS_ENABLED:'0',TURAS_REPORT_DELIVERY_ENABLED:'0'};
+  for(const key of Object.keys(process.env))delete process.env[key];Object.assign(process.env,env);
+  const manifestPath=join(appRoot,'migrations/manifest.json'),full=await readFile(manifestPath,'utf8');let future:string[]=[];
+  if(options.priorSchema){const prior=options.priorSchema,manifest=JSON.parse(full);future=manifest.migrations.filter((m:{file:string})=>Number(m.file.slice(0,3))>prior).map((m:{file:string})=>m.file);await mkdir(join(appRoot,'future'));for(const file of future)await rename(join(appRoot,'migrations',file),join(appRoot,'future',file));manifest.version=prior;manifest.migrations=manifest.migrations.filter((m:{file:string})=>Number(m.file.slice(0,3))<=prior);await writeFile(manifestPath,JSON.stringify(manifest));}
+  const script=(file:string,args:string[]=[])=>command(process.execPath,['--experimental-strip-types',file,...args],process.env,appRoot,Math.min(remaining(),120_000));
+  script('scripts/db-migrate.ts',['--init']);script('scripts/db-roles.ts');script('scripts/bootstrap-demo.ts');
+
+  let built=false;async function start(supervisor=false,production=false,native=false){remaining();if(child||nativeChild)throw Error('Owned pilot app already started');
+   if(production&&native){if(built)throw Error('Owned production native startup requires a fresh build');nativePortLease=await reserveOwnedEvalPort();process.env.EVE_NEXT_PRODUCTION_PORT=String(nativePortLease.port);}
+   if(production&&!built){child=spawn(process.execPath,['scripts/build-check.mjs'],{cwd:appRoot,env:{...process.env,NODE_ENV:'production'},stdio:['ignore','pipe','pipe']});for(const stream of [child.stdout,child.stderr])stream?.on('data',b=>{appLog=(appLog+b.toString()).slice(-100000);});const building=child,code=await new Promise<number|null>((done,reject)=>{building.once('error',reject);building.once('exit',done);});child=undefined;remaining();if(code!==0)throw Error('Owned production build failed');built=true;}
+   if(production&&native){
+    const lease=nativePortLease!;await lease.release();
+    nativeChild=spawn(process.execPath,[join(appRoot,'.output/server/index.mjs')],{cwd:appRoot,env:{...process.env,...await qualityChildEnvironment(),NODE_ENV:'production',HOST:'127.0.0.1',NITRO_HOST:'127.0.0.1',PORT:String(lease.port),NITRO_PORT:String(lease.port)},stdio:['ignore','pipe','pipe']});
+    for(const stream of [nativeChild.stdout,nativeChild.stderr])stream?.on('data',bytes=>{nativeLog=(nativeLog+bytes.toString()).slice(-100000);});
+    const readyUntil=Date.now()+Math.min(remaining(),60000);
+    while(!nativeLog.includes('http://127.0.0.1:'+lease.port)){remaining();if(nativeChild.exitCode!==null||Date.now()>readyUntil)throw Error('Owned production native service failed readiness');await new Promise(r=>setTimeout(r,200));}
+    process.env.TURAS_EVE_INTERNAL_ORIGIN='http://127.0.0.1:'+lease.port+'/';
+   }
+   await portLease.release();child=spawn(process.execPath,supervisor?['scripts/dev.mjs']:['node_modules/next/dist/bin/next',production?'start':'dev',...(production?[]:['--webpack']),'--port',String(portLease.port)],{cwd:appRoot,env:{...process.env,PORT:String(portLease.port),NODE_ENV:production?'production':'development',...await qualityChildEnvironment()},stdio:['ignore','pipe','pipe']});let tail='';for(const stream of [child.stdout,child.stderr])stream?.on('data',b=>{tail=(tail+b.toString()).slice(-100000);appLog=tail;const listening=/server listening at (http:\/\/127\.0\.0\.1:\d+)\//.exec(tail);if(listening)process.env.TURAS_EVE_INTERNAL_ORIGIN=listening[1]+'/';});
+   while(remaining()>0){if(child.exitCode!==null)break;try{const r=await fetch(`${origin}/api/auth/session`,{signal:AbortSignal.timeout(2000)});await r.body?.cancel();if(r.status===401&&(!native||production||/server listening at http:\/\/127\.0\.0\.1:\d+\//.test(appLog)))return;}catch{}await new Promise(r=>setTimeout(r,300));}
+   await writeFile(resolve('local-artifacts/016',`startup-${token}.log`),tail.replace(/(?:postgres(?:ql)?|https?):\/\/[^\s'"<>]+/g,'[redacted-url]'),{mode:0o600});throw Error('Owned pilot app failed readiness; inspect synthetic startup evidence');}
+  const databaseReady=async()=>{const probe=new Pool({connectionString:ownerUrl,connectionTimeoutMillis:1000});try{for(;;){remaining();try{await probe.query("SELECT 1");return;}catch{await new Promise(r=>setTimeout(r,250));}}}finally{await probe.end();}};
+  const databaseOwned=()=>{if(command('docker',['inspect','--format','{{index .Config.Labels "turas.016.owner"}}',container],safeEnv)!==token)throw Error('Owned database marker changed');};
+  const result=await run({stopDatabase:async()=>{remaining();databaseOwned();await closeRuntimePool();command('docker',['stop','--time','5',container],safeEnv);},startDatabase:async()=>{remaining();databaseOwned();command('docker',['start',container],safeEnv);await databaseReady();},backupRestore:async()=>{remaining();if(child||worker)throw Error("Stop owned app before restore");await closeRuntimePool();command("docker",["exec",container,"pg_dump","--username=postgres","--dbname="+name,"--format=custom","--file=/tmp/pilot-owned.dump"],safeEnv);command("docker",["exec",container,"pg_restore","--username=postgres","--dbname="+name,"--clean","--if-exists","--exit-on-error","/tmp/pilot-owned.dump"],safeEnv);command("docker",["exec",container,"rm","/tmp/pilot-owned.dump"],safeEnv);},restartDatabase:async()=>{remaining();databaseOwned();await closeRuntimePool();command("docker",["restart",container],safeEnv);await databaseReady();},appRoot,storeRoot,workflowRoot,origin,databaseContainer:container,databaseOwnerLabel:token,appPid:()=>child?.pid??null,workerPid:()=>worker?.pid??null,databaseName:name,environmentId,signal:cancellation.signal,start:()=>start(),startNative:()=>start(false,false,true),startProduction:()=>start(false,true),startProductionNative:()=>start(false,true,true),startSupervisor:()=>start(true),crashWorker:async()=>{remaining();if(!worker)throw Error('Owned worker not running');const current=worker;worker=undefined;current.kill('SIGKILL');if(current.exitCode===null)await new Promise<void>(done=>current.once('exit',()=>done()));},startWorker:async()=>{remaining();if(worker)throw Error('Owned pilot worker already started');worker=spawn(process.execPath,['--import','tsx','scripts/maintenance-worker.ts'],{cwd:appRoot,env:{...process.env,...await qualityChildEnvironment()},stdio:'ignore'});const ready=new Pool({connectionString:ownerUrl,connectionTimeoutMillis:1000});try{const workerDeadline=Math.min(deadline,Date.now()+30000);for(;;){remaining();if(worker.exitCode!==null)throw Error('Owned pilot worker failed startup');const heartbeat=await ready.query("SELECT 1 FROM maintenance_workers WHERE environment_id=$1 AND last_seen_at>=clock_timestamp()-interval '15 seconds' LIMIT 1",[environmentId]);if(heartbeat.rowCount)break;if(Date.now()>=workerDeadline)throw Error('Owned pilot worker heartbeat unavailable');await new Promise(r=>setTimeout(r,100));}}finally{await ready.end();}},stop,upgradeToCurrent:async()=>{remaining();if(!future.length)throw Error('No owned prior-schema fixture');for(const file of future)await rename(join(appRoot,'future',file),join(appRoot,'migrations',file));future=[];await writeFile(manifestPath,full);script('scripts/db-migrate.ts');script('scripts/db-roles.ts');}});remaining();return result;
+ } finally {
+  clearTimeout(watchdog);process.removeListener('SIGINT',interrupt);process.removeListener('SIGTERM',interrupt);
+  await portLease.release();await databasePortLease.release();await nativePortLease?.release();await stop();await closeRuntimePool();if(nativeLog)await writeFile(resolve('local-artifacts/016',`native-${token}.log`),nativeLog.replace(/(?:postgres(?:ql)?|https?):\/\/[^\s'"<>]+/g,'[redacted-url]'),{mode:0o600});if(appLog)await writeFile(resolve('local-artifacts/016',`runtime-${token}.log`),appLog.replace(/(?:postgres(?:ql)?|https?):\/\/[^\s'"<>]+/g,'[redacted-url]'),{mode:0o600});for(const key of Object.keys(process.env))delete process.env[key];Object.assign(process.env,previous);
+  if(created){const inspected=spawnSync('docker',['inspect','--format',`{{index .Config.Labels "turas.016.owner"}}`,container],{env:safeEnv,encoding:'utf8',timeout:30000});if(inspected.status===0){if(inspected.stdout.trim()!==token)throw Error('Owned pilot container marker changed; cleanup refused');command('docker',['rm','--force','--volumes',container],safeEnv);}else if(!/No such (?:object|container)/i.test(inspected.stderr??''))throw Error('Owned pilot resource cleanup could not be verified');}
+  await rm(root,{recursive:true,force:true,maxRetries:5,retryDelay:200});
+  if(await selectedHash()!==selectedBefore)throw Error('Selected configuration changed during pilot check');
+  if(await digest()!==agentDigest)throw Error('Root agent changed during pilot check');
+  if(JSON.stringify(await pilotProtectedSnapshot())!==JSON.stringify(protectedBefore))throw Error('Protected root state changed during pilot check');
+ }
+}

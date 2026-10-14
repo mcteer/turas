@@ -111,3 +111,7 @@ html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 .gap-report-values dd { margin: .35rem 0 1rem; white-space: pre-wrap; }
 .gap-report-values dl { padding-left: .75rem; border-left: 1px solid var(--border); }
 .gap-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+
+.pilot-workspace-banner { margin: 1rem 1.5rem 0; padding: .625rem .875rem; border: 1px solid var(--border); border-radius: .5rem; font-size: .8125rem; font-weight: 600; }
+
+@media(max-width:767px) { .pilot-workspace-banner { margin: 4rem 1rem 0; } }

@@ -259,7 +259,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
         const native = route.handler;
         return { ...route, handler: async (request, args) => {
           try {
-            const session = await getCurrentSession(request);
+            const session = await getCurrentSession(request,"cancellation");
             if (!session) throw new HttpFailure(401, "authentication_required", "Sign in required");
             checkSessionCsrf(request, session);
             const raw = await request.text();

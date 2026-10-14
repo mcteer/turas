@@ -1,0 +1,10 @@
+import {it,expect,vi,beforeEach} from 'vitest';
+import {randomUUID} from 'node:crypto';
+const docker=vi.hoisted(()=>vi.fn());
+vi.mock('node:child_process',()=>({spawnSync:docker}));
+import {cleanupOwnedBackupContainer} from '../../../lib/server/operations/backup-container-cleanup';
+beforeEach(()=>docker.mockReset());
+it('removes anonymous volumes only after actual backup ownership inspection',()=>{const owner=randomUUID(),container='turas-016-pg-dump-'+owner;docker.mockReturnValueOnce({status:0,stdout:owner+'\n'}).mockReturnValueOnce({status:0});expect(cleanupOwnedBackupContainer(container,owner)).toBe('removed');expect(docker.mock.calls.map(call=>call.slice(0,2))).toEqual([['docker',['inspect','--format','{{index .Config.Labels "turas.016.backup-owner"}}',container]],['docker',['rm','--force','--volumes',container]]]);});
+it('rejects foreign labels and container identities without removing resources',()=>{const owner=randomUUID();docker.mockReturnValue({status:0,stdout:randomUUID()});expect(()=>cleanupOwnedBackupContainer('turas-016-pg-restore-'+owner,owner)).toThrow('ownership differs');expect(docker).toHaveBeenCalledTimes(1);docker.mockClear();expect(()=>cleanupOwnedBackupContainer('unrelated-container',owner)).toThrow('Exact owned');expect(docker).not.toHaveBeenCalled();});
+it('distinguishes already absent containers from failed ownership inspection',()=>{const owner=randomUUID(),container='turas-016-pg-dump-'+owner;docker.mockReturnValueOnce({status:1,stderr:'Error: No such object: '+container});expect(cleanupOwnedBackupContainer(container,owner)).toBe('already-absent');expect(docker).toHaveBeenCalledTimes(1);docker.mockReturnValueOnce({status:1,stderr:'Daemon unavailable'});expect(()=>cleanupOwnedBackupContainer(container,owner)).toThrow('inspection unavailable');expect(docker).toHaveBeenCalledTimes(2);});
+it('retains failed cleanup as an error rather than claiming resource removal',()=>{const owner=randomUUID();docker.mockReturnValueOnce({status:0,stdout:owner}).mockReturnValueOnce({status:1});expect(()=>cleanupOwnedBackupContainer('turas-016-pg-restore-'+owner,owner)).toThrow('cleanup unverified');});

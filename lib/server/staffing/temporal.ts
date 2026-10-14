@@ -1,4 +1,3 @@
-import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { HttpFailure } from "../../contracts/http";
@@ -20,7 +19,9 @@ let loaded: TemporalApi | undefined;
 function temporal(): TemporalApi {
   if (loaded) return loaded;
   try {
-    const localRequire = createRequire(resolve(process.cwd(), "package.json"));
+    // Obtain the native loader at runtime; bundlers can rewrite an imported
+    // createRequire call into a loader without Node's resolve method.
+    const localRequire = process.getBuiltinModule("node:module").createRequire(resolve(process.cwd(), "package.json"));
     const entry = localRequire.resolve("@js-temporal/polyfill");
     const metadata = JSON.parse(readFileSync(resolve(dirname(entry), "../package.json"), "utf8"));
     if (metadata.name !== "@js-temporal/polyfill" || metadata.version !== "0.5.1") throw new Error("Pinned version required");

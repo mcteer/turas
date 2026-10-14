@@ -1,4 +1,5 @@
 "use client";
+import {uploadPrivateOriginal} from "../direct-upload";
 
 import { useEffect, useState } from "react";
 import { SourceViewer, type DraftSourceSelection } from "./source-viewer";
@@ -99,8 +100,7 @@ export function ComposerAttachments({ conversationId, customerId, customerName, 
       for (const [index, selectedItem] of selected.entries()) {
         const intent = batch.intents[index];
         setItems((current) => current.map((item) => item.file === selectedItem.file ? { ...item, intent } : item));
-        const bytes = await fetch(`/api/artifacts/intents/${intent.id}/bytes`, { method: "PUT",
-          headers: { "content-type": "application/octet-stream", "x-csrf-token": csrfToken }, body: selectedItem.file });
+        const bytes = await uploadPrivateOriginal({domain:"artifact",id:intent.id,file:selectedItem.file,csrfToken,localContentType:"application/octet-stream"});
         if (!bytes.ok) throw new Error((await bytes.json() as { error: { message: string } }).error.message);
         const complete = await fetch(`/api/artifacts/intents/${intent.id}/complete`, { method: "POST",
           headers: { "content-type": "application/json", "x-csrf-token": csrfToken },

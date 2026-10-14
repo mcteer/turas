@@ -1,3 +1,4 @@
+import {insertBoundFixtureSession} from "./bound-session";
 import { DEMO_IDS } from "../../lib/server/bootstrap-ids";
 import { BOUNDARY_IDS } from "./identities";
 
@@ -60,9 +61,7 @@ export async function createProfileTestSession(client: PoolClient,
     partner: [DEMO_IDS.partner, DEMO_IDS.partnerMembership, "partner", "member"],
   }[login] as [string, string, CurrentSession["kind"], CurrentSession["role"]];
   const sessionId = randomUUID();
-  await client.query(`INSERT INTO login_sessions(id,principal_id,token_hash,expires_at)
-    VALUES ($1,$2,$3,now()+interval '1 hour')`,
-  [sessionId, identity[0], createHash("sha256").update(sessionId).digest("hex")]);
+  await insertBoundFixtureSession(client,{id:sessionId,principalId:identity[0],tokenHash:createHash("sha256").update(sessionId).digest("hex"),expiresAt:new Date(Date.now()+3600000),membershipId:identity[1],workspaceId:DEMO_IDS.workspace});
   return { sessionId, token: "fixture", expiresAt: new Date(Date.now() + 3_600_000),
     principalId: identity[0], membershipId: identity[1], workspaceId: DEMO_IDS.workspace,
     loginName: login, displayName: login, kind: identity[2], role: identity[3] };

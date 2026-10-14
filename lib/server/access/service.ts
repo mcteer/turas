@@ -1,3 +1,4 @@
+import {requireOperationalOpen} from '../operations/admission';
 import { createHash, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
@@ -28,6 +29,7 @@ function digest(value: unknown): string {
 }
 
 async function checkEnvironment(client: PoolClient): Promise<void> {
+  await requireOperationalOpen(client);
   const marker = await client.query<{ environment_id: string }>(
     "SELECT environment_id FROM turas_environment LIMIT 1",
   );
@@ -61,8 +63,8 @@ async function lockAdminAuthority(client: PoolClient, actorId: string, workspace
   if (!principal.rows[0]?.active) throw new HttpFailure(403, "forbidden", "Action not allowed");
   if (actorSessionId) {
     const session = await client.query<{ revoked_at: Date | null; expires_at: Date }>(
-      "SELECT revoked_at,expires_at FROM login_sessions WHERE id=$1 AND principal_id=$2 FOR UPDATE",
-      [actorSessionId, actorId]);
+      "SELECT revoked_at,expires_at FROM login_sessions WHERE id=$1 AND principal_id=$2 AND membership_id=$3 AND workspace_id=$4 FOR UPDATE",
+      [actorSessionId, actorId,actorMembershipId,workspaceId]);
     if (!session.rows[0] || session.rows[0].revoked_at || session.rows[0].expires_at.getTime() <= Date.now()) {
       throw new HttpFailure(401, "unauthorized", "Sign in again");
     }

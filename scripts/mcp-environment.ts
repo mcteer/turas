@@ -1,3 +1,4 @@
+import {requireOwnedPilotDatabase} from './pilot-environment';
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
@@ -9,6 +10,7 @@ import { reserveOwnedEvalPort } from './eval-port';
 import { closeRuntimePool } from '../lib/server/db/client';
 
 export function requireOwnedMcpDatabase(env: NodeJS.ProcessEnv = process.env, owner = false) {
+ if(env.TURAS_PILOT_OWNED==='1')return requireOwnedPilotDatabase(env,owner);
  const raw = env[owner ? 'DATABASE_URL_UNPOOLED' : 'DATABASE_URL'];
  if (!raw || env.TURAS_MCP_OWNED !== '1' || !env.TURAS_ENVIRONMENT_ID?.startsWith('test-mcp-') ||
      env.TURAS_TEST_ENVIRONMENT_ID !== env.TURAS_ENVIRONMENT_ID) throw Error('Mcp checks require the owning runner');
@@ -30,6 +32,7 @@ export async function withMcpEnvironment<T>(run: (environment: McpEnvironment) =
  if (Number(process.versions.node.split('.')[0]) !== 24) throw Error('Mcp checks require Node 24');
  const digest = async () => createHash('sha256').update(await readFile('agent/agent.ts')).digest('hex');
  const agentDigest = await digest(), previous = { ...process.env };
+ const codeVersion=command('git',['rev-parse','HEAD'],process.env);if(!/^[a-f0-9]{40}$/.test(codeVersion))throw Error('Exact owned source identity required');
  const selectedHash=async()=>{try{return createHash('sha256').update(await readFile('.env.local')).digest('hex');}catch(error){if((error as {code?:string}).code==='ENOENT')return null;throw error;}};const selectedBefore=await selectedHash();
  const safeEnv: NodeJS.ProcessEnv = { ...Object.fromEntries(safeParentKeys.map(k=>[k,process.env[k]])), NODE_ENV: 'test' };
  const token = randomUUID().replaceAll('-','').slice(0,12), name = `turas_test_015_eval_${token}`,
@@ -57,14 +60,14 @@ export async function withMcpEnvironment<T>(run: (environment: McpEnvironment) =
    const sql=(await pool.query("SELECT format('CREATE ROLE turas_runtime LOGIN PASSWORD %L',$1::text) AS sql",[password])).rows[0].sql;await pool.query(sql);
   }finally{await pool.end();}
   await mkdir(appRoot,{mode:0o700});await mkdir(storeRoot,{mode:0o700});await mkdir(workflowRoot,{recursive:true,mode:0o700});
-  for(const file of ['app','agent','lib','migrations','scripts','public','evals','tests','packages','report-renderer','report-templates','next.config.ts','next-env.d.ts','playwright.config.ts','tsconfig.json','package.json'])copyOwnedEvalFiles(resolve(file),join(appRoot,file),{excludeRuntime:true,deadlineAt:deadline});
+  for(const file of ['app','agent','lib','migrations','scripts','public','evals','tests','packages','infra','report-renderer','report-templates','next.config.ts','next-env.d.ts','playwright.config.ts','tsconfig.json','package.json'])copyOwnedEvalFiles(resolve(file),join(appRoot,file),{excludeRuntime:true,deadlineAt:deadline});
   await symlink(resolve('node_modules'),join(appRoot,'node_modules'));
   await symlink(resolve('packages/artifact-extractor/node_modules'),join(appRoot,'packages/artifact-extractor/node_modules'));
   await writeFile(join(storeRoot,'.turas-report-store.json'),JSON.stringify({environmentId}),{mode:0o600});await mkdir(join(storeRoot,'objects'),{mode:0o700});
   const configPath=join(appRoot,'next.config.ts');const config=await readFile(configPath,'utf8');
   await writeFile(configPath,config.replace('const nextConfig: NextConfig = {',`const nextConfig: NextConfig = {\n  turbopack: { root: ${JSON.stringify(resolve('.'))} },`));
   const origin=`http://127.0.0.1:${portLease.port}`;
-  const env={...safeEnv,DATABASE_URL:runtimeUrl,DATABASE_URL_UNPOOLED:ownerUrl,TURAS_TEST_DATABASE_URL:ownerUrl,TURAS_ENVIRONMENT_ID:environmentId,TURAS_TEST_ENVIRONMENT_ID:environmentId,TURAS_MCP_OWNED:'1',TURAS_015_DISABLED:'0',TURAS_APP_ORIGIN:origin,TURAS_EVE_INTERNAL_ORIGIN:origin+'/',TURAS_REPORT_STORE_ROOT:storeRoot,TURAS_MAINTENANCE_SECRET:randomBytes(32).toString('hex'),TURAS_012_RECEIPT_HASH_KEYS:JSON.stringify([randomBytes(32).toString('hex')]),TURAS_DEMO_USERNAME:'mcteer',TURAS_DEMO_PASSWORD:'SyntheticMcpPassword1!',PANEL_USERNAME:'panel',PANEL_PASSWORD:'SyntheticMcpPassword2!',PARTNER_USERNAME:'partner',PARTNER_PASSWORD:'SyntheticMcpPassword3!',TURAS_TEST_MODEL_MODE:'deterministic',NODE_ENV:'test',TURAS_REPORTS_ENABLED:'0',TURAS_REPORT_DELIVERY_ENABLED:'0'};
+  const env={...safeEnv,TURAS_CODE_VERSION:codeVersion,DATABASE_URL:runtimeUrl,DATABASE_URL_UNPOOLED:ownerUrl,TURAS_TEST_DATABASE_URL:ownerUrl,TURAS_ENVIRONMENT_ID:environmentId,TURAS_TEST_ENVIRONMENT_ID:environmentId,TURAS_MCP_OWNED:'1',TURAS_015_DISABLED:'0',TURAS_APP_ORIGIN:origin,TURAS_EVE_INTERNAL_ORIGIN:origin+'/',TURAS_REPORT_STORE_ROOT:storeRoot,TURAS_MAINTENANCE_SECRET:randomBytes(32).toString('hex'),TURAS_012_RECEIPT_HASH_KEYS:JSON.stringify([randomBytes(32).toString('hex')]),TURAS_DEMO_USERNAME:'mcteer',TURAS_DEMO_PASSWORD:'SyntheticMcpPassword1!',PANEL_USERNAME:'panel',PANEL_PASSWORD:'SyntheticMcpPassword2!',PARTNER_USERNAME:'partner',PARTNER_PASSWORD:'SyntheticMcpPassword3!',TURAS_TEST_MODEL_MODE:'deterministic',NODE_ENV:'test',TURAS_REPORTS_ENABLED:'0',TURAS_REPORT_DELIVERY_ENABLED:'0'};
   for(const key of Object.keys(process.env))delete process.env[key];Object.assign(process.env,env);
   const manifestPath=join(appRoot,'migrations/manifest.json'),full=await readFile(manifestPath,'utf8');let future:string[]=[];
   if(options.priorSchema){const manifest=JSON.parse(full);future=manifest.migrations.filter((m:{file:string})=>Number(m.file.slice(0,3))>54).map((m:{file:string})=>m.file);await mkdir(join(appRoot,'future'));for(const file of future)await rename(join(appRoot,'migrations',file),join(appRoot,'future',file));manifest.version=54;manifest.migrations=manifest.migrations.filter((m:{file:string})=>Number(m.file.slice(0,3))<=54);await writeFile(manifestPath,JSON.stringify(manifest));}

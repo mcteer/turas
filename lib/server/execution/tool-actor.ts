@@ -17,7 +17,7 @@ export async function boundExecutionToolActor(db: PoolClient, principal: Feature
   const row = (await db.query(`SELECT a.id,a.conversation_id,a.owner_membership_id,c.context_login_session_id,c.owner_principal_id,c.workspace_id,
     s.expires_at,p.login_name,p.display_name,m.kind,m.role FROM execution_advice_attempts a JOIN conversations c ON c.id=a.conversation_id
     JOIN response_attempts r ON r.id=a.response_attempt_id AND r.conversation_id=c.id JOIN memberships m ON m.id=a.owner_membership_id
-    JOIN principals p ON p.id=c.owner_principal_id JOIN login_sessions s ON s.id=c.context_login_session_id
+    JOIN principals p ON p.id=c.owner_principal_id JOIN login_sessions s ON s.id=c.context_login_session_id AND s.membership_id=m.id AND s.workspace_id=m.workspace_id
     WHERE a.response_attempt_id=$1 AND c.owner_principal_id=$2 AND a.environment_id=$3 AND c.environment_id=a.environment_id
       AND c.workspace_id=a.workspace_id AND m.workspace_id=c.workspace_id AND m.principal_id=c.owner_principal_id AND s.principal_id=c.owner_principal_id`,
     [responseAttemptId, principal!.principalId, getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
@@ -35,7 +35,7 @@ export async function boundExecutionToolActor(db: PoolClient, principal: Feature
   const attempt = (await db.query(`SELECT a.state,a.model_steps,a.read_calls,a.context_bytes,a.dependency_count,a.deadline_at,
     r.response_state,r.dispatch_state,r.native_turn_id,r.deadline_at AS response_deadline,c.context_valid_until,c.eve_session_id,c.binding_state,
     s.revoked_at,s.expires_at,clock_timestamp() AS now FROM execution_advice_attempts a JOIN response_attempts r ON r.id=a.response_attempt_id
-    JOIN conversations c ON c.id=a.conversation_id JOIN login_sessions s ON s.id=c.context_login_session_id WHERE a.id=$1 FOR UPDATE OF a`, [row.id])).rows[0];
+    JOIN conversations c ON c.id=a.conversation_id JOIN login_sessions s ON s.id=c.context_login_session_id AND s.membership_id=a.owner_membership_id AND s.workspace_id=c.workspace_id AND s.principal_id=c.owner_principal_id WHERE a.id=$1 FOR UPDATE OF a`, [row.id])).rows[0];
   if (!attempt || attempt.revoked_at || attempt.expires_at.getTime() <= attempt.now.getTime()) throw new HttpFailure(401, "unauthorized", "Sign in again");
   const incoming = options.release && typeof options.incomingTurnId === "string" && options.incomingTurnId.length > 0 && options.incomingTurnId.length <= 180 ? options.incomingTurnId : null;
   const completed = options.release && attempt.state === "completed" && attempt.response_state === "completed" && attempt.dispatch_state === "admitted";

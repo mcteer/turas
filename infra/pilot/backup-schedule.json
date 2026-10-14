@@ -1,0 +1,8 @@
+{
+  "contract": "pilot-backup-schedule-v1",
+  "intervalHours": 12,
+  "maximumAgeHours": 24,
+  "retentionDays": 7,
+  "deleteOperatorArchives": false,
+  "deleteIndependentAuthority": false
+}

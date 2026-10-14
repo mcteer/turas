@@ -13,11 +13,11 @@ import { admitMcpManagement } from "./limits";
 import { newMcpCredential } from "./credentials";
 
 function digest(value:unknown){return createHash('sha256').update(JSON.stringify(value)).digest('hex');}
-export type McpConnectionRow={id:string;name:string;categories:unknown;created_at:Date;expires_at:Date;revoked_at:Date|null;last_used_at:Date|null};
+export type McpConnectionRow={id:string;name:string;categories:unknown;created_at:Date;expires_at:Date;revoked_at:Date|null;last_used_at:Date|null;credential_hash?:string|null};
 export function connectionMetadata(row:McpConnectionRow){
   return mcpConnectionMetadataSchema.parse({id:row.id,name:row.name,categories:row.categories,
     createdAt:row.created_at.toISOString(),expiresAt:row.expires_at.toISOString(),revokedAt:row.revoked_at?.toISOString()??null,
-    lastUsedAt:row.last_used_at?.toISOString()??null,state:row.revoked_at?'revoked':row.expires_at.getTime()<=Date.now()?'expired':'active'});
+    lastUsedAt:row.last_used_at?.toISOString()??null,state:row.revoked_at?'revoked':row.expires_at.getTime()<=Date.now()?'expired':row.credential_hash===null?'revoked':'active'});
 }
 async function managementAdmission(actor:CurrentSession){
   if(isMcpReadActor(actor))throw new HttpFailure(403,'forbidden','Action not allowed');
@@ -45,7 +45,7 @@ export async function createMcpConnection(actor:CurrentSession,raw:McpCreateConn
     const requestDigest=digest({action:'create',...input.data}),previous=await receipt(db,actor,input.data.requestKey,requestDigest,'create');
     if(previous){const row=(await db.query('SELECT * FROM mcp_connections WHERE id=$1 AND membership_id=$2 AND workspace_id=$3',[previous.connection_id,actor.membershipId,actor.workspaceId])).rows[0];if(!row)throw hiddenRecord();return {connection:connectionMetadata(row),secretAvailable:false as const};}
     await assertMcpReady(db,true);
-    const count=(await db.query("SELECT count(*)::integer AS n FROM mcp_connections WHERE environment_id=$1 AND membership_id=$2 AND workspace_id=$3 AND revoked_at IS NULL AND expires_at>clock_timestamp()",[getServerConfig().TURAS_ENVIRONMENT_ID,actor.membershipId,actor.workspaceId])).rows[0].n;
+    const count=(await db.query("SELECT count(*)::integer AS n FROM mcp_connections WHERE environment_id=$1 AND membership_id=$2 AND workspace_id=$3 AND revoked_at IS NULL AND credential_hash IS NOT NULL AND expires_at>clock_timestamp()",[getServerConfig().TURAS_ENVIRONMENT_ID,actor.membershipId,actor.workspaceId])).rows[0].n;
     if(count>=10)throw new HttpFailure(409,'conflict','Active connection limit reached');
     for(const customerId of [...input.data.customerIds].sort())await lockProfileActor(db,actor,customerId);
     const credential=newMcpCredential(),scopeDigest=digest({categories:[...input.data.categories].sort(),customerIds:[...input.data.customerIds].sort()});

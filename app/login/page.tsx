@@ -6,7 +6,7 @@ export default function LoginPage() {
     <main className="login-page"><div className="login-card">
       <p className="login-brand"><BrandMark />Turas</p>
       <h1>Sign in</h1>
-      <p>Use a configured demo account to enter the synthetic workspace.</p>
+      <p>Use your configured account to enter an assigned workspace.</p>
       <LoginForm />
       <p className="login-footnote">Customer knowledge. Thoughtful delivery.</p>
     </div></main>
