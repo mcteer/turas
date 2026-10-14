@@ -29,6 +29,10 @@ templates and agent skills; do not rerun initialization over project policy.
 6. Run relevant checks and `$speckit-converge` when useful. Mark tasks complete
    only with evidence. Document skipped or unavailable checks and their impact.
 7. Open a PR using the template, link the spec, and explain resulting behavior.
+   Verify the exact PR commit in an authenticated Preview deployment before merge.
+   For UI changes, inspect its rendered layout and complete CLI Playwright/WebKit
+   checks against Preview; local builds and CI do not substitute for this review.
+   Record the Preview URL, commit, results and unresolved checks in the PR.
    Obtain maintainer review, address comments, and merge after checks pass. Do not
    bypass protection or self-report an independent review that did not occur.
 8. Complete the authorized release: apply required database migrations and runtime

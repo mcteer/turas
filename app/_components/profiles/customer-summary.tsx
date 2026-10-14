@@ -14,7 +14,7 @@ export function CustomerSummary({ facts, research, description, workloadId, deli
   const business = summary.description || description;
   return <section className="customer-summary" aria-labelledby="customer-overview-heading">
     <div className="customer-summary-heading"><h2 id="customer-overview-heading">Customer Overview</h2>
-      <span className="muted">{workloadId ? "Selected workload" : "Customer-wide maturity"}</span></div>
+      </div>
     {business && <p className="customer-business-summary">{business}</p>}
     <dl className="customer-summary-metrics">
       <div><dt><UiIcon name="customers" size={16} />Maturity</dt>
@@ -34,8 +34,8 @@ export function CustomerSummary({ facts, research, description, workloadId, deli
         <p>{delivery?.state === "review_required" ? "Engagement evidence needs review" : delivery?.state === "ready" ? "Based on current delivery records" : "Current delivery status is unavailable"}</p></dd>
       </div>
     </dl>
-    <div className="customer-product-footprint"><div><h3>Products</h3><p className="muted">Customer context and independently researched product evidence</p></div>
-      {summary.products.length + researchedProducts.length === 0 ? <p className="muted">No product use documented yet.</p> : <ul className="customer-product-list">
+    <div className="customer-product-footprint"><div><h3>Products</h3><p className="muted">Known products from customer records and research</p></div>
+      {summary.products.length + researchedProducts.length === 0 ? <p className="muted">The available evidence does not yet identify specific products in use.</p> : <ul className="customer-product-list">
         {summary.products.map(product => <li key={product.key}><span className="customer-product-chip">{product.name}</span><span className="muted">Reviewed use</span></li>)}
         {researchedProducts.map(product => <li key={product.name}><button type="button" className="customer-product-chip" onClick={() => onSource(product.sources[0].sourceRevisionId)}>{product.name}<UiIcon name="arrow" size={13} /></button><span className="muted">Researched · View source</span></li>)}
       </ul>}

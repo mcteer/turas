@@ -22,6 +22,7 @@ runtime grants as part of each schema-dependent release.
 
 ### Customer Profiles and Maturity
 
+Customer Overview appears immediately below the customer heading, above workload controls.
 Search the Customer Profiles directory and open profiles directly from customer
 names. The overview shows scoped maturity, current risks, active delivery and
 sourced products. Independently checked research is accepted factual context

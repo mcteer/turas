@@ -124,6 +124,8 @@ export function ProfileOverview({ customerId }: { customerId: string }) {
         <div className="profile-header-actions">{profile.customer.synthetic && <span className="profile-badge">Synthetic demo</span>}
           {profile.canReview && <Link className="secondary-button" href={`/customers/${customerId}/review`}>Review Proposals</Link>}</div>
       </header>
+      <CustomerSummary facts={profile.acceptedFacts} research={profile.attributedResearch} description={profile.publicResearchCoverage?.description}
+        workloadId={workloadId || null} delivery={profile.activeDelivery} onSource={setSelectedSourceId} />
       <div className="profile-toolbar"><label htmlFor="profile-workload">Workload</label>
         <select id="profile-workload" className="field" value={workloadId} onChange={(event) => setWorkloadId(event.target.value)}>
           <option value="">All workloads</option>
@@ -131,8 +133,6 @@ export function ProfileOverview({ customerId }: { customerId: string }) {
         </select><Link className="secondary-button" href={`/s?customerId=${encodeURIComponent(customerId)}`}>Start Chat</Link>
         <Link className="secondary-button" href={`/customers/${customerId}/plans`}>Delivery Plans</Link>
         <Link className="secondary-button" href={`/customers/${customerId}/support`}>Support Guidance</Link>{internal&&<><Link className="secondary-button" href={`/customers/${customerId}/expansion`}>Expansion Opportunities</Link><Link className="secondary-button" href={`/customers/${customerId}/product-gaps`}>Product Gaps</Link></>}</div>
-      <CustomerSummary facts={profile.acceptedFacts} research={profile.attributedResearch} description={profile.publicResearchCoverage?.description}
-        workloadId={workloadId || null} delivery={profile.activeDelivery} onSource={setSelectedSourceId} />
       <EvidenceSearch customerId={customerId} workloadId={workloadId || undefined} />
       <TypedConflictReview customerId={customerId} canReview={profile.canReview} />
       {profile.acceptedFacts.length === 0 && <div className="profile-state"><h2>No Reviewed Human Claims Yet</h2><p>Human-submitted claims appear here after review. Independently checked research is available as factual context below.</p></div>}
