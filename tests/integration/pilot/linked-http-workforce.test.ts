@@ -1,3 +1,8 @@
+import {runHostedStaffingCommitment} from '../../../scripts/pilot-hosted-staffing';
+import {runHostedProfileFoundation} from '../../../scripts/pilot-hosted-foundation';
+import {runHostedPlanJourney} from '../../../scripts/pilot-hosted-plan';
+import {retrievalResponseSchema} from '../../../lib/contracts/retrieval';
+import {z} from 'zod';
 import {it,expect} from 'vitest';
 import {Client} from 'pg';
 import {randomUUID,createHash} from 'node:crypto';
@@ -34,6 +39,10 @@ it('reviews six located personnel cells through ordinary HTTP and keeps the orig
    const headers=new Headers({cookie:sessionCookieName()+'='+issued.token,origin:environment.origin,'content-type':'application/json','x-csrf-token':csrfTokenForSession(issued.token)});
    const scope={contract:'pilot-hosted-scope-v1',runId:randomUUID(),projectId:'prj_synthetic',teamId:'team_synthetic',deploymentId:'dpl_synthetic',origin:environment.origin,environmentMarker:environment.environmentId,workspaceId,target:'preview',sourceCommit:process.env.TURAS_CODE_VERSION!,sourceDigest:'a'.repeat(64),catalogDigest:'b'.repeat(64)} as PilotHostedScope;
    await closeRuntimePool();await environment.startProduction();
+   const trace=z.object({files:z.array(z.string())}).parse(JSON.parse(await readFile(join(environment.appRoot,".next/server/app/api/staffing/resources/[resourceId]/calendar/route.js.nft.json"),"utf8")));
+   expect(trace.files.some(file=>file.endsWith("/@js-temporal/polyfill/package.json"))).toBe(true);
+   expect(trace.files.some(file=>file.endsWith("/@js-temporal/polyfill/dist/index.cjs"))).toBe(true);
+   expect(trace.files.some(file=>file.includes("/jsbi/"))).toBe(true);
    const request=pilotHostedRequest({scope,headers,signal:environment.signal});
    const result=await runSyntheticWorkforceRecipe({scope,db:owner,signal:environment.signal,request,
     uploadOriginal:async(importId,bytes)=>uploadPilotOriginal({scope,headers,domain:'workforce',id:importId,bytes,contentType:'text/csv',signal:environment.signal,requireBlob:false}),
@@ -44,6 +53,12 @@ it('reviews six located personnel cells through ordinary HTTP and keeps the orig
    expect((await owner.query("SELECT count(*)::int AS n FROM retrieval_sources WHERE workspace_id=$1 AND source_revision_id=$2",[workspaceId,result.sourceVersionId])).rows[0].n).toBe(0);
    expect((await owner.query('SELECT count(*)::int AS n FROM profile_revisions WHERE workspace_id=$1',[workspaceId])).rows[0].n).toBe(0);
    const search=await request('/api/retrieval/search','POST',{scope:'customer',customerId,query:'PRIVATE_SYNTHETIC_PILOT_PERSONNEL_EVIDENCE',use:'discovery',limit:5}) as {data:{results:unknown[]}};expect(search.data.results).toEqual([]);
+   const foundation=await runHostedProfileFoundation({scope,db:owner,customerId,signal:environment.signal,request});
+   const retrieved=retrievalResponseSchema.parse(z.object({data:z.unknown()}).parse(await request('/api/retrieval/search','POST',{scope:'customer',customerId,workloadId:foundation.workloadId,query:'controlled synthetic workload serves synthetic public web requests',use:'discovery',limit:5})).data);
+   const citation=retrieved.results.find(row=>row.sourceRevisionId===foundation.profileRevisionId);if(!citation)throw Error('Ordinary reviewed staffing plan source required');
+   const plan=await runHostedPlanJourney({scope,db:owner,customerId,workloadId:foundation.workloadId,ownerMembershipId:membershipId,citationId:citation.citationId,expectedSourceRevisionId:foundation.profileRevisionId,signal:environment.signal,request});
+   const committed=await runHostedStaffingCommitment({scope,db:owner,customerId,workloadId:foundation.workloadId,engagementId:plan.engagementId,planId:plan.planId,baselineId:plan.baselineId,planRevisionId:plan.revisionId,resourceId:result.resourceId,skillId:result.skillId,request,signal:environment.signal});
+   expect(committed).toMatchObject({normalCommands:6,minutes:60,providerCalls:0,matchingIsNotConfirmationVerified:true,humanFeedbackRecorded:false});
   }finally{await owner.end();await closeRuntimePool();}
  },{postgresMajor:18,deadlineMs:300000});
 },300000);

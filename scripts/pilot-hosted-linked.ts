@@ -13,6 +13,7 @@ import {pilotHostedRequest} from './pilot-hosted-request';
 import {assertHostedPaidAdmission} from './pilot-hosted-paid';
 import {runHostedKnowledgeBaseline} from './pilot-hosted-knowledge';
 import {uploadPilotOriginal} from './pilot-original-upload';
+import {runHostedStaffingCommitment} from './pilot-hosted-staffing';
 import {runHostedWorkforceJourney} from './pilot-hosted-workforce';
 
 async function pause(signal:AbortSignal){
@@ -48,6 +49,7 @@ export async function runHostedLinkedJourney(input:{scope:PilotHostedScope;db:Cl
  if(search.mode!=='lexical_degraded')throw Error('No paid embedding admitted for this hosted infrastructure journey');
  const cited=search.results.find(row=>row.sourceRevisionId===source.profileRevisionId);if(!cited)throw Error('Ordinary exact reviewed source is not searchable');
  const plan=await runHostedPlanJourney({...input,workloadId:foundation.workloadId,citationId:cited.citationId,expectedSourceRevisionId:source.profileRevisionId,request});
+ const staffing=await runHostedStaffingCommitment({...input,workloadId:foundation.workloadId,engagementId:plan.engagementId,planId:plan.planId,baselineId:plan.baselineId,planRevisionId:plan.revisionId,resourceId:workforce.resourceId,skillId:workforce.skillId,request});
  const delivery=await runHostedDeliveryReview({...input,engagementId:plan.engagementId,baselineId:plan.baselineId,request});
  const milestone=await runHostedMilestoneReview({...input,engagementId:plan.engagementId,baselineId:plan.baselineId,activityRevisionId:delivery.revisionId,request});
  const artifactIds:string[]=[];
@@ -60,5 +62,5 @@ export async function runHostedLinkedJourney(input:{scope:PilotHostedScope;db:Cl
    }
   },readArtifact:async artifact=>{artifactIds.push(artifact.id);const actual=await bytes('/api/reports/artifacts/'+artifact.id,artifact.sizeBytes);if(actual.length!==artifact.sizeBytes||createHash('sha256').update(actual).digest('hex')!==artifact.contentDigest||actual.subarray(0,artifact.format==='pdf'?5:2).toString()!==(artifact.format==='pdf'?'%PDF-':'PK'))throw Error('Actual hosted report artifact differs');},
  });
- return {contract:'pilot-hosted-linked-chain-v1',customerId:input.customerId,foundation,source,workforce,knowledge,plan,delivery,milestone,reports,artifactIds,citationId:cited.citationId,normalReviewOnly:true,modelCalls:0,outboundSendAttempts:0,humanFeedbackRecorded:false,fullHostedCatalogVerified:false};
+ return {contract:'pilot-hosted-linked-chain-v1',customerId:input.customerId,foundation,source,workforce,knowledge,plan,staffing,delivery,milestone,reports,artifactIds,citationId:cited.citationId,normalReviewOnly:true,modelCalls:0,outboundSendAttempts:0,humanFeedbackRecorded:false,fullHostedCatalogVerified:false};
 }

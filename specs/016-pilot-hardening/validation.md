@@ -2297,3 +2297,46 @@ The source uploader now follows the normal UI capability/token/finish protocol a
 A new actual production-served owned HTTP check passes **1/1** through resource/skill creation, workforce CSV upload, genuine local scan/parse, all six literal cell identities, explicit resource/skill mapping and exact mcteer competency review. It reads and verifies the actual original bytes and proves no profile revision or customer retrieval source/result is created from personnel evidence. This does not establish staffing commitment, skills certification, actual participant observations or hosted processing. Hosted composition requires two additional actual workforce program/cost receipts, preserving the original 32-job total and every job/domain bound. The linked infrastructure chain now admits six expected program jobs rather than four; no job has run against Preview.
 
 The fixed inventory is **703 cases / 129 suites**. Root/pilot types and document hygiene pass. Fresh complete committed local/native/CI proof remains required; previous failed complete runs and development subsets are retained separately. The original model ledger/authorization is unchanged. Automatic feature-branch deployment remains disabled; no additional deployment is authorized by these changes.
+
+
+### 2026-10-13 complete local checkpoint and staffing runtime correction
+
+The complete owned deterministic run at `d3e8f8b32f9e8f187bc9134201ee62b0fd760443`
+passed **703/703 cases across 129 suites**. Its execution receipt is
+`local-artifacts/016/run-560e4eec-ec70-4b21-88a9-314710a13cf0/execution.json`,
+source digest `d506ee3729596982f55167f8f3ab99bdfc8a516c7ab0275bc39ba004b7f8ded7`,
+catalog digest `8ca16e0a0341351234f9ba81344cf7609b9d5b48fef89287fb2048f316d472b7`.
+This precedes the following source changes and does not validate them.
+
+CI run `38510918804` failed the predecessor MCP benchmark because its internal
+credential selected a delivery projection when both audience copies existed.
+The corrected fixture selects the internal copy explicitly. The governing
+`npm run benchmark:mcp` passed 100 real SDK reads in each of the five categories;
+server p95 values were profiles 49ms, evidence 59ms, knowledge 58ms, plans 45ms
+and reports 54ms. Each category denied its over-limit trial; quota resets and
+paid calls were zero. Private output: `mcp-benchmark-correction-20261013.log`.
+This is local proof and requires fresh CI on the resulting commit.
+
+The existing owned workforce HTTP case now continues through an ordinary reviewed
+profile and accepted plan, dated capacity, qualified demand, proposed allocation,
+exact confirmation preview and confirmation of 60 minutes. Personnel originals
+still do not become customer retrieval evidence. Its first three runtime attempts
+failed at calendar approval with HTTP 503; private logs are retained. A fixed
+stage diagnostic established that the built loader failed at `resolve` with a
+TypeError. Obtaining Node's native loader through `process.getBuiltinModule`
+restores the pinned resolver while preserving the package version and timezone
+checks. The temporary diagnostic was removed. The extended case passed 1/1 in
+`staffing-commitment-native-loader-20261013.log`. Explicit Next.js tracing retains
+the dynamically loaded polyfill and its dependency for staffing routes. The
+final extended case passed 1/1 after asserting the built calendar route trace
+contains the pinned package metadata, CommonJS entry and jsbi dependency
+(`staffing-commitment-runtime-trace-20261013.log`). Existing calendar resolution
+and contract regressions passed 12/12; root/pilot typechecks and documentation
+checks passed.
+
+The staffing commitment is composed into the hosted linked recipe without extra
+provider jobs. These are implementation/local results; no new hosted execution,
+model evaluation, participant feedback, deployment or release is claimed.
+Original Preview deployment overage and exhausted count remain recorded; automatic
+Git deployment for this branch stays disabled. Full current-source validation,
+CI, recovery/hosted acceptance and human observations remain open.
