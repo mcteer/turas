@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { checkMutationOrigin } from "../../lib/server/auth/csrf";
 import { parseArtifactStoreConfig, parseServerConfig } from "../../lib/server/config";
 import { chmodSync, mkdtempSync, mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -24,6 +25,18 @@ describe("server configuration", () => {
     expect(parseServerConfig(hosted).TURAS_APP_ORIGIN).toBe("https://turas-preview.vercel.app");
     expect(parseServerConfig({ ...hosted, VERCEL_ENV: "production" }).TURAS_APP_ORIGIN).toBe(valid.TURAS_APP_ORIGIN);
     expect(() => parseServerConfig({ ...hosted, VERCEL_URL: "attacker.example/path" })).toThrow("VERCEL_URL");
+  });
+  it("allows only the deployment and its exact platform-provided Preview branch origin", () => {
+    const hosted = { ...valid, VERCEL_ENV: "preview", VERCEL_URL: "turas-preview.vercel.app", VERCEL_BRANCH_URL: "turas-git-fix-team.vercel.app" };
+    const config = parseServerConfig(hosted);
+    for (const origin of ["https://turas-preview.vercel.app", "https://turas-git-fix-team.vercel.app"]) {
+      expect(() => checkMutationOrigin(new Request(origin + "/api/auth/login", { method: "POST", headers: { origin } }), config)).not.toThrow();
+    }
+    for (const origin of ["https://other.vercel.app", "https://turas-git-fix-team.vercel.app.attacker.example", "null"]) {
+      expect(() => checkMutationOrigin(new Request(config.TURAS_APP_ORIGIN, { method: "POST", headers: { origin, "x-forwarded-host": "turas-git-fix-team.vercel.app" } }), config)).toThrow("Request origin denied");
+    }
+    expect(() => parseServerConfig({ ...hosted, VERCEL_BRANCH_URL: "attacker.example/path" })).toThrow("VERCEL_BRANCH_URL");
+    expect(parseServerConfig({ ...hosted, VERCEL_ENV: "production", TURAS_PREVIEW_BRANCH_ORIGIN: "https://other.vercel.app" }).TURAS_PREVIEW_BRANCH_ORIGIN).toBeUndefined();
   });
   it("accepts complete explicit configuration", () => {
     expect(parseServerConfig(valid).TURAS_ENVIRONMENT_ID).toBe("local-002");

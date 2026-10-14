@@ -4,7 +4,9 @@ import { getServerConfig, type ServerConfig } from "../config";
 import type { CurrentSession } from "./sessions";
 
 export function checkMutationOrigin(request: Request, config: ServerConfig = getServerConfig()): void {
-  if (request.headers.get("origin") !== config.TURAS_APP_ORIGIN) {
+  const origin = request.headers.get("origin");
+  if (origin !== config.TURAS_APP_ORIGIN &&
+      (!config.TURAS_PREVIEW_BRANCH_ORIGIN || origin !== config.TURAS_PREVIEW_BRANCH_ORIGIN)) {
     throw new HttpFailure(403, "invalid_origin", "Request origin denied");
   }
 }

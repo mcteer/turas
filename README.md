@@ -22,6 +22,8 @@ runtime grants as part of each schema-dependent release.
 
 ### Customer Profiles and Maturity
 
+Preview login supports both the immutable deployment URL and its exact Vercel branch alias.
+
 Customer Overview appears immediately below the customer heading, above workload controls.
 Search the Customer Profiles directory and open profiles directly from customer
 names. The overview shows scoped maturity, current risks, active delivery and
