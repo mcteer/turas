@@ -1,3 +1,5 @@
+import { profileDeliverySummary } from "./delivery-summary";
+import { retrievalSourceHasMaterialConflict } from "../retrieval/search";
 import { readPublicCustomerCoverage } from "../research/public-read";
 import {lockLearningOriginalClosure} from '../learning/sources';
 import { getServerConfig } from "../config";
@@ -257,7 +259,14 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
           WHERE e.source_revision_id=v.id AND e.event_type IN ('withdraw','supersede'))
       ORDER BY v.created_at DESC,v.id DESC LIMIT 50`,
     [actor.workspaceId, customerId, allowInternal]);
-    const attributedResearch = research.rows.map((row) => {
+    const researchSchema = (await client.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0]?.schema_version ?? 0;
+    const eligibleResearch = [];
+    for (const row of research.rows) {
+      if (researchSchema >= 28 && await retrievalSourceHasMaterialConflict(client,
+        {source_kind:'verified_research',source_revision_id:row.id},actor,{scope:'customer',customerId})) continue;
+      eligibleResearch.push(row);
+    }
+    const attributedResearch = eligibleResearch.map((row) => {
       const checked = qualityInputSchema.safeParse(row.quality_input);
       const input = checked.success ? checked.data : unknownQualityInput;
       const date = input.dateBasis === "publication" ? row.publication_at :
@@ -266,6 +275,7 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
         informationType: input.informationType, dateBasis: input.dateBasis,
         evidenceAt: date, asOf: new Date() });
       return { sourceRevisionId: row.id, state: "researched", title: row.title,
+        acceptanceState: "accepted", acceptanceBasis: "independent_research",
         location: row.location, supportedClaim: row.supported_claim,
         publicationAt: row.publication_at?.toISOString() ?? null,
         observationAt: row.observation_at?.toISOString() ?? null,
@@ -289,7 +299,7 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
     return { customer: { id: customer.rows[0].id, displayName: customer.rows[0].display_name,
       synthetic: customer.rows[0].synthetic }, workloads: workloads.rows.map((row) => ({
       id: row.id, displayName: row.display_name, lifecycle: row.lifecycle })),
-      acceptedFacts, attributedResearch, publicResearchCoverage: await readPublicCustomerCoverage(client,actor,customerId),
+      acceptedFacts, attributedResearch, activeDelivery: await profileDeliverySummary(client,actor,customerId,selectedWorkloadId,allowInternal,customerWideOnly), publicResearchCoverage: await readPublicCustomerCoverage(client,actor,customerId),
       canReview,
       ...(openConflicts ? { openConflicts: openConflicts.rows.map((row) => ({
         id: row.id, state: row.state, version: Number(row.version),
@@ -455,8 +465,13 @@ export async function readProfileSource(actor: ProfileActor, customerId: string,
     const rated = rateEvidence({ R: input.R, D: input.D, C: input.C,
       informationType: input.informationType, dateBasis: input.dateBasis,
       evidenceAt: date, asOf: new Date() });
+    const researchSchema = (await client.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0]?.schema_version ?? 0;
+    const conflicted = researchSchema >= 28 && await retrievalSourceHasMaterialConflict(client,
+      {source_kind:'verified_research',source_revision_id:row.id},actor,{scope:'customer',customerId});
     return { sourceRevisionId: row.id, state: row.withdrawn ? "withdrawn" :
       row.superseded ? "superseded" : "researched",
+      acceptanceState: row.withdrawn || row.superseded || conflicted ? "unavailable" : "accepted",
+      acceptanceBasis: "independent_research", materialConflict: conflicted,
       title: row.title, location: row.location, passage: row.passage,
       supportedClaim: row.supported_claim, publicationAt: row.publication_at?.toISOString() ?? null,
       observationAt: row.observation_at?.toISOString() ?? null,

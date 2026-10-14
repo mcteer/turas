@@ -31,7 +31,8 @@ test("legacy landing and customer cards retain accessible scoped workflows", asy
   await page.getByRole("link", { name: "Customer Profiles", exact: true }).filter({ visible: true }).click();
   await expect(page.getByRole("dialog", { name: "Navigation" })).toHaveCount(0);
   await expect(page.locator(".customer-card").first()).toBeVisible();
-  await expect(page.getByRole("link", { name: "Open Profile" }).first()).toBeVisible();
+  await expect(page.locator(".customer-card h2 a").first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open Profile" })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   const axe = await new AxeBuilder({ page }).analyze();
   expect(axe.violations.filter(v => ["serious", "critical"].includes(v.impact ?? ""))).toEqual([]);

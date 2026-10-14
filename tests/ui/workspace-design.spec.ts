@@ -24,7 +24,7 @@ test("workspace screens retain usable controls and accessible layouts", async ({
   test.setTimeout(180_000);
   await signIn(page, "mcteer");
   const screens = [
-    ["/customers", "Customers", "customers"],
+    ["/customers", "Customer Profiles", "customers"],
     [`/customers/${DEMO_IDS.sharedCustomer}`, "Cedar (synthetic)", "profile"],
     [`/customers/${DEMO_IDS.sharedCustomer}/plans`, "Delivery Plans", "plans"],
     [`/customers/${DEMO_IDS.sharedCustomer}/plans/new`, "New Plan", "plan-editor"],
