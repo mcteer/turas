@@ -23,11 +23,12 @@ audits actual permanent request fences, preserving committed denials across fail
 audits. It remains an isolated recovery step; service recovery and hosted acceptance
 are pending.
 
-The current full local checkpoint passes 672 cases across 118 suites at `5c6a6d5`.
-The earlier actual-model batch failed 003's citation gate, and independent LLM
-review failed one 002 capability reply. Instruction corrections require fresh
-verification; the capped evaluation has spent $1.806543 and no Context credits.
-Unknown and withheld identifiers still fail the evaluator.
+The current complete local checkpoint passes 697 cases across 125 suites at
+`82790cc`. Further normal-review/retrieval and hosted-chain implementation requires
+fresh complete proof. The earlier actual-model batch failed 003's citation gate,
+and independent LLM review failed one 002 capability reply. Instruction corrections
+require fresh verification; the capped evaluation has spent $1.806543 and no
+Context credits. Hosted recovery and participant acceptance remain open.
 
 Recent Conversations provides owner-private Archive and Restore controls. Archived
 chats remain available in Archived Conversations and retain their history.
@@ -167,11 +168,11 @@ disabled. See [learning operations](docs/learning-operations.md), the
 
 Feature 016 has a [specification](specs/016-pilot-hardening/spec.md),
 [implementation plan](specs/016-pilot-hardening/plan.md) and
-[84 tasks](specs/016-pilot-hardening/tasks.md) for a controlled internal and
+[91 tasks](specs/016-pilot-hardening/tasks.md) for a controlled internal and
 assigned-partner pilot. The plan covers a synthetic Production pilot workspace,
 workspace-bound sessions, durable private files and hosted processing, recovery,
 retention, access, operating limits and attributable user feedback. Implementation
-is in progress, with 63 of 84 tasks complete. The complete local catalog passed
+is in progress, with 63 of 91 tasks complete. The complete local catalog passed
 640/640 named cases and all 43 required CI jobs passed at `08ef152`; full
 predecessor composition, WebKit, recovery/lifecycle and build gates are green.
 Owned load, dependency-fault and encrypted capture checks are recorded in the

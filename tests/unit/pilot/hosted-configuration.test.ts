@@ -1,7 +1,7 @@
 import {it,expect} from 'vitest';
 import {readHostedConfiguration,verifyHostedConfiguration} from '../../../lib/server/operations/hosted-configuration';
 const image=(kind:string)=>'vcr.vercel.com/synthetic/turas/'+kind+'@sha256:'+'a'.repeat(64);
-const env={TURAS_ENVIRONMENT_ID:'synthetic-preview',VERCEL_PROJECT_ID:'prj_synthetic',VERCEL_TEAM_ID:'team_synthetic',BLOB_STORE_ID:'store_synthetic',TURAS_PRIVATE_OBJECT_BACKEND:'blob',TURAS_JOB_EXECUTOR:'sandbox',TURAS_PILOT_HOSTED_JOBS_ENABLED:'1',TURAS_PILOT_SCANNER_IMAGE:image('scanner'),TURAS_PILOT_PARSER_IMAGE:image('parser'),TURAS_PILOT_RENDERER_IMAGE:image('renderer'),TURAS_PILOT_JOB_COST_JSON:'{"maximumDispatches":32}'};
+const env={TURAS_ENVIRONMENT_ID:'synthetic-preview',VERCEL_PROJECT_ID:'prj_synthetic',VERCEL_TEAM_ID:'team_synthetic',BLOB_STORE_ID:'store_synthetic',TURAS_PRIVATE_OBJECT_BACKEND:'blob',TURAS_JOB_EXECUTOR:'sandbox',TURAS_PILOT_HOSTED_JOBS_ENABLED:'1',TURAS_PILOT_SCANNER_IMAGE:image('scanner'),TURAS_PILOT_PARSER_IMAGE:image('parser'),TURAS_PILOT_RENDERER_IMAGE:image('renderer'),TURAS_PILOT_JOB_COST_JSON:"{\"maximumDispatches\":32,\"budgetId\":\"00000000-0000-4000-8000-000000000001\",\"scopeDigest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"pricingDigest\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}"};
 it('reports only explicit runtime identities and limits without credential material',()=>{
  const result=readHostedConfiguration({...env,VERCEL_TOKEN:'private-provider-key',BLOB_READ_WRITE_TOKEN:'private-store-key',DATABASE_URL:'private-database',VERCEL_OIDC_TOKEN:'private-oidc'});
  expect(result).toMatchObject({storeId:'synthetic',dispatcherEnabled:true,maximumConcurrentJobs:2,maximumDeadlineMs:300000});

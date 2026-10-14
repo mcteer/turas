@@ -1,44 +1,7 @@
-import {randomUUID} from 'node:crypto';
-import {z} from 'zod';
-import type {Client} from 'pg';
-import type {PilotHostedScope} from '../lib/contracts/pilot-hosted';
-import {reportPrepareSchema,reportRevisionCommandSchema,reportPublicationDecisionSchema} from '../lib/server/reports/schema';
-const viewSchema=z.object({reportId:z.uuid(),revisionId:z.uuid(),customerId:z.uuid(),version:z.number().int().positive(),state:z.string(),artifacts:z.array(z.object({id:z.uuid(),format:z.enum(['pdf','pptx']),sizeBytes:z.number().int().positive().max(10485760),contentDigest:z.string().regex(/^[a-f0-9]{64}$/)}))});
-const previewSchema=z.object({previewId:z.uuid(),previewDigest:z.string().regex(/^[a-f0-9]{64}$/)});
-export async function runOwnedReportJourney(input:{scope:PilotHostedScope;db:Client;customerId:string;engagementId:string;workloadId:string;signal:AbortSignal;request:(path:string,method:'GET'|'POST',body?:unknown)=>Promise<unknown>;authorRequest:(path:string,method:'GET'|'POST',body?:unknown)=>Promise<unknown>;runQueuedRender:(revisionId:string)=>Promise<void>;readArtifact:(artifact:z.infer<typeof viewSchema>['artifacts'][number])=>Promise<void>}){
- const {scope,db,customerId,engagementId,workloadId,signal,request}=input;
+import {runSyntheticReportRecipe} from './pilot-report-recipe';
+export async function runOwnedReportJourney(input:Parameters<typeof runSyntheticReportRecipe>[0]){
+ const {scope}=input;
  if(new URL(scope.origin).hostname!=='127.0.0.1'||!scope.environmentMarker.startsWith('test-pilot-')||process.env.TURAS_PILOT_OWNED!=='1'||process.env.TURAS_JOB_EXECUTOR!=='local')throw Error('Report execution is owned local only; no hosted paid admission implemented');
- const rows=(await db.query('SELECT c.synthetic FROM customer_references c JOIN engagements e ON e.customer_id=c.id AND e.workspace_id=c.workspace_id WHERE c.id=$1 AND c.workspace_id=$2 AND e.id=$3',[customerId,scope.workspaceId,engagementId])).rows;
- if(rows.length!==1||rows[0].synthetic!==true)throw Error('Exact synthetic linked report scope required');
- const unwrap=(value:unknown)=>z.object({data:z.unknown()}).parse(value).data;
- async function command(path:string,body:{requestKey:string;[key:string]:unknown},transport=request){signal.throwIfAborted();try{return unwrap(await transport(path,'POST',body));}catch(error){try{return unwrap(await transport('/api/reports/receipts/'+body.requestKey,'GET'));}catch{throw error;}}}
- const today=new Date(),year=today.getUTCFullYear(),month=today.getUTCMonth(),day=today.getUTCDate(),monday=new Date(Date.UTC(year,month,day-(today.getUTCDay()+6)%7)),quarter=Math.floor(month/3)*3;
- const date=(value:Date)=>value.toISOString().slice(0,10);
- const periods=[{kind:'weekly' as const,fromDate:date(monday),toDate:date(new Date(monday.valueOf()+6*86400000))},{kind:'monthly' as const,fromDate:date(new Date(Date.UTC(year,month,1))),toDate:date(new Date(Date.UTC(year,month+1,0)))},{kind:'quarterly' as const,fromDate:date(new Date(Date.UTC(year,quarter,1))),toDate:date(new Date(Date.UTC(year,quarter+3,0)))}];
- const samples:z.infer<typeof viewSchema>[]=[];
- for(const period of periods){
-  const prepared=viewSchema.parse(await command('/api/reports/customers/'+customerId+'/commands',reportPrepareSchema.parse({action:'prepare',requestKey:randomUUID(),expectedVersion:0,selection:{kind:period.kind,audience:'delivery',timezone:'UTC',engagementIds:[engagementId],workloadIds:[workloadId],includeCustomerLevel:true},fromDate:period.fromDate,toDate:period.toDate,partial:true}),input.authorRequest));
-  if(prepared.customerId!==customerId)throw Error('Linked report customer differs');
-  await command('/api/reports/'+prepared.reportId+'/commands',reportRevisionCommandSchema.parse({action:'render',requestKey:randomUUID(),expectedVersion:prepared.version,rationale:'Validate the controlled synthetic linked report'}));
-  if(period.kind!=='weekly')await input.runQueuedRender(prepared.revisionId);
-  const rendered=viewSchema.parse(unwrap(await request('/api/reports/'+prepared.reportId,'GET')));
-  if(rendered.reportId!==prepared.reportId||rendered.revisionId!==prepared.revisionId||rendered.state!=='review_ready')throw Error('Actual linked report validation unavailable');
-  if(period.kind!=='weekly'&&(rendered.artifacts.length!==2||new Set(rendered.artifacts.map(x=>x.format)).size!==2))throw Error('Actual PDF and PPTX artifacts required');
-  samples.push(rendered);
- }
- const brands=z.object({brands:z.array(z.object({brandId:z.uuid(),version:z.number().int().positive(),state:z.string()}))}).parse(unwrap(await request('/api/reports/brands','GET')));
- if(brands.brands.length!==1||brands.brands[0].state!=='draft')throw Error('Exact fresh synthetic sample brand required');
- const brand=brands.brands[0],body={customerId,action:'approve',expectedVersion:brand.version,sampleRevisionIds:samples.map(x=>x.revisionId)};
- const preview=previewSchema.parse(unwrap(await request('/api/reports/brands/'+brand.brandId+'/preview','POST',body)));
- await command('/api/reports/brands/'+brand.brandId+'/decisions',{...body,...preview,requestKey:randomUUID(),rationale:'Operator review of actual validated synthetic weekly, monthly and quarterly samples'});
- let actualArtifactReads=0;
- for(const sample of samples){
-  const current=viewSchema.parse(unwrap(await request('/api/reports/'+sample.reportId,'GET')));
-  const preview=previewSchema.parse(unwrap(await request('/api/reports/'+sample.reportId+'/preview','POST',{action:'publish',expectedVersion:current.version})));
-  await command('/api/reports/'+sample.reportId+'/decisions',reportPublicationDecisionSchema.parse({action:'publish',requestKey:randomUUID(),expectedVersion:current.version,...preview,rationale:'Operator review and synthetic pilot publication of the linked report'}));
-  const published=viewSchema.extend({publicationId:z.uuid()}).parse(unwrap(await request('/api/reports/'+sample.reportId,'GET')));
-  if(published.reportId!==sample.reportId||published.revisionId!==sample.revisionId||published.state!=='published')throw Error('Ordinary linked report publication unavailable');
-  for(const artifact of published.artifacts){await input.readArtifact(artifact);actualArtifactReads++;}
- }
- return {contract:'pilot-owned-linked-reports-v1',journey:'J009',normalReportCommands:10,actualRenderedJobs:2,actualArtifactReads,providerCalls:0,outboundSendAttempts:0,syntheticOnly:true,hostedProof:false,fullReportJourneyVerified:false,fullLinkedJourneyVerified:false};
+ const result=await runSyntheticReportRecipe(input);
+ return {...result,contract:"pilot-owned-linked-reports-v1",providerCalls:0,hostedProof:false};
 }

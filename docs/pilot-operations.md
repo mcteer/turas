@@ -512,3 +512,11 @@ Fresh hosted configurations require an explicit `maximumDispatches` in `TURAS_PI
 Copy and capture must derive required live originals from the matched database ledgers and verify their exact physical keys, sizes and digests. Equal empty stores are insufficient when a required original is missing. Required metadata does not grant source eligibility after recovery: independently current denials still apply. The copy primitive supports explicit object, byte and page bounds across all inventories, retaining originals on failure. Hosted copy/cutover remains a separate admitted operation.
 
 For the separately authorized Preview safety copy, use an explicit Preview source manifest and direct unpooled verify-full owner connection. The capture supports source schema 38, 55 or 57, independently verifies exact platform/owner/marker/ledger binding, and emits a target-bound v3 encrypted context; Production remains restricted to 55/57. Its separately retained key uses the independent operator project’s Preview environment. The existing restore-database-safety-copy command rehearses exact context/content/ledger in a matching disposable owned target, migrates explicitly to 57 and keeps every existing runtime denied and recovery quarantined. Old v2/055 records remain readable. Database-only safety capture/rehearsal does not certify private objects, Workflow resumption, full service recovery, schema deployment or readiness.
+
+The Preview-only hosted validator requires four explicit private inputs: `--scope`,
+`--run`, `--configuration`, and `--authorization`. Its configuration readback binds
+actual budget ID/scope/pricing identities before normal hosted source/report work.
+The linked infrastructure check refuses a configured embedding key; this plan
+adds no model allowance. Failed runs with potentially dispatched jobs record
+unknown paid-call counts and require scoped cost-ledger reconciliation. Completion
+of this partial chain does not satisfy the full hosted catalog or recovery gates.

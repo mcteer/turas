@@ -306,7 +306,9 @@
         "integration.backup-health.002",
         "integration.backup-health.003",
         "integration.backup-health.004",
-        "integration.backup-health.005"
+        "integration.backup-health.005",
+        "integration.profile-projection-review.001",
+        "integration.profile-projection-review.002"
       ]
     },
     {
@@ -725,7 +727,9 @@
         "unit.work-backup-pricing.006",
         "unit.work-backup-pricing.007",
         "integration.cost-authority.006",
-        "integration.cost-authority.007"
+        "integration.cost-authority.007",
+        "integration.hosted-paid-admission.001",
+        "integration.hosted-paid-admission.002"
       ]
     },
     {

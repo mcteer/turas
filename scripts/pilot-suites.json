@@ -1447,6 +1447,22 @@
       "cases": [
         "restores an explicit schema 38 Preview snapshot through 57 and keeps both runtime roles denied"
       ]
+    },
+    {
+      "file": "tests/integration/pilot/hosted-paid-admission.test.ts",
+      "expectedCases": 2,
+      "cases": [
+        "checks actual current scoped authority without reserving or dispatching paid work",
+        "denies changed target budget expiry scope count workspace and admission before paid callbacks"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/profile-projection-review.test.ts",
+      "expectedCases": 2,
+      "cases": [
+        "creates only exact accepted projections and retires corrections and retractions through normal commands",
+        "keeps internal acceptance private and honors the retrieval authoring rollback switch"
+      ]
     }
   ],
   "ui": {

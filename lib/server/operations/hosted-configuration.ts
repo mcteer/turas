@@ -12,12 +12,14 @@ export const hostedConfigurationSchema=z.strictObject({
  maximumConcurrentJobs:z.literal(2),maximumDeadlineMs:z.literal(300000),
  maximumInputBytes:z.literal(10485760),maximumOutputBytes:z.literal(52428800),
  maximumSandboxDispatches:z.number().int().min(1).max(100000),
+ costBudgetId:z.uuid(),costScopeDigest:z.string().regex(/^[a-f0-9]{64}$/),costPricingDigest:z.string().regex(/^[a-f0-9]{64}$/),
+ embeddingProviderConfigured:z.boolean(),
 });
 export type HostedConfiguration=z.infer<typeof hostedConfigurationSchema>;
 /** Safe allowlist for the existing authenticated administrator diagnostics. */
 export function readHostedConfiguration(env:Partial<NodeJS.ProcessEnv>=process.env):HostedConfiguration|null{
- let maximumSandboxDispatches:unknown;
- try{const raw=env.TURAS_PILOT_JOB_COST_JSON;if(!raw||Buffer.byteLength(raw)>8192)return null;maximumSandboxDispatches=JSON.parse(raw).maximumDispatches;}catch{return null;}
+ let costs:{maximumDispatches?:unknown;budgetId?:unknown;scopeDigest?:unknown;pricingDigest?:unknown};
+ try{const raw=env.TURAS_PILOT_JOB_COST_JSON;if(!raw||Buffer.byteLength(raw)>8192)return null;costs=JSON.parse(raw);if(!costs||typeof costs!=='object')return null;}catch{return null;}
  const parsed=hostedConfigurationSchema.safeParse({
   contract:'pilot-hosted-configuration-v1',environmentMarker:env.TURAS_ENVIRONMENT_ID,
   projectId:env.VERCEL_PROJECT_ID,teamId:env.VERCEL_TEAM_ID,
@@ -25,7 +27,8 @@ export function readHostedConfiguration(env:Partial<NodeJS.ProcessEnv>=process.e
   executor:env.TURAS_JOB_EXECUTOR,dispatcherEnabled:['0','1'].includes(env.TURAS_PILOT_HOSTED_JOBS_ENABLED??'')?env.TURAS_PILOT_HOSTED_JOBS_ENABLED==='1':undefined,
   images:{scanner:env.TURAS_PILOT_SCANNER_IMAGE,parser:env.TURAS_PILOT_PARSER_IMAGE,renderer:env.TURAS_PILOT_RENDERER_IMAGE},
   maximumConcurrentJobs:2,maximumDeadlineMs:300000,maximumInputBytes:10485760,maximumOutputBytes:52428800,
-  maximumSandboxDispatches,
+  maximumSandboxDispatches:costs.maximumDispatches,costBudgetId:costs.budgetId,costScopeDigest:costs.scopeDigest,costPricingDigest:costs.pricingDigest,
+  embeddingProviderConfigured:Boolean(env.AI_GATEWAY_API_KEY),
  });
  return parsed.success?parsed.data:null;
 }

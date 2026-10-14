@@ -21,6 +21,8 @@ import {runHostedExpansionBoundary} from './pilot-hosted-expansion';
 import {runHostedGapBoundary} from './pilot-hosted-gaps';
 import {runHostedPrimaryExclusion} from './pilot-hosted-primary';
 import {hostedConfigurationSchema} from '../lib/server/operations/hosted-configuration';
+import {previewInfrastructureAuthorizationSchema} from './pilot-hosted-paid';
+import {runHostedLinkedJourney} from './pilot-hosted-linked';
 import {withRecoveryCancellation} from '../lib/server/operations/recovery-cancellation';
 const execute=promisify(execFile);
 async function platformDeployment(scope:PilotHostedScope,origin=false,signal?:AbortSignal){
@@ -38,7 +40,7 @@ function explicitRuntimeUrl(env:NodeJS.ProcessEnv){
 /** Read-only admission before any authenticated hosted journey. Completion here
  * is not the hosted catalog, file processing, participant proof or readiness. */
 export async function pilotHosted(args=process.argv.slice(2)){
- if(args.length!==6||args[0]!=='--scope'||args[2]!=='--run'||args[4]!=='--configuration')throw Error('Explicit private hosted scope, run and configuration required');
+ if(args.length!==8||args[0]!=='--scope'||args[2]!=='--run'||args[4]!=='--configuration'||args[6]!=='--authorization')throw Error('Explicit private hosted scope, run, configuration and infrastructure authorization required');
  process.umask(0o077);
  const scopePath=resolve(args[1]),runPath=resolve(args[3]);
  const scope=pilotHostedScopeSchema.parse(await readEvidence(dirname(scopePath),basename(scopePath)));
@@ -46,14 +48,20 @@ export async function pilotHosted(args=process.argv.slice(2)){
  const configurationPath=resolve(args[5]);
  const configuration=hostedConfigurationSchema.parse(await readEvidence(dirname(configurationPath),basename(configurationPath)));
  if(configuration.environmentMarker!==scope.environmentMarker||configuration.projectId!==scope.projectId||configuration.teamId!==scope.teamId||!configuration.dispatcherEnabled)throw Error('Hosted configuration target or enabled dispatcher differs');
+ const authorizationPath=resolve(args[7]),rawAuthorization=await readEvidence(dirname(authorizationPath),basename(authorizationPath)),authorization=previewInfrastructureAuthorizationSchema.parse(rawAuthorization),authorizationDigest=evidenceDigest(JSON.stringify(rawAuthorization));
+ if(scope.target!=='preview'||authorization.environmentMarker!==scope.environmentMarker||authorization.projectId!==scope.projectId||authorization.teamId!==scope.teamId||authorization.maximumSandboxJobs!==configuration.maximumSandboxDispatches||Date.parse(authorization.approvedAt)>Date.now()||Date.parse(authorization.expiresAt)<=Date.now())throw Error('Fresh applicable Preview infrastructure authority required');
  const source=await pilotSource();
  if(run.id!==scope.runId||run.environmentMarker!==scope.environmentMarker||run.scopeDigest!==evidenceDigest(JSON.stringify(scope)))throw Error('Hosted run and scope differ');
  for(const key of ['sourceCommit','sourceDigest','catalogDigest'] as const)if(run[key]!==scope[key]||scope[key]!==source[key])throw Error('Hosted source or catalog differs');
  const protectedBefore=await pilotProtectedSnapshot(),id=randomUUID(),root=join(dirname(runPath),'hosted-'+id);
  await createEvidenceDirectory(root);
  const startedAt=new Date().toISOString();
- return withRecoveryCancellation(300000,async signal=>{
+ // This finite catalog may wait for multiple independently bounded 300s jobs.
+ // Their original deadlines/concurrency remain unchanged; authority expiry also
+ // cancels the whole operator run, rather than extending a job or approval.
+ return withRecoveryCancellation(Math.max(1,Math.min(7200000,Date.parse(authorization.expiresAt)-Date.now())),async signal=>{
  let stage='preflight';
+ let paidDispatchPossible=false;
  try{
   const dirty=await execute('git',['status','--porcelain','--untracked-files=all'],{timeout:10000,maxBuffer:1024*1024});
   if(dirty.stdout.trim())throw Error('Hosted verification requires committed source');
@@ -90,6 +98,7 @@ export async function pilotHosted(args=process.argv.slice(2)){
   const supportJourneys:Awaited<ReturnType<typeof runHostedSupportBoundary>>[]=[];
   const expansionJourneys:Awaited<ReturnType<typeof runHostedExpansionBoundary>>[]=[];
   const gapJourneys:Awaited<ReturnType<typeof runHostedGapBoundary>>[]=[];
+  const linkedJourneys:Awaited<ReturnType<typeof runHostedLinkedJourney>>[]=[];
   try{await readDb.connect();reads=await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async context=>{
     if(context.role==='internal-admin'){
      // The reader verified the actual version-bound diagnostic before this hook.
@@ -104,11 +113,20 @@ export async function pilotHosted(args=process.argv.slice(2)){
     await writeEvidence(root,'browser-'+context.role+'.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...browserJourneys.at(-1)});
     stage='profile_boundary';
     if(context.role==='internal-admin')profileJourneys.push(await runHostedProfileReviewJourney({scope,db:readDb,headers:context.headers,customerId:context.customerIds[0],signal}));
+    if(context.role==='internal-admin'){
+     stage='linked_chain';
+     paidDispatchPossible=true;
+     const owner=(await readDb.query("SELECT m.id FROM memberships m JOIN principals p ON p.id=m.principal_id WHERE m.workspace_id=$1 AND m.active AND m.kind='internal' AND m.role='admin' AND p.active AND p.login_name='mcteer'",[scope.workspaceId])).rows;
+     if(owner.length!==1)throw Error('Exact active linked reviewer required');
+     linkedJourneys.push(await runHostedLinkedJourney({scope,db:readDb,headers:context.headers,customerId:context.partnerCustomerIds[0],ownerMembershipId:owner[0].id,configuration,authorizationDigest,authorizationExpiresAt:authorization.expiresAt,signal}));
+     await writeEvidence(root,'linked-internal-admin.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...linkedJourneys.at(-1)});
+    }
     const positive=(await readDb.query(`SELECT c.id FROM customer_references c WHERE c.workspace_id=$1 AND c.synthetic AND c.id=ANY($2::uuid[])
      AND EXISTS(SELECT 1 FROM profile_records p WHERE p.customer_id=c.id AND p.current_accepted_revision_id IS NOT NULL)
      AND EXISTS(SELECT 1 FROM delivery_plans p WHERE p.workspace_id=c.workspace_id AND p.customer_id=c.id AND p.audience='delivery' AND p.accepted_revision_id IS NOT NULL)
      AND EXISTS(SELECT 1 FROM report_scopes s JOIN report_publications p ON p.report_id=s.id JOIN report_revision_states st ON st.revision_id=p.revision_id WHERE s.workspace_id=c.workspace_id AND s.customer_id=c.id AND s.audience='delivery' AND st.state='published')
-     ORDER BY c.id LIMIT 1`,[scope.workspaceId,context.customerIds])).rows[0]?.id;
+     AND ($3::uuid IS NULL OR c.id=$3)
+     ORDER BY c.id LIMIT 1`,[scope.workspaceId,context.customerIds,linkedJourneys[0]?.customerId??null])).rows[0]?.id;
     const denied=context.allCustomerIds.find(id=>id!==positive);
     if(!positive||!denied)throw Error('Ordinarily accepted hosted SDK chain required');
     stage='sdk_boundary';
@@ -145,12 +163,12 @@ export async function pilotHosted(args=process.argv.slice(2)){
     }
    },configuration);}finally{await readDb.end();}
   if(JSON.stringify(await platformDeployment(scope,true,signal))!==JSON.stringify(deployment)||JSON.stringify(await pilotSource())!==JSON.stringify(source)||JSON.stringify(await pilotProtectedSnapshot())!==JSON.stringify(protectedBefore))throw Error('Hosted identity or protected checkout changed');
-  await writeEvidence(root,'reads.json',{contract:'pilot-hosted-role-boundaries-v1',id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,startedAt,completedAt:new Date().toISOString(),roleReads:reads,sdkJourneys,profileJourneys,conversationJourneys,browserJourneys,supportJourneys,expansionJourneys,gapJourneys,normalProfileCommands:profileJourneys.reduce((sum,row)=>sum+row.normalProfileCommands,0),normalConversationCommands:conversationJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalSupportCommands:supportJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalExpansionCommands:expansionJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalGapCommands:gapJourneys.reduce((sum,row)=>sum+row.normalCommands,0),fullHostedCatalogVerified:false});
+  await writeEvidence(root,'reads.json',{contract:'pilot-hosted-role-boundaries-v1',id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,startedAt,completedAt:new Date().toISOString(),roleReads:reads,sdkJourneys,profileJourneys,conversationJourneys,browserJourneys,supportJourneys,expansionJourneys,gapJourneys,linkedJourneys,normalProfileCommands:profileJourneys.reduce((sum,row)=>sum+row.normalProfileCommands,0),normalConversationCommands:conversationJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalSupportCommands:supportJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalExpansionCommands:expansionJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalGapCommands:gapJourneys.reduce((sum,row)=>sum+row.normalCommands,0),fullHostedCatalogVerified:false});
   // Required journeys are not yet dispatched: do not return acceptance success.
   await writeEvidence(root,'blocked.json',{id,runId:run.id,...source,state:'blocked',safeFailure:'hosted_core_journey_catalog_not_complete',hostedCatalogVerified:false});
-  console.info(JSON.stringify({preflight:'pass',roleReads:reads.passedCases,sdkCases:sdkJourneys.reduce((sum,row)=>sum+row.passedCases,0),hostedCatalog:'blocked',paidCalls:0}));process.exitCode=1;return receipt;
+  console.info(JSON.stringify({preflight:'pass',roleReads:reads.passedCases,sdkCases:sdkJourneys.reduce((sum,row)=>sum+row.passedCases,0),hostedCatalog:'blocked',paidCalls:linkedJourneys.reduce((sum,row)=>sum+row.source.providerCalls+row.reports.providerCalls,0)}));process.exitCode=1;return receipt;
  }catch{
-  await writeEvidence(root,'failure.json',{id,runId:run.id,...source,startedAt,completedAt:new Date().toISOString(),state:'fail',safeFailure:'hosted_'+stage+'_incomplete',hostedCatalogVerified:false,paidCalls:0});
+  await writeEvidence(root,'failure.json',{id,runId:run.id,...source,startedAt,completedAt:new Date().toISOString(),state:'fail',safeFailure:'hosted_'+stage+'_incomplete',hostedCatalogVerified:false,paidCalls:paidDispatchPossible?null:0,paidDispatchPossible,scopedCostLedgerReviewRequired:paidDispatchPossible});
   throw Error('Hosted preflight failed; inspect private target prerequisites');
  }
  });
