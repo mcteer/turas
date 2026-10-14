@@ -1,16 +1,19 @@
-import {beforeAll,afterAll,it,expect} from 'vitest';
+import {it,expect} from 'vitest';
 import {Client} from 'pg';
 import {randomUUID,createHash} from 'node:crypto';
 import {mkdir,mkdtemp,rm,readdir,readFile} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
 import {pilotStorageMigrate} from '../../../scripts/pilot-storage-migrate';
-import {requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
+import {withPilotEnvironment,requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
 import {LocalPrivateObjects} from '../../../lib/server/storage/local-objects';
 import {activeObjectNamespaces,verifiedObjectInventory} from '../../../lib/server/storage/inventory';
 import {objectKey,environmentObjectId} from '../../../lib/server/storage/private-objects';
-const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)}),env=process.env.TURAS_ENVIRONMENT_ID!;
-beforeAll(async()=>{await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});await owner.connect();});afterAll(()=>owner.end());
+let owner:Client,env:string;
 async function fixture(run:(f:{root:string;source:string;destination:string;recoveryId:string;revision:number;args:(output:string)=>string[]})=>Promise<void>){
+ await withPilotEnvironment(async scope=>{
+ env=scope.environmentId;owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
+ try{
+ await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});
  const root=await mkdtemp(resolve('local-artifacts/016/storage-copy-fixture-')),source=join(root,'source'),destination=join(root,'destination'),recoveryId=randomUUID();await mkdir(source,{mode:0o700});await mkdir(destination,{mode:0o700});
  const original=(await owner.query('SELECT * FROM operations_control WHERE environment_id=$1',[env])).rows[0];
  try{
@@ -18,6 +21,8 @@ async function fixture(run:(f:{root:string;source:string;destination:string;reco
   for(const namespace of activeObjectNamespaces){await mkdir(join(source,'e_'+environmentObjectId(env),namespace),{recursive:true,mode:0o700});const bytes=Buffer.from('Controlled synthetic '+namespace),digest=createHash('sha256').update(bytes).digest('hex');await new LocalPrivateObjects(source,env,10485760).put(objectKey(env,namespace,namespace.startsWith('artifact')?digest:randomUUID()),(async function*(){yield bytes;})(),{sizeBytes:bytes.length,digest});}
   await run({root,source,destination,recoveryId,revision,args:output=>['--copy-owned','--environment',env,'--recovery-id',recoveryId,'--control-revision',String(revision),'--source-root',source,'--destination-root',destination,'--output',join(root,output)]});
  }finally{await owner.query('UPDATE operations_control SET mode=$2,revision=$3,recovery_id=$4 WHERE environment_id=$1',[env,original.mode,original.revision,original.recovery_id]);await rm(root,{recursive:true,force:true});}
+ }finally{await owner.end();}
+ },{postgresMajor:18,deadlineMs:180000});
 }
 it('copies all six namespaces under the exact owner fence and verifies cold parity without cutover',async()=>fixture(async f=>{
  const before=await verifiedObjectInventory(new LocalPrivateObjects(f.source,env,10485760),env),receipt=await pilotStorageMigrate(f.args('first'));

@@ -34,8 +34,9 @@ function command(cmd: string, args: string[], env: NodeJS.ProcessEnv, cwd = proc
  if (result.error || result.status !== 0) { writeFileSync(resolve('local-artifacts/016/setup-error.log'),(result.stdout??'')+(result.stderr??''),{mode:0o600}); throw Error(`Owned pilot setup failed: ${cmd.split('/').pop()}`); }
  return result.stdout.trim();
 }
-export async function withPilotEnvironment<T>(run: (environment: PilotEnvironment) => Promise<T>, options: { priorSchema?: 55; postgresMajor?:RecoveryPostgresMajor; queryStatistics?:boolean; deadlineMs?: number } = {}): Promise<T> {
+export async function withPilotEnvironment<T>(run: (environment: PilotEnvironment) => Promise<T>, options: { priorSchema?: 38|55; postgresMajor?:RecoveryPostgresMajor; queryStatistics?:boolean; deadlineMs?: number } = {}): Promise<T> {
  if (Number(process.versions.node.split('.')[0]) !== 24) throw Error('Pilot checks require Node 24');
+ if(options.priorSchema!==undefined&&![38,55].includes(options.priorSchema))throw Error('Explicit supported owned prior schema required');
  const protectedBefore=await pilotProtectedSnapshot();
  const digest = async () => createHash('sha256').update(await readFile('agent/agent.ts')).digest('hex');
  const agentDigest = await digest(), previous = { ...process.env };
@@ -81,7 +82,7 @@ export async function withPilotEnvironment<T>(run: (environment: PilotEnvironmen
   const env={...safeEnv,TURAS_CODE_VERSION:codeVersion,DATABASE_URL:runtimeUrl,DATABASE_URL_UNPOOLED:ownerUrl,TURAS_TEST_DATABASE_URL:ownerUrl,TURAS_ENVIRONMENT_ID:environmentId,TURAS_TEST_ENVIRONMENT_ID:environmentId,TURAS_PILOT_OWNED:'1',TURAS_015_DISABLED:'0',TURAS_PRIVATE_OBJECT_BACKEND:'local',TURAS_JOB_EXECUTOR:'local',TURAS_APP_ORIGIN:origin,TURAS_EVE_INTERNAL_ORIGIN:origin+'/',TURAS_REPORT_STORE_ROOT:storeRoot,TURAS_ARTIFACT_STORE_ROOT:artifactRoot,TURAS_WORKFORCE_STORE_ROOT:workforceRoot,TURAS_MAINTENANCE_SECRET:randomBytes(32).toString('hex'),TURAS_012_RECEIPT_HASH_KEYS:JSON.stringify([randomBytes(32).toString('hex')]),TURAS_DEMO_USERNAME:'mcteer',TURAS_DEMO_PASSWORD:'SyntheticPilotPassword1!',PANEL_USERNAME:'panel',PANEL_PASSWORD:'SyntheticPilotPassword2!',PARTNER_USERNAME:'partner',PARTNER_PASSWORD:'SyntheticPilotPassword3!',TURAS_TEST_MODEL_MODE:'deterministic',NODE_ENV:'test',TURAS_REPORTS_ENABLED:'0',TURAS_REPORT_DELIVERY_ENABLED:'0'};
   for(const key of Object.keys(process.env))delete process.env[key];Object.assign(process.env,env);
   const manifestPath=join(appRoot,'migrations/manifest.json'),full=await readFile(manifestPath,'utf8');let future:string[]=[];
-  if(options.priorSchema){const manifest=JSON.parse(full);future=manifest.migrations.filter((m:{file:string})=>Number(m.file.slice(0,3))>55).map((m:{file:string})=>m.file);await mkdir(join(appRoot,'future'));for(const file of future)await rename(join(appRoot,'migrations',file),join(appRoot,'future',file));manifest.version=55;manifest.migrations=manifest.migrations.filter((m:{file:string})=>Number(m.file.slice(0,3))<=55);await writeFile(manifestPath,JSON.stringify(manifest));}
+  if(options.priorSchema){const prior=options.priorSchema,manifest=JSON.parse(full);future=manifest.migrations.filter((m:{file:string})=>Number(m.file.slice(0,3))>prior).map((m:{file:string})=>m.file);await mkdir(join(appRoot,'future'));for(const file of future)await rename(join(appRoot,'migrations',file),join(appRoot,'future',file));manifest.version=prior;manifest.migrations=manifest.migrations.filter((m:{file:string})=>Number(m.file.slice(0,3))<=prior);await writeFile(manifestPath,JSON.stringify(manifest));}
   const script=(file:string,args:string[]=[])=>command(process.execPath,['--experimental-strip-types',file,...args],process.env,appRoot,Math.min(remaining(),120_000));
   script('scripts/db-migrate.ts',['--init']);script('scripts/db-roles.ts');script('scripts/bootstrap-demo.ts');
 

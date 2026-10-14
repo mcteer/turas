@@ -14,12 +14,14 @@ import {recoveryContentDigest} from './recovery-content';
 import {recoveryDigest} from '../../contracts/pilot-recovery';
 import {quarantineRestoredAuthority} from './recovery-quarantine';
 const digest=z.string().regex(/^[a-f0-9]{64}$/);
-const scopeSchema=z.strictObject({dump:z.string().min(1),digest,sizeBytes:z.number().int().positive().max(67108864),sourceEnvironmentId:z.string().min(1).max(256).regex(/^[A-Za-z0-9_.:-]+$/),sourceDatabaseName:z.string().regex(/^[A-Za-z_][A-Za-z0-9_]{0,62}$/),sourceSchema:z.literal(55),serverMajor:z.union([z.literal(17),z.literal(18)]),applicationContentDigest:digest,ledgerDigest:digest});
+const scopeSchema=z.strictObject({dump:z.string().min(1),digest,sizeBytes:z.number().int().positive().max(67108864),sourceEnvironmentId:z.string().min(1).max(256).regex(/^[A-Za-z0-9_.:-]+$/),sourceDatabaseName:z.string().regex(/^[A-Za-z_][A-Za-z0-9_]{0,62}$/),sourceSchema:z.union([z.literal(38),z.literal(55),z.literal(57)]),sourceTarget:z.enum(['preview','production']).default('production'),serverMajor:z.union([z.literal(17),z.literal(18)]),applicationContentDigest:digest,ledgerDigest:digest}).superRefine((value,ctx)=>{
+ if(value.sourceSchema===38&&value.sourceTarget!=='preview')ctx.addIssue({code:'custom',message:'Schema 38 rehearsal requires explicit Preview source'});
+});
 const quote=(name:string)=>'"'+name.replaceAll('"','""')+'"';
 /** Restore/rehearse only in an independently owned schema-055 disposable target.
  * Public/runtime CONNECT is removed before restore. No application, worker,
  * native runtime, provider dispatch, Production target or unlock is available. */
-export async function restoreOwnedLegacySafetyCopy(raw:z.infer<typeof scopeSchema>,signal:AbortSignal,denials?:{snapshot:unknown;contextDigest:string;backupCapturedAt:string}){
+export async function restoreOwnedLegacySafetyCopy(raw:z.input<typeof scopeSchema>,signal:AbortSignal,denials?:{snapshot:unknown;contextDigest:string;backupCapturedAt:string}){
  const input=scopeSchema.parse(raw),url=new URL(requireOwnedPilotDatabase(process.env,true)),target=decodeURIComponent(url.pathname.slice(1)),targetMarker=process.env.TURAS_ENVIRONMENT_ID!;
  if(target===input.sourceDatabaseName||targetMarker===input.sourceEnvironmentId)throw Error('Separate owned legacy restore target required');
  if(denials)verifyRecoveryDenialSnapshot(denials.snapshot,{environmentId:input.sourceEnvironmentId,contextDigest:denials.contextDigest,after:denials.backupCapturedAt,now:Date.now()});
@@ -33,31 +35,34 @@ export async function restoreOwnedLegacySafetyCopy(raw:z.infer<typeof scopeSchem
   if(hash.digest('hex')!==input.digest||(await file.stat()).size!==stat.size)throw Error('Legacy dump digest differs');
  }finally{await file.close();}
  const image=recoveryPostgresImage(input.serverMajor),prepared=spawnSync('docker',['image','inspect','--format','{{.Id}}',image],{encoding:'utf8',timeout:5000});if(prepared.status!==0||!/^sha256:[a-f0-9]{64}\s*$/.test(prepared.stdout))throw Error('Prepared matched legacy restore client required');
- const owner=new Client({connectionString:url.href,connectionTimeoutMillis:5000,statement_timeout:10000});let fenced=false;
+ const owner=new Client({connectionString:url.href,connectionTimeoutMillis:5000,statement_timeout:10000});let fenced=false;let runtimeRoles=['turas_runtime'];
  const token=randomUUID(),container='turas-016-legacy-restore-'+token;
  const clientEnv={PATH:process.env.PATH,HOME:process.env.HOME,PGHOST:process.platform==='linux'?url.hostname:'host.docker.internal',PGPORT:url.port||'5432',PGDATABASE:target,PGUSER:decodeURIComponent(url.username),PGPASSWORD:decodeURIComponent(url.password),PGSSLMODE:'disable',PGCONNECT_TIMEOUT:'5'};
  try{
   await owner.connect();
   const marker=(await owner.query("SELECT e.environment_id,e.schema_version,current_setting('server_version_num')::int AS version,current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='turas_environment'::regclass)) AS owner FROM turas_environment e")).rows;
-  if(marker.length!==1||marker[0].environment_id!==targetMarker||Number(marker[0].schema_version)!==55||marker[0].owner!==true||recoveryPostgresMajor(Number(marker[0].version))!==input.serverMajor)throw Error('Exact owned legacy restore marker/owner required');
+  if(marker.length!==1||marker[0].environment_id!==targetMarker||Number(marker[0].schema_version)!==input.sourceSchema||marker[0].owner!==true||recoveryPostgresMajor(Number(marker[0].version))!==input.serverMajor)throw Error('Exact owned legacy restore marker/owner required');
+  runtimeRoles=(await owner.query("SELECT rolname FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') ORDER BY rolname")).rows.map(row=>String(row.rolname));
+  if(!runtimeRoles.includes('turas_runtime'))throw Error('Owned runtime perimeter missing');
+  const roles=runtimeRoles.map(quote).join(',');
   // Prevent inherited default permissions and any existing runtime connection
   // from serving a partial source snapshot or the migration's initial open row.
-  await owner.query('REVOKE CONNECT ON DATABASE '+quote(target)+' FROM PUBLIC,turas_runtime');fenced=true;
-  await owner.query("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=current_database() AND usename='turas_runtime' AND pid<>pg_backend_pid()");
-  await owner.query('REVOKE ALL ON ALL TABLES IN SCHEMA public FROM turas_runtime');
-  await owner.query('REVOKE ALL ON SCHEMA public FROM PUBLIC,turas_runtime');
-  await owner.query('ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE SELECT,INSERT,UPDATE,DELETE ON TABLES FROM turas_runtime');
+  await owner.query('REVOKE CONNECT ON DATABASE '+quote(target)+' FROM PUBLIC,'+roles);fenced=true;
+  await owner.query("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=current_database() AND usename=ANY($1::text[]) AND pid<>pg_backend_pid()",[runtimeRoles]);
+  await owner.query('REVOKE ALL ON ALL TABLES IN SCHEMA public FROM '+roles);
+  await owner.query('REVOKE ALL ON SCHEMA public FROM PUBLIC,'+roles);
+  await owner.query('ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE SELECT,INSERT,UPDATE,DELETE ON TABLES FROM '+roles);
   signal.throwIfAborted();
   const child=spawn('docker',['run','--pull=never','--name',container,'--label','turas.016.backup-owner='+token,...(process.platform==='linux'?['--network=host']:[]),'--user',String(process.getuid?.())+':'+String(process.getgid?.()),'--cpus=1','--memory=512m','--pids-limit=64','--cap-drop=ALL','--security-opt=no-new-privileges','--read-only','--tmpfs=/tmp:rw,noexec,nosuid,size=16777216','--mount','type=bind,source='+parent+',target=/backup,readonly',...Object.keys(clientEnv).filter(key=>key.startsWith('PG')).flatMap(key=>['--env',key]),image,'sh','-c','pg_restore --version && exec pg_restore "$@"','turas-legacy-restore','--dbname='+target,'--clean','--if-exists','--no-owner','--no-acl','--exit-on-error','/backup/'+name],{env:{NODE_ENV:process.env.NODE_ENV??'production',...clientEnv},signal,stdio:['ignore','pipe','pipe']});
   let version='';child.stdout?.on('data',bytes=>{version=(version+bytes.toString()).slice(0,1024);});child.stderr?.on('data',()=>undefined);
   const timer=setTimeout(()=>child.kill('SIGTERM'),180000);let code:number|null;
   try{code=await new Promise<number|null>((done,reject)=>{child.once('error',reject);child.once('exit',done);});}finally{clearTimeout(timer);}
   signal.throwIfAborted();if(code!==0||!matchesRecoveryClient(version,'pg_restore',input.serverMajor))throw Error('Owned legacy restore incomplete');
-  await owner.query('REVOKE ALL ON SCHEMA public FROM PUBLIC,turas_runtime');await owner.query('REVOKE ALL ON ALL TABLES IN SCHEMA public FROM turas_runtime');
+  await owner.query('REVOKE ALL ON SCHEMA public FROM PUBLIC,'+roles);await owner.query('REVOKE ALL ON ALL TABLES IN SCHEMA public FROM '+roles);
   const restored=(await owner.query('SELECT environment_id,schema_version FROM turas_environment')).rows;
-  if(restored.length!==1||restored[0].environment_id!==input.sourceEnvironmentId||Number(restored[0].schema_version)!==55)throw Error('Restored legacy source marker differs');
+  if(restored.length!==1||restored[0].environment_id!==input.sourceEnvironmentId||Number(restored[0].schema_version)!==input.sourceSchema)throw Error('Restored legacy source marker differs');
   const manifest=JSON.parse(await readFile(resolve('migrations/manifest.json'),'utf8'));
-  const expected=manifest.migrations.slice(0,55).map((entry:{file:string})=>({name:entry.file.replace(/\.cjs$/,'')})).sort((a:{name:string},b:{name:string})=>a.name.localeCompare(b.name));
+  const expected=manifest.migrations.slice(0,input.sourceSchema).map((entry:{file:string})=>({name:entry.file.replace(/\.cjs$/,'')})).sort((a:{name:string},b:{name:string})=>a.name.localeCompare(b.name));
   const ledger=(await owner.query('SELECT name FROM turas_migrations ORDER BY name')).rows;
   if(JSON.stringify(ledger)!==JSON.stringify(expected)||recoveryDigest(ledger)!==input.ledgerDigest)throw Error('Restored legacy ledger differs');
   await owner.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
@@ -75,7 +80,7 @@ export async function restoreOwnedLegacySafetyCopy(raw:z.infer<typeof scopeSchem
   await quarantineRestoredAuthority(owner,{environmentId:input.sourceEnvironmentId,recoveryId,controlRevision:Number(control[0].revision)});
   const current=(await owner.query('SELECT e.schema_version,c.mode FROM turas_environment e JOIN operations_control c USING(environment_id)')).rows;
   if(current.length!==1||current[0].schema_version!==57||current[0].mode!=='locked'||(await owner.query('SELECT count(*)::int AS n FROM turas_migrations')).rows[0].n!==57)throw Error('Forward rehearsal lock/ledger differs');
-  return {contract:denials?'pilot-owned-legacy-restore-v2' as const:'pilot-owned-legacy-restore-v1' as const,targetDatabaseName:target,sourceEnvironmentId:input.sourceEnvironmentId,sourceSchema:55,targetSchema:57,applicationContentVerified:true,sourceLedgerVerified:true,forwardMigrationsVerified:true,mode:'locked' as const,runtimeConnectionDenied:true,credentialDenialsReapplied:denials!==undefined,credentialReconciliation,currentAuthorityVerified:false,workflowResumed:false,restorationReady:false};
+  return {contract:denials?'pilot-owned-legacy-restore-v2' as const:'pilot-owned-legacy-restore-v1' as const,targetDatabaseName:target,sourceEnvironmentId:input.sourceEnvironmentId,sourceTarget:input.sourceTarget,sourceSchema:input.sourceSchema,targetSchema:57,applicationContentVerified:true,sourceLedgerVerified:true,forwardMigrationsVerified:true,mode:'locked' as const,runtimeConnectionDenied:true,credentialDenialsReapplied:denials!==undefined,credentialReconciliation,currentAuthorityVerified:false,workflowResumed:false,restorationReady:false};
  }finally{
   // Stop the exact owned restore client before maintaining the final perimeter.
   try{
@@ -83,7 +88,7 @@ export async function restoreOwnedLegacySafetyCopy(raw:z.infer<typeof scopeSchem
    if(inspected.status===0){if(inspected.stdout.trim()!==token)throw Error('Legacy restore cleanup ownership differs');if(spawnSync('docker',['rm','--force',container],{stdio:'ignore',timeout:10000}).status!==0)throw Error('Legacy restore cleanup unverified');}
    else if(!/No such (?:object|container)/i.test(inspected.stderr))throw Error('Legacy restore cleanup unverified');
   }finally{
-   try{if(fenced){await owner.query('REVOKE CONNECT ON DATABASE '+quote(target)+' FROM PUBLIC,turas_runtime');await owner.query('REVOKE ALL ON SCHEMA public FROM PUBLIC,turas_runtime');await owner.query('REVOKE ALL ON ALL TABLES IN SCHEMA public FROM turas_runtime');}}
+   try{if(fenced){const roles=runtimeRoles.map(quote).join(',');await owner.query('REVOKE CONNECT ON DATABASE '+quote(target)+' FROM PUBLIC,'+roles);await owner.query('REVOKE ALL ON SCHEMA public FROM PUBLIC,'+roles);await owner.query('REVOKE ALL ON ALL TABLES IN SCHEMA public FROM '+roles);}}
    finally{await owner.end();}
   }
  }

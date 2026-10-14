@@ -943,12 +943,14 @@
     },
     {
       "file": "tests/unit/pilot/database-safety-source.test.ts",
-      "expectedCases": 4,
+      "expectedCases": 6,
       "cases": [
         "binds a database safety source to an explicit supported Production schema",
         "rejects pooled insecure foreign and implicit database safety sources",
         "rejects unknown safety flags alternate targets and unsupported schema claims",
-        "refuses unsafe external dump transport before opening a connection or process"
+        "refuses unsafe external dump transport before opening a connection or process",
+        "admits explicit Preview capture without broadening Production or mutation source scopes",
+        "requires target-bound v3 context while retaining exact v2 Production context support"
       ]
     },
     {
@@ -1437,6 +1439,13 @@
       "expectedCases": 1,
       "cases": [
         "withholds copy and backup for a live database original absent from an otherwise empty store"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/preview-safety-restore.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "restores an explicit schema 38 Preview snapshot through 57 and keeps both runtime roles denied"
       ]
     }
   ],
