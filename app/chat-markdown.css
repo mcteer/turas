@@ -1,0 +1,23 @@
+/* Legacy renderer utilities, using the current workspace theme. */
+@layer theme, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@source "../node_modules/streamdown/dist/*.js";
+@source "../node_modules/@streamdown/code/dist/*.js";
+@source "../node_modules/@streamdown/math/dist/*.js";
+@source "../node_modules/@streamdown/mermaid/dist/*.js";
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-sidebar: var(--surface);
+  --color-border: var(--border);
+  --color-muted: var(--hover);
+  --color-muted-foreground: var(--muted);
+  --color-primary: var(--foreground);
+  --color-primary-foreground: var(--background);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--foreground);
+  --color-ring: var(--focus);
+}
+.chat-markdown button { background: transparent; color: var(--foreground); border: 0; }
+.chat-markdown [data-streamdown="table-wrapper"]>div:first-child { display: flex; justify-content: flex-end; gap: .25rem; }

@@ -21,6 +21,7 @@ import { prepareGovernedNativeRelease, assertGovernedNativeRelease } from "./nat
 import { staffingSha256 } from "../staffing/commands";
 import type { PoolClient } from "pg";
 import { captureGeneralContext } from "./general-context";
+import { titleFromMessage } from "../../conversations/title";
 
 export function normalizeMessageText(text: string): string {
   return text.replace(/\r\n?/g, "\n").normalize("NFC");
@@ -147,6 +148,9 @@ export async function prepareAttempt(
     await client.query(`INSERT INTO submitted_messages
       (id, conversation_id, request_key, body_digest, text)
       VALUES ($1,$2,$3,$4,$5)`, [messageId, conversationId, requestKey, digest, text]);
+    await client.query(`UPDATE conversations SET title=$2 WHERE id=$1
+      AND title='New conversation' AND NOT EXISTS(SELECT 1 FROM submitted_messages
+        WHERE conversation_id=$1 AND id<>$3)`,[conversationId,titleFromMessage(text),messageId]);
     await client.query(`INSERT INTO response_attempts
       (id, conversation_id, message_id, input_digest, dispatch_state, response_state)
       VALUES ($1,$2,$3,$4,'prepared','pending')`, [attemptId, conversationId, messageId, digest]);

@@ -5,6 +5,7 @@ import { readProfile } from "./read";
 import { withTransaction } from "../db/client";
 import type { RecordKind } from "../../contracts/profile-payloads";
 import { searchEvidence } from "../retrieval/search";
+import { contextPage } from "../../profiles/context-pages";
 
 /** Shared governed path for new customer factual-context retrieval. */
 export async function readGovernedEvidenceContext(actor: ProfileActor, customerId: string,
@@ -59,32 +60,31 @@ export async function readEligibleContext(actor: ProfileActor, customerId: strin
           { sourceStatus: "restricted", sourceAttestation: fact.sourceAttestation } : {}) });
     }
     for (const source of profile.attributedResearch) {
-      if (query && !JSON.stringify(source.supportedClaim).toLocaleLowerCase().includes(query)) continue;
+      if (query && !JSON.stringify({ title: source.title, passage: source.passage,
+        claim: source.supportedClaim, products: source.productNames }).toLocaleLowerCase().includes(query)) continue;
       entries.push({ type: "attributed_research", citationId: source.sourceRevisionId,
         acceptanceState: "accepted", acceptanceBasis: "independent_research",
-        supportedClaim: source.supportedClaim, location: source.location, quality: source.quality });
+        supportedClaim: source.supportedClaim, passage: source.passage, title: source.title,
+        productNames: source.productNames, publicationAt: source.publicationAt,
+        observationAt: source.observationAt, retrievalAt: source.retrievalAt,
+        location: source.location, quality: source.quality });
     }
-    const selected: Record<string, unknown>[] = [];
-    let bytes = 0;
-    const offset = (page - 1) * limit;
-    for (const entry of entries.slice(offset)) {
-      const size = Buffer.byteLength(JSON.stringify(entry));
-      if (selected.length >= limit || bytes + size > 24 * 1024) break;
-      selected.push(entry);
-      bytes += size;
-    }
+    const packed = contextPage(entries, page, limit);
+    const selected = packed.entries;
     const validUntilCandidates = [asOf.getTime() + 86_400_000];
     for (const entry of selected) {
       const quality = entry.quality as { validUntil?: string } | undefined;
       const deadline = Date.parse(quality?.validUntil ?? "");
       if (Number.isFinite(deadline) && deadline > asOf.getTime()) validUntilCandidates.push(deadline);
     }
-    const truncated = offset + selected.length < entries.length;
+    const truncated = packed.hasNextPage || packed.oversized > 0;
     return { contractVersion: "customer-context-v1", customer: profile.customer,
       contextVersion: profile.contextVersion, asOf: asOf.toISOString(),
       validUntil: new Date(Math.min(...validUntilCandidates)).toISOString(),
-      entries: selected, page, complete: !truncated, truncated,
-      knownGaps: truncated ? ["Additional authorized context was omitted by the result limit"] : [] };
+      entries: selected, page, nextPage: packed.hasNextPage ? page + 1 : null,
+      complete: !truncated, truncated,
+      knownGaps: [...(packed.hasNextPage ? ["Additional authorized context is available on the next page"] : []),
+        ...(packed.oversized ? ["Some authorized records exceed the per-page byte limit; use evidence search to retrieve their passages"] : [])] };
   };
   return existingClient ? run(existingClient) : withTransaction(run);
 }

@@ -6,6 +6,7 @@ import type { CurrentSession } from "../auth/sessions";
 import { getServerConfig } from "../config";
 import { knowledgeLineageIsCurrent, unsupportedProfileRevisionIds } from "../profiles/eligibility";
 import { authorizeRetrievalScope,retrievalIntakeEnabled } from "./policy";
+import { readGeneralAttemptContext } from "../conversations/general-context";
 
 async function schemaReady(client: PoolClient): Promise<boolean> {
   const result = await client.query<{ schema_version: number }>(`
@@ -255,10 +256,16 @@ export async function recordRetrievalConsumption(client: PoolClient, actor: Curr
       AND valid_until>now()`,
   [receiptId,actor.membershipId,getServerConfig().TURAS_ENVIRONMENT_ID]);
   const selected = receipt.rows[0];
-  if (!selected || (selected.customer_id && selected.customer_id !== bound.customer_id)) {
+  if (!selected || (bound.customer_id && selected.customer_id && selected.customer_id !== bound.customer_id)) {
     throw hiddenRecord();
   }
-  await authorizeRetrievalScope(client,actor,selected.scope,bound.customer_id);
+  if (!bound.customer_id) {
+    const attempt = (await client.query<{id:string}>(`SELECT id FROM response_attempts
+      WHERE conversation_id=$1 AND response_state IN('pending','running')
+      ORDER BY created_at DESC LIMIT 1`,[conversationId])).rows[0];
+    if (!attempt || !await readGeneralAttemptContext(client,attempt.id,actor.principalId)) throw hiddenRecord();
+  }
+  await authorizeRetrievalScope(client,actor,selected.scope,selected.customer_id ?? bound.customer_id);
   const sources = await client.query<Omit<Dependency,"source_digest">>(`
     SELECT s.source_kind,s.source_revision_id,s.source_generation
     FROM retrieval_receipt_sources rs

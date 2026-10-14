@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "./design-system.css";
+import "./chat-markdown.css";
+import "katex/dist/katex.min.css";
 import { ThemeProvider } from "./_components/theme-provider";
 import { WebAnalytics } from "./_components/web-analytics";
 

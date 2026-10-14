@@ -149,6 +149,10 @@
   "dependencies": {
     "@js-temporal/polyfill": "0.5.1",
     "@modelcontextprotocol/server": "2.3.1",
+    "@streamdown/cjk": "1.0.3",
+    "@streamdown/code": "1.1.1",
+    "@streamdown/math": "1.0.2",
+    "@streamdown/mermaid": "1.0.2",
     "@vercel/analytics": "2.0.1",
     "@vercel/connect": "2.2.0",
     "ai": "^7.0.105",
@@ -162,16 +166,19 @@
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "resend": "6.32.0",
+    "streamdown": "2.5.0",
     "zod": "4.5.4"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
     "@modelcontextprotocol/client": "2.3.1",
     "@playwright/test": "1.63.0",
+    "@tailwindcss/postcss": "4.3.0",
     "@types/node": "24.x",
     "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "tailwindcss": "4.3.0",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
     "vitest": "5.0.2"

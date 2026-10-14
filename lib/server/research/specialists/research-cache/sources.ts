@@ -1,0 +1,144 @@
+import { embedMany, gateway } from "ai";
+import { z } from "zod";
+import type { AppIdentity } from "../identity";
+import { embeddingModel, embeddingSchema, embeddingsConfigured, embedQuery } from "../embeddings";
+import { readPublicSource } from "../solution-research/provider";
+import { sourceSchema } from "../solution-research/schema";
+import { researchPassages } from "../solution-research/source-integrity";
+import { cachedFetch } from "./fetch";
+import { evidenceDatabase } from "./database";
+import { canonicalSourceUrl, digest, normalized, snapshotReferenceSchema } from "./schema";
+import { requireResearchAccount } from "../account";
+import { withTransaction } from "../../../db/client";
+import { lockWorkspaceActor } from "../../../profiles/policy";
+
+const pageSchema = z.object({ source: sourceSchema, truncated: z.boolean() });
+const snapshotSchema = z.object({ id: z.string(), source: sourceSchema, truncated: z.boolean(), checked_at: z.coerce.date(), refresh_after: z.coerce.date(), index_state: z.string() });
+
+export async function readCachedSource(identity: AppIdentity, accountId: string, workload: string, url: string, signal: AbortSignal, notBefore?: Date, options: { recordAccount?: boolean } = {}) {
+  if(options.recordAccount!==false) await requireResearchAccount(identity,accountId);
+  else await withTransaction(db=>lockWorkspaceActor(db,identity,undefined,true));
+  const canonical = canonicalSourceUrl(url);
+  const key = "page:" + digest(canonical);
+  const read = await cachedFetch(identity, key, pageSchema, () => readPublicSource(canonical, signal), signal, { notBefore });
+  const { source, truncated } = read.value;
+  const contentHash = digest(JSON.stringify([source.url, source.title, source.excerpt, source.publication ?? null, truncated]));
+  const id = digest(canonical + "\n" + contentHash);
+  const sql = await evidenceDatabase();
+  signal.throwIfAborted();
+  await sql.query(`INSERT INTO turas_evidence_snapshots(environment_id,workspace_id,id,fetch_key,url,content_hash,source,truncated,checked_at,refresh_after)
+    VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10) ON CONFLICT(environment_id,workspace_id,id)
+    DO UPDATE SET checked_at=greatest(turas_evidence_snapshots.checked_at,excluded.checked_at),
+      refresh_after=greatest(turas_evidence_snapshots.refresh_after,excluded.refresh_after)`,
+    [identity.environmentId, identity.workspaceId, id, key, source.url, contentHash, JSON.stringify(source), truncated, read.checkedAt, read.refreshAfter]);
+  if (options.recordAccount !== false) {
+    await sql.query(`INSERT INTO turas_evidence_accounts(environment_id,workspace_id,owner_user_id,account_id,workload,snapshot_id,visibility)
+      VALUES($1,$2,$3,$4,$5,$6,'public') ON CONFLICT(environment_id,workspace_id,owner_user_id,account_id,workload,snapshot_id) DO UPDATE SET visibility='public'`,
+      [identity.environmentId, identity.workspaceId, identity.userId, accountId, normalized(workload), id]);
+  }
+  const paragraphs = researchPassages(source);
+  const chunks: string[] = [];
+  for (let i = 0; i < paragraphs.length; i += 4) chunks.push(paragraphs.slice(i, i + 4).map(p => p.text).join("\n\n"));
+  await sql.query(`INSERT INTO turas_evidence_passages(environment_id,workspace_id,snapshot_id,ordinal,text,model)
+    SELECT $1,$2,$3,ordinality::integer,value,$4 FROM jsonb_array_elements_text($5::jsonb) WITH ORDINALITY
+    ON CONFLICT DO NOTHING`, [identity.environmentId, identity.workspaceId, id, embeddingModel, JSON.stringify(chunks)]);
+  await indexSnapshot(identity, id, signal);
+  signal.throwIfAborted();
+  const cachedSource = { ...source, cache: { snapshotId: id, checkedAt: read.checkedAt, refreshAfter: read.refreshAfter } };
+  if (!read.hit && options.recordAccount !== false) {
+    // Source reads happen inside the background research specialists. Retain the
+    // exact newly fetched passages immediately, without waiting for a generated
+    // brief or copying any model interpretation into the account profile.
+    try {
+      const { learnPublicSources, publicLearningHasSource } = await import("./public-learning");
+      if (!read.hit || !(await publicLearningHasSource(identity, accountId, source.url)))
+        await learnPublicSources(identity, accountId, [cachedSource], researchPassages(source).map(passage => ({ sourceId: source.id, passageId: passage.id })), signal);
+    } catch {
+      console.warn(JSON.stringify({ event: "public_learning.background_write_failed" }));
+    }
+  }
+  return { source: cachedSource, truncated, cacheHit: read.hit };
+}
+
+export async function indexSnapshot(identity: Pick<AppIdentity, "environmentId" | "workspaceId">, id: string, signal: AbortSignal) {
+  if (!embeddingsConfigured()) return;
+  const sql = await evidenceDatabase();
+  const scope = [identity.environmentId, identity.workspaceId, id];
+  const claimed = await sql.query(`UPDATE turas_evidence_snapshots SET index_state='indexing',index_attempts=index_attempts+1,index_after=now()+interval '2 minutes'
+    WHERE environment_id=$1 AND workspace_id=$2 AND id=$3 AND index_state<>'ready' AND index_attempts<3 AND index_after<=now() RETURNING id`, scope);
+  if (!claimed.length) return;
+  try {
+    const chunks = z.array(z.object({ ordinal: z.number().int(), text: z.string() })).parse(await sql.query(
+      `SELECT ordinal,text FROM turas_evidence_passages WHERE environment_id=$1 AND workspace_id=$2 AND snapshot_id=$3 ORDER BY ordinal`, scope));
+    const response = await embedMany({ model: gateway.embeddingModel(embeddingModel), values: chunks.map(c => c.text),
+      maxParallelCalls: 1, maxRetries: 0, abortSignal: AbortSignal.any([signal, AbortSignal.timeout(20000)]) });
+    const vectors = z.array(embeddingSchema).length(chunks.length).parse(response.embeddings);
+    signal.throwIfAborted();
+    await sql.transaction([
+      ...chunks.map((chunk, i) => sql.query(`UPDATE turas_evidence_passages SET embedding=$5::vector
+        WHERE environment_id=$1 AND workspace_id=$2 AND snapshot_id=$3 AND ordinal=$4`, [...scope, chunk.ordinal, JSON.stringify(vectors[i])])),
+      sql.query(`UPDATE turas_evidence_snapshots SET index_state='ready' WHERE environment_id=$1 AND workspace_id=$2 AND id=$3`, scope),
+    ]);
+    console.info(JSON.stringify({ event: "research_cache.indexed", snapshotId: id, chunks: chunks.length, inputTokens: response.usage.tokens }));
+  } catch {
+    await sql.query(`UPDATE turas_evidence_snapshots SET index_state='failed',index_after=now()+interval '15 minutes'
+      WHERE environment_id=$1 AND workspace_id=$2 AND id=$3`, scope);
+    console.warn(JSON.stringify({ event: "research_cache.index_failed", snapshotId: id }));
+    signal.throwIfAborted();
+  }
+}
+
+export async function storedSourceCandidates(identity: AppIdentity, accountId: string, workload: string, query: string, signal: AbortSignal) {
+  await requireResearchAccount(identity,accountId);
+  const sql = await evidenceDatabase();
+  let vector: number[] | null = null;
+  const available = await sql.query(`SELECT 1 FROM turas_evidence_accounts
+    WHERE environment_id=$1 AND workspace_id=$2 AND (owner_user_id=$3 OR visibility='public') AND account_id=$4 AND workload=$5 LIMIT 1`,
+    [identity.environmentId, identity.workspaceId, identity.userId, accountId, normalized(workload)]);
+  if (!available.length) return { retrieval: "keyword" as const, sources: [] };
+  if (embeddingsConfigured() && query) {
+    try {
+      const key = "query:" + digest(JSON.stringify([identity.userId, accountId, normalized(workload), normalized(query), embeddingModel]));
+      vector = (await cachedFetch(identity, key, embeddingSchema, () => embedQuery(query, signal), signal)).value;
+    } catch { signal.throwIfAborted(); }
+  }
+  const rows = await sql.query(`WITH eligible AS MATERIALIZED (
+      SELECT DISTINCT s.* FROM turas_evidence_snapshots s JOIN turas_evidence_accounts a
+      ON a.environment_id=s.environment_id AND a.workspace_id=s.workspace_id AND a.snapshot_id=s.id
+      WHERE a.environment_id=$1 AND a.workspace_id=$2 AND (a.owner_user_id=$3 OR a.visibility='public') AND a.account_id=$4 AND a.workload=$5
+      AND NOT EXISTS (SELECT 1 FROM turas_evidence_snapshots newer WHERE newer.environment_id=s.environment_id
+        AND newer.workspace_id=s.workspace_id AND newer.fetch_key=s.fetch_key AND newer.checked_at>s.checked_at)
+    ), text_hits AS (
+      SELECT snapshot_id,row_number() OVER(ORDER BY max(ts_rank_cd(p.search_text,websearch_to_tsquery('english',$6))) DESC,snapshot_id) AS rank
+      FROM turas_evidence_passages p JOIN eligible s ON s.id=p.snapshot_id
+      WHERE p.environment_id=$1 AND p.workspace_id=$2 AND p.search_text @@ websearch_to_tsquery('english',$6) GROUP BY snapshot_id ORDER BY rank LIMIT 30
+    ), vector_hits AS (
+      SELECT snapshot_id,row_number() OVER(ORDER BY min(p.embedding <=> $7::vector),snapshot_id) AS rank
+      FROM turas_evidence_passages p JOIN eligible s ON s.id=p.snapshot_id
+      WHERE p.environment_id=$1 AND p.workspace_id=$2 AND p.embedding IS NOT NULL AND $7::vector IS NOT NULL AND p.model=$8
+      GROUP BY snapshot_id HAVING min(p.embedding <=> $7::vector)<0.75 ORDER BY rank LIMIT 30
+    ), ranked AS (
+      SELECT coalesce(t.snapshot_id,v.snapshot_id) AS id,coalesce(1.0/(60+t.rank),0)+coalesce(1.0/(60+v.rank),0) AS score
+      FROM text_hits t FULL JOIN vector_hits v ON t.snapshot_id=v.snapshot_id
+    ) SELECT s.id,s.source,s.truncated,s.checked_at,s.refresh_after,s.index_state FROM eligible s JOIN ranked r ON r.id=s.id
+      ORDER BY r.score DESC,s.id LIMIT 8`,
+    [identity.environmentId, identity.workspaceId, identity.userId, accountId, normalized(workload), query,
+      vector ? JSON.stringify(vector) : null, embeddingModel]);
+  signal.throwIfAborted();
+  return { retrieval: vector ? "hybrid" as const : "keyword" as const, sources: z.array(snapshotSchema).parse(rows).map(row => ({
+    id: row.source.id, url: row.source.url, title: row.source.title, truncated: row.truncated,
+    checkedAt: row.checked_at.toISOString(), refreshAfter: row.refresh_after.toISOString(),
+    stale: row.refresh_after.getTime() <= Date.now(), snapshotId: row.id,
+  })) };
+}
+
+export async function snapshotDependenciesValid(identity: AppIdentity, references: z.infer<typeof snapshotReferenceSchema>[]) {
+  if (!references.length) return false;
+  const sql = await evidenceDatabase();
+  const ids = [...new Set(references.map(r => r.snapshotId))];
+  const rows = await sql.query(`SELECT s.id FROM turas_evidence_snapshots s
+    WHERE s.environment_id=$1 AND s.workspace_id=$2 AND s.id=ANY($3::text[]) AND s.refresh_after>now()
+    AND NOT EXISTS(SELECT 1 FROM turas_evidence_snapshots n WHERE n.environment_id=s.environment_id AND n.workspace_id=s.workspace_id
+      AND n.fetch_key=s.fetch_key AND n.checked_at>s.checked_at)`, [identity.environmentId, identity.workspaceId, ids]);
+  return rows.length === ids.length;
+}

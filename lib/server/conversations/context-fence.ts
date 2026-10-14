@@ -1,3 +1,4 @@
+import { assertCustomerQuestionReads } from "./customer-accounts";
 import {ownResearchGenerationIsCurrent} from "../research/context-generation";
 import { conversationFeature } from "./feature";
 import type { PoolClient } from "pg";
@@ -34,6 +35,7 @@ export async function assertNativeContextCurrentInTransaction(client: PoolClient
   if (conversation.eve_session_id !== nativeSessionId) throw hiddenRecord();
   if (conversation.customer_id === null) {
     if (process.env.TURAS_GENERAL_CHAT_DISABLED === "1") throw hiddenRecord();
+    await assertCustomerQuestionReads(client, session, conversation.id);
     return;
   }
   const bound = await client.query<{ context_audience: string | null;

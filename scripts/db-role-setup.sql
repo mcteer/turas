@@ -12,6 +12,15 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+DO $$ BEGIN
+ IF to_regclass('public.parity_evaluation_budgets') IS NOT NULL THEN
+  GRANT SELECT ON parity_evaluation_budgets TO turas_runtime;
+  GRANT UPDATE(reserved_micro_usd,state) ON parity_evaluation_budgets TO turas_runtime;
+  GRANT SELECT,INSERT ON parity_evaluation_operations TO turas_runtime;
+  GRANT UPDATE(actual_micro_usd,settled_at) ON parity_evaluation_operations TO turas_runtime;
+ END IF;
+END $$;
+
 DO $$
 DECLARE table_name text;
 DECLARE payload_lock record;
@@ -281,5 +290,21 @@ END $$;
 DO $$ BEGIN
  IF to_regclass('public.learning_workspace_state') IS NOT NULL THEN
   GRANT EXECUTE ON FUNCTION turas_learning_lock_state(text,uuid) TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.general_customer_read_scopes') IS NOT NULL THEN
+  GRANT SELECT ON customer_reference_aliases TO turas_runtime;
+  GRANT SELECT,INSERT,UPDATE ON general_customer_read_scopes TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.turas_research_requests') IS NOT NULL THEN
+  GRANT SELECT,INSERT,UPDATE,DELETE ON turas_evidence_fetches,turas_evidence_snapshots,
+   turas_evidence_passages,turas_evidence_accounts,turas_public_learning,
+   turas_vercel_practice_sources,turas_vercel_practice_runs,turas_research_requests,
+   turas_research_artifacts TO turas_runtime;
  END IF;
 END $$;

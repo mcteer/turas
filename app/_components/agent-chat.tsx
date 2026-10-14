@@ -10,6 +10,8 @@ import { ShareChatClaim } from "./profiles/share-chat-claim";
 import { ComposerAttachments } from "./attachments/composer-attachments";
 import type { DraftSourceSelection } from "./attachments/source-viewer";
 import { ResearchPanel } from "./research/research-panel";
+import { ChatMarkdown } from "./chat-markdown";
+import { visibleChatMessages, backgroundChatActivity } from "../../lib/chat-messages";
 
 export function AgentChat({ conversationId, nativeSessionId, bindingState,
   customerName, synthetic, csrfToken, customerId, contextStatus }: {
@@ -88,6 +90,15 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
       }
     },
   });
+
+  const messages = visibleChatMessages(agent.data.messages, agent.events);
+  const background = backgroundChatActivity(agent.events);
+  const messagesPane = useRef<HTMLDivElement>(null);
+  const followBottom = useRef(true);
+  useEffect(() => {
+    const pane = messagesPane.current;
+    if (pane && followBottom.current) pane.scrollTop = pane.scrollHeight;
+  }, [agent.data.messages, agent.status]);
 
   useEffect(() => {
     let active = true;
@@ -272,8 +283,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   if (stale) return <HistoricalChat conversationId={conversationId}
     customerId={customerId} customerName={customerName} />;
   const busy = agent.status === "submitted" || agent.status === "streaming";
-  return <main className="chat-page">
-    <h1 className="chat-heading">{customerName}</h1>
+  return <main className="chat-page chat-thread" aria-label={`Chat with Turi: ${customerName}`}>
     {customerId && <><button type="button" className="chat-context-toggle" aria-expanded={contextOpen}
       onClick={() => setContextOpen(value => !value)}>Customer context</button>
       {contextOpen && <div className="chat-context-details">
@@ -286,13 +296,21 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         {shareOpen && <ShareChatClaim conversationId={conversationId} customerId={customerId} csrfToken={csrfToken} />}
       </div>}
     </>}
-    <div className="chat-messages" aria-live="polite">
-      {agent.data.messages.length === 0 && <p className="muted">No messages yet.</p>}
-      {agent.data.messages.map((message) => <article className="chat-message" key={message.id}>
-        <h2>{message.role === "assistant" ? "Turi" : "You"}</h2>
+    <div className="chat-messages" ref={messagesPane} aria-live="polite" onScroll={() => {
+      const pane = messagesPane.current;
+      if (pane) followBottom.current = pane.scrollHeight - pane.scrollTop - pane.clientHeight < 80;
+    }}>
+      {messages.length === 0 && <p className="muted">No messages yet.</p>}
+      {messages.map((message) => <article className={`chat-message chat-message-${message.role}`}
+        aria-label={message.role === "assistant" ? "Turi" : "You"} key={message.id}>
         {message.parts.map((part, index) => part.type === "text"
-          ? <p key={index}>{part.text}</p> : null)}
+          ? message.role === "assistant"
+            ? <ChatMarkdown key={index} streaming={busy && message.id === messages.at(-1)?.id} text={part.text} />
+            : <p key={index}>{part.text}</p>
+          : null)}
       </article>)}
+      {(busy || background.thinking) && <p className="chat-thinking" role="status">
+        {background.thinking ? "Researching…" : "Thinking…"}</p>}
     </div>
     <form className="chat-composer" onSubmit={(event) => { event.preventDefault(); void send(); }}>
       {customerId && attachmentsOpen && <ComposerAttachments conversationId={conversationId} customerId={customerId}

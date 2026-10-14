@@ -5,6 +5,7 @@ import { retrievalLimits } from "../../contracts/retrieval";
 import { finishEmbeddingOperation, markEmbeddingDispatched,
   reserveEmbeddingOperation } from "./jobs";
 import { recordRetrievalMetric } from "./telemetry";
+import { reserveParityEmbedding,settleParityProvider } from "../research/specialists/evaluation-budget";
 
 export const embeddingModelId = "openai/text-embedding-3-small";
 
@@ -35,10 +36,12 @@ export async function embedRetrievalTexts(values: readonly string[],
   });
   const started = Date.now();
   try {
+    const budget=await reserveParityEmbedding(inputCharacters);
     const response = await embedMany({ model: gateway.embeddingModel(embeddingModelId),
       values: normalized,maxRetries: 0,maxParallelCalls: retrievalLimits.concurrentEmbeddingCalls,
       abortSignal: AbortSignal.timeout(retrievalLimits.embeddingTimeoutMs),
       experimental_telemetry: { isEnabled: false } });
+    await settleParityProvider(budget,response.providerMetadata);
     if (response.embeddings.length !== normalized.length) throw new Error("Embedding count mismatch");
     const vectors = response.embeddings.map(exactEmbeddingVector);
     await withTransaction((client) => finishEmbeddingOperation(client,operation.id,"succeeded"));

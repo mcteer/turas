@@ -1,3 +1,4 @@
+import { assertCustomerQuestionReads, customerQuestionActor } from "../../lib/server/conversations/customer-accounts";
 import { defineHook } from "eve/hooks";
 import { withTransaction } from "../../lib/server/db/client";
 import { readCurrentAttemptContext } from "../../lib/server/profiles/attempt-context";
@@ -40,6 +41,11 @@ export default defineHook({
           const receipt = await client.query(`SELECT 1 FROM general_context_injections i JOIN general_context_receipts r ON r.attempt_id=i.attempt_id
             WHERE i.attempt_id=$1 AND i.turn_id=$2 AND i.snapshot_digest=r.snapshot_digest`,[attemptId,event.data.turnId]);
           if (!receipt.rowCount) throw new Error("General context was not injected");
+          const schema = (await client.query("SELECT schema_version FROM turas_environment LIMIT 1")).rows[0]?.schema_version;
+          if (schema < 56) return;
+          const scope = await customerQuestionActor(client, principal);
+          const conversation = (await client.query("SELECT conversation_id FROM response_attempts WHERE id=$1", [attemptId])).rows[0];
+          await assertCustomerQuestionReads(client, scope.actor, conversation.conversation_id, attemptId);
           return;
         }
         const receipt = await client.query(`SELECT 1 FROM context_injection_receipts i

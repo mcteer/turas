@@ -279,7 +279,7 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
       return { sourceRevisionId: row.id, state: "researched", title: row.title,
         acceptanceState: "accepted", acceptanceBasis: "independent_research",
         productNames: input.informationType === "product_capability" || communityAttributionWarning({url:row.location}) ? [] : productsFromResearch([{title:row.title,quote:row.passage}]),
-        location: row.location, supportedClaim: row.supported_claim,
+        location: row.location, passage: row.passage, supportedClaim: row.supported_claim,
         publicationAt: row.publication_at?.toISOString() ?? null,
         observationAt: row.observation_at?.toISOString() ?? null,
         retrievalAt: row.retrieval_at.toISOString(),

@@ -26,6 +26,14 @@ Preview chat starts its bounded maintenance worker on authenticated sends becaus
 
 Preview login supports both the immutable deployment URL and its exact Vercel branch alias.
 
+The legacy backend parity repair is in progress in PR 34. Named-customer lookup,
+original evidence passages and legacy chat rendering are restored locally. The
+copied specialist research/cache implementation is being connected to the current
+authorized stores; hosted specialist parity is not yet established. Track the
+comparisons and actual verification in [the repair audit](docs/legacy-backend-parity-audit.md).
+Migrations 056–058 and their runtime grants are pending hosted release. Changes
+must pass authenticated Preview HTTP and CLI Playwright/WebKit inspection before merge.
+
 Customer Overview appears immediately below the customer heading, above workload controls.
 Search the Customer Profiles directory and open profiles directly from customer
 names. The overview shows scoped maturity, current risks, active delivery and

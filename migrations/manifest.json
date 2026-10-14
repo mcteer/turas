@@ -1,5 +1,5 @@
 {
-  "version": 55,
+  "version": 58,
   "migrations": [
     {
       "file": "001-identity-foundation.cjs",
@@ -220,6 +220,18 @@
     {
       "file": "055-mcp-read-access.cjs",
       "sha256": "49f3f2b3b9faee96c4009351f3369e498380aab0498026111d261513ee3576f9"
+    },
+    {
+      "file": "056-named-customer-chat.cjs",
+      "sha256": "4fd8ca2afb886737bd2b81944c0316a2547459d2474246004f825e5b30e5edff"
+    },
+    {
+      "file": "057-legacy-specialist-research.cjs",
+      "sha256": "90427245dd0fe55e02398d600d826c9c8c0ea33712c99b6290bbf20e22dcf8ef"
+    },
+    {
+      "file": "058-parity-evaluation-budget.cjs",
+      "sha256": "82588593862556a93ce6c68fc3a484cc3641c904834cd2b6b83cbe73c00606c4"
     }
   ]
 }
