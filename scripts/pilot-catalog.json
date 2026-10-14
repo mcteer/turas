@@ -767,7 +767,9 @@
       "requiredRoles": [
         "automation"
       ],
-      "localCaseIds": []
+      "localCaseIds": [
+        "integration.hosted-training-admission.001"
+      ]
     },
     {
       "id": "G14",

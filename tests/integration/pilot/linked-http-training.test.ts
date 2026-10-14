@@ -10,7 +10,7 @@ import {runArtifactJob} from '../../../lib/server/artifacts/runner';
 import {z} from 'zod';
 import {pilotHostedRequest} from '../../../scripts/pilot-hosted-request';
 import {it,expect} from 'vitest';
-import {Client,type PoolClient} from 'pg';
+import {Client} from 'pg';
 import {createHash} from 'node:crypto';
 import {randomUUID} from 'node:crypto';
 import {withPilotEnvironment,requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
@@ -18,7 +18,6 @@ import {DEMO_IDS} from '../../../lib/server/bootstrap-ids';
 import {issueSession,sessionCookieName} from '../../../lib/server/auth/sessions';
 import {csrfTokenForSession} from '../../../lib/server/auth/csrf';
 import {closeRuntimePool} from '../../../lib/server/db/client';
-import {materializeCurrentProjection} from '../../../lib/server/retrieval/projections';
 import {retrievalResponseSchema} from '../../../lib/contracts/retrieval';
 import type {PilotHostedScope} from '../../../lib/contracts/pilot-hosted';
 import {runHostedProfileFoundation} from '../../../scripts/pilot-hosted-foundation';
@@ -60,7 +59,6 @@ await withPilotEnvironment(async environment=>{
    const response=await fetch(environment.origin+'/api/artifacts/'+versionId+'/original',{headers,redirect:'manual',signal:environment.signal});expect(response.status).toBe(200);expect(response.headers.get('x-turas-code-version')).toBe(scope.sourceCommit);
    const reader=response.body?.getReader();if(!reader)throw Error('Actual original body required');const parts:Uint8Array[]=[];let size=0;try{for(;;){const part=await reader.read();if(part.done)break;size+=part.value.byteLength;if(size>expected.length)throw Error('Actual original exceeds expected bound');parts.push(part.value);}}finally{await reader.cancel().catch(()=>undefined);reader.releaseLock();}expect(Buffer.concat(parts).equals(expected)).toBe(true);
   }});
-  await owner.query('BEGIN');try{const source=await materializeCurrentProjection(owner as unknown as PoolClient,'accepted_profile',uploaded.profileRevisionId,'delivery');if(!source)throw Error('Current projection unavailable');await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}
   const search=retrievalResponseSchema.parse(z.object({data:z.unknown()}).parse(await request('/api/retrieval/search','POST',{scope:'customer',customerId,workloadId:foundation.workloadId,query:'controlled synthetic workload serves synthetic public web requests',use:'discovery',limit:5})).data);
   if(search.mode!=='lexical_degraded')throw Error('No paid embedding admitted');
   const source=search.results.find(x=>x.sourceRevisionId===uploaded.profileRevisionId);if(!source)throw Error('Current governed linked citation unavailable');

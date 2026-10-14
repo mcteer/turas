@@ -1463,6 +1463,13 @@
         "creates only exact accepted projections and retires corrections and retractions through normal commands",
         "keeps internal acceptance private and honors the retrieval authoring rollback switch"
       ]
+    },
+    {
+      "file": "tests/integration/pilot/hosted-training-admission.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "requires an active exact partner grant and an ordinarily accepted training source before role callbacks"
+      ]
     }
   ],
   "ui": {

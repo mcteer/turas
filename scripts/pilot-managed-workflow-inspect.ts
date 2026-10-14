@@ -4,7 +4,7 @@ import {open,lstat,realpath} from 'node:fs/promises';
 import {resolve,dirname,basename} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
-import {databaseSafetySourceSchema,verifyDatabaseSafetySourceBinding} from './pilot-database-safety-copy';
+import {databaseSafetyCaptureSourceSchema,verifyDatabaseSafetySourceBinding} from './pilot-database-safety-copy';
 import {readEvidence,createEvidenceDirectory,writeEvidence} from './pilot-evidence';
 import {pilotSource} from './pilot-source';
 import {pilotProtectedSnapshot} from './pilot-preservation';
@@ -28,12 +28,12 @@ export async function pilotManagedWorkflowInspect(args:string[]){
  if(args.length!==9||args[0]!=='--inspect-managed-workflow')throw Error('Explicit native inspection inputs required');
  for(let i=1;i<args.length;i+=2){const key=args[i].replace(/^--/,'');if(!args[i].startsWith('--')||!allowed.has(key)||values[key]||!args[i+1]||args[i+1].startsWith('--'))throw Error('Invalid native inspection inputs');values[key]=args[i+1];}
  if(Object.keys(values).length!==allowed.size||!/^team_[A-Za-z0-9]+$/.test(values.team))throw Error('Complete work native inspection scope required');
- const sourceFile=resolve(values.source),scope=databaseSafetySourceSchema.parse(await readEvidence(dirname(sourceFile),basename(sourceFile)));
+ const sourceFile=resolve(values.source),scope=databaseSafetyCaptureSourceSchema.parse(await readEvidence(dirname(sourceFile),basename(sourceFile)));
  const source=await pilotSource(),before=await pilotProtectedSnapshot(),root=resolve(values.output),id=randomUUID();await createEvidenceDirectory(root);
  return withRecoveryCancellation(300000,async signal=>{
   try{
    const binding=await verifyDatabaseSafetySourceBinding(scope,values.team,signal),token=await readManagedWorkflowOperatorToken(values['auth-file']);
-   const headers={Authorization:'Bearer '+token,'x-vercel-project-id':scope.projectId,'x-vercel-team-id':values.team,'x-vercel-environment':'production'};
+   const headers={Authorization:'Bearer '+token,'x-vercel-project-id':scope.projectId,'x-vercel-team-id':values.team,'x-vercel-environment':scope.target};
    async function metadataGet(path:string){
     signal.throwIfAborted();const response=await fetch('https://api.vercel.com'+path,{headers,redirect:'error',signal:AbortSignal.any([signal,AbortSignal.timeout(30000)])});
     if(response.status===404){await response.body?.cancel();return null;}if(!response.ok){await response.body?.cancel();throw Error('Workflow provider metadata unavailable');}
@@ -65,7 +65,7 @@ export async function pilotManagedWorkflowInspect(args:string[]){
    const after=await applicationInventory();
    if(recoveryDigest({conversations:inventory.conversations,attempts:inventory.attempts})!==recoveryDigest({conversations:after.conversations,attempts:after.attempts})||JSON.stringify(await pilotSource())!==JSON.stringify(source)||JSON.stringify(await pilotProtectedSnapshot())!==JSON.stringify(before))throw Error('Native source or protected checkout changed');
    const counts:Record<string,number>={};for(const run of runs)counts[run.providerState]=(counts[run.providerState]??0)+1;
-   const receipt={contract:'pilot-managed-workflow-inspection-v1',id,...source,projectId:scope.projectId,teamId:values.team,environmentId:scope.environmentId,sourceSchema:scope.schemaVersion,sourceConnectionBinding:scope.connectionBinding,...binding,capturedAt:inventory.capturedAt,completedAt:new Date().toISOString(),conversations:inventory.conversations,attempts:inventory.attempts,runs,providerStates:counts,applicationBindingsUnchanged:true,readOnly:true,providerWrites:0,modelCalls:0,workflowCheckpointVerified:false,workflowResumed:false,currentAuthorityVerified:false,restorationReady:false};
+   const receipt={contract:'pilot-managed-workflow-inspection-v1',id,...source,projectId:scope.projectId,teamId:values.team,environmentId:scope.environmentId,sourceSchema:scope.schemaVersion,sourceTarget:scope.target,sourceConnectionBinding:scope.connectionBinding,...binding,capturedAt:inventory.capturedAt,completedAt:new Date().toISOString(),conversations:inventory.conversations,attempts:inventory.attempts,runs,providerStates:counts,applicationBindingsUnchanged:true,readOnly:true,providerWrites:0,modelCalls:0,workflowCheckpointVerified:false,workflowResumed:false,currentAuthorityVerified:false,restorationReady:false};
    await writeEvidence(root,'inspection.json',receipt);console.info(JSON.stringify({readOnly:true,conversationCount:runs.length,attemptCount:inventory.attempts.length,providerStates:counts,providerWrites:0,restorationReady:false}));return receipt;
   }catch(error){await writeEvidence(root,'failure.json',{id,...source,state:'fail',safeFailure:'managed_workflow_inspection_incomplete',readOnly:true,providerWrites:0,restorationReady:false});throw error;}
  });
