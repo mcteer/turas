@@ -528,3 +528,13 @@ and its original allowance is exhausted. Retain the actual retrospective record
 and build envelope; do not call unknown provider charges zero, reset the approval,
 or manually deploy until a concrete additional deployment is authorized after
 implementation/recovery prerequisites pass.
+
+Hosted Blob operations require `VERCEL_BLOB_RETRIES=0`. The pinned SDK otherwise
+retries up to ten times; unknown effects must not initiate another paid operation.
+The configuration diagnostic reports the zero-retry value and validation compares
+it before writes. Original uploads use the same prepared capability, narrowly
+issued client token and authenticated finish as the UI; no store-wide credential
+is passed to the uploader. Workforce originals/located cells remain separate from
+customer retrieval and shared knowledge. The linked validation chain requires
+six admitted program jobs (source scan/parse, workforce scan/parse, two renders),
+within the unchanged 32-job total. This partial chain is not full catalog proof.

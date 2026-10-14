@@ -29,7 +29,7 @@ export async function assertHostedPaidAdmission(input:{scope:PilotHostedScope;db
  return {budgetId:cfg.costBudgetId,scopeDigest:cfg.costScopeDigest,pricingDigest:cfg.costPricingDigest,heldOrCompletedJobs:Number(row.used_count),automaticTopUp:false};
 }
 /** Actual normal worker records, not caller booleans or executor exit codes. */
-export async function verifyHostedPaidJobs(input:{scope:PilotHostedScope;db:Client;configuration:HostedConfiguration;domainKind:'artifact'|'report';domainJobIds:string[];expectedImageDigests:string[]}){
+export async function verifyHostedPaidJobs(input:{scope:PilotHostedScope;db:Client;configuration:HostedConfiguration;domainKind:'artifact'|'report'|'workforce';domainJobIds:string[];expectedImageDigests:string[]}){
  const {scope,db,configuration:cfg}=input;
  for(const id of input.domainJobIds)z.uuid().parse(id);
  if(!input.domainJobIds.length||input.domainJobIds.length>32||new Set(input.domainJobIds).size!==input.domainJobIds.length||!input.expectedImageDigests.length||input.expectedImageDigests.length>32)throw Error('Fixed paid journey inventory required');

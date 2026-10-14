@@ -12,6 +12,8 @@ import {runHostedReportJourney} from './pilot-hosted-report';
 import {pilotHostedRequest} from './pilot-hosted-request';
 import {assertHostedPaidAdmission} from './pilot-hosted-paid';
 import {runHostedKnowledgeBaseline} from './pilot-hosted-knowledge';
+import {uploadPilotOriginal} from './pilot-original-upload';
+import {runHostedWorkforceJourney} from './pilot-hosted-workforce';
 
 async function pause(signal:AbortSignal){
  signal.throwIfAborted();await new Promise<void>((done,reject)=>{const timer=setTimeout(()=>{signal.removeEventListener('abort',abort);done();},2000);const abort=()=>{clearTimeout(timer);reject(signal.reason);};signal.addEventListener('abort',abort,{once:true});});
@@ -22,7 +24,7 @@ export async function runHostedLinkedJourney(input:{scope:PilotHostedScope;db:Cl
  const {scope,db,signal}=input,transport=input.transport??fetch;
  if(input.configuration.embeddingProviderConfigured)throw Error('Paid embedding traffic has no authority in this infrastructure journey');
  const request=pilotHostedRequest({scope,headers:input.headers,signal,transport});
- await assertHostedPaidAdmission({...input,requiredJobs:4});
+ await assertHostedPaidAdmission({...input,requiredJobs:6});
  async function bytes(path:string,maximum:number){
   const response=await transport(new URL(path,scope.origin),{headers:input.headers,redirect:'manual',cache:'no-store',signal:AbortSignal.any([signal,AbortSignal.timeout(30000)])});
   if(response.status!==200||response.headers.get('x-turas-code-version')!==scope.sourceCommit){await response.body?.cancel();throw Error('Exact hosted file unavailable or serving release differs');}
@@ -31,11 +33,8 @@ export async function runHostedLinkedJourney(input:{scope:PilotHostedScope;db:Cl
  }
  const foundation=await runHostedProfileFoundation({...input,request});
  const source=await runHostedSourceJourney({...input,workloadId:foundation.workloadId,request,
-  uploadBytes:async(intentId,value)=>{
-   const headers=new Headers(input.headers);headers.set('content-type','application/octet-stream');headers.set('content-length',String(value.length));
-   const response=await transport(new URL('/api/artifacts/intents/'+intentId+'/bytes',scope.origin),{method:'PUT',headers,body:new Uint8Array(value),redirect:'manual',signal:AbortSignal.any([signal,AbortSignal.timeout(30000)])});
-   try{if(response.status!==204||response.headers.get('x-turas-code-version')!==scope.sourceCommit)throw Error('Exact hosted original upload unavailable');}finally{await response.body?.cancel();}
-  },runQueuedExtraction:async versionId=>{
+  uploadBytes:async(intentId,value)=>uploadPilotOriginal({...input,domain:'artifact',id:intentId,bytes:value,contentType:'application/octet-stream',requireBlob:true,transport}),
+  runQueuedExtraction:async versionId=>{
    const deadline=Date.now()+300000;
    for(;;){signal.throwIfAborted();const view=z.object({data:z.object({id:z.uuid(),state:z.string()})}).parse(await request('/api/artifacts/'+versionId,'GET')).data;
     if(view.id!==versionId)throw Error('Queued source identity differs');if(view.state==='ready')return;
@@ -43,6 +42,7 @@ export async function runHostedLinkedJourney(input:{scope:PilotHostedScope;db:Cl
    }
   },readOriginal:async(versionId,expected)=>{if(!(await bytes('/api/artifacts/'+versionId+'/original',expected.length)).equals(expected))throw Error('Actual hosted original bytes differ');},
  });
+ const workforce=await runHostedWorkforceJourney(input);
  const knowledge=await runHostedKnowledgeBaseline({...input,sourceRevisionId:source.profileRevisionId,request});
  const search=retrievalResponseSchema.parse(z.object({data:z.unknown()}).parse(await request('/api/retrieval/search','POST',{scope:'customer',customerId:input.customerId,workloadId:foundation.workloadId,query:'controlled synthetic workload serves synthetic public web requests',use:'discovery',limit:5})).data);
  if(search.mode!=='lexical_degraded')throw Error('No paid embedding admitted for this hosted infrastructure journey');
@@ -60,5 +60,5 @@ export async function runHostedLinkedJourney(input:{scope:PilotHostedScope;db:Cl
    }
   },readArtifact:async artifact=>{artifactIds.push(artifact.id);const actual=await bytes('/api/reports/artifacts/'+artifact.id,artifact.sizeBytes);if(actual.length!==artifact.sizeBytes||createHash('sha256').update(actual).digest('hex')!==artifact.contentDigest||actual.subarray(0,artifact.format==='pdf'?5:2).toString()!==(artifact.format==='pdf'?'%PDF-':'PK'))throw Error('Actual hosted report artifact differs');},
  });
- return {contract:'pilot-hosted-linked-chain-v1',customerId:input.customerId,foundation,source,knowledge,plan,delivery,milestone,reports,artifactIds,citationId:cited.citationId,normalReviewOnly:true,modelCalls:0,outboundSendAttempts:0,humanFeedbackRecorded:false,fullHostedCatalogVerified:false};
+ return {contract:'pilot-hosted-linked-chain-v1',customerId:input.customerId,foundation,source,workforce,knowledge,plan,delivery,milestone,reports,artifactIds,citationId:cited.citationId,normalReviewOnly:true,modelCalls:0,outboundSendAttempts:0,humanFeedbackRecorded:false,fullHostedCatalogVerified:false};
 }

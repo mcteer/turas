@@ -2,7 +2,7 @@ import {privateBlobAuth} from './blob-auth';
 import {randomUUID,randomBytes} from 'node:crypto';
 import {handleUpload,type HandleUploadBody} from '@vercel/blob/client';
 import {z} from 'zod';
-import {failure,HttpFailure,success,hiddenRecord} from '../../contracts/http';
+import {failure,HttpFailure,success,hiddenRecord,versionedHeaders} from '../../contracts/http';
 import {artifactSession} from '../artifacts/http';
 import {artifactUploadSnapshot,stageArtifactUpload,readArtifactUploadIntent} from '../artifacts/upload';
 import {workforceUploadSnapshot,uploadImportOriginal} from '../staffing/imports';
@@ -47,5 +47,5 @@ export async function directUploadRequest(request:Request,domain:Domain,id:strin
  const result=await handleUpload({request,body:body as HandleUploadBody,...privateBlobAuth(),onBeforeGenerateToken:async(pathname,payload,multipart)=>{if(!actor||multipart)throw hiddenRecord();const cap=z.object({capabilityId:z.uuid()}).strict().parse(JSON.parse(payload??'null'));const {row}=await currentCapability(domain,actor,id,cap.capabilityId);if(pathname!==row.staging_key)throw hiddenRecord();return {allowedContentTypes:['application/octet-stream'],maximumSizeInBytes:Number(row.expected_bytes),validUntil:row.expires_at.getTime(),addRandomSuffix:false,allowOverwrite:false,tokenPayload:JSON.stringify({capabilityId:row.id})};},
  // Authenticated provider callbacks never publish or accept domain facts. Completion requires a current browser actor and actual verified bytes.
  onUploadCompleted:async()=>{}});
- return Response.json(result,{headers:{"Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"}});
+ return Response.json(result,{headers:versionedHeaders({"Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"})});
  }catch(error){return failure(error);}}

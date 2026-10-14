@@ -45,6 +45,7 @@ function explicitRuntimeUrl(env:NodeJS.ProcessEnv){
 export async function pilotHosted(args=process.argv.slice(2)){
  if(args.length!==8||args[0]!=='--scope'||args[2]!=='--run'||args[4]!=='--configuration'||args[6]!=='--authorization')throw Error('Explicit private hosted scope, run, configuration and infrastructure authorization required');
  process.umask(0o077);
+ process.env.VERCEL_BLOB_RETRIES='0';
  const scopePath=resolve(args[1]),runPath=resolve(args[3]);
  const scope=pilotHostedScopeSchema.parse(await readEvidence(dirname(scopePath),basename(scopePath)));
  const run=pilotRunSchema.parse(await readEvidence(dirname(runPath),basename(runPath)));
@@ -183,7 +184,7 @@ export async function pilotHosted(args=process.argv.slice(2)){
   await writeEvidence(root,'reads.json',{contract:'pilot-hosted-role-boundaries-v1',id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,startedAt,completedAt:new Date().toISOString(),roleReads:reads,sdkJourneys,profileJourneys,conversationJourneys,browserJourneys,supportJourneys,expansionJourneys,gapJourneys,linkedJourneys,trainingJourneys,normalProfileCommands:profileJourneys.reduce((sum,row)=>sum+row.normalProfileCommands,0),normalConversationCommands:conversationJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalSupportCommands:supportJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalExpansionCommands:expansionJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalGapCommands:gapJourneys.reduce((sum,row)=>sum+row.normalCommands,0),fullHostedCatalogVerified:false});
   // Required journeys are not yet dispatched: do not return acceptance success.
   await writeEvidence(root,'blocked.json',{id,runId:run.id,...source,state:'blocked',safeFailure:'hosted_core_journey_catalog_not_complete',hostedCatalogVerified:false});
-  console.info(JSON.stringify({preflight:'pass',roleReads:reads.passedCases,sdkCases:sdkJourneys.reduce((sum,row)=>sum+row.passedCases,0),hostedCatalog:'blocked',paidCalls:linkedJourneys.reduce((sum,row)=>sum+row.source.providerCalls+row.reports.providerCalls,0)}));process.exitCode=1;return receipt;
+  console.info(JSON.stringify({preflight:'pass',roleReads:reads.passedCases,sdkCases:sdkJourneys.reduce((sum,row)=>sum+row.passedCases,0),hostedCatalog:'blocked',paidCalls:linkedJourneys.reduce((sum,row)=>sum+row.source.providerCalls+row.workforce.providerCalls+row.reports.providerCalls,0)}));process.exitCode=1;return receipt;
  }catch{
   await writeEvidence(root,'failure.json',{id,runId:run.id,...source,startedAt,completedAt:new Date().toISOString(),state:'fail',safeFailure:'hosted_'+stage+'_incomplete',hostedCatalogVerified:false,paidCalls:paidDispatchPossible?null:0,paidDispatchPossible,scopedCostLedgerReviewRequired:paidDispatchPossible});
   throw Error('Hosted preflight failed; inspect private target prerequisites');

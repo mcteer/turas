@@ -4,6 +4,7 @@ export type PrivateBlobAuth={token:string}|{storeId:string;oidcToken?:string};
 export function privateBlobAuth(env:NodeJS.ProcessEnv=process.env):PrivateBlobAuth{
  const storeId=env.BLOB_STORE_ID?.replace(/^store_/,'');
  if(!storeId||!/^[a-zA-Z0-9-]{1,128}$/.test(storeId))throw Error('Explicit private Blob store configuration required');
+ if((env.VERCEL==='1'||['preview','production'].includes(env.VERCEL_ENV??''))&&env.VERCEL_BLOB_RETRIES!=='0')throw Error('Hosted private Blob requires disabled SDK retries');
  const token=env.BLOB_READ_WRITE_TOKEN;
  if(token){
   if(!token.startsWith('vercel_blob_rw_')||token.split('_')[3]!==storeId||!token.split('_')[4])throw Error('Private Blob token/store identity differs');

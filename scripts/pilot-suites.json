@@ -1470,6 +1470,13 @@
       "cases": [
         "requires an active exact partner grant and an ordinarily accepted training source before role callbacks"
       ]
+    },
+    {
+      "file": "tests/integration/pilot/linked-http-workforce.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "reviews six located personnel cells through ordinary HTTP and keeps the original outside customer retrieval"
+      ]
     }
   ],
   "ui": {

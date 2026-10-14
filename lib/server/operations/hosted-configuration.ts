@@ -14,6 +14,7 @@ export const hostedConfigurationSchema=z.strictObject({
  maximumSandboxDispatches:z.number().int().min(1).max(100000),
  costBudgetId:z.uuid(),costScopeDigest:z.string().regex(/^[a-f0-9]{64}$/),costPricingDigest:z.string().regex(/^[a-f0-9]{64}$/),
  embeddingProviderConfigured:z.boolean(),
+ blobSdkRetries:z.literal(0),
 });
 export type HostedConfiguration=z.infer<typeof hostedConfigurationSchema>;
 /** Safe allowlist for the existing authenticated administrator diagnostics. */
@@ -28,7 +29,7 @@ export function readHostedConfiguration(env:Partial<NodeJS.ProcessEnv>=process.e
   images:{scanner:env.TURAS_PILOT_SCANNER_IMAGE,parser:env.TURAS_PILOT_PARSER_IMAGE,renderer:env.TURAS_PILOT_RENDERER_IMAGE},
   maximumConcurrentJobs:2,maximumDeadlineMs:300000,maximumInputBytes:10485760,maximumOutputBytes:52428800,
   maximumSandboxDispatches:costs.maximumDispatches,costBudgetId:costs.budgetId,costScopeDigest:costs.scopeDigest,costPricingDigest:costs.pricingDigest,
-  embeddingProviderConfigured:Boolean(env.AI_GATEWAY_API_KEY),
+  embeddingProviderConfigured:Boolean(env.AI_GATEWAY_API_KEY),blobSdkRetries:env.VERCEL_BLOB_RETRIES==='0'?0:undefined,
  });
  return parsed.success?parsed.data:null;
 }
