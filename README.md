@@ -520,5 +520,5 @@ file execution remains open. Native binary fallback and file corrections now pas
 local real-Eve checks with a deterministic provider, byte-preserving upload, actual
 canonical customer resolution and reloaded history. They remain disabled in hosted
 environments until schema 072 and capped Sandbox admission are verified; these
-local checks do not establish actual-model quality. Preview is on schema 071
+local checks do not establish actual-model quality. Preview is on schema 072
 after encrypted recovery/restore/migration/grant rehearsal; Production is unchanged.

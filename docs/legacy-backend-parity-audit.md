@@ -565,3 +565,18 @@ intake selects its own immutable submitted message, retains current owner/sessio
 and account-grant checks, and creates an idempotent pending human draft without
 creating another response attempt. Runtime-role internal and partner cases cover
 this path and reject an unrelated correction ID.
+
+
+Migration 072 was applied only to Preview after a fresh encrypted schema-071
+capture, matching PostgreSQL/vector restore, migration and runtime-grant rehearsal.
+The rehearsal and application preserved 184 customers, 817 source revisions,
+zero human profile records and 23 conversations, with no active attempts. The
+native-payload column and runtime INSERT grant were verified. Its owned dump and
+restore containers were removed. Native uploads remain disabled pending capped
+hosted runtime admission and actual-provider acceptance; Production is unchanged.
+
+Twenty-seven stopped Eve build-template sandboxes were deleted using the SDK's
+explicit `deleteOrphanSnapshots:false`, and each original snapshot remained
+retrievable afterward. Eve's deployment artifact uses that snapshot ID directly;
+the temporary template name is not needed at runtime. No session sandbox or
+snapshot was deleted. The three existing session resources remain unclassified.
