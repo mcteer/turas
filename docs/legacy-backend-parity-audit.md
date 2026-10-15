@@ -797,3 +797,10 @@ transactional application/rollback rehearsal and final narrowing passed; ledger
 and operation fingerprints were identical throughout, with no provider calls or
 Production changes. The remaining hosted checks require the prepared final Preview
 source and are not covered by the older source's passing checks.
+
+The final timeout, preference-readback and native-image guidance is scoped to
+ordinary chat. Adding it to the root instructions caused the governed-learning
+native fixture to fail its provider-step bounds on `d473da0`; moving the same
+guidance into the existing ordinary-chat instruction module passes all 25 actual
+local Eve learning-native checks, including the 16 paired arms, with no paid calls.
+Type checking passes. Final hosted acceptance remains required.
