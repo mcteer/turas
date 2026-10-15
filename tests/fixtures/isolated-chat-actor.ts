@@ -8,7 +8,7 @@ import {assertDeterministicTestMode} from './runtime';
 export async function isolatedChatActor(db:Client|PoolClient,kind:'internal'|'partner',role:'admin'|'member',workspaceId?:string,previous?:CurrentSession){
  assertDeterministicTestMode();
  const rows=(await db.query('SELECT current_database() AS database,environment_id FROM turas_environment')).rows;
- if(rows.length!==1||!String(rows[0].database).startsWith('turas_test_')||!String(rows[0].environment_id).startsWith('test-')||rows[0].environment_id!==process.env.TURAS_TEST_ENVIRONMENT_ID)throw Error('Owned test database required for an isolated chat identity');
+ if(rows.length!==1||!/^turas_test(?:_|$)/.test(String(rows[0].database))||!String(rows[0].environment_id).startsWith('test-')||rows[0].environment_id!==process.env.TURAS_TEST_ENVIRONMENT_ID)throw Error('Owned test database required for an isolated chat identity');
  const identity=previous??{principalId:randomUUID(),membershipId:randomUUID(),workspaceId:workspaceId??randomUUID(),loginName:'fixture-'+randomUUID(),displayName:'Synthetic chat actor',kind,role};
  if(!previous){
   if(!workspaceId)await db.query("INSERT INTO workspaces(id,name) VALUES($1,'Synthetic isolated chat workspace')",[identity.workspaceId]);
