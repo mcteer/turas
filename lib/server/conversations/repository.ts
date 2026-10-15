@@ -1,3 +1,5 @@
+import {ordinaryNativeFilesEnabled} from './native-file-policy';
+import {assertCustomerQuestionReads} from "./customer-accounts";
 import { readExecutionAdviceStatus } from "../execution/advisory-status";
 import { conversationFeature } from "./feature";
 import { randomUUID } from "node:crypto";
@@ -8,6 +10,7 @@ import { getServerConfig } from "../config";
 import { query, withTransaction } from "../db/client";
 import { hiddenRecord, HttpFailure } from "../../contracts/http";
 import type { ConversationReference } from "../../contracts/conversations";
+import {updateConversationSchema} from '../../contracts/conversations';
 import { lockProfileActor, lockWorkspaceActor } from "../profiles/policy";
 import { assertRetrievalDependenciesCurrent } from "../retrieval/fences";
 import { assertPlanConversationFence } from "../plans/fences";
@@ -22,6 +25,7 @@ type ConversationRow = {
   customer_id: string | null;
   owner_principal_id: string;
   title: string;
+  revision?: string | number;
   binding_state: ConversationReference["bindingState"];
   eve_session_id: string | null;
   created_at: Date;
@@ -36,6 +40,8 @@ type ConversationRow = {
   delivery_generation?: string;
   artifact_context_stale?: boolean;
   retrieval_context_stale?: boolean;
+  live_customer_context?:boolean;
+  normal_live_context?:boolean;
   planning_audience?:"internal"|"delivery"|null;
 };
 
@@ -70,6 +76,7 @@ function contextStatus(row: ConversationRow, session: CurrentSession): "current"
   if (row.context_snapshot_schema !== "customer-context-v1") return "historical";
   const audience = row.planning_audience ?? (session.kind === "internal" ? "internal" : "delivery");
   const generation = audience === "internal" ? row.internal_generation : row.delivery_generation;
+  if(row.normal_live_context)return row.context_audience===audience && !row.artifact_context_stale && !row.retrieval_context_stale ? 'current':'changed';
   if (row.context_audience !== audience ||
       row.artifact_context_stale ||
       row.retrieval_context_stale ||
@@ -94,6 +101,14 @@ async function annotatePlanning(rows:ConversationRow[]):Promise<void> {
     const staffing=await query<{conversation_id:string}>("SELECT conversation_id FROM staffing_conversation_bindings WHERE conversation_id=ANY($1::uuid[])", [rows.map(row=>row.id)]);
     for (const row of staffing.rows) byId.set(row.conversation_id,"delivery");
   }
+  if((marker.rows[0]?.schema_version??0)>=64){
+    const governed=await query<{conversation_id:string}>(`SELECT conversation_id FROM execution_advice_bindings WHERE conversation_id=ANY($1::uuid[])
+      UNION SELECT conversation_id FROM support_advice_bindings WHERE conversation_id=ANY($1::uuid[])
+      UNION SELECT conversation_id FROM expansion_advice_bindings WHERE conversation_id=ANY($1::uuid[])
+      UNION SELECT conversation_id FROM learning_bindings WHERE conversation_id=ANY($1::uuid[])`,[rows.map(row=>row.id)]);
+    const excluded=new Set([...byId.keys(),...governed.rows.map(row=>row.conversation_id)]);
+    for(const row of rows)row.normal_live_context=!!row.live_customer_context&&!excluded.has(row.id);
+  }
   for (const row of rows) row.planning_audience=byId.get(row.id) ?? null;
 }
 
@@ -104,6 +119,7 @@ function toReference(row: ConversationRow, session: CurrentSession): Conversatio
     customerId: row.customer_id,
     ownerPrincipalId: row.owner_principal_id,
     title: status === "current" ? row.title : "Previous conversation",
+    version: Number(row.revision ?? 0),
     bindingState: row.binding_state,
     eveSessionId: row.binding_state === "bound" ? row.eve_session_id : null,
     createdAt: row.created_at.toISOString(),
@@ -140,12 +156,15 @@ async function staleRetrievalConversations(ids: readonly string[]): Promise<Set<
     [getServerConfig().TURAS_ENVIRONMENT_ID]);
   if ((marker.rows[0]?.schema_version ?? 0) < 22) return new Set();
   const used = await query<{ conversation_id: string }>(`
-    SELECT DISTINCT conversation_id FROM session_evidence_dependencies
-    WHERE conversation_id=ANY($1::uuid[])`,[ids]);
+    SELECT DISTINCT d.conversation_id FROM session_evidence_dependencies d JOIN conversations c ON c.id=d.conversation_id
+    WHERE d.conversation_id=ANY($1::uuid[])`,[ids]);
   const stale = new Set<string>();
   for (const row of used.rows) {
     try {
-      await withTransaction((client) => assertRetrievalDependenciesCurrent(client,row.conversation_id));
+      await withTransaction(async client => {
+        if((await conversationFeature(client,row.conversation_id)).kind!=='normal')
+          await assertRetrievalDependenciesCurrent(client,row.conversation_id);
+      });
     } catch (error) {
       if (error instanceof HttpFailure && error.status === 409) stale.add(row.conversation_id);
       else throw error;
@@ -189,13 +208,16 @@ export async function createOwnedConversation(
     const audience = session.kind === "internal" ? "internal" : "delivery";
     const generation = audience === "internal" ? contextState.rows[0].internal_generation :
       contextState.rows[0].delivery_generation;
+    const schema=Number((await client.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',
+      [getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0]?.schema_version??0);
+    const live=schema>=64;
     const id = randomUUID();
     const inserted = await client.query<ConversationRow>(`
       INSERT INTO conversations
         (id, environment_id, workspace_id, customer_id, owner_principal_id,
          creation_operation_id, binding_state, title, context_audience,
-         context_generation,context_snapshot_schema,context_login_session_id,context_membership_id)
-      VALUES ($1,$2,$3,$4,$5,$6,'unbound',$7,$8,$9,'customer-context-v1',$10,$11)
+         context_generation,context_snapshot_schema,context_login_session_id,context_membership_id${live?',live_customer_context':''})
+      VALUES ($1,$2,$3,$4,$5,$6,'unbound',$7,$8,$9,'customer-context-v1',$10,$11${live?',true':''})
       ON CONFLICT (creation_operation_id) DO NOTHING
       RETURNING *
     `, [id, getServerConfig().TURAS_ENVIRONMENT_ID, session.workspaceId,
@@ -228,6 +250,8 @@ export async function getOwnedConversation(
   `, [...values(session), id, getServerConfig().TURAS_ENVIRONMENT_ID]);
   if (!result.rows[0]) throw hiddenRecord();
   await annotatePlanning(result.rows);
+  if(result.rows[0].normal_live_context || result.rows[0].customer_id===null)
+    await withTransaction(db=>assertCustomerQuestionReads(db,session,id,undefined,false));
   result.rows[0].artifact_context_stale = (await staleArtifactConversations([id])).has(id);
   result.rows[0].retrieval_context_stale = (await staleRetrievalConversations([id])).has(id);
   return toReference(result.rows[0], session);
@@ -319,7 +343,7 @@ export async function getOwnedAttemptStatus(
     deadline_at: Date | null; last_error_code: string | null; output_tokens: number;
     watchdog_state: string | null;
   }>(`SELECT a.dispatch_state, a.response_state, a.native_turn_id,
-    a.deadline_at, a.last_error_code, a.output_tokens, j.state AS watchdog_state
+    COALESCE(j.deadline_at,a.deadline_at) AS deadline_at, a.last_error_code, a.output_tokens, j.state AS watchdog_state
     FROM response_attempts a JOIN submitted_messages sm ON sm.id = a.message_id
     LEFT JOIN watchdog_jobs j ON j.attempt_id = a.id
     WHERE a.conversation_id = $1 AND sm.request_key = $2 LIMIT 1`,
@@ -418,9 +442,14 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
   const finalPlanStale=await withTransaction((client)=>
     assertPlanConversationFence(client,session,id)).then(()=>false,()=>true);
   const hideGenerated = final.contextStatus !== "current" || finalPlanStale;
+  const documentSchemaVersion=Number((await query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0]?.schema_version??0);
   const visibleEvents = hideGenerated ? (ownerEvents?.rows ?? events.rows.filter((row) => row.event_type === "message.received")) : events.rows;
   return {
-    ...conversation, contextStatus: hideGenerated ? "changed":final.contextStatus,
+    ...conversation, featureKind:feature.kind,
+    canAttachDocuments:feature.kind==='normal' && process.env.TURAS_ORDINARY_ATTACHMENTS_DISABLED!=='1' &&
+      documentSchemaVersion>=71,
+    canAttachNativeFiles:feature.kind==='normal'&&ordinaryNativeFilesEnabled(id)&&documentSchemaVersion>=72,
+    contextStatus: hideGenerated ? "changed":final.contextStatus,
     title: hideGenerated ? "Previous conversation" : conversation.title,
     history: [...visibleEvents.slice(0, 500).map((row) => ({
       eventId: row.native_event_id,
@@ -453,7 +482,8 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
 export async function setOwnedConversationArchived(session: CurrentSession, id: string, archived: boolean) {
   return withTransaction(async client => {
     await lockWorkspaceActor(client, session);
-    const result = await client.query(`UPDATE conversations c SET archived_at=CASE WHEN $5 THEN COALESCE(c.archived_at,clock_timestamp()) ELSE NULL END
+    const result = await client.query(`UPDATE conversations c SET archived_at=CASE WHEN $5 THEN COALESCE(c.archived_at,clock_timestamp()) ELSE NULL END,
+      revision=c.revision+1,updated_at=clock_timestamp()
       WHERE c.id=$4 AND c.owner_principal_id=$3 AND c.environment_id=$6
         AND c.workspace_id=$7
         AND ((${scopedGeneral}) OR EXISTS (SELECT 1 FROM customer_references customer WHERE customer.id=c.customer_id AND ${scopedCustomer}))
@@ -461,4 +491,22 @@ export async function setOwnedConversationArchived(session: CurrentSession, id: 
     if (!result.rowCount) throw hiddenRecord();
     return { id, archived };
   });
+}
+
+/** Legacy owner-only title editing with optimistic concurrency. */
+export async function updateOwnedConversation(session:CurrentSession,id:string,input:{title?:string;archived?:boolean;version:number}){
+ const patch=updateConversationSchema.parse(input);
+ return withTransaction(async client=>{
+  await lockWorkspaceActor(client,session);
+  const owned=await client.query(`SELECT c.id,c.revision FROM conversations c WHERE c.id=$4
+    AND c.owner_principal_id=$3 AND c.workspace_id=$5 AND c.environment_id=$6
+    AND ((${scopedGeneral}) OR EXISTS(SELECT 1 FROM customer_references customer WHERE customer.id=c.customer_id AND ${scopedCustomer}))
+    FOR UPDATE OF c`,[...values(session),id,session.workspaceId,getServerConfig().TURAS_ENVIRONMENT_ID]);
+  if(!owned.rowCount)throw hiddenRecord();
+  if(Number(owned.rows[0].revision)!==patch.version)throw new HttpFailure(409,'conversation_changed','This conversation changed; reload before updating');
+  const changed=(await client.query(`UPDATE conversations SET title=COALESCE($2,title),
+    archived_at=CASE WHEN $3::boolean IS NULL THEN archived_at WHEN $3 THEN COALESCE(archived_at,clock_timestamp()) ELSE NULL END,
+    revision=revision+1,updated_at=clock_timestamp() WHERE id=$1 RETURNING title,archived_at,revision`,[id,patch.title??null,patch.archived??null])).rows[0];
+  return {id,title:changed.title,archived:changed.archived_at!==null,version:Number(changed.revision)};
+ });
 }

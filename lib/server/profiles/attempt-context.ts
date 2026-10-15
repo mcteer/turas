@@ -1,3 +1,4 @@
+import {ownResearchGenerationIsCurrent} from "../research/context-generation";
 import { conversationFeature } from "../conversations/feature";
 import { createHash, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
@@ -6,7 +7,7 @@ import type { CurrentSession } from "../auth/sessions";
 import { getServerConfig } from "../config";
 import { readEligibleContext } from "./context";
 import { assertArtifactDependenciesCurrent } from "../artifacts/context-fence";
-import { assertRetrievalDependenciesCurrent } from "../retrieval/fences";
+import { exactRetrievalOriginalCurrent, assertRetrievalDependenciesCurrent } from "../retrieval/fences";
 import { assertResearchAttemptCurrent } from "../research/fences";
 import { planningScopeForConversation } from "../plans/context";
 import { staffingScopeForConversation } from "../staffing/context";
@@ -42,6 +43,17 @@ export async function captureAttemptContext(client: PoolClient, actor: CurrentSe
     // shared budgets and output fences are connected. Never capture a default
     // internal customer snapshot as a fallback for a staffing request.
     throw new HttpFailure(503, "staffing_native_unavailable", "Staffing explanation context is not available");
+  }
+  if(feature.kind==='normal') {
+    const live=(await client.query(`SELECT to_jsonb(c)->>'live_customer_context'='true' AS enabled,context_audience FROM conversations c WHERE id=$1`,[conversationId])).rows[0];
+    if(live?.enabled) {
+      const audience=actor.kind==='internal'?'internal':'delivery';
+      if(live.context_audience!==audience)throw hiddenRecord();
+      await client.query(`UPDATE conversations c SET context_login_session_id=$2,context_membership_id=$3,
+        context_generation=CASE WHEN $4='internal' THEN s.internal_generation ELSE s.delivery_generation END,
+        context_valid_until=NULL FROM customer_profile_state s WHERE c.id=$1 AND s.customer_id=c.customer_id`,
+        [conversationId,actor.sessionId,actor.membershipId,audience]);
+    }
   }
   const conversation = await client.query<{ context_audience: string | null; context_generation: string | null;
     context_valid_until: Date | null; context_snapshot_schema: string | null;
@@ -117,7 +129,7 @@ export async function readCurrentAttemptContext(client: PoolClient, attemptId: s
     throw new HttpFailure(503, "staffing_native_unavailable", "Staffing explanation context is not available");
   }
   const receipt = await client.query<{ snapshot: Snapshot; snapshot_digest: string;
-    customer_id: string; owner_principal_id: string; login_session_id: string;
+    customer_id: string; conversation_id:string; owner_principal_id: string; login_session_id: string;
     membership_id: string; workspace_id: string; environment_id: string;
     audience: string; generation: string; valid_until: Date;
     context_generation: string; context_valid_until: Date | null;
@@ -125,7 +137,7 @@ export async function readCurrentAttemptContext(client: PoolClient, attemptId: s
     expires_at: Date; principal_active: boolean; member_active: boolean;
     member_kind: string; member_role: string; workspace_active: boolean;
     organization_active: boolean | null; grant_state: string | null }>(`
-    SELECT r.snapshot,r.snapshot_digest,r.customer_id,r.owner_principal_id,
+    SELECT r.snapshot,r.snapshot_digest,r.customer_id,r.conversation_id,r.owner_principal_id,
       r.login_session_id,r.membership_id,r.workspace_id,r.environment_id,
       r.audience,r.generation,r.valid_until,c.context_generation,c.context_valid_until,
       c.context_snapshot_schema,s.revoked_at,s.expires_at,p.active AS principal_active,
@@ -154,7 +166,7 @@ export async function readCurrentAttemptContext(client: PoolClient, attemptId: s
     "SELECT internal_generation,delivery_generation FROM customer_profile_state WHERE customer_id=$1 AND workspace_id=$2",
     [row.customer_id, row.workspace_id]);
   const current = row.audience === "internal" ? state.rows[0]?.internal_generation : state.rows[0]?.delivery_generation;
-  if (current !== row.generation) throw hiddenRecord();
+  if (!await ownResearchGenerationIsCurrent(client,{attemptId,conversationId:row.conversation_id,customerId:row.customer_id,workspaceId:row.workspace_id,membershipId:row.membership_id,sessionId:row.login_session_id,generation:row.generation,current})) throw hiddenRecord();
   const attempt = await client.query<{ conversation_id: string }>(
     "SELECT conversation_id FROM response_attempts WHERE id=$1", [attemptId]);
   if (!attempt.rows[0]) throw hiddenRecord();
@@ -163,5 +175,19 @@ export async function readCurrentAttemptContext(client: PoolClient, attemptId: s
   await assertResearchAttemptCurrent(client,attemptId);
   const digest = createHash("sha256").update(stableJson(row.snapshot)).digest("hex");
   if (digest !== row.snapshot_digest) throw hiddenRecord();
+  if(current!==row.generation){
+    // Keep the immutable admitted snapshot, but do not feed superseded public
+    // quotations back into the active turn. Current facts use governed tools.
+    const entries=[];
+    for(const entry of row.snapshot.entries){
+      const research=entry as {citationId:string;type?:string};
+      if(research.type==='attributed_research'){
+        const version=(await client.query<{version:string}>("SELECT version FROM evidence_source_revisions WHERE id=$1",[entry.citationId])).rows[0]?.version;
+        if(!version||!await exactRetrievalOriginalCurrent(client,'verified_research',entry.citationId,version))continue;
+      }
+      entries.push(entry);
+    }
+    return {...row.snapshot,entries};
+  }
   return row.snapshot;
 }

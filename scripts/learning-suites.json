@@ -17,6 +17,7 @@
     "tests/integration/learning-cohorts.test.ts",
     "tests/integration/learning-maintenance.test.ts",
     "tests/unit/learning-native-store.test.ts",
+    "tests/unit/learning-native-diagnostics.test.ts",
     "tests/unit/learning-review-verifier.test.ts"
   ],
   "native": [

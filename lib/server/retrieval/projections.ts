@@ -38,6 +38,7 @@ type SourceCandidate = {
   workloadId: string | null; sourceKind: "accepted_profile" | "approved_excerpt" | "verified_research";
   revisionId: string; audience: "internal" | "delivery"; generation: number;
   chunks: RetrievalChunk[];
+  documentProjection?:boolean;
 };
 
 const narrativeKeys = new Set([
@@ -155,12 +156,22 @@ export async function buildCurrentProjection(client: PoolClient,
   if (!row || (audience === "delivery" && row.audience !== "delivery")) return null;
   const url = new URL(row.location);
   if (url.protocol !== "https:" || url.username || url.password) return null;
-  const chunks = simpleChunks(row.passage,(start,end) => ({ kind: "research_passage",
+  let text=row.passage,documentProjection=false;
+  const schema=(await client.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[environmentId])).rows[0]?.schema_version??0;
+  if(schema>=60) {
+    const document=(await client.query<{document_text:string;document_digest:string}>(
+      'SELECT document_text,document_digest FROM independent_research_documents WHERE source_revision_id=$1',[revisionId])).rows[0];
+    if(document) {
+      if(createHash('sha256').update(document.document_text).digest('hex')!==document.document_digest)return null;
+      text=document.document_text;documentProjection=true;
+    }
+  }
+  const chunks = simpleChunks(text,(start,end) => ({ kind: "research_passage",
     canonicalUrl: url.toString(),start,end }));
   if (!chunks.length) return null;
   return { environmentId,workspaceId: row.workspace_id,customerId: row.customer_id,
     workloadId: null,sourceKind: kind,revisionId,audience,
-    generation: Number(row.version),chunks };
+    generation: Number(row.version),chunks,documentProjection };
 }
 
 /** Writes a separate audience copy; indexing still requires a current worker lease. */
@@ -176,6 +187,8 @@ export async function materializeCurrentProjection(client: PoolClient,
       locators: chunk.locators,warnings: chunk.warnings }))))
     .digest("hex");
   const id = randomUUID();
+  const contract=candidate.documentProjection?'retrieval-research-document-v1':projectionContract;
+  const contractDigest=candidate.documentProjection?createHash('sha256').update(`${contract}:nfc:checked-document:no-overlap:2000:duplicate-locators`).digest('hex'):projectionContractDigest;
   const source = await client.query<{ id: string }>(`
     INSERT INTO retrieval_sources(id,environment_id,workspace_id,customer_id,workload_id,
       scope,source_kind,source_revision_id,audience,projection_contract,contract_digest,
@@ -186,7 +199,7 @@ export async function materializeCurrentProjection(client: PoolClient,
       WHERE retrieval_sources.content_digest=EXCLUDED.content_digest
     RETURNING id`,
   [id,candidate.environmentId,candidate.workspaceId,candidate.customerId,candidate.workloadId,
-    kind,revisionId,audience,projectionContract,projectionContractDigest,
+    kind,revisionId,audience,contract,contractDigest,
     candidate.generation,contentDigest]);
   const sourceId = source.rows[0]?.id;
   if (!sourceId) return null;

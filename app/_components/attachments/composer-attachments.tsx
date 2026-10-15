@@ -1,19 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {artifactFileTypes as declaredTypes,artifactFileAccept} from "../../../lib/contracts/artifact-file-types";
 import { SourceViewer, type DraftSourceSelection } from "./source-viewer";
 
 type Intent = { id: string; state: string; versionId: string | null; receivedBytes: number;
   expectedSizeBytes: number; safeErrorCode: string | null };
 type Item = { file: File; intent: Intent | null; versionState: string | null;
   attached?: boolean; error: string | null };
-const declaredTypes: Record<string, string> = {
-  pdf: "application/pdf", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  csv: "text/csv", txt: "text/plain", md: "text/markdown",
-  png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg",
-};
 const sizeLabel = (bytes: number) => bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KiB`;
 
 export function ComposerAttachments({ conversationId, customerId, customerName, csrfToken,
@@ -141,7 +135,7 @@ export function ComposerAttachments({ conversationId, customerId, customerName, 
   return <section className="composer-attachments" aria-label="Customer documents">
     <p className="muted">Documents for {customerName} stay private until you submit selected evidence for review.</p>
     <label className="field-label" htmlFor="artifact-files">Attach documents</label>
-    <input id="artifact-files" type="file" multiple accept=".pdf,.docx,.pptx,.xlsx,.csv,.txt,.md,.png,.jpg,.jpeg"
+    <input id="artifact-files" type="file" multiple accept={artifactFileAccept}
       disabled={busy} onChange={(event) => {
         const files = [...(event.target.files ?? [])];
         if (files.length > 5 || files.reduce((sum, file) => sum + file.size, 0) > 26_214_400 ||

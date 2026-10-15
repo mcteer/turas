@@ -19,6 +19,7 @@ export type ConversationReference = {
   customerId: string | null;
   ownerPrincipalId: string;
   title: string;
+  version?: number;
   bindingState: "unbound" | "creating" | "reconciling" | "bound" | "failed";
   eveSessionId: string | null;
   createdAt: string;
@@ -27,3 +28,6 @@ export type ConversationReference = {
 };
 
 export const archiveConversationSchema = z.object({ archived: z.boolean() }).strict();
+export const updateConversationSchema = z.object({title:z.string().trim().min(1).max(80).optional(),
+  archived:z.boolean().optional(),version:z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER)})
+  .strict().refine(value=>value.title!==undefined || value.archived!==undefined);

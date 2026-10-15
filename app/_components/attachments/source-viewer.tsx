@@ -49,7 +49,7 @@ export function SourceViewer({ versionId, onClose, onDraftSelection }: { version
       {omission.count} {omission.kind} omitted: {omission.reason}</p>)}
     {notice && <p role="alert">{notice}</p>}
     <ol className="source-units">{["ready","partial"].includes(source?.state ?? "") && units.map((item) => <li key={item.id}>
-      <p className="muted">Unit {item.ordinal} · {item.locator.kind} · {item.origin}
+      <p className="muted">Unit {item.ordinal} · {item.locator.kind==='document_text'?'Document text':item.locator.kind} · {item.origin}
         {item.ocrConfidence !== null ? ` · OCR ${item.ocrConfidence.toFixed(0)}%` : ""}
         {item.hidden ? " · hidden source" : ""}</p>
       {onDraftSelection && <label className="profile-check"><input type="checkbox"

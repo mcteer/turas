@@ -22,7 +22,7 @@ export async function installExecutionNativeFixture(environment: ExecutionEvalEn
   requireOwnedExecutionClone(); assertDeterministicTestMode();
   const root = await realpath(environment.appRoot), owned = await realpath(resolve("local-artifacts/008"));
   if (!root.startsWith(`${owned}/eval-`) || !root.endsWith("/app") || root === await realpath(process.cwd())) throw new Error("Owned native app copy required");
-  const path = join(root, "agent/agent.ts"), source = await readFile(path, "utf8"), target = "wrapStaffingModel(gateway(selectedModel), admitted.mode";
+  const path = join(root, "agent/agent.ts"), source = await readFile(path, "utf8"), target = "wrapStaffingModel(parityBudgetModel(gateway(selectedModel),selectedModel), admitted.mode";
   if (source.split(target).length !== 2 || !source.includes('const selectedModel = "spacexai/grok-4.7";') || !source.includes('reasoning: "low"')) throw new Error("Fixture model shape changed");
   const replacement = source.replace(target, "wrapStaffingModel(createExecutionNativeFixtureModel(principal, identity), admitted.mode")
     .replace("return wrapStaffingModel(createExecutionNativeFixtureModel(principal, identity), admitted.mode, {", "return { model: wrapStaffingModel(createExecutionNativeFixtureModel(principal, identity), admitted.mode, {")

@@ -9,8 +9,13 @@ import { consumeResearchRun, reserveResearchOperation,
   dispatchResearchOperation,finishResearchRun,hasSubmittedContentOrigin } from
   "../../lib/server/research/execution";
 import { assertResearchAttemptCurrent } from "../../lib/server/research/fences";
+import { ownResearchGenerationIsCurrent } from "../../lib/server/research/context-generation";
+import { captureAttemptContext } from "../../lib/server/profiles/attempt-context";
 import { ingestCheckedObservation } from "../../lib/server/research/ingest";
 import { normalizePublicDocument, exactPublicPassage } from "../../lib/server/research/normalize";
+import {claimRetrievalJobs} from "../../lib/server/retrieval/jobs";
+import {currentIndexPassages} from "../../scripts/retrieval-worker";
+import {assertRetrievalDependenciesCurrent,exactRetrievalOriginalCurrent} from "../../lib/server/retrieval/fences";
 import { runRetrievalCleanupTick } from "../../lib/server/retrieval/cleanup";
 import { listDueResearch,markDueResearch,recordResearchRefresh } from "../../lib/server/research/refresh";
 
@@ -237,7 +242,27 @@ describe("owned bounded research admission", () => {
             .rejects.toMatchObject({ code: "research_source_unverified" });
           await client.query("ROLLBACK TO SAVEPOINT research_normalized_tamper");
           await client.query("RELEASE SAVEPOINT research_normalized_tamper");
+          await captureAttemptContext(client,actor,conversation,admitted.attemptId,customer);
+          const generationBefore=(await client.query("SELECT internal_generation FROM customer_profile_state WHERE customer_id=$1",[customer])).rows[0].internal_generation;
           const ingested = await ingestCheckedObservation(client,actor,observationId);
+          const generationAfter=(await client.query("SELECT internal_generation FROM customer_profile_state WHERE customer_id=$1",[customer])).rows[0].internal_generation;
+          expect(BigInt(generationAfter)).toBe(BigInt(generationBefore)+1n);
+          const bridge={attemptId:admitted.attemptId,conversationId:conversation,customerId:customer,workspaceId:workspace,membershipId:membership,sessionId,generation:generationBefore,current:generationAfter};
+          expect(await ownResearchGenerationIsCurrent(client,bridge)).toBe(true);
+          expect(await ownResearchGenerationIsCurrent(client,{...bridge,membershipId:randomUUID()})).toBe(false);
+          expect(await ownResearchGenerationIsCurrent(client,{...bridge,current:String(BigInt(generationAfter)+1n)})).toBe(false);
+          expect((await client.query("SELECT 1 FROM retrieval_sources WHERE source_revision_id=$1 AND lifecycle_state='current'",[ingested.sourceRevisionId])).rowCount).toBeGreaterThan(0);
+          await client.query("SAVEPOINT real_customer_index");
+          await client.query("UPDATE customer_references SET synthetic=false WHERE id=$1",[customer]);
+          const sourceIds=(await client.query<{id:string}>("SELECT id FROM retrieval_sources WHERE source_revision_id=$1",[ingested.sourceRevisionId])).rows.map(row=>row.id);
+          const claims=await claimRetrievalJobs(2,client,environment,sourceIds);
+          expect(claims).toHaveLength(2);
+          for(const claim of claims)expect(await currentIndexPassages(claim,client)).toHaveLength(1);
+          await client.query("SAVEPOINT submitted_origin_index");
+          await client.query("UPDATE research_observations SET origin='user_submission' WHERE id=$1",[observationId]);
+          for(const claim of claims)expect(await currentIndexPassages(claim,client)).toBe(null);
+          await client.query("ROLLBACK TO SAVEPOINT submitted_origin_index");await client.query("RELEASE SAVEPOINT submitted_origin_index");
+          await client.query("ROLLBACK TO SAVEPOINT real_customer_index");await client.query("RELEASE SAVEPOINT real_customer_index");
           expect(ingested.attributed).toBe(true);
           const verified = await client.query<{ supported_claim: string;
             quality_input: { R: number; D: number } }>(`
@@ -247,6 +272,36 @@ describe("owned bounded research admission", () => {
           expect(verified.rows[0]?.quality_input).toMatchObject({ R: 4,D: 4 });
           expect((await ingestCheckedObservation(client,actor,observationId)).sourceRevisionId)
             .toBe(ingested.sourceRevisionId);
+          await client.query("SAVEPOINT fresh_unchanged_research");
+          const consumedReceipt=randomUUID();
+          await client.query(`INSERT INTO retrieval_receipts(id,environment_id,actor_membership_id,scope,workspace_id,customer_id,mode,citation_ids,as_of,valid_until)
+            VALUES($1,$2,$3,'customer',$4,$5,'lexical_degraded','[]'::jsonb,now(),now()+interval '1 hour')`,[consumedReceipt,environment,membership,workspace,customer]);
+          await client.query(`INSERT INTO session_evidence_dependencies(id,environment_id,conversation_id,session_id,receipt_id,source_kind,source_revision_id,source_generation,source_digest,valid_until)
+            VALUES($1,$2,$3,$4,$5,'verified_research',$6,1,$7,now()+interval '1 hour')`,[randomUUID(),environment,conversation,nativeId,consumedReceipt,ingested.sourceRevisionId,passage.digest]);
+          const freshObservation=randomUUID(),freshOperation=randomUUID();
+          await client.query(`INSERT INTO research_operations(id,run_id,step_key,operation_key,kind,state,deadline,dispatched_at,finished_at)
+            VALUES($1,$2,'fetch:fresh-check','fresh-check','fetch','succeeded',now()+interval '1 minute',now(),now())`,[freshOperation,admitted.runId]);
+          await client.query(`INSERT INTO research_observations
+            (id,run_id,operation_id,origin,requested_url,canonical_url,identity_checked,scope_checked,integrity_checked,content_checked,body_digest,passage_digest,passage_text,normalized_characters,retrieval_at,date_provenance,content_type,normalized_digest)
+            SELECT $1,run_id,$3,origin,requested_url,canonical_url,identity_checked,scope_checked,integrity_checked,content_checked,body_digest,passage_digest,passage_text,normalized_characters,clock_timestamp(),date_provenance,content_type,normalized_digest FROM research_observations WHERE id=$2`,[freshObservation,observationId,freshOperation]);
+          await client.query(`INSERT INTO research_observation_payloads(observation_id,normalized_text,raw_body,raw_body_expires_at)
+            SELECT $1,normalized_text,raw_body,raw_body_expires_at FROM research_observation_payloads WHERE observation_id=$2`,[freshObservation,observationId]);
+          const fresh=await ingestCheckedObservation(client,actor,freshObservation);
+          expect(fresh.sourceRevisionId).not.toBe(ingested.sourceRevisionId);
+          const refreshedGeneration=(await client.query("SELECT internal_generation FROM customer_profile_state WHERE customer_id=$1",[customer])).rows[0].internal_generation;
+          expect(BigInt(refreshedGeneration)).toBe(BigInt(generationAfter)+1n);
+          expect(await ownResearchGenerationIsCurrent(client,{...bridge,current:refreshedGeneration})).toBe(true);
+          expect((await client.query("SELECT lifecycle_state FROM retrieval_sources WHERE source_revision_id=$1",[ingested.sourceRevisionId])).rows.every(row=>row.lifecycle_state==='retired')).toBe(true);
+          expect((await ingestCheckedObservation(client,actor,freshObservation)).sourceRevisionId).toBe(fresh.sourceRevisionId);
+          await expect(assertRetrievalDependenciesCurrent(client,conversation)).resolves.toBeUndefined();
+          expect(await exactRetrievalOriginalCurrent(client,'verified_research',ingested.sourceRevisionId,'1')).toBe(false);
+          await client.query("SAVEPOINT external_profile_change");
+          await client.query("UPDATE customer_profile_state SET internal_generation=internal_generation+1 WHERE customer_id=$1",[customer]);
+          await expect(assertRetrievalDependenciesCurrent(client,conversation)).rejects.toMatchObject({code:'retrieval_context_changed'});
+          await client.query("ROLLBACK TO SAVEPOINT external_profile_change");
+          await client.query("RELEASE SAVEPOINT external_profile_change");
+          await client.query("ROLLBACK TO SAVEPOINT fresh_unchanged_research");
+          await client.query("RELEASE SAVEPOINT fresh_unchanged_research");
           expect(await markDueResearch(client)).toBeGreaterThanOrEqual(1);
           const refreshable = await listDueResearch(client,actor,customer);
           expect(refreshable.find((item) => item.sourceRevisionId === ingested.sourceRevisionId))

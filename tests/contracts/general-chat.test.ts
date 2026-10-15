@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { POST as login } from "../../app/api/auth/login/route";
 import { POST as create, GET as list } from "../../app/api/conversations/route";
-import { GET as read } from "../../app/api/conversations/[id]/route";
+import { GET as read,PATCH as update } from "../../app/api/conversations/[id]/route";
 
 async function identity(name: "panel" | "partner" | "mcteer") {
   const response = await login(new Request(`${process.env.TURAS_APP_ORIGIN}/api/auth/login`, {
@@ -20,6 +20,21 @@ function request(path: string, actor: { cookie: string; csrf: string }, body?: u
   });
 }
 describe("general chat ownership", () => {
+  it('renames, archives and restores owned chats with legacy optimistic concurrency',async()=>{
+    const actor=await identity('panel'),other=await identity('mcteer');
+    const created=(await(await create(request('/api/conversations',actor,{requestKey:randomUUID(),title:'Original title'}))).json()).data;
+    const params={params:Promise.resolve({id:created.id})};
+    const patch=(who:typeof actor,body:unknown)=>update(new Request(request(`/api/conversations/${created.id}`,who,body),{method:'PATCH'}),params);
+    expect((await patch(other,{title:'Unowned edit',version:created.version})).status).toBe(404);
+    const renamed=await patch(actor,{title:'  Customer follow-up  ',version:created.version});expect(renamed.status).toBe(200);
+    const current=(await renamed.json()).data;expect(current.title).toBe('Customer follow-up');expect(current.version).toBe(created.version+1);
+    expect((await patch(actor,{title:'Stale overwrite',version:created.version})).status).toBe(409);
+    expect((await patch(actor,{title:'x'.repeat(81),version:current.version})).status).toBe(422);
+    const archived=(await(await patch(actor,{archived:true,version:current.version})).json()).data;
+    expect(archived.archived).toBe(true);expect(archived.version).toBe(current.version+1);
+    expect((await patch(actor,{archived:false,version:current.version})).status).toBe(409);
+    expect((await(await patch(actor,{archived:false,version:archived.version})).json()).data.archived).toBe(false);
+  });
   it("creates a private conversation without selecting or inventing a customer", async () => {
     const actor = await identity("panel"), other = await identity("mcteer");
     const input = { requestKey: randomUUID(), title: "Technical best practices" };

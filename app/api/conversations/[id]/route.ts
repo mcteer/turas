@@ -1,6 +1,6 @@
-import { archiveConversationSchema } from "../../../../lib/contracts/conversations";
+import { archiveConversationSchema,updateConversationSchema } from "../../../../lib/contracts/conversations";
 import { checkSessionCsrf } from "../../../../lib/server/auth/csrf";
-import { setOwnedConversationArchived } from "../../../../lib/server/conversations/repository";
+import { setOwnedConversationArchived,updateOwnedConversation } from "../../../../lib/server/conversations/repository";
 import { z } from "zod";
 import { failure, HttpFailure, success } from "../../../../lib/contracts/http";
 import { getCurrentSession } from "../../../../lib/server/auth/sessions";
@@ -28,7 +28,12 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     const { id } = await context.params;
     if (!z.uuid().safeParse(id).success) throw new HttpFailure(422, "invalid_input", "Invalid request");
     if (Number(request.headers.get("content-length") ?? 0) > 1024) throw new HttpFailure(413, "too_large", "Request too large");
-    const input = archiveConversationSchema.safeParse(await request.json());
+    const text=await request.text();
+    if(Buffer.byteLength(text)>1024)throw new HttpFailure(413,'too_large','Request too large');
+    let decoded:unknown;try{decoded=JSON.parse(text);}catch{throw new HttpFailure(422,'invalid_input','Invalid request');}
+    const update=updateConversationSchema.safeParse(decoded);
+    if(update.success)return success(await updateOwnedConversation(session,id,update.data));
+    const input = archiveConversationSchema.safeParse(decoded);
     if (!input.success) throw new HttpFailure(422, "invalid_input", "Invalid request");
     return success(await setOwnedConversationArchived(session, id, input.data.archived));
   } catch (error) { return failure(error); }

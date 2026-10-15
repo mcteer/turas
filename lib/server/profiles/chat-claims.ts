@@ -1,3 +1,4 @@
+import {conversationFeature} from "../conversations/feature";
 import { createHash } from "node:crypto";
 import type { PoolClient } from "pg";
 import type { ProfileActor } from "./policy";
@@ -19,13 +20,16 @@ export async function validateOwnedClaimSource(client: PoolClient, actor: Profil
   if (digest !== payload.sourceSpanDigest) {
     throw new HttpFailure(422, "invalid_claim_source", "Message span changed");
   }
-  const message = await client.query<{ conversation_id: string; text: string }>(`
-    SELECT sm.conversation_id,sm.text FROM submitted_messages sm
+  const message = await client.query<{ conversation_id: string; text: string;customer_id:string|null;live_customer_context:boolean }>(`
+    SELECT sm.conversation_id,sm.text,c.customer_id,to_jsonb(c)->>'live_customer_context'='true' AS live_customer_context FROM submitted_messages sm
     JOIN conversations c ON c.id=sm.conversation_id
-    WHERE sm.id=$1 AND c.customer_id=$2 AND c.workspace_id=$3
-      AND c.owner_principal_id=$4`,
+    WHERE sm.id=$1 AND c.workspace_id=$3
+      AND c.owner_principal_id=$4 AND ($2::uuid IS NOT NULL)`,
   [payload.sourceMessageId, customerId, actor.workspaceId, actor.principalId]);
-  if (!message.rows[0] || !message.rows[0].text.includes(payload.sourceExcerpt)) throw hiddenRecord();
+  const original=message.rows[0];
+  if (!original || !original.text.includes(payload.sourceExcerpt)) throw hiddenRecord();
+  if(original.customer_id && original.customer_id!==customerId &&
+    (!original.live_customer_context || (await conversationFeature(client,original.conversation_id)).kind!=='normal'))throw hiddenRecord();
   return { conversationId: message.rows[0].conversation_id,
     messageId: payload.sourceMessageId, spanDigest: digest };
 }

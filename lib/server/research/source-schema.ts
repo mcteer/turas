@@ -1,0 +1,1 @@
+export type ResearchSource = {id:string;url:string;title:string;retrievedAt:string;excerpt:string;publication?:{date:string;quote:string}|null;retainedPassages?:{id:string;text:string}[];focusTerm?:string};

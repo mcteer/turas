@@ -5,8 +5,9 @@ TAM, account teams and partners.
 
 Turas brings reviewed customer context, planning, staffing, execution and reporting
 into one workspace. **Turi**, its eve-powered assistant, explains and proposes next
-steps using authorized evidence. Human review—not a model response—determines which
-facts and decisions become accepted.
+steps using authorized evidence. Independently checked research updates customer
+knowledge automatically. Manually supplied claims and governed decisions retain
+their separate human review requirements.
 
 **Status:** active development. Customer profiles through executive reporting and
 TAM/support guidance (010), product expansion (011), product gaps (012) and partner enablement (013) are implemented. Local validation and basic hosted smoke
@@ -22,6 +23,67 @@ runtime grants as part of each schema-dependent release.
 
 ### Customer Profiles and Maturity
 
+Preview chat starts its bounded maintenance worker on authenticated sends because platform cron runs only in Production.
+
+Preview login supports both the immutable deployment URL and its exact Vercel branch alias.
+
+The legacy backend parity repair is in progress in PR 34. The repair restores
+named-customer reads, the three authored research specialists, automatic checked
+profile/source retention, research reuse, full-document indexing, native human
+input, structured Markdown and live ordinary customer chat. Complete workspace
+solution patterns and explicitly contributed adoption measurements use canonical
+approved profile sources; the fictional legacy portfolio is not imported.
+Focused local checks and an encrypted Preview restore/migration rehearsal pass.
+Hosted specialist behavior and visual acceptance remain pending; local checks do
+not establish them. Track open comparisons and actual verification in
+[the repair audit](docs/legacy-backend-parity-audit.md). Migrations 056–066 and their
+runtime grants are applied to backed-up, rehearsed Preview; Production is unchanged.
+Automatic Vercel deployments from `main` are paused for this merge. Production
+remains on schema 055; the repair requires 072 and explicit runtime grants. Re-enable
+Production deployment only as part of a separately coordinated backup, migration,
+grant and authenticated release verification sequence.
+Migration 067 adds posted-question resume windows and is applied to Preview
+after an encrypted schema-66 capture and matching-version restore rehearsal.
+The native question/new-login/answer/reloaded-history flow passed actual-model
+CLI WebKit checks on Preview `77ec4be`; final release verification remains open.
+Migration 068 adds owner-bound native chat corrections and concurrent provider
+token reservations. It is applied to Preview after an encrypted schema-67 capture
+and matching-version restore rehearsal. The real local Eve/headless WebKit check
+passes correction ordering, unchanged deadlines, reloaded history, Stop and native
+retirement using an unpaid deterministic provider; hosted correction remains open.
+Migrations 069–070 restore the legacy document formats and dated public inventory
+metadata, including the original five qualitative delivery signals. Preview's
+schema update passed an encrypted schema-68 capture and matching-version rehearsal.
+The inventory backfill binds existing canonical customers and checked source
+revisions; it creates no customer, maturity grade or accepted human claim.
+Research retains the specialist's information type and freshness window instead
+of classifying every source as adoption evidence. The original daily research
+maintenance route uses the cron bearer and bounded public-only rechecks without
+a human identity. Hosted format, maintenance and inventory acceptance remains open.
+Hosted model/provider checks continue under blanket user approval with bounded
+Preview ledgers. The original $15 ledger and its unresolved holds are preserved;
+a supplemental $15 allowance bounds the combined ceiling at $30 without top-ups.
+All three specialists completed on Preview; final answer quality, explicit reuse,
+full parity acceptance and final verification remain open.
+The `9b73d46` Preview Baggu and customer-free firewall answers pass retained
+independent semantic review. A cited-source retention collision blocked Notion's
+solution publication. Retention now binds its complete input and signed proof.
+On exact Preview `86338a9`, customer learning, the signed solution handoff and
+typed evaluation complete, with passing desktop/mobile/reloaded history checks.
+The advisory route remains `research_more`; independent final-answer review, the
+earlier reload stream finding and full CI acceptance remain open. The current MCP
+composition failed its native-learning gate, whose exact local recheck passes.
+The root Grok model is unchanged. Legacy ordinary-chat guidance is scoped to normal
+turns so governed learning keeps its original input ceiling; all 16 unpaid real
+Eve learning fixture arms pass. New extraction jobs and retries bind parser policy
+v2; actual scanner/parser/review/execution-journey checks pass locally.
+Journey search retains record-based ranking and 20-record paging. Frozen-source
+local learning and partner recovery rehearsals pass; runtime retention preserves
+the payload UPDATE denial. All 51 staffing suites pass after preserving the strict
+snapshot contract. Long research histories retain the latest eligible business
+overview. Hosted verification and CI completion remain open.
+
+Customer Overview appears immediately below the customer heading, above workload controls.
 Search the Customer Profiles directory and open profiles directly from customer
 names. The overview shows scoped maturity, current risks, active delivery and
 sourced products. Independently checked research is accepted factual context
@@ -380,6 +442,44 @@ reports outside the customer's own domain. Existing admitted requests retain the
 original host policy. Source text is quoted evidence; a host, mention or generated
 summary never establishes employer-wide deployment or accepted internal facts.
 
+Checked independent research automatically updates shared customer knowledge, including
+an initially empty profile, without human claim review. A new checked observation
+creates a current source revision and both authorized retrieval projections; an
+unchanged recheck advances the observation time, while a replacement retires the
+old index projection. When the complete retained document is unchanged, rechecks
+keep the already checked customer quotations and their source-supported overview;
+changed documents and explicit withdrawals still invalidate old citations. Recheck deadlines follow the latest successful check; evidence quality still uses
+the original publication or observation date.
+Only human-entered claims use the manual review workflow. The protected hosted
+watchdog drains the existing retrieval queue and marks research recheck deadlines;
+checked ordinary research for real customers is eligible for vector indexing.
+
+Hosted Preview verification uses real customer data, not browser response replacements.
+`npm run profiles:preview:check -- --origin <Preview origin> --commit <PR SHA> --output local-artifacts/customer-profile-fixes/preview-check`
+checks the exact deployment, compares the real customer directory and checked
+1Password/Notion research with Production, and captures desktop/mobile WebKit views.
+It verifies name navigation, overview placement, researched products, source detail
+and Sandbox evidence search. Review the captures before merge.
+
+The operator-only `profiles:preview:sync` command copies a current, checked public
+research snapshot from an explicit protected Production connection descriptor to a
+distinct, migrated Preview descriptor. Both databases must be schema 055 and the
+Preview administrator must be active. Pass `--source`, `--target` and a private
+`--output` receipt. It preserves source dates and original evidence identities,
+reuses ready vectors, retires superseded copied projections, and creates no provider
+calls. Manual claims, private conversations and delivery records are not copied.
+Verify the Preview target, recovery backup and migration/grant rehearsal before
+refreshing its dataset; the sync command never migrates a database.
+
+The research reader, source passage boundaries, publication-date checks, community
+attribution warning and product catalog reuse the corresponding legacy behavior.
+Customer Profiles derive product names from eligible retained source quotations,
+rather than requiring a product name in a generated summary. Focused public
+research preserves other still-eligible description and coverage receipts. An
+active research turn may finish after its own checked writes; changes from other
+actors, revoked access, expired receipts and superseded citations still fail their
+existing checks.
+
 The authorized operator batch researches a reviewed official Vercel directory and
 paginated story inventory. It records six coverage areas, exact source passages,
 dates, caveats, unknowns and provider usage, with source signatures and checkpointed
@@ -425,3 +525,61 @@ its immutable batch receipt and current source eligibility agree. A bounded sour
 selector keeps operator indexing within this public inventory; existing private
 source and synthetic-worker restrictions remain in place.
 This command neither approves private context nor publishes cross-customer learning.
+
+The legacy chat parity bug fix remains under verification in PR #34. Normal chat
+resolves accessible named customers without a picker and reads their dated account
+evidence inventory. Focused full-document search remains separate from that
+inventory. Independently checked research updates current customer knowledge and
+retrieval projections automatically; human submissions remain pending review.
+
+Ordinary shared search also reads official Vercel product documentation without a
+customer selection. Broader customer-derived practice references retain customer
+grant/source checks. Public references are distinct from customer adoption and
+published shared learnings; private originating research queries and briefs are
+excluded. Complete retained passages preserve original citation IDs, while bounded
+responses identify references whose passages were omitted.
+
+Actual Preview checks establish the real 184-customer directory, overview before
+workload controls, sourced 1Password/Notion products, hybrid Sandbox evidence
+search, preference persistence/isolation/removal, document preparation and native
+image correction with unsent-draft retention. The temporary native session and
+feature window were retired; native binary uploads remain disabled outside
+explicitly admitted infrastructure. Preview schema 072 migrations/grants were
+backed up and rehearsed. Production remains schema 055 and unchanged.
+
+Installation applies a guarded compatibility repair for Eve 0.67.1: its durable
+memory-tool callback context must serialize native-file URL data as the equivalent
+supported string form. The framework version and reviewed source hash must match;
+future framework changes require reviewing this repair. The file-memory provider,
+backend selection, scope, stored format and root model remain unchanged.
+
+Ordinary Stop and native retirement cover a turn parked for user input. Retirement
+settles its application attempt only after Eve confirms the exact session is reset
+or already inactive; an accepted request alone leaves it stopping.
+
+Actual Preview `3179bea` completes the original three specialists for the Notion
+solution question, returns the typed `evaluated / research_more` assessment, and
+passes CLI WebKit desktop, mobile and reloaded-history checks. A fresh independent
+source-based model review passes with zero material issues against the exact
+answer, fourteen retained customer sources, original product-reference passages
+and actual typed evaluation. Two minor presentation/source-metadata issues remain
+recorded. This is model review of retained sources, not human approval or an audit
+of current private customer configuration. Earlier source-bound Baggu and
+customer-free firewall answers also retain passing independent reviews.
+
+Source retention binds retries to the complete signed input. Native-input control
+turns preserve unanswered requests without approving them. The learning native
+retention probe tolerates only entries that disappear during traversal; its owned
+hosted-cleanup fixture stops the local worker before release and follows the normal
+minute cadence within its original deadline. The 22-session requirement and domain
+retry bounds remain unchanged. Earlier failures and exact validation results are
+retained in the [backend parity audit](docs/legacy-backend-parity-audit.md).
+
+The finite Preview allowance is $40 across three ledgers, with original charges
+and unsettled ceilings preserved and no automatic top-ups. The completed merge
+checks' native sessions are retired after evidence capture. Production remains on
+schema 055; Preview schema 072 migrations/grants were backed up and rehearsed.
+Automatic Git deployment of `main` is paused in `vercel.json` so merging cannot
+publish schema-incompatible code. A Production release still requires the explicit
+backup, migration, grants, compatibility and authenticated hosted checks. These
+checks do not establish the separate 016 hosted recovery/operator/pilot acceptance.

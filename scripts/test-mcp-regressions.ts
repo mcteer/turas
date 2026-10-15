@@ -4,6 +4,7 @@ import {withMcpEnvironment} from './mcp-environment';
 import {featureSourceDigest} from './execution-source-digest';
 import {capturePartnerProcess} from './test-partners';
 import {verifyLearningTestReport} from './learning-suites';
+import {readLearningNativeAssertion} from './learning-native-diagnostics';
 /** Reuse the earlier features' complete, owned gates and their strict evidence
  * contracts. The outer environment provides only synthetic application config. */
 const gates=[
@@ -21,7 +22,8 @@ async function main(){
   const run=await capturePartnerProcess(['--import','tsx',gate.file],2400000,environment.signal);await writeFile(join(directory,gate.name+'.log'),run.stdout+run.stderr,{mode:0o600});if(run.status!==0||run.error){
    // Surface fixed earlier-runner diagnostics, never assertion prose or payloads.
    const diagnostics=(run.stdout+'\n'+run.stderr).split('\n').flatMap(line=>{try{const row=JSON.parse(line);if(!/^webkit-(desktop|mobile)-(light|dark)$/.test(row.project)||!Array.isArray(row.failedLocations))return [];return [{project:row.project,processFailure:row.processFailure===true,...(/^(fixture|open-current-head|withdraw|accessibility|reload-withdrawn|reactivate|rollback-review|rollback-picker|rollback-originals|rollback-rationale|rollback-submit|rollback-refresh)$/.test(row.withdrawalStage)?{withdrawalStage:row.withdrawalStage}:{}),failedLocations:row.failedLocations.slice(0,20).map((f:any)=>({file:/^learning-[a-z-]+\.spec\.ts$/.test(f.file)?f.file:'unknown',line:Number.isInteger(f.line)&&f.line>=0&&f.line<100000?f.line:0,status:['failed','timedOut','interrupted'].includes(f.status)?f.status:'unknown',signatures:Array.isArray(f.signatures)?f.signatures.filter((x:unknown)=>['Timeout','toBeFocused','toBeVisible','toEqual','toHaveCount','ECONNREFUSED','Execution context was destroyed','Fast Refresh','503','429'].includes(String(x))).slice(0,10):[]}))}];}catch{return [];}});
-   console.error(JSON.stringify({regression:gate.name,diagnostics:diagnostics.slice(0,4)}));throw Error('Earlier-feature regression failed: '+gate.name+'; inspect '+directory);
+   const nativeDiagnostics=(run.stdout+'\n'+run.stderr).split('\n').flatMap(line=>{try{const diagnostic=readLearningNativeAssertion(JSON.parse(line));return diagnostic?[diagnostic]:[];}catch{return [];}}).slice(0,4);
+   console.error(JSON.stringify({regression:gate.name,diagnostics:diagnostics.slice(0,4),nativeDiagnostics}));throw Error('Earlier-feature regression failed: '+gate.name+'; inspect '+directory);
   }
   const summaries=run.stdout.split('\n').flatMap(line=>{try{return [JSON.parse(line) as Record<string,unknown>];}catch{return [];}}).filter(gate.match);if(summaries.length!==1)throw Error('Missing or ambiguous earlier-feature completion receipt: '+gate.name);results.push({name:gate.name,receipt:summaries[0]});console.info(JSON.stringify({gate:gate.name,status:'passed'}));
  },{deadlineMs:2500000});

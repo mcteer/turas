@@ -111,6 +111,9 @@ describe("eve session boundary", () => {
     expect(created.status).toBe(201);
     const conversation = await created.json() as { data: { id: string } };
     createdIds.push(conversation.data.id);
+    // Preserve coverage of the pre-064 native snapshot protocol; live ordinary
+    // continuation has its own runtime-role and real-Eve checks.
+    {const {Client}=await import("pg");const db=new Client({connectionString:process.env.TURAS_TEST_DATABASE_URL});await db.connect();try{await db.query("UPDATE conversations SET live_customer_context=false WHERE id=$1",[conversation.data.id]);}finally{await db.end();}}
     const nativeId = `wrun_${randomUUID()}`;
     let delegated = 0;
     let sent = 0;

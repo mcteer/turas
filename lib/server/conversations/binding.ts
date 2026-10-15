@@ -1,3 +1,4 @@
+import {conversationFeature} from "./feature";
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import type { CurrentSession } from "../auth/sessions";
@@ -19,6 +20,7 @@ type BindingRow = {
   binding_claim_token: string | null;
   binding_claim_expires_at: Date | null;
   context_snapshot_schema: string | null;
+  context_audience?:string|null;live_customer_context?:boolean;
   context_login_session_id: string | null;
   context_membership_id: string | null;
 };
@@ -40,6 +42,10 @@ async function ownedBinding(client: PoolClient, session: CurrentSession, id: str
   if (!row || row.customer_id !== scope.rows[0].customer_id) throw hiddenRecord();
   if (row.customer_id === null) {
     if (row.context_snapshot_schema !== "general-context-v1") throw hiddenRecord();
+    return row;
+  }
+  if(row.live_customer_context && (await conversationFeature(client,id)).kind==='normal') {
+    if(row.context_audience!==(session.kind==='internal'?'internal':'delivery'))throw hiddenRecord();
     return row;
   }
   if (row.context_snapshot_schema !== "customer-context-v1" ||

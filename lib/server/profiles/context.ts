@@ -5,6 +5,7 @@ import { readProfile } from "./read";
 import { withTransaction } from "../db/client";
 import type { RecordKind } from "../../contracts/profile-payloads";
 import { searchEvidence } from "../retrieval/search";
+import { contextPage } from "../../profiles/context-pages";
 
 /** Shared governed path for new customer factual-context retrieval. */
 export async function readGovernedEvidenceContext(actor: ProfileActor, customerId: string,
@@ -29,12 +30,14 @@ type ProfileProjection = {
 export async function readEligibleContext(actor: ProfileActor, customerId: string,
   options: { limit?: number; query?: string; workloadId?: string; kind?: RecordKind;
     page?: number;audience?:"internal"|"delivery";customerWideOnly?:boolean;shareActorRows?:boolean;
-    staffingFence?: boolean } = {},
+    staffingFence?: boolean; journeyOnly?:boolean; offset?:number; citationIds?:readonly string[];includeProductIndex?:boolean } = {},
   existingClient?: PoolClient): Promise<unknown> {
   const limit = options.limit ?? 20;
   const page = options.page ?? 1;
   if (!Number.isInteger(limit) || limit < 1 || limit > 20 ||
       !Number.isInteger(page) || page < 1 || page > 10 ||
+      (options.offset!==undefined&&(!options.journeyOnly||!Number.isInteger(options.offset)||options.offset<0||options.offset>100000)) ||
+      (options.citationIds!==undefined&&(!options.journeyOnly||options.citationIds.length>20)) ||
       (options.query?.length ?? 0) > 200) throw new HttpFailure(422, "invalid_query", "Invalid context query");
   const run = async (client: PoolClient) => {
     const profile = await readProfile(actor, customerId, client,options.workloadId,
@@ -43,6 +46,20 @@ export async function readEligibleContext(actor: ProfileActor, customerId: strin
       throw hiddenRecord();
     }
     const asOf = new Date();
+    // Keep the compact product inventory complete independently of quotation
+    // paging, using this same authorized profile generation and source checks.
+    const productIndex:{products:Array<{name:string;sourceRevisionId:string;url:string|null;publishedAt:string|null;retrievedAt:string}>;complete:boolean}={products:[],complete:true};
+    if(options.includeProductIndex && !options.journeyOnly && !options.query){
+      const names=new Set<string>();let bytes=0;
+      for(const source of profile.attributedResearch)for(const name of source.productNames as string[]){
+        if(names.has(name))continue;names.add(name);
+        const item={name,sourceRevisionId:source.sourceRevisionId as string,url:source.location as string|null,publishedAt:source.publicationAt as string|null,retrievedAt:source.retrievalAt as string};
+        if(bytes+Buffer.byteLength(JSON.stringify(item))>16*1024)item.url=null;
+        const size=Buffer.byteLength(JSON.stringify(item));
+        if(productIndex.products.length>=64 || bytes+size>16*1024){productIndex.complete=false;continue;}
+        productIndex.products.push(item);bytes+=size;
+      }
+    }
     const entries: Record<string, unknown>[] = [];
     const query = options.query?.toLocaleLowerCase();
     for (const fact of profile.acceptedFacts) {
@@ -50,41 +67,66 @@ export async function readEligibleContext(actor: ProfileActor, customerId: strin
       if (options.kind && fact.kind !== options.kind) continue;
       if (options.workloadId && fact.workloadId && fact.workloadId !== options.workloadId) continue;
       if (options.customerWideOnly && fact.workloadId) continue;
+      if(options.journeyOnly && (!fact.payload || typeof fact.payload!=='object' || !('legacyJourney' in fact.payload)))continue;
+      if(options.citationIds && !options.citationIds.includes(String(fact.id)))continue;
       if (query && !JSON.stringify({ payload: fact.payload,
         approvedArtifactExcerpt: fact.approvedArtifactExcerpt }).toLocaleLowerCase().includes(query)) continue;
       entries.push({ type: "accepted_manual", citationId: fact.id, kind: fact.kind,
+        ...(options.journeyOnly?{recordId:fact.recordId,createdAt:fact.createdAt}:{}),
         workloadId: fact.workloadId, payload: fact.payload, quality: fact.quality,
         ...(fact.approvedArtifactExcerpt ? { approvedArtifactExcerpt: fact.approvedArtifactExcerpt } : {}),
         ...(fact.supportStatus === "restricted_source" ?
           { sourceStatus: "restricted", sourceAttestation: fact.sourceAttestation } : {}) });
     }
     for (const source of profile.attributedResearch) {
-      if (query && !JSON.stringify(source.supportedClaim).toLocaleLowerCase().includes(query)) continue;
+      if(options.journeyOnly)continue;
+      if (query && !JSON.stringify({ title: source.title, passage: source.passage,
+        claim: source.supportedClaim, products: source.productNames }).toLocaleLowerCase().includes(query)) continue;
       entries.push({ type: "attributed_research", citationId: source.sourceRevisionId,
         acceptanceState: "accepted", acceptanceBasis: "independent_research",
-        supportedClaim: source.supportedClaim, location: source.location, quality: source.quality });
+        supportedClaim: source.supportedClaim, passage: source.passage, title: source.title,
+        productNames: source.productNames, publicationAt: source.publicationAt,
+        observationAt: source.observationAt, retrievalAt: source.retrievalAt,
+        location: source.location, quality: source.quality });
     }
-    const selected: Record<string, unknown>[] = [];
-    let bytes = 0;
-    const offset = (page - 1) * limit;
-    for (const entry of entries.slice(offset)) {
-      const size = Buffer.byteLength(JSON.stringify(entry));
-      if (selected.length >= limit || bytes + size > 24 * 1024) break;
-      selected.push(entry);
-      bytes += size;
-    }
+    if(options.journeyOnly)entries.sort((a,b)=>{
+      if(options.citationIds)return options.citationIds.indexOf(String(a.citationId))-options.citationIds.indexOf(String(b.citationId));
+      const observed=(entry:Record<string,unknown>)=>String((entry.payload as {legacyJourney?:{observedAt?:string}})?.legacyJourney?.observedAt??'');
+      return observed(b).localeCompare(observed(a))||String(b.createdAt??'').localeCompare(String(a.createdAt??''))||String(a.citationId).localeCompare(String(b.citationId));
+    });
+    const offset=options.offset;
+    let packed:ReturnType<typeof contextPage<Record<string,unknown>>>;
+    let nextOffset:number|null=null;
+    if(offset!==undefined){
+      const selected:Record<string,unknown>[]=[];let bytes=0,oversized=0,cursor=offset;
+      for(;cursor<entries.length;cursor++){
+        const size=Buffer.byteLength(JSON.stringify(entries[cursor]));
+        if(size>24*1024){oversized++;continue;}
+        if(selected.length>=limit||bytes+size>24*1024)break;
+        selected.push(entries[cursor]);bytes+=size;
+      }
+      nextOffset=cursor<entries.length?cursor:null;
+      packed={entries:selected,hasNextPage:nextOffset!==null,oversized};
+    }else packed=contextPage(entries, page, limit);
+    const selected = packed.entries;
     const validUntilCandidates = [asOf.getTime() + 86_400_000];
     for (const entry of selected) {
       const quality = entry.quality as { validUntil?: string } | undefined;
       const deadline = Date.parse(quality?.validUntil ?? "");
       if (Number.isFinite(deadline) && deadline > asOf.getTime()) validUntilCandidates.push(deadline);
     }
-    const truncated = offset + selected.length < entries.length;
+    const truncated = packed.hasNextPage || packed.oversized > 0;
     return { contractVersion: "customer-context-v1", customer: profile.customer,
       contextVersion: profile.contextVersion, asOf: asOf.toISOString(),
       validUntil: new Date(Math.min(...validUntilCandidates)).toISOString(),
-      entries: selected, page, complete: !truncated, truncated,
-      knownGaps: truncated ? ["Additional authorized context was omitted by the result limit"] : [] };
+      entries: selected, page,...(options.includeProductIndex?{productIndex}:{}),
+      // The frozen staffing snapshot has its own strict v1 contract. Search
+      // navigation metadata belongs to the ordinary evidence/journey surface.
+      ...(!options.staffingFence?{nextPage:offset===undefined&&packed.hasNextPage ? page + 1 : null}:{}),
+      ...(offset!==undefined?{offset,nextOffset,moreAvailable:nextOffset!==null}:{}),
+      complete: !truncated, truncated,
+      knownGaps: [...(packed.hasNextPage ? ["Additional authorized context is available on the next page"] : []),
+        ...(packed.oversized ? ["Some authorized records exceed the per-page byte limit; use evidence search to retrieve their passages"] : [])] };
   };
   return existingClient ? run(existingClient) : withTransaction(run);
 }

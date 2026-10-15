@@ -34,6 +34,8 @@ test('customer names open profiles directly and customer search has clear empty 
 test('the overview restores researched business and products without inferring maturity or risk',async({page},info)=>{
  await signIn(page,'panel');await page.goto(`/customers/${DEMO_IDS.sharedCustomer}`);
  const overview=page.getByRole('region',{name:'Customer Overview'});await expect(overview).toBeVisible();
+ await expect(page.getByText('Customer-wide maturity',{exact:true})).toHaveCount(0);
+ expect(await overview.evaluate(el=>!!(el.compareDocumentPosition(document.querySelector('.profile-toolbar')!) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
  await expect(overview).toContainText('A synthetic collaboration business');await expect(overview.getByText('Unknown',{exact:true})).toHaveCount(2);
  await expect(overview).toContainText('None Recorded');await expect(overview.getByRole('button',{name:'Vercel Sandbox'})).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
@@ -60,10 +62,13 @@ test('the summary displays a scoped reviewed maturity stage, risk and delivery i
  const risk={kind:'risk',category:'Delivery',description:'Synthetic open risk',owner:'Synthetic owner',likelihood:2,impact:3,severity:'high',severityRationale:'Synthetic risk assessment',mitigation:'Review dependencies',status:'open',observedAt:date,evidenceRevisionIds:evidence};
  await page.route(`**/api/customers/${DEMO_IDS.sharedCustomer}/profile`,async route=>{
   const response=await route.fetch(),body=await response.json();
+  body.data.attributedResearch=[];
   body.data.acceptedFacts=[maturity,risk].map(payload=>({id:randomUUID(),recordId:randomUUID(),recordVersion:1,workloadId:null,kind:payload.kind,reviewState:'accepted',payload,supportStatus:'settled',quality:{band:'usable'}}));
   body.data.activeDelivery={state:'ready',activeCount:2};await route.fulfill({response,json:body});
  });
  await page.goto(`/customers/${DEMO_IDS.sharedCustomer}`);const overview=page.getByRole('region',{name:'Customer Overview'});
+ await expect(overview).toContainText('The available evidence does not yet identify specific products in use.');
+ const productsHeading=await overview.getByRole('heading',{name:'Products',exact:true}).boundingBox();const emptyProducts=await overview.getByText('The available evidence does not yet identify specific products in use.').boundingBox();expect(emptyProducts!.y).toBeGreaterThan(productsHeading!.y+productsHeading!.height);
  await expect(overview).toContainText('Accelerate');await expect(overview).toContainText('Stage 3 of 6');await expect(overview).toContainText('High');await expect(overview).toContainText('2 Active');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  const axe=await new AxeBuilder({page}).include('.customer-summary').analyze();expect(axe.violations.filter(v=>['serious','critical'].includes(v.impact??''))).toEqual([]);

@@ -8,9 +8,14 @@ export async function learningNativeRunPayloads(workflowRoot:string,sessionIds:r
  const root=await realpath(workflowRoot),owned=await realpath(resolve('local-artifacts/014'));
  if(!root.startsWith(`${owned}/owned-`)||!root.endsWith('/app/.eve/.workflow-data')||sessionIds.length<1||sessionIds.length>32||sessionIds.some(id=>!/^wrun_[A-Za-z0-9_-]+$/.test(id)))throw Error('Owned native run inventory required');
  let examined=0,totalBytes=0;const records:Array<{name:string;path:string;size:number;category:string;value:Record<string,unknown>|null}>=[];
- async function inspect(path:string){for(const entry of await readdir(path,{withFileTypes:true})){const child=join(path,entry.name);if(entry.isSymbolicLink())throw Error('Owned native store symlink refused');if(entry.isDirectory())await inspect(child);else if(entry.isFile()){
-  if(++examined>20000)throw Error('Owned native inventory exceeds bound');const info=await lstat(child);totalBytes+=info.size;if(info.size>4000000||totalBytes>100000000)throw Error('Owned native payload bound exceeded');
-  let value:Record<string,unknown>|null=null;try{const parsed=JSON.parse((await readFile(child)).toString());if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed))value=parsed;}catch{}
+ // Workflow releases locks and retirement removes files during this read-only
+ // inventory. Only an actually vanished entry is absent; permission and other
+ // IO failures must still fail the probe, and every surviving payload counts.
+ const missing=(error:unknown)=>!!error&&typeof error==='object'&&'code' in error&&error.code==='ENOENT';
+ async function inspect(path:string){const entries=await readdir(path,{withFileTypes:true}).catch(error=>{if(missing(error))return [];throw error;});for(const entry of entries){const child=join(path,entry.name);if(entry.isSymbolicLink())throw Error('Owned native store symlink refused');if(entry.isDirectory())await inspect(child);else if(entry.isFile()){
+  if(++examined>20000)throw Error('Owned native inventory exceeds bound');const info=await lstat(child).catch(error=>{if(missing(error))return null;throw error;});if(!info)continue;totalBytes+=info.size;if(info.size>4000000||totalBytes>100000000)throw Error('Owned native payload bound exceeded');
+  const bytes=await readFile(child).catch(error=>{if(missing(error))return null;throw error;});if(!bytes)continue;
+  let value:Record<string,unknown>|null=null;try{const parsed=JSON.parse(bytes.toString());if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed))value=parsed;}catch{}
   records.push({name:basename(child),path:child.slice(root.length+1),size:info.size,category:child.slice(root.length+1).split('/')[0],value});
  }}}
  await inspect(root);const runIds=new Set(sessionIds);

@@ -6,9 +6,9 @@ test.describe("owned conversation shell", () => {
     await signIn(page, "panel");
     await page.goto("/s");
     await page.getByLabel("Customer (optional)").selectOption({ label: "Cedar (synthetic)" });
-    await page.getByRole("button", { name: "Attach documents" }).click();
+    await page.getByRole("button", { name: "Customer sources" }).click();
     await expect(page).toHaveURL(/\/s\/[0-9a-f-]+\?attachments=1$/);
-    await expect(page.getByRole("heading", { name: "Cedar (synthetic)" })).toBeVisible();
+    await expect(page.getByRole("main", { name: "Chat with Turi: Cedar (synthetic)" })).toBeVisible();
     await expect(page.getByLabel("Message Turi")).toBeVisible();
     await page.getByRole("button", { name: "Customer context", exact: true }).click();
     await expect(page.getByText("Synthetic customer data and public research only")).toBeVisible();
@@ -47,12 +47,12 @@ test("general question creates a customer-free chat and attempts its first deliv
   await page.getByRole("button", { name: "Send message" }).click();
   await expect(page).toHaveURL(/\/s\/[0-9a-f-]+$/);
   await accessRecheck;
-  await expect(page.getByRole("heading", { name: "General Technical Chat" })).toBeVisible();
+  await expect(page.getByRole("main", { name: "Chat with Turi: General Technical Chat" })).toBeVisible();
   await expect.poll(() => sends).toBe(1);
   expect(sentText).toBe("Explain cache invalidation.");
   await expect(page.getByRole("button", { name: "Customer context", exact: true })).toHaveCount(0);
   await page.reload();
-  await expect(page.getByRole("heading", { name: "General Technical Chat" })).toBeVisible();
+  await expect(page.getByRole("main", { name: "Chat with Turi: General Technical Chat" })).toBeVisible();
   expect(sends).toBe(1);
   const conversationId = new URL(page.url()).pathname.split("/").at(-1);
   await page.route(`**/api/conversations/${conversationId}`, route => route.fulfill({

@@ -59,8 +59,16 @@ test("closeout blocks pending time, records evidenced acknowledgement, and requi
   await page.getByRole("combobox",{name:"Evidence for Proof reviewed",exact:true}).selectOption(reference.id);
   await page.getByRole("combobox",{name:"Receiver acknowledgement",exact:true}).selectOption("recorded");await page.getByLabel("Acknowledgement date",{exact:true}).fill(f.date);
   await page.getByRole("group",{name:"Acknowledgement Evidence",exact:true}).getByRole("checkbox",{name:"Synthetic observed work",exact:true}).check();
-  await page.getByRole("button",{name:"Save delivery draft",exact:true}).click();const close=page.getByRole("article",{name:"Delivery record Reviewed delivery closeout",exact:true});
-  await close.getByRole("button",{name:"Submit delivery record",exact:true}).click();await expect(close.getByText("submitted",{exact:true})).toBeVisible();
+  const draftResponse=page.waitForResponse(response=>response.request().method()==='POST'&&new URL(response.url()).pathname===`/api/execution/engagements/${f.engagementId}/commands`);
+  await page.getByRole("button",{name:"Save delivery draft",exact:true}).click();
+  const saved=await draftResponse,savedBody=await saved.json().catch(()=>({}));
+  expect(saved.ok(),`Closeout draft save: HTTP ${saved.status()} ${typeof savedBody.code==='string'?savedBody.code:'unknown'}`).toBe(true);
+  const close=page.getByRole("article",{name:"Delivery record Reviewed delivery closeout",exact:true});
+  const submitResponse=page.waitForResponse(response=>response.request().method()==='POST'&&new URL(response.url()).pathname===`/api/execution/engagements/${f.engagementId}/commands`);
+  await close.getByRole("button",{name:"Submit delivery record",exact:true}).click();
+  const submitted=await submitResponse,submittedBody=await submitted.json().catch(()=>({}));
+  expect(submitted.ok(),`Closeout submit: HTTP ${submitted.status()} ${typeof submittedBody.code==='string'?submittedBody.code:'unknown'}`).toBe(true);
+  await expect(close.getByText("submitted",{exact:true})).toBeVisible();
   await signIn(page,"mcteer");await page.goto(url);await page.getByRole("tab",{name:"Handoff",exact:true}).click();await page.getByRole("combobox",{name:"Record type",exact:true}).selectOption("closeout");
   await close.getByRole("button",{name:"Review delivery record",exact:true}).click();await expect(page.getByRole("alert").filter({hasText:"submitted_time_pending"})).toBeVisible();await expect(page.getByRole("button",{name:"Confirm reviewed decision",exact:true})).toHaveCount(0);await page.getByRole("button",{name:"Close review",exact:true}).click();
   await decideTime(f,await timeCandidate(f,[time]));const ready=await readExecutionOverview(f.reviewer,f.engagementId);await page.evaluate(()=>window.dispatchEvent(new Event("focus")));

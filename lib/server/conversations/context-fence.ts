@@ -1,3 +1,5 @@
+import { assertCustomerQuestionReads } from "./customer-accounts";
+import {ownResearchGenerationIsCurrent} from "../research/context-generation";
 import { conversationFeature } from "./feature";
 import type { PoolClient } from "pg";
 import { hiddenRecord, HttpFailure } from "../../contracts/http";
@@ -14,7 +16,7 @@ import { staffingScopeForConversation } from "../staffing/context";
 import { assertGovernedNativeRelease, prepareGovernedReleaseForNative, type GovernedNativeRelease } from "./native-release";
 
 export async function assertNativeContextCurrentInTransaction(client: PoolClient, session: CurrentSession,
-  nativeSessionId: string, preparedStaffing?: GovernedNativeRelease | null): Promise<void> {
+  nativeSessionId: string, preparedStaffing?: GovernedNativeRelease | null, validateSources=true): Promise<void> {
   const lookup = await client.query<{ id: string }>(`
     SELECT id FROM conversations WHERE eve_session_id=$1 AND owner_principal_id=$2
       AND workspace_id=$3 AND environment_id=$4`,
@@ -31,8 +33,10 @@ export async function assertNativeContextCurrentInTransaction(client: PoolClient
   }
   const conversation = await readOwnedBinding(client, session, lookup.rows[0].id);
   if (conversation.eve_session_id !== nativeSessionId) throw hiddenRecord();
-  if (conversation.customer_id === null) {
+  if (conversation.customer_id === null || conversation.live_customer_context && feature.kind==='normal') {
     if (process.env.TURAS_GENERAL_CHAT_DISABLED === "1") throw hiddenRecord();
+    await assertCustomerQuestionReads(client, session, conversation.id,undefined,validateSources);
+    await assertArtifactDependenciesCurrent(client,conversation.id);
     return;
   }
   const bound = await client.query<{ context_audience: string | null;
@@ -48,8 +52,10 @@ export async function assertNativeContextCurrentInTransaction(client: PoolClient
   const audience = planning?.audience ??
     (session.kind === "internal" ? "internal" : "delivery");
   const current = audience === "internal" ? row?.internal_generation : row?.delivery_generation;
+  const activeAttempt=(await client.query<{id:string}>("SELECT id FROM response_attempts WHERE conversation_id=$1 AND response_state IN('pending','running','stopping') ORDER BY created_at DESC LIMIT 1",[conversation.id])).rows[0];
+  const generationCurrent=!!row&&row.context_generation!==null&&(row.context_generation===current||!!activeAttempt&&await ownResearchGenerationIsCurrent(client,{attemptId:activeAttempt.id,conversationId:conversation.id,customerId:conversation.customer_id!,workspaceId:session.workspaceId,membershipId:session.membershipId,sessionId:session.sessionId,generation:row.context_generation,current}));
   if (!row || row.context_snapshot_schema !== "customer-context-v1" ||
-      row.context_audience !== audience || row.context_generation !== current ||
+      row.context_audience !== audience || !generationCurrent ||
       (row.context_valid_until && row.context_valid_until.getTime() <= Date.now())) {
     throw new HttpFailure(409, "context_changed", "Start a new conversation for current customer context");
   }
@@ -60,16 +66,16 @@ export async function assertNativeContextCurrentInTransaction(client: PoolClient
 }
 
 export async function assertNativeContextCurrent(session: CurrentSession,
-  nativeSessionId: string): Promise<void> {
+  nativeSessionId: string,validateSources=true): Promise<void> {
   const prepared = await prepareGovernedReleaseForNative(nativeSessionId, { actor: session });
-  await withTransaction((client) => assertNativeContextCurrentInTransaction(client, session, nativeSessionId, prepared));
+  await withTransaction((client) => assertNativeContextCurrentInTransaction(client, session, nativeSessionId, prepared,validateSources));
 }
 
 export async function releaseNativeChunk(session: CurrentSession,
-  nativeSessionId: string, enqueue: () => void): Promise<void> {
+  nativeSessionId: string, enqueue: () => void,validateSources=true): Promise<void> {
   const prepared = await prepareGovernedReleaseForNative(nativeSessionId, { actor: session });
   await withTransaction(async (client) => {
-    await assertNativeContextCurrentInTransaction(client, session, nativeSessionId, prepared);
+    await assertNativeContextCurrentInTransaction(client, session, nativeSessionId, prepared,validateSources);
     enqueue();
   });
 }

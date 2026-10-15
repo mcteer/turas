@@ -1,3 +1,1 @@
-import { disableTool } from "eve/tools";
-
-export default disableTool();
+export {default} from "eve/tools/task_cancel";

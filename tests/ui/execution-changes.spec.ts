@@ -37,7 +37,10 @@ test("reviewed RAID and scope replacement retain actuals and require explicit on
   const replacement=await replaceBaseline(f,content);await page.evaluate(()=>window.dispatchEvent(new Event("focus")));
   const mapping=page.getByRole("region",{name:"Baseline Reconciliation",exact:true});await expect(mapping).toBeVisible();
   await mapping.getByRole("combobox",{name:"Map work_package proof",exact:true}).selectOption("delivery");
-  await expect(mapping.getByRole("combobox",{name:"Map work_package readiness",exact:true}).getByRole("option",{name:/\(delivery\)/})).toHaveJSProperty("disabled",true);
+  await expect(mapping.getByRole("combobox",{name:"Map work_package proof",exact:true})).toHaveValue("delivery");
+  // Inspect the native option's state independently of platform accessibility
+  // exposure of options inside a collapsed select.
+  await expect(mapping.getByRole("combobox",{name:"Map work_package readiness",exact:true}).locator('option[value="delivery"]')).toHaveJSProperty("disabled",true);
   await mapping.getByRole("combobox",{name:"Map work_package readiness",exact:true}).selectOption("__retired__");
   await mapping.getByRole("combobox",{name:"Map milestone proof_done",exact:true}).selectOption("delivery_done");
   await mapping.getByRole("combobox",{name:"Map milestone ready",exact:true}).selectOption("ready");

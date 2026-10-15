@@ -1,9 +1,13 @@
+import {ordinaryNativeFilesEnabled,assertNativeFileEvaluationOpen} from './native-file-policy';
+import {assertCustomerQuestionReads} from "./customer-accounts";
 import { prepareExecutionNativeAttempt, claimExecutionNativeDispatch } from "../execution/native-dispatch";
 import { prepareExpansionNativeAttempt, claimExpansionNativeDispatch } from "../expansion/native";
 import { prepareSupportNativeAttempt, claimSupportNativeDispatch } from "../support/native";
 import { conversationFeature } from "./feature";
 import { prepareLearningNativeAttempt,claimLearningNativeDispatch } from '../learning/native';
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
+import {messageDigest,normalizeMessageText} from './message-integrity';
+export {messageDigest,normalizeMessageText} from './message-integrity';
 import type { CurrentSession } from "../auth/sessions";
 import { getServerConfig } from "../config";
 import { withTransaction } from "../db/client";
@@ -21,14 +25,11 @@ import { prepareGovernedNativeRelease, assertGovernedNativeRelease } from "./nat
 import { staffingSha256 } from "../staffing/commands";
 import type { PoolClient } from "pg";
 import { captureGeneralContext } from "./general-context";
-
-export function normalizeMessageText(text: string): string {
-  return text.replace(/\r\n?/g, "\n").normalize("NFC");
-}
-
-export function messageDigest(text: string): string {
-  return createHash("sha256").update(JSON.stringify({ message: normalizeMessageText(text) })).digest("hex");
-}
+import { titleFromMessage } from "../../conversations/title";
+import {deriveSteeringAttempt} from './steering';
+import {parseOrdinaryNativeMessage,nativeMessageDigest,summarizeNativeMessage} from "./native-message";
+import {nativeMessageText,type OrdinaryNativeMessage} from "../../conversations/native-message";
+import {attachmentLimits,parseAttachmentMessage} from '../../conversations/attachment-text';
 
 async function requireWorkerHeartbeat(client: import("pg").PoolClient): Promise<void> {
   const result = await client.query(`SELECT 1 FROM maintenance_workers
@@ -39,25 +40,35 @@ async function requireWorkerHeartbeat(client: import("pg").PoolClient): Promise<
 
 export async function prepareAttempt(
   session: CurrentSession, conversationId: string, nativeSessionId: string,
-  requestKey: string, rawText: string, selections: readonly DraftSelection[] = [],
+  requestKey: string, rawText: string|OrdinaryNativeMessage, selections: readonly DraftSelection[] = [],
   existingClient?: PoolClient,
 ): Promise<{ attemptId: string; created: boolean; dispatchState: string; governed?: boolean }> {
   const feature = existingClient ? await conversationFeature(existingClient, conversationId) : await withTransaction(db => conversationFeature(db, conversationId));
-  if(feature.kind==='learning')return {...await prepareLearningNativeAttempt(session,conversationId,nativeSessionId,requestKey,rawText,selections.length>0,existingClient),governed:true};
-  if (feature.kind === "execution") return { ...await prepareExecutionNativeAttempt(session, conversationId, nativeSessionId, requestKey, rawText, selections.length > 0, existingClient), governed: true };
-  if(feature.kind==="expansion")return {...await prepareExpansionNativeAttempt(session,conversationId,nativeSessionId,requestKey,rawText,selections.length>0,existingClient),governed:true};
-  if (feature.kind === "support") return { ...await prepareSupportNativeAttempt(session, conversationId, nativeSessionId, requestKey, rawText, selections.length > 0, existingClient), governed: true };
-  if (feature.kind === "staffing") return { ...await prepareStaffingNativeAttempt(session, conversationId, nativeSessionId, requestKey, rawText, selections.length > 0, existingClient), governed: true };
-  const text = normalizeMessageText(rawText);
+  if(typeof rawText!=='string'&&feature.kind!=='normal')throw new HttpFailure(422,'native_files_scope','Use the governed source workflow for this conversation');
+  const textInput=typeof rawText==='string'?rawText:'';
+  if(feature.kind==='learning')return {...await prepareLearningNativeAttempt(session,conversationId,nativeSessionId,requestKey,textInput,selections.length>0,existingClient),governed:true};
+  if (feature.kind === "execution") return { ...await prepareExecutionNativeAttempt(session, conversationId, nativeSessionId, requestKey, textInput, selections.length > 0, existingClient), governed: true };
+  if(feature.kind==="expansion")return {...await prepareExpansionNativeAttempt(session,conversationId,nativeSessionId,requestKey,textInput,selections.length>0,existingClient),governed:true};
+  if (feature.kind === "support") return { ...await prepareSupportNativeAttempt(session, conversationId, nativeSessionId, requestKey, textInput, selections.length > 0, existingClient), governed: true };
+  if (feature.kind === "staffing") return { ...await prepareStaffingNativeAttempt(session, conversationId, nativeSessionId, requestKey, textInput, selections.length > 0, existingClient), governed: true };
+  const nativeParts=typeof rawText==='string'?null:parseOrdinaryNativeMessage(rawText);
+  if(nativeParts&&selections.length)throw new HttpFailure(422,'native_file_selections','Send native files separately from selected source passages');
+  const text=nativeParts?summarizeNativeMessage(nativeParts):normalizeMessageText(textInput);
+  const suppliedText=nativeParts?nativeMessageText(nativeParts):text;
   if (!text.trim()) throw new HttpFailure(422, "invalid_message", "Message required");
-  if (Buffer.byteLength(text, "utf8") > 16 * 1024) {
+  const documentMessage=feature.kind==='normal'?parseAttachmentMessage(suppliedText):null;
+  if (Buffer.byteLength(text, "utf8") > (documentMessage||nativeParts?attachmentLimits.messageBytes:16*1024)) {
     throw new HttpFailure(413, "message_too_large", "Message too large");
   }
-  const digest = selections.length ? canonicalArtifactSendDigest(text,selections) : messageDigest(text);
+  const digest = nativeParts?nativeMessageDigest(nativeParts):selections.length ? canonicalArtifactSendDigest(text,selections) : messageDigest(text);
   const run = async (client: PoolClient) => {
     const environmentId = getServerConfig().TURAS_ENVIRONMENT_ID;
+    if(nativeParts&&(Number((await client.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[environmentId])).rows[0]?.schema_version??0)<72||!ordinaryNativeFilesEnabled(conversationId)))throw new HttpFailure(503,'native_files_unavailable','Native file messages are not enabled');
+    if(documentMessage && (Number((await client.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[environmentId])).rows[0]?.schema_version??0)<71 || process.env.TURAS_ORDINARY_ATTACHMENTS_DISABLED==='1'))
+      throw new HttpFailure(503,'attachments_unavailable','Document messages are temporarily unavailable');
     await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [environmentId]);
     const conversation = await lockOwnedBinding(client, session, conversationId);
+    assertNativeFileEvaluationOpen(conversationId);
     // A first feature binder can win after the metadata preflight. Never let
     // an ordinary send cross that committed scope under the conversation lock.
     if (["execution", "staffing", "support", "expansion", "learning"].includes((await conversationFeature(client, conversationId)).kind))
@@ -98,11 +109,13 @@ export async function prepareAttempt(
         context.rows[0]?.context_generation === null)) {
       throw new HttpFailure(409, "historical_conversation", "Start a new conversation for current customer context");
     }
-    if (context.rows[0].context_valid_until && context.rows[0].context_valid_until.getTime() <= Date.now()) {
+    const liveNormal=feature.kind==='normal' && (conversation.customer_id===null || !!conversation.live_customer_context);
+    if (!liveNormal && context.rows[0].context_valid_until && context.rows[0].context_valid_until.getTime() <= Date.now()) {
       throw new HttpFailure(409, "context_changed", "Start a new conversation for current customer context");
     }
     await assertArtifactDependenciesCurrent(client, conversationId);
-    await assertRetrievalDependenciesCurrent(client, conversationId);
+    if(liveNormal)await assertCustomerQuestionReads(client,session,conversationId,undefined,false);
+    else await assertRetrievalDependenciesCurrent(client, conversationId);
     const existing = await client.query<{ id: string; body_digest: string; attempt_id: string; dispatch_state: string }>(`
       SELECT sm.id, sm.body_digest, a.id AS attempt_id, a.dispatch_state
       FROM submitted_messages sm JOIN response_attempts a ON a.message_id = sm.id
@@ -144,12 +157,16 @@ export async function prepareAttempt(
     }
     const messageId = randomUUID();
     const attemptId = randomUUID();
-    await client.query(`INSERT INTO submitted_messages
+    if(nativeParts)await client.query(`INSERT INTO submitted_messages(id,conversation_id,request_key,body_digest,text,ordinary_native_parts) VALUES($1,$2,$3,$4,$5,$6)`,[messageId,conversationId,requestKey,digest,text,JSON.stringify(nativeParts)]);
+    else await client.query(`INSERT INTO submitted_messages
       (id, conversation_id, request_key, body_digest, text)
       VALUES ($1,$2,$3,$4,$5)`, [messageId, conversationId, requestKey, digest, text]);
+    await client.query(`UPDATE conversations SET title=$2 WHERE id=$1
+      AND title='New conversation' AND NOT EXISTS(SELECT 1 FROM submitted_messages
+        WHERE conversation_id=$1 AND id<>$3)`,[conversationId,titleFromMessage(documentMessage?(documentMessage.prompt||`Attachment: ${documentMessage.documents[0].filename}`):text),messageId]);
     await client.query(`INSERT INTO response_attempts
       (id, conversation_id, message_id, input_digest, dispatch_state, response_state)
-      VALUES ($1,$2,$3,$4,'prepared','pending')`, [attemptId, conversationId, messageId, digest]);
+      VALUES ($1,$2,$3,$4,'prepared','pending')`, [attemptId, conversationId, messageId, nativeParts?messageDigest(text):digest]);
     if (planning) {
       await client.query(`UPDATE plan_drafting_attempts SET state='running',
         response_attempt_id=$2,updated_at=now() WHERE conversation_id=$1
@@ -188,7 +205,8 @@ export async function claimDispatch(
       throw new HttpFailure(409, "dispatch_claimed", "Dispatch already claimed");
     }
     if (conversation.customer_id) await captureAttemptContext(client, session, conversationId, attemptId, conversation.customer_id);
-    else await captureGeneralContext(client,session,conversationId,attemptId);
+    if(!conversation.customer_id || conversation.live_customer_context && (await conversationFeature(client,conversationId)).kind==='normal')
+      await captureGeneralContext(client,session,conversationId,attemptId);
     const dispatchStartedAt = new Date();
     const deadlineAt = new Date(dispatchStartedAt.getTime() + 120_000);
     await client.query(`UPDATE response_attempts SET dispatch_state = 'dispatching',
@@ -314,8 +332,12 @@ export async function markDispatchUncertain(
 }
 
 export async function deriveNativeAttempt(
-  session: CurrentSession, nativeSessionId: string, requestKey: string, text: string,
+  session: CurrentSession, nativeSessionId: string, requestKey: string, message: string|OrdinaryNativeMessage,
 ): Promise<string> {
+  const nativeParts=typeof message==='string'?null:parseOrdinaryNativeMessage(message);
+  const text=nativeParts?summarizeNativeMessage(nativeParts):message as string;
+  const steering=await deriveSteeringAttempt(session,nativeSessionId,requestKey,nativeParts??text);
+  if(steering)return steering;
   const staffingAttempt = await withTransaction(async db => {
     const row = (await db.query(`SELECT a.id,a.conversation_id FROM response_attempts a JOIN submitted_messages sm ON sm.id=a.message_id
       JOIN conversations c ON c.id=a.conversation_id WHERE c.eve_session_id=$1 AND c.owner_principal_id=$2 AND c.environment_id=$3
@@ -324,6 +346,7 @@ export async function deriveNativeAttempt(
     return row && ["staffing", "execution", "support", "expansion", "learning"].includes((await conversationFeature(db, row.conversation_id)).kind) ? row as { id: string; conversation_id: string } : null;
   });
   if (staffingAttempt) {
+    if(nativeParts)throw hiddenRecord();
     const prepared = await prepareGovernedNativeRelease(staffingAttempt.conversation_id,
       { actor: session, nativeSessionId, responseAttemptId: staffingAttempt.id, allowUnclaimedTurn: true });
     if (!prepared) throw hiddenRecord();
@@ -350,11 +373,13 @@ export async function deriveNativeAttempt(
       getServerConfig().TURAS_ENVIRONMENT_ID, requestKey]);
     const row = found.rows[0];
     if (!row) throw hiddenRecord();
+    assertNativeFileEvaluationOpen(row.conversation_id);
+    if(nativeParts&&!ordinaryNativeFilesEnabled(row.conversation_id))throw hiddenRecord();
     const artifact = await artifactContextSchemaReady(client)
       ? await client.query<{ native_text_digest: string }>(
         "SELECT native_text_digest FROM artifact_context_receipts WHERE attempt_id=$1", [row.id])
       : null;
-    if ((artifact?.rows[0]?.native_text_digest ?? row.body_digest) !== messageDigest(text)) throw hiddenRecord();
+    if (nativeParts ? row.body_digest!==nativeMessageDigest(nativeParts)||(await conversationFeature(client,row.conversation_id)).kind!=='normal' : (artifact?.rows[0]?.native_text_digest ?? row.body_digest) !== messageDigest(text)) throw hiddenRecord();
     await lockOwnedBinding(client, session, row.conversation_id);
     await readCurrentAttemptContext(client, row.id, session.principalId);
     return row.id;

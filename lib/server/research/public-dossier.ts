@@ -21,7 +21,7 @@ export const publicDossierSchema = z.object({
 }).strict();
 export type PublicDossier = z.infer<typeof publicDossierSchema>;
 export type CheckedPublicPage = { url: string; title: string; text: string; bodyDigest: string;
-  normalizedDigest: string; retrievedAt: string; publishedAt: string | null; discoveryPurpose: string; fullNormalizedDigest?: string; receiptSignature?: string; textTruncated?: boolean; totalNormalizedCharacters?: number };
+  normalizedDigest: string; retrievedAt: string; publishedAt: string | null; discoveryPurpose: string; fullNormalizedDigest?: string; receiptSignature?: string; textTruncated?: boolean; totalNormalizedCharacters?: number; independentDiscovery?: {accountId:string;searchId:string;provider:"context"|"gateway_exa";checkedAt:string} };
 export const publicDigest = (value: string) => createHash("sha256").update(value).digest("hex");
 
 /** This only establishes public subject relevance, never employer/workload ownership. */
@@ -61,12 +61,12 @@ export function checkedPublicPage(raw: { url: string; title: string; text: strin
 export function publicResearchQueries(customer: PublicCustomer): Array<{ purpose: string; query: string }> {
   const name = `"${customer.name.replaceAll('"', '')}"${customer.researchQualifier ? " " + customer.researchQualifier : ""}`;
   return [
-    { purpose: "identity", query: `${name} official company products website` },
-    { purpose: "vercel_relationship", query: `${name} Vercel customer architecture case study outcomes` },
-    { purpose: "architecture_outcomes", query: `${name} engineering architecture performance deployment measured outcomes` },
-    { purpose: "releases", query: `${name} official product releases changelog 2026` },
-    { purpose: "employee_testimony", query: `${name} engineer CTO conference presentation webinar architecture` },
-    { purpose: "practitioner_experience", query: `${name} product user experience limitations problems review firsthand` },
+    { purpose: "releases", query: `${name} product releases` },
+    { purpose: "employee_testimony", query: `${name} engineer conference presentation` },
+    { purpose: "practitioner_experience", query: `${name} firsthand workflow experience` },
+    { purpose: "vercel_relationship", query: `${name} Vercel customer stories documentation products workloads` },
+    { purpose: "architecture_outcomes", query: `${name} official engineering architecture performance deployment outcomes` },
+    { purpose: "identity", query: `${name} official company website` },
   ];
 }
 
@@ -74,9 +74,11 @@ export function publicResearchQueries(customer: PublicCustomer): Array<{ purpose
 export function signCheckedPublicPage(page: CheckedPublicPage): CheckedPublicPage {
   const secret=process.env.TURAS_MAINTENANCE_SECRET;
   if(!secret || secret.length<32)throw new Error("Source signing configuration unavailable");
+  // JSONB reorders nested object properties. Sign an explicit discovery field
+  // order so the original proof survives its database round trip.
   const message=JSON.stringify({contract:"public-batch-source-v1",url:page.url,bodyDigest:page.bodyDigest,
     normalizedDigest:page.normalizedDigest,fullNormalizedDigest:page.fullNormalizedDigest??page.normalizedDigest,
-    publishedAt:page.publishedAt,retrievedAt:page.retrievedAt,title:page.title,discoveryPurpose:page.discoveryPurpose});
+    publishedAt:page.publishedAt,retrievedAt:page.retrievedAt,title:page.title,discoveryPurpose:page.discoveryPurpose,...(page.independentDiscovery?{independentDiscovery:{accountId:page.independentDiscovery.accountId,searchId:page.independentDiscovery.searchId,provider:page.independentDiscovery.provider,checkedAt:page.independentDiscovery.checkedAt}}:{})});
   return {...page,receiptSignature:createHmac("sha256",secret).update(message).digest("hex")};
 }
 export function assertCheckedPublicPage(page: CheckedPublicPage): void {

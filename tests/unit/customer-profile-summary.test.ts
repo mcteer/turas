@@ -23,7 +23,12 @@ describe('customer overview scope and unknowns', () => {
     const source = { sourceRevisionId: evidence[0], title: 'Synthetic Workers case study', location: 'https://example.com/case', supportedClaim: 'The checked customer source reports that Synthetic Workers run on Vercel Sandbox.' };
     expect(researchProductMentions([source])).toEqual([{ name: 'Vercel Sandbox', sources: [source] }]);
     expect(researchProductMentions([{...source,supportedClaim:'The customer uses a generic local sandbox.'}])).toEqual([]);
-    expect(researchProductMentions([{...source,supportedClaim:'The customer does not use Vercel Sandbox.'}])).toEqual([]);
-    expect(researchProductMentions([{...source,supportedClaim:'The customer plans to use Vercel Sandbox.'}])).toEqual([]);
+    const quoted = {...source,supportedClaim:'A sourced customer marketing workload.',productNames:['Next.js','Sandbox']};
+    expect(researchProductMentions([quoted]).map(product=>product.name)).toEqual(['Next.js','Vercel Sandbox']);
+    expect(researchProductMentions([quoted])[0].sources).toEqual([quoted]);
   });
+ it('does not turn independently checked general product guidance into customer product use',()=>{
+  expect(researchProductMentions([{sourceRevisionId:'guidance',location:'https://example.com/guidance',title:'Vercel Sandbox guidance',supportedClaim:'Vercel Sandbox supports isolated execution.',productNames:[]}])).toEqual([]);
+ });
+
 });

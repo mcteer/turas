@@ -1,3 +1,4 @@
+import {profileSourceDates} from "../../profiles/source-dates";
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { qualityInputSchema, unknownQualityInput } from "../../contracts/profiles";
@@ -39,12 +40,12 @@ export async function persistApprovedQuality(client: PoolClient, input: {
         new Date(Date.UTC(dated.getFullYear(),dated.getMonth(),dated.getDate())) :
         new Date(`${dated}T00:00:00Z`) : null;
     } else if (rating.dateBasis === "observation") {
-      const observed = input.payload.observedAt ?? input.payload.observationEnd;
+      const {observed}=profileSourceDates(input.payload);
       evidenceAt = typeof observed === "string" && Number.isFinite(Date.parse(observed))
         ? new Date(observed) : null;
     }
   }
-  const reviewValue = input.payload.reviewAt;
+  const {review:reviewValue}=profileSourceDates(input.payload);
   const reviewAt = typeof reviewValue === "string" && Number.isFinite(Date.parse(reviewValue))
     ? new Date(reviewValue) : null;
   const rated = rateEvidence({ R: rating.R, D: rating.D, C: rating.C,

@@ -7,6 +7,7 @@ import { extractWorkforceSpreadsheet, extractSpreadsheet } from "./spreadsheet.t
 import { extractDocx, extractPptx } from "./office.ts";
 import { extractPdf } from "./pdf.ts";
 import { extractImage } from "./ocr.ts";
+import {extractLegacyDocument} from './legacy-document.ts';
 import { finish, type Manifest, type Parsed, type WorkforceManifest } from "./types.ts";
 
 export async function parseArtifact(bytes: Uint8Array, filename: string, declaredType: string,
@@ -15,16 +16,18 @@ export async function parseArtifact(bytes: Uint8Array, filename: string, declare
   const format = preflight.format;
   let parsed: Parsed;
   if (format === "txt" || format === "md" || format === "csv") parsed = extractText(preflight.text ?? "", format);
+  else if (format === "json") parsed = extractText(preflight.text ?? "", "txt");
   else if (format === "xlsx") parsed = await extractSpreadsheet(bytes);
   else if (format === "docx") parsed = await extractDocx(bytes);
   else if (format === "pptx") parsed = await extractPptx(bytes);
   else if (format === "pdf") parsed = await extractPdf(bytes);
   else if (format === "png" || format === "jpeg") parsed = await extractImage(bytes);
+  else if (format === "html" || format === "rtf" || format === "epub" || format === "odt" || format === "ods" || format === "odp" || format === "odg") parsed=await extractLegacyDocument(bytes,format);
   else parsed = finish([]);
   const codepoints = parsed.units.reduce((sum, item) => sum + Array.from(item.text).length, 0);
   if (codepoints > 500_000) throw new Error("extraction_limit");
   return { contract: "artifact-intake-v1", originalDigest: createHash("sha256").update(bytes).digest("hex"),
-    parserVersion: "004-parser-v1", imageDigest: binding.imageDigest,
+    parserVersion: "004-parser-v2", imageDigest: binding.imageDigest,
     scanReceiptDigest: binding.scanReceiptDigest, format,
     status: parsed.coverage.omitted.length ? "partial" : "ready", ...parsed };
 }

@@ -13,6 +13,7 @@ const schema = z.object({
   DATABASE_URL_UNPOOLED: databaseUrl,
   TURAS_ENVIRONMENT_ID: z.string().min(1),
   TURAS_APP_ORIGIN: z.string().url().refine((value) => new URL(value).origin === value, "An exact application origin is required"),
+  TURAS_PREVIEW_BRANCH_ORIGIN: z.string().url().optional(),
   TURAS_DEMO_USERNAME: z.literal("mcteer"),
   TURAS_DEMO_PASSWORD: credential,
   PANEL_USERNAME: z.literal("panel"),
@@ -34,9 +35,13 @@ export function parseServerConfig(environment: Record<string, string | undefined
   if (previewHost && !/^[a-zA-Z0-9-]+\.vercel\.app$/.test(previewHost)) {
     throw new Error("Turas configuration invalid: VERCEL_URL");
   }
+  const branchHost = previewHost ? environment.VERCEL_BRANCH_URL : undefined;
+  if (branchHost && !/^[a-zA-Z0-9-]+\.vercel\.app$/.test(branchHost)) {
+    throw new Error("Turas configuration invalid: VERCEL_BRANCH_URL");
+  }
   const parsed = schema.safeParse(previewHost
-    ? { ...environment, TURAS_APP_ORIGIN: `https://${previewHost}` }
-    : environment);
+    ? { ...environment, TURAS_APP_ORIGIN: `https://${previewHost}`, TURAS_PREVIEW_BRANCH_ORIGIN: branchHost ? `https://${branchHost}` : undefined }
+    : { ...environment, TURAS_PREVIEW_BRANCH_ORIGIN: undefined });
   if (!parsed.success) {
     const names = parsed.error.issues.map((issue) => issue.path.join(".")).filter(Boolean);
     throw new Error(`Turas configuration invalid: ${[...new Set(names)].join(", ")}`);
