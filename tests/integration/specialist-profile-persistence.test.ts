@@ -1,3 +1,4 @@
+import {readOrdinaryPracticeEvidence} from '../../lib/server/conversations/practice-evidence';
 import {searchNamedCustomerEvidence} from '../../lib/server/conversations/named-evidence-search';
 import {isolatedChatActor} from '../fixtures/isolated-chat-actor';
 import {settleSyntheticConversationAttempts} from '../fixtures/ordinary-attempt-cleanup';
@@ -110,6 +111,31 @@ it('retains new public research for an assigned partner, preserves curated claim
   expect(namedSearch.results.some(result=>result.text.includes(late))).toBe(true);
   expect((await db.query('SELECT customer_id FROM conversations WHERE id=$1',[fresh.conversation.id])).rows[0].customer_id).toBe(null);
   expect(Number((await db.query('SELECT count(*) FROM session_evidence_dependencies WHERE conversation_id=$1',[fresh.conversation.id])).rows[0].count)).toBeGreaterThan(0);
+  // Public product documentation is reusable without disclosing the private
+  // query metadata that originally populated the practice library.
+  const practiceUrl='https://vercel.com/docs/sandbox/concepts/firewall';
+  const practiceText='General firewall introduction. '.repeat(22)+'\n\nIP custom DNS and broad CIDR rules can bypass domain restrictions.\n\nAllowed destinations can receive exfiltrated data.';
+  const practiceSource=extractSources({success:true,url:practiceUrl,title:'Sandbox firewall',markdown:practiceText},new Date().toISOString())[0];
+  const practiceId=publicDigest(practiceText);
+  await db.query(`INSERT INTO turas_evidence_snapshots(environment_id,workspace_id,id,fetch_key,url,content_hash,source,truncated,checked_at,refresh_after)
+   VALUES($1,$2,$3,$3,$4,$3,$5,false,now(),now()+interval '6 hours')`,[process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,practiceId,practiceUrl,JSON.stringify(practiceSource)]);
+  const {researchPassages}=await import('../../lib/server/research/specialists/solution-research/source-integrity');
+  await db.query(`INSERT INTO turas_evidence_passages(environment_id,workspace_id,snapshot_id,ordinal,text,model) VALUES($1,$2,$3,1,$4,'fixture')`,[process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,practiceId,researchPassages(practiceSource).map(p=>p.text).join('\n\n')]);
+  await db.query(`INSERT INTO turas_vercel_practice_sources(environment_id,workspace_id,product,topic,snapshot_id,url,title,source_type,information_type,checked_at,refresh_after)
+   VALUES($1,$2,'private-product-marker','private-question-marker',$3,$4,'Sandbox firewall','vercel_documentation','product_capability',now(),now()+interval '6 hours')`,[process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,practiceId,practiceUrl]);
+  const practice=await readOrdinaryPracticeEvidence(searchPrincipal,customerId,'DNS CIDR exfiltrated',new AbortController().signal);
+  expect(practice.sources).toHaveLength(1);
+  expect(practice.sources[0].passages.some(p=>p.text.includes('exfiltrated'))).toBe(true);
+  expect(JSON.stringify(practice)).not.toContain('private-question-marker');
+  expect(JSON.stringify(practice)).not.toContain('private-product-marker');
+  expect((await db.query('SELECT citation_ids FROM general_customer_read_scopes WHERE attempt_id=$1 AND customer_id=$2',[searchPrincipal.attributes.turasAttemptId,customerId])).rows[0].citation_ids).toContain('public_practice:'+practiceId);
+  await withRuntime(client=>assertCustomerQuestionReads(client,actor,fresh.conversation.id,searchPrincipal.attributes.turasAttemptId));
+  // Withdrawing the library mapping invalidates already-consumed context.
+  await db.query('BEGIN');
+  try{
+   await db.query('DELETE FROM turas_vercel_practice_sources WHERE snapshot_id=$1',[practiceId]);
+   await expect(assertCustomerQuestionReads(db as unknown as PoolClient,actor,fresh.conversation.id,searchPrincipal.attributes.turasAttemptId)).rejects.toMatchObject({status:404});
+  }finally{await db.query('ROLLBACK');}
   // Two already-authorized reads must not upgrade shared membership locks
   // while recording consumption for distinct owner-private conversations.
   const consumers=[new Client({connectionString:process.env.DATABASE_URL}),new Client({connectionString:process.env.DATABASE_URL})];

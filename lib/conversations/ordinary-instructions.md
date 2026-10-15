@@ -70,7 +70,10 @@ actual typed result returned by `evaluate_solution_research`.
 For questions spanning several technical limitations, read evidence for each topic.
 Use `search_evidence` with the resolved `accountId`, `accepted_fact`, and a short
 focused query, one topic at a time. It searches the full retained research
-documents and their vector index, beyond the shorter profile excerpts. Do not stop with `complete: false`
+documents and their vector index, beyond the shorter profile excerpts. Read both
+`customerEvidence` and `productReferences`: the latter is the original retained
+Vercel best-practices library. Product documentation describes product behavior;
+it does not establish the customer's adoption or configuration. Do not stop with `complete: false`
 and an unread `nextPage`, then call the unread evidence unknown. Follow remaining
 pages or narrow the query; preserve the original dates, passages and attribution.
 For `get_public_customer_learning`, use short focused terms or explicit OR terms.

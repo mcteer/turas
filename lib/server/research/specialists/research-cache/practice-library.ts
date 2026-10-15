@@ -6,7 +6,7 @@ import { readCachedSource } from "./sources";
 import { evidenceDatabase } from "./database";
 import { digest, normalized } from "./schema";
 import { embeddingsConfigured } from "../embeddings";
-import { researchPassages } from "../solution-research/source-integrity";
+import { retainedPracticePassages } from "./practice-passages";
 import { z } from "zod";
 
 export const practiceSourceTypeSchema = z.enum(["vercel_documentation", "customer_engineering", "conference_presentation", "webinar", "practitioner_report", "independent_analysis"]);
@@ -32,7 +32,7 @@ export async function recordVercelPracticeSource(identity: AppIdentity, product:
   return { source, cacheHit: read.cacheHit };
 }
 
-export async function searchVercelPracticeSources(identity: AppIdentity, product: string, query: string, signal: AbortSignal) {
+async function practiceSourceReceipts(identity: AppIdentity, product: string, query: string, signal: AbortSignal) {
   const sql = await evidenceDatabase();
   let vector: number[] | null = null;
   if (embeddingsConfigured() && query) {
@@ -40,7 +40,7 @@ export async function searchVercelPracticeSources(identity: AppIdentity, product
   }
   const rows = await sql.query(`WITH candidates AS MATERIALIZED (
       SELECT p.*,s.source,s.url AS source_url,s.truncated,s.checked_at AS snapshot_checked_at,s.refresh_after AS snapshot_refresh_after,
-        m.product,m.topic,m.source_type,m.information_type,m.published_at
+        m.product,m.topic,m.title,m.source_type,m.information_type,m.published_at
       FROM turas_vercel_practice_sources m JOIN turas_evidence_snapshots s ON s.environment_id=m.environment_id AND s.workspace_id=m.workspace_id AND s.id=m.snapshot_id
       JOIN turas_evidence_passages p ON p.environment_id=s.environment_id AND p.workspace_id=s.workspace_id AND p.snapshot_id=s.id
       WHERE m.environment_id=$1 AND m.workspace_id=$2 AND ($3='' OR m.product=$3)
@@ -58,18 +58,29 @@ export async function searchVercelPracticeSources(identity: AppIdentity, product
   const grouped = new Map<string, PracticeSource>();
   for (const row of rows) {
     const source = sourceSchema.parse(row.source);
-    const passages = researchPassages(source);
-    const id = passages.find((passage) => passage.text === row.text)?.id ?? `passage-${row.ordinal}`;
+    const passages = retainedPracticePassages(source, String(row.text), query);
     const current = grouped.get(row.snapshot_id) ?? practiceSourceSchema.parse({
       url: row.source_url, title: row.title, product: row.product, topic: row.topic, sourceType: row.source_type,
       informationType: row.information_type, publishedAt: row.published_at ? new Date(row.published_at).toISOString().slice(0, 10) : null,
       checkedAt: new Date(row.snapshot_checked_at).toISOString(), refreshAfter: new Date(row.snapshot_refresh_after).toISOString(),
       stale: new Date(row.snapshot_refresh_after).getTime() <= Date.now(), passages: [],
     });
-    if (current.passages.length < 8) current.passages.push({ id, text: String(row.text).slice(0, 500) });
+    for (const passage of passages) {
+      if (current.passages.length >= 8) break;
+      if (!current.passages.some(existing => existing.id === passage.id)) current.passages.push(passage);
+    }
     grouped.set(row.snapshot_id, current);
   }
-  return [...grouped.values()].slice(0, 8);
+  return [...grouped.entries()].slice(0, 8).map(([snapshotId,source])=>({snapshotId,source}));
+}
+
+/** Existing specialist view: no private account or query metadata is added. */
+export async function searchVercelPracticeSources(identity:AppIdentity,product:string,query:string,signal:AbortSignal){
+ return (await practiceSourceReceipts(identity,product,query,signal)).map(row=>row.source);
+}
+/** Exact retained cache identities for source-consumption fencing. */
+export async function searchVercelPracticeSourceReceipts(identity:AppIdentity,query:string,signal:AbortSignal){
+ return practiceSourceReceipts(identity,'',query,signal);
 }
 
 export async function latestVercelPracticeRun(identity: AppIdentity, product: string, topic: string) {

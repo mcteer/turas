@@ -550,3 +550,9 @@ The latest repair Preview passes actual native-file correction and unsent-draft
 retention checks. The evidence-search response-size fix passes actual Preview verification.
 Research answer quality and ordinary-chat full-document search still need final
 hosted acceptance; PR 34 remains unmerged.
+
+
+Ordinary named-customer search now also reads retained public product references
+from the existing best-practices library, separately from customer adoption
+facts. The library bridge passes disposable authorization and passage-integrity
+checks; its actual-model Preview acceptance remains pending in PR #34.

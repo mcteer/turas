@@ -870,3 +870,27 @@ implementation and passes with the correction. The test rolls back both isolated
 consumption probes and retains the earlier source-refresh assertions. The final
 disposable catalog, typecheck, Eve build and Next web build pass. No hosted pass
 is inferred for the newly exposed named-account tool until its next Preview check.
+
+
+The `1dea217` Preview completed named full-document search and improved the
+answer's timeout/cancellation and continuing-cost coverage. Independent review
+still failed the answer: IP/custom-DNS/CIDR bypass and permitted-destination
+exfiltration caveats were absent from every returned tool result. The actual
+retained firewall documentation was in the existing public best-practices
+library, outside the customer-profile evidence index.
+
+The next repair connects ordinary named-account evidence search to that existing
+library, returning public product references separately from customer evidence.
+Private originating product/topic query metadata and research briefs are omitted;
+product documentation does not become customer adoption or profile facts. Exact
+cache identities are recorded and revalidated with current account grants and
+source eligibility on subsequent steps and turns. The library query also now
+selects its required title and maps packed index chunks back to complete original
+research passages and citation IDs instead of returning only the first 500
+characters with a fabricated fallback ID.
+
+The disposable migration/runtime-grant/parity catalog passes, including late
+packed-passage retrieval for an assigned partner, private-query metadata
+exclusion, and invalidation after library mapping withdrawal. The focused passage
+regression, typecheck, Eve build and authored-document checks pass. This repair
+has not yet been deployed or accepted by an actual-model Preview check.

@@ -1,3 +1,4 @@
+import type {PoolClient} from 'pg';
 import {buildCurrentProjection} from "../../retrieval/projections";
 import {retrievalSourceHasMaterialConflict} from "../../retrieval/search";
 import { withTransaction } from "../../db/client";
@@ -18,7 +19,9 @@ export async function requireResearchAccount(identity:AppIdentity,accountId:stri
 /** Discovery may find a new URL; cached research may not resurrect a canonical
  * source that has been withdrawn, conflicted or made ineligible. */
 export async function researchSourceIsEligible(identity:AppIdentity,accountId:string,url:string) {
-  return withTransaction(async db=>{
+  return withTransaction(db=>researchSourceIsEligibleInTransaction(db,identity,accountId,url));
+}
+export async function researchSourceIsEligibleInTransaction(db:PoolClient,identity:AppIdentity,accountId:string,url:string){
     await lockProfileActor(db,identity,accountId,undefined,true);
     const heads=await db.query<{id:string|null}>(`SELECT v.id FROM evidence_sources s
       LEFT JOIN LATERAL(SELECT id FROM evidence_source_revisions WHERE source_id=s.id ORDER BY version DESC LIMIT 1) v ON true
@@ -29,5 +32,4 @@ export async function researchSourceIsEligible(identity:AppIdentity,accountId:st
         await retrievalSourceHasMaterialConflict(db,{source_kind:'verified_research',source_revision_id:head.id},identity,{scope:'customer',customerId:accountId}))return false;
     }
     return true;
-  });
 }

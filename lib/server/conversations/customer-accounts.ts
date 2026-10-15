@@ -1,3 +1,4 @@
+import {practiceCitationPrefix,practiceSnapshotIsCurrent} from './practice-consumption';
 import type { PoolClient } from "pg";
 import type { CurrentSession } from "../auth/sessions";
 import { hiddenRecord, HttpFailure } from "../../contracts/http";
@@ -88,7 +89,7 @@ export async function readCustomerAccountEvidence(db: PoolClient, principal: Pri
       (attempt_id,customer_id,audience,generation,citation_ids)
       VALUES($1,$2,$3,$4,$5) ON CONFLICT(attempt_id,customer_id) DO UPDATE SET
        generation=EXCLUDED.generation,citation_ids=CASE WHEN general_customer_read_scopes.generation=EXCLUDED.generation THEN ARRAY(SELECT DISTINCT unnest(
-         general_customer_read_scopes.citation_ids||EXCLUDED.citation_ids)) ELSE EXCLUDED.citation_ids END,checked_at=clock_timestamp()`,
+         general_customer_read_scopes.citation_ids||EXCLUDED.citation_ids)) ELSE ARRAY(SELECT DISTINCT unnest(EXCLUDED.citation_ids||ARRAY(SELECT id FROM unnest(general_customer_read_scopes.citation_ids) id WHERE id LIKE 'public_practice:%'))) END,checked_at=clock_timestamp()`,
     [scope.attemptId, customerId, scope.actor.kind === "internal" ? "internal" : "delivery",
       context.contextVersion, [...new Set([...context.entries.map(entry => `${entry.type}:${entry.citationId}`),...(publicInventory?.evidence.map(story=>'attributed_research:'+story.sourceRevisionId)??[])])]]);
   }
@@ -120,12 +121,19 @@ export async function assertCustomerQuestionReads(db: PoolClient, actor: Current
     ORDER BY s.customer_id,s.checked_at DESC,a.created_at DESC`, [conversationId, actor.principalId, actor.workspaceId,
       getServerConfig().TURAS_ENVIRONMENT_ID])).rows;
   const validated = new Set<string>();
+  const practicesValidated=new Set<string>();
   for (const read of reads) {
     await lockProfileActor(db, actor, read.customer_id, undefined, true);
     // A profile generation is an inventory revision, not a revocation. New
     // independent research must not invalidate an otherwise authorized thread.
     // Recheck the exact consumed claims and the current audience instead.
     if(read.audience !== (actor.kind === "internal" ? "internal" : "delivery")) throw hiddenRecord();
+    if(validateSources)for(const citation of read.citation_ids as string[]){
+      if(!citation.startsWith(practiceCitationPrefix))continue;
+      const snapshotId=citation.slice(practiceCitationPrefix.length),key=read.customer_id+':'+snapshotId;
+      if(!practicesValidated.has(key)&&!await practiceSnapshotIsCurrent(db,actor,read.customer_id,snapshotId))throw hiddenRecord();
+      practicesValidated.add(key);
+    }
     if(!validateSources || validated.has(read.customer_id))continue;
     validated.add(read.customer_id);
     const manual = read.citation_ids.filter((id: string) => id.startsWith("accepted_manual:")).map((id: string) => id.slice(16));
