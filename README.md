@@ -56,9 +56,11 @@ Research retains the specialist's information type and freshness window instead
 of classifying every source as adoption evidence. The original daily research
 maintenance route uses the cron bearer and bounded public-only rechecks without
 a human identity. Hosted format, maintenance and inventory acceptance remains open.
-Hosted model/provider checks are in progress under one shared $15 ledger.
+Hosted model/provider checks continue under blanket user approval with bounded
+Preview ledgers. The original $15 ledger and its unresolved holds are preserved;
+a supplemental $15 allowance bounds the combined ceiling at $30 without top-ups.
 All three specialists completed on Preview; final answer quality, explicit reuse,
-full parity acceptance and cleanup remain open.
+full parity acceptance and final verification remain open.
 The root Grok model is unchanged. Legacy ordinary-chat guidance is scoped to normal
 turns so governed learning keeps its original input ceiling; all 16 unpaid real
 Eve learning fixture arms pass. New extraction jobs and retries bind parser policy
@@ -546,10 +548,12 @@ or already inactive; an accepted request alone leaves it stopping.
 Actual answer quality remains a release gate. Earlier completed answers omitted
 material security or framework evidence; those failures are retained. The restored
 inventory and customer-free documentation reader still need final actual-output
-acceptance. Broad proposal checks also reached the unchanged finite evaluation
-reservation guard before synthesis. The Preview evaluation hard-limits actual
-Grok output to 8,192 tokens; pricing, the $15 ledger, existing charges/unknown holds
-and Production behavior are unchanged. Final exact Preview/CI acceptance and
-owned test-payload cleanup remain open in the
+acceptance. Broad proposal checks reached the finite evaluation reservation guard before
+synthesis. Testing continues with the supplemental allowance described above;
+pricing, prior charges/unknown holds and Production behavior are unchanged.
+Preview Grok output remains bounded at 8,192 tokens. The latest 24 owned test
+sessions and conversations were retired and purged after encrypted backup and
+local restore/deletion rehearsal; real customer/research and financial records
+were unchanged. Final exact Preview/CI acceptance remains open in the
 [backend parity audit](docs/legacy-backend-parity-audit.md). PR #34 is unmerged;
 these bug checks do not establish complete 016 hosted/operator acceptance.
