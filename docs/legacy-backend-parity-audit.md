@@ -479,9 +479,11 @@ model envelope. Malformed framing is never hidden in history.
 
 Actual text, Word, PDF and spreadsheet files now pass the general-chat composer
 and intercepted native-send assertions across desktop/mobile WebKit in both themes.
-Source selection/lifecycle regressions pass alongside them. An initial file-selection
-timing failure was corrected by waiting for an enabled picker and interacting with
-the composer before selection; the complete fresh run passes. The scrolling message
+Source selection/lifecycle regressions pass alongside them. Initial local waits produced a complete passing run, but the later hosted landing
+check reproduced a lost first-file selection. The picker was enabled in server
+HTML before its React handler was hydrated. It now stays disabled until hydration;
+a controlled delayed-JavaScript WebKit check verifies both states and the first
+selection in all four configurations. Hosted recheck of this correction is pending. The scrolling message
 pane also has keyboard focus, resolving the serious WebKit accessibility finding.
 
 An encrypted schema-070 Preview recovery capture restored and rehearsed migration
@@ -506,3 +508,10 @@ A focused four-project WebKit check additionally verifies that opening Customer
 sources keeps the attached draft and performs no native send. Runtime-role checks
 cover both internal and assigned-partner intake, customer ambiguity, subsequent
 grant revocation, cross-owner denial and the document release switch.
+
+The hydration correction passes all twelve focused document/source-draft/delayed-
+JavaScript WebKit cases and the web build. The previous a355cac hosted landing
+attempt remains recorded as a failed first-file selection; it is not acceptance.
+Sixteen allowlisted evaluation native sessions returned successful reset responses;
+three test conversations had no native identity, and one retained question/history
+thread remains for final checks. This is not application payload erasure.

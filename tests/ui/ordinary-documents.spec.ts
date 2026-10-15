@@ -47,3 +47,17 @@ test('opening customer sources preserves attached context and does not dispatch 
  await expect(page.getByText('Draft not sent.',{exact:true})).toBeVisible();
  expect(sends).toBe(0);
 });
+
+test('server-rendered file controls wait for hydration before accepting the first selection',async({page})=>{
+ await signIn(page,'panel');
+ let release!:()=>void;const scriptsReady=new Promise<void>(resolve=>{release=resolve;});
+ await page.route('**/_next/static/**/*.js*',async route=>{await scriptsReady;await route.continue().catch(()=>{});});
+ try{
+  await page.goto('/s',{waitUntil:'commit'});
+  const picker=page.locator('input[type="file"][aria-label="Attach documents"]');
+  await expect(picker).toBeAttached();await expect(picker).toBeDisabled();
+  release();await expect(picker).toBeEnabled({timeout:30000});
+  await picker.setInputFiles({name:'first-selection.txt',mimeType:'text/plain',buffer:Buffer.from('The initial document selection must survive hydration.')});
+  await expect(page.getByRole('button',{name:'Remove first-selection.txt'})).toBeVisible();
+ }finally{release();await page.unrouteAll({behavior:'wait'});}
+});
