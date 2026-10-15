@@ -733,3 +733,16 @@ session content was retired. The stopped build-template cleanup total is now 28;
 all corresponding runtime snapshots remain available. No Turas local container
 remained after the focused checks, and the verified cleanup recovery was retained
 while two redundant encrypted captures were removed.
+
+The user extended the existing $15 hosted parity ledger by 24 hours on October
+15 and confirmed Gateway automatic top-ups are disabled. Previously accounted
+charges and outstanding holds were preserved. The separate $2 native-file
+Preview plan is also authorized; it remains limited to one bounded test session
+and one Preview build, with no Production changes.
+
+On exact `715b308` Preview, actual authenticated WebKit Sandboxes search returned
+10 independently accepted research passages in hybrid mode with Sandbox content
+and no mobile overflow. The first funded request returned a generic 503; that
+reliability finding remains open. The complete local gap benchmark passed with
+list p95 559 ms against its unchanged 2,000 ms limit. The current CI benchmark's
+2,068 ms failure remains recorded pending its isolated rerun.
