@@ -55,7 +55,7 @@ try{await withPlanEvalEnvironment(async environment=>{
   if(!sent.ok()){await writeFile(join(out,'send-private.json'),JSON.stringify({status:sent.status(),body:await sent.text()}),{mode:0o600});throw Error('Native file send rejected');}
   }
   if(process.argv.includes('--steer')){
-   const deadline=Date.now()+30000;while(!(await query('SELECT 1 FROM ordinary_native_file_fixture_calls')).rowCount){if(Date.now()>deadline)throw Error('Original provider did not start');await new Promise(resolve=>setTimeout(resolve,50));}
+   const deadline=Date.now()+90000;while(!(await query('SELECT 1 FROM ordinary_native_file_fixture_calls')).rowCount){const state=(await query('SELECT response_state,last_error_code FROM response_attempts WHERE conversation_id=$1',[id])).rows[0];if(state?.response_state==='failed')throw Error('Original response failed: '+String(state.last_error_code??'unknown'));if(Date.now()>deadline)throw Error('Original provider did not start');await new Promise(resolve=>setTimeout(resolve,100));}
    if(process.argv.includes('--composer')){
     await page.getByLabel('Message Turi').fill('Correct this using the attached file.');
     await page.getByLabel('Chat document files',{exact:true}).setInputFiles({name:'corrected.png',mimeType:'image/png',buffer:bytes});
@@ -94,7 +94,15 @@ try{await withPlanEvalEnvironment(async environment=>{
   }
   const retired=await context.request.post('/eve/v1/session/'+native+'/reset',{headers,data:{reason:'Owned native file fixture complete'}});if(!retired.ok())throw Error('Native file retirement unconfirmed');
   const receipt={kind:'ordinary-native-file-bytes',actualEveRuntime:true,fixtureProvider:true,paidProviderCalls:0,providerBytesPreserved:!process.argv.includes('--memory'),personalPreferenceSaved:process.argv.includes('--memory')||process.argv.includes('--memory-files'),personalPreferenceCrossSession,personalPreferenceIsolated,personalPreferenceRemoved,providerToolSets:calls.map(row=>row.tool_names),actualCanonicalCustomerResolved:true,nativeFileCorrection:process.argv.includes('--steer'),toolNames:calls[0].tool_names,composerUsed:process.argv.includes('--composer'),reloadedHistory:true,nativeRetirementStatus:retired.status()};await writeFile(join(out,'receipt.json'),JSON.stringify(receipt,null,2),{mode:0o600});console.log(JSON.stringify(receipt));for(const name of ['failure-private.json','failure-private.log','send-private.json'])await rm(join(out,name),{force:true});
- }catch(error){await writeFile(join(out,'failure-private.log'),environment.privateLogTail(),{mode:0o600});await writeFile(join(out,'failure-private.json'),JSON.stringify({name:error instanceof Error?error.name:'Unknown',message:error instanceof Error?error.message:String(error)}),{mode:0o600});throw error;}
+ }catch(error){
+  // Only this unpaid, synthetic fixture is eligible for bounded CI diagnostics.
+  // Keep full logs private; remove URLs and known credentials from error lines.
+  if(process.env.CI)for(const line of environment.privateLogTail().split('\n').filter(line=>/(?:Error:|Error \[|error:|Cannot |Missing |ENOENT|EACCES|timed out)/i.test(line)).slice(-16)){
+   let reason=line.replace(/https?:\/\/\S+|postgres(?:ql)?:\/\/\S+/gi,'<redacted-url>').replaceAll('synthetic-test-password','<redacted>');
+   for(const [key,value]of Object.entries(process.env))if(value&&value.length>=8&&/(?:SECRET|PASSWORD|TOKEN|API_KEY)/i.test(key))reason=reason.replaceAll(value,'<redacted>');
+   console.error(JSON.stringify({kind:'native_file_fixture_failure',name:'RuntimeDiagnostic',reason:reason.slice(0,240)}));
+  }
+  await writeFile(join(out,'failure-private.log'),environment.privateLogTail(),{mode:0o600});await writeFile(join(out,'failure-private.json'),JSON.stringify({name:error instanceof Error?error.name:'Unknown',message:error instanceof Error?error.message:String(error)}),{mode:0o600});throw error;}
  finally{if(csrf)await context.request.post('/api/auth/logout',{headers:{origin:environment.origin,'x-csrf-token':csrf}}).catch(()=>{});await context.close();await browser.close();}
 },{feature:'010',empty:true,deadlineAt:Date.now()+420000,prepare:async({appRoot,environmentId})=>{
  marker=fixtureOwner;
