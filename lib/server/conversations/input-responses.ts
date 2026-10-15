@@ -8,17 +8,20 @@ import {getServerConfig} from '../config';
 import {HttpFailure} from '../../contracts/http';
 import type {PoolClient} from 'pg';
 
-export async function hasNativeInputWindow(db:PoolClient,attemptId:string,nativeSessionId:string,turnId:string,current=true){
+export async function nativeInputDeadline(db:PoolClient,attemptId:string,nativeSessionId:string,turnId:string,current=true):Promise<Date|null>{
  const marker=(await db.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0];
- if((marker?.schema_version??0)<67)return false;
- return !!(await db.query(`SELECT 1 FROM native_input_resume_windows resume
+ if((marker?.schema_version??0)<67)return null;
+ return (await db.query<{deadline_at:Date}>(`SELECT resume.deadline_at FROM native_input_resume_windows resume
   JOIN event_projections event ON event.native_event_id=resume.native_event_id
   JOIN response_attempts a ON a.id=resume.attempt_id
   JOIN conversations c ON c.id=a.conversation_id AND c.eve_session_id=event.native_session_id
   WHERE a.id=$1 AND c.eve_session_id=$2 AND event.conversation_id=c.id
    AND ($4::boolean=false OR resume.deadline_at>clock_timestamp())
    AND ((event.event_type='input.requested' AND $3='')
-    OR (event.event_type='input.resolved' AND event.turn_id=$3)) LIMIT 1`,[attemptId,nativeSessionId,turnId,current])).rowCount;
+    OR (event.event_type='input.resolved' AND event.turn_id=$3)) ORDER BY resume.deadline_at DESC LIMIT 1`,[attemptId,nativeSessionId,turnId,current])).rows[0]?.deadline_at??null;
+}
+export async function hasNativeInputWindow(db:PoolClient,attemptId:string,nativeSessionId:string,turnId:string,current=true){
+ return !!await nativeInputDeadline(db,attemptId,nativeSessionId,turnId,current);
 }
 export const inputResponsesSchema=z.object({inputResponses:z.array(z.object({
  requestId:z.string().min(1).max(300),optionId:z.string().min(1).max(300).optional(),

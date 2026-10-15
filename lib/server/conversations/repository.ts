@@ -9,6 +9,7 @@ import { getServerConfig } from "../config";
 import { query, withTransaction } from "../db/client";
 import { hiddenRecord, HttpFailure } from "../../contracts/http";
 import type { ConversationReference } from "../../contracts/conversations";
+import {updateConversationSchema} from '../../contracts/conversations';
 import { lockProfileActor, lockWorkspaceActor } from "../profiles/policy";
 import { assertRetrievalDependenciesCurrent } from "../retrieval/fences";
 import { assertPlanConversationFence } from "../plans/fences";
@@ -23,6 +24,7 @@ type ConversationRow = {
   customer_id: string | null;
   owner_principal_id: string;
   title: string;
+  revision?: string | number;
   binding_state: ConversationReference["bindingState"];
   eve_session_id: string | null;
   created_at: Date;
@@ -116,6 +118,7 @@ function toReference(row: ConversationRow, session: CurrentSession): Conversatio
     customerId: row.customer_id,
     ownerPrincipalId: row.owner_principal_id,
     title: status === "current" ? row.title : "Previous conversation",
+    version: Number(row.revision ?? 0),
     bindingState: row.binding_state,
     eveSessionId: row.binding_state === "bound" ? row.eve_session_id : null,
     createdAt: row.created_at.toISOString(),
@@ -470,7 +473,8 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
 export async function setOwnedConversationArchived(session: CurrentSession, id: string, archived: boolean) {
   return withTransaction(async client => {
     await lockWorkspaceActor(client, session);
-    const result = await client.query(`UPDATE conversations c SET archived_at=CASE WHEN $5 THEN COALESCE(c.archived_at,clock_timestamp()) ELSE NULL END
+    const result = await client.query(`UPDATE conversations c SET archived_at=CASE WHEN $5 THEN COALESCE(c.archived_at,clock_timestamp()) ELSE NULL END,
+      revision=c.revision+1,updated_at=clock_timestamp()
       WHERE c.id=$4 AND c.owner_principal_id=$3 AND c.environment_id=$6
         AND c.workspace_id=$7
         AND ((${scopedGeneral}) OR EXISTS (SELECT 1 FROM customer_references customer WHERE customer.id=c.customer_id AND ${scopedCustomer}))
@@ -478,4 +482,22 @@ export async function setOwnedConversationArchived(session: CurrentSession, id: 
     if (!result.rowCount) throw hiddenRecord();
     return { id, archived };
   });
+}
+
+/** Legacy owner-only title editing with optimistic concurrency. */
+export async function updateOwnedConversation(session:CurrentSession,id:string,input:{title?:string;archived?:boolean;version:number}){
+ const patch=updateConversationSchema.parse(input);
+ return withTransaction(async client=>{
+  await lockWorkspaceActor(client,session);
+  const owned=await client.query(`SELECT c.id,c.revision FROM conversations c WHERE c.id=$4
+    AND c.owner_principal_id=$3 AND c.workspace_id=$5 AND c.environment_id=$6
+    AND ((${scopedGeneral}) OR EXISTS(SELECT 1 FROM customer_references customer WHERE customer.id=c.customer_id AND ${scopedCustomer}))
+    FOR UPDATE OF c`,[...values(session),id,session.workspaceId,getServerConfig().TURAS_ENVIRONMENT_ID]);
+  if(!owned.rowCount)throw hiddenRecord();
+  if(Number(owned.rows[0].revision)!==patch.version)throw new HttpFailure(409,'conversation_changed','This conversation changed; reload before updating');
+  const changed=(await client.query(`UPDATE conversations SET title=COALESCE($2,title),
+    archived_at=CASE WHEN $3::boolean IS NULL THEN archived_at WHEN $3 THEN COALESCE(archived_at,clock_timestamp()) ELSE NULL END,
+    revision=revision+1,updated_at=clock_timestamp() WHERE id=$1 RETURNING title,archived_at,revision`,[id,patch.title??null,patch.archived??null])).rows[0];
+  return {id,title:changed.title,archived:changed.archived_at!==null,version:Number(changed.revision)};
+ });
 }

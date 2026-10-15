@@ -37,9 +37,10 @@ Hosted specialist behavior and visual acceptance remain pending; local checks do
 not establish them. Track open comparisons and actual verification in
 [the repair audit](docs/legacy-backend-parity-audit.md). Migrations 056–066 and their
 runtime grants are applied to backed-up, rehearsed Preview; Production is unchanged.
-Migration 067 adds posted-question resume windows and is undergoing the same
-recovery rehearsal before its hosted check. Native input continuation still
-requires a successful actual Preview reply and reloaded history.
+Migration 067 adds posted-question resume windows and is applied to Preview
+after an encrypted schema-66 capture and matching-version restore rehearsal.
+The native question/new-login/answer/reloaded-history flow passed actual-model
+CLI WebKit checks on Preview `77ec4be`; final release verification remains open.
 Hosted model/provider checks are in progress under one shared $15 ledger.
 Specialist completion, full parity acceptance and cleanup remain open.
 The root Grok model is unchanged.

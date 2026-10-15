@@ -15,6 +15,7 @@ import {resolveCustomerAccount,readCustomerAccountEvidence} from '../../lib/serv
 import {readCurrentAttemptContext} from '../../lib/server/profiles/attempt-context';
 import {boundToolActor} from '../../lib/server/profiles/tool-actor';
 import {requestOwnedTaskCancellation,settleInactiveOwnedCancellation} from '../../lib/server/conversations/cancel';
+import {wrapOrdinaryChatModel} from '../../lib/server/conversations/model-budget';
 const isolatedTestUrl=requireTestDatabaseUrl();
 beforeAll(()=>{process.env.DATABASE_URL=isolatedTestUrl;process.env.TURAS_ENVIRONMENT_ID=process.env.TURAS_TEST_ENVIRONMENT_ID;});
 async function signIn():Promise<CurrentSession>{const origin=process.env.TURAS_APP_ORIGIN!;const response=await login(new Request(`${origin}/api/auth/login`,{method:'POST',headers:{origin,'content-type':'application/json'},body:JSON.stringify({username:'partner',password:process.env.PARTNER_PASSWORD})}));const actor=await getCurrentSession(new Request(origin,{headers:{cookie:response.headers.get('set-cookie')!.split(';')[0]}}));if(!actor)throw Error('Fixture identity unavailable');return actor;}
@@ -59,6 +60,15 @@ it('uses customer selection as initial context, continues after new knowledge an
   const originalAuthoritySession=fresh.sessionId;
   await db.query('UPDATE login_sessions SET revoked_at=now() WHERE id=$1',[fresh.sessionId]);
   fresh=await signIn();
+  let providerCalls=0;let providerSignal:AbortSignal|undefined;
+  type Model=Parameters<typeof wrapOrdinaryChatModel>[0];
+  const provider={specificationVersion:'v4',provider:'local-admission-fixture',modelId:'local-fixture',supportedUrls:{},
+    async doGenerate(options:{abortSignal?:AbortSignal}){providerCalls++;providerSignal=options.abortSignal;return {};},
+    async doStream(){throw Error('Unused fixture stream');}} as unknown as Model;
+  const resumedPrincipal={principalId:fresh.principalId,attributes:{turasAttemptId:next.attemptId}};
+  const resumedModel=wrapOrdinaryChatModel(provider,resumedPrincipal,native,'');
+  await expect(resumedModel.doGenerate({prompt:[]})).rejects.toMatchObject({status:404});
+  expect(providerCalls).toBe(0);
   await authorizeOwnedInputResponse(fresh,native,{inputResponses:[{requestId,text:'The public site'}]});
   const posted=(await db.query('SELECT deadline_at FROM native_input_resume_windows WHERE attempt_id=$1',[next.attemptId])).rows[0].deadline_at;
   expect((await db.query('SELECT response_state FROM response_attempts WHERE id=$1',[next.attemptId])).rows[0].response_state).toBe('running');
@@ -67,6 +77,12 @@ it('uses customer selection as initial context, continues after new knowledge an
   await projectNativeEvent(native,next.attemptId,event('turn.completed',{turnId:nextTurn}));
   expect((await db.query('SELECT response_state FROM response_attempts WHERE id=$1',[next.attemptId])).rows[0].response_state).toBe('running');
   await projectNativeEvent(native,next.attemptId,event('message.appended',{turnId:'',messageDelta:'Resumed'}));
+  await expect(resumedModel.doGenerate({prompt:[]})).rejects.toMatchObject({status:404});
+  expect(providerCalls).toBe(0);
+  await db.query(`INSERT INTO general_context_injections(attempt_id,turn_id,snapshot_digest)
+    SELECT attempt_id,$2,snapshot_digest FROM general_context_receipts WHERE attempt_id=$1`,[next.attemptId,nextTurn]);
+  await resumedModel.doGenerate({prompt:[]});
+  expect(providerCalls).toBe(1);expect(providerSignal).toBeInstanceOf(AbortSignal);
   expect((await db.query('SELECT login_session_id FROM general_context_receipts WHERE attempt_id=$1',[next.attemptId])).rows[0].login_session_id).toBe(originalAuthoritySession);
   expect((await db.query('SELECT login_session_id FROM ordinary_chat_authorities WHERE attempt_id=$1',[next.attemptId])).rows[0].login_session_id).toBe(fresh.sessionId);
   expect(await withTransaction(client=>readCurrentAttemptContext(client,next.attemptId,fresh.principalId))).toMatchObject({contractVersion:'general-context-v1'});

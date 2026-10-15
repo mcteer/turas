@@ -61,7 +61,7 @@ export async function loadResearchContext(identity:AppIdentity,accountId:string,
     return customerContextSchema.parse({accountId,name:account.name,synthetic:false,
       snapshotVersion:`current-manual:${manualVersion}`,
       publicEvidenceVersion,
-      solutionKnowledgeVersion:digest(JSON.stringify({published:headers,workspacePatterns:(await db.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0]?.schema_version>=62?await workspaceSolutionLibraryVersion(db,identity):null})),researchPolicyVersion:'account-attribution-passage-discovery-v3',
+      solutionKnowledgeVersion:digest(JSON.stringify({published:headers,workspacePatterns:(await db.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0]?.schema_version>=62?await workspaceSolutionLibraryVersion(db,identity):null})),researchPolicyVersion:'account-attribution-control-limitations-v4',
       journalStatus:profile.acceptedFacts.length?'available':'empty',moreAvailable:read.truncated || headers.length>100,
       evidence});
   });

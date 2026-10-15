@@ -12,6 +12,10 @@ Status: in progress. This is a repair audit, not a new feature specification. Ea
 - An old owned test attempt had an admitted delivery but no native turn. Authenticated cancellation returned the actual runtime acknowledgment `no_active_turn`; that exact stopping attempt was reconciled as cancelled. No allowance was reset. The cancellation route now performs this reconciliation for ordinary chats only after the same native acknowledgment; accepted cancellation alone does not prove completion.
 - Production remains unchanged. The shared evaluation ledger remains the original $15 budget. Full parity, final Preview inspection and cleanup are still incomplete.
 
+The subsequent `77ec4be` Preview passed the actual native question flow: the pending question survived logout/login/reload, clicking Desktop returned exactly `Desktop`, desktop/mobile views had no overflow or active page errors, and the answer survived reload. An encrypted schema-66 capture (184 customers, 805 source revisions, no human profile records, 22 conversations and zero active attempts) was restored under matching PostgreSQL/vector versions and migrated to 67 with explicit grants before isolated Preview was migrated. The restore preserved these counts and removed its owned containers. Later provider-admission hardening carries that same posted deadline into the provider abort signal. Local checks reject provider I/O without both the posted window and original context injection.
+
+The legacy conversation PATCH also supported owner-private title editing and optimistic archive/restore updates. The current build had omitted title editing and did not increment the archive revision. The repair restores an 80-character title edit and version checks, with existing ownership, workspace and current-grant checks. Older archive-only clients remain supported. Hosted interaction and visual checks remain required.
+
 ## Confirmed regressions
 
 - General chat removes customer resolution, evidence reads, and research capabilities. Legacy resolves named customers inside the conversation and uses the canonical account without requiring a UI selection.
