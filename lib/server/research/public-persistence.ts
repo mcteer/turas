@@ -118,8 +118,11 @@ async function persistCheckedPublicCustomerResearch(actor:CurrentSession,raw:unk
         [getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,customerId,page.bodyDigest,passageDigest,page.fullNormalizedDigest??page.normalizedDigest,page.text,page.url]);
       if(supplied.rowCount && !(specialist && page.independentDiscovery?.accountId===customerId))throw new HttpFailure(409,"submitted_origin","User-origin content cannot be promoted by public batch research");
       const currentClaim=supported.map(f=>`${f.attribution}: ${f.statement}${f.caveats.length?` Caveats: ${f.caveats.join('; ')}`:''}`).join("\n");
-      const supportedClaim=retainedPreviousClaim && previous!.passage.split(/\n\s*\n/).every(quote=>passage.includes(quote))
-        ? [...new Set([currentClaim,previous!.supported_claim])].join("\n") : currentClaim;
+      let supportedClaim=currentClaim;
+      if(retainedPreviousClaim && previous!.passage.split(/\n\s*\n/).every(quote=>passage.includes(quote))){
+        if(previous!.supported_claim.includes(currentClaim))supportedClaim=previous!.supported_claim;
+        else if(!currentClaim.includes(previous!.supported_claim))supportedClaim=`${currentClaim}\n${previous!.supported_claim}`;
+      }
       if(previous && previous.retrieval_at.getTime()>Date.parse(page.retrievedAt))throw new HttpFailure(409,"research_observation_outdated","A newer checked source is already current");
       if(previous?.passage_digest===passageDigest&&!previous.retired&&previous.supported_claim===supportedClaim&&previous.retrieval_at.getTime()===Date.parse(page.retrievedAt)){revisionIds.push(previous.id);continue;}
       const id=randomUUID();

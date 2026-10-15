@@ -1,3 +1,4 @@
+import {lockWorkspaceActor} from "../../lib/server/profiles/policy";
 import {researchSourceIsEligible} from "../../lib/server/research/specialists/account";
 import {loadResearchContext} from '../../lib/server/research/specialists/solution-research/context';
 import {retainSpecialistProfileSources} from '../../lib/server/research/specialists/retain-profile';
@@ -63,6 +64,15 @@ it('retains new public research for an assigned partner, preserves curated claim
    VALUES($1,$2,1,$3,$4,$5,$6,$7,$8,$9,$10,now()+interval '1 hour')`,[randomUUID(),receipt,source.id,source.passage_id,source.source_kind,source.source_revision_id,source.source_generation,source.passage_digest,source.projection_contract,JSON.stringify(source.locators)]);
   await withTransaction(client=>recordRetrievalConsumption(client,actor,receipt,conversation.id));
 
+
+  // Reproduce two ordinary chats having acquired their read-authority locks
+  // before validating retrieval scopes. Neither may upgrade the shared actor
+  // lock and deadlock the other merely to validate read-only permissions.
+  const readers=[new Client({connectionString:process.env.DATABASE_URL}),new Client({connectionString:process.env.DATABASE_URL})];
+  try{
+    await Promise.all(readers.map(async reader=>{await reader.connect();await reader.query('BEGIN');await lockWorkspaceActor(reader as unknown as PoolClient,actor,undefined,true);}));
+    await Promise.all(readers.map(reader=>assertCustomerQuestionReads(reader as unknown as PoolClient,actor,conversation.id,attempt.attemptId,false)));
+  }finally{await Promise.all(readers.map(async reader=>{await reader.query('ROLLBACK').catch(()=>{});await reader.end();}));}
 
   const late=`${name} uses Vercel Sandboxes to execute isolated workloads for its customers.`;
   const newQuote=`${name} independently documents the deployment architecture for its customer-facing service.`;

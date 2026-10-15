@@ -48,9 +48,9 @@ Every entry below must be accounted for by the domain ledger; naming similarity 
 | `ask_question` | Native question tool, request cards and owned/CSRF-checked response route restored. Pending questions survive unrelated turns and fresh login without rewriting original receipts; hosted checks pending. |
 | `bash` | Both builds disable model-facing shell access. |
 | `calculate_engagement_scenario` | Pending comparison |
-| `calculate_services_plan` | Pending comparison |
+| `calculate_services_plan` | Original schema, explicit proposed defaults and arithmetic copied. Ported checks prove full annual payroll/overhead, pricing floor, losses, zero denominators and protected capacity. No portfolio records imported. |
 | `capture_customer_context` | Pending comparison |
-| `connection_search` | Pending comparison |
+| `connection_search` | Compared: original provider-discovery guard retained. Customer lookup routes to the canonical resolver; missing private data does not trigger connector installation. |
 | `evaluate_solution_research` | Pending comparison |
 | `get_adoption_patterns` | Pending comparison |
 | `get_capacity` | Pending comparison |
@@ -73,7 +73,7 @@ Every entry below must be accounted for by the domain ledger; naming similarity 
 | `review_solution_pattern` | Pending comparison |
 | `search_solution_patterns` | Pending comparison |
 | `task_cancel` | Static native tool restored with owned background-task admission; authenticated Preview cancellation returned 202 and left zero live research leases. |
-| `todo` | Pending comparison |
+| `todo` | Removed by the installed Eve framework. Its changelog explicitly requires removing `agent/tools/todo.ts`; `eve/tools/todo` returns `ERR_PACKAGE_PATH_NOT_EXPORTED`. No fictional replacement or unsupported export added. |
 | `wait_for_customer_research` | Pending comparison |
 | `web_fetch` | Both disable the generic tool; legacy uses the bounded specialist source reader. |
 | `web_search` | Both disable the generic tool; legacy uses governed specialist discovery. |
@@ -128,6 +128,36 @@ accounted as provider fee holds. No allowance was reset. Production remains
 unchanged. Three-specialist/decision/reuse acceptance, native steering, remaining
 attachment formats, maintenance wiring, the remaining inventory comparisons,
 final exact-commit hosted inspection and cleanup are still open.
+
+### Additional actual Preview checks
+
+On `f5afe7b`, the exact question “What Vercel products is Baggu using?” completed
+through actual recon after server-bound delegation supplied the canonical account
+ID. Desktop/mobile/reload transport checks passed; the separate semantic judgment
+remains required. The prior `fcd2c9e` run exposed the omitted-ID handoff and is a
+failed check, not acceptance evidence.
+
+A concurrent Notion workflow failed with PostgreSQL `40P01` before its specialist
+handoffs. Read-scope authorization upgraded shared membership locks to exclusive
+locks, allowing two ordinary chats to deadlock. That validation now retains shared
+locks; a disposable two-connection barrier test reproduces the lock sequence and
+passes. The failed Notion cohort was cancelled through its owned authenticated
+endpoint (202), and its hosted recheck remains open.
+
+The browser harness was also corrected to wait for an enabled empty composer,
+not an enabled Send button (which correctly stays disabled with no draft).
+Harness mistakes and actual product failures remain separately recorded.
+
+### Fixed-date demo tools
+
+The five legacy capacity/portfolio/brief/scenario/intervention tools directly read
+`lib/demo/repository.ts`; their schemas and descriptions explicitly identify
+synthetic data. The intervention accepts only the literal fictional
+`eng-notion-pilot`. Copying those records would contradict removal of showcased
+fake data. Their domain concepts map to current staffing capacity, dated finance
+scenarios and tracked execution/decision APIs. Ordinary-chat access to those real
+domains is not yet equivalent: several reads remain bound to governed explanation
+sessions. This is an open routing gap, not a claim of parity from similar names.
 
 ## Source inventory
 

@@ -106,7 +106,10 @@ export async function assertCustomerQuestionReads(db: PoolClient, actor: Current
     JOIN conversations c ON c.id=d.conversation_id
     WHERE c.id=$1 AND c.owner_principal_id=$2 AND c.workspace_id=$3 AND c.environment_id=$4`,
     [conversationId,actor.principalId,actor.workspaceId,getServerConfig().TURAS_ENVIRONMENT_ID])).rows;
-  for (const scope of retrievalScopes) await authorizeRetrievalScope(db,actor,scope.scope,scope.customer_id);
+  // This validates reads; upgrading shared identity locks to UPDATE here makes
+  // concurrent ordinary chats deadlock on the same membership. Shared locks
+  // still fence revocation and source mutations until this transaction ends.
+  for (const scope of retrievalScopes) await authorizeRetrievalScope(db,actor,scope.scope,scope.customer_id,undefined,true);
   if(validateSources)await assertRetrievalDependenciesCurrent(db,conversationId);
   const reads = (await db.query(`SELECT s.* FROM general_customer_read_scopes s
     JOIN response_attempts a ON a.id=s.attempt_id JOIN conversations c ON c.id=a.conversation_id
