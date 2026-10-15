@@ -77,7 +77,7 @@ export async function prepareResearch(identity: AppIdentity, input: RequestScope
   const receipt = row ? verifiedDurableReceipt(row.receipt, identity) : null;
   if (!refresh && receipt && !("brief" in receipt.payload && solutionCitationIssues(receipt.payload.blockers).length) && row?.refresh_after && row.refresh_after.getTime() > Date.now() &&
     researchContextDigest(receipt.payload.context) === researchContextDigest(context) &&
-    receipt.payload.context.publicEvidenceVersion === context.publicEvidenceVersion && await snapshotDependenciesValid(identity, row.dependencies) &&
+    receipt.payload.context.publicEvidenceVersion === context.publicEvidenceVersion && await snapshotDependenciesValid(identity, row.dependencies, row.scope.accountId) &&
     !await hasNewPublicSources(identity, scope.accountId, receipt.payload.sources.map(source => source.url), receipt.payload.reusedFrom?.researchedAt ?? receipt.payload.issuedAt)) {
     const reference = await reissue(receipt, identity, signal);
     console.info(JSON.stringify({ event: "research_cache.brief", key, outcome: "hit" }));
@@ -165,7 +165,7 @@ export async function researchRequestProgress(identity: AppIdentity, key: string
     : { status: "unavailable" as const, reference: null, reason: "Research did not publish before its reservation expired. Do not automatically retry the whole investigation." };
   const current = await loadResearchContext(identity, row.scope.accountId, signal);
   const receipt = verifiedDurableReceipt(row.receipt, identity);
-  if (!receipt || researchContextDigest(current) !== row.context_hash || receipt.payload.context.publicEvidenceVersion !== current.publicEvidenceVersion || !await snapshotDependenciesValid(identity, row.dependencies) || (receipt && await hasNewPublicSources(identity, row.scope.accountId, receipt.payload.sources.map(source => source.url), receipt.payload.reusedFrom?.researchedAt ?? receipt.payload.issuedAt)))
+  if (!receipt || researchContextDigest(current) !== row.context_hash || receipt.payload.context.publicEvidenceVersion !== current.publicEvidenceVersion || !await snapshotDependenciesValid(identity, row.dependencies, row.scope.accountId) || (receipt && await hasNewPublicSources(identity, row.scope.accountId, receipt.payload.sources.map(source => source.url), receipt.payload.reusedFrom?.researchedAt ?? receipt.payload.issuedAt)))
     return { status: "unavailable" as const, reference: null, reason: "Completed research is no longer eligible for reuse. Customer context or evidence changed." };
   return { status: "available" as const, reference: await reissue(receipt, identity, signal), reason: "The shared research completed. Load this signed reference using the normal result tool; preserve its original check dates and gaps." };
 }

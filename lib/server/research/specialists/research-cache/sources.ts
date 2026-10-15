@@ -9,7 +9,7 @@ import { researchPassages } from "../solution-research/source-integrity";
 import { cachedFetch } from "./fetch";
 import { evidenceDatabase } from "./database";
 import { canonicalSourceUrl, digest, normalized, snapshotReferenceSchema } from "./schema";
-import { requireResearchAccount } from "../account";
+import { researchSourceIsEligible, requireResearchAccount } from "../account";
 import { withTransaction } from "../../../db/client";
 import { lockWorkspaceActor } from "../../../profiles/policy";
 
@@ -24,6 +24,8 @@ export async function readCachedSource(identity: AppIdentity, accountId: string,
   if(options.recordAccount!==false) await requireResearchAccount(identity,accountId);
   else await withTransaction(db=>lockWorkspaceActor(db,identity,undefined,true));
   const canonical = canonicalSourceUrl(url);
+  if(options.recordAccount!==false && !await researchSourceIsEligible(identity,accountId,canonical))
+    throw new Error("The customer source is no longer eligible; explicit source recovery is required.");
   const key = "page:" + digest(canonical);
   const read = await cachedFetch(identity, key, pageSchema, () => readPublicSource(canonical, signal), signal, { notBefore });
   const { source, truncated,proof:originalProof } = read.value;
@@ -156,13 +158,15 @@ export async function storedSourceCandidates(identity: AppIdentity, accountId: s
   })) };
 }
 
-export async function snapshotDependenciesValid(identity: AppIdentity, references: z.infer<typeof snapshotReferenceSchema>[]) {
+export async function snapshotDependenciesValid(identity: AppIdentity, references: z.infer<typeof snapshotReferenceSchema>[],accountId:string) {
   if (!references.length) return false;
   const sql = await evidenceDatabase();
   const ids = [...new Set(references.map(r => r.snapshotId))];
-  const rows = await sql.query(`SELECT s.id FROM turas_evidence_snapshots s
+  const rows = await sql.query(`SELECT s.id,s.url FROM turas_evidence_snapshots s
     WHERE s.environment_id=$1 AND s.workspace_id=$2 AND s.id=ANY($3::text[]) AND s.refresh_after>now()
     AND NOT EXISTS(SELECT 1 FROM turas_evidence_snapshots n WHERE n.environment_id=s.environment_id AND n.workspace_id=s.workspace_id
       AND n.fetch_key=s.fetch_key AND n.checked_at>s.checked_at)`, [identity.environmentId, identity.workspaceId, ids]);
-  return rows.length === ids.length;
+  if(rows.length!==ids.length)return false;
+  for(const row of rows)if(!await researchSourceIsEligible(identity,accountId,z.string().parse(row.url)))return false;
+  return true;
 }

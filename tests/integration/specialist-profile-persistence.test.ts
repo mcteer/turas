@@ -1,3 +1,4 @@
+import {researchSourceIsEligible} from "../../lib/server/research/specialists/account";
 import {loadResearchContext} from '../../lib/server/research/specialists/solution-research/context';
 import {retainSpecialistProfileSources} from '../../lib/server/research/specialists/retain-profile';
 import {extractSources} from '../../lib/server/research/specialists/solution-research/evidence';
@@ -99,6 +100,14 @@ it('retains new public research for an assigned partner, preserves curated claim
   expect((await db.query('SELECT count(*)::int AS count FROM session_evidence_dependencies WHERE conversation_id=$1',[conversation.id])).rows[0].count).toBe(1);
   expect((await db.query(`SELECT count(*)::int AS count FROM ordinary_evidence_refreshes f JOIN session_evidence_dependencies d ON d.id=f.dependency_id WHERE d.conversation_id=$1`,[conversation.id])).rows[0].count).toBe(1);
 
+  const researchActor={...actor,userId:actor.principalId,environmentId:process.env.TURAS_ENVIRONMENT_ID!};
+  expect(await researchSourceIsEligible(researchActor,customerId,url)).toBe(true);
+  expect(await researchSourceIsEligible(researchActor,customerId,'https://example.com/new-independent-source')).toBe(true);
+  const head=(await db.query(`SELECT v.id FROM evidence_source_revisions v JOIN evidence_sources s ON s.id=v.source_id
+    WHERE s.customer_id=$1 AND s.origin='independent_research' AND s.canonical_location=$2 ORDER BY v.version DESC LIMIT 1`,[customerId,url])).rows[0];
+  await db.query(`INSERT INTO evidence_source_events(id,source_revision_id,lifecycle_version,event_type,actor_membership_id,rationale)
+    VALUES($1,$2,1,'withdraw',$3,'Fixture source withdrawal')`,[randomUUID(),head.id,actor.membershipId]);
+  expect(await researchSourceIsEligible(researchActor,customerId,url)).toBe(false);
   await db.query("UPDATE customer_grants SET state='revoked' WHERE customer_id=$1 AND membership_id=$2",[customerId,actor.membershipId]);
   await expect(readProfile(actor,customerId)).rejects.toMatchObject({status:404});
  }finally{await db.end();}

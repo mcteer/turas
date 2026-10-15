@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { AppIdentity } from "../identity";
-import { requireResearchAccount } from "../account";
+import { researchSourceIsEligible, requireResearchAccount } from "../account";
 import { customerUpdateSchema } from "../solution-research/customer-update";
 import { sourceSchema } from "../solution-research/schema";
 import { researchPassages, verifiedPublicationDate } from "../solution-research/source-integrity";
@@ -89,7 +89,9 @@ export async function recallPublicLearning(identity: AppIdentity, accountId: str
   signal.throwIfAborted();
   const parsed = z.array(z.object({ id: z.string(), account_id: z.string(), url: z.string(), title: z.string(), passage_id: z.string(), quote: z.string(),
     published_at: z.coerce.date().nullable(), first_seen: z.coerce.date(), last_seen: z.coerce.date(), refresh_after: z.coerce.date().nullable(), changed: z.boolean(), query_matched: z.boolean() })).parse(rows);
-  return parsed.map(row => publicLearningSchema.parse({ id: row.id, accountId: row.account_id, url: row.url, title: row.title,
+  const eligible=[];
+  for(const row of parsed)if(await researchSourceIsEligible(identity,row.account_id,row.url))eligible.push(row);
+  return eligible.map(row => publicLearningSchema.parse({ id: row.id, accountId: row.account_id, url: row.url, title: row.title,
     passageId: row.passage_id, queryMatched: row.query_matched, quote: row.quote.slice(0, 1600), quoteTruncated: row.quote.length > 1600, publishedAt: row.published_at?.toISOString().slice(0, 10) ?? null,
     firstSeen: row.first_seen.toISOString(), attributionWarning: communityAttributionWarning({ url: row.url }), lastSeen: row.last_seen.toISOString(), evidenceState: row.changed ? "changed"
       : !row.refresh_after ? "historical" : row.refresh_after.getTime() <= Date.now() ? "refresh_due" : "recently_checked" }));
