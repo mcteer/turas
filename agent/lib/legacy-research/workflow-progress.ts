@@ -35,3 +35,22 @@ export async function failReservedResearch(kind:string,ctx:WorkflowStepToolConte
       WHERE later.conversation_id=$6 AND later.as_of>$5 AND later.as_of<=r.started_at)`,[getServerConfig().TURAS_ENVIRONMENT_ID,principal.principalId,ctx.session.id,kind,bound.as_of,bound.id]);
  });
 }
+
+/** Supply canonical scope from the authorized reservation, not a UUID that the
+ * root model may omit or transcribe incorrectly in free-form delegation text. */
+export async function reservedSpecialistInvocation(kind:'customer-update'|'best-practices'|'solution',input:{message:string;agentId?:string},ctx:WorkflowStepToolContext){
+ 'use step';
+ ctx.abortSignal.throwIfAborted();
+ const principal=ctx.session.auth.current,attemptId=principal?.attributes?.turasAttemptId;
+ if(!principal?.principalId || typeof attemptId!=='string')throw new Error('Research identity unavailable');
+ const {withTransaction}=await import('../../../lib/server/db/client');
+ const {readResearchRuntimeAuthority}=await import('../../../lib/server/research/specialists/runtime-authority');
+ const {requestScopeSchema}=await import('../../../lib/server/research/specialists/research-cache/schema');
+ const scope=await withTransaction(async db=>{
+   const authority=await readResearchRuntimeAuthority(db,attemptId,principal.principalId!,{parentSessionId:ctx.session.id,kind});
+   const pending=authority?.requests.filter(request=>!request.completed)??[];
+   if(pending.length!==1)throw new Error('No unique pending specialist reservation');
+   return requestScopeSchema.parse(pending[0].scope);
+ });
+ return {...input,message:`Server-bound research reservation: ${JSON.stringify(scope)}\nCall get_research_context first using this exact accountId. The reservation supplies the question and workload.\n\nParent research instructions:\n${input.message}`};
+}

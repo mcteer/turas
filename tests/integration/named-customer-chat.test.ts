@@ -1,3 +1,4 @@
+import {reservedSpecialistInvocation} from "../../agent/lib/legacy-research/workflow-progress";
 import {prepareResearch} from '../../lib/server/research/specialists/research-cache/requests';
 import {requestOwnedTaskCancellation} from '../../lib/server/conversations/cancel';
 import {projectNativeEvent} from "../../lib/server/conversations/projection";
@@ -60,10 +61,14 @@ it("resolves named customers inside private chat and rechecks grants and owner i
     await projectNativeEvent(nativeId,attempt.attemptId,event('message.received',{turnId:originalTurn,message:'Which products does Fixture alias use?'}));
     await projectNativeEvent(nativeId,attempt.attemptId,event('turn.completed',{turnId:originalTurn}));
     await owner.query(`INSERT INTO turas_research_requests(environment_id,workspace_id,owner_user_id,key,account_id,scope,context_hash,lease_id,lease_until,refresh,parent_session_id)
-      VALUES($1,$2,$3,$4,$5,'{"kind":"customer-update"}','fixture',$6,now()+interval '10 minutes',false,$7)`,
-      [process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,actor.principalId,randomUUID(),accessible,randomUUID(),nativeId]);
+      VALUES($1,$2,$3,$4,$5,$8::jsonb,'fixture',$6,now()+interval '10 minutes',false,$7)`,
+      [process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,actor.principalId,randomUUID(),accessible,randomUUID(),nativeId,JSON.stringify({accountId:accessible,workload:"Public customer website",question:"Which products does Fixture alias use?",kind:"customer-update"})]);
     const identity={...actor,userId:actor.principalId,environmentId:process.env.TURAS_ENVIRONMENT_ID!,responseAttemptId:attempt.attemptId};
     const scope={accountId:accessible,kind:'customer-update' as const,workload:'Public customer website',question:'Which Vercel products are documented for this customer?'};
+    const invocation=await reservedSpecialistInvocation('customer-update',{message:'Research the account without a copied identifier.'},
+      {session:{id:nativeId,auth:{current:principal}},abortSignal:new AbortController().signal} as unknown as Parameters<typeof reservedSpecialistInvocation>[2]);
+    expect(invocation.message).toContain(`"accountId":"${accessible}"`);
+    expect(invocation.message).toContain('Which products does Fixture alias use?');
     const joined=await Promise.all([prepareResearch(identity,scope,new AbortController().signal,false,nativeId),prepareResearch(identity,{...scope,question:'Please check the documented public product stack.'},new AbortController().signal,false,nativeId)]);
     expect(joined.every(result=>result.status==='working')).toBe(true);
     expect(new Set(joined.map(result=>result.key)).size).toBe(1);

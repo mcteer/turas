@@ -2,13 +2,13 @@ import type {WorkflowToolContext} from 'eve/tools';
 import {z} from 'zod';
 import {sleep} from 'workflow';
 import {specialistResults} from './specialist-results';
-import {researchProgress,assertOrdinaryWorkflow,failReservedResearch} from './workflow-progress';
+import {researchProgress,assertOrdinaryWorkflow,failReservedResearch,reservedSpecialistInvocation} from './workflow-progress';
 type Input={message:string;agentId?:string};
 export async function runCustomerRecon(input:Input,ctx:WorkflowToolContext){
  'use workflow';
  try {
  await assertOrdinaryWorkflow(ctx);
- const result=await ctx.agent('customer-recon-worker',{...input,outputSchema:z.record(z.string(),z.json()).parse(z.toJSONSchema(specialistResults['customer-recon']))});
+ const result=await ctx.agent('customer-recon-worker',{...await reservedSpecialistInvocation('customer-update',input,ctx),outputSchema:z.record(z.string(),z.json()).parse(z.toJSONSchema(specialistResults['customer-recon']))});
  const output=specialistResults['customer-recon'].parse(result);
  if(!output.reference)await failReservedResearch('customer-update',ctx);
  return output;
@@ -18,7 +18,7 @@ export async function runVercelBestPractices(input:Input,ctx:WorkflowToolContext
  'use workflow';
  try {
  await assertOrdinaryWorkflow(ctx);
- const result=await ctx.agent('vercel-best-practices-worker',{...input,outputSchema:z.record(z.string(),z.json()).parse(z.toJSONSchema(specialistResults['vercel-best-practices']))});
+ const result=await ctx.agent('vercel-best-practices-worker',{...await reservedSpecialistInvocation('best-practices',input,ctx),outputSchema:z.record(z.string(),z.json()).parse(z.toJSONSchema(specialistResults['vercel-best-practices']))});
  const output=specialistResults['vercel-best-practices'].parse(result);
  if(!output.reference)await failReservedResearch('best-practices',ctx);
  return output;
@@ -28,7 +28,7 @@ export async function runImplementationResearch(input:Input,ctx:WorkflowToolCont
  'use workflow';
  try {
  await assertOrdinaryWorkflow(ctx);
- const result=await ctx.agent('implementation-research-worker',{...input,outputSchema:z.record(z.string(),z.json()).parse(z.toJSONSchema(specialistResults['implementation-research']))});
+ const result=await ctx.agent('implementation-research-worker',{...await reservedSpecialistInvocation('solution',input,ctx),outputSchema:z.record(z.string(),z.json()).parse(z.toJSONSchema(specialistResults['implementation-research']))});
  const output=specialistResults['implementation-research'].parse(result);
  if(!output.reference)await failReservedResearch('solution',ctx);
  return output;

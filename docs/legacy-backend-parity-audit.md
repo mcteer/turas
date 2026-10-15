@@ -36,7 +36,7 @@ Status: in progress. This is a repair audit, not a new feature specification. Ea
 | Connections, registry discovery and generic runtime tools | agent/connections/; connection_search.ts; built-in tool exports | agent/connections/; installed eve tools | Compare used capabilities; no credentials or unused demo connectors copied |
 | Model/context assembly, memory, skills and tool availability | agent/agent.ts; instructions.md; agent/memory/; agent/skills/ | agent/ | Comparing; preserve current selected model |
 | API routes and maintenance/recovery entry points | app/api/; agent/channels/ | app/api/; agent/channels/; operations/ | Comparing |
-| Chat projection, Markdown, citations and progress | app/_components/{agent-chat,agent-message}.tsx; lib/chat-messages.ts | app/_components/agent-chat.tsx | Gap confirmed |
+| Chat projection, Markdown, citations and progress | app/_components/{agent-chat,agent-message}.tsx; lib/chat-messages.ts | app/_components/agent-chat.tsx | Structured Markdown and native activity restored; actual Preview desktop/mobile/reload inspected. Latest actual research answer failed semantic review; steering remains open. |
 
 ## Complete legacy tool inventory
 
@@ -72,7 +72,7 @@ Every entry below must be accounted for by the domain ledger; naming similarity 
 | `review_solution_application` | Pending comparison |
 | `review_solution_pattern` | Pending comparison |
 | `search_solution_patterns` | Pending comparison |
-| `task_cancel` | Gap: current disables the tool; legacy enables Eve task cancellation. Restore with owned background-task admission. |
+| `task_cancel` | Static native tool restored with owned background-task admission; authenticated Preview cancellation returned 202 and left zero live research leases. |
 | `todo` | Pending comparison |
 | `wait_for_customer_research` | Pending comparison |
 | `web_fetch` | Both disable the generic tool; legacy uses the bounded specialist source reader. |
@@ -88,6 +88,46 @@ Every entry below must be accounted for by the domain ledger; naming similarity 
 - Eve and Next.js builds pass. Local CLI WebKit rendering was inspected; this is not hosted Preview verification.
 - Paid hosted checks are now in progress under the shared $15 authorization. No Production change or merge has occurred for this repair.
 - Remaining major work includes actual specialist runtime admission/background lifecycle, profile persistence on all authorized research paths, native questions/approvals/steering, thread refresh/reuse, the remaining domain/tool comparisons, and authenticated hosted Preview checks.
+
+## Hosted findings and subsequent repairs
+
+Actual Preview recon ran under the non-administrator `panel` identity, without a
+customer picker. It retained four independently checked public source documents
+and produced 66 ready full-document vector passages. This proves that path's
+canonical writes, not the quality of its answer or all specialist paths.
+
+Independent LLM review of the actual reply failed: the answer dismissed useful
+framework evidence because hosting was unknown, included irrelevant retail
+material, and ended with an unfulfilled promise to read a completed result.
+Root instructions now require the focused sourced answer and loading the bound
+result before completion. Hosted re-evaluation remains required.
+
+Subsequent meaningful disposable runtime-role checks cover:
+
+- Worker-private evidence reads preserve the parent model's consumed-source fence
+  until the parent actually receives refreshed knowledge.
+- Rephrased admissions share an active reservation; the original submitted user
+  question now supplies the bounded reuse question rather than model wording.
+- Finalized source references select the retained quotations. New findings augment
+  earlier still-verbatim quotations; full-document navigation does not establish
+  product adoption. Coverage continuity checks remain bound to the same canonical
+  source and retained supporting quotes.
+- Canonical source withdrawal blocks cache reuse and source reads; material
+  conflicts use the existing canonical retrieval conflict check. New independently
+  discovered URLs remain researchable.
+
+Read-only CLI WebKit inspection on `a533a25` preserved history at desktop and mobile
+sizes with no horizontal overflow. WebKit reported one long-lived fetch cancelled
+specifically during document reload; request-failure instrumentation confirmed
+`cancelled` during navigation. This is recorded separately, not reported as zero
+browser errors. No additional model call was made by that inspection.
+
+All hosted checks share the original $15 ledger. At the last ledger read,
+$1.131615 was metered model/embedding usage and $0.158 remained conservatively
+accounted as provider fee holds. No allowance was reset. Production remains
+unchanged. Three-specialist/decision/reuse acceptance, native steering, remaining
+attachment formats, maintenance wiring, the remaining inventory comparisons,
+final exact-commit hosted inspection and cleanup are still open.
 
 ## Source inventory
 
