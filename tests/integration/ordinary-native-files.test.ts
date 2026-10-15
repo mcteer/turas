@@ -37,8 +37,12 @@ it('binds native file bytes separately from the runtime summary and refuses chan
   const other=await isolatedChatActor(db,'internal','member',actor.workspaceId);
   await expect(deriveNativeAttempt(other,native,request,parts)).rejects.toMatchObject({status:404});
   const turn=`turn_${randomUUID()}`;
-  await projectNativeEvent(native,attempt.attemptId,{type:'message.received',data:{message:summarizeNativeMessage(parts),turnId:turn},meta:{id:`evt_${randomUUID()}`,at:new Date().toISOString()}});
+  await projectNativeEvent(native,attempt.attemptId,{type:'message.received',data:{message:summarizeNativeMessage(parts),turnId:turn,parts:[{type:'text',text:'Describe this supplied file.'},{type:'file',filename:'source.bin',mediaType:'application/octet-stream',size:26,url:'eve-sandbox://private/source.bin',data:'must-not-project'}]},meta:{id:`evt_${randomUUID()}`,at:new Date().toISOString()}});
   expect((await db.query('SELECT response_state FROM response_attempts WHERE id=$1',[attempt.attemptId])).rows[0].response_state).toBe('running');
+  const projectedHistory=(await db.query("SELECT visible_payload FROM event_projections WHERE conversation_id=$1 AND event_type='message.received'",[conversation.id])).rows[0].visible_payload;
+  expect(projectedHistory.parts).toEqual([{type:'text',text:'Describe this supplied file.'},{type:'file',filename:'source.bin',mediaType:'application/octet-stream',size:26}]);
+  expect(JSON.stringify(projectedHistory)).not.toContain('eve-sandbox');
+  expect(JSON.stringify(projectedHistory)).not.toContain('must-not-project');
   const correctionKey=randomUUID(),deadline=(await db.query('SELECT deadline_at FROM response_attempts WHERE id=$1',[attempt.attemptId])).rows[0].deadline_at;
   const correction=await prepareOrdinarySteering(actor,conversation.id,native,correctionKey,changed);
   if(correction?.kind!=='dispatch')throw Error('Expected file correction');
