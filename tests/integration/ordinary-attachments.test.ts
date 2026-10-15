@@ -6,7 +6,9 @@ import {isolatedChatActor} from '../fixtures/isolated-chat-actor';
 import {settleSyntheticConversationAttempts} from '../fixtures/ordinary-attempt-cleanup';
 import {createOwnedConversation} from '../../lib/server/conversations/repository';
 import {claimBinding,bindNativeSession} from '../../lib/server/conversations/binding';
-import {prepareAttempt} from '../../lib/server/conversations/dispatch';
+import {prepareAttempt,claimDispatch} from '../../lib/server/conversations/dispatch';
+import {projectNativeEvent} from '../../lib/server/conversations/projection';
+import {prepareOrdinarySteering} from '../../lib/server/conversations/steering';
 import {intakeOrdinaryAttachmentContext} from '../../lib/server/conversations/attachment-intake';
 import {formatAttachmentText} from '../../lib/conversations/attachment-text';
 const url=requireTestDatabaseUrl();
@@ -76,5 +78,16 @@ it.each(['internal','partner'] as const)('routes named attachment context indepe
   expect(await intakeOrdinaryAttachmentContext(actor,conversation.id,attempt.attemptId)).toEqual({drafts:1,unresolved:0});
   const records=(await db.query('SELECT customer_id,current_accepted_revision_id FROM profile_records WHERE workspace_id=$1',[actor.workspaceId])).rows;
   expect(records).toEqual([{customer_id:named,current_accepted_revision_id:null}]);
+  await claimDispatch(actor,conversation.id,attempt.attemptId,0);
+  const original=(await db.query('SELECT text FROM submitted_messages WHERE id=(SELECT message_id FROM response_attempts WHERE id=$1)',[attempt.attemptId])).rows[0].text;
+  await projectNativeEvent(native,attempt.attemptId,{type:'message.received',data:{message:original,turnId:`turn_${randomUUID()}`},meta:{id:`evt_${randomUUID()}`,at:new Date().toISOString()}});
+  const correction=await prepareOrdinarySteering(actor,conversation.id,native,randomUUID(),formatAttachmentText('correction.txt','text/plain','Named document account customer context: corrected human-supplied assertion.'));
+  if(correction?.kind!=='dispatch')throw Error('Expected document correction');
+  expect(await intakeOrdinaryAttachmentContext(actor,conversation.id,attempt.attemptId,correction.id)).toEqual({drafts:1,unresolved:0});
+  expect(await intakeOrdinaryAttachmentContext(actor,conversation.id,attempt.attemptId,correction.id)).toEqual({drafts:1,unresolved:0});
+  const corrected=(await db.query('SELECT customer_id,current_accepted_revision_id FROM profile_records WHERE workspace_id=$1',[actor.workspaceId])).rows;
+  expect(corrected).toEqual([expect.objectContaining({customer_id:named,current_accepted_revision_id:null}),expect.objectContaining({customer_id:named,current_accepted_revision_id:null})]);
+  await expect(intakeOrdinaryAttachmentContext(actor,conversation.id,attempt.attemptId,randomUUID())).rejects.toMatchObject({status:404});
+
  }finally{try{await settleSyntheticConversationAttempts(db,owned);}finally{await db.end();}}
 });

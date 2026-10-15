@@ -194,6 +194,8 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
               if(steering){
                 if(steering.kind==='replay')return steering.response;
                 steeringId=steering.id;
+                if(parseAttachmentMessage(typeof message==='string'?message:nativeMessageText(message)))
+                  await intakeOrdinaryAttachmentContext(session,conversationId!,steering.attemptId,steering.id);
                 const headers=new Headers(request.headers);headers.delete('content-length');
                 const response=await native(new Request(request.url,{method:'POST',headers,body:JSON.stringify({message,turnPolicy:'steer'})}),args);
                 await recordSteeringReceipt(steering.id,args.params.sessionId,response);

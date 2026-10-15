@@ -19,7 +19,7 @@ function requestUuid(value: string) {
 /** Legacy automatic draft intake, bound to the actual immutable user send.
  * Its separate transaction preserves the profile writer's lock prefix. No
  * accepted fact or embedding is created from supplied document content. */
-export async function intakeOrdinaryAttachmentContext(actor: CurrentSession, conversationId: string, attemptId: string) {
+export async function intakeOrdinaryAttachmentContext(actor: CurrentSession, conversationId: string, attemptId: string, steeringId?: string) {
   return withTransaction(async db => {
     await lockWorkspaceActor(db, actor);
     const marker=(await db.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
@@ -27,10 +27,12 @@ export async function intakeOrdinaryAttachmentContext(actor: CurrentSession, con
       throw new HttpFailure(503,'attachments_unavailable','Document messages are temporarily unavailable');
     const row = (await db.query(`SELECT c.customer_id,c.live_customer_context,m.id AS message_id,m.text,m.created_at AS message_created_at,to_jsonb(m)->'ordinary_native_parts' AS native_parts
       FROM conversations c JOIN response_attempts a ON a.conversation_id=c.id
-      JOIN submitted_messages m ON m.id=a.message_id AND m.conversation_id=c.id
+      LEFT JOIN ordinary_steering_deliveries d ON d.id=$6::uuid AND d.attempt_id=a.id AND d.login_session_id=$7
+      JOIN submitted_messages m ON m.id=CASE WHEN $6::uuid IS NULL THEN a.message_id ELSE d.message_id END AND m.conversation_id=c.id
       WHERE c.id=$1 AND a.id=$2 AND c.owner_principal_id=$3 AND c.workspace_id=$4
-        AND c.environment_id=$5 AND a.dispatch_state='prepared'`,
-    [conversationId, attemptId, actor.principalId, actor.workspaceId, getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
+        AND c.environment_id=$5 AND (($6::uuid IS NULL AND a.dispatch_state='prepared') OR
+          ($6::uuid IS NOT NULL AND d.dispatch_state='dispatching' AND d.deadline_at>clock_timestamp() AND a.response_state='running'))`,
+    [conversationId, attemptId, actor.principalId, actor.workspaceId, getServerConfig().TURAS_ENVIRONMENT_ID, steeringId??null, actor.sessionId])).rows[0];
     if (!row) throw hiddenRecord();
     const parsed = parseAttachmentMessage(row.native_parts?nativeMessageText(parseOrdinaryNativeMessage(row.native_parts)):row.text);
     if (!parsed || (await conversationFeature(db, conversationId)).kind !== "normal") return { drafts: 0, unresolved: 0 };

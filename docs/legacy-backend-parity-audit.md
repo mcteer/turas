@@ -557,3 +557,11 @@ and existing native-question history checks. Its full verify CI passed, while th
 execution WebKit job timed out submitting a closeout. The same focused desktop-
 light closeout suite passed locally; the CI failure is still unresolved. Added
 save/submit response assertions will expose the response status/code on recurrence.
+
+
+The headless WebKit composer also passes native-file correction and reload, with
+both original and correction cards retained at mobile width. Correction document
+intake selects its own immutable submitted message, retains current owner/session
+and account-grant checks, and creates an idempotent pending human draft without
+creating another response attempt. Runtime-role internal and partner cases cover
+this path and reject an unrelated correction ID.
