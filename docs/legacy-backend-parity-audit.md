@@ -702,3 +702,34 @@ for authenticated maintenance verification. The inherited credential is not
 readable through the platform's sensitive-variable API. Production and other
 branches are unchanged. The temporary branch-scoped credential must be removed
 after the check; its value remains outside the repository.
+
+
+The lockfile copy is now confined to native-fixture preparation. Unrelated plan,
+execution, support, expansion and reporting evaluation apps retain their original
+shared-dependency root. The focused execution WebKit journey and native-file
+preference/fresh-session check both pass after this scope correction. The complete
+CI run is being repeated; the prior run had 36 successful jobs with longer checks
+still pending, and is not recorded as a full pass.
+
+Exact `00d506a` Preview passed authenticated profile/history/document preparation
+checks. Its research maintenance route returned 200 with the branch-only cron
+credential and 403 without it. There were zero due snapshot indexes or public
+refreshes, and no provider operation or cost was added. This proves hosted route
+and authorization wiring, not completed semantic indexing. Read-only projection
+inspection found 22 generic index jobs still queued, with 122 pending and 1,614
+ready passage embeddings.
+
+Retained actual Preview events from `f5afe7b` contain a successful native
+`load_skill("solution-research")` result with the complete authored body (5,765
+characters). The adapter, skill body and Eve version are identical at the current
+head. This is actual hosted capability evidence recovered without another model
+call; it does not change the failed Notion answer-quality verdict.
+
+The three preserved session Sandboxes were traced through actual provider run
+metadata to running legacy workflows created September 19–22, before this work.
+They are historical sessions, not current development fixtures. Neither current
+Production nor Preview has the old legacy conversation table. No legacy run or
+session content was retired. The stopped build-template cleanup total is now 28;
+all corresponding runtime snapshots remain available. No Turas local container
+remained after the focused checks, and the verified cleanup recovery was retained
+while two redundant encrypted captures were removed.

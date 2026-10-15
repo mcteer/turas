@@ -114,6 +114,7 @@ try{await withPlanEvalEnvironment(async environment=>{
  finally{if(csrf)await context.request.post('/api/auth/logout',{headers:{origin:environment.origin,'x-csrf-token':csrf}}).catch(()=>{});await context.close();await browser.close();}
 },{feature:'010',empty:true,deadlineAt:Date.now()+420000,prepare:async({appRoot,environmentId})=>{
  marker=fixtureOwner;
+ await writeFile(join(appRoot,'package-lock.json'),await readFile(resolve('package-lock.json')),{mode:0o600});
  // Eve's native runtime can request its documented optional local provider.
  // Install it before the browser turn, into a fully owned dependency tree;
  // never let an in-turn install replace the shared checkout's dependency link.
