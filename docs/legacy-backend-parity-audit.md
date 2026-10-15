@@ -686,3 +686,19 @@ remain identical and the runtime performs no dependency installation. These are
 unpaid deterministic-provider checks of the real memory/runtime path, not hosted
 Blob persistence. A separate CI case preserves this native-file regression alongside
 the original plain-text preference and file-correction cases.
+
+
+All three native-chat CI cases pass on `5803a5f`: plain-text preferences,
+native-file preferences and file/correction WebKit history. The broader run found
+a governed-learning native-retirement failure. Ordinary receipt reconciliation is
+now restricted to ordinary owner authorization, preserving the pre-existing native
+response path for governed service retirement. The focused local learning-native
+suite passes all 25 checks, including real local HTTP maintenance/retirement and
+MCP credential cleanup, with zero paid calls. The next complete CI run remains
+required; these local results do not establish Vercel maintenance behavior.
+
+A new sensitive cron credential is scoped solely to this repair's Preview branch
+for authenticated maintenance verification. The inherited credential is not
+readable through the platform's sensitive-variable API. Production and other
+branches are unchanged. The temporary branch-scoped credential must be removed
+after the check; its value remains outside the repository.

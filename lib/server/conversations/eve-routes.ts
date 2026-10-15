@@ -339,10 +339,12 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
         return { ...route, handler: async (request, args) => {
           try {
             const sessionId = args.params.sessionId;
-            if (!sessionId || !/^wrun_[A-Za-z0-9_-]+$/.test(sessionId) ||
-                !await authorizeNativeRetirement(request,sessionId) && !await authorizeExecutionRetirement(request,sessionId) && !await authorizeSupportRetirement(request,sessionId) && !await authorizeExpansionRetirement(request,sessionId) && !await authorizeLearningRetirement(request,sessionId) && !await authorizeOwnedOrdinaryRetirement(request,sessionId)) return closed();
+            if (!sessionId || !/^wrun_[A-Za-z0-9_-]+$/.test(sessionId)) return closed();
+            const governed=await authorizeNativeRetirement(request,sessionId) || await authorizeExecutionRetirement(request,sessionId) || await authorizeSupportRetirement(request,sessionId) || await authorizeExpansionRetirement(request,sessionId) || await authorizeLearningRetirement(request,sessionId);
+            const ordinary=!governed && await authorizeOwnedOrdinaryRetirement(request,sessionId);
+            if(!governed&&!ordinary)return closed();
             const response=await native(request,args);
-            await reconcileOwnedOrdinaryRetirement(request,sessionId,response);
+            if(ordinary)await reconcileOwnedOrdinaryRetirement(request,sessionId,response);
             return response;
           } catch (error) { return nativeFailure(error); }
         } };
