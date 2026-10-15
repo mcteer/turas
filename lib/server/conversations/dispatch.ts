@@ -26,6 +26,7 @@ import type { PoolClient } from "pg";
 import { captureGeneralContext } from "./general-context";
 import { titleFromMessage } from "../../conversations/title";
 import {deriveSteeringAttempt} from './steering';
+import {attachmentLimits,parseAttachmentMessage} from '../../conversations/attachment-text';
 
 async function requireWorkerHeartbeat(client: import("pg").PoolClient): Promise<void> {
   const result = await client.query(`SELECT 1 FROM maintenance_workers
@@ -47,12 +48,15 @@ export async function prepareAttempt(
   if (feature.kind === "staffing") return { ...await prepareStaffingNativeAttempt(session, conversationId, nativeSessionId, requestKey, rawText, selections.length > 0, existingClient), governed: true };
   const text = normalizeMessageText(rawText);
   if (!text.trim()) throw new HttpFailure(422, "invalid_message", "Message required");
-  if (Buffer.byteLength(text, "utf8") > 16 * 1024) {
+  const documentMessage=feature.kind==='normal'?parseAttachmentMessage(text):null;
+  if (Buffer.byteLength(text, "utf8") > (documentMessage?attachmentLimits.messageBytes:16*1024)) {
     throw new HttpFailure(413, "message_too_large", "Message too large");
   }
   const digest = selections.length ? canonicalArtifactSendDigest(text,selections) : messageDigest(text);
   const run = async (client: PoolClient) => {
     const environmentId = getServerConfig().TURAS_ENVIRONMENT_ID;
+    if(documentMessage && (Number((await client.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[environmentId])).rows[0]?.schema_version??0)<71 || process.env.TURAS_ORDINARY_ATTACHMENTS_DISABLED==='1'))
+      throw new HttpFailure(503,'attachments_unavailable','Document messages are temporarily unavailable');
     await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [environmentId]);
     const conversation = await lockOwnedBinding(client, session, conversationId);
     // A first feature binder can win after the metadata preflight. Never let
@@ -148,7 +152,7 @@ export async function prepareAttempt(
       VALUES ($1,$2,$3,$4,$5)`, [messageId, conversationId, requestKey, digest, text]);
     await client.query(`UPDATE conversations SET title=$2 WHERE id=$1
       AND title='New conversation' AND NOT EXISTS(SELECT 1 FROM submitted_messages
-        WHERE conversation_id=$1 AND id<>$3)`,[conversationId,titleFromMessage(text),messageId]);
+        WHERE conversation_id=$1 AND id<>$3)`,[conversationId,titleFromMessage(documentMessage?(documentMessage.prompt||`Attachment: ${documentMessage.documents[0].filename}`):text),messageId]);
     await client.query(`INSERT INTO response_attempts
       (id, conversation_id, message_id, input_digest, dispatch_state, response_state)
       VALUES ($1,$2,$3,$4,'prepared','pending')`, [attemptId, conversationId, messageId, digest]);

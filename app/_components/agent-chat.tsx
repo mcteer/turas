@@ -14,6 +14,13 @@ import {pendingChatInputs,chatInputAnswer} from "../../lib/chat-inputs";
 import {ChatInputRequestCard} from "./chat-input-request";
 import { ChatMarkdown } from "./chat-markdown";
 import { visibleChatMessages, backgroundChatActivity } from "../../lib/chat-messages";
+import {OrdinaryDocuments,ReceivedDocuments} from './attachments/ordinary-documents';
+import {formatAttachmentText,parseAttachmentMessage,type AttachedDocumentText} from '../../lib/conversations/attachment-text';
+
+function UserChatText({text}:{text:string}) {
+  const parsed=parseAttachmentMessage(text);
+  return parsed?<>{parsed.prompt&&<p>{parsed.prompt}</p>}<ReceivedDocuments documents={parsed.documents}/></>:<p>{text}</p>;
+}
 
 export function AgentChat({ conversationId, nativeSessionId, bindingState,
   customerName, synthetic, csrfToken, customerId, contextStatus }: {
@@ -49,7 +56,7 @@ function HistoricalChat({ conversationId, customerId, customerName }: {
   return <main className="chat-page"><h1 className="chat-heading">{customerName}</h1>
     <p role="status" className="chat-notice">Customer context has changed. Start a new conversation to use current information.</p>
     <div className="chat-messages">{messages.map((event) => <article className="chat-message" key={event.eventId}>
-      <h2>You</h2><p>{event.payload.message}</p></article>)}</div>
+      <h2>You</h2><UserChatText text={event.payload.message??''}/></article>)}</div>
     <p><Link className="primary-button" href={`/s?customerId=${encodeURIComponent(customerId ?? "")}`}>Start a New Conversation</Link></p>
   </main>;
 }
@@ -76,6 +83,10 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   const [dispatchState, setDispatchState] = useState<string>();
   const [responseState, setResponseState] = useState<string>();
   const [canSteer,setCanSteer]=useState(false);
+  const [canAttachDocuments,setCanAttachDocuments]=useState(false);
+  const [documents,setDocuments]=useState<AttachedDocumentText[]>([]);
+  const [preparingDocuments,setPreparingDocuments]=useState(false);
+  const pendingMessage=useRef<string|null>(null);
   const [steering,setSteering]=useState(false);
   const keyRef = useRef<string | null>(null);
   const agent = useEveAgent({
@@ -94,6 +105,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         setPendingKey(null);
         keyRef.current = null;
         pendingSelections.current = null;
+        pendingMessage.current = null;
       }
     },
   });
@@ -118,12 +130,13 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
           return;
         }
         if (!response.ok) throw new Error();
-        const detail = await response.json() as { data: { contextStatus?: string;featureKind?:string; attempts: Array<{
+        const detail = await response.json() as { data: { contextStatus?: string;featureKind?:string;canAttachDocuments?:boolean; attempts: Array<{
           requestKey: string; dispatchState: string; responseState: string;
           watchdogState: string | null;
         }> } };
         if (!active) return;
         setCanSteer(detail.data.featureKind==='normal');
+        setCanAttachDocuments(detail.data.canAttachDocuments===true);
         if (detail.data.contextStatus !== "current") {
           agent.reset(); setStale(true); return;
         }
@@ -250,13 +263,16 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   }
 
   async function send(retryPrepared = false, initialText?: string) {
+    if(preparingDocuments)return;
     const selections = retryPrepared ? pendingSelections.current ?? [] : draftSelections;
-    const text = (initialText ?? draft).trim() || (selections.length ? "Please discuss the selected customer source passages." : "");
-    const answer=!selections.length?chatInputAnswer(inputRequests,text):null;
+    const prompt = (initialText ?? draft).trim() || (selections.length ? "Please discuss the selected customer source passages." : "");
+    const text=retryPrepared&&pendingMessage.current?pendingMessage.current:documents.length?
+      [prompt||'Please discuss the attached documents.',...documents.map(document=>formatAttachmentText(document.filename,document.mediaType,document.text,document.truncated))].join('\n\n'):prompt;
+    const answer=!selections.length&&!documents.length?chatInputAnswer(inputRequests,text):null;
     if(answer && agent.status==='ready' && !denied && !answering) {
       await respondToRequest(answer);setDraft('');return;
     }
-    if(text && canSteer && !denied && !stale && !stopping && !steering && !selections.length &&
+    if(text && canSteer && !denied && !stale && !stopping && !steering && !selections.length && !documents.length &&
       (agent.status==='submitted'||agent.status==='streaming')){
       setSteering(true);setDraft('');setNotice('Sending correction…');
       try{await agent.send(text,{turnPolicy:'steer',headers:{'x-turas-request-key':crypto.randomUUID()}});setNotice('Correction submitted.');}
@@ -269,6 +285,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     const key = keyRef.current ?? crypto.randomUUID();
     keyRef.current = key;
     if (!retryPrepared) pendingSelections.current = selections;
+    if (!retryPrepared) pendingMessage.current=text;
     setPendingKey(key);
     setDispatchState("prepared");
     setResponseState("pending");
@@ -279,6 +296,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         ...(selections.length ? { "x-turas-artifact-selections": btoa(JSON.stringify(selections)) } : {}) } });
       setDraft("");
       setDraftSelections([]);
+      setDocuments([]);
       setSelectionResetVersion((value) => value + 1);
       setNotice("Message accepted. Waiting for the response…");
     } catch {
@@ -323,6 +341,8 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
       {contextOpen && <div className="chat-context-details">
         <Link href={`/customers/${customerId}/plans`}>Delivery Plans</Link>
         <DemoDataNotice synthetic={synthetic} />
+        {canAttachDocuments && <button type="button" className="secondary-button" aria-expanded={attachmentsOpen}
+          onClick={() => setAttachmentsOpen(value => !value)}>Customer sources</button>}
         <ResearchPanel customerId={customerId} conversationId={conversationId}
           csrfToken={csrfToken} busy={Boolean(pendingKey) || agent.status !== "ready"} onStart={sendResearchTurn} />
         <button type="button" className="secondary-button" aria-expanded={shareOpen}
@@ -330,7 +350,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         {shareOpen && <ShareChatClaim conversationId={conversationId} customerId={customerId} csrfToken={csrfToken} />}
       </div>}
     </>}
-    <div className="chat-messages" ref={messagesPane} aria-live="polite" onScroll={() => {
+    <div className="chat-messages" ref={messagesPane} tabIndex={0} role="region" aria-label="Conversation messages" aria-live="polite" onScroll={() => {
       const pane = messagesPane.current;
       if (pane) followBottom.current = pane.scrollHeight - pane.scrollTop - pane.clientHeight < 80;
     }}>
@@ -340,7 +360,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         {message.parts.map((part, index) => part.type === "text"
           ? message.role === "assistant"
             ? <ChatMarkdown key={index} streaming={busy && message.id === messages.at(-1)?.id} text={part.text} />
-            : <p key={index}>{part.text}</p>
+            : <UserChatText key={index} text={part.text}/>
           : null)}
       </article>)}
       {inputRequests.map(request=><ChatInputRequestCard key={request.requestId} request={request}
@@ -356,12 +376,14 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(); } }}
         maxLength={16_384} disabled={(!canSteer && busy) || (Boolean(pendingKey) && dispatchState !== "prepared" && !(canSteer&&busy)) || agent.status === "resuming" || stopping || steering} />
       <div className="chat-actions">
-        {customerId && <button className="composer-attach" type="button" aria-label="Show attachments" aria-expanded={attachmentsOpen}
+        {canAttachDocuments&&<OrdinaryDocuments documents={documents} onChange={setDocuments} onPreparingChange={setPreparingDocuments}
+          disabled={busy||Boolean(pendingKey)||answering||agent.status==='resuming'||stopping||steering}/>}
+        {customerId && !canAttachDocuments && <button className="composer-attach" type="button" aria-label="Show attachments" aria-expanded={attachmentsOpen}
           onClick={() => setAttachmentsOpen(value => !value)}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m8 12 6-6a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l9-9" /></svg></button>}
-        <button className="composer-send" type={busy && !(canSteer&&draft.trim()) ? "button" : "submit"} aria-label={busy && !(canSteer&&draft.trim()) ? "Stop response" : "Send message"}
-          onClick={busy && !(canSteer&&draft.trim()) ? () => void cancel() : undefined}
-          disabled={busy ? stopping||steering||Boolean(draftSelections.length) : (!draft.trim() && !draftSelections.length) || Boolean(pendingKey) || agent.status === "resuming" || stopping}>
-          {busy && !(canSteer&&draft.trim()) ? <span aria-hidden="true">■</span> : <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" /></svg>}
+        <button className="composer-send" type={busy && !(canSteer&&draft.trim()&&!documents.length) ? "button" : "submit"} aria-label={busy && !(canSteer&&draft.trim()&&!documents.length) ? "Stop response" : "Send message"}
+          onClick={busy && !(canSteer&&draft.trim()&&!documents.length) ? () => void cancel() : undefined}
+          disabled={preparingDocuments||(busy ? stopping||steering||Boolean(draftSelections.length) : (!draft.trim() && !draftSelections.length&&!documents.length) || Boolean(pendingKey) || agent.status === "resuming" || stopping)}>
+          {busy && !(canSteer&&draft.trim()&&!documents.length) ? <span aria-hidden="true">■</span> : <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" /></svg>}
         </button>
       </div>
     </form>

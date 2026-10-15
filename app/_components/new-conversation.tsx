@@ -32,7 +32,6 @@ export function NewConversation({ csrfToken }: { csrfToken: string }) {
 
   async function start(attachments = false) {
     if ((!draft.trim() && !attachments) || starting.current) return;
-    if (attachments && !selected) { setError("Choose a customer below to attach customer documents."); document.getElementById("chat-customer")?.focus(); return; }
     starting.current = true;
     setState("creating");
     setError("");

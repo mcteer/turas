@@ -19,6 +19,8 @@ import { authorizeSupportRetirement } from "../support/native-retirement";
 import { authorizeNativeRetirement } from "../artifacts/native-retirement";
 import { authorizeLearningRetirement } from '../learning/native-retirement';
 import {authorizeOwnedOrdinaryRetirement} from './ordinary-retirement';
+import {intakeOrdinaryAttachmentContext} from './attachment-intake';
+import {attachmentLimits,parseAttachmentMessage} from '../../conversations/attachment-text';
 
 const createSchema = z.object({ operationId: z.uuid() }).strict();
 const sendSchema = z.object({ message: z.string(),
@@ -143,7 +145,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
               throw new HttpFailure(422, "invalid_input", "Invalid request");
             }
             const raw = await request.text();
-            if (Buffer.byteLength(raw) > 32 * 1024) {
+            if (Buffer.byteLength(raw) > Math.max(attachmentLimits.messageBytes, 6 * attachmentLimits.files * attachmentLimits.characters) + 128 * 1024) {
               throw new HttpFailure(413, "too_large", "Request too large");
             }
             let decoded: unknown;
@@ -204,6 +206,8 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
               if (receipt) return receipt;
               throw new HttpFailure(409, "turas_dispatch_pending", "Dispatch outcome pending");
             }
+            if(!prepared.governed && parseAttachmentMessage(text))
+              await intakeOrdinaryAttachmentContext(session,conversationId!,attemptId);
             let tailIndex: number;
             try {
               tailIndex = await args.attachSession(args.params.sessionId).getStreamTailIndex();

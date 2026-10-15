@@ -459,3 +459,33 @@ Ordinary evidence pagination added `nextPage` to the frozen staffing snapshot, w
 The public-coverage reader also limited business-description fallback to its 20 newest eligible receipts. A bounded union now selects the latest 20 and the newest eligible nonempty description, using the same complete source closure for both. The regression inserts 25 focused empty-description receipts, preserves the older valid overview and rejects it after supporting content changes. Notion had 32 receipts with its description at rank 32; a read-only comparison additionally found two source heads no longer retained all original quoted text, including omissions from their current full documents. The repair correctly kept that older dossier withheld.
 
 A separate actual headless WebKit read of Notion’s current official product page retained its current identity quotation. The normal operator research writer accepted that checked quotation into Preview, advanced the profile/source projection and returned an idempotent replay without model/provider calls. This is newly attributed independent research, not a reinstatement of the old dossier or an internal maturity/delivery assessment. Production is unchanged.
+
+### Ordinary document intake restoration (in progress)
+
+The legacy browser composer extracts supported documents before dispatch and wraps
+that text as explicitly unverified user context. Its context-intent path creates
+review drafts. This is distinct from independently checked specialist research.
+The restored normal-chat path uses the same pinned officeparser 8 and MIME/extension
+mapping, 10 MiB input and 120,000-character extraction bounds. Customer selection
+is optional. Five documents and a 3 MiB framed message are bounded before dispatch;
+plain prompts retain their 16 KiB limit. Migration 071 permits those framed sends.
+
+Runtime-role disposable checks verify immutable send binding, one pending manual
+claim, no accepted revision or retrieval passage, replay after customer rename,
+foreign-owner denial and unchanged plain-message limits. Existing profile source
+proof and review rules remain in force. Intake uses the immutable message date and
+request identity. Extraction truncation is shown to the sender and retained in the
+model envelope. Malformed framing is never hidden in history.
+
+Actual text, Word, PDF and spreadsheet files now pass the general-chat composer
+and intercepted native-send assertions across desktop/mobile WebKit in both themes.
+Source selection/lifecycle regressions pass alongside them. An initial file-selection
+timing failure was corrected by waiting for an enabled picker and interacting with
+the composer before selection; the complete fresh run passes. The scrolling message
+pane also has keyboard focus, resolving the serious WebKit accessibility finding.
+
+An encrypted schema-070 Preview recovery capture restored and rehearsed migration
+071 and runtime grants without changing 184 customers, 817 source revisions, zero
+human profile records or 23 conversations. Preview application, hosted file execution
+and legacy native-file fallback remain open. Migration 071 has not been applied to
+Preview or Production. Binary fallback is not represented as implemented.
