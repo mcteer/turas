@@ -1,3 +1,4 @@
+import type {PoolClient} from 'pg';
 import {recordRetrievalConsumption} from '../../lib/server/retrieval/fences';
 import {withTransaction} from '../../lib/server/db/client';
 import {createOwnedConversation} from '../../lib/server/conversations/repository';
@@ -16,7 +17,8 @@ import {persistSpecialistCustomerResearch} from '../../lib/server/research/publi
 import {publicDigest,signCheckedPublicPage,dossierAreas} from '../../lib/server/research/public-dossier';
 import {readProfile} from '../../lib/server/profiles/read';
 const isolatedTestUrl=requireTestDatabaseUrl();
-beforeAll(()=>{process.env.DATABASE_URL=isolatedTestUrl;process.env.TURAS_ENVIRONMENT_ID=process.env.TURAS_TEST_ENVIRONMENT_ID;});
+const withRuntime=<T>(run:(db:PoolClient)=>Promise<T>)=>withTransaction(async db=>{await db.query('SET LOCAL ROLE turas_runtime');return run(db);});
+beforeAll(()=>{const runtime=new URL(isolatedTestUrl);runtime.searchParams.set('options','-c role=turas_runtime');process.env.DATABASE_URL=runtime.href;process.env.DATABASE_URL_UNPOOLED=runtime.href;process.env.TURAS_ENVIRONMENT_ID=process.env.TURAS_TEST_ENVIRONMENT_ID;});
 it('retains new public research for an assigned partner, preserves curated claims on recheck, and indexes late document evidence',async()=>{
  const db=new Client({connectionString:isolatedTestUrl});await db.connect();
  try {
@@ -46,7 +48,7 @@ it('retains new public research for an assigned partner, preserves curated claim
   await db.query("INSERT INTO maintenance_workers(environment_id,worker_id,last_seen_at) VALUES($1,'source-refresh-fixture',now()) ON CONFLICT(environment_id,worker_id) DO UPDATE SET last_seen_at=now()",[process.env.TURAS_ENVIRONMENT_ID]);
   const attempt=await prepareAttempt(actor,conversation.id,native,randomUUID(),'What does this customer use?');await claimDispatch(actor,conversation.id,attempt.attemptId,0);
   const principal={principalId:actor.principalId,attributes:{turasAttemptId:attempt.attemptId}};
-  const original=await withTransaction(client=>readCustomerAccountEvidence(client,principal,customerId));
+  const original=await withRuntime(client=>readCustomerAccountEvidence(client,principal,customerId));
   const oldCitation=original.entries[0].citationId;
   const source=(await db.query(`SELECT s.*,p.id AS passage_id,p.passage_digest,p.locators FROM retrieval_sources s
    JOIN retrieval_passages p ON p.source_id=s.id WHERE s.source_revision_id=$1 AND s.lifecycle_state='current' LIMIT 1`,[oldCitation])).rows[0];
@@ -75,12 +77,12 @@ it('retains new public research for an assigned partner, preserves curated claim
   await db.query(`INSERT INTO evidence_sources(id,workspace_id,customer_id,origin,canonical_location) VALUES($1,$2,$3,'manual',$4)`,[randomUUID(),actor.workspaceId,customerId,url]);
   await expect(retain(changed,changed,0)).rejects.toMatchObject({code:'submitted_origin'});
   await retain(changed,changed,0,true);
-  await expect(withTransaction(client=>assertCustomerQuestionReads(client,actor,conversation.id,attempt.attemptId))).rejects.toMatchObject({status:409});
-  const refreshed=await withTransaction(client=>refreshOrdinaryKnowledge(client,actor,principal,conversation.id,attempt.attemptId));
+  await expect(withRuntime(client=>assertCustomerQuestionReads(client,actor,conversation.id,attempt.attemptId))).rejects.toMatchObject({status:409});
+  const refreshed=await withRuntime(client=>refreshOrdinaryKnowledge(client,actor,principal,conversation.id,attempt.attemptId));
   expect(JSON.stringify(refreshed)).toContain(changed);
   const active=(await db.query('SELECT citation_ids FROM general_customer_read_scopes WHERE attempt_id=$1 AND customer_id=$2',[attempt.attemptId,customerId])).rows[0].citation_ids;
   expect(active).not.toContain(`attributed_research:${oldCitation}`);
-  await withTransaction(client=>assertCustomerQuestionReads(client,actor,conversation.id,attempt.attemptId));
+  await withRuntime(client=>assertCustomerQuestionReads(client,actor,conversation.id,attempt.attemptId));
   expect((await db.query('SELECT count(*)::int AS count FROM session_evidence_dependencies WHERE conversation_id=$1',[conversation.id])).rows[0].count).toBe(1);
   expect((await db.query(`SELECT count(*)::int AS count FROM ordinary_evidence_refreshes f JOIN session_evidence_dependencies d ON d.id=f.dependency_id WHERE d.conversation_id=$1`,[conversation.id])).rows[0].count).toBe(1);
 

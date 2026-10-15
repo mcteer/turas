@@ -262,6 +262,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     setDispatchState("prepared");
     setResponseState("pending");
     setNotice("Submitting message…");
+    setDraft("");
     try {
       await agent.send(text, { headers: { "x-turas-request-key": key,
         ...(selections.length ? { "x-turas-artifact-selections": btoa(JSON.stringify(selections)) } : {}) } });

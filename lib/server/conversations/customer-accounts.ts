@@ -144,7 +144,7 @@ export async function assertCustomerQuestionReads(db: PoolClient, actor: Current
                AND proof.identity_result AND proof.scope_result AND proof.integrity_result AND proof.content_result
                AND strpos(proof.rationale,'"retainedPreviousClaim":true')>0
                AND NOT EXISTS(SELECT 1 FROM evidence_source_events removed WHERE removed.source_revision_id=current.id
-                 AND removed.event_type IN('withdraw','supersede')))) FOR SHARE OF v,s`,
+                 AND removed.event_type IN('withdraw','supersede'))))`,
       [id, actor.workspaceId, read.customer_id, actor.kind]);
       if (!found.rowCount || await retrievalSourceHasMaterialConflict(db,
         { source_kind: "verified_research", source_revision_id: id }, actor,

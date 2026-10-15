@@ -1,10 +1,11 @@
+import {readProfile} from '../profiles/read';
 import {createHash,randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import type {CurrentSession} from '../auth/sessions';
 import {assertCustomerQuestionReads,readCustomerAccountEvidence} from './customer-accounts';
 import {conversationFeature} from './feature';
 import {confirmedConflictAfter,originalCurrent} from '../retrieval/fences';
-import {hiddenRecord} from '../../contracts/http';
+import {hiddenRecord,HttpFailure} from '../../contracts/http';
 
 type Principal=Parameters<typeof readCustomerAccountEvidence>[1];
 /** Ordinary chat keeps its dated history, but refreshes active factual context
@@ -20,12 +21,19 @@ export async function refreshOrdinaryKnowledge(db:PoolClient,actor:CurrentSessio
   UNION SELECT r.customer_id FROM session_evidence_dependencies d JOIN retrieval_receipts r ON r.id=d.receipt_id WHERE d.conversation_id=$1
   UNION SELECT customer_id FROM conversations WHERE id=$1
  ) accounts WHERE customer_id IS NOT NULL ORDER BY customer_id`,[conversationId])).rows;
- const contexts:unknown[]=[];let bytes=0;
+ const contexts:unknown[]=[];const retiredNamed:string[]=[];let bytes=0;
  for(const {customer_id} of customers){
   // Always register a current authoritative brief, even if no facts remain.
+  const previous=(await db.query<{citation_ids:string[]}>(`SELECT s.citation_ids FROM general_customer_read_scopes s JOIN response_attempts a ON a.id=s.attempt_id
+   WHERE a.conversation_id=$1 AND s.customer_id=$2 ORDER BY s.checked_at DESC,a.created_at DESC LIMIT 1`,[conversationId,customer_id])).rows[0]?.citation_ids??[];
+  const profile=await readProfile(actor,customer_id,db,undefined,undefined,false,true) as {acceptedFacts:Array<{id:string;supportStatus:string}>;attributedResearch:Array<{sourceRevisionId:string}>};
+  const eligible=new Set([...profile.acceptedFacts.filter(f=>['settled','restricted_source'].includes(f.supportStatus)).map(f=>`accepted_manual:${f.id}`),...profile.attributedResearch.map(s=>`attributed_research:${s.sourceRevisionId}`)]);
   const context=await readCustomerAccountEvidence(db,principal,customer_id);
+  const citations=[...new Set([...previous.filter(id=>eligible.has(id)),...context.entries.map(entry=>`${entry.type}:${entry.citationId}`)])];
+  retiredNamed.push(...previous.filter(id=>!eligible.has(id)));
+  if(citations.length>100)throw new HttpFailure(422,'scope_too_large','Narrow the current customer evidence context');
   await db.query(`UPDATE general_customer_read_scopes SET citation_ids=$3,checked_at=clock_timestamp()
-   WHERE attempt_id=$1 AND customer_id=$2`,[attemptId,customer_id,context.entries.map(entry=>`${entry.type}:${entry.citationId}`)]);
+   WHERE attempt_id=$1 AND customer_id=$2`,[attemptId,customer_id,citations]);
   const body={...context,notice:'Current authorized customer knowledge. Earlier conversation evidence is dated; omitted entries require the customer evidence tools, not an inference of absence.'};
   const size=Buffer.byteLength(JSON.stringify(body));
   if(bytes+size<=64*1024){contexts.push(body);bytes+=size;}
@@ -41,8 +49,8 @@ export async function refreshOrdinaryKnowledge(db:PoolClient,actor:CurrentSessio
    || !await originalCurrent(db,d))retired.push(d.id);
  }
  const packet={contractVersion:'ordinary-current-knowledge-v1',asOf:new Date().toISOString(),contexts,
-  retiredHistoricalEvidence:retired.length,
-  notice:retired.length?'Some earlier evidence expired, changed, or was withdrawn. Treat it as historical, not current support. Re-query evidence tools for current passages, especially shared solution guidance.':undefined};
+  retiredHistoricalEvidence:retired.length,retiredNamedCitations:retiredNamed,
+  notice:retired.length||retiredNamed.length?'Some earlier evidence expired, changed, or was withdrawn. Treat it as historical, not current support. Re-query evidence tools for current passages, especially shared solution guidance.':undefined};
  const digest=createHash('sha256').update(JSON.stringify(packet)).digest('hex');
  const id=randomUUID();
  await db.query(`INSERT INTO ordinary_context_refreshes(id,attempt_id,conversation_id,packet_digest,customer_ids) VALUES($1,$2,$3,$4,$5)`,[id,attemptId,conversationId,digest,customers.map(c=>c.customer_id)]);
