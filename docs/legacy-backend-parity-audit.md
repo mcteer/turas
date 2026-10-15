@@ -1204,3 +1204,30 @@ duration/persistence reference actually returned by the answer's tools; the next
 review must include all those retained original references and the actual typed
 evaluator output. The malformed reviewer JSON is retained alongside a deterministic
 syntax-only repair; its failed verdict is preserved, not relabeled as success.
+
+### Merge acceptance — 2026-10-15
+
+Exact Preview `3179bea` passes the same Notion ordinary-chat question without a
+customer selection. All three original specialists publish receipts; the actual
+typed evaluator returns `evaluated / research_more`. CLI headless WebKit passes
+desktop, mobile and reloaded-history checks. Native events and exact answer,
+receipt and source-packet SHA-256 hashes are retained privately. The corrected
+driver does not need a session-limit continuation for this run.
+
+A fresh separate `openai/gpt-5.6-terra` source-based review passes with zero
+material issues. The 291,004-byte packet includes fourteen current retained public
+customer source documents, twelve original product-reference records (including
+the references actually returned by the root tools) and the actual typed
+evaluation. Its schema-validated verdict is bound to the packet hash and source
+commit. It flags two minor issues: a date attribution absent from the packet's
+source text and extraneous process/rubric narration. It does not establish live
+customer configuration, commercial terms, human approval or release readiness.
+Previous failed reviews remain intact. No Production or root model changes occur.
+
+Both completed continuation-check sessions are retired through their ordinary
+owner-authorized reset endpoints after capture, with HTTP 200 and no model calls.
+The additional $10 ledger remains bounded by the original expiry/pricing; earlier
+charges and unsettled ceilings are preserved. The corrected native cleanup gate
+also passes fresh CI. Final complete CI is required for the documentation-updated
+merge head; the PR records its exact run and result before merge. Automatic
+Production deployment remains paused pending the separate schema 072 release.

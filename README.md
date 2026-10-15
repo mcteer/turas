@@ -557,29 +557,29 @@ Ordinary Stop and native retirement cover a turn parked for user input. Retireme
 settles its application attempt only after Eve confirms the exact session is reset
 or already inactive; an accepted request alone leaves it stopping.
 
-Actual answer quality remains a release gate. Earlier completed answers omitted
-material evidence. On Preview `68044c2`, independent review passes the original
-Baggu product-use answer and a customer-free firewall documentation answer;
-desktop/mobile/reload checks pass. The full Notion specialist question still
-fails: practice finalization rejected an overlong caveat and no solution artifact
-reached evaluation. The repair keeps shared practice documents out of customer
-fact retention without blocking research, preserves missing-receipt rejection
-for customer-mapped sources, and guides bounded correction of rejected practice
-input. Hosted recheck of those repairs remains required; earlier failures are
-retained. Broad proposal checks previously reached the finite evaluation guard
-before synthesis. Testing continues with the supplemental allowance described above;
-pricing, prior charges/unknown holds and Production behavior are unchanged.
-Preview Grok output remains bounded at 8,192 tokens. The latest 24 owned test
-sessions and conversations were retired and purged after encrypted backup and
-local restore/deletion rehearsal; real customer/research and financial records
-were unchanged. Final exact Preview/CI acceptance remains open in the
-[backend parity audit](docs/legacy-backend-parity-audit.md). PR #34 is unmerged;
-these bug checks do not establish complete 016 hosted/operator acceptance.
+Actual Preview `3179bea` completes the original three specialists for the Notion
+solution question, returns the typed `evaluated / research_more` assessment, and
+passes CLI WebKit desktop, mobile and reloaded-history checks. A fresh independent
+source-based model review passes with zero material issues against the exact
+answer, fourteen retained customer sources, original product-reference passages
+and actual typed evaluation. Two minor presentation/source-metadata issues remain
+recorded. This is model review of retained sources, not human approval or an audit
+of current private customer configuration. Earlier source-bound Baggu and
+customer-free firewall answers also retain passing independent reviews.
 
-The subsequent `d7afd7f` run stored the practice brief but failed in native event
-projection while a specialist's 400,000-input-token continuation request was
-pending. The parent produced no final recommendation. The next repair preserves
-an unanswered request across a control-turn completion without granting
-model admission. A bounded product index also keeps known products visible across
-quotation pages; explicit tech-stack lists recognize the framework spelling
-`Next`. Disposable ownership/source/input checks pass; hosted recheck remains open.
+Source retention binds retries to the complete signed input. Native-input control
+turns preserve unanswered requests without approving them. The learning native
+retention probe tolerates only entries that disappear during traversal; its owned
+hosted-cleanup fixture stops the local worker before release and follows the normal
+minute cadence within its original deadline. The 22-session requirement and domain
+retry bounds remain unchanged. Earlier failures and exact validation results are
+retained in the [backend parity audit](docs/legacy-backend-parity-audit.md).
+
+The finite Preview allowance is $40 across three ledgers, with original charges
+and unsettled ceilings preserved and no automatic top-ups. The completed merge
+checks' native sessions are retired after evidence capture. Production remains on
+schema 055; Preview schema 072 migrations/grants were backed up and rehearsed.
+Automatic Git deployment of `main` is paused in `vercel.json` so merging cannot
+publish schema-incompatible code. A Production release still requires the explicit
+backup, migration, grants, compatibility and authenticated hosted checks. These
+checks do not establish the separate 016 hosted recovery/operator/pilot acceptance.
