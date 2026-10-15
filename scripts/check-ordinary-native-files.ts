@@ -39,6 +39,13 @@ try{await withPlanEvalEnvironment(async environment=>{
   const bytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC','base64');
   const page=await context.newPage();
   if(process.argv.includes('--composer')){
+   // Compile the actual thread surface before starting the paused provider.
+   // This avoids measuring a cold development compile as correction latency.
+   const warmupKey=randomUUID(),warmup=await context.request.post('/api/conversations',{headers,data:{requestKey:warmupKey}});if(!warmup.ok())throw Error('Thread warmup creation failed');
+   const warmupId=(await warmup.json()).data.id;
+   const warmupBinding=await context.request.post('/eve/v1/session',{headers:{...headers,'x-turas-conversation-id':warmupId},data:{operationId:warmupKey}});if(!warmupBinding.ok())throw Error('Thread warmup binding failed');
+   await page.goto('/s/'+warmupId,{waitUntil:'domcontentloaded'});
+   await page.getByLabel('Message Turi').waitFor({timeout:60000});
    await page.goto('/s',{waitUntil:'domcontentloaded'});
    await page.waitForFunction(()=>{const input=document.querySelector<HTMLInputElement>('input[type="file"][aria-label="Chat document files"]');return input&&!input.disabled;},null,{timeout:30000});
    await page.getByLabel('Message Turi').fill(firstPrompt);
@@ -106,7 +113,12 @@ try{await withPlanEvalEnvironment(async environment=>{
  finally{if(csrf)await context.request.post('/api/auth/logout',{headers:{origin:environment.origin,'x-csrf-token':csrf}}).catch(()=>{});await context.close();await browser.close();}
 },{feature:'010',empty:true,deadlineAt:Date.now()+420000,prepare:async({appRoot,environmentId})=>{
  marker=fixtureOwner;
- const dev=join(appRoot,'scripts/dev.mjs');await writeFile(dev,"import {execFileSync} from 'node:child_process';\nexecFileSync(process.execPath,['--experimental-strip-types','scripts/bootstrap-demo.ts'],{stdio:'ignore'});\n"+await readFile(dev,'utf8'),{mode:0o600});
+ // Eve prepares every declared environment on the first native file. Keep all
+ // owned fixture environments on its selected Docker provider, rather than
+ // auto-installing an unrelated default provider during the browser turn.
+ for(const specialist of ['customer-recon-worker','implementation-research-worker','vercel-best-practices-worker'])
+  await writeFile(join(appRoot,'agent/subagents',specialist,'sandbox.ts'),"import {defineParentSandbox} from 'eve/sandbox';export default defineParentSandbox();\n",{mode:0o600});
+ const dev=join(appRoot,'scripts/dev.mjs');await writeFile(dev,"import {execFileSync} from 'node:child_process';\nexecFileSync(process.execPath,['--experimental-strip-types','scripts/bootstrap-demo.ts'],{stdio:'ignore'});\n"+(await readFile(dev,'utf8')).replace('["dev"]','["dev","--webpack"]'),{mode:0o600});
  await writeFile(join(appRoot,'agent/sandbox.ts'),`import {defineSandbox} from 'eve/sandbox';import {DockerSandbox} from 'eve/sandbox/docker';export const environment=DockerSandbox.image(${JSON.stringify(image)},{pullPolicy:'never',env:{TURAS_NATIVE_FILE_FIXTURE_OWNER:${JSON.stringify(fixtureOwner)}}});export default defineSandbox(()=>environment.open({networkPolicy:'deny-all'}));\n`,{mode:0o600});return {};
 }});}catch(error){
  const reason=(error instanceof Error?error.message:'Unknown fixture failure').split('\n')[0].replace(/[a-z][a-z0-9+.-]*:\/\/[^\s/@:]+:[^\s/@]+@/gi,'<redacted>@').slice(0,200);

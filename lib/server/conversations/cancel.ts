@@ -52,7 +52,7 @@ export async function requestCancellation(
       WHERE conversation_id = $1 AND (native_turn_id = $2
         ${(marker.rows[0]?.schema_version??0)>=61 ? `OR EXISTS(SELECT 1 FROM research_background_turns background
           WHERE background.attempt_id=response_attempts.id AND background.turn_id=$2)` : ''})
-        AND response_state IN ('pending','running','stopping')
+        AND response_state IN ('pending','running','waiting_input','stopping')
       FOR UPDATE`, [id, turnId]);
     if (!attempt.rows[0]) throw new HttpFailure(409, "stale_turn", "Turn is no longer active");
     if (attempt.rows[0].response_state !== "stopping") {
@@ -114,8 +114,8 @@ export async function requestOwnedTaskCancellation(session:CurrentSession,native
     WHERE a.conversation_id=$1 AND g.as_of<=r.started_at ORDER BY g.as_of DESC LIMIT 1) parent ON true
    WHERE r.environment_id=$2 AND r.workspace_id=$3 AND r.owner_user_id=$4 AND r.parent_session_id=$5
      AND r.receipt IS NULL AND r.lease_until>now() FOR UPDATE OF r`,[row.id,getServerConfig().TURAS_ENVIRONMENT_ID,session.workspaceId,session.principalId,nativeSessionId])).rows;
-  await db.query(`UPDATE response_attempts SET response_state=CASE WHEN response_state IN('pending','running','stopping') THEN 'stopping' ELSE 'cancelled' END,
-   updated_at=now(),revision=revision+1 WHERE conversation_id=$1 AND (response_state IN('pending','running','stopping') OR id=ANY($2::uuid[]))`,[row.id,requests.map(r=>r.attempt_id).filter(Boolean)]);
+  await db.query(`UPDATE response_attempts SET response_state=CASE WHEN response_state IN('pending','running','waiting_input','stopping') THEN 'stopping' ELSE 'cancelled' END,
+   updated_at=now(),revision=revision+1 WHERE conversation_id=$1 AND (response_state IN('pending','running','waiting_input','stopping') OR id=ANY($2::uuid[]))`,[row.id,requests.map(r=>r.attempt_id).filter(Boolean)]);
   await db.query(`UPDATE turas_research_requests SET lease_until=least(lease_until,clock_timestamp())
    WHERE environment_id=$1 AND workspace_id=$2 AND owner_user_id=$3 AND parent_session_id=$4 AND receipt IS NULL AND lease_until>now()`,[getServerConfig().TURAS_ENVIRONMENT_ID,session.workspaceId,session.principalId,nativeSessionId]);
  });

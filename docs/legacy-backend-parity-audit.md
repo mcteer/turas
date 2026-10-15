@@ -623,3 +623,32 @@ check. Dispatch, correction, input continuation and provider execution recheck
 that window; an in-flight provider receives its deadline signal. Runtime-role
 checks cover another conversation, expiry and subsequent provider rejection.
 These controls do not enable hosted native uploads or authorize infrastructure.
+
+
+### Parked-question retirement and isolated browser startup
+
+The cleanup rehearsal identified a retained evaluation turn in `waiting_input`.
+Stop/retirement admission previously omitted that state. Ordinary cancellation now
+closes it as `stopping`; application settlement requires Eve's exact terminal
+`reset`/`no_active_session` receipt, or the existing `no_active_turn` cancellation
+acknowledgment. An accepted request, failed response or another session's reset
+receipt does not prove retirement. Runtime-role checks pass these distinctions and
+verify watchdog settlement. Hosted recheck is still required before cleanup.
+
+The latest file-correction CI failure exposed unresolved KaTeX fonts in the owned
+application: its copied lockfile changed Turbopack's dependency root while installed
+dependencies remain linked to the parent checkout. The isolated browser fixture
+now uses the same webpack bundler as the hosted build and compiles a separate empty
+owned thread before beginning the interrupted response. All three fixture specialists
+inherit the selected pinned Docker sandbox, preventing Eve's optional default-provider
+installation from replacing dependencies and rebuilding the development runtime. It still sends both files
+through the actual composer, Eve runtime and provider adapter; compilation is not
+counted as runtime correction latency. The local actual-runtime/headless WebKit file-correction check now passes with
+original bytes, one parent attempt and reloaded history. CI verification remains open.
+
+Exact `45c902f` authenticated Preview profile reads passed all 184 real customers,
+1Password/Notion product source details, first overview placement and desktop/mobile
+layout. Actual WebKit document preparation and the retained Desktop question answer
+also pass. Two errors were recorded during navigation/reload cancellation; they
+are retained in the private receipt rather than reported as zero errors. No paid
+model or evidence search was dispatched by these reads.

@@ -19,7 +19,7 @@ import {authorizeExpansionRetirement} from "../expansion/native-retirement";
 import { authorizeSupportRetirement } from "../support/native-retirement";
 import { authorizeNativeRetirement } from "../artifacts/native-retirement";
 import { authorizeLearningRetirement } from '../learning/native-retirement';
-import {authorizeOwnedOrdinaryRetirement} from './ordinary-retirement';
+import {authorizeOwnedOrdinaryRetirement,reconcileOwnedOrdinaryRetirement} from './ordinary-retirement';
 import {intakeOrdinaryAttachmentContext} from './attachment-intake';
 import {ordinaryNativeMessageSchema,nativeMessageText} from '../../conversations/native-message';
 import {parseOrdinaryNativeMessage,summarizeNativeMessage} from './native-message';
@@ -341,7 +341,9 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             const sessionId = args.params.sessionId;
             if (!sessionId || !/^wrun_[A-Za-z0-9_-]+$/.test(sessionId) ||
                 !await authorizeNativeRetirement(request,sessionId) && !await authorizeExecutionRetirement(request,sessionId) && !await authorizeSupportRetirement(request,sessionId) && !await authorizeExpansionRetirement(request,sessionId) && !await authorizeLearningRetirement(request,sessionId) && !await authorizeOwnedOrdinaryRetirement(request,sessionId)) return closed();
-            return native(request,args);
+            const response=await native(request,args);
+            await reconcileOwnedOrdinaryRetirement(request,sessionId,response);
+            return response;
           } catch (error) { return nativeFailure(error); }
         } };
       }

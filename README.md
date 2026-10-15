@@ -531,3 +531,9 @@ future framework changes require reviewing this repair. The file-memory provider
 backend selection, scope, stored format and root model remain unchanged. Local
 runtime checks cover preference save/recall, caller isolation/removal and native
 file/correction history; these do not establish hosted Blob persistence.
+
+Ordinary Stop and native retirement also cover a turn parked for user input. A
+native retirement settles its application attempt only after Eve confirms the exact
+session is reset or already inactive; an accepted request alone leaves it stopping.
+The hosted parity checks and development-data cleanup remain release gates in the
+[backend parity audit](docs/legacy-backend-parity-audit.md).

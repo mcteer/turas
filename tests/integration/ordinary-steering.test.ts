@@ -182,3 +182,25 @@ it('aborts a bounded file-check conversation at its operator deadline and refuse
   expect(calls).toBe(1);
  }finally{for(const key of keys){if(prior[key]===undefined)delete process.env[key];else process.env[key]=prior[key];}try{await settleSyntheticConversationAttempts(f.db,[f.conversation.id]);}finally{await f.db.end();}}
 });
+
+it('keeps a parked question stopping until the exact native retirement is confirmed',async()=>{
+ const f=await fixture();try{
+  const {reconcileOwnedOrdinaryRetirement}=await import('../../lib/server/conversations/ordinary-retirement');
+  const {csrfTokenForSession}=await import('../../lib/server/auth/csrf');
+  const issued=await issueSession({principalId:f.actor.principalId,membershipId:f.actor.membershipId,workspaceId:f.actor.workspaceId,loginName:f.actor.loginName,displayName:f.actor.displayName,kind:f.actor.kind,role:f.actor.role});
+  const cookie=sessionCookie(issued.token,issued.expiresAt).split(';')[0],origin=process.env.TURAS_APP_ORIGIN!;
+  const request=new Request(origin+'/eve/v1/session/'+f.native+'/reset',{method:'POST',headers:{origin,cookie,'x-csrf-token':csrfTokenForSession(issued.token)},body:'{}'});
+  await f.db.query("UPDATE response_attempts SET response_state='waiting_input' WHERE id=$1",[f.attemptId]);
+  await authorizeOwnedOrdinaryRetirement(request,f.native);
+  const state=async()=>(await f.db.query('SELECT response_state FROM response_attempts WHERE id=$1',[f.attemptId])).rows[0].response_state;
+  expect(await state()).toBe('stopping');
+  for(const receipt of [{ok:true,status:'accepted'},{ok:true,status:'reset',previousSessionId:'wrun_other'}]){
+   await reconcileOwnedOrdinaryRetirement(request,f.native,Response.json(receipt));expect(await state()).toBe('stopping');
+  }
+  await reconcileOwnedOrdinaryRetirement(request,f.native,Response.json({ok:true,status:'reset',previousSessionId:f.native},{status:500}));expect(await state()).toBe('stopping');
+  await reconcileOwnedOrdinaryRetirement(request,f.native,Response.json({ok:true,status:'reset',previousSessionId:f.native}));
+  expect(await state()).toBe('cancelled');
+  expect((await f.db.query('SELECT state FROM watchdog_jobs WHERE attempt_id=$1',[f.attemptId])).rows[0].state).toBe('settled');
+  await reconcileOwnedOrdinaryRetirement(request,f.native,Response.json({ok:true,status:'no_active_session'}));expect(await state()).toBe('cancelled');
+ }finally{try{await settleSyntheticConversationAttempts(f.db,[f.conversation.id]);}finally{await f.db.end();}}
+});
