@@ -64,7 +64,6 @@ export function parityBudgetModel(model:Model,modelId:string):Model {
       if(called)throw new Error('A paid evaluation call cannot be retried');called=true;
       const bytes=Buffer.byteLength(JSON.stringify({prompt:params.prompt,tools:params.tools}))
         +8192+128*params.prompt.length;
-      if(bytes>120_000)throw new Error('Evaluation input exceeds its priced token ceiling');
       const maxOutputTokens=Math.min(params.maxOutputTokens??32_000,32_000);
       operation=await reserve(modelId,pricing=>{
         const price=pricing[modelId];if(!price)throw new Error('Model pricing was not authorized');

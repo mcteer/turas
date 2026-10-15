@@ -40,3 +40,18 @@ it("reserves a shared ceiling atomically before either fixture provider can run"
     await owner.end();
   }
 });
+
+it('prices a large legacy research context and denies an unaffordable prompt before provider I/O',async()=>{
+ const owner=new Client({connectionString:isolatedTestUrl});await owner.connect();const previous=process.env.VERCEL_ENV;
+ try{
+  const actor=(await owner.query("SELECT workspace_id,principal_id FROM memberships WHERE kind='internal' LIMIT 1")).rows[0],id=randomUUID();
+  await owner.query(`INSERT INTO parity_evaluation_budgets(id,environment_id,workspace_id,owner_principal_id,cap_micro_usd,pricing,expires_at)
+   VALUES($1,$2,$3,$4,1000000,$5,now()+interval '1 hour')`,[id,process.env.TURAS_ENVIRONMENT_ID,actor.workspace_id,actor.principal_id,JSON.stringify({'openai/gpt-5.6-terra':{input:0.000001,output:0.000001}})]);
+  process.env.VERCEL_ENV='preview';process.env.TURAS_PARITY_EVALUATION_BUDGET_ID=id;let calls=0;
+  const model={specificationVersion:'v4',provider:'synthetic-budget-fixture',modelId:'openai/gpt-5.6-terra',supportedUrls:{},async doGenerate(){calls++;return {providerMetadata:{gateway:{cost:'0.05'}}}},async doStream(){throw Error('Unused')}} as unknown as Model;
+  const prompt=(length:number)=>[{role:'user' as const,content:[{type:'text' as const,text:'Public fixture evidence. '.repeat(length)}]}];
+  await parityBudgetModel(model,'openai/gpt-5.6-terra').doGenerate({prompt:prompt(10000),maxOutputTokens:1});
+  await expect(parityBudgetModel(model,'openai/gpt-5.6-terra').doGenerate({prompt:prompt(100000),maxOutputTokens:1})).rejects.toMatchObject({code:'parity_budget_exhausted'});
+  expect(calls).toBe(1);
+ }finally{delete process.env.TURAS_PARITY_EVALUATION_BUDGET_ID;if(previous===undefined)delete process.env.VERCEL_ENV;else process.env.VERCEL_ENV=previous;await owner.end();}
+});

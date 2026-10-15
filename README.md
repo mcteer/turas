@@ -36,8 +36,9 @@ Focused local checks and an encrypted Preview restore/migration rehearsal pass.
 Hosted specialist behavior and visual acceptance remain pending; local checks do
 not establish them. Track open comparisons and actual verification in
 [the repair audit](docs/legacy-backend-parity-audit.md). Migrations 056–066 and their
-runtime grants require the coordinated hosted release. The $15 parity-check
-allowance is authorized; no paid parity provider call has run at this checkpoint.
+runtime grants are applied to backed-up, rehearsed Preview; Production is unchanged.
+Hosted model/provider checks are in progress under one shared $15 ledger.
+Specialist completion, full parity acceptance and cleanup remain open.
 The root Grok model is unchanged.
 
 Customer Overview appears immediately below the customer heading, above workload controls.
