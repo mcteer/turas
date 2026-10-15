@@ -57,6 +57,8 @@ try {
   const contractUrl=new URL(url);contractUrl.searchParams.set('options','-c role=turas_runtime');
   if(!process.argv.includes("--native-only")&&!process.argv.includes("--native-files-only"))run(["node_modules/vitest/vitest.mjs","run","tests/contracts/general-chat.test.ts"],{...environment,DATABASE_URL:contractUrl.toString(),DATABASE_URL_UNPOOLED:contractUrl.toString()});
   if(process.argv.includes('--execution-handoff'))run(['--import','tsx','scripts/check-execution-ui.ts','--us4','webkit-desktop-light'],integrationEnvironment);
+  if(process.argv.includes('--native-memory-files'))run(['--import','tsx','scripts/check-ordinary-native-files.ts','--memory-files'],integrationEnvironment);
+  if(process.argv.includes('--native-memory'))run(['--import','tsx','scripts/check-ordinary-native-files.ts','--memory'],integrationEnvironment);
   if(process.argv.includes('--native-files-steer-ui'))run(['--import','tsx','scripts/check-ordinary-native-files.ts','--composer','--steer'],integrationEnvironment);
   if(process.argv.includes('--native-files-ui'))run(['--import','tsx','scripts/check-ordinary-native-files.ts','--composer'],integrationEnvironment);
   if(process.argv.includes('--native-files-steer'))run(['--import','tsx','scripts/check-ordinary-native-files.ts','--steer'],integrationEnvironment);

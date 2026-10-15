@@ -580,3 +580,33 @@ explicit `deleteOrphanSnapshots:false`, and each original snapshot remained
 retrievable afterward. Eve's deployment artifact uses that snapshot ID directly;
 the temporary template name is not needed at runtime. No session sandbox or
 snapshot was deleted. The three existing session resources remain unclassified.
+
+
+### Personal preference memory compatibility
+
+An actual local Eve save call exposed a 0.67.1 framework boundary defect for native
+file turns: `context.messages.*.content.*.data` and `context.turn.input.*.content.*.data`
+are URL objects, while durable memory callback creation accepts JSON values only.
+The provider recalled successfully and returned save/remove tools, but framework
+registration discarded their complete result. Plain-text save/recall, another-
+caller isolation and removal pass with the unchanged provider.
+
+A version/source-hash guarded installation repair converts only URL objects to
+supported ModelMessage string data before that callback's existing strict JSON
+validation. Other unsupported types retain their rejection behavior. It changes
+no framework version, storage backend, namespace, scope, file format or model.
+The repaired native runtime advertised both memory tools and executed a preference
+save with original file bytes preserved. The native-file correction composer,
+canonical account resolver and reloaded cards/reply pass separately in headless
+WebKit. The combined long development test encountered the documented process-
+local memory loss when Eve's optional sandbox setup rebuilt its development
+runtime; this is not hosted Blob persistence evidence.
+
+All 538 unit tests pass with isolated synthetic configuration, and both Eve and
+web builds pass. Dedicated unpaid CI jobs exercise preference scope/persistence
+and file/correction history. The exact 9f5aa8f hosted read checks passed the real
+184-customer directory, first overview, 1Password/Notion products and source details,
+private title/history and file preparation. Reload errors remain recorded; no
+active-page errors or overflow occurred. Authenticated HTTP confirms native
+uploads remain disabled on that Preview. Hosted `/eve/v1/info` returned 403 and
+is not claimed as a positive inspection result. Production remains unchanged.

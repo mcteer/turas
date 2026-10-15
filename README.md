@@ -522,3 +522,12 @@ canonical customer resolution and reloaded history. They remain disabled in host
 environments until schema 072 and capped Sandbox admission are verified; these
 local checks do not establish actual-model quality. Preview is on schema 072
 after encrypted recovery/restore/migration/grant rehearsal; Production is unchanged.
+
+
+Installation applies a guarded compatibility repair for Eve 0.67.1: its durable
+memory-tool callback context must serialize native-file URL data as the equivalent
+supported string form. The framework version and reviewed source hash must match;
+future framework changes require reviewing this repair. The file-memory provider,
+backend selection, scope, stored format and root model remain unchanged. Local
+runtime checks cover preference save/recall, caller isolation/removal and native
+file/correction history; these do not establish hosted Blob persistence.

@@ -709,3 +709,33 @@ jobs:
           npm run test:mcp:regressions
       - name: Require complete evidence with the same source fingerprint
         run: node --import tsx scripts/mcp-ci-evidence.ts "${{ matrix.gate }}"
+
+  legacy-chat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        flow: [text-preferences, file-corrections]
+    env:
+      AI_GATEWAY_API_KEY: ''
+      VERCEL_OIDC_TOKEN: ''
+      CONTEXT_API_KEY: ''
+      CONTEXT_DEV_API_KEY: ''
+      TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix packages/artifact-extractor
+      - run: npm run retrieval:prepare -- --offline
+      - run: npx playwright install --with-deps webkit
+      - name: Real Eve preference save, recall, caller isolation and removal
+        if: matrix.flow == 'text-preferences'
+        run: node scripts/check-legacy-parity-disposable.mjs --native-memory --native-files-only
+      - name: Real Eve file bytes, customer resolution, corrections and WebKit history
+        if: matrix.flow == 'file-corrections'
+        run: node scripts/check-legacy-parity-disposable.mjs --native-files-steer-ui --native-files-only
