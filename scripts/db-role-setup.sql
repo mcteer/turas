@@ -27,6 +27,7 @@ END $$;
 
 DO $$ BEGIN
  IF to_regclass('public.parity_evaluation_budgets') IS NOT NULL THEN
+  REVOKE ALL ON parity_evaluation_budgets,parity_evaluation_operations FROM turas_runtime;
   GRANT SELECT ON parity_evaluation_budgets TO turas_runtime;
   GRANT UPDATE(reserved_micro_usd,state) ON parity_evaluation_budgets TO turas_runtime;
   GRANT SELECT,INSERT ON parity_evaluation_operations TO turas_runtime;

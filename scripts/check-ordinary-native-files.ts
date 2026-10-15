@@ -47,13 +47,16 @@ try{await withPlanEvalEnvironment(async environment=>{
    const warmupBinding=await context.request.post('/eve/v1/session',{headers:{...headers,'x-turas-conversation-id':warmupId},data:{operationId:warmupKey}});if(!warmupBinding.ok())throw Error('Thread warmup binding failed');
    await page.goto('/s/'+warmupId,{waitUntil:'domcontentloaded'});
    await page.getByLabel('Message Turi').waitFor({timeout:60000});
-   await page.goto('/s',{waitUntil:'domcontentloaded'});
+   // Steer on the existing thread so the same composer owns both sends.
+   if(!process.argv.includes('--steer'))await page.goto('/s',{waitUntil:'domcontentloaded'});
    await page.waitForFunction(()=>{const input=document.querySelector<HTMLInputElement>('input[type="file"][aria-label="Chat document files"]');return input&&!input.disabled;},null,{timeout:30000});
    await page.getByLabel('Message Turi').fill(firstPrompt);
    await page.getByLabel('Chat document files',{exact:true}).setInputFiles({name:'pixel.png',mimeType:'image/png',buffer:bytes});
    await page.getByRole('button',{name:'Remove pixel.png'}).waitFor({timeout:20000});
    await page.getByRole('button',{name:'Send message',exact:true}).click();
-   await page.waitForURL(/\/s\/[0-9a-f-]+$/,{timeout:30000});id=new URL(page.url()).pathname.split('/').at(-1)!;
+   await page.waitForURL(/\/s\/[0-9a-f-]+$/,{timeout:30000});
+   await page.getByRole('button',{name:'Remove pixel.png',exact:true}).waitFor({state:'detached',timeout:10000});
+   id=new URL(page.url()).pathname.split('/').at(-1)!;
    const saved=await context.request.get('/api/conversations/'+id);if(!saved.ok())throw Error('Composer conversation unavailable');native=(await saved.json()).data.eveSessionId;
    if(!native)throw Error('Composer native binding unavailable');
   }else{
@@ -70,6 +73,7 @@ try{await withPlanEvalEnvironment(async environment=>{
     await page.getByRole('button',{name:'Remove corrected.png'}).waitFor({timeout:10000});
     const [delivery]=await Promise.all([page.waitForResponse(response=>response.request().method()==='POST'&&response.url()===environment.origin+'/eve/v1/session/'+native),page.getByRole('button',{name:'Send message',exact:true}).click()]);
     if(!delivery.ok())throw Error('Composer file correction rejected');
+    await page.getByLabel('Message Turi').fill('Keep this next unsent draft.');
    }else{
    const correction=await context.request.post('/eve/v1/session/'+native,{headers:{...headers,'x-turas-conversation-id':id,'x-turas-request-key':randomUUID()},data:{turnPolicy:'steer',message:[{type:'text',text:'Correct this using the attached file.'},{type:'file',filename:'corrected.png',mediaType:'image/png',data:'data:image/png;base64,'+bytes.toString('base64')}]}});
    if(!correction.ok()){await writeFile(join(out,'send-private.json'),JSON.stringify({status:correction.status(),body:await correction.text()}),{mode:0o600});throw Error('File correction rejected');}
@@ -77,6 +81,7 @@ try{await withPlanEvalEnvironment(async environment=>{
   }
   const until=Date.now()+60000;let completed=false;while(Date.now()<until){const rows=(await query('SELECT response_state FROM response_attempts WHERE conversation_id=$1',[id])).rows;if(rows.some(row=>row.response_state==='completed')){completed=true;break;}if(rows.some(row=>row.response_state==='failed'))throw Error('Native file response failed');await new Promise(resolve=>setTimeout(resolve,100));}
   if(!completed)throw Error('Native file response timed out');
+  if(process.argv.includes('--composer')&&process.argv.includes('--steer')&&await page.getByLabel('Message Turi').inputValue()!=='Keep this next unsent draft.')throw Error('Completing the previous send erased the next draft');
   const calls=(await query('SELECT bytes_digest,tool_names FROM ordinary_native_file_fixture_calls')).rows;
   if((process.argv.includes('--steer')?calls.length<2:calls.length!==(process.argv.includes('--memory')||process.argv.includes('--memory-files')?3:2))||calls.some(call=>call.bytes_digest!==createHash('sha256').update(process.argv.includes('--memory')?Buffer.alloc(0):bytes).digest('hex')))throw Error('Provider file bytes differ');
   if(process.argv.includes('--steer')){const projected=(await query('SELECT native_event_id FROM ordinary_steering_deliveries d JOIN response_attempts a ON a.id=d.attempt_id WHERE a.conversation_id=$1',[id])).rows;if(projected.length!==1||!projected[0].native_event_id)throw Error('Native file correction was not consumed');if(Number((await query('SELECT count(*) AS n FROM response_attempts WHERE conversation_id=$1',[id])).rows[0].n)!==1)throw Error('Correction created a second response allowance');}

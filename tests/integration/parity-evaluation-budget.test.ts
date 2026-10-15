@@ -55,3 +55,17 @@ it('prices a large legacy research context and denies an unaffordable prompt bef
   expect(calls).toBe(1);
  }finally{delete process.env.TURAS_PARITY_EVALUATION_BUDGET_ID;if(previous===undefined)delete process.env.VERCEL_ENV;else process.env.VERCEL_ENV=previous;await owner.end();}
 });
+
+it('keeps operator budget authority and operation ceilings protected after runtime grant setup',async()=>{
+ const owner=new Client({connectionString:isolatedTestUrl}),runtime=new Client({connectionString:isolatedTestUrl});await owner.connect();await runtime.connect();
+ try{
+  const actor=(await owner.query("SELECT workspace_id,principal_id FROM memberships WHERE kind='internal' LIMIT 1")).rows[0],id=randomUUID();
+  await owner.query(`INSERT INTO parity_evaluation_budgets(id,environment_id,workspace_id,owner_principal_id,cap_micro_usd,pricing,expires_at)
+   VALUES($1,$2,$3,$4,1000,'{}',now()+interval '1 hour')`,[id,process.env.TURAS_ENVIRONMENT_ID,actor.workspace_id,actor.principal_id]);
+  await runtime.query('SET ROLE turas_runtime');
+  expect((await runtime.query('SELECT id FROM parity_evaluation_budgets WHERE id=$1',[id])).rowCount).toBe(1);
+  for(const sql of ['UPDATE parity_evaluation_budgets SET cap_micro_usd=15000000 WHERE id=$1',"UPDATE parity_evaluation_budgets SET pricing='{}' WHERE id=$1","UPDATE parity_evaluation_budgets SET expires_at=now()+interval '1 day' WHERE id=$1",'DELETE FROM parity_evaluation_budgets WHERE id=$1'])await expect(runtime.query(sql,[id])).rejects.toMatchObject({code:'42501'});
+  const operation=randomUUID();await runtime.query("INSERT INTO parity_evaluation_operations(id,budget_id,provider,ceiling_micro_usd) VALUES($1,$2,'synthetic-fixture',100)",[operation,id]);
+  for(const sql of ['UPDATE parity_evaluation_operations SET ceiling_micro_usd=0 WHERE id=$1','DELETE FROM parity_evaluation_operations WHERE id=$1'])await expect(runtime.query(sql,[operation])).rejects.toMatchObject({code:'42501'});
+ }finally{await runtime.end();await owner.end();}
+});

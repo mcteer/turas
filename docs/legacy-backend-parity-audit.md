@@ -766,3 +766,34 @@ three temporary feature settings restored, and its stopped build template delete
 while retaining the runtime snapshot. The user authorized one replacement build
 and session within the same $2 infrastructure and $15 provider caps. The replacement
 hosted acceptance and revised Notion output review remain open.
+
+The replacement `cc74e26` native check completed with one parent response attempt
+and one consumed correction. CLI WebKit exposed a real same-composer race: the
+initial attachment remained selected until Eve's streaming `send` promise resolved,
+so the correction included both files. The composer now clears the captured send
+at dispatch and preserves a subsequent draft. A real-Eve/WebKit regression uses
+the same existing composer for both sends and verifies file clearing and next-draft
+preservation; it passes locally. The normal web build also passes.
+
+The Sandbox retained both original filenames. The native test also asked for raw
+file inspection despite both legacy and current builds disabling arbitrary file
+and shell tools; that unsupported operation does not prove a missing backend file.
+Actual image-answer quality remains separate from byte delivery. The root guidance
+now distinguishes display labels, native visible image content and measurement
+limits. A further output review still failed the elapsed-ceiling wording and omitted
+continued compute after cancellation, so that caveat is now explicit in instructions.
+No revised actual-model pass is claimed.
+
+The 016 integration catalog found that the chat fence denied an authorized shared-only
+receipt in an owned customer-free conversation. That case is now permitted while
+customer receipt consumption still requires the bound customer or a current named
+customer authority. The integrated isolation case passes after this correction.
+
+Runtime grant replay now revokes broad evaluation-table grants before reinstating
+the migration's restricted reserve/settle columns. The disposable domain catalog
+passes an actual runtime-role denial test for cap/pricing/expiry changes, ledger
+deletion and operation-ceiling mutation. Exact Preview schema-072 ACL backup,
+transactional application/rollback rehearsal and final narrowing passed; ledger
+and operation fingerprints were identical throughout, with no provider calls or
+Production changes. The remaining hosted checks require the prepared final Preview
+source and are not covered by the older source's passing checks.

@@ -287,8 +287,8 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     }
     if(text && canSteer && !denied && !stale && !stopping && !steering && !selections.length &&
       (agent.status==='submitted'||agent.status==='streaming')){
-      setSteering(true);setDraft('');setNotice('Sending correction…');
-      try{await agent.send(message,{turnPolicy:'steer',headers:{'x-turas-request-key':crypto.randomUUID()}});setDocuments([]);setNotice('Correction submitted.');}
+      setSteering(true);setDraft('');setDocuments([]);setNotice('Sending correction…');
+      try{await agent.send(message,{turnPolicy:'steer',headers:{'x-turas-request-key':crypto.randomUUID()}});setNotice('Correction submitted.');}
       catch{setNotice('The correction could not be confirmed. It was not sent again.');}
       finally{setSteering(false);}
       return;
@@ -304,13 +304,14 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     setResponseState("pending");
     setNotice("Submitting message…");
     setDraft("");
+    // agent.send resolves after streaming. Snapshot and clear only this send’s
+    // composer state now, so a correction neither repeats files nor loses a new draft.
+    setDraftSelections([]);
+    setDocuments([]);
+    setSelectionResetVersion((value) => value + 1);
     try {
       await agent.send(message, { headers: { "x-turas-request-key": key,
         ...(selections.length ? { "x-turas-artifact-selections": btoa(JSON.stringify(selections)) } : {}) } });
-      setDraft("");
-      setDraftSelections([]);
-      setDocuments([]);
-      setSelectionResetVersion((value) => value + 1);
       setNotice("Message accepted. Waiting for the response…");
     } catch {
       setNotice("Dispatch outcome is being reconciled. The message was not sent again.");

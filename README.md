@@ -542,3 +542,6 @@ Funded hosted checks now establish hybrid Sandbox evidence search and personal
 preference persistence, isolation and removal. Actual Notion answer-quality review
 still fails the cancellation-overrun caveat; revised instructions and a corrected,
 provider-compatible native image fixture await replacement Preview acceptance.
+The same-composer correction regression now verifies that a dispatched file clears
+immediately and finishing the previous stream preserves the next unsent draft.
+Evaluation runtime grants preserve operator-only cap, pricing and expiry control.
