@@ -1231,3 +1231,13 @@ charges and unsettled ceilings are preserved. The corrected native cleanup gate
 also passes fresh CI. Final complete CI is required for the documentation-updated
 merge head; the PR records its exact run and result before merge. Automatic
 Production deployment remains paused pending the separate schema 072 release.
+
+Final merge-head CI `38796600415` identifies one execution WebKit failure at the
+duplicate baseline-mapping option property assertion; its bounded report identifies
+a locator assertion, not a domain rejection. The exact two-journey owned local
+reproduction passes with zero skipped/flaky cases. The assertion now first verifies
+the selected mapping value, then inspects the duplicate native option by its exact
+DOM value instead of its platform accessibility-role exposure inside a collapsed
+select. The duplicate must still be disabled, and the complete mapping/actuals
+journey remains unchanged. The strengthened two-case local check passes; no
+application code changes. Fresh complete CI is required for this test-only repair.
