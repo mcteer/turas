@@ -1,3 +1,4 @@
+import {ownedInputResponseAttempt} from "../../lib/server/conversations/input-responses";
 import { eveChannel } from "eve/channels/eve";
 import type { AuthFn } from "eve/channels/auth";
 import { getCurrentSession } from "../../lib/server/auth/sessions";
@@ -19,11 +20,20 @@ const appCookieAuth: AuthFn<Request> = async (request): Promise<Awaited<ReturnTy
   }
   const session = await getCurrentSession(request);
   if (!session) return null;
+  let pendingAttempt:string|undefined;
+  const continuation=new URL(request.url).pathname.match(/^\/eve\/v1\/session\/(wrun_[A-Za-z0-9_-]+)$/);
+  if(request.method==='POST' && continuation) {
+    const body:unknown=await request.clone().json().catch(()=>null);
+    if(body && typeof body==='object' && 'inputResponses' in body) {
+      pendingAttempt=await ownedInputResponseAttempt(session,continuation[1],body).catch(()=>undefined);
+      if(!pendingAttempt)return null;
+    }
+  }
   return {
     authenticator: "turas-session",
     principalId: session.principalId,
     principalType: "user",
-    attributes: { workspaceId: session.workspaceId },
+    attributes: { workspaceId: session.workspaceId,...(pendingAttempt?{turasAttemptId:pendingAttempt}:{}) },
   };
 };
 

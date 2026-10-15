@@ -1,7 +1,7 @@
 export function ChatStatus({ notice, responseState, error }: {
   notice?: string; responseState?: string; error?: boolean;
 }) {
-  const label = responseState === "stopping" ? "Stopping requested. Waiting for confirmation…"
+  const label = responseState === 'waiting_input' ? 'Waiting for your reply.' : responseState === "stopping" ? "Stopping requested. Waiting for confirmation…"
     : responseState === "cancelled" ? "Response cancelled. Partial output may be visible."
       : responseState === "failed" ? "Response failed. Partial output may be visible."
         : responseState === "completed" ? "Response complete."

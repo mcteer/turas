@@ -1,3 +1,4 @@
+import {assertCustomerQuestionReads} from "./customer-accounts";
 import { readExecutionAdviceStatus } from "../execution/advisory-status";
 import { conversationFeature } from "./feature";
 import { randomUUID } from "node:crypto";
@@ -36,6 +37,8 @@ type ConversationRow = {
   delivery_generation?: string;
   artifact_context_stale?: boolean;
   retrieval_context_stale?: boolean;
+  live_customer_context?:boolean;
+  normal_live_context?:boolean;
   planning_audience?:"internal"|"delivery"|null;
 };
 
@@ -70,6 +73,7 @@ function contextStatus(row: ConversationRow, session: CurrentSession): "current"
   if (row.context_snapshot_schema !== "customer-context-v1") return "historical";
   const audience = row.planning_audience ?? (session.kind === "internal" ? "internal" : "delivery");
   const generation = audience === "internal" ? row.internal_generation : row.delivery_generation;
+  if(row.normal_live_context)return row.context_audience===audience && !row.artifact_context_stale && !row.retrieval_context_stale ? 'current':'changed';
   if (row.context_audience !== audience ||
       row.artifact_context_stale ||
       row.retrieval_context_stale ||
@@ -93,6 +97,14 @@ async function annotatePlanning(rows:ConversationRow[]):Promise<void> {
   if ((marker.rows[0]?.schema_version ?? 0)>=34) {
     const staffing=await query<{conversation_id:string}>("SELECT conversation_id FROM staffing_conversation_bindings WHERE conversation_id=ANY($1::uuid[])", [rows.map(row=>row.id)]);
     for (const row of staffing.rows) byId.set(row.conversation_id,"delivery");
+  }
+  if((marker.rows[0]?.schema_version??0)>=64){
+    const governed=await query<{conversation_id:string}>(`SELECT conversation_id FROM execution_advice_bindings WHERE conversation_id=ANY($1::uuid[])
+      UNION SELECT conversation_id FROM support_advice_bindings WHERE conversation_id=ANY($1::uuid[])
+      UNION SELECT conversation_id FROM expansion_advice_bindings WHERE conversation_id=ANY($1::uuid[])
+      UNION SELECT conversation_id FROM learning_bindings WHERE conversation_id=ANY($1::uuid[])`,[rows.map(row=>row.id)]);
+    const excluded=new Set([...byId.keys(),...governed.rows.map(row=>row.conversation_id)]);
+    for(const row of rows)row.normal_live_context=!!row.live_customer_context&&!excluded.has(row.id);
   }
   for (const row of rows) row.planning_audience=byId.get(row.id) ?? null;
 }
@@ -140,12 +152,15 @@ async function staleRetrievalConversations(ids: readonly string[]): Promise<Set<
     [getServerConfig().TURAS_ENVIRONMENT_ID]);
   if ((marker.rows[0]?.schema_version ?? 0) < 22) return new Set();
   const used = await query<{ conversation_id: string }>(`
-    SELECT DISTINCT conversation_id FROM session_evidence_dependencies
-    WHERE conversation_id=ANY($1::uuid[])`,[ids]);
+    SELECT DISTINCT d.conversation_id FROM session_evidence_dependencies d JOIN conversations c ON c.id=d.conversation_id
+    WHERE d.conversation_id=ANY($1::uuid[])`,[ids]);
   const stale = new Set<string>();
   for (const row of used.rows) {
     try {
-      await withTransaction((client) => assertRetrievalDependenciesCurrent(client,row.conversation_id));
+      await withTransaction(async client => {
+        if((await conversationFeature(client,row.conversation_id)).kind!=='normal')
+          await assertRetrievalDependenciesCurrent(client,row.conversation_id);
+      });
     } catch (error) {
       if (error instanceof HttpFailure && error.status === 409) stale.add(row.conversation_id);
       else throw error;
@@ -194,8 +209,8 @@ export async function createOwnedConversation(
       INSERT INTO conversations
         (id, environment_id, workspace_id, customer_id, owner_principal_id,
          creation_operation_id, binding_state, title, context_audience,
-         context_generation,context_snapshot_schema,context_login_session_id,context_membership_id)
-      VALUES ($1,$2,$3,$4,$5,$6,'unbound',$7,$8,$9,'customer-context-v1',$10,$11)
+         context_generation,context_snapshot_schema,context_login_session_id,context_membership_id,live_customer_context)
+      VALUES ($1,$2,$3,$4,$5,$6,'unbound',$7,$8,$9,'customer-context-v1',$10,$11,true)
       ON CONFLICT (creation_operation_id) DO NOTHING
       RETURNING *
     `, [id, getServerConfig().TURAS_ENVIRONMENT_ID, session.workspaceId,
@@ -228,6 +243,8 @@ export async function getOwnedConversation(
   `, [...values(session), id, getServerConfig().TURAS_ENVIRONMENT_ID]);
   if (!result.rows[0]) throw hiddenRecord();
   await annotatePlanning(result.rows);
+  if(result.rows[0].normal_live_context || result.rows[0].customer_id===null)
+    await withTransaction(db=>assertCustomerQuestionReads(db,session,id,undefined,false));
   result.rows[0].artifact_context_stale = (await staleArtifactConversations([id])).has(id);
   result.rows[0].retrieval_context_stale = (await staleRetrievalConversations([id])).has(id);
   return toReference(result.rows[0], session);
@@ -319,7 +336,7 @@ export async function getOwnedAttemptStatus(
     deadline_at: Date | null; last_error_code: string | null; output_tokens: number;
     watchdog_state: string | null;
   }>(`SELECT a.dispatch_state, a.response_state, a.native_turn_id,
-    a.deadline_at, a.last_error_code, a.output_tokens, j.state AS watchdog_state
+    COALESCE(j.deadline_at,a.deadline_at) AS deadline_at, a.last_error_code, a.output_tokens, j.state AS watchdog_state
     FROM response_attempts a JOIN submitted_messages sm ON sm.id = a.message_id
     LEFT JOIN watchdog_jobs j ON j.attempt_id = a.id
     WHERE a.conversation_id = $1 AND sm.request_key = $2 LIMIT 1`,

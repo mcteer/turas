@@ -38,3 +38,12 @@ describe("restored legacy chat mechanics", () => {
     expect(visibleChatMessages([message],events)).toEqual([]);
   });
 });
+
+it('hides native task-state wakeups and settles the current workflow receipt',()=>{
+ const events=[{type:'action.result',data:{result:{callId:'call',toolName:'customer-recon',output:{status:'working',taskId:'task'}}},meta:{at:'2026-10-14T00:00:00Z'}},
+  {type:'message.received',data:{kind:'execution.background_task',turnId:'wake',message:'[Task state] runtime cohort'},meta:{deliveryIds:[]}},
+  {type:'action.result',data:{result:{callId:'call',toolName:'customer-recon',output:{kind:'customer-update',status:'ready'}}},meta:{at:'2026-10-14T00:01:00Z'}}] as unknown as MessageStreamEvent[];
+ const message={id:'wake',role:'user',metadata:{turnId:'wake'},parts:[{type:'text',text:'[Task state] runtime cohort'}]} as EveMessage;
+ expect(visibleChatMessages([message],events)).toEqual([]);
+ expect(backgroundChatActivity(events,Date.parse('2026-10-14T00:02:00Z')).thinking).toBe(false);
+});

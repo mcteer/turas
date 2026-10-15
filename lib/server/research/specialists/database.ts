@@ -37,5 +37,5 @@ export async function ensureDatabase() {
   const marker=await runtimeQuery<{schema_version:number}>(
     "SELECT schema_version FROM turas_environment WHERE environment_id=$1",
     [getServerConfig().TURAS_ENVIRONMENT_ID]);
-  if((marker.rows[0]?.schema_version??0)<57) throw new HttpFailure(503,"research_unavailable","Specialist research migrations are unavailable");
+  if((marker.rows[0]?.schema_version??0)<60) throw new HttpFailure(503,"research_unavailable","Specialist research migrations are unavailable");
 }

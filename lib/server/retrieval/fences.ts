@@ -144,6 +144,8 @@ async function ownCheckedReplacement(client:PoolClient,conversationId:string,dep
 export async function assertRetrievalDependenciesCurrent(client: PoolClient,
   conversationId: string): Promise<void> {
   if (!await schemaReady(client)) return;
+  const marker=Number((await client.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0]?.schema_version??0);
+  const refreshed=marker>=66 ? `AND NOT EXISTS(SELECT 1 FROM ordinary_evidence_refreshes refreshed WHERE refreshed.dependency_id=dependency.id)` : '';
   const dependencies = await client.query<Dependency & { valid_until: Date;
     receipt_as_of: Date | null }>(`
     SELECT dependency.source_kind,dependency.source_revision_id,
@@ -151,7 +153,7 @@ export async function assertRetrievalDependenciesCurrent(client: PoolClient,
       receipt.as_of AS receipt_as_of
     FROM session_evidence_dependencies dependency
     LEFT JOIN retrieval_receipts receipt ON receipt.id=dependency.receipt_id
-    WHERE dependency.conversation_id=$1
+    WHERE dependency.conversation_id=$1 ${refreshed}
     ORDER BY dependency.consumed_at,dependency.id`,
   [conversationId]);
   if (dependencies.rows.length && !retrievalIntakeEnabled()) {
@@ -256,15 +258,11 @@ export async function recordRetrievalConsumption(client: PoolClient, actor: Curr
       AND valid_until>now()`,
   [receiptId,actor.membershipId,getServerConfig().TURAS_ENVIRONMENT_ID]);
   const selected = receipt.rows[0];
-  if (!selected || (bound.customer_id && selected.customer_id && selected.customer_id !== bound.customer_id)) {
-    throw hiddenRecord();
-  }
-  if (!bound.customer_id) {
-    const attempt = (await client.query<{id:string}>(`SELECT id FROM response_attempts
-      WHERE conversation_id=$1 AND response_state IN('pending','running')
-      ORDER BY created_at DESC LIMIT 1`,[conversationId])).rows[0];
-    if (!attempt || !await readGeneralAttemptContext(client,attempt.id,actor.principalId)) throw hiddenRecord();
-  }
+  const attempt=(await client.query<{id:string}>(`SELECT id FROM response_attempts
+    WHERE conversation_id=$1 AND response_state IN('pending','running') ORDER BY created_at DESC LIMIT 1`,[conversationId])).rows[0];
+  const liveNamed=!!attempt && !!await readGeneralAttemptContext(client,attempt.id,actor.principalId);
+  if(!selected || !liveNamed && bound.customer_id && selected.customer_id && selected.customer_id!==bound.customer_id)throw hiddenRecord();
+  if(!bound.customer_id && !liveNamed)throw hiddenRecord();
   await authorizeRetrievalScope(client,actor,selected.scope,selected.customer_id ?? bound.customer_id);
   const sources = await client.query<Omit<Dependency,"source_digest">>(`
     SELECT s.source_kind,s.source_revision_id,s.source_generation

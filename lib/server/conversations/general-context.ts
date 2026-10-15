@@ -1,3 +1,4 @@
+import {conversationFeature} from "./feature";
 import { createHash } from "node:crypto";
 import type { PoolClient } from "pg";
 import { withTransaction } from "../db/client";
@@ -5,6 +6,7 @@ import type { CurrentSession } from "../auth/sessions";
 import { getServerConfig } from "../config";
 import { hiddenRecord, HttpFailure } from "../../contracts/http";
 import { lockWorkspaceActor } from "../profiles/policy";
+import { readResearchRuntimeAuthority } from "../research/specialists/runtime-authority";
 
 export type GeneralSnapshot = {
   contractVersion: "general-context-v1"; contextVersion: string;
@@ -14,13 +16,17 @@ export type GeneralSnapshot = {
 
 export async function captureGeneralContext(db: PoolClient, actor: CurrentSession, conversationId: string, attemptId: string): Promise<void> {
   await lockWorkspaceActor(db, actor);
-  if (process.env.TURAS_GENERAL_CHAT_DISABLED === "1") throw new HttpFailure(503, "general_chat_unavailable", "General chat is unavailable");
-  const row = (await db.query(`SELECT 1 FROM conversations c JOIN response_attempts a ON a.conversation_id=c.id
-    WHERE c.id=$1 AND a.id=$2 AND c.customer_id IS NULL AND c.context_snapshot_schema='general-context-v1'
+  if((await conversationFeature(db,conversationId)).kind!=='normal')throw hiddenRecord();
+  const row = (await db.query(`SELECT c.customer_id FROM conversations c JOIN response_attempts a ON a.conversation_id=c.id
+    WHERE c.id=$1 AND a.id=$2 AND (c.customer_id IS NULL OR c.live_customer_context) AND c.context_snapshot_schema IN('general-context-v1','customer-context-v1')
       AND c.owner_principal_id=$3 AND c.workspace_id=$4 AND c.environment_id=$5`,
   [conversationId,attemptId,actor.principalId,actor.workspaceId,getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
   if (!row) throw hiddenRecord();
-  const now = new Date(), until = new Date(Math.min(now.getTime()+120000,actor.expiresAt.getTime()));
+  if(row.customer_id===null && process.env.TURAS_GENERAL_CHAT_DISABLED==='1')throw new HttpFailure(503,'general_chat_unavailable','General chat is unavailable');
+  // This receipt binds identity, not a frozen customer-facts snapshot. Legacy
+  // background research can outlive the initiating reply. Login revocation,
+  // current membership/grants and each retrieved source remain checked live.
+  const now = new Date(), until = actor.expiresAt;
   const digest = createHash("sha256").update(JSON.stringify(["general-context-v1",conversationId,attemptId,actor.principalId,actor.sessionId,actor.membershipId,now.toISOString(),until.toISOString()])).digest("hex");
   await db.query(`INSERT INTO general_context_receipts
     (attempt_id,conversation_id,workspace_id,environment_id,owner_principal_id,login_session_id,membership_id,as_of,valid_until,snapshot_digest)
@@ -29,22 +35,27 @@ export async function captureGeneralContext(db: PoolClient, actor: CurrentSessio
 }
 
 export async function readGeneralAttemptContext(db: PoolClient, attemptId: string, principalId: string): Promise<GeneralSnapshot | null> {
-  const scope = (await db.query<{ customer_id: string | null }>(`SELECT c.customer_id FROM response_attempts a JOIN conversations c ON c.id=a.conversation_id
+  const scope = (await db.query<{ customer_id: string | null;live_customer_context?:boolean;conversation_id:string }>(`SELECT c.customer_id,to_jsonb(c)->>'live_customer_context'='true' AS live_customer_context,c.id AS conversation_id FROM response_attempts a JOIN conversations c ON c.id=a.conversation_id
     WHERE a.id=$1 AND c.owner_principal_id=$2 AND c.environment_id=$3`, [attemptId,principalId,getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
-  if (!scope || scope.customer_id !== null) return null;
-  if (process.env.TURAS_GENERAL_CHAT_DISABLED === "1") throw hiddenRecord();
+  if (!scope || scope.customer_id !== null && (!scope.live_customer_context || (await conversationFeature(db,scope.conversation_id)).kind!=='normal')) return null;
+  if (scope.customer_id===null && process.env.TURAS_GENERAL_CHAT_DISABLED === "1") throw hiddenRecord();
   const row = (await db.query<{ as_of: Date; valid_until: Date; session_id: string; membership_id: string; workspace_id: string; expires_at: Date; login_name: string; display_name: string; kind: "internal" | "partner"; role: "admin" | "member" }>(`
     SELECT r.as_of,r.valid_until,r.login_session_id AS session_id,r.membership_id,r.workspace_id,s.expires_at,p.login_name,p.display_name,m.kind,m.role
-    FROM general_context_receipts r JOIN conversations c ON c.id=r.conversation_id
+    FROM ordinary_chat_authorities r JOIN conversations c ON c.id=r.conversation_id
     JOIN login_sessions s ON s.id=r.login_session_id AND s.principal_id=r.owner_principal_id
     JOIN memberships m ON m.id=r.membership_id AND m.principal_id=r.owner_principal_id AND m.workspace_id=r.workspace_id
     JOIN principals p ON p.id=r.owner_principal_id
     WHERE r.attempt_id=$1 AND r.owner_principal_id=$2 AND r.environment_id=$3
-      AND c.customer_id IS NULL AND c.context_snapshot_schema='general-context-v1'
+      AND (c.customer_id IS NULL OR to_jsonb(c)->>'live_customer_context'='true') AND c.context_snapshot_schema IN('general-context-v1','customer-context-v1')
       AND c.workspace_id=r.workspace_id AND c.owner_principal_id=r.owner_principal_id
       AND s.revoked_at IS NULL AND s.expires_at>now() AND r.valid_until>now()`,
   [attemptId,principalId,getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
-  if (!row) throw hiddenRecord();
+  if (!row) {
+    const authority=await readResearchRuntimeAuthority(db,attemptId,principalId);
+    if(!authority)throw hiddenRecord();
+    return {contractVersion:'general-context-v1',contextVersion:'0',asOf:authority.asOf.toISOString(),
+      validUntil:authority.validUntil.toISOString(),entries:[],complete:true,truncated:false};
+  }
   await lockWorkspaceActor(db, { sessionId:row.session_id, token:"", principalId, membershipId:row.membership_id, workspaceId:row.workspace_id,
     expiresAt:row.expires_at,loginName:row.login_name,displayName:row.display_name,kind:row.kind,role:row.role }, undefined, true);
   if (row.valid_until.getTime() <= Date.now()) throw hiddenRecord();
@@ -55,5 +66,8 @@ export async function readGeneralAttemptContext(db: PoolClient, attemptId: strin
 export async function generalResponseScope(principal: { principalId?: string; attributes?: Record<string, unknown> } | null | undefined): Promise<boolean> {
   const attemptId = principal?.attributes?.turasAttemptId;
   if (!principal?.principalId || typeof attemptId !== "string") return false;
-  return withTransaction(async db => Boolean(await readGeneralAttemptContext(db, attemptId, principal.principalId!)));
+  return withTransaction(async db => {
+    const selected=(await db.query('SELECT c.customer_id FROM conversations c JOIN response_attempts a ON a.conversation_id=c.id WHERE a.id=$1',[attemptId])).rows[0];
+    return selected?.customer_id===null && Boolean(await readGeneralAttemptContext(db,attemptId,principal.principalId!));
+  });
 }

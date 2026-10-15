@@ -48,7 +48,9 @@ export async function requestCancellation(
     }
     const attempt = await client.query<{ id: string; response_state: string }>(`
       SELECT id, response_state FROM response_attempts
-      WHERE conversation_id = $1 AND native_turn_id = $2
+      WHERE conversation_id = $1 AND (native_turn_id = $2
+        ${(marker.rows[0]?.schema_version??0)>=61 ? `OR EXISTS(SELECT 1 FROM research_background_turns background
+          WHERE background.attempt_id=response_attempts.id AND background.turn_id=$2)` : ''})
         AND response_state IN ('pending','running','stopping')
       FOR UPDATE`, [id, turnId]);
     if (!attempt.rows[0]) throw new HttpFailure(409, "stale_turn", "Turn is no longer active");

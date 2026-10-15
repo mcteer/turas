@@ -13,6 +13,12 @@ DO $$ BEGIN
 END $$;
 
 DO $$ BEGIN
+ IF to_regclass('public.independent_research_documents') IS NOT NULL THEN
+  GRANT SELECT,INSERT ON independent_research_documents TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
  IF to_regclass('public.parity_evaluation_budgets') IS NOT NULL THEN
   GRANT SELECT ON parity_evaluation_budgets TO turas_runtime;
   GRANT UPDATE(reserved_micro_usd,state) ON parity_evaluation_budgets TO turas_runtime;
@@ -306,5 +312,43 @@ DO $$ BEGIN
    turas_evidence_passages,turas_evidence_accounts,turas_public_learning,
    turas_vercel_practice_sources,turas_vercel_practice_runs,turas_research_requests,
    turas_research_artifacts TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.research_background_turns') IS NOT NULL THEN
+  GRANT SELECT,INSERT ON research_background_turns TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.workspace_solution_patterns') IS NOT NULL THEN
+  GRANT SELECT,INSERT ON workspace_solution_patterns,workspace_solution_applications TO turas_runtime;
+  GRANT UPDATE(embedding,embedding_model) ON workspace_solution_patterns TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.customer_adoption_contributions') IS NOT NULL THEN
+  GRANT SELECT,INSERT ON customer_adoption_contributions TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.native_input_resume_windows') IS NOT NULL THEN
+  GRANT SELECT,INSERT ON native_input_resume_windows TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.ordinary_continuation_authorities') IS NOT NULL THEN
+  GRANT SELECT,INSERT ON ordinary_continuation_authorities TO turas_runtime;
+  GRANT SELECT ON ordinary_chat_authorities TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.ordinary_context_refreshes') IS NOT NULL THEN
+  GRANT SELECT,INSERT ON ordinary_context_refreshes,ordinary_evidence_refreshes TO turas_runtime;
  END IF;
 END $$;

@@ -10,6 +10,8 @@ import { ShareChatClaim } from "./profiles/share-chat-claim";
 import { ComposerAttachments } from "./attachments/composer-attachments";
 import type { DraftSourceSelection } from "./attachments/source-viewer";
 import { ResearchPanel } from "./research/research-panel";
+import {pendingChatInputs,chatInputAnswer} from "../../lib/chat-inputs";
+import {ChatInputRequestCard} from "./chat-input-request";
 import { ChatMarkdown } from "./chat-markdown";
 import { visibleChatMessages, backgroundChatActivity } from "../../lib/chat-messages";
 
@@ -80,6 +82,9 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     headers: () => ({ "x-csrf-token": csrfToken,
       "x-turas-conversation-id": conversationId }),
     onEvent(event) {
+      if(event.type==='input.requested'){
+        setResponseState('waiting_input');setPendingKey(null);keyRef.current=null;
+      }
       if (["turn.completed", "turn.failed", "turn.cancelled"].includes(event.type)) {
         setResponseState(event.type === "turn.completed" ? "completed"
           : event.type === "turn.failed" ? "failed" : "cancelled");
@@ -91,6 +96,8 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     },
   });
 
+  const inputRequests=pendingChatInputs(agent.events);
+  const [answering,setAnswering]=useState(false);
   const messages = visibleChatMessages(agent.data.messages, agent.events);
   const background = backgroundChatActivity(agent.events);
   const messagesPane = useRef<HTMLDivElement>(null);
@@ -229,9 +236,23 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     void send(false, initialDraft);
   }, [initialDraft, agent.status]);
 
+  async function respondToRequest(response:{requestId:string;optionId?:string;text?:string}) {
+    setAnswering(true);setNotice('Submitting your response…');
+    try {
+      if(response.optionId!==undefined)await agent.respond([{requestId:response.requestId,optionId:response.optionId}]);
+      else await agent.respond([{requestId:response.requestId,text:response.text??''}]);
+      setNotice('Response submitted.');
+    }catch{setNotice('Your response could not be confirmed. Reload to check its status.');}
+    finally{setAnswering(false);}
+  }
+
   async function send(retryPrepared = false, initialText?: string) {
     const selections = retryPrepared ? pendingSelections.current ?? [] : draftSelections;
     const text = (initialText ?? draft).trim() || (selections.length ? "Please discuss the selected customer source passages." : "");
+    const answer=!selections.length?chatInputAnswer(inputRequests,text):null;
+    if(answer && agent.status==='ready' && !denied && !answering) {
+      await respondToRequest(answer);setDraft('');return;
+    }
     if (!text.trim() || denied || (pendingKey && !(retryPrepared && dispatchState === "prepared")) ||
         agent.status !== "ready") return;
     const key = keyRef.current ?? crypto.randomUUID();
@@ -309,6 +330,8 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
             : <p key={index}>{part.text}</p>
           : null)}
       </article>)}
+      {inputRequests.map(request=><ChatInputRequestCard key={request.requestId} request={request}
+        disabled={answering||busy||agent.status==='resuming'} onResponse={respondToRequest}/>) }
       {(busy || background.thinking) && <p className="chat-thinking" role="status">
         {background.thinking ? "Researching…" : "Thinking…"}</p>}
     </div>
@@ -330,7 +353,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
       </div>
     </form>
     {draft.trim() && !pendingKey && <p className="state-message" role="status">Draft not sent.</p>}
-    <ChatStatus notice={notice} responseState={responseState} error={Boolean(agent.error)} />
+    <ChatStatus notice={notice} responseState={inputRequests.length?'waiting_input':responseState} error={Boolean(agent.error)} />
     {pendingKey && dispatchState === "prepared" && !busy &&
       <button className="secondary-button" type="button" onClick={() => void send(true)}>
         Retry prepared message</button>}

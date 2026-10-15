@@ -8,6 +8,7 @@ export async function readPublicCustomerCoverage(db:PoolClient,actor:ProfileActo
  await lockProfileActor(db,actor,customerId,undefined,true);
  const marker=(await db.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
  if(!marker||marker.schema_version<45)return null;
+ const specialistRetention=marker.schema_version>=60;
  const found=await db.query<{dossier:unknown;created_at:Date}>(`SELECT r.dossier,r.created_at FROM public_customer_research_results r
   WHERE r.environment_id=$1 AND r.workspace_id=$2 AND r.customer_id=$3
     AND NOT EXISTS(SELECT 1 FROM unnest(r.source_revision_ids) AS used(id)
@@ -20,7 +21,12 @@ export async function readPublicCustomerCoverage(db:PoolClient,actor:ProfileActo
           AND candidate.passage_digest=prior.passage_digest AND candidate.supported_claim=prior.supported_claim
           AND (candidate.id=prior.id OR (current_check.trusted_ingest_identity LIKE 'public-fetch-v1:observation:%'
             AND strpos(current_check.rationale,'"retainedPreviousClaim":true')>0
-            AND substring(current_check.rationale FROM '"normalizedDigest":"([a-f0-9]{64})"')=substring(original_check.rationale FROM '"normalizedDigest":"([a-f0-9]{64})"')))) v ON true
+            AND substring(current_check.rationale FROM '"normalizedDigest":"([a-f0-9]{64})"')=substring(original_check.rationale FROM '"normalizedDigest":"([a-f0-9]{64})"'))
+          ${specialistRetention ? `OR (current_check.trusted_ingest_identity='public-batch-fetch-v1'
+            AND strpos(current_check.rationale,'"retainedPreviousClaim":true')>0
+            AND strpos(current_check.rationale,'"specialistDocumentCheck":true')>0
+            AND EXISTS(SELECT 1 FROM independent_research_documents document WHERE document.source_revision_id=candidate.id
+              AND document.document_digest=substring(current_check.rationale FROM '"normalizedDigest":"([a-f0-9]{64})"')))` : ''})) v ON true
       LEFT JOIN evidence_sources original ON original.id=v.source_id AND original.origin='independent_research'
       LEFT JOIN research_checks checked ON checked.source_revision_id=v.id
       WHERE v.id IS NULL OR original.id IS NULL OR v.audience<>'delivery'

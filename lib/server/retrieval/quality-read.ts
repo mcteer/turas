@@ -1,3 +1,4 @@
+import {profileSourceDates} from "../../profiles/source-dates";
 import type { PoolClient } from "pg";
 import { evidenceQualitySchema } from "../../contracts/retrieval";
 import { retrievalQuality } from "./context";
@@ -24,8 +25,8 @@ export async function readRetrievalQuality(client: PoolClient, row: {source_kind
       "(SELECT s.profile_revision_id FROM artifact_evidence_selections s WHERE s.id=$1)" : "$1"}`,
   [row.source_revision_id]);
   const payload = found.rows[0]?.payload ?? {};
-  const observed = payload.observedAt ?? payload.observationEnd;
+  const {observed}=profileSourceDates(payload);
   return retrievalQuality(found.rows[0]?.quality_input,{
     observationAt: typeof observed === "string" ? new Date(observed) : null,
-    reviewAt: typeof payload.reviewAt === "string" ? new Date(payload.reviewAt) : null },asOf);
+    reviewAt: typeof profileSourceDates(payload).review === "string" ? new Date(profileSourceDates(payload).review as string) : null },asOf);
 }

@@ -1,3 +1,4 @@
+import {contextSchema as journeyContextSchema} from "./customer-journey";
 import { z } from "zod";
 
 const narrative = z.string().trim().min(1).max(8_000);
@@ -51,6 +52,6 @@ export const profilePayloadSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("decision"), statement: narrative, rationale: narrative, effectiveAt: instant, accountableOwner: name, evidenceRevisionIds }).strict(),
   z.object({ kind: z.literal("outcome"), statement: narrative, measure: title.optional(), unit: title.optional(), period: title.optional(), baseline: narrative.optional(), comparison: narrative.optional(), evidenceRevisionIds }).strict(),
   z.object({ kind: z.literal("next_review"), subject: title, recordReferenceId: uuid.optional(), owner: name, dueAt: instant, action: narrative, completedAt: instant.optional() }).strict(),
-  z.object({ kind: z.literal("claim"), text: narrative, title: title.optional(), sourceType: z.literal("manual"), sourceUrl: sourceUrl.optional(), sourceExcerpt: narrative.optional(), sourceMessageId: uuid.optional(), sourceSpanDigest: z.string().regex(/^[0-9a-f]{64}$/).optional(), evidenceRevisionIds }).strict(),
+  z.object({ kind: z.literal("claim"), text: narrative, title: title.optional(), sourceType: z.literal("manual"), legacyJourney:journeyContextSchema.optional(), sourceUrl: sourceUrl.optional(), sourceExcerpt: narrative.optional(), sourceMessageId: uuid.optional(), sourceSpanDigest: z.string().regex(/^[0-9a-f]{64}$/).optional(), evidenceRevisionIds }).strict(),
 ]);
 export type ProfilePayload = z.infer<typeof profilePayloadSchema>;

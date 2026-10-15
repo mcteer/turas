@@ -7,6 +7,7 @@ import { researchPassages, verifiedPublicationDate } from "../solution-research/
 import { communityAttributionWarning } from "../solution-research/attribution";
 import { digest } from "./schema";
 import { evidenceDatabase } from "./database";
+import { retainSpecialistProfileSources } from "../retain-profile";
 
 export const publicLearningSchema = z.object({
   id: z.string(), accountId: z.string(), url: z.url(), title: z.string(), passageId: z.string(), quote: z.string(), quoteTruncated: z.boolean(),
@@ -41,6 +42,7 @@ export async function learnPublicSources(identity: AppIdentity, accountId: strin
     }
   }
   if (inserts.length) await sql.transaction(inserts);
+  await retainSpecialistProfileSources(identity,accountId,sources);
   console.info(JSON.stringify({ event: "public_learning.recorded", passageCount: inserts.length }));
 }
 

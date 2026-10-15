@@ -1,3 +1,3 @@
-import { disableTool } from "eve/tools";
-
-export default disableTool();
+import taskCancel from "eve/tools/task_cancel";
+import {normalChatTool} from "../lib/normal-chat-tool";
+export default normalChatTool(taskCancel);

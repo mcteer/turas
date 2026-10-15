@@ -1,3 +1,4 @@
+import {profileSourceDates} from "../../profiles/source-dates";
 import { qualityInputSchema, unknownQualityInput } from "../../contracts/profiles";
 import { rateEvidence, type InformationType, type DateBasis } from "./quality";
 
@@ -33,7 +34,12 @@ function partnerPayload(value: unknown, visibleEvidenceIds: ReadonlySet<string>)
   for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
     if (["sourceMessageId", "sourceSpanDigest", "ownerReferenceId", "recordReferenceId",
       "referenceId", "sourceUrl", "sourceExcerpt"].includes(key)) continue;
-    if (key === "evidenceRevisionIds") {
+    if(key==='legacyJourney' && entry && typeof entry==='object'){
+      const journey=entry as Record<string,unknown>;
+      const source=journey.source as Record<string,unknown>|undefined;
+      projected[key]={...partnerPayload(journey,visibleEvidenceIds) as Record<string,unknown>,
+        source:{kind:source?.kind??'note',reference:'Reviewed customer source',url:'',excerpt:'Original source provenance is private; only the approved delivery claim is shared.'}};
+    } else if (key === "evidenceRevisionIds") {
       projected[key] = Array.isArray(entry) ? entry.filter((id) =>
         typeof id === "string" && visibleEvidenceIds.has(id)) : [];
     } else projected[key] = partnerPayload(entry, visibleEvidenceIds);
@@ -45,8 +51,8 @@ function qualityForRow(row: ProjectionRow, partner = false) {
   const input = qualityInputSchema.safeParse(row.qualityInput);
   const rated = input.success ? input.data : unknownQualityInput;
   const payload = row.payload && typeof row.payload === "object" ? row.payload as Record<string, unknown> : {};
-  const observed = payload.observedAt ?? payload.observationEnd;
-  const review = payload.reviewAt;
+  const {observed}=profileSourceDates(payload);
+  const {review}=profileSourceDates(payload);
   const date = row.ratingEvidenceAt !== undefined ?
     (row.ratingEvidenceAt ? new Date(row.ratingEvidenceAt) : null) :
     rated.dateBasis === "observation" && typeof observed === "string" ? new Date(observed) : null;

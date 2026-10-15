@@ -17,7 +17,7 @@ function docker(args) { return spawnSync("docker",args,{encoding:"utf8"}); }
 try {
   const context = docker(["context","inspect"]);
   if(context.status!==0 || !JSON.parse(context.stdout)[0]?.Endpoints?.docker?.Host?.startsWith("unix://") || process.env.DOCKER_HOST && !process.env.DOCKER_HOST.startsWith("unix://")) throw Error("A local Docker socket is required");
-  const started = docker(["run","-d","--name",name,"--env-file",envFile,"-p","127.0.0.1::5432","pgvector/pgvector:pg18"]);
+  const started = docker(["run","-d","--name",name,"--env-file",envFile,"-p","127.0.0.1::5432","pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f"]);
   if(started.status!==0) throw Error("Owned database startup failed");
   created = true;
   const port = docker(["port",name,"5432/tcp"]).stdout.trim().split(":").at(-1);
@@ -51,11 +51,11 @@ try {
     TURAS_TEST_DATABASE_URL:url,TURAS_TEST_ENVIRONMENT_ID:environment.TURAS_ENVIRONMENT_ID};
   run(["node_modules/vitest/vitest.mjs","run","tests/integration/named-customer-chat.test.ts",
     "tests/integration/general-chat.test.ts","tests/integration/legacy-research-transactions.test.ts",
-    "tests/integration/parity-evaluation-budget.test.ts"],integrationEnvironment);
+    "tests/integration/parity-evaluation-budget.test.ts","tests/integration/specialist-profile-persistence.test.ts","tests/integration/legacy-knowledge-mechanics.test.ts","tests/integration/live-customer-chat.test.ts"],integrationEnvironment);
   // Route contracts read DATABASE_URL directly; they do not use the integration
   // fixture's explicit test-database selector.
   run(["node_modules/vitest/vitest.mjs","run","tests/contracts/general-chat.test.ts"]);
-  console.log("Disposable migrations, runtime grants and six chat/transaction/budget checks passed");
+  console.log("Disposable migrations, runtime grants and chat, source-persistence, transaction and budget checks passed");
 } catch(error) {
   console.error(error.message);
   // Tests contain only locally created fixture data. Credentials and startup

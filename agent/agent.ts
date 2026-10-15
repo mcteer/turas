@@ -1,3 +1,5 @@
+import {responseFeature} from "../lib/server/conversations/feature";
+import {wrapOrdinaryChatModel} from "../lib/server/conversations/model-budget";
 import { gateway } from "ai";
 import { defineAgent, defineDynamic } from "eve";
 import { withTransaction } from "../lib/server/db/client";
@@ -40,6 +42,8 @@ export default defineAgent({
           deadlineAt: admitted.deadlineAt, beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),
         });
       }
+      if((await responseFeature(principal))?.kind==='normal')
+        return wrapOrdinaryChatModel(parityBudgetModel(gateway(selectedModel),selectedModel),principal,ctx.session.id);
       return withTransaction(async (client) => {
         const marker = await client.query<{schema_version:number}>(
           "SELECT schema_version FROM turas_environment LIMIT 1");

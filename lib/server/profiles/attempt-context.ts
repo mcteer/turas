@@ -44,6 +44,17 @@ export async function captureAttemptContext(client: PoolClient, actor: CurrentSe
     // internal customer snapshot as a fallback for a staffing request.
     throw new HttpFailure(503, "staffing_native_unavailable", "Staffing explanation context is not available");
   }
+  if(feature.kind==='normal') {
+    const live=(await client.query(`SELECT to_jsonb(c)->>'live_customer_context'='true' AS enabled,context_audience FROM conversations c WHERE id=$1`,[conversationId])).rows[0];
+    if(live?.enabled) {
+      const audience=actor.kind==='internal'?'internal':'delivery';
+      if(live.context_audience!==audience)throw hiddenRecord();
+      await client.query(`UPDATE conversations c SET context_login_session_id=$2,context_membership_id=$3,
+        context_generation=CASE WHEN $4='internal' THEN s.internal_generation ELSE s.delivery_generation END,
+        context_valid_until=NULL FROM customer_profile_state s WHERE c.id=$1 AND s.customer_id=c.customer_id`,
+        [conversationId,actor.sessionId,actor.membershipId,audience]);
+    }
+  }
   const conversation = await client.query<{ context_audience: string | null; context_generation: string | null;
     context_valid_until: Date | null; context_snapshot_schema: string | null;
     context_login_session_id: string | null; context_membership_id: string | null }>(`

@@ -1,16 +1,12 @@
 import { z } from "zod";
 import type { AppIdentity } from "../identity";
 import { database, ensureDatabase } from "../database";
-import { accountIdSchema } from "../account-id";
 import { researchReceiptSchema, verifyResearch, type ResearchReceipt } from "./receipt";
 
 import { customerUpdateReceiptSchema, verifyCustomerUpdate, type CustomerUpdateReceipt } from "./customer-update-receipt";
 
-export const researchReferenceSchema = z.object({
-  accountId: accountIdSchema,
-  researchId: z.string().regex(/^[a-f0-9]{64}$/),
-}).strict();
-export type ResearchReference = z.infer<typeof researchReferenceSchema>;
+import { researchReferenceSchema,type ResearchReference } from "./research-reference";
+export { researchReferenceSchema,type ResearchReference } from "./research-reference";
 const scope = (identity: AppIdentity) => [
   identity.environmentId, identity.workspaceId, identity.userId,
 ];

@@ -1,9 +1,11 @@
+import {workspaceSolutionLibraryVersion} from "../../../knowledge/workspace-patterns/repository";
 import type { AppIdentity } from "../identity";
 import { requireResearchAccount } from "../account";
 import { withTransaction } from "../../../db/client";
 import { readEligibleContext } from "../../../profiles/context";
 import { currentKnowledgeHeaders } from "../../../knowledge/read";
 import { readProfile } from "../../../profiles/read";
+import { readCustomerAccountEvidence } from "../../../conversations/customer-accounts";
 import { customerContextSchema } from "./schema";
 import { digest } from "../research-cache/schema";
 import type { CustomerResearchContext } from "./schema";
@@ -31,9 +33,11 @@ export async function loadResearchContext(identity:AppIdentity,accountId:string,
     const publicEvidenceVersion=digest(JSON.stringify(profile.attributedResearch.map(source=>({
       location:source.location,title:source.title,passage:source.passage,
       supportedClaim:source.supportedClaim,publicationAt:source.publicationAt,
-      productNames:source.productNames,
+      productNames:source.productNames,documentDigest:source.documentDigest,
     })).sort((a,b)=>String(a.location).localeCompare(String(b.location)))));
-    const read=await readEligibleContext(identity,accountId,{limit:20,shareActorRows:true},db) as {
+    const read=(identity.responseAttemptId ? await readCustomerAccountEvidence(db,
+      {principalId:identity.principalId,attributes:{turasAttemptId:identity.responseAttemptId}},accountId):
+      await readEligibleContext(identity,accountId,{limit:20,shareActorRows:true},db)) as {
       contextVersion:string;truncated:boolean;entries:Record<string,unknown>[];
     };
     const headers=await currentKnowledgeHeaders(db,identity);
@@ -41,18 +45,20 @@ export async function loadResearchContext(identity:AppIdentity,accountId:string,
     const evidence=read.entries.map(entry=>{
       const publicSource=entry.type==='attributed_research';
       const payload=entry.payload as Record<string,unknown>|undefined;
-      const text=publicSource?`${entry.supportedClaim}\nOriginal source passage: ${entry.passage}\nLast checked: ${entry.retrievalAt}`:JSON.stringify(payload);
+      const journey=payload?.legacyJourney as Record<string,unknown>|undefined;
+      const text=publicSource?`${entry.supportedClaim}\nOriginal source passage: ${entry.passage}\nLast checked: ${entry.retrievalAt}`:journey?JSON.stringify({title:journey.title,summary:journey.summary,scope:journey.scope,stage:journey.stage,
+          observedAt:journey.observedAt,reviewAfter:journey.reviewAfter,confidence:journey.confidence,impact:journey.impact,source:journey.source}):JSON.stringify(payload);
       return {id:`${entry.type}:${entry.citationId}`,title:String(entry.title??entry.kind??'Customer record'),
-        summary:text.slice(0,4000),observedAt:publicSource?date(entry.publicationAt)??date(entry.observationAt):date(payload?.observedAt)??date(payload?.observationEnd),
-        reviewAfter:date(payload?.reviewAt),source:publicSource?String(entry.location):`profile:${entry.citationId}`,
-        scope:entry.workloadId?`Workload ${entry.workloadId}`:'Customer',
+        summary:text.slice(0,4000),observedAt:publicSource?date(entry.publicationAt)??date(entry.observationAt):date(payload?.observedAt)??date(payload?.observationEnd)??date(journey?.observedAt),
+        reviewAfter:date(payload?.reviewAt)??date(journey?.reviewAfter),source:publicSource?String(entry.location):`profile:${entry.citationId}`,
+        scope:entry.workloadId?`Workload ${entry.workloadId}`:String(journey?.scope??'Customer'),
         basis:publicSource?'checked_public_research' as const:'approved_customer_record' as const};
     });
     signal?.throwIfAborted();
     return customerContextSchema.parse({accountId,name:account.name,synthetic:false,
       snapshotVersion:`current-manual:${manualVersion}`,
       publicEvidenceVersion,
-      solutionKnowledgeVersion:digest(JSON.stringify(headers)),researchPolicyVersion:'account-attribution-passage-discovery-v3',
+      solutionKnowledgeVersion:digest(JSON.stringify({published:headers,workspacePatterns:(await db.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0]?.schema_version>=62?await workspaceSolutionLibraryVersion(db,identity):null})),researchPolicyVersion:'account-attribution-passage-discovery-v3',
       journalStatus:profile.acceptedFacts.length?'available':'empty',moreAvailable:read.truncated || headers.length>100,
       evidence});
   });

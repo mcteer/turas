@@ -41,6 +41,8 @@ export function visibleChatMessages(
         `Background task ${event.data.backgroundTask.taskId} (${event.data.subagentName}) failed.`,
       );
     }
+    if(event.type==='message.received' && event.data.kind==='execution.background_task' && !event.meta.deliveryIds?.length)
+      internalTurns.add(event.data.turnId);
     // Eve projects background wake-ups as user messages. Real deliveries
     // carry deliveryIds; leave them visible even when they quote a task notice.
     if (
@@ -90,11 +92,13 @@ export function backgroundChatActivity(
     admittedAt: number;
     notificationTurn?: string;
     stopped: boolean;
+    callId?:string;
   }>();
   for (const event of events) {
     if (event.type === "action.result" && "toolName" in event.data.result && researchTasks.has(event.data.result.toolName)) {
       const taskId = waitingTask(event.data.result.output);
-      if (taskId && !tasks.has(taskId)) tasks.set(taskId, { name: event.data.result.toolName, admittedAt: Date.parse(event.meta.at), stopped: false });
+      if(!taskId)for(const [id,task] of tasks)if(task.callId && task.callId===event.data.result.callId)tasks.delete(id);
+      if (taskId && !tasks.has(taskId)) tasks.set(taskId, { name: event.data.result.toolName, admittedAt: Date.parse(event.meta.at), stopped: false,callId:event.data.result.callId });
     }
     if (event.type === "subagent.completed" && event.data.backgroundTask?.status === "working") {
       const taskId = event.data.backgroundTask.taskId;

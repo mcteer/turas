@@ -32,7 +32,7 @@ export async function customerQuestionActor(db: PoolClient, principal: Principal
   if (!general) return { ...await boundToolActor(db, principal), general: false as const };
   const row = (await db.query(`SELECT r.login_session_id,r.membership_id,r.workspace_id,
     r.owner_principal_id,s.expires_at,p.login_name,p.display_name,m.kind,m.role
-    FROM general_context_receipts r JOIN login_sessions s ON s.id=r.login_session_id
+    FROM ordinary_chat_authorities r JOIN login_sessions s ON s.id=r.login_session_id
     JOIN principals p ON p.id=r.owner_principal_id JOIN memberships m ON m.id=r.membership_id
     WHERE r.attempt_id=$1 AND r.owner_principal_id=$2`, [attemptId, principal.principalId])).rows[0];
   if (!row) throw hiddenRecord();
@@ -85,8 +85,8 @@ export async function readCustomerAccountEvidence(db: PoolClient, principal: Pri
     await db.query(`INSERT INTO general_customer_read_scopes
       (attempt_id,customer_id,audience,generation,citation_ids)
       VALUES($1,$2,$3,$4,$5) ON CONFLICT(attempt_id,customer_id) DO UPDATE SET
-       generation=EXCLUDED.generation,citation_ids=ARRAY(SELECT DISTINCT unnest(
-         general_customer_read_scopes.citation_ids||EXCLUDED.citation_ids)),checked_at=clock_timestamp()`,
+       generation=EXCLUDED.generation,citation_ids=CASE WHEN general_customer_read_scopes.generation=EXCLUDED.generation THEN ARRAY(SELECT DISTINCT unnest(
+         general_customer_read_scopes.citation_ids||EXCLUDED.citation_ids)) ELSE EXCLUDED.citation_ids END,checked_at=clock_timestamp()`,
     [scope.attemptId, customerId, scope.actor.kind === "internal" ? "internal" : "delivery",
       context.contextVersion, context.entries.map(entry => `${entry.type}:${entry.citationId}`)]);
   }
@@ -96,7 +96,7 @@ export async function readCustomerAccountEvidence(db: PoolClient, principal: Pri
 /** Recheck named reads on every paid step and stream release, just as scoped
  * customer context does. Naming an account never grants access to its data. */
 export async function assertCustomerQuestionReads(db: PoolClient, actor: CurrentSession,
-  conversationId: string, attemptId?: string) {
+  conversationId: string, attemptId?: string,validateSources=true) {
   const marker = (await db.query("SELECT schema_version FROM turas_environment LIMIT 1")).rows[0];
   if (marker?.schema_version < 56) return;
   // Retrieval dependencies survive turns. Recheck access to every consumed
@@ -107,22 +107,22 @@ export async function assertCustomerQuestionReads(db: PoolClient, actor: Current
     WHERE c.id=$1 AND c.owner_principal_id=$2 AND c.workspace_id=$3 AND c.environment_id=$4`,
     [conversationId,actor.principalId,actor.workspaceId,getServerConfig().TURAS_ENVIRONMENT_ID])).rows;
   for (const scope of retrievalScopes) await authorizeRetrievalScope(db,actor,scope.scope,scope.customer_id);
-  await assertRetrievalDependenciesCurrent(db,conversationId);
+  if(validateSources)await assertRetrievalDependenciesCurrent(db,conversationId);
   const reads = (await db.query(`SELECT s.* FROM general_customer_read_scopes s
     JOIN response_attempts a ON a.id=s.attempt_id JOIN conversations c ON c.id=a.conversation_id
     WHERE c.id=$1 AND c.owner_principal_id=$2 AND c.workspace_id=$3
-      AND c.environment_id=$4 AND ($5::uuid IS NULL OR a.id=$5)
-      AND ($5::uuid IS NOT NULL OR a.response_state IN('pending','running','stopping'))
-    ORDER BY s.customer_id`, [conversationId, actor.principalId, actor.workspaceId,
-      getServerConfig().TURAS_ENVIRONMENT_ID, attemptId ?? null])).rows;
+      AND c.environment_id=$4
+    ORDER BY s.customer_id,s.checked_at DESC,a.created_at DESC`, [conversationId, actor.principalId, actor.workspaceId,
+      getServerConfig().TURAS_ENVIRONMENT_ID])).rows;
+  const validated = new Set<string>();
   for (const read of reads) {
-    await readGeneralAttemptContext(db, read.attempt_id, actor.principalId);
     await lockProfileActor(db, actor, read.customer_id, undefined, true);
-    const state = (await db.query("SELECT internal_generation,delivery_generation FROM customer_profile_state WHERE customer_id=$1", [read.customer_id])).rows[0];
-    if (read.audience !== (actor.kind === "internal" ? "internal" : "delivery") ||
-        String(read.generation) !== String(read.audience === "internal" ? state.internal_generation : state.delivery_generation)) {
-      throw new HttpFailure(409, "context_changed", "Customer knowledge changed during this answer");
-    }
+    // A profile generation is an inventory revision, not a revocation. New
+    // independent research must not invalidate an otherwise authorized thread.
+    // Recheck the exact consumed claims and the current audience instead.
+    if(read.audience !== (actor.kind === "internal" ? "internal" : "delivery")) throw hiddenRecord();
+    if(!validateSources || validated.has(read.customer_id))continue;
+    validated.add(read.customer_id);
     const manual = read.citation_ids.filter((id: string) => id.startsWith("accepted_manual:")).map((id: string) => id.slice(16));
     if ((await unsupportedProfileRevisionIds(db, manual, true)).size) throw hiddenRecord();
     for (const citation of read.citation_ids as string[]) {
@@ -134,8 +134,17 @@ export async function assertCustomerQuestionReads(db: PoolClient, actor: Current
         WHERE v.id=$1 AND v.workspace_id=$2 AND v.customer_id=$3
          AND ($4='internal' OR v.audience='delivery') AND checks.identity_result
          AND checks.scope_result AND checks.integrity_result AND checks.content_result
-         AND NOT EXISTS(SELECT 1 FROM evidence_source_events e WHERE e.source_revision_id=v.id
-           AND e.event_type IN('withdraw','supersede')) FOR SHARE OF v,s`,
+         AND NOT EXISTS(SELECT 1 FROM evidence_source_events e WHERE e.source_revision_id=v.id AND e.event_type='withdraw')
+         AND (NOT EXISTS(SELECT 1 FROM evidence_source_events e WHERE e.source_revision_id=v.id AND e.event_type='supersede')
+           OR EXISTS(SELECT 1 FROM evidence_source_revisions current
+             JOIN research_checks proof ON proof.source_revision_id=current.id
+             WHERE current.source_id=v.source_id
+               AND current.version=(SELECT max(head.version) FROM evidence_source_revisions head WHERE head.source_id=v.source_id)
+               AND current.passage_digest=v.passage_digest AND current.supported_claim=v.supported_claim
+               AND proof.identity_result AND proof.scope_result AND proof.integrity_result AND proof.content_result
+               AND strpos(proof.rationale,'"retainedPreviousClaim":true')>0
+               AND NOT EXISTS(SELECT 1 FROM evidence_source_events removed WHERE removed.source_revision_id=current.id
+                 AND removed.event_type IN('withdraw','supersede')))) FOR SHARE OF v,s`,
       [id, actor.workspaceId, read.customer_id, actor.kind]);
       if (!found.rowCount || await retrievalSourceHasMaterialConflict(db,
         { source_kind: "verified_research", source_revision_id: id }, actor,

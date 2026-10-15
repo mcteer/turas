@@ -1,7 +1,7 @@
 const productCatalog = [
   { label: "Next.js", aliases: ["next.js", "nextjs"] },
   { label: "AI SDK", aliases: ["ai sdk", "ai-sdk"] },
-  { label: "Sandbox", aliases: ["vercel sandbox"] },
+  { label: "Sandbox", aliases: ["vercel sandbox", "vercel sandboxes"] },
   { label: "Fluid Compute", aliases: ["fluid compute"] },
   { label: "Edge Config", aliases: ["edge config"] },
   { label: "Vercel Firewall", aliases: ["vercel firewall"] },

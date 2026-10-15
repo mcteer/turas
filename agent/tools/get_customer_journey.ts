@@ -1,3 +1,4 @@
+import {journeyRecords} from "../../lib/profiles/journey";
 import { defineTool } from "eve/tools";
 import { z } from "zod";
 import { withTransaction } from "../../lib/server/db/client";
@@ -32,13 +33,13 @@ export const authoredTool = defineTool({
           await recordRetrievalConsumption(db,current.actor,search.receiptId,attempt.conversation_id);
           return readCustomerAccountEvidence(db,ctx.session.auth.current,accountId,{page});
         });
-        return { ...context, retrieval: search.mode, search,
+        return { ...context,records:journeyRecords(context.entries), retrieval: search.mode, search,
           reason: "Search passages are cited authorized evidence. Context entries provide the journey brief; only the search passages are matches to the question." };
       }
     }
     const context = await withTransaction(db => readCustomerAccountEvidence(db,
       ctx.session.auth.current, accountId, { page }));
-    return { ...context, retrieval: query ? "recent_fallback" : "recent",
+    return { ...context,records:journeyRecords(context.entries), retrieval: query ? "recent_fallback" : "recent",
       reason: query ? "No eligible search match was found. These are available customer records, not proven matches to the question." : "Authorized customer journey brief." };
   },
 });

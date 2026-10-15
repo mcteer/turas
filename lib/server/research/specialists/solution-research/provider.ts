@@ -1,6 +1,9 @@
+import {reserveParityContextRequest} from "../evaluation-budget";
 import { z } from "zod";
 import { setTimeout as delay } from "node:timers/promises";
 import { extractSources, publicResearchUrl } from "./evidence";
+import { createHash } from "node:crypto";
+import { publicDigest,signCheckedPublicPage } from "../../public-dossier";
 
 export class ResearchProviderError extends Error {
   readonly reason:
@@ -29,11 +32,14 @@ async function request(
   signal: AbortSignal,
   body?: unknown,
   query?: URLSearchParams,
-): Promise<unknown> {
+): Promise<{value:unknown;bodyDigest:string}> {
   const token = contextApiKey();
   if (!token) throw new ResearchProviderError("not_configured");
   const url = new URL(path, "https://api.context.dev");
   if (query) url.search = query.toString();
+  signal.throwIfAborted();
+  await reserveParityContextRequest();
+  signal.throwIfAborted();
   const response = await fetch(url, {
     method: body === undefined ? "GET" : "POST",
     headers: {
@@ -57,11 +63,13 @@ async function request(
   const decoder = new TextDecoder();
   let bytes = 0;
   let text = "";
+  const digest=createHash('sha256');
   try {
     while (true) {
       const part = await reader.read();
       if (part.done) break;
       bytes += part.value.byteLength;
+      digest.update(part.value);
       if (bytes > 1_000_000) {
         await reader.cancel();
         throw new ResearchProviderError("response_too_large");
@@ -73,7 +81,7 @@ async function request(
     reader.releaseLock();
   }
   try {
-    return JSON.parse(text);
+    return {value:JSON.parse(text),bodyDigest:digest.digest('hex')};
   } catch {
     throw new ResearchProviderError("invalid_response");
   }
@@ -119,7 +127,7 @@ const searchResponse = z.object({
 });
 export async function searchPublicSources(query: string, signal: AbortSignal) {
   const parsed = searchResponse.safeParse(
-    await request("/v1/web/search", signal, { query, numResults: 10 }),
+    (await request("/v1/web/search", signal, { query, numResults: 10 })).value,
   );
   if (!parsed.success || parsed.data.partial)
     throw new ResearchProviderError("invalid_response");
@@ -158,9 +166,8 @@ export async function readPublicSource(url: string, signal: AbortSignal) {
     includeImages: "false",
     maxAgeMs: "0",
   });
-  const parsed = pageResponse.safeParse(
-    await requestPage(signal, query),
-  );
+  const wire=await requestPage(signal,query);
+  const parsed = pageResponse.safeParse(wire.value);
   if (
     !parsed.success ||
     parsed.data.partial ||
@@ -184,5 +191,10 @@ export async function readPublicSource(url: string, signal: AbortSignal) {
   return {
     source,
     truncated: parsed.data.markdown.length > source.excerpt.length,
+    proof:signCheckedPublicPage({url:source.url,title:source.title.slice(0,160),text:parsed.data.markdown,
+      bodyDigest:wire.bodyDigest,normalizedDigest:publicDigest(parsed.data.markdown),
+      retrievedAt:source.retrievedAt,publishedAt:source.publication?.date?`${source.publication.date}T00:00:00.000Z`:null,
+      discoveryPurpose:'specialist_public_source',textTruncated:false,
+      totalNormalizedCharacters:parsed.data.markdown.length}),
   };
 }

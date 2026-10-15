@@ -17,10 +17,16 @@ export function exactEmbeddingVector(value: readonly number[]): number[] {
   return [...value];
 }
 
-export async function embedRetrievalTexts(values: readonly string[],
-  options: { jobId?: string; operationKey?: string } = {}): Promise<number[][]> {
+export async function embedRetrievalTexts(values: readonly string[],options:{jobId?:string;operationKey?:string}={}) {
+ return embedGovernedTexts(values,options,2000);
+}
+export async function embedWorkspacePatternText(value:string):Promise<number[]> {
+ return (await embedGovernedTexts([value],{},16000))[0];
+}
+async function embedGovernedTexts(values: readonly string[],
+  options: { jobId?: string; operationKey?: string },characterLimit:number): Promise<number[][]> {
   if (values.length < 1 || values.length > retrievalLimits.embeddingBatch ||
-      values.some((value) => !value.trim() || Array.from(value).length > 2_000) ||
+      values.some((value) => !value.trim() || Array.from(value).length > characterLimit) ||
       !process.env.AI_GATEWAY_API_KEY) throw new Error("Embedding unavailable or input exceeds limit");
   const normalized = values.map((value) => value.normalize("NFC"));
   const inputCharacters = normalized.reduce((sum,value) => sum + Array.from(value).length,0);

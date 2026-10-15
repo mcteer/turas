@@ -1,5 +1,5 @@
 {
-  "version": 58,
+  "version": 66,
   "migrations": [
     {
       "file": "001-identity-foundation.cjs",
@@ -232,6 +232,38 @@
     {
       "file": "058-parity-evaluation-budget.cjs",
       "sha256": "82588593862556a93ce6c68fc3a484cc3641c904834cd2b6b83cbe73c00606c4"
+    },
+    {
+      "file": "059-specialist-source-provenance.cjs",
+      "sha256": "b271ca8212abe3d6ef7072d78c6df8a8a531e19e3c9c794cd19d6af555114219"
+    },
+    {
+      "file": "060-independent-research-documents.cjs",
+      "sha256": "483beaf58daf7b54b12081b03e9750b349999bd9694696e6dae621b538d40c25"
+    },
+    {
+      "file": "061-research-background-turns.cjs",
+      "sha256": "87ad413fe841d744a8bfe9de56f66a308edef231254633cd981e8747532648e4"
+    },
+    {
+      "file": "062-workspace-solution-patterns.cjs",
+      "sha256": "a815d1c1fcaa349128a94e0d260eb4ec9fea29b195e4dd8a916764d84079d9b8"
+    },
+    {
+      "file": "063-customer-adoption-contributions.cjs",
+      "sha256": "49478976248856c9743207abd08701f5917992b15d9d89504a9ef2804d89f6f6"
+    },
+    {
+      "file": "064-live-ordinary-customer-chat.cjs",
+      "sha256": "c341a38bc8c40895c64afb7cfbb3502fe2c9e29214dd9be92be7f13f20b833b4"
+    },
+    {
+      "file": "065-native-input-waiting-state.cjs",
+      "sha256": "ab6dd928e0d1791f7f1f62ed5ead169d51d0ccc536ed38749c4a3559bc044476"
+    },
+    {
+      "file": "066-ordinary-context-refresh.cjs",
+      "sha256": "7ecb4519bd1f8a1ac2da40aa3df565fa62f06f57347ec8d01193edea906354f2"
     }
   ]
 }

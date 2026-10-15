@@ -1,4 +1,4 @@
-import { embedMany, gateway } from "ai";
+import { embedRetrievalTexts } from "../../../retrieval/embeddings";
 import { z } from "zod";
 import type { AppIdentity } from "../identity";
 import { embeddingModel, embeddingSchema, embeddingsConfigured, embedQuery } from "../embeddings";
@@ -12,7 +12,11 @@ import { requireResearchAccount } from "../account";
 import { withTransaction } from "../../../db/client";
 import { lockWorkspaceActor } from "../../../profiles/policy";
 
-const pageSchema = z.object({ source: sourceSchema, truncated: z.boolean() });
+const pageSchema = z.object({ source: sourceSchema, truncated: z.boolean(),proof:z.object({
+  url:z.url(),title:z.string(),text:z.string(),bodyDigest:z.string(),normalizedDigest:z.string(),
+  retrievedAt:z.string(),publishedAt:z.string().nullable(),discoveryPurpose:z.string(),
+  receiptSignature:z.string().optional(),textTruncated:z.boolean().optional(),totalNormalizedCharacters:z.number().optional(),
+}).optional() });
 const snapshotSchema = z.object({ id: z.string(), source: sourceSchema, truncated: z.boolean(), checked_at: z.coerce.date(), refresh_after: z.coerce.date(), index_state: z.string() });
 
 export async function readCachedSource(identity: AppIdentity, accountId: string, workload: string, url: string, signal: AbortSignal, notBefore?: Date, options: { recordAccount?: boolean } = {}) {
@@ -21,16 +25,17 @@ export async function readCachedSource(identity: AppIdentity, accountId: string,
   const canonical = canonicalSourceUrl(url);
   const key = "page:" + digest(canonical);
   const read = await cachedFetch(identity, key, pageSchema, () => readPublicSource(canonical, signal), signal, { notBefore });
-  const { source, truncated } = read.value;
-  const contentHash = digest(JSON.stringify([source.url, source.title, source.excerpt, source.publication ?? null, truncated]));
+  const { source, truncated,proof } = read.value;
+  const contentHash = digest(JSON.stringify([source.url, source.title, source.excerpt, source.publication ?? null, truncated,proof?.normalizedDigest??null]));
   const id = digest(canonical + "\n" + contentHash);
   const sql = await evidenceDatabase();
   signal.throwIfAborted();
-  await sql.query(`INSERT INTO turas_evidence_snapshots(environment_id,workspace_id,id,fetch_key,url,content_hash,source,truncated,checked_at,refresh_after)
-    VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10) ON CONFLICT(environment_id,workspace_id,id)
+  await sql.query(`INSERT INTO turas_evidence_snapshots(environment_id,workspace_id,id,fetch_key,url,content_hash,source,truncated,checked_at,refresh_after,check_receipt)
+    VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,$11::jsonb) ON CONFLICT(environment_id,workspace_id,id)
     DO UPDATE SET checked_at=greatest(turas_evidence_snapshots.checked_at,excluded.checked_at),
-      refresh_after=greatest(turas_evidence_snapshots.refresh_after,excluded.refresh_after)`,
-    [identity.environmentId, identity.workspaceId, id, key, source.url, contentHash, JSON.stringify(source), truncated, read.checkedAt, read.refreshAfter]);
+      refresh_after=greatest(turas_evidence_snapshots.refresh_after,excluded.refresh_after),
+      check_receipt=CASE WHEN excluded.checked_at>=turas_evidence_snapshots.checked_at THEN excluded.check_receipt ELSE turas_evidence_snapshots.check_receipt END`,
+    [identity.environmentId, identity.workspaceId, id, key, source.url, contentHash, JSON.stringify(source), truncated, read.checkedAt, read.refreshAfter,proof?JSON.stringify(proof):null]);
   if (options.recordAccount !== false) {
     await sql.query(`INSERT INTO turas_evidence_accounts(environment_id,workspace_id,owner_user_id,account_id,workload,snapshot_id,visibility)
       VALUES($1,$2,$3,$4,$5,$6,'public') ON CONFLICT(environment_id,workspace_id,owner_user_id,account_id,workload,snapshot_id) DO UPDATE SET visibility='public'`,
@@ -38,26 +43,36 @@ export async function readCachedSource(identity: AppIdentity, accountId: string,
   }
   const paragraphs = researchPassages(source);
   const chunks: string[] = [];
-  for (let i = 0; i < paragraphs.length; i += 4) chunks.push(paragraphs.slice(i, i + 4).map(p => p.text).join("\n\n"));
+  let packed="";
+  for (const paragraph of paragraphs) {
+    const characters=Array.from(paragraph.text);
+    for(let offset=0;offset<characters.length;offset+=2000) {
+      const part=characters.slice(offset,offset+2000).join("");
+      if(packed && Array.from(packed+"\n\n"+part).length>2000){chunks.push(packed);packed="";}
+      packed=packed?packed+"\n\n"+part:part;
+    }
+  }
+  if(packed)chunks.push(packed);
   await sql.query(`INSERT INTO turas_evidence_passages(environment_id,workspace_id,snapshot_id,ordinal,text,model)
     SELECT $1,$2,$3,ordinality::integer,value,$4 FROM jsonb_array_elements_text($5::jsonb) WITH ORDINALITY
     ON CONFLICT DO NOTHING`, [identity.environmentId, identity.workspaceId, id, embeddingModel, JSON.stringify(chunks)]);
   await indexSnapshot(identity, id, signal);
   signal.throwIfAborted();
   const cachedSource = { ...source, cache: { snapshotId: id, checkedAt: read.checkedAt, refreshAfter: read.refreshAfter } };
-  if (!read.hit && options.recordAccount !== false) {
+  let retentionWarning:string|null=null;
+  if (options.recordAccount !== false) {
     // Source reads happen inside the background research specialists. Retain the
     // exact newly fetched passages immediately, without waiting for a generated
     // brief or copying any model interpretation into the account profile.
     try {
       const { learnPublicSources, publicLearningHasSource } = await import("./public-learning");
-      if (!read.hit || !(await publicLearningHasSource(identity, accountId, source.url)))
-        await learnPublicSources(identity, accountId, [cachedSource], researchPassages(source).map(passage => ({ sourceId: source.id, passageId: passage.id })), signal);
+      await learnPublicSources(identity, accountId, [cachedSource], researchPassages(source).map(passage => ({ sourceId: source.id, passageId: passage.id })), signal);
     } catch {
       console.warn(JSON.stringify({ event: "public_learning.background_write_failed" }));
+      retentionWarning='The page was read, but shared customer knowledge could not be updated. Do not claim profile persistence succeeded.';
     }
   }
-  return { source: cachedSource, truncated, cacheHit: read.hit };
+  return { source: cachedSource, truncated, cacheHit: read.hit,retentionWarning };
 }
 
 export async function indexSnapshot(identity: Pick<AppIdentity, "environmentId" | "workspaceId">, id: string, signal: AbortSignal) {
@@ -70,16 +85,19 @@ export async function indexSnapshot(identity: Pick<AppIdentity, "environmentId" 
   try {
     const chunks = z.array(z.object({ ordinal: z.number().int(), text: z.string() })).parse(await sql.query(
       `SELECT ordinal,text FROM turas_evidence_passages WHERE environment_id=$1 AND workspace_id=$2 AND snapshot_id=$3 ORDER BY ordinal`, scope));
-    const response = await embedMany({ model: gateway.embeddingModel(embeddingModel), values: chunks.map(c => c.text),
-      maxParallelCalls: 1, maxRetries: 0, abortSignal: AbortSignal.any([signal, AbortSignal.timeout(20000)]) });
-    const vectors = z.array(embeddingSchema).length(chunks.length).parse(response.embeddings);
+    const embedded:number[][]=[];
+    for(let offset=0;offset<chunks.length;offset+=32) {
+      signal.throwIfAborted();
+      embedded.push(...await embedRetrievalTexts(chunks.slice(offset,offset+32).map(chunk=>chunk.text)));
+    }
+    const vectors = z.array(embeddingSchema).length(chunks.length).parse(embedded);
     signal.throwIfAborted();
     await sql.transaction([
       ...chunks.map((chunk, i) => sql.query(`UPDATE turas_evidence_passages SET embedding=$5::vector
         WHERE environment_id=$1 AND workspace_id=$2 AND snapshot_id=$3 AND ordinal=$4`, [...scope, chunk.ordinal, JSON.stringify(vectors[i])])),
       sql.query(`UPDATE turas_evidence_snapshots SET index_state='ready' WHERE environment_id=$1 AND workspace_id=$2 AND id=$3`, scope),
     ]);
-    console.info(JSON.stringify({ event: "research_cache.indexed", snapshotId: id, chunks: chunks.length, inputTokens: response.usage.tokens }));
+    console.info(JSON.stringify({ event: "research_cache.indexed", snapshotId: id, chunks: chunks.length }));
   } catch {
     await sql.query(`UPDATE turas_evidence_snapshots SET index_state='failed',index_after=now()+interval '15 minutes'
       WHERE environment_id=$1 AND workspace_id=$2 AND id=$3`, scope);

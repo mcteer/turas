@@ -20,17 +20,17 @@ Status: in progress. This is a repair audit, not a new feature specification. Ea
 | Canonical name, aliases and documented workload resolution | agent/tools/resolve_customer_account.ts; lib/customer-evidence/repository.ts | Named resolver and governed reads restored locally | Local unit/integration checks pass; hosted verification pending |
 | Customer evidence and longitudinal journey | agent/tools/get_customer_evidence.ts; get_customer_journey.ts; lib/customer-journey/ | lib/server/profiles/ | Comparing |
 | Human claim capture, review, revision and retraction | capture_customer_context.ts; app/api/context-approvals/ | lib/server/profiles/; lib/server/artifacts/ | Comparing |
-| Research admission, reuse, leases and duplicate suppression | agent/tools/prepare_customer_research.ts; lib/research-cache/requests.ts | lib/server/research/requests.ts | Gap confirmed: additional UI gates |
-| Recon, practices and implementation specialists | agent/subagents/; agent/lib/research-context-tool.ts | Omitted; specialist contracts/cache/provider implementation now ported under lib/server/research/specialists/ | Runtime integration pending |
+| Research admission, reuse, leases and duplicate suppression | agent/tools/prepare_customer_research.ts; lib/research-cache/requests.ts | lib/server/research/requests.ts | Legacy admission/reuse/join tools restored; automatic ordinary-chat routing restored; hosted checks pending |
+| Recon, practices and implementation specialists | agent/subagents/; agent/lib/research-context-tool.ts | Omitted; specialist contracts/cache/provider implementation now ported under lib/server/research/specialists/ | Three workers and typed workflow handoffs compile; hosted behavior pending |
 | Durable joining, background activity and cancellation | wait_for_customer_research.ts; lib/chat-messages.ts; task_cancel.ts | Research polling/native attempts | Comparing |
 | Provider discovery and rendered source readers | lib/solution-research/{independent-search,provider}.ts; lib/research-cache/fetch.ts | lib/server/research/ | Partially ported; verify full path |
 | Source integrity, focused passages and attribution | lib/solution-research/{source-integrity,source-focus,attribution}.ts | lib/server/research/ | Partially ported; verify contracts |
 | Publication/event chronology and freshness | release-chronology.ts; freshness*.ts | lib/server/research/; profiles/quality.ts | Comparing |
-| Checked knowledge persistence and customer updates | customer-update*.ts; lib/research-cache/public-learning.ts | public-persistence.ts; ingest.ts | Comparing |
+| Checked knowledge persistence and customer updates | customer-update*.ts; lib/research-cache/public-learning.ts | public-persistence.ts; specialists/retain-profile.ts | Local assigned-partner persistence, recheck, late-document indexing and revocation checks pass |
 | Hybrid retrieval, embeddings and index invalidation | lib/customer-journey/{memory,embeddings,search-store}.ts | lib/server/retrieval/ | Comparing |
 | Signed research artifacts, handoffs and solution decisions | agent/lib/research-handoff.ts; lib/solution-research/{artifacts,receipt,decision-workflow}.ts | lib/server/research/; lib/server/plans/ | Comparing |
-| Reusable solutions and customer-specific applications | lib/solution-patterns/; get_solution_knowledge.ts | lib/server/knowledge/; lib/server/plans/ | Comparing |
-| Customer learning and consent | lib/customer-learning/; get_adoption_patterns.ts | lib/server/learning/ | Comparing |
+| Reusable solutions and customer-specific applications | lib/solution-patterns/; get_solution_knowledge.ts | lib/server/knowledge/workspace-patterns/ | Complete legacy fields and six-dimensional target fit restored; current source withdrawal invalidates reuse locally |
+| Customer learning and consent | lib/customer-learning/; get_adoption_patterns.ts | lib/server/learning/customer-adoption/ | Original metric, contribution consent/versioning and cohort suppression restored; local checks pass |
 | Capacity, interventions, scenarios and services arithmetic | lib/demo/{metrics,services-plan,repository}.ts | lib/server/{staffing,execution,finance}/ | Compare calculations; fake records remain test-only |
 | Attachments, text extraction and context submission | lib/attachment-extract.ts; lib/chat-attachments.ts; intake route | packages/artifact-extractor/; lib/server/artifacts/ | Comparing |
 | Connections, registry discovery and generic runtime tools | agent/connections/; connection_search.ts; built-in tool exports | agent/connections/; installed eve tools | Compare used capabilities; no credentials or unused demo connectors copied |
@@ -45,7 +45,7 @@ Every entry below must be accounted for by the domain ledger; naming similarity 
 | Legacy tool | Comparison |
 | --- | --- |
 | `agent` | Both builds disable generic root-copy delegation. Declared legacy specialists are separate capabilities. |
-| `ask_question` | Gap: legacy exposes the Eve question tool and UI/native response route. Current native route composition closes unhandled response routes. |
+| `ask_question` | Native question tool, request cards and owned/CSRF-checked response route restored. Pending questions survive unrelated turns and fresh login without rewriting original receipts; hosted checks pending. |
 | `bash` | Both builds disable model-facing shell access. |
 | `calculate_engagement_scenario` | Pending comparison |
 | `calculate_services_plan` | Pending comparison |
@@ -263,6 +263,23 @@ Inventory contains 164 authored backend/agent/API files. Listing a file does not
 
 </details>
 
+## Local implementation checkpoint — 2026-10-14
+
+- Three legacy authored specialists retain their Terra model, reasoning, dollar/token limits, rendered Context reader, independent Exa discovery, quote checks, chronology, source focus and signed result contracts. The current Eve release requires structured output on invocation and top-level workflow functions; these are framework adapters, not replacement research loops.
+- Independently checked source reads update canonical profiles for an authorized member or assigned partner. Full rendered documents are retained separately from curated quotations and materialized through the current retrieval queue. A new check preserves still-verbatim curated claims; publication/observation dates are not reset. Body changes invalidate brief reuse independently of private-context changes.
+- Ordinary customer chat refreshes its initial profile context and permits named reads of other accessible customers. A fresh login can continue the thread and answer its actual pending question. Current access to every previously consumed customer remains required. Planning, staffing, execution, support, expansion and governed learning retain their distinct bindings and tool catalogs.
+- Native input waits have a separate state and append-only resume window. Answering does not rewrite the original dispatch deadline or immutable identity receipt. Ordinary model calls, including resumed answers, retain the application's cumulative output allowance.
+- Workspace solution derivatives retain the original publication/review fields, review expiry, source lineage, six fit dimensions and target-context hash. They are not relabelled as globally published product learnings. Measured customer adoption retains the original metric, same-population counts, 28–35-day measurement window, explicit contribution/revocation and minimum five accounts in each group.
+- Legacy personal-preference file memory reuses an existing configured backend, scoped to environment/workspace/authenticated principal. No memory store or connector is provisioned. Recalled preferences do not become canonical customer facts.
+- Local database checks run only in an owned disposable database and remove its container, volume, credentials and temporary directory afterward. They cover named reads, ownership, grant revocation, source retention, late-document passages, duplicate requests, background completion/cancellation, fresh-login continuation, native pending input, complete solution patterns, lineage invalidation, cohort suppression, transaction rollback and budget concurrency.
+- An encrypted capture of the actual Preview schema 55 was restored locally and migrated through schema 66 with explicit runtime grants. The rehearsal preserved 184 customer references, 770 source revisions and three conversations; no active response or human profile record was changed. The rehearsed migrations and explicit grants were applied to isolated Preview schema 66. Production remains unchanged.
+
+Still open before completion: authenticated hosted model/provider paths and reuse; actual profile/vector effects; desktop/mobile WebKit inspection; ordinary-chat steering; the full attachment-format comparison; scheduled research maintenance under current service authorization; hosted preference persistence; and final cleanup. The restored ordinary capabilities are not advertised as available in governed feature workflows.
+
 ## Required completion evidence
 
 Record focused unit/integration tests, meaningful real-model questions, actual hosted source/knowledge effects, authenticated CLI Playwright/WebKit desktop/mobile inspection, and cleanup. Never substitute fixture responses for hosted acceptance. Unknown, untested or divergent mechanisms stay explicitly open.
+
+### Current-knowledge continuation verification
+
+Ordinary model admission now injects a fresh authorized customer brief before every provider call. Changed, withdrawn or expired retrieval dependencies are explicitly retired from active factual use through append-only refresh receipts; original retrieval receipts remain unchanged. History remains dated context. Every previously consumed customer still requires its current grant and original audience. A disposable integration check consumes a research source, replaces its actual checked content, refreshes the same thread, verifies the new passage and citation, preserves the original dependency row, and confirms its explicit retirement. Governed workflow fences remain strict. Source freshness is validated on model admission and newly projected assistant output; ordinary lifecycle events and dated replay use cumulative authorization. Hosted proof is still required.

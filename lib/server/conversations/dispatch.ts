@@ -1,3 +1,4 @@
+import {assertCustomerQuestionReads} from "./customer-accounts";
 import { prepareExecutionNativeAttempt, claimExecutionNativeDispatch } from "../execution/native-dispatch";
 import { prepareExpansionNativeAttempt, claimExpansionNativeDispatch } from "../expansion/native";
 import { prepareSupportNativeAttempt, claimSupportNativeDispatch } from "../support/native";
@@ -99,11 +100,13 @@ export async function prepareAttempt(
         context.rows[0]?.context_generation === null)) {
       throw new HttpFailure(409, "historical_conversation", "Start a new conversation for current customer context");
     }
-    if (context.rows[0].context_valid_until && context.rows[0].context_valid_until.getTime() <= Date.now()) {
+    const liveNormal=feature.kind==='normal' && (conversation.customer_id===null || !!conversation.live_customer_context);
+    if (!liveNormal && context.rows[0].context_valid_until && context.rows[0].context_valid_until.getTime() <= Date.now()) {
       throw new HttpFailure(409, "context_changed", "Start a new conversation for current customer context");
     }
     await assertArtifactDependenciesCurrent(client, conversationId);
-    await assertRetrievalDependenciesCurrent(client, conversationId);
+    if(liveNormal)await assertCustomerQuestionReads(client,session,conversationId,undefined,false);
+    else await assertRetrievalDependenciesCurrent(client, conversationId);
     const existing = await client.query<{ id: string; body_digest: string; attempt_id: string; dispatch_state: string }>(`
       SELECT sm.id, sm.body_digest, a.id AS attempt_id, a.dispatch_state
       FROM submitted_messages sm JOIN response_attempts a ON a.message_id = sm.id
@@ -192,7 +195,8 @@ export async function claimDispatch(
       throw new HttpFailure(409, "dispatch_claimed", "Dispatch already claimed");
     }
     if (conversation.customer_id) await captureAttemptContext(client, session, conversationId, attemptId, conversation.customer_id);
-    else await captureGeneralContext(client,session,conversationId,attemptId);
+    if(!conversation.customer_id || conversation.live_customer_context && (await conversationFeature(client,conversationId)).kind==='normal')
+      await captureGeneralContext(client,session,conversationId,attemptId);
     const dispatchStartedAt = new Date();
     const deadlineAt = new Date(dispatchStartedAt.getTime() + 120_000);
     await client.query(`UPDATE response_attempts SET dispatch_state = 'dispatching',

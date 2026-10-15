@@ -1,3 +1,4 @@
+import {inputResponsesSchema,authorizeOwnedInputResponse} from "./input-responses";
 import type { EveChannel } from "eve/channels/eve";
 import { z } from "zod";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
@@ -134,7 +135,6 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             conversationId = request.headers.get("x-turas-conversation-id") ?? undefined;
             const requestKey = request.headers.get("x-turas-request-key") ?? undefined;
             if (!z.uuid().safeParse(conversationId).success ||
-                !z.uuid().safeParse(requestKey).success ||
                 !/^wrun_[A-Za-z0-9_-]+$/.test(args.params.sessionId ?? "")) {
               throw new HttpFailure(422, "invalid_input", "Invalid request");
             }
@@ -145,6 +145,21 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             let decoded: unknown;
             try { decoded = JSON.parse(raw); }
             catch { throw new HttpFailure(422, "invalid_input", "Invalid request"); }
+            const responses=inputResponsesSchema.safeParse(decoded);
+            if(responses.success) {
+              const conversation=await getOwnedConversationByNativeSession(session,args.params.sessionId);
+              if(conversation.id!==conversationId)throw hiddenRecord();
+              await authorizeOwnedInputResponse(session,args.params.sessionId,responses.data);
+              await startPreviewChatWorker(args.attachSession,args.waitUntil);
+              await assertNativeContextCurrent(session,args.params.sessionId,false);
+              const headers=new Headers(request.headers);headers.delete("content-length");
+              // The native runtime validates request IDs/options against its own
+              // pending batch. This is an owner/CSRF-checked continuation, never
+              // a new chat dispatch or a model-authored approval.
+              return native(new Request(request.url,{method:"POST",headers,
+                body:JSON.stringify(responses.data)}),args);
+            }
+            if(!z.uuid().safeParse(requestKey).success)throw new HttpFailure(422,"invalid_input","Invalid request");
             const parsed = sendSchema.safeParse(decoded);
             if (!parsed.success) throw new HttpFailure(422, "invalid_input", "Invalid request");
             const selectionHeader = request.headers.get("x-turas-artifact-selections");
@@ -239,19 +254,19 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             const current = await getCurrentSession(request);
             if (!current) throw new HttpFailure(401, "authentication_required", "Sign in required");
             await getOwnedConversationByNativeSession(current, args.params.sessionId);
-            await assertNativeContextCurrent(current, args.params.sessionId);
+            await assertNativeContextCurrent(current, args.params.sessionId,false);
             const response = await native(request, args);
             if (!response.ok) return response;
             return guardNativeStream(response, async () => {
               const refreshed = await getCurrentSession(request);
               if (!refreshed) return false;
               await getOwnedConversationByNativeSession(refreshed, args.params.sessionId);
-              await assertNativeContextCurrent(refreshed, args.params.sessionId);
+              await assertNativeContextCurrent(refreshed, args.params.sessionId,false);
               return true;
             }, 10_000, 15_000, async (_chunk, enqueue) => {
               const refreshed = await getCurrentSession(request);
               if (!refreshed) throw hiddenRecord();
-              await releaseNativeChunk(refreshed, args.params.sessionId, enqueue);
+              await releaseNativeChunk(refreshed, args.params.sessionId, enqueue,false);
             });
           } catch (error) {
             return nativeFailure(error);

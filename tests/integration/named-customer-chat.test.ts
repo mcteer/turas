@@ -1,3 +1,6 @@
+import {projectNativeEvent} from "../../lib/server/conversations/projection";
+import {requestCancellation} from "../../lib/server/conversations/cancel";
+import {readResearchRuntimeAuthority} from "../../lib/server/research/specialists/runtime-authority";
 import { randomUUID } from "node:crypto";
 import { Client } from "pg";
 import { beforeAll, expect, it } from "vitest";
@@ -47,6 +50,24 @@ it("resolves named customers inside private chat and rechecks grants and owner i
     expect(await withTransaction(db=>readCustomerAccountEvidence(db,principal,accessible))).toMatchObject({customer:{id:accessible},entries:[]});
     await expect(withTransaction(db=>readCustomerAccountEvidence(db,principal,denied))).rejects.toMatchObject({status:404});
     await expect(withTransaction(db=>resolveCustomerAccount(db,{...principal,principalId:randomUUID()},"Fixture alias"))).rejects.toMatchObject({status:404});
+    // New public inventory must not freeze an otherwise authorized conversation.
+    await owner.query('UPDATE customer_profile_state SET internal_generation=internal_generation+1,delivery_generation=delivery_generation+1 WHERE customer_id=$1',[accessible]);
+    await withTransaction(db=>assertCustomerQuestionReads(db,actor,conversation.id,attempt.attemptId));
+    const event=(type:string,data:Record<string,unknown>)=>({type,data,meta:{id:`evt_${randomUUID()}`,at:new Date().toISOString()}});
+    const originalTurn=`turn_${randomUUID()}`,backgroundTurn=`turn_${randomUUID()}`;
+    await projectNativeEvent(nativeId,attempt.attemptId,event('message.received',{turnId:originalTurn,message:'Which products does Fixture alias use?'}));
+    await projectNativeEvent(nativeId,attempt.attemptId,event('turn.completed',{turnId:originalTurn}));
+    await owner.query(`INSERT INTO turas_research_requests(environment_id,workspace_id,owner_user_id,key,account_id,scope,context_hash,lease_id,lease_until,refresh,parent_session_id)
+      VALUES($1,$2,$3,$4,$5,'{"kind":"customer-update"}','fixture',$6,now()+interval '10 minutes',false,$7)`,
+      [process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,actor.principalId,randomUUID(),accessible,randomUUID(),nativeId]);
+    await projectNativeEvent(nativeId,attempt.attemptId,event('message.received',{kind:'execution.background_task',turnId:backgroundTurn,message:'Server-authored research completion'}));
+    await projectNativeEvent(nativeId,attempt.attemptId,event('message.completed',{turnId:backgroundTurn,message:'A checked research reply.'}));
+    expect((await owner.query('SELECT native_turn_id,response_state FROM response_attempts WHERE id=$1',[attempt.attemptId])).rows[0]).toMatchObject({native_turn_id:originalTurn,response_state:'running'});
+    expect((await owner.query("SELECT 1 FROM event_projections WHERE conversation_id=$1 AND visible_payload->>'message'='Server-authored research completion'",[conversation.id])).rowCount).toBe(0);
+    await expect(projectNativeEvent(nativeId,attempt.attemptId,event('message.completed',{turnId:'unknown-turn',message:'Unassociated reply'}))).rejects.toThrow('Native turn does not match');
+    await requestCancellation(actor,nativeId,backgroundTurn);
+    expect(await withTransaction(db=>readResearchRuntimeAuthority(db,attempt.attemptId,actor.principalId))).toBe(null);
+    await projectNativeEvent(nativeId,attempt.attemptId,event('turn.cancelled',{turnId:backgroundTurn}));
     await owner.query("UPDATE customer_grants SET state='revoked' WHERE customer_id=$1 AND membership_id=$2",[accessible,actor.membershipId]);
     await expect(withTransaction(db=>assertCustomerQuestionReads(db,actor,conversation.id,attempt.attemptId))).rejects.toMatchObject({status:404});
   } finally {await owner.end();}

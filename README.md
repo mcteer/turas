@@ -26,13 +26,19 @@ Preview chat starts its bounded maintenance worker on authenticated sends becaus
 
 Preview login supports both the immutable deployment URL and its exact Vercel branch alias.
 
-The legacy backend parity repair is in progress in PR 34. Named-customer lookup,
-original evidence passages and legacy chat rendering are restored locally. The
-copied specialist research/cache implementation is being connected to the current
-authorized stores; hosted specialist parity is not yet established. Track the
-comparisons and actual verification in [the repair audit](docs/legacy-backend-parity-audit.md).
-Migrations 056–058 and their runtime grants are pending hosted release. Changes
-must pass authenticated Preview HTTP and CLI Playwright/WebKit inspection before merge.
+The legacy backend parity repair is in progress in PR 34. The repair restores
+named-customer reads, the three authored research specialists, automatic checked
+profile/source retention, research reuse, full-document indexing, native human
+input, structured Markdown and live ordinary customer chat. Complete workspace
+solution patterns and explicitly contributed adoption measurements use canonical
+approved profile sources; the fictional legacy portfolio is not imported.
+Focused local checks and an encrypted Preview restore/migration rehearsal pass.
+Hosted specialist behavior and visual acceptance remain pending; local checks do
+not establish them. Track open comparisons and actual verification in
+[the repair audit](docs/legacy-backend-parity-audit.md). Migrations 056–066 and their
+runtime grants require the coordinated hosted release. The $15 parity-check
+allowance is authorized; no paid parity provider call has run at this checkpoint.
+The root Grok model is unchanged.
 
 Customer Overview appears immediately below the customer heading, above workload controls.
 Search the Customer Profiles directory and open profiles directly from customer

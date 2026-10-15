@@ -96,3 +96,25 @@ export function reserveParityEmbedding(inputCharacters:number) {
   });
 }
 export const settleParityProvider=settle;
+
+/** Standard search/Markdown calls use existing prepaid credits with top-up off.
+ * Retain a conservative one-cent evaluation allowance per dispatched request,
+ * including failures/retries. Never report this ceiling as actual provider cost. */
+export function reserveParityContextRequest() {
+  return reserve('context/standard-web',pricing=>{
+    const price=pricing['context/standard-web'];
+    if(!price || price.input<0.01)throw new Error('Context request allowance was not authorized');
+    return Math.ceil(price.input*1_000_000);
+  });
+}
+
+/** Keep the maximum single Exa search fee reserved separately. Gateway cost
+ * metadata can include tools; double-counting that fee is conservative, whereas
+ * releasing an unitemized provider fee would weaken the shared cap. */
+export function reserveParityExaSearch(){
+ return reserve('gateway/exa_search',pricing=>{
+  const price=pricing['gateway/exa_search'];
+  if(!price || price.input<0.007)throw new Error('Search fee allowance was not authorized');
+  return Math.ceil(price.input*1_000_000);
+ });
+}

@@ -45,7 +45,9 @@ export default defineHook({
           if (schema < 56) return;
           const scope = await customerQuestionActor(client, principal);
           const conversation = (await client.query("SELECT conversation_id FROM response_attempts WHERE id=$1", [attemptId])).rows[0];
-          await assertCustomerQuestionReads(client, scope.actor, conversation.conversation_id, attemptId);
+          await assertCustomerQuestionReads(client, scope.actor, conversation.conversation_id, attemptId, false);
+          const artifact=await readCurrentArtifactDraft(client,attemptId,principal.principalId);
+          if(artifact && !(await client.query('SELECT 1 FROM artifact_context_injection_receipts WHERE attempt_id=$1 AND turn_id=$2 AND injection_digest=$3',[attemptId,event.data.turnId,artifact.digest])).rowCount)throw new Error('Artifact context was not injected');
           return;
         }
         const receipt = await client.query(`SELECT 1 FROM context_injection_receipts i

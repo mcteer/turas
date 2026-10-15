@@ -5,6 +5,8 @@ import { retrievalSourceHasMaterialConflict } from "../retrieval/search";
 import { readPublicCustomerCoverage } from "../research/public-read";
 import {lockLearningOriginalClosure} from '../learning/sources';
 import { getServerConfig } from "../config";
+import { createHash } from "node:crypto";
+import { publicSubjectMention } from "../research/public-dossier";
 import type { PoolClient } from "pg";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
 import { profileListQuerySchema } from "../../contracts/profiles";
@@ -268,6 +270,14 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
         {source_kind:'verified_research',source_revision_id:row.id},actor,{scope:'customer',customerId})) continue;
       eligibleResearch.push(row);
     }
+    const documents=new Map<string,string>();
+    if(researchSchema>=60 && eligibleResearch.length) {
+      const retained=await client.query<{source_revision_id:string;document_text:string;document_digest:string}>(
+        'SELECT source_revision_id,document_text,document_digest FROM independent_research_documents WHERE source_revision_id=ANY($1::uuid[])',
+        [eligibleResearch.map(row=>row.id)]);
+      for(const document of retained.rows)if(createHash('sha256').update(document.document_text).digest('hex')===document.document_digest)
+        documents.set(document.source_revision_id,document.document_text);
+    }
     const attributedResearch = eligibleResearch.map((row) => {
       const checked = qualityInputSchema.safeParse(row.quality_input);
       const input = checked.success ? checked.data : unknownQualityInput;
@@ -276,9 +286,13 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
       const rated = rateEvidence({ R: input.R, D: input.D, C: input.C,
         informationType: input.informationType, dateBasis: input.dateBasis,
         evidenceAt: date, asOf: new Date() });
+      const document=documents.get(row.id);
+      const productText=document ? publicSubjectMention(row.title,customer.rows[0].display_name)?document:
+        document.split(/\n\s*\n/).filter(paragraph=>publicSubjectMention(paragraph,customer.rows[0].display_name)).join('\n\n') : row.passage;
       return { sourceRevisionId: row.id, state: "researched", title: row.title,
         acceptanceState: "accepted", acceptanceBasis: "independent_research",
-        productNames: input.informationType === "product_capability" || communityAttributionWarning({url:row.location}) ? [] : productsFromResearch([{title:row.title,quote:row.passage}]),
+        productNames: input.informationType === "product_capability" || communityAttributionWarning({url:row.location}) ? [] : productsFromResearch([{title:row.title,quote:productText}]),
+        documentDigest: document ? createHash('sha256').update(document).digest('hex') : null,
         location: row.location, passage: row.passage, supportedClaim: row.supported_claim,
         publicationAt: row.publication_at?.toISOString() ?? null,
         observationAt: row.observation_at?.toISOString() ?? null,
