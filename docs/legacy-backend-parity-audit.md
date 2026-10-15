@@ -1127,3 +1127,37 @@ accounted cost is not represented as a fully settled invoice. No allowance, expi
 or unknown hold is reset, and no additional paid check is started. Production
 remains unchanged, PR 34 stays open, and full independent review/CI acceptance and
 the separate 016 hosted recovery/operator/participant gates remain incomplete.
+
+### Merge continuation — 2026-10-15
+
+The user explicitly requested completion and merge. CI `38787336807` at `ff9da00`
+identifies an omitted manifest entry for the newly added learning diagnostics test
+and an `ENOENT` race while the native retention probe traverses a transient Workflow
+lock directory. The diagnostics test is now registered in the explicit learning
+manifest. A deterministic unit case removes a directory after enumeration and
+reproduces the original failure while a real payload remains present. The probe
+now tolerates only vanished entries; surviving payloads still count, and permission
+or other IO failures still fail. No directory class is excluded and no retention
+assertion is relaxed. Six focused native-store/diagnostic checks, the exact manifest
+check and root/learning type checks pass. Complete owned cohort and fresh CI results
+remain separately required before merge.
+
+The exact owned MCP compositions subsequently pass the complete learning domain
+catalog and all 25 native checks without paid calls. The separate source-based
+Terra review of the retained `86338a9` answer fails on documented adoption and
+distinct firewall limitations. The ordinary-only synthesis guidance now requires
+reading a material adoption source, retaining attributed vendor-described usage,
+following relevant omitted-reference navigation, and distinguishing routing,
+protocol and delegated-authority limitations. Existing instruction-scope and
+capability checks pass 9/9; a fresh hosted answer and independent review are required.
+Root type checking, authored-document checks and both Eve/Next builds also pass.
+
+Pre-merge read-only checks on 2026-10-15 confirm Preview schema 072 and Production
+schema 055 (`production-neon-20261005`). The current Vercel Git configuration would
+deploy `main` automatically. This merge therefore pauses automatic deployment for
+`main` using the documented branch-specific `git.deploymentEnabled` control;
+Preview branch deployments remain enabled. The user authorized merge, while the
+prior admitted infrastructure work excludes Production changes. No Production
+schema, grant or running deployment is changed. A later Production release must
+perform the explicit backup/rehearsal/migration/grant/code compatibility sequence
+before deployment is re-enabled. Reference: https://vercel.com/docs/project-configuration/git-configuration#git.deploymentenabled

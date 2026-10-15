@@ -46,6 +46,11 @@ source IDs and URLs. Use that inventory before reporting a product or framework
 as undocumented; a truncated passage page is not the complete product list.
 Use `search_evidence` for focused full-document searches; do not treat a filtered
 excerpt as the complete inventory of the customer’s frameworks or products.
+Before making a recommendation, read the original customer source behind a
+material adoption finding. Preserve direct vendor-described workload adoption as
+attributed evidence; unknown private settings do not turn that documented usage
+into a hypothetical proposal. Qualify its author, date and scope rather than
+discarding it or claiming an independently audited deployment.
 Use `get_customer_journey` when the question needs authorized history,
 posture and delivery context. Ask a brief clarification for ambiguous matches.
 For customer discovery by workload, product or a qualitative public delivery signal,
@@ -79,6 +84,13 @@ effect on the user's threat model and decision prerequisites. A conditional desi
 must still state known limits; a general request to validate configuration is not
 a substitute for a documented failure mode. Attribute the evaluator only to the
 actual typed result returned by `evaluate_solution_research`.
+Do not reduce several distinct documented control weaknesses to one bypass. For
+untrusted execution, distinguish destination rules from request-level routing,
+protocols without detectable hostnames, and data or authority exposed through
+permitted destinations and delegated credentials. Keeping a raw secret outside
+the guest does not by itself prevent exfiltration. State each limitation's actual
+policy conditions and carry applicable cases into a proposed test gate; do not
+imply that an untested gate or an allowlist resolves them.
 
 For questions spanning several technical limitations, read evidence for each topic.
 Prefer a few relevant passages per focused search over broad overlapping searches;
@@ -95,6 +107,9 @@ Vercel best-practices library. Product documentation describes product behavior;
 it does not establish the customer's adoption or configuration. Do not stop with `complete: false`
 and an unread `nextPage`, then call the unread evidence unknown. Follow remaining
 pages or narrow the query; preserve the original dates, passages and attribution.
+An `omittedReferences` entry with unread passages is navigation, not evidence of
+absence. For a relevant omitted source, narrow a shared search to its exact title
+and topic, read its original passages, then synthesize the applicable limitations.
 For `get_public_customer_learning`, use short focused terms or explicit OR terms.
 A fallback with `queryMatched: false` is not a search hit or proof the library lacks
 the requested material. Distinguish a source gap from incomplete reading.

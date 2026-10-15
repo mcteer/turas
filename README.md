@@ -38,6 +38,10 @@ Hosted specialist behavior and visual acceptance remain pending; local checks do
 not establish them. Track open comparisons and actual verification in
 [the repair audit](docs/legacy-backend-parity-audit.md). Migrations 056–066 and their
 runtime grants are applied to backed-up, rehearsed Preview; Production is unchanged.
+Automatic Vercel deployments from `main` are paused for this merge. Production
+remains on schema 055; the repair requires 072 and explicit runtime grants. Re-enable
+Production deployment only as part of a separately coordinated backup, migration,
+grant and authenticated release verification sequence.
 Migration 067 adds posted-question resume windows and is applied to Preview
 after an encrypted schema-66 capture and matching-version restore rehearsal.
 The native question/new-login/answer/reloaded-history flow passed actual-model
