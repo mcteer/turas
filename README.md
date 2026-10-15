@@ -65,7 +65,10 @@ The `9b73d46` Preview Baggu and customer-free firewall answers pass retained
 independent semantic review. Its linked Notion run remains failed: cited-source
 retention prevented solution publication, and reload stream errors remain open.
 Finalization now reports its actual failed stage with bounded private diagnostics;
-this correction still requires hosted verification.
+the fresh Preview check identifies a request-key collision when a cached page
+gains new signed discovery provenance. Retention now binds its complete input and
+proof; disposable replay and source-persistence checks pass. Hosted verification
+of the retention correction remains required.
 The root Grok model is unchanged. Legacy ordinary-chat guidance is scoped to normal
 turns so governed learning keeps its original input ceiling; all 16 unpaid real
 Eve learning fixture arms pass. New extraction jobs and retries bind parser policy

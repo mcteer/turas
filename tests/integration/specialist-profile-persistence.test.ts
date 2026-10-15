@@ -239,6 +239,18 @@ it('retains new public research for an assigned partner, preserves curated claim
   const architecture=z.object({attributedResearch:z.array(z.object({productNames:z.array(z.string()),retrievalAt:z.string()}))}).parse(await readProfile(actor,customerId));
   expect(architecture.attributedResearch[0].productNames).toContain('Sandbox');
   expect(architecture.attributedResearch[0].retrievalAt).toBe(checked.page.retrievedAt);
+  // The same cached page can gain a new signed discovery association without
+  // changing its text, snapshot ID, quotation or original retrieval date.
+  const architectureSource={...classified,informationType:'architecture' as const};
+  expect(await retainSpecialistProfileSources(researchActor,customerId,[architectureSource])).toMatchObject({updated:0});
+  const revisedProof=signCheckedPublicPage({...checked.page,independentDiscovery:{
+    accountId:customerId,searchId:'server-discovery-followup',provider:'context',checkedAt:new Date().toISOString(),
+  }});
+  await db.query('UPDATE turas_evidence_snapshots SET check_receipt=$2 WHERE id=$1',[checked.snapshot,JSON.stringify(revisedProof)]);
+  const countBefore=(await db.query('SELECT count(*)::int AS count FROM evidence_source_revisions WHERE customer_id=$1',[customerId])).rows[0].count;
+  expect(await retainSpecialistProfileSources(researchActor,customerId,[architectureSource])).toMatchObject({updated:1});
+  expect(await retainSpecialistProfileSources(researchActor,customerId,[architectureSource])).toMatchObject({updated:0});
+  expect((await db.query('SELECT count(*)::int AS count FROM evidence_source_revisions WHERE customer_id=$1',[customerId])).rows[0].count).toBe(countBefore);
   const inventory=await withRuntime(client=>readCustomerAccountEvidence(client,principal,customerId,{page:10,includeProductIndex:true}));
   expect(inventory.entries).toEqual([]);
   expect(inventory.productIndex).toMatchObject({complete:true,products:expect.arrayContaining([expect.objectContaining({name:'Sandbox',url})])});

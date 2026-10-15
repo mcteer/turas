@@ -55,11 +55,15 @@ export async function retainSpecialistProfileSources(identity:AppIdentity,accoun
       state:area==='architecture_outcomes'?'supported' as const:'incomplete' as const,
       explanation:area==='architecture_outcomes'?'Exact source passages were retained.':'A source read does not establish a complete assessment of this area.'})),
       unknowns:['Source retention does not establish private operating status or a complete customer-state assessment.']};
-    const requestKey=requestUuid(JSON.stringify([accountId,source.cache.snapshotId,page.retrievedAt,quotes,source.informationType??null]));
-    const result=await persistSpecialistCustomerResearch(identity,{requestKey,
+    const input={
       batchDigest:publicDigest(JSON.stringify([source.cache.snapshotId,page.normalizedDigest,quotes])),
       customer:{name:account.name,industries:[],directoryListed:false,stories:[{url:page.url,title:page.title}]},dossier,
-      usage:{searches:0,fetches:0,inputTokens:0,outputTokens:0,costUsd:null,model:'server-source-retention',modelCalls:0}},[page],accountId,source.informationType);
+      usage:{searches:0,fetches:0,inputTokens:0,outputTokens:0,costUsd:null,model:'server-source-retention',modelCalls:0}};
+    // A content-addressed cache snapshot can receive a newly signed discovery
+    // association. Bind the complete persistence input and proof, rather than
+    // reusing an earlier request key for that different verified observation.
+    const requestKey=requestUuid(JSON.stringify({accountId,input,page,informationType:source.informationType??null}));
+    const result=await persistSpecialistCustomerResearch(identity,{requestKey,...input},[page],accountId,source.informationType);
     if(!result.replayed)updated++;
   }
   return {updated,skipped};

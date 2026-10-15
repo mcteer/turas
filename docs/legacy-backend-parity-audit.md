@@ -1070,3 +1070,33 @@ The first recheck script incorrectly requested a single assistant element where
 three actual messages existed. The corrected selector checks the final message;
 neither attempt is represented as a passing overall browser run. No new model,
 research, embedding or Sandbox provider work was dispatched during this recovery.
+
+The subsequent admitted single Notion check ran against exact Preview `b038fce`
+under the unchanged blanket approval and existing capped ledger. Its desktop,
+mobile and reloaded-history transport receipt passes, but the research workflow
+remains failed: customer recon reports an account-wide learning persistence gap,
+and solution publication fails at source retention. The new runtime category is
+`request_key_conflict`; the missing solution artifact is correctly denied by the
+evaluator. The final answer and native events are retained privately, without
+promoting transport success into research quality acceptance.
+
+The source-retention key included snapshot, original check date and quotations,
+but omitted the signed fetch proof and exact dossier. Cached page content can
+retain its snapshot ID while gaining a new signed independent discovery
+association. That different persistence input then collided with the older key.
+The owned runtime-role regression reproduces the actual conflict before the fix.
+Retention now derives its deterministic key from the complete persistence input,
+checked page and information type. The original writer's input-conflict, signature,
+source-origin, grant and eligibility checks are unchanged. The corrected complete
+disposable migration/grant/chat/source/transaction/budget catalog passes; the new
+case proves exact replay before and after the changed signed proof and no duplicate
+accepted source revision. Type checking, both Eve/Next builds and authored-document
+checks pass. Hosted acceptance of this fix
+remains open; no Production migration, deployment or release occurred.
+
+The two earlier independent review packets gained supplemental tool-result fields
+after review. Removing only those supplemental fields reconstructs each original
+packet byte-for-byte against the review's SHA-256. Original answers and native
+events also match their recorded hashes. Separate recovered packet files and an
+integrity receipt preserve this observation without changing the original files
+or repeating the reviews.
