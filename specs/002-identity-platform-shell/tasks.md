@@ -278,5 +278,7 @@ This cosmetic follow-up adds no roadmap capability or model-routing behavior.
   regression, then admit only its platform-provided `VERCEL_URL` in the shared
   origin guard while preserving the canonical origin, Preview branch handling,
   missing-origin rejection and foreign/forwarded-host denials.
-- [ ] Verify browser-form login/logout for `mcteer` and `panel` on the exact hosted
-  deployment and canonical Production URL; record the exact commit and results.
+- [x] Verify browser-form login/logout for `mcteer` and `panel` on the exact hosted
+  Preview deployment/branch alias and canonical Production URL; record the exact
+  commit and results. Final Production deployment-origin acceptance remains a
+  post-merge release check recorded in the PR.

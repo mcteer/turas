@@ -84,8 +84,12 @@ as an additional origin. Canonical configuration, Preview branch support, cookie
 and CSRF checks remain in force. Other deployment URLs, lookalike suffixes,
 request-host spoofing and caller-supplied alias settings remain denied. A failing
 regression reproduces the issue; all 13 focused configuration/auth checks then
-pass. Exact hosted correction acceptance and final deployed commit are recorded
-in the release PR before completion.
+pass. Exact Preview `6993f535411603aa9c777842c05e58ffe3b053eb` passes six actual
+CLI WebKit browser-form login/logout checks: `mcteer` and `panel` on the immutable
+Preview URL, its branch alias and canonical Production. Every check includes an
+authenticated directory read, foreign-origin denial and post-logout denial, with
+no model dispatch. Final-head Preview acceptance, the final Production commit and
+its direct-origin acceptance are recorded in the release PR before completion.
 
 ## Remaining limits
 
