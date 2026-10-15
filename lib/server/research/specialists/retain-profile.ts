@@ -21,17 +21,22 @@ export async function retainSpecialistProfileSources(identity:AppIdentity,accoun
   let updated=0,skipped=0;
   for(const source of sources) {
     if(!source.cache){skipped++;continue;}
+    const selected=references===undefined?researchPassageView(source).passages:researchPassages(source).filter(passage=>
+      references.some(reference=>reference.sourceId===source.id && (reference.passageId===passage.id ||
+        reference.quote!==undefined && passage.text.includes(reference.quote))));
+    if(!selected.length){skipped++;continue;}
     const row=await withTransaction(async db=>(await db.query<{check_receipt:CheckedPublicPage|null}>(
       `SELECT s.check_receipt FROM turas_evidence_snapshots s
        JOIN turas_evidence_accounts a ON a.environment_id=s.environment_id AND a.workspace_id=s.workspace_id AND a.snapshot_id=s.id
        WHERE s.environment_id=$1 AND s.workspace_id=$2 AND s.id=$3 AND a.account_id=$4 AND a.visibility='public' LIMIT 1`,
       [identity.environmentId,identity.workspaceId,source.cache!.snapshotId,accountId])).rows[0]);
-    if(!row?.check_receipt)throw new Error('The retained source has no verified fetch receipt');
+    // Shared product guidance can support a solution without being fetched for
+    // this customer. It must not become customer evidence or block the signed
+    // research handoff. A mapped customer source still requires its receipt.
+    if(!row){skipped++;continue;}
+    if(!row.check_receipt)throw new Error('The retained source has no verified fetch receipt');
     const page=row.check_receipt;assertCheckedPublicPage(page);
     if(page.url!==source.url || !publicSubjectMention(page.text,account.name)){skipped++;continue;}
-    const selected=references===undefined?researchPassageView(source).passages:researchPassages(source).filter(passage=>
-      references.some(reference=>reference.sourceId===source.id && (reference.passageId===passage.id ||
-        reference.quote!==undefined && passage.text.includes(reference.quote))));
     // A finalized reference may identify a precise quotation within a larger
     // cached passage. Keep that quotation rather than expanding it and using
     // the immutable 8k profile allowance on unrelated surrounding text.

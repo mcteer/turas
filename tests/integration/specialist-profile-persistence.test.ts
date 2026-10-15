@@ -27,6 +27,26 @@ const isolatedTestUrl=requireTestDatabaseUrl();
 const ownedConversationIds:string[]=[];
 const withRuntime=<T>(run:(db:PoolClient)=>Promise<T>)=>withTransaction(async db=>{await db.query('SET LOCAL ROLE turas_runtime');return run(db);});
 beforeAll(()=>{const runtime=new URL(isolatedTestUrl);runtime.searchParams.set('options','-c role=turas_runtime');process.env.DATABASE_URL=runtime.href;process.env.DATABASE_URL_UNPOOLED=runtime.href;process.env.TURAS_ENVIRONMENT_ID=process.env.TURAS_TEST_ENVIRONMENT_ID;});
+it('keeps shared practice sources out of customer facts without blocking research retention',async()=>{
+ const db=new Client({connectionString:isolatedTestUrl});await db.connect();
+ try{
+  const actor=await isolatedChatActor(db,'internal','member'),customerId=randomUUID(),name=`Retention Fixture ${customerId}`;
+  await db.query('INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,$3,false)',[customerId,actor.workspaceId,name]);
+  const text=`Official product documentation mentions ${name} as an example, without establishing that customer’s deployment.`,url=`https://vercel.com/docs/retention-fixture/${customerId}`;
+  const page=signCheckedPublicPage({url,title:'Shared product documentation',text,bodyDigest:publicDigest(text),normalizedDigest:publicDigest(text),retrievedAt:new Date().toISOString(),publishedAt:null,discoveryPurpose:'specialist_public_source'});
+  const snapshot=publicDigest(text),source={...extractSources({success:true,url,title:page.title,markdown:text},page.retrievedAt)[0],cache:{snapshotId:snapshot,checkedAt:page.retrievedAt,refreshAfter:new Date(Date.now()+3600000).toISOString()}};
+  await db.query(`INSERT INTO turas_evidence_snapshots(environment_id,workspace_id,id,fetch_key,url,content_hash,source,truncated,checked_at,refresh_after,check_receipt) VALUES($1,$2,$3,$3,$4,$3,'{}',false,now(),now()+interval '6 hours',$5)`,[process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,snapshot,url,JSON.stringify(page)]);
+  const identity={...actor,userId:actor.principalId,environmentId:process.env.TURAS_ENVIRONMENT_ID!};
+  expect(await retainSpecialistProfileSources(identity,customerId,[source])).toEqual({updated:0,skipped:1});
+  expect((await db.query('SELECT count(*)::int AS count FROM evidence_sources WHERE customer_id=$1',[customerId])).rows[0].count).toBe(0);
+  // Once a source is customer-mapped, missing verification is still an error.
+  await db.query(`INSERT INTO turas_evidence_accounts(environment_id,workspace_id,owner_user_id,account_id,workload,snapshot_id,visibility) VALUES($1,$2,$3,$4,'',$5,'public')`,[process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,actor.principalId,customerId,snapshot]);
+  await db.query('UPDATE turas_evidence_snapshots SET check_receipt=NULL WHERE id=$1',[snapshot]);
+  await expect(retainSpecialistProfileSources(identity,customerId,[source])).rejects.toThrow('no verified fetch receipt');
+  // An unrelated, uncited source is never part of the selected retention work.
+  expect(await retainSpecialistProfileSources(identity,customerId,[source],[])).toEqual({updated:0,skipped:1});
+ }finally{await db.end();}
+});
 it('retains new public research for an assigned partner, preserves curated claims on recheck, and indexes late document evidence',async()=>{
  const db=new Client({connectionString:isolatedTestUrl});await db.connect();
  try {

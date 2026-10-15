@@ -51,6 +51,7 @@ const researchTool = defineTool({
       return { status: "needs_revision" as const, reference: null,
         reason: `Nothing was stored or finalized. Correct this brief once using already retrieved evidence, then call finalize_research again. ${citationIssues.join(" ")} Every sourceId cited in findings, alternatives or process inputs needs a sourceSupport entry with an exact retrieved passageId. Use research_evidence to recover valid IDs. Add relevant support or remove the unsupported claim/reference and preserve the gap. Do not add web research, invent evidence or remove legitimate uncertainty. A second submission retains any remaining blockers.` };
     }
+    let phase="retain_sources";
     try {
       const citedSources = retainResearchSources(brief, sources);
       await learnPublicSources(identity, brief.accountId, sources, brief.sourceSupport.map(support => ({
@@ -59,6 +60,7 @@ const researchTool = defineTool({
         quote: support.quote,
         sourceType: support.sourceType,
       })), ctx.abortSignal);
+      phase="bind_context";
       const receipt = signResearch({
         userId: identity.userId,
         workspaceId: identity.workspaceId,
@@ -70,7 +72,9 @@ const researchTool = defineTool({
         blockers,
         customerRecon,
       });
+      phase="store_artifact";
       const reference = await storeResearchArtifact(receipt, identity, ctx.abortSignal);
+      phase="finish_reservation";
       await finishResearchRequest(identity, researchState.get().requestTicket, receipt, ctx.abortSignal);
       researchState.update((state) => ({ ...state, finalized: true }));
       return {
@@ -80,7 +84,7 @@ const researchTool = defineTool({
           "Turi should call evaluate_solution_research with accountId only, omitting researchId, for this admitted task. The server resolves its exact completed result. The stored artifact validates provenance and structure, not the truth of interpretation. Decision assessment and human decision rights remain separate.",
       };
     } catch {
-      console.warn(JSON.stringify({ event: "solution_research.artifact_unavailable", callId: ctx.callId }));
+      console.warn(JSON.stringify({ event: "solution_research.artifact_unavailable", callId: ctx.callId,phase }));
       return {
         status: "unavailable" as const,
         reference: null,

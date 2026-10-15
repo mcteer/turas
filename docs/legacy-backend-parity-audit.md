@@ -6,6 +6,22 @@ Status: in progress. This is a repair audit, not a new feature specification. Ea
 
 ## Current hosted acceptance
 
+Latest checkpoint (`68044c2`): independent review passes the original Baggu
+product-use answer and the customer-free firewall explanation, including the
+original `p13`/`p28` limits. Both pass actual desktop/mobile/reloaded-history
+checks. The original full Notion specialist question still fails: a practice
+caveat exceeded its existing input limit, no signed solution reached evaluation,
+and the final answer omitted material limits. These are retained failures.
+The follow-up repair skips shared practice sources without a customer mapping
+when retaining customer facts, while still rejecting a mapped source with no
+verified fetch receipt. Practice instructions retain the original field limits
+and permit one correction of input rejected before execution. New disposable
+checks cover both source boundaries; actual hosted recheck remains open.
+Blanket user approval now covers continuation without individual run questions.
+A supplemental $15 Preview ledger bounds combined model/provider allowance at
+$30; original charges and unknown holds remain intact and top-ups remain off.
+Historical budget amounts below describe their original checkpoints.
+
 - Baggu's exact product-use question passed independent semantic review on Preview `0ec65cf`, with minor wording and verbosity issues. Desktop/mobile WebKit and reloaded history passed. The answer distinguishes documented Vercel platform use from a historical framework stack.
 - The Notion workflow on that Preview completed all three actual specialists and the original decision model. Its answer **failed** independent semantic review: material documented security-control and cancellation-overrun limitations were omitted. The review packet also lacked the actual typed evaluator output; a provider charge alone does not establish that the final interpretation faithfully reflects it. Research instructions now require these limitations to survive the handoff and final readout; hosted quality recheck remains open.
 - Native questions survived a fresh login but failed to produce a retained answer on `0ec65cf`, `7b342b3` and `7882018`. Runtime logs identify an empty-turn input continuation before a resolution event. The context guard initially rejected it; `2311d59` then correctly blocked provider I/O because the attempt was still parked. These are failures, not acceptance evidence. Migration 067 and its adapter reserve one owner-posted window per actual native request, preserve the original injection and cumulative token allowance, and prevent retries from extending the window. Actual-model recheck remains required.

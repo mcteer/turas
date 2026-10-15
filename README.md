@@ -546,10 +546,16 @@ settles its application attempt only after Eve confirms the exact session is res
 or already inactive; an accepted request alone leaves it stopping.
 
 Actual answer quality remains a release gate. Earlier completed answers omitted
-material security or framework evidence; those failures are retained. The restored
-inventory and customer-free documentation reader still need final actual-output
-acceptance. Broad proposal checks reached the finite evaluation reservation guard before
-synthesis. Testing continues with the supplemental allowance described above;
+material evidence. On Preview `68044c2`, independent review passes the original
+Baggu product-use answer and a customer-free firewall documentation answer;
+desktop/mobile/reload checks pass. The full Notion specialist question still
+fails: practice finalization rejected an overlong caveat and no solution artifact
+reached evaluation. The repair keeps shared practice documents out of customer
+fact retention without blocking research, preserves missing-receipt rejection
+for customer-mapped sources, and guides bounded correction of rejected practice
+input. Hosted recheck of those repairs remains required; earlier failures are
+retained. Broad proposal checks previously reached the finite evaluation guard
+before synthesis. Testing continues with the supplemental allowance described above;
 pricing, prior charges/unknown holds and Production behavior are unchanged.
 Preview Grok output remains bounded at 8,192 tokens. The latest 24 owned test
 sessions and conversations were retired and purged after encrypted backup and
