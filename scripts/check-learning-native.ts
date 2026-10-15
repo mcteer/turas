@@ -16,7 +16,8 @@ import {readLearningEvaluation} from '../lib/server/learning/evaluation-captures
 import {prepareLearningEvaluationArm} from '../lib/server/learning/evaluation';
 import type {CurrentSession} from '../lib/server/auth/sessions';
 import {featureSourceDigest} from './execution-source-digest';
-const assert=(value:unknown,message:string)=>{if(!value)throw Error(message);};
+import {learningNativeAssertion} from './learning-native-diagnostics';
+const assert=(value:unknown,message:string)=>{if(!value){console.error(JSON.stringify(learningNativeAssertion(message)));throw Error(message);}};
 if(process.argv.length!==2)throw Error('Learning native acceptance takes no filters');
 const digest=await featureSourceDigest('014');let checks=0;
 await withLearningEnvironment(async environment=>{

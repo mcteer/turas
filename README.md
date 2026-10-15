@@ -62,13 +62,13 @@ a supplemental $15 allowance bounds the combined ceiling at $30 without top-ups.
 All three specialists completed on Preview; final answer quality, explicit reuse,
 full parity acceptance and final verification remain open.
 The `9b73d46` Preview Baggu and customer-free firewall answers pass retained
-independent semantic review. Its linked Notion run remains failed: cited-source
-retention prevented solution publication, and reload stream errors remain open.
-Finalization now reports its actual failed stage with bounded private diagnostics;
-the fresh Preview check identifies a request-key collision when a cached page
-gains new signed discovery provenance. Retention now binds its complete input and
-proof; disposable replay and source-persistence checks pass. Hosted verification
-of the retention correction remains required.
+independent semantic review. A cited-source retention collision blocked Notion's
+solution publication. Retention now binds its complete input and signed proof.
+On exact Preview `86338a9`, customer learning, the signed solution handoff and
+typed evaluation complete, with passing desktop/mobile/reloaded history checks.
+The advisory route remains `research_more`; independent final-answer review, the
+earlier reload stream finding and full CI acceptance remain open. The current MCP
+composition failed its native-learning gate, whose exact local recheck passes.
 The root Grok model is unchanged. Legacy ordinary-chat guidance is scoped to normal
 turns so governed learning keeps its original input ceiling; all 16 unpaid real
 Eve learning fixture arms pass. New extraction jobs and retries bind parser policy

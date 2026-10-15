@@ -1100,3 +1100,30 @@ packet byte-for-byte against the review's SHA-256. Original answers and native
 events also match their recorded hashes. Separate recovered packet files and an
 integrity receipt preserve this observation without changing the original files
 or repeating the reviews.
+
+On exact Preview `86338a9`, the corrected retention path completes all three
+specialists with published receipts. Customer recon no longer reports its
+account-wide learning persistence gap; the solution has its signed reference, and
+the actual typed evaluator returns `evaluated` with advisory route `research_more`
+for remaining evidence gaps. Actual desktop/mobile/reloaded-history transport
+passes with no active page errors or mobile overflow. Raw answer, native events,
+database readbacks and browser receipts are retained in
+`notion-resume-86338a9-panel/` under the private parity directory. This establishes
+the repaired publication path, not independent final-answer quality or full parity.
+
+CI `38784982277` at `86338a9` fails `read-only-mcp (regressions)` at composed
+`014-native`; its wrapper reports an empty diagnostic. The exact owned MCP →
+native-learning composition passes all 25 checks locally with zero paid calls.
+That local pass does not clear the CI failure or establish its cause. Native
+assertions now emit only fixed checked-in assertion identities, and the MCP wrapper
+retains at most four validated identities. It excludes original exception prose,
+payloads and arbitrary fields. Assertions, domain bounds, retries and success
+criteria are unchanged. Four focused privacy/diagnostic cases and type checking
+pass; fresh CI remains required.
+
+After both admitted Preview checks, the unchanged two-ledger $30 combined cap
+accounts for **$23.294776**, including preserved unsettled provider ceilings;
+accounted cost is not represented as a fully settled invoice. No allowance, expiry
+or unknown hold is reset, and no additional paid check is started. Production
+remains unchanged, PR 34 stays open, and full independent review/CI acceptance and
+the separate 016 hosted recovery/operator/participant gates remain incomplete.
