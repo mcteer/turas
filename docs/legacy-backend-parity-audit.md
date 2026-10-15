@@ -827,3 +827,46 @@ handles expired. The model reported the denial honestly, but it did not complete
 the recommendation. The follow-up in the original long thread was blocked by the
 shared budget's conservative reservation before provider I/O. Unknown prior holds
 are retained. Neither run proves the revised caveat instructions pass.
+
+The subsequent `9016442` Preview passes the actual Notion “Sandboxes” search:
+nine accepted research passages in hybrid mode, no response substitution and no
+mobile overflow. CLI WebKit also verifies immutable and branch-alias form login,
+all 184 real customers matching Production, overview placement, product buttons,
+source details and desktop/mobile captures for 1Password and Notion. 1Password's
+research is unchanged. Notion's ten Production source revisions remain preserved:
+eight current, two retained with independently checked same-source successors;
+new checked research brings Preview to twenty current revisions. The strict
+whole-profile-equality checker remains unsuitable for this intentional research
+refresh; the separate lineage check explains the difference rather than claiming
+identical research data. No synthetic, Cedar or Jupiter customers were found.
+
+A fresh actual-model answer using current accepted evidence still fails semantic
+review: it stopped profile pagination at page four despite `nextPage: 5`, omitted
+documented cancellation overruns/continued compute cost and the distinction
+between secret brokering and exfiltration through permitted destinations. The
+missing passages exist in the retained full documents, beyond the curated profile
+excerpts. Ordinary general chat had hidden the existing `search_evidence` tool.
+The prepared repair exposes that same governed search with a canonical account ID,
+current authorization before retrieval, source/owner/grant rechecks before release
+and append-only conversation consumption dependencies. Governed workflow bindings
+remain fixed; they cannot accept an account override. Shared-only general search
+uses its existing shared scope. Ordinary guidance requires focused full-document
+queries and complete coverage before claiming an evidence gap.
+
+The disposable runtime-role regression retrieves a late full-document passage
+absent from the curated finding in an unselected assigned-partner conversation,
+records its source dependencies, and denies the same read after grant revocation.
+The full local parity/grant/context catalog and type checking pass. Actual hosted
+model/tool quality recheck remains required; no pass is inferred from local proof.
+The temporary native session is deleted, three native settings restored, the
+branch-only temporary cron credential removed, stopped build templates retired
+without deleting required snapshots, and fourteen owned test conversations
+archived pending final payload cleanup. Original historical session resources,
+real research, budget holds and recovery archives remain preserved.
+
+Citation recording now keeps shared authorization locks instead of upgrading
+them. A two-connection barrier reproduces a PostgreSQL deadlock with the prior
+implementation and passes with the correction. The test rolls back both isolated
+consumption probes and retains the earlier source-refresh assertions. The final
+disposable catalog, typecheck, Eve build and Next web build pass. No hosted pass
+is inferred for the newly exposed named-account tool until its next Preview check.

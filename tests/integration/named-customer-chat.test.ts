@@ -1,3 +1,4 @@
+import {searchNamedCustomerEvidence} from '../../lib/server/conversations/named-evidence-search';
 import {isolatedChatActor} from '../fixtures/isolated-chat-actor';
 import {settleSyntheticConversationAttempts} from '../fixtures/ordinary-attempt-cleanup';
 import {reservedSpecialistInvocation} from "../../agent/lib/legacy-research/workflow-progress";
@@ -49,6 +50,12 @@ it("resolves named customers inside private chat and rechecks grants and owner i
     expect(await withTransaction(db=>resolveCustomerAccount(db,principal,"Named chat fixture B"))).toMatchObject({status:"not_found"});
     expect(await withTransaction(db=>readCustomerAccountEvidence(db,principal,accessible))).toMatchObject({customer:{id:accessible},entries:[]});
     await expect(withTransaction(db=>readCustomerAccountEvidence(db,principal,denied))).rejects.toMatchObject({status:404});
+    await expect(searchNamedCustomerEvidence(principal,denied,
+      {query:'Synthetic',scope:'customer',use:'accepted_fact',limit:5})).rejects.toMatchObject({status:404});
+    const shared=await searchNamedCustomerEvidence(principal,undefined,
+      {query:'Synthetic',scope:'shared',use:'accepted_fact',limit:5});
+    expect(shared.mode).toBe('lexical_degraded');
+
     await expect(withTransaction(db=>resolveCustomerAccount(db,{...principal,principalId:randomUUID()},"Fixture alias"))).rejects.toMatchObject({status:404});
     // New public inventory must not freeze an otherwise authorized conversation.
     await owner.query('UPDATE customer_profile_state SET internal_generation=internal_generation+1,delivery_generation=delivery_generation+1 WHERE customer_id=$1',[accessible]);

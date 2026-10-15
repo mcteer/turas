@@ -1,3 +1,4 @@
+import {searchNamedCustomerEvidence} from '../../lib/server/conversations/named-evidence-search';
 import {isolatedChatActor} from '../fixtures/isolated-chat-actor';
 import {settleSyntheticConversationAttempts} from '../fixtures/ordinary-attempt-cleanup';
 import {lockWorkspaceActor} from "../../lib/server/profiles/policy";
@@ -92,6 +93,33 @@ it('retains new public research for an assigned partner, preserves curated claim
   expect(profile.attributedResearch[0].passage).toContain(newQuote);
   expect(profile.attributedResearch[0].documentDigest).toBe(publicDigest(complete));
   expect(profile.attributedResearch[0].productNames).not.toContain('Sandbox');
+  async function freshSearchConversation(){
+   const key=randomUUID(),fresh=await createOwnedConversation(actor,{requestKey:key});
+   ownedConversationIds.push(fresh.conversation.id);
+   const binding=await claimBinding(actor,fresh.conversation.id,key);
+   if(binding.state!=='claimed')throw Error('Fixture search binding unavailable');
+   const native=`wrun_${randomUUID()}`;
+   await bindNativeSession(actor,fresh.conversation.id,binding.claimToken,native);
+   const attempt=await prepareAttempt(actor,fresh.conversation.id,native,randomUUID(),'Find documented Sandbox evidence');
+   await claimDispatch(actor,fresh.conversation.id,attempt.attemptId,0);
+   return {...fresh,principal:{principalId:actor.principalId,attributes:{turasAttemptId:attempt.attemptId}}};
+  }
+  const fresh=await freshSearchConversation(),searchPrincipal=fresh.principal;
+  const namedSearch=await searchNamedCustomerEvidence(searchPrincipal,customerId,
+    {query:'Sandboxes',scope:'customer',use:'accepted_fact',limit:5});
+  expect(namedSearch.results.some(result=>result.text.includes(late))).toBe(true);
+  expect((await db.query('SELECT customer_id FROM conversations WHERE id=$1',[fresh.conversation.id])).rows[0].customer_id).toBe(null);
+  expect(Number((await db.query('SELECT count(*) FROM session_evidence_dependencies WHERE conversation_id=$1',[fresh.conversation.id])).rows[0].count)).toBeGreaterThan(0);
+  // Two already-authorized reads must not upgrade shared membership locks
+  // while recording consumption for distinct owner-private conversations.
+  const consumers=[new Client({connectionString:process.env.DATABASE_URL}),new Client({connectionString:process.env.DATABASE_URL})];
+  try{
+   await Promise.all(consumers.map(async reader=>{await reader.connect();await reader.query('BEGIN');await lockWorkspaceActor(reader as unknown as PoolClient,actor,undefined,true);}));
+   await Promise.all(consumers.map(async(reader,index)=>{
+    await recordRetrievalConsumption(reader as unknown as PoolClient,actor,namedSearch.receiptId,index?conversation.id:fresh.conversation.id);
+    await reader.query('ROLLBACK');
+   }));
+  }finally{await Promise.all(consumers.map(async reader=>{await reader.query('ROLLBACK').catch(()=>{});await reader.end();}));}
   // A full-document search hit is not yet a curated product finding. Once the
   // researcher selects its actual supporting quote, the profile updates.
   await retain(complete,late,0);
@@ -147,5 +175,7 @@ it('retains new public research for an assigned partner, preserves curated claim
   expect(await researchSourceIsEligible(researchActor,customerId,url)).toBe(false);
   await db.query("UPDATE customer_grants SET state='revoked' WHERE customer_id=$1 AND membership_id=$2",[customerId,actor.membershipId]);
   await expect(readProfile(actor,customerId)).rejects.toMatchObject({status:404});
+  await expect(searchNamedCustomerEvidence(searchPrincipal,customerId,
+    {query:'Sandboxes',scope:'customer',use:'accepted_fact',limit:5})).rejects.toMatchObject({status:404});
  }finally{try{await settleSyntheticConversationAttempts(db,ownedConversationIds);}finally{await db.end();}}
 });

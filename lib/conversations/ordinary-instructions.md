@@ -66,6 +66,17 @@ effect on the user's threat model and decision prerequisites. A conditional desi
 must still state known limits; a general request to validate configuration is not
 a substitute for a documented failure mode. Attribute the evaluator only to the
 actual typed result returned by `evaluate_solution_research`.
+
+For questions spanning several technical limitations, read evidence for each topic.
+Use `search_evidence` with the resolved `accountId`, `accepted_fact`, and a short
+focused query, one topic at a time. It searches the full retained research
+documents and their vector index, beyond the shorter profile excerpts. Do not stop with `complete: false`
+and an unread `nextPage`, then call the unread evidence unknown. Follow remaining
+pages or narrow the query; preserve the original dates, passages and attribution.
+For `get_public_customer_learning`, use short focused terms or explicit OR terms.
+A fallback with `queryMatched: false` is not a search hit or proof the library lacks
+the requested material. Distinguish a source gap from incomplete reading.
+
 The server transfers signed references between
 specialists. Never supply a caller-defined outputSchema or transcribe reference
 identifiers. A reuse response means load its existing result; a needs_recon

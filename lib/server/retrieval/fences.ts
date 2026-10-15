@@ -263,7 +263,7 @@ export async function recordRetrievalConsumption(client: PoolClient, actor: Curr
   const liveNamed=!!attempt && !!await readGeneralAttemptContext(client,attempt.id,actor.principalId);
   if(!selected || !liveNamed && bound.customer_id && selected.customer_id && selected.customer_id!==bound.customer_id)throw hiddenRecord();
   if(!bound.customer_id && !liveNamed && selected.scope!=='shared')throw hiddenRecord();
-  await authorizeRetrievalScope(client,actor,selected.scope,selected.customer_id ?? bound.customer_id);
+  await authorizeRetrievalScope(client,actor,selected.scope,selected.customer_id ?? bound.customer_id,undefined,true);
   const sources = await client.query<Omit<Dependency,"source_digest">>(`
     SELECT s.source_kind,s.source_revision_id,s.source_generation
     FROM retrieval_receipt_sources rs

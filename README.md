@@ -547,5 +547,6 @@ immediately and finishing the previous stream preserves the next unsent draft.
 Evaluation runtime grants preserve operator-only cap, pricing and expiry control.
 
 The latest repair Preview passes actual native-file correction and unsent-draft
-retention checks. Research answer quality and the evidence-search response-size
-fix still need final hosted acceptance; PR 34 remains unmerged.
+retention checks. The evidence-search response-size fix passes actual Preview verification.
+Research answer quality and ordinary-chat full-document search still need final
+hosted acceptance; PR 34 remains unmerged.
