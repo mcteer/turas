@@ -1,3 +1,5 @@
+import {isolatedChatActor} from '../fixtures/isolated-chat-actor';
+import {settleSyntheticConversationAttempts} from '../fixtures/ordinary-attempt-cleanup';
 import {reservedSpecialistInvocation} from "../../agent/lib/legacy-research/workflow-progress";
 import {prepareResearch} from '../../lib/server/research/specialists/research-cache/requests';
 import {requestOwnedTaskCancellation} from '../../lib/server/conversations/cancel';
@@ -8,8 +10,6 @@ import { randomUUID } from "node:crypto";
 import { Client } from "pg";
 import { beforeAll, expect, it } from "vitest";
 import { requireTestDatabaseUrl } from "../fixtures/database";
-import { POST as login } from "../../app/api/auth/login/route";
-import { getCurrentSession } from "../../lib/server/auth/sessions";
 import { withTransaction } from "../../lib/server/db/client";
 import { createOwnedConversation } from "../../lib/server/conversations/repository";
 import { claimBinding, bindNativeSession } from "../../lib/server/conversations/binding";
@@ -17,17 +17,13 @@ import { prepareAttempt, claimDispatch } from "../../lib/server/conversations/di
 import { resolveCustomerAccount, readCustomerAccountEvidence, assertCustomerQuestionReads } from "../../lib/server/conversations/customer-accounts";
 
 const isolatedTestUrl = requireTestDatabaseUrl();
+const ownedConversationIds:string[]=[];
 beforeAll(() => { process.env.DATABASE_URL=isolatedTestUrl; process.env.TURAS_ENVIRONMENT_ID=process.env.TURAS_TEST_ENVIRONMENT_ID; });
 
 it("resolves named customers inside private chat and rechecks grants and owner identity",async()=>{
   const owner=new Client({connectionString:isolatedTestUrl}); await owner.connect();
   try {
-    const origin=process.env.TURAS_APP_ORIGIN!;
-    const response=await login(new Request(`${origin}/api/auth/login`,{method:"POST",
-      headers:{origin,"content-type":"application/json"},body:JSON.stringify({username:"partner",password:process.env.PARTNER_PASSWORD})}));
-    expect(response.status).toBe(200);
-    const actor=await getCurrentSession(new Request(origin,{headers:{cookie:response.headers.get("set-cookie")!.split(";")[0]}}));
-    if(!actor) throw Error("Test identity unavailable");
+    const actor=await isolatedChatActor(owner,'partner','member');
     const accessible=randomUUID(),denied=randomUUID();
     await owner.query(`INSERT INTO customer_references(id,workspace_id,display_name,synthetic)
       VALUES($1,$3,'Named chat fixture A',false),($2,$3,'Named chat fixture B',false)`,[accessible,denied,actor.workspaceId]);
@@ -37,6 +33,7 @@ it("resolves named customers inside private chat and rechecks grants and owner i
       VALUES($1,'Fixture alias','name'),($1,'Fixture storefront','documented_workload')`,[accessible]);
     const operationId=randomUUID();
     const {conversation}=await createOwnedConversation(actor,{requestKey:operationId});
+    ownedConversationIds.push(conversation.id);
     const binding=await claimBinding(actor,conversation.id,operationId);
     if(binding.state!=="claimed")throw Error("Test binding unavailable");
     const nativeId=`wrun_${randomUUID()}`;
@@ -93,5 +90,5 @@ it("resolves named customers inside private chat and rechecks grants and owner i
     await projectNativeEvent(nativeId,attempt.attemptId,event('turn.cancelled',{turnId:backgroundTurn}));
     await owner.query("UPDATE customer_grants SET state='revoked' WHERE customer_id=$1 AND membership_id=$2",[accessible,actor.membershipId]);
     await expect(withTransaction(db=>assertCustomerQuestionReads(db,actor,conversation.id,attempt.attemptId))).rejects.toMatchObject({status:404});
-  } finally {await owner.end();}
+  } finally{try{await settleSyntheticConversationAttempts(owner,ownedConversationIds);}finally{await owner.end();}}
 });

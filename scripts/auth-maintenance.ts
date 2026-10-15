@@ -16,9 +16,20 @@ async function main(): Promise<void> {
       throw new Error("Database environment marker mismatch");
     }
     if (args.length === 1 && args[0] === "--prune") {
+      // Immutable attempts, continuation authorities and later domain receipts
+      // may retain a session independently of the conversation's initial login.
+      // Discover actual FK references so a new audited domain cannot break
+      // pruning or tempt maintenance to discard its authority history.
+      const references=await client.query<{clause:string}>(`SELECT format(
+        'NOT EXISTS (SELECT 1 FROM %I.%I r WHERE r.%I = s.id)',n.nspname,t.relname,a.attname) AS clause
+        FROM pg_constraint fk JOIN pg_class t ON t.oid=fk.conrelid
+        JOIN pg_namespace n ON n.oid=t.relnamespace
+        JOIN pg_attribute a ON a.attrelid=fk.conrelid AND a.attnum=fk.conkey[1]
+        WHERE fk.contype='f' AND fk.confrelid='login_sessions'::regclass
+          AND cardinality(fk.conkey)=1 AND cardinality(fk.confkey)=1`);
       const sessions = await client.query(
         `DELETE FROM login_sessions s WHERE (s.expires_at <= now() OR s.revoked_at IS NOT NULL)
-          AND NOT EXISTS (SELECT 1 FROM conversations c WHERE c.context_login_session_id=s.id)`,
+          ${references.rows.map(row=>'AND '+row.clause).join('\n')}`,
       );
       const windows = await client.query("DELETE FROM rate_windows WHERE expires_at <= now()");
       console.log(`Removed ${sessions.rowCount ?? 0} expired/revoked sessions and ${windows.rowCount ?? 0} expired rate windows`);

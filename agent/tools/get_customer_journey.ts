@@ -3,9 +3,8 @@ import { defineTool } from "eve/tools";
 import { z } from "zod";
 import { withTransaction } from "../../lib/server/db/client";
 import { customerQuestionActor, readCustomerAccountEvidence } from "../../lib/server/conversations/customer-accounts";
-import { searchEvidence } from "../../lib/server/retrieval/search";
+import { searchCustomerJourneyRecords } from "../../lib/server/retrieval/search";
 import { hiddenRecord } from "../../lib/contracts/http";
-import { recordRetrievalConsumption } from "../../lib/server/retrieval/fences";
 import { customerAccountTool } from "../lib/customer-account-tool";
 
 export const authoredTool = defineTool({
@@ -21,20 +20,19 @@ export const authoredTool = defineTool({
       return scope;
     });
     if (query) {
-      const search = await searchEvidence(scope.actor, { scope: "customer",
-        customerId: accountId, query, use: "accepted_fact", limit: 10 });
-      if (search.results.length) {
-        const context = await withTransaction(async db => {
-          const current = await customerQuestionActor(db,ctx.session.auth.current);
-          if (!current.general && current.customerId !== accountId) throw hiddenRecord();
-          const attempt = (await db.query<{conversation_id:string}>(
-            "SELECT conversation_id FROM response_attempts WHERE id=$1",[current.attemptId])).rows[0];
-          if (!attempt) throw hiddenRecord();
-          await recordRetrievalConsumption(db,current.actor,search.receiptId,attempt.conversation_id);
-          return readCustomerAccountEvidence(db,ctx.session.auth.current,accountId,{journeyOnly:true,offset:offset??(page-1)*20,citationIds:[...new Set(search.results.filter(hit=>hit.sourceKind==='accepted_profile').map(hit=>hit.sourceRevisionId))]});
+      const start=offset??(page-1)*20;
+      const search=await searchCustomerJourneyRecords(scope.actor,accountId,query,start,ctx.abortSignal);
+      if(search.ids.length){
+        const context=await withTransaction(async db=>{
+          const current=await customerQuestionActor(db,ctx.session.auth.current);
+          if(!current.general&&current.customerId!==accountId)throw hiddenRecord();
+          return readCustomerAccountEvidence(db,ctx.session.auth.current,accountId,{journeyOnly:true,offset:0,citationIds:search.ids});
         });
-        return { ...context,records:journeyRecords(context.entries,accountId), retrieval: search.mode, search,
-          reason: "Search passages are cited authorized evidence. Journey records are the current approved records matched by this search; public research passages remain separately attributed search evidence." };
+        const packed=context as typeof context&{nextOffset?:number|null;moreAvailable?:boolean};
+        const nextOffset=packed.nextOffset!=null?start+packed.nextOffset:search.nextOffset;
+        return {...context,records:journeyRecords(context.entries,accountId),memory:search.memory,retrieval:search.retrieval,
+          offset:start,nextOffset,moreAvailable:nextOffset!==null,
+          reason:'These are current approved journey records matched by the original record-based keyword/hybrid ranking. Reviewed human claims are not independently verified facts. Preserve dates, confidence, measurement basis and limitations.'};
       }
     }
     const context = await withTransaction(db => readCustomerAccountEvidence(db,

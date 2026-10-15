@@ -1,11 +1,12 @@
+import {isolatedChatActor} from '../fixtures/isolated-chat-actor';
+import {settleSyntheticConversationAttempts} from '../fixtures/ordinary-attempt-cleanup';
 import {ownedInputResponseAttempt,authorizeOwnedInputResponse} from "../../lib/server/conversations/input-responses";
 import {refreshOrdinaryKnowledge} from '../../lib/server/conversations/current-knowledge';
 import {randomUUID} from 'node:crypto';
 import {Client} from 'pg';
 import {beforeAll,expect,it} from 'vitest';
 import {requireTestDatabaseUrl} from '../fixtures/database';
-import {POST as login} from '../../app/api/auth/login/route';
-import {getCurrentSession,type CurrentSession} from '../../lib/server/auth/sessions';
+import type {CurrentSession} from '../../lib/server/auth/sessions';
 import {withTransaction} from '../../lib/server/db/client';
 import {createOwnedConversation,getOwnedConversation} from '../../lib/server/conversations/repository';
 import {claimBinding,bindNativeSession} from '../../lib/server/conversations/binding';
@@ -17,14 +18,17 @@ import {boundToolActor} from '../../lib/server/profiles/tool-actor';
 import {requestOwnedTaskCancellation,settleInactiveOwnedCancellation} from '../../lib/server/conversations/cancel';
 import {wrapOrdinaryChatModel} from '../../lib/server/conversations/model-budget';
 const isolatedTestUrl=requireTestDatabaseUrl();
+const ownedConversationIds:string[]=[];
 beforeAll(()=>{const runtime=new URL(isolatedTestUrl);runtime.searchParams.set('options','-c role=turas_runtime');process.env.DATABASE_URL=runtime.toString();process.env.TURAS_ENVIRONMENT_ID=process.env.TURAS_TEST_ENVIRONMENT_ID;});
-async function signIn():Promise<CurrentSession>{const origin=process.env.TURAS_APP_ORIGIN!;const response=await login(new Request(`${origin}/api/auth/login`,{method:'POST',headers:{origin,'content-type':'application/json'},body:JSON.stringify({username:'partner',password:process.env.PARTNER_PASSWORD})}));const actor=await getCurrentSession(new Request(origin,{headers:{cookie:response.headers.get('set-cookie')!.split(';')[0]}}));if(!actor)throw Error('Fixture identity unavailable');return actor;}
+let priorActor:CurrentSession|undefined;
+async function signIn():Promise<CurrentSession>{const db=new Client({connectionString:isolatedTestUrl});await db.connect();try{priorActor=await isolatedChatActor(db,'partner','member',undefined,priorActor);return priorActor;}finally{await db.end();}}
 it('uses customer selection as initial context, continues after new knowledge and login, and protects previously read customer access',async()=>{
  const db=new Client({connectionString:isolatedTestUrl});await db.connect();try{
   const original=await signIn(),a=randomUUID(),b=randomUUID();
   await db.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$3,'Live fixture A',false),($2,$3,'Live fixture B',false)",[a,b,original.workspaceId]);
   for(const customer of [a,b])await db.query("INSERT INTO customer_grants(id,workspace_id,customer_id,membership_id,state,revision,granted_by) VALUES($1,$2,$3,$4,'active',1,$5)",[randomUUID(),original.workspaceId,customer,original.membershipId,original.principalId]);
   const key=randomUUID(),{conversation}=await createOwnedConversation(original,{requestKey:key,customerId:a});
+  ownedConversationIds.push(conversation.id);
   const binding=await claimBinding(original,conversation.id,key);if(binding.state!=='claimed')throw Error('Fixture binding unavailable');
   const native=`wrun_${randomUUID()}`;await bindNativeSession(original,conversation.id,binding.claimToken,native);
   await db.query("INSERT INTO maintenance_workers(environment_id,worker_id,last_seen_at) VALUES($1,'live-chat-fixture',now()) ON CONFLICT(environment_id,worker_id) DO UPDATE SET last_seen_at=now()",[process.env.TURAS_ENVIRONMENT_ID]);
@@ -103,5 +107,5 @@ it('uses customer selection as initial context, continues after new knowledge an
   expect((await db.query('SELECT state FROM watchdog_jobs WHERE attempt_id=$1',[cancelled.attemptId])).rows[0].state).toBe('settled');
   await db.query("UPDATE customer_grants SET state='revoked' WHERE customer_id=$1 AND membership_id=$2",[b,fresh.membershipId]);
   await expect(getOwnedConversation(fresh,conversation.id)).rejects.toMatchObject({status:404});
- }finally{await db.end();}
+ }finally{try{await settleSyntheticConversationAttempts(db,ownedConversationIds);}finally{await db.end();}}
 });

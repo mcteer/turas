@@ -12,7 +12,7 @@ import { claimBinding } from "../../lib/server/conversations/binding";
 import { assertNativeContextCurrent, releaseNativeChunk } from "../../lib/server/conversations/context-fence";
 import { guardNativeStream } from "../../lib/server/conversations/stream";
 
-describe("attempt-bound customer context", () => {
+describe("legacy snapshot-bound customer context", () => {
   it("blocks native chunk release from a changed or expired conversation", async () => {
     const previousEnvironment = process.env.TURAS_ENVIRONMENT_ID;
     const previousUrl = process.env.DATABASE_URL;
@@ -41,7 +41,7 @@ describe("attempt-bound customer context", () => {
       originalGeneration = await db(async (client) => {
         const state = await client.query<{ internal_generation: string }>(
           "SELECT internal_generation FROM customer_profile_state WHERE customer_id=$1", [customerId]);
-        await client.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2 WHERE id=$1",
+        await client.query("UPDATE conversations SET live_customer_context=false,binding_state='bound',eve_session_id=$2 WHERE id=$1",
           [conversationId, nativeId]);
         return state.rows[0].internal_generation;
       });
@@ -85,7 +85,7 @@ describe("attempt-bound customer context", () => {
       partnerConversationId = partnerConversation.conversation.id;
       const partnerNativeId = `wrun_${randomUUID().replaceAll("-", "")}`;
       await db((client) => client.query(
-        "UPDATE conversations SET binding_state='bound',eve_session_id=$2 WHERE id=$1",
+        "UPDATE conversations SET live_customer_context=false,binding_state='bound',eve_session_id=$2 WHERE id=$1",
         [partnerConversationId, partnerNativeId]));
       await releaseNativeChunk(partner, partnerNativeId, () => { released += 1; });
       expect(released).toBe(2);
@@ -126,6 +126,8 @@ describe("attempt-bound customer context", () => {
         const first = await createOwnedConversation(oldSession,
           { customerId: DEMO_IDS.sharedCustomer, requestKey: firstKey,
             title: "Synthetic previous context" });
+        // A persisted pre-064 conversation retains its original snapshot contract.
+        await client.query("UPDATE conversations SET live_customer_context=false WHERE id=$1",[first.conversation.id]);
         const newerSession = await createProfileTestSession(client, "panel");
         let secondId: string | undefined;
         try {
@@ -342,6 +344,7 @@ describe("attempt-bound customer context", () => {
         const created = await createOwnedConversation(actor, { customerId: DEMO_IDS.sharedCustomer,
           requestKey: randomUUID(), title: "Synthetic generated-looking title" });
         const id = created.conversation.id;
+        await client.query("UPDATE conversations SET live_customer_context=false WHERE id=$1",[id]);
         const initial = await client.query<{ internal_generation: string }>(
           "SELECT internal_generation FROM customer_profile_state WHERE customer_id=$1",
           [DEMO_IDS.sharedCustomer]);

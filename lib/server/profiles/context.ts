@@ -37,7 +37,7 @@ export async function readEligibleContext(actor: ProfileActor, customerId: strin
   if (!Number.isInteger(limit) || limit < 1 || limit > 20 ||
       !Number.isInteger(page) || page < 1 || page > 10 ||
       (options.offset!==undefined&&(!options.journeyOnly||!Number.isInteger(options.offset)||options.offset<0||options.offset>100000)) ||
-      (options.citationIds!==undefined&&(!options.journeyOnly||options.citationIds.length>10)) ||
+      (options.citationIds!==undefined&&(!options.journeyOnly||options.citationIds.length>20)) ||
       (options.query?.length ?? 0) > 200) throw new HttpFailure(422, "invalid_query", "Invalid context query");
   const run = async (client: PoolClient) => {
     const profile = await readProfile(actor, customerId, client,options.workloadId,

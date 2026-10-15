@@ -1,3 +1,5 @@
+import {isolatedChatActor} from '../fixtures/isolated-chat-actor';
+import {settleSyntheticConversationAttempts} from '../fixtures/ordinary-attempt-cleanup';
 import {lockWorkspaceActor} from "../../lib/server/profiles/policy";
 import {researchSourceIsEligible} from "../../lib/server/research/specialists/account";
 import {loadResearchContext} from '../../lib/server/research/specialists/solution-research/context';
@@ -16,21 +18,17 @@ import {Client} from 'pg';
 import {z} from 'zod';
 import {beforeAll,expect,it} from 'vitest';
 import {requireTestDatabaseUrl} from '../fixtures/database';
-import {POST as login} from '../../app/api/auth/login/route';
-import {getCurrentSession} from '../../lib/server/auth/sessions';
 import {persistSpecialistCustomerResearch} from '../../lib/server/research/public-persistence';
 import {publicDigest,signCheckedPublicPage,dossierAreas} from '../../lib/server/research/public-dossier';
 import {readProfile} from '../../lib/server/profiles/read';
 const isolatedTestUrl=requireTestDatabaseUrl();
+const ownedConversationIds:string[]=[];
 const withRuntime=<T>(run:(db:PoolClient)=>Promise<T>)=>withTransaction(async db=>{await db.query('SET LOCAL ROLE turas_runtime');return run(db);});
 beforeAll(()=>{const runtime=new URL(isolatedTestUrl);runtime.searchParams.set('options','-c role=turas_runtime');process.env.DATABASE_URL=runtime.href;process.env.DATABASE_URL_UNPOOLED=runtime.href;process.env.TURAS_ENVIRONMENT_ID=process.env.TURAS_TEST_ENVIRONMENT_ID;});
 it('retains new public research for an assigned partner, preserves curated claims on recheck, and indexes late document evidence',async()=>{
  const db=new Client({connectionString:isolatedTestUrl});await db.connect();
  try {
-  const origin=process.env.TURAS_APP_ORIGIN!;
-  const response=await login(new Request(`${origin}/api/auth/login`,{method:'POST',headers:{origin,'content-type':'application/json'},body:JSON.stringify({username:'partner',password:process.env.PARTNER_PASSWORD})}));
-  const currentActor=await getCurrentSession(new Request(origin,{headers:{cookie:response.headers.get('set-cookie')!.split(';')[0]}}));if(!currentActor)throw Error('Fixture login unavailable');
-  const actor=currentActor;
+  const actor=await isolatedChatActor(db,'partner','member');
   const customerId=randomUUID(),name=`Parity Fixture ${customerId}`;
   await db.query('INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,$3,false)',[customerId,actor.workspaceId,name]);
   await db.query(`INSERT INTO customer_grants(id,workspace_id,customer_id,membership_id,state,revision,granted_by) VALUES($1,$2,$3,$4,'active',1,$5)`,[randomUUID(),actor.workspaceId,customerId,actor.membershipId,actor.principalId]);
@@ -48,6 +46,7 @@ it('retains new public research for an assigned partner, preserves curated claim
   }
   await retain(originalQuote,originalQuote,10000);
   const key=randomUUID(),{conversation}=await createOwnedConversation(actor,{requestKey:key});
+  ownedConversationIds.push(conversation.id);
   const binding=await claimBinding(actor,conversation.id,key);if(binding.state!=='claimed')throw Error('Fixture binding unavailable');
   const native=`wrun_${randomUUID()}`;await bindNativeSession(actor,conversation.id,binding.claimToken,native);
   await db.query("INSERT INTO maintenance_workers(environment_id,worker_id,last_seen_at) VALUES($1,'source-refresh-fixture',now()) ON CONFLICT(environment_id,worker_id) DO UPDATE SET last_seen_at=now()",[process.env.TURAS_ENVIRONMENT_ID]);
@@ -137,5 +136,5 @@ it('retains new public research for an assigned partner, preserves curated claim
   expect(await researchSourceIsEligible(researchActor,customerId,url)).toBe(false);
   await db.query("UPDATE customer_grants SET state='revoked' WHERE customer_id=$1 AND membership_id=$2",[customerId,actor.membershipId]);
   await expect(readProfile(actor,customerId)).rejects.toMatchObject({status:404});
- }finally{await db.end();}
+ }finally{try{await settleSyntheticConversationAttempts(db,ownedConversationIds);}finally{await db.end();}}
 });

@@ -1,3 +1,4 @@
+import {settleSyntheticConversationAttempts} from '../fixtures/ordinary-attempt-cleanup';
 import {randomUUID} from 'node:crypto';
 import {Client} from 'pg';
 import {beforeAll,expect,it} from 'vitest';
@@ -30,7 +31,7 @@ it('keeps a late prior-turn cancellation attached to its original attempt and ne
   expect((await f.db.query('SELECT response_state FROM response_attempts WHERE id=$1',[next.attemptId])).rows[0].response_state).toBe('stopping');
   await projectNativeEvent(f.native,next.attemptId,event('turn.cancelled',{turnId:nextTurn}));
   expect((await f.db.query('SELECT response_state FROM response_attempts WHERE id=$1',[next.attemptId])).rows[0].response_state).toBe('cancelled');
- }finally{await f.db.end();}
+ }finally{try{await settleSyntheticConversationAttempts(f.db,[f.conversation.id]);}finally{await f.db.end();}}
 });
 
 async function fixture(){
@@ -91,7 +92,7 @@ it.each(['same','new'] as const)('keeps a %s-turn correction owner-bound, dedupl
   await projectNativeEvent(f.native,f.attemptId,event('turn.completed',{turnId:turn}));
   expect((await f.db.query('SELECT response_state,deadline_at FROM response_attempts WHERE id=$1',[f.attemptId])).rows[0]).toMatchObject({response_state:'completed',deadline_at:f.dispatch.deadlineAt});
   expect(await prepareOrdinarySteering(f.actor,f.conversation.id,f.native,randomUUID(),'A genuinely new follow-up')).toBeNull();
- }finally{await f.db.end();}
+ }finally{try{await settleSyntheticConversationAttempts(f.db,[f.conversation.id]);}finally{await f.db.end();}}
 });
 
 it('settles a raced original completion only after an actual pre-admission rejection receipt',async()=>{
@@ -103,7 +104,7 @@ it('settles a raced original completion only after an actual pre-admission rejec
   expect((await f.db.query('SELECT response_state FROM response_attempts WHERE id=$1',[f.attemptId])).rows[0].response_state).toBe('completed');
   expect((await f.db.query('SELECT state FROM watchdog_jobs WHERE attempt_id=$1',[f.attemptId])).rows[0].state).toBe('settled');
   const retry=await prepareOrdinarySteering(f.actor,f.conversation.id,f.native,key,text);expect(retry?.kind).toBe('replay');if(retry?.kind==='replay')expect(retry.response.status).toBe(409);
- }finally{await f.db.end();}
+ }finally{try{await settleSyntheticConversationAttempts(f.db,[f.conversation.id]);}finally{await f.db.end();}}
 });
 
 it('keeps interrupted provider holds inside the existing 20,000-token conversation allowance',async()=>{
@@ -120,7 +121,7 @@ it('keeps interrupted provider holds inside the existing 20,000-token conversati
   expect((await f.db.query('SELECT actual_tokens FROM ordinary_model_operations WHERE id=$1',[held[0].id])).rows[0].actual_tokens).toBe(10);
   const privilege=(await f.db.query("SELECT has_table_privilege('turas_runtime','ordinary_model_operations','DELETE') AS can_delete,has_column_privilege('turas_runtime','ordinary_model_operations','ceiling_tokens','UPDATE') AS can_reset")).rows[0];
   expect(privilege).toEqual({can_delete:false,can_reset:false});
- }finally{await f.db.end();}
+ }finally{try{await settleSyntheticConversationAttempts(f.db,[f.conversation.id]);}finally{await f.db.end();}}
 });
 
 it('serializes concurrent provider reservations without overspending the conversation allowance',async()=>{
@@ -133,7 +134,7 @@ it('serializes concurrent provider reservations without overspending the convers
   expect(admitted.reduce((sum,result)=>sum+result.value.ceiling,0)).toBe(20000);
   const held=(await f.db.query('SELECT sum(ceiling_tokens)::int AS tokens,count(*)::int AS operations FROM ordinary_model_operations WHERE conversation_id=$1',[f.conversation.id])).rows[0];
   expect(held).toEqual({tokens:20000,operations:3});
- }finally{await f.db.end();}
+ }finally{try{await settleSyntheticConversationAttempts(f.db,[f.conversation.id]);}finally{await f.db.end();}}
 });
 
 it('blocks provider I/O and new corrections after cancellation starts',async()=>{
@@ -145,7 +146,7 @@ it('blocks provider I/O and new corrections after cancellation starts',async()=>
   expect(calls).toBe(0);
   await expect(prepareOrdinarySteering(f.actor,f.conversation.id,f.native,randomUUID(),'A late correction')).rejects.toBeDefined();
   expect((await f.db.query('SELECT count(*)::int AS n FROM ordinary_model_operations WHERE conversation_id=$1',[f.conversation.id])).rows[0].n).toBe(0);
- }finally{await f.db.end();}
+ }finally{try{await settleSyntheticConversationAttempts(f.db,[f.conversation.id]);}finally{await f.db.end();}}
 });
 
 it('requires the current owner and CSRF before closing ordinary admission for native retirement',async()=>{
@@ -162,5 +163,5 @@ it('requires the current owner and CSRF before closing ordinary admission for na
   expect((await f.db.query('SELECT response_state FROM response_attempts WHERE id=$1',[f.attemptId])).rows[0].response_state).toBe('running');
   expect(await authorizeOwnedOrdinaryRetirement(request(csrf),f.native)).toBe(f.actor.principalId);
   expect((await f.db.query('SELECT response_state FROM response_attempts WHERE id=$1',[f.attemptId])).rows[0].response_state).toBe('stopping');
- }finally{await f.db.end();}
+ }finally{try{await settleSyntheticConversationAttempts(f.db,[f.conversation.id]);}finally{await f.db.end();}}
 });

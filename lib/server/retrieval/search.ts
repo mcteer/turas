@@ -136,6 +136,56 @@ export async function retrievalSourceHasMaterialConflict(client: PoolClient,
   return Boolean(profile.rowCount);
 }
 
+/** Legacy journey ranking is over approved records, not the ten-passage UI
+ * response. Keep its 200-candidate/21-ID lookahead and RRF-60 calculation while
+ * using the canonical authorization, current-source and embedding layers. */
+export async function searchCustomerJourneyRecords(actor:CurrentSession,customerId:string,query:string,offset:number,signal:AbortSignal){
+  const input=retrievalSearchSchema.parse({scope:'customer',customerId,query,use:'accepted_fact',limit:10});
+  if(!Number.isInteger(offset)||offset<0||offset>100000)throw new HttpFailure(422,'invalid_query','Invalid journey offset');
+  if(activeSearches>=retrievalLimits.activePerEnvironment)throw new HttpFailure(429,'rate_limited','Retrieval busy');
+  activeSearches++;
+  try{
+    signal.throwIfAborted();
+    await withTransaction(async db=>{await authorizeRetrievalScope(db,actor,'customer',customerId);await rateLimit(db,actor);});
+    let vector:number[]|null=null,memory:'not_configured'|'available'|'unavailable'=process.env.AI_GATEWAY_API_KEY?'unavailable':'not_configured';
+    try{vector=(await embedRetrievalTexts([query]))[0];memory='available';}catch{signal.throwIfAborted();recordRetrievalMetric('lexical_degraded_count',1);}
+    signal.throwIfAborted();
+    const ids=await withTransaction(async db=>{
+      // Legacy keyword retrieval reads current approved records immediately;
+      // an asynchronous embedding/index job must not make them disappear.
+      const {readProfile}=await import('../profiles/read');
+      const profile=await readProfile(actor,customerId,db,undefined,undefined,false,true) as {acceptedFacts:Array<{id:string;supportStatus:string;payload:Record<string,unknown>}>};
+      const ids:string[]=[];
+      for(const fact of profile.acceptedFacts)if(['settled','restricted_source'].includes(fact.supportStatus)&&fact.payload.legacyJourney&&
+        !await retrievalSourceHasMaterialConflict(db,{source_kind:'accepted_profile',source_revision_id:fact.id},actor,input))ids.push(fact.id);
+      if(!ids.length)return [];
+      const sources=(await eligibleSources(db,actor,input)).filter(source=>source.source_kind==='accepted_profile'&&ids.includes(source.source_revision_id));
+      await db.query("SET LOCAL statement_timeout='2000ms'");
+      const ranked=await db.query<{id:string}>(`WITH current AS MATERIALIZED(
+        SELECT id,payload->'legacyJourney' AS context FROM profile_revisions
+        WHERE id=ANY($1::uuid[]) AND payload?'legacyJourney'
+      ),text_hits AS(
+        SELECT id,row_number() OVER(ORDER BY ts_rank_cd(to_tsvector('english',context::text),websearch_to_tsquery('english',$2)) DESC,id) AS rank
+        FROM current WHERE to_tsvector('english',context::text)@@websearch_to_tsquery('english',$2)
+        ORDER BY rank LIMIT 200
+      ),vector_hits AS(
+        SELECT id,row_number() OVER(ORDER BY distance,id) AS rank FROM(
+          SELECT c.id,min(p.embedding<=>$3::public.vector) AS distance FROM current c
+          JOIN retrieval_sources s ON s.source_revision_id=c.id AND s.id=ANY($4::uuid[])
+          JOIN retrieval_passages p ON p.source_id=s.id
+          WHERE $3::text IS NOT NULL AND p.embedding_state='ready' AND p.embedding_contract='embedding-v1'
+          GROUP BY c.id HAVING min(p.embedding<=>$3::public.vector)<=0.75
+          ORDER BY distance,c.id LIMIT 200
+        ) ranked
+      ) SELECT coalesce(t.id,v.id) AS id FROM text_hits t FULL JOIN vector_hits v ON v.id=t.id
+        ORDER BY coalesce(1.0/(60+t.rank),0)+coalesce(1.0/(60+v.rank),0) DESC,coalesce(t.id,v.id)
+        LIMIT 21 OFFSET $5`,[ids,query,vector?JSON.stringify(vector):null,sources.map(source=>source.id),offset]);
+      signal.throwIfAborted();return ranked.rows.map(row=>row.id);
+    });
+    return {ids:ids.slice(0,20),nextOffset:ids.length>20?offset+20:null,moreAvailable:ids.length>20,memory,retrieval:vector?'hybrid' as const:'keyword' as const};
+  }finally{activeSearches--;}
+}
+
 export async function searchEvidence(actor: CurrentSession, raw: unknown,
   effective?:{audience:"internal"|"delivery";workloadId:string|null;lexicalOnly?:boolean}) {
   const parsed = retrievalSearchSchema.safeParse(raw);

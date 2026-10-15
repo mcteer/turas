@@ -207,13 +207,16 @@ export async function createOwnedConversation(
     const audience = session.kind === "internal" ? "internal" : "delivery";
     const generation = audience === "internal" ? contextState.rows[0].internal_generation :
       contextState.rows[0].delivery_generation;
+    const schema=Number((await client.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',
+      [getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0]?.schema_version??0);
+    const live=schema>=64;
     const id = randomUUID();
     const inserted = await client.query<ConversationRow>(`
       INSERT INTO conversations
         (id, environment_id, workspace_id, customer_id, owner_principal_id,
          creation_operation_id, binding_state, title, context_audience,
-         context_generation,context_snapshot_schema,context_login_session_id,context_membership_id,live_customer_context)
-      VALUES ($1,$2,$3,$4,$5,$6,'unbound',$7,$8,$9,'customer-context-v1',$10,$11,true)
+         context_generation,context_snapshot_schema,context_login_session_id,context_membership_id${live?',live_customer_context':''})
+      VALUES ($1,$2,$3,$4,$5,$6,'unbound',$7,$8,$9,'customer-context-v1',$10,$11${live?',true':''})
       ON CONFLICT (creation_operation_id) DO NOTHING
       RETURNING *
     `, [id, getServerConfig().TURAS_ENVIRONMENT_ID, session.workspaceId,

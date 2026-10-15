@@ -11,6 +11,7 @@ import {fitDimensions} from '../../lib/contracts/solution-patterns';
 import {readEligibleContext} from '../../lib/server/profiles/context';
 import {withTransaction} from '../../lib/server/db/client';
 import {journeyRecords} from '../../lib/profiles/journey';
+import {searchCustomerJourneyRecords} from '../../lib/server/retrieval/search';
 const isolatedTestUrl=requireTestDatabaseUrl();
 beforeAll(()=>{process.env.DATABASE_URL=isolatedTestUrl;process.env.TURAS_ENVIRONMENT_ID=process.env.TURAS_TEST_ENVIRONMENT_ID;});
 async function actor(username:string,password:string):Promise<CurrentSession>{
@@ -42,6 +43,20 @@ it('retains complete reviewed patterns and target fit, invalidates withdrawn sou
   expect(journeyRecords(journeyPage.entries,customerId)).toEqual([expect.objectContaining({id:proposed.revisionId,rootId:proposed.recordId,stale:false,delta:{absolute:20,percent:100,improving:true,targetReached:false},citation:`/customers/${customerId}`})]);
   const matched=await readEligibleContext(admin,customerId,{journeyOnly:true,offset:0,citationIds:[proposed.revisionId]}) as {entries:Parameters<typeof journeyRecords>[0]};
   expect(journeyRecords(matched.entries).map(record=>record.id)).toEqual([proposed.revisionId]);
+  const rankedIds:string[]=[];
+  for(let i=0;i<25;i++){
+   const summary=`Quasar journal pagination synthetic observation ${i}.`;
+   const record=await submitProfileCommand(author,customerId,{action:'propose_record',requestKey:randomUUID(),requestedAudience:'delivery',dataCategory:'delivery_context',payload:{kind:'claim',text:summary,sourceType:'manual',legacyJourney:{...journey,summary,observedAt:'2026-09-15',impact:null}}}) as {revisionId:string};
+   const row=(await db.query('SELECT v.content_digest,r.version FROM profile_revisions v JOIN profile_records r ON r.id=v.record_id WHERE v.id=$1',[record.revisionId])).rows[0];
+   await submitProfileCommand(admin,customerId,{action:'accept_revision',requestKey:randomUUID(),revisionId:record.revisionId,digest:row.content_digest,expectedRecordVersion:Number(row.version),expectedAcceptedRevisionId:null,rationale:'Reviewed exact synthetic pagination observation.'});rankedIds.push(record.revisionId);
+  }
+  await submitProfileCommand(author,customerId,{action:'propose_record',requestKey:randomUUID(),requestedAudience:'delivery',dataCategory:'delivery_context',payload:{kind:'claim',text:'Quasar pending synthetic observation.',sourceType:'manual',legacyJourney:{...journey,summary:'Quasar pending synthetic observation.',impact:null}}});
+  const signal=new AbortController().signal;
+  const first=await searchCustomerJourneyRecords(admin,customerId,'quasar',0,signal),second=await searchCustomerJourneyRecords(admin,customerId,'quasar',20,signal);
+  expect(first).toMatchObject({retrieval:'keyword',memory:'not_configured',nextOffset:20,moreAvailable:true});expect(first.ids).toHaveLength(20);
+  expect(second).toMatchObject({nextOffset:null,moreAvailable:false});expect(second.ids).toHaveLength(5);
+  expect([...first.ids,...second.ids].sort()).toEqual(rankedIds.sort());
+  await expect(searchCustomerJourneyRecords({...admin,workspaceId:randomUUID()},customerId,'quasar',0,signal)).rejects.toMatchObject({status:401});
   const paragraph='A bounded isolated execution workflow with explicit operating ownership.';
   const pattern={title:'Isolated execution handoff',problem:paragraph,prerequisites:paragraph,approach:paragraph,delivery:paragraph,processAndAdoption:paragraph,limitations:paragraph,alternatives:paragraph,lessons:paragraph,outcome:{basis:'measured' as const,description:paragraph,measurementLimits:'Only a bounded pilot with a reviewed baseline was measured.'},reviewAfter:'2026-12-01'};
   const command={action:'publish' as const,patternId:randomUUID(),expectedVersion:0,requestId:randomUUID(),rationale:'Reviewed the complete generalized synthetic derivative.',sourceRecordId:proposed.revisionId,pattern,attestation:{generalizedContentReviewed:true as const,workspaceReuseApproved:true as const,outcomeBasisVerified:true as const}};

@@ -87,6 +87,8 @@ describe("conversation persistence invariants", () => {
     const { conversation } = await createOwnedConversation(session,
       { customerId: DEMO_IDS.sharedCustomer, requestKey: key });
     createdIds.push(conversation.id);
+    // These persistence invariants exercise a pre-064 snapshot conversation.
+    await withTestDatabase(client=>client.query("UPDATE conversations SET live_customer_context=false WHERE id=$1",[conversation.id]));
     const start = new Date();
     const first = await claimBinding(session, conversation.id, key, start);
     expect(first.state).toBe("claimed");
@@ -118,6 +120,8 @@ describe("conversation persistence invariants", () => {
     const { conversation } = await createOwnedConversation(session,
       { customerId: DEMO_IDS.sharedCustomer, requestKey: randomUUID() });
     createdIds.push(conversation.id);
+    // These persistence invariants exercise a pre-064 snapshot conversation.
+    await withTestDatabase(client=>client.query("UPDATE conversations SET live_customer_context=false WHERE id=$1",[conversation.id]));
     const claim = await claimBinding(session, conversation.id, (await withTestDatabase(async (client) =>
       (await client.query<{ creation_operation_id: string }>("SELECT creation_operation_id FROM conversations WHERE id = $1",
         [conversation.id])).rows[0].creation_operation_id)));
@@ -281,6 +285,8 @@ describe("conversation persistence invariants", () => {
     const { conversation } = await createOwnedConversation(session,
       { customerId: DEMO_IDS.sharedCustomer, requestKey: operationId });
     createdIds.push(conversation.id);
+    // These persistence invariants exercise a pre-064 snapshot conversation.
+    await withTestDatabase(client=>client.query("UPDATE conversations SET live_customer_context=false WHERE id=$1",[conversation.id]));
     const binding = await claimBinding(session, conversation.id, operationId);
     if (binding.state !== "claimed") throw new Error("Binding fixture failed");
     const nativeId = `wrun_${randomUUID()}`;

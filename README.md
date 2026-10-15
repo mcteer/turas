@@ -63,6 +63,9 @@ The root Grok model is unchanged. Legacy ordinary-chat guidance is scoped to nor
 turns so governed learning keeps its original input ceiling; all 16 unpaid real
 Eve learning fixture arms pass. New extraction jobs and retries bind parser policy
 v2; actual scanner/parser/review/execution-journey checks pass locally.
+Journey search retains record-based ranking and 20-record paging. Frozen-source
+local learning and partner recovery rehearsals pass; runtime retention preserves
+the payload UPDATE denial. Hosted verification and CI completion remain open.
 
 Customer Overview appears immediately below the customer heading, above workload controls.
 Search the Customer Profiles directory and open profiles directly from customer

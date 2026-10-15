@@ -58,6 +58,10 @@ describe("bounded retrieval receipt retention",() => {
             VALUES(gen_random_uuid(),$1,'query','old-dispatched-embedding','dispatched',
               'embedding-v1','synthetic',1536,10,
               now()-interval '31 days',now()-interval '31 days')`,[environment]);
+          // Payloads are append-only to runtime. SELECT FOR UPDATE requires an
+          // UPDATE grant even when the intended maintenance operation is DELETE.
+          await client.query("SET LOCAL ROLE turas_runtime");
+          expect((await client.query("SELECT has_table_privilege(current_user,'research_observation_payloads','UPDATE') AS allowed")).rows[0].allowed).toBe(false);
           await runRetrievalCleanupTick(client);
           const remaining = async () => Number((await client.query<{ count: string }>(`
             SELECT count(*)::text AS count FROM retrieval_embedding_operations

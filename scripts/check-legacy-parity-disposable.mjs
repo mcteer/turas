@@ -51,11 +51,12 @@ try {
     TURAS_TEST_DATABASE_URL:url,TURAS_TEST_ENVIRONMENT_ID:environment.TURAS_ENVIRONMENT_ID};
   if(!process.argv.includes("--native-only"))run(["node_modules/vitest/vitest.mjs","run","tests/integration/named-customer-chat.test.ts",
     "tests/integration/general-chat.test.ts","tests/integration/legacy-research-transactions.test.ts",
-    "tests/integration/parity-evaluation-budget.test.ts","tests/integration/specialist-profile-persistence.test.ts","tests/integration/legacy-knowledge-mechanics.test.ts","tests/integration/live-customer-chat.test.ts","tests/integration/ordinary-steering.test.ts","tests/integration/legacy-document-formats.test.ts","tests/integration/research-maintenance.test.ts","tests/integration/public-customer-inventory.test.ts"],integrationEnvironment);
+    "tests/integration/parity-evaluation-budget.test.ts","tests/integration/specialist-profile-persistence.test.ts","tests/integration/legacy-knowledge-mechanics.test.ts","tests/integration/live-customer-chat.test.ts","tests/integration/ordinary-steering.test.ts","tests/integration/legacy-document-formats.test.ts","tests/integration/research-maintenance.test.ts","tests/integration/retrieval-retention.test.ts","tests/integration/public-customer-inventory.test.ts"],integrationEnvironment);
   // Route contracts read DATABASE_URL directly; they do not use the integration
   // fixture's explicit test-database selector.
   const contractUrl=new URL(url);contractUrl.searchParams.set('options','-c role=turas_runtime');
   if(!process.argv.includes("--native-only"))run(["node_modules/vitest/vitest.mjs","run","tests/contracts/general-chat.test.ts"],{...environment,DATABASE_URL:contractUrl.toString(),DATABASE_URL_UNPOOLED:contractUrl.toString()});
+  if(process.argv.includes('--earlier-regressions'))run(['--import','tsx','scripts/test-staffing-regressions.ts'],integrationEnvironment);
   if(process.argv.includes('--artifact-journey'))run(['--import','tsx','scripts/check-legacy-artifact-publication.ts'],integrationEnvironment);
   if(process.argv.includes('--native')||process.argv.includes('--native-only'))run(['--import','tsx','scripts/check-ordinary-chat-native.ts'],integrationEnvironment);
   console.log("Disposable migrations, runtime grants and chat, source-persistence, transaction and budget checks passed");

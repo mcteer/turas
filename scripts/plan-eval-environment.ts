@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { spawn,spawnSync,type ChildProcess } from "node:child_process";
-import { mkdir,mkdtemp,rm,symlink,writeFile,readdir,readlink } from "node:fs/promises";
+import { mkdir,mkdtemp,rm,symlink,writeFile,readdir,readlink,readFile,realpath,lstat } from "node:fs/promises";
 import {mkdirSync,writeFileSync,readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import { reserveOwnedEvalPort } from "./eval-port";
@@ -198,6 +198,18 @@ export async function withPlanEvalEnvironment<T>(
     const testStore = process.env.TURAS_TEST_ARTIFACT_STORE_ROOT;
     if (testStore) {
       copyOwnedEvalFiles(testStore,storeRoot,{deadlineAt:options.deadlineAt});
+    }else if(process.env.TURAS_ARTIFACT_STORE_ROOT){
+      // Nested owned regression clones inherit public runtime assets, never
+      // originals or app payloads from a configured application store.
+      const sourceStore=process.env.TURAS_ARTIFACT_STORE_ROOT;
+      const sourcePath=await realpath(sourceStore).catch(()=>null),ownedRoot=await realpath(resolve('local-artifacts'));
+      if(sourcePath?.startsWith(ownedRoot+'/')&&!(await lstat(sourceStore)).isSymbolicLink()){
+        const marker=JSON.parse(await readFile(join(sourceStore,'.turas-artifact-store.json'),'utf8'));
+        if(marker.environmentId===process.env.TURAS_ENVIRONMENT_ID&&String(marker.environmentId).startsWith('test-')){
+          for(const component of ['runtime-images.json','signatures','assets'])if(await lstat(join(sourceStore,component)).catch(()=>null))
+            copyOwnedEvalFiles(join(sourceStore,component),join(storeRoot,component),{deadlineAt:options.deadlineAt});
+        }
+      }
     }
     await writeFile(join(storeRoot,".turas-artifact-store.json"),
       JSON.stringify({environmentId:testMarker}),{mode:0o600});

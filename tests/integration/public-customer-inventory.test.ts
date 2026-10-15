@@ -1,9 +1,10 @@
+import {isolatedChatActor} from '../fixtures/isolated-chat-actor';
+import {settleSyntheticConversationAttempts} from '../fixtures/ordinary-attempt-cleanup';
 import {randomUUID} from 'node:crypto';
 import {Client} from 'pg';
 import type {PoolClient} from 'pg';
 import {beforeAll,expect,it} from 'vitest';
 import {requireTestDatabaseUrl} from '../fixtures/database';
-import {createProfileTestSession} from '../fixtures/profiles';
 import {importPublicCustomerInventory,listPublicCustomerInventory} from '../../lib/server/profiles/public-inventory';
 import {createOwnedConversation} from '../../lib/server/conversations/repository';
 import {claimBinding,bindNativeSession} from '../../lib/server/conversations/binding';
@@ -14,11 +15,12 @@ import {readProfile} from '../../lib/server/profiles/read';
 import {readPublicInventoryReference} from '../../lib/server/profiles/public-inventory-reference';
 import {withTransaction} from '../../lib/server/db/client';
 const isolated=requireTestDatabaseUrl();
+const ownedConversationIds:string[]=[];
 beforeAll(()=>{const runtime=new URL(isolated);runtime.searchParams.set('options','-c role=turas_runtime');process.env.DATABASE_URL=runtime.href;process.env.DATABASE_URL_UNPOOLED=runtime.href;process.env.TURAS_ENVIRONMENT_ID=process.env.TURAS_TEST_ENVIRONMENT_ID;});
 
 it('ports dated curated signals only onto checked sources, searches new research products, and rechecks grants and withdrawal',async()=>{
  const db=new Client({connectionString:isolated});await db.connect();try{
-  const admin=await createProfileTestSession(db as unknown as PoolClient,'mcteer'),partner=await createProfileTestSession(db as unknown as PoolClient,'partner');
+  const admin=await isolatedChatActor(db,'internal','admin'),partner=await isolatedChatActor(db,'partner','member',admin.workspaceId);
   const prefix='Inventory '+randomUUID(),a=randomUUID(),b=randomUUID(),c=randomUUID(),url='https://vercel.com/customers/fixture-'+randomUUID();
   for(const [id,suffix] of [[a,'A'],[b,'B'],[c,'C']])await db.query('INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,$3,false)',[id,admin.workspaceId,prefix+' '+suffix]);
   const sourceId=randomUUID(),revisionId=randomUUID();
@@ -36,7 +38,7 @@ it('ports dated curated signals only onto checked sources, searches new research
   expect(await importPublicCustomerInventory(admin,snapshot)).toMatchObject({imported:0,replayed:2});
   expect(Number((await db.query('SELECT count(*) AS n FROM profile_records WHERE customer_id=ANY($1::uuid[])',[[a,b,c]])).rows[0].n)).toBe(0);
   await db.query("INSERT INTO maintenance_workers(environment_id,worker_id,last_seen_at) VALUES($1,'inventory-fixture',now()) ON CONFLICT(environment_id,worker_id) DO UPDATE SET last_seen_at=now()",[process.env.TURAS_ENVIRONMENT_ID]);
-  async function chat(actor:typeof admin){const key=randomUUID(),{conversation}=await createOwnedConversation(actor,{requestKey:key});const binding=await claimBinding(actor,conversation.id,key);if(binding.state!=='claimed')throw Error('Binding unavailable');const native='wrun_'+randomUUID();await bindNativeSession(actor,conversation.id,binding.claimToken,native);const attempt=await prepareAttempt(actor,conversation.id,native,randomUUID(),'Find customers by public product evidence.');await claimDispatch(actor,conversation.id,attempt.attemptId,0);return {conversation,attempt,principal:{principalId:actor.principalId,attributes:{turasAttemptId:attempt.attemptId}}};}
+  async function chat(actor:typeof admin){const key=randomUUID(),{conversation}=await createOwnedConversation(actor,{requestKey:key});ownedConversationIds.push(conversation.id);const binding=await claimBinding(actor,conversation.id,key);if(binding.state!=='claimed')throw Error('Binding unavailable');const native='wrun_'+randomUUID();await bindNativeSession(actor,conversation.id,binding.claimToken,native);const attempt=await prepareAttempt(actor,conversation.id,native,randomUUID(),'Find customers by public product evidence.');await claimDispatch(actor,conversation.id,attempt.attemptId,0);return {conversation,attempt,principal:{principalId:actor.principalId,attributes:{turasAttemptId:attempt.attemptId}}};}
   const owner=await chat(admin),read=(input:unknown)=>withTransaction(client=>listPublicCustomerInventory(client,owner.principal,input));
   const all=await read({query:prefix});expect(all.total).toBe(3);expect(all.accounts.every(account=>account.formalMaturity==='unknown')).toBe(true);
   expect(all.accounts.find(account=>account.id===a)).toMatchObject({storyCount:1,directoryListed:true});expect(all.accounts.find(account=>account.id===c)).toMatchObject({storyCount:null,directoryListed:null});
@@ -69,5 +71,5 @@ it('ports dated curated signals only onto checked sources, searches new research
   expect((await read({query:'Fixture Legacy Product',signal:'Operational trust'})).accounts).toEqual([]);
   expect((await read({query:'Sandbox'})).accounts.map(account=>account.id)).not.toContain(a);
   expect((await db.query("SELECT has_table_privilege('turas_runtime','public_customer_inventory_imports','UPDATE') AS can_rewrite,has_table_privilege('turas_runtime','public_customer_inventory_stories','DELETE') AS can_delete")).rows[0]).toEqual({can_rewrite:false,can_delete:false});
- }finally{await db.end();}
+ }finally{try{await settleSyntheticConversationAttempts(db,ownedConversationIds);}finally{await db.end();}}
 });
