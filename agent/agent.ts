@@ -43,7 +43,7 @@ export default defineAgent({
         });
       }
       if((await responseFeature(principal))?.kind==='normal')
-        return wrapOrdinaryChatModel(parityBudgetModel(gateway(selectedModel),selectedModel),principal,ctx.session.id);
+        return wrapOrdinaryChatModel(parityBudgetModel(gateway(selectedModel),selectedModel),principal,ctx.session.id,turnId);
       return withTransaction(async (client) => {
         const marker = await client.query<{schema_version:number}>(
           "SELECT schema_version FROM turas_environment LIMIT 1");

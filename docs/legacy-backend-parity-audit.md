@@ -4,6 +4,14 @@ Legacy source: `../turas-back` at `fd1e205d7fd258676d6fb12b3ade8a431d53a6af`. Cu
 
 Status: in progress. This is a repair audit, not a new feature specification. Each mechanic requires a source comparison and behavior check before it is marked complete. The user requires legacy backend behavior, the current visual theme, automatic acceptance of independent research, and no fake showcased customers.
 
+## Current hosted acceptance
+
+- Baggu's exact product-use question passed independent semantic review on Preview `0ec65cf`, with minor wording and verbosity issues. Desktop/mobile WebKit and reloaded history passed. The answer distinguishes documented Vercel platform use from a historical framework stack.
+- The Notion workflow on that Preview completed all three actual specialists and the original decision model. Its answer **failed** independent semantic review: material documented security-control and cancellation-overrun limitations were omitted. The review packet also lacked the actual typed evaluator output; a provider charge alone does not establish that the final interpretation faithfully reflects it. Research instructions now require these limitations to survive the handoff and final readout; hosted quality recheck remains open.
+- Native questions survived a fresh login but failed to produce a retained answer on `0ec65cf`, `7b342b3` and `7882018`. Runtime logs identify an empty-turn input continuation before a resolution event. The context guard initially rejected it; `2311d59` then correctly blocked provider I/O because the attempt was still parked. These are failures, not acceptance evidence. Migration 067 and its adapter reserve one owner-posted window per actual native request, preserve the original injection and cumulative token allowance, and prevent retries from extending the window. Actual-model recheck remains required.
+- An old owned test attempt had an admitted delivery but no native turn. Authenticated cancellation returned the actual runtime acknowledgment `no_active_turn`; that exact stopping attempt was reconciled as cancelled. No allowance was reset. The cancellation route now performs this reconciliation for ordinary chats only after the same native acknowledgment; accepted cancellation alone does not prove completion.
+- Production remains unchanged. The shared evaluation ledger remains the original $15 budget. Full parity, final Preview inspection and cleanup are still incomplete.
+
 ## Confirmed regressions
 
 - General chat removes customer resolution, evidence reads, and research capabilities. Legacy resolves named customers inside the conversation and uses the canonical account without requiring a UI selection.

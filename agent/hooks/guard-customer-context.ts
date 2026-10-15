@@ -1,4 +1,6 @@
 import { assertCustomerQuestionReads, customerQuestionActor } from "../../lib/server/conversations/customer-accounts";
+import {hasNativeInputWindow} from '../../lib/server/conversations/input-responses';
+import {hiddenRecord} from '../../lib/contracts/http';
 import { defineHook } from "eve/hooks";
 import { withTransaction } from "../../lib/server/db/client";
 import { readCurrentAttemptContext } from "../../lib/server/profiles/attempt-context";
@@ -22,7 +24,10 @@ export default defineHook({
       // turn and cannot have a turn.started instruction receipt yet. Ordinary
       // provider admission still requires the original injected context and a
       // running, owner-bound attempt; this boundary grants neither.
-      if (feature?.kind === "normal" && event.data.turnId === "") return;
+      if (feature?.kind === "normal" && event.data.turnId === "") {
+        if(!await withTransaction(db=>hasNativeInputWindow(db,attemptId,ctx.session.id,event.data.turnId)))throw hiddenRecord();
+        return;
+      }
       if(feature?.kind==='learning'){
         await readLearningDraftInitialContext(principal,event.data.turnId,ctx.session.id,false);return;
       }

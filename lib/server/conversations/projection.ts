@@ -1,4 +1,5 @@
 import {customerQuestionActor,assertCustomerQuestionReads} from "./customer-accounts";
+import {hasNativeInputWindow} from './input-responses';
 import {readResearchRuntimeAuthority} from "../research/specialists/runtime-authority";
 import { projectExecutionNativeEventInTransaction, type ExecutionNativeProjection } from "../execution/native-events";
 import { projectLearningNativeEventInTransaction,type LearningNativeProjection } from '../learning/native-events';
@@ -253,9 +254,9 @@ export async function projectNativeEventInTransaction(
       const marker=(await client.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0];
       const background=marker?.schema_version>=61 && typeof data.turnId==='string' && (await client.query(`SELECT 1 FROM research_background_turns
         WHERE native_session_id=$1 AND turn_id=$2 AND attempt_id=$3`,[nativeSessionId,data.turnId,attemptId])).rowCount;
-      const resumed=marker?.schema_version>=65 && typeof data.turnId==='string' && (await client.query(`SELECT 1 FROM native_input_resume_windows resume
+      const resumed=typeof data.turnId==='string' && (await hasNativeInputWindow(client,attemptId,nativeSessionId,data.turnId,false) || marker?.schema_version>=65 && !!(await client.query(`SELECT 1 FROM native_input_resume_windows resume
         JOIN event_projections resolution ON resolution.native_event_id=resume.native_event_id
-        WHERE resume.attempt_id=$1 AND resolution.native_session_id=$2 AND resolution.turn_id=$3`,[attemptId,nativeSessionId,data.turnId])).rowCount;
+        WHERE resume.attempt_id=$1 AND resolution.native_session_id=$2 AND resolution.turn_id=$3`,[attemptId,nativeSessionId,data.turnId])).rowCount);
       const resolving=event.type==='input.resolved' && await inputResolutionAttempt(client,nativeSessionId,attemptId,data)===attemptId;
       if(!background && !resumed && !resolving)throw new Error("Native turn does not match the reserved attempt");
     }
@@ -267,9 +268,18 @@ export async function projectNativeEventInTransaction(
         await client.query(`UPDATE watchdog_jobs SET state='settled',lease_owner=NULL,lease_expires_at=NULL,updated_at=now() WHERE attempt_id=$1`,[attemptId]);
       }else{
         if(await inputResolutionAttempt(client,nativeSessionId,attemptId,data)!==attemptId)throw new Error('Native input resolution has no owned pending request');
+        const posted=(await client.query(`SELECT min(resume.deadline_at) AS deadline_at FROM native_input_resume_windows resume
+          JOIN event_projections request ON request.native_event_id=resume.native_event_id
+          CROSS JOIN LATERAL jsonb_array_elements(COALESCE(request.visible_payload->'requests','[]'::jsonb)) item
+          WHERE resume.attempt_id=$1 AND request.native_session_id=$2 AND request.event_type='input.requested'
+            AND item->>'requestId' IN(SELECT resolution->>'requestId' FROM jsonb_array_elements($3::jsonb) resolution)`,
+          [attemptId,nativeSessionId,JSON.stringify(data.resolutions??[])])).rows[0]?.deadline_at;
         const resumed=await client.query(`UPDATE response_attempts SET response_state='running',updated_at=now(),revision=revision+1
           WHERE id=$1 AND response_state='waiting_input' RETURNING id`,[attemptId]);
-        if(resumed.rows[0]) {
+        if(posted && posted.getTime()>Date.now()) {
+          await client.query(`INSERT INTO native_input_resume_windows(attempt_id,native_event_id,deadline_at)
+            VALUES($1,$2,$3) ON CONFLICT(native_event_id) DO NOTHING`,[attemptId,event.meta.id,posted]);
+        }else if(resumed.rows[0]) {
           const window=(await client.query(`INSERT INTO native_input_resume_windows(attempt_id,native_event_id,deadline_at)
             VALUES($1,$2,date_trunc('milliseconds',clock_timestamp())+interval '120 seconds') RETURNING deadline_at`,[attemptId,event.meta.id])).rows[0];
           await client.query(`UPDATE watchdog_jobs SET deadline_at=$2,state='pending',next_attempt_at=$2,
@@ -291,6 +301,8 @@ export async function projectNativeEventInTransaction(
       "turn.completed": "completed", "turn.cancelled": "cancelled", "turn.failed": "failed",
     };
     if (terminal[event.type]) {
+      if(event.type==='turn.completed' && row.native_turn_id===data.turnId &&
+        await hasNativeInputWindow(client,attemptId,nativeSessionId,'',true))return;
       await client.query(`UPDATE response_attempts SET response_state = $2,
         updated_at = now(), revision = revision + 1 WHERE id = $1
         AND response_state IN ('pending','running','stopping')`, [attemptId, terminal[event.type]]);

@@ -9,7 +9,7 @@ import { bindNativeSession, claimBinding, markBindingUncertain } from "./binding
 import { claimDispatch, getAttemptReceipt, markDispatchUncertain, normalizeMessageText, prepareAttempt, recordNativePreAdmissionRejection, recordNativeReceipt } from "./dispatch";
 import { getOwnedConversationByNativeSession } from "./repository";
 import { guardNativeStream } from "./stream";
-import { requestCancellation,requestOwnedTaskCancellation } from "./cancel";
+import { requestCancellation,requestOwnedTaskCancellation,settleInactiveOwnedCancellation } from "./cancel";
 import { assertNativeContextCurrent, releaseNativeChunk } from "./context-fence";
 import { artifactDraftSelectionSchema } from "../../contracts/artifacts";
 import { authorizeExecutionRetirement } from "../execution/native-retirement";
@@ -293,9 +293,15 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             else await requestCancellation(session, args.params.sessionId, parsed.data.turnId!);
             const headers = new Headers(request.headers);
             headers.delete("content-length");
-            return native(new Request(request.url, {
+            const response=await native(new Request(request.url, {
               method: "POST", headers, body: JSON.stringify(parsed.data),
             }), args);
+            if(response.ok){
+              const receipt:unknown=await response.clone().json().catch(()=>null);
+              if(receipt && typeof receipt==='object' && 'ok' in receipt && receipt.ok===true &&
+                'status' in receipt && receipt.status==='no_active_turn')await settleInactiveOwnedCancellation(session,args.params.sessionId);
+            }
+            return response;
           } catch (error) {
             return nativeFailure(error);
           }

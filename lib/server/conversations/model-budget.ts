@@ -3,17 +3,19 @@ import {refreshOrdinaryKnowledge} from './current-knowledge';
 import {withTransaction} from '../db/client';
 import {customerQuestionActor} from './customer-accounts';
 import {HttpFailure,hiddenRecord} from '../../contracts/http';
+import {hasNativeInputWindow} from './input-responses';
 type Principal=Parameters<typeof customerQuestionActor>[1];
 type Model=Parameters<typeof wrapLanguageModel>[0]['model'];
 /** Replies to parked questions use the same ordinary-chat token allowance;
  * a native session-limit approval cannot reset the application's allowance. */
-export function wrapOrdinaryChatModel(model:Model,principal:Principal,nativeSessionId:string){
+export function wrapOrdinaryChatModel(model:Model,principal:Principal,nativeSessionId:string,turnId:string){
  return wrapLanguageModel({model,middleware:{async transformParams({params}){
   const {remaining,packet}=await withTransaction(async db=>{
    const scope=await customerQuestionActor(db,principal);
    const conversation=(await db.query(`SELECT c.id FROM conversations c JOIN response_attempts a ON a.conversation_id=c.id
     WHERE a.id=$1 AND c.eve_session_id=$2 AND c.owner_principal_id=$3 AND a.response_state='running'`,[scope.attemptId,nativeSessionId,scope.actor.principalId])).rows[0];
    if(!conversation)throw hiddenRecord();
+   if(turnId==='' && !await hasNativeInputWindow(db,scope.attemptId,nativeSessionId,turnId))throw hiddenRecord();
    const injected=await db.query(`SELECT 1 FROM response_attempts a
     JOIN general_context_receipts r ON r.attempt_id=a.id
     JOIN general_context_injections i ON i.attempt_id=a.id AND i.turn_id=a.native_turn_id

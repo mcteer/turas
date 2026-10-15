@@ -120,3 +120,18 @@ export async function requestOwnedTaskCancellation(session:CurrentSession,native
    WHERE environment_id=$1 AND workspace_id=$2 AND owner_user_id=$3 AND parent_session_id=$4 AND receipt IS NULL AND lease_until>now()`,[getServerConfig().TURAS_ENVIRONMENT_ID,session.workspaceId,session.principalId,nativeSessionId]);
  });
 }
+
+/** Reconcile only the runtime's explicit no-active-turn acknowledgment. An
+ * accepted cancellation request alone does not prove a running turn stopped. */
+export async function settleInactiveOwnedCancellation(session:CurrentSession,nativeSessionId:string){
+ return withTransaction(async db=>{
+  const row=(await db.query(`SELECT id FROM conversations WHERE eve_session_id=$1 AND owner_principal_id=$2
+    AND workspace_id=$3 AND environment_id=$4`,[nativeSessionId,session.principalId,session.workspaceId,getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
+  if(!row || (await conversationFeature(db,row.id)).kind!=='normal')return;
+  await lockOwnedBinding(db,session,row.id);
+  const settled=(await db.query(`UPDATE response_attempts SET response_state='cancelled',updated_at=now(),revision=revision+1
+    WHERE conversation_id=$1 AND response_state='stopping' RETURNING id`,[row.id])).rows;
+  for(const attempt of settled)await db.query(`UPDATE watchdog_jobs SET state='settled',lease_owner=NULL,
+    lease_expires_at=NULL,updated_at=now() WHERE attempt_id=$1`,[attempt.id]);
+ });
+}

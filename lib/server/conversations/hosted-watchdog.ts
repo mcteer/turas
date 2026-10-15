@@ -41,8 +41,10 @@ export async function runHostedWatchdog(attachSession: AttachSessionFn, options:
   const mcpTimer=setInterval(maintainMcp,30000);maintainMcp();
   const maintainResearch=()=>{
     if(stopping||Date.now()>=end||researchTick)return;
-    researchTick=(async()=>{await runRetrievalWorkerTick();await runRetrievalCleanupTick();await markDueResearch();})()
-      .catch(()=>{console.warn(JSON.stringify({kind:'research_maintenance_failed'}));}).finally(()=>{researchTick=null;});
+    let phase='index';
+    researchTick=(async()=>{await runRetrievalWorkerTick();phase='cleanup';await runRetrievalCleanupTick();phase='review-dates';await markDueResearch();})()
+      .catch(error=>{console.warn(JSON.stringify({kind:'research_maintenance_failed',phase,
+        code:typeof error==='object'&&error!==null&&'code' in error&&typeof error.code==='string'&&/^[A-Z0-9_]{1,40}$/.test(error.code)?error.code:null}));}).finally(()=>{researchTick=null;});
   };
   const researchTimer=setInterval(maintainResearch,5000);maintainResearch();
   try{while (Date.now() < end) {
