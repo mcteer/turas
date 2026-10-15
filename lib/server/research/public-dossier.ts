@@ -74,9 +74,11 @@ export function publicResearchQueries(customer: PublicCustomer): Array<{ purpose
 export function signCheckedPublicPage(page: CheckedPublicPage): CheckedPublicPage {
   const secret=process.env.TURAS_MAINTENANCE_SECRET;
   if(!secret || secret.length<32)throw new Error("Source signing configuration unavailable");
+  // JSONB reorders nested object properties. Sign an explicit discovery field
+  // order so the original proof survives its database round trip.
   const message=JSON.stringify({contract:"public-batch-source-v1",url:page.url,bodyDigest:page.bodyDigest,
     normalizedDigest:page.normalizedDigest,fullNormalizedDigest:page.fullNormalizedDigest??page.normalizedDigest,
-    publishedAt:page.publishedAt,retrievedAt:page.retrievedAt,title:page.title,discoveryPurpose:page.discoveryPurpose,...(page.independentDiscovery?{independentDiscovery:page.independentDiscovery}:{})});
+    publishedAt:page.publishedAt,retrievedAt:page.retrievedAt,title:page.title,discoveryPurpose:page.discoveryPurpose,...(page.independentDiscovery?{independentDiscovery:{accountId:page.independentDiscovery.accountId,searchId:page.independentDiscovery.searchId,provider:page.independentDiscovery.provider,checkedAt:page.independentDiscovery.checkedAt}}:{})});
   return {...page,receiptSignature:createHmac("sha256",secret).update(message).digest("hex")};
 }
 export function assertCheckedPublicPage(page: CheckedPublicPage): void {

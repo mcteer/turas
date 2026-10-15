@@ -1,3 +1,5 @@
+import {retainSpecialistProfileSources} from '../../lib/server/research/specialists/retain-profile';
+import {extractSources} from '../../lib/server/research/specialists/solution-research/evidence';
 import type {PoolClient} from 'pg';
 import {recordRetrievalConsumption} from '../../lib/server/retrieval/fences';
 import {withTransaction} from '../../lib/server/db/client';
@@ -39,7 +41,7 @@ it('retains new public research for an assigned partner, preserves curated claim
    const input={requestKey:randomUUID(),batchDigest:publicDigest(text),customer:{name,industries:[],directoryListed:false,stories:[{url,title:name}]},dossier:{description:age?'Original checked business description.':'',findings:[{area:'architecture_outcomes',statement:quote,quote,sourceIndex:0,attribution:'Public source',caveats:[]}],coverage:dossierAreas.map(area=>({area,state:area==='architecture_outcomes'?'supported':'incomplete',explanation:'Only the cited public document was checked.'})),unknowns:[]},usage:{searches:0,fetches:0,inputTokens:0,outputTokens:0,costUsd:null,model:'fixture',modelCalls:0}};
    const saved=await persistSpecialistCustomerResearch(actor,input,[page],customerId);
    expect((await persistSpecialistCustomerResearch(actor,input,[page],customerId)).replayed).toBe(true);
-   return saved;
+   return {saved,page,snapshot};
   }
   await retain(originalQuote,originalQuote,10000);
   const key=randomUUID(),{conversation}=await createOwnedConversation(actor,{requestKey:key});
@@ -76,7 +78,9 @@ it('retains new public research for an assigned partner, preserves curated claim
   const changed=`${name} now uses Vercel Sandboxes for its isolated execution service.`;
   await db.query(`INSERT INTO evidence_sources(id,workspace_id,customer_id,origin,canonical_location) VALUES($1,$2,$3,'manual',$4)`,[randomUUID(),actor.workspaceId,customerId,url]);
   await expect(retain(changed,changed,0)).rejects.toMatchObject({code:'submitted_origin'});
-  await retain(changed,changed,0,true);
+  const checked=await retain(changed,changed,0,true);
+  const sourceForRetention=extractSources({success:true,url,title:name,markdown:changed},checked.page.retrievedAt)[0];
+  expect(await retainSpecialistProfileSources({...actor,userId:actor.principalId,environmentId:process.env.TURAS_ENVIRONMENT_ID!},customerId,[{...sourceForRetention,cache:{snapshotId:checked.snapshot,checkedAt:checked.page.retrievedAt,refreshAfter:new Date(Date.now()+3600000).toISOString()}}])).toMatchObject({updated:1,skipped:0});
   await expect(withRuntime(client=>assertCustomerQuestionReads(client,actor,conversation.id,attempt.attemptId))).rejects.toMatchObject({status:409});
   const refreshed=await withRuntime(client=>refreshOrdinaryKnowledge(client,actor,principal,conversation.id,attempt.attemptId));
   expect(JSON.stringify(refreshed)).toContain(changed);

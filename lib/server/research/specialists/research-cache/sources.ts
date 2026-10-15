@@ -71,8 +71,10 @@ export async function readCachedSource(identity: AppIdentity, accountId: string,
     try {
       const { learnPublicSources, publicLearningHasSource } = await import("./public-learning");
       await learnPublicSources(identity, accountId, [cachedSource], researchPassages(source).map(passage => ({ sourceId: source.id, passageId: passage.id })), signal);
-    } catch {
-      console.warn(JSON.stringify({ event: "public_learning.background_write_failed" }));
+    } catch(error) {
+      const code=error && typeof error==='object' && 'code' in error && typeof error.code==='string'?error.code:
+        error instanceof Error && error.message==='Public fetch receipt signature is invalid'?'invalid_fetch_signature':'retention_unavailable';
+      console.warn(JSON.stringify({ event: "public_learning.background_write_failed",code }));
       retentionWarning='The page was read, but shared customer knowledge could not be updated. Do not claim profile persistence succeeded.';
     }
   }
