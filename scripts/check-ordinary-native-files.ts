@@ -100,7 +100,10 @@ try{await withPlanEvalEnvironment(async environment=>{
  marker=fixtureOwner;
  const dev=join(appRoot,'scripts/dev.mjs');await writeFile(dev,"import {execFileSync} from 'node:child_process';\nexecFileSync(process.execPath,['--experimental-strip-types','scripts/bootstrap-demo.ts'],{stdio:'ignore'});\n"+await readFile(dev,'utf8'),{mode:0o600});
  await writeFile(join(appRoot,'agent/sandbox.ts'),`import {defineSandbox} from 'eve/sandbox';import {DockerSandbox} from 'eve/sandbox/docker';export const environment=DockerSandbox.image(${JSON.stringify(image)},{pullPolicy:'never',env:{TURAS_NATIVE_FILE_FIXTURE_OWNER:${JSON.stringify(fixtureOwner)}}});export default defineSandbox(()=>environment.open({networkPolicy:'deny-all'}));\n`,{mode:0o600});return {};
-}});}finally{
+}});}catch(error){
+ const reason=(error instanceof Error?error.message:'Unknown fixture failure').split('\n')[0].replace(/[a-z][a-z0-9+.-]*:\/\/[^\s/@:]+:[^\s/@]+@/gi,'<redacted>@').slice(0,200);
+ console.error(JSON.stringify({kind:'native_file_fixture_failure',name:error instanceof Error?error.name:'Unknown',reason}));throw error;
+}finally{
  delete process.env.TURAS_ORDINARY_MEMORY_FILE_FIXTURE;delete process.env.TURAS_ORDINARY_MEMORY_FIXTURE;delete process.env.TURAS_ORDINARY_NATIVE_FILE_STEERING_FIXTURE;delete process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED;delete process.env.TURAS_ORDINARY_NATIVE_FILE_FIXTURE;
  // Exact baked-in fixture ownership excludes every unrelated Docker resource.
  const removedContainers:string[]=[],removedImages:string[]=[];

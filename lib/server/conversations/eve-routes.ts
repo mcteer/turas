@@ -1,3 +1,4 @@
+import {assertNativeFileEvaluationOpen} from './native-file-policy';
 import {inputResponsesSchema,authorizeOwnedInputResponse} from "./input-responses";
 import {prepareOrdinarySteering,recordSteeringReceipt,markSteeringUncertain} from './steering';
 import type { EveChannel } from "eve/channels/eve";
@@ -157,6 +158,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             if(responses.success) {
               const conversation=await getOwnedConversationByNativeSession(session,args.params.sessionId);
               if(conversation.id!==conversationId)throw hiddenRecord();
+              assertNativeFileEvaluationOpen(conversation.id);
               await authorizeOwnedInputResponse(session,args.params.sessionId,responses.data);
               await startPreviewChatWorker(args.attachSession,args.waitUntil);
               await assertNativeContextCurrent(session,args.params.sessionId,false);

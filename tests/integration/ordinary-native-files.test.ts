@@ -4,7 +4,7 @@ import {beforeAll,expect,it} from 'vitest';
 import {requireTestDatabaseUrl} from '../fixtures/database';
 import {isolatedChatActor} from '../fixtures/isolated-chat-actor';
 import {settleSyntheticConversationAttempts} from '../fixtures/ordinary-attempt-cleanup';
-import {createOwnedConversation} from '../../lib/server/conversations/repository';
+import {createOwnedConversation,getOwnedConversationDetail} from '../../lib/server/conversations/repository';
 import {claimBinding,bindNativeSession} from '../../lib/server/conversations/binding';
 import {prepareAttempt,claimDispatch,deriveNativeAttempt,messageDigest} from '../../lib/server/conversations/dispatch';
 import {projectNativeEvent} from '../../lib/server/conversations/projection';
@@ -13,7 +13,7 @@ import {prepareOrdinarySteering,recordSteeringReceipt} from '../../lib/server/co
 const url=requireTestDatabaseUrl();
 beforeAll(()=>{const runtime=new URL(url);runtime.searchParams.set('options','-c role=turas_runtime');process.env.DATABASE_URL=runtime.toString();process.env.TURAS_ENVIRONMENT_ID=process.env.TURAS_TEST_ENVIRONMENT_ID;});
 it('binds native file bytes separately from the runtime summary and refuses changed retries or cross-owner dispatch',async()=>{
- const db=new Client({connectionString:url});await db.connect();const owned:string[]=[];const prior=process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED;
+ const db=new Client({connectionString:url});await db.connect();const owned:string[]=[];const keys=['TURAS_ORDINARY_NATIVE_FILES_ENABLED','TURAS_ORDINARY_NATIVE_FILES_CONVERSATION_ID','TURAS_ORDINARY_NATIVE_FILES_EXPIRES_AT'] as const;const prior=Object.fromEntries(keys.map(key=>[key,process.env[key]]));
  try{
   const actor=await isolatedChatActor(db,'internal','admin'),key=randomUUID();
   const {conversation}=await createOwnedConversation(actor,{requestKey:key});owned.push(conversation.id);
@@ -24,6 +24,15 @@ it('binds native file bytes separately from the runtime summary and refuses chan
   delete process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED;
   const request=randomUUID();await expect(prepareAttempt(actor,conversation.id,native,request,parts)).rejects.toMatchObject({status:503,code:'native_files_unavailable'});
   process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED='1';
+  process.env.TURAS_ORDINARY_NATIVE_FILES_CONVERSATION_ID=randomUUID();
+  const until=new Date(Date.now()+60000).toISOString();process.env.TURAS_ORDINARY_NATIVE_FILES_EXPIRES_AT=until;
+  await expect(prepareAttempt(actor,conversation.id,native,request,parts)).rejects.toMatchObject({status:503,code:'native_files_unavailable'});
+  process.env.TURAS_ORDINARY_NATIVE_FILES_CONVERSATION_ID=conversation.id;
+  process.env.TURAS_ORDINARY_NATIVE_FILES_EXPIRES_AT=new Date(Date.now()-1000).toISOString();
+  await expect(prepareAttempt(actor,conversation.id,native,request,parts)).rejects.toMatchObject({status:503,code:'native_files_unavailable'});
+  await expect(prepareAttempt(actor,conversation.id,native,randomUUID(),'A late text continuation')).rejects.toMatchObject({status:503,code:'native_files_unavailable'});
+  process.env.TURAS_ORDINARY_NATIVE_FILES_EXPIRES_AT=until;
+  expect(await getOwnedConversationDetail(actor,conversation.id)).toMatchObject({canAttachNativeFiles:true});
   const attempt=await prepareAttempt(actor,conversation.id,native,request,parts);
   const row=(await db.query('SELECT sm.text,sm.body_digest,sm.ordinary_native_parts,a.input_digest FROM submitted_messages sm JOIN response_attempts a ON a.message_id=sm.id WHERE a.id=$1',[attempt.attemptId])).rows[0];
   expect(row.text).toBe(summarizeNativeMessage(parts));expect(row.body_digest).toBe(nativeMessageDigest(parts));
@@ -33,6 +42,10 @@ it('binds native file bytes separately from the runtime summary and refuses chan
   await expect(db.query("UPDATE submitted_messages SET ordinary_native_parts='[]'::jsonb WHERE id=(SELECT message_id FROM response_attempts WHERE id=$1)",[attempt.attemptId])).rejects.toThrow();
   await claimDispatch(actor,conversation.id,attempt.attemptId,0);
   expect(await deriveNativeAttempt(actor,native,request,parts)).toBe(attempt.attemptId);
+  process.env.TURAS_ORDINARY_NATIVE_FILES_EXPIRES_AT=new Date(Date.now()-1000).toISOString();
+  await expect(deriveNativeAttempt(actor,native,request,parts)).rejects.toMatchObject({status:503,code:'native_files_unavailable'});
+  expect(await getOwnedConversationDetail(actor,conversation.id)).toMatchObject({canAttachNativeFiles:false});
+  process.env.TURAS_ORDINARY_NATIVE_FILES_EXPIRES_AT=until;
   await expect(deriveNativeAttempt(actor,native,request,changed)).rejects.toMatchObject({status:404});
   const other=await isolatedChatActor(db,'internal','member',actor.workspaceId);
   await expect(deriveNativeAttempt(other,native,request,parts)).rejects.toMatchObject({status:404});
@@ -54,5 +67,5 @@ it('binds native file bytes separately from the runtime summary and refuses chan
   expect((await db.query('SELECT native_event_id FROM ordinary_steering_deliveries WHERE id=$1',[correction.id])).rows[0].native_event_id).toBeTruthy();
   expect((await db.query('SELECT count(*)::int AS n,min(deadline_at) AS deadline FROM response_attempts WHERE conversation_id=$1',[conversation.id])).rows[0]).toEqual({n:1,deadline});
 
- }finally{if(prior===undefined)delete process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED;else process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED=prior;try{await settleSyntheticConversationAttempts(db,owned);}finally{await db.end();}}
+ }finally{for(const key of keys){if(prior[key]===undefined)delete process.env[key];else process.env[key]=prior[key];}try{await settleSyntheticConversationAttempts(db,owned);}finally{await db.end();}}
 });

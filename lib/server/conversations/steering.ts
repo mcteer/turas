@@ -1,3 +1,4 @@
+import {ordinaryNativeFilesEnabled,assertNativeFileEvaluationOpen} from './native-file-policy';
 import {randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import {z} from 'zod';
@@ -35,7 +36,8 @@ export async function prepareOrdinarySteering(actor:CurrentSession,conversationI
  if(!z.uuid().safeParse(requestKey).success || !text.trim() || Buffer.byteLength(text)>(documentMessage||parts?attachmentLimits.messageBytes:16384))throw new HttpFailure(422,'invalid_message','Invalid correction');
  return withTransaction(async db=>{
   const conversation=await lockOwnedBinding(db,actor,conversationId);
-  if(parts&&(Number((await db.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0]?.schema_version??0)<72||process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED!=='1'||process.env.TURAS_ORDINARY_ATTACHMENTS_DISABLED==='1'))throw new HttpFailure(503,'native_files_unavailable','Native file messages are not enabled');
+  assertNativeFileEvaluationOpen(conversationId);
+  if(parts&&(Number((await db.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0]?.schema_version??0)<72||!ordinaryNativeFilesEnabled(conversationId)))throw new HttpFailure(503,'native_files_unavailable','Native file messages are not enabled');
   if(conversation.eve_session_id!==nativeSessionId || (await conversationFeature(db,conversationId)).kind!=='normal')throw hiddenRecord();
   if(!await ready(db))throw new HttpFailure(503,'steering_unavailable','Chat correction requires the current database release');
   const existing=(await db.query<Receipt&{body_digest:string}>(`SELECT d.*,m.body_digest FROM submitted_messages m
@@ -82,6 +84,8 @@ export async function deriveSteeringAttempt(actor:CurrentSession,nativeSessionId
       AND d.deadline_at>clock_timestamp() AND a.response_state IN('running','completed')`,
     [nativeSessionId,actor.principalId,actor.workspaceId,getServerConfig().TURAS_ENVIRONMENT_ID,requestKey,actor.sessionId])).rows[0];
   if(!row)return null;
+  assertNativeFileEvaluationOpen(row.conversation_id);
+  if(parts&&!ordinaryNativeFilesEnabled(row.conversation_id))throw hiddenRecord();
   if(row.body_digest!==digest)throw hiddenRecord();
   await lockOwnedBinding(db,actor,row.conversation_id);
   if((await conversationFeature(db,row.conversation_id)).kind!=='normal')throw hiddenRecord();

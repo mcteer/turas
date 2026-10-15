@@ -610,3 +610,16 @@ private title/history and file preparation. Reload errors remain recorded; no
 active-page errors or overflow occurred. Authenticated HTTP confirms native
 uploads remain disabled on that Preview. Hosted `/eve/v1/info` returned 403 and
 is not claimed as a positive inspection result. Production remains unchanged.
+
+The file-correction fixture now waits for the runtime's actual abort signal before
+resuming with the correction, instead of assuming a four-second browser timing
+window. The local headless WebKit case passes original/correction byte delivery,
+one parent response attempt and retained history. Its isolated application also
+copies the pinned lockfile. CI failures emit a bounded synthetic failure reason;
+raw startup logs and credentials remain private.
+
+An optional conversation ID and expiry can restrict native files to one operator
+check. Dispatch, correction, input continuation and provider execution recheck
+that window; an in-flight provider receives its deadline signal. Runtime-role
+checks cover another conversation, expiry and subsequent provider rejection.
+These controls do not enable hosted native uploads or authorize infrastructure.

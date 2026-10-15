@@ -1,3 +1,4 @@
+import {ordinaryNativeFilesEnabled} from './native-file-policy';
 import {assertCustomerQuestionReads} from "./customer-accounts";
 import { readExecutionAdviceStatus } from "../execution/advisory-status";
 import { conversationFeature } from "./feature";
@@ -447,7 +448,7 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
     ...conversation, featureKind:feature.kind,
     canAttachDocuments:feature.kind==='normal' && process.env.TURAS_ORDINARY_ATTACHMENTS_DISABLED!=='1' &&
       documentSchemaVersion>=71,
-    canAttachNativeFiles:feature.kind==='normal'&&process.env.TURAS_ORDINARY_ATTACHMENTS_DISABLED!=='1'&&process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED==='1'&&documentSchemaVersion>=72,
+    canAttachNativeFiles:feature.kind==='normal'&&ordinaryNativeFilesEnabled(id)&&documentSchemaVersion>=72,
     contextStatus: hideGenerated ? "changed":final.contextStatus,
     title: hideGenerated ? "Previous conversation" : conversation.title,
     history: [...visibleEvents.slice(0, 500).map((row) => ({

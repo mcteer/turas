@@ -75,6 +75,7 @@ try {
   // details stay private; report the bounded test failure section only.
   const failure=output.indexOf("Failed Tests");
   if(failure>=0) console.error(output.slice(failure,failure+5000));
+  for(const line of output.split("\n"))if(line.startsWith('{"kind":"native_file_fixture_failure"'))console.error(line);
   process.exitCode=1;
 } finally {
   if(created && docker(["rm","-f","-v",name]).status!==0) {

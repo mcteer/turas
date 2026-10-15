@@ -1,3 +1,4 @@
+import {ordinaryNativeFilesEnabled,assertNativeFileEvaluationOpen} from './native-file-policy';
 import {assertCustomerQuestionReads} from "./customer-accounts";
 import { prepareExecutionNativeAttempt, claimExecutionNativeDispatch } from "../execution/native-dispatch";
 import { prepareExpansionNativeAttempt, claimExpansionNativeDispatch } from "../expansion/native";
@@ -62,11 +63,12 @@ export async function prepareAttempt(
   const digest = nativeParts?nativeMessageDigest(nativeParts):selections.length ? canonicalArtifactSendDigest(text,selections) : messageDigest(text);
   const run = async (client: PoolClient) => {
     const environmentId = getServerConfig().TURAS_ENVIRONMENT_ID;
-    if(nativeParts&&(Number((await client.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[environmentId])).rows[0]?.schema_version??0)<72||process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED!=='1'||process.env.TURAS_ORDINARY_ATTACHMENTS_DISABLED==='1'))throw new HttpFailure(503,'native_files_unavailable','Native file messages are not enabled');
+    if(nativeParts&&(Number((await client.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[environmentId])).rows[0]?.schema_version??0)<72||!ordinaryNativeFilesEnabled(conversationId)))throw new HttpFailure(503,'native_files_unavailable','Native file messages are not enabled');
     if(documentMessage && (Number((await client.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[environmentId])).rows[0]?.schema_version??0)<71 || process.env.TURAS_ORDINARY_ATTACHMENTS_DISABLED==='1'))
       throw new HttpFailure(503,'attachments_unavailable','Document messages are temporarily unavailable');
     await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [environmentId]);
     const conversation = await lockOwnedBinding(client, session, conversationId);
+    assertNativeFileEvaluationOpen(conversationId);
     // A first feature binder can win after the metadata preflight. Never let
     // an ordinary send cross that committed scope under the conversation lock.
     if (["execution", "staffing", "support", "expansion", "learning"].includes((await conversationFeature(client, conversationId)).kind))
@@ -371,6 +373,8 @@ export async function deriveNativeAttempt(
       getServerConfig().TURAS_ENVIRONMENT_ID, requestKey]);
     const row = found.rows[0];
     if (!row) throw hiddenRecord();
+    assertNativeFileEvaluationOpen(row.conversation_id);
+    if(nativeParts&&!ordinaryNativeFilesEnabled(row.conversation_id))throw hiddenRecord();
     const artifact = await artifactContextSchemaReady(client)
       ? await client.query<{ native_text_digest: string }>(
         "SELECT native_text_digest FROM artifact_context_receipts WHERE attempt_id=$1", [row.id])

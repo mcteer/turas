@@ -1,3 +1,4 @@
+import {nativeFileEvaluationDeadline} from './native-file-policy';
 import {wrapLanguageModel} from 'ai';
 import {refreshOrdinaryKnowledge} from './current-knowledge';
 import {withTransaction} from '../db/client';
@@ -20,9 +21,11 @@ export function wrapOrdinaryChatModel(model:Model,principal:Principal,nativeSess
    const conversation=(await db.query(`SELECT c.id FROM conversations c JOIN response_attempts a ON a.conversation_id=c.id
     WHERE a.id=$1 AND c.eve_session_id=$2 AND c.owner_principal_id=$3 AND a.response_state='running'`,[scope.attemptId,nativeSessionId,scope.actor.principalId])).rows[0];
    if(!conversation)throw hiddenRecord();
+   const evaluationDeadline=nativeFileEvaluationDeadline(conversation.id);
    const inputDeadline=await nativeInputDeadline(db,scope.attemptId,nativeSessionId,turnId);
    const steeringDeadline=await steeringTurnDeadline(db,scope.attemptId,nativeSessionId,turnId);
-   const resumeDeadline=inputDeadline&&steeringDeadline?new Date(Math.max(inputDeadline.getTime(),steeringDeadline.getTime())):inputDeadline??steeringDeadline;
+   let resumeDeadline=inputDeadline&&steeringDeadline?new Date(Math.max(inputDeadline.getTime(),steeringDeadline.getTime())):inputDeadline??steeringDeadline;
+   if(evaluationDeadline)resumeDeadline=resumeDeadline?new Date(Math.min(resumeDeadline.getTime(),evaluationDeadline.getTime())):evaluationDeadline;
    if(turnId==='' && !inputDeadline || resumeDeadline && resumeDeadline.getTime()<=Date.now())throw hiddenRecord();
    const injected=await db.query(`SELECT 1 FROM response_attempts a
     JOIN general_context_receipts r ON r.attempt_id=a.id

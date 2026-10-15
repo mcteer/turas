@@ -165,3 +165,20 @@ it('requires the current owner and CSRF before closing ordinary admission for na
   expect((await f.db.query('SELECT response_state FROM response_attempts WHERE id=$1',[f.attemptId])).rows[0].response_state).toBe('stopping');
  }finally{try{await settleSyntheticConversationAttempts(f.db,[f.conversation.id]);}finally{await f.db.end();}}
 });
+
+it('aborts a bounded file-check conversation at its operator deadline and refuses further provider I/O',async()=>{
+ const f=await fixture(),keys=['TURAS_ORDINARY_NATIVE_FILES_ENABLED','TURAS_ORDINARY_NATIVE_FILES_CONVERSATION_ID','TURAS_ORDINARY_NATIVE_FILES_EXPIRES_AT'] as const;
+ const prior=Object.fromEntries(keys.map(key=>[key,process.env[key]]));
+ try{
+  process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED='1';process.env.TURAS_ORDINARY_NATIVE_FILES_CONVERSATION_ID=f.conversation.id;
+  process.env.TURAS_ORDINARY_NATIVE_FILES_EXPIRES_AT=new Date(Date.now()+1000).toISOString();
+  let calls=0;type Model=Parameters<typeof wrapOrdinaryChatModel>[0];
+  const provider={specificationVersion:'v4',provider:'local-fixture',modelId:'local-fixture',supportedUrls:{},async doGenerate(options:{abortSignal?:AbortSignal}){
+   calls++;const signal=options.abortSignal;if(!signal)throw Error('Operator deadline signal missing');
+   return new Promise((_,reject)=>{const abort=()=>{clearTimeout(timer);reject(new DOMException('Owned check expired','AbortError'));};const timer=setTimeout(()=>{signal.removeEventListener('abort',abort);reject(Error('Provider outlived operator deadline'));},2500);signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort();});
+  },async doStream(){throw Error('Unused');}} as unknown as Model;
+  await expect(wrapOrdinaryChatModel(provider,f.principal,f.native,f.turn).doGenerate({prompt:[]})).rejects.toMatchObject({name:'AbortError'});
+  await expect(wrapOrdinaryChatModel(provider,f.principal,f.native,f.turn).doGenerate({prompt:[]})).rejects.toMatchObject({status:503,code:'native_files_unavailable'});
+  expect(calls).toBe(1);
+ }finally{for(const key of keys){if(prior[key]===undefined)delete process.env[key];else process.env[key]=prior[key];}try{await settleSyntheticConversationAttempts(f.db,[f.conversation.id]);}finally{await f.db.end();}}
+});

@@ -6,8 +6,12 @@ import {assertDeterministicTestMode} from './runtime';
 export function createOrdinaryNativeFileFixtureModel(attemptId:string){
  assertDeterministicTestMode();
  if(process.env.TURAS_ORDINARY_NATIVE_FILE_FIXTURE!=='1'||process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN||!/^\/turas_test_010_eval_[a-f0-9]{12}$/.test(new URL(process.env.DATABASE_URL!).pathname))throw Error('Owned unpaid native-file fixture required');
+ let generationSignal:AbortSignal|undefined;
  const model=mockModel({provider:'owned-native-file-fixture',modelId:'spacexai/grok-4.7',respond:async({toolResults,lastUserMessage,messages})=>{
-  if(process.env.TURAS_ORDINARY_NATIVE_FILE_STEERING_FIXTURE==='1'&&!lastUserMessage?.includes('Correct this using'))await new Promise(resolve=>setTimeout(resolve,4000));
+  if(process.env.TURAS_ORDINARY_NATIVE_FILE_STEERING_FIXTURE==='1'&&!lastUserMessage?.includes('Correct this using')){
+   const signal=generationSignal;if(!signal)throw Error('Steering fixture has no generation signal');
+   await new Promise<void>((resolve,reject)=>{const finish=()=>{clearTimeout(timer);resolve();};const timer=setTimeout(()=>{signal.removeEventListener('abort',finish);reject(Error('Steering fixture did not receive a correction'));},30000);signal.addEventListener('abort',finish,{once:true});if(signal.aborted)finish();});
+  }
   if(process.env.TURAS_ORDINARY_MEMORY_FIXTURE==='1'&&lastUserMessage==='Recall the saved preference.'){
    if(!JSON.stringify(messages).includes('# Persistent memories for file')||!JSON.stringify(messages).includes('The caller prefers concise answers.'))throw Error('Preference was not recalled into the fresh conversation');
    const removed=toolResults.find(result=>result.name==='file__remove_memory');
@@ -35,6 +39,7 @@ export function createOrdinaryNativeFileFixtureModel(attemptId:string){
  }});
  if(typeof model==='string')throw Error('Fixture model unavailable');
  return wrapLanguageModel({model,middleware:{async transformParams({params}){
+  generationSignal=params.abortSignal;
   const files=params.prompt.flatMap(message=>typeof message.content==='string'?[]:message.content.filter(part=>part.type==='file'));
   if(process.env.TURAS_ORDINARY_MEMORY_FIXTURE==='1'?files.length>2:files.length<1||files.length>2)throw Error('The provider did not receive actual files');
   const names=(params.tools??[]).map(tool=>tool.name);
