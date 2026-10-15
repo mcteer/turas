@@ -63,7 +63,7 @@ const researchTool = defineTool({
       const read = cacheEnabled() && identity && state.context
         ? await readCachedSource(identity, state.context.accountId, state.requestScope?.workload ?? state.context.name,
           url, ctx.abortSignal, state.refreshAfter ? new Date(state.refreshAfter) : undefined,
-          { recordAccount: state.mode !== "best-practices",independentDiscovery })
+          { recordAccount: state.mode !== "best-practices",independentDiscovery,informationType })
         : await readPublicSource(url, ctx.abortSignal);
       const { source: retrievedSource, truncated } = read;
       const source = { ...retrievedSource, informationType, ...(focusTerm ? { focusTerm } : {}) };

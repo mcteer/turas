@@ -29,7 +29,7 @@ export async function refreshOrdinaryKnowledge(db:PoolClient,actor:CurrentSessio
   const profile=await readProfile(actor,customer_id,db,undefined,undefined,false,true) as {acceptedFacts:Array<{id:string;supportStatus:string}>;attributedResearch:Array<{sourceRevisionId:string}>};
   const eligible=new Set([...profile.acceptedFacts.filter(f=>['settled','restricted_source'].includes(f.supportStatus)).map(f=>`accepted_manual:${f.id}`),...profile.attributedResearch.map(s=>`attributed_research:${s.sourceRevisionId}`)]);
   const context=await readCustomerAccountEvidence(db,principal,customer_id);
-  const citations=[...new Set([...previous.filter(id=>eligible.has(id)),...context.entries.map(entry=>`${entry.type}:${entry.citationId}`)])];
+  const citations=[...new Set([...previous.filter(id=>eligible.has(id)),...context.entries.map(entry=>`${entry.type}:${entry.citationId}`),...(context.publicInventory?.evidence.map(story=>'attributed_research:'+story.sourceRevisionId)??[])])];
   retiredNamed.push(...previous.filter(id=>!eligible.has(id)));
   if(citations.length>100)throw new HttpFailure(422,'scope_too_large','Narrow the current customer evidence context');
   await db.query(`UPDATE general_customer_read_scopes SET citation_ids=$3,checked_at=clock_timestamp()

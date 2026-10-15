@@ -47,3 +47,16 @@ it('hides native task-state wakeups and settles the current workflow receipt',()
  expect(visibleChatMessages([message],events)).toEqual([]);
  expect(backgroundChatActivity(events,Date.parse('2026-10-14T00:02:00Z')).thinking).toBe(false);
 });
+
+it('places corrected answer steps after their actual user delivery while keeping earlier streamed text',()=>{
+ const user=(id:string,text:string)=>({id:id+':user',role:'user',metadata:{turnId:'turn'},parts:[{type:'text',text}]} as EveMessage);
+ const first=user('evt_first','Original question'),correction=user('evt_correction','Correction');
+ const assistant={id:'assistant',role:'assistant',metadata:{turnId:'turn'},parts:[{type:'text',stepIndex:0,text:'Earlier streamed text'},{type:'text',stepIndex:1,text:'Corrected answer'}]} as EveMessage;
+ const events=[{type:'message.received',data:{turnId:'turn',message:'Original question'},meta:{id:'evt_first'}},
+  {type:'step.started',data:{turnId:'turn',stepIndex:0},meta:{}},
+  {type:'message.received',data:{turnId:'turn',message:'Correction'},meta:{id:'evt_correction'}},
+  {type:'step.started',data:{turnId:'turn',stepIndex:1},meta:{}}] as unknown as MessageStreamEvent[];
+ const texts=visibleChatMessages([first,assistant,correction],events).map(message=>message.parts.filter(part=>part.type==='text').map(part=>part.text).join(''));
+ expect(texts).toEqual(['Original question','Earlier streamed text','Correction','Corrected answer']);
+ expect(visibleChatMessages([first,{...assistant,parts:assistant.parts.slice(1)},correction],events).map(message=>message.role)).toEqual(['user','user','assistant']);
+});

@@ -1,5 +1,5 @@
 {
-  "version": 68,
+  "version": 70,
   "migrations": [
     {
       "file": "001-identity-foundation.cjs",
@@ -272,6 +272,14 @@
     {
       "file": "068-ordinary-chat-steering.cjs",
       "sha256": "c8fe82270f41416503361d230a71f3d7db23cb8d9e8491e175cd44ab89287599"
+    },
+    {
+      "file": "069-legacy-document-formats.cjs",
+      "sha256": "1a7f6279067f97f6642ea93a6adda21529db85eaec98276c9001f304b5308f52"
+    },
+    {
+      "file": "070-public-customer-inventory.cjs",
+      "sha256": "8380df6c15cc385c326eaf0cef80722961be4140a2f90687a6079aaf3b5a0426"
     }
   ]
 }

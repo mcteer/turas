@@ -10,11 +10,28 @@ import {projectNativeEvent} from '../../lib/server/conversations/projection';
 import {prepareOrdinarySteering,recordSteeringReceipt,currentAttemptUserMessages} from '../../lib/server/conversations/steering';
 import {wrapOrdinaryChatModel} from '../../lib/server/conversations/model-budget';
 import {withTransaction} from '../../lib/server/db/client';
+import {authorizeOwnedOrdinaryRetirement} from '../../lib/server/conversations/ordinary-retirement';
 import {reserveOrdinaryOutput,settleOrdinaryOutput} from '../../lib/server/conversations/token-allowance';
+import {requestOwnedTaskCancellation} from '../../lib/server/conversations/cancel';
 
 const isolated=requireTestDatabaseUrl();
 beforeAll(()=>{const runtime=new URL(isolated);runtime.searchParams.set('options','-c role=turas_runtime');process.env.DATABASE_URL=runtime.toString();process.env.TURAS_ENVIRONMENT_ID=process.env.TURAS_TEST_ENVIRONMENT_ID;});
 const event=(type:string,data:Record<string,unknown>)=>({type,data,meta:{id:`evt_${randomUUID()}`,at:new Date().toISOString()}});
+
+it('keeps a late prior-turn cancellation attached to its original attempt and never reopens a stopped delivery',async()=>{
+ const f=await fixture();try{
+  await projectNativeEvent(f.native,f.attemptId,event('turn.completed',{turnId:f.turn}));
+  const text='A second queued request';const next=await prepareAttempt(f.actor,f.conversation.id,f.native,randomUUID(),text);
+  await claimDispatch(f.actor,f.conversation.id,next.attemptId,0);
+  await requestOwnedTaskCancellation(f.actor,f.native);
+  await projectNativeEvent(f.native,next.attemptId,event('turn.cancelled',{turnId:f.turn}));
+  expect((await f.db.query('SELECT response_state FROM response_attempts WHERE id=$1',[next.attemptId])).rows[0].response_state).toBe('stopping');
+  const nextTurn='turn_'+randomUUID();await projectNativeEvent(f.native,next.attemptId,event('message.received',{turnId:nextTurn,message:text}));
+  expect((await f.db.query('SELECT response_state FROM response_attempts WHERE id=$1',[next.attemptId])).rows[0].response_state).toBe('stopping');
+  await projectNativeEvent(f.native,next.attemptId,event('turn.cancelled',{turnId:nextTurn}));
+  expect((await f.db.query('SELECT response_state FROM response_attempts WHERE id=$1',[next.attemptId])).rows[0].response_state).toBe('cancelled');
+ }finally{await f.db.end();}
+});
 
 async function fixture(){
  const db=new Client({connectionString:isolated});await db.connect();
@@ -128,5 +145,22 @@ it('blocks provider I/O and new corrections after cancellation starts',async()=>
   expect(calls).toBe(0);
   await expect(prepareOrdinarySteering(f.actor,f.conversation.id,f.native,randomUUID(),'A late correction')).rejects.toBeDefined();
   expect((await f.db.query('SELECT count(*)::int AS n FROM ordinary_model_operations WHERE conversation_id=$1',[f.conversation.id])).rows[0].n).toBe(0);
+ }finally{await f.db.end();}
+});
+
+it('requires the current owner and CSRF before closing ordinary admission for native retirement',async()=>{
+ const f=await fixture();try{
+  const {issueSession,sessionCookie}=await import('../../lib/server/auth/sessions');
+  const issued=await issueSession({principalId:f.actor.principalId,membershipId:f.actor.membershipId,workspaceId:f.actor.workspaceId,loginName:f.actor.loginName,displayName:f.actor.displayName,kind:f.actor.kind,role:f.actor.role});
+  const cookie=sessionCookie(issued.token,issued.expiresAt).split(';')[0],origin=process.env.TURAS_APP_ORIGIN!;
+  const session=await getCurrentSession(new Request(origin,{headers:{cookie}}));if(!session)throw Error('Local retirement login unavailable');
+  const request=(csrf?:string)=>new Request(origin+'/eve/v1/session/'+f.native+'/reset',{method:'POST',headers:{origin,cookie,...(csrf?{'x-csrf-token':csrf}:{})},body:JSON.stringify({reason:'Disposable owned retirement check'})});
+  await expect(authorizeOwnedOrdinaryRetirement(request(),f.native)).rejects.toMatchObject({status:403});
+  const {csrfTokenForSession}=await import('../../lib/server/auth/csrf');
+  const csrf=csrfTokenForSession(session.token);
+  await expect(authorizeOwnedOrdinaryRetirement(request(csrf),'wrun_unowned')).rejects.toMatchObject({status:404});
+  expect((await f.db.query('SELECT response_state FROM response_attempts WHERE id=$1',[f.attemptId])).rows[0].response_state).toBe('running');
+  expect(await authorizeOwnedOrdinaryRetirement(request(csrf),f.native)).toBe(f.actor.principalId);
+  expect((await f.db.query('SELECT response_state FROM response_attempts WHERE id=$1',[f.attemptId])).rows[0].response_state).toBe('stopping');
  }finally{await f.db.end();}
 });

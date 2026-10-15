@@ -1,5 +1,6 @@
 import {communityAttributionWarning} from "../research/attribution";
 import { productsFromResearch } from "../../profiles/research-products";
+import {readPublicInventoryReference,curatedProductNames} from './public-inventory-reference';
 import { profileDeliverySummary } from "./delivery-summary";
 import { retrievalSourceHasMaterialConflict } from "../retrieval/search";
 import { readPublicCustomerCoverage } from "../research/public-read";
@@ -277,6 +278,7 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
       for(const document of retained.rows)if(createHash('sha256').update(document.document_text).digest('hex')===document.document_digest)
         documents.set(document.source_revision_id,document.document_text);
     }
+    const publicInventory=await readPublicInventoryReference(client,actor,customerId);
     const attributedResearch = eligibleResearch.map((row) => {
       const checked = qualityInputSchema.safeParse(row.quality_input);
       const input = checked.success ? checked.data : unknownQualityInput;
@@ -291,7 +293,9 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
       const productText=row.passage;
       return { sourceRevisionId: row.id, state: "researched", title: row.title,
         acceptanceState: "accepted", acceptanceBasis: "independent_research",
-        productNames: input.informationType === "product_capability" || communityAttributionWarning({url:row.location}) ? [] : productsFromResearch([{title:row.title,quote:productText}]),
+        productNames: communityAttributionWarning({url:row.location}) ? [] : [...new Set([
+          ...curatedProductNames(publicInventory?.evidence.filter(story=>story.sourceRevisionId===row.id).flatMap(story=>story.products)??[]),
+          ...(input.informationType === "product_capability"?[]:productsFromResearch([{title:row.title,quote:productText}]))])],
         documentDigest: document ? createHash('sha256').update(document).digest('hex') : null,
         location: row.location, passage: row.passage, supportedClaim: row.supported_claim,
         publicationAt: row.publication_at?.toISOString() ?? null,
@@ -316,7 +320,7 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
     return { customer: { id: customer.rows[0].id, displayName: customer.rows[0].display_name,
       synthetic: customer.rows[0].synthetic }, workloads: workloads.rows.map((row) => ({
       id: row.id, displayName: row.display_name, lifecycle: row.lifecycle })),
-      acceptedFacts, attributedResearch, activeDelivery: await profileDeliverySummary(client,actor,customerId,selectedWorkloadId,allowInternal,customerWideOnly), publicResearchCoverage: await readPublicCustomerCoverage(client,actor,customerId),
+      acceptedFacts, attributedResearch, publicInventory, activeDelivery: await profileDeliverySummary(client,actor,customerId,selectedWorkloadId,allowInternal,customerWideOnly), publicResearchCoverage: await readPublicCustomerCoverage(client,actor,customerId),
       canReview,
       ...(openConflicts ? { openConflicts: openConflicts.rows.map((row) => ({
         id: row.id, state: row.state, version: Number(row.version),

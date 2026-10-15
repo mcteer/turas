@@ -35,7 +35,7 @@ try {
     TURAS_DEMO_USERNAME:"mcteer",TURAS_DEMO_PASSWORD:"synthetic-test-password",
     PANEL_USERNAME:"panel",PANEL_PASSWORD:"synthetic-test-password",
     PARTNER_USERNAME:"partner",PARTNER_PASSWORD:"synthetic-test-password",
-    TURAS_MAINTENANCE_SECRET:randomBytes(32).toString("hex"),AI_GATEWAY_API_KEY:"",VERCEL_ENV:""};
+    TURAS_MAINTENANCE_SECRET:randomBytes(32).toString("hex"),AI_GATEWAY_API_KEY:"",VERCEL_OIDC_TOKEN:"",CONTEXT_API_KEY:"",CONTEXT_DEV_API_KEY:"",VERCEL_ENV:""};
   function run(args,env=environment) {
     const result = spawnSync(process.execPath,args,{env,encoding:"utf8",maxBuffer:12*1024*1024});
     output += (result.stdout??"")+(result.stderr??"");
@@ -49,13 +49,14 @@ try {
     DATABASE_URL:"postgresql://unused:unused@127.0.0.1:1/application",
     DATABASE_URL_UNPOOLED:"postgresql://unused:unused@127.0.0.1:1/application",
     TURAS_TEST_DATABASE_URL:url,TURAS_TEST_ENVIRONMENT_ID:environment.TURAS_ENVIRONMENT_ID};
-  run(["node_modules/vitest/vitest.mjs","run","tests/integration/named-customer-chat.test.ts",
+  if(!process.argv.includes("--native-only"))run(["node_modules/vitest/vitest.mjs","run","tests/integration/named-customer-chat.test.ts",
     "tests/integration/general-chat.test.ts","tests/integration/legacy-research-transactions.test.ts",
-    "tests/integration/parity-evaluation-budget.test.ts","tests/integration/specialist-profile-persistence.test.ts","tests/integration/legacy-knowledge-mechanics.test.ts","tests/integration/live-customer-chat.test.ts","tests/integration/ordinary-steering.test.ts"],integrationEnvironment);
+    "tests/integration/parity-evaluation-budget.test.ts","tests/integration/specialist-profile-persistence.test.ts","tests/integration/legacy-knowledge-mechanics.test.ts","tests/integration/live-customer-chat.test.ts","tests/integration/ordinary-steering.test.ts","tests/integration/legacy-document-formats.test.ts","tests/integration/research-maintenance.test.ts","tests/integration/public-customer-inventory.test.ts"],integrationEnvironment);
   // Route contracts read DATABASE_URL directly; they do not use the integration
   // fixture's explicit test-database selector.
   const contractUrl=new URL(url);contractUrl.searchParams.set('options','-c role=turas_runtime');
-  run(["node_modules/vitest/vitest.mjs","run","tests/contracts/general-chat.test.ts"],{...environment,DATABASE_URL:contractUrl.toString(),DATABASE_URL_UNPOOLED:contractUrl.toString()});
+  if(!process.argv.includes("--native-only"))run(["node_modules/vitest/vitest.mjs","run","tests/contracts/general-chat.test.ts"],{...environment,DATABASE_URL:contractUrl.toString(),DATABASE_URL_UNPOOLED:contractUrl.toString()});
+  if(process.argv.includes('--native')||process.argv.includes('--native-only'))run(['--import','tsx','scripts/check-ordinary-chat-native.ts'],integrationEnvironment);
   console.log("Disposable migrations, runtime grants and chat, source-persistence, transaction and budget checks passed");
 } catch(error) {
   console.error(error.message);

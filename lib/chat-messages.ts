@@ -64,7 +64,7 @@ export function visibleChatMessages(
       failedTurns.add(event.data.turnId);
     }
   }
-  return messages.filter((message) =>
+  const visible:EveMessage[]=messages.filter((message) =>
     message.role !== "user" ||
     !message.metadata?.turnId ||
     !internalTurns.has(message.metadata.turnId),
@@ -75,10 +75,34 @@ export function visibleChatMessages(
     // Raw error details remain in the authorized event stream.
     return {
       ...message,
-      role: "assistant",
-      parts: [{ type: "text", text: "Background research stopped before a result was handed back. Review any limit or cancellation notice above. You can start a new research request when you’re ready." }],
+      role: "assistant" as const,
+      parts: [{ type: "text" as const, text: "Background research stopped before a result was handed back. Review any limit or cancellation notice above. You can start a new research request when you’re ready." }],
     };
   });
+  // Eve keeps one assistant message per turn, including a placeholder created
+  // before a correction. Render its step parts at their actual boundary so a
+  // corrected answer cannot appear above the user message that requested it.
+  const output=[...visible];
+  for(const assistant of visible){
+    const turnId=assistant.metadata?.turnId;if(assistant.role!=='assistant'||!turnId)continue;
+    const deliveries=events.flatMap((event,index)=>event.type==='message.received'&&event.data.turnId===turnId
+      ?[{index,id:`${event.meta.id}:user`}]:[]).filter(delivery=>visible.some(message=>message.id===delivery.id&&message.role==='user'));
+    if(deliveries.length<2)continue;
+    const groups=new Map<string,EveMessage['parts'][number][]>();
+    for(const part of assistant.parts){
+      const step='stepIndex' in part?part.stepIndex:undefined;
+      const boundary=step===undefined?-1:events.findIndex(event=>event.type==='step.started'&&event.data.turnId===turnId&&event.data.stepIndex===step);
+      const delivery=[...deliveries].reverse().find(delivery=>delivery.index<boundary)??deliveries[0];
+      groups.set(delivery.id,[...(groups.get(delivery.id)??[]),part]);
+    }
+    const original=output.indexOf(assistant);if(original<0)continue;output.splice(original,1);
+    for(const [deliveryId,parts]of groups){
+      if(!parts.some(part=>part.type==='text'&&part.text.length))continue;
+      const position=output.findIndex(message=>message.id===deliveryId);if(position<0)continue;
+      output.splice(position+1,0,{...assistant,id:`${assistant.id}:${deliveryId}`,parts});
+    }
+  }
+  return output;
 }
 
 // Admission finishes the initiating tool call, not the background work. Keep

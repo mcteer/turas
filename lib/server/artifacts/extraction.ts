@@ -15,6 +15,8 @@ export type ArtifactExtractionExpectation = {
 const locatorKindByFormat = {
   pdf: "pdf", docx: "docx", pptx: "pptx", xlsx: "xlsx", csv: "csv",
   txt: "txt", md: "md", png: "image", jpeg: "image",
+  json: "txt", html: "document_text", rtf: "document_text", epub: "document_text",
+  odt: "document_text", ods: "document_text", odp: "document_text", odg: "document_text",
 } as const;
 
 /** Validate a parser result before any SQL write; parser values never define authorization scope. */

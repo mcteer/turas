@@ -113,6 +113,23 @@ it('retains new public research for an assigned partner, preserves curated claim
   const researchActor={...actor,userId:actor.principalId,environmentId:process.env.TURAS_ENVIRONMENT_ID!};
   expect(await researchSourceIsEligible(researchActor,customerId,url)).toBe(true);
   expect(await researchSourceIsEligible(researchActor,customerId,'https://example.com/new-independent-source')).toBe(true);
+  const classified={...sourceForRetention,informationType:'product_capability' as const,cache:{snapshotId:checked.snapshot,checkedAt:checked.page.retrievedAt,refreshAfter:new Date(Date.now()+3600000).toISOString()}};
+  expect(await retainSpecialistProfileSources(researchActor,customerId,[classified])).toMatchObject({updated:1});
+  const capability=z.object({attributedResearch:z.array(z.object({productNames:z.array(z.string()),retrievalAt:z.string()}))}).parse(await readProfile(actor,customerId));
+  expect(capability.attributedResearch[0].productNames).toEqual([]);
+  expect(capability.attributedResearch[0].retrievalAt).toBe(checked.page.retrievedAt);
+  expect(await retainSpecialistProfileSources(researchActor,customerId,[{...classified,informationType:'architecture'}])).toMatchObject({updated:1});
+  const architecture=z.object({attributedResearch:z.array(z.object({productNames:z.array(z.string()),retrievalAt:z.string()}))}).parse(await readProfile(actor,customerId));
+  expect(architecture.attributedResearch[0].productNames).toContain('Sandbox');
+  expect(architecture.attributedResearch[0].retrievalAt).toBe(checked.page.retrievedAt);
+  // Overlapping selections near the 8k limit must not displace earlier facts.
+  const longDocument=name+' '+Array.from({length:110},(_,i)=>`Documented architecture detail ${String(i).padStart(3,'0')}: isolated execution and verified delivery. `).join('');
+  const priorQuotes=Array.from({length:5},(_,i)=>longDocument.slice(i*1300,i*1300+1300));
+  for(const quote of priorQuotes)await retain(longDocument,quote,0,true);
+  await retain(longDocument,longDocument.slice(5200,6700),0,true);
+  const overlapping=z.object({attributedResearch:z.array(z.object({passage:z.string()}))}).parse(await readProfile(actor,customerId));
+  for(const quote of priorQuotes)expect(overlapping.attributedResearch[0].passage).toContain(quote);
+  expect(overlapping.attributedResearch[0].passage).toContain(longDocument.slice(5200,6700));
   const head=(await db.query(`SELECT v.id FROM evidence_source_revisions v JOIN evidence_sources s ON s.id=v.source_id
     WHERE s.customer_id=$1 AND s.origin='independent_research' AND s.canonical_location=$2 ORDER BY v.version DESC LIMIT 1`,[customerId,url])).rows[0];
   await db.query(`INSERT INTO evidence_source_events(id,source_revision_id,lifecycle_version,event_type,actor_membership_id,rationale)

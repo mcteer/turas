@@ -5,8 +5,9 @@ TAM, account teams and partners.
 
 Turas brings reviewed customer context, planning, staffing, execution and reporting
 into one workspace. **Turi**, its eve-powered assistant, explains and proposes next
-steps using authorized evidence. Human review—not a model response—determines which
-facts and decisions become accepted.
+steps using authorized evidence. Independently checked research updates customer
+knowledge automatically. Manually supplied claims and governed decisions retain
+their separate human review requirements.
 
 **Status:** active development. Customer profiles through executive reporting and
 TAM/support guidance (010), product expansion (011), product gaps (012) and partner enablement (013) are implemented. Local validation and basic hosted smoke
@@ -43,9 +44,21 @@ The native question/new-login/answer/reloaded-history flow passed actual-model
 CLI WebKit checks on Preview `77ec4be`; final release verification remains open.
 Migration 068 adds owner-bound native chat corrections and concurrent provider
 token reservations. It is applied to Preview after an encrypted schema-67 capture
-and matching-version restore rehearsal; hosted correction checks remain open.
+and matching-version restore rehearsal. The real local Eve/headless WebKit check
+passes correction ordering, unchanged deadlines, reloaded history, Stop and native
+retirement using an unpaid deterministic provider; hosted correction remains open.
+Migrations 069–070 restore the legacy document formats and dated public inventory
+metadata, including the original five qualitative delivery signals. Preview's
+schema update passed an encrypted schema-68 capture and matching-version rehearsal.
+The inventory backfill binds existing canonical customers and checked source
+revisions; it creates no customer, maturity grade or accepted human claim.
+Research retains the specialist's information type and freshness window instead
+of classifying every source as adoption evidence. The original daily research
+maintenance route uses the cron bearer and bounded public-only rechecks without
+a human identity. Hosted format, maintenance and inventory acceptance remains open.
 Hosted model/provider checks are in progress under one shared $15 ledger.
-Specialist completion, full parity acceptance and cleanup remain open.
+All three specialists completed on Preview; final answer quality, explicit reuse,
+full parity acceptance and cleanup remain open.
 The root Grok model is unchanged.
 
 Customer Overview appears immediately below the customer heading, above workload controls.

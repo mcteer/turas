@@ -13,6 +13,13 @@ DO $$ BEGIN
 END $$;
 
 DO $$ BEGIN
+ IF to_regclass('public.public_customer_inventory_imports') IS NOT NULL THEN
+  REVOKE ALL ON public_customer_inventory_imports,public_customer_inventory_stories FROM turas_runtime;
+  GRANT SELECT,INSERT ON public_customer_inventory_imports,public_customer_inventory_stories TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
  IF to_regclass('public.independent_research_documents') IS NOT NULL THEN
   GRANT SELECT,INSERT ON independent_research_documents TO turas_runtime;
  END IF;

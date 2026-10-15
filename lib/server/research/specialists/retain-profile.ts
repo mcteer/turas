@@ -32,11 +32,16 @@ export async function retainSpecialistProfileSources(identity:AppIdentity,accoun
     const selected=references===undefined?researchPassageView(source).passages:researchPassages(source).filter(passage=>
       references.some(reference=>reference.sourceId===source.id && (reference.passageId===passage.id ||
         reference.quote!==undefined && passage.text.includes(reference.quote))));
-    const quotes=[...new Set(selected.map(passage=>{
+    // A finalized reference may identify a precise quotation within a larger
+    // cached passage. Keep that quotation rather than expanding it and using
+    // the immutable 8k profile allowance on unrelated surrounding text.
+    const explicitQuotes=references?.filter(reference=>reference.sourceId===source.id && reference.quote!==undefined &&
+      selected.some(passage=>passage.text.includes(reference.quote!))).map(reference=>reference.quote!)??[];
+    const quotes=[...new Set((explicitQuotes.length?explicitQuotes:selected.map(passage=>{
       if(passage.text.length>=40)return passage.text;
       const start=page.text.indexOf(passage.text);
       return start<0?'':page.text.slice(start,start+100);
-    }).filter(quote=>quote.length>=40 && page.text.includes(quote)))].slice(0,12);
+    })).filter(quote=>quote.length>=40 && page.text.includes(quote)))].slice(0,12);
     if(!quotes.length){skipped++;continue;}
     const caveat=communityAttributionWarning(source);
     const dossier={description:'',findings:quotes.map(quote=>({area:'architecture_outcomes' as const,
@@ -45,11 +50,11 @@ export async function retainSpecialistProfileSources(identity:AppIdentity,accoun
       state:area==='architecture_outcomes'?'supported' as const:'incomplete' as const,
       explanation:area==='architecture_outcomes'?'Exact source passages were retained.':'A source read does not establish a complete assessment of this area.'})),
       unknowns:['Source retention does not establish private operating status or a complete customer-state assessment.']};
-    const requestKey=requestUuid(JSON.stringify([accountId,source.cache.snapshotId,page.retrievedAt,quotes]));
+    const requestKey=requestUuid(JSON.stringify([accountId,source.cache.snapshotId,page.retrievedAt,quotes,source.informationType??null]));
     const result=await persistSpecialistCustomerResearch(identity,{requestKey,
       batchDigest:publicDigest(JSON.stringify([source.cache.snapshotId,page.normalizedDigest,quotes])),
       customer:{name:account.name,industries:[],directoryListed:false,stories:[{url:page.url,title:page.title}]},dossier,
-      usage:{searches:0,fetches:0,inputTokens:0,outputTokens:0,costUsd:null,model:'server-source-retention',modelCalls:0}},[page],accountId);
+      usage:{searches:0,fetches:0,inputTokens:0,outputTokens:0,costUsd:null,model:'server-source-retention',modelCalls:0}},[page],accountId,source.informationType);
     if(!result.replayed)updated++;
   }
   return {updated,skipped};

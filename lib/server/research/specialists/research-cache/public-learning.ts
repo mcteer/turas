@@ -99,12 +99,11 @@ export async function recallPublicLearning(identity: AppIdentity, accountId: str
 
 // Use the existing authenticated maintenance job. Bounded public page checks, no
 // autonomous model sessions, internal connector access or customer writes.
-export async function refreshPublicLearning(identity: AppIdentity, signal: AbortSignal) {
-  const environmentId = identity.environmentId;
+export async function refreshPublicLearning(environmentId:string,signal:AbortSignal) {
   const sql = await evidenceDatabase();
   const due = z.array(z.object({ workspace_id: z.string(), account_id: z.string(), url: z.string() })).parse(await sql.query(`
     WITH candidates AS (
-      SELECT workspace_id,account_id,url FROM turas_public_learning WHERE environment_id=$1 AND workspace_id=$2
+      SELECT workspace_id,account_id,url FROM turas_public_learning WHERE environment_id=$1
         AND coalesce(refresh_attempt_at,last_seen)<now()-interval '1 day'
       GROUP BY workspace_id,account_id,url ORDER BY min(coalesce(refresh_attempt_at,last_seen)) LIMIT 2
     ), claimed AS (
@@ -112,15 +111,15 @@ export async function refreshPublicLearning(identity: AppIdentity, signal: Abort
       WHERE l.environment_id=$1 AND l.workspace_id=c.workspace_id AND l.account_id=c.account_id AND l.url=c.url
         AND coalesce(l.refresh_attempt_at,l.last_seen)<now()-interval '1 day'
       RETURNING l.workspace_id,l.account_id,l.url
-    ) SELECT DISTINCT workspace_id,account_id,url FROM claimed`, [environmentId,identity.workspaceId]));
+    ) SELECT DISTINCT workspace_id,account_id,url FROM claimed`, [environmentId]));
   let refreshed = 0;
-  const { readCachedSource } = await import("./sources");
+  const {refreshRetainedPublicSource,retainedPublicSourceMaintenanceAllowed}=await import("./sources");
   for (const row of due) {
     signal.throwIfAborted();
     try {
-      await requireResearchAccount(identity,row.account_id);
-      const check = await readCachedSource(identity,
-        row.account_id, "public evidence", row.url, AbortSignal.any([signal, AbortSignal.timeout(15000)]));
+      const scope={environmentId,workspaceId:row.workspace_id};
+      const check=await refreshRetainedPublicSource(scope,row.account_id,row.url,AbortSignal.any([signal,AbortSignal.timeout(15000)]));
+      if(!await retainedPublicSourceMaintenanceAllowed(scope,row.account_id,row.url))continue;
       // Preserve every historical passage. Only mark text confirmed when the
       // current page still contains it; removed or changed passages remain dated.
       await sql.query(`UPDATE turas_public_learning SET snapshot_id=$5,last_seen=greatest(last_seen,$6::timestamptz)

@@ -11,6 +11,7 @@ import {currentAttemptUserMessages} from '../../lib/server/conversations/steerin
 const authoredTool=defineTool({
  description:'Save a DRAFT customer journey note, milestone, risk, decision or measured outcome from customer context explicitly supplied by the user. Preserve scope, journey stage, dates, source and numeric impact. It remains Pending steward review; this neither accepts a fact nor publishes a reusable pattern. source.excerpt must quote the actual user message, never an assistant reply or invented evidence.',
  inputSchema:z.object({accountId:accountIdSchema,requestId:z.uuid(),context:contextSchema}).strict(),
+ label:{start:()=> 'Review customer context draft',complete:()=> 'Draft saved for review'},
  async execute(input,ctx){
   ctx.abortSignal.throwIfAborted();
   return withTransaction(async db=>{

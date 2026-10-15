@@ -6,6 +6,10 @@
     {
       "path": "/eve/v1/turas/watchdog",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/internal/research-maintenance",
+      "schedule": "17 3 * * *"
     }
   ],
   "git": {

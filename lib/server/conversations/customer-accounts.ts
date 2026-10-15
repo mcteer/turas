@@ -10,6 +10,7 @@ import { unsupportedProfileRevisionIds } from "../profiles/eligibility";
 import { retrievalSourceHasMaterialConflict } from "../retrieval/search";
 import { authorizeRetrievalScope } from "../retrieval/policy";
 import { assertRetrievalDependenciesCurrent } from "../retrieval/fences";
+import {readPublicInventoryReference} from '../profiles/public-inventory-reference';
 
 type Principal = Parameters<typeof boundToolActor>[1];
 type Account = { id: string; name: string; aliases: string[]; workloads: string[] };
@@ -81,6 +82,7 @@ export async function readCustomerAccountEvidence(db: PoolClient, principal: Pri
   await lockProfileActor(db, scope.actor, customerId, undefined, true);
   const context = await readEligibleContext(scope.actor, customerId,
     { ...options, limit: 20, shareActorRows: true }, db) as Context;
+  const publicInventory=await readPublicInventoryReference(db,scope.actor,customerId);
   if (scope.general) {
     await db.query(`INSERT INTO general_customer_read_scopes
       (attempt_id,customer_id,audience,generation,citation_ids)
@@ -88,9 +90,9 @@ export async function readCustomerAccountEvidence(db: PoolClient, principal: Pri
        generation=EXCLUDED.generation,citation_ids=CASE WHEN general_customer_read_scopes.generation=EXCLUDED.generation THEN ARRAY(SELECT DISTINCT unnest(
          general_customer_read_scopes.citation_ids||EXCLUDED.citation_ids)) ELSE EXCLUDED.citation_ids END,checked_at=clock_timestamp()`,
     [scope.attemptId, customerId, scope.actor.kind === "internal" ? "internal" : "delivery",
-      context.contextVersion, context.entries.map(entry => `${entry.type}:${entry.citationId}`)]);
+      context.contextVersion, [...new Set([...context.entries.map(entry => `${entry.type}:${entry.citationId}`),...(publicInventory?.evidence.map(story=>'attributed_research:'+story.sourceRevisionId)??[])])]]);
   }
-  return context;
+  return {...context,publicInventory};
 }
 
 /** Recheck named reads on every paid step and stream release, just as scoped

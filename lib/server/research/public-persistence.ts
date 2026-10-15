@@ -9,6 +9,7 @@ import { materializeCurrentProjection, retireRetrievalProjection } from "../retr
 import { enqueuePlanCleanupForSource } from "../plans/cleanup";
 import { qualityInputSchema } from "../../contracts/profiles";
 import { rateEvidence } from "../profiles/quality";
+import {informationTypeSchema,type InformationType} from './specialists/solution-research/freshness';
 import { publicCustomerSchema, publicDigest, validatePublicDossier, assertCheckedPublicPage,
   type PublicCustomer, type CheckedPublicPage } from "./public-dossier";
 
@@ -28,17 +29,19 @@ export async function persistPublicCustomerResearch(actor: CurrentSession, raw: 
  * human-claim approval authority. This entry still requires exact signed pages,
  * current customer access and the shared source-origin/eligibility checks. */
 export async function persistSpecialistCustomerResearch(actor:CurrentSession,raw:unknown,
-  pages:readonly CheckedPublicPage[],targetCustomerId:string) {
+  pages:readonly CheckedPublicPage[],targetCustomerId:string,informationType?:InformationType) {
   if(!targetCustomerId)throw new HttpFailure(422,"identity_required","Resolve the customer before retaining research");
-  return persistCheckedPublicCustomerResearch(actor,raw,pages,targetCustomerId,true);
+  return persistCheckedPublicCustomerResearch(actor,raw,pages,targetCustomerId,true,informationType);
 }
 
 async function persistCheckedPublicCustomerResearch(actor:CurrentSession,raw:unknown,
-  pages:readonly CheckedPublicPage[],targetCustomerId:string|undefined,specialist:boolean) {
+  pages:readonly CheckedPublicPage[],targetCustomerId:string|undefined,specialist:boolean,sourceInformationType?:InformationType) {
+  const sourceType=sourceInformationType?informationTypeSchema.parse(sourceInformationType):undefined;
+  const mappedInformationType=sourceType==='availability_pricing'?'product_availability':sourceType==='process_adoption'?'adoption_process':sourceType??'adoption_process';
   const input = receiptSchema.parse(raw);
   for(const page of pages)assertCheckedPublicPage(page);
   const dossier = validatePublicDossier(input.dossier, input.customer, pages);
-  const digest = publicDigest(JSON.stringify({ ...input, dossier, pages }));
+  const digest = publicDigest(JSON.stringify({ ...input, dossier, pages,...(sourceType?{sourceInformationType:sourceType}:{}) }));
   return withTransaction(async db => {
     await lockWorkspaceActor(db, actor);
     if (!specialist && (actor.kind !== "internal" || actor.role !== "admin")) throw new HttpFailure(403,"forbidden","Research batch requires an active administrator");
@@ -92,7 +95,7 @@ async function persistCheckedPublicCustomerResearch(actor:CurrentSession,raw:unk
       const sourceId=source?.id??randomUUID();
       if(!source)await db.query(`INSERT INTO evidence_sources(id,workspace_id,customer_id,origin,canonical_location,trusted_ingest_identity)
         VALUES($1,$2,$3,'independent_research',$4,'public-batch-fetch-v1')`,[sourceId,actor.workspaceId,customerId,page.url]);
-      const previous=(await db.query<{id:string;version:number;passage_digest:string;retrieval_at:Date;supported_claim:string;publication_at:Date|null;passage:string;retired:boolean}>(`SELECT v.id,v.version,v.passage_digest,v.retrieval_at,v.supported_claim,v.publication_at,v.passage,
+      const previous=(await db.query<{id:string;version:number;passage_digest:string;retrieval_at:Date;supported_claim:string;publication_at:Date|null;passage:string;retired:boolean;information_type:string}>(`SELECT v.id,v.version,v.passage_digest,v.retrieval_at,v.supported_claim,v.publication_at,v.passage,v.quality_input->>'informationType' AS information_type,
         EXISTS(SELECT 1 FROM evidence_source_events e WHERE e.source_revision_id=v.id AND e.event_type IN('withdraw','supersede')) AS retired
         FROM evidence_source_revisions v WHERE source_id=$1 ORDER BY version DESC LIMIT 1`,[sourceId])).rows[0];
       if(previous?.retired)throw new HttpFailure(409,"research_source_retired","Withdrawn public evidence requires explicit source recovery");
@@ -103,7 +106,22 @@ async function persistCheckedPublicCustomerResearch(actor:CurrentSession,raw:unk
         (previous.publication_at?.toISOString()??null)===(page.publishedAt?new Date(page.publishedAt).toISOString():null) &&
         previous.passage.split(/\n\s*\n/).every(quote=>quote.trim().length>0 && page.text.includes(quote.trim())));
       if(retainedPreviousClaim){
-        const quotes=[...new Set([...supported.map(f=>f.quote),...previous!.passage.split(/\n\s*\n/)])];
+        const selected=[...new Set([...supported.map(f=>f.quote),...previous!.passage.split(/\n\s*\n/)])];
+        // Overlapping excerpts from the same checked page must not consume the
+        // bounded profile allowance twice and displace earlier evidence.
+        const spans=selected.map(quote=>({start:page.text.indexOf(quote),end:page.text.indexOf(quote)+quote.length}))
+          .sort((a,b)=>a.start-b.start||b.end-a.end);
+        const merged:typeof spans=[];
+        for(const span of spans){
+          const last=merged.at(-1);
+          if(last && span.start<=last.end)last.end=Math.max(last.end,span.end);
+          else merged.push({...span});
+        }
+        // Retain the selected-support priority while deduplicating overlap.
+        const quotes=[...new Set(selected.map(quote=>{
+          const start=page.text.indexOf(quote),span=merged.find(span=>span.start<=start&&span.end>=start+quote.length)!;
+          return span.end-span.start<=8000?page.text.slice(span.start,span.end):quote;
+        }))];
         // Prefer the current selected support; preserve complete earlier quotes
         // within the existing immutable passage limit. Never truncate a quote.
         passage="";
@@ -124,12 +142,12 @@ async function persistCheckedPublicCustomerResearch(actor:CurrentSession,raw:unk
         else if(!currentClaim.includes(previous!.supported_claim))supportedClaim=`${currentClaim}\n${previous!.supported_claim}`;
       }
       if(previous && previous.retrieval_at.getTime()>Date.parse(page.retrievedAt))throw new HttpFailure(409,"research_observation_outdated","A newer checked source is already current");
-      if(previous?.passage_digest===passageDigest&&!previous.retired&&previous.supported_claim===supportedClaim&&previous.retrieval_at.getTime()===Date.parse(page.retrievedAt)){revisionIds.push(previous.id);continue;}
+      if(previous?.passage_digest===passageDigest&&!previous.retired&&previous.supported_claim===supportedClaim&&previous.retrieval_at.getTime()===Date.parse(page.retrievedAt)&&previous.information_type===mappedInformationType){revisionIds.push(previous.id);continue;}
       const id=randomUUID();
       const quality=qualityInputSchema.parse({rubricVersion:"evidence-quality-v1", R:1,D:4,C:0,
         reliabilityRationale:"Independently checked public source; factual acceptance is automatic, publisher and workload authority remain claim-specific",
         directnessRationale:"Exact retained quotation from checked public fetch",corroborationRationale:"No independent corroboration automatically counted",
-        informationType:"adoption_process",dateBasis:page.publishedAt?"publication":"unknown"});
+        informationType:mappedInformationType,dateBasis:page.publishedAt?"publication":"unknown"});
       await db.query(`INSERT INTO evidence_source_revisions(id,source_id,workspace_id,customer_id,version,location,title,passage,supported_claim,
         passage_digest,publication_at,retrieval_at,rights,audience,quality_input) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'delivery',$14)`,
         [id,sourceId,actor.workspaceId,customerId,Number(previous?.version??0)+1,page.url,page.title||"Attributed public research",passage,

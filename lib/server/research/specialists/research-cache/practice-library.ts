@@ -21,7 +21,7 @@ export const practiceRunSchema = z.object({ id: z.string(), product: z.string(),
 
 export async function recordVercelPracticeSource(identity: AppIdentity, product: string, topic: string, url: string, sourceType: z.infer<typeof practiceSourceTypeSchema>, informationType: z.infer<typeof informationTypeSchema>, signal: AbortSignal) {
   const sql = await evidenceDatabase();
-  const read = await readCachedSource(identity, "public-vercel-practice", `${product} ${topic}`, url, signal, undefined, { recordAccount: false });
+  const read = await readCachedSource(identity, "public-vercel-practice", `${product} ${topic}`, url, signal, undefined, { recordAccount: false,informationType });
   const source = sourceSchema.parse(read.source);
   const snapshot = source.cache;
   if (!snapshot) throw new Error("Practice source was not cached.");

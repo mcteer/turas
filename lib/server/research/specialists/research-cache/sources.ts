@@ -12,6 +12,7 @@ import { canonicalSourceUrl, digest, normalized, snapshotReferenceSchema } from 
 import { researchSourceIsEligible, requireResearchAccount } from "../account";
 import { withTransaction } from "../../../db/client";
 import { lockWorkspaceActor } from "../../../profiles/policy";
+import {getServerConfig} from "../../../config";
 
 const pageSchema = z.object({ source: sourceSchema, truncated: z.boolean(),proof:z.object({
   url:z.url(),title:z.string(),text:z.string(),bodyDigest:z.string(),normalizedDigest:z.string(),
@@ -20,11 +21,52 @@ const pageSchema = z.object({ source: sourceSchema, truncated: z.boolean(),proof
 }).optional() });
 const snapshotSchema = z.object({ id: z.string(), source: sourceSchema, truncated: z.boolean(), checked_at: z.coerce.date(), refresh_after: z.coerce.date(), index_state: z.string() });
 
-export async function readCachedSource(identity: AppIdentity, accountId: string, workload: string, url: string, signal: AbortSignal, notBefore?: Date, options: { recordAccount?: boolean;independentDiscovery?:CheckedPublicPage["independentDiscovery"] } = {}) {
-  if(options.recordAccount!==false) await requireResearchAccount(identity,accountId);
+type ReadOptions={recordAccount?:boolean;independentDiscovery?:CheckedPublicPage["independentDiscovery"];informationType?:z.infer<typeof sourceSchema>['informationType']};
+const maintenanceBrand=Symbol('retained-public-source-maintenance');
+type MaintenanceScope=Pick<AppIdentity,'environmentId'|'workspaceId'>&{[maintenanceBrand]:true;accountId:string;url:string};
+
+export async function readCachedSource(identity:AppIdentity,accountId:string,workload:string,url:string,signal:AbortSignal,notBefore?:Date,options:ReadOptions={}){
+ return readCachedSourceForScope(identity,accountId,workload,url,signal,notBefore,options);
+}
+
+/** Service maintenance can only recheck an already-retained public URL. It has
+ * no human login, private customer-read capability, or profile-write authority. */
+export async function refreshRetainedPublicSource(scope:Pick<AppIdentity,'environmentId'|'workspaceId'>,accountId:string,url:string,signal:AbortSignal){
+ const canonical=canonicalSourceUrl(url);
+ const authority:MaintenanceScope={...scope,accountId,url:canonical,[maintenanceBrand]:true};
+ await assertPublicMaintenanceScope(authority);
+ return readCachedSourceForScope(authority,accountId,'public evidence',canonical,signal,undefined,{recordAccount:false});
+}
+export async function retainedPublicSourceMaintenanceAllowed(scope:Pick<AppIdentity,'environmentId'|'workspaceId'>,accountId:string,url:string){
+ try{await assertPublicMaintenanceScope({...scope,accountId,url:canonicalSourceUrl(url),[maintenanceBrand]:true});return true;}catch{return false;}
+}
+async function assertPublicMaintenanceScope(scope:MaintenanceScope){
+ if(scope.environmentId!==getServerConfig().TURAS_ENVIRONMENT_ID)throw new Error('Research maintenance environment mismatch');
+ await withTransaction(async db=>{
+  const allowed=await db.query(`SELECT 1 FROM turas_public_learning l
+   JOIN customer_references c ON c.id::text=l.account_id AND c.workspace_id::text=l.workspace_id AND NOT c.synthetic
+   JOIN workspaces w ON w.id=c.workspace_id AND w.active
+   WHERE l.environment_id=$1 AND l.workspace_id=$2 AND l.account_id=$3 AND l.url=$4
+    AND NOT EXISTS(SELECT 1 FROM evidence_sources s LEFT JOIN LATERAL
+     (SELECT id FROM evidence_source_revisions WHERE source_id=s.id ORDER BY version DESC LIMIT 1) head ON true
+     WHERE s.workspace_id=c.workspace_id AND s.customer_id=c.id AND s.origin='independent_research' AND s.canonical_location=l.url
+      AND (head.id IS NULL OR EXISTS(SELECT 1 FROM evidence_source_events e WHERE e.source_revision_id=head.id AND e.event_type IN('withdraw','supersede'))
+       OR NOT EXISTS(SELECT 1 FROM research_checks checks WHERE checks.source_revision_id=head.id AND checks.identity_result AND checks.scope_result AND checks.integrity_result AND checks.content_result)
+       OR EXISTS(SELECT 1 FROM evidence_conflicts conflict WHERE conflict.workspace_id=c.workspace_id AND conflict.customer_id=c.id
+        AND conflict.state IN('flagged','confirmed') AND head.id IN(conflict.first_revision_id,conflict.second_revision_id)))) LIMIT 1`,
+   [scope.environmentId,scope.workspaceId,scope.accountId,scope.url]);
+  if(!allowed.rowCount)throw new Error('Public maintenance source is no longer eligible');
+ });
+}
+async function readCachedSourceForScope(identity:AppIdentity|MaintenanceScope,accountId:string,workload:string,url:string,signal:AbortSignal,notBefore?:Date,options:ReadOptions={}) {
+  const maintenance=maintenanceBrand in identity;
+  if(maintenance){
+   if(options.recordAccount!==false || identity.accountId!==accountId || identity.url!==canonicalSourceUrl(url))throw new Error('Invalid public maintenance scope');
+   await assertPublicMaintenanceScope(identity);
+  } else if(options.recordAccount!==false) await requireResearchAccount(identity,accountId);
   else await withTransaction(db=>lockWorkspaceActor(db,identity,undefined,true));
   const canonical = canonicalSourceUrl(url);
-  if(options.recordAccount!==false && !await researchSourceIsEligible(identity,accountId,canonical))
+  if(!maintenance && options.recordAccount!==false && !await researchSourceIsEligible(identity,accountId,canonical))
     throw new Error("The customer source is no longer eligible; explicit source recovery is required.");
   const key = "page:" + digest(canonical);
   const read = await cachedFetch(identity, key, pageSchema, () => readPublicSource(canonical, signal), signal, { notBefore });
@@ -42,7 +84,7 @@ export async function readCachedSource(identity: AppIdentity, accountId: string,
       refresh_after=greatest(turas_evidence_snapshots.refresh_after,excluded.refresh_after),
       check_receipt=CASE WHEN excluded.checked_at>=turas_evidence_snapshots.checked_at THEN excluded.check_receipt ELSE turas_evidence_snapshots.check_receipt END`,
     [identity.environmentId, identity.workspaceId, id, key, source.url, contentHash, JSON.stringify(source), truncated, read.checkedAt, read.refreshAfter,proof?JSON.stringify(proof):null]);
-  if (options.recordAccount !== false) {
+  if (!maintenance && options.recordAccount !== false) {
     await sql.query(`INSERT INTO turas_evidence_accounts(environment_id,workspace_id,owner_user_id,account_id,workload,snapshot_id,visibility)
       VALUES($1,$2,$3,$4,$5,$6,'public') ON CONFLICT(environment_id,workspace_id,owner_user_id,account_id,workload,snapshot_id) DO UPDATE SET visibility='public'`,
       [identity.environmentId, identity.workspaceId, identity.userId, accountId, normalized(workload), id]);
@@ -64,9 +106,9 @@ export async function readCachedSource(identity: AppIdentity, accountId: string,
     ON CONFLICT DO NOTHING`, [identity.environmentId, identity.workspaceId, id, embeddingModel, JSON.stringify(chunks)]);
   await indexSnapshot(identity, id, signal);
   signal.throwIfAborted();
-  const cachedSource = { ...source, cache: { snapshotId: id, checkedAt: read.checkedAt, refreshAfter: read.refreshAfter } };
+  const cachedSource = { ...source,...(options.informationType?{informationType:options.informationType}:{}),cache: { snapshotId: id, checkedAt: read.checkedAt, refreshAfter: read.refreshAfter } };
   let retentionWarning:string|null=null;
-  if (options.recordAccount !== false) {
+  if (!maintenance && options.recordAccount !== false) {
     // Source reads happen inside the background research specialists. Retain the
     // exact newly fetched passages immediately, without waiting for a generated
     // brief or copying any model interpretation into the account profile.

@@ -14,7 +14,7 @@ const textCodepoints = (value: string) => Array.from(value).length;
 
 export const artifactAudienceSchema = z.enum(["internal", "delivery"]);
 export const artifactDataCategorySchema = z.enum(["delivery_context", "internal_operations", "commercial", "personnel", "other_internal"]);
-export const artifactFormatSchema = z.enum(["pdf", "docx", "pptx", "xlsx", "csv", "txt", "md", "png", "jpeg"]);
+export const artifactFormatSchema = z.enum(["pdf", "docx", "pptx", "xlsx", "csv", "txt", "md", "png", "jpeg", "json", "html", "rtf", "epub", "odt", "ods", "odp", "odg"]);
 export const artifactStateSchema = z.enum(["quarantined", "processing", "ready", "partial", "failed", "cancelled", "withdrawn", "deleting", "deleted"]);
 export const artifactIntentStateSchema = z.enum(["uploading", "staged", "completed", "cancelled", "expired", "failed"]);
 export const artifactErrorCodeSchema = z.enum([
@@ -30,6 +30,10 @@ export const artifactFileMetadataSchema = z.object({
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "text/csv", "text/plain", "text/markdown", "image/png", "image/jpeg",
+    "application/json", "text/yaml", "application/x-yaml", "text/xml", "application/xml",
+    "text/html", "application/rtf", "application/epub+zip",
+    "application/vnd.oasis.opendocument.text", "application/vnd.oasis.opendocument.spreadsheet",
+    "application/vnd.oasis.opendocument.presentation", "application/vnd.oasis.opendocument.graphics",
   ]),
   sourcePublishedOn: sourceDate,
   sourceObservedOn: sourceDate,
@@ -92,6 +96,7 @@ export const artifactLocatorSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("xlsx"), sheetOrdinal: positive, sheetName: z.string().min(1).max(255), sheetState: z.enum(["visible", "hidden", "veryHidden"]), row: positive, column: positive, a1: z.string().regex(/^[A-Z]+[1-9][0-9]*$/), mergedRange: z.string().max(100).optional(), mergedMaster: z.string().max(100).optional(), hiddenRow: z.boolean(), hiddenColumn: z.boolean() }).strict(),
   z.object({ kind: z.literal("csv"), record: positive, column: positive, ...lineSpan }).strict().refine((value) => value.lineEnd >= value.lineStart),
   z.object({ kind: z.enum(["txt", "md"]), ...lineSpan }).strict().refine((value) => value.lineEnd >= value.lineStart),
+  z.object({ kind: z.literal("document_text"), ...lineSpan }).strict().refine((value) => value.lineEnd >= value.lineStart),
   z.object({ kind: z.literal("image"), width: positive.max(16_000), height: positive.max(16_000), region: bbox, orientation: z.number().int().min(0).max(359).nullable() }).strict(),
 ]);
 export type ArtifactLocator = z.infer<typeof artifactLocatorSchema>;
@@ -226,7 +231,7 @@ export const approvedArtifactCitationSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("pptx"), slide: positive, shape: positive }).strict(),
   z.object({ kind: z.literal("xlsx"), sheetOrdinal: positive, row: positive, column: positive }).strict(),
   z.object({ kind: z.literal("csv"), record: positive, column: positive }).strict(),
-  z.object({ kind: z.enum(["txt", "md"]), lineStart: positive, lineEnd: positive }).strict(),
+  z.object({ kind: z.enum(["txt", "md", "document_text"]), lineStart: positive, lineEnd: positive }).strict(),
   z.object({ kind: z.literal("image"), regionNumber: positive }).strict(),
 ]);
 export const approvedArtifactExcerptSchema = z.object({

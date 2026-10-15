@@ -83,6 +83,25 @@ export async function projectNativeEvent(
   nativeSessionId: string, attemptId: string, event: NativeEvent, streamIndex?: number,
 ): Promise<void> {
   if (!visibleTypes.has(event.type)) return;
+  // Session auth can already describe the next submitted attempt when an
+  // earlier turn emits its terminal boundary. Resolve known native turns from
+  // their durable association instead of attributing them to the newest send.
+  if(event.type!=='message.received'&&event.type!=='input.resolved'&&typeof event.data?.turnId==='string'){
+    const original=await withTransaction(async db=>{
+      const current=(await db.query(`SELECT c.id FROM conversations c JOIN response_attempts a ON a.conversation_id=c.id
+        WHERE a.id=$1 AND c.eve_session_id=$2 AND c.binding_state='bound'`,[attemptId,nativeSessionId])).rows[0];
+      if(!current||(await conversationFeature(db,current.id)).kind!=='normal')return null;
+      const marker=Number((await db.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0]?.schema_version??0);
+      const targets=(await db.query(`SELECT a.id FROM response_attempts a WHERE a.conversation_id=$1 AND EXISTS(SELECT 1 FROM conversations c WHERE c.id=a.conversation_id AND c.eve_session_id=$3) AND
+        (a.native_turn_id=$2
+        ${marker>=61?`OR EXISTS(SELECT 1 FROM research_background_turns bg WHERE bg.attempt_id=a.id AND bg.turn_id=$2 AND bg.native_session_id=$3)`:''}
+        ${marker>=65?`OR EXISTS(SELECT 1 FROM native_input_resume_windows resume JOIN event_projections resolution ON resolution.native_event_id=resume.native_event_id WHERE resume.attempt_id=a.id AND resolution.turn_id=$2 AND resolution.native_session_id=$3)`:''}
+        ${marker>=68?`OR EXISTS(SELECT 1 FROM ordinary_steering_deliveries steer WHERE steer.attempt_id=a.id AND steer.native_turn_id=$2 AND steer.native_event_id IS NOT NULL)`:''})`,[current.id,event.data!.turnId,nativeSessionId])).rows;
+      if(targets.length>1)throw new Error('Native turn association is ambiguous');
+      return targets[0]?.id??null;
+    });
+    if(original)attemptId=original;
+  }
   if(event.type==='input.resolved'){
     const binding=await withTransaction(async db=>{
       const current=(await db.query('SELECT conversation_id FROM response_attempts WHERE id=$1',[attemptId])).rows[0];
@@ -95,7 +114,7 @@ export async function projectNativeEvent(
     const original=await withTransaction(async db=>{
       const current=(await db.query(`SELECT c.id FROM conversations c JOIN response_attempts a ON a.conversation_id=c.id WHERE a.id=$1 AND c.eve_session_id=$2 AND c.binding_state='bound'`,[attemptId,nativeSessionId])).rows[0];
       if(!current || (await conversationFeature(db,current.id)).kind!=='normal')return null;
-      const targets=(await db.query(`SELECT a.id FROM response_attempts a WHERE a.conversation_id=$1 AND
+      const targets=(await db.query(`SELECT a.id FROM response_attempts a WHERE a.conversation_id=$1 AND EXISTS(SELECT 1 FROM conversations c WHERE c.id=a.conversation_id AND c.eve_session_id=$3) AND
         (a.native_turn_id=$2 OR EXISTS(SELECT 1 FROM research_background_turns bg WHERE bg.attempt_id=a.id AND bg.turn_id=$2 AND bg.native_session_id=$3)
          OR EXISTS(SELECT 1 FROM native_input_resume_windows resume JOIN event_projections resolution ON resolution.native_event_id=resume.native_event_id
           WHERE resume.attempt_id=a.id AND resolution.turn_id=$2 AND resolution.native_session_id=$3))`,[current.id,event.data!.turnId,nativeSessionId])).rows;
@@ -248,7 +267,7 @@ export async function projectNativeEventInTransaction(
         throw new Error("Native input does not match the reserved attempt");
       }
       await client.query(`UPDATE response_attempts SET input_event_id = $2,
-        native_turn_id = $3, dispatch_state = 'admitted', response_state = 'running',
+        native_turn_id = $3, dispatch_state = 'admitted', response_state = CASE WHEN response_state='stopping' THEN 'stopping' ELSE 'running' END,
         updated_at = now(), revision = revision + 1 WHERE id = $1`,
       [attemptId, event.meta.id, data.turnId]);
       return;
