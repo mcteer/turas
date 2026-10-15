@@ -27,61 +27,24 @@ Preview chat starts its bounded maintenance worker on authenticated sends becaus
 
 Preview login supports both the immutable deployment URL and its exact Vercel branch alias.
 
-The legacy backend parity repair is in progress in PR 34. The repair restores
-named-customer reads, the three authored research specialists, automatic checked
-profile/source retention, research reuse, full-document indexing, native human
-input, structured Markdown and live ordinary customer chat. Complete workspace
-solution patterns and explicitly contributed adoption measurements use canonical
-approved profile sources; the fictional legacy portfolio is not imported.
-Focused local checks and an encrypted Preview restore/migration rehearsal pass.
-Hosted specialist behavior and visual acceptance remain pending; local checks do
-not establish them. Track open comparisons and actual verification in
-[the repair audit](docs/legacy-backend-parity-audit.md). Migrations 056–066 and their
-runtime grants are applied to backed-up, rehearsed Preview; Production is unchanged.
-Automatic Vercel deployments from `main` are paused for this merge. Production
-remains on schema 055; the repair requires 072 and explicit runtime grants. Re-enable
-Production deployment only as part of a separately coordinated backup, migration,
-grant and authenticated release verification sequence.
-Migration 067 adds posted-question resume windows and is applied to Preview
-after an encrypted schema-66 capture and matching-version restore rehearsal.
-The native question/new-login/answer/reloaded-history flow passed actual-model
-CLI WebKit checks on Preview `77ec4be`; final release verification remains open.
-Migration 068 adds owner-bound native chat corrections and concurrent provider
-token reservations. It is applied to Preview after an encrypted schema-67 capture
-and matching-version restore rehearsal. The real local Eve/headless WebKit check
-passes correction ordering, unchanged deadlines, reloaded history, Stop and native
-retirement using an unpaid deterministic provider; hosted correction remains open.
-Migrations 069–070 restore the legacy document formats and dated public inventory
-metadata, including the original five qualitative delivery signals. Preview's
-schema update passed an encrypted schema-68 capture and matching-version rehearsal.
-The inventory backfill binds existing canonical customers and checked source
-revisions; it creates no customer, maturity grade or accepted human claim.
-Research retains the specialist's information type and freshness window instead
-of classifying every source as adoption evidence. The original daily research
-maintenance route uses the cron bearer and bounded public-only rechecks without
-a human identity. Hosted format, maintenance and inventory acceptance remains open.
-Hosted model/provider checks continue under blanket user approval with bounded
-Preview ledgers. The original $15 ledger and its unresolved holds are preserved;
-a supplemental $15 allowance bounds the combined ceiling at $30 without top-ups.
-All three specialists completed on Preview; final answer quality, explicit reuse,
-full parity acceptance and final verification remain open.
-The `9b73d46` Preview Baggu and customer-free firewall answers pass retained
-independent semantic review. A cited-source retention collision blocked Notion's
-solution publication. Retention now binds its complete input and signed proof.
-On exact Preview `86338a9`, customer learning, the signed solution handoff and
-typed evaluation complete, with passing desktop/mobile/reloaded history checks.
-The advisory route remains `research_more`; independent final-answer review, the
-earlier reload stream finding and full CI acceptance remain open. The current MCP
-composition failed its native-learning gate, whose exact local recheck passes.
-The root Grok model is unchanged. Legacy ordinary-chat guidance is scoped to normal
-turns so governed learning keeps its original input ceiling; all 16 unpaid real
-Eve learning fixture arms pass. New extraction jobs and retries bind parser policy
-v2; actual scanner/parser/review/execution-journey checks pass locally.
-Journey search retains record-based ranking and 20-record paging. Frozen-source
-local learning and partner recovery rehearsals pass; runtime retention preserves
-the payload UPDATE denial. All 51 staffing suites pass after preserving the strict
-snapshot contract. Long research histories retain the latest eligible business
-overview. Hosted verification and CI completion remain open.
+The legacy backend and chat parity repair merged in [PR 34](https://github.com/mcteer/turas/pull/34).
+Production serves that repair on schema 072 after an encrypted backup, verified
+restore/migration rehearsal and explicit runtime grants. Authenticated HTTP and
+CLI WebKit checks pass for the real 184-customer directory, 1Password/Notion
+profiles, overview placement, product sources and Sandbox evidence search. One
+ordinary Production chat resolves 1Password by name, answers from retained public
+research with citations and preserves the answer across reload; another internal
+account is denied access to that private conversation. The owned check session
+is retired and archived. See the [release record](docs/production-parity-release-2026-10-15.md)
+and [repair audit](docs/legacy-backend-parity-audit.md) for exact evidence and limits.
+
+Preview acceptance includes all three original Notion specialists, typed
+`evaluated / research_more` output and a fresh independent source-based review
+with zero material issues. The finite Preview allowance is $40 across three
+ledgers; original charges and unsettled ceilings are preserved without automatic
+top-ups. Native binary uploads remain disabled outside explicitly admitted
+infrastructure. The root Grok model is unchanged. These checks do not complete
+016 hosted recovery, operator or pilot acceptance.
 
 Customer Overview appears immediately below the customer heading, above workload controls.
 Search the Customer Profiles directory and open profiles directly from customer
@@ -165,7 +128,7 @@ Read-only MCP access (015) has a [specification](specs/015-read-only-mcp/spec.md
 [plan](specs/015-read-only-mcp/plan.md) and [tasks](specs/015-read-only-mcp/tasks.md),
 merged in [PR 28](https://github.com/mcteer/turas/pull/28). It supports internal users and assigned partners
 through scoped revocable access. Local and CI acceptance are recorded in the
-[validation record](specs/015-read-only-mcp/validation.md); Production is enabled on schema 055 with runtime grants and authenticated SDK/HTTP/CLI WebKit validation, including actual research passage and citation reads. See [operations](docs/mcp-operations.md). Further
+[validation record](specs/015-read-only-mcp/validation.md); The initial Production activation used schema 055 with runtime grants and authenticated SDK/HTTP/CLI WebKit validation, including actual research passage and citation reads. See [operations](docs/mcp-operations.md). Further
 delivery/learning automation remains roadmap work. There is no external support-ticket connector. See the
 [roadmap](ROADMAP.md) for proposed slices and dependencies.
 
@@ -526,7 +489,7 @@ selector keeps operator indexing within this public inventory; existing private
 source and synthetic-worker restrictions remain in place.
 This command neither approves private context nor publishes cross-customer learning.
 
-The legacy chat parity bug fix remains under verification in PR #34. Normal chat
+The legacy chat parity bug fix merged in PR #34 and is released to Production. Normal chat
 resolves accessible named customers without a picker and reads their dated account
 evidence inventory. Focused full-document search remains separate from that
 inventory. Independently checked research updates current customer knowledge and
@@ -545,7 +508,8 @@ search, preference persistence/isolation/removal, document preparation and nativ
 image correction with unsent-draft retention. The temporary native session and
 feature window were retired; native binary uploads remain disabled outside
 explicitly admitted infrastructure. Preview schema 072 migrations/grants were
-backed up and rehearsed. Production remains schema 055 and unchanged.
+backed up and rehearsed. Production is now schema 072; its separate encrypted
+backup, rehearsal and actual hosted checks are in the [release record](docs/production-parity-release-2026-10-15.md).
 
 Installation applies a guarded compatibility repair for Eve 0.67.1: its durable
 memory-tool callback context must serialize native-file URL data as the equivalent
@@ -576,10 +540,9 @@ retry bounds remain unchanged. Earlier failures and exact validation results are
 retained in the [backend parity audit](docs/legacy-backend-parity-audit.md).
 
 The finite Preview allowance is $40 across three ledgers, with original charges
-and unsettled ceilings preserved and no automatic top-ups. The completed merge
-checks' native sessions are retired after evidence capture. Production remains on
-schema 055; Preview schema 072 migrations/grants were backed up and rehearsed.
-Automatic Git deployment of `main` is paused in `vercel.json` so merging cannot
-publish schema-incompatible code. A Production release still requires the explicit
-backup, migration, grants, compatibility and authenticated hosted checks. These
-checks do not establish the separate 016 hosted recovery/operator/pilot acceptance.
+and unsettled ceilings preserved and no automatic top-ups. Completed checks'
+native sessions are retired after evidence capture. Production is on schema 072
+with verified runtime grants and actual authenticated HTTP/CLI WebKit acceptance.
+Automatic Git deployment of `main` is restored by the compatibility-safe release
+configuration. These checks do not establish the separate 016 hosted
+recovery/operator/pilot acceptance. See the [release record](docs/production-parity-release-2026-10-15.md).
