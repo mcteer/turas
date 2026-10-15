@@ -652,3 +652,28 @@ layout. Actual WebKit document preparation and the retained Desktop question ans
 also pass. Two errors were recorded during navigation/reload cancellation; they
 are retained in the private receipt rather than reported as zero errors. No paid
 model or evidence search was dispatched by these reads.
+
+
+On exact `cdb69d4` Preview, four old evaluation turns parked for input were reset
+through their authenticated owner routes. Eve returned terminal retirement receipts
+and their application attempts settled, with no model calls. An encrypted schema-072
+capture was restored locally and the exact 19-conversation cleanup was rehearsed,
+then applied to Preview. It deleted 556 dependent test rows and 19 conversations,
+leaving four conversations, including the retained history-check thread. Protected
+customer, source, independent-research, cache and cost-ledger fingerprints were
+unchanged. Both owned recovery containers were removed. The retained thread and
+private verification artifacts still require final cleanup.
+
+Actual headless WebKit search for **Sandboxes** returned seven accepted Notion
+research passages on `45c902f`, with no overflow. This used the existing
+`lexical_degraded` fallback while the existing evaluation ledger was expired. The
+provider operation count and accounted $4.515469 remained unchanged. No response
+was substituted and no lexical-only request flag was added. This establishes the
+real text-search path; hosted semantic search remains open.
+
+CI exposed an additional in-turn optional-provider installation despite the pinned
+fixture sandbox. The native test now creates its own complete dependency tree and
+installs Eve's required optional local provider before startup, then verifies the
+existing guarded memory repair. No checkout dependency link, authored model or
+application dependency manifest is changed. The local file/correction WebKit check
+passes with this preparation. CI remains required; no hosted quality pass is inferred.

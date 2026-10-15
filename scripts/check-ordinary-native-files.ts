@@ -99,12 +99,13 @@ try{await withPlanEvalEnvironment(async environment=>{
    await check('panel','Recall the saved preference.','Stored preference recalled and removed.');personalPreferenceCrossSession=true;
    await check('panel','Check for a stored preference.','No stored preference is visible.');personalPreferenceRemoved=true;
   }
+  if(environment.privateLogTail().includes('installing optional dependency'))throw Error('Native turn attempted an in-process dependency installation');
   const retired=await context.request.post('/eve/v1/session/'+native+'/reset',{headers,data:{reason:'Owned native file fixture complete'}});if(!retired.ok())throw Error('Native file retirement unconfirmed');
-  const receipt={kind:'ordinary-native-file-bytes',actualEveRuntime:true,fixtureProvider:true,paidProviderCalls:0,providerBytesPreserved:!process.argv.includes('--memory'),personalPreferenceSaved:process.argv.includes('--memory')||process.argv.includes('--memory-files'),personalPreferenceCrossSession,personalPreferenceIsolated,personalPreferenceRemoved,providerToolSets:calls.map(row=>row.tool_names),actualCanonicalCustomerResolved:true,nativeFileCorrection:process.argv.includes('--steer'),toolNames:calls[0].tool_names,composerUsed:process.argv.includes('--composer'),reloadedHistory:true,nativeRetirementStatus:retired.status()};await writeFile(join(out,'receipt.json'),JSON.stringify(receipt,null,2),{mode:0o600});console.log(JSON.stringify(receipt));for(const name of ['failure-private.json','failure-private.log','send-private.json'])await rm(join(out,name),{force:true});
+  const receipt={kind:'ordinary-native-file-bytes',actualEveRuntime:true,fixtureProvider:true,paidProviderCalls:0,runtimeDependencyInstallation:false,providerBytesPreserved:!process.argv.includes('--memory'),personalPreferenceSaved:process.argv.includes('--memory')||process.argv.includes('--memory-files'),personalPreferenceCrossSession,personalPreferenceIsolated,personalPreferenceRemoved,providerToolSets:calls.map(row=>row.tool_names),actualCanonicalCustomerResolved:true,nativeFileCorrection:process.argv.includes('--steer'),toolNames:calls[0].tool_names,composerUsed:process.argv.includes('--composer'),reloadedHistory:true,nativeRetirementStatus:retired.status()};await writeFile(join(out,'receipt.json'),JSON.stringify(receipt,null,2),{mode:0o600});console.log(JSON.stringify(receipt));for(const name of ['failure-private.json','failure-private.log','send-private.json'])await rm(join(out,name),{force:true});
  }catch(error){
   // Only this unpaid, synthetic fixture is eligible for bounded CI diagnostics.
   // Keep full logs private; remove URLs and known credentials from error lines.
-  if(process.env.CI)for(const line of environment.privateLogTail().split('\n').filter(line=>/(?:Error:|Error \[|error:|Cannot |Missing |ENOENT|EACCES|timed out)/i.test(line)).slice(-16)){
+  if(process.env.CI)for(const line of environment.privateLogTail().split('\n').filter(line=>/(?:Error:|Error \[|error:|Cannot |Missing |ENOENT|EACCES|timed out|installing optional dependency)/i.test(line)).slice(-16)){
    let reason=line.replace(/https?:\/\/\S+|postgres(?:ql)?:\/\/\S+/gi,'<redacted-url>').replaceAll('synthetic-test-password','<redacted>');
    for(const [key,value]of Object.entries(process.env))if(value&&value.length>=8&&/(?:SECRET|PASSWORD|TOKEN|API_KEY)/i.test(key))reason=reason.replaceAll(value,'<redacted>');
    console.error(JSON.stringify({kind:'native_file_fixture_failure',name:'RuntimeDiagnostic',reason:reason.slice(0,240)}));
@@ -113,6 +114,13 @@ try{await withPlanEvalEnvironment(async environment=>{
  finally{if(csrf)await context.request.post('/api/auth/logout',{headers:{origin:environment.origin,'x-csrf-token':csrf}}).catch(()=>{});await context.close();await browser.close();}
 },{feature:'010',empty:true,deadlineAt:Date.now()+420000,prepare:async({appRoot,environmentId})=>{
  marker=fixtureOwner;
+ // Eve's native runtime can request its documented optional local provider.
+ // Install it before the browser turn, into a fully owned dependency tree;
+ // never let an in-turn install replace the shared checkout's dependency link.
+ await rm(join(appRoot,'node_modules'));
+ const prepared=spawnSync('npm',['install','--save-dev','--ignore-scripts','--no-audit','--no-fund','just-bash@3.1.0'],{cwd:appRoot,env:{...process.env,AI_GATEWAY_API_KEY:'',VERCEL_OIDC_TOKEN:''},encoding:'utf8',timeout:120000,maxBuffer:4*1024*1024});
+ if(prepared.status!==0){await writeFile(join(out,'dependency-preparation-private.log'),String(prepared.stderr??''),{mode:0o600});throw Error('Owned native dependency preparation failed');}
+ const compatibility=spawnSync(process.execPath,['scripts/eve-memory-context-compat.mjs'],{cwd:appRoot,encoding:'utf8',timeout:10000});if(compatibility.status!==0)throw Error('Owned native memory compatibility preparation failed');
  // Eve prepares every declared environment on the first native file. Keep all
  // owned fixture environments on its selected Docker provider, rather than
  // auto-installing an unrelated default provider during the browser turn.
