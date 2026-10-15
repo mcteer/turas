@@ -804,3 +804,26 @@ native fixture to fail its provider-step bounds on `d473da0`; moving the same
 guidance into the existing ordinary-chat instruction module passes all 25 actual
 local Eve learning-native checks, including the 16 paired arms, with no paid calls.
 Type checking passes. Final hosted acceptance remains required.
+
+Preview `6f38a91` passes the actual Grok native-image correction check: one
+response attempt, consumed correction, correct white replacement image, preserved
+unsent next draft, reloaded attachment history and no mobile overflow. Desktop
+and mobile captures were inspected. One reload fetch error was recorded. The
+owned native session reset returned 200, its Sandbox was deleted, and three
+temporary branch settings were restored. This is not overall parity acceptance.
+
+The exact Preview evidence-search check still returned 503. Running the same
+domain request against Preview data identified a response-schema rejection above
+24 KiB, rather than missing Sandbox evidence. The repair retains the highest-ranked
+whole passages within that existing byte limit, adds an explicit completeness
+warning and persists citations only for returned passages. A multilingual runtime
+domain regression, the disposable parity/grant catalog and type checking pass.
+The patched domain returns nine actual accepted passages in hybrid mode against
+Preview data; this local execution does not prove the patch deployed. A further
+Preview build requires expansion of the already-used authorized build count.
+
+The latest fresh-chat Notion check failed because its explicit one-hour artifact
+handles expired. The model reported the denial honestly, but it did not complete
+the recommendation. The follow-up in the original long thread was blocked by the
+shared budget's conservative reservation before provider I/O. Unknown prior holds
+are retained. Neither run proves the revised caveat instructions pass.

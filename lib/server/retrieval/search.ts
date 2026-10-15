@@ -258,7 +258,7 @@ export async function searchEvidence(actor: CurrentSession, raw: unknown,
       const validUntil = new Date(Math.min(asOf.getTime()+86_400_000,
         ...selections.map((item) => Date.parse(item.quality.validUntil))));
       const receiptId = randomUUID();
-      const response = retrievalResponseSchema.parse({ version: retrievalContractVersion,
+      const responseBody = { version: retrievalContractVersion,
         receiptId,asOf: asOf.toISOString(),validUntil: validUntil.toISOString(),
         mode: vector ? "hybrid" : "lexical_degraded",language: "en",
         completenessWarnings: [
@@ -274,7 +274,17 @@ export async function searchEvidence(actor: CurrentSession, raw: unknown,
           title: item.title,
           text: item.row.passage_text,locators: item.locators,quality: item.quality,
           caveats: item.caveats,warnings: item.warnings,
-          productVersion: item.productVersion })) });
+          productVersion: item.productVersion })) };
+      // Keep complete, ranked passages and their immutable digests. Provenance and
+      // UTF-8 text count toward the wire limit, not just passage characters.
+      while (Buffer.byteLength(JSON.stringify(responseBody), "utf8") > retrievalLimits.resultBytes) {
+        if (!responseBody.completenessWarnings.includes("Lower-ranked evidence omitted to fit the response size limit")) {
+          responseBody.completenessWarnings.push("Lower-ranked evidence omitted to fit the response size limit");
+        }
+        responseBody.results.pop();
+        selections.pop();
+      }
+      const response = retrievalResponseSchema.parse(responseBody);
       await client.query(`INSERT INTO retrieval_receipts
         (id,environment_id,actor_membership_id,scope,workspace_id,customer_id,
          mode,embedding_contract,citation_ids,as_of,valid_until)

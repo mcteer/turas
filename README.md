@@ -545,3 +545,7 @@ provider-compatible native image fixture await replacement Preview acceptance.
 The same-composer correction regression now verifies that a dispatched file clears
 immediately and finishing the previous stream preserves the next unsent draft.
 Evaluation runtime grants preserve operator-only cap, pricing and expiry control.
+
+The latest repair Preview passes actual native-file correction and unsent-draft
+retention checks. Research answer quality and the evidence-search response-size
+fix still need final hosted acceptance; PR 34 remains unmerged.
