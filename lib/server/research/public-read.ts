@@ -9,7 +9,10 @@ export async function readPublicCustomerCoverage(db:PoolClient,actor:ProfileActo
  const marker=(await db.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
  if(!marker||marker.schema_version<45)return null;
  const specialistRetention=marker.schema_version>=60;
- const found=await db.query<{dossier:unknown;created_at:Date}>(`SELECT r.dossier,r.created_at FROM public_customer_research_results r
+ // Focused receipts must not push an older eligible business description out
+ // of the bounded projection. Both branches use the identical source closure;
+ // a withdrawn/conflicted/replaced description receives no fallback exemption.
+ const found=await db.query<{dossier:unknown;created_at:Date}>(`WITH eligible AS NOT MATERIALIZED(SELECT r.id,r.dossier,r.created_at FROM public_customer_research_results r
   WHERE r.environment_id=$1 AND r.workspace_id=$2 AND r.customer_id=$3
     AND NOT EXISTS(SELECT 1 FROM unnest(r.source_revision_ids) AS used(id)
       LEFT JOIN evidence_source_revisions prior ON prior.id=used.id AND prior.workspace_id=r.workspace_id AND prior.customer_id=r.customer_id
@@ -37,7 +40,12 @@ export async function readPublicCustomerCoverage(db:PoolClient,actor:ProfileActo
         OR EXISTS(SELECT 1 FROM evidence_conflict_targets conflict WHERE conflict.environment_id=r.environment_id AND conflict.state='confirmed'
           AND ((conflict.first_kind='verified_research' AND conflict.first_revision_id IN(v.id,used.id))
             OR (conflict.second_kind='verified_research' AND conflict.second_revision_id IN(v.id,used.id)))))
-  ORDER BY r.created_at DESC,r.id DESC LIMIT 20`,[getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,customerId]);
+  ) SELECT dossier,created_at FROM(
+    (SELECT * FROM eligible ORDER BY created_at DESC,id DESC LIMIT 20)
+    UNION
+    (SELECT * FROM eligible WHERE length(btrim(dossier->>'description'))>0
+      ORDER BY created_at DESC,id DESC LIMIT 1)
+  ) selected ORDER BY created_at DESC,id DESC`,[getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,customerId]);
  if(!found.rows[0])return null;
  const eligible=found.rows.flatMap(row=>{
   const raw=row.dossier as Record<string,unknown>;

@@ -58,7 +58,7 @@ export async function readEligibleContext(actor: ProfileActor, customerId: strin
       if (query && !JSON.stringify({ payload: fact.payload,
         approvedArtifactExcerpt: fact.approvedArtifactExcerpt }).toLocaleLowerCase().includes(query)) continue;
       entries.push({ type: "accepted_manual", citationId: fact.id, kind: fact.kind,
-        recordId:fact.recordId,createdAt:fact.createdAt,
+        ...(options.journeyOnly?{recordId:fact.recordId,createdAt:fact.createdAt}:{}),
         workloadId: fact.workloadId, payload: fact.payload, quality: fact.quality,
         ...(fact.approvedArtifactExcerpt ? { approvedArtifactExcerpt: fact.approvedArtifactExcerpt } : {}),
         ...(fact.supportStatus === "restricted_source" ?
@@ -105,7 +105,10 @@ export async function readEligibleContext(actor: ProfileActor, customerId: strin
     return { contractVersion: "customer-context-v1", customer: profile.customer,
       contextVersion: profile.contextVersion, asOf: asOf.toISOString(),
       validUntil: new Date(Math.min(...validUntilCandidates)).toISOString(),
-      entries: selected, page, nextPage: offset===undefined&&packed.hasNextPage ? page + 1 : null,
+      entries: selected, page,
+      // The frozen staffing snapshot has its own strict v1 contract. Search
+      // navigation metadata belongs to the ordinary evidence/journey surface.
+      ...(!options.staffingFence?{nextPage:offset===undefined&&packed.hasNextPage ? page + 1 : null}:{}),
       ...(offset!==undefined?{offset,nextOffset,moreAvailable:nextOffset!==null}:{}),
       complete: !truncated, truncated,
       knownGaps: [...(packed.hasNextPage ? ["Additional authorized context is available on the next page"] : []),

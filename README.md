@@ -65,7 +65,9 @@ Eve learning fixture arms pass. New extraction jobs and retries bind parser poli
 v2; actual scanner/parser/review/execution-journey checks pass locally.
 Journey search retains record-based ranking and 20-record paging. Frozen-source
 local learning and partner recovery rehearsals pass; runtime retention preserves
-the payload UPDATE denial. Hosted verification and CI completion remain open.
+the payload UPDATE denial. All 51 staffing suites pass after preserving the strict
+snapshot contract. Long research histories retain the latest eligible business
+overview. Hosted verification and CI completion remain open.
 
 Customer Overview appears immediately below the customer heading, above workload controls.
 Search the Customer Profiles directory and open profiles directly from customer

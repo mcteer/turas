@@ -77,6 +77,15 @@ it('retains new public research for an assigned partner, preserves curated claim
   const newQuote=`${name} independently documents the deployment architecture for its customer-facing service.`;
   const complete=originalQuote+'\n\n'+newQuote+'\n\n'+('Unrelated documented detail. '.repeat(900))+'\n\n'+late;
   await retain(complete,newQuote,0);
+  // Reproduce a real profile after many focused investigations. Their empty
+  // descriptions must not erase an older still-source-eligible overview.
+  await db.query(`INSERT INTO public_customer_research_results
+    (id,environment_id,workspace_id,customer_id,actor_membership_id,batch_digest,
+     request_key,input_digest,dossier,source_revision_ids,provider_usage,state)
+    SELECT gen_random_uuid(),r.environment_id,r.workspace_id,r.customer_id,r.actor_membership_id,
+      r.batch_digest,gen_random_uuid(),r.input_digest,r.dossier,r.source_revision_ids,r.provider_usage,r.state
+    FROM(SELECT * FROM public_customer_research_results WHERE customer_id=$1
+      ORDER BY created_at DESC,id DESC LIMIT 1) r CROSS JOIN generate_series(1,25)`,[customerId]);
   const profile=z.object({attributedResearch:z.array(z.object({passage:z.string(),documentDigest:z.string().nullable(),productNames:z.array(z.string())})),publicResearchCoverage:z.object({description:z.string()}).nullable()}).parse(await readProfile(actor,customerId));
   expect(profile.attributedResearch).toHaveLength(1);
   expect(profile.attributedResearch[0].passage).toContain(originalQuote);
@@ -96,6 +105,8 @@ it('retains new public research for an assigned partner, preserves curated claim
   await db.query(`INSERT INTO evidence_sources(id,workspace_id,customer_id,origin,canonical_location) VALUES($1,$2,$3,'manual',$4)`,[randomUUID(),actor.workspaceId,customerId,url]);
   await expect(retain(changed,changed,0)).rejects.toMatchObject({code:'submitted_origin'});
   const checked=await retain(changed,changed,0,true);
+  const changedOverview=z.object({publicResearchCoverage:z.object({description:z.string()}).nullable()}).parse(await readProfile(actor,customerId));
+  expect(changedOverview.publicResearchCoverage?.description??'').not.toBe('Original checked business description.');
   const sourceForRetention=extractSources({success:true,url,title:name,markdown:changed},checked.page.retrievedAt)[0];
   expect(await retainSpecialistProfileSources({...actor,userId:actor.principalId,environmentId:process.env.TURAS_ENVIRONMENT_ID!},customerId,[{...sourceForRetention,cache:{snapshotId:checked.snapshot,checkedAt:checked.page.retrievedAt,refreshAfter:new Date(Date.now()+3600000).toISOString()}}])).toMatchObject({updated:1,skipped:0});
   await loadResearchContext({...actor,userId:actor.principalId,environmentId:process.env.TURAS_ENVIRONMENT_ID!,responseAttemptId:attempt.attemptId,workerSessionId:'wrun_local_fixture'},customerId);
