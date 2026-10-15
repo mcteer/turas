@@ -16,6 +16,7 @@ import { retainResearchSources } from "../../../../lib/server/research/specialis
 import { bindResearchSubmission, solutionCitationIssues } from "../../../../lib/server/research/specialists/solution-research/submission";
 import { finishResearchRequest } from "../../../../lib/server/research/specialists/research-cache/requests";
 import { learnPublicSources } from "../../../../lib/server/research/specialists/research-cache/public-learning";
+import { researchFinalizationFailure, type ResearchFinalizationPhase } from "../../../../lib/server/research/specialists/solution-research/finalization-failure";
 const researchTool = defineTool({
   description:
     "Validate a complete research brief against retrieved sources and authorized customer evidence, then store a caller-bound signed artifact in Postgres. Records gaps; never approves a solution or writes customer memory. Return its short reference to Turi for decision assessment; never copy the signed payload.",
@@ -51,7 +52,7 @@ const researchTool = defineTool({
       return { status: "needs_revision" as const, reference: null,
         reason: `Nothing was stored or finalized. Correct this brief once using already retrieved evidence, then call finalize_research again. ${citationIssues.join(" ")} Every sourceId cited in findings, alternatives or process inputs needs a sourceSupport entry with an exact retrieved passageId. Use research_evidence to recover valid IDs. Add relevant support or remove the unsupported claim/reference and preserve the gap. Do not add web research, invent evidence or remove legitimate uncertainty. A second submission retains any remaining blockers.` };
     }
-    let phase="retain_sources";
+    let phase: ResearchFinalizationPhase="retain_sources";
     try {
       const citedSources = retainResearchSources(brief, sources);
       await learnPublicSources(identity, brief.accountId, sources, brief.sourceSupport.map(support => ({
@@ -83,13 +84,13 @@ const researchTool = defineTool({
         reason:
           "Turi should call evaluate_solution_research with accountId only, omitting researchId, for this admitted task. The server resolves its exact completed result. The stored artifact validates provenance and structure, not the truth of interpretation. Decision assessment and human decision rights remain separate.",
       };
-    } catch {
-      console.warn(JSON.stringify({ event: "solution_research.artifact_unavailable", callId: ctx.callId,phase }));
+    } catch (error) {
+      const failure = researchFinalizationFailure(error, phase);
+      console.warn(JSON.stringify({ event: "solution_research.artifact_unavailable", callId: ctx.callId,phase,category:failure.category }));
       return {
         status: "unavailable" as const,
         reference: null,
-        reason:
-          "Research artifact storage or signing is unavailable. Check the database and session-secret configuration.",
+        reason: failure.reason,
       };
     }
   },

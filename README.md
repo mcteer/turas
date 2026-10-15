@@ -61,6 +61,11 @@ Preview ledgers. The original $15 ledger and its unresolved holds are preserved;
 a supplemental $15 allowance bounds the combined ceiling at $30 without top-ups.
 All three specialists completed on Preview; final answer quality, explicit reuse,
 full parity acceptance and final verification remain open.
+The `9b73d46` Preview Baggu and customer-free firewall answers pass retained
+independent semantic review. Its linked Notion run remains failed: cited-source
+retention prevented solution publication, and reload stream errors remain open.
+Finalization now reports its actual failed stage with bounded private diagnostics;
+this correction still requires hosted verification.
 The root Grok model is unchanged. Legacy ordinary-chat guidance is scoped to normal
 turns so governed learning keeps its original input ceiling; all 16 unpaid real
 Eve learning fixture arms pass. New extraction jobs and retries bind parser policy

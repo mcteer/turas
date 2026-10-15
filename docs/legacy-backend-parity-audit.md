@@ -1035,3 +1035,38 @@ unassigned-partner fixture includes a competing customer-engineering result and
 verifies that neither its body, title nor URL appears in the public response.
 The fixture uses a separate signed principal, preserving the production
 per-principal active-response limit rather than weakening it.
+
+### Power-loss continuation — 2026-10-15
+
+Recovered the current repair at `9b73d46` in `turas-chat-legacy-fix`, integrated
+at `b305b59` in `turas-016-integration`; the canonical checkout's `650f5f4`
+checkpoint predates this work. Neither checkout had uncommitted changes at resume.
+The original model captures, independent reviews, provider ledgers and recovery
+records remain retained in the private parity evidence directory.
+
+The exact `9b73d46` Baggu answer and customer-free firewall answer passed their
+retained independent LLM reviews, including the previously omitted Next framework
+evidence and original firewall p13/p28 limitations. The same Preview's actual
+Notion Sandbox search passed in hybrid mode. These results do not establish
+complete legacy parity or Production release acceptance.
+
+The linked Notion run remains failed. The actual runtime warning identifies
+`solution_research.artifact_unavailable` at `retain_sources`, before context
+signing and artifact storage. A read-only database check confirms the best-practice
+receipt completed and the solution reservation has no published receipt. The
+exact exception cause remains unestablished; no signing-secret failure is inferred.
+The finalizer now returns a stage-specific failure explanation and logs only a
+fixed allowlisted domain/database/validation/interruption category alongside the
+existing phase/call identity. Arbitrary exception prose, source content, SQL detail
+and provider payloads are excluded. Existing denial and no-automatic-retry behavior
+is preserved. Focused diagnostics/privacy and specialist-contract tests pass 7/7,
+type checking, the Eve build and authored-document checks pass; hosted verification
+remains required.
+
+An unpaid read-only CLI WebKit recheck loads the retained Notion answer after three
+reloads, on desktop and mobile without horizontal overflow. It also reproduces a
+stream access-control error; the earlier failed browser receipt stays failed.
+The first recheck script incorrectly requested a single assistant element where
+three actual messages existed. The corrected selector checks the final message;
+neither attempt is represented as a passing overall browser run. No new model,
+research, embedding or Sandbox provider work was dispatched during this recovery.
