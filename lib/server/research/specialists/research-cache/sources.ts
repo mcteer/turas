@@ -1,3 +1,4 @@
+import {signCheckedPublicPage,type CheckedPublicPage} from "../../public-dossier";
 import { embedRetrievalTexts } from "../../../retrieval/embeddings";
 import { z } from "zod";
 import type { AppIdentity } from "../identity";
@@ -19,13 +20,16 @@ const pageSchema = z.object({ source: sourceSchema, truncated: z.boolean(),proof
 }).optional() });
 const snapshotSchema = z.object({ id: z.string(), source: sourceSchema, truncated: z.boolean(), checked_at: z.coerce.date(), refresh_after: z.coerce.date(), index_state: z.string() });
 
-export async function readCachedSource(identity: AppIdentity, accountId: string, workload: string, url: string, signal: AbortSignal, notBefore?: Date, options: { recordAccount?: boolean } = {}) {
+export async function readCachedSource(identity: AppIdentity, accountId: string, workload: string, url: string, signal: AbortSignal, notBefore?: Date, options: { recordAccount?: boolean;independentDiscovery?:CheckedPublicPage["independentDiscovery"] } = {}) {
   if(options.recordAccount!==false) await requireResearchAccount(identity,accountId);
   else await withTransaction(db=>lockWorkspaceActor(db,identity,undefined,true));
   const canonical = canonicalSourceUrl(url);
   const key = "page:" + digest(canonical);
   const read = await cachedFetch(identity, key, pageSchema, () => readPublicSource(canonical, signal), signal, { notBefore });
-  const { source, truncated,proof } = read.value;
+  const { source, truncated,proof:originalProof } = read.value;
+  const discovery=options.independentDiscovery;
+  if(discovery && (discovery.accountId!==accountId || !discovery.searchId || !['context','gateway_exa'].includes(discovery.provider) || !Number.isFinite(Date.parse(discovery.checkedAt))))throw new Error('Invalid independent discovery association');
+  const proof=originalProof&&discovery?signCheckedPublicPage({...originalProof,independentDiscovery:discovery}):originalProof;
   const contentHash = digest(JSON.stringify([source.url, source.title, source.excerpt, source.publication ?? null, truncated,proof?.normalizedDigest??null]));
   const id = digest(canonical + "\n" + contentHash);
   const sql = await evidenceDatabase();

@@ -29,8 +29,8 @@ it('retains new public research for an assigned partner, preserves curated claim
   await db.query(`INSERT INTO customer_grants(id,workspace_id,customer_id,membership_id,state,revision,granted_by) VALUES($1,$2,$3,$4,'active',1,$5)`,[randomUUID(),actor.workspaceId,customerId,actor.membershipId,actor.principalId]);
   const originalQuote=`${name} uses Vercel to deliver its public website and its application to customers.`;
   const url=`https://example.com/parity/${customerId}`;
-  async function retain(text:string,quote:string,age:number){
-   const page=signCheckedPublicPage({url,title:`${name} architecture`,text,bodyDigest:publicDigest(text),normalizedDigest:publicDigest(text),retrievedAt:new Date(Date.now()-age).toISOString(),publishedAt:null,discoveryPurpose:'specialist_public_source'});
+  async function retain(text:string,quote:string,age:number,independentlyDiscovered=false){
+   const page=signCheckedPublicPage({url,title:`${name} architecture`,text,bodyDigest:publicDigest(text),normalizedDigest:publicDigest(text),retrievedAt:new Date(Date.now()-age).toISOString(),publishedAt:null,discoveryPurpose:'specialist_public_source',...(independentlyDiscovered?{independentDiscovery:{accountId:customerId,searchId:'server-discovery-fixture',provider:'context' as const,checkedAt:new Date().toISOString()}}:{})});
    const snapshot=publicDigest(text+page.retrievedAt);
    await db.query(`INSERT INTO turas_evidence_snapshots(environment_id,workspace_id,id,fetch_key,url,content_hash,source,truncated,checked_at,refresh_after,check_receipt) VALUES($1,$2,$3,$3,$4,$3,'{}',false,now(),now()+interval '6 hours',$5)`,[process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,snapshot,url,JSON.stringify(page)]);
    await db.query(`INSERT INTO turas_evidence_accounts(environment_id,workspace_id,owner_user_id,account_id,workload,snapshot_id,visibility) VALUES($1,$2,$3,$4,'',$5,'public')`,[process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,actor.principalId,customerId,snapshot]);
@@ -72,7 +72,9 @@ it('retains new public research for an assigned partner, preserves curated claim
   expect(passages.rows.some(row=>row.text.includes(late))).toBe(true);
   // Actual changed content must replace active facts in this same thread.
   const changed=`${name} now uses Vercel Sandboxes for its isolated execution service.`;
-  await retain(changed,changed,0);
+  await db.query(`INSERT INTO evidence_sources(id,workspace_id,customer_id,origin,canonical_location) VALUES($1,$2,$3,'manual',$4)`,[randomUUID(),actor.workspaceId,customerId,url]);
+  await expect(retain(changed,changed,0)).rejects.toMatchObject({code:'submitted_origin'});
+  await retain(changed,changed,0,true);
   await expect(withTransaction(client=>assertCustomerQuestionReads(client,actor,conversation.id,attempt.attemptId))).rejects.toMatchObject({status:409});
   const refreshed=await withTransaction(client=>refreshOrdinaryKnowledge(client,actor,principal,conversation.id,attempt.attemptId));
   expect(JSON.stringify(refreshed)).toContain(changed);

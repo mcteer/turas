@@ -58,10 +58,12 @@ const researchTool = defineTool({
     try {
       const identity = await researchIdentity(ctx.session.auth.current,ctx.session.parent?{parentSessionId:ctx.session.parent.sessionId,workerSessionId:ctx.session.id}:undefined);
       const state = researchState.get();
+      const discovery=state.discoverySearches?.find(search=>search.status==='found' && search.urls.some(found=>{try{const a=new URL(found),b=new URL(url);a.hash='';b.hash='';return a.href===b.href;}catch{return false;}}));
+      const independentDiscovery=discovery?.provider&&state.context?{accountId:state.context.accountId,searchId:discovery.searchId,provider:discovery.provider,checkedAt:discovery.checkedAt??new Date().toISOString()}:undefined;
       const read = cacheEnabled() && identity && state.context
         ? await readCachedSource(identity, state.context.accountId, state.requestScope?.workload ?? state.context.name,
           url, ctx.abortSignal, state.refreshAfter ? new Date(state.refreshAfter) : undefined,
-          { recordAccount: state.mode !== "best-practices" })
+          { recordAccount: state.mode !== "best-practices",independentDiscovery })
         : await readPublicSource(url, ctx.abortSignal);
       const { source: retrievedSource, truncated } = read;
       const source = { ...retrievedSource, informationType, ...(focusTerm ? { focusTerm } : {}) };

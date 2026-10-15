@@ -21,7 +21,7 @@ export const publicDossierSchema = z.object({
 }).strict();
 export type PublicDossier = z.infer<typeof publicDossierSchema>;
 export type CheckedPublicPage = { url: string; title: string; text: string; bodyDigest: string;
-  normalizedDigest: string; retrievedAt: string; publishedAt: string | null; discoveryPurpose: string; fullNormalizedDigest?: string; receiptSignature?: string; textTruncated?: boolean; totalNormalizedCharacters?: number };
+  normalizedDigest: string; retrievedAt: string; publishedAt: string | null; discoveryPurpose: string; fullNormalizedDigest?: string; receiptSignature?: string; textTruncated?: boolean; totalNormalizedCharacters?: number; independentDiscovery?: {accountId:string;searchId:string;provider:"context"|"gateway_exa";checkedAt:string} };
 export const publicDigest = (value: string) => createHash("sha256").update(value).digest("hex");
 
 /** This only establishes public subject relevance, never employer/workload ownership. */
@@ -76,7 +76,7 @@ export function signCheckedPublicPage(page: CheckedPublicPage): CheckedPublicPag
   if(!secret || secret.length<32)throw new Error("Source signing configuration unavailable");
   const message=JSON.stringify({contract:"public-batch-source-v1",url:page.url,bodyDigest:page.bodyDigest,
     normalizedDigest:page.normalizedDigest,fullNormalizedDigest:page.fullNormalizedDigest??page.normalizedDigest,
-    publishedAt:page.publishedAt,retrievedAt:page.retrievedAt,title:page.title,discoveryPurpose:page.discoveryPurpose});
+    publishedAt:page.publishedAt,retrievedAt:page.retrievedAt,title:page.title,discoveryPurpose:page.discoveryPurpose,...(page.independentDiscovery?{independentDiscovery:page.independentDiscovery}:{})});
   return {...page,receiptSignature:createHmac("sha256",secret).update(message).digest("hex")};
 }
 export function assertCheckedPublicPage(page: CheckedPublicPage): void {

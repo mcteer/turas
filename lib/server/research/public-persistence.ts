@@ -110,7 +110,7 @@ async function persistCheckedPublicCustomerResearch(actor:CurrentSession,raw:unk
           AND (o.body_digest=$4 OR o.passage_digest=$5 OR o.normalized_digest=$6 OR payload.normalized_text=$7)
         UNION ALL SELECT 1 FROM evidence_sources WHERE workspace_id=$2 AND customer_id=$3 AND origin='manual' AND canonical_location=$8 LIMIT 1`,
         [getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,customerId,page.bodyDigest,passageDigest,page.fullNormalizedDigest??page.normalizedDigest,page.text,page.url]);
-      if(supplied.rowCount)throw new HttpFailure(409,"submitted_origin","User-origin content cannot be promoted by public batch research");
+      if(supplied.rowCount && !(specialist && page.independentDiscovery?.accountId===customerId))throw new HttpFailure(409,"submitted_origin","User-origin content cannot be promoted by public batch research");
       const supportedClaim=retainedPreviousClaim?previous!.supported_claim:supported.map(f=>`${f.attribution}: ${f.statement}${f.caveats.length?` Caveats: ${f.caveats.join('; ')}`:''}`).join("\n");
       if(previous && previous.retrieval_at.getTime()>Date.parse(page.retrievedAt))throw new HttpFailure(409,"research_observation_outdated","A newer checked source is already current");
       if(previous?.passage_digest===passageDigest&&!previous.retired&&previous.supported_claim===supportedClaim&&previous.retrieval_at.getTime()===Date.parse(page.retrievedAt)){revisionIds.push(previous.id);continue;}

@@ -17,7 +17,7 @@ export function specialistModel(kind:'customer-update'|'best-practices'|'solutio
       if(!parsed.success)throw hiddenRecord();
       const invocation=parsed.data.data.invocation;
       parentState.update(()=>({parentSessionId:invocation.parentSessionId}));
-      return budgetedResearchModel('openai/gpt-5.6-terra');
+      return 'openai/gpt-5.6-terra';
     },
     async 'step.started'(_event,ctx) {
       const principal=ctx.session.auth.current;

@@ -21,7 +21,7 @@ export default defineAgent({
   // also remove eve's model/tool payloads and replay log.
   experimental: { workflow: { retention: 0 } },
   model: defineDynamic({ events: {
-    "session.started": () => currentModel(),
+    "session.started": () => selectedModel,
     async "step.started"(event, ctx) {
       const data = typeof event === "object" && event !== null && "data" in event ?
         event.data : null;
