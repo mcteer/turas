@@ -21,7 +21,9 @@ export async function ownedInputResponseAttempt(actor:CurrentSession,nativeSessi
   const rows=(await db.query<{request_id:string;attempt_id:string}>(`SELECT DISTINCT request->>'requestId' AS request_id,a.id AS attempt_id
    FROM event_projections event JOIN conversations c ON c.id=event.conversation_id
    JOIN response_attempts a ON a.conversation_id=c.id AND (a.native_turn_id=event.turn_id
-    ${background?`OR EXISTS(SELECT 1 FROM research_background_turns bg WHERE bg.native_session_id=c.eve_session_id AND bg.turn_id=event.turn_id AND bg.attempt_id=a.id)`:''})
+    ${background?`OR EXISTS(SELECT 1 FROM research_background_turns bg WHERE bg.native_session_id=c.eve_session_id AND bg.turn_id=event.turn_id AND bg.attempt_id=a.id)`:''}
+    ${(marker?.schema_version??0)>=65?`OR EXISTS(SELECT 1 FROM native_input_resume_windows resume JOIN event_projections prior ON prior.native_event_id=resume.native_event_id
+      WHERE resume.attempt_id=a.id AND prior.turn_id=event.turn_id AND prior.native_session_id=c.eve_session_id)`:''})
    CROSS JOIN LATERAL jsonb_array_elements(COALESCE(event.visible_payload->'requests','[]'::jsonb)) request
    WHERE c.eve_session_id=$1 AND c.owner_principal_id=$2 AND c.workspace_id=$3 AND c.environment_id=$4 AND c.binding_state='bound'
     AND event.event_type='input.requested' AND request->>'requestId'=ANY($5::text[])

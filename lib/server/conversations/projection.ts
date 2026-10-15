@@ -55,16 +55,47 @@ function visiblePayload(event: NativeEvent): Record<string, unknown> {
   }
 }
 
+/** Input replies may resume in a new native turn. Bind them by the actual
+ * native request IDs, not by assuming the reply keeps the original turn ID. */
+async function inputResolutionAttempt(db:PoolClient,nativeSessionId:string,currentAttemptId:string,data:NativeEvent['data']){
+ const resolutions=Array.isArray(data?.resolutions)?data.resolutions:[];
+ const ids=resolutions.flatMap(value=>typeof value==='object' && value!==null && 'requestId' in value && typeof value.requestId==='string'?[value.requestId]:[]);
+ if(!ids.length || ids.length!==resolutions.length || new Set(ids).size!==ids.length)return null;
+ const owner=(await db.query(`SELECT c.id,c.owner_principal_id FROM conversations c JOIN response_attempts a ON a.conversation_id=c.id
+  WHERE a.id=$1 AND c.eve_session_id=$2 AND c.binding_state='bound'`,[currentAttemptId,nativeSessionId])).rows[0];
+ if(!owner || (await conversationFeature(db,owner.id)).kind!=='normal')return null;
+ const rows=(await db.query<{attempt_id:string;request_id:string}>(`SELECT DISTINCT a.id AS attempt_id,request->>'requestId' AS request_id
+  FROM event_projections requested JOIN response_attempts a ON a.conversation_id=requested.conversation_id
+   AND (a.native_turn_id=requested.turn_id OR EXISTS(SELECT 1 FROM research_background_turns bg
+     WHERE bg.attempt_id=a.id AND bg.turn_id=requested.turn_id AND bg.native_session_id=$2)
+    OR EXISTS(SELECT 1 FROM native_input_resume_windows resume JOIN event_projections prior ON prior.native_event_id=resume.native_event_id
+      WHERE resume.attempt_id=a.id AND prior.turn_id=requested.turn_id AND prior.native_session_id=$2))
+  CROSS JOIN LATERAL jsonb_array_elements(COALESCE(requested.visible_payload->'requests','[]'::jsonb)) request
+  WHERE requested.conversation_id=$1 AND requested.native_session_id=$2 AND requested.event_type='input.requested'
+   AND request->>'requestId'=ANY($3::text[])`,[owner.id,nativeSessionId,ids])).rows;
+ return rows.length===ids.length && new Set(rows.map(row=>row.attempt_id)).size===1?rows[0].attempt_id:null;
+}
+
 export async function projectNativeEvent(
   nativeSessionId: string, attemptId: string, event: NativeEvent, streamIndex?: number,
 ): Promise<void> {
   if (!visibleTypes.has(event.type)) return;
-  if(['input.requested','input.resolved'].includes(event.type) && typeof event.data?.turnId==='string') {
+  if(event.type==='input.resolved'){
+    const binding=await withTransaction(async db=>{
+      const current=(await db.query('SELECT conversation_id FROM response_attempts WHERE id=$1',[attemptId])).rows[0];
+      const normal=!!current && (await conversationFeature(db,current.conversation_id)).kind==='normal';
+      return {normal,original:normal?await inputResolutionAttempt(db,nativeSessionId,attemptId,event.data):null};
+    });
+    if(binding.normal && !binding.original)throw new Error('Native input resolution has no owned pending request');
+    if(binding.original)attemptId=binding.original;
+  }else if(event.type==='input.requested' && typeof event.data?.turnId==='string'){
     const original=await withTransaction(async db=>{
       const current=(await db.query(`SELECT c.id FROM conversations c JOIN response_attempts a ON a.conversation_id=c.id WHERE a.id=$1 AND c.eve_session_id=$2 AND c.binding_state='bound'`,[attemptId,nativeSessionId])).rows[0];
       if(!current || (await conversationFeature(db,current.id)).kind!=='normal')return null;
       const targets=(await db.query(`SELECT a.id FROM response_attempts a WHERE a.conversation_id=$1 AND
-        (a.native_turn_id=$2 OR EXISTS(SELECT 1 FROM research_background_turns bg WHERE bg.attempt_id=a.id AND bg.turn_id=$2 AND bg.native_session_id=$3))`,[current.id,event.data!.turnId,nativeSessionId])).rows;
+        (a.native_turn_id=$2 OR EXISTS(SELECT 1 FROM research_background_turns bg WHERE bg.attempt_id=a.id AND bg.turn_id=$2 AND bg.native_session_id=$3)
+         OR EXISTS(SELECT 1 FROM native_input_resume_windows resume JOIN event_projections resolution ON resolution.native_event_id=resume.native_event_id
+          WHERE resume.attempt_id=a.id AND resolution.turn_id=$2 AND resolution.native_session_id=$3))`,[current.id,event.data!.turnId,nativeSessionId])).rows;
       return targets.length===1?targets[0].id:null;
     });
     if(original)attemptId=original;
@@ -222,7 +253,11 @@ export async function projectNativeEventInTransaction(
       const marker=(await client.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0];
       const background=marker?.schema_version>=61 && typeof data.turnId==='string' && (await client.query(`SELECT 1 FROM research_background_turns
         WHERE native_session_id=$1 AND turn_id=$2 AND attempt_id=$3`,[nativeSessionId,data.turnId,attemptId])).rowCount;
-      if(!background)throw new Error("Native turn does not match the reserved attempt");
+      const resumed=marker?.schema_version>=65 && typeof data.turnId==='string' && (await client.query(`SELECT 1 FROM native_input_resume_windows resume
+        JOIN event_projections resolution ON resolution.native_event_id=resume.native_event_id
+        WHERE resume.attempt_id=$1 AND resolution.native_session_id=$2 AND resolution.turn_id=$3`,[attemptId,nativeSessionId,data.turnId])).rowCount;
+      const resolving=event.type==='input.resolved' && await inputResolutionAttempt(client,nativeSessionId,attemptId,data)===attemptId;
+      if(!background && !resumed && !resolving)throw new Error("Native turn does not match the reserved attempt");
     }
     if((event.type==='input.requested' || event.type==='input.resolved') &&
        (await conversationFeature(client,row.conversation_id)).kind==='normal') {
@@ -231,6 +266,7 @@ export async function projectNativeEventInTransaction(
           WHERE id=$1 AND response_state IN('pending','running','completed')`,[attemptId]);
         await client.query(`UPDATE watchdog_jobs SET state='settled',lease_owner=NULL,lease_expires_at=NULL,updated_at=now() WHERE attempt_id=$1`,[attemptId]);
       }else{
+        if(await inputResolutionAttempt(client,nativeSessionId,attemptId,data)!==attemptId)throw new Error('Native input resolution has no owned pending request');
         const resumed=await client.query(`UPDATE response_attempts SET response_state='running',updated_at=now(),revision=revision+1
           WHERE id=$1 AND response_state='waiting_input' RETURNING id`,[attemptId]);
         if(resumed.rows[0]) {

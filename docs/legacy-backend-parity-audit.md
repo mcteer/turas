@@ -148,6 +148,20 @@ The browser harness was also corrected to wait for an enabled empty composer,
 not an enabled Send button (which correctly stays disabled with no draft).
 Harness mistakes and actual product failures remain separately recorded.
 
+On `0ec65cf`, the original Baggu question passes independent LLM semantic review
+with minor wording/verbosity issues; desktop/mobile/reloaded history also pass.
+A separate Notion question completed all three actual specialists and the original
+Luna decision model. Typed recon, practices and solution receipts are stored;
+transport and visual history checks pass. Its substantive solution review and
+explicit reuse check remain open. Total accounted usage at this checkpoint is
+$4.388535 including full provider fee holds, within the unchanged $15 ledger.
+
+The native question survived sign-out/new-login and accepted its answer, but its
+resumed reply failed. Input resolution is now associated through actual native
+request IDs and its resume window can bind a different native turn. The local
+regression uses a different resumed turn, preserves original receipts and the
+conversation token allowance, and passes. Hosted re-evaluation is still required.
+
 ### Fixed-date demo tools
 
 The five legacy capacity/portfolio/brief/scenario/intervention tools directly read

@@ -62,10 +62,11 @@ it('uses customer selection as initial context, continues after new knowledge an
   expect((await db.query('SELECT login_session_id FROM general_context_receipts WHERE attempt_id=$1',[next.attemptId])).rows[0].login_session_id).toBe(originalAuthoritySession);
   expect((await db.query('SELECT login_session_id FROM ordinary_chat_authorities WHERE attempt_id=$1',[next.attemptId])).rows[0].login_session_id).toBe(fresh.sessionId);
   expect(await withTransaction(client=>readCurrentAttemptContext(client,next.attemptId,fresh.principalId))).toMatchObject({contractVersion:'general-context-v1'});
-  await projectNativeEvent(native,unrelated.attemptId,event('input.resolved',{turnId:nextTurn,resolutions:[{requestId,kind:'question',outcome:'answered',response:{requestId,text:'The public site'}}]}));
+  await projectNativeEvent(native,unrelated.attemptId,event('input.resolved',{turnId:'resumed-native-turn',resolutions:[{requestId,kind:'question',outcome:'answered',response:{requestId,text:'The public site'}}]}));
   expect((await db.query('SELECT response_state FROM response_attempts WHERE id=$1',[next.attemptId])).rows[0].response_state).toBe('running');
   await expect(ownedInputResponseAttempt(fresh,native,{inputResponses:[{requestId,text:'Again'}]})).rejects.toMatchObject({status:409});
-  await projectNativeEvent(native,next.attemptId,event('turn.completed',{turnId:nextTurn}));
+  await projectNativeEvent(native,next.attemptId,event('message.completed',{turnId:'resumed-native-turn',message:'Resumed answer',finishReason:'stop'}));
+  await projectNativeEvent(native,next.attemptId,event('turn.completed',{turnId:'resumed-native-turn'}));
   await db.query("UPDATE customer_grants SET state='revoked' WHERE customer_id=$1 AND membership_id=$2",[b,fresh.membershipId]);
   await expect(getOwnedConversation(fresh,conversation.id)).rejects.toMatchObject({status:404});
  }finally{await db.end();}
