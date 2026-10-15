@@ -41,6 +41,9 @@ Migration 067 adds posted-question resume windows and is applied to Preview
 after an encrypted schema-66 capture and matching-version restore rehearsal.
 The native question/new-login/answer/reloaded-history flow passed actual-model
 CLI WebKit checks on Preview `77ec4be`; final release verification remains open.
+Migration 068 adds owner-bound native chat corrections and concurrent provider
+token reservations. It is applied to Preview after an encrypted schema-67 capture
+and matching-version restore rehearsal; hosted correction checks remain open.
 Hosted model/provider checks are in progress under one shared $15 ledger.
 Specialist completion, full parity acceptance and cleanup remain open.
 The root Grok model is unchanged.

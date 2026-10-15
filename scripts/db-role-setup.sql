@@ -352,3 +352,12 @@ DO $$ BEGIN
   GRANT SELECT,INSERT ON ordinary_context_refreshes,ordinary_evidence_refreshes TO turas_runtime;
  END IF;
 END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.ordinary_steering_deliveries') IS NOT NULL THEN
+  REVOKE ALL ON ordinary_steering_deliveries,ordinary_conversation_allowances,ordinary_model_operations FROM turas_runtime;
+  GRANT SELECT,INSERT ON ordinary_steering_deliveries,ordinary_conversation_allowances,ordinary_model_operations TO turas_runtime;
+  GRANT UPDATE(dispatch_state,native_delivery_id,native_event_id,native_turn_id,native_receipt,native_status,updated_at) ON ordinary_steering_deliveries TO turas_runtime;
+  GRANT UPDATE(actual_tokens,settled_at) ON ordinary_model_operations TO turas_runtime;
+ END IF;
+END $$;

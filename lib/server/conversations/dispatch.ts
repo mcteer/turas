@@ -4,7 +4,9 @@ import { prepareExpansionNativeAttempt, claimExpansionNativeDispatch } from "../
 import { prepareSupportNativeAttempt, claimSupportNativeDispatch } from "../support/native";
 import { conversationFeature } from "./feature";
 import { prepareLearningNativeAttempt,claimLearningNativeDispatch } from '../learning/native';
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
+import {messageDigest,normalizeMessageText} from './message-integrity';
+export {messageDigest,normalizeMessageText} from './message-integrity';
 import type { CurrentSession } from "../auth/sessions";
 import { getServerConfig } from "../config";
 import { withTransaction } from "../db/client";
@@ -23,14 +25,7 @@ import { staffingSha256 } from "../staffing/commands";
 import type { PoolClient } from "pg";
 import { captureGeneralContext } from "./general-context";
 import { titleFromMessage } from "../../conversations/title";
-
-export function normalizeMessageText(text: string): string {
-  return text.replace(/\r\n?/g, "\n").normalize("NFC");
-}
-
-export function messageDigest(text: string): string {
-  return createHash("sha256").update(JSON.stringify({ message: normalizeMessageText(text) })).digest("hex");
-}
+import {deriveSteeringAttempt} from './steering';
 
 async function requireWorkerHeartbeat(client: import("pg").PoolClient): Promise<void> {
   const result = await client.query(`SELECT 1 FROM maintenance_workers
@@ -324,6 +319,8 @@ export async function markDispatchUncertain(
 export async function deriveNativeAttempt(
   session: CurrentSession, nativeSessionId: string, requestKey: string, text: string,
 ): Promise<string> {
+  const steering=await deriveSteeringAttempt(session,nativeSessionId,requestKey,text);
+  if(steering)return steering;
   const staffingAttempt = await withTransaction(async db => {
     const row = (await db.query(`SELECT a.id,a.conversation_id FROM response_attempts a JOIN submitted_messages sm ON sm.id=a.message_id
       JOIN conversations c ON c.id=a.conversation_id WHERE c.eve_session_id=$1 AND c.owner_principal_id=$2 AND c.environment_id=$3

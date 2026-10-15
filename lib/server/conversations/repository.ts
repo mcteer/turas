@@ -440,7 +440,7 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
   const hideGenerated = final.contextStatus !== "current" || finalPlanStale;
   const visibleEvents = hideGenerated ? (ownerEvents?.rows ?? events.rows.filter((row) => row.event_type === "message.received")) : events.rows;
   return {
-    ...conversation, contextStatus: hideGenerated ? "changed":final.contextStatus,
+    ...conversation, featureKind:feature.kind, contextStatus: hideGenerated ? "changed":final.contextStatus,
     title: hideGenerated ? "Previous conversation" : conversation.title,
     history: [...visibleEvents.slice(0, 500).map((row) => ({
       eventId: row.native_event_id,

@@ -17,7 +17,7 @@ import {boundToolActor} from '../../lib/server/profiles/tool-actor';
 import {requestOwnedTaskCancellation,settleInactiveOwnedCancellation} from '../../lib/server/conversations/cancel';
 import {wrapOrdinaryChatModel} from '../../lib/server/conversations/model-budget';
 const isolatedTestUrl=requireTestDatabaseUrl();
-beforeAll(()=>{process.env.DATABASE_URL=isolatedTestUrl;process.env.TURAS_ENVIRONMENT_ID=process.env.TURAS_TEST_ENVIRONMENT_ID;});
+beforeAll(()=>{const runtime=new URL(isolatedTestUrl);runtime.searchParams.set('options','-c role=turas_runtime');process.env.DATABASE_URL=runtime.toString();process.env.TURAS_ENVIRONMENT_ID=process.env.TURAS_TEST_ENVIRONMENT_ID;});
 async function signIn():Promise<CurrentSession>{const origin=process.env.TURAS_APP_ORIGIN!;const response=await login(new Request(`${origin}/api/auth/login`,{method:'POST',headers:{origin,'content-type':'application/json'},body:JSON.stringify({username:'partner',password:process.env.PARTNER_PASSWORD})}));const actor=await getCurrentSession(new Request(origin,{headers:{cookie:response.headers.get('set-cookie')!.split(';')[0]}}));if(!actor)throw Error('Fixture identity unavailable');return actor;}
 it('uses customer selection as initial context, continues after new knowledge and login, and protects previously read customer access',async()=>{
  const db=new Client({connectionString:isolatedTestUrl});await db.connect();try{
@@ -66,8 +66,8 @@ it('uses customer selection as initial context, continues after new knowledge an
     async doGenerate(options:{abortSignal?:AbortSignal}){providerCalls++;providerSignal=options.abortSignal;return {};},
     async doStream(){throw Error('Unused fixture stream');}} as unknown as Model;
   const resumedPrincipal={principalId:fresh.principalId,attributes:{turasAttemptId:next.attemptId}};
-  const resumedModel=wrapOrdinaryChatModel(provider,resumedPrincipal,native,'');
-  await expect(resumedModel.doGenerate({prompt:[]})).rejects.toMatchObject({status:404});
+  const resumedModel=()=>wrapOrdinaryChatModel(provider,resumedPrincipal,native,'');
+  await expect(resumedModel().doGenerate({prompt:[]})).rejects.toMatchObject({status:404});
   expect(providerCalls).toBe(0);
   await authorizeOwnedInputResponse(fresh,native,{inputResponses:[{requestId,text:'The public site'}]});
   const posted=(await db.query('SELECT deadline_at FROM native_input_resume_windows WHERE attempt_id=$1',[next.attemptId])).rows[0].deadline_at;
@@ -77,11 +77,11 @@ it('uses customer selection as initial context, continues after new knowledge an
   await projectNativeEvent(native,next.attemptId,event('turn.completed',{turnId:nextTurn}));
   expect((await db.query('SELECT response_state FROM response_attempts WHERE id=$1',[next.attemptId])).rows[0].response_state).toBe('running');
   await projectNativeEvent(native,next.attemptId,event('message.appended',{turnId:'',messageDelta:'Resumed'}));
-  await expect(resumedModel.doGenerate({prompt:[]})).rejects.toMatchObject({status:404});
+  await expect(resumedModel().doGenerate({prompt:[]})).rejects.toMatchObject({status:404});
   expect(providerCalls).toBe(0);
   await db.query(`INSERT INTO general_context_injections(attempt_id,turn_id,snapshot_digest)
     SELECT attempt_id,$2,snapshot_digest FROM general_context_receipts WHERE attempt_id=$1`,[next.attemptId,nextTurn]);
-  await resumedModel.doGenerate({prompt:[]});
+  await resumedModel().doGenerate({prompt:[]});
   expect(providerCalls).toBe(1);expect(providerSignal).toBeInstanceOf(AbortSignal);
   expect((await db.query('SELECT login_session_id FROM general_context_receipts WHERE attempt_id=$1',[next.attemptId])).rows[0].login_session_id).toBe(originalAuthoritySession);
   expect((await db.query('SELECT login_session_id FROM ordinary_chat_authorities WHERE attempt_id=$1',[next.attemptId])).rows[0].login_session_id).toBe(fresh.sessionId);

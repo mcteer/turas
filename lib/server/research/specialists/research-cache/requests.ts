@@ -5,6 +5,7 @@ import type { AppIdentity } from "../identity";
 import { loadResearchContext, researchContextDigest } from "../solution-research/context";
 import { customerUpdateReceiptSchema, verifyCustomerUpdate, signCustomerUpdate } from "../solution-research/customer-update-receipt";
 import { researchReceiptSchema, verifyResearch, signResearch } from "../solution-research/receipt";
+import {currentAttemptUserMessages} from '../../../conversations/steering';
 import { storeCustomerUpdateArtifact, storeResearchArtifact, researchReferenceSchema } from "../solution-research/artifacts";
 import { evidenceDatabase } from "./database";
 import { digest, requestKey, requestScopeSchema, requestTicketSchema, snapshotReferenceSchema, type RequestScope, type RequestTicket, cachePolicy } from "./schema";
@@ -47,10 +48,7 @@ async function reissue(receipt: DurableReceipt, identity: AppIdentity, signal: A
 export async function prepareResearch(identity: AppIdentity, input: RequestScope, signal: AbortSignal, refresh = false, parentSessionId?: string, reconReference?: z.infer<typeof researchReferenceSchema>) {
   let originalQuestion:string|undefined;
   if(identity.responseAttemptId){
-    const message=await withTransaction(async db=>(await db.query<{text:string}>(`SELECT sm.text FROM response_attempts a
-      JOIN submitted_messages sm ON sm.id=a.message_id JOIN conversations c ON c.id=a.conversation_id
-      WHERE a.id=$1 AND c.owner_principal_id=$2 AND c.workspace_id=$3 AND c.environment_id=$4`,
-      [identity.responseAttemptId,identity.principalId,identity.workspaceId,identity.environmentId])).rows[0]);
+    const message=await withTransaction(async db=>(await currentAttemptUserMessages(db,identity.responseAttemptId!,identity.principalId,identity.workspaceId))[0]);
     const text=message?.text.trim();
     // Preserve the legacy bounded-question contract and the user's exact words.
     // A model rephrasing must not invalidate cache reuse or launch another run.

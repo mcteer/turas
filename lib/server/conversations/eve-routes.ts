@@ -1,4 +1,5 @@
 import {inputResponsesSchema,authorizeOwnedInputResponse} from "./input-responses";
+import {prepareOrdinarySteering,recordSteeringReceipt,markSteeringUncertain} from './steering';
 import type { EveChannel } from "eve/channels/eve";
 import { z } from "zod";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
@@ -20,7 +21,8 @@ import { authorizeLearningRetirement } from '../learning/native-retirement';
 
 const createSchema = z.object({ operationId: z.uuid() }).strict();
 const sendSchema = z.object({ message: z.string(),
-  artifactSelections: z.array(artifactDraftSelectionSchema).max(5).optional() }).strict();
+  artifactSelections: z.array(artifactDraftSelectionSchema).max(5).optional(),
+  turnPolicy:z.enum(['queue','steer']).optional() }).strict();
 const nativeSessionSchema = z.object({ ok: z.literal(true), sessionId: z.string().min(1) }).passthrough();
 
 function nativeFailure(error: unknown): Response {
@@ -128,6 +130,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
           let conversationId: string | undefined;
           let attemptId: string | undefined;
           let dispatchClaimed = false;
+          let steeringId:string|undefined;
           try {
             session = await getCurrentSession(request);
             if (!session) throw new HttpFailure(401, "authentication_required", "Sign in required");
@@ -180,6 +183,18 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
               "Please discuss the selected customer source passages." : ""));
             await getOwnedConversationByNativeSession(session, args.params.sessionId);
             await startPreviewChatWorker(args.attachSession, args.waitUntil);
+            if(parsed.data.turnPolicy==='steer'){
+              if(selections.length)throw new HttpFailure(422,'steering_sources','Send new source selections after the active response');
+              const steering=await prepareOrdinarySteering(session,conversationId!,args.params.sessionId,requestKey!,text);
+              if(steering){
+                if(steering.kind==='replay')return steering.response;
+                steeringId=steering.id;
+                const headers=new Headers(request.headers);headers.delete('content-length');
+                const response=await native(new Request(request.url,{method:'POST',headers,body:JSON.stringify({message:text,turnPolicy:'steer'})}),args);
+                await recordSteeringReceipt(steering.id,args.params.sessionId,response);
+                return response;
+              }
+            }
             const prepared = await prepareAttempt(session, conversationId!, args.params.sessionId,
               requestKey!, text, selections);
             attemptId = prepared.attemptId;
@@ -239,6 +254,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             await recordNativeReceipt(session, conversationId!, attemptId, nativeResponse);
             return nativeResponse;
           } catch (error) {
+            if(steeringId)await markSteeringUncertain(steeringId).catch(()=>{});
             if (dispatchClaimed && session && conversationId && attemptId) {
               try { await markDispatchUncertain(session, conversationId, attemptId); }
               catch { /* durable claim remains blocked */ }

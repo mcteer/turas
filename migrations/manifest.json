@@ -1,5 +1,5 @@
 {
-  "version": 67,
+  "version": 68,
   "migrations": [
     {
       "file": "001-identity-foundation.cjs",
@@ -268,6 +268,10 @@
     {
       "file": "067-posted-native-question-window.cjs",
       "sha256": "6e762adfe0a88fe6d3ba4b50de93d3969b9228a78137d3c4811842d6547febd3"
+    },
+    {
+      "file": "068-ordinary-chat-steering.cjs",
+      "sha256": "c8fe82270f41416503361d230a71f3d7db23cb8d9e8491e175cd44ab89287599"
     }
   ]
 }

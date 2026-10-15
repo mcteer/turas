@@ -51,10 +51,11 @@ try {
     TURAS_TEST_DATABASE_URL:url,TURAS_TEST_ENVIRONMENT_ID:environment.TURAS_ENVIRONMENT_ID};
   run(["node_modules/vitest/vitest.mjs","run","tests/integration/named-customer-chat.test.ts",
     "tests/integration/general-chat.test.ts","tests/integration/legacy-research-transactions.test.ts",
-    "tests/integration/parity-evaluation-budget.test.ts","tests/integration/specialist-profile-persistence.test.ts","tests/integration/legacy-knowledge-mechanics.test.ts","tests/integration/live-customer-chat.test.ts"],integrationEnvironment);
+    "tests/integration/parity-evaluation-budget.test.ts","tests/integration/specialist-profile-persistence.test.ts","tests/integration/legacy-knowledge-mechanics.test.ts","tests/integration/live-customer-chat.test.ts","tests/integration/ordinary-steering.test.ts"],integrationEnvironment);
   // Route contracts read DATABASE_URL directly; they do not use the integration
   // fixture's explicit test-database selector.
-  run(["node_modules/vitest/vitest.mjs","run","tests/contracts/general-chat.test.ts"]);
+  const contractUrl=new URL(url);contractUrl.searchParams.set('options','-c role=turas_runtime');
+  run(["node_modules/vitest/vitest.mjs","run","tests/contracts/general-chat.test.ts"],{...environment,DATABASE_URL:contractUrl.toString(),DATABASE_URL_UNPOOLED:contractUrl.toString()});
   console.log("Disposable migrations, runtime grants and chat, source-persistence, transaction and budget checks passed");
 } catch(error) {
   console.error(error.message);

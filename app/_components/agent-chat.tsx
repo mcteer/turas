@@ -75,6 +75,8 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [dispatchState, setDispatchState] = useState<string>();
   const [responseState, setResponseState] = useState<string>();
+  const [canSteer,setCanSteer]=useState(false);
+  const [steering,setSteering]=useState(false);
   const keyRef = useRef<string | null>(null);
   const agent = useEveAgent({
     initialSession: { sessionId: nativeSessionId, streamIndex: 0 },
@@ -116,11 +118,12 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
           return;
         }
         if (!response.ok) throw new Error();
-        const detail = await response.json() as { data: { contextStatus?: string; attempts: Array<{
+        const detail = await response.json() as { data: { contextStatus?: string;featureKind?:string; attempts: Array<{
           requestKey: string; dispatchState: string; responseState: string;
           watchdogState: string | null;
         }> } };
         if (!active) return;
+        setCanSteer(detail.data.featureKind==='normal');
         if (detail.data.contextStatus !== "current") {
           agent.reset(); setStale(true); return;
         }
@@ -253,6 +256,14 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     if(answer && agent.status==='ready' && !denied && !answering) {
       await respondToRequest(answer);setDraft('');return;
     }
+    if(text && canSteer && !denied && !stale && !stopping && !steering && !selections.length &&
+      (agent.status==='submitted'||agent.status==='streaming')){
+      setSteering(true);setDraft('');setNotice('Sending correction…');
+      try{await agent.send(text,{turnPolicy:'steer',headers:{'x-turas-request-key':crypto.randomUUID()}});setNotice('Correction submitted.');}
+      catch{setNotice('The correction could not be confirmed. It was not sent again.');}
+      finally{setSteering(false);}
+      return;
+    }
     if (!text.trim() || denied || (pendingKey && !(retryPrepared && dispatchState === "prepared")) ||
         agent.status !== "ready") return;
     const key = keyRef.current ?? crypto.randomUUID();
@@ -343,14 +354,14 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         onDraftSelectionsChange={setDraftSelections} resetSelectionVersion={selectionResetVersion} />}
       <textarea id="chat-message" aria-label="Message Turi" placeholder="Message Turi…" value={draft} onChange={(event) => setDraft(event.target.value)}
         onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(); } }}
-        maxLength={16_384} disabled={busy || (Boolean(pendingKey) && dispatchState !== "prepared") || agent.status === "resuming" || stopping} />
+        maxLength={16_384} disabled={(!canSteer && busy) || (Boolean(pendingKey) && dispatchState !== "prepared" && !(canSteer&&busy)) || agent.status === "resuming" || stopping || steering} />
       <div className="chat-actions">
         {customerId && <button className="composer-attach" type="button" aria-label="Show attachments" aria-expanded={attachmentsOpen}
           onClick={() => setAttachmentsOpen(value => !value)}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m8 12 6-6a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l9-9" /></svg></button>}
-        <button className="composer-send" type={busy ? "button" : "submit"} aria-label={busy ? "Stop response" : "Send message"}
-          onClick={busy ? () => void cancel() : undefined}
-          disabled={busy ? stopping : (!draft.trim() && !draftSelections.length) || Boolean(pendingKey) || agent.status === "resuming" || stopping}>
-          {busy ? <span aria-hidden="true">■</span> : <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" /></svg>}
+        <button className="composer-send" type={busy && !(canSteer&&draft.trim()) ? "button" : "submit"} aria-label={busy && !(canSteer&&draft.trim()) ? "Stop response" : "Send message"}
+          onClick={busy && !(canSteer&&draft.trim()) ? () => void cancel() : undefined}
+          disabled={busy ? stopping||steering||Boolean(draftSelections.length) : (!draft.trim() && !draftSelections.length) || Boolean(pendingKey) || agent.status === "resuming" || stopping}>
+          {busy && !(canSteer&&draft.trim()) ? <span aria-hidden="true">■</span> : <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" /></svg>}
         </button>
       </div>
     </form>

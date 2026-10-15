@@ -1,5 +1,6 @@
 import {customerQuestionActor,assertCustomerQuestionReads} from "./customer-accounts";
 import {hasNativeInputWindow} from './input-responses';
+import {projectSteeringMessage,steeringTurnDeadline,pendingSteering} from './steering';
 import {readResearchRuntimeAuthority} from "../research/specialists/runtime-authority";
 import { projectExecutionNativeEventInTransaction, type ExecutionNativeProjection } from "../execution/native-events";
 import { projectLearningNativeEventInTransaction,type LearningNativeProjection } from '../learning/native-events';
@@ -70,7 +71,8 @@ async function inputResolutionAttempt(db:PoolClient,nativeSessionId:string,curre
    AND (a.native_turn_id=requested.turn_id OR EXISTS(SELECT 1 FROM research_background_turns bg
      WHERE bg.attempt_id=a.id AND bg.turn_id=requested.turn_id AND bg.native_session_id=$2)
     OR EXISTS(SELECT 1 FROM native_input_resume_windows resume JOIN event_projections prior ON prior.native_event_id=resume.native_event_id
-      WHERE resume.attempt_id=a.id AND prior.turn_id=requested.turn_id AND prior.native_session_id=$2))
+      WHERE resume.attempt_id=a.id AND prior.turn_id=requested.turn_id AND prior.native_session_id=$2)
+    ${Number((await db.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0]?.schema_version??0)>=68?`OR EXISTS(SELECT 1 FROM ordinary_steering_deliveries steer WHERE steer.attempt_id=a.id AND steer.native_turn_id=requested.turn_id AND steer.native_event_id IS NOT NULL)`:''})
   CROSS JOIN LATERAL jsonb_array_elements(COALESCE(requested.visible_payload->'requests','[]'::jsonb)) request
   WHERE requested.conversation_id=$1 AND requested.native_session_id=$2 AND requested.event_type='input.requested'
    AND request->>'requestId'=ANY($3::text[])`,[owner.id,nativeSessionId,ids])).rows;
@@ -238,6 +240,7 @@ export async function projectNativeEventInTransaction(
       return;
     }
     if (event.type === "message.received") {
+      if(await projectSteeringMessage(client,nativeSessionId,attemptId,event))return;
       if (typeof data.message !== "string" || typeof data.turnId !== "string" ||
           messageDigest(data.message) !== nativeInputDigest ||
           (row.input_event_id && row.input_event_id !== event.meta.id) ||
@@ -258,7 +261,8 @@ export async function projectNativeEventInTransaction(
         JOIN event_projections resolution ON resolution.native_event_id=resume.native_event_id
         WHERE resume.attempt_id=$1 AND resolution.native_session_id=$2 AND resolution.turn_id=$3`,[attemptId,nativeSessionId,data.turnId])).rowCount);
       const resolving=event.type==='input.resolved' && await inputResolutionAttempt(client,nativeSessionId,attemptId,data)===attemptId;
-      if(!background && !resumed && !resolving)throw new Error("Native turn does not match the reserved attempt");
+      const steered=typeof data.turnId==='string' && await steeringTurnDeadline(client,attemptId,nativeSessionId,data.turnId);
+      if(!background && !resumed && !resolving && !steered)throw new Error("Native turn does not match the reserved attempt");
     }
     if((event.type==='input.requested' || event.type==='input.resolved') &&
        (await conversationFeature(client,row.conversation_id)).kind==='normal') {
@@ -301,6 +305,7 @@ export async function projectNativeEventInTransaction(
       "turn.completed": "completed", "turn.cancelled": "cancelled", "turn.failed": "failed",
     };
     if (terminal[event.type]) {
+      if(event.type==='turn.completed' && row.native_turn_id===data.turnId && await pendingSteering(client,attemptId))return;
       if(event.type==='turn.completed' && row.native_turn_id===data.turnId &&
         await hasNativeInputWindow(client,attemptId,nativeSessionId,'',true))return;
       await client.query(`UPDATE response_attempts SET response_state = $2,

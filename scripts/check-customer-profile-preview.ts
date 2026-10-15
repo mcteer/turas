@@ -22,7 +22,9 @@ const browser=await webkit.launch(),contexts:BrowserContext[]=[];
 const sessions:Array<{context:BrowserContext;origin:string;csrf:string}>=[];
 const username=process.env.TURAS_DEMO_USERNAME??'mcteer',password=process.env.TURAS_DEMO_PASSWORD;
 async function signedIn(origin:string,preview=false){
- const context=await browser.newContext({baseURL:origin,viewport:{width:1440,height:1100},colorScheme:'dark',extraHTTPHeaders:preview?{'x-vercel-protection-bypass':entries[0][0],'x-vercel-set-bypass-cookie':'true'}:{}});contexts.push(context);
+ const context=await browser.newContext({baseURL:origin,viewport:{width:1440,height:1100},colorScheme:'dark'});contexts.push(context);
+ if(preview)await context.route(origin+'/**',route=>route.continue({headers:{...route.request().headers(),
+  'x-vercel-protection-bypass':entries[0][0],'x-vercel-set-bypass-cookie':'true'}}));
  const loginPage=await context.newPage();await loginPage.goto('/login?returnTo=/customers');await loginPage.getByLabel('Username',{exact:true}).fill(username);await loginPage.getByLabel('Password',{exact:true}).fill(password);const loginResponse=loginPage.waitForResponse(response=>new URL(response.url()).pathname==='/api/auth/login'&&response.request().method()==='POST');await loginPage.getByRole('button',{name:'Sign in',exact:true}).click();const login=await loginResponse;if(!login.ok())throw Error('Hosted browser authentication failed');const body=await login.json();if(typeof body.data?.csrfToken!=='string')throw Error('Hosted session receipt unavailable');sessions.push({context,origin,csrf:body.data.csrfToken});await loginPage.waitForURL('**/customers');await loginPage.close();return sessions.at(-1)!;
 }
 async function directory(context:BrowserContext){const items:Array<{id:string;displayName:string;synthetic:boolean}>=[];let cursor:string|null=null;for(let count=0;count<11;count++){
