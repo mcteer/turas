@@ -512,47 +512,44 @@ selector keeps operator indexing within this public inventory; existing private
 source and synthetic-worker restrictions remain in place.
 This command neither approves private context nor publishes cross-customer learning.
 
-The legacy chat parity bug fix remains under verification in PR #34. Normal-chat
-extracted document intake keeps supplied human claims pending review. Actual text,
-Word, PDF and spreadsheet preparation passes in Preview; all four local headless
-WebKit configurations also pass the landing-to-thread send flow. Hosted provider
-file execution remains open. Native binary fallback and file corrections now pass
-local real-Eve checks with a deterministic provider, byte-preserving upload, actual
-canonical customer resolution and reloaded history. They remain disabled in hosted
-environments until schema 072 and capped Sandbox admission are verified; these
-local checks do not establish actual-model quality. Preview is on schema 072
-after encrypted recovery/restore/migration/grant rehearsal; Production is unchanged.
+The legacy chat parity bug fix remains under verification in PR #34. Normal chat
+resolves accessible named customers without a picker and reads their dated account
+evidence inventory. Focused full-document search remains separate from that
+inventory. Independently checked research updates current customer knowledge and
+retrieval projections automatically; human submissions remain pending review.
 
+Ordinary shared search also reads official Vercel product documentation without a
+customer selection. Broader customer-derived practice references retain customer
+grant/source checks. Public references are distinct from customer adoption and
+published shared learnings; private originating research queries and briefs are
+excluded. Complete retained passages preserve original citation IDs, while bounded
+responses identify references whose passages were omitted.
+
+Actual Preview checks establish the real 184-customer directory, overview before
+workload controls, sourced 1Password/Notion products, hybrid Sandbox evidence
+search, preference persistence/isolation/removal, document preparation and native
+image correction with unsent-draft retention. The temporary native session and
+feature window were retired; native binary uploads remain disabled outside
+explicitly admitted infrastructure. Preview schema 072 migrations/grants were
+backed up and rehearsed. Production remains schema 055 and unchanged.
 
 Installation applies a guarded compatibility repair for Eve 0.67.1: its durable
 memory-tool callback context must serialize native-file URL data as the equivalent
 supported string form. The framework version and reviewed source hash must match;
 future framework changes require reviewing this repair. The file-memory provider,
-backend selection, scope, stored format and root model remain unchanged. Local
-runtime checks cover preference save/recall, caller isolation/removal and native
-file/correction history; these do not establish hosted Blob persistence.
+backend selection, scope, stored format and root model remain unchanged.
 
-Ordinary Stop and native retirement also cover a turn parked for user input. A
-native retirement settles its application attempt only after Eve confirms the exact
-session is reset or already inactive; an accepted request alone leaves it stopping.
-The hosted parity checks and development-data cleanup remain release gates in the
-[backend parity audit](docs/legacy-backend-parity-audit.md).
+Ordinary Stop and native retirement cover a turn parked for user input. Retirement
+settles its application attempt only after Eve confirms the exact session is reset
+or already inactive; an accepted request alone leaves it stopping.
 
-Funded hosted checks now establish hybrid Sandbox evidence search and personal
-preference persistence, isolation and removal. Actual Notion answer-quality review
-still fails the cancellation-overrun caveat; revised instructions and a corrected,
-provider-compatible native image fixture await replacement Preview acceptance.
-The same-composer correction regression now verifies that a dispatched file clears
-immediately and finishing the previous stream preserves the next unsent draft.
-Evaluation runtime grants preserve operator-only cap, pricing and expiry control.
-
-The latest repair Preview passes actual native-file correction and unsent-draft
-retention checks. The evidence-search response-size fix passes actual Preview verification.
-Research answer quality and ordinary-chat full-document search still need final
-hosted acceptance; PR 34 remains unmerged.
-
-
-Ordinary named-customer search now also reads retained public product references
-from the existing best-practices library, separately from customer adoption
-facts. The library bridge passes disposable authorization and passage-integrity
-checks; its actual-model Preview acceptance remains pending in PR #34.
+Actual answer quality remains a release gate. Earlier completed answers omitted
+material security or framework evidence; those failures are retained. The restored
+inventory and customer-free documentation reader still need final actual-output
+acceptance. Broad proposal checks also reached the unchanged finite evaluation
+reservation guard before synthesis. The Preview evaluation hard-limits actual
+Grok output to 8,192 tokens; pricing, the $15 ledger, existing charges/unknown holds
+and Production behavior are unchanged. Final exact Preview/CI acceptance and
+owned test-payload cleanup remain open in the
+[backend parity audit](docs/legacy-backend-parity-audit.md). PR #34 is unmerged;
+these bug checks do not establish complete 016 hosted/operator acceptance.
