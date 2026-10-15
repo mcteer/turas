@@ -746,3 +746,23 @@ and no mobile overflow. The first funded request returned a generic 503; that
 reliability finding remains open. The complete local gap benchmark passed with
 list p95 559 ms against its unchanged 2,000 ms limit. The current CI benchmark's
 2,068 ms failure remains recorded pending its isolated rerun.
+
+The funded `715b308` Notion run completed all three real specialists, but its
+independent output review failed: the answer still described a five-minute
+execution timeout as a hard cap and omitted documented cancellation overruns.
+The root instructions now explicitly preserve that distinction. Hosted personal
+preference save, fresh-session recall, caller isolation, removal and fresh-session
+absence checks passed; the save acknowledgement was ambiguous, so instructions
+now require readback before confirmation. Generic current index jobs drained,
+leaving 1,732 ready embeddings and six passages with ineligible sources.
+
+The first bounded native-file check accepted file delivery and correction but
+failed at the actual model. A direct, budgeted Grok diagnostic established that
+the synthetic one-pixel PNG violated provider minimums: each dimension must be
+at least eight pixels and total area at least 512 pixels. The fixture now uses
+32x32 pixels, which passed an actual unchanged-model call. This does not establish
+hosted native-file acceptance. The failed session and its Sandbox were retired,
+three temporary feature settings restored, and its stopped build template deleted
+while retaining the runtime snapshot. The user authorized one replacement build
+and session within the same $2 infrastructure and $15 provider caps. The replacement
+hosted acceptance and revised Notion output review remain open.

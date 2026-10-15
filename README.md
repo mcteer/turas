@@ -537,3 +537,8 @@ native retirement settles its application attempt only after Eve confirms the ex
 session is reset or already inactive; an accepted request alone leaves it stopping.
 The hosted parity checks and development-data cleanup remain release gates in the
 [backend parity audit](docs/legacy-backend-parity-audit.md).
+
+Funded hosted checks now establish hybrid Sandbox evidence search and personal
+preference persistence, isolation and removal. Actual Notion answer-quality review
+still fails the cancellation-overrun caveat; revised instructions and a corrected,
+provider-compatible native image fixture await replacement Preview acceptance.

@@ -36,7 +36,8 @@ try{await withPlanEvalEnvironment(async environment=>{
   const headers={origin:environment.origin,'x-csrf-token':csrf!},operationId=randomUUID();
   let id:string,native:string|undefined;
   const firstPrompt=process.argv.includes('--memory')||process.argv.includes('--memory-files')?'Remember that I prefer concise answers.':'Please inspect this native file.';
-  const bytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC','base64');
+  // Grok requires each dimension >=8 and at least 512 pixels total; use 32x32.
+  const bytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAJklEQVR4nO3NMQ0AAAwDoPo33arYsQQMkB6LQCAQCAQCgUAg+BIMi1X0pjxKe0gAAAAASUVORK5CYII=','base64');
   const page=await context.newPage();
   if(process.argv.includes('--composer')){
    // Compile the actual thread surface before starting the paused provider.
