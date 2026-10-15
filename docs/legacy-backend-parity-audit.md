@@ -20,6 +20,12 @@ On Preview `2da3521`, headless CLI WebKit verified title editing, desktop/mobile
 
 The ordinary-chat correction repair uses Eve's native `turnPolicy: "steer"`; governed channels retain their queued policy. Migration 068 binds each correction to its owner's active attempt and original deadline, records the actual native delivery receipt, and prevents unknown outcomes from being resent. Only native-consumed corrections can supply human-claim quotations or replace the exact research question. Late completion of the initial turn cannot strand an admitted correction. Provider reservations preserve the existing 20,000-output-token conversation limit before I/O; interruption or missing usage retains the full reservation. Six disposable runtime-role checks cover same/new native turn projection, receipt replay and uncertain outcomes, a raced rejection, interrupted usage, concurrent reservations and cancellation. Type checking, 514 unit tests and the Eve build pass locally. Hosted steering acceptance remains open; these fixtures do not establish runtime behavior on Preview.
 
+Preview `64cdedc` passed headless CLI WebKit title editing and reloaded native-question history at desktop/mobile sizes in both themes. Two fetch errors occurred during navigation reload, including one recorded cancelled request; no active-page errors or overflow occurred. The actual native correction/provider path was not dispatched by this check. Both application builds pass. Migration 068 was applied only after an encrypted schema-67 recovery capture and matching-version restore/migration rehearsal preserved 184 customers, 805 source revisions, zero human profile records and 23 conversations, with no active responses. Its temporary containers were removed.
+
+Authenticated browser-form login passed on that immutable Preview URL and its branch alias. A read-only profile check found the same 184 real-customer directory as Production, overview placement above workload controls, product buttons and source details for 1Password and Notion. 1Password's checked research matches Production. Notion has 18 current sources versus Production's ten: eight baseline revisions remain current, two baseline revisions are retained with checked same-source successors, and new research accounts for the additional current evidence. Canonical baseline rows and their original dates/claims remain preserved. The original strict whole-profile digest comparison failed on these intended research updates; the subsequent read-only lineage check explains the difference and is not a claim that Preview and Production evidence are identical. This visual check did not dispatch paid evidence search. Read-only database checks found no synthetic, Cedar or Jupiter customer references in either environment.
+
+The existing Notion native stream also yielded the actual typed decision output and all three specialist completion payloads without another model call. Independent review of this supplemented packet passed the final answer's decision readout: all eight judgments were unknown, further research was recommended and review remained required. Overall semantic acceptance still **fails** because the answer omitted material egress/brokering and timeout-overrun limitations. No new answer or overall hosted quality pass is inferred from recovering that evidence.
+
 ## Confirmed regressions
 
 - General chat removes customer resolution, evidence reads, and research capabilities. Legacy resolves named customers inside the conversation and uses the canonical account without requiring a UI selection.
@@ -61,33 +67,33 @@ Every entry below must be accounted for by the domain ledger; naming similarity 
 | Legacy tool | Comparison |
 | --- | --- |
 | `agent` | Both builds disable generic root-copy delegation. Declared legacy specialists are separate capabilities. |
-| `ask_question` | Native question tool, request cards and owned/CSRF-checked response route restored. Pending questions survive unrelated turns and fresh login without rewriting original receipts; hosted checks pending. |
+| `ask_question` | Native question tool and owner/CSRF-checked response route restored. Actual fresh-login, Desktop response and reloaded history passed on `77ec4be`; final-commit verification remains open. |
 | `bash` | Both builds disable model-facing shell access. |
-| `calculate_engagement_scenario` | Pending comparison |
+| `calculate_engagement_scenario` | Legacy tool reads only `lib/demo/repository` and calculates a nonpersistent synthetic what-if for `eng-*` IDs. Its fake portfolio is excluded under the request to use real customers. Current governed finance/staffing scenarios require canonical engagement authorization; ordinary-chat access to those real scenarios remains a gap. |
 | `calculate_services_plan` | Original schema, explicit proposed defaults and arithmetic copied. Ported checks prove full annual payroll/overhead, pricing floor, losses, zero denominators and protected capacity. No portfolio records imported. |
 | `capture_customer_context` | Pending comparison |
 | `connection_search` | Compared: original provider-discovery guard retained. Customer lookup routes to the canonical resolver; missing private data does not trigger connector installation. |
 | `evaluate_solution_research` | Pending comparison |
-| `get_adoption_patterns` | Pending comparison |
-| `get_capacity` | Pending comparison |
+| `get_adoption_patterns` | Authored report contract ported; legacy owner maps to current internal administrator. Original metric inputs, consent, quarter/version semantics and minimum five-account cohort suppression are covered locally. Hosted acceptance open. |
+| `get_capacity` | Legacy returns fixed synthetic demo capacity. Current `read_staffing_capacity` uses governed real staffing inputs; legacy ordinary-chat capacity routing remains a gap. No demo figures imported. |
 | `get_customer_evidence` | Governed named reads now retain original passages, product identity and separate source/check dates. Byte-limited pagination fixed. Hosted check pending. |
 | `get_customer_journey` | Hybrid retrieval and explicit recent fallback restored locally. Current dependency/grant fences retained. Hosted check pending. |
 | `get_customer_research_update` | Pending comparison |
-| `get_engagement_brief` | Pending comparison |
-| `get_learning_contribution` | Pending comparison |
-| `get_portfolio_summary` | Pending comparison |
-| `get_public_customer_learning` | Pending comparison |
-| `get_solution_knowledge` | Pending comparison |
+| `get_engagement_brief` | Legacy reads a synthetic brief from `lib/demo/repository`. Current execution summaries and delivery-plan reads use authorized real engagements; ordinary-chat brief routing remains a gap. No fictional brief imported. |
+| `get_learning_contribution` | Original account/quarter contribution read contract ported with current live administrator authorization and normal-chat availability. No automatic contribution consent. Hosted acceptance open. |
+| `get_portfolio_summary` | Legacy returns fixed-date synthetic portfolio exceptions from `lib/demo/repository`. No production data behavior exists to copy verbatim; governed real portfolio reads need explicit ordinary-chat routing. Fake records excluded. |
+| `get_public_customer_learning` | Original account-wide public passage read contract ported, with canonical source/dependency and current-access fences. Original dates, contrary evidence and refresh flags retained; cross-account examples remain public-only. Hosted reuse acceptance open. |
+| `get_solution_knowledge` | Original account applications/context-hash/invalidation read contract ported to canonical approved records. Private publication lineage remains steward-restricted; no automatic publication. Local source-withdrawal checks pass; hosted acceptance open. |
 | `list_customer_evidence` | Pending comparison |
-| `load_skill` | Pending comparison |
+| `load_skill` | Ordinary chat delegates to installed Eve native `load_skill` as legacy does. Existing governed workflows retain their authorized domain adapters. Generic root filesystem tools remain unavailable; hosted ordinary skill-load acceptance open. |
 | `prepare_customer_research` | Pending comparison |
 | `read_file` | Both builds disable arbitrary filesystem reads. |
-| `record_engagement_intervention` | Pending comparison |
+| `record_engagement_intervention` | Legacy can mutate only the literal fictional `eng-notion-pilot`, with exact-version/idempotency checks and human approval. Current execution/staffing decisions preserve real authorization and approval; ordinary-chat routing is not yet equivalent. Fictional mutation not installed. |
 | `resolve_customer_account` | Exact name/alias priority, documented workloads and ambiguity ported to current canonical UUIDs; grants checked before lookup. Local tests pass. |
-| `review_learning_contribution` | Pending comparison |
-| `review_solution_application` | Pending comparison |
-| `review_solution_pattern` | Pending comparison |
-| `search_solution_patterns` | Pending comparison |
+| `review_learning_contribution` | Original explicit contribution approval command ported with live internal-admin/account review authorization, exact versions and idempotency. Consent is separate from research acceptance. Local checks pass; hosted approval acceptance open. |
+| `review_solution_application` | Original separately approved target adaptation retained, including all six fit dimensions, validation plan, context hash and version/idempotency checks. Current account-steward policy replaces demo owner identity; hosted approval acceptance open. |
+| `review_solution_pattern` | Original separately approved generalized derivative publication/withdrawal retained, with source-steward review, redaction/outcome attestation and exact source/version lineage. Local withdrawal/invalidation checks pass; hosted approval acceptance open. |
+| `search_solution_patterns` | Original same-workspace eligible-derivative search and target-context hash contract ported. Similarity grants neither target approval nor source-record access. Local six-dimensional fit/source invalidation checks pass; hosted acceptance open. |
 | `task_cancel` | Static native tool restored with owned background-task admission; authenticated Preview cancellation returned 202 and left zero live research leases. |
 | `todo` | Removed by the installed Eve framework. Its changelog explicitly requires removing `agent/tools/todo.ts`; `eve/tools/todo` returns `ERR_PACKAGE_PATH_NOT_EXPORTED`. No fictional replacement or unsupported export added. |
 | `wait_for_customer_research` | Pending comparison |
