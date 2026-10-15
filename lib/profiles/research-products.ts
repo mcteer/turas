@@ -23,7 +23,10 @@ function mentions(corpus: string, alias: string) {
 
 export function productsFromResearch(items: ReadonlyArray<{ title: string; quote: string }>) {
   const corpus = items.map((item) => `${item.title}\n${item.quote}`).join("\n");
+  const listedNext=[...corpus.matchAll(/\b(?:tech(?:nology)?\s+)?stack\s*:\s*([^\r\n]{1,500})/gi)]
+    .some(match=>match[1].split(',').some(item=>item.trim().replace(/[.;]$/,'').toLowerCase()==='next'));
   return productCatalog
-    .filter((product) => product.aliases.some((alias) => mentions(corpus, alias)))
+    .filter((product) => product.aliases.some((alias) => mentions(corpus, alias)) ||
+      product.label === "Next.js" && listedNext)
     .map((product) => product.label);
 }

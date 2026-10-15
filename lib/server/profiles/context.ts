@@ -30,7 +30,7 @@ type ProfileProjection = {
 export async function readEligibleContext(actor: ProfileActor, customerId: string,
   options: { limit?: number; query?: string; workloadId?: string; kind?: RecordKind;
     page?: number;audience?:"internal"|"delivery";customerWideOnly?:boolean;shareActorRows?:boolean;
-    staffingFence?: boolean; journeyOnly?:boolean; offset?:number; citationIds?:readonly string[] } = {},
+    staffingFence?: boolean; journeyOnly?:boolean; offset?:number; citationIds?:readonly string[];includeProductIndex?:boolean } = {},
   existingClient?: PoolClient): Promise<unknown> {
   const limit = options.limit ?? 20;
   const page = options.page ?? 1;
@@ -46,6 +46,20 @@ export async function readEligibleContext(actor: ProfileActor, customerId: strin
       throw hiddenRecord();
     }
     const asOf = new Date();
+    // Keep the compact product inventory complete independently of quotation
+    // paging, using this same authorized profile generation and source checks.
+    const productIndex:{products:Array<{name:string;sourceRevisionId:string;url:string|null;publishedAt:string|null;retrievedAt:string}>;complete:boolean}={products:[],complete:true};
+    if(options.includeProductIndex && !options.journeyOnly && !options.query){
+      const names=new Set<string>();let bytes=0;
+      for(const source of profile.attributedResearch)for(const name of source.productNames as string[]){
+        if(names.has(name))continue;names.add(name);
+        const item={name,sourceRevisionId:source.sourceRevisionId as string,url:source.location as string|null,publishedAt:source.publicationAt as string|null,retrievedAt:source.retrievalAt as string};
+        if(bytes+Buffer.byteLength(JSON.stringify(item))>16*1024)item.url=null;
+        const size=Buffer.byteLength(JSON.stringify(item));
+        if(productIndex.products.length>=64 || bytes+size>16*1024){productIndex.complete=false;continue;}
+        productIndex.products.push(item);bytes+=size;
+      }
+    }
     const entries: Record<string, unknown>[] = [];
     const query = options.query?.toLocaleLowerCase();
     for (const fact of profile.acceptedFacts) {
@@ -105,7 +119,7 @@ export async function readEligibleContext(actor: ProfileActor, customerId: strin
     return { contractVersion: "customer-context-v1", customer: profile.customer,
       contextVersion: profile.contextVersion, asOf: asOf.toISOString(),
       validUntil: new Date(Math.min(...validUntilCandidates)).toISOString(),
-      entries: selected, page,
+      entries: selected, page,...(options.includeProductIndex?{productIndex}:{}),
       // The frozen staffing snapshot has its own strict v1 contract. Search
       // navigation metadata belongs to the ordinary evidence/journey surface.
       ...(!options.staffingFence?{nextPage:offset===undefined&&packed.hasNextPage ? page + 1 : null}:{}),

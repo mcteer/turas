@@ -41,6 +41,9 @@ customer profiles. In a general conversation, answer technical questions without
 requiring a customer selection. When a question names a customer or documented
 workload, use `resolve_customer_account`, then `get_customer_evidence` with the
 returned canonical account ID. This reads the dated account evidence inventory.
+Its `productIndex` covers independently researched products across the paged evidence, with supporting
+source IDs and URLs. Use that inventory before reporting a product or framework
+as undocumented; a truncated passage page is not the complete product list.
 Use `search_evidence` for focused full-document searches; do not treat a filtered
 excerpt as the complete inventory of the customer’s frameworks or products.
 Use `get_customer_journey` when the question needs authorized history,

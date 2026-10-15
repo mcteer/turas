@@ -74,10 +74,11 @@ export async function resolveCustomerAccount(db: PoolClient, principal: Principa
 }
 
 type Context = { customer: { id: string; displayName: string }; contextVersion: string;
+  productIndex?:{products:Array<{name:string;sourceRevisionId:string;url:string|null;publishedAt:string|null;retrievedAt:string}>;complete:boolean};
   entries: Array<{ type: string; citationId: string }>; [key: string]: unknown };
 
 export async function readCustomerAccountEvidence(db: PoolClient, principal: Principal,
-  customerId: string, options: { query?: string; page?: number;journeyOnly?:boolean;offset?:number;citationIds?:readonly string[] } = {}) {
+  customerId: string, options: { query?: string; page?: number;journeyOnly?:boolean;offset?:number;citationIds?:readonly string[];includeProductIndex?:boolean } = {}) {
   const scope = await customerQuestionActor(db, principal);
   if (!scope.general && scope.customerId !== customerId) throw hiddenRecord();
   await lockProfileActor(db, scope.actor, customerId, undefined, true);
@@ -91,7 +92,7 @@ export async function readCustomerAccountEvidence(db: PoolClient, principal: Pri
        generation=EXCLUDED.generation,citation_ids=CASE WHEN general_customer_read_scopes.generation=EXCLUDED.generation THEN ARRAY(SELECT DISTINCT unnest(
          general_customer_read_scopes.citation_ids||EXCLUDED.citation_ids)) ELSE ARRAY(SELECT DISTINCT unnest(EXCLUDED.citation_ids||ARRAY(SELECT id FROM unnest(general_customer_read_scopes.citation_ids) id WHERE id LIKE 'public_practice:%'))) END,checked_at=clock_timestamp()`,
     [scope.attemptId, customerId, scope.actor.kind === "internal" ? "internal" : "delivery",
-      context.contextVersion, [...new Set([...context.entries.map(entry => `${entry.type}:${entry.citationId}`),...(publicInventory?.evidence.map(story=>'attributed_research:'+story.sourceRevisionId)??[])])]]);
+      context.contextVersion, [...new Set([...context.entries.map(entry => `${entry.type}:${entry.citationId}`),...(publicInventory?.evidence.map(story=>'attributed_research:'+story.sourceRevisionId)??[]),...(context.productIndex?.products.map(product=>'attributed_research:'+product.sourceRevisionId)??[])])]]);
   }
   return {...context,publicInventory};
 }

@@ -563,3 +563,11 @@ local restore/deletion rehearsal; real customer/research and financial records
 were unchanged. Final exact Preview/CI acceptance remains open in the
 [backend parity audit](docs/legacy-backend-parity-audit.md). PR #34 is unmerged;
 these bug checks do not establish complete 016 hosted/operator acceptance.
+
+The subsequent `d7afd7f` run stored the practice brief but failed in native event
+projection while a specialist's 400,000-input-token continuation request was
+pending. The parent produced no final recommendation. The next repair preserves
+an unanswered request across a control-turn completion without granting
+model admission. A bounded product index also keeps known products visible across
+quotation pages; explicit tech-stack lists recognize the framework spelling
+`Next`. Disposable ownership/source/input checks pass; hosted recheck remains open.

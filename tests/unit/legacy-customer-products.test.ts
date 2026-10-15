@@ -12,4 +12,7 @@ test("research-derived products use named Vercel product terms and exclude the c
   );
   assert.deepEqual(productsFromResearch([{ title: "WPP workflow", quote: "The customer has a workflow for publishing campaigns." }]), []);
   assert.deepEqual(productsFromResearch([{ title: "Unrelated page", quote: "Vercel is mentioned as the hosting company." }]), []);
+  assert.deepEqual(productsFromResearch([{title:"Storefront rebuild",quote:"Tech stack: Next, React, Shopify, Sanity, Algolia."}]),["Next.js"]);
+  assert.deepEqual(productsFromResearch([{title:"Storefront rebuild",quote:"Technology stack: Express.js, Next, React."}]),["Next.js"]);
+  assert.deepEqual(productsFromResearch([{title:"Next steps",quote:"Our next deployment will review the stack and remaining steps."}]),[]);
 });

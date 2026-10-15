@@ -247,6 +247,11 @@ export async function projectNativeEventInTransaction(
         WHERE id=$1 AND response_state<>'cancelled'`,[attemptId]);
       return;
     }
+    // A framework continuation prompt can close its control turn while
+    // the owned user-input request remains parked. This is neither an answer
+    // nor a model admission; preserve the pending request and its allowance.
+    if(event.type==='turn.completed' && row.response_state==='waiting_input' &&
+      (await conversationFeature(client,row.conversation_id)).kind==='normal')return;
     const artifact = await artifactContextSchemaReady(client)
       ? await client.query<{ native_text_digest: string }>(
         "SELECT native_text_digest FROM artifact_context_receipts WHERE attempt_id=$1", [attemptId])
@@ -292,7 +297,12 @@ export async function projectNativeEventInTransaction(
         WHERE resume.attempt_id=$1 AND resolution.native_session_id=$2 AND resolution.turn_id=$3`,[attemptId,nativeSessionId,data.turnId])).rowCount);
       const resolving=event.type==='input.resolved' && await inputResolutionAttempt(client,nativeSessionId,attemptId,data)===attemptId;
       const steered=typeof data.turnId==='string' && await steeringTurnDeadline(client,attemptId,nativeSessionId,data.turnId);
-      if(!background && !resumed && !resolving && !steered)throw new Error("Native turn does not match the reserved attempt");
+      if(!background && !resumed && !resolving && !steered){
+        console.warn(JSON.stringify({event:'conversation.turn_mismatch',eventType:event.type,
+          nativeSessionId,attemptId,eventTurnId:typeof data.turnId==='string'?data.turnId:null,
+          expectedTurnId:row.native_turn_id}));
+        throw new Error("Native turn does not match the reserved attempt");
+      }
     }
     if((event.type==='input.requested' || event.type==='input.resolved') &&
        (await conversationFeature(client,row.conversation_id)).kind==='normal') {

@@ -55,6 +55,10 @@ it('uses customer selection as initial context, continues after new knowledge an
   await projectNativeEvent(native,next.attemptId,event('input.requested',{turnId:nextTurn,requests:[{requestId,kind:'question',prompt:'Which workload?',allowFreeform:true,action:{kind:'tool-call',callId:'fixture-question',toolName:'ask_question',input:{question:'Which workload?'}}}]}));
   expect((await db.query('SELECT response_state FROM response_attempts WHERE id=$1',[next.attemptId])).rows[0].response_state).toBe('waiting_input');
   expect((await db.query('SELECT state FROM watchdog_jobs WHERE attempt_id=$1',[next.attemptId])).rows[0].state).toBe('settled');
+  await projectNativeEvent(native,next.attemptId,event('turn.completed',{turnId:''}));
+  await projectNativeEvent(native,next.attemptId,event('turn.completed',{turnId:'native-limit-control-turn'}));
+  expect((await db.query('SELECT response_state FROM response_attempts WHERE id=$1',[next.attemptId])).rows[0].response_state).toBe('waiting_input');
+  await expect(projectNativeEvent(native,next.attemptId,event('message.appended',{turnId:'',messageDelta:'Unadmitted answer'}))).rejects.toThrow('Native turn does not match');
   expect(await ownedInputResponseAttempt(fresh,native,{inputResponses:[{requestId,text:'The public site'}]})).toBe(next.attemptId);
   await expect(ownedInputResponseAttempt({...fresh,principalId:randomUUID()},native,{inputResponses:[{requestId,text:'The public site'}]})).rejects.toMatchObject({status:409});
   const unrelated=await prepareAttempt(fresh,conversation.id,native,randomUUID(),'An unrelated follow-up');await claimDispatch(fresh,conversation.id,unrelated.attemptId,4);
@@ -74,6 +78,7 @@ it('uses customer selection as initial context, continues after new knowledge an
   await expect(resumedModel().doGenerate({prompt:[]})).rejects.toMatchObject({status:404});
   expect(providerCalls).toBe(0);
   await authorizeOwnedInputResponse(fresh,native,{inputResponses:[{requestId,text:'The public site'}]});
+  await expect(projectNativeEvent(native,next.attemptId,event('turn.completed',{turnId:'native-limit-control-turn'}))).rejects.toThrow('Native turn does not match');
   const posted=(await db.query('SELECT deadline_at FROM native_input_resume_windows WHERE attempt_id=$1',[next.attemptId])).rows[0].deadline_at;
   expect((await db.query('SELECT response_state FROM response_attempts WHERE id=$1',[next.attemptId])).rows[0].response_state).toBe('running');
   await authorizeOwnedInputResponse(fresh,native,{inputResponses:[{requestId,text:'The public site'}]});

@@ -6,7 +6,7 @@ Status: in progress. This is a repair audit, not a new feature specification. Ea
 
 ## Current hosted acceptance
 
-Latest checkpoint (`68044c2`): independent review passes the original Baggu
+Earlier checkpoint (`68044c2`): independent review passes the original Baggu
 product-use answer and the customer-free firewall explanation, including the
 original `p13`/`p28` limits. Both pass actual desktop/mobile/reloaded-history
 checks. The original full Notion specialist question still fails: a practice
@@ -21,6 +21,22 @@ Blanket user approval now covers continuation without individual run questions.
 A supplemental $15 Preview ledger bounds combined model/provider allowance at
 $30; original charges and unknown holds remain intact and top-ups remain off.
 Historical budget amounts below describe their original checkpoints.
+
+On `d7afd7f`, the practice brief was stored, but its worker reached 407,780
+cumulative input tokens against the original 400,000-token limit. The pending
+native session-limit request was followed by a fatal `turn.completed` projection
+mismatch; the parent produced no recommendation. The run remains failed. The
+next patch preserves a parked owned request across a control-turn boundary
+without allowing assistant output before approval, and adds safe mismatch
+diagnostics. No model selection, monetary ledger or conversation allowance is reset.
+Baggu also omitted Next again: actual tool results included two incomplete
+quotation pages, neither containing the stack. The bounded product index now
+uses the complete authorized profile projection, carries current supporting
+source IDs into consumption fences, and preserves original full quotations and
+paging. Explicit comma-separated tech-stack labels recognize `Next`; ordinary
+English uses of “next” do not. Local regressions pass; exact hosted checks remain
+required. An isolated nested MCP/learning-native reproduction also passes all
+25 checks without paid calls; its earlier CI failure is retained.
 
 - Baggu's exact product-use question passed independent semantic review on Preview `0ec65cf`, with minor wording and verbosity issues. Desktop/mobile WebKit and reloaded history passed. The answer distinguishes documented Vercel platform use from a historical framework stack.
 - The Notion workflow on that Preview completed all three actual specialists and the original decision model. Its answer **failed** independent semantic review: material documented security-control and cancellation-overrun limitations were omitted. The review packet also lacked the actual typed evaluator output; a provider charge alone does not establish that the final interpretation faithfully reflects it. Research instructions now require these limitations to survive the handoff and final readout; hosted quality recheck remains open.

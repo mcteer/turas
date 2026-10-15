@@ -239,6 +239,9 @@ it('retains new public research for an assigned partner, preserves curated claim
   const architecture=z.object({attributedResearch:z.array(z.object({productNames:z.array(z.string()),retrievalAt:z.string()}))}).parse(await readProfile(actor,customerId));
   expect(architecture.attributedResearch[0].productNames).toContain('Sandbox');
   expect(architecture.attributedResearch[0].retrievalAt).toBe(checked.page.retrievedAt);
+  const inventory=await withRuntime(client=>readCustomerAccountEvidence(client,principal,customerId,{page:10,includeProductIndex:true}));
+  expect(inventory.entries).toEqual([]);
+  expect(inventory.productIndex).toMatchObject({complete:true,products:expect.arrayContaining([expect.objectContaining({name:'Sandbox',url})])});
   // Overlapping selections near the 8k limit must not displace earlier facts.
   const longDocument=name+' '+Array.from({length:110},(_,i)=>`Documented architecture detail ${String(i).padStart(3,'0')}: isolated execution and verified delivery. `).join('');
   const priorQuotes=Array.from({length:5},(_,i)=>longDocument.slice(i*1300,i*1300+1300));
