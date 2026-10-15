@@ -1185,3 +1185,22 @@ exact successful input-response HTTP acknowledgment, never re-posts that request
 and observes the ongoing turn instead of assuming the UI card must disappear
 before its native continuation finishes. The two-worker, one-continuation-per-worker
 limits, original token allowance and shared dollar ledger are preserved.
+
+The user authorizes the proposed additional $10 Preview allowance (combined $40)
+without routine approval prompts. Its separate ledger preserves the two existing
+ledgers byte-for-byte, including unsettled ceilings; expiry and pricing are unchanged.
+Only the existing Preview branch budget variable changes. No automatic top-up or
+Production change is enabled. The corrected driver first reaches the existing
+budget guard; that failed owned session is retired without releasing its holds.
+
+Exact Preview `78a6f86` completes all three specialists and the actual CLI WebKit
+desktop/mobile/reloaded-history check. The fresh separate source review still
+rejects the answer for omitting the concrete SNI/HTTP Host routing condition and
+conflating arbitrary generated code with an unrestricted public execution service.
+Ordinary synthesis guidance now distinguishes those capabilities and explicitly
+requires reading the original firewall conditions before an egress recommendation.
+The review also flags operational claims, but its packet omitted an original
+duration/persistence reference actually returned by the answer's tools; the next
+review must include all those retained original references and the actual typed
+evaluator output. The malformed reviewer JSON is retained alongside a deterministic
+syntax-only repair; its failed verdict is preserved, not relabeled as success.

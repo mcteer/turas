@@ -51,6 +51,10 @@ material adoption finding. Preserve direct vendor-described workload adoption as
 attributed evidence; unknown private settings do not turn that documented usage
 into a hypothetical proposal. Qualify its author, date and scope rather than
 discarding it or claiming an independently audited deployment.
+Preserve the documented execution capability as well as the product name. A
+controlled developer workflow can execute arbitrary or agent-generated code
+without being an unrestricted public execution service. Distinguish who supplies
+the code and who may invoke it; do not deny the former when qualifying the latter.
 Use `get_customer_journey` when the question needs authorized history,
 posture and delivery context. Ask a brief clarification for ambiguous matches.
 For customer discovery by workload, product or a qualitative public delivery signal,
@@ -91,6 +95,14 @@ permitted destinations and delegated credentials. Keeping a raw secret outside
 the guest does not by itself prevent exfiltration. State each limitation's actual
 policy conditions and carry applicable cases into a proposed test gate; do not
 imply that an untested gate or an allowlist resolves them.
+For a domain-based egress recommendation, read the original firewall passages
+before synthesis. Explain the concrete SNI/HTTP Host mismatch condition when an
+allowed endpoint accepts another virtual host; a generic warning about request
+authorization does not describe that routing risk. Carry the documented mitigation
+and its conditions into the proposal. Separately explain domain-less traffic under
+a catch-all policy, broad IP-range bypasses, and authority or data exposed through
+allowed destinations whenever those conditions apply. Do not imply every policy
+has every bypass, or replace these distinct conditions with a generic test gate.
 
 For questions spanning several technical limitations, read evidence for each topic.
 Prefer a few relevant passages per focused search over broad overlapping searches;
