@@ -12,7 +12,7 @@ export async function installStaffingLiveObservation(environment: StaffingEvalEn
   if (!root.startsWith(`${owned}/eval-`) || !root.endsWith("/app") || root === await realpath(process.cwd()) ||
     new URL(process.env.DATABASE_URL!).pathname !== `/${environment.databaseName}`) throw new Error("Owned live app required");
   const path = join(root, "agent/agent.ts"), source = await readFile(path, "utf8");
-  const target = "wrapStaffingModel(gateway(selectedModel), admitted.mode";
+  const target = "wrapStaffingModel(parityBudgetModel(gateway(selectedModel),selectedModel), admitted.mode";
   if (source.split(target).length !== 2 || !source.includes('const selectedModel = "spacexai/grok-4.7";') ||
     !source.includes('reasoning: "low"') || source.includes("createStaffingNativeFixtureModel")) throw new Error("Live model observation shape changed");
   await query(`CREATE TABLE staffing_live_provider_observations(id uuid PRIMARY KEY,
@@ -25,7 +25,7 @@ export async function installStaffingLiveObservation(environment: StaffingEvalEn
     CREATE TABLE staffing_live_provider_barriers(attempt_id uuid PRIMARY KEY REFERENCES staffing_advisory_attempts(id),
       step_index integer NOT NULL CHECK(step_index BETWEEN 0 AND 5),released boolean NOT NULL DEFAULT false)`);
   await writeFile(path, 'import { observeStaffingLiveProvider } from "../tests/fixtures/staffing/live-provider";\n' +
-    source.replace(target, "wrapStaffingModel(observeStaffingLiveProvider(gateway(selectedModel), principal, identity), admitted.mode"), { mode: 0o600 });
+    source.replace(target, "wrapStaffingModel(observeStaffingLiveProvider(parityBudgetModel(gateway(selectedModel),selectedModel), principal, identity), admitted.mode"), { mode: 0o600 });
   // The live case's paid allowance covers its explicit staffing turn. Keep
   // cleanup/watchdog/workforce maintenance real, but prevent queued lexical
   // fixture projections from starting unrelated paid background embeddings.

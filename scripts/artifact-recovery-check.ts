@@ -1,3 +1,4 @@
+import {artifactParserPolicyVersion} from '../lib/contracts/artifacts';
 import { createHash, randomUUID } from "node:crypto";
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
 import { cp, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
@@ -121,8 +122,8 @@ try {
     actor = await createProfileTestSession(client,"panel");
     fixture = await createArtifactDatabaseFixture(client,actor,DEMO_IDS.sharedCustomer);
     await client.query(`UPDATE artifact_extraction_runs SET parser_image_digest=$2,
-      scan_policy_version='004-scan-v1',parser_policy_version='004-parser-v1' WHERE id=$1`,
-    [fixture.runId,preparedArtifactImages().parserDigest]);
+      scan_policy_version='004-scan-v1',parser_policy_version=$3 WHERE id=$1`,
+    [fixture.runId,preparedArtifactImages().parserDigest,artifactParserPolicyVersion]);
     const key = await client.query<{ object_key: string }>(
       "SELECT object_key FROM artifact_versions WHERE id=$1",[fixture.versionId]);
     objectKey = key.rows[0].object_key;

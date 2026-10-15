@@ -14,7 +14,7 @@ export async function installExpansionLiveObservation(environment: { appRoot: st
   if (mocked) assertDeterministicTestMode();
   else if (process.env.TURAS_ALLOW_LIVE_MODEL_TESTS !== "1" || !process.env.AI_GATEWAY_API_KEY) throw new Error("Explicit live opt-in required");
   expansionLiveBudgetSchema.parse(Number(process.env.TURAS_EXPANSION_LIVE_BUDGET_USD));
-  const base = mocked ? "createExpansionNativeFixtureModel(principal, identity)" : "gateway(selectedModel)";
+  const base = mocked ? "createExpansionNativeFixtureModel(principal, identity)" : "parityBudgetModel(gateway(selectedModel),selectedModel)";
   const target = `wrapStaffingModel(${base}, admitted.mode`;
   if (source.split(target).length !== 2 || !source.includes('const selectedModel = "spacexai/grok-4.7";') || !source.includes('reasoning: "low"'))
     throw new Error("Expansion selected model shape changed");

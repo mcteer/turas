@@ -1,5 +1,10 @@
 # Turas delivery roadmap
 
+PR 34 repairs legacy backend and chat parity before pilot release. Its
+[audit](docs/legacy-backend-parity-audit.md) records source comparisons, actual
+Preview checks and remaining gaps. This bug repair does not complete 016;
+hosted answer quality, remaining parity checks and cleanup still gate readiness.
+
 Baseline: 2026-09-26; updated 2026-10-09. **001 merged in PR 1; 002 merged in
 [PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 merged in [PR 11](https://github.com/mcteer/turas/pull/11) after local and CI validation, without a hosted release; 007 merged in [PR 13](https://github.com/mcteer/turas/pull/13) after local and CI validation, without a hosted release. 008 merged in [PR 16](https://github.com/mcteer/turas/pull/16) after passing CI; hosted execution acceptance remains separate. 009 merged in [PR 17](https://github.com/mcteer/turas/pull/17); live reporting delivery remains deferred. 010 implementation and acceptance are recorded in [PR 19](https://github.com/mcteer/turas/pull/19); 011 merged in [PR 22](https://github.com/mcteer/turas/pull/22) after local, actual-model independent review and passing CI; 012 merged in [PR 23](https://github.com/mcteer/turas/pull/23); 013 merged in [PR 24](https://github.com/mcteer/turas/pull/24); 014 merged in [PR 25](https://github.com/mcteer/turas/pull/25), with Production schema 054 and internal hosted read checks recorded; 015 merged in [PR 28](https://github.com/mcteer/turas/pull/28), with acceptance tracked in its validation record; Production is enabled on schema 055 with runtime grants and authenticated SDK/HTTP/CLI WebKit acceptance, including research passage/citation reads; 016 remains a roadmap proposal.**
 

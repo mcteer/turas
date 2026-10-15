@@ -59,7 +59,10 @@ a human identity. Hosted format, maintenance and inventory acceptance remains op
 Hosted model/provider checks are in progress under one shared $15 ledger.
 All three specialists completed on Preview; final answer quality, explicit reuse,
 full parity acceptance and cleanup remain open.
-The root Grok model is unchanged.
+The root Grok model is unchanged. Legacy ordinary-chat guidance is scoped to normal
+turns so governed learning keeps its original input ceiling; all 16 unpaid real
+Eve learning fixture arms pass. New extraction jobs and retries bind parser policy
+v2; actual scanner/parser/review/execution-journey checks pass locally.
 
 Customer Overview appears immediately below the customer heading, above workload controls.
 Search the Customer Profiles directory and open profiles directly from customer

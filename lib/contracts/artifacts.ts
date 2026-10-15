@@ -1,4 +1,5 @@
 import { z } from "zod";
+export const artifactParserPolicyVersion='004-parser-v2';
 
 export const artifactContractVersion = "artifact-intake-v1" as const;
 export const artifactMaxOriginalBytes = 10_485_760;

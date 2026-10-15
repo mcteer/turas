@@ -8,6 +8,9 @@ import {submitProfileCommand} from '../../lib/server/profiles/service';
 import {reviewSolutionPattern,searchSolutionPatterns,inspectSolutionKnowledge,reviewSolutionApplication} from '../../lib/server/knowledge/workspace-patterns/repository';
 import {reviewLearningContribution,getAdoptionPatterns} from '../../lib/server/learning/customer-adoption/repository';
 import {fitDimensions} from '../../lib/contracts/solution-patterns';
+import {readEligibleContext} from '../../lib/server/profiles/context';
+import {withTransaction} from '../../lib/server/db/client';
+import {journeyRecords} from '../../lib/profiles/journey';
 const isolatedTestUrl=requireTestDatabaseUrl();
 beforeAll(()=>{process.env.DATABASE_URL=isolatedTestUrl;process.env.TURAS_ENVIRONMENT_ID=process.env.TURAS_TEST_ENVIRONMENT_ID;});
 async function actor(username:string,password:string):Promise<CurrentSession>{
@@ -29,6 +32,16 @@ it('retains complete reviewed patterns and target fit, invalidates withdrawn sou
   const corrected=(await db.query('SELECT payload FROM profile_revisions WHERE id=$1',[correction.revisionId])).rows[0].payload;
   expect(corrected.legacyJourney).toMatchObject({summary:'A corrected human summary with the original measured pilot preserved.',impact:journey.impact,source:journey.source,stage:journey.stage});
   expect((await db.query('SELECT current_accepted_revision_id FROM profile_records WHERE id=$1',[proposed.recordId])).rows[0].current_accepted_revision_id).toBe(proposed.revisionId);
+  for(const observedAt of ['2026-08-01','2026-10-01']){
+   const note=await submitProfileCommand(author,customerId,{action:'propose_record',requestKey:randomUUID(),requestedAudience:'delivery',dataCategory:'delivery_context',payload:{kind:'claim',text:'A separate dated human observation.',sourceType:'manual',legacyJourney:{...journey,observedAt,impact:null}}}) as {revisionId:string;recordId:string};
+   const row=(await db.query('SELECT v.content_digest,r.version FROM profile_revisions v JOIN profile_records r ON r.id=v.record_id WHERE v.id=$1',[note.revisionId])).rows[0];
+   await submitProfileCommand(admin,customerId,{action:'accept_revision',requestKey:randomUUID(),revisionId:note.revisionId,digest:row.content_digest,expectedRecordVersion:Number(row.version),expectedAcceptedRevisionId:null,rationale:'Reviewed the exact dated synthetic observation.'});
+  }
+  const journeyPage=await withTransaction(async client=>{await client.query('SET LOCAL ROLE turas_runtime');return readEligibleContext(admin,customerId,{journeyOnly:true,offset:1,limit:1},client);}) as {entries:Parameters<typeof journeyRecords>[0];nextOffset:number;moreAvailable:boolean};
+  expect(journeyPage.nextOffset).toBe(2);expect(journeyPage.moreAvailable).toBe(true);
+  expect(journeyRecords(journeyPage.entries,customerId)).toEqual([expect.objectContaining({id:proposed.revisionId,rootId:proposed.recordId,stale:false,delta:{absolute:20,percent:100,improving:true,targetReached:false},citation:`/customers/${customerId}`})]);
+  const matched=await readEligibleContext(admin,customerId,{journeyOnly:true,offset:0,citationIds:[proposed.revisionId]}) as {entries:Parameters<typeof journeyRecords>[0]};
+  expect(journeyRecords(matched.entries).map(record=>record.id)).toEqual([proposed.revisionId]);
   const paragraph='A bounded isolated execution workflow with explicit operating ownership.';
   const pattern={title:'Isolated execution handoff',problem:paragraph,prerequisites:paragraph,approach:paragraph,delivery:paragraph,processAndAdoption:paragraph,limitations:paragraph,alternatives:paragraph,lessons:paragraph,outcome:{basis:'measured' as const,description:paragraph,measurementLimits:'Only a bounded pilot with a reviewed baseline was measured.'},reviewAfter:'2026-12-01'};
   const command={action:'publish' as const,patternId:randomUUID(),expectedVersion:0,requestId:randomUUID(),rationale:'Reviewed the complete generalized synthetic derivative.',sourceRecordId:proposed.revisionId,pattern,attestation:{generalizedContentReviewed:true as const,workspaceReuseApproved:true as const,outcomeBasisVerified:true as const}};

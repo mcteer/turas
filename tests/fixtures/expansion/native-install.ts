@@ -12,7 +12,7 @@ export async function installExpansionNativeFixture(environment: { appRoot: stri
   if (!root.startsWith(`${owned}/eval-`) || !root.endsWith("/app") || root === await realpath(process.cwd()))
     throw new Error("Owned expansion native app copy required");
   const path = join(root, "agent/agent.ts"), source = await readFile(path, "utf8");
-  const target = "wrapStaffingModel(gateway(selectedModel), admitted.mode";
+  const target = "wrapStaffingModel(parityBudgetModel(gateway(selectedModel),selectedModel), admitted.mode";
   if (source.split(target).length !== 2 || !source.includes('const selectedModel = "spacexai/grok-4.7";') || !source.includes('reasoning: "low"'))
     throw new Error("Fixture model shape changed");
   const replacement = source.replace(target, "wrapStaffingModel(createExpansionNativeFixtureModel(principal, identity), admitted.mode")

@@ -32,6 +32,6 @@ gap and offer a new user-started bounded request rather than hidden follow-up.`,
 
 export default defineDynamic({ events: {
   async "turn.started"(_event, ctx) {
-    return ["staffing", "execution", "expansion", "learning"].includes((await responseFeature(ctx.session.auth.current))?.kind ?? "") ? null : instructions;
+    return (await responseFeature(ctx.session.auth.current))?.kind=== "planning" ? instructions : null;
   },
 } });

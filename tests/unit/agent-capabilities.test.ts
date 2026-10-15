@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 describe("Turi capability inventory", () => {
   it("describes bounded accepted context and refuses to promote claims to profile facts", () => {
-    const instructions = readFileSync("agent/instructions.md", "utf8");
+    const instructions = readFileSync("agent/instructions.md", "utf8") + readFileSync("lib/conversations/ordinary-instructions.md", "utf8");
     expect(instructions).toMatch(/private customer-scoped chat/i);
     expect(instructions).toMatch(/not accepted profile facts/i);
     expect(instructions).toMatch(/bounded customer context\s+snapshot/i);

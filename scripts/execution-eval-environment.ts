@@ -8,16 +8,24 @@ import { ownedEvalTimeout } from "./eval-deadline";
 import { copyOwnedEvalFiles } from "./eval-owned-copy";
 
 let preparedPublicRuntimeRoot: string | undefined;
+let preparedPublicRuntimeOwner:string|undefined;
+export async function cleanupPreparedExecutionPublicRuntime(){
+  if(!preparedPublicRuntimeRoot||!preparedPublicRuntimeOwner)return;
+  const marker=JSON.parse(await readFile(join(preparedPublicRuntimeRoot,'.execution-public-runtime.json'),'utf8'));
+  if(marker.ownerToken!==preparedPublicRuntimeOwner)throw Error('Owned public runtime identity changed; cleanup refused');
+  await rm(preparedPublicRuntimeRoot,{recursive:true,force:true});preparedPublicRuntimeRoot=undefined;preparedPublicRuntimeOwner=undefined;
+}
 async function prepareExecutionPublicRuntime(repositoryRoot:string,environmentId:string,deadlineAt?:number) {
   if(preparedPublicRuntimeRoot)return preparedPublicRuntimeRoot;
   const parent=resolve(repositoryRoot,"local-artifacts/008");await mkdir(parent,{recursive:true,mode:0o700});
   const root=await mkdtemp(join(parent,"public-runtime-"));
   const ownerToken=randomUUID();
+  preparedPublicRuntimeRoot=root;preparedPublicRuntimeOwner=ownerToken;
   await writeFile(join(root,".execution-public-runtime.json"),JSON.stringify({environmentId,ownerToken}),{flag:"wx",mode:0o600});
   const prepared=spawnSync(process.execPath,["--import","tsx","scripts/prepare-artifacts.ts"],{
     cwd:repositoryRoot,env:{...process.env,TURAS_ARTIFACT_STORE_ROOT:root},stdio:"inherit",timeout:ownedEvalTimeout(deadlineAt,600_000),killSignal:"SIGKILL"});
   if(prepared.error||prepared.status!==0)throw new Error("Owned public artifact runtime preparation failed");
-  preparedPublicRuntimeRoot=root;return root;
+  return root;
 }
 export type ExecutionEvalEnvironment = PlanEvalEnvironment & {
   workforceRoot: string;
