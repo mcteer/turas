@@ -3,11 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { OrdinaryDocuments } from "./attachments/ordinary-documents";
-import {formatAttachmentText,type AttachedDocumentText} from "../../lib/conversations/attachment-text";
+import {composeOrdinaryMessage,type OrdinaryAttachment,type OrdinarySendMessage} from "../../lib/conversations/ordinary-documents";
 import { CustomerPicker, type CustomerChoice } from "./customer-picker";
 
 
-export function NewConversation({ csrfToken, canAttachDocuments = false }: { csrfToken: string; canAttachDocuments?: boolean }) {
+export function NewConversation({ csrfToken, canAttachDocuments = false, canAttachNativeFiles = false }: { csrfToken: string; canAttachDocuments?: boolean; canAttachNativeFiles?: boolean }) {
   const router = useRouter();
   const search = useSearchParams();
   const [customers, setCustomers] = useState<CustomerChoice[]>([]);
@@ -17,7 +17,7 @@ export function NewConversation({ csrfToken, canAttachDocuments = false }: { csr
   const starting = useRef(false);
   const operation = useRef<string | null>(null);
   const [draft, setDraft] = useState("");
-  const [documents,setDocuments]=useState<AttachedDocumentText[]>([]);
+  const [documents,setDocuments]=useState<OrdinaryAttachment[]>([]);
   const [preparingDocuments,setPreparingDocuments]=useState(false);
 
   useEffect(() => {
@@ -36,7 +36,8 @@ export function NewConversation({ csrfToken, canAttachDocuments = false }: { csr
 
   async function start(attachments = false) {
     if ((!draft.trim() && !documents.length && !attachments) || starting.current || preparingDocuments) return;
-    const text=documents.length?[draft.trim()||"Please discuss the attached documents.",...documents.map(document=>formatAttachmentText(document.filename,document.mediaType,document.text,document.truncated))].join("\n\n"):draft.trim();
+    let text:OrdinarySendMessage;
+    try{text=composeOrdinaryMessage(draft,documents);}catch(failure){setError(failure instanceof Error?failure.message:'The documents could not be prepared.');return;}
     starting.current = true;
     setState("creating");
     setError("");
@@ -80,7 +81,7 @@ export function NewConversation({ csrfToken, canAttachDocuments = false }: { csr
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void start(); } }} />
         <div className="chat-actions">
-          {canAttachDocuments?<OrdinaryDocuments buttonLabel="Attach documents" documents={documents} onChange={setDocuments} onPreparingChange={setPreparingDocuments} disabled={state==="creating"}/>:<button className="composer-attach" type="button" aria-label="Attach documents" disabled={state === "creating"} onClick={() => void start(true)}>
+          {canAttachDocuments?<OrdinaryDocuments buttonLabel="Attach documents" nativeFilesEnabled={canAttachNativeFiles} documents={documents} onChange={setDocuments} onPreparingChange={setPreparingDocuments} disabled={state==="creating"}/>:<button className="composer-attach" type="button" aria-label="Attach documents" disabled={state === "creating"} onClick={() => void start(true)}>
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m8 12 6-6a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l9-9" /></svg>
           </button>}
           <button className="composer-send" type="submit" aria-label="Send message" disabled={(!draft.trim()&&!documents.length)||preparingDocuments||state === "creating"}>

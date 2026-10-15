@@ -20,10 +20,12 @@ import { authorizeNativeRetirement } from "../artifacts/native-retirement";
 import { authorizeLearningRetirement } from '../learning/native-retirement';
 import {authorizeOwnedOrdinaryRetirement} from './ordinary-retirement';
 import {intakeOrdinaryAttachmentContext} from './attachment-intake';
+import {ordinaryNativeMessageSchema,nativeMessageText} from '../../conversations/native-message';
+import {parseOrdinaryNativeMessage,summarizeNativeMessage} from './native-message';
 import {attachmentLimits,parseAttachmentMessage} from '../../conversations/attachment-text';
 
 const createSchema = z.object({ operationId: z.uuid() }).strict();
-const sendSchema = z.object({ message: z.string(),
+const sendSchema = z.object({ message: z.union([z.string(),ordinaryNativeMessageSchema]),
   artifactSelections: z.array(artifactDraftSelectionSchema).max(5).optional(),
   turnPolicy:z.enum(['queue','steer']).optional() }).strict();
 const nativeSessionSchema = z.object({ ok: z.literal(true), sessionId: z.string().min(1) }).passthrough();
@@ -182,31 +184,31 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
               selectionHeader ? headerSelections : parsed.data.artifactSelections ?? []);
             if (!checkedSelections.success) throw new HttpFailure(422,"invalid_input","Invalid source selections");
             const selections = checkedSelections.data;
-            const text = normalizeMessageText(parsed.data.message.trim() || (selections.length ?
-              "Please discuss the selected customer source passages." : ""));
+            const message=typeof parsed.data.message==='string'?normalizeMessageText(parsed.data.message.trim()||(selections.length?"Please discuss the selected customer source passages.":"")):parseOrdinaryNativeMessage(parsed.data.message);
+            const text=typeof message==='string'?message:summarizeNativeMessage(message);
             await getOwnedConversationByNativeSession(session, args.params.sessionId);
             await startPreviewChatWorker(args.attachSession, args.waitUntil);
             if(parsed.data.turnPolicy==='steer'){
               if(selections.length)throw new HttpFailure(422,'steering_sources','Send new source selections after the active response');
-              const steering=await prepareOrdinarySteering(session,conversationId!,args.params.sessionId,requestKey!,text);
+              const steering=await prepareOrdinarySteering(session,conversationId!,args.params.sessionId,requestKey!,message);
               if(steering){
                 if(steering.kind==='replay')return steering.response;
                 steeringId=steering.id;
                 const headers=new Headers(request.headers);headers.delete('content-length');
-                const response=await native(new Request(request.url,{method:'POST',headers,body:JSON.stringify({message:text,turnPolicy:'steer'})}),args);
+                const response=await native(new Request(request.url,{method:'POST',headers,body:JSON.stringify({message,turnPolicy:'steer'})}),args);
                 await recordSteeringReceipt(steering.id,args.params.sessionId,response);
                 return response;
               }
             }
             const prepared = await prepareAttempt(session, conversationId!, args.params.sessionId,
-              requestKey!, text, selections);
+              requestKey!, message, selections);
             attemptId = prepared.attemptId;
             if (!prepared.created && prepared.dispatchState !== "prepared") {
               const receipt = await getAttemptReceipt(session, conversationId!, attemptId);
               if (receipt) return receipt;
               throw new HttpFailure(409, "turas_dispatch_pending", "Dispatch outcome pending");
             }
-            if(!prepared.governed && parseAttachmentMessage(text))
+            if(!prepared.governed && parseAttachmentMessage(typeof message==='string'?message:nativeMessageText(message)))
               await intakeOrdinaryAttachmentContext(session,conversationId!,attemptId);
             let tailIndex: number;
             try {
@@ -231,7 +233,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             const dispatches = prepared.governed ? 1 : 5;
             for (let retry = 0; retry < dispatches && Date.now() - started < 20_000; retry++) {
               nativeResponse = await native(new Request(request.url, {
-                method: "POST", headers, body: JSON.stringify({ message: text }),
+                method: "POST", headers, body: JSON.stringify({ message }),
               }), args);
               if (nativeResponse.status !== 409) break;
               let rejection: unknown;

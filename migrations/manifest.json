@@ -1,5 +1,5 @@
 {
-  "version": 71,
+  "version": 72,
   "migrations": [
     {
       "file": "001-identity-foundation.cjs",
@@ -284,6 +284,10 @@
     {
       "file": "071-ordinary-attachment-text.cjs",
       "sha256": "e7857deadd3e25e787aea2ebe905d40b1123c992eacec9df3caf33b929f722f4"
+    },
+    {
+      "file": "072-ordinary-native-message.cjs",
+      "sha256": "045f8a93647e607903ff7aa203315c8820c4587d0f7938b8d59cc2af1c9e76c7"
     }
   ]
 }

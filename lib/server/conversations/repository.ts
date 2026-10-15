@@ -441,11 +441,13 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
   const finalPlanStale=await withTransaction((client)=>
     assertPlanConversationFence(client,session,id)).then(()=>false,()=>true);
   const hideGenerated = final.contextStatus !== "current" || finalPlanStale;
+  const documentSchemaVersion=Number((await query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0]?.schema_version??0);
   const visibleEvents = hideGenerated ? (ownerEvents?.rows ?? events.rows.filter((row) => row.event_type === "message.received")) : events.rows;
   return {
     ...conversation, featureKind:feature.kind,
     canAttachDocuments:feature.kind==='normal' && process.env.TURAS_ORDINARY_ATTACHMENTS_DISABLED!=='1' &&
-      Number((await query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0]?.schema_version??0)>=71,
+      documentSchemaVersion>=71,
+    canAttachNativeFiles:feature.kind==='normal'&&process.env.TURAS_ORDINARY_ATTACHMENTS_DISABLED!=='1'&&process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED==='1'&&documentSchemaVersion>=72,
     contextStatus: hideGenerated ? "changed":final.contextStatus,
     title: hideGenerated ? "Previous conversation" : conversation.title,
     history: [...visibleEvents.slice(0, 500).map((row) => ({

@@ -12,5 +12,5 @@ export default async function NewConversationPage() {
   if (!session) return null;
   const marker=await query<{schema_version:number}>("SELECT schema_version FROM turas_environment WHERE environment_id=$1",[getServerConfig().TURAS_ENVIRONMENT_ID]);
   const canAttachDocuments=Number(marker.rows[0]?.schema_version??0)>=71&&process.env.TURAS_ORDINARY_ATTACHMENTS_DISABLED!=="1";
-  return <NewConversation csrfToken={csrfTokenForSession(session.token)} canAttachDocuments={canAttachDocuments} />;
+  return <NewConversation csrfToken={csrfTokenForSession(session.token)} canAttachDocuments={canAttachDocuments} canAttachNativeFiles={canAttachDocuments&&Number(marker.rows[0]?.schema_version??0)>=72&&process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED==='1'} />;
 }

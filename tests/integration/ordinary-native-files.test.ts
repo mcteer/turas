@@ -1,0 +1,54 @@
+import {randomUUID} from 'node:crypto';
+import {Client} from 'pg';
+import {beforeAll,expect,it} from 'vitest';
+import {requireTestDatabaseUrl} from '../fixtures/database';
+import {isolatedChatActor} from '../fixtures/isolated-chat-actor';
+import {settleSyntheticConversationAttempts} from '../fixtures/ordinary-attempt-cleanup';
+import {createOwnedConversation} from '../../lib/server/conversations/repository';
+import {claimBinding,bindNativeSession} from '../../lib/server/conversations/binding';
+import {prepareAttempt,claimDispatch,deriveNativeAttempt,messageDigest} from '../../lib/server/conversations/dispatch';
+import {projectNativeEvent} from '../../lib/server/conversations/projection';
+import {parseOrdinaryNativeMessage,nativeMessageDigest,summarizeNativeMessage} from '../../lib/server/conversations/native-message';
+import {prepareOrdinarySteering,recordSteeringReceipt} from '../../lib/server/conversations/steering';
+const url=requireTestDatabaseUrl();
+beforeAll(()=>{const runtime=new URL(url);runtime.searchParams.set('options','-c role=turas_runtime');process.env.DATABASE_URL=runtime.toString();process.env.TURAS_ENVIRONMENT_ID=process.env.TURAS_TEST_ENVIRONMENT_ID;});
+it('binds native file bytes separately from the runtime summary and refuses changed retries or cross-owner dispatch',async()=>{
+ const db=new Client({connectionString:url});await db.connect();const owned:string[]=[];const prior=process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED;
+ try{
+  const actor=await isolatedChatActor(db,'internal','admin'),key=randomUUID();
+  const {conversation}=await createOwnedConversation(actor,{requestKey:key});owned.push(conversation.id);
+  const binding=await claimBinding(actor,conversation.id,key);if(binding.state!=='claimed')throw Error('Fixture binding unavailable');
+  const native=`wrun_${randomUUID()}`;await bindNativeSession(actor,conversation.id,binding.claimToken,native);
+  await db.query("INSERT INTO maintenance_workers(environment_id,worker_id,last_seen_at) VALUES($1,'native-file-fixture',now()) ON CONFLICT(environment_id,worker_id) DO UPDATE SET last_seen_at=now()",[process.env.TURAS_ENVIRONMENT_ID]);
+  const parts=parseOrdinaryNativeMessage([{type:'text',text:'Describe this supplied file.'},{type:'file',filename:'source.bin',mediaType:'application/octet-stream',data:'data:application/octet-stream;base64,'+Buffer.from('Synthetic local file bytes').toString('base64')}]);
+  delete process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED;
+  const request=randomUUID();await expect(prepareAttempt(actor,conversation.id,native,request,parts)).rejects.toMatchObject({status:503,code:'native_files_unavailable'});
+  process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED='1';
+  const attempt=await prepareAttempt(actor,conversation.id,native,request,parts);
+  const row=(await db.query('SELECT sm.text,sm.body_digest,sm.ordinary_native_parts,a.input_digest FROM submitted_messages sm JOIN response_attempts a ON a.message_id=sm.id WHERE a.id=$1',[attempt.attemptId])).rows[0];
+  expect(row.text).toBe(summarizeNativeMessage(parts));expect(row.body_digest).toBe(nativeMessageDigest(parts));
+  expect(row.input_digest).toBe(messageDigest(row.text));expect(row.ordinary_native_parts).toEqual(parts);
+  const changed=parseOrdinaryNativeMessage(parts.map(part=>part.type==='file'?{...part,data:'data:application/octet-stream;base64,'+Buffer.from('Changed bytes').toString('base64')}:part));
+  await expect(prepareAttempt(actor,conversation.id,native,request,changed)).rejects.toMatchObject({status:409});
+  await expect(db.query("UPDATE submitted_messages SET ordinary_native_parts='[]'::jsonb WHERE id=(SELECT message_id FROM response_attempts WHERE id=$1)",[attempt.attemptId])).rejects.toThrow();
+  await claimDispatch(actor,conversation.id,attempt.attemptId,0);
+  expect(await deriveNativeAttempt(actor,native,request,parts)).toBe(attempt.attemptId);
+  await expect(deriveNativeAttempt(actor,native,request,changed)).rejects.toMatchObject({status:404});
+  const other=await isolatedChatActor(db,'internal','member',actor.workspaceId);
+  await expect(deriveNativeAttempt(other,native,request,parts)).rejects.toMatchObject({status:404});
+  const turn=`turn_${randomUUID()}`;
+  await projectNativeEvent(native,attempt.attemptId,{type:'message.received',data:{message:summarizeNativeMessage(parts),turnId:turn},meta:{id:`evt_${randomUUID()}`,at:new Date().toISOString()}});
+  expect((await db.query('SELECT response_state FROM response_attempts WHERE id=$1',[attempt.attemptId])).rows[0].response_state).toBe('running');
+  const correctionKey=randomUUID(),deadline=(await db.query('SELECT deadline_at FROM response_attempts WHERE id=$1',[attempt.attemptId])).rows[0].deadline_at;
+  const correction=await prepareOrdinarySteering(actor,conversation.id,native,correctionKey,changed);
+  if(correction?.kind!=='dispatch')throw Error('Expected file correction');
+  expect(await deriveNativeAttempt(actor,native,correctionKey,changed)).toBe(attempt.attemptId);
+  await expect(deriveNativeAttempt(actor,native,correctionKey,parts)).rejects.toMatchObject({status:404});
+  await expect(prepareOrdinarySteering(actor,conversation.id,native,correctionKey,parts)).rejects.toMatchObject({code:'request_key_conflict'});
+  await recordSteeringReceipt(correction.id,native,Response.json({ok:true,sessionId:native,status:'accepted',deliveryId:'native-file-correction'},{status:202}));
+  await projectNativeEvent(native,attempt.attemptId,{type:'message.received',data:{message:summarizeNativeMessage(changed),turnId:turn},meta:{id:`evt_${randomUUID()}`,at:new Date().toISOString(),deliveryIds:['native-file-correction']}});
+  expect((await db.query('SELECT native_event_id FROM ordinary_steering_deliveries WHERE id=$1',[correction.id])).rows[0].native_event_id).toBeTruthy();
+  expect((await db.query('SELECT count(*)::int AS n,min(deadline_at) AS deadline FROM response_attempts WHERE conversation_id=$1',[conversation.id])).rows[0]).toEqual({n:1,deadline});
+
+ }finally{if(prior===undefined)delete process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED;else process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED=prior;try{await settleSyntheticConversationAttempts(db,owned);}finally{await db.end();}}
+});

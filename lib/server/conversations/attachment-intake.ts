@@ -4,6 +4,8 @@ import { withTransaction } from "../db/client";
 import { getServerConfig } from "../config";
 import { hiddenRecord, HttpFailure } from "../../contracts/http";
 import { parseAttachmentMessage } from "../../conversations/attachment-text";
+import {nativeMessageText} from "../../conversations/native-message";
+import {parseOrdinaryNativeMessage} from "./native-message";
 import { conversationFeature } from "./feature";
 import { lockWorkspaceActor } from "../profiles/policy";
 import { submitProfileCommandDetailed } from "../profiles/service";
@@ -23,22 +25,22 @@ export async function intakeOrdinaryAttachmentContext(actor: CurrentSession, con
     const marker=(await db.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
     if(Number(marker?.schema_version??0)<71 || process.env.TURAS_ORDINARY_ATTACHMENTS_DISABLED==='1')
       throw new HttpFailure(503,'attachments_unavailable','Document messages are temporarily unavailable');
-    const row = (await db.query(`SELECT c.customer_id,m.id AS message_id,m.text,m.created_at AS message_created_at
+    const row = (await db.query(`SELECT c.customer_id,c.live_customer_context,m.id AS message_id,m.text,m.created_at AS message_created_at,to_jsonb(m)->'ordinary_native_parts' AS native_parts
       FROM conversations c JOIN response_attempts a ON a.conversation_id=c.id
       JOIN submitted_messages m ON m.id=a.message_id AND m.conversation_id=c.id
       WHERE c.id=$1 AND a.id=$2 AND c.owner_principal_id=$3 AND c.workspace_id=$4
         AND c.environment_id=$5 AND a.dispatch_state='prepared'`,
     [conversationId, attemptId, actor.principalId, actor.workspaceId, getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
     if (!row) throw hiddenRecord();
-    const parsed = parseAttachmentMessage(row.text);
+    const parsed = parseAttachmentMessage(row.native_parts?nativeMessageText(parseOrdinaryNativeMessage(row.native_parts)):row.text);
     if (!parsed || (await conversationFeature(db, conversationId)).kind !== "normal") return { drafts: 0, unresolved: 0 };
     const customers = (await db.query(`SELECT c.id,c.display_name AS name,
       ARRAY(SELECT alias FROM customer_reference_aliases a WHERE a.customer_id=c.id AND a.kind='name') AS aliases,
       ARRAY[]::text[] AS workloads FROM customer_references c WHERE c.workspace_id=$1
-        AND (($2::uuid IS NULL AND NOT c.synthetic) OR c.id=$2)
+        AND NOT c.synthetic AND ($2::uuid IS NULL OR c.id=$2)
         AND ($3='internal' OR EXISTS(SELECT 1 FROM customer_grants g WHERE g.customer_id=c.id
           AND g.membership_id=$4 AND g.state='active')) ORDER BY c.display_name,c.id LIMIT 1001`,
-    [actor.workspaceId, row.customer_id, actor.kind, actor.membershipId])).rows;
+    [actor.workspaceId, row.live_customer_context ? null : row.customer_id, actor.kind, actor.membershipId])).rows;
     if (customers.length > 1000) return { drafts: 0, unresolved: parsed.documents.length };
     let drafts = 0, unresolved = 0;
     for (const [index, document] of parsed.documents.entries()) {
@@ -53,8 +55,7 @@ export async function intakeOrdinaryAttachmentContext(actor: CurrentSession, con
       const normalized = supplied.toLocaleLowerCase("en-US");
       // Same name/alias mention lookup as legacy's attachment intake. An
       // ambiguous or inaccessible account never receives a draft.
-      const matches = row.customer_id ? customers.filter(customer => customer.id === row.customer_id)
-        : customers.filter(customer => [customer.name, ...customer.aliases].some(alias => normalized.includes(alias.toLocaleLowerCase("en-US"))));
+      const matches = customers.filter(customer => [customer.name, ...customer.aliases].some(alias => normalized.includes(alias.toLocaleLowerCase("en-US"))));
       if (matches.length !== 1) { unresolved++; continue; }
       const customer = matches[0], sourceExcerpt = document.text.slice(0, 12_000).trim();
       const excerpt=sourceExcerpt.slice(0,8_000).trim();

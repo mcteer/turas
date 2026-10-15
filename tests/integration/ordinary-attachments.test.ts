@@ -59,3 +59,22 @@ it('withholds ambiguous and newly revoked customer intake, and honors the releas
   await expect(intakeOrdinaryAttachmentContext(actor,conversation.id,attempt.attemptId)).rejects.toMatchObject({status:503,code:'attachments_unavailable'});
  }finally{delete process.env.TURAS_ORDINARY_ATTACHMENTS_DISABLED;try{await settleSyntheticConversationAttempts(db,owned);}finally{await db.end();}}
 });
+
+it.each(['internal','partner'] as const)('routes named attachment context independently of a selected live customer (%s)',async kind=>{
+ const db=new Client({connectionString:url});await db.connect();const owned:string[]=[];
+ try{
+  const actor=await isolatedChatActor(db,kind,kind==='internal'?'admin':'member'),selected=randomUUID(),named=randomUUID();
+  await db.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$3,'Selected attachment account',false),($2,$3,'Named document account',false)",[selected,named,actor.workspaceId]);
+  for(const id of [selected,named]){
+   if(kind==='partner')await db.query("INSERT INTO customer_grants(id,workspace_id,customer_id,membership_id,state,revision,granted_by) VALUES($1,$2,$3,$4,'active',1,$5)",[randomUUID(),actor.workspaceId,id,actor.membershipId,actor.principalId]);
+  }
+  const key=randomUUID(),{conversation}=await createOwnedConversation(actor,{requestKey:key,customerId:selected});owned.push(conversation.id);
+  const binding=await claimBinding(actor,conversation.id,key);if(binding.state!=='claimed')throw Error('Fixture binding unavailable');
+  const native=`wrun_${randomUUID()}`;await bindNativeSession(actor,conversation.id,binding.claimToken,native);
+  await db.query("INSERT INTO maintenance_workers(environment_id,worker_id,last_seen_at) VALUES($1,'attachment-fixture',now()) ON CONFLICT(environment_id,worker_id) DO UPDATE SET last_seen_at=now()",[process.env.TURAS_ENVIRONMENT_ID]);
+  const attempt=await prepareAttempt(actor,conversation.id,native,randomUUID(),formatAttachmentText('named-account.txt','text/plain','Named document account customer context: a human-supplied assertion.'));
+  expect(await intakeOrdinaryAttachmentContext(actor,conversation.id,attempt.attemptId)).toEqual({drafts:1,unresolved:0});
+  const records=(await db.query('SELECT customer_id,current_accepted_revision_id FROM profile_records WHERE workspace_id=$1',[actor.workspaceId])).rows;
+  expect(records).toEqual([{customer_id:named,current_accepted_revision_id:null}]);
+ }finally{try{await settleSyntheticConversationAttempts(db,owned);}finally{await db.end();}}
+});

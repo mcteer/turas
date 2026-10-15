@@ -523,3 +523,37 @@ four source-upload fixture failures: that workflow still clicked the landing
 paperclip, and its input label collided with the chat picker. Source-upload checks
 now open Customer sources, the chat input has a distinct accessible label, and
 the focused four-project WebKit run includes source upload and passes.
+
+
+### Native file fallback and corrections (local verification)
+
+The ordinary composer now preserves legacy UserContent arrays when extraction is
+unsupported or fails, with local-byte-only file input, a five-file/3 MiB transport
+bound and the existing ten MiB source-file limit. Migration 072 stores immutable
+original parts; dispatch binds their complete byte digest separately from Eve's
+public text summary. Governed artifact selections retain their separate contract.
+The default-disabled native upload switch also controls channel upload admission.
+Preview remains at 071; Production remains unchanged.
+
+The actual Eve runtime with a deterministic unpaid provider received identical
+image bytes, invoked the real canonical customer resolver, exposed all three
+specialists and evaluator, and retained the reply/file card after reload. A second
+actual-runtime check consumed a native file correction inside the original response
+attempt. Runtime-role tests reject changed-byte retries and foreign-owner access,
+and verify one unchanged deadline/response allowance. These are local protocol
+checks, not Grok quality or hosted Sandbox acceptance. The owned container and
+prepared image were removed after each check.
+
+Live normal-chat attachment intake now resolves the account mentioned by the
+supplied content rather than forcing the selected profile. Internal and assigned-
+partner regression cases verify that selecting account A while naming B creates
+only an unaccepted B draft. Ambiguous, inaccessible and revoked accounts remain
+unresolved; historical frozen context does not silently expand its account scope.
+File metadata, without duplicated inline bytes or internal sandbox paths, is
+retained in the application history projection for historical file cards.
+
+The exact 1b99d9f Preview passed authenticated headless WebKit document preparation
+and existing native-question history checks. Its full verify CI passed, while the
+execution WebKit job timed out submitting a closeout. The same focused desktop-
+light closeout suite passed locally; the CI failure is still unresolved. Added
+save/submit response assertions will expose the response status/code on recurrence.

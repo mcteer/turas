@@ -1,3 +1,4 @@
+import {parseOrdinaryNativeMessage} from "../../lib/server/conversations/native-message";
 import {ownedInputResponseAttempt} from "../../lib/server/conversations/input-responses";
 import { eveChannel } from "eve/channels/eve";
 import type { AuthFn } from "eve/channels/auth";
@@ -39,10 +40,10 @@ const appCookieAuth: AuthFn<Request> = async (request): Promise<Awaited<ReturnTy
 
 export default composeEveRoutes(eveChannel({
   auth: [appCookieAuth],
-  uploadPolicy: "disabled",
+  uploadPolicy: process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED==='1'?{maxBytes:10*1024*1024,allowedMediaTypes:"*"}:"disabled",
   turnPolicy: "queue",
   async onMessage(ctx, message) {
-    if (!ctx.eve.caller || typeof message !== "string" || !ctx.eve.sessionId) {
+    if (!ctx.eve.caller || (typeof message !== "string"&&!Array.isArray(message)) || !ctx.eve.sessionId) {
       throw new HttpFailure(403, "invalid_dispatch", "Action not allowed");
     }
     const requestKey = ctx.eve.request.headers.get("x-turas-request-key");
@@ -51,7 +52,7 @@ export default composeEveRoutes(eveChannel({
     if (!session || session.principalId !== ctx.eve.caller.principalId) {
       throw new HttpFailure(403, "invalid_dispatch", "Action not allowed");
     }
-    const attemptId = await deriveNativeAttempt(session, ctx.eve.sessionId, requestKey, message);
+    const attemptId = await deriveNativeAttempt(session, ctx.eve.sessionId, requestKey, typeof message==='string'?message:parseOrdinaryNativeMessage(message));
     return { auth: { ...ctx.eve.caller,
       attributes: { ...ctx.eve.caller.attributes, turasAttemptId: attemptId } } };
   },

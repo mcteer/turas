@@ -28,7 +28,7 @@ import { recordStaffingTelemetry } from "../staffing/telemetry";
 export type NativeEvent = {
   type: string;
   data?: Record<string, unknown>;
-  meta: { id?: string; at?: string };
+  meta: { id?: string; at?: string; deliveryIds?: readonly string[] };
 };
 
 const visibleTypes = new Set([
@@ -39,7 +39,18 @@ const visibleTypes = new Set([
 function visiblePayload(event: NativeEvent): Record<string, unknown> {
   const data = event.data ?? {};
   switch (event.type) {
-    case "message.received": return { message: data.message };
+    case "message.received": {
+      // Retain the framework's public file metadata, never sandbox paths or
+      // another persisted copy of inline bytes, for historical attachment cards.
+      const parts=Array.isArray(data.parts)?data.parts.flatMap<Record<string,unknown>>(part=>{
+        if(!part||typeof part!=="object")return [];
+        if(part.type==='text'&&typeof part.text==='string')return [{type:'text',text:part.text}];
+        if(part.type!=='file'||typeof part.mediaType!=='string')return [];
+        return [{type:'file',mediaType:part.mediaType,...(typeof part.filename==='string'?{filename:part.filename}:{}),
+          ...(typeof part.size==='number'&&Number.isSafeInteger(part.size)&&part.size>=0?{size:part.size}:{})}];
+      }):[];
+      return parts.some(part=>part.type==='file')?{message:data.message,parts}:{message:data.message};
+    }
     case "message.appended": return { messageDelta: data.messageDelta };
     case "message.completed": return { message: data.message, finishReason: data.finishReason };
     case "input.requested": return {requests:data.requests};
