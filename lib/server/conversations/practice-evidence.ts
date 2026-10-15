@@ -24,7 +24,7 @@ export async function readOrdinaryPracticeEvidence(principal:Principal,accountId
   const safe=(rows:typeof selected)=>rows.map(({source})=>({url:source.url,title:source.title,sourceType:source.sourceType,
    informationType:source.informationType,publishedAt:source.publishedAt,checkedAt:source.checkedAt,refreshAfter:source.refreshAfter,
    stale:source.stale,passages:source.passages}));
-  const result={kind:'public_product_reference' as const,sources:safe(selected),completenessWarnings:['Bounded retained public product references; these do not establish that the customer uses the product or configuration. Stale references are historical evidence, not current guidance.']};
+  const result={kind:'public_product_reference' as const,sources:safe(selected),completenessWarnings:['Complete retained passages for each included public reference (the cached source itself can be partial); these do not establish that the customer uses the product or configuration. Stale references are historical evidence, not current guidance.']};
   while(Buffer.byteLength(JSON.stringify(result),'utf8')>maximumBytes){
    selected.pop();result.sources=safe(selected);
    if(!result.completenessWarnings.includes('Lower-ranked public references omitted to fit the response limit'))result.completenessWarnings.push('Lower-ranked public references omitted to fit the response limit');

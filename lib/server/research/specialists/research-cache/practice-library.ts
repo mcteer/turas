@@ -6,6 +6,7 @@ import { readCachedSource } from "./sources";
 import { evidenceDatabase } from "./database";
 import { digest, normalized } from "./schema";
 import { embeddingsConfigured } from "../embeddings";
+import { researchPassages } from "../solution-research/source-integrity";
 import { retainedPracticePassages } from "./practice-passages";
 import { z } from "zod";
 
@@ -32,7 +33,7 @@ export async function recordVercelPracticeSource(identity: AppIdentity, product:
   return { source, cacheHit: read.cacheHit };
 }
 
-async function practiceSourceReceipts(identity: AppIdentity, product: string, query: string, signal: AbortSignal) {
+async function practiceSourceReceipts(identity: AppIdentity, product: string, query: string, signal: AbortSignal, completeReferences=false) {
   const sql = await evidenceDatabase();
   let vector: number[] | null = null;
   if (embeddingsConfigured() && query) {
@@ -71,7 +72,9 @@ async function practiceSourceReceipts(identity: AppIdentity, product: string, qu
     }
     grouped.set(row.snapshot_id, current);
   }
-  return [...grouped.entries()].slice(0, 8).map(([snapshotId,source])=>({snapshotId,source}));
+  return [...grouped.entries()].slice(0, 8).map(([snapshotId,source])=>({snapshotId,source:completeReferences
+    ? {...source,passages:researchPassages(sourceSchema.parse(rows.find(row=>row.snapshot_id===snapshotId)!.source))}
+    :source}));
 }
 
 /** Existing specialist view: no private account or query metadata is added. */
@@ -80,7 +83,7 @@ export async function searchVercelPracticeSources(identity:AppIdentity,product:s
 }
 /** Exact retained cache identities for source-consumption fencing. */
 export async function searchVercelPracticeSourceReceipts(identity:AppIdentity,query:string,signal:AbortSignal){
- return practiceSourceReceipts(identity,'',query,signal);
+ return practiceSourceReceipts(identity,'',query,signal,true);
 }
 
 export async function latestVercelPracticeRun(identity: AppIdentity, product: string, topic: string) {

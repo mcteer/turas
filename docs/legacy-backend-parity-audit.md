@@ -904,3 +904,15 @@ now exposes the domain reader's existing optional focused query, and guidance
 prefers relevant passages over unrelated profile pagination or duplicate reads.
 No provider pricing, reservation calculation, budget cap, unknown hold or root
 model is changed. Typecheck and Eve/Next builds pass for this follow-up.
+
+
+Independent inspection of the failed `09ee70a` tool outputs found that the legacy
+eight-passage library excerpt still omitted firewall passages p13 and p28.
+Ordinary chat now receives all original retained passages for each included
+public reference, bounded by the existing response-size limit; the specialist's
+original eight-passage contract is preserved. A read-only check of the actual
+Preview cache confirms that each retained firewall document has 38 passages,
+including both missing passages, and its complete passage payload is 17,897
+bytes. This local source read performs no provider operation and is not hosted
+answer acceptance. The regression includes a late hit in a document with more
+than eight passages and checks exact complete original passage/ID equality.

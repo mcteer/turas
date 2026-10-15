@@ -114,17 +114,19 @@ it('retains new public research for an assigned partner, preserves curated claim
   // Public product documentation is reusable without disclosing the private
   // query metadata that originally populated the practice library.
   const practiceUrl='https://vercel.com/docs/sandbox/concepts/firewall';
-  const practiceText='General firewall introduction. '.repeat(22)+'\n\nIP custom DNS and broad CIDR rules can bypass domain restrictions.\n\nAllowed destinations can receive exfiltrated data.';
+  const practiceText=Array.from({length:28},(_,i)=>`Section ${i}: `+'General firewall introduction. '.repeat(12)).join('\n\n')+'\n\nIP custom DNS and broad CIDR rules can bypass domain restrictions.\n\nAllowed destinations can receive exfiltrated data.';
   const practiceSource=extractSources({success:true,url:practiceUrl,title:'Sandbox firewall',markdown:practiceText},new Date().toISOString())[0];
   const practiceId=publicDigest(practiceText);
   await db.query(`INSERT INTO turas_evidence_snapshots(environment_id,workspace_id,id,fetch_key,url,content_hash,source,truncated,checked_at,refresh_after)
    VALUES($1,$2,$3,$3,$4,$3,$5,false,now(),now()+interval '6 hours')`,[process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,practiceId,practiceUrl,JSON.stringify(practiceSource)]);
   const {researchPassages}=await import('../../lib/server/research/specialists/solution-research/source-integrity');
-  await db.query(`INSERT INTO turas_evidence_passages(environment_id,workspace_id,snapshot_id,ordinal,text,model) VALUES($1,$2,$3,1,$4,'fixture')`,[process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,practiceId,researchPassages(practiceSource).map(p=>p.text).join('\n\n')]);
+  await db.query(`INSERT INTO turas_evidence_passages(environment_id,workspace_id,snapshot_id,ordinal,text,model) VALUES($1,$2,$3,1,$4,'fixture')`,[process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,practiceId,researchPassages(practiceSource).slice(-3).map(p=>p.text).join('\n\n')]);
   await db.query(`INSERT INTO turas_vercel_practice_sources(environment_id,workspace_id,product,topic,snapshot_id,url,title,source_type,information_type,checked_at,refresh_after)
    VALUES($1,$2,'private-product-marker','private-question-marker',$3,$4,'Sandbox firewall','vercel_documentation','product_capability',now(),now()+interval '6 hours')`,[process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,practiceId,practiceUrl]);
   const practice=await readOrdinaryPracticeEvidence(searchPrincipal,customerId,'DNS CIDR exfiltrated',new AbortController().signal);
   expect(practice.sources).toHaveLength(1);
+  expect(practice.sources[0].passages.length).toBeGreaterThan(8);
+  expect(practice.sources[0].passages).toEqual(researchPassages(practiceSource));
   expect(practice.sources[0].passages.some(p=>p.text.includes('exfiltrated'))).toBe(true);
   expect(JSON.stringify(practice)).not.toContain('private-question-marker');
   expect(JSON.stringify(practice)).not.toContain('private-product-marker');
