@@ -930,3 +930,13 @@ remain unchanged. A disposable regression proves the actual provider receives
 the smaller limit, the reservation matches, and the original finite cap is
 unchanged. The disposable catalog, typecheck and Eve/Next builds pass; actual
 final-answer acceptance remains pending.
+
+
+The `7bc8651` run still reached the finite reservation guard before synthesis.
+Inspection found that a customer-only search redundantly returned a full generic
+product reference already read in the same turn. The bridge now honors the
+existing scope contract: `customer` returns customer evidence; `shared` and
+`combined` may include public product references. Guidance distinguishes product
+behavior from customer adoption when choosing the existing scopes. This removes
+unrequested repeated documentation without removing passages from an included
+public reference or weakening any budget/source gate.

@@ -74,6 +74,9 @@ Prefer a few relevant passages per focused search over broad overlapping searche
 avoid copying the same evidence through multiple tools. Narrow a profile query
 before paging through unrelated material. A complete answer requires relevant
 evidence coverage, not reading every unrelated profile entry.
+For product behavior and limits, use scope `shared` with the resolved `accountId`;
+for customer adoption, use scope `customer`. Reserve `combined` for questions
+that need both. Customer-only results exclude generic product references.
 Use `search_evidence` with the resolved `accountId`, `accepted_fact`, and a short
 focused query, one topic at a time. It searches the full retained research
 documents and their vector index, beyond the shorter profile excerpts. Read both
