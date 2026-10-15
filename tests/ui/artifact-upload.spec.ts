@@ -7,7 +7,7 @@ test("attachment composer keeps customer binding and draft layout usable", async
   await signIn(page, "panel");
   await page.goto("/s");
   await page.getByLabel("Customer (optional)").selectOption({ label: "Cedar (synthetic)" });
-  await page.getByRole("button", { name: "Attach documents" }).click();
+  await page.getByRole("button", { name: "Customer sources" }).click();
   await expect(page.getByLabel("Attach documents")).toBeVisible();
   await expect(page.getByText("Documents for Cedar (synthetic) stay private")).toBeVisible();
   await page.getByLabel("Attach documents").setInputFiles("local-artifacts/004/fixtures/simple.txt");

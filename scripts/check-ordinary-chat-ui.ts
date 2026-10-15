@@ -10,7 +10,7 @@ await withPlanEvalEnvironment(async environment=>{
  const generated=spawnSync(process.execPath,['--import','tsx','tests/fixtures/artifacts/generate.ts'],{cwd:environment.appRoot,env:process.env,encoding:'utf8'});
  if(generated.status!==0)throw Error('Synthetic document corpus preparation failed');
  await environment.start();
- const files=process.argv.includes('--documents-only')?['tests/ui/ordinary-documents.spec.ts']:['tests/ui/ordinary-documents.spec.ts','tests/ui/chat.spec.ts','tests/ui/chat-states.spec.ts','tests/ui/artifact-context.spec.ts','tests/ui/artifact-lifecycle.spec.ts'];
+ const files=process.argv.includes('--documents-only')?['tests/ui/ordinary-documents.spec.ts']:['tests/ui/ordinary-documents.spec.ts','tests/ui/chat.spec.ts','tests/ui/chat-states.spec.ts','tests/ui/artifact-upload.spec.ts','tests/ui/artifact-context.spec.ts','tests/ui/artifact-lifecycle.spec.ts'];
  const status=await new Promise<number|null>((resolve,reject)=>{
   const child=spawn(process.execPath,['node_modules/@playwright/test/cli.js','test',...files],{
    cwd:environment.appRoot,env:{...process.env,TURAS_UI_BASE_URL:environment.origin,TURAS_EXECUTION_FIXTURE_READY:'1'},stdio:'inherit'});

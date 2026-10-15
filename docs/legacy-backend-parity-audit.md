@@ -515,3 +515,11 @@ attempt remains recorded as a failed first-file selection; it is not acceptance.
 Sixteen allowlisted evaluation native sessions returned successful reset responses;
 three test conversations had no native identity, and one retained question/history
 thread remains for final checks. This is not application payload erasure.
+
+Exact 6a1be36 authenticated Preview checks passed the corrected first-file
+selection with actual text/Word/PDF/spreadsheet files, mobile layout and retained
+reply/history. No model was dispatched. The full verify run subsequently found
+four source-upload fixture failures: that workflow still clicked the landing
+paperclip, and its input label collided with the chat picker. Source-upload checks
+now open Customer sources, the chat input has a distinct accessible label, and
+the focused four-project WebKit run includes source upload and passes.

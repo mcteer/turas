@@ -34,7 +34,7 @@ export function OrdinaryDocuments({ documents, onChange, onPreparingChange, disa
   }
   return <div className="ordinary-documents">
     <input ref={input} type="file" multiple hidden accept=".csv,.docx,.epub,.html,.json,.log,.md,.odp,.ods,.odg,.odt,.pdf,.pptx,.rtf,.txt,.xlsx,.xml,.yaml,.yml"
-      aria-label="Attach documents" disabled={!ready || disabled || preparing} onChange={event => { const files = Array.from(event.target.files ?? []); event.target.value = ""; void add(files); }} />
+      aria-label="Chat document files" disabled={!ready || disabled || preparing} onChange={event => { const files = Array.from(event.target.files ?? []); event.target.value = ""; void add(files); }} />
     <button type="button" className="composer-attach" aria-label={buttonLabel} disabled={!ready || disabled || preparing} onClick={() => input.current?.click()}>
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m8 12 6-6a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l9-9" /></svg>
     </button>
