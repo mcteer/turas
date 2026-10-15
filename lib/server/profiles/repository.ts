@@ -15,7 +15,7 @@ export async function addProposal(client: PoolClient, actor: ProfileActor, custo
   command: Proposal, submissionChannel: "profile_form" | "agent_proposal" | "artifact_share" = "profile_form",
   artifactSelectionId?: string):
   Promise<{ recordId: string; revisionId: string; reviewState: "pending" }> {
-  const payload = command.payload;
+  let payload = command.payload;
   if ((submissionChannel === "artifact_share") !== Boolean(artifactSelectionId && command.artifactSelectionDigest)) {
     throw new HttpFailure(422, "artifact_support_required", "Exact artifact support is required");
   }
@@ -75,6 +75,16 @@ export async function addProposal(client: PoolClient, actor: ProfileActor, custo
         WHERE id=$1 AND audience='delivery' AND data_category='delivery_context'`,
       [row.current_accepted_revision_id]);
       if (!visible.rowCount) throw hiddenRecord();
+    }
+    // The standard correction form edits claim text. Preserve the original
+    // structured journey, measures and private provenance server-side instead
+    // of dropping them or round-tripping sanitized partner provenance.
+    if(submissionChannel==='profile_form' && payload.kind==='claim' && !payload.legacyJourney && row.current_accepted_revision_id){
+      const original=(await client.query<{payload:import('../../contracts/profile-payloads').ProfilePayload}>('SELECT payload FROM profile_revisions WHERE id=$1',[row.current_accepted_revision_id])).rows[0]?.payload;
+      if(original?.kind==='claim' && original.legacyJourney){
+        if(payload.text.length>4000)throw new HttpFailure(422,'journey_summary_too_large','Keep this journey summary within 4,000 characters');
+        payload={...payload,legacyJourney:{...original.legacyJourney,summary:payload.text,title:payload.title??original.legacyJourney.title}};
+      }
     }
     if (row.canonical_key !== canonicalRecordKey(payload.kind, workloadId, payload)) {
       throw new HttpFailure(422, "immutable_key", "Create a new record for a different key");

@@ -1,3 +1,4 @@
+import {requestOwnedTaskCancellation} from '../../lib/server/conversations/cancel';
 import {projectNativeEvent} from "../../lib/server/conversations/projection";
 import {requestCancellation} from "../../lib/server/conversations/cancel";
 import {readResearchRuntimeAuthority} from "../../lib/server/research/specialists/runtime-authority";
@@ -60,6 +61,13 @@ it("resolves named customers inside private chat and rechecks grants and owner i
     await owner.query(`INSERT INTO turas_research_requests(environment_id,workspace_id,owner_user_id,key,account_id,scope,context_hash,lease_id,lease_until,refresh,parent_session_id)
       VALUES($1,$2,$3,$4,$5,'{"kind":"customer-update"}','fixture',$6,now()+interval '10 minutes',false,$7)`,
       [process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,actor.principalId,randomUUID(),accessible,randomUUID(),nativeId]);
+    await expect(requestOwnedTaskCancellation({...actor,principalId:randomUUID()},nativeId)).rejects.toMatchObject({status:404});
+    await requestOwnedTaskCancellation(actor,nativeId);
+    expect(await withTransaction(db=>readResearchRuntimeAuthority(db,attempt.attemptId,actor.principalId))).toBe(null);
+    expect((await owner.query('SELECT response_state FROM response_attempts WHERE id=$1',[attempt.attemptId])).rows[0].response_state).toBe('cancelled');
+    // New fixture phase: restore the pending cohort to exercise native delivery.
+    await owner.query("UPDATE response_attempts SET response_state='completed' WHERE id=$1",[attempt.attemptId]);
+    await owner.query("UPDATE turas_research_requests SET lease_until=now()+interval '10 minutes' WHERE parent_session_id=$1",[nativeId]);
     await projectNativeEvent(nativeId,attempt.attemptId,event('message.received',{kind:'execution.background_task',turnId:backgroundTurn,message:'Server-authored research completion'}));
     await projectNativeEvent(nativeId,attempt.attemptId,event('message.completed',{turnId:backgroundTurn,message:'A checked research reply.'}));
     expect((await owner.query('SELECT native_turn_id,response_state FROM response_attempts WHERE id=$1',[attempt.attemptId])).rows[0]).toMatchObject({native_turn_id:originalTurn,response_state:'running'});

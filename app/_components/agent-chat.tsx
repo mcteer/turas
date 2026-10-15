@@ -277,7 +277,8 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
 
   async function cancel() {
     setStopping(true);
-    try { await agent.cancel(); setNotice("Stopping requested. Waiting for confirmation…"); }
+    try { const response=await fetch(`/eve/v1/session/${encodeURIComponent(nativeSessionId)}/cancel`,{method:'POST',headers:{'content-type':'application/json','x-csrf-token':csrfToken,'x-turas-conversation-id':conversationId},body:JSON.stringify({tasks:true})});
+      if(!response.ok)await agent.cancel();setNotice("Stopping requested. Waiting for confirmation…"); }
     catch { setStopping(false); setNotice("Could not request a stop."); }
   }
 

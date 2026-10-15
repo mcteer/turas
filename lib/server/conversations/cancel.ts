@@ -4,7 +4,8 @@ import type { CurrentSession } from "../auth/sessions";
 import { getServerConfig } from "../config";
 import { withTransaction } from "../db/client";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
-import { readOwnedBinding } from "./binding";
+import {assertCustomerQuestionReads} from "./customer-accounts";
+import { readOwnedBinding,lockOwnedBinding } from "./binding";
 import type { PoolClient } from "pg";
 import { staffingScopeForConversation } from "../staffing/context";
 import { lockStaffingActor } from "../staffing/policy";
@@ -97,4 +98,25 @@ export async function requestCancellation(
   };
   if (existingClient) return run(existingClient);
   await withTransaction(run);
+}
+
+/** Legacy Stop cancels the owner's research cohort even after its initial
+ * acknowledgement has completed. A task receipt never grants cross-session
+ * control, and cancellation closes database admission before the native call. */
+export async function requestOwnedTaskCancellation(session:CurrentSession,nativeSessionId:string){
+ await withTransaction(async db=>{
+  const row=(await db.query(`SELECT id FROM conversations WHERE eve_session_id=$1 AND owner_principal_id=$2 AND workspace_id=$3 AND environment_id=$4`,[nativeSessionId,session.principalId,session.workspaceId,getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
+  if(!row || (await conversationFeature(db,row.id)).kind!=='normal')throw hiddenRecord();
+  await lockOwnedBinding(db,session,row.id);
+  await assertCustomerQuestionReads(db,session,row.id,undefined,false);
+  const requests=(await db.query(`SELECT r.key,parent.id AS attempt_id FROM turas_research_requests r
+   LEFT JOIN LATERAL(SELECT a.id FROM response_attempts a JOIN general_context_receipts g ON g.attempt_id=a.id
+    WHERE a.conversation_id=$1 AND g.as_of<=r.started_at ORDER BY g.as_of DESC LIMIT 1) parent ON true
+   WHERE r.environment_id=$2 AND r.workspace_id=$3 AND r.owner_user_id=$4 AND r.parent_session_id=$5
+     AND r.receipt IS NULL AND r.lease_until>now() FOR UPDATE OF r`,[row.id,getServerConfig().TURAS_ENVIRONMENT_ID,session.workspaceId,session.principalId,nativeSessionId])).rows;
+  await db.query(`UPDATE response_attempts SET response_state=CASE WHEN response_state IN('pending','running','stopping') THEN 'stopping' ELSE 'cancelled' END,
+   updated_at=now(),revision=revision+1 WHERE conversation_id=$1 AND (response_state IN('pending','running','stopping') OR id=ANY($2::uuid[]))`,[row.id,requests.map(r=>r.attempt_id).filter(Boolean)]);
+  await db.query(`UPDATE turas_research_requests SET lease_until=least(lease_until,clock_timestamp())
+   WHERE environment_id=$1 AND workspace_id=$2 AND owner_user_id=$3 AND parent_session_id=$4 AND receipt IS NULL AND lease_until>now()`,[getServerConfig().TURAS_ENVIRONMENT_ID,session.workspaceId,session.principalId,nativeSessionId]);
+ });
 }

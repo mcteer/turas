@@ -6,26 +6,24 @@ import { loadResearchContext,researchContextDigest } from "../../lib/server/rese
 import { budgetedResearchModel } from "../../lib/server/research/specialists/evaluation-budget";
 import { getServerConfig } from "../../lib/server/config";
 import { hiddenRecord } from "../../lib/contracts/http";
-import { defineState } from "eve/context";
-import { z } from "zod";
-const parentState=defineState('turas.specialist-parent.v1',()=>({parentSessionId:null as string|null}));
 
 export function specialistModel(kind:'customer-update'|'best-practices'|'solution') {
   return defineDynamic({events:{
-    'session.started'(event) {
-      const parsed=z.object({data:z.object({invocation:z.object({kind:z.literal('subagent'),parentSessionId:z.string().min(1)})})}).safeParse(event);
-      if(!parsed.success)throw hiddenRecord();
-      const invocation=parsed.data.data.invocation;
-      parentState.update(()=>({parentSessionId:invocation.parentSessionId}));
-      return 'openai/gpt-5.6-terra';
-    },
+    'session.started':()=> 'openai/gpt-5.6-terra',
     async 'step.started'(_event,ctx) {
       const principal=ctx.session.auth.current;
       const attemptId=principal?.attributes?.turasAttemptId;
-      const parent=parentState.get().parentSessionId;
-      if(!principal?.principalId || typeof attemptId!=='string' || !parent)throw hiddenRecord();
-      const authority=await withTransaction(db=>readResearchRuntimeAuthority(db,attemptId,principal.principalId,
-        {parentSessionId:parent,workerSessionId:ctx.session.id,kind}));
+      if(!principal?.principalId || typeof attemptId!=='string')throw hiddenRecord();
+      // Model resolvers expose session identity/auth, not ToolContext.parent.
+      // Derive the parent from the immutable owner-bound attempt, then fence
+      // this actual child ID against that parent's unique matching reservation.
+      const {parent,authority}=await withTransaction(async db=>{
+        const parent=(await db.query<{parent:string}>(`SELECT c.eve_session_id AS parent FROM conversations c JOIN response_attempts a ON a.conversation_id=c.id
+          WHERE a.id=$1 AND c.owner_principal_id=$2 AND c.environment_id=$3 AND c.binding_state='bound'`,[attemptId,principal.principalId,getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0]?.parent;
+        if(!parent || parent===ctx.session.id)throw hiddenRecord();
+        return {parent,authority:await readResearchRuntimeAuthority(db,attemptId,principal.principalId!,
+          {parentSessionId:parent,workerSessionId:ctx.session.id,kind})};
+      });
       if(!authority || authority.requests.length!==1)throw hiddenRecord();
       const request=authority.requests[0];
       const identity={...authority.actor,userId:authority.actor.principalId,environmentId:getServerConfig().TURAS_ENVIRONMENT_ID,responseAttemptId:attemptId};

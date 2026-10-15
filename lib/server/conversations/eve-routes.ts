@@ -9,7 +9,7 @@ import { bindNativeSession, claimBinding, markBindingUncertain } from "./binding
 import { claimDispatch, getAttemptReceipt, markDispatchUncertain, normalizeMessageText, prepareAttempt, recordNativePreAdmissionRejection, recordNativeReceipt } from "./dispatch";
 import { getOwnedConversationByNativeSession } from "./repository";
 import { guardNativeStream } from "./stream";
-import { requestCancellation } from "./cancel";
+import { requestCancellation,requestOwnedTaskCancellation } from "./cancel";
 import { assertNativeContextCurrent, releaseNativeChunk } from "./context-fence";
 import { artifactDraftSelectionSchema } from "../../contracts/artifacts";
 import { authorizeExecutionRetirement } from "../execution/native-retirement";
@@ -287,13 +287,14 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             let decoded: unknown;
             try { decoded = JSON.parse(raw); }
             catch { throw new HttpFailure(422, "invalid_input", "Invalid request"); }
-            const parsed = z.object({ turnId: z.string().min(1).max(200) }).strict().safeParse(decoded);
+            const parsed = z.object({ turnId: z.string().min(1).max(200).optional(),tasks:z.boolean().optional() }).strict().refine(value=>!!value.turnId||value.tasks===true).safeParse(decoded);
             if (!parsed.success) throw new HttpFailure(422, "invalid_input", "Invalid request");
-            await requestCancellation(session, args.params.sessionId, parsed.data.turnId);
+            if(parsed.data.tasks)await requestOwnedTaskCancellation(session,args.params.sessionId);
+            else await requestCancellation(session, args.params.sessionId, parsed.data.turnId!);
             const headers = new Headers(request.headers);
             headers.delete("content-length");
             return native(new Request(request.url, {
-              method: "POST", headers, body: JSON.stringify({ turnId: parsed.data.turnId }),
+              method: "POST", headers, body: JSON.stringify(parsed.data),
             }), args);
           } catch (error) {
             return nativeFailure(error);
