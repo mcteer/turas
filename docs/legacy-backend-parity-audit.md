@@ -916,3 +916,17 @@ including both missing passages, and its complete passage payload is 17,897
 bytes. This local source read performs no provider operation and is not hosted
 answer acceptance. The regression includes a late hit in a document with more
 than eight passages and checks exact complete original passage/ID equality.
+
+
+Independent inspection of the exact `8ca3d02` Preview tool outputs confirms that
+original firewall p13 and p28 now arrive with exact retained text, together with
+cancellation-overrun and continuing-payment testimony. The final answer still
+failed when the funded evaluation could not reserve another 32,000 output tokens.
+The Preview parity wrapper now hard-limits actual Grok output to 8,192 tokens and
+reserves that same reduced ceiling. This tightens the actual provider request;
+it does not discount token pricing, bypass the guard, reset charges/holds, change
+the root model or alter Production behavior. Other specialist output envelopes
+remain unchanged. A disposable regression proves the actual provider receives
+the smaller limit, the reservation matches, and the original finite cap is
+unchanged. The disposable catalog, typecheck and Eve/Next builds pass; actual
+final-answer acceptance remains pending.

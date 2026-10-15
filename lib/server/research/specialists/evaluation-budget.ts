@@ -64,7 +64,11 @@ export function parityBudgetModel(model:Model,modelId:string):Model {
       if(called)throw new Error('A paid evaluation call cannot be retried');called=true;
       const bytes=Buffer.byteLength(JSON.stringify({prompt:params.prompt,tools:params.tools}))
         +8192+128*params.prompt.length;
-      const maxOutputTokens=Math.min(params.maxOutputTokens??32_000,32_000);
+      // The funded Preview root-answer check needs a bounded answer, not a
+      // 32k-token output reservation. This is a real provider limit as well as
+      // the reserved ceiling; specialist envelopes remain unchanged.
+      const outputLimit=modelId==='spacexai/grok-4.7'?8192:32_000;
+      const maxOutputTokens=Math.min(params.maxOutputTokens??outputLimit,outputLimit);
       operation=await reserve(modelId,pricing=>{
         const price=pricing[modelId];if(!price)throw new Error('Model pricing was not authorized');
         return modelCostCeiling(bytes,maxOutputTokens,price.input,price.output)

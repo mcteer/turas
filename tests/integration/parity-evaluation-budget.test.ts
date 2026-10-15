@@ -69,3 +69,21 @@ it('keeps operator budget authority and operation ceilings protected after runti
   for(const sql of ['UPDATE parity_evaluation_operations SET ceiling_micro_usd=0 WHERE id=$1','DELETE FROM parity_evaluation_operations WHERE id=$1'])await expect(runtime.query(sql,[operation])).rejects.toMatchObject({code:'42501'});
  }finally{await runtime.end();await owner.end();}
 });
+
+
+it('hard-limits the actual Preview root output so a bounded answer fits its existing finite reservation',async()=>{
+ const owner=new Client({connectionString:isolatedTestUrl});await owner.connect();const previous=process.env.VERCEL_ENV;
+ try{
+  const actor=(await owner.query("SELECT workspace_id,principal_id FROM memberships WHERE kind='internal' LIMIT 1")).rows[0],id=randomUUID();
+  await owner.query(`INSERT INTO parity_evaluation_budgets(id,environment_id,workspace_id,owner_principal_id,cap_micro_usd,pricing,expires_at)
+   VALUES($1,$2,$3,$4,10000,$5,now()+interval '1 hour')`,[id,process.env.TURAS_ENVIRONMENT_ID,actor.workspace_id,actor.principal_id,JSON.stringify({'spacexai/grok-4.7':{input:0,output:0.000001}})]);
+  process.env.VERCEL_ENV='preview';process.env.TURAS_PARITY_EVALUATION_BUDGET_ID=id;let observed=0;
+  const model={specificationVersion:'v4',provider:'synthetic-budget-fixture',modelId:'spacexai/grok-4.7',supportedUrls:{},async doGenerate(params:{maxOutputTokens:number}){observed=params.maxOutputTokens;return {providerMetadata:{gateway:{cost:'0.0001'}}}},async doStream(){throw Error('Unused')}} as unknown as Model;
+  await parityBudgetModel(model,'spacexai/grok-4.7').doGenerate({prompt:[],maxOutputTokens:32000});
+  expect(observed).toBe(8192);
+  const operation=(await owner.query('SELECT ceiling_micro_usd,actual_micro_usd FROM parity_evaluation_operations WHERE budget_id=$1',[id])).rows[0];
+  expect(Number(operation.ceiling_micro_usd)).toBe(observed);
+  expect(Number(operation.actual_micro_usd)).toBe(100);
+  expect(Number((await owner.query('SELECT cap_micro_usd FROM parity_evaluation_budgets WHERE id=$1',[id])).rows[0].cap_micro_usd)).toBe(10000);
+ }finally{delete process.env.TURAS_PARITY_EVALUATION_BUDGET_ID;if(previous===undefined)delete process.env.VERCEL_ENV;else process.env.VERCEL_ENV=previous;await owner.end();}
+});
