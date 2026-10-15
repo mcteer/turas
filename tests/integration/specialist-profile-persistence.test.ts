@@ -139,6 +139,10 @@ it('retains new public research for an assigned partner, preserves curated claim
   expect(practice.sources[0].passages.some(p=>p.text.includes('exfiltrated'))).toBe(true);
   expect(JSON.stringify(practice)).not.toContain('private-question-marker');
   expect(JSON.stringify(practice)).not.toContain('private-product-marker');
+  const boundedPractice=await readOrdinaryPracticeEvidence(searchPrincipal,customerId,'DNS CIDR exfiltrated',new AbortController().signal,1024);
+  expect(Buffer.byteLength(JSON.stringify(boundedPractice))).toBeLessThanOrEqual(1024);
+  expect(boundedPractice.sources).toEqual([]);
+  expect(boundedPractice.omittedReferences).toContainEqual(expect.objectContaining({url:practiceUrl,passagesOmitted:true}));
   expect((await db.query('SELECT citation_ids FROM general_customer_read_scopes WHERE attempt_id=$1 AND customer_id=$2',[searchPrincipal.attributes.turasAttemptId,customerId])).rows[0].citation_ids).toContain('public_practice:'+practiceId);
   await withRuntime(client=>assertCustomerQuestionReads(client,actor,fresh.conversation.id,searchPrincipal.attributes.turasAttemptId));
   // Withdrawing the library mapping invalidates already-consumed context.

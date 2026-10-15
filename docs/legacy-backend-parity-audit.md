@@ -954,3 +954,28 @@ Current owner/feature/session/grant/source checks still apply before release.
 Disposable regressions cover no implicit customer, exact current-turn reuse,
 ambiguous reads, and denial after grant revocation. Typecheck and Eve/Next builds
 pass; the corrected handoff still needs actual Preview acceptance.
+
+
+The `13592b1` composite case reached the finite reservation guard before any
+answer. Its shared searches explicitly supplied accountId, so this run does not
+prove omitted-ID handoff behavior. The returned top references were Sandbox
+comparison/concepts pages, while other matching references were dropped for the
+response-size bound. The bridge now preserves safe public URL/title/check-date
+metadata for omitted references, clearly marking their passages unread. This
+restores visibility into the original multi-source library result without
+exposing private originating query metadata, truncating quotations, or exceeding
+the byte bound. Exact returned metadata source identities are fenced too. A
+1,024-byte regression verifies bounded metadata-only output for a long document.
+The unmodified original Baggu question completes in actual Preview without a
+selected customer; independent factual review is pending.
+
+
+Independent review failed the completed Baggu answer because it omitted the
+employee's documented `Next` framework evidence. Native events showed that the
+new optional get_customer_evidence query had been passed natural multiword
+phrases to a literal substring filter, yielding empty inventories. This parameter
+was introduced during verification and was not legacy behavior. It is removed:
+get_customer_evidence again reads the dated account inventory, as the original
+legacy tool does, and search_evidence handles focused full-document queries.
+The failed output remains retained. A reserved background recon was also started;
+its actual completion state must be reconciled before test cleanup.

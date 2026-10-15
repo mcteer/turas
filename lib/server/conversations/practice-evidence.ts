@@ -38,16 +38,22 @@ export async function readOrdinaryPracticeEvidence(principal:Principal,accountId
   const safe=(rows:typeof selected)=>rows.map(({source})=>({url:source.url,title:source.title,sourceType:source.sourceType,
    informationType:source.informationType,publishedAt:source.publishedAt,checkedAt:source.checkedAt,refreshAfter:source.refreshAfter,
    stale:source.stale,passages:source.passages}));
-  const result={kind:'public_product_reference' as const,sources:safe(selected),completenessWarnings:['Complete retained passages for each included public reference (the cached source itself can be partial); these do not establish that the customer uses the product or configuration. Stale references are historical evidence, not current guidance.']};
+  const omitted:typeof found=[];
+  const metadata=()=>omitted.map(({source})=>({url:source.url,title:source.title,checkedAt:source.checkedAt,stale:source.stale,passagesOmitted:true as const}));
+  const result={omittedReferences:metadata(),kind:'public_product_reference' as const,sources:safe(selected),completenessWarnings:['Complete retained passages for each included public reference (the cached source itself can be partial); these do not establish that the customer uses the product or configuration. Stale references are historical evidence, not current guidance.']};
   while(Buffer.byteLength(JSON.stringify(result),'utf8')>maximumBytes){
-   selected.pop();result.sources=safe(selected);
+   if(selected.length)omitted.unshift(selected.pop()!);
+   else if(omitted.length)omitted.pop();
+   else throw Error('Practice response metadata exceeds its bound');
+   result.sources=safe(selected);result.omittedReferences=metadata();
    if(!result.completenessWarnings.includes('Lower-ranked public references omitted to fit the response limit'))result.completenessWarnings.push('Lower-ranked public references omitted to fit the response limit');
   }
-  if(selected.length)await db.query(`INSERT INTO general_customer_read_scopes(attempt_id,customer_id,audience,generation,citation_ids)
+  const returned=[...selected,...omitted];
+  if(returned.length)await db.query(`INSERT INTO general_customer_read_scopes(attempt_id,customer_id,audience,generation,citation_ids)
    SELECT $1,customer_id,$3,CASE WHEN $3='internal' THEN internal_generation ELSE delivery_generation END,$4::text[]
    FROM customer_profile_state WHERE customer_id=$2 AND workspace_id=$5
    ON CONFLICT(attempt_id,customer_id) DO UPDATE SET citation_ids=ARRAY(SELECT DISTINCT unnest(general_customer_read_scopes.citation_ids||EXCLUDED.citation_ids)),checked_at=clock_timestamp()`,
-   [scope.attemptId,accountId,scope.actor.kind==='internal'?'internal':'delivery',selected.map(row=>practiceCitationPrefix+row.snapshotId),scope.actor.workspaceId]);
+   [scope.attemptId,accountId,scope.actor.kind==='internal'?'internal':'delivery',returned.map(row=>practiceCitationPrefix+row.snapshotId),scope.actor.workspaceId]);
   return result;
  });
 }
