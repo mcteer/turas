@@ -6,8 +6,22 @@ import {searchVercelPracticeSourceReceipts} from '../research/specialists/resear
 import {customerQuestionActor,assertCustomerQuestionReads} from './customer-accounts';
 import {conversationFeature} from './feature';
 import {practiceCitationPrefix,practiceSnapshotIsCurrent} from './practice-consumption';
+import {lockProfileActor} from '../profiles/policy';
 
 type Principal=Parameters<typeof customerQuestionActor>[1];
+/** Reuse only an exact current-turn read, never a model name, picker, or a
+ * customer mentioned in an older turn. Ambiguity requires an explicit ID. */
+export async function ordinaryPracticeAccount(principal:Principal){
+ return withTransaction(async db=>{
+  const scope=await customerQuestionActor(db,principal);
+  const conversation=(await db.query<{conversation_id:string}>('SELECT conversation_id FROM response_attempts WHERE id=$1',[scope.attemptId])).rows[0];
+  if(!conversation||(await conversationFeature(db,conversation.conversation_id)).kind!=='normal')throw hiddenRecord();
+  const ids=scope.general?(await db.query<{customer_id:string}>('SELECT customer_id FROM general_customer_read_scopes WHERE attempt_id=$1 ORDER BY customer_id LIMIT 2',[scope.attemptId])).rows.map(row=>row.customer_id):[scope.customerId];
+  if(ids.length!==1)return undefined;
+  await lockProfileActor(db,scope.actor,ids[0],undefined,true);
+  return ids[0];
+ });
+}
 /** Read the original public-practice library without exposing private request
  * product/topic metadata or treating documentation as customer adoption. */
 export async function readOrdinaryPracticeEvidence(principal:Principal,accountId:string,query:string,signal:AbortSignal,maximumBytes=24576){

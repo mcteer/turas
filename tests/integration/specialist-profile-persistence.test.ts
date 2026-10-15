@@ -1,4 +1,4 @@
-import {readOrdinaryPracticeEvidence} from '../../lib/server/conversations/practice-evidence';
+import {readOrdinaryPracticeEvidence,ordinaryPracticeAccount} from '../../lib/server/conversations/practice-evidence';
 import {searchNamedCustomerEvidence} from '../../lib/server/conversations/named-evidence-search';
 import {isolatedChatActor} from '../fixtures/isolated-chat-actor';
 import {settleSyntheticConversationAttempts} from '../fixtures/ordinary-attempt-cleanup';
@@ -123,6 +123,15 @@ it('retains new public research for an assigned partner, preserves curated claim
   await db.query(`INSERT INTO turas_evidence_passages(environment_id,workspace_id,snapshot_id,ordinal,text,model) VALUES($1,$2,$3,1,$4,'fixture')`,[process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,practiceId,researchPassages(practiceSource).slice(-3).map(p=>p.text).join('\n\n')]);
   await db.query(`INSERT INTO turas_vercel_practice_sources(environment_id,workspace_id,product,topic,snapshot_id,url,title,source_type,information_type,checked_at,refresh_after)
    VALUES($1,$2,'private-product-marker','private-question-marker',$3,$4,'Sandbox firewall','vercel_documentation','product_capability',now(),now()+interval '6 hours')`,[process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,practiceId,practiceUrl]);
+  expect(await ordinaryPracticeAccount(searchPrincipal)).toBeUndefined();
+  await withRuntime(client=>readCustomerAccountEvidence(client,searchPrincipal,customerId));
+  expect(await ordinaryPracticeAccount(searchPrincipal)).toBe(customerId);
+  const otherCustomer=randomUUID();
+  await db.query('INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,$3,false)',[otherCustomer,actor.workspaceId,'Other scope fixture']);
+  await db.query(`INSERT INTO general_customer_read_scopes(attempt_id,customer_id,audience,generation,citation_ids) VALUES($1,$2,'delivery',0,'{}')`,[searchPrincipal.attributes.turasAttemptId,otherCustomer]);
+  try{expect(await ordinaryPracticeAccount(searchPrincipal)).toBeUndefined();}
+  finally{await db.query('DELETE FROM general_customer_read_scopes WHERE attempt_id=$1 AND customer_id=$2',[searchPrincipal.attributes.turasAttemptId,otherCustomer]);}
+
   const practice=await readOrdinaryPracticeEvidence(searchPrincipal,customerId,'DNS CIDR exfiltrated',new AbortController().signal);
   expect(practice.sources).toHaveLength(1);
   expect(practice.sources[0].passages.length).toBeGreaterThan(8);
@@ -203,6 +212,7 @@ it('retains new public research for an assigned partner, preserves curated claim
   expect(await researchSourceIsEligible(researchActor,customerId,url)).toBe(false);
   await db.query("UPDATE customer_grants SET state='revoked' WHERE customer_id=$1 AND membership_id=$2",[customerId,actor.membershipId]);
   await expect(readProfile(actor,customerId)).rejects.toMatchObject({status:404});
+  await expect(ordinaryPracticeAccount(searchPrincipal)).rejects.toMatchObject({status:404});
   await expect(searchNamedCustomerEvidence(searchPrincipal,customerId,
     {query:'Sandboxes',scope:'customer',use:'accepted_fact',limit:5})).rejects.toMatchObject({status:404});
  }finally{try{await settleSyntheticConversationAttempts(db,ownedConversationIds);}finally{await db.end();}}

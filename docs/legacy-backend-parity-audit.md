@@ -940,3 +940,17 @@ existing scope contract: `customer` returns customer evidence; `shared` and
 behavior from customer adoption when choosing the existing scopes. This removes
 unrequested repeated documentation without removing passages from an included
 public reference or weakening any budget/source gate.
+
+
+The bounded-read `fef303b` case completed, and timeout/continuing-cost synthesis
+passed independent review. Overall quality still failed: shared searches omitted
+accountId and returned no practice references, so neither missing firewall
+passage reached the model. The repair now reuses exactly one authorized customer
+already read in the current ordinary turn when a shared search omits accountId.
+It never infers from model text, a picker, or an earlier turn. Zero or multiple
+current-turn customer reads produce an explicit scope-gap warning rather than
+silently implying absent research. An explicit accountId remains supported.
+Current owner/feature/session/grant/source checks still apply before release.
+Disposable regressions cover no implicit customer, exact current-turn reuse,
+ambiguous reads, and denial after grant revocation. Typecheck and Eve/Next builds
+pass; the corrected handoff still needs actual Preview acceptance.
