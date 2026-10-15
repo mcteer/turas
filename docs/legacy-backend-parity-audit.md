@@ -979,3 +979,27 @@ get_customer_evidence again reads the dated account inventory, as the original
 legacy tool does, and search_evidence handles focused full-document queries.
 The failed output remains retained. A reserved background recon was also started;
 its actual completion state must be reconciled before test cleanup.
+
+
+The original public best-practices library is workspace-public and does not need
+a customer selection. Ordinary shared searches now retain that behavior: current
+ordinary owner/session/workspace authorization precedes embedding and is checked
+again with exact current cached-source eligibility after retrieval. Only public
+source text and safe provenance are returned; originating research topic/product
+queries and private briefs remain excluded. No customer facts or approvals are
+written. When a customer is explicitly supplied or uniquely read this turn,
+existing customer grant/source-consumption checks additionally apply. A generic
+public-document read creates no customer association and remains available to an
+active workspace partner without an assigned customer. The disposable regression
+covers that distinction and confirms no customer read-scope row is manufactured.
+
+
+Customer-free reads are restricted before ranking and again before release to
+`vercel_documentation` entries under the canonical `https://vercel.com/docs/`
+path, without URL query/fragment parameters. Customer engineering, conference,
+practitioner and other customer-derived references still require authorized
+customer context; they are not promoted into published shared learnings. The
+unassigned-partner fixture includes a competing customer-engineering result and
+verifies that neither its body, title nor URL appears in the public response.
+The fixture uses a separate signed principal, preserving the production
+per-principal active-response limit rather than weakening it.

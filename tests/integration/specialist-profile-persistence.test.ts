@@ -94,16 +94,16 @@ it('retains new public research for an assigned partner, preserves curated claim
   expect(profile.attributedResearch[0].passage).toContain(newQuote);
   expect(profile.attributedResearch[0].documentDigest).toBe(publicDigest(complete));
   expect(profile.attributedResearch[0].productNames).not.toContain('Sandbox');
-  async function freshSearchConversation(){
-   const key=randomUUID(),fresh=await createOwnedConversation(actor,{requestKey:key});
+  async function freshSearchConversation(who=actor){
+   const key=randomUUID(),fresh=await createOwnedConversation(who,{requestKey:key});
    ownedConversationIds.push(fresh.conversation.id);
-   const binding=await claimBinding(actor,fresh.conversation.id,key);
+   const binding=await claimBinding(who,fresh.conversation.id,key);
    if(binding.state!=='claimed')throw Error('Fixture search binding unavailable');
    const native=`wrun_${randomUUID()}`;
-   await bindNativeSession(actor,fresh.conversation.id,binding.claimToken,native);
-   const attempt=await prepareAttempt(actor,fresh.conversation.id,native,randomUUID(),'Find documented Sandbox evidence');
-   await claimDispatch(actor,fresh.conversation.id,attempt.attemptId,0);
-   return {...fresh,principal:{principalId:actor.principalId,attributes:{turasAttemptId:attempt.attemptId}}};
+   await bindNativeSession(who,fresh.conversation.id,binding.claimToken,native);
+   const attempt=await prepareAttempt(who,fresh.conversation.id,native,randomUUID(),'Find documented Sandbox evidence');
+   await claimDispatch(who,fresh.conversation.id,attempt.attemptId,0);
+   return {...fresh,principal:{principalId:who.principalId,attributes:{turasAttemptId:attempt.attemptId}}};
   }
   const fresh=await freshSearchConversation(),searchPrincipal=fresh.principal;
   const namedSearch=await searchNamedCustomerEvidence(searchPrincipal,customerId,
@@ -139,6 +139,24 @@ it('retains new public research for an assigned partner, preserves curated claim
   expect(practice.sources[0].passages.some(p=>p.text.includes('exfiltrated'))).toBe(true);
   expect(JSON.stringify(practice)).not.toContain('private-question-marker');
   expect(JSON.stringify(practice)).not.toContain('private-product-marker');
+  const unassignedPartner=await isolatedChatActor(db,'partner','member',actor.workspaceId);
+  const generic=await freshSearchConversation(unassignedPartner);
+  const customerDocumentUrl='https://vercel.com/docs/other-account-fixture';
+  const customerDocument=extractSources({success:true,url:customerDocumentUrl,title:'Other customer identifier',markdown:'DNS CIDR exfiltrated private-customer-material-marker. '.repeat(8)},new Date().toISOString())[0];
+  const customerDocumentId=publicDigest(customerDocumentUrl);
+  await db.query(`INSERT INTO turas_evidence_snapshots(environment_id,workspace_id,id,fetch_key,url,content_hash,source,truncated,checked_at,refresh_after)
+   VALUES($1,$2,$3,$3,$4,$3,$5,false,now(),now()+interval '6 hours')`,[process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,customerDocumentId,customerDocumentUrl,JSON.stringify(customerDocument)]);
+  await db.query(`INSERT INTO turas_evidence_passages(environment_id,workspace_id,snapshot_id,ordinal,text,model) VALUES($1,$2,$3,1,$4,'fixture')`,[process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,customerDocumentId,customerDocument.excerpt]);
+  await db.query(`INSERT INTO turas_vercel_practice_sources(environment_id,workspace_id,product,topic,snapshot_id,url,title,source_type,information_type,checked_at,refresh_after)
+   VALUES($1,$2,'private-product','private-topic',$3,$4,'Other customer identifier','customer_engineering','product_capability',now(),now()+interval '6 hours')`,[process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,customerDocumentId,customerDocumentUrl]);
+  const genericPublic=await readOrdinaryPracticeEvidence(generic.principal,undefined,'DNS CIDR exfiltrated',new AbortController().signal);
+  expect(genericPublic.sources).toHaveLength(1);
+  expect((await db.query('SELECT count(*)::int AS count FROM general_customer_read_scopes WHERE attempt_id=$1',[generic.principal.attributes.turasAttemptId])).rows[0].count).toBe(0);
+  expect(JSON.stringify(genericPublic)).not.toContain('private-question-marker');
+  expect(JSON.stringify(genericPublic)).not.toContain('Other customer identifier');
+  expect(JSON.stringify(genericPublic)).not.toContain('private-customer-material-marker');
+  expect(JSON.stringify(genericPublic)).not.toContain(customerDocumentUrl);
+  await db.query('DELETE FROM turas_vercel_practice_sources WHERE snapshot_id=$1',[customerDocumentId]);
   const boundedPractice=await readOrdinaryPracticeEvidence(searchPrincipal,customerId,'DNS CIDR exfiltrated',new AbortController().signal,1024);
   expect(Buffer.byteLength(JSON.stringify(boundedPractice))).toBeLessThanOrEqual(1024);
   expect(boundedPractice.sources).toEqual([]);
@@ -216,6 +234,7 @@ it('retains new public research for an assigned partner, preserves curated claim
   expect(await researchSourceIsEligible(researchActor,customerId,url)).toBe(false);
   await db.query("UPDATE customer_grants SET state='revoked' WHERE customer_id=$1 AND membership_id=$2",[customerId,actor.membershipId]);
   await expect(readProfile(actor,customerId)).rejects.toMatchObject({status:404});
+  expect((await readOrdinaryPracticeEvidence(generic.principal,undefined,'DNS CIDR exfiltrated',new AbortController().signal)).sources).toHaveLength(1);
   await expect(ordinaryPracticeAccount(searchPrincipal)).rejects.toMatchObject({status:404});
   await expect(searchNamedCustomerEvidence(searchPrincipal,customerId,
     {query:'Sandboxes',scope:'customer',use:'accepted_fact',limit:5})).rejects.toMatchObject({status:404});

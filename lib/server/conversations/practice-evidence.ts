@@ -24,14 +24,22 @@ export async function ordinaryPracticeAccount(principal:Principal){
 }
 /** Read the original public-practice library without exposing private request
  * product/topic metadata or treating documentation as customer adoption. */
-export async function readOrdinaryPracticeEvidence(principal:Principal,accountId:string,query:string,signal:AbortSignal,maximumBytes=24576){
+export async function readOrdinaryPracticeEvidence(principal:Principal,accountId:string|undefined,query:string,signal:AbortSignal,maximumBytes=24576){
  if(!Number.isSafeInteger(maximumBytes)||maximumBytes<1024||maximumBytes>24576)throw Error('Bounded practice response required');
- const identity=await researchIdentity(principal);await requireResearchAccount(identity,accountId);signal.throwIfAborted();
- const found=await searchVercelPracticeSourceReceipts(identity,query,signal);
+ const identity=await researchIdentity(principal);if(accountId)await requireResearchAccount(identity,accountId);signal.throwIfAborted();
+ // Public product references use the original workspace-public library. Even
+ // without a customer, authorize the ordinary owner/session before embedding.
+ await withTransaction(async db=>{
+  const scope=await customerQuestionActor(db,principal);
+  const conversation=(await db.query<{conversation_id:string}>('SELECT conversation_id FROM response_attempts WHERE id=$1',[scope.attemptId])).rows[0];
+  if(!conversation||(await conversationFeature(db,conversation.conversation_id)).kind!=='normal'||scope.actor.sessionId!==identity.sessionId||scope.actor.workspaceId!==identity.workspaceId||scope.actor.membershipId!==identity.membershipId||scope.actor.kind!==identity.kind||scope.actor.role!==identity.role||!scope.general&&scope.customerId!==accountId)throw hiddenRecord();
+  await assertCustomerQuestionReads(db,scope.actor,conversation.conversation_id,scope.attemptId);
+ });
+ const found=await searchVercelPracticeSourceReceipts(identity,query,signal,!accountId);
  return withTransaction(async db=>{
   signal.throwIfAborted();const scope=await customerQuestionActor(db,principal);
   const conversation=(await db.query<{conversation_id:string}>('SELECT conversation_id FROM response_attempts WHERE id=$1',[scope.attemptId])).rows[0];
-  if(!conversation||(await conversationFeature(db,conversation.conversation_id)).kind!=='normal'||scope.actor.sessionId!==identity.sessionId||scope.actor.membershipId!==identity.membershipId||scope.actor.kind!==identity.kind||scope.actor.role!==identity.role||!scope.general&&scope.customerId!==accountId)throw hiddenRecord();
+  if(!conversation||(await conversationFeature(db,conversation.conversation_id)).kind!=='normal'||scope.actor.sessionId!==identity.sessionId||scope.actor.workspaceId!==identity.workspaceId||scope.actor.membershipId!==identity.membershipId||scope.actor.kind!==identity.kind||scope.actor.role!==identity.role||!scope.general&&scope.customerId!==accountId)throw hiddenRecord();
   await assertCustomerQuestionReads(db,scope.actor,conversation.conversation_id,scope.attemptId);
   const selected:typeof found=[];
   for(const row of found)if(await practiceSnapshotIsCurrent(db,scope.actor,accountId,row.snapshotId))selected.push(row);
@@ -49,7 +57,7 @@ export async function readOrdinaryPracticeEvidence(principal:Principal,accountId
    if(!result.completenessWarnings.includes('Lower-ranked public references omitted to fit the response limit'))result.completenessWarnings.push('Lower-ranked public references omitted to fit the response limit');
   }
   const returned=[...selected,...omitted];
-  if(returned.length)await db.query(`INSERT INTO general_customer_read_scopes(attempt_id,customer_id,audience,generation,citation_ids)
+  if(accountId&&returned.length)await db.query(`INSERT INTO general_customer_read_scopes(attempt_id,customer_id,audience,generation,citation_ids)
    SELECT $1,customer_id,$3,CASE WHEN $3='internal' THEN internal_generation ELSE delivery_generation END,$4::text[]
    FROM customer_profile_state WHERE customer_id=$2 AND workspace_id=$5
    ON CONFLICT(attempt_id,customer_id) DO UPDATE SET citation_ids=ARRAY(SELECT DISTINCT unnest(general_customer_read_scopes.citation_ids||EXCLUDED.citation_ids)),checked_at=clock_timestamp()`,
