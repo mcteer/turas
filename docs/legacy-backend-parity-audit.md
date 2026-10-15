@@ -1161,3 +1161,27 @@ prior admitted infrastructure work excludes Production changes. No Production
 schema, grant or running deployment is changed. A later Production release must
 perform the explicit backup/rehearsal/migration/grant/code compatibility sequence
 before deployment is re-enabled. Reference: https://vercel.com/docs/project-configuration/git-configuration#git.deploymentenabled
+
+Fresh `d2b9346` CI passes the manifest/domain gate but identifies a native hosted
+cleanup assertion. Its fixture killed the local worker after releasing held jobs
+and invoked only one bounded hosted-maintenance tick. The fixture now stops that
+worker before release and permits the next normal minute tick inside the original
+75-second deadline. The 22-session retirement requirement, per-attempt backoff and
+attempt caps remain unchanged; bounded failure diagnostics include only counts.
+
+The read-only reload probe passes twelve reloads across all four CLI WebKit
+configurations with exact answer preservation and HTTP 200 stream headers. Its one
+fetch error correlates to the exact stream request cancelled by reload; no unmatched
+or active-page error is observed. The original failed receipts remain intact. A
+first probe incorrectly awaited the end of a deliberately long-lived stream and
+timed out; the corrected probe checks headers and cancels its own reader.
+
+The admitted `d2b9346` model run reaches an authorized 400K→800K input continuation.
+The browser driver clicks once, but waits for the card to detach before recording
+the admitted request. Its timeout logs out while a resumed native turn is reading
+evidence; the resulting authority denial correctly fails the run. Native events
+and the original failed receipt are retained. The corrected driver records the
+exact successful input-response HTTP acknowledgment, never re-posts that request,
+and observes the ongoing turn instead of assuming the UI card must disappear
+before its native continuation finishes. The two-worker, one-continuation-per-worker
+limits, original token allowance and shared dollar ledger are preserved.
