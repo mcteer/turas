@@ -128,7 +128,7 @@ export async function assertCustomerQuestionReads(db: PoolClient, actor: Current
     for (const citation of read.citation_ids as string[]) {
       if (!citation.startsWith("attributed_research:")) continue;
       const id = citation.slice(20);
-      const found = await db.query(`SELECT 1 FROM evidence_source_revisions v
+      const found = await db.query<{head_id:string}>(`SELECT (SELECT head.id FROM evidence_source_revisions head WHERE head.source_id=v.source_id ORDER BY head.version DESC LIMIT 1) AS head_id FROM evidence_source_revisions v
         JOIN evidence_sources s ON s.id=v.source_id AND s.origin='independent_research'
         JOIN research_checks checks ON checks.source_revision_id=v.id
         WHERE v.id=$1 AND v.workspace_id=$2 AND v.customer_id=$3
@@ -148,7 +148,9 @@ export async function assertCustomerQuestionReads(db: PoolClient, actor: Current
       [id, actor.workspaceId, read.customer_id, actor.kind]);
       if (!found.rowCount || await retrievalSourceHasMaterialConflict(db,
         { source_kind: "verified_research", source_revision_id: id }, actor,
-        { scope: "customer", customerId: read.customer_id })) throw hiddenRecord();
+        { scope: "customer", customerId: read.customer_id }) || found.rows[0].head_id!==id && await retrievalSourceHasMaterialConflict(db,
+        {source_kind:'verified_research',source_revision_id:found.rows[0].head_id},actor,
+        {scope:'customer',customerId:read.customer_id})) throw hiddenRecord();
     }
   }
 }

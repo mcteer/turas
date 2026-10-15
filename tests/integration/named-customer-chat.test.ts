@@ -1,3 +1,4 @@
+import {prepareResearch} from '../../lib/server/research/specialists/research-cache/requests';
 import {requestOwnedTaskCancellation} from '../../lib/server/conversations/cancel';
 import {projectNativeEvent} from "../../lib/server/conversations/projection";
 import {requestCancellation} from "../../lib/server/conversations/cancel";
@@ -61,12 +62,21 @@ it("resolves named customers inside private chat and rechecks grants and owner i
     await owner.query(`INSERT INTO turas_research_requests(environment_id,workspace_id,owner_user_id,key,account_id,scope,context_hash,lease_id,lease_until,refresh,parent_session_id)
       VALUES($1,$2,$3,$4,$5,'{"kind":"customer-update"}','fixture',$6,now()+interval '10 minutes',false,$7)`,
       [process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,actor.principalId,randomUUID(),accessible,randomUUID(),nativeId]);
+    const identity={...actor,userId:actor.principalId,environmentId:process.env.TURAS_ENVIRONMENT_ID!,responseAttemptId:attempt.attemptId};
+    const scope={accountId:accessible,kind:'customer-update' as const,workload:'Public customer website',question:'Which Vercel products are documented for this customer?'};
+    const joined=await Promise.all([prepareResearch(identity,scope,new AbortController().signal,false,nativeId),prepareResearch(identity,{...scope,question:'Please check the documented public product stack.'},new AbortController().signal,false,nativeId)]);
+    expect(joined.every(result=>result.status==='working')).toBe(true);
+    expect(new Set(joined.map(result=>result.key)).size).toBe(1);
+    expect(Number((await owner.query('SELECT count(*) FROM turas_research_requests WHERE parent_session_id=$1 AND lease_until>now()',[nativeId])).rows[0].count)).toBe(1);
     await expect(requestOwnedTaskCancellation({...actor,principalId:randomUUID()},nativeId)).rejects.toMatchObject({status:404});
     await requestOwnedTaskCancellation(actor,nativeId);
     expect(await withTransaction(db=>readResearchRuntimeAuthority(db,attempt.attemptId,actor.principalId))).toBe(null);
     expect((await owner.query('SELECT response_state FROM response_attempts WHERE id=$1',[attempt.attemptId])).rows[0].response_state).toBe('cancelled');
+    expect(await withTransaction(db=>readResearchRuntimeAuthority(db,attempt.attemptId,actor.principalId,{parentSessionId:nativeId},true))).toBe(null);
     // New fixture phase: restore the pending cohort to exercise native delivery.
     await owner.query("UPDATE response_attempts SET response_state='completed' WHERE id=$1",[attempt.attemptId]);
+    expect(await withTransaction(db=>readResearchRuntimeAuthority(db,attempt.attemptId,actor.principalId))).toBe(null);
+    expect(await withTransaction(db=>readResearchRuntimeAuthority(db,attempt.attemptId,actor.principalId,{parentSessionId:nativeId},true))).toMatchObject({actor:{principalId:actor.principalId}});
     await owner.query("UPDATE turas_research_requests SET lease_until=now()+interval '10 minutes' WHERE parent_session_id=$1",[nativeId]);
     await projectNativeEvent(nativeId,attempt.attemptId,event('message.received',{kind:'execution.background_task',turnId:backgroundTurn,message:'Server-authored research completion'}));
     await projectNativeEvent(nativeId,attempt.attemptId,event('message.completed',{turnId:backgroundTurn,message:'A checked research reply.'}));

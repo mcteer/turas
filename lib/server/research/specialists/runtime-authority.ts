@@ -5,9 +5,11 @@ import { lockWorkspaceActor,lockProfileActor } from "../../profiles/policy";
 import { conversationFeature } from "../../conversations/feature";
 
 /** Legacy background work uses its registered parent/worker lease. An expired
- * short chat receipt alone is never permission to run another paid call. */
+ * short chat receipt alone is never permission to run another paid call.
+ * allowExpiredNotification is reserved for a trusted native task notification:
+ * it permits a bounded failure explanation, never child/provider admission. */
 export async function readResearchRuntimeAuthority(db:PoolClient,attemptId:string,principalId:string,
-  lineage?:{parentSessionId:string;workerSessionId?:string;kind?:string}) {
+  lineage?:{parentSessionId:string;workerSessionId?:string;kind?:string},allowExpiredNotification=false) {
   const marker=(await db.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0];
   if((marker?.schema_version??0)<57)return null;
   const row=(await db.query(`SELECT c.id AS conversation_id,c.eve_session_id,c.customer_id,
@@ -35,14 +37,15 @@ export async function readResearchRuntimeAuthority(db:PoolClient,attemptId:strin
     loginName:row.login_name,displayName:row.display_name,kind:row.kind,role:row.role};
   await lockWorkspaceActor(db,actor,undefined,true);
   const requests=(await db.query(`SELECT account_id,scope,key,lease_id,context_hash,worker_session_id,receipt IS NOT NULL AS completed,
-    least($7::timestamptz,CASE WHEN receipt IS NULL THEN lease_until
+    least($7::timestamptz,CASE WHEN receipt IS NULL THEN CASE WHEN $9::boolean AND lease_until<=now() THEN clock_timestamp()+interval '120 seconds' ELSE lease_until END
       ELSE completed_at+interval '10 minutes' END) AS valid_until
     FROM turas_research_requests WHERE environment_id=$1 AND workspace_id=$2 AND owner_user_id=$3
       AND parent_session_id=$4 AND started_at>=$5 AND ($6::text IS NULL OR scope->>'kind'=$6)
-      AND ((receipt IS NULL AND lease_until>now()) OR (receipt IS NOT NULL AND completed_at>now()-interval '10 minutes'))
+      AND ((receipt IS NULL AND lease_until>now()) OR (receipt IS NOT NULL AND completed_at>now()-interval '10 minutes')
+        OR ($9::boolean AND receipt IS NULL AND lease_until>now()-interval '10 minutes'))
       AND ($8::text IS NULL OR worker_session_id IS NULL OR worker_session_id=$8)
     ORDER BY key LIMIT 13`,[getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,actor.principalId,
-      row.eve_session_id,row.as_of,lineage?.kind??null,actor.expiresAt,lineage?.workerSessionId??null])).rows;
+      row.eve_session_id,row.as_of,lineage?.kind??null,actor.expiresAt,lineage?.workerSessionId??null,allowExpiredNotification])).rows;
   if(!requests.length || requests.length>12)return null;
   for(const request of requests) {
     await lockProfileActor(db,actor,request.account_id,undefined,true);

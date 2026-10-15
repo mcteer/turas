@@ -9,7 +9,9 @@ export async function runCustomerRecon(input:Input,ctx:WorkflowToolContext){
  try {
  await assertOrdinaryWorkflow(ctx);
  const result=await ctx.agent('customer-recon-worker',{...input,outputSchema:z.record(z.string(),z.json()).parse(z.toJSONSchema(specialistResults['customer-recon']))});
- return specialistResults['customer-recon'].parse(result);
+ const output=specialistResults['customer-recon'].parse(result);
+ if(!output.reference)await failReservedResearch('customer-update',ctx);
+ return output;
  }catch(error){await failReservedResearch('customer-update',ctx);throw error;}
 }
 export async function runVercelBestPractices(input:Input,ctx:WorkflowToolContext){
@@ -17,7 +19,9 @@ export async function runVercelBestPractices(input:Input,ctx:WorkflowToolContext
  try {
  await assertOrdinaryWorkflow(ctx);
  const result=await ctx.agent('vercel-best-practices-worker',{...input,outputSchema:z.record(z.string(),z.json()).parse(z.toJSONSchema(specialistResults['vercel-best-practices']))});
- return specialistResults['vercel-best-practices'].parse(result);
+ const output=specialistResults['vercel-best-practices'].parse(result);
+ if(!output.reference)await failReservedResearch('best-practices',ctx);
+ return output;
  }catch(error){await failReservedResearch('best-practices',ctx);throw error;}
 }
 export async function runImplementationResearch(input:Input,ctx:WorkflowToolContext){
@@ -25,7 +29,9 @@ export async function runImplementationResearch(input:Input,ctx:WorkflowToolCont
  try {
  await assertOrdinaryWorkflow(ctx);
  const result=await ctx.agent('implementation-research-worker',{...input,outputSchema:z.record(z.string(),z.json()).parse(z.toJSONSchema(specialistResults['implementation-research']))});
- return specialistResults['implementation-research'].parse(result);
+ const output=specialistResults['implementation-research'].parse(result);
+ if(!output.reference)await failReservedResearch('solution',ctx);
+ return output;
  }catch(error){await failReservedResearch('solution',ctx);throw error;}
 }
 export async function joinCustomerResearch({key}:{key:string},ctx:WorkflowToolContext){

@@ -171,7 +171,7 @@ export async function projectNativeEventInTransaction(
     }
     if(event.type==='message.received' && data.kind==='execution.background_task') {
       const owner=(await client.query('SELECT owner_principal_id FROM conversations WHERE id=$1',[row.conversation_id])).rows[0];
-      const authority=await readResearchRuntimeAuthority(client,attemptId,owner.owner_principal_id,{parentSessionId:nativeSessionId});
+      const authority=await readResearchRuntimeAuthority(client,attemptId,owner.owner_principal_id,{parentSessionId:nativeSessionId},true);
       if(!authority || typeof data.turnId!=='string' || !data.turnId)throw new Error('Background research delivery has no current parent authority');
       await client.query(`INSERT INTO research_background_turns(native_session_id,turn_id,attempt_id,native_event_id)
         VALUES($1,$2,$3,$4) ON CONFLICT(native_session_id,turn_id) DO NOTHING`,

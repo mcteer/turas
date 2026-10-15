@@ -1,3 +1,4 @@
+import {withTransaction} from "../../../db/client";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { AppIdentity } from "../identity";
@@ -74,7 +75,20 @@ export async function prepareResearch(identity: AppIdentity, input: RequestScope
       reason: "Stored evidence reused after current access, customer-context and source-version checks. Load the reference with the normal result tool. Preserve its original research/check dates, gaps and conflicts; this was not a new web investigation." };
   }
   const lease = randomUUID();
-  const claimed = await sql.query(`INSERT INTO turas_research_requests
+  const admission=await withTransaction(async db=>{
+    if(parentSessionId){
+      // The legacy worker contract admits one matching child per parent/kind.
+      // Rephrasing the same question must join that worker, not create an
+      // ambiguous second lease while its first model step is running.
+      await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[
+        ['research-worker-slot',...principal(identity),parentSessionId,scope.kind].join(':')]);
+      const running=(await db.query<{key:string}>(`SELECT key FROM turas_research_requests
+        WHERE environment_id=$1 AND workspace_id=$2 AND owner_user_id=$3 AND parent_session_id=$4
+          AND scope->>'kind'=$5 AND receipt IS NULL AND lease_until>now() ORDER BY started_at,key LIMIT 1`,
+        [...principal(identity),parentSessionId,scope.kind])).rows[0];
+      if(running)return {claimed:[],workingKey:running.key};
+    }
+    const claimed = await db.query(`INSERT INTO turas_research_requests
     (environment_id,workspace_id,owner_user_id,key,account_id,scope,context_hash,lease_id,lease_until,refresh,parent_session_id,recon_reference)
     VALUES($1,$2,$3,$4,$5,$6::jsonb,$7,$8,now()+interval '10 minutes',$9,$10,$11::jsonb)
     ON CONFLICT(environment_id,workspace_id,owner_user_id,key) DO UPDATE SET scope=excluded.scope,context_hash=excluded.context_hash,
@@ -82,6 +96,11 @@ export async function prepareResearch(identity: AppIdentity, input: RequestScope
       dependencies='[]'::jsonb,refresh_after=NULL
     WHERE turas_research_requests.receipt IS NOT NULL OR turas_research_requests.lease_until<=now() RETURNING key`,
     [...principal(identity), key, scope.accountId, JSON.stringify(scope), contextHash, lease, refresh, parentSessionId ?? null, reconReference ? JSON.stringify(reconReference) : null]);
+    return {claimed:claimed.rows,workingKey:null as string|null};
+  });
+  if(admission.workingKey)return {status:'working' as const,key:admission.workingKey,reference:null,ticket:null,checkedAt:null,
+    reason:"This chat already has a specialist of this kind running. Join the returned key first, then prepare this requested scope if more work is still needed. No second reservation was created."};
+  const claimed=admission.claimed;
   signal.throwIfAborted();
   console.info(JSON.stringify({ event: "research_cache.brief", key, outcome: claimed.length ? "miss" : "joined" }));
   return { status: claimed.length ? "research" as const : "working" as const, key, reference: null,
