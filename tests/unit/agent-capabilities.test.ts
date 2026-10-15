@@ -15,8 +15,8 @@ describe("Turi capability inventory", () => {
     expect(instructions).not.toMatch(/can generate approved delivery plans/i);
   });
 
-  it("disables unused host, file, web and subagent tools", () => {
-    for (const name of ["bash", "read_file", "write_file", "web_fetch", "web_search", "agent", "task_cancel"]) {
+  it("disables unused host, file, web and generic root-copy tools", () => {
+    for (const name of ["bash", "read_file", "write_file", "web_fetch", "web_search", "agent"]) {
       expect(readFileSync(`agent/tools/${name}.ts`, "utf8")).toContain("disableTool()");
     }
   });

@@ -1,3 +1,4 @@
+import {loadResearchContext} from '../../lib/server/research/specialists/solution-research/context';
 import {retainSpecialistProfileSources} from '../../lib/server/research/specialists/retain-profile';
 import {extractSources} from '../../lib/server/research/specialists/solution-research/evidence';
 import type {PoolClient} from 'pg';
@@ -81,6 +82,8 @@ it('retains new public research for an assigned partner, preserves curated claim
   const checked=await retain(changed,changed,0,true);
   const sourceForRetention=extractSources({success:true,url,title:name,markdown:changed},checked.page.retrievedAt)[0];
   expect(await retainSpecialistProfileSources({...actor,userId:actor.principalId,environmentId:process.env.TURAS_ENVIRONMENT_ID!},customerId,[{...sourceForRetention,cache:{snapshotId:checked.snapshot,checkedAt:checked.page.retrievedAt,refreshAfter:new Date(Date.now()+3600000).toISOString()}}])).toMatchObject({updated:1,skipped:0});
+  await loadResearchContext({...actor,userId:actor.principalId,environmentId:process.env.TURAS_ENVIRONMENT_ID!,responseAttemptId:attempt.attemptId,workerSessionId:'wrun_local_fixture'},customerId);
+  expect((await db.query('SELECT citation_ids FROM general_customer_read_scopes WHERE attempt_id=$1 AND customer_id=$2',[attempt.attemptId,customerId])).rows[0].citation_ids).toContain(`attributed_research:${oldCitation}`);
   await expect(withRuntime(client=>assertCustomerQuestionReads(client,actor,conversation.id,attempt.attemptId))).rejects.toMatchObject({status:409});
   const refreshed=await withRuntime(client=>refreshOrdinaryKnowledge(client,actor,principal,conversation.id,attempt.attemptId));
   expect(JSON.stringify(refreshed)).toContain(changed);

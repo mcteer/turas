@@ -35,7 +35,10 @@ export async function loadResearchContext(identity:AppIdentity,accountId:string,
       supportedClaim:source.supportedClaim,publicationAt:source.publicationAt,
       productNames:source.productNames,documentDigest:source.documentDigest,
     })).sort((a,b)=>String(a.location).localeCompare(String(b.location)))));
-    const read=(identity.responseAttemptId ? await readCustomerAccountEvidence(db,
+    // A worker's private reads are not facts delivered to its parent model.
+    // Keep the parent's consumed-source fence until its next actual model
+    // refresh supplies the replacement facts to that model.
+    const read=(identity.responseAttemptId && !identity.workerSessionId ? await readCustomerAccountEvidence(db,
       {principalId:identity.principalId,attributes:{turasAttemptId:identity.responseAttemptId}},accountId):
       await readEligibleContext(identity,accountId,{limit:20,shareActorRows:true},db)) as {
       contextVersion:string;truncated:boolean;entries:Record<string,unknown>[];

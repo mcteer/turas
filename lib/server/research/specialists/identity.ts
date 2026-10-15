@@ -7,7 +7,7 @@ import { hiddenRecord } from "../../../contracts/http";
 
 /** The legacy receipt identity is backed by the current live session and role,
  * rather than legacy demo logins or a model-supplied owner/workspace. */
-export type AppIdentity = CurrentSession & { userId: string; environmentId: string;responseAttemptId?:string };
+export type AppIdentity = CurrentSession & { userId: string; environmentId: string;responseAttemptId?:string;workerSessionId?:string };
 export async function researchIdentity(principal: Parameters<typeof customerQuestionActor>[1],
   lineage?:{parentSessionId:string;workerSessionId?:string;kind?:string}): Promise<AppIdentity> {
   const {actor} = await withTransaction(async db=>{
@@ -26,5 +26,5 @@ export async function researchIdentity(principal: Parameters<typeof customerQues
     }
   });
   return {...actor,userId:actor.principalId,environmentId:getServerConfig().TURAS_ENVIRONMENT_ID,
-    responseAttemptId:principal?.attributes?.turasAttemptId as string};
+    responseAttemptId:principal?.attributes?.turasAttemptId as string,...(lineage?.workerSessionId?{workerSessionId:lineage.workerSessionId}:{})};
 }

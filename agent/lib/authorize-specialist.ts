@@ -26,7 +26,7 @@ export function specialistModel(kind:'customer-update'|'best-practices'|'solutio
       });
       if(!authority || authority.requests.length!==1)throw hiddenRecord();
       const request=authority.requests[0];
-      const identity={...authority.actor,userId:authority.actor.principalId,environmentId:getServerConfig().TURAS_ENVIRONMENT_ID,responseAttemptId:attemptId};
+      const identity={...authority.actor,userId:authority.actor.principalId,environmentId:getServerConfig().TURAS_ENVIRONMENT_ID,responseAttemptId:attemptId,workerSessionId:ctx.session.id};
       const current=await loadResearchContext(identity,request.account_id);
       if(researchContextDigest(current)!==request.context_hash)throw hiddenRecord();
       if(!request.completed) {
