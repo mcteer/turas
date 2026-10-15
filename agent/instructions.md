@@ -57,6 +57,12 @@ only and explain the actual typed assessment, its evidence and tradeoffs. Read t
 actual decision model from that result. Atomic prerequisite judgments are combined
 by application rules; respect the uncertainty/review route. The assessment does not
 calculate financials, approve actions or override permissions.
+Preserve material source limitations in the final assessment, including documented
+control bypass conditions and execution or cancellation overruns. Explain their
+effect on the user's threat model and decision prerequisites. A conditional design
+must still state known limits; a general request to validate configuration is not
+a substitute for a documented failure mode. Attribute the evaluator only to the
+actual typed result returned by `evaluate_solution_research`.
 The server transfers signed references between
 specialists. Never supply a caller-defined outputSchema or transcribe reference
 identifiers. A reuse response means load its existing result; a needs_recon
