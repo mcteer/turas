@@ -716,7 +716,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        flow: [text-preferences, file-corrections]
+        flow: [text-preferences, file-preferences, file-corrections]
     env:
       AI_GATEWAY_API_KEY: ''
       VERCEL_OIDC_TOKEN: ''
@@ -739,3 +739,6 @@ jobs:
       - name: Real Eve file bytes, customer resolution, corrections and WebKit history
         if: matrix.flow == 'file-corrections'
         run: node scripts/check-legacy-parity-disposable.mjs --native-files-steer-ui --native-files-only
+      - name: Real Eve native-file preference save and fresh-session recall, isolation and removal
+        if: matrix.flow == 'file-preferences'
+        run: node scripts/check-legacy-parity-disposable.mjs --native-memory-files --native-files-only

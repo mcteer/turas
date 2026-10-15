@@ -677,3 +677,12 @@ installs Eve's required optional local provider before startup, then verifies th
 existing guarded memory repair. No checkout dependency link, authored model or
 application dependency manifest is changed. The local file/correction WebKit check
 passes with this preparation. CI remains required; no hosted quality pass is inferred.
+
+
+With provider dependencies prepared before startup, the repaired native-file memory
+turn now passes actual Eve preference save, fresh-conversation recall, another-caller
+isolation, removal and a final fresh-conversation absence check. Original image bytes
+remain identical and the runtime performs no dependency installation. These are
+unpaid deterministic-provider checks of the real memory/runtime path, not hosted
+Blob persistence. A separate CI case preserves this native-file regression alongside
+the original plain-text preference and file-correction cases.

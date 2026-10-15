@@ -82,7 +82,7 @@ try{await withPlanEvalEnvironment(async environment=>{
   const resolutions=(await query('SELECT customer_id FROM ordinary_native_file_fixture_resolutions')).rows;if(resolutions.length!==1||resolutions[0].customer_id!==fixtureCustomerId)throw Error('Actual native resolver did not return the seeded canonical account');
   if(!process.argv.includes('--composer'))await page.goto('/s/'+id,{waitUntil:'domcontentloaded'});await page.getByText('Native file bytes received.',{exact:true}).waitFor({timeout:30000});await page.reload();await page.getByText('Native file bytes received.',{exact:true}).waitFor({timeout:30000});if(process.argv.includes('--composer')){await page.getByText('pixel.png',{exact:true}).waitFor();if(process.argv.includes('--steer'))await page.getByText('corrected.png',{exact:true}).waitFor();await page.screenshot({path:join(out,'native-file-desktop.png'),fullPage:true});await page.setViewportSize({width:390,height:844});await page.screenshot({path:join(out,'native-file-mobile.png'),fullPage:true});}
   let personalPreferenceCrossSession=false,personalPreferenceIsolated=false,personalPreferenceRemoved=false;
-  if(process.argv.includes('--memory')){
+  if(process.argv.includes('--memory')||process.argv.includes('--memory-files')){
    const check=async(username:string,prompt:string,expected:string)=>{
     const isolated=await browser.newContext({baseURL:environment.origin});let token:string|undefined;
     try{
