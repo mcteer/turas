@@ -17,6 +17,12 @@ export default defineHook({
         throw new Error("Customer context was not bound to this turn");
       }
       const feature = await responseFeature(principal);
+      // The native question workflow re-enters its boundary with no turn ID
+      // before publishing the input resolution. It has not started a model
+      // turn and cannot have a turn.started instruction receipt yet. Ordinary
+      // provider admission still requires the original injected context and a
+      // running, owner-bound attempt; this boundary grants neither.
+      if (feature?.kind === "normal" && event.data.turnId === "") return;
       if(feature?.kind==='learning'){
         await readLearningDraftInitialContext(principal,event.data.turnId,ctx.session.id,false);return;
       }

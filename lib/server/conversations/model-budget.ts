@@ -14,6 +14,12 @@ export function wrapOrdinaryChatModel(model:Model,principal:Principal,nativeSess
    const conversation=(await db.query(`SELECT c.id FROM conversations c JOIN response_attempts a ON a.conversation_id=c.id
     WHERE a.id=$1 AND c.eve_session_id=$2 AND c.owner_principal_id=$3 AND a.response_state='running'`,[scope.attemptId,nativeSessionId,scope.actor.principalId])).rows[0];
    if(!conversation)throw hiddenRecord();
+   const injected=await db.query(`SELECT 1 FROM response_attempts a
+    JOIN general_context_receipts r ON r.attempt_id=a.id
+    JOIN general_context_injections i ON i.attempt_id=a.id AND i.turn_id=a.native_turn_id
+      AND i.snapshot_digest=r.snapshot_digest
+    WHERE a.id=$1 AND a.conversation_id=$2`,[scope.attemptId,conversation.id]);
+   if(!injected.rowCount)throw hiddenRecord();
    const packet=await refreshOrdinaryKnowledge(db,scope.actor,principal,conversation.id,scope.attemptId);
    const spent=Number((await db.query('SELECT COALESCE(sum(output_tokens),0)::text AS tokens FROM response_attempts WHERE conversation_id=$1',[conversation.id])).rows[0].tokens);
    if(!Number.isSafeInteger(spent)||spent>=32000)throw new HttpFailure(429,'conversation_budget','Conversation output allowance exhausted');
