@@ -56,6 +56,7 @@ try {
   // fixture's explicit test-database selector.
   const contractUrl=new URL(url);contractUrl.searchParams.set('options','-c role=turas_runtime');
   if(!process.argv.includes("--native-only"))run(["node_modules/vitest/vitest.mjs","run","tests/contracts/general-chat.test.ts"],{...environment,DATABASE_URL:contractUrl.toString(),DATABASE_URL_UNPOOLED:contractUrl.toString()});
+  if(process.argv.includes('--documents-ui'))run(['--import','tsx','scripts/check-ordinary-chat-ui.ts','--documents-only'],integrationEnvironment);
   if(process.argv.includes('--chat-ui'))run(['--import','tsx','scripts/check-ordinary-chat-ui.ts'],integrationEnvironment);
   if(process.argv.includes('--earlier-regressions'))run(['--import','tsx','scripts/test-staffing-regressions.ts'],integrationEnvironment);
   if(process.argv.includes('--artifact-journey'))run(['--import','tsx','scripts/check-legacy-artifact-publication.ts'],integrationEnvironment);

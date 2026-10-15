@@ -6,7 +6,7 @@ test.describe("owned conversation shell", () => {
     await signIn(page, "panel");
     await page.goto("/s");
     await page.getByLabel("Customer (optional)").selectOption({ label: "Cedar (synthetic)" });
-    await page.getByRole("button", { name: "Attach documents" }).click();
+    await page.getByRole("button", { name: "Customer sources" }).click();
     await expect(page).toHaveURL(/\/s\/[0-9a-f-]+\?attachments=1$/);
     await expect(page.getByRole("main", { name: "Chat with Turi: Cedar (synthetic)" })).toBeVisible();
     await expect(page.getByLabel("Message Turi")).toBeVisible();

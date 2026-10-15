@@ -242,7 +242,10 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     try {
       const value = JSON.parse(saved);
       if (typeof value.text !== "string" || typeof value.requestKey !== "string") return;
-      setDraft(value.text); keyRef.current = value.requestKey; setInitialDraft(value.text);
+      const parsed=parseAttachmentMessage(value.text);
+      setDraft(parsed?.prompt??value.text);
+      if(value.autoSend===false)setDocuments(parsed?.documents??[]);
+      else { keyRef.current = value.requestKey; setInitialDraft(value.text); }
     } catch { /* A corrupt local draft cannot dispatch a turn. */ }
   }, [conversationId]);
 

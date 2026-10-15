@@ -56,14 +56,15 @@ export async function intakeOrdinaryAttachmentContext(actor: CurrentSession, con
       const matches = row.customer_id ? customers.filter(customer => customer.id === row.customer_id)
         : customers.filter(customer => [customer.name, ...customer.aliases].some(alias => normalized.includes(alias.toLocaleLowerCase("en-US"))));
       if (matches.length !== 1) { unresolved++; continue; }
-      const customer = matches[0], excerpt = document.text.slice(0, 8_000).trim();
+      const customer = matches[0], sourceExcerpt = document.text.slice(0, 12_000).trim();
+      const excerpt=sourceExcerpt.slice(0,8_000).trim();
       if (!excerpt) { unresolved++; continue; }
       const observedAt = new Date(row.message_created_at).toISOString().slice(0, 10);
       const summary = `The user supplied ${document.filename} as customer context for ${customer.name}. The source and claims require steward review before they become account facts.${document.truncated?' Text extraction was partial.':''}`;
       const context = { title: `User-supplied attachment: ${document.filename}`.slice(0, 160), summary,
         scope: "User-supplied customer context", kind: "note", stage: null, observedAt,
         reviewAfter: new Date(new Date(row.message_created_at).getTime() + 30 * 86_400_000).toISOString().slice(0, 10), confidence: "low",
-        source: { kind: "attachment", reference: document.filename, url: "", excerpt }, impact: null };
+        source: { kind: "attachment", reference: document.filename, url: "", excerpt: sourceExcerpt }, impact: null };
       await submitProfileCommandDetailed(actor, customer.id, { action: "propose_record",
         requestKey,
         requestedAudience: actor.kind === "partner" ? "delivery" : "internal",

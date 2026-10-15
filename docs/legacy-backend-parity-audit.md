@@ -486,6 +486,23 @@ pane also has keyboard focus, resolving the serious WebKit accessibility finding
 
 An encrypted schema-070 Preview recovery capture restored and rehearsed migration
 071 and runtime grants without changing 184 customers, 817 source revisions, zero
-human profile records or 23 conversations. Preview application, hosted file execution
-and legacy native-file fallback remain open. Migration 071 has not been applied to
-Preview or Production. Binary fallback is not represented as implemented.
+human profile records or 23 conversations. Migration 071 was then applied only to Preview after a fresh matching rehearsal.
+Exact e05bd5b authenticated Preview checks prepared real text/Word/PDF/spreadsheet
+files without dispatching a model, and preserved the existing reply and reloaded
+history. Reload cancellation errors remain distinguished from active-page errors.
+Hosted provider file execution and legacy native-file fallback remain open.
+Production is unchanged; binary fallback is not represented as implemented.
+
+The landing composer now prepares files before creating a conversation, matching
+legacy’s initial attachment flow. Send transfers the full unverified envelope once;
+opening Customer sources preserves an unsent draft instead of dispatching it. All
+four headless WebKit configurations pass the actual text/Word/PDF/spreadsheet
+landing-to-thread send checks, alongside source selection/lifecycle and chat-state
+regressions. The legacy 12,000-character source excerpt remains in the pending
+journey context; the signed owned-message proof retains its existing 8,000-character
+contract limit.
+
+A focused four-project WebKit check additionally verifies that opening Customer
+sources keeps the attached draft and performs no native send. Runtime-role checks
+cover both internal and assigned-partner intake, customer ambiguity, subsequent
+grant revocation, cross-owner denial and the document release switch.

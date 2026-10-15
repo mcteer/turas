@@ -11,11 +11,12 @@ import {intakeOrdinaryAttachmentContext} from '../../lib/server/conversations/at
 import {formatAttachmentText} from '../../lib/conversations/attachment-text';
 const url=requireTestDatabaseUrl();
 beforeAll(()=>{const runtime=new URL(url);runtime.searchParams.set('options','-c role=turas_runtime');process.env.DATABASE_URL=runtime.toString();process.env.TURAS_ENVIRONMENT_ID=process.env.TURAS_TEST_ENVIRONMENT_ID;});
-it('admits customer-free documents as immutable sends and idempotent unaccepted drafts without indexing human claims',async()=>{
+it.each(['internal','partner'] as const)('admits customer-free documents as immutable sends and idempotent unaccepted drafts without indexing human claims (%s)',async kind=>{
  const db=new Client({connectionString:url});await db.connect();const owned:string[]=[];
  try{
-  const actor=await isolatedChatActor(db,'internal','admin'),customer=randomUUID();
+  const actor=await isolatedChatActor(db,kind,kind==='internal'?'admin':'member'),customer=randomUUID();
   await db.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,'Attachment fixture account',false)",[customer,actor.workspaceId]);
+  if(kind==='partner')await db.query("INSERT INTO customer_grants(id,workspace_id,customer_id,membership_id,state,revision,granted_by) VALUES($1,$2,$3,$4,'active',1,$5)",[randomUUID(),actor.workspaceId,customer,actor.membershipId,actor.principalId]);
   const key=randomUUID(),{conversation}=await createOwnedConversation(actor,{requestKey:key});owned.push(conversation.id);
   const binding=await claimBinding(actor,conversation.id,key);if(binding.state!=='claimed')throw Error('Fixture binding unavailable');
   const native=`wrun_${randomUUID()}`;await bindNativeSession(actor,conversation.id,binding.claimToken,native);
@@ -28,6 +29,9 @@ it('admits customer-free documents as immutable sends and idempotent unaccepted 
   await db.query("UPDATE customer_references SET display_name='Renamed attachment account' WHERE id=$1",[customer]);
   expect(await intakeOrdinaryAttachmentContext(actor,conversation.id,attempt.attemptId)).toEqual({drafts:1,unresolved:0});
   const records=(await db.query('SELECT current_accepted_revision_id FROM profile_records WHERE customer_id=$1',[customer])).rows;
+  const payload=(await db.query('SELECT v.payload FROM profile_revisions v JOIN profile_records r ON r.id=v.record_id WHERE r.customer_id=$1',[customer])).rows[0].payload;
+  expect(payload.legacyJourney.source.excerpt).toBe(excerpt.slice(0,12000).trim());
+  expect(payload.sourceExcerpt.length).toBeLessThanOrEqual(8000);
   expect(records).toHaveLength(1);expect(records[0].current_accepted_revision_id).toBeNull();
   expect((await db.query('SELECT count(*)::int AS count FROM retrieval_passages p JOIN retrieval_sources s ON s.id=p.source_id WHERE s.customer_id=$1',[customer])).rows[0].count).toBe(0);
   await expect(prepareAttempt(actor,conversation.id,native,request,text+'changed')).rejects.toMatchObject({status:409});

@@ -513,6 +513,8 @@ source and synthetic-worker restrictions remain in place.
 This command neither approves private context nor publishes cross-customer learning.
 
 The legacy chat parity bug fix remains under verification in PR #34. Normal-chat
-extracted document intake is being restored with migration 071; it keeps supplied
-human claims pending review. Hosted file execution and native binary fallback are
-still open acceptance checks. Preview is on schema 070; Production is unchanged.
+extracted document intake keeps supplied human claims pending review. Actual text,
+Word, PDF and spreadsheet preparation passes in Preview; all four local headless
+WebKit configurations also pass the landing-to-thread send flow. Hosted provider
+file execution and native binary fallback remain open. Preview is on schema 071
+after encrypted recovery/restore/migration/grant rehearsal; Production is unchanged.
