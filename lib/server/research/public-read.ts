@@ -18,13 +18,15 @@ export async function readPublicCustomerCoverage(db:PoolClient,actor:ProfileActo
         JOIN research_checks current_check ON current_check.source_revision_id=candidate.id
         WHERE candidate.source_id=prior.source_id AND candidate.workspace_id=r.workspace_id AND candidate.customer_id=r.customer_id
           AND candidate.version=(SELECT max(head.version) FROM evidence_source_revisions head WHERE head.source_id=prior.source_id)
-          AND candidate.passage_digest=prior.passage_digest AND candidate.supported_claim=prior.supported_claim
-          AND (candidate.id=prior.id OR (current_check.trusted_ingest_identity LIKE 'public-fetch-v1:observation:%'
-            AND strpos(current_check.rationale,'"retainedPreviousClaim":true')>0
-            AND substring(current_check.rationale FROM '"normalizedDigest":"([a-f0-9]{64})"')=substring(original_check.rationale FROM '"normalizedDigest":"([a-f0-9]{64})"'))
+          AND ((candidate.passage_digest=prior.passage_digest AND candidate.supported_claim=prior.supported_claim
+            AND (candidate.id=prior.id OR (current_check.trusted_ingest_identity LIKE 'public-fetch-v1:observation:%'
+              AND strpos(current_check.rationale,'"retainedPreviousClaim":true')>0
+              AND substring(current_check.rationale FROM '"normalizedDigest":"([a-f0-9]{64})"')=substring(original_check.rationale FROM '"normalizedDigest":"([a-f0-9]{64})"'))))
           ${specialistRetention ? `OR (current_check.trusted_ingest_identity='public-batch-fetch-v1'
             AND strpos(current_check.rationale,'"retainedPreviousClaim":true')>0
             AND strpos(current_check.rationale,'"specialistDocumentCheck":true')>0
+            AND NOT EXISTS(SELECT 1 FROM regexp_split_to_table(prior.passage,E'\\n\\s*\\n') AS quote
+              WHERE length(trim(quote))=0 OR strpos(candidate.passage,trim(quote))=0)
             AND EXISTS(SELECT 1 FROM independent_research_documents document WHERE document.source_revision_id=candidate.id
               AND document.document_digest=substring(current_check.rationale FROM '"normalizedDigest":"([a-f0-9]{64})"')))` : ''})) v ON true
       LEFT JOIN evidence_sources original ON original.id=v.source_id AND original.origin='independent_research'

@@ -69,9 +69,15 @@ it('retains new public research for an assigned partner, preserves curated claim
   await retain(complete,newQuote,0);
   const profile=z.object({attributedResearch:z.array(z.object({passage:z.string(),documentDigest:z.string().nullable(),productNames:z.array(z.string())})),publicResearchCoverage:z.object({description:z.string()}).nullable()}).parse(await readProfile(actor,customerId));
   expect(profile.attributedResearch).toHaveLength(1);
-  expect(profile.attributedResearch[0].passage).toBe(originalQuote);
+  expect(profile.attributedResearch[0].passage).toContain(originalQuote);
+  expect(profile.attributedResearch[0].passage).toContain(newQuote);
   expect(profile.attributedResearch[0].documentDigest).toBe(publicDigest(complete));
-  expect(profile.attributedResearch[0].productNames).toContain('Sandbox');
+  expect(profile.attributedResearch[0].productNames).not.toContain('Sandbox');
+  // A full-document search hit is not yet a curated product finding. Once the
+  // researcher selects its actual supporting quote, the profile updates.
+  await retain(complete,late,0);
+  const selected=z.object({attributedResearch:z.array(z.object({productNames:z.array(z.string())}))}).parse(await readProfile(actor,customerId));
+  expect(selected.attributedResearch[0].productNames).toContain('Sandbox');
   expect(profile.publicResearchCoverage?.description).toBe('Original checked business description.');
   const passages=await db.query(`SELECT p.passage_text AS text FROM retrieval_passages p JOIN retrieval_sources s ON s.id=p.source_id WHERE s.customer_id=$1 AND p.passage_text LIKE '%Sandboxes%'`,[customerId]);
   expect(passages.rows.some(row=>row.text.includes(late))).toBe(true);

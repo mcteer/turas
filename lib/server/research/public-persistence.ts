@@ -96,13 +96,19 @@ async function persistCheckedPublicCustomerResearch(actor:CurrentSession,raw:unk
         EXISTS(SELECT 1 FROM evidence_source_events e WHERE e.source_revision_id=v.id AND e.event_type IN('withdraw','supersede')) AS retired
         FROM evidence_source_revisions v WHERE source_id=$1 ORDER BY version DESC LIMIT 1`,[sourceId])).rows[0];
       if(previous?.retired)throw new HttpFailure(409,"research_source_retired","Withdrawn public evidence requires explicit source recovery");
-      // A fresh read must not replace existing curated quotations with whichever
-      // first passages the specialist happened to select. Preserve only quotations
-      // that are still present verbatim in the newly verified complete document.
+      // Keep still-verbatim curated quotations while admitting newly selected
+      // support. Rechecking a page must neither erase earlier evidence nor
+      // discard the specialist's newly finalized product findings.
       const retainedPreviousClaim=Boolean(specialist && previous &&
         (previous.publication_at?.toISOString()??null)===(page.publishedAt?new Date(page.publishedAt).toISOString():null) &&
         previous.passage.split(/\n\s*\n/).every(quote=>quote.trim().length>0 && page.text.includes(quote.trim())));
-      if(retainedPreviousClaim)passage=previous!.passage;
+      if(retainedPreviousClaim){
+        const quotes=[...new Set([...supported.map(f=>f.quote),...previous!.passage.split(/\n\s*\n/)])];
+        // Prefer the current selected support; preserve complete earlier quotes
+        // within the existing immutable passage limit. Never truncate a quote.
+        passage="";
+        for(const quote of quotes)if(passage.length+(passage?2:0)+quote.length<=8000)passage+=(passage?"\n\n":"")+quote;
+      }
       const passageDigest=publicDigest(passage);
       const supplied=await db.query(`SELECT 1 FROM research_observations o JOIN research_runs r ON r.id=o.run_id
         LEFT JOIN research_observation_payloads payload ON payload.observation_id=o.id
@@ -111,7 +117,9 @@ async function persistCheckedPublicCustomerResearch(actor:CurrentSession,raw:unk
         UNION ALL SELECT 1 FROM evidence_sources WHERE workspace_id=$2 AND customer_id=$3 AND origin='manual' AND canonical_location=$8 LIMIT 1`,
         [getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,customerId,page.bodyDigest,passageDigest,page.fullNormalizedDigest??page.normalizedDigest,page.text,page.url]);
       if(supplied.rowCount && !(specialist && page.independentDiscovery?.accountId===customerId))throw new HttpFailure(409,"submitted_origin","User-origin content cannot be promoted by public batch research");
-      const supportedClaim=retainedPreviousClaim?previous!.supported_claim:supported.map(f=>`${f.attribution}: ${f.statement}${f.caveats.length?` Caveats: ${f.caveats.join('; ')}`:''}`).join("\n");
+      const currentClaim=supported.map(f=>`${f.attribution}: ${f.statement}${f.caveats.length?` Caveats: ${f.caveats.join('; ')}`:''}`).join("\n");
+      const supportedClaim=retainedPreviousClaim && previous!.passage.split(/\n\s*\n/).every(quote=>passage.includes(quote))
+        ? [...new Set([currentClaim,previous!.supported_claim])].join("\n") : currentClaim;
       if(previous && previous.retrieval_at.getTime()>Date.parse(page.retrievedAt))throw new HttpFailure(409,"research_observation_outdated","A newer checked source is already current");
       if(previous?.passage_digest===passageDigest&&!previous.retired&&previous.supported_claim===supportedClaim&&previous.retrieval_at.getTime()===Date.parse(page.retrievedAt)){revisionIds.push(previous.id);continue;}
       const id=randomUUID();

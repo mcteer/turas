@@ -2,6 +2,7 @@ import { withTransaction } from "../../db/client";
 import { requireResearchAccount } from "./account";
 import type { AppIdentity } from "./identity";
 import type { ResearchSource } from "./solution-research/schema";
+import { researchPassages } from "./solution-research/source-integrity";
 import { researchPassageView } from "./research-cache/passage-view";
 import { communityAttributionWarning } from "./solution-research/attribution";
 import { persistSpecialistCustomerResearch } from "../public-persistence";
@@ -15,7 +16,7 @@ function requestUuid(value:string) {
 
 /** Retain quotations through the governed profile writer and vector queue.
  * A model interpretation is never the accepted fact. */
-export async function retainSpecialistProfileSources(identity:AppIdentity,accountId:string,sources:ResearchSource[]) {
+export async function retainSpecialistProfileSources(identity:AppIdentity,accountId:string,sources:ResearchSource[],references?:ReadonlyArray<{sourceId:string;passageId?:string;quote?:string}>) {
   const account=await requireResearchAccount(identity,accountId);
   let updated=0,skipped=0;
   for(const source of sources) {
@@ -28,7 +29,10 @@ export async function retainSpecialistProfileSources(identity:AppIdentity,accoun
     if(!row?.check_receipt)throw new Error('The retained source has no verified fetch receipt');
     const page=row.check_receipt;assertCheckedPublicPage(page);
     if(page.url!==source.url || !publicSubjectMention(page.text,account.name)){skipped++;continue;}
-    const quotes=[...new Set(researchPassageView(source).passages.map(passage=>{
+    const selected=references===undefined?researchPassageView(source).passages:researchPassages(source).filter(passage=>
+      references.some(reference=>reference.sourceId===source.id && (reference.passageId===passage.id ||
+        reference.quote!==undefined && passage.text.includes(reference.quote))));
+    const quotes=[...new Set(selected.map(passage=>{
       if(passage.text.length>=40)return passage.text;
       const start=page.text.indexOf(passage.text);
       return start<0?'':page.text.slice(start,start+100);

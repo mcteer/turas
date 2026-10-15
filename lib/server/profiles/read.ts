@@ -6,7 +6,6 @@ import { readPublicCustomerCoverage } from "../research/public-read";
 import {lockLearningOriginalClosure} from '../learning/sources';
 import { getServerConfig } from "../config";
 import { createHash } from "node:crypto";
-import { publicSubjectMention } from "../research/public-dossier";
 import type { PoolClient } from "pg";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
 import { profileListQuerySchema } from "../../contracts/profiles";
@@ -287,8 +286,9 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
         informationType: input.informationType, dateBasis: input.dateBasis,
         evidenceAt: date, asOf: new Date() });
       const document=documents.get(row.id);
-      const productText=document ? publicSubjectMention(row.title,customer.rows[0].display_name)?document:
-        document.split(/\n\s*\n/).filter(paragraph=>publicSubjectMention(paragraph,customer.rows[0].display_name)).join('\n\n') : row.passage;
+      // Adoption comes from retained customer evidence, not incidental product
+      // mentions in navigation or recommendations elsewhere in a full document.
+      const productText=row.passage;
       return { sourceRevisionId: row.id, state: "researched", title: row.title,
         acceptanceState: "accepted", acceptanceBasis: "independent_research",
         productNames: input.informationType === "product_capability" || communityAttributionWarning({url:row.location}) ? [] : productsFromResearch([{title:row.title,quote:productText}]),

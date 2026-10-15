@@ -42,7 +42,7 @@ export async function learnPublicSources(identity: AppIdentity, accountId: strin
     }
   }
   if (inserts.length) await sql.transaction(inserts);
-  await retainSpecialistProfileSources(identity,accountId,sources);
+  await retainSpecialistProfileSources(identity,accountId,sources,references);
   console.info(JSON.stringify({ event: "public_learning.recorded", passageCount: inserts.length }));
 }
 
