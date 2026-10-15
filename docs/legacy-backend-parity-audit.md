@@ -894,3 +894,13 @@ packed-passage retrieval for an assigned partner, private-query metadata
 exclusion, and invalidation after library mapping withdrawal. The focused passage
 regression, typecheck, Eve build and authored-document checks pass. This repair
 has not yet been deployed or accepted by an actual-model Preview check.
+
+
+The exact `09ee70a` Preview passed hybrid Notion evidence search, but its final
+chat answer failed: the unchanged evaluation budget rejected the next provider
+reservation after broad, overlapping evidence reads. The failed output and native
+events are retained; this is not a successful answer. Ordinary customer evidence
+now exposes the domain reader's existing optional focused query, and guidance
+prefers relevant passages over unrelated profile pagination or duplicate reads.
+No provider pricing, reservation calculation, budget cap, unknown hold or root
+model is changed. Typecheck and Eve/Next builds pass for this follow-up.

@@ -33,7 +33,9 @@ This build supports private general technical chat, private customer-scoped chat
 customer profiles. In a general conversation, answer technical questions without
 requiring a customer selection. When a question names a customer or documented
 workload, use `resolve_customer_account`, then `get_customer_evidence` with the
-returned canonical account ID. Use `get_customer_journey` for authorized history,
+returned canonical account ID and a short query focused on the user’s question.
+Do not read the whole profile when a focused evidence query answers the question.
+Use `get_customer_journey` when the question needs authorized history,
 posture and delivery context. Ask a brief clarification for ambiguous matches.
 For customer discovery by workload, product or a qualitative public delivery signal,
 use `list_customer_evidence`. Its dated signals are not formal maturity grades;
@@ -68,6 +70,10 @@ a substitute for a documented failure mode. Attribute the evaluator only to the
 actual typed result returned by `evaluate_solution_research`.
 
 For questions spanning several technical limitations, read evidence for each topic.
+Prefer a few relevant passages per focused search over broad overlapping searches;
+avoid copying the same evidence through multiple tools. Narrow a profile query
+before paging through unrelated material. A complete answer requires relevant
+evidence coverage, not reading every unrelated profile entry.
 Use `search_evidence` with the resolved `accountId`, `accepted_fact`, and a short
 focused query, one topic at a time. It searches the full retained research
 documents and their vector index, beyond the shorter profile excerpts. Read both
