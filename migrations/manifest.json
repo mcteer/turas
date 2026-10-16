@@ -1,5 +1,5 @@
 {
-  "version": 72,
+  "version": 77,
   "migrations": [
     {
       "file": "001-identity-foundation.cjs",

@@ -7,6 +7,7 @@ const currentSchema=JSON.parse(readFileSync(new URL('../../../migrations/manifes
 describe('explicit learning operator schema compatibility',()=>{
  it('accepts historical and current supported schemas for the migration owner and denies unknown versions/runtime ownership',async()=>withMcpDatabase(async db=>{
   const {actor}=await mcpFixture(db),owner=requireOwnedMcpDatabase(process.env,true),runtime=requireOwnedMcpDatabase(process.env,false);
+  const originalSchema=(await db.query('SELECT schema_version FROM turas_environment')).rows[0].schema_version;
   try{
    for(const version of [...new Set([54,55,currentSchema])]){
     await db.query('UPDATE turas_environment SET schema_version=$1',[version]);
@@ -16,6 +17,6 @@ describe('explicit learning operator schema compatibility',()=>{
    await expect(activateLearning(actor.environmentId,actor.workspaceId,false,runtime)).rejects.toThrow('migration owner');
    await db.query('UPDATE turas_environment SET schema_version=$1',[currentSchema+1]);
    await expect(activateLearning(actor.environmentId,actor.workspaceId,false,owner)).rejects.toThrow('current supported schema');
-  }finally{await db.query('UPDATE turas_environment SET schema_version=55');}
+  }finally{await db.query('UPDATE turas_environment SET schema_version=$1',[originalSchema]);}
  }));
 });
