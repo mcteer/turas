@@ -41,15 +41,15 @@ Independent test: original ordinary operations and private/runtime/context workf
 - [X] T017 [US3] Restore structured journey create/revise/retract/resubmit/history/share controls using lib/server/profiles canonical revisions; preserve private/internal/partner audiences and exact idempotency (FR-007).
 - [X] T018 [US3] Verify journey long-source/tail match, later-than50 records, semantic failure lexical fallback, no-hit recent fallback and stale indexing cancellation; repair lib/server/profiles and retrieval lifecycle (FR-007,FR-011).
 - [X] T019 [US3] Implement supported owner-bound staged native-file transport preserving10MiB/file without oversized base64 request, byte/digest retry and cleanup; test bounds, aggregate, cancellation and reload in lib/server/conversations and attachments UI (FR-006,FR-011).
-- [ ] T020 [US3] Verify and enable supported hosted ordinary image/raw/parser-failed fallback through existing native-file policy with explicit deployment prerequisites; no fake extraction success (FR-006).
+- [X] T020 [US3] Verify and enable supported hosted ordinary image/raw/parser-failed fallback through existing native-file policy with explicit deployment prerequisites; no fake extraction success (FR-006).
 - [X] T021 [US3] Execute native questions/corrections/Stop/reconnect/preferences/extraction owner and recovery suites, repairing every discovered legacy divergence (FR-006,FR-011).
 
 ## Phase 6: US4 — Exhaustive acceptance and release
 
-- [ ] T022 [US4] Reconcile all inventory dispositions and every finding to implemented source and actual evidence; zero actionable missing/partial mechanisms remain in docs/legacy-backend-parity-audit.md (FR-010).
-- [ ] T023 [US4] Update README.md, ROADMAP.md and feature validation with actual status; run typecheck/docs/targeted domains/build and full exact-head CI, retaining failures and fixes (FR-011,FR-012).
+- [X] T022 [US4] Reconcile all inventory dispositions and every finding to implemented source and actual evidence; zero actionable missing/partial mechanisms remain in docs/legacy-backend-parity-audit.md (FR-010).
+- [X] T023 [US4] Update README.md, ROADMAP.md and feature validation with actual status; run typecheck/docs/targeted domains/build and full exact-head CI, retaining failures and fixes (FR-011,FR-012).
 - [X] T024 [US4] Exercise changed workflows with authenticated real Preview HTTP and CLI WebKit desktop/mobile/reload, actual ordinary native consumers and independent review; preserve prior model charges/holds and bounded scope (FR-011).
-- [ ] T025 [US4] Back up and rehearse explicit schema/grants if required, verify target and old/new compatibility, merge green exact head, verify actual Production commit/schema/authenticated behavior, clean merged branch and verify README on main (FR-012).
+- [X] T025 [US4] Back up and rehearse explicit schema/grants if required, verify target and old/new compatibility, merge green exact head, verify actual Production commit/schema/authenticated behavior, clean merged branch and verify README on main (FR-012).
 
 - [X] T026 [US4] Restore any remaining backend consumer gaps discovered by complete root-page/config audit, including customer-directory signal filtering and operating-plan/portfolio consumers, with current-themed authorized UI and original calculations (FR-001,FR-003,FR-008,FR-010).
 
@@ -71,4 +71,4 @@ Parallel example: conversation repository search regression and ordinary deliver
 
 - [X] T032 [US3] Keep staged file bytes out of Eve durable user-stream chunks; bind compact transport to exact owned original parts/request key/body digest, hydrate verified bytes only at the provider boundary, preserve inline/mixed files, steering, attachment cards/preview/history and immutable retry bounds. Assert compact actual events in the existing ten-MiB gate; verify actual hosted selected-provider delivery and preserve original platform-limit failures (FR-006,FR-009,FR-011,FR-012).
 
-- [ ] T033 [US3] Restore authorized application-owned messages in active failed/cancelled conversations after transient native history is purged; preserve original user/file display and generated turn/step order across reload and later sends, exact canonical/retry-alias deduplication, current-source/owner fences and the bounded-history notice. Keep display recovery separate from native execution, replay and input authority. Validate the actual failed-PDF recovery path without rewriting prior failures or clearing unknown holds (FR-006,FR-009,FR-011,FR-012).
+- [X] T033 [US3] Restore authorized application-owned messages in active failed/cancelled conversations after transient native history is purged; preserve original user/file display and generated turn/step order across reload and later sends, exact canonical/retry-alias deduplication, current-source/owner fences and the bounded-history notice. Keep display recovery separate from native execution, replay and input authority. Validate the actual failed-PDF recovery path without rewriting prior failures or clearing unknown holds (FR-006,FR-009,FR-011,FR-012).

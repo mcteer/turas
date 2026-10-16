@@ -6,20 +6,24 @@ Its 337-file inventory and 101 concrete acceptance-reference reviews map origina
 implementation and consumers, including shared retained research, source browsing,
 ordinary delivery tools, context review, journey controls and native-file transport.
 See the [validation record](specs/018-legacy-backend-parity/validation.md) and
-[release tasks](specs/018-legacy-backend-parity/tasks.md) for the evidence and
-remaining acceptance gates. Earlier parity releases cover narrower scope.
+[release tasks](specs/018-legacy-backend-parity/tasks.md) for completed
+release gates and evidence limits. Earlier parity releases cover narrower scope.
 
 PR 36 merged the backend restoration on schema 077. PR 37 restored authorized
 read-only history after native retirement and exact pre-provider retry identity.
 [PR 38](https://github.com/mcteer/turas/pull/38) removed staged bytes from Eve's
-durable user stream. Actual Production ten-MiB selected-provider delivery,
-owned download/checksum, reload, desktop/mobile and retirement pass; the largest
-captured native event is 630 bytes. Original failed checks remain recorded.
-Malformed-PDF validation then exposed a separate recovery gap: an active failed
-turn can lose its visible messages after Eve purges transient history. Application
-projections retain the original message; the active display recovery fix and final
-release acceptance remain in progress.
-See the [2026-10-16 release record](docs/production-parity-release-2026-10-16.md).
+durable user stream; actual ten-MiB Production delivery passes with a largest
+captured native event of 630 bytes.
+[PR 39](https://github.com/mcteer/turas/pull/39) restores authorized active history
+after native messages disappear, including exact empty-turn question identity.
+All 50 final-source CI jobs and 26 Preview checks pass. Backend release merge
+`2d9dc018eec88c41e8e52accb91169eef54ca43f` was verified in Production on schema 077
+with authenticated
+HTTP/headless WebKit general, login, original-history and actual failed-turn
+reload checks. The malformed-PDF attempt fails explicitly; its original message
+and private file card survive reload without claiming extraction success.
+Original failed checks and unsettled holds remain preserved. See the
+[2026-10-16 release record](docs/production-parity-release-2026-10-16.md).
 
 Customer maturity and delivery management for Vercel FDE, Professional Services,
 TAM, account teams and partners.
