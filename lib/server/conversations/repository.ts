@@ -445,9 +445,14 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
   const [events, partials, attempts, submitted] = await Promise.all([
     query<{
       native_event_id: string; event_type: string; visible_payload: Record<string, unknown>;
-      stream_index: string | null; emitted_at: Date;
-    }>(`SELECT native_event_id, event_type, visible_payload, stream_index, emitted_at
-      FROM event_projections WHERE conversation_id = $1
+      stream_index: string | null; emitted_at: Date; turn_id: string | null; step_index: number | null; input_alias_event_ids: string[];
+    }>(`SELECT event.native_event_id,event.event_type,event.visible_payload,event.stream_index,event.emitted_at,event.turn_id,event.step_index,
+        ARRAY(SELECT alias.native_event_id FROM event_projections alias JOIN response_attempts original ON original.input_event_id=event.native_event_id AND original.conversation_id=event.conversation_id
+          WHERE alias.conversation_id=event.conversation_id AND alias.native_session_id=event.native_session_id AND alias.event_type='message.received'
+            AND alias.visible_payload->'applicationInputReplay'->>'retryOfInputEventId'=event.native_event_id
+            AND alias.visible_payload->'applicationInputReplay'->>'admittedDeliveryId'=original.native_delivery_id
+          ORDER BY alias.emitted_at,alias.native_event_id LIMIT 3) AS input_alias_event_ids
+      FROM event_projections event WHERE conversation_id = $1
         AND event_type <> 'message.appended'
         AND NOT (event_type='message.received' AND visible_payload ? 'applicationInputReplay')
       ORDER BY emitted_at, native_event_id LIMIT 501`, [id]),
@@ -481,7 +486,7 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
   const stale = latest.contextStatus !== "current" || planStale;
   const ownerEvents = stale ? await query<{
     native_event_id: string; event_type: string; visible_payload: Record<string, unknown>;
-    stream_index: string | null; emitted_at: Date;
+    stream_index: string | null; emitted_at: Date; turn_id?:string|null;step_index?:number|null;input_alias_event_ids?:string[];
   }>(`SELECT native_event_id,event_type,visible_payload,stream_index,emitted_at
     FROM event_projections WHERE conversation_id=$1 AND event_type='message.received'
       AND NOT (visible_payload ? 'applicationInputReplay')
@@ -504,12 +509,12 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
     history: [...visibleEvents.slice(0, 500).map((row) => ({
       eventId: row.native_event_id,
       eventType: row.event_type,
-      payload: row.visible_payload,
+      payload: row.visible_payload,turnId:row.turn_id,stepIndex:row.step_index,inputAliasEventIds:row.input_alias_event_ids??[],
       streamIndex: row.stream_index === null ? null : Number(row.stream_index),
       emittedAt: row.emitted_at.toISOString(),
     })), ...(hideGenerated ? [] : partials.rows.map((row) => ({
       eventId: `partial_${row.turn_id}_${row.step_index ?? "unknown"}`, eventType: "message.appended",
-      payload: { messageDelta: row.message, partial: true }, streamIndex: null,
+      payload: { messageDelta: row.message, partial: true },turnId:row.turn_id,stepIndex:row.step_index, streamIndex: null,
       emittedAt: row.emitted_at.toISOString(),
     })))].sort((a, b) => a.emittedAt.localeCompare(b.emittedAt)),
     historyTruncated: visibleEvents.length > 500,

@@ -11,12 +11,15 @@ remaining acceptance gates. Earlier parity releases cover narrower scope.
 
 PR 36 merged the backend restoration on schema 077. PR 37 restored authorized
 read-only history after native retirement and exact pre-provider retry identity.
-Actual Production owner-private history, reload, mobile and profile consistency
-checks pass. Ten-MiB acceptance then exposed an 18.6 MB Eve user-stream chunk
-exceeding the platform's 10 MB chunk limit, before any provider operation.
-The follow-up keeps staged bytes in application storage, forwards their exact
-bounded summary and hydrates verified originals only at the provider boundary.
-Hosted large-file acceptance remains open.
+[PR 38](https://github.com/mcteer/turas/pull/38) removed staged bytes from Eve's
+durable user stream. Actual Production ten-MiB selected-provider delivery,
+owned download/checksum, reload, desktop/mobile and retirement pass; the largest
+captured native event is 630 bytes. Original failed checks remain recorded.
+Malformed-PDF validation then exposed a separate recovery gap: an active failed
+turn can lose its visible messages after Eve purges transient history. Application
+projections retain the original message; the active display recovery fix and final
+release acceptance remain in progress.
+See the [2026-10-16 release record](docs/production-parity-release-2026-10-16.md).
 
 Customer maturity and delivery management for Vercel FDE, Professional Services,
 TAM, account teams and partners.

@@ -1,6 +1,6 @@
 {
   "referenceCommit": "fd1e205d7fd258676d6fb12b3ade8a431d53a6af",
-  "status": "337 pinned legacy paths reviewed; all101 test/evaluation references concretely mapped; PR36/37 merged/schema077 and Production history verified; T032 hosted staged-file stream-boundary fix and final release acceptance remain open",
+  "status": "337 pinned legacy paths reviewed; all101 test/evaluation references mapped; PR36/37/38 merged/schema077 and actual compact10MiB Production delivery verified; T033 active failed-turn history recovery and final release acceptance remain open",
   "entries": [
     {
       "legacyPath": ".gitignore",
@@ -190,7 +190,8 @@
         "T004",
         "T013",
         "T021",
-        "T032"
+        "T032",
+        "T033"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -210,7 +211,9 @@
         "lib/server/conversations/native-retirement-recovery.ts",
         "lib/server/conversations/native-input-display.ts",
         "lib/conversations/native-message-display.ts",
-        "lib/server/conversations/native-message.ts"
+        "lib/server/conversations/native-message.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -228,10 +231,12 @@
           "lib/server/conversations/native-retirement-recovery.ts",
           "lib/server/conversations/native-input-display.ts",
           "lib/conversations/native-message-display.ts",
-          "lib/server/conversations/native-message.ts"
+          "lib/server/conversations/native-message.ts",
+          "lib/conversations/active-chat-history.ts",
+          "lib/conversations/retained-history.ts"
         ],
         "currentFileSha256": {
-          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/eve-routes.ts": "e0383b3095f72069d86cdb243fad154d0a61fb2d17e7adff8f78971289956a85",
@@ -243,7 +248,9 @@
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
-          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
+          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10",
+          "lib/conversations/retained-history.ts": "a30b228c9d9e85b1b178ff0880adb60b68c94668cf85992063308aa169d0e2f9"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -254,13 +261,15 @@
           "specs/018-legacy-backend-parity/validation.md",
           "tests/unit/legacy-chat-mechanics.test.tsx",
           "tests/unit/ordinary-native-message.test.ts",
-          "tests/unit/retained-chat-history.test.ts"
+          "tests/unit/retained-chat-history.test.ts",
+          "tests/unit/active-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
         "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
-        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
+        "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
+        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
       }
     },
     {
@@ -340,7 +349,8 @@
         "T004",
         "T013",
         "T021",
-        "T032"
+        "T032",
+        "T033"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -360,7 +370,9 @@
         "lib/server/conversations/native-retirement-recovery.ts",
         "lib/server/conversations/native-input-display.ts",
         "lib/conversations/native-message-display.ts",
-        "lib/server/conversations/native-message.ts"
+        "lib/server/conversations/native-message.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -378,10 +390,12 @@
           "lib/server/conversations/native-retirement-recovery.ts",
           "lib/server/conversations/native-input-display.ts",
           "lib/conversations/native-message-display.ts",
-          "lib/server/conversations/native-message.ts"
+          "lib/server/conversations/native-message.ts",
+          "lib/conversations/active-chat-history.ts",
+          "lib/conversations/retained-history.ts"
         ],
         "currentFileSha256": {
-          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/eve-routes.ts": "e0383b3095f72069d86cdb243fad154d0a61fb2d17e7adff8f78971289956a85",
@@ -393,7 +407,9 @@
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
-          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
+          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10",
+          "lib/conversations/retained-history.ts": "a30b228c9d9e85b1b178ff0880adb60b68c94668cf85992063308aa169d0e2f9"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -404,13 +420,15 @@
           "specs/018-legacy-backend-parity/validation.md",
           "tests/unit/legacy-chat-mechanics.test.tsx",
           "tests/unit/ordinary-native-message.test.ts",
-          "tests/unit/retained-chat-history.test.ts"
+          "tests/unit/retained-chat-history.test.ts",
+          "tests/unit/active-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
         "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
-        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
+        "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
+        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
       }
     },
     {
@@ -491,7 +509,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/lib/legacy-research/practice-context-tool.ts": "118c7b5a46e22fbcfd6f8a52cd15d6b4d09806f85036f820ad1c680ee0a9881d"
+        }
       },
       "currentPaths": [
         "agent/lib/legacy-research/practice-context-tool.ts"
@@ -542,7 +563,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/lib/legacy-research/public-research.ts": "bd48ef5f330f32f5df85e2c9fae5a06e941851dbccc95f35040cc6236acd8e0e"
+        }
       },
       "currentPaths": [
         "agent/lib/legacy-research/public-research.ts"
@@ -593,7 +617,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/lib/legacy-research/research-context-tool.ts": "36156b13f668a79c1ebcb88d7b84b658365a660aed0eda7167e3a00dae670d32"
+        }
       },
       "currentPaths": [
         "agent/lib/legacy-research/research-context-tool.ts"
@@ -644,7 +671,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/lib/legacy-research/research-handoff.ts": "abdd51f153362d17b7c3de92a0d08664f43b35064c56690391ea57111f6e1c93"
+        }
       },
       "currentPaths": [
         "agent/lib/legacy-research/research-handoff.ts"
@@ -695,7 +725,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/lib/legacy-research/research-state.ts": "ca01d8840b0dd69e8a5b2f4d7cd7d83c0e74cd831dc209a180317f667ee1e117"
+        }
       },
       "currentPaths": [
         "agent/lib/legacy-research/research-state.ts"
@@ -746,7 +779,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/lib/legacy-research/research-tools/read_public_research_source.ts": "f3dc1840cc4ac599439b5040a35ea254b5f76e5bcdd775d6bc88b507b5f6a01c"
+        }
       },
       "currentPaths": [
         "agent/lib/legacy-research/research-tools/read_public_research_source.ts"
@@ -797,7 +833,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/lib/legacy-research/research-tools/read_research_passages.ts": "e2168bbcd5c24b627bec32e22dffe905ea1e5cd73c4c245815ca0ee6e45e8a37"
+        }
       },
       "currentPaths": [
         "agent/lib/legacy-research/research-tools/read_research_passages.ts"
@@ -848,7 +887,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/lib/legacy-research/research-tools/research_evidence.ts": "43e312151cc5d094c3a8773d13b8f2c1040bad825b338559aad2c8750a43980e"
+        }
       },
       "currentPaths": [
         "agent/lib/legacy-research/research-tools/research_evidence.ts"
@@ -899,7 +941,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/lib/legacy-research/research-tools/search_public_research.ts": "7984a0323a626fa6e2c23a61e30425fa2411db8ad758a95ec9e5137a3c1ae14d"
+        }
       },
       "currentPaths": [
         "agent/lib/legacy-research/research-tools/search_public_research.ts"
@@ -1317,7 +1362,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/skills/solution-research/SKILL.md": "7e8a042c7d8e4a15b2803182e645fb68e71e22a221c3f14024f548be641e23a9"
+        }
       },
       "currentPaths": [
         "lib/server/knowledge/workspace-patterns/repository.ts",
@@ -1387,7 +1435,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/customer-recon-worker/agent.ts": "246e1b1d899f2bde621360914f11fb61b85db4c1efe2e5a771d01eef7c912b58"
+        }
       },
       "currentPaths": [
         "agent/subagents/customer-recon-worker/agent.ts"
@@ -1438,7 +1489,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/customer-recon-worker/instructions.md": "477cd1a57296afc877c86cc87402a075f2a40a2b01847c668edc6aef82f97d8c"
+        }
       },
       "currentPaths": [
         "agent/subagents/customer-recon-worker/instructions.md"
@@ -1489,7 +1543,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/customer-recon-worker/tools/bash.ts": "3a4cda85fee0e8b3c5b033d414eb53439b5d2b8e7a2f848da430c21babfb131b"
+        }
       },
       "currentPaths": [
         "agent/subagents/customer-recon-worker/tools/bash.ts"
@@ -1540,7 +1597,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/customer-recon-worker/tools/connection_search.ts": "e8bb109e7422d654d53c1c6086d6df8b57fb70ef6708fe73faf36f8fb3249f0e"
+        }
       },
       "currentPaths": [
         "agent/subagents/customer-recon-worker/tools/connection_search.ts"
@@ -1591,7 +1651,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/customer-recon-worker/tools/finalize_customer_update.ts": "cdb0e51d4554bffda0694a0c9ddc218cf72cbd7cbde224aa2bc8b063ec7b54e3"
+        }
       },
       "currentPaths": [
         "agent/subagents/customer-recon-worker/tools/finalize_customer_update.ts"
@@ -1642,7 +1705,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/customer-recon-worker/tools/get_research_context.ts": "28027a61e8507f92099aba0ffbd12faa162b6f490af12cee0e0c6f2c83b77094"
+        }
       },
       "currentPaths": [
         "agent/subagents/customer-recon-worker/tools/get_research_context.ts"
@@ -1693,7 +1759,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/customer-recon-worker/tools/read_file.ts": "3a4cda85fee0e8b3c5b033d414eb53439b5d2b8e7a2f848da430c21babfb131b"
+        }
       },
       "currentPaths": [
         "agent/subagents/customer-recon-worker/tools/read_file.ts"
@@ -1744,7 +1813,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/customer-recon-worker/tools/read_public_research_source.ts": "53b9cc7d9e964bb8c33c50dcb89e711874a3955dd13f1ad0e3b08c7c251152b6"
+        }
       },
       "currentPaths": [
         "agent/subagents/customer-recon-worker/tools/read_public_research_source.ts"
@@ -1795,7 +1867,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/customer-recon-worker/tools/read_research_passages.ts": "ca0fea65f09937813b0ca5e5210760613ee302f34ace4753c19e3ec030206bdc"
+        }
       },
       "currentPaths": [
         "agent/subagents/customer-recon-worker/tools/read_research_passages.ts"
@@ -1846,7 +1921,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/customer-recon-worker/tools/research_evidence.ts": "44cc33b2c747b72642569e286bf7bea530d65c7d2aa36cb5d76e0a3199782fb6"
+        }
       },
       "currentPaths": [
         "agent/subagents/customer-recon-worker/tools/research_evidence.ts"
@@ -1897,7 +1975,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/customer-recon-worker/tools/search_public_research.ts": "1ad4985793870e7d8c0c3b02a69fa69468bae7c766ed69efa668163d537aae49"
+        }
       },
       "currentPaths": [
         "agent/subagents/customer-recon-worker/tools/search_public_research.ts"
@@ -1948,7 +2029,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/customer-recon-worker/tools/web_fetch.ts": "3a4cda85fee0e8b3c5b033d414eb53439b5d2b8e7a2f848da430c21babfb131b"
+        }
       },
       "currentPaths": [
         "agent/subagents/customer-recon-worker/tools/web_fetch.ts"
@@ -1999,7 +2083,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/customer-recon-worker/tools/web_search.ts": "3a4cda85fee0e8b3c5b033d414eb53439b5d2b8e7a2f848da430c21babfb131b"
+        }
       },
       "currentPaths": [
         "agent/subagents/customer-recon-worker/tools/web_search.ts"
@@ -2050,7 +2137,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/customer-recon-worker/tools/write_file.ts": "3a4cda85fee0e8b3c5b033d414eb53439b5d2b8e7a2f848da430c21babfb131b"
+        }
       },
       "currentPaths": [
         "agent/subagents/customer-recon-worker/tools/write_file.ts"
@@ -2101,7 +2191,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/implementation-research-worker/agent.ts": "daf21d1a1e5a379758ce0cf6fe028df5115360038513cd22633e39a8b4d1e8e8"
+        }
       },
       "currentPaths": [
         "agent/subagents/implementation-research-worker/agent.ts"
@@ -2152,7 +2245,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/implementation-research-worker/instructions.md": "6664965c1fcb684b08c37d4743f7a2b29097d3e3b6df94c61e5c0f614c1e6d1d"
+        }
       },
       "currentPaths": [
         "agent/subagents/implementation-research-worker/instructions.md"
@@ -2203,7 +2299,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/implementation-research-worker/tools/finalize_research.ts": "677247101f5fda48ea9fe31a542047bb7d4fa0634e953506676c7e5a01133c07"
+        }
       },
       "currentPaths": [
         "agent/subagents/implementation-research-worker/tools/finalize_research.ts"
@@ -2254,7 +2353,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/implementation-research-worker/tools/get_practice_context.ts": "5fa3d8c78cdf7e5cf9e820d3dfcd1f73dc98a28a6416e8d1ee0ab30e31236b44"
+        }
       },
       "currentPaths": [
         "agent/subagents/implementation-research-worker/tools/get_practice_context.ts"
@@ -2305,7 +2407,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/implementation-research-worker/tools/get_research_context.ts": "7d38bcee7dd66723c3a07e8284962dee2cffe10be8c39e66e328c3dd6dca86c0"
+        }
       },
       "currentPaths": [
         "agent/subagents/implementation-research-worker/tools/get_research_context.ts"
@@ -2356,7 +2461,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/implementation-research-worker/tools/read_public_research_source.ts": "ce327b915942344be4fe6f8ed2d002d0b9bc10ff4a9e9a68251b2f404ab4a0ef"
+        }
       },
       "currentPaths": [
         "agent/subagents/implementation-research-worker/tools/read_public_research_source.ts"
@@ -2407,7 +2515,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/implementation-research-worker/tools/read_research_passages.ts": "ca0fea65f09937813b0ca5e5210760613ee302f34ace4753c19e3ec030206bdc"
+        }
       },
       "currentPaths": [
         "agent/subagents/implementation-research-worker/tools/read_research_passages.ts"
@@ -2458,7 +2569,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/implementation-research-worker/tools/research_evidence.ts": "44cc33b2c747b72642569e286bf7bea530d65c7d2aa36cb5d76e0a3199782fb6"
+        }
       },
       "currentPaths": [
         "agent/subagents/implementation-research-worker/tools/research_evidence.ts"
@@ -2509,7 +2623,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/implementation-research-worker/tools/search_public_research.ts": "b8d211c4682f3e2d1fde0754ab0a6e4ac7e6485d720b0fd275bb39e2a4f99aa4"
+        }
       },
       "currentPaths": [
         "agent/subagents/implementation-research-worker/tools/search_public_research.ts"
@@ -2560,7 +2677,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/vercel-best-practices-worker/agent.ts": "62cbbf8076fa1e2f7208d6c751f152567f6386f76e6252a8431a8f7f881fd7b8"
+        }
       },
       "currentPaths": [
         "agent/subagents/vercel-best-practices-worker/agent.ts"
@@ -2611,7 +2731,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/vercel-best-practices-worker/instructions.md": "3e070d4226487fffebc107f4d188d3372ff2b2bdc799becf149124de0f672f05"
+        }
       },
       "currentPaths": [
         "agent/subagents/vercel-best-practices-worker/instructions.md"
@@ -2662,7 +2785,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/vercel-best-practices-worker/tools/finalize_vercel_practices.ts": "e82d0c301b3ed3fa36c9075b737802515a9d5f61816c185dfe6adc5f4b9e5f39"
+        }
       },
       "currentPaths": [
         "agent/subagents/vercel-best-practices-worker/tools/finalize_vercel_practices.ts"
@@ -2713,7 +2839,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/vercel-best-practices-worker/tools/get_practice_context.ts": "ef0ffb491f02e08640f7d59964e2b5cd5669d550bd09909eda8ab5d3f178751d"
+        }
       },
       "currentPaths": [
         "agent/subagents/vercel-best-practices-worker/tools/get_practice_context.ts"
@@ -2764,7 +2893,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/vercel-best-practices-worker/tools/read_public_research_source.ts": "53b9cc7d9e964bb8c33c50dcb89e711874a3955dd13f1ad0e3b08c7c251152b6"
+        }
       },
       "currentPaths": [
         "agent/subagents/vercel-best-practices-worker/tools/read_public_research_source.ts"
@@ -2815,7 +2947,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/vercel-best-practices-worker/tools/read_research_passages.ts": "ca0fea65f09937813b0ca5e5210760613ee302f34ace4753c19e3ec030206bdc"
+        }
       },
       "currentPaths": [
         "agent/subagents/vercel-best-practices-worker/tools/read_research_passages.ts"
@@ -2866,7 +3001,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/vercel-best-practices-worker/tools/research_evidence.ts": "44cc33b2c747b72642569e286bf7bea530d65c7d2aa36cb5d76e0a3199782fb6"
+        }
       },
       "currentPaths": [
         "agent/subagents/vercel-best-practices-worker/tools/research_evidence.ts"
@@ -2917,7 +3055,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/subagents/vercel-best-practices-worker/tools/search_public_research.ts": "1ad4985793870e7d8c0c3b02a69fa69468bae7c766ed69efa668163d537aae49"
+        }
       },
       "currentPaths": [
         "agent/subagents/vercel-best-practices-worker/tools/search_public_research.ts"
@@ -3496,7 +3637,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/tools/evaluate_solution_research.ts": "9a30297f770f8f3966e9f4633096a64638305aa4bfca632af4d945bdba048020"
+        }
       },
       "currentPaths": [
         "agent/tools/evaluate_solution_research.ts"
@@ -3663,7 +3807,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/tools/get_customer_evidence.ts": "2a198012b7955d55c845a77539c3cd4b57f7e0a934329d3df5e51669eda5ec3d"
+        }
       },
       "currentPaths": [
         "agent/tools/get_customer_evidence.ts",
@@ -3781,7 +3928,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/tools/get_customer_research_update.ts": "8c3f821c81a50221d01a1343675cc181caa90b4f92cece81a60f578bccb919d5"
+        }
       },
       "currentPaths": [
         "agent/tools/get_customer_research_update.ts"
@@ -4003,7 +4153,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/tools/get_public_customer_learning.ts": "d131eb195670ce0662c5fddb59cf569346ebb486e1b1d0f60db2c54ebd50d323"
+        }
       },
       "currentPaths": [
         "agent/tools/get_public_customer_learning.ts",
@@ -4263,7 +4416,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/tools/prepare_customer_research.ts": "b3a260a36c7103b1bc9ddaf84c3eaefed87ab4c608b1a7561f9f37ae85afa217"
+        }
       },
       "currentPaths": [
         "agent/tools/prepare_customer_research.ts"
@@ -4721,7 +4877,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/tools/task_cancel.ts": "a93466e281acd475d30560f20e18bd6c8492f609dce38593602cc5d7d8dea549"
+        }
       },
       "currentPaths": [
         "agent/tools/task_cancel.ts"
@@ -4868,7 +5027,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "agent/tools/wait_for_customer_research.ts": "6af4e99ff5b866b3bb43f1532afc7b6d203b61a4cd7fd73e3a9615c84582f4b8"
+        }
       },
       "currentPaths": [
         "agent/tools/wait_for_customer_research.ts"
@@ -5035,7 +5197,8 @@
         "T021",
         "T030",
         "T031",
-        "T032"
+        "T032",
+        "T033"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -5061,7 +5224,8 @@
         "lib/server/conversations/projection.ts",
         "lib/server/conversations/native-input-display.ts",
         "lib/conversations/native-message-display.ts",
-        "lib/server/conversations/native-message.ts"
+        "lib/server/conversations/native-message.ts",
+        "lib/conversations/active-chat-history.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -5085,10 +5249,11 @@
           "lib/server/conversations/projection.ts",
           "lib/server/conversations/native-input-display.ts",
           "lib/conversations/native-message-display.ts",
-          "lib/server/conversations/native-message.ts"
+          "lib/server/conversations/native-message.ts",
+          "lib/conversations/active-chat-history.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "1423b2ee5787224ec3242c16dc6ae9a030dd361d20a474bbd069b3fd7bc67ba6",
+          "app/_components/agent-chat.tsx": "a267c170d01b99a513423cd89796597c975cf2401882c821eef05cae2fc9b3b7",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
           "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4",
@@ -5100,13 +5265,14 @@
           "lib/server/conversations/maintenance.ts": "2421e7a8e8db2c2e874bcb36e0db6c63b9186d62332f492edbb5287114782222",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
           "app/_components/retained-chat.tsx": "2b0fbf3dca8ec4dd987b5795f55a9a92805223bcc387806df4448045bf45f0fd",
-          "lib/conversations/retained-history.ts": "f2d8204c6155398f67a658a90b3576a5b67427a30164b438d80d42ed2efc5446",
-          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
+          "lib/conversations/retained-history.ts": "a30b228c9d9e85b1b178ff0880adb60b68c94668cf85992063308aa169d0e2f9",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa",
           "lib/server/conversations/native-input-replay.ts": "5ea96616a1a4f1e36305b25619631e88efc916c510ca5b18ad320bae7e4b7ad7",
           "lib/server/conversations/projection.ts": "53057cec62d216d18db5d3fd9c1013d409f385858ea8cfe9ab0b36e81d3bcac1",
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
-          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
+          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -5119,14 +5285,16 @@
           "tests/unit/retained-chat-history.test.ts",
           "tests/integration/native-input-replay.test.ts",
           "tests/unit/legacy-chat-mechanics.test.tsx",
-          "tests/unit/ordinary-native-message.test.ts"
+          "tests/unit/ordinary-native-message.test.ts",
+          "tests/unit/active-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
         "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
         "retryRecovery": "Installed Eve durable-step retries emit new received-event IDs. Preserve distinct audit events and recognize only exact pre-provider same-delivery aliases; retain original input/file envelope/deadline/allowance and current authorization. Reconciliation accepts only recorded aliases and UI shows one send. Hosted exact-source acceptance remains required.",
-        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
+        "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
+        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
       },
       "notes": " Actual Production retirement exposed a missing consumer of persisted application messages. T030 adds a read-only authorized view, step-specific interrupted text and explicit history-limit notice; actual hosted recovery remains required."
     },
@@ -5240,7 +5408,8 @@
         "T004",
         "T013",
         "T021",
-        "T032"
+        "T032",
+        "T033"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -5261,7 +5430,10 @@
         "lib/server/conversations/native-retirement-recovery.ts",
         "lib/server/conversations/native-input-display.ts",
         "lib/conversations/native-message-display.ts",
-        "lib/server/conversations/native-message.ts"
+        "lib/server/conversations/native-message.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts",
+        "lib/server/conversations/repository.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -5280,10 +5452,13 @@
           "lib/server/conversations/native-retirement-recovery.ts",
           "lib/server/conversations/native-input-display.ts",
           "lib/conversations/native-message-display.ts",
-          "lib/server/conversations/native-message.ts"
+          "lib/server/conversations/native-message.ts",
+          "lib/conversations/active-chat-history.ts",
+          "lib/conversations/retained-history.ts",
+          "lib/server/conversations/repository.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "1423b2ee5787224ec3242c16dc6ae9a030dd361d20a474bbd069b3fd7bc67ba6",
+          "app/_components/agent-chat.tsx": "a267c170d01b99a513423cd89796597c975cf2401882c821eef05cae2fc9b3b7",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
           "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4",
@@ -5296,7 +5471,10 @@
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
-          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
+          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10",
+          "lib/conversations/retained-history.ts": "a30b228c9d9e85b1b178ff0880adb60b68c94668cf85992063308aa169d0e2f9",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -5307,13 +5485,15 @@
           "specs/018-legacy-backend-parity/validation.md",
           "tests/unit/legacy-chat-mechanics.test.tsx",
           "tests/unit/ordinary-native-message.test.ts",
-          "tests/unit/retained-chat-history.test.ts"
+          "tests/unit/retained-chat-history.test.ts",
+          "tests/unit/active-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
         "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
-        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
+        "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
+        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
       }
     },
     {
@@ -5424,7 +5604,7 @@
           "Exact018 Preview/Production and final CI verification remain required.",
           "Actual unpaid native4MiB/10MiB passes; selected-provider hosted media/retirement remains required."
         ],
-        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
+        "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved."
       }
     },
     {
@@ -5535,7 +5715,7 @@
           "Exact018 Preview/Production and final CI verification remain required.",
           "Actual unpaid native4MiB/10MiB passes; selected-provider hosted media/retirement remains required."
         ],
-        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
+        "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved."
       }
     },
     {
@@ -5818,7 +5998,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "app/_components/profiles/source-library.tsx": "dc5f20f15f70e52df9d8e3112bd4e1a8cacbdd45e3aa014b6e5505cdb7b1df82"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/research-cache/public-learning-read.ts",
@@ -6229,7 +6412,7 @@
           "Exact018 Preview/Production and final CI verification remain required.",
           "Actual unpaid native4MiB/10MiB passes; selected-provider hosted media/retirement remains required."
         ],
-        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
+        "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved."
       }
     },
     {
@@ -6370,7 +6553,7 @@
           "Exact018 Preview/Production and final CI verification remain required.",
           "Actual unpaid native4MiB/10MiB passes; selected-provider hosted media/retirement remains required."
         ],
-        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
+        "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved."
       }
     },
     {
@@ -6405,7 +6588,8 @@
         "T004",
         "T013",
         "T021",
-        "T032"
+        "T032",
+        "T033"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -6425,7 +6609,9 @@
         "lib/server/conversations/native-retirement-recovery.ts",
         "lib/server/conversations/native-input-display.ts",
         "lib/conversations/native-message-display.ts",
-        "lib/server/conversations/native-message.ts"
+        "lib/server/conversations/native-message.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -6443,10 +6629,12 @@
           "lib/server/conversations/native-retirement-recovery.ts",
           "lib/server/conversations/native-input-display.ts",
           "lib/conversations/native-message-display.ts",
-          "lib/server/conversations/native-message.ts"
+          "lib/server/conversations/native-message.ts",
+          "lib/conversations/active-chat-history.ts",
+          "lib/conversations/retained-history.ts"
         ],
         "currentFileSha256": {
-          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/eve-routes.ts": "e0383b3095f72069d86cdb243fad154d0a61fb2d17e7adff8f78971289956a85",
@@ -6458,7 +6646,9 @@
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
-          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
+          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10",
+          "lib/conversations/retained-history.ts": "a30b228c9d9e85b1b178ff0880adb60b68c94668cf85992063308aa169d0e2f9"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -6469,13 +6659,15 @@
           "specs/018-legacy-backend-parity/validation.md",
           "tests/unit/legacy-chat-mechanics.test.tsx",
           "tests/unit/ordinary-native-message.test.ts",
-          "tests/unit/retained-chat-history.test.ts"
+          "tests/unit/retained-chat-history.test.ts",
+          "tests/unit/active-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
         "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
-        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
+        "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
+        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
       }
     },
     {
@@ -6510,7 +6702,8 @@
         "T004",
         "T013",
         "T021",
-        "T032"
+        "T032",
+        "T033"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -6530,7 +6723,9 @@
         "lib/server/conversations/native-retirement-recovery.ts",
         "lib/server/conversations/native-input-display.ts",
         "lib/conversations/native-message-display.ts",
-        "lib/server/conversations/native-message.ts"
+        "lib/server/conversations/native-message.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -6548,10 +6743,12 @@
           "lib/server/conversations/native-retirement-recovery.ts",
           "lib/server/conversations/native-input-display.ts",
           "lib/conversations/native-message-display.ts",
-          "lib/server/conversations/native-message.ts"
+          "lib/server/conversations/native-message.ts",
+          "lib/conversations/active-chat-history.ts",
+          "lib/conversations/retained-history.ts"
         ],
         "currentFileSha256": {
-          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/eve-routes.ts": "e0383b3095f72069d86cdb243fad154d0a61fb2d17e7adff8f78971289956a85",
@@ -6563,7 +6760,9 @@
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
-          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
+          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10",
+          "lib/conversations/retained-history.ts": "a30b228c9d9e85b1b178ff0880adb60b68c94668cf85992063308aa169d0e2f9"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -6574,13 +6773,15 @@
           "specs/018-legacy-backend-parity/validation.md",
           "tests/unit/legacy-chat-mechanics.test.tsx",
           "tests/unit/ordinary-native-message.test.ts",
-          "tests/unit/retained-chat-history.test.ts"
+          "tests/unit/retained-chat-history.test.ts",
+          "tests/unit/active-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
         "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
-        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
+        "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
+        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
       }
     },
     {
@@ -6615,7 +6816,8 @@
         "T004",
         "T013",
         "T021",
-        "T032"
+        "T032",
+        "T033"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -6635,7 +6837,9 @@
         "lib/server/conversations/native-retirement-recovery.ts",
         "lib/server/conversations/native-input-display.ts",
         "lib/conversations/native-message-display.ts",
-        "lib/server/conversations/native-message.ts"
+        "lib/server/conversations/native-message.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -6653,10 +6857,12 @@
           "lib/server/conversations/native-retirement-recovery.ts",
           "lib/server/conversations/native-input-display.ts",
           "lib/conversations/native-message-display.ts",
-          "lib/server/conversations/native-message.ts"
+          "lib/server/conversations/native-message.ts",
+          "lib/conversations/active-chat-history.ts",
+          "lib/conversations/retained-history.ts"
         ],
         "currentFileSha256": {
-          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/eve-routes.ts": "e0383b3095f72069d86cdb243fad154d0a61fb2d17e7adff8f78971289956a85",
@@ -6668,7 +6874,9 @@
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
-          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
+          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10",
+          "lib/conversations/retained-history.ts": "a30b228c9d9e85b1b178ff0880adb60b68c94668cf85992063308aa169d0e2f9"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -6679,13 +6887,15 @@
           "specs/018-legacy-backend-parity/validation.md",
           "tests/unit/legacy-chat-mechanics.test.tsx",
           "tests/unit/ordinary-native-message.test.ts",
-          "tests/unit/retained-chat-history.test.ts"
+          "tests/unit/retained-chat-history.test.ts",
+          "tests/unit/active-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
         "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
-        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
+        "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
+        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
       }
     },
     {
@@ -6799,7 +7009,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "app/api/customers/[customerId]/sources/route.ts": "b4f5eae67adbaa9512d8e977e2fcec854e911ad36c8e64b4f672ca487306ebf8"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/research-cache/public-learning-read.ts",
@@ -6868,7 +7081,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "app/api/internal/research-maintenance/route.ts": "9d230a9afed5be451d650518a060467bd272c0f7b4e6bba6a309f3e0a3707415"
+        }
       },
       "currentPaths": [
         "app/api/internal/research-maintenance/route.ts"
@@ -7037,7 +7253,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "app/(workspace)/customers/[customerId]/page.tsx": "3eedf7755c6c45cca5706dcbec9336305af13375acbe5219e1cb577d81fd96a7"
+        }
       },
       "currentPaths": [
         "app/(workspace)/customers/[customerId]/page.tsx"
@@ -7104,7 +7323,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "app/(workspace)/customers/[customerId]/sources/page.tsx": "90e5acc6129f325e2148ff1e7de47faf72e14e454065fec0987548e4de46c489"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/research-cache/public-learning-read.ts",
@@ -7419,7 +7641,8 @@
         "T004",
         "T013",
         "T021",
-        "T032"
+        "T032",
+        "T033"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -7440,7 +7663,10 @@
         "lib/server/conversations/native-retirement-recovery.ts",
         "lib/server/conversations/native-input-display.ts",
         "lib/conversations/native-message-display.ts",
-        "lib/server/conversations/native-message.ts"
+        "lib/server/conversations/native-message.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts",
+        "lib/server/conversations/repository.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -7459,10 +7685,13 @@
           "lib/server/conversations/native-retirement-recovery.ts",
           "lib/server/conversations/native-input-display.ts",
           "lib/conversations/native-message-display.ts",
-          "lib/server/conversations/native-message.ts"
+          "lib/server/conversations/native-message.ts",
+          "lib/conversations/active-chat-history.ts",
+          "lib/conversations/retained-history.ts",
+          "lib/server/conversations/repository.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "1423b2ee5787224ec3242c16dc6ae9a030dd361d20a474bbd069b3fd7bc67ba6",
+          "app/_components/agent-chat.tsx": "a267c170d01b99a513423cd89796597c975cf2401882c821eef05cae2fc9b3b7",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
           "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4",
@@ -7475,7 +7704,10 @@
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
-          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
+          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10",
+          "lib/conversations/retained-history.ts": "a30b228c9d9e85b1b178ff0880adb60b68c94668cf85992063308aa169d0e2f9",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -7486,13 +7718,15 @@
           "specs/018-legacy-backend-parity/validation.md",
           "tests/unit/legacy-chat-mechanics.test.tsx",
           "tests/unit/ordinary-native-message.test.ts",
-          "tests/unit/retained-chat-history.test.ts"
+          "tests/unit/retained-chat-history.test.ts",
+          "tests/unit/active-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
         "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
-        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
+        "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
+        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
       }
     },
     {
@@ -7528,7 +7762,8 @@
         "T004",
         "T013",
         "T021",
-        "T032"
+        "T032",
+        "T033"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -7549,7 +7784,10 @@
         "lib/server/conversations/native-retirement-recovery.ts",
         "lib/server/conversations/native-input-display.ts",
         "lib/conversations/native-message-display.ts",
-        "lib/server/conversations/native-message.ts"
+        "lib/server/conversations/native-message.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts",
+        "lib/server/conversations/repository.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -7568,10 +7806,13 @@
           "lib/server/conversations/native-retirement-recovery.ts",
           "lib/server/conversations/native-input-display.ts",
           "lib/conversations/native-message-display.ts",
-          "lib/server/conversations/native-message.ts"
+          "lib/server/conversations/native-message.ts",
+          "lib/conversations/active-chat-history.ts",
+          "lib/conversations/retained-history.ts",
+          "lib/server/conversations/repository.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "1423b2ee5787224ec3242c16dc6ae9a030dd361d20a474bbd069b3fd7bc67ba6",
+          "app/_components/agent-chat.tsx": "a267c170d01b99a513423cd89796597c975cf2401882c821eef05cae2fc9b3b7",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
           "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4",
@@ -7584,7 +7825,10 @@
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
-          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
+          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10",
+          "lib/conversations/retained-history.ts": "a30b228c9d9e85b1b178ff0880adb60b68c94668cf85992063308aa169d0e2f9",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -7595,13 +7839,15 @@
           "specs/018-legacy-backend-parity/validation.md",
           "tests/unit/legacy-chat-mechanics.test.tsx",
           "tests/unit/ordinary-native-message.test.ts",
-          "tests/unit/retained-chat-history.test.ts"
+          "tests/unit/retained-chat-history.test.ts",
+          "tests/unit/active-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
         "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
-        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
+        "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
+        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
       }
     },
     {
@@ -8455,7 +8701,9 @@
         "lib/server/research/specialists/identity.ts",
         "lib/server/research/specialists/research-cache/requests.ts",
         "lib/server/research/specialists/runtime-authority.ts",
-        "lib/server/retrieval/search.ts"
+        "lib/server/retrieval/search.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts"
       ],
       "tasks": [
         "T011",
@@ -8464,7 +8712,8 @@
         "T021",
         "T022",
         "T024",
-        "T029"
+        "T029",
+        "T033"
       ],
       "notes": "Legacy acceptance reference; current acceptance must exercise the covered mechanism, not merely preserve file naming. Original hosted benchmark credentials/data are not copied.",
       "acceptanceReview": {
@@ -8559,7 +8808,7 @@
           "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/named-evidence-search.ts": "32189a43e797d4889ecc0970a8ea5f5c9918eb224f355f6f33da450f05dee3ad",
           "lib/server/conversations/projection.ts": "53057cec62d216d18db5d3fd9c1013d409f385858ea8cfe9ab0b36e81d3bcac1",
-          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/knowledge/workspace-patterns/repository.ts": "5db2ca8504708af2949258f26a9e4ad887d5118090b06ddf7e16531a4e3f7fa9",
           "lib/server/learning/customer-adoption/repository.ts": "08ec69fad0831e3d5f98b2f5407748f7510a736cf2753a53bf22a2688c839a24",
@@ -8863,7 +9112,7 @@
           "Exact018 Preview/Production and final CI verification remain required.",
           "Actual unpaid native4MiB/10MiB passes; selected-provider hosted media/retirement remains required."
         ],
-        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
+        "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved."
       }
     },
     {
@@ -9306,7 +9555,7 @@
           "Exact018 Preview/Production and final CI verification remain required.",
           "Actual unpaid native4MiB/10MiB passes; selected-provider hosted media/retirement remains required."
         ],
-        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
+        "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved."
       }
     },
     {
@@ -9343,7 +9592,8 @@
         "T013",
         "T021",
         "T031",
-        "T032"
+        "T032",
+        "T033"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -9366,7 +9616,10 @@
         "lib/server/conversations/projection.ts",
         "lib/server/conversations/native-input-display.ts",
         "lib/conversations/native-message-display.ts",
-        "lib/server/conversations/native-message.ts"
+        "lib/server/conversations/native-message.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts",
+        "lib/server/conversations/repository.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -9387,10 +9640,13 @@
           "lib/server/conversations/projection.ts",
           "lib/server/conversations/native-input-display.ts",
           "lib/conversations/native-message-display.ts",
-          "lib/server/conversations/native-message.ts"
+          "lib/server/conversations/native-message.ts",
+          "lib/conversations/active-chat-history.ts",
+          "lib/conversations/retained-history.ts",
+          "lib/server/conversations/repository.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "1423b2ee5787224ec3242c16dc6ae9a030dd361d20a474bbd069b3fd7bc67ba6",
+          "app/_components/agent-chat.tsx": "a267c170d01b99a513423cd89796597c975cf2401882c821eef05cae2fc9b3b7",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
           "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4",
@@ -9405,7 +9661,10 @@
           "lib/server/conversations/projection.ts": "53057cec62d216d18db5d3fd9c1013d409f385858ea8cfe9ab0b36e81d3bcac1",
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
-          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
+          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10",
+          "lib/conversations/retained-history.ts": "a30b228c9d9e85b1b178ff0880adb60b68c94668cf85992063308aa169d0e2f9",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -9417,14 +9676,16 @@
           "tests/integration/native-input-replay.test.ts",
           "tests/unit/legacy-chat-mechanics.test.tsx",
           "tests/unit/ordinary-native-message.test.ts",
-          "tests/unit/retained-chat-history.test.ts"
+          "tests/unit/retained-chat-history.test.ts",
+          "tests/unit/active-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
         "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
         "retryRecovery": "Installed Eve durable-step retries emit new received-event IDs. Preserve distinct audit events and recognize only exact pre-provider same-delivery aliases; retain original input/file envelope/deadline/allowance and current authorization. Reconciliation accepts only recorded aliases and UI shows one send. Hosted exact-source acceptance remains required.",
-        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
+        "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
+        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
       }
     },
     {
@@ -9459,7 +9720,8 @@
         "T004",
         "T013",
         "T021",
-        "T032"
+        "T032",
+        "T033"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -9479,7 +9741,9 @@
         "lib/server/conversations/native-retirement-recovery.ts",
         "lib/server/conversations/native-input-display.ts",
         "lib/conversations/native-message-display.ts",
-        "lib/server/conversations/native-message.ts"
+        "lib/server/conversations/native-message.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -9497,10 +9761,12 @@
           "lib/server/conversations/native-retirement-recovery.ts",
           "lib/server/conversations/native-input-display.ts",
           "lib/conversations/native-message-display.ts",
-          "lib/server/conversations/native-message.ts"
+          "lib/server/conversations/native-message.ts",
+          "lib/conversations/active-chat-history.ts",
+          "lib/conversations/retained-history.ts"
         ],
         "currentFileSha256": {
-          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/eve-routes.ts": "e0383b3095f72069d86cdb243fad154d0a61fb2d17e7adff8f78971289956a85",
@@ -9512,7 +9778,9 @@
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
-          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
+          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10",
+          "lib/conversations/retained-history.ts": "a30b228c9d9e85b1b178ff0880adb60b68c94668cf85992063308aa169d0e2f9"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -9523,13 +9791,15 @@
           "specs/018-legacy-backend-parity/validation.md",
           "tests/unit/legacy-chat-mechanics.test.tsx",
           "tests/unit/ordinary-native-message.test.ts",
-          "tests/unit/retained-chat-history.test.ts"
+          "tests/unit/retained-chat-history.test.ts",
+          "tests/unit/active-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
         "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
-        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
+        "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
+        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
       }
     },
     {
@@ -9596,7 +9866,12 @@
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
         ],
-        "batchRegression": "tests/integration/legacy-profile-products.test.ts:7 tests passed"
+        "batchRegression": "tests/integration/legacy-profile-products.test.ts:7 tests passed",
+        "currentFileSha256": {
+          "lib/profiles/research-products.ts": "2073be1addd795e522bd5ad5d20fa00a3277523563a21e27baef7619e539755f",
+          "lib/server/profiles/policy.ts": "76183dc888a3b17a3233c45c78424f51a280ddc713742f80c5afbc673479cde3",
+          "lib/server/retrieval/research-projection.ts": "2d2cc088b1c4011e11127111d01ad20f010459b3cadaeeb323c329073f0edf14"
+        }
       },
       "currentPaths": [
         "lib/server/profiles/public-inventory.ts",
@@ -10636,7 +10911,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/research-cache/database.ts": "d92fd7cef83edb747929351bdcdf6dc8d215a311748d019bf1cd5e23c1439627"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/research-cache/database.ts"
@@ -10687,7 +10965,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/research-cache/fetch.ts": "c406aceca9b3689fa54f17457bf78048c1d954feef1cf3d957d2ac2406a995bc"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/research-cache/fetch.ts"
@@ -10742,7 +11023,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/research-cache/library.ts": "006afe2984dfd08c6d004cb6e1e1a01a385cb6ae5ca76a7e8bebe9e3b44f8d70"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/research-cache/library.ts"
@@ -10793,7 +11077,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/research-cache/maintenance.ts": "0d99b1085c4226300da63f2c873bb14cc09e967c3c9f5650a566bc23a6eb81a7"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/research-cache/maintenance.ts"
@@ -10844,7 +11131,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/research-cache/passage-view.ts": "24a2424cb364e515c5456f11aa8bd25c2b2ed5bdf24f5343751fbf4d0c858668"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/research-cache/passage-view.ts"
@@ -10895,7 +11185,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/research-cache/practice-library.ts": "0c514d7a338c358fb77049fa1a6030d5a723e3125309b703262850d8c03a55e9"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/research-cache/practice-library.ts"
@@ -10958,7 +11251,13 @@
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
         ],
-        "batchRegression": "tests/integration/legacy-profile-products.test.ts:7 tests passed"
+        "batchRegression": "tests/integration/legacy-profile-products.test.ts:7 tests passed",
+        "currentFileSha256": {
+          "lib/server/research/specialists/research-cache/public-learning-read.ts": "2397a617d0a320ed246491c6a23bf910a6218bdf25aa796da2db6ab5e43db25e",
+          "lib/server/profiles/policy.ts": "76183dc888a3b17a3233c45c78424f51a280ddc713742f80c5afbc673479cde3",
+          "lib/server/retrieval/research-projection.ts": "2d2cc088b1c4011e11127111d01ad20f010459b3cadaeeb323c329073f0edf14",
+          "lib/server/research/specialists/research-cache/public-learning.ts": "07be906ecba4dfd02322b38d797639a643e1113a89353a2704507d8d693b8a37"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/research-cache/public-learning.ts",
@@ -11010,7 +11309,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/research-cache/requests.ts": "1b7edb481211f37009ba98525732034c835639ec0715c7d5128792876bc7588d"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/research-cache/requests.ts"
@@ -11061,7 +11363,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/research-cache/schema.ts": "3c721ab5a33a87bdb93da1e754d4d21101c4b5cc3d8dbc03cadc687bd4fad543"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/research-cache/schema.ts"
@@ -11114,7 +11419,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/research-cache/sources.ts": "7be38461ea95cef0f63e77aa5caadefc1d3a3946620153fb4277cce639ee9945"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/research-cache/sources.ts"
@@ -11354,7 +11662,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/solution-research/artifacts.ts": "41c57c621ed4381e1e2bf6ce413d9a59d77eb635fb2d8e877170ad00838509bb"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/solution-research/artifacts.ts"
@@ -11406,7 +11717,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/solution-research/attribution.ts": "f15dbe9b6c24385c060026bcfe1409e01cad17deeed75b8358232ccfc4a29ce2"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/solution-research/attribution.ts"
@@ -11458,7 +11772,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/solution-research/citations.ts": "641f345ca920636b54468fc47452ecbcb2bc6112ce522e43c105ad10cc32100a"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/solution-research/citations.ts"
@@ -11510,7 +11827,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/solution-research/context.ts": "93c2b3332efacb55908f3784271f87eee3197b0e402c17a8edb4474ba71019bd"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/solution-research/context.ts"
@@ -11562,7 +11882,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/solution-research/customer-update-receipt.ts": "6bf5afbd7397f79943163b1964cbea7182677a20ed39d5ff33f95c280d3f163b"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/solution-research/customer-update-receipt.ts"
@@ -11614,7 +11937,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/solution-research/customer-update.ts": "fd964c42e84118a25b9aa53a20b7a7caf3979f28ab4017aeb9e54f0575519b21"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/solution-research/customer-update.ts"
@@ -11666,7 +11992,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/solution-research/decision-workflow.ts": "c20eb29548a37885763b2b81dbb6e05c372ea6b90072443f8c4ac739d59bde54"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/solution-research/decision-workflow.ts"
@@ -11718,7 +12047,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/solution-research/decision.ts": "036f7f83a70077878001206d40fbff9dda2b491f0ffbd03c29960f7108108701"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/solution-research/decision.ts"
@@ -11770,7 +12102,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/solution-research/discovery.ts": "f2fddfd3fe51a57844bde6beb78cc5914105add2d5f1aabad8cbc2d013f97b20"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/solution-research/discovery.ts"
@@ -11825,7 +12160,11 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/identity.ts": "1dbf961b5a6e9f4f6118f0d3cbe8bfcdebbf7b10c80ead8721d2517d563fb3dc",
+          "lib/server/research/specialists/evaluation-budget.ts": "43ac36a5a57d7474bb6e331a7408f19f17e786a70c558281cda001c36cb79270"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/identity.ts",
@@ -11878,7 +12217,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/solution-research/evidence.ts": "c73e874773cc7a056ef6269212608910f31088b1eceb52f26824dae908df1ff8"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/solution-research/evidence.ts"
@@ -11930,7 +12272,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/solution-research/freshness-report.ts": "369c041056c6ad17e0aa89c4984f4780d555997e1d73628aca51299089b9d3da"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/solution-research/freshness-report.ts"
@@ -11982,7 +12327,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/solution-research/freshness.ts": "954d1f22c124414d77f6dedb40318408c1118e90cbee5bb803f1bd0a02010fd4"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/solution-research/freshness.ts"
@@ -12034,7 +12382,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/solution-research/independent-search.ts": "4ef1c683c1703cebe139905cc4cadae71fa574b5d3c7f8719e8e8da670e547d5"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/solution-research/independent-search.ts"
@@ -12086,7 +12437,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/solution-research/process-impact.ts": "14c1758b619e10dcc7d713112b8b4eec27528a57de5d77d82a50b534c0b67b08"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/solution-research/process-impact.ts"
@@ -12138,7 +12492,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/solution-research/provider.ts": "00c305deebe603a95de653cb4b0e08ae2ec553b85038e3356ec3d9358ee56896"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/solution-research/provider.ts"
@@ -12190,7 +12547,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/solution-research/receipt.ts": "e33787721cb2c1b3dfbb03be79ee84abfadf1657496d8f313dfa9faeeb2e839a"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/solution-research/receipt.ts"
@@ -12242,7 +12602,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/solution-research/release-chronology.ts": "dabdca9ae3048d8ae0611a85d7f481b6aca8c69f90d06d08c98b4bf7d2011893"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/solution-research/release-chronology.ts"
@@ -12294,7 +12657,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/solution-research/schema.ts": "13013fd004abd0968d2f1a8ef3d03fa60d3c99ddf94edeba7232de931d274faf"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/solution-research/schema.ts"
@@ -12346,7 +12712,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/solution-research/source-focus.ts": "9f12257a434fbe05862050d14ecd1ee9ad71a986b8b254a3e4f9bd4f42183487"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/solution-research/source-focus.ts"
@@ -12398,7 +12767,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/solution-research/source-integrity.ts": "fd45c094d0a8e1f1d8a981dc9fb9f7148c47a4e8fb81aad762f97ca1eabdb448"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/solution-research/source-integrity.ts"
@@ -12450,7 +12822,10 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "currentFileSha256": {
+          "lib/server/research/specialists/solution-research/submission.ts": "efdccc1e083c3f5acb8df29b4662f4a263693771e90221dcd0a0b9a61466d6b1"
+        }
       },
       "currentPaths": [
         "lib/server/research/specialists/solution-research/submission.ts"
@@ -12542,7 +12917,7 @@
           ],
           "currentFileSha256": {
             "playwright.config.ts": "de60445898d29a44e6785c722f79848eca4309d9c23d30bc441a0384180bc61e",
-            "scripts/check-legacy-parity-disposable.mjs": "f72ee6f44ab2affa2fdd40e586f63e1f34a4f3f186ad4a27a946310c2832850f",
+            "scripts/check-legacy-parity-disposable.mjs": "3b3d9c69c3da261da18fae48aa85fc9cbd9b9c65c503e033bba3f5df456472c8",
             ".github/workflows/legacy-backend-parity.yml": "231196ad1e5a10e6a0f5df9c5a73e63b991c75426cac5b77142b2fa81b788565",
             ".github/workflows/ci.yml": "550cb944cfe1f34ba7f59bc27c92798ea761bd40a4f0efe92c76e4a9c314bcfb"
           },
@@ -14576,7 +14951,9 @@
       "reviews": [],
       "currentPaths": [
         "app/_components/agent-chat.tsx",
-        "lib/server/conversations/repository.ts"
+        "lib/server/conversations/repository.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts"
       ],
       "tasks": [
         "T011",
@@ -14585,7 +14962,8 @@
         "T021",
         "T022",
         "T024",
-        "T029"
+        "T029",
+        "T033"
       ],
       "notes": "Legacy acceptance reference; current acceptance must exercise the covered mechanism, not merely preserve file naming. Original hosted benchmark credentials/data are not copied.",
       "acceptanceReview": {
@@ -14644,8 +15022,8 @@
           "localValidation": "13 new unit contracts and5 new cache integration cases passed; combined11file40test run passed including current journey/history. Pattern fixture separately verified by its owning agent. No historical benchmark score or hosted proof inferred."
         },
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "1423b2ee5787224ec3242c16dc6ae9a030dd361d20a474bbd069b3fd7bc67ba6",
-          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925"
+          "app/_components/agent-chat.tsx": "a267c170d01b99a513423cd89796597c975cf2401882c821eef05cae2fc9b3b7",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa"
         },
         "currentTestFileSha256": {
           "tests/contracts/conversations.test.ts": "fbcd4ec92f1a9ddefc7c230dc35c79e0055d90b3b781194cce3cb47a15d9ab62",
@@ -15042,7 +15420,9 @@
         "lib/server/research/specialists/solution-research/submission.ts",
         "lib/server/retrieval/cleanup.ts",
         "lib/server/retrieval/fences.ts",
-        "lib/server/retrieval/jobs.ts"
+        "lib/server/retrieval/jobs.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts"
       ],
       "tasks": [
         "T011",
@@ -15051,7 +15431,8 @@
         "T021",
         "T022",
         "T024",
-        "T029"
+        "T029",
+        "T033"
       ],
       "notes": "Legacy acceptance reference; current acceptance must exercise the covered mechanism, not merely preserve file naming. Original hosted benchmark credentials/data are not copied.",
       "acceptanceReview": {
@@ -15212,7 +15593,7 @@
           "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/named-evidence-search.ts": "32189a43e797d4889ecc0970a8ea5f5c9918eb224f355f6f33da450f05dee3ad",
           "lib/server/conversations/practice-evidence.ts": "d3402512e8d6f14d67f9594b689d428f97b67bf911feb61f47157f65728fcfeb",
-          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/attempt-context.ts": "22401c3852f1e245d30644d59a4e5f47218fb9a11e3c5b7969ced65e11cea216",
           "lib/server/profiles/policy.ts": "76183dc888a3b17a3233c45c78424f51a280ddc713742f80c5afbc673479cde3",
@@ -17147,7 +17528,9 @@
       "reviews": [],
       "currentPaths": [
         "app/_components/agent-chat.tsx",
-        "lib/server/conversations/repository.ts"
+        "lib/server/conversations/repository.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts"
       ],
       "tasks": [
         "T011",
@@ -17156,7 +17539,8 @@
         "T021",
         "T022",
         "T024",
-        "T029"
+        "T029",
+        "T033"
       ],
       "notes": "Legacy acceptance reference; current acceptance must exercise the covered mechanism, not merely preserve file naming. Original hosted benchmark credentials/data are not copied.",
       "acceptanceReview": {
@@ -17207,8 +17591,8 @@
           "localValidation": "13 new unit contracts and5 new cache integration cases passed; combined11file40test run passed including current journey/history. Pattern fixture separately verified by its owning agent. No historical benchmark score or hosted proof inferred."
         },
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "1423b2ee5787224ec3242c16dc6ae9a030dd361d20a474bbd069b3fd7bc67ba6",
-          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925"
+          "app/_components/agent-chat.tsx": "a267c170d01b99a513423cd89796597c975cf2401882c821eef05cae2fc9b3b7",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa"
         },
         "currentTestFileSha256": {
           "tests/contracts/conversations.test.ts": "fbcd4ec92f1a9ddefc7c230dc35c79e0055d90b3b781194cce3cb47a15d9ab62",
@@ -17485,7 +17869,9 @@
         "lib/server/retrieval/fences.ts",
         "lib/server/retrieval/jobs.ts",
         "lib/server/retrieval/policy.ts",
-        "lib/server/retrieval/search.ts"
+        "lib/server/retrieval/search.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts"
       ],
       "tasks": [
         "T011",
@@ -17494,7 +17880,8 @@
         "T021",
         "T022",
         "T024",
-        "T029"
+        "T029",
+        "T033"
       ],
       "notes": "Legacy acceptance reference; current acceptance must exercise the covered mechanism, not merely preserve file naming. Original hosted benchmark credentials/data are not copied.",
       "acceptanceReview": {
@@ -17563,7 +17950,7 @@
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/customer-accounts.ts": "6f937d42ab258c3a39485002c39ba3f477e66909f35625511853b8cec5d9a0db",
           "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
-          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa",
           "lib/server/conversations/stream.ts": "9ad9f1cdd7a3154693ca23c2e9e6950ccad62cbbf7f0d384cf5977e86af69d47",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/service.ts": "9cddfd16cfde7c785dd53d866d199ab23366eb4a50251b59ca438b8d6a62de56",
@@ -18070,7 +18457,9 @@
         "lib/server/research/specialists/solution-research/source-focus.ts",
         "lib/server/research/specialists/solution-research/source-integrity.ts",
         "lib/server/research/specialists/solution-research/submission.ts",
-        "lib/server/retrieval/fences.ts"
+        "lib/server/retrieval/fences.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts"
       ],
       "tasks": [
         "T011",
@@ -18079,7 +18468,8 @@
         "T021",
         "T022",
         "T024",
-        "T029"
+        "T029",
+        "T033"
       ],
       "notes": "Legacy acceptance reference; current acceptance must exercise the covered mechanism, not merely preserve file naming. Original hosted benchmark credentials/data are not copied.",
       "acceptanceReview": {
@@ -18222,7 +18612,7 @@
           "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/named-evidence-search.ts": "32189a43e797d4889ecc0970a8ea5f5c9918eb224f355f6f33da450f05dee3ad",
           "lib/server/conversations/practice-evidence.ts": "d3402512e8d6f14d67f9594b689d428f97b67bf911feb61f47157f65728fcfeb",
-          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/policy.ts": "76183dc888a3b17a3233c45c78424f51a280ddc713742f80c5afbc673479cde3",
           "lib/server/profiles/read.ts": "a11208ff0d1324a52871c3ece172b8093fb4e6177c6b6a387427d0deebfce0d5",
@@ -18579,7 +18969,9 @@
         "lib/server/profiles/read.ts",
         "lib/server/profiles/service.ts",
         "lib/server/research/specialists/research-cache/requests.ts",
-        "lib/server/research/specialists/runtime-authority.ts"
+        "lib/server/research/specialists/runtime-authority.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts"
       ],
       "tasks": [
         "T011",
@@ -18588,7 +18980,8 @@
         "T021",
         "T022",
         "T024",
-        "T029"
+        "T029",
+        "T033"
       ],
       "notes": "Legacy acceptance reference; current acceptance must exercise the covered mechanism, not merely preserve file naming. Original hosted benchmark credentials/data are not copied.",
       "acceptanceReview": {
@@ -18641,7 +19034,7 @@
           "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/named-evidence-search.ts": "32189a43e797d4889ecc0970a8ea5f5c9918eb224f355f6f33da450f05dee3ad",
           "lib/server/conversations/projection.ts": "53057cec62d216d18db5d3fd9c1013d409f385858ea8cfe9ab0b36e81d3bcac1",
-          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/customer-create.ts": "4e8b2b714b73c69c340058154621879561c349fca8040ac0ee8af0e98ccfa5d6",
           "lib/server/profiles/read.ts": "a11208ff0d1324a52871c3ece172b8093fb4e6177c6b6a387427d0deebfce0d5",
@@ -18862,7 +19255,9 @@
         "lib/server/research/specialists/solution-research/provider.ts",
         "lib/server/retrieval/cleanup.ts",
         "lib/server/retrieval/fences.ts",
-        "lib/server/retrieval/jobs.ts"
+        "lib/server/retrieval/jobs.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts"
       ],
       "tasks": [
         "T011",
@@ -18871,7 +19266,8 @@
         "T021",
         "T022",
         "T024",
-        "T029"
+        "T029",
+        "T033"
       ],
       "notes": "Legacy acceptance reference; current acceptance must exercise the covered mechanism, not merely preserve file naming. Original hosted benchmark credentials/data are not copied.",
       "acceptanceReview": {
@@ -18940,7 +19336,7 @@
           "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/named-evidence-search.ts": "32189a43e797d4889ecc0970a8ea5f5c9918eb224f355f6f33da450f05dee3ad",
           "lib/server/conversations/projection.ts": "53057cec62d216d18db5d3fd9c1013d409f385858ea8cfe9ab0b36e81d3bcac1",
-          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/attempt-context.ts": "22401c3852f1e245d30644d59a4e5f47218fb9a11e3c5b7969ced65e11cea216",
           "lib/server/research/context-generation.ts": "eb5af831f02c5b23ac45b355eabd89c8dafe63478f221fadebcad185c5c0969a",
@@ -19397,7 +19793,9 @@
         "lib/server/retrieval/cleanup.ts",
         "lib/server/retrieval/embeddings.ts",
         "lib/server/retrieval/fences.ts",
-        "lib/server/retrieval/jobs.ts"
+        "lib/server/retrieval/jobs.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts"
       ],
       "tasks": [
         "T011",
@@ -19406,7 +19804,8 @@
         "T021",
         "T022",
         "T024",
-        "T029"
+        "T029",
+        "T033"
       ],
       "notes": "Legacy acceptance reference; current acceptance must exercise the covered mechanism, not merely preserve file naming. Original hosted benchmark credentials/data are not copied.",
       "acceptanceReview": {
@@ -19529,7 +19928,7 @@
           "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/named-evidence-search.ts": "32189a43e797d4889ecc0970a8ea5f5c9918eb224f355f6f33da450f05dee3ad",
           "lib/server/conversations/practice-evidence.ts": "d3402512e8d6f14d67f9594b689d428f97b67bf911feb61f47157f65728fcfeb",
-          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/policy.ts": "76183dc888a3b17a3233c45c78424f51a280ddc713742f80c5afbc673479cde3",
           "lib/server/profiles/read.ts": "a11208ff0d1324a52871c3ece172b8093fb4e6177c6b6a387427d0deebfce0d5",
@@ -20243,7 +20642,9 @@
         "lib/server/research/specialists/solution-research/source-integrity.ts",
         "lib/server/research/specialists/solution-research/submission.ts",
         "lib/server/retrieval/context.ts",
-        "lib/server/retrieval/fences.ts"
+        "lib/server/retrieval/fences.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts"
       ],
       "tasks": [
         "T011",
@@ -20252,7 +20653,8 @@
         "T021",
         "T022",
         "T024",
-        "T029"
+        "T029",
+        "T033"
       ],
       "notes": "Legacy acceptance reference; current acceptance must exercise the covered mechanism, not merely preserve file naming. Original hosted benchmark credentials/data are not copied.",
       "acceptanceReview": {
@@ -20381,7 +20783,7 @@
           "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/named-evidence-search.ts": "32189a43e797d4889ecc0970a8ea5f5c9918eb224f355f6f33da450f05dee3ad",
           "lib/server/conversations/practice-evidence.ts": "d3402512e8d6f14d67f9594b689d428f97b67bf911feb61f47157f65728fcfeb",
-          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/policy.ts": "76183dc888a3b17a3233c45c78424f51a280ddc713742f80c5afbc673479cde3",
           "lib/server/profiles/quality.ts": "6b15e5cb2782942296dab16f436a1ac9d94e7fe308ef53b006ea3a2fa9b80399",
@@ -21280,7 +21682,10 @@
         "lib/server/conversations/input-responses.ts",
         "lib/server/research/fetch.ts",
         "lib/server/conversations/attachment-intake.ts",
-        "lib/server/conversations/native-uploads.ts"
+        "lib/server/conversations/native-uploads.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts",
+        "lib/server/conversations/repository.ts"
       ],
       "tasks": [
         "T011",
@@ -21289,7 +21694,8 @@
         "T021",
         "T022",
         "T024",
-        "T029"
+        "T029",
+        "T033"
       ],
       "notes": "Legacy acceptance reference; current acceptance must exercise the covered mechanism, not merely preserve file naming. Original hosted benchmark credentials/data are not copied.",
       "acceptanceReview": {
@@ -21397,7 +21803,7 @@
           "localValidation": "13 new unit contracts and5 new cache integration cases passed; combined11file40test run passed including current journey/history. Pattern fixture separately verified by its owning agent. No historical benchmark score or hosted proof inferred."
         },
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "1423b2ee5787224ec3242c16dc6ae9a030dd361d20a474bbd069b3fd7bc67ba6",
+          "app/_components/agent-chat.tsx": "a267c170d01b99a513423cd89796597c975cf2401882c821eef05cae2fc9b3b7",
           "lib/conversations/attachment-text.ts": "952ab6de1257c307a804dfd61d8f7c5d18ee3b367df9dc91c8b996d8e6e80673",
           "lib/server/conversations/input-responses.ts": "a6ff7216c862b21103872f668490638946bab381d45cca6eeb7d69821681860f",
           "lib/server/research/fetch.ts": "1fb596c17c32d6e065bfc29b51ba89f4f6e68c11b947834df6251d2b0fce1c59",
@@ -21431,7 +21837,9 @@
         "lib/server/conversations/repository.ts",
         "lib/server/db/client.ts",
         "lib/server/profiles/attempt-context.ts",
-        "lib/server/profiles/tool-actor.ts"
+        "lib/server/profiles/tool-actor.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts"
       ],
       "tasks": [
         "T011",
@@ -21440,7 +21848,8 @@
         "T021",
         "T022",
         "T024",
-        "T029"
+        "T029",
+        "T033"
       ],
       "notes": "Legacy acceptance reference; current acceptance must exercise the covered mechanism, not merely preserve file naming. Original hosted benchmark credentials/data are not copied.",
       "acceptanceReview": {
@@ -21538,7 +21947,7 @@
           "lib/server/auth/sessions.ts": "f5aa0b00dccd6e4af1fbf8e67ba605d04a780b41fbefa4ea0bdda9ebe948681e",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
-          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/attempt-context.ts": "22401c3852f1e245d30644d59a4e5f47218fb9a11e3c5b7969ced65e11cea216",
           "lib/server/profiles/tool-actor.ts": "c9ee809d96774236ef28b3495649fc7e9cf4e0586d679aaf044e40cee610d714"
@@ -21561,7 +21970,10 @@
       "reviews": [],
       "currentPaths": [
         "app/_components/agent-chat.tsx",
-        "app/globals.css"
+        "app/globals.css",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts",
+        "lib/server/conversations/repository.ts"
       ],
       "tasks": [
         "T011",
@@ -21570,7 +21982,8 @@
         "T021",
         "T022",
         "T024",
-        "T029"
+        "T029",
+        "T033"
       ],
       "notes": "Legacy acceptance reference; current acceptance must exercise the covered mechanism, not merely preserve file naming. Original hosted benchmark credentials/data are not copied.",
       "acceptanceReview": {
@@ -21612,7 +22025,7 @@
           "Legacy separate header/fade/Scroll-to-bottom control is not implemented in the current authored bound-chat layout; exact geometry test therefore is not applicable verbatim. Parent must explicitly disposition these UI design/control differences; current native mobile overflow and landing layout tests prove only their actual assertions."
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "1423b2ee5787224ec3242c16dc6ae9a030dd361d20a474bbd069b3fd7bc67ba6",
+          "app/_components/agent-chat.tsx": "a267c170d01b99a513423cd89796597c975cf2401882c821eef05cae2fc9b3b7",
           "app/globals.css": "91df1bbc5b18c5d6ca512b2c98a85bd4d37329361ab46e62052298e40d188b11"
         },
         "currentTestFileSha256": {
@@ -21713,7 +22126,9 @@
         "lib/server/profiles/public-inventory.ts",
         "lib/server/profiles/read.ts",
         "lib/server/research/public-dossier.ts",
-        "lib/server/research/public-persistence.ts"
+        "lib/server/research/public-persistence.ts",
+        "lib/conversations/active-chat-history.ts",
+        "lib/conversations/retained-history.ts"
       ],
       "tasks": [
         "T011",
@@ -21722,7 +22137,8 @@
         "T021",
         "T022",
         "T024",
-        "T029"
+        "T029",
+        "T033"
       ],
       "notes": "Legacy acceptance reference; current acceptance must exercise the covered mechanism, not merely preserve file naming. Original hosted benchmark credentials/data are not copied.",
       "acceptanceReview": {
@@ -21803,7 +22219,7 @@
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/customer-accounts.ts": "6f937d42ab258c3a39485002c39ba3f477e66909f35625511853b8cec5d9a0db",
           "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
-          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
+          "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/public-inventory-reference.ts": "ba9abb24b8c09e340e38f6ae0835f7fb58ae1cde079b2e7dcb7047bbe14285bd",
           "lib/server/profiles/public-inventory.ts": "ae9de643c51285d515e80dd9c5f90e218c89069fa9600ed6356fb1f3fa5083ee",

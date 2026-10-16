@@ -14,6 +14,7 @@ import {pendingChatInputs,chatInputAnswer} from "../../lib/chat-inputs";
 import {ChatInputRequestCard} from "./chat-input-request";
 import { ChatMarkdown } from "./chat-markdown";
 import { visibleChatMessages, backgroundChatActivity } from "../../lib/chat-messages";
+import {activeChatHistory,retainedActiveParts} from '../../lib/conversations/active-chat-history';
 import {RetainedChat} from './retained-chat';
 import {retainedChatMessages,type RetainedChatEvent} from '../../lib/conversations/retained-history';
 import {nativeUserDisplayParts,type NativeAttachmentReference} from '../../lib/conversations/native-message-display';
@@ -97,6 +98,17 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   const [canAttachNativeFiles,setCanAttachNativeFiles]=useState(false);
   type FileReference=NativeAttachmentReference;
   const [nativeAttachments,setNativeAttachments]=useState<FileReference[]>([]);
+  const [applicationHistory,setApplicationHistory]=useState<RetainedChatEvent[]>([]);
+  const [historyTruncated,setHistoryTruncated]=useState(false);
+  const historyReadEpoch=useRef(0),historyAppliedEpoch=useRef(0);
+  function clearApplicationHistory(epoch:number){if(epoch<historyAppliedEpoch.current)return;historyAppliedEpoch.current=epoch;setApplicationHistory([]);setNativeAttachments([]);}
+  function applyApplicationHistory(data:{contextStatus?:string;history?:RetainedChatEvent[];historyTruncated?:boolean;nativeAttachments?:FileReference[]},epoch:number){
+    if(epoch<historyAppliedEpoch.current)return;historyAppliedEpoch.current=epoch;
+    setNativeAttachments(data.contextStatus==='current'?data.nativeAttachments??[]:[]);
+    setApplicationHistory(data.contextStatus==='current'&&Array.isArray(data.history)?data.history:[]);
+    setHistoryTruncated(data.historyTruncated===true);
+  }
+
   const [documents,setDocuments]=useState<OrdinaryAttachment[]>([]);
   const [preparingDocuments,setPreparingDocuments]=useState(false);
   const changingDocuments=useRef(false);
@@ -133,9 +145,11 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     },
   });
 
+  const latestAgent=useRef(agent);latestAgent.current=agent;
   const inputRequests=pendingChatInputs(agent.events);
   const [answering,setAnswering]=useState(false);
   const messages = visibleChatMessages(agent.data.messages, agent.events);
+  const displayMessages=activeChatHistory(messages,canSteer?applicationHistory:[]);
   const background = backgroundChatActivity(agent.events);
   const messagesPane = useRef<HTMLDivElement>(null);
   const followBottom = useRef(true);
@@ -146,24 +160,25 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
 
   useEffect(() => {
     let active = true;
+    const historyEpoch=++historyReadEpoch.current;
     void fetch(`/api/conversations/${conversationId}`, { cache: "no-store" })
       .then(async (response) => {
         if (response.status === 401 || response.status === 404) {
-          if (active) setDenied(true);
+          if (active&&historyEpoch>=historyAppliedEpoch.current) {clearApplicationHistory(historyEpoch);setDenied(true);}
           return;
         }
         if (!response.ok) throw new Error();
-        const detail = await response.json() as { data: { nativeAttachments?:FileReference[];contextStatus?: string;featureKind?:string;canAttachDocuments?:boolean;canAttachNativeFiles?:boolean; attempts: Array<{
+        const detail = await response.json() as { data: { history?:RetainedChatEvent[];historyTruncated?:boolean;nativeAttachments?:FileReference[];contextStatus?: string;featureKind?:string;canAttachDocuments?:boolean;canAttachNativeFiles?:boolean; attempts: Array<{
           requestKey: string; dispatchState: string; responseState: string;
           watchdogState: string | null;
         }> } };
-        if (!active) return;
+        if (!active||historyEpoch<historyAppliedEpoch.current) return;
         setCanSteer(detail.data.featureKind==='normal');
         setCanAttachDocuments(detail.data.canAttachDocuments===true);
         setCanAttachNativeFiles(detail.data.canAttachNativeFiles===true);
-        setNativeAttachments(detail.data.nativeAttachments??[]);
+        applyApplicationHistory(detail.data,historyEpoch);
         if (detail.data.contextStatus !== "current") {
-          agent.reset(); setStale(true); return;
+          setApplicationHistory([]);agent.reset(); setStale(true); return;
         }
         const outstanding = [...detail.data.attempts].reverse().find((attempt) =>
           ["pending", "running", "stopping"].includes(attempt.responseState));
@@ -185,56 +200,63 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
             setResponseState(latest.responseState);
           }
         }
-      }).catch(() => { if (active) setNotice("History status is unavailable. Reload to check again."); });
-    return () => { active = false; };
+      }).catch(() => { if (active) {clearApplicationHistory(historyEpoch);setNotice("History status is unavailable. Reload to check again.");} });
+    return () => { active = false;historyAppliedEpoch.current=++historyReadEpoch.current; };
   }, [conversationId]);
 
   useEffect(() => {
+    let active=true;
     const check = async () => {
+      const historyEpoch=++historyReadEpoch.current;
       try {
         const response = await fetch(`/api/conversations/${conversationId}`, { cache: "no-store" });
+        if(!active||historyEpoch<historyAppliedEpoch.current)return;
         if (response.status === 401 || response.status === 404) {
-          agent.reset();
-          setDenied(true);
+          latestAgent.current.reset();
+          clearApplicationHistory(historyEpoch);setDenied(true);
         } else if (response.ok) {
-          const detail = await response.json() as { data: { contextStatus?: string;nativeAttachments?:FileReference[] } };
-          setNativeAttachments(detail.data.nativeAttachments??[]);
+          const detail = await response.json() as { data: { contextStatus?: string;featureKind?:string;canAttachDocuments?:boolean;canAttachNativeFiles?:boolean;history?:RetainedChatEvent[];historyTruncated?:boolean;nativeAttachments?:FileReference[] } };
+          if(!active||historyEpoch<historyAppliedEpoch.current)return;
+          setCanSteer(detail.data.featureKind==='normal');setCanAttachDocuments(detail.data.canAttachDocuments===true);setCanAttachNativeFiles(detail.data.canAttachNativeFiles===true);
+          applyApplicationHistory(detail.data,historyEpoch);
           if (detail.data.contextStatus !== "current") {
-            agent.reset(); setStale(true);
+            setApplicationHistory([]);latestAgent.current.reset(); setStale(true);
           }
-        }
-      } catch { /* live stream guard also closes on authority failure */ }
+        } else {clearApplicationHistory(historyEpoch);}
+      } catch {if(active)clearApplicationHistory(historyEpoch); /* Never retain a display fallback after its read fails. */ }
     };
     const timer = setInterval(() => { void check(); }, 2_000);
-    return () => clearInterval(timer);
-  }, [agent, conversationId]);
+    return () => {active=false;historyAppliedEpoch.current=++historyReadEpoch.current;clearInterval(timer);};
+  }, [conversationId]);
 
   useEffect(() => {
     if (!pendingKey || denied) return;
     let active = true;
     const check = async () => {
+      let visibilityHistoryEpoch:number|undefined;
       try {
         const response = await fetch(`/api/conversations/${conversationId}/attempts/${pendingKey}`,
           { cache: "no-store" });
         if (response.status === 401) {
-          if (active) { agent.reset(); setDenied(true); }
+          if (active) { agent.reset(); setDenied(true);setApplicationHistory([]);setNativeAttachments([]); }
           return;
         }
         if (response.status === 404) {
           // A status read can beat response preparation, or the send can fail
           // before admission. Check chat authority before treating an absent
           // response receipt as lost access. Never redispatch from this poll.
+          const historyEpoch=++historyReadEpoch.current;visibilityHistoryEpoch=historyEpoch;
           const visibility = await fetch(`/api/conversations/${conversationId}`, { cache: "no-store" });
-          if (!active) return;
+          if (!active||historyEpoch<historyAppliedEpoch.current) return;
           if (visibility.status === 401 || visibility.status === 404) {
-            agent.reset(); setDenied(true); return;
+            clearApplicationHistory(historyEpoch);agent.reset(); setDenied(true); return;
           }
-          if (!visibility.ok) throw new Error();
-          const detail = await visibility.json() as { data: { contextStatus?: string;nativeAttachments?:FileReference[] } };
-          if (!active) return;
-          setNativeAttachments(detail.data.nativeAttachments??[]);
+          if (!visibility.ok) {clearApplicationHistory(historyEpoch);throw new Error();}
+          const detail = await visibility.json() as { data: { contextStatus?: string;featureKind?:string;canAttachDocuments?:boolean;canAttachNativeFiles?:boolean;history?:RetainedChatEvent[];historyTruncated?:boolean;nativeAttachments?:FileReference[] } };
+          if (!active||historyEpoch<historyAppliedEpoch.current) return;
+          applyApplicationHistory(detail.data,historyEpoch);
           if (detail.data.contextStatus !== "current") {
-            agent.reset(); setStale(true); return;
+            setApplicationHistory([]);agent.reset(); setStale(true); return;
           }
           // Preserve the send's pending/uncertain notice until a receipt exists.
           return;
@@ -254,7 +276,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
           keyRef.current = null;
           setStopping(false);
         }
-      } catch { if (active) setNotice("Status is unavailable. The message was not sent again."); }
+      } catch { if (active) {if(visibilityHistoryEpoch!==undefined)clearApplicationHistory(visibilityHistoryEpoch);setNotice("Status is unavailable. The message was not sent again.");} }
     };
     void check();
     const timer = setInterval(() => { void check(); }, 5_000);
@@ -394,8 +416,9 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
       const pane = messagesPane.current;
       if (pane) followBottom.current = pane.scrollHeight - pane.scrollTop - pane.clientHeight < 80;
     }}>
-      {messages.length === 0 && <p className="muted">No messages yet.</p>}
-      {messages.map((message) => <article className={`chat-message chat-message-${message.role}`}
+      {historyTruncated&&<p role="status">This conversation is long. Only the first 500 saved events and recent partial responses are shown.</p>}
+      {displayMessages.length === 0 && <p className="muted">No messages yet.</p>}
+      {displayMessages.map((item)=>{if(item.kind==='retained'){const message=item.message;return <article className={`chat-message chat-message-${message.role}`} aria-label={message.role==='assistant'?'Turi':'You'} key={'retained:'+message.id}>{retainedActiveParts(message,nativeAttachments.find(ref=>ref.eventId===message.id)).map((part,index)=>part.type==='file'?<NativeChatAttachment key={index} filename={part.filename} mediaType={part.mediaType} size={part.size} url={part.url}/>:message.role==='assistant'?<ChatMarkdown key={index} text={part.text}/>:<UserChatText key={index} text={part.text}/>)}{message.partial&&<small>Partial response</small>}</article>;}const message=item.message;return <article className={`chat-message chat-message-${message.role}`}
         aria-label={message.role === "assistant" ? "Turi" : "You"} key={message.id}>
         {message.role==='user'?nativeUserDisplayParts(message,nativeAttachments.find(item=>item.eventId===message.id.replace(/:user$/,''))).map((part,index)=>part.type==='text'
           ?<UserChatText key={index} text={part.text}/>:<NativeChatAttachment key={index} filename={part.filename} mediaType={part.mediaType} url={part.url} size={part.size}/>):message.parts.map((part, index) => part.type === "text"
@@ -403,7 +426,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
             ? <ChatMarkdown key={index} streaming={busy && message.id === messages.at(-1)?.id} text={part.text} />
             : <UserChatText key={index} text={part.text}/>
           :null)}
-      </article>)}
+      </article>;})}
       {inputRequests.map(request=><ChatInputRequestCard key={request.requestId} request={request}
         disabled={answering||busy||agent.status==='resuming'} onResponse={respondToRequest}/>) }
       {(busy || background.thinking) && <p className="chat-thinking" role="status">
