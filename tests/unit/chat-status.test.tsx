@@ -18,3 +18,9 @@ describe("chat response notices", () => {
     expect(cancelled).not.toContain("Waiting for confirmation");
   });
 });
+
+it('keeps failed input and operator notices visible after an earlier completed turn',()=>{
+ const html=renderToStaticMarkup(<ChatStatus quietSuccess responseState="completed" notice="Your response could not be confirmed." error/>);
+ expect(html).toContain('Your response could not be confirmed.');
+ expect(renderToStaticMarkup(<ChatStatus quietSuccess responseState="completed"/>)).toBe('');
+});

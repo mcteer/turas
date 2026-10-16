@@ -11,7 +11,7 @@ if (Number(process.versions.node.split(".")[0]) !== 24) throw Error("Run this ch
 if (process.argv.includes("--webkit-child")) {
   const { withPlanEvalEnvironment } = await import("./plan-eval-environment.ts");
   const files = ["legacy-login-native.spec.ts", "legacy-source-library.spec.ts",
-    "ordinary-operations.spec.ts", "legacy-context-journey.spec.ts", "legacy-chat-shell-contracts.spec.ts", "legacy-retired-history.spec.ts"].map(file=>"tests/ui/"+file);
+    "ordinary-operations.spec.ts", "legacy-context-journey.spec.ts", "legacy-chat-shell-contracts.spec.ts", "legacy-retired-history.spec.ts", "chat-interaction-parity.spec.ts"].map(file=>"tests/ui/"+file);
   await withPlanEvalEnvironment(async environment => {
     const bootstrap=spawnSync(process.execPath,["--experimental-strip-types","scripts/bootstrap-demo.ts"],
       {cwd:environment.appRoot,env:process.env,encoding:"utf8"});
@@ -111,9 +111,9 @@ if (process.argv.includes("--webkit-child")) {
       throw Error("018 actual WebKit acceptance failed; inspect private report");
     }
     const report=JSON.parse(result.stdout);
-    if(report.stats.expected!==52||report.stats.unexpected||report.stats.flaky||report.stats.skipped)
-      throw Error("018 WebKit requires all52cases acrossfourprojects without skips or retries");
-    console.log(JSON.stringify({gate:"018-webkit",actualEve:true,projects:4,passed:52,skipped:0}));
+    if(report.stats.expected!==80||report.stats.unexpected||report.stats.flaky||report.stats.skipped)
+      throw Error("018 WebKit requires all80cases acrossfourprojects without skips or retries");
+    console.log(JSON.stringify({gate:"018-webkit",actualEve:true,projects:4,passed:80,skipped:0}));
   },{feature:"010",production:true,deadlineAt:Date.now()+1_800_000,prepare:async({appRoot})=>{
     const {copyFile}=await import("node:fs/promises");
     await copyFile("playwright.config.ts",join(appRoot,"playwright.config.ts"));
@@ -121,7 +121,7 @@ if (process.argv.includes("--webkit-child")) {
   }});
   process.exit(0);
 }
-const acceptanceOnly=["--webkit","--native-operations","--native-staged-4","--native-staged-10","--native-task-state","--native-questions"].some(flag=>process.argv.includes(flag));
+const acceptanceOnly=["--chat-interaction","--webkit","--native-operations","--native-staged-4","--native-staged-10","--native-task-state","--native-questions"].some(flag=>process.argv.includes(flag));
 mkdirSync("local-artifacts",{recursive:true,mode:0o700});
 const name = `turas-parity-owned-${process.pid}`;
 const directory = mkdtempSync(join(tmpdir(),"turas-parity-owned-"));
@@ -198,6 +198,7 @@ try {
   // fixture's explicit test-database selector.
   const contractUrl=new URL(url);contractUrl.searchParams.set('options','-c role=turas_runtime');
   if(!acceptanceOnly&&!process.argv.includes("--native-only")&&!process.argv.includes("--native-files-only"))run(["node_modules/vitest/vitest.mjs","run","tests/contracts/general-chat.test.ts"],{...environment,DATABASE_URL:contractUrl.toString(),DATABASE_URL_UNPOOLED:contractUrl.toString()});
+  if(process.argv.includes('--chat-interaction'))run(['--import','tsx','scripts/check-chat-interaction-ui.ts',...(process.argv.includes('--preparation-race')?['--preparation-race']:[])],integrationEnvironment);
   if(process.argv.includes('--webkit'))run(['--import','tsx','scripts/check-legacy-parity-disposable.mjs','--webkit-child'],integrationEnvironment);
   if(process.argv.includes('--native-operations'))run(['--import','tsx','scripts/check-ordinary-operations-native.ts','--knowledge'],integrationEnvironment);
   if(process.argv.includes('--native-staged-4'))run(['--import','tsx','scripts/check-ordinary-native-files.ts','--composer','--steer','--staged-4'],integrationEnvironment);
@@ -217,9 +218,9 @@ try {
   if(process.argv.includes('--artifact-journey'))run(['--import','tsx','scripts/check-legacy-artifact-publication.ts'],integrationEnvironment);
   if(process.argv.includes('--native')||process.argv.includes('--native-only'))run(['--import','tsx','scripts/check-ordinary-chat-native.ts'],integrationEnvironment);
   mkdirSync("local-artifacts/018/ci-disposable",{recursive:true,mode:0o700});
-  const gateName=process.argv.find(flag=>["--webkit","--native-operations","--native-staged-4","--native-staged-10","--native-task-state","--native-questions"].includes(flag))?.slice(2)??"domains";
+  const gateName=process.argv.find(flag=>["--chat-interaction","--webkit","--native-operations","--native-staged-4","--native-staged-10","--native-task-state","--native-questions"].includes(flag))?.slice(2)??"domains";
   writeFileSync(join("local-artifacts/018/ci-disposable",gateName+"-private.log"),output,{mode:0o600});
-  console.log(JSON.stringify({gate:acceptanceOnly?process.argv.find(flag=>["--webkit","--native-operations","--native-staged-4","--native-staged-10","--native-task-state","--native-questions"].includes(flag)):"domains",ownedDisposableDatabase:true,migrationsAndRuntimeGrants:true,passed:true,paidProviderCalls:0}));
+  console.log(JSON.stringify({gate:acceptanceOnly?process.argv.find(flag=>["--chat-interaction","--webkit","--native-operations","--native-staged-4","--native-staged-10","--native-task-state","--native-questions"].includes(flag)):"domains",ownedDisposableDatabase:true,migrationsAndRuntimeGrants:true,passed:true,paidProviderCalls:0}));
 } catch(error) {
   console.error(error.message);
   // Tests contain only locally created fixture data. Credentials and startup

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { OrdinaryDocuments } from "./attachments/ordinary-documents";
 import {composeOrdinaryMessage,type OrdinaryAttachment,type OrdinarySendMessage} from "../../lib/conversations/ordinary-documents";
+import {ComposerLinks} from "./composer-links";
 import { CustomerPicker, type CustomerChoice } from "./customer-picker";
 import { uploadNativeFiles } from "../../lib/conversations/upload-native-files";
 
@@ -83,6 +84,7 @@ export function NewConversation({ csrfToken, canAttachDocuments = false, canAtta
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void start(); } }} />
         <div className="chat-actions">
+          <ComposerLinks text={draft} onChange={setDraft} disabled={state==="creating"||preparingDocuments}/>
           {canAttachDocuments?<OrdinaryDocuments buttonLabel="Attach documents" nativeFilesEnabled={canAttachNativeFiles} documents={documents} onChange={setDocuments} onPreparingChange={setPreparingDocuments} disabled={state==="creating"||preparingDocuments}/>:<button className="composer-attach" type="button" aria-label="Attach documents" disabled={state === "creating"} onClick={() => void start(true)}>
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m8 12 6-6a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l9-9" /></svg>
           </button>}
