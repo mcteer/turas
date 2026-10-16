@@ -1,3 +1,4 @@
+import {readVerifiedResearchProjectionRows} from "./research-projection";
 import { createHash, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { profilePayloadSchema } from "../../contracts/profile-payloads";
@@ -142,30 +143,9 @@ export async function buildCurrentProjection(client: PoolClient,
       workloadId: row.workload_id,sourceKind: kind,revisionId,audience,
       generation: Number(row.lifecycle_generation),chunks };
   }
-  const found = await client.query<{ workspace_id: string; customer_id: string;
-    version: string; passage: string; location: string; audience: string }>(`
-    SELECT v.workspace_id,v.customer_id,v.version,v.passage,v.location,v.audience
-    FROM evidence_source_revisions v
-    JOIN evidence_sources s ON s.id=v.source_id AND s.origin='independent_research'
-    JOIN research_checks c ON c.source_revision_id=v.id
-      AND c.identity_result AND c.scope_result AND c.integrity_result AND c.content_result
-    WHERE v.id=$1 AND NOT EXISTS (SELECT 1 FROM evidence_source_events e
-      WHERE e.source_revision_id=v.id AND e.event_type IN ('withdraw','supersede'))`,
-  [revisionId]);
-  const row = found.rows[0];
-  if (!row || (audience === "delivery" && row.audience !== "delivery")) return null;
-  const url = new URL(row.location);
-  if (url.protocol !== "https:" || url.username || url.password) return null;
-  let text=row.passage,documentProjection=false;
-  const schema=(await client.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[environmentId])).rows[0]?.schema_version??0;
-  if(schema>=60) {
-    const document=(await client.query<{document_text:string;document_digest:string}>(
-      'SELECT document_text,document_digest FROM independent_research_documents WHERE source_revision_id=$1',[revisionId])).rows[0];
-    if(document) {
-      if(createHash('sha256').update(document.document_text).digest('hex')!==document.document_digest)return null;
-      text=document.document_text;documentProjection=true;
-    }
-  }
+  const row=(await readVerifiedResearchProjectionRows(client,[revisionId],audience,environmentId)).get(revisionId);
+  if(!row)return null;
+  const text=row.text,documentProjection=row.documentProjection,url=new URL(row.location);
   const chunks = simpleChunks(text,(start,end) => ({ kind: "research_passage",
     canonicalUrl: url.toString(),start,end }));
   if (!chunks.length) return null;

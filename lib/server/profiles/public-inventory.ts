@@ -1,14 +1,14 @@
-import {recallPublicLearning} from "../research/specialists/research-cache/public-learning-read";
+import {recallPublicLearningForAccounts} from "../research/specialists/research-cache/public-learning-read";
 import {getServerConfig} from "../config";
 import {createHash,randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import {z} from 'zod';
 import type {CurrentSession} from '../auth/sessions';
 import {HttpFailure,hiddenRecord} from '../../contracts/http';
-import {lockWorkspaceActor,lockProfileActor} from './policy';
+import {lockWorkspaceActor,lockProfileActors} from './policy';
 import {withTransaction} from '../db/client';
 import {customerQuestionActor} from '../conversations/customer-accounts';
-import {productsFromResearch} from '../../profiles/research-products';
+import {productsFromResearch,couldMatchResearchProductLabel} from '../../profiles/research-products';
 import {communityAttributionWarning} from '../research/specialists/solution-research/attribution';
 import {inventoryStoryJoins,inventoryStoryEligibility} from './public-inventory-reference';
 
@@ -100,7 +100,9 @@ export async function readPublicCustomerInventory(db:PoolClient,actor:CurrentSes
   WHERE c.workspace_id=$1 AND ($5::boolean OR NOT c.synthetic) AND ($3='internal' OR EXISTS(SELECT 1 FROM customer_grants g WHERE g.customer_id=c.id AND g.membership_id=$2 AND g.state='active'))
    AND ($4::uuid IS NULL OR c.id=$4) ORDER BY c.display_name,c.id LIMIT 1001`,[scope.actor.workspaceId,scope.actor.membershipId,scope.actor.kind,scope.general?null:scope.customerId,options.includeSynthetic??false]);
  if(result.rows.length>1000)throw new HttpFailure(503,'inventory_incomplete','Narrow the customer inventory');
- const research=(await db.query<{id:string;customer_id:string;title:string;passage:string;location:string;information_type:string|null}>(`SELECT v.id,v.customer_id,v.title,v.passage,v.location,v.quality_input->>'informationType' AS information_type
+ const needsResearchProducts=Boolean(input.query)&&couldMatchResearchProductLabel(input.query);
+ if(needsResearchProducts){
+ const research=(await db.query<{id:string;customer_id:string;location:string;information_type:string|null}>(`SELECT v.id,v.customer_id,v.location,v.quality_input->>'informationType' AS information_type
   FROM evidence_source_revisions v JOIN evidence_sources s ON s.id=v.source_id AND s.origin='independent_research'
   JOIN research_checks checks ON checks.source_revision_id=v.id AND checks.identity_result AND checks.scope_result AND checks.integrity_result AND checks.content_result
   WHERE v.customer_id=ANY($1::uuid[]) AND v.workspace_id=$2 AND ($3='internal' OR v.audience='delivery')
@@ -109,18 +111,19 @@ export async function readPublicCustomerInventory(db:PoolClient,actor:CurrentSes
     AND conflict.state IN('flagged','confirmed') AND v.id IN(conflict.first_revision_id,conflict.second_revision_id)) ORDER BY v.id LIMIT 5001`,[result.rows.map(account=>account.id),scope.actor.workspaceId,scope.actor.kind])).rows;
  if(research.length>5000)throw new HttpFailure(503,'inventory_incomplete','Narrow the customer evidence inventory');
  const identity={...actor,userId:actor.principalId,environmentId:getServerConfig().TURAS_ENVIRONMENT_ID};
+ const retained=await recallPublicLearningForAccounts(identity,[...new Set(research.map(source=>source.customer_id))],new AbortController().signal,db);
  for(const account of result.rows){
-  if(!input.query || !research.some(source=>source.customer_id===account.id))continue;
-  const retained=await recallPublicLearning(identity,account.id,'',new AbortController().signal,false,db);
+  if(!research.some(source=>source.customer_id===account.id))continue;
   for(const source of research.filter(source=>source.customer_id===account.id)){
    if(source.information_type==='product_capability'||communityAttributionWarning({url:source.location}))continue;
-   const products=productsFromResearch(retained.filter(passage=>passage.url===source.location));
+   const products=productsFromResearch(retained.filter(passage=>passage.accountId===account.id&&passage.url===source.location));
    if(products.length){account.products=[...new Set([...(account.products??[]),...products])];(account.productSourceIds??=[]).push(source.id);}
   }
  }
+ }
  const matches=filterPublicCustomerInventory(result.rows,input.query,input.signal),page=matches.slice(input.offset,input.offset+input.limit);
+ await lockProfileActors(db,scope.actor,page.map(account=>account.id),undefined,true);
  for(const account of [...page].sort((a,b)=>a.id.localeCompare(b.id))){
-  await lockProfileActor(db,scope.actor,account.id,undefined,true);
   if(scope.general&&scope.attemptId)await db.query(`INSERT INTO general_customer_read_scopes(attempt_id,customer_id,audience,generation,citation_ids)
    SELECT $1,customer_id,$3,CASE WHEN $3='internal' THEN internal_generation ELSE delivery_generation END,$4::text[] FROM customer_profile_state WHERE customer_id=$2
    ON CONFLICT(attempt_id,customer_id) DO UPDATE SET citation_ids=ARRAY(SELECT DISTINCT unnest(general_customer_read_scopes.citation_ids||EXCLUDED.citation_ids))`,

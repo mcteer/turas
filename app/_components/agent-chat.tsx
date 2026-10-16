@@ -297,6 +297,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     try{message=retryPrepared&&pendingMessage.current?pendingMessage.current:initialText??composeOrdinaryMessage(prompt,documents);}catch(failure){setNotice(failure instanceof Error?failure.message:'The documents could not be prepared.');return;}
     if(typeof message!=='string'&&selections.length){setNotice('Send native files separately from selected source passages.');return;}
     const text=typeof message==='string'?message:summarizeNativeMessage(message);
+    if((selections.length||documents.length)&&chatInputAnswer(inputRequests,prompt)){setNotice('Answer the pending question separately before sending files or selected evidence.');return;}
     const answer=typeof message==='string'&&!selections.length&&!documents.length?chatInputAnswer(inputRequests,text):null;
     if(answer && agent.status==='ready' && !denied && !answering) {
       await respondToRequest(answer);setDraft('');return;
@@ -422,6 +423,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
       </div>
     </form>
     {draft.trim() && !pendingKey && <p className="state-message" role="status">Draft not sent.</p>}
+    {notice==='Answer the pending question separately before sending files or selected evidence.'&&<p role="alert" className="status-alert">{notice}</p>}
     <ChatStatus notice={notice} responseState={inputRequests.length?'waiting_input':responseState} error={Boolean(agent.error)} />
     {pendingKey && dispatchState === "prepared" && !busy &&
       <button className="secondary-button" type="button" onClick={() => void send(true)}>

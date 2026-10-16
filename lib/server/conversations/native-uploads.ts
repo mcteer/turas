@@ -141,7 +141,7 @@ export async function assertNativeAttemptFileLimit(db:PoolClient,actor:CurrentSe
  * sandbox-path hints. Read only the five most recent distinct files from real
  * consumed sends in this owned conversation, including after reconnect. Model
  * prose, a sandbox path or another conversation's ID never grants access. */
-export async function readNativeProviderFiles(db:PoolClient,actor:CurrentSession,conversationId:string,attemptId:string){
+export async function readNativeProviderFiles(db:PoolClient,actor:CurrentSession,conversationId:string,attemptId:string,internal?:{questionContinuation:boolean}){
  const marker=(await db.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0];
  if(Number(marker?.schema_version??0)<74)return [];
  const rows=(await db.query<{id:string;upload_id:string;ordinary_native_parts:unknown}>(
@@ -151,12 +151,12 @@ export async function readNativeProviderFiles(db:PoolClient,actor:CurrentSession
     JOIN ordinary_native_uploads u ON u.bound_message_id=m.id AND u.conversation_id=c.id
       AND u.owner_principal_id=c.owner_principal_id AND u.workspace_id=c.workspace_id AND u.environment_id=c.environment_id
     WHERE c.id=$1 AND c.owner_principal_id=$2 AND c.workspace_id=$3 AND c.environment_id=$4
-      AND EXISTS(SELECT 1 FROM response_attempts active WHERE active.id=$5 AND active.conversation_id=c.id AND active.response_state='running')
+      AND EXISTS(SELECT 1 FROM response_attempts active WHERE active.id=$5 AND active.conversation_id=c.id AND (active.response_state='running' OR $6::boolean AND active.response_state='waiting_input' AND (${Number(marker?.schema_version??0)>=77?`EXISTS(SELECT 1 FROM ordinary_question_reconstructions reconstruction WHERE reconstruction.attempt_id=active.id AND reconstruction.native_session_id=c.eve_session_id AND reconstruction.deadline_at>clock_timestamp()) OR EXISTS(SELECT 1 FROM ordinary_question_continuations continuation WHERE continuation.attempt_id=active.id AND continuation.native_session_id=c.eve_session_id AND continuation.deadline_at>clock_timestamp())`:'false'})))
       AND (EXISTS(SELECT 1 FROM response_attempts a WHERE a.message_id=m.id AND a.input_event_id IS NOT NULL)
         OR EXISTS(SELECT 1 FROM ordinary_steering_deliveries d WHERE d.message_id=m.id AND d.native_event_id IS NOT NULL AND d.dispatch_state='admitted'))
     ORDER BY u.filename,u.media_type,u.sha256,m.created_at DESC,m.id DESC,u.id DESC
    ) picked ORDER BY picked.created_at DESC,picked.id DESC,picked.upload_id DESC LIMIT 5`,
-  [conversationId,actor.principalId,actor.workspaceId,getServerConfig().TURAS_ENVIRONMENT_ID,attemptId])).rows;
+  [conversationId,actor.principalId,actor.workspaceId,getServerConfig().TURAS_ENVIRONMENT_ID,attemptId,!!internal?.questionContinuation])).rows;
  const referenced=rows.flatMap(message=>Array.isArray(message.ordinary_native_parts)?parseOrdinaryNativeMessage(message.ordinary_native_parts)
   .flatMap(part=>part.type==='file'&&'sha256' in part&&part.data==='turas-upload:'+message.upload_id?[{part,messageId:message.id}]:[]):[]);
  if(!referenced.length)return [];

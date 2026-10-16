@@ -392,6 +392,8 @@ END $$;
 
 DO $$ BEGIN
  IF to_regclass('public.ordinary_question_continuations') IS NOT NULL THEN
+  REVOKE ALL ON ordinary_question_reconstructions FROM turas_runtime;
+  GRANT SELECT,INSERT ON ordinary_question_reconstructions TO turas_runtime;
   REVOKE ALL ON ordinary_question_posts FROM turas_runtime;
   GRANT SELECT,INSERT ON ordinary_question_posts TO turas_runtime;
   REVOKE ALL ON ordinary_question_continuations FROM turas_runtime;

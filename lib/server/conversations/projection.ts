@@ -1,3 +1,4 @@
+import {questionReconstructionEventWindow} from './question-reconstruction';
 import {customerQuestionActor,assertCustomerQuestionReads} from "./customer-accounts";
 import {hasNativeInputWindow} from './input-responses';
 import {projectSteeringMessage,steeringTurnDeadline,pendingSteering} from './steering';
@@ -254,7 +255,7 @@ export async function projectNativeEventInTransaction(
     // the owned user-input request remains parked. This is neither an answer
     // nor a model admission; preserve the pending request and its allowance.
     if(event.type==='turn.completed' && row.response_state==='waiting_input' &&
-      (await conversationFeature(client,row.conversation_id)).kind==='normal')return;
+      (await conversationFeature(client,row.conversation_id)).kind==='normal' && !await questionReconstructionEventWindow(client,attemptId,nativeSessionId,data))return;
     const artifact = await artifactContextSchemaReady(client)
       ? await client.query<{ native_text_digest: string }>(
         "SELECT native_text_digest FROM artifact_context_receipts WHERE attempt_id=$1", [attemptId])
@@ -336,7 +337,7 @@ export async function projectNativeEventInTransaction(
       const marker=(await client.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0];
       const background=marker?.schema_version>=61 && typeof data.turnId==='string' && (await client.query(`SELECT 1 FROM research_background_turns
         WHERE native_session_id=$1 AND turn_id=$2 AND attempt_id=$3`,[nativeSessionId,data.turnId,attemptId])).rowCount;
-      const resumed=typeof data.turnId==='string' && (await hasNativeInputWindow(client,attemptId,nativeSessionId,data.turnId,false) || marker?.schema_version>=65 && !!(await client.query(`SELECT 1 FROM native_input_resume_windows resume
+      const resumed=typeof data.turnId==='string' && ((await hasNativeInputWindow(client,attemptId,nativeSessionId,data.turnId,false)||await questionReconstructionEventWindow(client,attemptId,nativeSessionId,data)) || marker?.schema_version>=65 && !!(await client.query(`SELECT 1 FROM native_input_resume_windows resume
         JOIN event_projections resolution ON resolution.native_event_id=resume.native_event_id
         WHERE resume.attempt_id=$1 AND resolution.native_session_id=$2 AND resolution.turn_id=$3`,[attemptId,nativeSessionId,data.turnId])).rowCount);
       const resolving=event.type==='input.resolved' && await inputResolutionAttempt(client,nativeSessionId,attemptId,data)===attemptId;
@@ -394,7 +395,7 @@ export async function projectNativeEventInTransaction(
         await hasNativeInputWindow(client,attemptId,nativeSessionId,'',true))return;
       await client.query(`UPDATE response_attempts SET response_state = $2,
         updated_at = now(), revision = revision + 1 WHERE id = $1
-        AND response_state IN ('pending','running','stopping')`, [attemptId, terminal[event.type]]);
+        AND (response_state IN ('pending','running','stopping') OR response_state='waiting_input' AND $3::boolean)`, [attemptId, terminal[event.type],await questionReconstructionEventWindow(client,attemptId,nativeSessionId,data)]);
       await client.query(`UPDATE watchdog_jobs SET state = 'settled', lease_owner = NULL,
         lease_expires_at = NULL, updated_at = now() WHERE attempt_id = $1`, [attemptId]);
     }

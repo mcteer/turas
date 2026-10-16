@@ -15,6 +15,7 @@ exports.up=pgm=>pgm.sql(`
   native_session_id text NOT NULL,
   native_turn_id text NOT NULL CHECK(length(native_turn_id)>0),
   native_sequence integer NOT NULL CHECK(native_sequence>=1),
+  settled_request_ids text[] NOT NULL CHECK(cardinality(settled_request_ids)>0),
   login_session_id uuid NOT NULL REFERENCES login_sessions(id),
   membership_id uuid NOT NULL REFERENCES memberships(id),
   deadline_at timestamptz NOT NULL,
@@ -41,6 +42,25 @@ exports.up=pgm=>pgm.sql(`
  CREATE TRIGGER ordinary_question_continuation_identity BEFORE INSERT ON ordinary_question_continuations FOR EACH ROW EXECUTE FUNCTION turas_question_continuation_identity();
  CREATE TRIGGER ordinary_question_continuation_immutable BEFORE UPDATE OR DELETE ON ordinary_question_continuations FOR EACH ROW EXECUTE FUNCTION turas_profile_immutable();
  GRANT SELECT,INSERT ON ordinary_question_posts,ordinary_question_continuations TO turas_runtime;
+ CREATE TABLE ordinary_question_reconstructions(
+  id uuid PRIMARY KEY,
+  attempt_id uuid NOT NULL REFERENCES response_attempts(id),
+  followup_attempt_id uuid NOT NULL REFERENCES response_attempts(id),
+  request_event_id text NOT NULL REFERENCES event_projections(native_event_id),
+  native_session_id text NOT NULL,
+  callback_turn_id text NOT NULL,
+  native_sequence integer NOT NULL CHECK(native_sequence>=1),
+  settled_request_ids text[] NOT NULL CHECK(cardinality(settled_request_ids)>0),
+  step_index integer NOT NULL CHECK(step_index>=0),
+  login_session_id uuid NOT NULL REFERENCES login_sessions(id),
+  membership_id uuid NOT NULL REFERENCES memberships(id),
+  deadline_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  UNIQUE(attempt_id,followup_attempt_id,request_event_id),
+  CHECK(deadline_at>created_at AND deadline_at<=created_at+interval '120 seconds')
+ );
+ CREATE TRIGGER ordinary_question_reconstruction_immutable BEFORE UPDATE OR DELETE ON ordinary_question_reconstructions FOR EACH ROW EXECUTE FUNCTION turas_profile_immutable();
+ GRANT SELECT,INSERT ON ordinary_question_reconstructions TO turas_runtime;
  UPDATE turas_environment SET schema_version=77 WHERE schema_version=76;
 `);
 exports.down=()=>{throw Error('Question continuation receipts require forward recovery');};

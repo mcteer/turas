@@ -46,7 +46,7 @@ Independent test: original ordinary operations and private/runtime/context workf
 
 ## Phase 6: US4 — Exhaustive acceptance and release
 
-- [ ] T022 [US4] Reconcile all inventory dispositions and every finding to implemented source and actual evidence; zero actionable missing/partial mechanisms remain in docs/legacy-backend-parity-audit.md (FR-010).
+- [X] T022 [US4] Reconcile all inventory dispositions and every finding to implemented source and actual evidence; zero actionable missing/partial mechanisms remain in docs/legacy-backend-parity-audit.md (FR-010).
 - [ ] T023 [US4] Update README.md, ROADMAP.md and feature validation with actual status; run typecheck/docs/targeted domains/build and full exact-head CI, retaining failures and fixes (FR-011,FR-012).
 - [ ] T024 [US4] Exercise changed workflows with authenticated real Preview HTTP and CLI WebKit desktop/mobile/reload, actual ordinary native consumers and independent review; preserve prior model charges/holds and bounded scope (FR-011).
 - [ ] T025 [US4] Back up and rehearse explicit schema/grants if required, verify target and old/new compatibility, merge green exact head, verify actual Production commit/schema/authenticated behavior, clean merged branch and verify README on main (FR-012).

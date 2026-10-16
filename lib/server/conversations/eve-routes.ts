@@ -1,5 +1,5 @@
 import {assertNativeFileEvaluationOpen} from './native-file-policy';
-import {inputResponsesSchema,authorizeOwnedInputResponse} from "./input-responses";
+import {inputResponsesSchema,authorizeOwnedInputResponse,implicitOwnedQuestionResponse} from "./input-responses";
 import {prepareOrdinarySteering,recordSteeringReceipt,markSteeringUncertain} from './steering';
 import type { EveChannel } from "eve/channels/eve";
 import { z } from "zod";
@@ -156,7 +156,8 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             let decoded: unknown;
             try { decoded = JSON.parse(raw); }
             catch { throw new HttpFailure(422, "invalid_input", "Invalid request"); }
-            const responses=inputResponsesSchema.safeParse(decoded);
+            let responses=inputResponsesSchema.safeParse(decoded);
+            if(!responses.success){const ordinary=sendSchema.safeParse(decoded);if(ordinary.success&&ordinary.data.turnPolicy!=='steer'){const implicit=await implicitOwnedQuestionResponse(session,args.params.sessionId,ordinary.data.message);if(implicit){if(ordinary.data.artifactSelections!==undefined||request.headers.has('x-turas-artifact-selections'))throw new HttpFailure(422,'question_answer_with_artifacts','Answer the pending question separately before sending selected evidence');responses=inputResponsesSchema.safeParse(implicit);}}}
             if(responses.success) {
               const conversation=await getOwnedConversationByNativeSession(session,args.params.sessionId);
               if(conversation.id!==conversationId)throw hiddenRecord();

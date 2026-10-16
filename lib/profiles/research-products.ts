@@ -16,6 +16,12 @@ const productCatalog = [
   { label: "v0", aliases: ["v0"] },
 ] as const;
 
+/** Inventory filters compare the emitted labels, not their research aliases. */
+export function couldMatchResearchProductLabel(query: string) {
+  const normalized=query.trim().toLocaleLowerCase('en-US');
+  return productCatalog.some(product=>product.label.toLocaleLowerCase('en-US').includes(normalized));
+}
+
 function mentions(corpus: string, alias: string) {
   const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, "i").test(corpus);

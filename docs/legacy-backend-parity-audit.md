@@ -14,6 +14,15 @@ original missing source-library consumers, remain as historical findings; the
 `currentImplementation` field records their restored wiring and current source
 hashes. These local checks do not close hosted replay or release acceptance.
 
+The shared research reader also batches customer authorization and canonical
+eligibility while preserving each account’s original eight ordered passages and
+1,600-character quotes. Twelve-account batch/individual equality and fixed-query
+regressions pass. A read-only network benchmark using the real Preview runtime
+role reduced product discovery from an 80-second deadline (over 1,000 queries)
+to 3.745 seconds and 40 queries. Fresh HTTP authentication was bound to that
+database and logged out; this measures local code against Preview data, not
+deployed-code acceptance.
+
 Confirmed divergences and current work:
 
 | Mechanism | Proven difference | Repair and verification status |
@@ -26,6 +35,8 @@ Confirmed divergences and current work:
 | Conversation search | Fresh owner login/generation hid otherwise current ordinary customer chats from title search | Current-context eligibility applied before paging; original predicate fails and repaired authority/paging regressions pass |
 | Native files | Three-MiB base64 transport contradicted ten-MiB/file promise; hosted native path default-off | Explicit migrations 074/076 stage owner-bound immutable chunks and durable retirement recovery; domain/HTTP bounds and actual Eve/WebKit4MiB/10MiB pass; hosted acceptance and enablement pending |
 | Task checklist | Installed Eve removed the original todo export and panel | Supported durable per-session state and ordinary track_tasks adapter implemented; actual Eve/WebKit replace/read, fresh-login/reload, other-owner denial and per-conversation isolation pass |
+| Native questions | The current framework resumes a held workflow before publishing resolution events, sometimes retaining original login/attempt context | Migration077 pins actual owner-posted question responses and narrow typed-result reconstruction to immutable current-session/deadline receipts; basic fresh-login/reply/reload passes, dismissal and older-request native acceptance remains in progress |
+| Native approval review | Pending UI discarded exact action inputs and redundant appended instructions prevented original approved tool execution | Complete escaped proposed inputs and narrow authenticated continuation compatibility restored; actual older/fresh-login intervention and all five knowledge decisions pass |
 
 The unused legacy Linear, Notion and Vercel connection declarations were
 existing-grant-only and disabled unless explicitly enabled. No approved active
@@ -51,6 +62,8 @@ remain historical evidence. Production schema 072, encrypted restore/migration
 rehearsal, explicit grants and authenticated HTTP/CLI WebKit checks are recorded in
 the [release record](production-parity-release-2026-10-15.md). This repair does not
 complete the separate 016 hosted recovery/operator/pilot gates.
+
+The sections beginning below retain the earlier PR34 checkpoint history. Their contemporaneous failures and pending labels remain historical evidence; current feature018 implementation and acceptance are tracked in the table above, its pinned inventory and feature validation record.
 
 ## Historical hosted acceptance checkpoints
 

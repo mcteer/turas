@@ -1,6 +1,6 @@
 {
   "referenceCommit": "fd1e205d7fd258676d6fb12b3ade8a431d53a6af",
-  "status": "complete source inventory classification; runtime acceptance remains in progress",
+  "status": "complete source inventory classification; local implementation verified; hosted release gates remain open",
   "entries": [
     {
       "legacyPath": ".gitignore",
@@ -126,7 +126,7 @@
           "agent/tools/write_file.ts": "eaae69827db6f3e6532fc8353e8d485c31cd09260fa48655c3096306d8c4326b",
           "agent/tools/connection_search.ts": "6757a7de108335e7322944d347284ee8120cf534632b8516672fee0d7c38054d",
           "agent/tools/load_skill.ts": "9b7a3ee0d3920740c4ba144686bc208d076094783bd936aac3be612876484d51",
-          "lib/server/conversations/model-budget.ts": "055411e0d656f773064f7185a5112727c53d2e16face60bf4aecf0761aba09b6",
+          "lib/server/conversations/model-budget.ts": "c1b4acf2b931d5293533ef8793815d057ccc4ca86f00a4312155e7faceeb4d58",
           "lib/server/conversations/token-allowance.ts": "039547338424a862106a9884baead702a1eb5acd34216355c4a3bd5a85260a94",
           "agent/lib/normal-chat-tool.ts": "3ab3e1168ec5afca3d4cfd3fa34cedc44d08569ea7d30b5b1b619cd6f49a5b46",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
@@ -134,12 +134,15 @@
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
           "scripts/check-ordinary-native-files.ts",
-          "scripts/check-ordinary-questions-native.ts"
+          "scripts/check-ordinary-questions-native.ts",
+          "tests/fixtures/ordinary-questions-native-model.ts",
+          "tests/integration/legacy-native-uploads.test.ts",
+          "specs/018-legacy-backend-parity/validation.md"
         ],
         "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Conversation search, actual file corrections/reload and task state pass; actual question acceptance remains required."
-        ]
+          "Exact018 Preview/Production and final CI verification remain required."
+        ],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
       }
     },
     {
@@ -211,10 +214,10 @@
           "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
-          "lib/server/conversations/eve-routes.ts": "f7a8433d878491839d415ae02b6485a16ab27dc612a46a9fd72e8b4c8a4790ff",
+          "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
           "agent/channels/eve.ts": "bed1aaaa816f917cdef53757f8fdd0a2bf154dbb933d7dfbaf782f9b10fb51d0",
           "agent/hooks/persist-conversation.ts": "4ca86fc9e16f07de1c003e2dbc86a85e0ed793ca1cf287dd1e08b1ea4a4ad6a2",
-          "agent/hooks/guard-customer-context.ts": "85d1bfedddca5d71d24166b0af90496b20983a422d8c12d043614110eac23d98",
+          "agent/hooks/guard-customer-context.ts": "0df466eb31712c311ac3d135531e5b1c9778788a855d411df0cf19cb3c892df6",
           "app/api/conversations/route.ts": "a8c23bf6f453ce56a6931da71165e2c760868e31e93b616498e6ef8c302a6cd9",
           "app/api/conversations/[id]/route.ts": "1f3f0a9b9fea20aa3ae863ebb54b8cca120e372d1521bb4dc7dbc71e36753bff",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
@@ -222,12 +225,15 @@
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
           "scripts/check-ordinary-native-files.ts",
-          "scripts/check-ordinary-questions-native.ts"
+          "scripts/check-ordinary-questions-native.ts",
+          "tests/fixtures/ordinary-questions-native-model.ts",
+          "tests/integration/legacy-native-uploads.test.ts",
+          "specs/018-legacy-backend-parity/validation.md"
         ],
         "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Conversation search, actual file corrections/reload and task state pass; actual question acceptance remains required."
-        ]
+          "Exact018 Preview/Production and final CI verification remain required."
+        ],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
       }
     },
     {
@@ -344,10 +350,10 @@
           "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
-          "lib/server/conversations/eve-routes.ts": "f7a8433d878491839d415ae02b6485a16ab27dc612a46a9fd72e8b4c8a4790ff",
+          "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
           "agent/channels/eve.ts": "bed1aaaa816f917cdef53757f8fdd0a2bf154dbb933d7dfbaf782f9b10fb51d0",
           "agent/hooks/persist-conversation.ts": "4ca86fc9e16f07de1c003e2dbc86a85e0ed793ca1cf287dd1e08b1ea4a4ad6a2",
-          "agent/hooks/guard-customer-context.ts": "85d1bfedddca5d71d24166b0af90496b20983a422d8c12d043614110eac23d98",
+          "agent/hooks/guard-customer-context.ts": "0df466eb31712c311ac3d135531e5b1c9778788a855d411df0cf19cb3c892df6",
           "app/api/conversations/route.ts": "a8c23bf6f453ce56a6931da71165e2c760868e31e93b616498e6ef8c302a6cd9",
           "app/api/conversations/[id]/route.ts": "1f3f0a9b9fea20aa3ae863ebb54b8cca120e372d1521bb4dc7dbc71e36753bff",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
@@ -355,12 +361,15 @@
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
           "scripts/check-ordinary-native-files.ts",
-          "scripts/check-ordinary-questions-native.ts"
+          "scripts/check-ordinary-questions-native.ts",
+          "tests/fixtures/ordinary-questions-native-model.ts",
+          "tests/integration/legacy-native-uploads.test.ts",
+          "specs/018-legacy-backend-parity/validation.md"
         ],
         "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Conversation search, actual file corrections/reload and task state pass; actual question acceptance remains required."
-        ]
+          "Exact018 Preview/Production and final CI verification remain required."
+        ],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
       }
     },
     {
@@ -2949,7 +2958,7 @@
           "agent/tools/write_file.ts": "eaae69827db6f3e6532fc8353e8d485c31cd09260fa48655c3096306d8c4326b",
           "agent/tools/connection_search.ts": "6757a7de108335e7322944d347284ee8120cf534632b8516672fee0d7c38054d",
           "agent/tools/load_skill.ts": "9b7a3ee0d3920740c4ba144686bc208d076094783bd936aac3be612876484d51",
-          "lib/server/conversations/model-budget.ts": "055411e0d656f773064f7185a5112727c53d2e16face60bf4aecf0761aba09b6",
+          "lib/server/conversations/model-budget.ts": "c1b4acf2b931d5293533ef8793815d057ccc4ca86f00a4312155e7faceeb4d58",
           "lib/server/conversations/token-allowance.ts": "039547338424a862106a9884baead702a1eb5acd34216355c4a3bd5a85260a94",
           "agent/lib/normal-chat-tool.ts": "3ab3e1168ec5afca3d4cfd3fa34cedc44d08569ea7d30b5b1b619cd6f49a5b46",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
@@ -2957,12 +2966,15 @@
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
           "scripts/check-ordinary-native-files.ts",
-          "scripts/check-ordinary-questions-native.ts"
+          "scripts/check-ordinary-questions-native.ts",
+          "tests/fixtures/ordinary-questions-native-model.ts",
+          "tests/integration/legacy-native-uploads.test.ts",
+          "specs/018-legacy-backend-parity/validation.md"
         ],
         "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Conversation search, actual file corrections/reload and task state pass; actual question acceptance remains required."
-        ]
+          "Exact018 Preview/Production and final CI verification remain required."
+        ],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
       }
     },
     {
@@ -3023,20 +3035,23 @@
         "currentFileSha256": {
           "app/_components/chat-input-request.tsx": "c3dab124c111570071cfaa350f78e1f0c275e4a68e90f256345727981e7c5008",
           "lib/chat-inputs.ts": "3efe6a85d86bc4eccb590d6ddf75e18bc8823738612e96aa92601f767da30514",
-          "lib/server/conversations/input-responses.ts": "d57d58c97ab2aad19de9067d93ea3362f8260e86c34432664d13c4b1715b60b6",
+          "lib/server/conversations/input-responses.ts": "a6ff7216c862b21103872f668490638946bab381d45cca6eeb7d69821681860f",
           "lib/server/conversations/steering.ts": "f5cdfac3845bafc04d3c383b1f5e73ad3ffb935bce08bebbc60d6cb7e376dea6",
           "agent/tools/ask_question.ts": "28376107c633dce3bb0ae6a7d04558906bd0c013fd38097a44e0cdc562be85a6",
           "agent/tools/task_cancel.ts": "a93466e281acd475d30560f20e18bd6c8492f609dce38593602cc5d7d8dea549",
-          "lib/server/conversations/question-continuation.ts": "5ca2af36940b1fe3ea2d447a5febf2a6232bb5ecdb56b39cfd4b829360d8c54f"
+          "lib/server/conversations/question-continuation.ts": "e8f08a5b7b1f379d7ef5de931887a9a1924ffc90960f7163659db60e33e7b1cf"
         },
         "localEvidence": [
           "scripts/check-ordinary-questions-native.ts",
-          "scripts/check-ordinary-operations-native.ts"
+          "scripts/check-ordinary-operations-native.ts",
+          "tests/fixtures/ordinary-questions-native-model.ts",
+          "tests/integration/legacy-native-uploads.test.ts",
+          "specs/018-legacy-backend-parity/validation.md"
         ],
         "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Actual approvals including older requests pass. Question continuation actual failure remains under repair; do not infer acceptance from static mapping."
-        ]
+          "Exact018 Preview/Production and final CI verification remain required."
+        ],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
       }
     },
     {
@@ -3115,7 +3130,7 @@
           "agent/tools/write_file.ts": "eaae69827db6f3e6532fc8353e8d485c31cd09260fa48655c3096306d8c4326b",
           "agent/tools/connection_search.ts": "6757a7de108335e7322944d347284ee8120cf534632b8516672fee0d7c38054d",
           "agent/tools/load_skill.ts": "9b7a3ee0d3920740c4ba144686bc208d076094783bd936aac3be612876484d51",
-          "lib/server/conversations/model-budget.ts": "055411e0d656f773064f7185a5112727c53d2e16face60bf4aecf0761aba09b6",
+          "lib/server/conversations/model-budget.ts": "c1b4acf2b931d5293533ef8793815d057ccc4ca86f00a4312155e7faceeb4d58",
           "lib/server/conversations/token-allowance.ts": "039547338424a862106a9884baead702a1eb5acd34216355c4a3bd5a85260a94",
           "agent/lib/normal-chat-tool.ts": "3ab3e1168ec5afca3d4cfd3fa34cedc44d08569ea7d30b5b1b619cd6f49a5b46",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
@@ -3123,12 +3138,15 @@
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
           "scripts/check-ordinary-native-files.ts",
-          "scripts/check-ordinary-questions-native.ts"
+          "scripts/check-ordinary-questions-native.ts",
+          "tests/fixtures/ordinary-questions-native-model.ts",
+          "tests/integration/legacy-native-uploads.test.ts",
+          "specs/018-legacy-backend-parity/validation.md"
         ],
         "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Conversation search, actual file corrections/reload and task state pass; actual question acceptance remains required."
-        ]
+          "Exact018 Preview/Production and final CI verification remain required."
+        ],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
       }
     },
     {
@@ -3363,7 +3381,7 @@
           "agent/tools/write_file.ts": "eaae69827db6f3e6532fc8353e8d485c31cd09260fa48655c3096306d8c4326b",
           "agent/tools/connection_search.ts": "6757a7de108335e7322944d347284ee8120cf534632b8516672fee0d7c38054d",
           "agent/tools/load_skill.ts": "9b7a3ee0d3920740c4ba144686bc208d076094783bd936aac3be612876484d51",
-          "lib/server/conversations/model-budget.ts": "055411e0d656f773064f7185a5112727c53d2e16face60bf4aecf0761aba09b6",
+          "lib/server/conversations/model-budget.ts": "c1b4acf2b931d5293533ef8793815d057ccc4ca86f00a4312155e7faceeb4d58",
           "lib/server/conversations/token-allowance.ts": "039547338424a862106a9884baead702a1eb5acd34216355c4a3bd5a85260a94",
           "agent/lib/normal-chat-tool.ts": "3ab3e1168ec5afca3d4cfd3fa34cedc44d08569ea7d30b5b1b619cd6f49a5b46",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
@@ -3371,12 +3389,15 @@
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
           "scripts/check-ordinary-native-files.ts",
-          "scripts/check-ordinary-questions-native.ts"
+          "scripts/check-ordinary-questions-native.ts",
+          "tests/fixtures/ordinary-questions-native-model.ts",
+          "tests/integration/legacy-native-uploads.test.ts",
+          "specs/018-legacy-backend-parity/validation.md"
         ],
         "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Conversation search, actual file corrections/reload and task state pass; actual question acceptance remains required."
-        ]
+          "Exact018 Preview/Production and final CI verification remain required."
+        ],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
       }
     },
     {
@@ -4125,7 +4146,7 @@
           "agent/tools/write_file.ts": "eaae69827db6f3e6532fc8353e8d485c31cd09260fa48655c3096306d8c4326b",
           "agent/tools/connection_search.ts": "6757a7de108335e7322944d347284ee8120cf534632b8516672fee0d7c38054d",
           "agent/tools/load_skill.ts": "9b7a3ee0d3920740c4ba144686bc208d076094783bd936aac3be612876484d51",
-          "lib/server/conversations/model-budget.ts": "055411e0d656f773064f7185a5112727c53d2e16face60bf4aecf0761aba09b6",
+          "lib/server/conversations/model-budget.ts": "c1b4acf2b931d5293533ef8793815d057ccc4ca86f00a4312155e7faceeb4d58",
           "lib/server/conversations/token-allowance.ts": "039547338424a862106a9884baead702a1eb5acd34216355c4a3bd5a85260a94",
           "agent/lib/normal-chat-tool.ts": "3ab3e1168ec5afca3d4cfd3fa34cedc44d08569ea7d30b5b1b619cd6f49a5b46",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
@@ -4133,12 +4154,15 @@
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
           "scripts/check-ordinary-native-files.ts",
-          "scripts/check-ordinary-questions-native.ts"
+          "scripts/check-ordinary-questions-native.ts",
+          "tests/fixtures/ordinary-questions-native-model.ts",
+          "tests/integration/legacy-native-uploads.test.ts",
+          "specs/018-legacy-backend-parity/validation.md"
         ],
         "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Conversation search, actual file corrections/reload and task state pass; actual question acceptance remains required."
-        ]
+          "Exact018 Preview/Production and final CI verification remain required."
+        ],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
       }
     },
     {
@@ -4268,7 +4292,7 @@
           "agent/tools/write_file.ts": "eaae69827db6f3e6532fc8353e8d485c31cd09260fa48655c3096306d8c4326b",
           "agent/tools/connection_search.ts": "6757a7de108335e7322944d347284ee8120cf534632b8516672fee0d7c38054d",
           "agent/tools/load_skill.ts": "9b7a3ee0d3920740c4ba144686bc208d076094783bd936aac3be612876484d51",
-          "lib/server/conversations/model-budget.ts": "055411e0d656f773064f7185a5112727c53d2e16face60bf4aecf0761aba09b6",
+          "lib/server/conversations/model-budget.ts": "c1b4acf2b931d5293533ef8793815d057ccc4ca86f00a4312155e7faceeb4d58",
           "lib/server/conversations/token-allowance.ts": "039547338424a862106a9884baead702a1eb5acd34216355c4a3bd5a85260a94",
           "agent/lib/normal-chat-tool.ts": "3ab3e1168ec5afca3d4cfd3fa34cedc44d08569ea7d30b5b1b619cd6f49a5b46",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
@@ -4276,12 +4300,15 @@
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
           "scripts/check-ordinary-native-files.ts",
-          "scripts/check-ordinary-questions-native.ts"
+          "scripts/check-ordinary-questions-native.ts",
+          "tests/fixtures/ordinary-questions-native-model.ts",
+          "tests/integration/legacy-native-uploads.test.ts",
+          "specs/018-legacy-backend-parity/validation.md"
         ],
         "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Conversation search, actual file corrections/reload and task state pass; actual question acceptance remains required."
-        ]
+          "Exact018 Preview/Production and final CI verification remain required."
+        ],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
       }
     },
     {
@@ -4721,7 +4748,7 @@
           "agent/tools/write_file.ts": "eaae69827db6f3e6532fc8353e8d485c31cd09260fa48655c3096306d8c4326b",
           "agent/tools/connection_search.ts": "6757a7de108335e7322944d347284ee8120cf534632b8516672fee0d7c38054d",
           "agent/tools/load_skill.ts": "9b7a3ee0d3920740c4ba144686bc208d076094783bd936aac3be612876484d51",
-          "lib/server/conversations/model-budget.ts": "055411e0d656f773064f7185a5112727c53d2e16face60bf4aecf0761aba09b6",
+          "lib/server/conversations/model-budget.ts": "c1b4acf2b931d5293533ef8793815d057ccc4ca86f00a4312155e7faceeb4d58",
           "lib/server/conversations/token-allowance.ts": "039547338424a862106a9884baead702a1eb5acd34216355c4a3bd5a85260a94",
           "agent/lib/normal-chat-tool.ts": "3ab3e1168ec5afca3d4cfd3fa34cedc44d08569ea7d30b5b1b619cd6f49a5b46",
           "agent/tools/track_tasks.ts": "10d3b539936b49331f8b465eef8d556a2f1e4c615f24fbb4507c238e04453713",
@@ -4892,7 +4919,7 @@
           "agent/tools/write_file.ts": "eaae69827db6f3e6532fc8353e8d485c31cd09260fa48655c3096306d8c4326b",
           "agent/tools/connection_search.ts": "6757a7de108335e7322944d347284ee8120cf534632b8516672fee0d7c38054d",
           "agent/tools/load_skill.ts": "9b7a3ee0d3920740c4ba144686bc208d076094783bd936aac3be612876484d51",
-          "lib/server/conversations/model-budget.ts": "055411e0d656f773064f7185a5112727c53d2e16face60bf4aecf0761aba09b6",
+          "lib/server/conversations/model-budget.ts": "c1b4acf2b931d5293533ef8793815d057ccc4ca86f00a4312155e7faceeb4d58",
           "lib/server/conversations/token-allowance.ts": "039547338424a862106a9884baead702a1eb5acd34216355c4a3bd5a85260a94",
           "agent/lib/normal-chat-tool.ts": "3ab3e1168ec5afca3d4cfd3fa34cedc44d08569ea7d30b5b1b619cd6f49a5b46",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
@@ -4900,12 +4927,15 @@
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
           "scripts/check-ordinary-native-files.ts",
-          "scripts/check-ordinary-questions-native.ts"
+          "scripts/check-ordinary-questions-native.ts",
+          "tests/fixtures/ordinary-questions-native-model.ts",
+          "tests/integration/legacy-native-uploads.test.ts",
+          "specs/018-legacy-backend-parity/validation.md"
         ],
         "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Conversation search, actual file corrections/reload and task state pass; actual question acceptance remains required."
-        ]
+          "Exact018 Preview/Production and final CI verification remain required."
+        ],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
       }
     },
     {
@@ -4977,7 +5007,7 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "325377a89dd8e6a88991a67176a7148412383e8b5143e1036cf042acae727f78",
+          "app/_components/agent-chat.tsx": "9bf6cc9c2ef42aa1fa6397407cece5a0fe35f9038805e510c175c460129f9924",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
           "lib/chat-messages.ts": "ce785f0ea48d268733634746460168052995da374bcf8f25dae7bc4a1dd016f7",
@@ -4992,12 +5022,15 @@
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
           "scripts/check-ordinary-native-files.ts",
-          "scripts/check-ordinary-questions-native.ts"
+          "scripts/check-ordinary-questions-native.ts",
+          "tests/fixtures/ordinary-questions-native-model.ts",
+          "tests/integration/legacy-native-uploads.test.ts",
+          "specs/018-legacy-backend-parity/validation.md"
         ],
         "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Conversation search, actual file corrections/reload and task state pass; actual question acceptance remains required."
-        ]
+          "Exact018 Preview/Production and final CI verification remain required."
+        ],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
       }
     },
     {
@@ -5058,20 +5091,23 @@
         "currentFileSha256": {
           "app/_components/chat-input-request.tsx": "c3dab124c111570071cfaa350f78e1f0c275e4a68e90f256345727981e7c5008",
           "lib/chat-inputs.ts": "3efe6a85d86bc4eccb590d6ddf75e18bc8823738612e96aa92601f767da30514",
-          "lib/server/conversations/input-responses.ts": "d57d58c97ab2aad19de9067d93ea3362f8260e86c34432664d13c4b1715b60b6",
+          "lib/server/conversations/input-responses.ts": "a6ff7216c862b21103872f668490638946bab381d45cca6eeb7d69821681860f",
           "lib/server/conversations/steering.ts": "f5cdfac3845bafc04d3c383b1f5e73ad3ffb935bce08bebbc60d6cb7e376dea6",
           "agent/tools/ask_question.ts": "28376107c633dce3bb0ae6a7d04558906bd0c013fd38097a44e0cdc562be85a6",
           "agent/tools/task_cancel.ts": "a93466e281acd475d30560f20e18bd6c8492f609dce38593602cc5d7d8dea549",
-          "lib/server/conversations/question-continuation.ts": "5ca2af36940b1fe3ea2d447a5febf2a6232bb5ecdb56b39cfd4b829360d8c54f"
+          "lib/server/conversations/question-continuation.ts": "e8f08a5b7b1f379d7ef5de931887a9a1924ffc90960f7163659db60e33e7b1cf"
         },
         "localEvidence": [
           "scripts/check-ordinary-questions-native.ts",
-          "scripts/check-ordinary-operations-native.ts"
+          "scripts/check-ordinary-operations-native.ts",
+          "tests/fixtures/ordinary-questions-native-model.ts",
+          "tests/integration/legacy-native-uploads.test.ts",
+          "specs/018-legacy-backend-parity/validation.md"
         ],
         "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Actual approvals including older requests pass. Question continuation actual failure remains under repair; do not infer acceptance from static mapping."
-        ]
+          "Exact018 Preview/Production and final CI verification remain required."
+        ],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
       }
     },
     {
@@ -5143,7 +5179,7 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "325377a89dd8e6a88991a67176a7148412383e8b5143e1036cf042acae727f78",
+          "app/_components/agent-chat.tsx": "9bf6cc9c2ef42aa1fa6397407cece5a0fe35f9038805e510c175c460129f9924",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
           "lib/chat-messages.ts": "ce785f0ea48d268733634746460168052995da374bcf8f25dae7bc4a1dd016f7",
@@ -5158,12 +5194,15 @@
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
           "scripts/check-ordinary-native-files.ts",
-          "scripts/check-ordinary-questions-native.ts"
+          "scripts/check-ordinary-questions-native.ts",
+          "tests/fixtures/ordinary-questions-native-model.ts",
+          "tests/integration/legacy-native-uploads.test.ts",
+          "specs/018-legacy-backend-parity/validation.md"
         ],
         "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Conversation search, actual file corrections/reload and task state pass; actual question acceptance remains required."
-        ]
+          "Exact018 Preview/Production and final CI verification remain required."
+        ],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
       }
     },
     {
@@ -5251,7 +5290,7 @@
           "lib/server/conversations/native-file-policy.ts": "b5e7e18ead5723d08065d97184608b55e153e35343fe93b716f262f8b0ace6a8",
           "app/_components/attachments/ordinary-documents.tsx": "eb6f2c64c4979c179119f744e256496ccbdc31de975c4acfe55ea3cce55c3ad9",
           "app/_components/attachments/native-chat-attachment.tsx": "5f53f5c57329797077161274907cb4bceeb063e7af2731d10384a0c0ff937821",
-          "lib/server/conversations/native-uploads.ts": "3d9e4997de8762b21280bbe77b5c163de7fda42c74ebd221c4ef6c544908ee80",
+          "lib/server/conversations/native-uploads.ts": "b76289018da3e5eda67402fc1f27f13eb2b56b6e2e65d29a7443ead210d91395",
           "lib/server/conversations/native-upload-http.ts": "ea2868c77a510e67696e253c58deb51fc1bfe6262846092144ed4d5be9c82ba9",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
           "lib/conversations/upload-native-files.ts": "682982ab1355dc44e751d2e285811a69ed251294c9daf09b926befaf7eaed4c4"
@@ -5351,7 +5390,7 @@
           "lib/server/conversations/native-file-policy.ts": "b5e7e18ead5723d08065d97184608b55e153e35343fe93b716f262f8b0ace6a8",
           "app/_components/attachments/ordinary-documents.tsx": "eb6f2c64c4979c179119f744e256496ccbdc31de975c4acfe55ea3cce55c3ad9",
           "app/_components/attachments/native-chat-attachment.tsx": "5f53f5c57329797077161274907cb4bceeb063e7af2731d10384a0c0ff937821",
-          "lib/server/conversations/native-uploads.ts": "3d9e4997de8762b21280bbe77b5c163de7fda42c74ebd221c4ef6c544908ee80",
+          "lib/server/conversations/native-uploads.ts": "b76289018da3e5eda67402fc1f27f13eb2b56b6e2e65d29a7443ead210d91395",
           "lib/server/conversations/native-upload-http.ts": "ea2868c77a510e67696e253c58deb51fc1bfe6262846092144ed4d5be9c82ba9",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
           "lib/conversations/upload-native-files.ts": "682982ab1355dc44e751d2e285811a69ed251294c9daf09b926befaf7eaed4c4"
@@ -6034,7 +6073,7 @@
           "lib/server/conversations/native-file-policy.ts": "b5e7e18ead5723d08065d97184608b55e153e35343fe93b716f262f8b0ace6a8",
           "app/_components/attachments/ordinary-documents.tsx": "eb6f2c64c4979c179119f744e256496ccbdc31de975c4acfe55ea3cce55c3ad9",
           "app/_components/attachments/native-chat-attachment.tsx": "5f53f5c57329797077161274907cb4bceeb063e7af2731d10384a0c0ff937821",
-          "lib/server/conversations/native-uploads.ts": "3d9e4997de8762b21280bbe77b5c163de7fda42c74ebd221c4ef6c544908ee80",
+          "lib/server/conversations/native-uploads.ts": "b76289018da3e5eda67402fc1f27f13eb2b56b6e2e65d29a7443ead210d91395",
           "lib/server/conversations/native-upload-http.ts": "ea2868c77a510e67696e253c58deb51fc1bfe6262846092144ed4d5be9c82ba9",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
           "lib/conversations/upload-native-files.ts": "682982ab1355dc44e751d2e285811a69ed251294c9daf09b926befaf7eaed4c4"
@@ -6164,7 +6203,7 @@
           "lib/server/conversations/native-file-policy.ts": "b5e7e18ead5723d08065d97184608b55e153e35343fe93b716f262f8b0ace6a8",
           "app/_components/attachments/ordinary-documents.tsx": "eb6f2c64c4979c179119f744e256496ccbdc31de975c4acfe55ea3cce55c3ad9",
           "app/_components/attachments/native-chat-attachment.tsx": "5f53f5c57329797077161274907cb4bceeb063e7af2731d10384a0c0ff937821",
-          "lib/server/conversations/native-uploads.ts": "3d9e4997de8762b21280bbe77b5c163de7fda42c74ebd221c4ef6c544908ee80",
+          "lib/server/conversations/native-uploads.ts": "b76289018da3e5eda67402fc1f27f13eb2b56b6e2e65d29a7443ead210d91395",
           "lib/server/conversations/native-upload-http.ts": "ea2868c77a510e67696e253c58deb51fc1bfe6262846092144ed4d5be9c82ba9",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
           "lib/conversations/upload-native-files.ts": "682982ab1355dc44e751d2e285811a69ed251294c9daf09b926befaf7eaed4c4"
@@ -6248,10 +6287,10 @@
           "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
-          "lib/server/conversations/eve-routes.ts": "f7a8433d878491839d415ae02b6485a16ab27dc612a46a9fd72e8b4c8a4790ff",
+          "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
           "agent/channels/eve.ts": "bed1aaaa816f917cdef53757f8fdd0a2bf154dbb933d7dfbaf782f9b10fb51d0",
           "agent/hooks/persist-conversation.ts": "4ca86fc9e16f07de1c003e2dbc86a85e0ed793ca1cf287dd1e08b1ea4a4ad6a2",
-          "agent/hooks/guard-customer-context.ts": "85d1bfedddca5d71d24166b0af90496b20983a422d8c12d043614110eac23d98",
+          "agent/hooks/guard-customer-context.ts": "0df466eb31712c311ac3d135531e5b1c9778788a855d411df0cf19cb3c892df6",
           "app/api/conversations/route.ts": "a8c23bf6f453ce56a6931da71165e2c760868e31e93b616498e6ef8c302a6cd9",
           "app/api/conversations/[id]/route.ts": "1f3f0a9b9fea20aa3ae863ebb54b8cca120e372d1521bb4dc7dbc71e36753bff",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
@@ -6259,12 +6298,15 @@
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
           "scripts/check-ordinary-native-files.ts",
-          "scripts/check-ordinary-questions-native.ts"
+          "scripts/check-ordinary-questions-native.ts",
+          "tests/fixtures/ordinary-questions-native-model.ts",
+          "tests/integration/legacy-native-uploads.test.ts",
+          "specs/018-legacy-backend-parity/validation.md"
         ],
         "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Conversation search, actual file corrections/reload and task state pass; actual question acceptance remains required."
-        ]
+          "Exact018 Preview/Production and final CI verification remain required."
+        ],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
       }
     },
     {
@@ -6336,10 +6378,10 @@
           "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
-          "lib/server/conversations/eve-routes.ts": "f7a8433d878491839d415ae02b6485a16ab27dc612a46a9fd72e8b4c8a4790ff",
+          "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
           "agent/channels/eve.ts": "bed1aaaa816f917cdef53757f8fdd0a2bf154dbb933d7dfbaf782f9b10fb51d0",
           "agent/hooks/persist-conversation.ts": "4ca86fc9e16f07de1c003e2dbc86a85e0ed793ca1cf287dd1e08b1ea4a4ad6a2",
-          "agent/hooks/guard-customer-context.ts": "85d1bfedddca5d71d24166b0af90496b20983a422d8c12d043614110eac23d98",
+          "agent/hooks/guard-customer-context.ts": "0df466eb31712c311ac3d135531e5b1c9778788a855d411df0cf19cb3c892df6",
           "app/api/conversations/route.ts": "a8c23bf6f453ce56a6931da71165e2c760868e31e93b616498e6ef8c302a6cd9",
           "app/api/conversations/[id]/route.ts": "1f3f0a9b9fea20aa3ae863ebb54b8cca120e372d1521bb4dc7dbc71e36753bff",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
@@ -6347,12 +6389,15 @@
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
           "scripts/check-ordinary-native-files.ts",
-          "scripts/check-ordinary-questions-native.ts"
+          "scripts/check-ordinary-questions-native.ts",
+          "tests/fixtures/ordinary-questions-native-model.ts",
+          "tests/integration/legacy-native-uploads.test.ts",
+          "specs/018-legacy-backend-parity/validation.md"
         ],
         "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Conversation search, actual file corrections/reload and task state pass; actual question acceptance remains required."
-        ]
+          "Exact018 Preview/Production and final CI verification remain required."
+        ],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
       }
     },
     {
@@ -6424,10 +6469,10 @@
           "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
-          "lib/server/conversations/eve-routes.ts": "f7a8433d878491839d415ae02b6485a16ab27dc612a46a9fd72e8b4c8a4790ff",
+          "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
           "agent/channels/eve.ts": "bed1aaaa816f917cdef53757f8fdd0a2bf154dbb933d7dfbaf782f9b10fb51d0",
           "agent/hooks/persist-conversation.ts": "4ca86fc9e16f07de1c003e2dbc86a85e0ed793ca1cf287dd1e08b1ea4a4ad6a2",
-          "agent/hooks/guard-customer-context.ts": "85d1bfedddca5d71d24166b0af90496b20983a422d8c12d043614110eac23d98",
+          "agent/hooks/guard-customer-context.ts": "0df466eb31712c311ac3d135531e5b1c9778788a855d411df0cf19cb3c892df6",
           "app/api/conversations/route.ts": "a8c23bf6f453ce56a6931da71165e2c760868e31e93b616498e6ef8c302a6cd9",
           "app/api/conversations/[id]/route.ts": "1f3f0a9b9fea20aa3ae863ebb54b8cca120e372d1521bb4dc7dbc71e36753bff",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
@@ -6435,12 +6480,15 @@
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
           "scripts/check-ordinary-native-files.ts",
-          "scripts/check-ordinary-questions-native.ts"
+          "scripts/check-ordinary-questions-native.ts",
+          "tests/fixtures/ordinary-questions-native-model.ts",
+          "tests/integration/legacy-native-uploads.test.ts",
+          "specs/018-legacy-backend-parity/validation.md"
         ],
         "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Conversation search, actual file corrections/reload and task state pass; actual question acceptance remains required."
-        ]
+          "Exact018 Preview/Production and final CI verification remain required."
+        ],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
       }
     },
     {
@@ -7210,7 +7258,7 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "325377a89dd8e6a88991a67176a7148412383e8b5143e1036cf042acae727f78",
+          "app/_components/agent-chat.tsx": "9bf6cc9c2ef42aa1fa6397407cece5a0fe35f9038805e510c175c460129f9924",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
           "lib/chat-messages.ts": "ce785f0ea48d268733634746460168052995da374bcf8f25dae7bc4a1dd016f7",
@@ -7225,12 +7273,15 @@
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
           "scripts/check-ordinary-native-files.ts",
-          "scripts/check-ordinary-questions-native.ts"
+          "scripts/check-ordinary-questions-native.ts",
+          "tests/fixtures/ordinary-questions-native-model.ts",
+          "tests/integration/legacy-native-uploads.test.ts",
+          "specs/018-legacy-backend-parity/validation.md"
         ],
         "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Conversation search, actual file corrections/reload and task state pass; actual question acceptance remains required."
-        ]
+          "Exact018 Preview/Production and final CI verification remain required."
+        ],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
       }
     },
     {
@@ -7302,7 +7353,7 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "325377a89dd8e6a88991a67176a7148412383e8b5143e1036cf042acae727f78",
+          "app/_components/agent-chat.tsx": "9bf6cc9c2ef42aa1fa6397407cece5a0fe35f9038805e510c175c460129f9924",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
           "lib/chat-messages.ts": "ce785f0ea48d268733634746460168052995da374bcf8f25dae7bc4a1dd016f7",
@@ -7317,12 +7368,15 @@
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
           "scripts/check-ordinary-native-files.ts",
-          "scripts/check-ordinary-questions-native.ts"
+          "scripts/check-ordinary-questions-native.ts",
+          "tests/fixtures/ordinary-questions-native-model.ts",
+          "tests/integration/legacy-native-uploads.test.ts",
+          "specs/018-legacy-backend-parity/validation.md"
         ],
         "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Conversation search, actual file corrections/reload and task state pass; actual question acceptance remains required."
-        ]
+          "Exact018 Preview/Production and final CI verification remain required."
+        ],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
       }
     },
     {
@@ -7886,7 +7940,7 @@
           "lib/server/conversations/native-file-policy.ts": "b5e7e18ead5723d08065d97184608b55e153e35343fe93b716f262f8b0ace6a8",
           "app/_components/attachments/ordinary-documents.tsx": "eb6f2c64c4979c179119f744e256496ccbdc31de975c4acfe55ea3cce55c3ad9",
           "app/_components/attachments/native-chat-attachment.tsx": "5f53f5c57329797077161274907cb4bceeb063e7af2731d10384a0c0ff937821",
-          "lib/server/conversations/native-uploads.ts": "3d9e4997de8762b21280bbe77b5c163de7fda42c74ebd221c4ef6c544908ee80",
+          "lib/server/conversations/native-uploads.ts": "b76289018da3e5eda67402fc1f27f13eb2b56b6e2e65d29a7443ead210d91395",
           "lib/server/conversations/native-upload-http.ts": "ea2868c77a510e67696e253c58deb51fc1bfe6262846092144ed4d5be9c82ba9",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
           "lib/conversations/upload-native-files.ts": "682982ab1355dc44e751d2e285811a69ed251294c9daf09b926befaf7eaed4c4"
@@ -8318,7 +8372,7 @@
           "lib/server/conversations/native-file-policy.ts": "b5e7e18ead5723d08065d97184608b55e153e35343fe93b716f262f8b0ace6a8",
           "app/_components/attachments/ordinary-documents.tsx": "eb6f2c64c4979c179119f744e256496ccbdc31de975c4acfe55ea3cce55c3ad9",
           "app/_components/attachments/native-chat-attachment.tsx": "5f53f5c57329797077161274907cb4bceeb063e7af2731d10384a0c0ff937821",
-          "lib/server/conversations/native-uploads.ts": "3d9e4997de8762b21280bbe77b5c163de7fda42c74ebd221c4ef6c544908ee80",
+          "lib/server/conversations/native-uploads.ts": "b76289018da3e5eda67402fc1f27f13eb2b56b6e2e65d29a7443ead210d91395",
           "lib/server/conversations/native-upload-http.ts": "ea2868c77a510e67696e253c58deb51fc1bfe6262846092144ed4d5be9c82ba9",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
           "lib/conversations/upload-native-files.ts": "682982ab1355dc44e751d2e285811a69ed251294c9daf09b926befaf7eaed4c4"
@@ -8402,7 +8456,7 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "325377a89dd8e6a88991a67176a7148412383e8b5143e1036cf042acae727f78",
+          "app/_components/agent-chat.tsx": "9bf6cc9c2ef42aa1fa6397407cece5a0fe35f9038805e510c175c460129f9924",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
           "lib/chat-messages.ts": "ce785f0ea48d268733634746460168052995da374bcf8f25dae7bc4a1dd016f7",
@@ -8417,12 +8471,15 @@
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
           "scripts/check-ordinary-native-files.ts",
-          "scripts/check-ordinary-questions-native.ts"
+          "scripts/check-ordinary-questions-native.ts",
+          "tests/fixtures/ordinary-questions-native-model.ts",
+          "tests/integration/legacy-native-uploads.test.ts",
+          "specs/018-legacy-backend-parity/validation.md"
         ],
         "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Conversation search, actual file corrections/reload and task state pass; actual question acceptance remains required."
-        ]
+          "Exact018 Preview/Production and final CI verification remain required."
+        ],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
       }
     },
     {
@@ -8494,10 +8551,10 @@
           "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
-          "lib/server/conversations/eve-routes.ts": "f7a8433d878491839d415ae02b6485a16ab27dc612a46a9fd72e8b4c8a4790ff",
+          "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
           "agent/channels/eve.ts": "bed1aaaa816f917cdef53757f8fdd0a2bf154dbb933d7dfbaf782f9b10fb51d0",
           "agent/hooks/persist-conversation.ts": "4ca86fc9e16f07de1c003e2dbc86a85e0ed793ca1cf287dd1e08b1ea4a4ad6a2",
-          "agent/hooks/guard-customer-context.ts": "85d1bfedddca5d71d24166b0af90496b20983a422d8c12d043614110eac23d98",
+          "agent/hooks/guard-customer-context.ts": "0df466eb31712c311ac3d135531e5b1c9778788a855d411df0cf19cb3c892df6",
           "app/api/conversations/route.ts": "a8c23bf6f453ce56a6931da71165e2c760868e31e93b616498e6ef8c302a6cd9",
           "app/api/conversations/[id]/route.ts": "1f3f0a9b9fea20aa3ae863ebb54b8cca120e372d1521bb4dc7dbc71e36753bff",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
@@ -8505,12 +8562,15 @@
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
           "scripts/check-ordinary-native-files.ts",
-          "scripts/check-ordinary-questions-native.ts"
+          "scripts/check-ordinary-questions-native.ts",
+          "tests/fixtures/ordinary-questions-native-model.ts",
+          "tests/integration/legacy-native-uploads.test.ts",
+          "specs/018-legacy-backend-parity/validation.md"
         ],
         "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Conversation search, actual file corrections/reload and task state pass; actual question acceptance remains required."
-        ]
+          "Exact018 Preview/Production and final CI verification remain required."
+        ],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
       }
     },
     {
@@ -8553,13 +8613,18 @@
         "reviewPhase": "018 implemented-source reconciliation",
         "disposition": "domain-adapted",
         "currentPaths": [
-          "lib/profiles/research-products.ts"
+          "lib/profiles/research-products.ts",
+          "lib/server/profiles/policy.ts",
+          "lib/server/retrieval/research-projection.ts"
         ],
         "sourceSha256": {
-          "lib/profiles/research-products.ts": "74a86a54861fcf4d0e7b9a87c07396aed8ef86c5b58d1d57f6c2ace870eec8b8"
+          "lib/profiles/research-products.ts": "2073be1addd795e522bd5ad5d20fa00a3277523563a21e27baef7619e539755f",
+          "lib/server/profiles/policy.ts": "76183dc888a3b17a3233c45c78424f51a280ddc713742f80c5afbc673479cde3",
+          "lib/server/retrieval/research-projection.ts": "2d2cc088b1c4011e11127111d01ad20f010459b3cadaeeb323c329073f0edf14"
         },
         "evidence": [
-          "Initial pinned source inspection retained in audit-research.json"
+          "Initial pinned source inspection retained in audit-research.json",
+          "Batch recall uses the same per-account 8/order/1600 contract; selected rows are filtered by current canonical eligibility without ninth-slot refill. Actual DB12-account batch/individual equality and constant26-query bound pass. Real Preview runtime network benchmark: Next.js3745ms/40queries/77matches, name1343ms/17queries/1match; fresh HTTP session DB-bound, logout confirmed, no research/schema/budget/model writes. Local reader against hosted DB, not hosted deployed-code proof."
         ],
         "verificationScope": "Pinned source inspection and verified local suites; no hosted parity claim",
         "localAcceptance": {
@@ -8571,7 +8636,8 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "batchRegression": "tests/integration/legacy-profile-products.test.ts:7 tests passed"
       },
       "currentPaths": [
         "lib/server/profiles/public-inventory.ts",
@@ -9906,16 +9972,21 @@
         "disposition": "domain-adapted",
         "currentPaths": [
           "lib/server/research/specialists/research-cache/public-learning.ts",
-          "lib/server/research/specialists/research-cache/public-learning-read.ts"
+          "lib/server/research/specialists/research-cache/public-learning-read.ts",
+          "lib/server/profiles/policy.ts",
+          "lib/server/retrieval/research-projection.ts"
         ],
         "sourceSha256": {
           "lib/server/research/specialists/research-cache/public-learning.ts": "07be906ecba4dfd02322b38d797639a643e1113a89353a2704507d8d693b8a37",
-          "lib/server/research/specialists/research-cache/public-learning-read.ts": "c4c032f6877e5b43a38bab31ca020b74a4e4dc87cc8b3e7ad415f8043325b342"
+          "lib/server/research/specialists/research-cache/public-learning-read.ts": "2397a617d0a320ed246491c6a23bf910a6218bdf25aa796da2db6ab5e43db25e",
+          "lib/server/profiles/policy.ts": "76183dc888a3b17a3233c45c78424f51a280ddc713742f80c5afbc673479cde3",
+          "lib/server/retrieval/research-projection.ts": "2d2cc088b1c4011e11127111d01ad20f010459b3cadaeeb323c329073f0edf14"
         },
         "evidence": [
           "Initial pinned source inspection retained in audit-research.json",
           "Original8/1600 shared read contract consumed by profile and directory; canonical fallback exactpassage/noledgerURL precedence documented adaptation",
-          "tests/integration/legacy-profile-products.test.ts"
+          "tests/integration/legacy-profile-products.test.ts",
+          "Batch recall uses the same per-account 8/order/1600 contract; selected rows are filtered by current canonical eligibility without ninth-slot refill. Actual DB12-account batch/individual equality and constant26-query bound pass. Real Preview runtime network benchmark: Next.js3745ms/40queries/77matches, name1343ms/17queries/1match; fresh HTTP session DB-bound, logout confirmed, no research/schema/budget/model writes. Local reader against hosted DB, not hosted deployed-code proof."
         ],
         "verificationScope": "Pinned source inspection and verified local suites; no hosted parity claim",
         "localAcceptance": {
@@ -9927,7 +9998,8 @@
           "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
           "Exact-head complete CI and Preview acceptance (T023/T024)",
           "Required migration/grant release and authenticated Production verification (T025)"
-        ]
+        ],
+        "batchRegression": "tests/integration/legacy-profile-products.test.ts:7 tests passed"
       },
       "currentPaths": [
         "lib/server/research/specialists/research-cache/public-learning.ts",

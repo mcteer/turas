@@ -343,10 +343,10 @@ it('binds only the actual question callback after an exact owner POST without re
   const f=await fixture(db);id=f.conversation.id;const text='Owned pending question fixture.',attempt=await prepareAttempt(f.actor,id,f.native,randomUUID(),text);
   await claimDispatch(f.actor,id,attempt.attemptId,0);
   await projectNativeEvent(f.native,attempt.attemptId,event('message.received',{message:text,turnId:'turn_0',sequence:0}));
-  const requestId='question_'+randomUUID();await projectNativeEvent(f.native,attempt.attemptId,event('input.requested',{turnId:'turn_0',sequence:0,requests:[{requestId,kind:'question'}]}));
+  const requestId='question_'+randomUUID();await projectNativeEvent(f.native,attempt.attemptId,event('input.requested',{turnId:'turn_0',sequence:0,requests:[{requestId,kind:'question',action:{kind:'tool-call',callId:'held-question',toolName:'ask_question'}}]}));
   const principal={authenticator:'turas-session',principalType:'user',principalId:f.actor.principalId,attributes:{turasAttemptId:attempt.attemptId,turasLoginSessionId:f.actor.sessionId,turasMembershipId:f.actor.membershipId}};
   const step=event('step.started',{turnId:'turn_2',sequence:2,stepIndex:0}),turn={id:'turn_2',sequence:2};
-  const bind=(value=step,caller=principal,current=turn)=>withTransaction(runtime=>bindPostedQuestionStep(runtime,caller,f.native,value,current));
+  const bind=(value=step,caller=principal,current=turn)=>withTransaction(runtime=>bindPostedQuestionStep(runtime,caller,f.native,value,current,[{role:'tool',content:[{type:'tool-result',toolCallId:'held-question',toolName:'ask_question',output:{type:'json',value:{status:'answered',answer:'Desktop'}}}]}]));
   const deadline=(value='turn_2')=>withTransaction(runtime=>nativeInputDeadline(runtime,attempt.attemptId,f.native,value));
   await bind();expect(await deadline()).toBeNull();
   const postingActor=await isolatedChatActor(db,'internal','admin',undefined,f.actor);
@@ -406,5 +406,40 @@ it.each(['login','workspace','source'] as const)('permits only an actual owned a
   else if(revoked==='workspace')await db.query('UPDATE workspaces SET active=false WHERE id=$1',[actor.workspaceId]);
   else await db.query("UPDATE customer_grants SET state='revoked',revision=revision+1 WHERE customer_id=$1 AND membership_id=$2",[customer,actor.membershipId]);
   await expect(control()).rejects.toMatchObject({status:revoked==='source'?404:401});
+ }finally{if(id)await settleSyntheticConversationAttempts(db,[id]);await db.end();}
+});
+
+it('admits only typed original-question dismissal reconstruction against its real followup and retained original allowance',async()=>{
+ const db=new Client({connectionString:url});await db.connect();let id:string|undefined;
+ const {admitQuestionReconstruction}=await import('../../lib/server/conversations/question-reconstruction');
+ const event=(type:string,data:Record<string,unknown>)=>({type,data,meta:{id:'evt_'+randomUUID(),at:new Date().toISOString()}});
+ try{
+  const f=await fixture(db);id=f.conversation.id;const text='Owned original reconstruction.',attempt=await prepareAttempt(f.actor,id,f.native,randomUUID(),text);await claimDispatch(f.actor,id,attempt.attemptId,0);
+  await projectNativeEvent(f.native,attempt.attemptId,event('message.received',{message:text,turnId:'turn_0',sequence:0}));
+  const callId='held_'+randomUUID(),toolName='ask_question';await projectNativeEvent(f.native,attempt.attemptId,event('input.requested',{turnId:'turn_0',sequence:0,requests:[{requestId:'request_'+randomUUID(),kind:'question',action:{kind:'tool-call',callId,toolName}}]}));
+  const secondCallId='held_'+randomUUID();await projectNativeEvent(f.native,attempt.attemptId,event('input.requested',{turnId:'turn_0',sequence:0,requests:[{requestId:'request_'+randomUUID(),kind:'question',action:{kind:'tool-call',callId:secondCallId,toolName}}]}));
+  const principal={authenticator:'turas-session',principalType:'user',principalId:f.actor.principalId,attributes:{turasAttemptId:attempt.attemptId,turasLoginSessionId:f.actor.sessionId,turasMembershipId:f.actor.membershipId}};
+  const step=event('step.started',{turnId:'turn_1',sequence:1,stepIndex:0});
+  const typed=[{role:'tool',content:[{type:'tool-result',toolCallId:callId,toolName,output:{type:'json',value:{status:'dismissed'}}}]}];
+  typed[0].content.push({type:'tool-result',toolCallId:secondCallId,toolName,output:{type:'json',value:{status:'dismissed'}}});
+  const admit=(messages:unknown=typed,current=step)=>withTransaction(runtime=>admitQuestionReconstruction(runtime,principal,f.native,current,messages));
+  expect(await admit()).toBeNull();
+  const fresh=await isolatedChatActor(db,'internal','admin',undefined,f.actor),followup=await prepareAttempt(fresh,id,f.native,randomUUID(),'An actual nonmatching follow-up.');await claimDispatch(fresh,id,followup.attemptId,0);
+  const originalDeadline=(await db.query('SELECT deadline_at FROM response_attempts WHERE id=$1',[attempt.attemptId])).rows[0].deadline_at;
+  expect(await admit([{role:'user',content:JSON.stringify(typed)}])).toBeNull();
+  expect(await admit([{role:'tool',content:[{...typed[0].content[0],toolCallId:'unrelated'}]}])).toBeNull();
+  expect((await db.query('SELECT response_state FROM response_attempts WHERE id=$1',[attempt.attemptId])).rows[0].response_state).toBe('waiting_input');
+  await db.query('UPDATE login_sessions SET revoked_at=now() WHERE id=$1',[f.actor.sessionId]);
+  const deadline=await admit();expect(deadline).toBeInstanceOf(Date);
+  expect(await admit()).toEqual(deadline);
+  expect(await admit(typed,event('step.started',{turnId:'turn_7',sequence:7,stepIndex:0}))).toBeNull();
+  expect(await admit(typed,event('step.started',{turnId:'turn_1',sequence:1,stepIndex:1}))).toBeNull();
+  expect((await db.query('SELECT response_state,deadline_at FROM response_attempts WHERE id=$1',[attempt.attemptId])).rows[0]).toMatchObject({response_state:'waiting_input',deadline_at:originalDeadline});
+  expect((await db.query('SELECT count(*)::int n FROM ordinary_question_reconstructions WHERE attempt_id=$1',[attempt.attemptId])).rows[0].n).toBe(2);
+  expect((await db.query('SELECT count(*)::int n FROM ordinary_model_operations WHERE attempt_id=$1',[attempt.attemptId])).rows[0].n).toBe(0);
+  expect((await db.query("SELECT count(*)::int n FROM event_projections WHERE conversation_id=$1 AND event_type='input.resolved'",[id])).rows[0].n).toBe(0);
+  await expect(withTransaction(runtime=>runtime.query('DELETE FROM ordinary_question_reconstructions WHERE attempt_id=$1',[attempt.attemptId]))).rejects.toMatchObject({code:'42501'});
+  await expect(withTransaction(runtime=>runtime.query('UPDATE ordinary_question_reconstructions SET deadline_at=clock_timestamp() WHERE attempt_id=$1',[attempt.attemptId]))).rejects.toMatchObject({code:'42501'});
+  await db.query('UPDATE login_sessions SET revoked_at=now() WHERE id=$1',[fresh.sessionId]);await expect(admit()).rejects.toMatchObject({status:401});
  }finally{if(id)await settleSyntheticConversationAttempts(db,[id]);await db.end();}
 });

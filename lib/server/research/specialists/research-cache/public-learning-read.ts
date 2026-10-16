@@ -3,8 +3,8 @@ import {getServerConfig} from "../../../config";
 import type {PoolClient} from "pg";
 import {z} from "zod";
 import type {AppIdentity} from "../identity";
-import {lockProfileActor} from "../../../profiles/policy";
-import {requireResearchAccount,researchSourceIsEligible,researchSourceIsEligibleInTransaction} from "../account";
+import {lockProfileActor,lockProfileActors} from "../../../profiles/policy";
+import {requireResearchAccount,researchSourceIsEligible,researchSourcesAreEligibleInTransaction,researchSourceKey} from "../account";
 import {evidenceDatabase} from "./database";
 import {communityAttributionWarning} from "../solution-research/attribution";
 
@@ -19,7 +19,24 @@ export async function recallPublicLearning(identity: AppIdentity, accountId: str
   if(existingClient)await lockProfileActor(existingClient,identity,accountId,undefined,true);
   else await requireResearchAccount(identity,accountId);
   const sql = existingClient ? {query:async(text:string,values:unknown[])=>(await existingClient.query(text,values)).rows} : await evidenceDatabase();
-  const rows = await sql.query(`WITH learning AS (
+  const rows = await sql.query(selectionSql(false),[identity.environmentId,identity.workspaceId,accountId,query,acrossAccounts,identity.membershipId,identity.kind,[]]);
+  signal.throwIfAborted();
+  return parseSelected(identity,rows,existingClient);
+}
+async function parseSelected(identity:AppIdentity,rows:unknown,existingClient?:PoolClient){
+  const parsed = z.array(z.object({ id: z.string(), account_id: z.string(), url: z.string(), title: z.string(), passage_id: z.string(), quote: z.string(),
+    published_at: z.coerce.date().nullable(), first_seen: z.coerce.date(), last_seen: z.coerce.date(), refresh_after: z.coerce.date().nullable(), changed: z.boolean(), query_matched: z.boolean() })).parse(rows);
+  const authority=existingClient?await researchSourcesAreEligibleInTransaction(existingClient,identity,parsed.map(row=>({accountId:row.account_id,url:row.url}))):null;
+  const eligible=[];
+  for(const row of parsed)if(authority?authority.get(researchSourceKey({accountId:row.account_id,url:row.url})):await researchSourceIsEligible(identity,row.account_id,row.url))eligible.push(row);
+  return eligible.map(row => publicLearningSchema.parse({ id: row.id, accountId: row.account_id, url: row.url, title: row.title,
+    passageId: row.passage_id, queryMatched: row.query_matched, quote: row.quote.slice(0, 1600), quoteTruncated: row.quote.length > 1600, publishedAt: row.published_at?.toISOString().slice(0, 10) ?? null,
+    firstSeen: row.first_seen.toISOString(), attributionWarning: communityAttributionWarning({ url: row.url }), lastSeen: row.last_seen.toISOString(), evidenceState: row.changed ? "changed"
+      : !row.refresh_after ? "historical" : row.refresh_after.getTime() <= Date.now() ? "refresh_due" : "recently_checked" }));
+}
+
+const recallOrdering="origin_priority,passage_rank,relevance DESC,(source_type IN ('customer_publication','vendor_case_study','conference_presentation','webinar')) DESC,last_seen DESC,id";
+function selectionSql(batch:boolean){return `WITH learning AS (
     SELECT l.environment_id,l.workspace_id,l.account_id,l.id,l.url,l.title,l.passage_id,l.quote,
       l.published_at,l.first_seen,l.last_seen,l.source_type,l.snapshot_id,l.search_text,0 AS origin_priority
     FROM turas_public_learning l WHERE l.environment_id=$1 AND l.workspace_id=$2
@@ -44,7 +61,7 @@ export async function recallPublicLearning(identity: AppIdentity, accountId: str
       EXISTS(SELECT 1 FROM turas_evidence_snapshots n WHERE n.environment_id=l.environment_id AND n.workspace_id=l.workspace_id
         AND n.url=l.url AND n.id<>l.snapshot_id AND n.checked_at>l.last_seen) AS changed
     FROM learning l LEFT JOIN turas_evidence_snapshots s ON s.environment_id=l.environment_id AND s.workspace_id=l.workspace_id AND s.id=l.snapshot_id
-    WHERE l.environment_id=$1 AND l.workspace_id=$2 AND (l.account_id=$3 OR $5::boolean)
+    WHERE l.environment_id=$1 AND l.workspace_id=$2 AND (l.account_id=$3 OR $5::boolean OR l.account_id=ANY($8::text[]))
       AND EXISTS(SELECT 1 FROM customer_references c WHERE c.id::text=l.account_id
         AND c.workspace_id::text=l.workspace_id AND ($7='internal' OR EXISTS(
           SELECT 1 FROM customer_grants g WHERE g.customer_id=c.id
@@ -60,19 +77,15 @@ export async function recallPublicLearning(identity: AppIdentity, accountId: str
               AND (conflict.scope='shared' OR (conflict.scope='customer' AND conflict.workspace_id=canonical.workspace_id AND conflict.customer_id=canonical.customer_id))
               AND ((conflict.first_kind='verified_research' AND conflict.first_revision_id=head.id) OR
                 (conflict.second_kind='verified_research' AND conflict.second_revision_id=head.id)))))
-      ) SELECT * FROM ranked
-    WHERE query_matched OR NOT EXISTS(SELECT 1 FROM ranked WHERE query_matched)
-    ORDER BY (account_id=$3) DESC,origin_priority,passage_rank,relevance DESC,
-      (source_type IN ('customer_publication','vendor_case_study','conference_presentation','webinar')) DESC,
-      last_seen DESC,id LIMIT 8`,
-    [identity.environmentId, identity.workspaceId, accountId, query, acrossAccounts,identity.membershipId,identity.kind]);
-  signal.throwIfAborted();
-  const parsed = z.array(z.object({ id: z.string(), account_id: z.string(), url: z.string(), title: z.string(), passage_id: z.string(), quote: z.string(),
-    published_at: z.coerce.date().nullable(), first_seen: z.coerce.date(), last_seen: z.coerce.date(), refresh_after: z.coerce.date().nullable(), changed: z.boolean(), query_matched: z.boolean() })).parse(rows);
-  const eligible=[];
-  for(const row of parsed)if(await (existingClient?researchSourceIsEligibleInTransaction(existingClient,identity,row.account_id,row.url):researchSourceIsEligible(identity,row.account_id,row.url)))eligible.push(row);
-  return eligible.map(row => publicLearningSchema.parse({ id: row.id, accountId: row.account_id, url: row.url, title: row.title,
-    passageId: row.passage_id, queryMatched: row.query_matched, quote: row.quote.slice(0, 1600), quoteTruncated: row.quote.length > 1600, publishedAt: row.published_at?.toISOString().slice(0, 10) ?? null,
-    firstSeen: row.first_seen.toISOString(), attributionWarning: communityAttributionWarning({ url: row.url }), lastSeen: row.last_seen.toISOString(), evidenceState: row.changed ? "changed"
-      : !row.refresh_after ? "historical" : row.refresh_after.getTime() <= Date.now() ? "refresh_due" : "recently_checked" }));
+      ) ${batch ? `, selected AS (SELECT ranked.*,row_number() OVER(PARTITION BY account_id ORDER BY ${recallOrdering}) AS account_rank FROM ranked) SELECT * FROM selected WHERE account_rank<=8 ORDER BY account_id,account_rank` : `SELECT * FROM ranked WHERE query_matched OR NOT EXISTS(SELECT 1 FROM ranked WHERE query_matched) ORDER BY (account_id=$3) DESC,${recallOrdering} LIMIT 8`}`;}
+
+/** Same selected-passage boundary independently for every authorized account. */
+export async function recallPublicLearningForAccounts(identity:AppIdentity,accountIds:readonly string[],signal:AbortSignal,db:PoolClient){
+ if(identity.environmentId!==getServerConfig().TURAS_ENVIRONMENT_ID)throw hiddenRecord();
+ const ids=[...new Set(accountIds)].sort();
+ await lockProfileActors(db,identity,ids,undefined,true);
+ if(!ids.length)return [];
+ const rows=(await db.query(selectionSql(true),[identity.environmentId,identity.workspaceId,ids[0],'',false,identity.membershipId,identity.kind,ids])).rows;
+ signal.throwIfAborted();
+ return parseSelected(identity,rows,db);
 }

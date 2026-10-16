@@ -1,3 +1,4 @@
+import {admitQuestionReconstruction} from './question-reconstruction';
 import {bindPostedQuestionStep} from './question-continuation';
 import {nativeFileEvaluationDeadline} from './native-file-policy';
 import {wrapLanguageModel} from 'ai';
@@ -20,17 +21,19 @@ export function wrapOrdinaryChatModel(model:Model,principal:Principal,nativeSess
  return wrapLanguageModel({model,middleware:{async transformParams({params}){
   if(called)throw new HttpFailure(409,'model_call_repeated','A dispatched model call cannot be repeated');called=true;
   const {remaining,packet,resumeDeadline,files}=await withTransaction(async db=>{
+   const reconstructionDeadline=nativeStep?await admitQuestionReconstruction(db,principal,nativeSessionId,nativeStep.event,params.prompt):null;
    const scope=await customerQuestionActor(db,principal);
-   const conversation=(await db.query(`SELECT c.id,a.native_turn_id FROM conversations c JOIN response_attempts a ON a.conversation_id=c.id
-    WHERE a.id=$1 AND c.eve_session_id=$2 AND c.owner_principal_id=$3 AND a.response_state='running'`,[scope.attemptId,nativeSessionId,scope.actor.principalId])).rows[0];
-   if(!conversation)throw hiddenRecord();
-   if(nativeStep)await bindPostedQuestionStep(db,principal,nativeSessionId,nativeStep.event);
-   const evaluationDeadline=nativeFileEvaluationDeadline(conversation.id);
+   if(nativeStep)await bindPostedQuestionStep(db,principal,nativeSessionId,nativeStep.event,undefined,params.prompt);
    const inputDeadline=await nativeInputDeadline(db,scope.attemptId,nativeSessionId,turnId);
+   const conversation=(await db.query(`SELECT c.id,a.native_turn_id FROM conversations c JOIN response_attempts a ON a.conversation_id=c.id
+    WHERE a.id=$1 AND c.eve_session_id=$2 AND c.owner_principal_id=$3 AND (a.response_state='running' OR $4::boolean AND a.response_state='waiting_input')`,[scope.attemptId,nativeSessionId,scope.actor.principalId,!!(reconstructionDeadline||inputDeadline&&turnId!=='')])).rows[0];
+   if(!conversation)throw hiddenRecord();
+   const evaluationDeadline=nativeFileEvaluationDeadline(conversation.id);
    const steeringDeadline=await steeringTurnDeadline(db,scope.attemptId,nativeSessionId,turnId);
    const background=turnId&&turnId!==conversation.native_turn_id&&(await db.query('SELECT 1 FROM research_background_turns WHERE attempt_id=$1 AND native_session_id=$2 AND turn_id=$3',[scope.attemptId,nativeSessionId,turnId])).rowCount;
-   if(turnId!==conversation.native_turn_id&&!inputDeadline&&!steeringDeadline&&!background)throw hiddenRecord();
+   if(turnId!==conversation.native_turn_id&&!inputDeadline&&!steeringDeadline&&!background&&!reconstructionDeadline)throw hiddenRecord();
    let resumeDeadline=inputDeadline&&steeringDeadline?new Date(Math.max(inputDeadline.getTime(),steeringDeadline.getTime())):inputDeadline??steeringDeadline;
+   if(reconstructionDeadline)resumeDeadline=resumeDeadline?new Date(Math.min(resumeDeadline.getTime(),reconstructionDeadline.getTime())):reconstructionDeadline;
    if(evaluationDeadline)resumeDeadline=resumeDeadline?new Date(Math.min(resumeDeadline.getTime(),evaluationDeadline.getTime())):evaluationDeadline;
    if(turnId==='' && !inputDeadline || resumeDeadline && resumeDeadline.getTime()<=Date.now())throw hiddenRecord();
    const injected=await db.query(`SELECT 1 FROM response_attempts a
@@ -40,7 +43,7 @@ export function wrapOrdinaryChatModel(model:Model,principal:Principal,nativeSess
     WHERE a.id=$1 AND a.conversation_id=$2`,[scope.attemptId,conversation.id]);
    if(!injected.rowCount)throw hiddenRecord();
    const packet=await refreshOrdinaryKnowledge(db,scope.actor,principal,conversation.id,scope.attemptId);
-   const files=await readNativeProviderFiles(db,scope.actor,conversation.id,scope.attemptId);
+   const files=await readNativeProviderFiles(db,scope.actor,conversation.id,scope.attemptId,{questionContinuation:!!(reconstructionDeadline||inputDeadline&&turnId!=='')});
    const spent=Number((await db.query('SELECT COALESCE(sum(output_tokens),0)::text AS tokens FROM response_attempts WHERE conversation_id=$1',[conversation.id])).rows[0].tokens);
    if(!Number.isSafeInteger(spent)||spent>=ordinaryConversationOutputLimit)throw new HttpFailure(429,'conversation_budget','Conversation output allowance exhausted');
    const marker=(await db.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0];
