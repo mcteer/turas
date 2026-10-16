@@ -6,7 +6,7 @@
 Restore legacy interaction mechanisms within the existing visual shell: responsive scroll following/restoration, visible tool/reasoning activity, consistent composer intake and truthful state transitions. Preserve governed backend mechanisms from018.
 
 ## Technical Context
-TypeScript/Node24, Next16/React19, installed Eve0.67.1 and existing Playwright WebKit. No new dependency, provider integration, database migration or root-model change. Browser storage contains only numeric scroll coordinates and follow state; authorized content remains server-owned. Owned disposable test environments preserve selected database and workflow storage.
+TypeScript/Node24, Next16/React19, installed Eve0.67.1 and existing Playwright WebKit. No new dependency, provider integration, new schema migration or root-model change. Browser storage contains only numeric scroll coordinates and follow state; authorized content remains server-owned. Owned disposable test environments preserve selected database and workflow storage.
 
 ## Constitution Check
 Pass before and after design: bounded spec and traceability; no change to evidence acceptance or human decisions; server authorization remains authoritative; current Eve continuous streaming retained; headless UI verification and exact hosted release checks required. No exceptions.
@@ -21,4 +21,4 @@ Pass before and after design: bounded spec and traceability; no change to eviden
 Changes are confined to app/_components chat/composer components, a viewport hook, lib/conversations display helpers, focused unit/UI tests and an isolated check runner. Existing domain services and native admission remain unchanged. Docs under this feature include source comparison, interface contract, test commands and release evidence.
 
 ## Delivery and Recovery
-Run focused units, typecheck, docs/build and the owned four-project headless WebKit gate. Inspect captures. Open a focused PR, run required CI and exact authenticated Preview checks; independently review before merge. Verify exact deployed Production commit, logins and changed read-only interaction paths. No schema migration: previous schema77 backup/rehearsal remains valid. Rollback is the prior compatible app commit, without resetting data/holds.
+Run focused units, typecheck, docs/build and the owned four-project headless WebKit gate. Inspect captures. Open a focused PR, run required CI and exact authenticated Preview checks; independently review before merge. Verify exact deployed Production commit, logins and changed read-only interaction paths. No new Production schema migration. The isolated public-only Preview acceptance target uses explicit existing77 initialization, runtime grants and encrypted backup/restore rehearsal recorded in validation.md. Rollback is the prior compatible app commit, without resetting data/holds.
