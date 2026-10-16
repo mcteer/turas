@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-15
 
-**Status**: Backend restoration, retired history/retry and staged-file stream fixes merged; active failed-turn history recovery and final release acceptance in progress
+**Status**: Complete — audited backend scope merged through PR39 and verified in Production on schema077; evidence limits remain explicit
 
 **Input**: “AUDIT ALL OF LEGACY. COPY BACKEND MECHANISMS.” Continue through working implementation, validation and merge without repeated approval requests. The reference is `../turas-back` at `fd1e205d7fd258676d6fb12b3ade8a431d53a6af`.
 

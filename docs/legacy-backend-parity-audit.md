@@ -1335,3 +1335,19 @@ loses its visible history when Eve transient messages are purged. The original
 PDF browser check remains failed and its unknown reservation is preserved. T033
 restores authorized application-owned display without changing native authority;
 final acceptance and release closure remain open.
+
+
+### Final active-history release — 2026-10-16
+
+The actionable gap above is closed by [PR39](https://github.com/mcteer/turas/pull/39).
+Final source395b53 passes50 exact-head CI jobs and26 zero-model Preview checks;
+merge2d9dc01 is verified on canonical Production/schema77. An actual new failed
+PDF turn with empty native history retains its original user message and private
+file card after desktop/mobile reload. Independent review accepts explicit failure
+without an answer/extraction claim. The earlier failed browser check remains
+failed; its unknown hold is preserved. The new case also retains its unknown
+reservation and retires with HTTP200/zero chunks. Later-send behavior is separately
+covered by actual-Eve synthetic-provider and empty-native UI checks. All337 paths
+and101 acceptance references are dispositioned; zero actionable backend gaps
+remain in this audited scope. See the [release record](production-parity-release-2026-10-16.md)
+for actual release checks, original failures and remaining evidence limitations.

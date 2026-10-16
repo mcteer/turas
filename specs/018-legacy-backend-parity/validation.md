@@ -422,3 +422,77 @@ coalesces them under the same empty turn and step. Exact event records remain
 visible without content deduplication. Thirteen focused tests and TypeScript
 pass, including actual public SDK reducer cases for empty and absent turn IDs,
 distinct steps and separate canonical completions.
+
+
+## Final PR39 release acceptance — 2026-10-16
+
+This section supersedes earlier current-state descriptions of schema072, pending
+T032/T033 and incomplete release acceptance; their original checkpoint evidence
+and failures remain preserved above.
+
+Final source `395b53bbad317c797183018ac677a117d295aacd` passes all50 exact-head CI
+jobs: Turas checks38920456001 attempt1 (43/43) and Legacy backend parity38920456212
+attempt2 (7/7). Final52-case WebKit, actual native questions, operations, staged
+four/ten-MiB, task-state and domain gates pass. The native-operations initial CI
+job exposed only a generic failure and no artifacts; unchanged complete local
+reproduction passes, then one unchanged job-only retry passes. Its cause is not
+classified as a flake. The earlier086318 duplicate-question regression remains
+a real failed candidate, fixed using exact empty-string turn/step identity and
+distinct canonical event preservation. Final13 focused tests and TypeScript pass.
+The719-test full local unit baseline precedes the final small identity guards;
+exact-head CI covers the combined source without relabeling that earlier run.
+
+Exact READY Preview passes14 general, six login and six original retained-history
+checks (26 total), with zero new model calls. An initial general check completed
+all14 behavior checks but failed cleanup; a diagnostic unchanged repeat passes
+including cleanup, with original failure/cause uncertainty preserved. No paid
+Preview reservation, top-up, new validation catalog or Production evidence import
+is performed. Original finite Preview accounting remains preserved.
+
+PR39 merged as `2d9dc018eec88c41e8e52accb91169eef54ca43f`, with exact tree equality
+to the tested source. Both associated branches are absent, canonical main is
+fast-forwarded and README read. Identical-tree duplicate main runs38935581046/
+38935581094 were cancelled after the tested-tree proof; they are not claimed as
+passing CI. Production deployment `dpl_8zy6mER4JYjmSGBiQCzuEViQENBQ` was READY at verification at
+the canonical alias on the exact merge. Schema77 and34 read-only privilege
+metadata checks pass. Owner inspection does not establish runtime-role execution.
+T033 changes no schema or grants, so no additional full backup/rehearsal is needed;
+the verified encrypted schema77/445-table restore, ledger,34grant and rollback452/
+candidate65dfa compatibility evidence remains preserved.
+
+Actual Production passes13 general and four login checks. Three original
+retired records (retained answer, native-four-MiB and original0dd failed PDF) pass
+desktop/mobile reload, owner privacy and revoked-cookie checks with zero model
+calls or Eve reconnects. Original model operations, unknown holds and accepted
+profile facts remain unchanged. The old failed PDF remains an old failed browser
+acceptance; its separate read-only recovery is not rewritten as an original pass.
+
+A new104-byte malformed-PDF case now validates active failure recovery on the
+exact PR39 deployment. Browser parser failure sends the original raw file, with
+exact MIME/SHA owned download and other-owner denial. No accepted customer facts
+or research are created. One admitted attempt fails with MODEL_CALL_FAILED and
+zero recorded output; late raw native history contains zero events. The original
+application-owned message and private file card survive desktop/mobile reload,
+with the failed-response notice and no assistant answer. Independent review binds
+the receipt, actual projected step/turn failures, empty raw events, zero-byte
+assistant output, fixture and screenshots. This accepts explicit negative outcome
+and display recovery only: no PDF format support, extraction success or specific
+PDF-caused provider error is claimed. One unknown8,192-token hold is preserved.
+Retirement returns HTTP200, chunks are zero, and the exact case is archived and
+logged out. Four console resource404s lack recorded URLs and remain unclassified;
+font warnings are separately retained. No error-free-console claim is made.
+
+Later-send recovery is proven separately by the actual-Eve synthetic-provider
+failure gate and empty-native UI cases, with exact-head CI covering final source.
+There is no additional hosted paid later turn. The PR38 ten-MiB selected-provider
+99-output-token/630-byte-largest-event result and original retained account answer
+are preserved without provider repetition. Six retained passages support that
+account answer; full article text is absent and its claimed lexical-search
+execution remains unverified. These are evidence limits, not expanded corpus
+claims. Feature016 operator/pilot and unrelated hosted acceptance remain separate.
+
+All337 legacy paths and101 concrete acceptance references remain dispositioned,
+with zero unclassified paths or actionable gaps in the authorized backend scope.
+Canonical environment, all40,615 original workflow files and selected root model
+remain unchanged. Documentation consolidation changes only release records; it does not create
+new backend execution evidence.

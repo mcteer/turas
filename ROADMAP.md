@@ -1,6 +1,6 @@
 # Turas delivery roadmap
 
-Complete legacy backend parity is the currently authorized repair under
+Complete legacy backend parity is implemented and released under
 [`018-legacy-backend-parity`](specs/018-legacy-backend-parity/spec.md), with its
 explicit [implementation tasks](specs/018-legacy-backend-parity/tasks.md).
 It restores original mechanisms and consumers within existing governed domains.
@@ -299,8 +299,14 @@ its exit evidence and merged PR are linked. Distinguish local, CI, preview and
 production verification. Revise dependencies and scope when evidence changes.
 Update README in each relevant PR and verify it after merge.
 
-Feature 018 follow-up: PR 36 and PR 37 are merged on schema 077. Actual Production retired-history/profile checks pass (T030), with exact bounded retry recovery covered by T031. Ten-MiB acceptance exposed a platform user-stream chunk limit before provider admission; T032 tracks compact immutable file transport with verified bytes at the provider boundary. Full feature acceptance remains open.
+Feature018 was released incrementally through PR36–39. The original stream-size
+and active-history failures remain recorded in feature validation; the final
+verified release is summarized below.
 
-Feature018 PR38 is merged on Production schema077 with actual ten-MiB compact
-selected-provider delivery verified. T033 active failed-turn history recovery and
-final acceptance remain open; see the feature tasks and validation record.
+### Feature018 release closure — 2026-10-16
+
+PR36–39 restore the337-path/101-reference audited backend scope. Final source
+395b53 passes all50CI jobs and26Preview checks; merge2d9dc01 is verified in
+Production on schema77, including original retained history and actual failed-turn
+file-card reload recovery. See the [release record](docs/production-parity-release-2026-10-16.md).
+Historical failed checks remain recorded; this does not complete feature016.

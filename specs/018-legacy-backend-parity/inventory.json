@@ -1,6 +1,6 @@
 {
   "referenceCommit": "fd1e205d7fd258676d6fb12b3ade8a431d53a6af",
-  "status": "337 pinned legacy paths reviewed; all101 test/evaluation references mapped; PR36/37/38 merged/schema077 and actual compact10MiB Production delivery verified; T033 active failed-turn history recovery and final release acceptance remain open",
+  "status": "Complete:337 pinned legacy paths reviewed and101 acceptance references dispositioned; PR36\u201339 merged, final50 exact-head CI/26Preview checks pass, canonical Production/schema077 and actual active failed-turn reload recovery independently verified; evidence limits preserved",
   "entries": [
     {
       "legacyPath": ".gitignore",
@@ -151,11 +151,9 @@
           "tests/integration/native-input-replay.test.ts",
           "tests/unit/legacy-chat-mechanics.test.tsx"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
-        "retryRecovery": "Installed Eve durable-step retries emit new received-event IDs. Preserve distinct audit events and recognize only exact pre-provider same-delivery aliases; retain original input/file envelope/deadline/allowance and current authorization. Reconciliation accepts only recorded aliases and UI shows one send. Hosted exact-source acceptance remains required."
+        "remainingAcceptance": [],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record.",
+        "retryRecovery": "Installed Eve durable-step retries emit new received-event IDs. Preserve distinct audit events and recognize only exact pre-provider same-delivery aliases; retain original input/file envelope/deadline/allowance and current authorization. Reconciliation accepts only recorded aliases and UI shows one send. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record."
       }
     },
     {
@@ -264,12 +262,10 @@
           "tests/unit/retained-chat-history.test.ts",
           "tests/unit/active-chat-history.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
+        "remainingAcceptance": [],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record.",
         "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
-        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
+        "activeTerminalRecovery": "T033closed: PR39/merge2d9dc01 actual Production failed-turn reload preserves original user/file with empty native history; exact canonical/alias/turn/step display identity and owner/source fences verified. Explicit MODEL_CALL_FAILED and unknown hold remain; no extraction-success claim."
       }
     },
     {
@@ -423,12 +419,10 @@
           "tests/unit/retained-chat-history.test.ts",
           "tests/unit/active-chat-history.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
+        "remainingAcceptance": [],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record.",
         "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
-        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
+        "activeTerminalRecovery": "T033closed: PR39/merge2d9dc01 actual Production failed-turn reload preserves original user/file with empty native history; exact canonical/alias/turn/step display identity and owner/source fences verified. Explicit MODEL_CALL_FAILED and unknown hold remain; no extraction-success claim."
       }
     },
     {
@@ -505,11 +499,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/lib/legacy-research/practice-context-tool.ts": "118c7b5a46e22fbcfd6f8a52cd15d6b4d09806f85036f820ad1c680ee0a9881d"
         }
@@ -559,11 +549,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/lib/legacy-research/public-research.ts": "bd48ef5f330f32f5df85e2c9fae5a06e941851dbccc95f35040cc6236acd8e0e"
         }
@@ -613,11 +599,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/lib/legacy-research/research-context-tool.ts": "36156b13f668a79c1ebcb88d7b84b658365a660aed0eda7167e3a00dae670d32"
         }
@@ -667,11 +649,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/lib/legacy-research/research-handoff.ts": "abdd51f153362d17b7c3de92a0d08664f43b35064c56690391ea57111f6e1c93"
         }
@@ -721,11 +699,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/lib/legacy-research/research-state.ts": "ca01d8840b0dd69e8a5b2f4d7cd7d83c0e74cd831dc209a180317f667ee1e117"
         }
@@ -775,11 +749,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/lib/legacy-research/research-tools/read_public_research_source.ts": "f3dc1840cc4ac599439b5040a35ea254b5f76e5bcdd775d6bc88b507b5f6a01c"
         }
@@ -829,11 +799,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/lib/legacy-research/research-tools/read_research_passages.ts": "e2168bbcd5c24b627bec32e22dffe905ea1e5cd73c4c245815ca0ee6e45e8a37"
         }
@@ -883,11 +849,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/lib/legacy-research/research-tools/research_evidence.ts": "43e312151cc5d094c3a8773d13b8f2c1040bad825b338559aad2c8750a43980e"
         }
@@ -937,11 +899,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/lib/legacy-research/research-tools/search_public_research.ts": "7984a0323a626fa6e2c23a61e30425fa2411db8ad758a95ec9e5137a3c1ae14d"
         }
@@ -993,10 +951,7 @@
         "localEvidence": [
           "scripts/check-ordinary-native-files.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Existing exact997 CI text/file preference save/recall/isolation/remove passes; final018 regression CI remains required."
-        ]
+        "remainingAcceptance": []
       }
     },
     {
@@ -1358,11 +1313,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/skills/solution-research/SKILL.md": "7e8a042c7d8e4a15b2803182e645fb68e71e22a221c3f14024f548be641e23a9"
         }
@@ -1431,11 +1382,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/customer-recon-worker/agent.ts": "246e1b1d899f2bde621360914f11fb61b85db4c1efe2e5a771d01eef7c912b58"
         }
@@ -1485,11 +1432,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/customer-recon-worker/instructions.md": "477cd1a57296afc877c86cc87402a075f2a40a2b01847c668edc6aef82f97d8c"
         }
@@ -1539,11 +1482,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/customer-recon-worker/tools/bash.ts": "3a4cda85fee0e8b3c5b033d414eb53439b5d2b8e7a2f848da430c21babfb131b"
         }
@@ -1593,11 +1532,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/customer-recon-worker/tools/connection_search.ts": "e8bb109e7422d654d53c1c6086d6df8b57fb70ef6708fe73faf36f8fb3249f0e"
         }
@@ -1647,11 +1582,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/customer-recon-worker/tools/finalize_customer_update.ts": "cdb0e51d4554bffda0694a0c9ddc218cf72cbd7cbde224aa2bc8b063ec7b54e3"
         }
@@ -1701,11 +1632,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/customer-recon-worker/tools/get_research_context.ts": "28027a61e8507f92099aba0ffbd12faa162b6f490af12cee0e0c6f2c83b77094"
         }
@@ -1755,11 +1682,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/customer-recon-worker/tools/read_file.ts": "3a4cda85fee0e8b3c5b033d414eb53439b5d2b8e7a2f848da430c21babfb131b"
         }
@@ -1809,11 +1732,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/customer-recon-worker/tools/read_public_research_source.ts": "53b9cc7d9e964bb8c33c50dcb89e711874a3955dd13f1ad0e3b08c7c251152b6"
         }
@@ -1863,11 +1782,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/customer-recon-worker/tools/read_research_passages.ts": "ca0fea65f09937813b0ca5e5210760613ee302f34ace4753c19e3ec030206bdc"
         }
@@ -1917,11 +1832,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/customer-recon-worker/tools/research_evidence.ts": "44cc33b2c747b72642569e286bf7bea530d65c7d2aa36cb5d76e0a3199782fb6"
         }
@@ -1971,11 +1882,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/customer-recon-worker/tools/search_public_research.ts": "1ad4985793870e7d8c0c3b02a69fa69468bae7c766ed69efa668163d537aae49"
         }
@@ -2025,11 +1932,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/customer-recon-worker/tools/web_fetch.ts": "3a4cda85fee0e8b3c5b033d414eb53439b5d2b8e7a2f848da430c21babfb131b"
         }
@@ -2079,11 +1982,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/customer-recon-worker/tools/web_search.ts": "3a4cda85fee0e8b3c5b033d414eb53439b5d2b8e7a2f848da430c21babfb131b"
         }
@@ -2133,11 +2032,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/customer-recon-worker/tools/write_file.ts": "3a4cda85fee0e8b3c5b033d414eb53439b5d2b8e7a2f848da430c21babfb131b"
         }
@@ -2187,11 +2082,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/implementation-research-worker/agent.ts": "daf21d1a1e5a379758ce0cf6fe028df5115360038513cd22633e39a8b4d1e8e8"
         }
@@ -2241,11 +2132,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/implementation-research-worker/instructions.md": "6664965c1fcb684b08c37d4743f7a2b29097d3e3b6df94c61e5c0f614c1e6d1d"
         }
@@ -2295,11 +2182,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/implementation-research-worker/tools/finalize_research.ts": "677247101f5fda48ea9fe31a542047bb7d4fa0634e953506676c7e5a01133c07"
         }
@@ -2349,11 +2232,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/implementation-research-worker/tools/get_practice_context.ts": "5fa3d8c78cdf7e5cf9e820d3dfcd1f73dc98a28a6416e8d1ee0ab30e31236b44"
         }
@@ -2403,11 +2282,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/implementation-research-worker/tools/get_research_context.ts": "7d38bcee7dd66723c3a07e8284962dee2cffe10be8c39e66e328c3dd6dca86c0"
         }
@@ -2457,11 +2332,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/implementation-research-worker/tools/read_public_research_source.ts": "ce327b915942344be4fe6f8ed2d002d0b9bc10ff4a9e9a68251b2f404ab4a0ef"
         }
@@ -2511,11 +2382,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/implementation-research-worker/tools/read_research_passages.ts": "ca0fea65f09937813b0ca5e5210760613ee302f34ace4753c19e3ec030206bdc"
         }
@@ -2565,11 +2432,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/implementation-research-worker/tools/research_evidence.ts": "44cc33b2c747b72642569e286bf7bea530d65c7d2aa36cb5d76e0a3199782fb6"
         }
@@ -2619,11 +2482,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/implementation-research-worker/tools/search_public_research.ts": "b8d211c4682f3e2d1fde0754ab0a6e4ac7e6485d720b0fd275bb39e2a4f99aa4"
         }
@@ -2673,11 +2532,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/vercel-best-practices-worker/agent.ts": "62cbbf8076fa1e2f7208d6c751f152567f6386f76e6252a8431a8f7f881fd7b8"
         }
@@ -2727,11 +2582,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/vercel-best-practices-worker/instructions.md": "3e070d4226487fffebc107f4d188d3372ff2b2bdc799becf149124de0f672f05"
         }
@@ -2781,11 +2632,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/vercel-best-practices-worker/tools/finalize_vercel_practices.ts": "e82d0c301b3ed3fa36c9075b737802515a9d5f61816c185dfe6adc5f4b9e5f39"
         }
@@ -2835,11 +2682,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/vercel-best-practices-worker/tools/get_practice_context.ts": "ef0ffb491f02e08640f7d59964e2b5cd5669d550bd09909eda8ab5d3f178751d"
         }
@@ -2889,11 +2732,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/vercel-best-practices-worker/tools/read_public_research_source.ts": "53b9cc7d9e964bb8c33c50dcb89e711874a3955dd13f1ad0e3b08c7c251152b6"
         }
@@ -2943,11 +2782,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/vercel-best-practices-worker/tools/read_research_passages.ts": "ca0fea65f09937813b0ca5e5210760613ee302f34ace4753c19e3ec030206bdc"
         }
@@ -2997,11 +2832,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/vercel-best-practices-worker/tools/research_evidence.ts": "44cc33b2c747b72642569e286bf7bea530d65c7d2aa36cb5d76e0a3199782fb6"
         }
@@ -3051,11 +2882,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/subagents/vercel-best-practices-worker/tools/search_public_research.ts": "1ad4985793870e7d8c0c3b02a69fa69468bae7c766ed69efa668163d537aae49"
         }
@@ -3156,10 +2983,8 @@
           "tests/integration/legacy-native-uploads.test.ts",
           "specs/018-legacy-backend-parity/validation.md"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
+        "remainingAcceptance": [],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record."
       }
     },
     {
@@ -3233,10 +3058,8 @@
           "tests/integration/legacy-native-uploads.test.ts",
           "specs/018-legacy-backend-parity/validation.md"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
+        "remainingAcceptance": [],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record."
       }
     },
     {
@@ -3331,10 +3154,8 @@
           "tests/integration/legacy-native-uploads.test.ts",
           "specs/018-legacy-backend-parity/validation.md"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
+        "remainingAcceptance": [],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record."
       }
     },
     {
@@ -3585,10 +3406,8 @@
           "tests/integration/legacy-native-uploads.test.ts",
           "specs/018-legacy-backend-parity/validation.md"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
+        "remainingAcceptance": [],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record."
       }
     },
     {
@@ -3633,11 +3452,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/tools/evaluate_solution_research.ts": "9a30297f770f8f3966e9f4633096a64638305aa4bfca632af4d945bdba048020"
         }
@@ -3803,11 +3618,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/tools/get_customer_evidence.ts": "2a198012b7955d55c845a77539c3cd4b57f7e0a934329d3df5e51669eda5ec3d"
         }
@@ -3924,11 +3735,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/tools/get_customer_research_update.ts": "8c3f821c81a50221d01a1343675cc181caa90b4f92cece81a60f578bccb919d5"
         }
@@ -4149,11 +3956,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/tools/get_public_customer_learning.ts": "d131eb195670ce0662c5fddb59cf569346ebb486e1b1d0f60db2c54ebd50d323"
         }
@@ -4365,10 +4168,8 @@
           "tests/integration/legacy-native-uploads.test.ts",
           "specs/018-legacy-backend-parity/validation.md"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
+        "remainingAcceptance": [],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record."
       }
     },
     {
@@ -4412,11 +4213,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/tools/prepare_customer_research.ts": "b3a260a36c7103b1bc9ddaf84c3eaefed87ab4c608b1a7561f9f37ae85afa217"
         }
@@ -4517,10 +4314,8 @@
           "tests/integration/legacy-native-uploads.test.ts",
           "specs/018-legacy-backend-parity/validation.md"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
+        "remainingAcceptance": [],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record."
       }
     },
     {
@@ -4873,11 +4668,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/tools/task_cancel.ts": "a93466e281acd475d30560f20e18bd6c8492f609dce38593602cc5d7d8dea549"
         }
@@ -4976,10 +4767,7 @@
           "tests/unit/legacy-task-checklist.test.ts",
           "scripts/check-ordinary-native-files.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Supported durable task checklist replaces removed Eve todo export; actual native persistence/fresh-login/isolation passes."
-        ]
+        "remainingAcceptance": []
       }
     },
     {
@@ -5023,11 +4811,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "agent/tools/wait_for_customer_research.ts": "6af4e99ff5b866b3bb43f1532afc7b6d203b61a4cd7fd73e3a9615c84582f4b8"
         }
@@ -5156,10 +4940,8 @@
           "tests/integration/legacy-native-uploads.test.ts",
           "specs/018-legacy-backend-parity/validation.md"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
+        "remainingAcceptance": [],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record."
       }
     },
     {
@@ -5288,13 +5070,11 @@
           "tests/unit/ordinary-native-message.test.ts",
           "tests/unit/active-chat-history.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
-        "retryRecovery": "Installed Eve durable-step retries emit new received-event IDs. Preserve distinct audit events and recognize only exact pre-provider same-delivery aliases; retain original input/file envelope/deadline/allowance and current authorization. Reconciliation accepts only recorded aliases and UI shows one send. Hosted exact-source acceptance remains required.",
+        "remainingAcceptance": [],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record.",
+        "retryRecovery": "Installed Eve durable-step retries emit new received-event IDs. Preserve distinct audit events and recognize only exact pre-provider same-delivery aliases; retain original input/file envelope/deadline/allowance and current authorization. Reconciliation accepts only recorded aliases and UI shows one send. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record.",
         "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
-        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
+        "activeTerminalRecovery": "T033closed: PR39/merge2d9dc01 actual Production failed-turn reload preserves original user/file with empty native history; exact canonical/alias/turn/step display identity and owner/source fences verified. Explicit MODEL_CALL_FAILED and unknown hold remain; no extraction-success claim."
       },
       "notes": " Actual Production retirement exposed a missing consumer of persisted application messages. T030 adds a read-only authorized view, step-specific interrupted text and explicit history-limit notice; actual hosted recovery remains required."
     },
@@ -5369,10 +5149,8 @@
           "tests/integration/legacy-native-uploads.test.ts",
           "specs/018-legacy-backend-parity/validation.md"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
+        "remainingAcceptance": [],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record."
       }
     },
     {
@@ -5488,12 +5266,10 @@
           "tests/unit/retained-chat-history.test.ts",
           "tests/unit/active-chat-history.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
+        "remainingAcceptance": [],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record.",
         "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
-        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
+        "activeTerminalRecovery": "T033closed: PR39/merge2d9dc01 actual Production failed-turn reload preserves original user/file with empty native history; exact canonical/alias/turn/step display identity and owner/source fences verified. Explicit MODEL_CALL_FAILED and unknown hold remain; no extraction-success claim."
       }
     },
     {
@@ -5600,10 +5376,7 @@
           "tests/unit/ordinary-native-message.test.ts",
           "tests/unit/retained-chat-history.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Actual unpaid native4MiB/10MiB passes; selected-provider hosted media/retirement remains required."
-        ],
+        "remainingAcceptance": [],
         "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved."
       }
     },
@@ -5711,10 +5484,7 @@
           "tests/unit/ordinary-native-message.test.ts",
           "tests/unit/retained-chat-history.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Actual unpaid native4MiB/10MiB passes; selected-provider hosted media/retirement remains required."
-        ],
+        "remainingAcceptance": [],
         "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved."
       }
     },
@@ -5994,11 +5764,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "app/_components/profiles/source-library.tsx": "dc5f20f15f70e52df9d8e3112bd4e1a8cacbdd45e3aa014b6e5505cdb7b1df82"
         }
@@ -6103,9 +5869,7 @@
           "tests/ui/legacy-login-native.spec.ts",
           "tests/unit/config.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ]
+        "remainingAcceptance": []
       }
     },
     {
@@ -6186,9 +5950,7 @@
           "tests/ui/legacy-login-native.spec.ts",
           "tests/unit/config.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ]
+        "remainingAcceptance": []
       }
     },
     {
@@ -6269,9 +6031,7 @@
           "tests/ui/legacy-login-native.spec.ts",
           "tests/unit/config.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ]
+        "remainingAcceptance": []
       }
     },
     {
@@ -6408,10 +6168,7 @@
           "tests/unit/ordinary-native-message.test.ts",
           "tests/unit/retained-chat-history.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Actual unpaid native4MiB/10MiB passes; selected-provider hosted media/retirement remains required."
-        ],
+        "remainingAcceptance": [],
         "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved."
       }
     },
@@ -6549,10 +6306,7 @@
           "tests/unit/ordinary-native-message.test.ts",
           "tests/unit/retained-chat-history.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Actual unpaid native4MiB/10MiB passes; selected-provider hosted media/retirement remains required."
-        ],
+        "remainingAcceptance": [],
         "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved."
       }
     },
@@ -6662,12 +6416,10 @@
           "tests/unit/retained-chat-history.test.ts",
           "tests/unit/active-chat-history.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
+        "remainingAcceptance": [],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record.",
         "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
-        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
+        "activeTerminalRecovery": "T033closed: PR39/merge2d9dc01 actual Production failed-turn reload preserves original user/file with empty native history; exact canonical/alias/turn/step display identity and owner/source fences verified. Explicit MODEL_CALL_FAILED and unknown hold remain; no extraction-success claim."
       }
     },
     {
@@ -6776,12 +6528,10 @@
           "tests/unit/retained-chat-history.test.ts",
           "tests/unit/active-chat-history.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
+        "remainingAcceptance": [],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record.",
         "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
-        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
+        "activeTerminalRecovery": "T033closed: PR39/merge2d9dc01 actual Production failed-turn reload preserves original user/file with empty native history; exact canonical/alias/turn/step display identity and owner/source fences verified. Explicit MODEL_CALL_FAILED and unknown hold remain; no extraction-success claim."
       }
     },
     {
@@ -6890,12 +6640,10 @@
           "tests/unit/retained-chat-history.test.ts",
           "tests/unit/active-chat-history.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
+        "remainingAcceptance": [],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record.",
         "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
-        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
+        "activeTerminalRecovery": "T033closed: PR39/merge2d9dc01 actual Production failed-turn reload preserves original user/file with empty native history; exact canonical/alias/turn/step display identity and owner/source fences verified. Explicit MODEL_CALL_FAILED and unknown hold remain; no extraction-success claim."
       }
     },
     {
@@ -7005,11 +6753,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "app/api/customers/[customerId]/sources/route.ts": "b4f5eae67adbaa9512d8e977e2fcec854e911ad36c8e64b4f672ca487306ebf8"
         }
@@ -7077,11 +6821,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "app/api/internal/research-maintenance/route.ts": "9d230a9afed5be451d650518a060467bd272c0f7b4e6bba6a309f3e0a3707415"
         }
@@ -7249,11 +6989,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "app/(workspace)/customers/[customerId]/page.tsx": "3eedf7755c6c45cca5706dcbec9336305af13375acbe5219e1cb577d81fd96a7"
         }
@@ -7319,11 +7055,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "app/(workspace)/customers/[customerId]/sources/page.tsx": "90e5acc6129f325e2148ff1e7de47faf72e14e454065fec0987548e4de46c489"
         }
@@ -7721,12 +7453,10 @@
           "tests/unit/retained-chat-history.test.ts",
           "tests/unit/active-chat-history.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
+        "remainingAcceptance": [],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record.",
         "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
-        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
+        "activeTerminalRecovery": "T033closed: PR39/merge2d9dc01 actual Production failed-turn reload preserves original user/file with empty native history; exact canonical/alias/turn/step display identity and owner/source fences verified. Explicit MODEL_CALL_FAILED and unknown hold remain; no extraction-success claim."
       }
     },
     {
@@ -7842,12 +7572,10 @@
           "tests/unit/retained-chat-history.test.ts",
           "tests/unit/active-chat-history.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
+        "remainingAcceptance": [],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record.",
         "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
-        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
+        "activeTerminalRecovery": "T033closed: PR39/merge2d9dc01 actual Production failed-turn reload preserves original user/file with empty native history; exact canonical/alias/turn/step display identity and owner/source fences verified. Explicit MODEL_CALL_FAILED and unknown hold remain; no extraction-success claim."
       }
     },
     {
@@ -9108,10 +8836,7 @@
           "tests/unit/ordinary-native-message.test.ts",
           "tests/unit/retained-chat-history.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Actual unpaid native4MiB/10MiB passes; selected-provider hosted media/retirement remains required."
-        ],
+        "remainingAcceptance": [],
         "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved."
       }
     },
@@ -9193,9 +8918,7 @@
           "tests/ui/legacy-login-native.spec.ts",
           "tests/unit/config.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ]
+        "remainingAcceptance": []
       }
     },
     {
@@ -9276,9 +8999,7 @@
           "tests/ui/legacy-login-native.spec.ts",
           "tests/unit/config.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ]
+        "remainingAcceptance": []
       }
     },
     {
@@ -9359,9 +9080,7 @@
           "tests/ui/legacy-login-native.spec.ts",
           "tests/unit/config.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ]
+        "remainingAcceptance": []
       }
     },
     {
@@ -9442,9 +9161,7 @@
           "tests/ui/legacy-login-native.spec.ts",
           "tests/unit/config.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ]
+        "remainingAcceptance": []
       }
     },
     {
@@ -9551,10 +9268,7 @@
           "tests/unit/ordinary-native-message.test.ts",
           "tests/unit/retained-chat-history.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required.",
-          "Actual unpaid native4MiB/10MiB passes; selected-provider hosted media/retirement remains required."
-        ],
+        "remainingAcceptance": [],
         "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved."
       }
     },
@@ -9679,13 +9393,11 @@
           "tests/unit/retained-chat-history.test.ts",
           "tests/unit/active-chat-history.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
-        "retryRecovery": "Installed Eve durable-step retries emit new received-event IDs. Preserve distinct audit events and recognize only exact pre-provider same-delivery aliases; retain original input/file envelope/deadline/allowance and current authorization. Reconciliation accepts only recorded aliases and UI shows one send. Hosted exact-source acceptance remains required.",
+        "remainingAcceptance": [],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record.",
+        "retryRecovery": "Installed Eve durable-step retries emit new received-event IDs. Preserve distinct audit events and recognize only exact pre-provider same-delivery aliases; retain original input/file envelope/deadline/allowance and current authorization. Reconciliation accepts only recorded aliases and UI shows one send. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record.",
         "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
-        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
+        "activeTerminalRecovery": "T033closed: PR39/merge2d9dc01 actual Production failed-turn reload preserves original user/file with empty native history; exact canonical/alias/turn/step display identity and owner/source fences verified. Explicit MODEL_CALL_FAILED and unknown hold remain; no extraction-success claim."
       }
     },
     {
@@ -9794,12 +9506,10 @@
           "tests/unit/retained-chat-history.test.ts",
           "tests/unit/active-chat-history.test.ts"
         ],
-        "remainingAcceptance": [
-          "Exact018 Preview/Production and final CI verification remain required."
-        ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
+        "remainingAcceptance": [],
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Local native evidence remains distinct from the final hosted release checks recorded in feature validation and the release record.",
         "hostedStreamAdaptation": "PR38 merged0dd6548: actualProduction selected-provider10MiB passes ownedSHA/download/reload/mobile/private/retire200/chunks0/archive; ten rawnativeevents max630B withoutstagedbytes. Independentsemantic+read-onlyattempt/usageproofPASS. Original18.6MBWorkflowfailure preserved.",
-        "activeTerminalRecovery": "T033open: actualmalformedPDF providerfailure/reload losesnativehistory whileauthorizedapplicationprojection retainsoriginaluser/file. Display-onlycanonicalunion +exactevent/alias/turn/stepidentity/current-sourcefences andlater-sendpersistence arebeingvalidated; notyetahostedpass."
+        "activeTerminalRecovery": "T033closed: PR39/merge2d9dc01 actual Production failed-turn reload preserves original user/file with empty native history; exact canonical/alias/turn/step display identity and owner/source fences verified. Explicit MODEL_CALL_FAILED and unknown hold remain; no extraction-success claim."
       }
     },
     {
@@ -9861,11 +9571,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "batchRegression": "tests/integration/legacy-profile-products.test.ts:7 tests passed",
         "currentFileSha256": {
           "lib/profiles/research-products.ts": "2073be1addd795e522bd5ad5d20fa00a3277523563a21e27baef7619e539755f",
@@ -10907,11 +10613,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/research-cache/database.ts": "d92fd7cef83edb747929351bdcdf6dc8d215a311748d019bf1cd5e23c1439627"
         }
@@ -10961,11 +10663,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/research-cache/fetch.ts": "c406aceca9b3689fa54f17457bf78048c1d954feef1cf3d957d2ac2406a995bc"
         }
@@ -11019,11 +10717,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/research-cache/library.ts": "006afe2984dfd08c6d004cb6e1e1a01a385cb6ae5ca76a7e8bebe9e3b44f8d70"
         }
@@ -11073,11 +10767,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/research-cache/maintenance.ts": "0d99b1085c4226300da63f2c873bb14cc09e967c3c9f5650a566bc23a6eb81a7"
         }
@@ -11127,11 +10817,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/research-cache/passage-view.ts": "24a2424cb364e515c5456f11aa8bd25c2b2ed5bdf24f5343751fbf4d0c858668"
         }
@@ -11181,11 +10867,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/research-cache/practice-library.ts": "0c514d7a338c358fb77049fa1a6030d5a723e3125309b703262850d8c03a55e9"
         }
@@ -11246,11 +10928,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "batchRegression": "tests/integration/legacy-profile-products.test.ts:7 tests passed",
         "currentFileSha256": {
           "lib/server/research/specialists/research-cache/public-learning-read.ts": "2397a617d0a320ed246491c6a23bf910a6218bdf25aa796da2db6ab5e43db25e",
@@ -11305,11 +10983,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/research-cache/requests.ts": "1b7edb481211f37009ba98525732034c835639ec0715c7d5128792876bc7588d"
         }
@@ -11359,11 +11033,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/research-cache/schema.ts": "3c721ab5a33a87bdb93da1e754d4d21101c4b5cc3d8dbc03cadc687bd4fad543"
         }
@@ -11415,11 +11085,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/research-cache/sources.ts": "7be38461ea95cef0f63e77aa5caadefc1d3a3946620153fb4277cce639ee9945"
         }
@@ -11658,11 +11324,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/solution-research/artifacts.ts": "41c57c621ed4381e1e2bf6ce413d9a59d77eb635fb2d8e877170ad00838509bb"
         }
@@ -11713,11 +11375,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/solution-research/attribution.ts": "f15dbe9b6c24385c060026bcfe1409e01cad17deeed75b8358232ccfc4a29ce2"
         }
@@ -11768,11 +11426,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/solution-research/citations.ts": "641f345ca920636b54468fc47452ecbcb2bc6112ce522e43c105ad10cc32100a"
         }
@@ -11823,11 +11477,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/solution-research/context.ts": "93c2b3332efacb55908f3784271f87eee3197b0e402c17a8edb4474ba71019bd"
         }
@@ -11878,11 +11528,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/solution-research/customer-update-receipt.ts": "6bf5afbd7397f79943163b1964cbea7182677a20ed39d5ff33f95c280d3f163b"
         }
@@ -11933,11 +11579,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/solution-research/customer-update.ts": "fd964c42e84118a25b9aa53a20b7a7caf3979f28ab4017aeb9e54f0575519b21"
         }
@@ -11988,11 +11630,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/solution-research/decision-workflow.ts": "c20eb29548a37885763b2b81dbb6e05c372ea6b90072443f8c4ac739d59bde54"
         }
@@ -12043,11 +11681,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/solution-research/decision.ts": "036f7f83a70077878001206d40fbff9dda2b491f0ffbd03c29960f7108108701"
         }
@@ -12098,11 +11732,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/solution-research/discovery.ts": "f2fddfd3fe51a57844bde6beb78cc5914105add2d5f1aabad8cbc2d013f97b20"
         }
@@ -12156,11 +11786,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/identity.ts": "1dbf961b5a6e9f4f6118f0d3cbe8bfcdebbf7b10c80ead8721d2517d563fb3dc",
           "lib/server/research/specialists/evaluation-budget.ts": "43ac36a5a57d7474bb6e331a7408f19f17e786a70c558281cda001c36cb79270"
@@ -12213,11 +11839,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/solution-research/evidence.ts": "c73e874773cc7a056ef6269212608910f31088b1eceb52f26824dae908df1ff8"
         }
@@ -12268,11 +11890,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/solution-research/freshness-report.ts": "369c041056c6ad17e0aa89c4984f4780d555997e1d73628aca51299089b9d3da"
         }
@@ -12323,11 +11941,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/solution-research/freshness.ts": "954d1f22c124414d77f6dedb40318408c1118e90cbee5bb803f1bd0a02010fd4"
         }
@@ -12378,11 +11992,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/solution-research/independent-search.ts": "4ef1c683c1703cebe139905cc4cadae71fa574b5d3c7f8719e8e8da670e547d5"
         }
@@ -12433,11 +12043,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/solution-research/process-impact.ts": "14c1758b619e10dcc7d713112b8b4eec27528a57de5d77d82a50b534c0b67b08"
         }
@@ -12488,11 +12094,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/solution-research/provider.ts": "00c305deebe603a95de653cb4b0e08ae2ec553b85038e3356ec3d9358ee56896"
         }
@@ -12543,11 +12145,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/solution-research/receipt.ts": "e33787721cb2c1b3dfbb03be79ee84abfadf1657496d8f313dfa9faeeb2e839a"
         }
@@ -12598,11 +12196,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/solution-research/release-chronology.ts": "dabdca9ae3048d8ae0611a85d7f481b6aca8c69f90d06d08c98b4bf7d2011893"
         }
@@ -12653,11 +12247,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/solution-research/schema.ts": "13013fd004abd0968d2f1a8ef3d03fa60d3c99ddf94edeba7232de931d274faf"
         }
@@ -12708,11 +12298,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/solution-research/source-focus.ts": "9f12257a434fbe05862050d14ecd1ee9ad71a986b8b254a3e4f9bd4f42183487"
         }
@@ -12763,11 +12349,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/solution-research/source-integrity.ts": "fd45c094d0a8e1f1d8a981dc9fb9f7148c47a4e8fb81aad762f97ca1eabdb448"
         }
@@ -12818,11 +12400,7 @@
           "disposableDomainGate": "43 files / 127 tests passed",
           "consumerWebKitGate": "20 cases across four WebKit projects passed; zero skipped or flaky"
         },
-        "remainingAcceptance": [
-          "Actual retained DoorDash hosted profile/account-reader/reload consistency (T007)",
-          "Exact-head complete CI and Preview acceptance (T023/T024)",
-          "Required migration/grant release and authenticated Production verification (T025)"
-        ],
+        "remainingAcceptance": [],
         "currentFileSha256": {
           "lib/server/research/specialists/solution-research/submission.ts": "efdccc1e083c3f5acb8df29b4662f4a263693771e90221dcd0a0b9a61466d6b1"
         }
@@ -12904,7 +12482,7 @@
       "legacyPath": "playwright.config.ts",
       "sha256": "6ce22e32fdc2fcf5d7ee2fffd6fed208d0459dee6a1c1d10f0fb66fe919af202",
       "classification": "reviewed-consumer-or-config",
-      "status": "reviewed isolated CLI WebKit runner ownership; exact discovery verified and final runtime CI pending",
+      "status": "reviewed isolated CLI WebKit runner ownership; exact discovery and final exact-head runtime CI verified",
       "reviews": [
         {
           "legacySha256": "6ce22e32fdc2fcf5d7ee2fffd6fed208d0459dee6a1c1d10f0fb66fe919af202",
@@ -22969,5 +22547,30 @@
     "reviewed": 101,
     "genericPendingMappings": 0,
     "scope": "Active backend contracts restored and tested; historical paid/model-comparison scores, fictional fixtures, retired integrations and exact prior-theme UI assertions are explicitly distinguished. Named local/hosted checks do not establish unrerun unconstrained-model corpus results."
+  },
+  "releaseAcceptance": {
+    "sourceHead": "395b53bbad317c797183018ac677a117d295aacd",
+    "mergeHead": "2d9dc018eec88c41e8e52accb91169eef54ca43f",
+    "productionDeployment": "dpl_8zy6mER4JYjmSGBiQCzuEViQENBQ",
+    "schemaVersion": 77,
+    "exactHeadCiJobsPassed": 50,
+    "previewChecksPassed": 26,
+    "paidPreviewCallsForFinalChecks": 0,
+    "productionGeneralChecksPassed": 13,
+    "productionLoginChecksPassed": 4,
+    "originalRetiredRecordsVerifiedWithoutModelCalls": 3,
+    "actualFailedTurnEmptyNativeHistoryRecovery": true,
+    "negativeOutcomeIndependentlyReviewed": true,
+    "laterSendProof": "separate actual-Eve synthetic-provider and empty-native UI/CI checks; no hosted paid later turn",
+    "newSchemaOrGrantMigrationRequiredForT033": false,
+    "priorVerifiedEncryptedSchema77RehearsalPreserved": true,
+    "originalFailuresAndUnknownHoldsPreserved": true,
+    "unclassifiedConsole404sPreserved": true,
+    "scopeLimits": [
+      "Historical paid/model-comparison scores are not reproduced",
+      "Retained passages do not establish full-article content or claimed lexical-search execution",
+      "Read-only owner metadata checks do not prove runtime-role execution",
+      "Feature016 pilot/operator/unrelated hosted acceptance remains separate"
+    ]
   }
 }

@@ -52,3 +52,18 @@ Optional history identity metadata is a read contract addition, not a native eve
 or input authorization. Denial or noncurrent evidence clears recovered generated
 content. Preserve the500-event bound, original failures and unknown model holds.
 No schema or runtime-grant change is required.
+
+
+## Final release result — 2026-10-16
+
+PR39 final source395b53 passes all50 exact-head CI jobs and26 zero-model Preview
+checks. Merge2d9dc01 has the identical tested tree and is verified at canonical
+Production on schema77. Thirteen general/four login checks and three original
+retired-history checks pass without model calls. A fresh malformed-PDF failure
+with empty native history preserves its original message and owned file card on
+desktop/mobile reload, then retires with HTTP200/zero chunks. Independent review
+accepts the explicit negative outcome, without PDF format or extraction claims.
+Later-send recovery is separately proven by actual-Eve synthetic-provider and
+empty-native UI checks, not an additional hosted paid turn. No new schema or
+grant migration is needed for T033; the prior verified77 backup/rehearsal remains
+preserved. Original failures, unknown holds and evidence limits are retained.
