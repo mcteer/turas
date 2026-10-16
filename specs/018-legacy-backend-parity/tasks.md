@@ -63,4 +63,4 @@ Parallel example: conversation repository search regression and ordinary deliver
 
 - [X] T028 [US3] Restore inspectable native approval action inputs in lib/chat-inputs.ts and app/_components/chat-input-request.tsx; retain exact authenticated responder session, durable approval continuation, actual original tool execution and current-theme desktop/mobile/reloaded review. Verify actual operations and reusable-knowledge native controls (FR-007,FR-009,FR-011).
 
-- [ ] T029 [US4] Reconcile all101 legacy test/evaluation references to exact current assertions or justified historical exclusions; restore missing active backend regression contracts, zero-vector rejection and exact active attachment intake deduplication. Rerun changed-source release rehearsals and acceptance before merge (FR-010–FR-012).
+- [X] T029 [US4] Reconcile all101 legacy test/evaluation references to exact current assertions or justified historical exclusions; restore missing active backend regression contracts, zero-vector rejection and exact active attachment intake deduplication. Rerun changed-source release rehearsals and acceptance before merge (FR-010–FR-012).
