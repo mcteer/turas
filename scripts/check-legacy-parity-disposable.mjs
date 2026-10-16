@@ -167,7 +167,7 @@ try {
     DATABASE_URL_UNPOOLED:"postgresql://unused:unused@127.0.0.1:1/application",
     TURAS_TEST_DATABASE_URL:url,TURAS_TEST_ENVIRONMENT_ID:environment.TURAS_ENVIRONMENT_ID};
   if(!acceptanceOnly&&!process.argv.includes("--native-only")&&!process.argv.includes("--native-files-only"))run(["node_modules/vitest/vitest.mjs","run","tests/integration/named-customer-chat.test.ts",
-    "tests/integration/general-chat.test.ts","tests/integration/ordinary-attachments.test.ts","tests/integration/ordinary-native-files.test.ts","tests/integration/legacy-research-transactions.test.ts",
+    "tests/integration/general-chat.test.ts","tests/integration/ordinary-attachments.test.ts","tests/integration/ordinary-native-files.test.ts","tests/integration/native-input-replay.test.ts","tests/integration/legacy-research-transactions.test.ts",
     "tests/integration/parity-evaluation-budget.test.ts","tests/integration/specialist-profile-persistence.test.ts","tests/integration/legacy-knowledge-mechanics.test.ts","tests/integration/live-customer-chat.test.ts","tests/integration/ordinary-steering.test.ts","tests/integration/legacy-document-formats.test.ts","tests/integration/research-maintenance.test.ts","tests/integration/retrieval-retention.test.ts","tests/integration/retrieval-service.test.ts","tests/integration/profile-context.test.ts","tests/integration/public-customer-inventory.test.ts",
     "tests/integration/legacy-profile-products.test.ts","tests/integration/legacy-source-library.test.ts",
     "tests/integration/legacy-adoption-cohorts.test.ts","tests/integration/legacy-workspace-review.test.ts",

@@ -449,6 +449,7 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
     }>(`SELECT native_event_id, event_type, visible_payload, stream_index, emitted_at
       FROM event_projections WHERE conversation_id = $1
         AND event_type <> 'message.appended'
+        AND NOT (event_type='message.received' AND visible_payload ? 'applicationInputReplay')
       ORDER BY emitted_at, native_event_id LIMIT 501`, [id]),
     query<{ turn_id: string; step_index: number | null; message: string; emitted_at: Date }>(`
       SELECT e.turn_id, e.step_index, string_agg(e.visible_payload->>'messageDelta', ''
@@ -483,6 +484,7 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
     stream_index: string | null; emitted_at: Date;
   }>(`SELECT native_event_id,event_type,visible_payload,stream_index,emitted_at
     FROM event_projections WHERE conversation_id=$1 AND event_type='message.received'
+      AND NOT (visible_payload ? 'applicationInputReplay')
     ORDER BY emitted_at,native_event_id LIMIT 501`, [id]) : null;
   const final = await getOwnedConversation(session, id);
   const finalPlanStale=await withTransaction((client)=>

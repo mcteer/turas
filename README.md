@@ -13,7 +13,11 @@ PR 36 merged the backend restoration on schema 077. Production acceptance found
 a remaining recovery defect: confirmed native retirement removes the native
 message stream while Turas retains its authorized message projections. The
 follow-up restores their read-only display, preserves owner/source checks and
-marks bounded history explicitly. Hosted recovery acceptance remains open.
+marks bounded history explicitly. A controlled Eve interruption also exposed new
+event IDs for the same accepted delivery; recovery now preserves that delivery
+identity, original deadline and allowance before provider admission. Changed
+inputs and retries after a model reservation remain refused. Hosted recovery
+acceptance remains open.
 
 Customer maturity and delivery management for Vercel FDE, Professional Services,
 TAM, account teams and partners.

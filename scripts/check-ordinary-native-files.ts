@@ -22,6 +22,22 @@ try{await withPlanEvalEnvironment(async environment=>{
  const target='return wrapOrdinaryChatModel(parityBudgetModel(gateway(selectedModel),selectedModel),principal,ctx.session.id,turnId,{event});';
  if(source.split(target).length!==2)throw Error('Authored model shape changed');
  await writeFile(path,'import {createOrdinaryNativeFileFixtureModel} from "../tests/fixtures/ordinary-native-file-model";\n'+source.replace(target,'return {model:wrapOrdinaryChatModel(createOrdinaryNativeFileFixtureModel(String(principal?.attributes?.turasAttemptId)),principal,ctx.session.id,turnId,{event}),modelContextWindowTokens:128_000};'),{mode:0o600});
+ // Exercise the installed framework's real interrupted-step retry only in
+ // this owned staged-10 copy. No runtime fault flag exists in the application.
+ const interruptedStepMarker=join(environment.appRoot,'.eve','native-file-interruption.json');
+ if(process.argv.includes('--staged-10')){
+  const hookPath=join(environment.appRoot,'agent/hooks/persist-conversation.ts'),hook=await readFile(hookPath,'utf8');
+  const target='await projectNativeEvent(ctx.session.id, attemptId, event);';
+  if(hook.split(target).length!==2)throw Error('Owned interruption hook shape changed');
+  const addition=`
+        if(event.type==='message.received'&&!existsSync(${JSON.stringify(interruptedStepMarker)})){
+          const captured=(await query("SELECT a.input_event_id,a.input_digest,a.native_delivery_id,a.deadline_at,(SELECT count(*) FROM ordinary_model_operations WHERE attempt_id=a.id) AS operations FROM response_attempts a WHERE a.id=$1",[attemptId])).rows[0];
+          writeFileSync(${JSON.stringify(interruptedStepMarker)},JSON.stringify(captured),{flag:'wx',mode:0o600});
+          console.error('OWNED_NATIVE_FILE_POST_RECEIVED_INTERRUPTION');
+          throw Error('OWNED_NATIVE_FILE_POST_RECEIVED_INTERRUPTION');
+        }`;
+  await writeFile(hookPath,'import {existsSync,writeFileSync} from "node:fs";\nimport {query} from "../../lib/server/db/client";\n'+hook.replace(target,target+addition),{mode:0o600});
+ }
  const fixtureOwnerUrl=process.env.DATABASE_URL!,fixtureCustomerId=randomUUID();
  const owner=new Client({connectionString:fixtureOwnerUrl});await owner.connect();try{await owner.query(`CREATE TABLE ordinary_native_file_fixture_calls(id uuid PRIMARY KEY,attempt_id uuid NOT NULL REFERENCES response_attempts(id),bytes_digest text NOT NULL,tool_names text[] NOT NULL DEFAULT '{}');CREATE TABLE ordinary_native_file_fixture_resolutions(attempt_id uuid PRIMARY KEY REFERENCES response_attempts(id),customer_id uuid NOT NULL REFERENCES customer_references(id));GRANT SELECT,INSERT ON ordinary_native_file_fixture_calls,ordinary_native_file_fixture_resolutions TO turas_runtime`);}finally{await owner.end();}
  const runtime=new URL(process.env.DATABASE_URL!);runtime.searchParams.set('options','-c role=turas_runtime');await closeRuntimePool();process.env.DATABASE_URL=runtime.href;process.env.DATABASE_URL_UNPOOLED=runtime.href;process.env.TURAS_TEST_DATABASE_URL=runtime.href;
@@ -200,9 +216,21 @@ try{await withPlanEvalEnvironment(async environment=>{
     replacedRevision:1,items:[{id:'source-review',text:'Inspect the exact supplied file.',status:'in_progress'}],freshOwnerLogin:true,
     sameThreadReloadRead:true,otherOwnerConversationDenied:true,newConversationRevision:0,newConversationItems:[]},null,2),{mode:0o600});
   }
+  let interruptedStepRecovery=false;
+  if(process.argv.includes('--staged-10')){
+   const captured=JSON.parse(await readFile(interruptedStepMarker,'utf8'));
+   const current=(await query('SELECT input_event_id,input_digest,native_delivery_id,deadline_at FROM response_attempts WHERE conversation_id=$1',[id])).rows;
+   const inputs=(await query("SELECT visible_payload FROM event_projections WHERE conversation_id=$1 AND event_type='message.received'",[id])).rows;
+   const aliases=inputs.filter(row=>row.visible_payload.applicationInputReplay);
+   if(Number(captured.operations)!==0||current.length!==2||!current.some(row=>row.input_event_id===captured.input_event_id&&row.input_digest===captured.input_digest&&row.native_delivery_id===captured.native_delivery_id&&row.deadline_at.toISOString()===captured.deadline_at)||aliases.length!==1||aliases[0].visible_payload.applicationInputReplay.retryOfInputEventId!==captured.input_event_id||aliases[0].visible_payload.applicationInputReplay.admittedDeliveryId!==captured.native_delivery_id)throw Error('Owned interrupted-step recovery changed canonical input, deadline or delivery');
+   const rendered=await page.locator('article.chat-message-user').allTextContents();
+   if(rendered.length!==2||rendered.filter(text=>text.includes(firstPrompt)).length!==1)throw Error('Interrupted native delivery duplicated rendered user sends');
+   interruptedStepRecovery=true;
+   await writeFile(join(out,'interrupted-step-recovery.json'),JSON.stringify({actualEveRuntime:true,forcedInterruptions:1,initialModelOperations:0,canonicalInputPreserved:true,originalDeadlinePreserved:true,admittedAliases:1,renderedUserSends:2,originalUserSendCopies:1,providerFileBytesPreserved:true,paidProviderCalls:0},null,2),{mode:0o600});
+  }
   const retired=await context.request.post('/eve/v1/session/'+native+'/reset',{headers,data:{reason:'Owned native file fixture complete'}});if(!retired.ok())throw Error('Native file retirement unconfirmed');
   if(boundaryMiB&&(!uploadRequestBytes.length||Math.max(...uploadRequestBytes)>512*1024||!sendRequestBytes.length||Math.max(...sendRequestBytes)>4096))throw Error('Large native file bypassed bounded staging transport');
-  const receipt={kind:'ordinary-native-file-bytes',actualEveRuntime:true,fixtureProvider:true,paidProviderCalls:0,runtimeDependencyInstallation:false,providerBytesPreserved:!process.argv.includes('--memory'),stagedFileBytes:boundaryMiB?bytes.length:null,maximumUploadRequestBytes:uploadRequestBytes.length?Math.max(...uploadRequestBytes):null,maximumSendRequestBytes:sendRequestBytes.length?Math.max(...sendRequestBytes):null,attachmentMutationBlockedDuringUpload,readyDraftRemovalReleasedQuota,uncertainDraftRemovalPreserved,previousFileAvailableAfterReload,personalPreferenceSaved:process.argv.includes('--memory')||process.argv.includes('--memory-files'),personalPreferenceCrossSession,personalPreferenceIsolated,personalPreferenceRemoved,providerToolSets:calls.map(row=>row.tool_names),actualCanonicalCustomerResolved:true,nativeFileCorrection:process.argv.includes('--steer'),toolNames:calls[0].tool_names,composerUsed:process.argv.includes('--composer'),reloadedHistory:true,nativeRetirementStatus:retired.status()};await writeFile(join(out,'receipt.json'),JSON.stringify(receipt,null,2),{mode:0o600});console.log(JSON.stringify(receipt));for(const name of ['failure-private.json','failure-private.log','send-private.json'])await rm(join(out,name),{force:true});
+  const receipt={interruptedStepRecovery,kind:'ordinary-native-file-bytes',actualEveRuntime:true,fixtureProvider:true,paidProviderCalls:0,runtimeDependencyInstallation:false,providerBytesPreserved:!process.argv.includes('--memory'),stagedFileBytes:boundaryMiB?bytes.length:null,maximumUploadRequestBytes:uploadRequestBytes.length?Math.max(...uploadRequestBytes):null,maximumSendRequestBytes:sendRequestBytes.length?Math.max(...sendRequestBytes):null,attachmentMutationBlockedDuringUpload,readyDraftRemovalReleasedQuota,uncertainDraftRemovalPreserved,previousFileAvailableAfterReload,personalPreferenceSaved:process.argv.includes('--memory')||process.argv.includes('--memory-files'),personalPreferenceCrossSession,personalPreferenceIsolated,personalPreferenceRemoved,providerToolSets:calls.map(row=>row.tool_names),actualCanonicalCustomerResolved:true,nativeFileCorrection:process.argv.includes('--steer'),toolNames:calls[0].tool_names,composerUsed:process.argv.includes('--composer'),reloadedHistory:true,nativeRetirementStatus:retired.status()};await writeFile(join(out,'receipt.json'),JSON.stringify(receipt,null,2),{mode:0o600});console.log(JSON.stringify(receipt));for(const name of ['failure-private.json','failure-private.log','send-private.json'])await rm(join(out,name),{force:true});
  }catch(error){
   await writeFile(join(out,'runtime-state-private.json'),JSON.stringify({
    attempts:(await query('SELECT id,dispatch_state,response_state,native_turn_id,last_error_code FROM response_attempts')).rows,

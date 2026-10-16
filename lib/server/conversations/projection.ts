@@ -1,3 +1,4 @@
+import {admitNativeInputReplay,sanitizeNativeInputParts} from './native-input-replay';
 import {questionReconstructionEventWindow} from './question-reconstruction';
 import {customerQuestionActor,assertCustomerQuestionReads} from "./customer-accounts";
 import {hasNativeInputWindow} from './input-responses';
@@ -45,14 +46,9 @@ function visiblePayload(event: NativeEvent): Record<string, unknown> {
     case "message.received": {
       // Retain the framework's public file metadata, never sandbox paths or
       // another persisted copy of inline bytes, for historical attachment cards.
-      const parts=Array.isArray(data.parts)?data.parts.flatMap<Record<string,unknown>>(part=>{
-        if(!part||typeof part!=="object")return [];
-        if(part.type==='text'&&typeof part.text==='string')return [{type:'text',text:part.text}];
-        if(part.type!=='file'||typeof part.mediaType!=='string')return [];
-        return [{type:'file',mediaType:part.mediaType,...(typeof part.filename==='string'?{filename:part.filename}:{}),
-          ...(typeof part.size==='number'&&Number.isSafeInteger(part.size)&&part.size>=0?{size:part.size}:{})}];
-      }):[];
-      return parts.some(part=>part.type==='file')?{message:data.message,parts}:{message:data.message};
+      const parts=sanitizeNativeInputParts(data.parts);
+      const sequence=Number.isSafeInteger(data.sequence)&&Number(data.sequence)>=0?{sequence:data.sequence}:{};
+      return parts.some(part=>part.type==='file')?{message:data.message,parts,...sequence}:{message:data.message,...sequence};
     }
     case "message.appended": return { messageDelta: data.messageDelta };
     case "message.completed": return { message: data.message, finishReason: data.finishReason };
@@ -192,7 +188,7 @@ export async function projectNativeEventInTransaction(
   // Fence every visible event before response locks, projection writes or usage
   // reconciliation. A historical/uncertain native session must not bypass the
   // closed staffing context entry point through received/completed events.
-  const owned = (await client.query<{ conversation_id: string }>(`SELECT a.conversation_id FROM response_attempts a
+  const owned = (await client.query<{ conversation_id: string; owner_principal_id: string }>(`SELECT a.conversation_id,c.owner_principal_id FROM response_attempts a
     JOIN conversations c ON c.id=a.conversation_id WHERE a.id=$1 AND c.eve_session_id=$2 AND c.binding_state='bound'`,
     [attemptId, nativeSessionId])).rows[0];
   if (!owned) throw new Error("Native attempt association unavailable");
@@ -231,12 +227,21 @@ export async function projectNativeEventInTransaction(
         await assertPlanConversationFence(client,bound.actor,owner.conversation_id);
       }
     }
+    if (event.type === 'message.received' && feature.kind === 'normal') {
+      const scope = await customerQuestionActor(client, {principalId: owned.owner_principal_id,
+        attributes: {turasAttemptId: attemptId}});
+      await assertCustomerQuestionReads(client, scope.actor, owned.conversation_id, attemptId);
+      // Provider reservations take this same lock before touching the attempt.
+      // A retry cannot observe zero operations while an admission is committing.
+      await client.query('SELECT id FROM conversations WHERE id=$1 FOR UPDATE', [owned.conversation_id]);
+    }
     const attempt = await client.query<{
-      conversation_id: string; owner_principal_id:string; native_turn_id: string | null; input_event_id: string | null;
+      id: string; conversation_id: string; owner_principal_id:string; native_turn_id: string | null; input_event_id: string | null;
+      native_delivery_id: string | null; deadline_at: Date | null;
       input_digest: string; dispatch_state: string; response_state: string;
     }>(`
-      SELECT a.conversation_id,c.owner_principal_id, a.native_turn_id, a.input_event_id,
-        a.input_digest, a.dispatch_state, a.response_state
+      SELECT a.id,a.conversation_id,c.owner_principal_id, a.native_turn_id, a.input_event_id,
+        a.native_delivery_id,a.deadline_at,a.input_digest, a.dispatch_state, a.response_state
       FROM response_attempts a JOIN conversations c ON c.id = a.conversation_id
       WHERE a.id = $1 AND c.eve_session_id = $2 AND c.binding_state = 'bound'
       FOR UPDATE OF a
@@ -312,6 +317,8 @@ export async function projectNativeEventInTransaction(
        ORDER BY resolution.emitted_at DESC LIMIT 1`,[attemptId,row.conversation_id,nativeSessionId,data.sequence,data.turnId])).rows[0];
       if(!resumeParent)return; // Initial/background starts require their own actual delivery association.
     }
+    const inputReplay = feature.kind === 'normal' && event.type === 'message.received'
+      ? await admitNativeInputReplay(client, row, nativeSessionId, event, nativeInputDigest) : null;
     const inserted = await client.query(`INSERT INTO event_projections
       (native_event_id, conversation_id, native_session_id, stream_index,
        event_type, turn_id, step_index, visible_payload, emitted_at)
@@ -320,7 +327,7 @@ export async function projectNativeEventInTransaction(
     [event.meta.id, row.conversation_id, nativeSessionId, streamIndex ?? null,
       event.type, typeof data.turnId === "string" ? data.turnId : null,
       Number.isInteger(data.stepIndex) ? data.stepIndex : null,
-      JSON.stringify(resumeParent?{sequence:data.sequence,resumeForEventId:resumeParent.native_event_id}:visiblePayload(event)), event.meta.at]);
+      JSON.stringify(resumeParent?{sequence:data.sequence,resumeForEventId:resumeParent.native_event_id}:inputReplay?{...visiblePayload(event),applicationInputReplay:inputReplay}:visiblePayload(event)), event.meta.at]);
     if (!inserted.rowCount) {
       if (streamIndex !== undefined) {
         await client.query(`UPDATE event_projections SET stream_index = COALESCE(stream_index, $2)
@@ -337,11 +344,16 @@ export async function projectNativeEventInTransaction(
     }
     if (event.type === "message.received") {
       if(await projectSteeringMessage(client,nativeSessionId,attemptId,event))return;
+      if (inputReplay) return; // Distinct audit event; same accepted input and allowance.
       if (typeof data.message !== "string" || typeof data.turnId !== "string" ||
           messageDigest(data.message) !== nativeInputDigest ||
           (row.input_event_id && row.input_event_id !== event.meta.id) ||
           (row.native_turn_id && row.native_turn_id !== data.turnId)) {
-        throw new Error("Native input does not match the reserved attempt");
+        const code = typeof data.message !== 'string' || typeof data.turnId !== 'string' ? 'NATIVE_INPUT_SHAPE_INVALID'
+          : messageDigest(data.message) !== nativeInputDigest ? 'NATIVE_INPUT_DIGEST_MISMATCH'
+          : row.native_turn_id && row.native_turn_id !== data.turnId ? 'NATIVE_INPUT_TURN_CONFLICT'
+          : 'NATIVE_INPUT_EVENT_CONFLICT';
+        throw Object.assign(new Error("Native input does not match the reserved attempt"), {code});
       }
       await client.query(`UPDATE response_attempts SET input_event_id = $2,
         native_turn_id = $3, dispatch_state = 'admitted', response_state = CASE WHEN response_state='stopping' THEN 'stopping' ELSE 'running' END,

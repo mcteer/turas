@@ -81,6 +81,7 @@ As the maintainer, I can inspect an exhaustive mechanism ledger and its evidence
 
 ### Edge Cases
 
+- A durable native step is interrupted after accepted input projection and before provider admission; its retry emits a new event ID for the same delivery. Recovery must keep the original input, file metadata, deadline and allowance, and one visible send. A changed envelope, expired authority or any prior model reservation must not admit a new alias.
 - A research result arrives after an initial empty read but before the final answer/profile reload.
 - Multiple passages from one page, a truncated quote, incidental navigation/product names, reverse integrations, dated evaluations and source-specific ordering produce different product lists.
 - A source changes or authority is revoked between discovery, retrieval, handoff and publication.

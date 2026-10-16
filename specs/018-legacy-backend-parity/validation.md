@@ -202,3 +202,53 @@ requests to settle before reload and retains the unfiltered browser-error guard.
 A read-only query of the actual Production image conversation confirmed that
 both appended and completed events carry step index zero, matching the new
 step-specific grouping without duplicating its completed messages.
+
+
+### Pre-provider interruption recovery follow-up
+
+Actual Production ten-MiB acceptance failed before provider admission: no model
+operation was created. Later framework retries rejected new received-event IDs
+for the same accepted delivery, masking the first failure. Its original cause
+remains unresolved; this does not establish a file-size or provider failure.
+A controlled owned Eve interruption independently reproduces the retry identity
+gap using the installed framework's documented durable-step semantics. The
+supported adaptation preserves distinct audit events but binds exact pre-provider
+aliases to the original delivery, with current owner/source checks and unchanged
+input, file metadata, deadline and allowance. Provider admission and replay use
+the same conversation-first lock order. Reconciliation recognizes only saved
+aliases; user-facing history folds the same delivery rather than repeated text.
+Final fixture, independent review and exact-source release checks remain open.
+
+The actual Production retained-evidence answer completed four settled model
+operations totaling 1,045 output tokens. Its browser checker then failed because
+an added network-idle wait cannot finish while Eve's stream remains open. That
+failure is preserved. A fresh authenticated read-only packet captures all six
+Production sources and the same six bounded selections without another model
+call; source-based semantic review and actual retired-history browser acceptance
+remain separate required checks. Earlier failed packet captures remain retained.
+
+
+The frozen retry-source snapshot passes TypeScript, all 159 unit files/706 tests,
+and the owned domain runner's 59 files/215 tests plus three route contracts.
+The existing staged-ten-MiB gate now forces one post-projection/pre-provider
+interruption inside its owned application copy. It passes actual Eve retry,
+10,485,760 exact file bytes, at most 524,288-byte upload requests and 285-byte send,
+original deadline/delivery/input identity, exactly one recorded alias and one
+rendered original send, followed by a distinct follow-up, reload/reuse and
+confirmed native retirement. It uses the deterministic test provider and makes
+zero paid calls. Both independent source reviews found no remaining concrete
+retry blocker after file-envelope hardening. These results establish the owned
+runtime behavior; final exact-source CI and hosted recovery remain required.
+The first unconfigured unit command failed two cursor configuration checks;
+its corrected synthetic configuration passes the complete suite, with the
+original failure retained.
+
+Independent review supports the actual Production answer's factual content
+against all six eligible retained passages and accepted supported claims, with
+all six cited source IDs matching. The profile remains unchanged. Full article
+text is absent from those stored records. Exact-conversation retrieval receipts
+cannot establish the answer's claimed no-hit lexical-search execution, so that
+process claim remains unverified. No new provider execution or full browser
+acceptance is implied by this source review.
+
+Final owned Eve/Next production composition and all48CLI WebKit cases pass on the combined recovery source across desktop/mobile light/dark, with zero skips, retries or flaky cases. Exact hosted release gates remain open.

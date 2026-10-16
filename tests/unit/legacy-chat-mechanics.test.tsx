@@ -60,3 +60,23 @@ it('places corrected answer steps after their actual user delivery while keeping
  expect(texts).toEqual(['Original question','Earlier streamed text','Correction','Corrected answer']);
  expect(visibleChatMessages([first,{...assistant,parts:assistant.parts.slice(1)},correction],events).map(message=>message.role)).toEqual(['user','user','assistant']);
 });
+
+
+it("folds interrupted-step delivery aliases without hiding separate or changed inputs", () => {
+  const user = (id: string) => ({ id: `${id}:user`, role: "user", parts: [{ type: "text", text: "Question" }] } as EveMessage);
+  const received = (id: string, delivery = "delivery", sequence = 0, message = "Question") => ({
+    type: "message.received", data: { turnId: "turn", sequence, message },
+    meta: { id, deliveryIds: [delivery] },
+  } as MessageStreamEvent);
+  const first = user("first"), retry = user("retry");
+  const events = [received("first"), received("retry")];
+  expect(visibleChatMessages([first, retry], events)).toEqual([first]);
+  expect(visibleChatMessages([retry], events)).toEqual([retry]);
+  expect(visibleChatMessages([first], [events[0], events[0]])).toEqual([first]);
+  for (const different of [received("retry", "other"), received("retry", "delivery", 1), received("retry", "delivery", 0, "Changed")])
+    expect(visibleChatMessages([first, retry], [events[0], different])).toEqual([first, retry]);
+  const changedParts = { ...events[1], data: { ...events[1].data, parts: [{ type: "file", mediaType: "image/png", filename: "changed.png" }] } } as MessageStreamEvent;
+  expect(visibleChatMessages([first, retry], [events[0], changedParts])).toEqual([first, retry]);
+  const missingDelivery = { ...events[1], meta: { ...events[1].meta, deliveryIds: [] } } as MessageStreamEvent;
+  expect(visibleChatMessages([first, retry], [events[0], missingDelivery])).toEqual([first, retry]);
+});

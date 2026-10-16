@@ -1,3 +1,4 @@
+import {savedNativeInputReplay} from './native-input-replay';
 import { conversationFeature } from "./feature";
 import { reconcileLearningNativeEvents } from '../learning/native-reconcile';
 import { reconcileExecutionNativeEvents } from "../execution/native-reconcile";
@@ -29,6 +30,10 @@ export async function reconcileFromEvents(
   if (staffing?.kind === "support") return reconcileSupportNativeEvents(nativeSessionId, attemptId, inputEvents);
   if (staffing?.kind === "staffing") return reconcileStaffingNativeEvents(nativeSessionId, attemptId, inputEvents);
   return withTransaction(async (client) => {
+    // Match ordinary provider admission and input projection lock ordering.
+    await client.query(`SELECT c.id FROM conversations c JOIN response_attempts a ON a.conversation_id=c.id
+      WHERE a.id=$1 AND c.eve_session_id=$2 AND c.environment_id=$3 FOR UPDATE OF c`,
+    [attemptId,nativeSessionId,getServerConfig().TURAS_ENVIRONMENT_ID]);
     const result = await client.query<{
       conversation_id: string; dispatch_start_index: string | null; input_digest: string;
       native_turn_id: string | null; input_event_id: string | null; projection_next_index: string;
@@ -74,10 +79,12 @@ export async function reconcileFromEvents(
     const firstInput = events.find(({ event }) =>
       event.type === "message.received" && event.data?.kind !== "execution.background_task");
     if (!firstInput) return uncertain();
+    const firstInputAlias = row.input_event_id && await savedNativeInputReplay(client,
+      row.conversation_id,nativeSessionId,row.input_event_id,firstInput.event);
     if (typeof firstInput.event.data?.message !== "string" ||
         typeof firstInput.event.data.turnId !== "string" ||
         messageDigest(firstInput.event.data.message) !== nativeInputDigest ||
-        (row.input_event_id && row.input_event_id !== firstInput.event.meta.id) ||
+        (row.input_event_id && row.input_event_id !== firstInput.event.meta.id && !firstInputAlias) ||
         (row.native_turn_id && row.native_turn_id !== firstInput.event.data.turnId)) {
       return ambiguous();
     }
@@ -91,7 +98,8 @@ export async function reconcileFromEvents(
         continue;
       }
       if (event.type === "message.received" && event.data?.kind !== "execution.background_task") {
-        if (sawInput) break;
+        if (sawInput && (!row.input_event_id || !await savedNativeInputReplay(client,
+          row.conversation_id,nativeSessionId,row.input_event_id,event))) break;
         sawInput = true;
       }
       if (typeof event.data?.turnId === "string" && event.data.turnId !== turnId) break;
