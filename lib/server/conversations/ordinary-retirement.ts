@@ -3,6 +3,8 @@ import {getCurrentSession} from '../auth/sessions';
 import {checkSessionCsrf} from '../auth/csrf';
 import {HttpFailure} from '../../contracts/http';
 import {requestOwnedTaskCancellation,settleInactiveOwnedCancellation} from './cancel';
+import {cleanupNativeUploads} from './native-uploads';
+import {requestOrdinaryNativeRetirement,confirmOrdinaryNativeRetirement,authorizeOrdinaryNativeRetirementRecovery,terminalNativeRetirementReceipt} from './native-retirement-recovery';
 
 /** Restore the legacy owner-only native retirement control. Closing the owned
  * ordinary research admission precedes forwarding; no synthetic source or
@@ -15,6 +17,7 @@ export async function authorizeOwnedOrdinaryRetirement(request:Request,nativeSes
  let input:unknown;try{input=raw.trim()?JSON.parse(raw):{};}catch{throw new HttpFailure(422,'invalid_input','Invalid retirement request');}
  if(!z.object({reason:z.string().max(500).optional()}).strict().safeParse(input).success)throw new HttpFailure(422,'invalid_input','Invalid retirement request');
  await requestOwnedTaskCancellation(actor,nativeSessionId);
+ await requestOrdinaryNativeRetirement(actor,nativeSessionId);
  return actor.principalId;
 }
 
@@ -22,12 +25,12 @@ export async function authorizeOwnedOrdinaryRetirement(request:Request,nativeSes
  * A successful HTTP status or accepted request alone cannot settle admission. */
 export async function reconcileOwnedOrdinaryRetirement(request:Request,nativeSessionId:string,response:Response){
  if(!response.ok)return;
- const receipt=z.discriminatedUnion('status',[
-  z.object({ok:z.literal(true),status:z.literal('reset'),previousSessionId:z.literal(nativeSessionId)}),
-  z.object({ok:z.literal(true),status:z.literal('no_active_session')}),
- ]).safeParse(await response.clone().json().catch(()=>null));
- if(!receipt.success)return;
+ if(!terminalNativeRetirementReceipt(nativeSessionId,await response.clone().json().catch(()=>null)))return;
+ const recovered=await authorizeOrdinaryNativeRetirementRecovery(request,nativeSessionId);
+ if(recovered){await confirmOrdinaryNativeRetirement(nativeSessionId,request.headers.get('x-turas-ordinary-retirement-id')!);await cleanupNativeUploads();return;}
  const actor=await getCurrentSession(request);if(!actor)return;
  checkSessionCsrf(request,actor);
  await settleInactiveOwnedCancellation(actor,nativeSessionId);
+ await confirmOrdinaryNativeRetirement(nativeSessionId);
+ await cleanupNativeUploads();
 }

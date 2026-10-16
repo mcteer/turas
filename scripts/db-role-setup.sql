@@ -11,6 +11,12 @@ DO $$ BEGIN
     REVOKE UPDATE, DELETE ON TABLE public_customer_research_results FROM turas_runtime;
   END IF;
 END $$;
+DO $$ BEGIN
+ IF to_regclass('public.ordinary_operations_read_dependencies') IS NOT NULL THEN
+  REVOKE ALL ON ordinary_operations_read_dependencies FROM turas_runtime;
+  GRANT SELECT,INSERT ON ordinary_operations_read_dependencies TO turas_runtime;
+ END IF;
+END $$;
 
 DO $$ BEGIN
  IF to_regclass('public.public_customer_inventory_imports') IS NOT NULL THEN
@@ -367,5 +373,33 @@ DO $$ BEGIN
   GRANT SELECT,INSERT ON ordinary_steering_deliveries,ordinary_conversation_allowances,ordinary_model_operations TO turas_runtime;
   GRANT UPDATE(dispatch_state,native_delivery_id,native_event_id,native_turn_id,native_receipt,native_status,updated_at) ON ordinary_steering_deliveries TO turas_runtime;
   GRANT UPDATE(actual_tokens,settled_at) ON ordinary_model_operations TO turas_runtime;
+ END IF;
+END $$;
+DO $$ BEGIN
+ IF to_regclass('public.ordinary_intervention_decisions') IS NOT NULL THEN
+  REVOKE ALL ON ordinary_intervention_decisions,ordinary_intervention_authorizations FROM turas_runtime;
+  GRANT SELECT,INSERT ON ordinary_intervention_decisions,ordinary_intervention_authorizations TO turas_runtime;
+ END IF;
+END $$;
+DO $$ BEGIN
+ IF to_regclass('public.ordinary_native_uploads') IS NOT NULL THEN
+  REVOKE ALL ON ordinary_native_uploads,ordinary_native_upload_chunks FROM turas_runtime;
+  GRANT SELECT,INSERT ON ordinary_native_uploads TO turas_runtime;
+  GRANT UPDATE(state,bound_message_id) ON ordinary_native_uploads TO turas_runtime;
+  GRANT SELECT,INSERT,DELETE ON ordinary_native_upload_chunks TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.ordinary_question_continuations') IS NOT NULL THEN
+  REVOKE ALL ON ordinary_question_posts FROM turas_runtime;
+  GRANT SELECT,INSERT ON ordinary_question_posts TO turas_runtime;
+  REVOKE ALL ON ordinary_question_continuations FROM turas_runtime;
+  GRANT SELECT,INSERT ON ordinary_question_continuations TO turas_runtime;
+ END IF;
+ IF to_regclass('public.ordinary_native_retirements') IS NOT NULL THEN
+  REVOKE ALL ON ordinary_native_retirements FROM turas_runtime;
+  GRANT SELECT,INSERT ON ordinary_native_retirements TO turas_runtime;
+  GRANT UPDATE(state,confirmed_at,next_attempt_at,attempts,safe_error_code) ON ordinary_native_retirements TO turas_runtime;
  END IF;
 END $$;

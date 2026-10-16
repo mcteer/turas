@@ -86,6 +86,23 @@ export async function addProposal(client: PoolClient, actor: ProfileActor, custo
         payload={...payload,legacyJourney:{...original.legacyJourney,summary:payload.text,title:payload.title??original.legacyJourney.title}};
       }
     }
+    // A partner edits the approved delivery projection, whose source provenance
+    // is deliberately masked. Never replace the retained original with that mask.
+    if(actor.kind==='partner' && payload.kind==='claim' && payload.legacyJourney && row.current_accepted_revision_id){
+      const original=(await client.query<{payload:import('../../contracts/profile-payloads').ProfilePayload}>(
+        'SELECT payload FROM profile_revisions WHERE id=$1',[row.current_accepted_revision_id])).rows[0]?.payload;
+      if(original?.kind==='claim' && original.legacyJourney){
+        const supplied=payload.legacyJourney.source;
+        const masked=supplied.kind===original.legacyJourney.source.kind &&
+          supplied.reference==='Reviewed customer source' && supplied.url==='' &&
+          supplied.excerpt==='Original source provenance is private; only the approved delivery claim is shared.';
+        const unchanged=(['kind','reference','url','excerpt'] as const).every(key=>supplied[key]===original.legacyJourney!.source[key]);
+        if(!masked && !unchanged){
+          throw new HttpFailure(422,'journey_source_change','Submit a separate sourced proposal to change a reviewed record’s private source');
+        }
+        payload={...payload,legacyJourney:{...payload.legacyJourney,source:original.legacyJourney.source}};
+      }
+    }
     if (row.canonical_key !== canonicalRecordKey(payload.kind, workloadId, payload)) {
       throw new HttpFailure(422, "immutable_key", "Create a new record for a different key");
     }

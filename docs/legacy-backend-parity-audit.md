@@ -1,5 +1,48 @@
 # Legacy backend parity audit
 
+## Complete audit follow-up: feature 018
+
+The earlier repair did not establish complete backend parity. The expanded
+user-authorized audit is tracked in [feature 018](../specs/018-legacy-backend-parity/spec.md)
+and its [pinned inventory](../specs/018-legacy-backend-parity/inventory.json).
+Implementation and acceptance are in progress. Earlier completed rows do not
+override a later finding or prove that a copied function has an active consumer.
+
+The inventory appends current implementation mappings and verified local evidence
+for all 86 research and associated consumer rows. Initial reviews, including the
+original missing source-library consumers, remain as historical findings; the
+`currentImplementation` field records their restored wiring and current source
+hashes. These local checks do not close hosted replay or release acceptance.
+
+Confirmed divergences and current work:
+
+| Mechanism | Proven difference | Repair and verification status |
+| --- | --- | --- |
+| Profile research products | Profile expanded the original eight selected 1,600-character passages into up to fifty canonical sources | Shared read-only recall restored, including ledger precedence, per-URL selection, original dates and eligible canonical-ingestion fallback; failing-before and passing-after integration checks |
+| Account discovery | Directory exposed name-only search; product discovery used a different source corpus | Shared actor-level discovery and original signal/product/workload consumer restored; current-source eligibility retained; complete new consumer CLI WebKit20/20 passes |
+| Retained source library | Copied library had no API/page callers | Authorized collection/page, twenty-row paging, latest snapshot, owner masking and eligibility checks restored; local integration and four-project CLI WebKit pass |
+| Ordinary delivery operations | Dedicated-channel tools did not expose original ordinary portfolio/capacity/engagement/scenario/intervention behavior | Real-domain adapters and current-themed consumers restored; calculation, permission, hypothetical no-write and exact human receipt checks pass locally; concurrent context deadlock repaired; actual parked, fresh-login and older-request native approvals pass, including all five knowledge decisions |
+| Context and journey | Workspace queue and structured source/impact revision controls missing | Canonical review queue and structured journey consumer restored; transactional lifecycle/privacy checks and eight four-project browser cases pass, including correction after retraction |
+| Conversation search | Fresh owner login/generation hid otherwise current ordinary customer chats from title search | Current-context eligibility applied before paging; original predicate fails and repaired authority/paging regressions pass |
+| Native files | Three-MiB base64 transport contradicted ten-MiB/file promise; hosted native path default-off | Explicit migrations 074/076 stage owner-bound immutable chunks and durable retirement recovery; domain/HTTP bounds and actual Eve/WebKit4MiB/10MiB pass; hosted acceptance and enablement pending |
+| Task checklist | Installed Eve removed the original todo export and panel | Supported durable per-session state and ordinary track_tasks adapter implemented; actual Eve/WebKit replace/read, fresh-login/reload, other-owner denial and per-conversation isolation pass |
+
+The unused legacy Linear, Notion and Vercel connection declarations were
+existing-grant-only and disabled unless explicitly enabled. No approved active
+operational source was identified. Their provider-discovery/no-onboarding guard
+is preserved; no speculative credentials or integrations are installed. The
+customer named Notion does not select a Notion storage-provider connection.
+
+Ordinary operations replace fictional legacy fixtures with current authorized records. Their consumed real financial/source snapshots are immutable: genuine source changes withhold stale thread content; New Chat reads the current snapshot. This is a governed adaptation, not automatic refresh of legacy fixed demo data. Owner Stop/reset remains available without exposing withdrawn content.
+
+Current explicit migrations, source acceptance, conversation ownership, current
+membership and assigned-partner boundaries remain required adaptations. Legacy
+request-time schema creation, unsigned local authentication and fictional
+portfolio records are not copied. See the [validation record](../specs/018-legacy-backend-parity/validation.md)
+for actual results and remaining acceptance; static review is not hosted proof. The [native-file release prerequisites](../specs/018-legacy-backend-parity/quickstart.md#hosted-native-file-release-prerequisites) cover enablement, runtime grants, selected-provider checks and confirmed-retirement recovery.
+
+
+
 Legacy source: `../turas-back` at `fd1e205d7fd258676d6fb12b3ade8a431d53a6af`. Repair merged in [PR 34](https://github.com/mcteer/turas/pull/34).
 
 Status: merged and released to Production with bounded acceptance. The final

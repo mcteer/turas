@@ -176,6 +176,17 @@ export async function storedSourceCandidates(identity: AppIdentity, accountId: s
       WHERE a.environment_id=$1 AND a.workspace_id=$2 AND (a.owner_user_id=$3 OR a.visibility='public') AND a.account_id=$4 AND a.workload=$5
       AND NOT EXISTS (SELECT 1 FROM turas_evidence_snapshots newer WHERE newer.environment_id=s.environment_id
         AND newer.workspace_id=s.workspace_id AND newer.fetch_key=s.fetch_key AND newer.checked_at>s.checked_at)
+      AND NOT EXISTS(SELECT 1 FROM evidence_sources canonical
+        LEFT JOIN LATERAL(SELECT * FROM evidence_source_revisions v WHERE v.source_id=canonical.id ORDER BY v.version DESC LIMIT 1) head ON true
+        WHERE canonical.workspace_id=$2::uuid AND canonical.customer_id=$4::uuid AND canonical.origin='independent_research'
+          AND canonical.canonical_location=s.url AND (head.id IS NULL OR ($9='partner' AND head.audience<>'delivery')
+            OR EXISTS(SELECT 1 FROM evidence_source_events e WHERE e.source_revision_id=head.id AND e.event_type IN('withdraw','supersede'))
+            OR NOT EXISTS(SELECT 1 FROM research_checks checks WHERE checks.source_revision_id=head.id AND checks.identity_result AND checks.scope_result AND checks.integrity_result AND checks.content_result)
+            OR EXISTS(SELECT 1 FROM independent_research_documents document WHERE document.source_revision_id=head.id AND encode(sha256(convert_to(document.document_text,'UTF8')),'hex')<>document.document_digest)
+            OR EXISTS(SELECT 1 FROM evidence_conflict_targets conflict WHERE conflict.environment_id=$1 AND conflict.state='confirmed'
+              AND (conflict.scope='shared' OR (conflict.scope='customer' AND conflict.workspace_id=canonical.workspace_id AND conflict.customer_id=canonical.customer_id))
+              AND ((conflict.first_kind='verified_research' AND conflict.first_revision_id=head.id) OR
+                (conflict.second_kind='verified_research' AND conflict.second_revision_id=head.id)))))
     ), text_hits AS (
       SELECT snapshot_id,row_number() OVER(ORDER BY max(ts_rank_cd(p.search_text,websearch_to_tsquery('english',$6))) DESC,snapshot_id) AS rank
       FROM turas_evidence_passages p JOIN eligible s ON s.id=p.snapshot_id
@@ -191,9 +202,14 @@ export async function storedSourceCandidates(identity: AppIdentity, accountId: s
     ) SELECT s.id,s.source,s.truncated,s.checked_at,s.refresh_after,s.index_state FROM eligible s JOIN ranked r ON r.id=s.id
       ORDER BY r.score DESC,s.id LIMIT 8`,
     [identity.environmentId, identity.workspaceId, identity.userId, accountId, normalized(workload), query,
-      vector ? JSON.stringify(vector) : null, embeddingModel]);
+      vector ? JSON.stringify(vector) : null, embeddingModel,identity.kind]);
   signal.throwIfAborted();
-  return { retrieval: vector ? "hybrid" as const : "keyword" as const, sources: z.array(snapshotSchema).parse(rows).map(row => ({
+  const eligible=[];
+  for(const row of z.array(snapshotSchema).parse(rows)){
+    signal.throwIfAborted();
+    if(await researchSourceIsEligible(identity,accountId,row.source.url))eligible.push(row);
+  }
+  return { retrieval: vector ? "hybrid" as const : "keyword" as const, sources: eligible.map(row => ({
     id: row.source.id, url: row.source.url, title: row.source.title, truncated: row.truncated,
     checkedAt: row.checked_at.toISOString(), refreshAfter: row.refresh_after.toISOString(),
     stale: row.refresh_after.getTime() <= Date.now(), snapshotId: row.id,

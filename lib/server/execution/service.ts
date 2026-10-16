@@ -34,10 +34,10 @@ export async function submitExecutionCommand(actor:ExecutionActor,engagementId:s
     }
   });
 }
-async function readAuthority(db:PoolClient,actor:ExecutionActor,engagementId:string) {
+async function readAuthority(db:PoolClient,actor:ExecutionActor,engagementId:string,admit=true) {
   const customerId=await executionCustomer(db,actor,engagementId);
   await lockExecutionActor(db,actor,customerId,'read');
-  await chargeExecutionRate(db,actor,'read');return customerId;
+  if(admit)await chargeExecutionRate(db,actor,'read');return customerId;
 }
 export async function previewExecutionCommand(actor:ExecutionActor,engagementId:string,raw:unknown) {
   const parsed=executionPreviewSchema.safeParse(raw);
@@ -76,10 +76,10 @@ export async function readExecutionOverview(actor:ExecutionActor,engagementId:st
 }
 /** Internal projection for callers that already hold live scope authority.
  * Read admission must precede plan/source locks; never acquire a rate row here. */
-export async function readExecutionOverviewSnapshot(db:PoolClient,actor:ExecutionActor,engagementId:string,customerId:string) {
+export async function readExecutionOverviewSnapshot(db:PoolClient,actor:ExecutionActor,engagementId:string,customerId:string,sharedRead=false) {
     const engagement=(await db.query<{active_baseline_id:string}>('SELECT active_baseline_id FROM engagements WHERE id=$1',[engagementId])).rows[0];
     if (!engagement?.active_baseline_id) throw hiddenRecord();
-    const baseline=await executionBaseline(db,actor,customerId,engagementId,engagement.active_baseline_id,true);
+    const baseline=await executionBaseline(db,actor,customerId,engagementId,engagement.active_baseline_id,sharedRead?'share':true);
     const head=(await db.query<{id:string;current_baseline_id:string;version:string;generation:string;state:string;closeout_revision_id:string|null}>(`SELECT id,current_baseline_id,version,generation,state,closeout_revision_id FROM execution_workspaces
       WHERE engagement_id=$1 AND workspace_id=$2 AND environment_id=$3`,[engagementId,actor.workspaceId,getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
     const mismatch=!!head&&head.current_baseline_id!==baseline.id;
@@ -93,10 +93,10 @@ export async function readExecutionOverviewSnapshot(db:PoolClient,actor:Executio
     let baselineEligible=true;
     try { await verifyBaseline(db,actor,customerId,baseline,false); }
     catch(error) { if (error instanceof HttpFailure && [403,404,409].includes(error.status)) baselineEligible=false; else throw error; }
-    await db.query("SELECT id FROM engagements WHERE id=$1 FOR UPDATE",[engagementId]);
+    await db.query(`SELECT id FROM engagements WHERE id=$1 FOR ${sharedRead?"SHARE":"UPDATE"}`,[engagementId]);
     if((await db.query("SELECT active_baseline_id FROM engagements WHERE id=$1",[engagementId])).rows[0]?.active_baseline_id!==baseline.id)
       throw new HttpFailure(409,"source_changed","Accepted baseline changed; refresh");
-    const lockedHead=(await db.query("SELECT generation FROM execution_workspaces WHERE engagement_id=$1 FOR UPDATE",[engagementId])).rows[0];
+    const lockedHead=(await db.query(`SELECT generation FROM execution_workspaces WHERE engagement_id=$1 FOR ${sharedRead?"SHARE":"UPDATE"}`,[engagementId])).rows[0];
     if(lockedHead?.generation!==head?.generation)throw new HttpFailure(409,"source_changed","Delivery state changed; refresh");
     const projected=[];
     for(const milestone of milestones) {
@@ -134,11 +134,13 @@ export async function readExecutionOverviewSnapshot(db:PoolClient,actor:Executio
 }
 const listInput=z.object({...executionListSchema.shape,kind:z.enum(['activity','raid','decision','scope_change','effort_budget','estimate','handoff','closeout','outcome']).optional(),
   state:z.enum(['draft','submitted','accepted','rejected','superseded','retracted']).optional(),recordId:executionId.optional()}).strict();
-export async function readExecutionRecords(actor:ExecutionActor,engagementId:string,raw:unknown,review=false) {
+/** Internal shared reads keep the canonical eligibility projection. Only a
+ * persisted-read fence may set admit=false; request schemas expose neither flag. */
+export async function readExecutionRecords(actor:ExecutionActor,engagementId:string,raw:unknown,review=false,existingClient?:PoolClient,sharedRead=false,admit=true) {
   const parsed=listInput.safeParse(raw);if(!parsed.success)throw new HttpFailure(400,'invalid_input','Invalid record filters');
   const input=parsed.data;
-  return executionTransaction(async db=>{
-    const customerId=await readAuthority(db,actor,engagementId);
+  const run=async(db:PoolClient)=>{
+    const customerId=await readAuthority(db,actor,engagementId,admit);
     if(review&&!isExecutionReviewer(actor))throw new HttpFailure(403,'forbidden','Review access required');
     const head=(await db.query<{current_baseline_id:string;generation:string}>('SELECT current_baseline_id,generation FROM execution_workspaces WHERE engagement_id=$1',[engagementId])).rows[0];
     if(!head)throw hiddenRecord();
@@ -156,15 +158,16 @@ export async function readExecutionRecords(actor:ExecutionActor,engagementId:str
     const selected=rows.slice(0,input.limit),records=[];
     const revisionIds=selected.map(r=>!acceptedOnly&&(r.author_membership_id===actor.membershipId||isExecutionReviewer(actor))?r.current_revision_id:r.accepted_revision_id).filter((id):id is string=>!!id);
     const plans=(await db.query<{plan_id:string}>("SELECT DISTINCT b.plan_id FROM execution_record_revisions v JOIN milestone_baselines b ON b.id=v.baseline_id WHERE v.id=ANY($1::uuid[])",[revisionIds])).rows;
-    await db.query("SELECT id FROM delivery_plans WHERE id=ANY($1::uuid[]) ORDER BY id FOR UPDATE",[plans.map(p=>p.plan_id).sort()]);
+    await db.query(`SELECT id FROM delivery_plans WHERE id=ANY($1::uuid[]) ORDER BY id FOR ${sharedRead?"SHARE":"UPDATE"}`,[plans.map(p=>p.plan_id).sort()]);
     await lockExecutionOriginalSources(db,actor,customerId,engagementId,revisionIds.map(sourceRevisionId=>({kind:"execution_record" as const,sourceRevisionId})));
-    await db.query("SELECT id FROM engagements WHERE id=$1 FOR UPDATE",[engagementId]);
-    const generation=(await db.query("SELECT generation FROM execution_workspaces WHERE engagement_id=$1 FOR UPDATE",[engagementId])).rows[0]?.generation;
+    await db.query(`SELECT id FROM engagements WHERE id=$1 FOR ${sharedRead?"SHARE":"UPDATE"}`,[engagementId]);
+    const generation=(await db.query(`SELECT generation FROM execution_workspaces WHERE engagement_id=$1 FOR ${sharedRead?"SHARE":"UPDATE"}`,[engagementId])).rows[0]?.generation;
     if(generation!==head.generation)throw new HttpFailure(409,"source_changed","Record list changed; refresh");
-    for(const row of selected){const record=await projectExecutionRecord(db,actor,customerId,engagementId,row,acceptedOnly);if(record)records.push(record);}
+    for(const row of selected){const record=await projectExecutionRecord(db,actor,customerId,engagementId,row,acceptedOnly,sharedRead);if(record)records.push(record);}
     const last=selected.at(-1);
     return {records,generation:Number(head.generation),nextCursor:rows.length>input.limit&&last?executionCursor(scope,last.created_at.toISOString(),last.id):null};
-  });
+  };
+  return existingClient?run(existingClient):executionTransaction(run);
 }
 
 export async function readExecutionOwners(actor:ExecutionActor,engagementId:string) {

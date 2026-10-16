@@ -13,9 +13,9 @@ import {closeoutReferences} from "./closeout";
 import {validateEffortContent} from "./effort";
 import {validateRegisterContent} from "./registers";
 import type { ExecutionRecordMetadata } from "./projection";
-export async function executionRecordHead(db:PoolClient,actor:ExecutionActor,engagementId:string,recordId:string,lock=false) {
+export async function executionRecordHead(db:PoolClient,actor:ExecutionActor,engagementId:string,recordId:string,lock:boolean|'share'=false) {
   const row=(await db.query<ExecutionRecordMetadata>(`SELECT id,author_membership_id,current_revision_id,accepted_revision_id,version,state,kind,baseline_id
-    FROM execution_records WHERE id=$1 AND environment_id=$2 AND workspace_id=$3 AND engagement_id=$4 ${lock?'FOR UPDATE':''}`,
+    FROM execution_records WHERE id=$1 AND environment_id=$2 AND workspace_id=$3 AND engagement_id=$4 ${lock==='share'?'FOR SHARE':lock?'FOR UPDATE':''}`,
     [recordId,getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,engagementId])).rows[0];
   if (!row) throw hiddenRecord(); return row;
 }
@@ -39,26 +39,26 @@ export async function validateRecordContent(db:PoolClient,actor:ExecutionActor,c
   await validateHandoffContent(db,actor,engagementId,baselineId,content);
   await validateRegisterContent(db,actor,engagementId,baselineId,content);
 }
-export async function lockRecordContext(db:PoolClient,actor:ExecutionActor,customerId:string,engagementId:string,baselineId:string,content:ExecutionRecordContent,revisionId?:string){
+export async function lockRecordContext(db:PoolClient,actor:ExecutionActor,customerId:string,engagementId:string,baselineId:string,content:ExecutionRecordContent,revisionId?:string,sharedRead=false){
   const references=revisionId?await executionStoredReferences(db,revisionId,content):[...content.references,...await handoffReferences(db,actor,engagementId,baselineId,content)];
   const closureReferences=content.kind==="closeout"?await closeoutReferences(db,actor,engagementId,baselineId):[];
   let baseline=await executionBaseline(db,actor,customerId,engagementId,baselineId);
   const replacementId=content.kind==="scope_change"&&content.state==="implemented"?content.replacementBaselineId:null;
   let replacement=replacementId?await executionBaseline(db,actor,customerId,engagementId,replacementId):null;
-  await db.query("SELECT id FROM delivery_plans WHERE id=ANY($1::uuid[]) ORDER BY id FOR UPDATE",[[...new Set([baseline.plan_id,...(replacement?[replacement.plan_id]:[])])].sort()]);
+  await db.query(`SELECT id FROM delivery_plans WHERE id=ANY($1::uuid[]) ORDER BY id FOR ${sharedRead?"SHARE":"UPDATE"}`,[[...new Set([baseline.plan_id,...(replacement?[replacement.plan_id]:[])])].sort()]);
   baseline=await executionBaseline(db,actor,customerId,engagementId,baselineId);
   if(replacement)replacement=await executionBaseline(db,actor,customerId,engagementId,replacement.id);
   const baselineRef=(b:typeof baseline)=>({id:b.id,kind:"milestone_baseline" as const,sourceRevisionId:b.id,generation:Number(b.baseline_number),contentDigest:b.content_digest});
   if(replacement){
     await lockExecutionOriginalSources(db,actor,customerId,engagementId,[...references,...closureReferences,baselineRef(baseline),baselineRef(replacement)]);
-    await db.query("SELECT id FROM engagements WHERE id=$1 FOR UPDATE",[engagementId]);
+    await db.query(`SELECT id FROM engagements WHERE id=$1 FOR ${sharedRead?"SHARE":"UPDATE"}`,[engagementId]);
     await validateRegisterContent(db,actor,engagementId,baselineId,content);
     const sourceDigest=await verifyExecutionSources(db,actor,customerId,engagementId,content.audience,[...references,...closureReferences,baselineRef(replacement)],false);
     return {baseline,effectiveBaselineId:replacement.id,sourceDigest,references};
   }
   if(baseline.active_baseline_id!==baseline.id)throw new HttpFailure(409,"source_changed","Current baseline required");
   if(closureReferences.length)await lockExecutionOriginalSources(db,actor,customerId,engagementId,[...references,...closureReferences,baselineRef(baseline)]);
-  const primaryDigest=await verifyExecutionSources(db,actor,customerId,engagementId,content.audience,[...references,baselineRef(baseline)],true);
+  const primaryDigest=await verifyExecutionSources(db,actor,customerId,engagementId,content.audience,[...references,baselineRef(baseline)],true,true,sharedRead);
   const closureDigest=closureReferences.length?await verifyExecutionSources(db,actor,customerId,engagementId,"internal",closureReferences,false):null;
   return {baseline,effectiveBaselineId:baseline.id,sourceDigest:executionDigest({primaryDigest,closureDigest}),references};
 }

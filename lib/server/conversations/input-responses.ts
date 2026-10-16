@@ -18,7 +18,8 @@ export async function nativeInputDeadline(db:PoolClient,attemptId:string,nativeS
   WHERE a.id=$1 AND c.eve_session_id=$2 AND event.conversation_id=c.id
    AND ($4::boolean=false OR resume.deadline_at>clock_timestamp())
    AND ((event.event_type='input.requested' AND $3='')
-    OR (event.event_type='input.resolved' AND event.turn_id=$3)) ORDER BY resume.deadline_at DESC LIMIT 1`,[attemptId,nativeSessionId,turnId,current])).rows[0]?.deadline_at??null;
+    OR (event.event_type IN('input.resolved','turn.started') AND event.turn_id=$3)
+    ${(marker?.schema_version??0)>=77?`OR EXISTS(SELECT 1 FROM ordinary_question_continuations continuation WHERE continuation.attempt_id=a.id AND continuation.request_event_id=event.native_event_id AND continuation.native_session_id=$2 AND continuation.native_turn_id=$3 AND continuation.deadline_at=resume.deadline_at AND EXISTS(SELECT 1 FROM login_sessions login JOIN memberships membership ON membership.id=continuation.membership_id AND membership.principal_id=c.owner_principal_id AND membership.workspace_id=c.workspace_id JOIN principals owner ON owner.id=c.owner_principal_id WHERE login.id=continuation.login_session_id AND login.principal_id=c.owner_principal_id AND login.revoked_at IS NULL AND login.expires_at>clock_timestamp() AND membership.active AND owner.active))`:''}) ORDER BY resume.deadline_at DESC LIMIT 1`,[attemptId,nativeSessionId,turnId,current])).rows[0]?.deadline_at??null;
 }
 export async function hasNativeInputWindow(db:PoolClient,attemptId:string,nativeSessionId:string,turnId:string,current=true){
  return !!await nativeInputDeadline(db,attemptId,nativeSessionId,turnId,current);
@@ -41,6 +42,7 @@ async function ownedInputResponseBinding(actor:CurrentSession,nativeSessionId:st
     ${background?`OR EXISTS(SELECT 1 FROM research_background_turns bg WHERE bg.native_session_id=c.eve_session_id AND bg.turn_id=event.turn_id AND bg.attempt_id=a.id)`:''}
     ${(marker?.schema_version??0)>=65?`OR EXISTS(SELECT 1 FROM native_input_resume_windows resume JOIN event_projections prior ON prior.native_event_id=resume.native_event_id
       WHERE resume.attempt_id=a.id AND prior.turn_id=event.turn_id AND prior.native_session_id=c.eve_session_id)`:''}
+    ${(marker?.schema_version??0)>=77?`OR EXISTS(SELECT 1 FROM ordinary_question_continuations question WHERE question.attempt_id=a.id AND question.native_session_id=c.eve_session_id AND question.native_turn_id=event.turn_id)`:''}
     ${(marker?.schema_version??0)>=68?`OR EXISTS(SELECT 1 FROM ordinary_steering_deliveries steer WHERE steer.attempt_id=a.id AND steer.native_turn_id=event.turn_id AND steer.native_event_id IS NOT NULL)`:''})
    CROSS JOIN LATERAL jsonb_array_elements(COALESCE(event.visible_payload->'requests','[]'::jsonb)) request
    WHERE c.eve_session_id=$1 AND c.owner_principal_id=$2 AND c.workspace_id=$3 AND c.environment_id=$4 AND c.binding_state='bound'
@@ -78,6 +80,15 @@ export async function authorizeOwnedInputResponse(actor:CurrentSession,nativeSes
   // cannot replace this receipt or extend its deadline or token allowance.
   for(const eventId of eventIds)await db.query(`INSERT INTO native_input_resume_windows(attempt_id,native_event_id,deadline_at)
     VALUES($1,$2,date_trunc('milliseconds',clock_timestamp())+interval '120 seconds') ON CONFLICT(native_event_id) DO NOTHING`,[attemptId,eventId]);
+  if(marker?.schema_version>=77)for(const eventId of eventIds){
+   const question=(await db.query(`SELECT 1 FROM event_projections request WHERE request.native_event_id=$1
+    AND jsonb_array_length(COALESCE(request.visible_payload->'requests','[]'::jsonb))>0
+    AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(request.visible_payload->'requests') item WHERE item->>'kind'<>'question')`,[eventId])).rowCount;
+   if(!question)continue;
+   await db.query('INSERT INTO ordinary_question_posts(request_event_id,attempt_id,login_session_id,membership_id) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING',[eventId,attemptId,actor.sessionId,actor.membershipId]);
+   const posted=(await db.query('SELECT login_session_id,membership_id FROM ordinary_question_posts WHERE request_event_id=$1',[eventId])).rows[0];
+   if(posted.login_session_id!==actor.sessionId||posted.membership_id!==actor.membershipId)throw new HttpFailure(409,'input_request_changed','This question response is already bound to another login; reload to check its outcome');
+  }
   const window=(await db.query(`SELECT min(deadline_at) AS deadline_at FROM native_input_resume_windows
     WHERE attempt_id=$1 AND native_event_id=ANY($2::text[])`,[attemptId,eventIds])).rows[0];
   if(!window?.deadline_at || window.deadline_at.getTime()<=Date.now())throw new HttpFailure(409,'input_resume_expired','This question continuation expired');

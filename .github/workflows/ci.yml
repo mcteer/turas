@@ -488,7 +488,8 @@ jobs:
 
   execution:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    # Four-project WebKit acceptance can finish near 90 minutes; allow cleanup too.
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:

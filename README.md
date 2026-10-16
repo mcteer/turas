@@ -1,5 +1,13 @@
 # Turas
 
+The complete legacy backend audit and follow-up repair is active in
+[`018-legacy-backend-parity`](specs/018-legacy-backend-parity/spec.md).
+The pinned inventory traces backend sources and their consumers; implementation
+and validation remain in progress. Confirmed gaps include inconsistent retained
+research projections, missing source-library consumers, ordinary delivery tools,
+workspace context review, structured journey controls and native-file transport.
+Earlier parity releases do not establish completion of this broader audit.
+
 Customer maturity and delivery management for Vercel FDE, Professional Services,
 TAM, account teams and partners.
 

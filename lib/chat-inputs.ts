@@ -1,8 +1,12 @@
 import {z} from 'zod';
 const requestSchema=z.object({requestId:z.string(),kind:z.enum(['question','session-limit','tool-approval']),
+ action:z.object({toolName:z.string().min(1).max(300),callId:z.string().min(1).max(500),input:z.unknown()}).optional().catch(undefined),
  prompt:z.string(),allowFreeform:z.boolean().optional(),display:z.string().optional(),
  options:z.array(z.object({id:z.string(),label:z.string(),description:z.string().optional()})).optional()});
 export type ChatInputRequest=z.infer<typeof requestSchema>;
+export function approvalReviewReady(request:ChatInputRequest){
+ return request.kind!=='tool-approval'||Boolean(request.action&&Object.hasOwn(request.action,'input'));
+}
 /** Project native pending requests; model prose never creates approval buttons. */
 export function pendingChatInputs(events:readonly {type:string;data?:unknown}[]):ChatInputRequest[]{
  const pending=new Map<string,{request:ChatInputRequest;turnId:string|null}>();
@@ -25,6 +29,6 @@ export function chatInputAnswer(requests:readonly ChatInputRequest[],text:string
  if(requests.length!==1 || !text.trim())return null;
  const request=requests[0],value=text.trim();
  const option=request.options?.find((option,index)=>option.id===value || option.label.toLocaleLowerCase()===value.toLocaleLowerCase() || String(index+1)===value);
- if(option)return {requestId:request.requestId,optionId:option.id};
+ if(option){if(request.kind==='tool-approval'&&option.id==='approve'&&!approvalReviewReady(request))return null;return {requestId:request.requestId,optionId:option.id};}
  return request.kind==='question' && request.allowFreeform!==false?{requestId:request.requestId,text:value}:null;
 }

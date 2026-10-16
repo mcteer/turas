@@ -1,3 +1,4 @@
+import {assertNativeConversationOpen} from './native-retirement-state';
 import {ordinaryNativeFilesEnabled,assertNativeFileEvaluationOpen} from './native-file-policy';
 import {assertCustomerQuestionReads} from "./customer-accounts";
 import { prepareExecutionNativeAttempt, claimExecutionNativeDispatch } from "../execution/native-dispatch";
@@ -27,9 +28,10 @@ import type { PoolClient } from "pg";
 import { captureGeneralContext } from "./general-context";
 import { titleFromMessage } from "../../conversations/title";
 import {deriveSteeringAttempt} from './steering';
-import {parseOrdinaryNativeMessage,nativeMessageDigest,summarizeNativeMessage} from "./native-message";
+import {parseOrdinaryNativeMessage,nativeMessageDigest,summarizeNativeMessage,sameNativeUploadReferences} from "./native-message";
 import {nativeMessageText,type OrdinaryNativeMessage} from "../../conversations/native-message";
 import {attachmentLimits,parseAttachmentMessage} from '../../conversations/attachment-text';
+import {bindNativeUploads} from './native-uploads';
 
 async function requireWorkerHeartbeat(client: import("pg").PoolClient): Promise<void> {
   const result = await client.query(`SELECT 1 FROM maintenance_workers
@@ -68,6 +70,7 @@ export async function prepareAttempt(
       throw new HttpFailure(503,'attachments_unavailable','Document messages are temporarily unavailable');
     await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [environmentId]);
     const conversation = await lockOwnedBinding(client, session, conversationId);
+    await assertNativeConversationOpen(client,conversationId);
     assertNativeFileEvaluationOpen(conversationId);
     // A first feature binder can win after the metadata preflight. Never let
     // an ordinary send cross that committed scope under the conversation lock.
@@ -116,13 +119,13 @@ export async function prepareAttempt(
     await assertArtifactDependenciesCurrent(client, conversationId);
     if(liveNormal)await assertCustomerQuestionReads(client,session,conversationId,undefined,false);
     else await assertRetrievalDependenciesCurrent(client, conversationId);
-    const existing = await client.query<{ id: string; body_digest: string; attempt_id: string; dispatch_state: string }>(`
-      SELECT sm.id, sm.body_digest, a.id AS attempt_id, a.dispatch_state
+    const existing = await client.query<{ id: string; body_digest: string; attempt_id: string; dispatch_state: string; native_parts:unknown }>(`
+      SELECT sm.id, sm.body_digest, a.id AS attempt_id, a.dispatch_state,to_jsonb(sm)->'ordinary_native_parts' AS native_parts
       FROM submitted_messages sm JOIN response_attempts a ON a.message_id = sm.id
       WHERE sm.conversation_id = $1 AND sm.request_key = $2
     `, [conversationId, requestKey]);
     if (existing.rows[0]) {
-      if (existing.rows[0].body_digest !== digest) {
+      if (existing.rows[0].body_digest !== digest || !sameNativeUploadReferences(existing.rows[0].native_parts,nativeParts)) {
         throw new HttpFailure(409, "request_key_conflict", "Request key already used");
       }
       return { attemptId: existing.rows[0].attempt_id, created: false,
@@ -161,6 +164,7 @@ export async function prepareAttempt(
     else await client.query(`INSERT INTO submitted_messages
       (id, conversation_id, request_key, body_digest, text)
       VALUES ($1,$2,$3,$4,$5)`, [messageId, conversationId, requestKey, digest, text]);
+    if(nativeParts)await bindNativeUploads(client,session,conversationId,messageId,nativeParts);
     await client.query(`UPDATE conversations SET title=$2 WHERE id=$1
       AND title='New conversation' AND NOT EXISTS(SELECT 1 FROM submitted_messages
         WHERE conversation_id=$1 AND id<>$3)`,[conversationId,titleFromMessage(documentMessage?(documentMessage.prompt||`Attachment: ${documentMessage.documents[0].filename}`):text),messageId]);
@@ -333,10 +337,11 @@ export async function markDispatchUncertain(
 
 export async function deriveNativeAttempt(
   session: CurrentSession, nativeSessionId: string, requestKey: string, message: string|OrdinaryNativeMessage,
+  options:{trustedHydrated?:true}={},
 ): Promise<string> {
-  const nativeParts=typeof message==='string'?null:parseOrdinaryNativeMessage(message);
+  const nativeParts=typeof message==='string'?null:parseOrdinaryNativeMessage(message,options);
   const text=nativeParts?summarizeNativeMessage(nativeParts):message as string;
-  const steering=await deriveSteeringAttempt(session,nativeSessionId,requestKey,nativeParts??text);
+  const steering=await deriveSteeringAttempt(session,nativeSessionId,requestKey,nativeParts??text,options);
   if(steering)return steering;
   const staffingAttempt = await withTransaction(async db => {
     const row = (await db.query(`SELECT a.id,a.conversation_id FROM response_attempts a JOIN submitted_messages sm ON sm.id=a.message_id

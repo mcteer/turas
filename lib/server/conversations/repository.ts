@@ -1,4 +1,5 @@
 import {ordinaryNativeFilesEnabled} from './native-file-policy';
+import {nativeAttachmentReferences} from './native-uploads';
 import {assertCustomerQuestionReads} from "./customer-accounts";
 import { readExecutionAdviceStatus } from "../execution/advisory-status";
 import { conversationFeature } from "./feature";
@@ -272,7 +273,16 @@ export async function listOwnedConversations(
   options: { customerId?: string; title?: string; cursor?: string; limit: number; archived?: string },
 ): Promise<{ items: ConversationReference[]; nextCursor: string | null }> {
   const cursor = decodeCursor(options.cursor);
-  const escapedTitle = options.title?.replace(/[\\%_]/g, "\\$&") ?? null;
+  const escapedTitle = options.title ? options.title.replace(/[\\%_]/g, "\\$&") : null;
+  const schema = options.title ? Number((await query<{ schema_version: number }>(
+    "SELECT schema_version FROM turas_environment WHERE environment_id=$1",
+    [getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0]?.schema_version ?? 0) : 0;
+  // Match annotatePlanning's ordinary-live classification before pagination so
+  // stale governed matches cannot crowd an otherwise searchable chat off-page.
+  const liveCustomerSearch = schema >= 64 ? `c.live_customer_context AND ${[
+    "planning_conversation_bindings", "staffing_conversation_bindings",
+    "execution_advice_bindings", "support_advice_bindings", "expansion_advice_bindings", "learning_bindings",
+  ].map(table => `NOT EXISTS (SELECT 1 FROM ${table} binding WHERE binding.conversation_id=c.id)`).join(" AND ")}` : "false";
   const result = await query<ConversationRow>(`
     SELECT c.*,state.internal_generation,state.delivery_generation FROM conversations c
     LEFT JOIN customer_references customer ON customer.id = c.customer_id
@@ -281,13 +291,13 @@ export async function listOwnedConversations(
       AND (${scopedCustomer} OR (${scopedGeneral}))
       AND (c.archived_at IS NOT NULL) = $13::boolean
       AND ($5::uuid IS NULL OR c.customer_id = $5)
-      AND ($6::text IS NULL OR ((${scopedGeneral}) AND c.title ILIKE '%' || $6 || '%' ESCAPE '\\') OR (c.context_snapshot_schema='customer-context-v1'
-        AND c.context_audience=CASE WHEN $10::text='internal' THEN 'internal' ELSE 'delivery' END
-        AND c.context_login_session_id=$11 AND c.context_membership_id=$12
-        AND c.context_generation=CASE WHEN $10::text='internal'
-          THEN state.internal_generation ELSE state.delivery_generation END
-        AND (c.context_valid_until IS NULL OR c.context_valid_until>now())
-        AND c.title ILIKE '%' || $6 || '%' ESCAPE '\\'))
+      AND ($6::text IS NULL OR (c.title ILIKE '%' || $6 || '%' ESCAPE '\\' AND
+        ((${scopedGeneral}) OR (c.context_snapshot_schema='customer-context-v1'
+          AND c.context_audience=CASE WHEN $10::text='internal' THEN 'internal' ELSE 'delivery' END
+          AND ((${liveCustomerSearch}) OR (c.context_login_session_id=$11 AND c.context_membership_id=$12
+            AND c.context_generation=CASE WHEN $10::text='internal'
+              THEN state.internal_generation ELSE state.delivery_generation END
+            AND (c.context_valid_until IS NULL OR c.context_valid_until>now())))))))
       AND ($7::timestamptz IS NULL OR (c.updated_at, c.id) < ($7, $8::uuid))
     ORDER BY c.updated_at DESC, c.id DESC LIMIT $9
   `, [...values(session), getServerConfig().TURAS_ENVIRONMENT_ID, options.customerId ?? null,
@@ -299,9 +309,25 @@ export async function listOwnedConversations(
   const retrievalStale = await staleRetrievalConversations(rows.map((row) => row.id));
   for (const row of rows) row.artifact_context_stale = stale.has(row.id);
   for (const row of rows) row.retrieval_context_stale = retrievalStale.has(row.id);
+  const visibleRows: ConversationRow[] = [];
+  for (const row of rows) {
+    if (options.title) {
+      // Search uses the same classification as reads: ordinary live customer
+      // context survives a fresh login or refreshed generation, while governed
+      // snapshots remain bound to their original authority and source state.
+      if (contextStatus(row, session) !== "current") continue;
+      try {
+        if ((await getOwnedConversation(session, row.id)).contextStatus !== "current") continue;
+      } catch (error) {
+        if (error instanceof HttpFailure && (error.status === 404 || error.status === 409)) continue;
+        throw error;
+      }
+    }
+    visibleRows.push(row);
+  }
   const last = rows.at(-1);
   return {
-    items: rows.map((row) => toReference(row, session)),
+    items: visibleRows.map((row) => toReference(row, session)),
     nextCursor: result.rows.length > options.limit && last
       ? Buffer.from(JSON.stringify({ t: last.updated_at.toISOString(), id: last.id })).toString("base64url")
       : null,
@@ -449,6 +475,7 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
     canAttachDocuments:feature.kind==='normal' && process.env.TURAS_ORDINARY_ATTACHMENTS_DISABLED!=='1' &&
       documentSchemaVersion>=71,
     canAttachNativeFiles:feature.kind==='normal'&&ordinaryNativeFilesEnabled(id)&&documentSchemaVersion>=72,
+    nativeAttachments:feature.kind==='normal'&&!hideGenerated?await nativeAttachmentReferences(session,id):[],
     contextStatus: hideGenerated ? "changed":final.contextStatus,
     title: hideGenerated ? "Previous conversation" : conversation.title,
     history: [...visibleEvents.slice(0, 500).map((row) => ({

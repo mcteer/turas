@@ -13,7 +13,7 @@ export function visibleExecutionRevision(actor: ExecutionActor, record: Executio
     ? record.current_revision_id : record.accepted_revision_id;
 }
 export async function projectExecutionRecord(db: PoolClient, actor: ExecutionActor, customerId: string,
-  engagementId: string, record: ExecutionRecordMetadata, acceptedOnly=false) {
+  engagementId: string, record: ExecutionRecordMetadata, acceptedOnly=false,sharedRead=false) {
   const revisionId = acceptedOnly ? record.accepted_revision_id : visibleExecutionRevision(actor, record);
   if (!revisionId) return null;
   const audience = actor.kind === "partner" ? "delivery" : "internal";
@@ -22,7 +22,7 @@ export async function projectExecutionRecord(db: PoolClient, actor: ExecutionAct
       AND engagement_id=$5 AND (audience='delivery' OR $6='internal')`,
     [revisionId,getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,customerId,engagementId,audience])).rows[0];
   if (!header) return null;
-  const eligible = await executionRevisionEligible(db, actor, customerId, engagementId, revisionId, audience, true);
+  const eligible = await executionRevisionEligible(db, actor, customerId, engagementId, revisionId, audience, true,sharedRead);
   const own=record.author_membership_id===actor.membershipId,reviewer=isExecutionReviewer(actor);
   const acceptedVersion=acceptedOnly||(!own&&!reviewer)?(await db.query<{expected_version:string}>("SELECT expected_version FROM execution_review_decisions WHERE revision_id=$1 AND action='accept' ORDER BY created_at DESC LIMIT 1",[revisionId])).rows[0]?.expected_version:null;
   const acceptedDigest=reviewer&&record.accepted_revision_id?(await db.query<{content_digest:string}>("SELECT content_digest FROM execution_record_revisions WHERE id=$1",[record.accepted_revision_id])).rows[0]?.content_digest:null;

@@ -7,10 +7,33 @@ export function createOrdinaryNativeFileFixtureModel(attemptId:string){
  assertDeterministicTestMode();
  if(process.env.TURAS_ORDINARY_NATIVE_FILE_FIXTURE!=='1'||process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN||!/^\/turas_test_010_eval_[a-f0-9]{12}$/.test(new URL(process.env.DATABASE_URL!).pathname))throw Error('Owned unpaid native-file fixture required');
  let generationSignal:AbortSignal|undefined;
- const model=mockModel({provider:'owned-native-file-fixture',modelId:'spacexai/grok-4.7',respond:async({toolResults,lastUserMessage,messages})=>{
-  if(process.env.TURAS_ORDINARY_NATIVE_FILE_STEERING_FIXTURE==='1'&&!lastUserMessage?.includes('Correct this using')){
+ const model=mockModel({provider:'owned-native-file-fixture',modelId:'spacexai/grok-4.7',respond:async({toolResults,lastUserMessage:runtimeLastUserMessage,messages})=>{
+  // Provider middleware may append an attributed file/context packet. Match
+  // the actual synthetic user delivery rather than mistaking that packet for
+  // a correction, memory request or checklist action.
+  const prompts=new Set(['Please inspect this native file.','Correct this using the attached file.','Remember that I prefer concise answers.',
+   'Recall the saved preference.','Check for a stored preference.','Read the private checklist after reconnect.','Check private checklist isolation.',
+   'Inspect the previously attached file after reload.']);
+  const texts=messages.flatMap(message=>message.role==='user'?message.text.split('\n').map(text=>text.trim()):[]);
+  const lastUserMessage=texts.flatMap(text=>[...prompts].filter(prompt=>text.includes(prompt))).at(-1)??[...prompts].find(prompt=>runtimeLastUserMessage?.includes(prompt))??runtimeLastUserMessage;
+  console.info(JSON.stringify({kind:'owned_native_file_prompt',user:prompts.has(lastUserMessage??'')?lastUserMessage:'unmatched',tools:toolResults.map(result=>result.name)}));
+  if(process.env.TURAS_ORDINARY_TASK_STATE_FIXTURE==='1'){
+   const read=lastUserMessage==='Read the private checklist after reconnect.',isolated=lastUserMessage==='Check private checklist isolation.';
+   const callId=`checklist-${attemptId}-${read?'read':isolated?'isolated':'replace'}`;
+   const tracked=toolResults.find(result=>result.name==='track_tasks'&&result.id===callId);
+   if(!tracked)return {toolCalls:[{id:callId,name:'track_tasks',input:read||isolated?{action:'read'}:{action:'replace',expectedRevision:0,
+    items:[{id:'source-review',text:'Inspect the exact supplied file.',status:'in_progress'}]}}],usage:{inputTokens:11,outputTokens:7}};
+   if(tracked.isError)throw Error('Actual private checklist tool failed');
+   let value:unknown=tracked.output;
+   for(let index=0;index<5;index++){if(typeof value==='string'){try{value=JSON.parse(value);continue;}catch{break;}}if(value&&typeof value==='object'&&'value' in value){value=value.value;continue;}break;}
+   if(!value||typeof value!=='object'||!('revision' in value)||!('items' in value)||!Array.isArray(value.items))throw Error('Private checklist did not return durable state');
+   if(isolated){if(value.revision!==0||value.items.length)throw Error('Private checklist crossed conversations');return {text:'New conversation has no private checklist.',usage:{inputTokens:11,outputTokens:7}};}
+   if(value.revision!==1||JSON.stringify(value.items)!==JSON.stringify([{id:'source-review',text:'Inspect the exact supplied file.',status:'in_progress'}]))throw Error('Private checklist changed across the native boundary');
+   if(read)return {text:'Private checklist survived reconnect.',usage:{inputTokens:11,outputTokens:7}};
+  }
+  if(process.env.TURAS_ORDINARY_NATIVE_FILE_STEERING_FIXTURE==='1'&&lastUserMessage==='Please inspect this native file.'){
    const signal=generationSignal;if(!signal)throw Error('Steering fixture has no generation signal');
-   await new Promise<void>((resolve,reject)=>{const finish=()=>{clearTimeout(timer);resolve();};const timer=setTimeout(()=>{signal.removeEventListener('abort',finish);reject(Error('Steering fixture did not receive a correction'));},30000);signal.addEventListener('abort',finish,{once:true});if(signal.aborted)finish();});
+   await new Promise<void>((resolve,reject)=>{const finish=()=>{clearTimeout(timer);reject(new DOMException('Generation aborted','AbortError'));};const timer=setTimeout(()=>{signal.removeEventListener('abort',finish);reject(Error('Steering fixture did not receive a correction'));},30000);signal.addEventListener('abort',finish,{once:true});if(signal.aborted)finish();});
   }
   if(process.env.TURAS_ORDINARY_MEMORY_FIXTURE==='1'&&lastUserMessage==='Recall the saved preference.'){
    if(!JSON.stringify(messages).includes('# Persistent memories for file')||!JSON.stringify(messages).includes('The caller prefers concise answers.'))throw Error('Preference was not recalled into the fresh conversation');
@@ -35,15 +58,21 @@ export function createOrdinaryNativeFileFixtureModel(attemptId:string){
   for(let i=0;i<5;i++){if(typeof value==='string'){try{value=JSON.parse(value);continue;}catch{break;}}if(value&&typeof value==='object'&&'value' in value){value=value.value;continue;}break;}
   if(!value||typeof value!=='object'||!('status' in value)||value.status!=='resolved'||!('account' in value)||!value.account||typeof value.account!=='object'||!('id' in value.account)||typeof value.account.id!=='string')throw Error('Native customer resolver did not return a canonical account');
   await query('INSERT INTO ordinary_native_file_fixture_resolutions(attempt_id,customer_id) VALUES($1,$2) ON CONFLICT DO NOTHING',[attemptId,value.account.id]);
-  return {text:'Native file bytes received.',usage:{inputTokens:11,outputTokens:7}};
+  return {text:lastUserMessage==='Inspect the previously attached file after reload.'?'Previously attached file bytes received.':'Native file bytes received.',usage:{inputTokens:11,outputTokens:7}};
  }});
  if(typeof model==='string')throw Error('Fixture model unavailable');
  return wrapLanguageModel({model,middleware:{async transformParams({params}){
   generationSignal=params.abortSignal;
   const files=params.prompt.flatMap(message=>typeof message.content==='string'?[]:message.content.filter(part=>part.type==='file'));
-  if(process.env.TURAS_ORDINARY_MEMORY_FIXTURE==='1'?files.length>2:files.length<1||files.length>2)throw Error('The provider did not receive actual files');
+  if(process.env.TURAS_ORDINARY_MEMORY_FIXTURE==='1'||process.env.TURAS_ORDINARY_TASK_STATE_FIXTURE==='1'?files.length>2:files.length<1||files.length>2){
+   const shape=params.prompt.map(message=>({role:message.role,parts:typeof message.content==='string'?['string']:message.content.map(part=>part.type)}));
+   const notes=params.prompt.flatMap(message=>typeof message.content==='string'?[]:message.content.flatMap(part=>part.type==='text'&&/attach|file|upload/i.test(part.text)&&part.text.length<1200?[part.text.slice(0,300)]:[]));
+   console.info(JSON.stringify({kind:'owned_native_file_missing',shape,notes}));
+   throw Error('The provider did not receive actual files');
+  }
   const names=(params.tools??[]).map(tool=>tool.name);
-  for(const name of ['resolve_customer_account','get_customer_evidence','prepare_customer_research','customer-recon','vercel-best-practices','implementation-research','evaluate_solution_research','file__save_memory','file__remove_memory'])if(!names.includes(name))throw Error('Required ordinary research tool unavailable: '+name);
+  for(const name of ['resolve_customer_account','get_customer_evidence','prepare_customer_research','customer-recon','vercel-best-practices','implementation-research','evaluate_solution_research','file__save_memory','file__remove_memory',
+   'get_adoption_patterns','get_learning_contribution','review_learning_contribution','search_solution_patterns','get_solution_knowledge','review_solution_pattern','review_solution_application','track_tasks'])if(!names.includes(name))throw Error('Required ordinary research tool unavailable: '+name);
   const fileData=files.at(-1)?.data;
   if(fileData&&fileData.type!=='data')throw Error('Provider did not receive inline native file data');
   const bytes=!fileData?Buffer.alloc(0):typeof fileData.data==='string'?Buffer.from(fileData.data,'base64'):Buffer.from(fileData.data);

@@ -15,10 +15,10 @@ try{await withPlanEvalEnvironment(async environment=>{
  const root=await realpath(environment.appRoot),owned=await realpath(resolve('local-artifacts/010'));
  if(!root.startsWith(owned+'/eval-')||!root.endsWith('/app'))throw Error('Owned ordinary app copy required');
  const path=join(root,'agent/agent.ts'),source=await readFile(path,'utf8');
- const target='return wrapOrdinaryChatModel(parityBudgetModel(gateway(selectedModel),selectedModel),principal,ctx.session.id,turnId);';
+ const target='return wrapOrdinaryChatModel(parityBudgetModel(gateway(selectedModel),selectedModel),principal,ctx.session.id,turnId,{event});';
  if(source.split(target).length!==2||!source.includes('const selectedModel = "spacexai/grok-4.7";'))throw Error('Ordinary model shape changed');
  await writeFile(path,'import {createOrdinaryNativeFixtureModel} from "../tests/fixtures/ordinary-chat-native-model";\n'+source.replace(target,
-  "return {model:wrapOrdinaryChatModel(createOrdinaryNativeFixtureModel(String(principal?.attributes?.turasAttemptId)),principal,ctx.session.id,turnId),modelContextWindowTokens:128_000};"),{mode:0o600});
+  "return {model:wrapOrdinaryChatModel(createOrdinaryNativeFixtureModel(String(principal?.attributes?.turasAttemptId)),principal,ctx.session.id,turnId,{event}),modelContextWindowTokens:128_000};"),{mode:0o600});
  const hookPath=join(root,'agent/hooks/persist-conversation.ts');const hook=await readFile(hookPath,'utf8');await writeFile(hookPath,hook.replace('      try {',"      if(['message.received','turn.cancelled','turn.completed'].includes(event.type))console.info(JSON.stringify({fixtureNativeEvent:event.type,attemptId,turnId:'turnId' in event.data?event.data.turnId:null}));\n      try {"),{mode:0o600});
  const admin=new Client({connectionString:process.env.DATABASE_URL});await admin.connect();
  try{await admin.query(`CREATE TABLE ordinary_native_fixture_calls(id uuid PRIMARY KEY,attempt_id uuid NOT NULL REFERENCES response_attempts(id),provider_path text NOT NULL,prompt_digest text NOT NULL,created_at timestamptz NOT NULL DEFAULT clock_timestamp());GRANT SELECT,INSERT ON ordinary_native_fixture_calls TO turas_runtime;`);}finally{await admin.end();}

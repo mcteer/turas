@@ -1,3 +1,4 @@
+import {assertNativeConversationOpen} from './native-retirement-state';
 import {ordinaryNativeFilesEnabled,assertNativeFileEvaluationOpen} from './native-file-policy';
 import {randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';
@@ -12,8 +13,9 @@ import {readCurrentAttemptContext} from '../profiles/attempt-context';
 import {messageDigest,normalizeMessageText} from './message-integrity';
 import {getServerConfig} from '../config';
 import {type OrdinaryNativeMessage,nativeMessageText} from '../../conversations/native-message';
-import {parseOrdinaryNativeMessage,nativeMessageDigest,summarizeNativeMessage} from './native-message';
+import {parseOrdinaryNativeMessage,nativeMessageDigest,summarizeNativeMessage,sameNativeUploadReferences} from './native-message';
 import {attachmentLimits,parseAttachmentMessage} from '../../conversations/attachment-text';
+import {bindNativeUploads,assertNativeAttemptFileLimit} from './native-uploads';
 
 async function ready(db:PoolClient){return Number((await db.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0]?.schema_version??0)>=68;}
 type Receipt={native_receipt:unknown;native_status:number|null;dispatch_state:string};
@@ -35,14 +37,14 @@ export async function prepareOrdinarySteering(actor:CurrentSession,conversationI
  if(documentMessage&&process.env.TURAS_ORDINARY_ATTACHMENTS_DISABLED==='1')throw new HttpFailure(503,'attachments_unavailable','Document messages are temporarily unavailable');
  if(!z.uuid().safeParse(requestKey).success || !text.trim() || Buffer.byteLength(text)>(documentMessage||parts?attachmentLimits.messageBytes:16384))throw new HttpFailure(422,'invalid_message','Invalid correction');
  return withTransaction(async db=>{
-  const conversation=await lockOwnedBinding(db,actor,conversationId);
+  const conversation=await lockOwnedBinding(db,actor,conversationId);await assertNativeConversationOpen(db,conversationId);
   assertNativeFileEvaluationOpen(conversationId);
   if(parts&&(Number((await db.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0]?.schema_version??0)<72||!ordinaryNativeFilesEnabled(conversationId)))throw new HttpFailure(503,'native_files_unavailable','Native file messages are not enabled');
   if(conversation.eve_session_id!==nativeSessionId || (await conversationFeature(db,conversationId)).kind!=='normal')throw hiddenRecord();
   if(!await ready(db))throw new HttpFailure(503,'steering_unavailable','Chat correction requires the current database release');
-  const existing=(await db.query<Receipt&{body_digest:string}>(`SELECT d.*,m.body_digest FROM submitted_messages m
+  const existing=(await db.query<Receipt&{body_digest:string;native_parts:unknown}>(`SELECT d.*,m.body_digest,to_jsonb(m)->'ordinary_native_parts' AS native_parts FROM submitted_messages m
     JOIN ordinary_steering_deliveries d ON d.message_id=m.id WHERE m.conversation_id=$1 AND m.request_key=$2`,[conversationId,requestKey])).rows[0];
-  if(existing){if(existing.body_digest!==digest)throw new HttpFailure(409,'request_key_conflict','Request key already used');return {kind:'replay',response:replay(existing,nativeSessionId)};}
+  if(existing){if(existing.body_digest!==digest || !sameNativeUploadReferences(existing.native_parts,parts))throw new HttpFailure(409,'request_key_conflict','Request key already used');return {kind:'replay',response:replay(existing,nativeSessionId)};}
   // A retry of a regular send must retain its original normal-send receipt.
   if((await db.query('SELECT 1 FROM submitted_messages WHERE conversation_id=$1 AND request_key=$2',[conversationId,requestKey])).rowCount)return null;
   const parent=(await db.query<{id:string;deadline_at:Date;native_turn_id:string|null;dispatch_state:string;response_state:string}>(`SELECT a.id,a.native_turn_id,a.dispatch_state,a.response_state,
@@ -61,9 +63,11 @@ export async function prepareOrdinarySteering(actor:CurrentSession,conversationI
   await db.query(`INSERT INTO ordinary_continuation_authorities(id,attempt_id,login_session_id,membership_id,owner_principal_id,workspace_id,environment_id,valid_until)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(attempt_id,login_session_id) DO NOTHING`,[randomUUID(),parent.id,actor.sessionId,actor.membershipId,actor.principalId,actor.workspaceId,getServerConfig().TURAS_ENVIRONMENT_ID,actor.expiresAt]);
   await readCurrentAttemptContext(db,parent.id,actor.principalId);
+  if(parts)await assertNativeAttemptFileLimit(db,actor,parent.id,parts);
   const messageId=randomUUID(),id=randomUUID();
   if(parts)await db.query(`INSERT INTO submitted_messages(id,conversation_id,request_key,body_digest,text,ordinary_native_parts) VALUES($1,$2,$3,$4,$5,$6)`,[messageId,conversationId,requestKey,digest,text,JSON.stringify(parts)]);
   else await db.query(`INSERT INTO submitted_messages(id,conversation_id,request_key,body_digest,text) VALUES($1,$2,$3,$4,$5)`,[messageId,conversationId,requestKey,digest,text]);
+  if(parts)await bindNativeUploads(db,actor,conversationId,messageId,parts);
   await db.query(`INSERT INTO ordinary_steering_deliveries(id,attempt_id,message_id,login_session_id,deadline_at,dispatch_state)
     VALUES($1,$2,$3,$4,$5,'dispatching')`,[id,parent.id,messageId,actor.sessionId,parent.deadline_at]);
   return {kind:'dispatch',id,attemptId:parent.id};
@@ -71,8 +75,8 @@ export async function prepareOrdinarySteering(actor:CurrentSession,conversationI
 }
 
 /** Called by the native channel's onMessage authorization, before execution. */
-export async function deriveSteeringAttempt(actor:CurrentSession,nativeSessionId:string,requestKey:string,message:string|OrdinaryNativeMessage){
- const parts=typeof message==='string'?null:parseOrdinaryNativeMessage(message);
+export async function deriveSteeringAttempt(actor:CurrentSession,nativeSessionId:string,requestKey:string,message:string|OrdinaryNativeMessage,options:{trustedHydrated?:true}={}){
+ const parts=typeof message==='string'?null:parseOrdinaryNativeMessage(message,options);
  const digest=parts?nativeMessageDigest(parts):messageDigest(message as string);
  return withTransaction(async db=>{
   if(!await ready(db))return null;

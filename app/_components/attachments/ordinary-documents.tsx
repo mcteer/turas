@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { extractAttachmentText, getExtractableFileType } from "../../../lib/attachment-extract";
+import {NativeChatAttachment} from "./native-chat-attachment";
 import { attachmentLimits } from "../../../lib/conversations/attachment-text";
 
 import {composeOrdinaryMessage,type OrdinaryAttachment} from '../../../lib/conversations/ordinary-documents';
@@ -10,9 +11,9 @@ async function nativeFile(file:File){
  const mediaType=(file.type||'application/octet-stream').split(';')[0].toLowerCase();
  return {type:'file' as const,filename:file.name,mediaType,data:`data:${mediaType};base64,${data.slice(data.indexOf(',')+1)}`};
 }
-export function OrdinaryDocuments({ documents, onChange, onPreparingChange, disabled, buttonLabel = "Attach document", nativeFilesEnabled = false }: {
+export function OrdinaryDocuments({ documents, onChange, onPreparingChange, disabled, buttonLabel = "Attach document", nativeFilesEnabled = false,conversationId }: {
   documents: OrdinaryAttachment[]; onChange: (value: OrdinaryAttachment[]) => void;
-  onPreparingChange: (value: boolean) => void; disabled: boolean; buttonLabel?: string; nativeFilesEnabled?: boolean;
+  onPreparingChange: (value: boolean) => void; disabled: boolean; buttonLabel?: string; nativeFilesEnabled?: boolean;conversationId?:string;
 }) {
   const input = useRef<HTMLInputElement>(null), generation = useRef(0);
   const [ready,setReady]=useState(false);
@@ -46,6 +47,7 @@ export function OrdinaryDocuments({ documents, onChange, onPreparingChange, disa
     </button>
     {preparing && <span role="status">Preparing document…</span>}
     {!!documents.length && <ul className="chat-document-list">{documents.map((document, index) => <li key={index}>
+      {'data' in document&&'sha256' in document&&conversationId?<NativeChatAttachment filename={document.filename} mediaType={document.mediaType} size={document.size} url={`/api/conversations/${conversationId}/native-uploads/${document.data.slice('turas-upload:'.length)}`}/>:null}
       <span>{document.filename}{'truncated' in document&&document.truncated && <small>Partial document · first 120,000 characters</small>}</span>
       <button type="button" aria-label={`Remove ${document.filename}`} disabled={!ready || disabled || preparing} onClick={() => onChange(documents.filter((_, i) => i !== index))}>×</button>
     </li>)}</ul>}

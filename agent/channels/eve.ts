@@ -12,10 +12,12 @@ import { authorizeSupportRetirement } from "../../lib/server/support/native-reti
 import { authorizeNativeRetirement } from "../../lib/server/artifacts/native-retirement";
 import { authorizeLearningRetirement } from '../../lib/server/learning/native-retirement';
 
+import {authorizeOrdinaryNativeRetirementRecovery} from "../../lib/server/conversations/native-retirement-recovery";
+
 const appCookieAuth: AuthFn<Request> = async (request): Promise<Awaited<ReturnType<AuthFn<Request>>>> => {
   const retirementSession = new URL(request.url).pathname.match(/^\/eve\/v1\/session\/(wrun_[A-Za-z0-9_-]+)\/reset$/);
   if (request.method === "POST" && retirementSession) {
-    const principalId = await authorizeNativeRetirement(request,retirementSession[1]) ?? await authorizeExecutionRetirement(request,retirementSession[1]) ?? await authorizeSupportRetirement(request,retirementSession[1]) ?? await authorizeExpansionRetirement(request,retirementSession[1]) ?? await authorizeLearningRetirement(request,retirementSession[1]);
+    const principalId = await authorizeOrdinaryNativeRetirementRecovery(request,retirementSession[1]) ?? await authorizeNativeRetirement(request,retirementSession[1]) ?? await authorizeExecutionRetirement(request,retirementSession[1]) ?? await authorizeSupportRetirement(request,retirementSession[1]) ?? await authorizeExpansionRetirement(request,retirementSession[1]) ?? await authorizeLearningRetirement(request,retirementSession[1]);
     if (principalId) return { authenticator: "turas-source-retirement",
       principalId, principalType: "user", attributes: {} };
   }
@@ -34,7 +36,7 @@ const appCookieAuth: AuthFn<Request> = async (request): Promise<Awaited<ReturnTy
     authenticator: "turas-session",
     principalId: session.principalId,
     principalType: "user",
-    attributes: { workspaceId: session.workspaceId,...(pendingAttempt?{turasAttemptId:pendingAttempt}:{}) },
+    attributes: { workspaceId: session.workspaceId,turasLoginSessionId:session.sessionId,turasMembershipId:session.membershipId,...(pendingAttempt?{turasAttemptId:pendingAttempt}:{}) },
   };
 };
 
@@ -52,7 +54,9 @@ export default composeEveRoutes(eveChannel({
     if (!session || session.principalId !== ctx.eve.caller.principalId) {
       throw new HttpFailure(403, "invalid_dispatch", "Action not allowed");
     }
-    const attemptId = await deriveNativeAttempt(session, ctx.eve.sessionId, requestKey, typeof message==='string'?message:parseOrdinaryNativeMessage(message));
+    // Large parts reach this handler only after the outer governed route has
+    // hydrated owner-bound immutable uploads. No browser flag enables this.
+    const attemptId = await deriveNativeAttempt(session, ctx.eve.sessionId, requestKey, typeof message==='string'?message:parseOrdinaryNativeMessage(message,{trustedHydrated:true}),{trustedHydrated:true});
     return { auth: { ...ctx.eve.caller,
       attributes: { ...ctx.eve.caller.attributes, turasAttemptId: attemptId } } };
   },
