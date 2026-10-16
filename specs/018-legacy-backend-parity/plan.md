@@ -26,7 +26,8 @@ Pass before and after design: current workspace/customer/owner fences and human 
 6. Fix ordinary live conversation search using the same context classification as current reads. Restore supported native-file fallback and10MiB contract with bounded staged transport, not an oversized hosted JSON request.
 7. Trace framework-removed todo and old connector integration to supported current behavior; unused/demo connections are not installed. Current streaming supersedes manual legacy polling only with actual reconnect verification.
 8. Adapt durable-step recovery to installed Eve semantics: preserve each distinct audit event while associating at most three exact pre-provider aliases with the original accepted delivery. Serialize with provider admission, keep the immutable deadline/allowance, recheck current authority, and render one user send. Already recorded aliases remain recognizable during reconciliation after settlement; they cannot authorize fresh provider work.
-9. Version any necessary tables/contracts through explicit migrations. Keep backups, rehearsal and code/schema compatibility before hosted rollout.
+9. Keep original staged parts and bytes in the governed upload domain. Forward only their exact deterministic summary to Eve (preserving small inline parts in mixed messages), then supply verified canonical bytes to the model inside the existing authorization/allowance middleware. Render canonical original text and file metadata separately from the native replay envelope; do not publish private URLs or expand hosted stream limits.
+10. Version any necessary tables/contracts through explicit migrations. Keep backups, rehearsal and code/schema compatibility before hosted rollout.
 
 ## Project Structure
 

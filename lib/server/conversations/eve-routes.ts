@@ -25,7 +25,7 @@ import {intakeOrdinaryAttachmentContext} from './attachment-intake';
 import {ordinaryNativeMessageSchema,nativeMessageText} from '../../conversations/native-message';
 import {parseOrdinaryNativeMessage,summarizeNativeMessage} from './native-message';
 import {attachmentLimits,parseAttachmentMessage} from '../../conversations/attachment-text';
-import {hydrateNativeUploads} from './native-uploads';
+import {prepareNativeUploadMessage} from './native-uploads';
 
 const createSchema = z.object({ operationId: z.uuid() }).strict();
 const sendSchema = z.object({ message: z.union([z.string(),ordinaryNativeMessageSchema]),
@@ -202,8 +202,8 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
                 if(parseAttachmentMessage(typeof message==='string'?message:nativeMessageText(message)))
                   await intakeOrdinaryAttachmentContext(session,conversationId!,steering.attemptId,steering.id);
                 const headers=new Headers(request.headers);headers.delete('content-length');
-                const hydrated=typeof message==='string'?message:await hydrateNativeUploads(session,conversationId!,requestKey!,message);
-                const response=await native(new Request(request.url,{method:'POST',headers,body:JSON.stringify({message:hydrated,turnPolicy:'steer'})}),args);
+                const forwarded=typeof message==='string'?message:await prepareNativeUploadMessage(session,conversationId!,requestKey!,message);
+                const response=await native(new Request(request.url,{method:'POST',headers,body:JSON.stringify({message:forwarded,turnPolicy:'steer'})}),args);
                 await recordSteeringReceipt(steering.id,args.params.sessionId,response);
                 return response;
               }
@@ -236,13 +236,13 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             const headers = new Headers(request.headers);
             headers.delete("content-length");
             headers.delete("x-turas-artifact-selections");
-            const hydrated=typeof message==='string'?message:await hydrateNativeUploads(session,conversationId!,requestKey!,message);
+            const forwarded=typeof message==='string'?message:await prepareNativeUploadMessage(session,conversationId!,requestKey!,message);
             let nativeResponse: Response | undefined;
             const started = Date.now();
             const dispatches = prepared.governed ? 1 : 5;
             for (let retry = 0; retry < dispatches && Date.now() - started < 20_000; retry++) {
               nativeResponse = await native(new Request(request.url, {
-                method: "POST", headers, body: JSON.stringify({ message:hydrated }),
+                method: "POST", headers, body: JSON.stringify({ message:forwarded }),
               }), args);
               if (nativeResponse.status !== 409) break;
               let rejection: unknown;

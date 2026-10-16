@@ -1,4 +1,5 @@
 import {admitNativeInputReplay,sanitizeNativeInputParts} from './native-input-replay';
+import {projectNativeInputDisplay} from './native-input-display';
 import {questionReconstructionEventWindow} from './question-reconstruction';
 import {customerQuestionActor,assertCustomerQuestionReads} from "./customer-accounts";
 import {hasNativeInputWindow} from './input-responses';
@@ -343,8 +344,13 @@ export async function projectNativeEventInTransaction(
       await client.query(`INSERT INTO native_input_resume_windows(attempt_id,native_event_id,deadline_at) VALUES($1,$2,$3) ON CONFLICT(native_event_id) DO NOTHING`,[attemptId,event.meta.id,resumeParent.deadline_at]);return;
     }
     if (event.type === "message.received") {
-      if(await projectSteeringMessage(client,nativeSessionId,attemptId,event))return;
-      if (inputReplay) return; // Distinct audit event; same accepted input and allowance.
+      if(await projectSteeringMessage(client,nativeSessionId,attemptId,event)){
+        await projectNativeInputDisplay(client,row.conversation_id,nativeSessionId,event.meta.id!);return;
+      }
+      if (inputReplay) {
+        await projectNativeInputDisplay(client,row.conversation_id,nativeSessionId,event.meta.id!,inputReplay.retryOfInputEventId);
+        return; // Distinct audit event; same accepted input and allowance.
+      }
       if (typeof data.message !== "string" || typeof data.turnId !== "string" ||
           messageDigest(data.message) !== nativeInputDigest ||
           (row.input_event_id && row.input_event_id !== event.meta.id) ||
@@ -359,6 +365,7 @@ export async function projectNativeEventInTransaction(
         native_turn_id = $3, dispatch_state = 'admitted', response_state = CASE WHEN response_state='stopping' THEN 'stopping' ELSE 'running' END,
         updated_at = now(), revision = revision + 1 WHERE id = $1`,
       [attemptId, event.meta.id, data.turnId]);
+      await projectNativeInputDisplay(client,row.conversation_id,nativeSessionId,event.meta.id!);
       return;
     }
     if (!row.native_turn_id || row.native_turn_id !== data.turnId) {

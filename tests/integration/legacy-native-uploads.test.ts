@@ -6,17 +6,18 @@ import { csrfTokenForSession } from "../../lib/server/auth/csrf";
 import { sessionCookie, type CurrentSession } from "../../lib/server/auth/sessions";
 import { createOwnedConversation, getOwnedConversationDetail } from "../../lib/server/conversations/repository";
 import { claimBinding, bindNativeSession } from "../../lib/server/conversations/binding";
-import { prepareAttempt, claimDispatch, deriveNativeAttempt } from "../../lib/server/conversations/dispatch";
-import { hydrateNativeUploads, cleanupNativeUploads } from "../../lib/server/conversations/native-uploads";
+import { prepareAttempt, claimDispatch, deriveNativeAttempt,recordNativeReceipt } from "../../lib/server/conversations/dispatch";
+import { prepareNativeUploadMessage, cleanupNativeUploads,nativeAttachmentReferences } from "../../lib/server/conversations/native-uploads";
 import { nativeMessageDigest, parseOrdinaryNativeMessage,summarizeNativeMessage } from "../../lib/server/conversations/native-message";
 import {projectNativeEvent} from '../../lib/server/conversations/projection';
 import {wrapOrdinaryChatModel} from '../../lib/server/conversations/model-budget';
+import {formatAttachmentText} from '../../lib/conversations/attachment-text';
 import { nativeUploadChunkBytes } from "../../lib/contracts/native-uploads";
 import { withTransaction } from "../../lib/server/db/client";
 import { requireTestDatabaseUrl } from "../fixtures/database";
 import { isolatedChatActor } from "../fixtures/isolated-chat-actor";
 import { settleSyntheticConversationAttempts } from "../fixtures/ordinary-attempt-cleanup";
-import {prepareOrdinarySteering} from '../../lib/server/conversations/steering';
+import {prepareOrdinarySteering,recordSteeringReceipt} from '../../lib/server/conversations/steering';
 import {uploadNativeFiles,cancelRemovedNativeFiles} from '../../lib/conversations/upload-native-files';
 
 const url = requireTestDatabaseUrl();
@@ -44,9 +45,9 @@ async function fixture(db: Client, actor = undefined as CurrentSession|undefined
   [process.env.TURAS_TEST_ENVIRONMENT_ID]);
   return { actor, conversation, native };
 }
-async function stage(actor: CurrentSession, conversationId: string, bytes: Buffer) {
+async function stage(actor: CurrentSession, conversationId: string, bytes: Buffer,filename="supplied.bin") {
   const parameters = { id: conversationId };
-  const input = { requestKey: randomUUID(), filename: "supplied.bin", mediaType: "application/octet-stream",
+  const input = { requestKey: randomUUID(), filename, mediaType: "application/octet-stream",
     size: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex") };
   const created = await nativeUploadHttp(request(actor, "POST", JSON.stringify(input)), parameters, "create");
   expect(created.status).toBe(201);
@@ -92,14 +93,24 @@ it.each([4, 10])("stages actual %i MiB bytes through bounded HTTP handlers and h
     expect(Buffer.byteLength(JSON.stringify(stored.ordinary_native_parts))).toBeLessThan(1024);
     expect((await nativeUploadReadHttp(request(f.actor,'GET'),viewParams)).status).toBe(404); // A bound draft is not admitted history.
     await claimDispatch(f.actor, f.conversation.id, attempt.attemptId, 0);
-    const hydrated = await hydrateNativeUploads(f.actor, f.conversation.id, key, parts);
-    expect(nativeMessageDigest(hydrated)).toBe(nativeMessageDigest(parts));
-    const file = hydrated.find(part => part.type === "file")!;
-    expect(file.type === "file" && Buffer.from(file.data.slice(file.data.indexOf(",") + 1), "base64").equals(bytes)).toBe(true);
-    expect(() => parseOrdinaryNativeMessage(hydrated)).toThrow();
-    expect(await deriveNativeAttempt(f.actor, f.native, key, hydrated, { trustedHydrated: true })).toBe(attempt.attemptId);
-    const turn='turn_'+randomUUID();
-    await projectNativeEvent(f.native,attempt.attemptId,{type:'message.received',data:{message:summarizeNativeMessage(parts),turnId:turn},meta:{id:'evt_'+randomUUID(),at:new Date().toISOString()}});
+    const forwarded = await prepareNativeUploadMessage(f.actor, f.conversation.id, key, parts);
+    expect(forwarded).toBe(summarizeNativeMessage(parts));
+    expect(Buffer.byteLength(JSON.stringify(forwarded))).toBeLessThan(1024);
+    expect(JSON.stringify(forwarded)).not.toContain('data:');
+    expect(await deriveNativeAttempt(f.actor, f.native, key, forwarded, { trustedHydrated: true })).toBe(attempt.attemptId);
+    await expect(deriveNativeAttempt(f.actor,f.native,key,String(forwarded)+' changed')).rejects.toMatchObject({status:404});
+    const turn='turn_'+randomUUID(),delivery=randomUUID(),canonicalId='evt_'+randomUUID();
+    await recordNativeReceipt(f.actor,f.conversation.id,attempt.attemptId,Response.json({deliveryId:delivery,status:'accepted'},{status:202}));
+    const nativeEvent={type:'message.received',data:{message:summarizeNativeMessage(parts),turnId:turn,sequence:0},meta:{id:canonicalId,at:new Date().toISOString(),deliveryIds:[delivery]}};
+    await projectNativeEvent(f.native,attempt.attemptId,nativeEvent);
+    const aliasId='evt_'+randomUUID();await projectNativeEvent(f.native,attempt.attemptId,{...nativeEvent,meta:{...nativeEvent.meta,id:aliasId}});
+    const displayed=(await db.query("SELECT native_event_id,visible_payload FROM event_projections WHERE conversation_id=$1 AND event_type='message.received'",[f.conversation.id])).rows;
+    expect(displayed).toHaveLength(2);for(const row of displayed){expect(row.visible_payload.parts).toBeUndefined();expect(row.visible_payload.applicationInputParts).toEqual([{type:'text',text:'Read this file.'},{type:'file',filename:'supplied.bin',mediaType:'application/octet-stream',size:bytes.length}]);}
+    expect(JSON.stringify(displayed)).not.toContain('data:');expect(JSON.stringify(displayed)).not.toContain('turas-upload:');
+    const attachmentMetadata=await nativeAttachmentReferences(f.actor,f.conversation.id);
+    expect(attachmentMetadata.map(item=>item.eventId).sort()).toEqual([canonicalId,aliasId].sort());
+    for(const item of attachmentMetadata){expect(item.text).toBe('Read this file.');expect(item.inlineFileCount).toBe(0);expect(item.fileOrder).toEqual([{kind:'staged',index:0}]);expect(item.files).toHaveLength(1);}
+
     expect((await nativeUploadReadHttp(request(f.actor,'GET'),viewParams)).status).toBe(200);
     await db.query(`INSERT INTO general_context_injections(attempt_id,turn_id,snapshot_digest)
       SELECT attempt_id,$2,snapshot_digest FROM general_context_receipts WHERE attempt_id=$1`,[attempt.attemptId,turn]);
@@ -123,7 +134,7 @@ it.each([4, 10])("stages actual %i MiB bytes through bounded HTTP handlers and h
     f.actor=await isolatedChatActor(db,'internal','admin',undefined,f.actor);
     const other = await isolatedChatActor(db, "internal", "member", f.actor.workspaceId);
     expect((await nativeUploadReadHttp(request(other,'GET'),viewParams)).status).toBe(404);
-    await expect(hydrateNativeUploads(other, f.conversation.id, key, parts)).rejects.toMatchObject({ status: 404 });
+    await expect(prepareNativeUploadMessage(other, f.conversation.id, key, parts)).rejects.toMatchObject({ status: 404 });
     expect((await nativeUploadHttp(request(other, "PUT", bytes.subarray(0, nativeUploadChunkBytes)),
       { id: f.conversation.id, uploadId: staged.uploadId, index: "0" }, "chunk")).status).toBe(404);
     expect((await nativeUploadHttp(request(f.actor, "DELETE"), { id: f.conversation.id, uploadId: staged.uploadId }, "cancel")).status).toBe(409);
@@ -140,7 +151,7 @@ it.each([4, 10])("stages actual %i MiB bytes through bounded HTTP handlers and h
     expect(await cleanupNativeUploads()).toBe(0); // Admitted files have no new time expiry.
     expect(await cleanupNativeUploads(f.conversation.id)).toBe(2);
     expect((await db.query("SELECT count(*)::int AS n FROM ordinary_native_upload_chunks WHERE upload_id=$1", [staged.uploadId])).rows[0].n).toBe(0);
-    await expect(hydrateNativeUploads(f.actor, f.conversation.id, key, parts)).rejects.toMatchObject({ code: "native_upload_expired" });
+    await expect(prepareNativeUploadMessage(f.actor, f.conversation.id, key, parts)).rejects.toMatchObject({ code: "native_upload_expired" });
   } finally {
     if (prior === undefined) delete process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED; else process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED = prior;
     try { await settleSyntheticConversationAttempts(db, owned); } finally { await db.end(); }
@@ -442,4 +453,40 @@ it('admits only typed original-question dismissal reconstruction against its rea
   await expect(withTransaction(runtime=>runtime.query('UPDATE ordinary_question_reconstructions SET deadline_at=clock_timestamp() WHERE attempt_id=$1',[attempt.attemptId]))).rejects.toMatchObject({code:'42501'});
   await db.query('UPDATE login_sessions SET revoked_at=now() WHERE id=$1',[fresh.sessionId]);await expect(admit()).rejects.toMatchObject({status:401});
  }finally{if(id)await settleSyntheticConversationAttempts(db,[id]);await db.end();}
+});
+
+it.each(['utf8-boundary','document-envelope'])('preserves exact mixed inline/staged initial and steering transport at %s',async kind=>{
+ const db=new Client({connectionString:url});await db.connect();const owned:string[]=[],prior=process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED;process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED='1';
+ try{
+  const f=await fixture(db);owned.push(f.conversation.id);
+  const bytes=Buffer.from('Immutable staged content'),staged=await stage(f.actor,f.conversation.id,bytes,'界'.repeat(240));
+  const prompt=kind==='utf8-boundary'?'界'.repeat(5461)+'a':formatAttachmentText('source.txt','text/plain','x'.repeat(120000));
+  const inline={type:'file',filename:'inline.bin',mediaType:'application/octet-stream',data:'data:application/octet-stream;base64,'+Buffer.from('Inline original').toString('base64')};
+  const parts=parseOrdinaryNativeMessage([{type:'text',text:prompt},inline,staged.reference]),key=randomUUID();
+  const attempt=await prepareAttempt(f.actor,f.conversation.id,f.native,key,parts);await claimDispatch(f.actor,f.conversation.id,attempt.attemptId,0);
+  const forwarded=await prepareNativeUploadMessage(f.actor,f.conversation.id,key,parts);
+  expect(Array.isArray(forwarded)).toBe(true);if(typeof forwarded==='string')throw Error('Inline file was lost');
+  expect(forwarded.filter(part=>part.type==='file')).toEqual([inline]);expect(summarizeNativeMessage(forwarded)).toBe(summarizeNativeMessage(parts));
+  const eveParsed=forwarded.map(part=>part.type==='file'?{type:part.type,mediaType:part.mediaType,data:part.data,filename:part.filename}:part);
+  expect(await deriveNativeAttempt(f.actor,f.native,key,eveParsed,{trustedHydrated:true})).toBe(attempt.attemptId);
+  await expect(deriveNativeAttempt(f.actor,f.native,key,summarizeNativeMessage(parts))).rejects.toMatchObject({status:404});
+  const changed=forwarded.map(part=>part.type==='file'?{...inline,data:'data:application/octet-stream;base64,'+Buffer.from('Changed').toString('base64')}:part);
+  await expect(deriveNativeAttempt(f.actor,f.native,key,changed,{trustedHydrated:true})).rejects.toThrow();
+  const turn='turn_'+randomUUID();await projectNativeEvent(f.native,attempt.attemptId,{type:'message.received',data:{message:summarizeNativeMessage(parts),turnId:turn,parts:forwarded},meta:{id:'evt_'+randomUUID(),at:new Date().toISOString()}});
+  const metadata=await nativeAttachmentReferences(f.actor,f.conversation.id);expect(metadata).toHaveLength(1);expect(metadata[0].text).toBe(prompt);expect(metadata[0].inlineFileCount).toBe(1);expect(metadata[0].fileOrder).toEqual([{kind:'inline',index:0},{kind:'staged',index:0}]);
+  const correction=await stage(f.actor,f.conversation.id,Buffer.from('Correction staged bytes')),correctionKey=randomUUID();
+  const correctionParts=parseOrdinaryNativeMessage([{type:'text',text:'Correct using this exact supplied file.'},correction.reference]);
+  const steering=await prepareOrdinarySteering(f.actor,f.conversation.id,f.native,correctionKey,correctionParts);expect(steering?.kind).toBe('dispatch');
+  const correctionTransport=await prepareNativeUploadMessage(f.actor,f.conversation.id,correctionKey,correctionParts);
+  expect(correctionTransport).toBe(summarizeNativeMessage(correctionParts));
+  expect(await deriveNativeAttempt(f.actor,f.native,correctionKey,correctionTransport,{trustedHydrated:true})).toBe(attempt.attemptId);
+  await expect(deriveNativeAttempt(f.actor,f.native,correctionKey,String(correctionTransport)+' changed')).rejects.toMatchObject({status:404});
+  if(steering?.kind!=='dispatch')throw Error('Steering not dispatched');
+  const delivery=randomUUID();await recordSteeringReceipt(steering.id,f.native,Response.json({ok:true,sessionId:f.native,status:'accepted',deliveryId:delivery},{status:202}));
+  const eventId='evt_'+randomUUID();await projectNativeEvent(f.native,attempt.attemptId,{type:'message.received',data:{message:correctionTransport,turnId:turn,sequence:0},meta:{id:eventId,at:new Date().toISOString(),deliveryIds:[delivery]}});
+  const displayed=(await db.query('SELECT visible_payload FROM event_projections WHERE native_event_id=$1',[eventId])).rows[0].visible_payload;
+  expect(displayed.parts).toBeUndefined();expect(displayed.applicationInputParts).toEqual([{type:'text',text:'Correct using this exact supplied file.'},{type:'file',filename:'supplied.bin',mediaType:'application/octet-stream',size:Buffer.byteLength('Correction staged bytes')}]);
+  expect(JSON.stringify(displayed)).not.toContain('data:');expect(JSON.stringify(displayed)).not.toContain('turas-upload:');
+
+ }finally{if(prior===undefined)delete process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED;else process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED=prior;try{await settleSyntheticConversationAttempts(db,owned);}finally{await db.end();}}
 });

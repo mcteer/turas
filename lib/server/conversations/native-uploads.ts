@@ -3,7 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { nativeUploadChunkBytes, nativeUploadIntentSchema, type NativeUploadIntent } from "../../contracts/native-uploads";
 import { attachmentLimits } from "../../conversations/attachment-text";
-import type { OrdinaryNativeMessage } from "../../conversations/native-message";
+import {nativeMessageText, type OrdinaryNativeMessage } from "../../conversations/native-message";
 import { hiddenRecord, HttpFailure } from "../../contracts/http";
 import type { CurrentSession } from "../auth/sessions";
 import { getServerConfig } from "../config";
@@ -11,7 +11,7 @@ import { withTransaction } from "../db/client";
 import { lockOwnedBinding,readOwnedBinding } from "./binding";
 import { conversationFeature } from "./feature";
 import { ordinaryNativeFilesEnabled } from "./native-file-policy";
-import { nativeMessageDigest, parseOrdinaryNativeMessage } from "./native-message";
+import { nativeMessageDigest, parseOrdinaryNativeMessage,nativeUploadTransportMessage } from "./native-message";
 import {assertCustomerQuestionReads} from './customer-accounts';
 import {currentAttemptUserMessages} from './steering';
 
@@ -173,9 +173,9 @@ export async function readNativeProviderFiles(db:PoolClient,actor:CurrentSession
  }
  return files;
 }
-/** The only large payload is reconstructed inside the server. Browsers submit
- * compact references; no external request or public URL carries the file. */
-export async function hydrateNativeUploads(actor: CurrentSession, conversationId: string, requestKey: string, parts: OrdinaryNativeMessage) {
+/** Verify owner-bound bytes before dispatch, then keep staged bytes out of Eve
+ * durable input/event streams. Provider middleware hydrates them separately. */
+export async function prepareNativeUploadMessage(actor: CurrentSession, conversationId: string, requestKey: string, parts: OrdinaryNativeMessage) {
   if (!parts.some(part => part.type === "file" && "sha256" in part)) return parseOrdinaryNativeMessage(parts);
   return withTransaction(async db => {
     await scope(db, actor, conversationId);
@@ -183,17 +183,14 @@ export async function hydrateNativeUploads(actor: CurrentSession, conversationId
       WHERE conversation_id=$1 AND request_key=$2`, [conversationId, requestKey])).rows[0];
     if (!message || JSON.stringify(parseOrdinaryNativeMessage(message.ordinary_native_parts)) !== JSON.stringify(parts) ||
         message.body_digest !== nativeMessageDigest(parts)) throw hiddenRecord();
-    const hydrated: OrdinaryNativeMessage = [];
     for (const part of parts) {
-      if (part.type !== "file" || !("sha256" in part)) { hydrated.push(part); continue; }
+      if (part.type !== "file" || !("sha256" in part)) continue;
       const row = await owned(db, actor, conversationId, part.data.slice("turas-upload:".length)); available(row);
       if (row.state !== "bound" || row.bound_message_id !== message.id || row.sha256 !== part.sha256 ||
           row.filename !== part.filename || row.media_type !== part.mediaType || row.size_bytes !== part.size) throw hiddenRecord();
-      const bytes = await bytesFor(db, row);
-      hydrated.push({ type: "file", filename: row.filename, mediaType: row.media_type,
-        data: `data:${row.media_type};base64,${bytes.toString("base64")}` });
+      await bytesFor(db, row); // Recheck exact bytes/hash before immutable-reference dispatch.
     }
-    return parseOrdinaryNativeMessage(hydrated, { trustedHydrated: true });
+    return nativeUploadTransportMessage(parts);
   });
 }
 export async function cancelNativeUpload(actor: CurrentSession, conversationId: string, id: string) {
@@ -239,11 +236,22 @@ export async function nativeAttachmentReferences(actor:CurrentSession,conversati
   const rows=(await db.query<{event_id:string;ordinary_native_parts:unknown}>(`SELECT consumed.event_id,m.ordinary_native_parts
    FROM conversations c JOIN submitted_messages m ON m.conversation_id=c.id
    JOIN LATERAL(SELECT a.input_event_id AS event_id FROM response_attempts a WHERE a.message_id=m.id AND a.input_event_id IS NOT NULL
+    UNION ALL SELECT alias.native_event_id FROM response_attempts a JOIN event_projections alias
+     ON alias.conversation_id=a.conversation_id AND alias.native_session_id=c.eve_session_id AND alias.event_type='message.received'
+      AND alias.visible_payload->'applicationInputReplay'->>'retryOfInputEventId'=a.input_event_id
+      AND alias.visible_payload->'applicationInputReplay'->>'admittedDeliveryId'=a.native_delivery_id
+     WHERE a.message_id=m.id AND a.input_event_id IS NOT NULL
     UNION ALL SELECT d.native_event_id FROM ordinary_steering_deliveries d WHERE d.message_id=m.id AND d.native_event_id IS NOT NULL AND d.dispatch_state='admitted') consumed ON true
    WHERE c.id=$1 AND c.owner_principal_id=$2 AND c.workspace_id=$3 AND c.environment_id=$4 AND m.ordinary_native_parts IS NOT NULL
    ORDER BY m.created_at DESC,m.id DESC LIMIT 500`,[conversationId,actor.principalId,actor.workspaceId,getServerConfig().TURAS_ENVIRONMENT_ID])).rows;
-  return rows.map(row=>({eventId:row.event_id,files:parseOrdinaryNativeMessage(row.ordinary_native_parts).flatMap(part=>part.type==='file'&&'sha256' in part?
-   [{filename:part.filename,mediaType:part.mediaType,size:part.size,url:`/api/conversations/${conversationId}/native-uploads/${part.data.slice('turas-upload:'.length)}`}]:[])}));
+  return rows.map(row=>{
+   const parts=parseOrdinaryNativeMessage(row.ordinary_native_parts);let stagedIndex=0,inlineIndex=0;
+   const fileOrder=parts.flatMap<{kind:'staged'|'inline';index:number}>(part=>part.type!=='file'?[]:'sha256' in part
+    ?[{kind:'staged' as const,index:stagedIndex++}]:[{kind:'inline' as const,index:inlineIndex++}]);
+   return {eventId:row.event_id,text:nativeMessageText(parts),inlineFileCount:inlineIndex,fileOrder,
+    files:parts.flatMap(part=>part.type==='file'&&'sha256' in part?
+     [{filename:part.filename,mediaType:part.mediaType,size:part.size,url:`/api/conversations/${conversationId}/native-uploads/${part.data.slice('turas-upload:'.length)}`}]:[])};
+  });
  });
 }
 /** Unbound uploads expire after thirty minutes. Admitted bytes retain the

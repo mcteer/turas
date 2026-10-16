@@ -17,7 +17,8 @@ export function retainedChatMessages(events: readonly RetainedChatEvent[], inclu
     const partial = event.eventType === 'message.appended' && event.payload.partial === true;
     if (!user && (!includeGenerated || event.eventType !== 'message.completed' && !partial)) continue;
     const parts: RetainedChatPart[] = [];
-    if (user && Array.isArray(event.payload.parts)) for (const value of event.payload.parts) {
+    const displayParts = Array.isArray(event.payload.applicationInputParts) ? event.payload.applicationInputParts : event.payload.parts;
+    if (user && Array.isArray(displayParts)) for (const value of displayParts) {
       if (!value || typeof value !== 'object') continue;
       if (value.type === 'text' && typeof value.text === 'string') parts.push({type: 'text', text: value.text});
       if (value.type === 'file' && typeof value.mediaType === 'string') parts.push({type: 'file', mediaType: value.mediaType,

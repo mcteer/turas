@@ -1,6 +1,6 @@
 {
   "referenceCommit": "fd1e205d7fd258676d6fb12b3ade8a431d53a6af",
-  "status": "337 pinned legacy paths reviewed; all101 test/evaluation references concretely mapped; PR36 merged/schema077; T030 retained-history and T031 accepted-delivery recovery and final hosted acceptance remain open",
+  "status": "337 pinned legacy paths reviewed; all101 test/evaluation references concretely mapped; PR36/37 merged/schema077 and Production history verified; T032 hosted staged-file stream-boundary fix and final release acceptance remain open",
   "entries": [
     {
       "legacyPath": ".gitignore",
@@ -139,7 +139,7 @@
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
           "lib/server/conversations/native-provider-dedup.ts": "dfa36c3523fb0e1fc04ec58845f495a32b023f366eaa31fc940223f08035d092",
           "lib/server/conversations/native-input-replay.ts": "5ea96616a1a4f1e36305b25619631e88efc916c510ca5b18ad320bae7e4b7ad7",
-          "lib/server/conversations/projection.ts": "19f970cd00decc291bdb4644efd1ac360cb2db189b21e35edbed399371584858"
+          "lib/server/conversations/projection.ts": "53057cec62d216d18db5d3fd9c1013d409f385858ea8cfe9ab0b36e81d3bcac1"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -189,7 +189,8 @@
         "T022",
         "T004",
         "T013",
-        "T021"
+        "T021",
+        "T032"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -206,7 +207,10 @@
         "agent/hooks/guard-customer-context.ts",
         "app/api/conversations/route.ts",
         "app/api/conversations/[id]/route.ts",
-        "lib/server/conversations/native-retirement-recovery.ts"
+        "lib/server/conversations/native-retirement-recovery.ts",
+        "lib/server/conversations/native-input-display.ts",
+        "lib/conversations/native-message-display.ts",
+        "lib/server/conversations/native-message.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -221,19 +225,25 @@
           "agent/hooks/guard-customer-context.ts",
           "app/api/conversations/route.ts",
           "app/api/conversations/[id]/route.ts",
-          "lib/server/conversations/native-retirement-recovery.ts"
+          "lib/server/conversations/native-retirement-recovery.ts",
+          "lib/server/conversations/native-input-display.ts",
+          "lib/conversations/native-message-display.ts",
+          "lib/server/conversations/native-message.ts"
         ],
         "currentFileSha256": {
           "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
-          "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
-          "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
-          "agent/channels/eve.ts": "bed1aaaa816f917cdef53757f8fdd0a2bf154dbb933d7dfbaf782f9b10fb51d0",
+          "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
+          "lib/server/conversations/eve-routes.ts": "e0383b3095f72069d86cdb243fad154d0a61fb2d17e7adff8f78971289956a85",
+          "agent/channels/eve.ts": "b6b03ac9cf30acf68f7bac6c32f03c677e21ea94af29e360afa79241873254d8",
           "agent/hooks/persist-conversation.ts": "4ca86fc9e16f07de1c003e2dbc86a85e0ed793ca1cf287dd1e08b1ea4a4ad6a2",
           "agent/hooks/guard-customer-context.ts": "0df466eb31712c311ac3d135531e5b1c9778788a855d411df0cf19cb3c892df6",
           "app/api/conversations/route.ts": "a8c23bf6f453ce56a6931da71165e2c760868e31e93b616498e6ef8c302a6cd9",
           "app/api/conversations/[id]/route.ts": "1f3f0a9b9fea20aa3ae863ebb54b8cca120e372d1521bb4dc7dbc71e36753bff",
-          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
+          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
+          "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
+          "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -241,12 +251,16 @@
           "scripts/check-ordinary-questions-native.ts",
           "tests/fixtures/ordinary-questions-native-model.ts",
           "tests/integration/legacy-native-uploads.test.ts",
-          "specs/018-legacy-backend-parity/validation.md"
+          "specs/018-legacy-backend-parity/validation.md",
+          "tests/unit/legacy-chat-mechanics.test.tsx",
+          "tests/unit/ordinary-native-message.test.ts",
+          "tests/unit/retained-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
+        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
       }
     },
     {
@@ -325,7 +339,8 @@
         "T022",
         "T004",
         "T013",
-        "T021"
+        "T021",
+        "T032"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -342,7 +357,10 @@
         "agent/hooks/guard-customer-context.ts",
         "app/api/conversations/route.ts",
         "app/api/conversations/[id]/route.ts",
-        "lib/server/conversations/native-retirement-recovery.ts"
+        "lib/server/conversations/native-retirement-recovery.ts",
+        "lib/server/conversations/native-input-display.ts",
+        "lib/conversations/native-message-display.ts",
+        "lib/server/conversations/native-message.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -357,19 +375,25 @@
           "agent/hooks/guard-customer-context.ts",
           "app/api/conversations/route.ts",
           "app/api/conversations/[id]/route.ts",
-          "lib/server/conversations/native-retirement-recovery.ts"
+          "lib/server/conversations/native-retirement-recovery.ts",
+          "lib/server/conversations/native-input-display.ts",
+          "lib/conversations/native-message-display.ts",
+          "lib/server/conversations/native-message.ts"
         ],
         "currentFileSha256": {
           "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
-          "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
-          "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
-          "agent/channels/eve.ts": "bed1aaaa816f917cdef53757f8fdd0a2bf154dbb933d7dfbaf782f9b10fb51d0",
+          "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
+          "lib/server/conversations/eve-routes.ts": "e0383b3095f72069d86cdb243fad154d0a61fb2d17e7adff8f78971289956a85",
+          "agent/channels/eve.ts": "b6b03ac9cf30acf68f7bac6c32f03c677e21ea94af29e360afa79241873254d8",
           "agent/hooks/persist-conversation.ts": "4ca86fc9e16f07de1c003e2dbc86a85e0ed793ca1cf287dd1e08b1ea4a4ad6a2",
           "agent/hooks/guard-customer-context.ts": "0df466eb31712c311ac3d135531e5b1c9778788a855d411df0cf19cb3c892df6",
           "app/api/conversations/route.ts": "a8c23bf6f453ce56a6931da71165e2c760868e31e93b616498e6ef8c302a6cd9",
           "app/api/conversations/[id]/route.ts": "1f3f0a9b9fea20aa3ae863ebb54b8cca120e372d1521bb4dc7dbc71e36753bff",
-          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
+          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
+          "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
+          "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -377,12 +401,16 @@
           "scripts/check-ordinary-questions-native.ts",
           "tests/fixtures/ordinary-questions-native-model.ts",
           "tests/integration/legacy-native-uploads.test.ts",
-          "specs/018-legacy-backend-parity/validation.md"
+          "specs/018-legacy-backend-parity/validation.md",
+          "tests/unit/legacy-chat-mechanics.test.tsx",
+          "tests/unit/ordinary-native-message.test.ts",
+          "tests/unit/retained-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
+        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
       }
     },
     {
@@ -3052,7 +3080,7 @@
           "app/_components/chat-input-request.tsx": "c3dab124c111570071cfaa350f78e1f0c275e4a68e90f256345727981e7c5008",
           "lib/chat-inputs.ts": "3efe6a85d86bc4eccb590d6ddf75e18bc8823738612e96aa92601f767da30514",
           "lib/server/conversations/input-responses.ts": "a6ff7216c862b21103872f668490638946bab381d45cca6eeb7d69821681860f",
-          "lib/server/conversations/steering.ts": "f5cdfac3845bafc04d3c383b1f5e73ad3ffb935bce08bebbc60d6cb7e376dea6",
+          "lib/server/conversations/steering.ts": "83b118e7061c2e489d191ea70aedc9d5c30eeef4fbc6867f7aa882a787e92bfa",
           "agent/tools/ask_question.ts": "28376107c633dce3bb0ae6a7d04558906bd0c013fd38097a44e0cdc562be85a6",
           "agent/tools/task_cancel.ts": "a93466e281acd475d30560f20e18bd6c8492f609dce38593602cc5d7d8dea549",
           "lib/server/conversations/question-continuation.ts": "e8f08a5b7b1f379d7ef5de931887a9a1924ffc90960f7163659db60e33e7b1cf"
@@ -5006,7 +5034,8 @@
         "T013",
         "T021",
         "T030",
-        "T031"
+        "T031",
+        "T032"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -5029,7 +5058,10 @@
         "lib/conversations/retained-history.ts",
         "lib/server/conversations/repository.ts",
         "lib/server/conversations/native-input-replay.ts",
-        "lib/server/conversations/projection.ts"
+        "lib/server/conversations/projection.ts",
+        "lib/server/conversations/native-input-display.ts",
+        "lib/conversations/native-message-display.ts",
+        "lib/server/conversations/native-message.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -5050,10 +5082,13 @@
           "lib/conversations/retained-history.ts",
           "lib/server/conversations/repository.ts",
           "lib/server/conversations/native-input-replay.ts",
-          "lib/server/conversations/projection.ts"
+          "lib/server/conversations/projection.ts",
+          "lib/server/conversations/native-input-display.ts",
+          "lib/conversations/native-message-display.ts",
+          "lib/server/conversations/native-message.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "211c17dbbb409944f8e9300133bdee2cac6158f7e8e5f77158d106be83485d6a",
+          "app/_components/agent-chat.tsx": "1423b2ee5787224ec3242c16dc6ae9a030dd361d20a474bbd069b3fd7bc67ba6",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
           "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4",
@@ -5065,10 +5100,13 @@
           "lib/server/conversations/maintenance.ts": "2421e7a8e8db2c2e874bcb36e0db6c63b9186d62332f492edbb5287114782222",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
           "app/_components/retained-chat.tsx": "2b0fbf3dca8ec4dd987b5795f55a9a92805223bcc387806df4448045bf45f0fd",
-          "lib/conversations/retained-history.ts": "7432acace54382bff4f5e3f33c8b740e7524a11b8c1dba65dddfeb0b1cf59d30",
+          "lib/conversations/retained-history.ts": "f2d8204c6155398f67a658a90b3576a5b67427a30164b438d80d42ed2efc5446",
           "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/conversations/native-input-replay.ts": "5ea96616a1a4f1e36305b25619631e88efc916c510ca5b18ad320bae7e4b7ad7",
-          "lib/server/conversations/projection.ts": "19f970cd00decc291bdb4644efd1ac360cb2db189b21e35edbed399371584858"
+          "lib/server/conversations/projection.ts": "53057cec62d216d18db5d3fd9c1013d409f385858ea8cfe9ab0b36e81d3bcac1",
+          "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
+          "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -5080,13 +5118,15 @@
           "tests/ui/legacy-retired-history.spec.ts",
           "tests/unit/retained-chat-history.test.ts",
           "tests/integration/native-input-replay.test.ts",
-          "tests/unit/legacy-chat-mechanics.test.tsx"
+          "tests/unit/legacy-chat-mechanics.test.tsx",
+          "tests/unit/ordinary-native-message.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
         "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
-        "retryRecovery": "Installed Eve durable-step retries emit new received-event IDs. Preserve distinct audit events and recognize only exact pre-provider same-delivery aliases; retain original input/file envelope/deadline/allowance and current authorization. Reconciliation accepts only recorded aliases and UI shows one send. Hosted exact-source acceptance remains required."
+        "retryRecovery": "Installed Eve durable-step retries emit new received-event IDs. Preserve distinct audit events and recognize only exact pre-provider same-delivery aliases; retain original input/file envelope/deadline/allowance and current authorization. Reconciliation accepts only recorded aliases and UI shows one send. Hosted exact-source acceptance remains required.",
+        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
       },
       "notes": " Actual Production retirement exposed a missing consumer of persisted application messages. T030 adds a read-only authorized view, step-specific interrupted text and explicit history-limit notice; actual hosted recovery remains required."
     },
@@ -5149,7 +5189,7 @@
           "app/_components/chat-input-request.tsx": "c3dab124c111570071cfaa350f78e1f0c275e4a68e90f256345727981e7c5008",
           "lib/chat-inputs.ts": "3efe6a85d86bc4eccb590d6ddf75e18bc8823738612e96aa92601f767da30514",
           "lib/server/conversations/input-responses.ts": "a6ff7216c862b21103872f668490638946bab381d45cca6eeb7d69821681860f",
-          "lib/server/conversations/steering.ts": "f5cdfac3845bafc04d3c383b1f5e73ad3ffb935bce08bebbc60d6cb7e376dea6",
+          "lib/server/conversations/steering.ts": "83b118e7061c2e489d191ea70aedc9d5c30eeef4fbc6867f7aa882a787e92bfa",
           "agent/tools/ask_question.ts": "28376107c633dce3bb0ae6a7d04558906bd0c013fd38097a44e0cdc562be85a6",
           "agent/tools/task_cancel.ts": "a93466e281acd475d30560f20e18bd6c8492f609dce38593602cc5d7d8dea549",
           "lib/server/conversations/question-continuation.ts": "e8f08a5b7b1f379d7ef5de931887a9a1924ffc90960f7163659db60e33e7b1cf"
@@ -5199,7 +5239,8 @@
         "T022",
         "T004",
         "T013",
-        "T021"
+        "T021",
+        "T032"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -5217,7 +5258,10 @@
         "lib/server/conversations/reconcile.ts",
         "lib/server/conversations/watchdog.ts",
         "lib/server/conversations/maintenance.ts",
-        "lib/server/conversations/native-retirement-recovery.ts"
+        "lib/server/conversations/native-retirement-recovery.ts",
+        "lib/server/conversations/native-input-display.ts",
+        "lib/conversations/native-message-display.ts",
+        "lib/server/conversations/native-message.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -5233,10 +5277,13 @@
           "lib/server/conversations/reconcile.ts",
           "lib/server/conversations/watchdog.ts",
           "lib/server/conversations/maintenance.ts",
-          "lib/server/conversations/native-retirement-recovery.ts"
+          "lib/server/conversations/native-retirement-recovery.ts",
+          "lib/server/conversations/native-input-display.ts",
+          "lib/conversations/native-message-display.ts",
+          "lib/server/conversations/native-message.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "211c17dbbb409944f8e9300133bdee2cac6158f7e8e5f77158d106be83485d6a",
+          "app/_components/agent-chat.tsx": "1423b2ee5787224ec3242c16dc6ae9a030dd361d20a474bbd069b3fd7bc67ba6",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
           "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4",
@@ -5246,7 +5293,10 @@
           "lib/server/conversations/reconcile.ts": "20d04ea778e83d9c92d0cea3dfc5bff7b5a24ad2d11c46b55b91967176ce50fe",
           "lib/server/conversations/watchdog.ts": "efa9c80ce31e4e79194104d4a56da63c63dac3a32d48cb14970507a42c79c367",
           "lib/server/conversations/maintenance.ts": "2421e7a8e8db2c2e874bcb36e0db6c63b9186d62332f492edbb5287114782222",
-          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
+          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
+          "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
+          "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -5254,12 +5304,16 @@
           "scripts/check-ordinary-questions-native.ts",
           "tests/fixtures/ordinary-questions-native-model.ts",
           "tests/integration/legacy-native-uploads.test.ts",
-          "specs/018-legacy-backend-parity/validation.md"
+          "specs/018-legacy-backend-parity/validation.md",
+          "tests/unit/legacy-chat-mechanics.test.tsx",
+          "tests/unit/ordinary-native-message.test.ts",
+          "tests/unit/retained-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
+        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
       }
     },
     {
@@ -5294,7 +5348,8 @@
         "T022",
         "T019",
         "T020",
-        "T021"
+        "T021",
+        "T032"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -5315,7 +5370,9 @@
         "lib/server/conversations/native-uploads.ts",
         "lib/server/conversations/native-upload-http.ts",
         "lib/server/conversations/native-retirement-recovery.ts",
-        "lib/conversations/upload-native-files.ts"
+        "lib/conversations/upload-native-files.ts",
+        "lib/server/conversations/native-input-display.ts",
+        "lib/conversations/native-message-display.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -5334,32 +5391,40 @@
           "lib/server/conversations/native-uploads.ts",
           "lib/server/conversations/native-upload-http.ts",
           "lib/server/conversations/native-retirement-recovery.ts",
-          "lib/conversations/upload-native-files.ts"
+          "lib/conversations/upload-native-files.ts",
+          "lib/server/conversations/native-input-display.ts",
+          "lib/conversations/native-message-display.ts"
         ],
         "currentFileSha256": {
           "lib/attachment-extract.ts": "dc8c58f1800f5efea967a6d362450432daed21842d7a96271803e83a992d3878",
           "lib/chat-attachments.ts": "0a3f5496cfa5c8fe4e239cf5fe800184eac401c081ce0f41d03f4ec68a680e57",
           "lib/conversations/attachment-text.ts": "952ab6de1257c307a804dfd61d8f7c5d18ee3b367df9dc91c8b996d8e6e80673",
           "lib/conversations/ordinary-documents.ts": "93f4eefddca811802ef133f031f1b463388c384c6b96d5168a291705ed686c1e",
-          "lib/conversations/native-message.ts": "a552405006e508a0b8a93652fa27bbc7dc008bf2ed3e3083838e40bc0b179672",
-          "lib/server/conversations/native-message.ts": "691d2262c8a49dbec0e6afd496b40c353dd09a9b9fd43376794081ccf10bf2ab",
+          "lib/conversations/native-message.ts": "f7afd3d3dccd13b62926ab73caa57699d5a223c3fade2fcd3ed3998b45f19ec4",
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
           "lib/server/conversations/attachment-intake.ts": "f39625ab74ff0f60060164ddfa4e808b85681f712ef380f9d14eb606233ad767",
           "lib/server/conversations/native-file-policy.ts": "b5e7e18ead5723d08065d97184608b55e153e35343fe93b716f262f8b0ace6a8",
           "app/_components/attachments/ordinary-documents.tsx": "eb6f2c64c4979c179119f744e256496ccbdc31de975c4acfe55ea3cce55c3ad9",
           "app/_components/attachments/native-chat-attachment.tsx": "5f53f5c57329797077161274907cb4bceeb063e7af2731d10384a0c0ff937821",
-          "lib/server/conversations/native-uploads.ts": "b76289018da3e5eda67402fc1f27f13eb2b56b6e2e65d29a7443ead210d91395",
+          "lib/server/conversations/native-uploads.ts": "37ef523b1204f74b3f8223327f0cb6c1a7cd57a06e9933e41410a127cfa2624d",
           "lib/server/conversations/native-upload-http.ts": "ea2868c77a510e67696e253c58deb51fc1bfe6262846092144ed4d5be9c82ba9",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
-          "lib/conversations/upload-native-files.ts": "682982ab1355dc44e751d2e285811a69ed251294c9daf09b926befaf7eaed4c4"
+          "lib/conversations/upload-native-files.ts": "682982ab1355dc44e751d2e285811a69ed251294c9daf09b926befaf7eaed4c4",
+          "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
+          "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619"
         },
         "localEvidence": [
           "tests/integration/legacy-native-uploads.test.ts",
-          "scripts/check-ordinary-native-files.ts"
+          "scripts/check-ordinary-native-files.ts",
+          "tests/unit/legacy-chat-mechanics.test.tsx",
+          "tests/unit/ordinary-native-message.test.ts",
+          "tests/unit/retained-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required.",
           "Actual unpaid native4MiB/10MiB passes; selected-provider hosted media/retirement remains required."
-        ]
+        ],
+        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
       }
     },
     {
@@ -5394,7 +5459,8 @@
         "T022",
         "T019",
         "T020",
-        "T021"
+        "T021",
+        "T032"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -5415,7 +5481,9 @@
         "lib/server/conversations/native-uploads.ts",
         "lib/server/conversations/native-upload-http.ts",
         "lib/server/conversations/native-retirement-recovery.ts",
-        "lib/conversations/upload-native-files.ts"
+        "lib/conversations/upload-native-files.ts",
+        "lib/server/conversations/native-input-display.ts",
+        "lib/conversations/native-message-display.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -5434,32 +5502,40 @@
           "lib/server/conversations/native-uploads.ts",
           "lib/server/conversations/native-upload-http.ts",
           "lib/server/conversations/native-retirement-recovery.ts",
-          "lib/conversations/upload-native-files.ts"
+          "lib/conversations/upload-native-files.ts",
+          "lib/server/conversations/native-input-display.ts",
+          "lib/conversations/native-message-display.ts"
         ],
         "currentFileSha256": {
           "lib/attachment-extract.ts": "dc8c58f1800f5efea967a6d362450432daed21842d7a96271803e83a992d3878",
           "lib/chat-attachments.ts": "0a3f5496cfa5c8fe4e239cf5fe800184eac401c081ce0f41d03f4ec68a680e57",
           "lib/conversations/attachment-text.ts": "952ab6de1257c307a804dfd61d8f7c5d18ee3b367df9dc91c8b996d8e6e80673",
           "lib/conversations/ordinary-documents.ts": "93f4eefddca811802ef133f031f1b463388c384c6b96d5168a291705ed686c1e",
-          "lib/conversations/native-message.ts": "a552405006e508a0b8a93652fa27bbc7dc008bf2ed3e3083838e40bc0b179672",
-          "lib/server/conversations/native-message.ts": "691d2262c8a49dbec0e6afd496b40c353dd09a9b9fd43376794081ccf10bf2ab",
+          "lib/conversations/native-message.ts": "f7afd3d3dccd13b62926ab73caa57699d5a223c3fade2fcd3ed3998b45f19ec4",
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
           "lib/server/conversations/attachment-intake.ts": "f39625ab74ff0f60060164ddfa4e808b85681f712ef380f9d14eb606233ad767",
           "lib/server/conversations/native-file-policy.ts": "b5e7e18ead5723d08065d97184608b55e153e35343fe93b716f262f8b0ace6a8",
           "app/_components/attachments/ordinary-documents.tsx": "eb6f2c64c4979c179119f744e256496ccbdc31de975c4acfe55ea3cce55c3ad9",
           "app/_components/attachments/native-chat-attachment.tsx": "5f53f5c57329797077161274907cb4bceeb063e7af2731d10384a0c0ff937821",
-          "lib/server/conversations/native-uploads.ts": "b76289018da3e5eda67402fc1f27f13eb2b56b6e2e65d29a7443ead210d91395",
+          "lib/server/conversations/native-uploads.ts": "37ef523b1204f74b3f8223327f0cb6c1a7cd57a06e9933e41410a127cfa2624d",
           "lib/server/conversations/native-upload-http.ts": "ea2868c77a510e67696e253c58deb51fc1bfe6262846092144ed4d5be9c82ba9",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
-          "lib/conversations/upload-native-files.ts": "682982ab1355dc44e751d2e285811a69ed251294c9daf09b926befaf7eaed4c4"
+          "lib/conversations/upload-native-files.ts": "682982ab1355dc44e751d2e285811a69ed251294c9daf09b926befaf7eaed4c4",
+          "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
+          "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619"
         },
         "localEvidence": [
           "tests/integration/legacy-native-uploads.test.ts",
-          "scripts/check-ordinary-native-files.ts"
+          "scripts/check-ordinary-native-files.ts",
+          "tests/unit/legacy-chat-mechanics.test.tsx",
+          "tests/unit/ordinary-native-message.test.ts",
+          "tests/unit/retained-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required.",
           "Actual unpaid native4MiB/10MiB passes; selected-provider hosted media/retirement remains required."
-        ]
+        ],
+        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
       }
     },
     {
@@ -6062,7 +6138,8 @@
         "T017",
         "T019",
         "T020",
-        "T021"
+        "T021",
+        "T032"
       ],
       "historicalNote": {
         "status": "implemented and locally verified; hosted acceptance is a separate release gate",
@@ -6089,7 +6166,9 @@
         "lib/server/conversations/native-uploads.ts",
         "lib/server/conversations/native-upload-http.ts",
         "lib/server/conversations/native-retirement-recovery.ts",
-        "lib/conversations/upload-native-files.ts"
+        "lib/conversations/upload-native-files.ts",
+        "lib/server/conversations/native-input-display.ts",
+        "lib/conversations/native-message-display.ts"
       ],
       "notes": "Implemented through current authorized canonical domains; no legacy private or fictional records imported.",
       "evidence": {
@@ -6117,32 +6196,40 @@
           "lib/server/conversations/native-uploads.ts",
           "lib/server/conversations/native-upload-http.ts",
           "lib/server/conversations/native-retirement-recovery.ts",
-          "lib/conversations/upload-native-files.ts"
+          "lib/conversations/upload-native-files.ts",
+          "lib/server/conversations/native-input-display.ts",
+          "lib/conversations/native-message-display.ts"
         ],
         "currentFileSha256": {
           "lib/attachment-extract.ts": "dc8c58f1800f5efea967a6d362450432daed21842d7a96271803e83a992d3878",
           "lib/chat-attachments.ts": "0a3f5496cfa5c8fe4e239cf5fe800184eac401c081ce0f41d03f4ec68a680e57",
           "lib/conversations/attachment-text.ts": "952ab6de1257c307a804dfd61d8f7c5d18ee3b367df9dc91c8b996d8e6e80673",
           "lib/conversations/ordinary-documents.ts": "93f4eefddca811802ef133f031f1b463388c384c6b96d5168a291705ed686c1e",
-          "lib/conversations/native-message.ts": "a552405006e508a0b8a93652fa27bbc7dc008bf2ed3e3083838e40bc0b179672",
-          "lib/server/conversations/native-message.ts": "691d2262c8a49dbec0e6afd496b40c353dd09a9b9fd43376794081ccf10bf2ab",
+          "lib/conversations/native-message.ts": "f7afd3d3dccd13b62926ab73caa57699d5a223c3fade2fcd3ed3998b45f19ec4",
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
           "lib/server/conversations/attachment-intake.ts": "f39625ab74ff0f60060164ddfa4e808b85681f712ef380f9d14eb606233ad767",
           "lib/server/conversations/native-file-policy.ts": "b5e7e18ead5723d08065d97184608b55e153e35343fe93b716f262f8b0ace6a8",
           "app/_components/attachments/ordinary-documents.tsx": "eb6f2c64c4979c179119f744e256496ccbdc31de975c4acfe55ea3cce55c3ad9",
           "app/_components/attachments/native-chat-attachment.tsx": "5f53f5c57329797077161274907cb4bceeb063e7af2731d10384a0c0ff937821",
-          "lib/server/conversations/native-uploads.ts": "b76289018da3e5eda67402fc1f27f13eb2b56b6e2e65d29a7443ead210d91395",
+          "lib/server/conversations/native-uploads.ts": "37ef523b1204f74b3f8223327f0cb6c1a7cd57a06e9933e41410a127cfa2624d",
           "lib/server/conversations/native-upload-http.ts": "ea2868c77a510e67696e253c58deb51fc1bfe6262846092144ed4d5be9c82ba9",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
-          "lib/conversations/upload-native-files.ts": "682982ab1355dc44e751d2e285811a69ed251294c9daf09b926befaf7eaed4c4"
+          "lib/conversations/upload-native-files.ts": "682982ab1355dc44e751d2e285811a69ed251294c9daf09b926befaf7eaed4c4",
+          "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
+          "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619"
         },
         "localEvidence": [
           "tests/integration/legacy-native-uploads.test.ts",
-          "scripts/check-ordinary-native-files.ts"
+          "scripts/check-ordinary-native-files.ts",
+          "tests/unit/legacy-chat-mechanics.test.tsx",
+          "tests/unit/ordinary-native-message.test.ts",
+          "tests/unit/retained-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required.",
           "Actual unpaid native4MiB/10MiB passes; selected-provider hosted media/retirement remains required."
-        ]
+        ],
+        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
       }
     },
     {
@@ -6192,7 +6279,8 @@
         "T017",
         "T019",
         "T020",
-        "T021"
+        "T021",
+        "T032"
       ],
       "historicalNote": {
         "status": "implemented and locally verified; hosted acceptance is a separate release gate",
@@ -6219,7 +6307,9 @@
         "lib/server/conversations/native-uploads.ts",
         "lib/server/conversations/native-upload-http.ts",
         "lib/server/conversations/native-retirement-recovery.ts",
-        "lib/conversations/upload-native-files.ts"
+        "lib/conversations/upload-native-files.ts",
+        "lib/server/conversations/native-input-display.ts",
+        "lib/conversations/native-message-display.ts"
       ],
       "notes": "Implemented through current authorized canonical domains; no legacy private or fictional records imported.",
       "evidence": {
@@ -6247,32 +6337,40 @@
           "lib/server/conversations/native-uploads.ts",
           "lib/server/conversations/native-upload-http.ts",
           "lib/server/conversations/native-retirement-recovery.ts",
-          "lib/conversations/upload-native-files.ts"
+          "lib/conversations/upload-native-files.ts",
+          "lib/server/conversations/native-input-display.ts",
+          "lib/conversations/native-message-display.ts"
         ],
         "currentFileSha256": {
           "lib/attachment-extract.ts": "dc8c58f1800f5efea967a6d362450432daed21842d7a96271803e83a992d3878",
           "lib/chat-attachments.ts": "0a3f5496cfa5c8fe4e239cf5fe800184eac401c081ce0f41d03f4ec68a680e57",
           "lib/conversations/attachment-text.ts": "952ab6de1257c307a804dfd61d8f7c5d18ee3b367df9dc91c8b996d8e6e80673",
           "lib/conversations/ordinary-documents.ts": "93f4eefddca811802ef133f031f1b463388c384c6b96d5168a291705ed686c1e",
-          "lib/conversations/native-message.ts": "a552405006e508a0b8a93652fa27bbc7dc008bf2ed3e3083838e40bc0b179672",
-          "lib/server/conversations/native-message.ts": "691d2262c8a49dbec0e6afd496b40c353dd09a9b9fd43376794081ccf10bf2ab",
+          "lib/conversations/native-message.ts": "f7afd3d3dccd13b62926ab73caa57699d5a223c3fade2fcd3ed3998b45f19ec4",
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
           "lib/server/conversations/attachment-intake.ts": "f39625ab74ff0f60060164ddfa4e808b85681f712ef380f9d14eb606233ad767",
           "lib/server/conversations/native-file-policy.ts": "b5e7e18ead5723d08065d97184608b55e153e35343fe93b716f262f8b0ace6a8",
           "app/_components/attachments/ordinary-documents.tsx": "eb6f2c64c4979c179119f744e256496ccbdc31de975c4acfe55ea3cce55c3ad9",
           "app/_components/attachments/native-chat-attachment.tsx": "5f53f5c57329797077161274907cb4bceeb063e7af2731d10384a0c0ff937821",
-          "lib/server/conversations/native-uploads.ts": "b76289018da3e5eda67402fc1f27f13eb2b56b6e2e65d29a7443ead210d91395",
+          "lib/server/conversations/native-uploads.ts": "37ef523b1204f74b3f8223327f0cb6c1a7cd57a06e9933e41410a127cfa2624d",
           "lib/server/conversations/native-upload-http.ts": "ea2868c77a510e67696e253c58deb51fc1bfe6262846092144ed4d5be9c82ba9",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
-          "lib/conversations/upload-native-files.ts": "682982ab1355dc44e751d2e285811a69ed251294c9daf09b926befaf7eaed4c4"
+          "lib/conversations/upload-native-files.ts": "682982ab1355dc44e751d2e285811a69ed251294c9daf09b926befaf7eaed4c4",
+          "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
+          "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619"
         },
         "localEvidence": [
           "tests/integration/legacy-native-uploads.test.ts",
-          "scripts/check-ordinary-native-files.ts"
+          "scripts/check-ordinary-native-files.ts",
+          "tests/unit/legacy-chat-mechanics.test.tsx",
+          "tests/unit/ordinary-native-message.test.ts",
+          "tests/unit/retained-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required.",
           "Actual unpaid native4MiB/10MiB passes; selected-provider hosted media/retirement remains required."
-        ]
+        ],
+        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
       }
     },
     {
@@ -6306,7 +6404,8 @@
         "T022",
         "T004",
         "T013",
-        "T021"
+        "T021",
+        "T032"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -6323,7 +6422,10 @@
         "agent/hooks/guard-customer-context.ts",
         "app/api/conversations/route.ts",
         "app/api/conversations/[id]/route.ts",
-        "lib/server/conversations/native-retirement-recovery.ts"
+        "lib/server/conversations/native-retirement-recovery.ts",
+        "lib/server/conversations/native-input-display.ts",
+        "lib/conversations/native-message-display.ts",
+        "lib/server/conversations/native-message.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -6338,19 +6440,25 @@
           "agent/hooks/guard-customer-context.ts",
           "app/api/conversations/route.ts",
           "app/api/conversations/[id]/route.ts",
-          "lib/server/conversations/native-retirement-recovery.ts"
+          "lib/server/conversations/native-retirement-recovery.ts",
+          "lib/server/conversations/native-input-display.ts",
+          "lib/conversations/native-message-display.ts",
+          "lib/server/conversations/native-message.ts"
         ],
         "currentFileSha256": {
           "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
-          "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
-          "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
-          "agent/channels/eve.ts": "bed1aaaa816f917cdef53757f8fdd0a2bf154dbb933d7dfbaf782f9b10fb51d0",
+          "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
+          "lib/server/conversations/eve-routes.ts": "e0383b3095f72069d86cdb243fad154d0a61fb2d17e7adff8f78971289956a85",
+          "agent/channels/eve.ts": "b6b03ac9cf30acf68f7bac6c32f03c677e21ea94af29e360afa79241873254d8",
           "agent/hooks/persist-conversation.ts": "4ca86fc9e16f07de1c003e2dbc86a85e0ed793ca1cf287dd1e08b1ea4a4ad6a2",
           "agent/hooks/guard-customer-context.ts": "0df466eb31712c311ac3d135531e5b1c9778788a855d411df0cf19cb3c892df6",
           "app/api/conversations/route.ts": "a8c23bf6f453ce56a6931da71165e2c760868e31e93b616498e6ef8c302a6cd9",
           "app/api/conversations/[id]/route.ts": "1f3f0a9b9fea20aa3ae863ebb54b8cca120e372d1521bb4dc7dbc71e36753bff",
-          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
+          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
+          "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
+          "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -6358,12 +6466,16 @@
           "scripts/check-ordinary-questions-native.ts",
           "tests/fixtures/ordinary-questions-native-model.ts",
           "tests/integration/legacy-native-uploads.test.ts",
-          "specs/018-legacy-backend-parity/validation.md"
+          "specs/018-legacy-backend-parity/validation.md",
+          "tests/unit/legacy-chat-mechanics.test.tsx",
+          "tests/unit/ordinary-native-message.test.ts",
+          "tests/unit/retained-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
+        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
       }
     },
     {
@@ -6397,7 +6509,8 @@
         "T022",
         "T004",
         "T013",
-        "T021"
+        "T021",
+        "T032"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -6414,7 +6527,10 @@
         "agent/hooks/guard-customer-context.ts",
         "app/api/conversations/route.ts",
         "app/api/conversations/[id]/route.ts",
-        "lib/server/conversations/native-retirement-recovery.ts"
+        "lib/server/conversations/native-retirement-recovery.ts",
+        "lib/server/conversations/native-input-display.ts",
+        "lib/conversations/native-message-display.ts",
+        "lib/server/conversations/native-message.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -6429,19 +6545,25 @@
           "agent/hooks/guard-customer-context.ts",
           "app/api/conversations/route.ts",
           "app/api/conversations/[id]/route.ts",
-          "lib/server/conversations/native-retirement-recovery.ts"
+          "lib/server/conversations/native-retirement-recovery.ts",
+          "lib/server/conversations/native-input-display.ts",
+          "lib/conversations/native-message-display.ts",
+          "lib/server/conversations/native-message.ts"
         ],
         "currentFileSha256": {
           "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
-          "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
-          "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
-          "agent/channels/eve.ts": "bed1aaaa816f917cdef53757f8fdd0a2bf154dbb933d7dfbaf782f9b10fb51d0",
+          "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
+          "lib/server/conversations/eve-routes.ts": "e0383b3095f72069d86cdb243fad154d0a61fb2d17e7adff8f78971289956a85",
+          "agent/channels/eve.ts": "b6b03ac9cf30acf68f7bac6c32f03c677e21ea94af29e360afa79241873254d8",
           "agent/hooks/persist-conversation.ts": "4ca86fc9e16f07de1c003e2dbc86a85e0ed793ca1cf287dd1e08b1ea4a4ad6a2",
           "agent/hooks/guard-customer-context.ts": "0df466eb31712c311ac3d135531e5b1c9778788a855d411df0cf19cb3c892df6",
           "app/api/conversations/route.ts": "a8c23bf6f453ce56a6931da71165e2c760868e31e93b616498e6ef8c302a6cd9",
           "app/api/conversations/[id]/route.ts": "1f3f0a9b9fea20aa3ae863ebb54b8cca120e372d1521bb4dc7dbc71e36753bff",
-          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
+          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
+          "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
+          "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -6449,12 +6571,16 @@
           "scripts/check-ordinary-questions-native.ts",
           "tests/fixtures/ordinary-questions-native-model.ts",
           "tests/integration/legacy-native-uploads.test.ts",
-          "specs/018-legacy-backend-parity/validation.md"
+          "specs/018-legacy-backend-parity/validation.md",
+          "tests/unit/legacy-chat-mechanics.test.tsx",
+          "tests/unit/ordinary-native-message.test.ts",
+          "tests/unit/retained-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
+        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
       }
     },
     {
@@ -6488,7 +6614,8 @@
         "T022",
         "T004",
         "T013",
-        "T021"
+        "T021",
+        "T032"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -6505,7 +6632,10 @@
         "agent/hooks/guard-customer-context.ts",
         "app/api/conversations/route.ts",
         "app/api/conversations/[id]/route.ts",
-        "lib/server/conversations/native-retirement-recovery.ts"
+        "lib/server/conversations/native-retirement-recovery.ts",
+        "lib/server/conversations/native-input-display.ts",
+        "lib/conversations/native-message-display.ts",
+        "lib/server/conversations/native-message.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -6520,19 +6650,25 @@
           "agent/hooks/guard-customer-context.ts",
           "app/api/conversations/route.ts",
           "app/api/conversations/[id]/route.ts",
-          "lib/server/conversations/native-retirement-recovery.ts"
+          "lib/server/conversations/native-retirement-recovery.ts",
+          "lib/server/conversations/native-input-display.ts",
+          "lib/conversations/native-message-display.ts",
+          "lib/server/conversations/native-message.ts"
         ],
         "currentFileSha256": {
           "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
-          "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
-          "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
-          "agent/channels/eve.ts": "bed1aaaa816f917cdef53757f8fdd0a2bf154dbb933d7dfbaf782f9b10fb51d0",
+          "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
+          "lib/server/conversations/eve-routes.ts": "e0383b3095f72069d86cdb243fad154d0a61fb2d17e7adff8f78971289956a85",
+          "agent/channels/eve.ts": "b6b03ac9cf30acf68f7bac6c32f03c677e21ea94af29e360afa79241873254d8",
           "agent/hooks/persist-conversation.ts": "4ca86fc9e16f07de1c003e2dbc86a85e0ed793ca1cf287dd1e08b1ea4a4ad6a2",
           "agent/hooks/guard-customer-context.ts": "0df466eb31712c311ac3d135531e5b1c9778788a855d411df0cf19cb3c892df6",
           "app/api/conversations/route.ts": "a8c23bf6f453ce56a6931da71165e2c760868e31e93b616498e6ef8c302a6cd9",
           "app/api/conversations/[id]/route.ts": "1f3f0a9b9fea20aa3ae863ebb54b8cca120e372d1521bb4dc7dbc71e36753bff",
-          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
+          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
+          "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
+          "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -6540,12 +6676,16 @@
           "scripts/check-ordinary-questions-native.ts",
           "tests/fixtures/ordinary-questions-native-model.ts",
           "tests/integration/legacy-native-uploads.test.ts",
-          "specs/018-legacy-backend-parity/validation.md"
+          "specs/018-legacy-backend-parity/validation.md",
+          "tests/unit/legacy-chat-mechanics.test.tsx",
+          "tests/unit/ordinary-native-message.test.ts",
+          "tests/unit/retained-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
+        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
       }
     },
     {
@@ -7278,7 +7418,8 @@
         "T022",
         "T004",
         "T013",
-        "T021"
+        "T021",
+        "T032"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -7296,7 +7437,10 @@
         "lib/server/conversations/reconcile.ts",
         "lib/server/conversations/watchdog.ts",
         "lib/server/conversations/maintenance.ts",
-        "lib/server/conversations/native-retirement-recovery.ts"
+        "lib/server/conversations/native-retirement-recovery.ts",
+        "lib/server/conversations/native-input-display.ts",
+        "lib/conversations/native-message-display.ts",
+        "lib/server/conversations/native-message.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -7312,10 +7456,13 @@
           "lib/server/conversations/reconcile.ts",
           "lib/server/conversations/watchdog.ts",
           "lib/server/conversations/maintenance.ts",
-          "lib/server/conversations/native-retirement-recovery.ts"
+          "lib/server/conversations/native-retirement-recovery.ts",
+          "lib/server/conversations/native-input-display.ts",
+          "lib/conversations/native-message-display.ts",
+          "lib/server/conversations/native-message.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "211c17dbbb409944f8e9300133bdee2cac6158f7e8e5f77158d106be83485d6a",
+          "app/_components/agent-chat.tsx": "1423b2ee5787224ec3242c16dc6ae9a030dd361d20a474bbd069b3fd7bc67ba6",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
           "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4",
@@ -7325,7 +7472,10 @@
           "lib/server/conversations/reconcile.ts": "20d04ea778e83d9c92d0cea3dfc5bff7b5a24ad2d11c46b55b91967176ce50fe",
           "lib/server/conversations/watchdog.ts": "efa9c80ce31e4e79194104d4a56da63c63dac3a32d48cb14970507a42c79c367",
           "lib/server/conversations/maintenance.ts": "2421e7a8e8db2c2e874bcb36e0db6c63b9186d62332f492edbb5287114782222",
-          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
+          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
+          "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
+          "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -7333,12 +7483,16 @@
           "scripts/check-ordinary-questions-native.ts",
           "tests/fixtures/ordinary-questions-native-model.ts",
           "tests/integration/legacy-native-uploads.test.ts",
-          "specs/018-legacy-backend-parity/validation.md"
+          "specs/018-legacy-backend-parity/validation.md",
+          "tests/unit/legacy-chat-mechanics.test.tsx",
+          "tests/unit/ordinary-native-message.test.ts",
+          "tests/unit/retained-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
+        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
       }
     },
     {
@@ -7373,7 +7527,8 @@
         "T022",
         "T004",
         "T013",
-        "T021"
+        "T021",
+        "T032"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -7391,7 +7546,10 @@
         "lib/server/conversations/reconcile.ts",
         "lib/server/conversations/watchdog.ts",
         "lib/server/conversations/maintenance.ts",
-        "lib/server/conversations/native-retirement-recovery.ts"
+        "lib/server/conversations/native-retirement-recovery.ts",
+        "lib/server/conversations/native-input-display.ts",
+        "lib/conversations/native-message-display.ts",
+        "lib/server/conversations/native-message.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -7407,10 +7565,13 @@
           "lib/server/conversations/reconcile.ts",
           "lib/server/conversations/watchdog.ts",
           "lib/server/conversations/maintenance.ts",
-          "lib/server/conversations/native-retirement-recovery.ts"
+          "lib/server/conversations/native-retirement-recovery.ts",
+          "lib/server/conversations/native-input-display.ts",
+          "lib/conversations/native-message-display.ts",
+          "lib/server/conversations/native-message.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "211c17dbbb409944f8e9300133bdee2cac6158f7e8e5f77158d106be83485d6a",
+          "app/_components/agent-chat.tsx": "1423b2ee5787224ec3242c16dc6ae9a030dd361d20a474bbd069b3fd7bc67ba6",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
           "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4",
@@ -7420,7 +7581,10 @@
           "lib/server/conversations/reconcile.ts": "20d04ea778e83d9c92d0cea3dfc5bff7b5a24ad2d11c46b55b91967176ce50fe",
           "lib/server/conversations/watchdog.ts": "efa9c80ce31e4e79194104d4a56da63c63dac3a32d48cb14970507a42c79c367",
           "lib/server/conversations/maintenance.ts": "2421e7a8e8db2c2e874bcb36e0db6c63b9186d62332f492edbb5287114782222",
-          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
+          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
+          "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
+          "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -7428,12 +7592,16 @@
           "scripts/check-ordinary-questions-native.ts",
           "tests/fixtures/ordinary-questions-native-model.ts",
           "tests/integration/legacy-native-uploads.test.ts",
-          "specs/018-legacy-backend-parity/validation.md"
+          "specs/018-legacy-backend-parity/validation.md",
+          "tests/unit/legacy-chat-mechanics.test.tsx",
+          "tests/unit/ordinary-native-message.test.ts",
+          "tests/unit/retained-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
+        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
       }
     },
     {
@@ -8388,9 +8556,9 @@
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/cancel.ts": "c5aa6b6a68f89aee7c585c9d1c075e4423b12d134bc0b80f0533b9c13b767cd3",
           "lib/server/conversations/customer-accounts.ts": "6f937d42ab258c3a39485002c39ba3f477e66909f35625511853b8cec5d9a0db",
-          "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
+          "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/named-evidence-search.ts": "32189a43e797d4889ecc0970a8ea5f5c9918eb224f355f6f33da450f05dee3ad",
-          "lib/server/conversations/projection.ts": "19f970cd00decc291bdb4644efd1ac360cb2db189b21e35edbed399371584858",
+          "lib/server/conversations/projection.ts": "53057cec62d216d18db5d3fd9c1013d409f385858ea8cfe9ab0b36e81d3bcac1",
           "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/knowledge/workspace-patterns/repository.ts": "5db2ca8504708af2949258f26a9e4ad887d5118090b06ddf7e16531a4e3f7fa9",
@@ -8619,7 +8787,8 @@
         "T022",
         "T019",
         "T020",
-        "T021"
+        "T021",
+        "T032"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -8640,7 +8809,9 @@
         "lib/server/conversations/native-uploads.ts",
         "lib/server/conversations/native-upload-http.ts",
         "lib/server/conversations/native-retirement-recovery.ts",
-        "lib/conversations/upload-native-files.ts"
+        "lib/conversations/upload-native-files.ts",
+        "lib/server/conversations/native-input-display.ts",
+        "lib/conversations/native-message-display.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -8659,32 +8830,40 @@
           "lib/server/conversations/native-uploads.ts",
           "lib/server/conversations/native-upload-http.ts",
           "lib/server/conversations/native-retirement-recovery.ts",
-          "lib/conversations/upload-native-files.ts"
+          "lib/conversations/upload-native-files.ts",
+          "lib/server/conversations/native-input-display.ts",
+          "lib/conversations/native-message-display.ts"
         ],
         "currentFileSha256": {
           "lib/attachment-extract.ts": "dc8c58f1800f5efea967a6d362450432daed21842d7a96271803e83a992d3878",
           "lib/chat-attachments.ts": "0a3f5496cfa5c8fe4e239cf5fe800184eac401c081ce0f41d03f4ec68a680e57",
           "lib/conversations/attachment-text.ts": "952ab6de1257c307a804dfd61d8f7c5d18ee3b367df9dc91c8b996d8e6e80673",
           "lib/conversations/ordinary-documents.ts": "93f4eefddca811802ef133f031f1b463388c384c6b96d5168a291705ed686c1e",
-          "lib/conversations/native-message.ts": "a552405006e508a0b8a93652fa27bbc7dc008bf2ed3e3083838e40bc0b179672",
-          "lib/server/conversations/native-message.ts": "691d2262c8a49dbec0e6afd496b40c353dd09a9b9fd43376794081ccf10bf2ab",
+          "lib/conversations/native-message.ts": "f7afd3d3dccd13b62926ab73caa57699d5a223c3fade2fcd3ed3998b45f19ec4",
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
           "lib/server/conversations/attachment-intake.ts": "f39625ab74ff0f60060164ddfa4e808b85681f712ef380f9d14eb606233ad767",
           "lib/server/conversations/native-file-policy.ts": "b5e7e18ead5723d08065d97184608b55e153e35343fe93b716f262f8b0ace6a8",
           "app/_components/attachments/ordinary-documents.tsx": "eb6f2c64c4979c179119f744e256496ccbdc31de975c4acfe55ea3cce55c3ad9",
           "app/_components/attachments/native-chat-attachment.tsx": "5f53f5c57329797077161274907cb4bceeb063e7af2731d10384a0c0ff937821",
-          "lib/server/conversations/native-uploads.ts": "b76289018da3e5eda67402fc1f27f13eb2b56b6e2e65d29a7443ead210d91395",
+          "lib/server/conversations/native-uploads.ts": "37ef523b1204f74b3f8223327f0cb6c1a7cd57a06e9933e41410a127cfa2624d",
           "lib/server/conversations/native-upload-http.ts": "ea2868c77a510e67696e253c58deb51fc1bfe6262846092144ed4d5be9c82ba9",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
-          "lib/conversations/upload-native-files.ts": "682982ab1355dc44e751d2e285811a69ed251294c9daf09b926befaf7eaed4c4"
+          "lib/conversations/upload-native-files.ts": "682982ab1355dc44e751d2e285811a69ed251294c9daf09b926befaf7eaed4c4",
+          "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
+          "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619"
         },
         "localEvidence": [
           "tests/integration/legacy-native-uploads.test.ts",
-          "scripts/check-ordinary-native-files.ts"
+          "scripts/check-ordinary-native-files.ts",
+          "tests/unit/legacy-chat-mechanics.test.tsx",
+          "tests/unit/ordinary-native-message.test.ts",
+          "tests/unit/retained-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required.",
           "Actual unpaid native4MiB/10MiB passes; selected-provider hosted media/retirement remains required."
-        ]
+        ],
+        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
       }
     },
     {
@@ -9051,7 +9230,8 @@
         "T022",
         "T019",
         "T020",
-        "T021"
+        "T021",
+        "T032"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -9072,7 +9252,9 @@
         "lib/server/conversations/native-uploads.ts",
         "lib/server/conversations/native-upload-http.ts",
         "lib/server/conversations/native-retirement-recovery.ts",
-        "lib/conversations/upload-native-files.ts"
+        "lib/conversations/upload-native-files.ts",
+        "lib/server/conversations/native-input-display.ts",
+        "lib/conversations/native-message-display.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -9091,32 +9273,40 @@
           "lib/server/conversations/native-uploads.ts",
           "lib/server/conversations/native-upload-http.ts",
           "lib/server/conversations/native-retirement-recovery.ts",
-          "lib/conversations/upload-native-files.ts"
+          "lib/conversations/upload-native-files.ts",
+          "lib/server/conversations/native-input-display.ts",
+          "lib/conversations/native-message-display.ts"
         ],
         "currentFileSha256": {
           "lib/attachment-extract.ts": "dc8c58f1800f5efea967a6d362450432daed21842d7a96271803e83a992d3878",
           "lib/chat-attachments.ts": "0a3f5496cfa5c8fe4e239cf5fe800184eac401c081ce0f41d03f4ec68a680e57",
           "lib/conversations/attachment-text.ts": "952ab6de1257c307a804dfd61d8f7c5d18ee3b367df9dc91c8b996d8e6e80673",
           "lib/conversations/ordinary-documents.ts": "93f4eefddca811802ef133f031f1b463388c384c6b96d5168a291705ed686c1e",
-          "lib/conversations/native-message.ts": "a552405006e508a0b8a93652fa27bbc7dc008bf2ed3e3083838e40bc0b179672",
-          "lib/server/conversations/native-message.ts": "691d2262c8a49dbec0e6afd496b40c353dd09a9b9fd43376794081ccf10bf2ab",
+          "lib/conversations/native-message.ts": "f7afd3d3dccd13b62926ab73caa57699d5a223c3fade2fcd3ed3998b45f19ec4",
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
           "lib/server/conversations/attachment-intake.ts": "f39625ab74ff0f60060164ddfa4e808b85681f712ef380f9d14eb606233ad767",
           "lib/server/conversations/native-file-policy.ts": "b5e7e18ead5723d08065d97184608b55e153e35343fe93b716f262f8b0ace6a8",
           "app/_components/attachments/ordinary-documents.tsx": "eb6f2c64c4979c179119f744e256496ccbdc31de975c4acfe55ea3cce55c3ad9",
           "app/_components/attachments/native-chat-attachment.tsx": "5f53f5c57329797077161274907cb4bceeb063e7af2731d10384a0c0ff937821",
-          "lib/server/conversations/native-uploads.ts": "b76289018da3e5eda67402fc1f27f13eb2b56b6e2e65d29a7443ead210d91395",
+          "lib/server/conversations/native-uploads.ts": "37ef523b1204f74b3f8223327f0cb6c1a7cd57a06e9933e41410a127cfa2624d",
           "lib/server/conversations/native-upload-http.ts": "ea2868c77a510e67696e253c58deb51fc1bfe6262846092144ed4d5be9c82ba9",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
-          "lib/conversations/upload-native-files.ts": "682982ab1355dc44e751d2e285811a69ed251294c9daf09b926befaf7eaed4c4"
+          "lib/conversations/upload-native-files.ts": "682982ab1355dc44e751d2e285811a69ed251294c9daf09b926befaf7eaed4c4",
+          "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
+          "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619"
         },
         "localEvidence": [
           "tests/integration/legacy-native-uploads.test.ts",
-          "scripts/check-ordinary-native-files.ts"
+          "scripts/check-ordinary-native-files.ts",
+          "tests/unit/legacy-chat-mechanics.test.tsx",
+          "tests/unit/ordinary-native-message.test.ts",
+          "tests/unit/retained-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required.",
           "Actual unpaid native4MiB/10MiB passes; selected-provider hosted media/retirement remains required."
-        ]
+        ],
+        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
       }
     },
     {
@@ -9152,7 +9342,8 @@
         "T004",
         "T013",
         "T021",
-        "T031"
+        "T031",
+        "T032"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -9172,7 +9363,10 @@
         "lib/server/conversations/maintenance.ts",
         "lib/server/conversations/native-retirement-recovery.ts",
         "lib/server/conversations/native-input-replay.ts",
-        "lib/server/conversations/projection.ts"
+        "lib/server/conversations/projection.ts",
+        "lib/server/conversations/native-input-display.ts",
+        "lib/conversations/native-message-display.ts",
+        "lib/server/conversations/native-message.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -9190,10 +9384,13 @@
           "lib/server/conversations/maintenance.ts",
           "lib/server/conversations/native-retirement-recovery.ts",
           "lib/server/conversations/native-input-replay.ts",
-          "lib/server/conversations/projection.ts"
+          "lib/server/conversations/projection.ts",
+          "lib/server/conversations/native-input-display.ts",
+          "lib/conversations/native-message-display.ts",
+          "lib/server/conversations/native-message.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "211c17dbbb409944f8e9300133bdee2cac6158f7e8e5f77158d106be83485d6a",
+          "app/_components/agent-chat.tsx": "1423b2ee5787224ec3242c16dc6ae9a030dd361d20a474bbd069b3fd7bc67ba6",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
           "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4",
@@ -9205,7 +9402,10 @@
           "lib/server/conversations/maintenance.ts": "2421e7a8e8db2c2e874bcb36e0db6c63b9186d62332f492edbb5287114782222",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
           "lib/server/conversations/native-input-replay.ts": "5ea96616a1a4f1e36305b25619631e88efc916c510ca5b18ad320bae7e4b7ad7",
-          "lib/server/conversations/projection.ts": "19f970cd00decc291bdb4644efd1ac360cb2db189b21e35edbed399371584858"
+          "lib/server/conversations/projection.ts": "53057cec62d216d18db5d3fd9c1013d409f385858ea8cfe9ab0b36e81d3bcac1",
+          "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
+          "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -9215,13 +9415,16 @@
           "tests/integration/legacy-native-uploads.test.ts",
           "specs/018-legacy-backend-parity/validation.md",
           "tests/integration/native-input-replay.test.ts",
-          "tests/unit/legacy-chat-mechanics.test.tsx"
+          "tests/unit/legacy-chat-mechanics.test.tsx",
+          "tests/unit/ordinary-native-message.test.ts",
+          "tests/unit/retained-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
         "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
-        "retryRecovery": "Installed Eve durable-step retries emit new received-event IDs. Preserve distinct audit events and recognize only exact pre-provider same-delivery aliases; retain original input/file envelope/deadline/allowance and current authorization. Reconciliation accepts only recorded aliases and UI shows one send. Hosted exact-source acceptance remains required."
+        "retryRecovery": "Installed Eve durable-step retries emit new received-event IDs. Preserve distinct audit events and recognize only exact pre-provider same-delivery aliases; retain original input/file envelope/deadline/allowance and current authorization. Reconciliation accepts only recorded aliases and UI shows one send. Hosted exact-source acceptance remains required.",
+        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
       }
     },
     {
@@ -9255,7 +9458,8 @@
         "T022",
         "T004",
         "T013",
-        "T021"
+        "T021",
+        "T032"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -9272,7 +9476,10 @@
         "agent/hooks/guard-customer-context.ts",
         "app/api/conversations/route.ts",
         "app/api/conversations/[id]/route.ts",
-        "lib/server/conversations/native-retirement-recovery.ts"
+        "lib/server/conversations/native-retirement-recovery.ts",
+        "lib/server/conversations/native-input-display.ts",
+        "lib/conversations/native-message-display.ts",
+        "lib/server/conversations/native-message.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -9287,19 +9494,25 @@
           "agent/hooks/guard-customer-context.ts",
           "app/api/conversations/route.ts",
           "app/api/conversations/[id]/route.ts",
-          "lib/server/conversations/native-retirement-recovery.ts"
+          "lib/server/conversations/native-retirement-recovery.ts",
+          "lib/server/conversations/native-input-display.ts",
+          "lib/conversations/native-message-display.ts",
+          "lib/server/conversations/native-message.ts"
         ],
         "currentFileSha256": {
           "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
-          "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
-          "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
-          "agent/channels/eve.ts": "bed1aaaa816f917cdef53757f8fdd0a2bf154dbb933d7dfbaf782f9b10fb51d0",
+          "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
+          "lib/server/conversations/eve-routes.ts": "e0383b3095f72069d86cdb243fad154d0a61fb2d17e7adff8f78971289956a85",
+          "agent/channels/eve.ts": "b6b03ac9cf30acf68f7bac6c32f03c677e21ea94af29e360afa79241873254d8",
           "agent/hooks/persist-conversation.ts": "4ca86fc9e16f07de1c003e2dbc86a85e0ed793ca1cf287dd1e08b1ea4a4ad6a2",
           "agent/hooks/guard-customer-context.ts": "0df466eb31712c311ac3d135531e5b1c9778788a855d411df0cf19cb3c892df6",
           "app/api/conversations/route.ts": "a8c23bf6f453ce56a6931da71165e2c760868e31e93b616498e6ef8c302a6cd9",
           "app/api/conversations/[id]/route.ts": "1f3f0a9b9fea20aa3ae863ebb54b8cca120e372d1521bb4dc7dbc71e36753bff",
-          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
+          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
+          "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
+          "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
+          "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -9307,12 +9520,16 @@
           "scripts/check-ordinary-questions-native.ts",
           "tests/fixtures/ordinary-questions-native-model.ts",
           "tests/integration/legacy-native-uploads.test.ts",
-          "specs/018-legacy-backend-parity/validation.md"
+          "specs/018-legacy-backend-parity/validation.md",
+          "tests/unit/legacy-chat-mechanics.test.tsx",
+          "tests/unit/ordinary-native-message.test.ts",
+          "tests/unit/retained-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
+        "hostedStreamAdaptation": "Actual Production10MiB input expanded to18642341B userstream exceeding10485760B limit beforeprovider. Keepstagedbytes in governedstorage; exactowned canonicalparts/bodydigest/requestKey bind deterministiccompactnative summary. Preserve inline/mixedfiles, steering, originaltext/metadata cards and strict native replay envelope; originalbytes hydrate only at separately authorized provider boundary. T032 finalsource/hostedacceptance remains open."
       }
     },
     {
@@ -12324,7 +12541,7 @@
             ".github/workflows/ci.yml"
           ],
           "currentFileSha256": {
-            "playwright.config.ts": "cb8ec0a739e40366056bbd2e3dec12d52d22fbd53204f149955e9307025d9396",
+            "playwright.config.ts": "de60445898d29a44e6785c722f79848eca4309d9c23d30bc441a0384180bc61e",
             "scripts/check-legacy-parity-disposable.mjs": "f72ee6f44ab2affa2fdd40e586f63e1f34a4f3f186ad4a27a946310c2832850f",
             ".github/workflows/legacy-backend-parity.yml": "231196ad1e5a10e6a0f5df9c5a73e63b991c75426cac5b77142b2fa81b788565",
             ".github/workflows/ci.yml": "550cb944cfe1f34ba7f59bc27c92798ea761bd40a4f0efe92c76e4a9c314bcfb"
@@ -13791,7 +14008,7 @@
           "app/api/conversations/route.ts": "a8c23bf6f453ce56a6931da71165e2c760868e31e93b616498e6ef8c302a6cd9",
           "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4",
           "lib/server/auth/sessions.ts": "f5aa0b00dccd6e4af1fbf8e67ba605d04a780b41fbefa4ea0bdda9ebe948681e",
-          "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a"
+          "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794"
         },
         "currentTestFileSha256": {
           "tests/ui/chat.spec.ts": "9483268b818a9483843247a441e70e07d3b71f70769d0d7e32d69cfbaea26b29",
@@ -13862,7 +14079,7 @@
         "rationale": "Historical hosted trace metrics collector is operator tooling. Current persisted step/operation accounting and verifier cover incomplete/unknown usage and shared reservation ceiling; no old deployment/project identifiers copied. External retrieval/compute is never asserted to be included in provider token usage.",
         "gaps": [],
         "currentFileSha256": {
-          "lib/server/conversations/projection.ts": "19f970cd00decc291bdb4644efd1ac360cb2db189b21e35edbed399371584858",
+          "lib/server/conversations/projection.ts": "53057cec62d216d18db5d3fd9c1013d409f385858ea8cfe9ab0b36e81d3bcac1",
           "lib/server/conversations/model-budget.ts": "dc8cdcb71708fe4a2c051830e6e4a8732475099efde01f18f30fd7baf6706702",
           "lib/server/research/specialists/evaluation-budget.ts": "43ac36a5a57d7474bb6e331a7408f19f17e786a70c558281cda001c36cb79270"
         },
@@ -14427,7 +14644,7 @@
           "localValidation": "13 new unit contracts and5 new cache integration cases passed; combined11file40test run passed including current journey/history. Pattern fixture separately verified by its owning agent. No historical benchmark score or hosted proof inferred."
         },
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "9bf6cc9c2ef42aa1fa6397407cece5a0fe35f9038805e510c175c460129f9924",
+          "app/_components/agent-chat.tsx": "1423b2ee5787224ec3242c16dc6ae9a030dd361d20a474bbd069b3fd7bc67ba6",
           "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925"
         },
         "currentTestFileSha256": {
@@ -14992,7 +15209,7 @@
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/current-knowledge.ts": "6e2c3b73606593411e3e2fe101215d11248f15b5b1abac5d216d84118953f48c",
           "lib/server/conversations/customer-accounts.ts": "6f937d42ab258c3a39485002c39ba3f477e66909f35625511853b8cec5d9a0db",
-          "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
+          "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/named-evidence-search.ts": "32189a43e797d4889ecc0970a8ea5f5c9918eb224f355f6f33da450f05dee3ad",
           "lib/server/conversations/practice-evidence.ts": "d3402512e8d6f14d67f9594b689d428f97b67bf911feb61f47157f65728fcfeb",
           "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
@@ -16143,7 +16360,7 @@
         "rationale": "Old helper is benchmark failure classification, not runtime application error authority. Current attempt state/projection and unknown usage mechanisms are mapped. Root now restored focused actual visible-message/background-working event contracts. The old terminalFailure/isProviderBudgetError helper only belonged to manual historical model-comparison runners; no active runtime consumer imports it.",
         "gaps": [],
         "currentFileSha256": {
-          "lib/server/conversations/projection.ts": "19f970cd00decc291bdb4644efd1ac360cb2db189b21e35edbed399371584858",
+          "lib/server/conversations/projection.ts": "53057cec62d216d18db5d3fd9c1013d409f385858ea8cfe9ab0b36e81d3bcac1",
           "lib/server/conversations/model-budget.ts": "dc8cdcb71708fe4a2c051830e6e4a8732475099efde01f18f30fd7baf6706702"
         },
         "currentTestFileSha256": {
@@ -16990,7 +17207,7 @@
           "localValidation": "13 new unit contracts and5 new cache integration cases passed; combined11file40test run passed including current journey/history. Pattern fixture separately verified by its owning agent. No historical benchmark score or hosted proof inferred."
         },
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "9bf6cc9c2ef42aa1fa6397407cece5a0fe35f9038805e510c175c460129f9924",
+          "app/_components/agent-chat.tsx": "1423b2ee5787224ec3242c16dc6ae9a030dd361d20a474bbd069b3fd7bc67ba6",
           "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925"
         },
         "currentTestFileSha256": {
@@ -17345,7 +17562,7 @@
           "lib/server/bootstrap-ids.ts": "2766348ecd400e1c2515627324d6878b37035f75a1e9b0925e35bc44d2a492b8",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/customer-accounts.ts": "6f937d42ab258c3a39485002c39ba3f477e66909f35625511853b8cec5d9a0db",
-          "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
+          "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/conversations/stream.ts": "9ad9f1cdd7a3154693ca23c2e9e6950ccad62cbbf7f0d384cf5977e86af69d47",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
@@ -18002,7 +18219,7 @@
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/current-knowledge.ts": "6e2c3b73606593411e3e2fe101215d11248f15b5b1abac5d216d84118953f48c",
           "lib/server/conversations/customer-accounts.ts": "6f937d42ab258c3a39485002c39ba3f477e66909f35625511853b8cec5d9a0db",
-          "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
+          "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/named-evidence-search.ts": "32189a43e797d4889ecc0970a8ea5f5c9918eb224f355f6f33da450f05dee3ad",
           "lib/server/conversations/practice-evidence.ts": "d3402512e8d6f14d67f9594b689d428f97b67bf911feb61f47157f65728fcfeb",
           "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
@@ -18421,9 +18638,9 @@
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/cancel.ts": "c5aa6b6a68f89aee7c585c9d1c075e4423b12d134bc0b80f0533b9c13b767cd3",
           "lib/server/conversations/customer-accounts.ts": "6f937d42ab258c3a39485002c39ba3f477e66909f35625511853b8cec5d9a0db",
-          "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
+          "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/named-evidence-search.ts": "32189a43e797d4889ecc0970a8ea5f5c9918eb224f355f6f33da450f05dee3ad",
-          "lib/server/conversations/projection.ts": "19f970cd00decc291bdb4644efd1ac360cb2db189b21e35edbed399371584858",
+          "lib/server/conversations/projection.ts": "53057cec62d216d18db5d3fd9c1013d409f385858ea8cfe9ab0b36e81d3bcac1",
           "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/customer-create.ts": "4e8b2b714b73c69c340058154621879561c349fca8040ac0ee8af0e98ccfa5d6",
@@ -18720,9 +18937,9 @@
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/cancel.ts": "c5aa6b6a68f89aee7c585c9d1c075e4423b12d134bc0b80f0533b9c13b767cd3",
           "lib/server/conversations/customer-accounts.ts": "6f937d42ab258c3a39485002c39ba3f477e66909f35625511853b8cec5d9a0db",
-          "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
+          "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/named-evidence-search.ts": "32189a43e797d4889ecc0970a8ea5f5c9918eb224f355f6f33da450f05dee3ad",
-          "lib/server/conversations/projection.ts": "19f970cd00decc291bdb4644efd1ac360cb2db189b21e35edbed399371584858",
+          "lib/server/conversations/projection.ts": "53057cec62d216d18db5d3fd9c1013d409f385858ea8cfe9ab0b36e81d3bcac1",
           "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/attempt-context.ts": "22401c3852f1e245d30644d59a4e5f47218fb9a11e3c5b7969ced65e11cea216",
@@ -19309,7 +19526,7 @@
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/current-knowledge.ts": "6e2c3b73606593411e3e2fe101215d11248f15b5b1abac5d216d84118953f48c",
           "lib/server/conversations/customer-accounts.ts": "6f937d42ab258c3a39485002c39ba3f477e66909f35625511853b8cec5d9a0db",
-          "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
+          "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/named-evidence-search.ts": "32189a43e797d4889ecc0970a8ea5f5c9918eb224f355f6f33da450f05dee3ad",
           "lib/server/conversations/practice-evidence.ts": "d3402512e8d6f14d67f9594b689d428f97b67bf911feb61f47157f65728fcfeb",
           "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
@@ -19969,7 +20186,7 @@
         "currentFileSha256": {
           "lib/server/research/public-dossier.ts": "babfe6499a7135770182a111a695cd02fc47ba3681e9f89e01317792348dae78",
           "lib/server/research/specialists/solution-research/source-integrity.ts": "fd45c094d0a8e1f1d8a981dc9fb9f7148c47a4e8fb81aad762f97ca1eabdb448",
-          "lib/server/conversations/projection.ts": "19f970cd00decc291bdb4644efd1ac360cb2db189b21e35edbed399371584858"
+          "lib/server/conversations/projection.ts": "53057cec62d216d18db5d3fd9c1013d409f385858ea8cfe9ab0b36e81d3bcac1"
         },
         "currentTestFileSha256": {
           "tests/unit/research-public-dossier.test.ts": "7a519bdf09f209137dab57b0e98c99cfbfb6dd362b447a1c25671a2c54011caf",
@@ -20161,7 +20378,7 @@
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/current-knowledge.ts": "6e2c3b73606593411e3e2fe101215d11248f15b5b1abac5d216d84118953f48c",
           "lib/server/conversations/customer-accounts.ts": "6f937d42ab258c3a39485002c39ba3f477e66909f35625511853b8cec5d9a0db",
-          "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
+          "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/named-evidence-search.ts": "32189a43e797d4889ecc0970a8ea5f5c9918eb224f355f6f33da450f05dee3ad",
           "lib/server/conversations/practice-evidence.ts": "d3402512e8d6f14d67f9594b689d428f97b67bf911feb61f47157f65728fcfeb",
           "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
@@ -21180,12 +21397,12 @@
           "localValidation": "13 new unit contracts and5 new cache integration cases passed; combined11file40test run passed including current journey/history. Pattern fixture separately verified by its owning agent. No historical benchmark score or hosted proof inferred."
         },
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "9bf6cc9c2ef42aa1fa6397407cece5a0fe35f9038805e510c175c460129f9924",
+          "app/_components/agent-chat.tsx": "1423b2ee5787224ec3242c16dc6ae9a030dd361d20a474bbd069b3fd7bc67ba6",
           "lib/conversations/attachment-text.ts": "952ab6de1257c307a804dfd61d8f7c5d18ee3b367df9dc91c8b996d8e6e80673",
           "lib/server/conversations/input-responses.ts": "a6ff7216c862b21103872f668490638946bab381d45cca6eeb7d69821681860f",
           "lib/server/research/fetch.ts": "1fb596c17c32d6e065bfc29b51ba89f4f6e68c11b947834df6251d2b0fce1c59",
           "lib/server/conversations/attachment-intake.ts": "f39625ab74ff0f60060164ddfa4e808b85681f712ef380f9d14eb606233ad767",
-          "lib/server/conversations/native-uploads.ts": "b76289018da3e5eda67402fc1f27f13eb2b56b6e2e65d29a7443ead210d91395"
+          "lib/server/conversations/native-uploads.ts": "37ef523b1204f74b3f8223327f0cb6c1a7cd57a06e9933e41410a127cfa2624d"
         },
         "currentTestFileSha256": {
           "tests/unit/ordinary-attachment-text.test.ts": "605b989b3922bc4bcc3f313cc1b41b0866e24fc994cfacc493e08871e9528598",
@@ -21320,7 +21537,7 @@
           "lib/conversations/title.ts": "94942fd3e959fb585af986e36d6f7ee36a750e2a6fc6046537120094abbca4e6",
           "lib/server/auth/sessions.ts": "f5aa0b00dccd6e4af1fbf8e67ba605d04a780b41fbefa4ea0bdda9ebe948681e",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
-          "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
+          "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/attempt-context.ts": "22401c3852f1e245d30644d59a4e5f47218fb9a11e3c5b7969ced65e11cea216",
@@ -21395,7 +21612,7 @@
           "Legacy separate header/fade/Scroll-to-bottom control is not implemented in the current authored bound-chat layout; exact geometry test therefore is not applicable verbatim. Parent must explicitly disposition these UI design/control differences; current native mobile overflow and landing layout tests prove only their actual assertions."
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "9bf6cc9c2ef42aa1fa6397407cece5a0fe35f9038805e510c175c460129f9924",
+          "app/_components/agent-chat.tsx": "1423b2ee5787224ec3242c16dc6ae9a030dd361d20a474bbd069b3fd7bc67ba6",
           "app/globals.css": "91df1bbc5b18c5d6ca512b2c98a85bd4d37329361ab46e62052298e40d188b11"
         },
         "currentTestFileSha256": {
@@ -21585,7 +21802,7 @@
           "lib/server/bootstrap-ids.ts": "2766348ecd400e1c2515627324d6878b37035f75a1e9b0925e35bc44d2a492b8",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/customer-accounts.ts": "6f937d42ab258c3a39485002c39ba3f477e66909f35625511853b8cec5d9a0db",
-          "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
+          "lib/server/conversations/dispatch.ts": "323028f581469fd1cff5bc60a79098e41e381ea975945ae545829fd57a3c8794",
           "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/public-inventory-reference.ts": "ba9abb24b8c09e340e38f6ae0835f7fb58ae1cde079b2e7dcb7047bbe14285bd",
@@ -22180,7 +22397,7 @@
         "rationale": "Original tests target historical benchmark-only classifier, not a domain mutation. Current output/accounting/terminal state tests cover interrupted usage and owned response lifecycle but do not make equivalent quota diagnostics assertions. Root now restored focused actual visible-message/background-working event contracts. The old terminalFailure/isProviderBudgetError helper only belonged to manual historical model-comparison runners; no active runtime consumer imports it.",
         "gaps": [],
         "currentFileSha256": {
-          "lib/server/conversations/projection.ts": "19f970cd00decc291bdb4644efd1ac360cb2db189b21e35edbed399371584858",
+          "lib/server/conversations/projection.ts": "53057cec62d216d18db5d3fd9c1013d409f385858ea8cfe9ab0b36e81d3bcac1",
           "lib/server/conversations/model-budget.ts": "dc8cdcb71708fe4a2c051830e6e4a8732475099efde01f18f30fd7baf6706702"
         },
         "currentTestFileSha256": {

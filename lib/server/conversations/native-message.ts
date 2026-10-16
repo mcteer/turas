@@ -1,4 +1,5 @@
 import {createHash} from 'node:crypto';
+import {isDeepStrictEqual} from 'node:util';
 import {ordinaryNativeMessageSchema,hydratedNativeMessageSchema,hydratedNativeMessageBytes,type OrdinaryNativeMessage,summarizeNativeMessage} from '../../conversations/native-message';
 import {attachmentLimits,parseAttachmentMessage} from '../../conversations/attachment-text';
 import {HttpFailure} from '../../contracts/http';
@@ -36,3 +37,22 @@ export function sameNativeUploadReferences(stored:unknown,provided:OrdinaryNativ
  return JSON.stringify(parseOrdinaryNativeMessage(stored))===JSON.stringify(provided);
 }
 export {summarizeNativeMessage};
+
+/** Compact server transport for immutable staged files. Inline legacy parts stay
+ * inline; staged bytes enter only the separately fenced provider middleware. */
+export function nativeUploadTransportMessage(parts:OrdinaryNativeMessage):string|OrdinaryNativeMessage{
+ if(!parts.some(part=>part.type==='file'&&'sha256' in part))return parts;
+ if(!parts.some(part=>part.type==='file'&&!('sha256' in part)))return summarizeNativeMessage(parts);
+ return parts.map(part=>part.type==='file'&&'sha256' in part
+  ?{type:'text' as const,text:`[file: ${part.filename} (${part.mediaType})]`}:part);
+}
+export function canonicalNativeUploadTransport(stored:unknown,provided:unknown,bodyDigest:string):string|OrdinaryNativeMessage|null{
+ if(!Array.isArray(stored))return null;
+ const parts=parseOrdinaryNativeMessage(stored);
+ if(!parts.some(part=>part.type==='file'&&'sha256' in part)||nativeMessageDigest(parts)!==bodyDigest)return null;
+ const transport=nativeUploadTransportMessage(parts);
+ return isDeepStrictEqual(transport,provided)?transport:null;
+}
+export function matchesNativeUploadTransport(stored:unknown,provided:unknown,bodyDigest:string){
+ return canonicalNativeUploadTransport(stored,provided,bodyDigest)!==null;
+}

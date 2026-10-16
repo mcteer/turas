@@ -28,7 +28,7 @@ import type { PoolClient } from "pg";
 import { captureGeneralContext } from "./general-context";
 import { titleFromMessage } from "../../conversations/title";
 import {deriveSteeringAttempt} from './steering';
-import {parseOrdinaryNativeMessage,nativeMessageDigest,summarizeNativeMessage,sameNativeUploadReferences} from "./native-message";
+import {parseOrdinaryNativeMessage,nativeMessageDigest,summarizeNativeMessage,sameNativeUploadReferences,canonicalNativeUploadTransport} from "./native-message";
 import {nativeMessageText,type OrdinaryNativeMessage} from "../../conversations/native-message";
 import {attachmentLimits,parseAttachmentMessage} from '../../conversations/attachment-text';
 import {bindNativeUploads} from './native-uploads';
@@ -336,12 +336,10 @@ export async function markDispatchUncertain(
 }
 
 export async function deriveNativeAttempt(
-  session: CurrentSession, nativeSessionId: string, requestKey: string, message: string|OrdinaryNativeMessage,
+  session: CurrentSession, nativeSessionId: string, requestKey: string, message: unknown,
   options:{trustedHydrated?:true}={},
 ): Promise<string> {
-  const nativeParts=typeof message==='string'?null:parseOrdinaryNativeMessage(message,options);
-  const text=nativeParts?summarizeNativeMessage(nativeParts):message as string;
-  const steering=await deriveSteeringAttempt(session,nativeSessionId,requestKey,nativeParts??text,options);
+  const steering=await deriveSteeringAttempt(session,nativeSessionId,requestKey,message,options);
   if(steering)return steering;
   const staffingAttempt = await withTransaction(async db => {
     const row = (await db.query(`SELECT a.id,a.conversation_id FROM response_attempts a JOIN submitted_messages sm ON sm.id=a.message_id
@@ -351,7 +349,8 @@ export async function deriveNativeAttempt(
     return row && ["staffing", "execution", "support", "expansion", "learning"].includes((await conversationFeature(db, row.conversation_id)).kind) ? row as { id: string; conversation_id: string } : null;
   });
   if (staffingAttempt) {
-    if(nativeParts)throw hiddenRecord();
+    if(typeof message!=='string')throw hiddenRecord();
+    const text=message;
     const prepared = await prepareGovernedNativeRelease(staffingAttempt.conversation_id,
       { actor: session, nativeSessionId, responseAttemptId: staffingAttempt.id, allowUnclaimedTurn: true });
     if (!prepared) throw hiddenRecord();
@@ -365,26 +364,34 @@ export async function deriveNativeAttempt(
     });
   }
   const result = await withTransaction(async (client) => {
-    const found = await client.query<{ id: string; conversation_id: string; body_digest: string }>(`
-      SELECT a.id, a.conversation_id, sm.body_digest
+    const found = await client.query<{ id: string; conversation_id: string; body_digest: string;ordinary_native_parts:unknown }>(`
+      SELECT a.id, a.conversation_id, sm.body_digest,sm.ordinary_native_parts
       FROM response_attempts a
       JOIN submitted_messages sm ON sm.id = a.message_id
       JOIN conversations c ON c.id = a.conversation_id
       WHERE c.eve_session_id = $1 AND c.owner_principal_id = $2
-        AND c.environment_id = $3 AND sm.request_key = $4
+        AND c.environment_id = $3 AND sm.request_key = $4 AND c.workspace_id=$5 AND c.binding_state='bound'
         AND a.dispatch_state = 'dispatching'
       LIMIT 1
     `, [nativeSessionId, session.principalId,
-      getServerConfig().TURAS_ENVIRONMENT_ID, requestKey]);
+      getServerConfig().TURAS_ENVIRONMENT_ID, requestKey,session.workspaceId]);
     const row = found.rows[0];
     if (!row) throw hiddenRecord();
     assertNativeFileEvaluationOpen(row.conversation_id);
+    // Compare the exact saved public input before parsing its server transport:
+    // generated file hints are not additional user text or document envelopes.
+    const transport=canonicalNativeUploadTransport(row.ordinary_native_parts,message,row.body_digest);
+    const resolved=transport??message;
+    const nativeParts=typeof resolved==='string'?null:transport!==null?transport as OrdinaryNativeMessage:parseOrdinaryNativeMessage(resolved,options);
+    const text=nativeParts?summarizeNativeMessage(nativeParts):resolved as string;
     if(nativeParts&&!ordinaryNativeFilesEnabled(row.conversation_id))throw hiddenRecord();
     const artifact = await artifactContextSchemaReady(client)
       ? await client.query<{ native_text_digest: string }>(
         "SELECT native_text_digest FROM artifact_context_receipts WHERE attempt_id=$1", [row.id])
       : null;
-    if (nativeParts ? row.body_digest!==nativeMessageDigest(nativeParts)||(await conversationFeature(client,row.conversation_id)).kind!=='normal' : (artifact?.rows[0]?.native_text_digest ?? row.body_digest) !== messageDigest(text)) throw hiddenRecord();
+    const uploadTransport=transport!==null;
+    if(uploadTransport&&(!ordinaryNativeFilesEnabled(row.conversation_id)||(await conversationFeature(client,row.conversation_id)).kind!=='normal'))throw hiddenRecord();
+    if (!uploadTransport && (nativeParts ? row.body_digest!==nativeMessageDigest(nativeParts)||(await conversationFeature(client,row.conversation_id)).kind!=='normal' : (artifact?.rows[0]?.native_text_digest ?? row.body_digest) !== messageDigest(text))) throw hiddenRecord();
     await lockOwnedBinding(client, session, row.conversation_id);
     await readCurrentAttemptContext(client, row.id, session.principalId);
     return row.id;

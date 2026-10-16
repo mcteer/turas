@@ -9,15 +9,14 @@ See the [validation record](specs/018-legacy-backend-parity/validation.md) and
 [release tasks](specs/018-legacy-backend-parity/tasks.md) for the evidence and
 remaining acceptance gates. Earlier parity releases cover narrower scope.
 
-PR 36 merged the backend restoration on schema 077. Production acceptance found
-a remaining recovery defect: confirmed native retirement removes the native
-message stream while Turas retains its authorized message projections. The
-follow-up restores their read-only display, preserves owner/source checks and
-marks bounded history explicitly. A controlled Eve interruption also exposed new
-event IDs for the same accepted delivery; recovery now preserves that delivery
-identity, original deadline and allowance before provider admission. Changed
-inputs and retries after a model reservation remain refused. Hosted recovery
-acceptance remains open.
+PR 36 merged the backend restoration on schema 077. PR 37 restored authorized
+read-only history after native retirement and exact pre-provider retry identity.
+Actual Production owner-private history, reload, mobile and profile consistency
+checks pass. Ten-MiB acceptance then exposed an 18.6 MB Eve user-stream chunk
+exceeding the platform's 10 MB chunk limit, before any provider operation.
+The follow-up keeps staged bytes in application storage, forwards their exact
+bounded summary and hydrates verified originals only at the provider boundary.
+Hosted large-file acceptance remains open.
 
 Customer maturity and delivery management for Vercel FDE, Professional Services,
 TAM, account teams and partners.

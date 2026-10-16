@@ -15,7 +15,8 @@ import {ChatInputRequestCard} from "./chat-input-request";
 import { ChatMarkdown } from "./chat-markdown";
 import { visibleChatMessages, backgroundChatActivity } from "../../lib/chat-messages";
 import {RetainedChat} from './retained-chat';
-import type {RetainedChatEvent} from '../../lib/conversations/retained-history';
+import {retainedChatMessages,type RetainedChatEvent} from '../../lib/conversations/retained-history';
+import {nativeUserDisplayParts,type NativeAttachmentReference} from '../../lib/conversations/native-message-display';
 import {NativeChatAttachment} from './attachments/native-chat-attachment';
 import {OrdinaryDocuments,ReceivedDocuments} from './attachments/ordinary-documents';
 import {parseAttachmentMessage} from '../../lib/conversations/attachment-text';
@@ -52,7 +53,7 @@ export function AgentChat({ conversationId, nativeSessionId, bindingState,
 function HistoricalChat({ conversationId, customerId, customerName }: {
   conversationId: string; customerId: string | null; customerName: string;
 }) {
-  const [messages, setMessages] = useState<{ eventId: string; payload: { message?: string;parts?:{type:string;text?:string;filename?:string;mediaType?:string;size?:number}[] } }[]>([]);
+  const [messages, setMessages] = useState<RetainedChatEvent[]>([]);
   useEffect(() => {
     let active = true;
     void fetch(`/api/conversations/${conversationId}`, { cache: "no-store" }).then(async (response) => {
@@ -64,8 +65,8 @@ function HistoricalChat({ conversationId, customerId, customerName }: {
   }, [conversationId]);
   return <main className="chat-page"><h1 className="chat-heading">{customerName}</h1>
     <p role="status" className="chat-notice">Customer context has changed. Start a new conversation to use current information.</p>
-    <div className="chat-messages">{messages.map((event) => <article className="chat-message" key={event.eventId}>
-      <h2>You</h2>{event.payload.parts?.some(part=>part.type==='file')?event.payload.parts.map((part,index)=>part.type==='file'?<NativeChatAttachment key={index} filename={part.filename} mediaType={part.mediaType} size={part.size}/>:<UserChatText key={index} text={part.text??''}/>):<UserChatText text={event.payload.message??''}/>}</article>)}</div>
+    <div className="chat-messages">{retainedChatMessages(messages,false).map(message => <article className="chat-message" key={message.id}>
+      <h2>You</h2>{message.parts.map((part,index)=>part.type==='file'?<NativeChatAttachment key={index} filename={part.filename} mediaType={part.mediaType} size={part.size}/>:<UserChatText key={index} text={part.text}/>)}</article>)}</div>
     <p><Link className="primary-button" href={`/s?customerId=${encodeURIComponent(customerId ?? "")}`}>Start a New Conversation</Link></p>
   </main>;
 }
@@ -94,7 +95,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   const [canSteer,setCanSteer]=useState(false);
   const [canAttachDocuments,setCanAttachDocuments]=useState(false);
   const [canAttachNativeFiles,setCanAttachNativeFiles]=useState(false);
-  type FileReference={eventId:string;files:{filename?:string;mediaType:string;size:number;url:string}[]};
+  type FileReference=NativeAttachmentReference;
   const [nativeAttachments,setNativeAttachments]=useState<FileReference[]>([]);
   const [documents,setDocuments]=useState<OrdinaryAttachment[]>([]);
   const [preparingDocuments,setPreparingDocuments]=useState(false);
@@ -396,11 +397,12 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
       {messages.length === 0 && <p className="muted">No messages yet.</p>}
       {messages.map((message) => <article className={`chat-message chat-message-${message.role}`}
         aria-label={message.role === "assistant" ? "Turi" : "You"} key={message.id}>
-        {message.parts.map((part, index) => part.type === "text"
+        {message.role==='user'?nativeUserDisplayParts(message,nativeAttachments.find(item=>item.eventId===message.id.replace(/:user$/,''))).map((part,index)=>part.type==='text'
+          ?<UserChatText key={index} text={part.text}/>:<NativeChatAttachment key={index} filename={part.filename} mediaType={part.mediaType} url={part.url} size={part.size}/>):message.parts.map((part, index) => part.type === "text"
           ? message.role === "assistant"
             ? <ChatMarkdown key={index} streaming={busy && message.id === messages.at(-1)?.id} text={part.text} />
             : <UserChatText key={index} text={part.text}/>
-          : part.type==='file'&&message.role==='user'?<NativeChatAttachment key={index} filename={part.filename} mediaType={part.mediaType} url={part.url} {...nativeAttachments.find(item=>item.eventId===message.id.replace(/:user$/,''))?.files.find(file=>file.filename===part.filename&&file.mediaType===part.mediaType)}/>:null)}
+          :null)}
       </article>)}
       {inputRequests.map(request=><ChatInputRequestCard key={request.requestId} request={request}
         disabled={answering||busy||agent.status==='resuming'} onResponse={respondToRequest}/>) }

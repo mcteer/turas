@@ -1,4 +1,3 @@
-import {parseOrdinaryNativeMessage} from "../../lib/server/conversations/native-message";
 import {ownedInputResponseAttempt} from "../../lib/server/conversations/input-responses";
 import { eveChannel } from "eve/channels/eve";
 import type { AuthFn } from "eve/channels/auth";
@@ -54,9 +53,10 @@ export default composeEveRoutes(eveChannel({
     if (!session || session.principalId !== ctx.eve.caller.principalId) {
       throw new HttpFailure(403, "invalid_dispatch", "Action not allowed");
     }
-    // Large parts reach this handler only after the outer governed route has
-    // hydrated owner-bound immutable uploads. No browser flag enables this.
-    const attemptId = await deriveNativeAttempt(session, ctx.eve.sessionId, requestKey, typeof message==='string'?message:parseOrdinaryNativeMessage(message,{trustedHydrated:true}),{trustedHydrated:true});
+    // Staged uploads reach Eve as exact bounded summaries of the immutable
+    // original parts. The outer route verifies owned bytes before dispatch;
+    // the provider middleware hydrates them again under current authority.
+    const attemptId = await deriveNativeAttempt(session, ctx.eve.sessionId, requestKey, message,{trustedHydrated:true});
     return { auth: { ...ctx.eve.caller,
       attributes: { ...ctx.eve.caller.attributes, turasAttemptId: attemptId } } };
   },

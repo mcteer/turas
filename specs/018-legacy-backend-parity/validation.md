@@ -252,3 +252,66 @@ process claim remains unverified. No new provider execution or full browser
 acceptance is implied by this source review.
 
 Final owned Eve/Next production composition and all48CLI WebKit cases pass on the combined recovery source across desktop/mobile light/dark, with zero skips, retries or flaky cases. Exact hosted release gates remain open.
+
+
+### Merged recovery and actual hosted stream-limit finding
+
+PR37 merged as452cb637c7ea0f5235f34ca200335c3f334f656b after all50 exact
+daab05e CI gates passed. Its merged tree is identical to that tested source.
+The native-operations gate required one unchanged job-only retry after a full
+unchanged local replay passed; its original generic failure remains unexplained
+and preserved. Automatic duplicate main-push runs were cancelled only after
+exact tree equality was proved; cancellation is not a passing check.
+The associated local/remote branch is deleted and README was read on main.
+
+Actual READY Production452cb63 passes13 authenticated HTTP/CLI WebKit checks,
+four login checks, and both original retired conversations' desktop/mobile/reload,
+owner denial and revoked-cookie checks with zero model calls and browser errors.
+The retained-evidence conversation's profile, original attempt/deadline/usage and
+four settled operations remain unchanged. A fresh theme probe confirms the
+apparent faint button in one screenshot was captured during an existing150ms
+transition; settled dark/light contrast is15.10:1/16.10:1, with no overflow.
+
+The new actual ten-MiB case still failed before provider admission: zero model
+operations. Exact hosted Workflow diagnostics identify the original underlying
+failure: a user-stream chunk of18,642,341bytes exceeds the10,485,760-byte limit.
+Three legitimate same-delivery retries were correctly admitted, preserving the
+canonical input and deadline, but hit the same persistent platform limit.
+Its exact native session was retired with HTTP200, chunks are zero and the case
+is archived. Earlier failures, raw diagnostics and unknown unrelated holds remain
+preserved. This establishes a stream serialization failure, not a provider or
+image-understanding failure.
+
+The T032 adaptation validates the original owned parts, request key, binding,
+metadata and bytes before forwarding their compact deterministic summary. Small
+inline parts stay inline in mixed messages. The existing separately authorized
+provider middleware supplies exact original bytes; files remain unverified user
+input. Canonical display metadata stays separate from the actual native envelope
+used for retry validation. First focused DB tests caught a nonexistent steering
+conversation column in the new display helper; the corrected attempt join passes
+all22 focused tests. The existing ten-MiB owned Eve gate passes exact provider
+bytes and forced interruption recovery with maximum actual event JSON538bytes
+(estimated base64 envelope720bytes). This is owned runtime evidence, not yet a
+hosted stream-limit or selected-provider pass. Final stable-source checks and
+actual hosted acceptance remain required.
+
+
+### Frozen T032 boundary validation
+
+The final transport accepts only a structurally exact projection of the stored
+original public input after owner/workspace/environment/native/request-key
+lookup. Structural equality accounts for Eve's file-property ordering without
+relaxing keys, values, array order or public input limits. The earlier parallel
+unit run caught this ordering mismatch; its two failures remain preserved.
+The frozen source passes all159 unit files/713 tests,59 domain files/218 tests
+and the separate three-case domain check. TypeScript and218 documentation
+contracts pass. Independent transport and display reviews found no blocker.
+
+The final actual-Eve ten-MiB gate passes exact original provider bytes, reload
+and reuse, one forced interruption and one admitted retry alias, preserving the
+canonical input and original deadline. Maximum emitted event JSON is538bytes
+(estimated base64 envelope720bytes). Native retirement returns HTTP200. No
+attachment sandbox containers or images were needed or remained in the exact
+owned resource scan. The native memory/files gate also passes inline provider
+bytes, cross-session preferences, isolation and removal. These checks used a
+synthetic provider and do not establish hosted selected-provider acceptance.
