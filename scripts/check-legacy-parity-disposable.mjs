@@ -104,7 +104,8 @@ if (process.argv.includes("--webkit-child")) {
               failures.push({file:String(spec.file??suite.file??"").split(/[\\/]/).at(-1),line:spec.line,
                 project:test.projectName,status:value.status,
                 category:/timeout|timed out/i.test(text)?"timeout":/expect|assert/i.test(text)?"assertion":"runtime",
-                errorLine:value.error?.location?.line});
+                errorLine:value.error?.location?.line,
+                phase:(test.annotations??[]).filter(annotation=>annotation.type==='journey-phase').map(annotation=>{try{const parsed=JSON.parse(annotation.description);return ['fixture','scenario'].includes(parsed.phase)&&['authentication','owner-session','owned-customer-seed','authenticated-route-contracts','journey-navigation','journey-ready','initializing','ready','running','settled'].includes(parsed.stage)?{phase:parsed.phase,stage:parsed.stage,durationMs:Number.isFinite(parsed.durationMs)&&parsed.durationMs>=0?parsed.durationMs:undefined}:undefined;}catch{return undefined;}}).filter(Boolean).at(-1)});
             }
           }
           for(const child of suite.suites??[])collect(child);

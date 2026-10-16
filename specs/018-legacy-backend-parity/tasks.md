@@ -18,7 +18,7 @@ Independent test: identical retained sources produce original bounded selection 
 
 - [X] T005 [US1] Add failing integration replay covering8-source ordering,1600-character boundary, incidental later names, withdrawal and later reads in tests/integration/legacy-profile-products.test.ts (FR-004,FR-011).
 - [X] T006 [US1] Restore shared recallPublicLearning consumer in lib/server/profiles/read.ts and source-reference mapping; preserve current authority and full-document storage (FR-004).
-- [ ] T007 [US1] Verify actual retained DoorDash evidence before/after shared-reader port with profile/reload/account reader and record exact result in specs/018-legacy-backend-parity/validation.md (FR-004,FR-011).
+- [X] T007 [US1] Verify actual retained DoorDash evidence before/after shared-reader port with profile/reload/account reader and record exact result in specs/018-legacy-backend-parity/validation.md (FR-004,FR-011).
 
 ## Phase 4: US2 — Research and reusable knowledge
 
@@ -42,13 +42,13 @@ Independent test: original ordinary operations and private/runtime/context workf
 - [X] T018 [US3] Verify journey long-source/tail match, later-than50 records, semantic failure lexical fallback, no-hit recent fallback and stale indexing cancellation; repair lib/server/profiles and retrieval lifecycle (FR-007,FR-011).
 - [X] T019 [US3] Implement supported owner-bound staged native-file transport preserving10MiB/file without oversized base64 request, byte/digest retry and cleanup; test bounds, aggregate, cancellation and reload in lib/server/conversations and attachments UI (FR-006,FR-011).
 - [ ] T020 [US3] Verify and enable supported hosted ordinary image/raw/parser-failed fallback through existing native-file policy with explicit deployment prerequisites; no fake extraction success (FR-006).
-- [ ] T021 [US3] Execute native questions/corrections/Stop/reconnect/preferences/extraction owner and recovery suites, repairing every discovered legacy divergence (FR-006,FR-011).
+- [X] T021 [US3] Execute native questions/corrections/Stop/reconnect/preferences/extraction owner and recovery suites, repairing every discovered legacy divergence (FR-006,FR-011).
 
 ## Phase 6: US4 — Exhaustive acceptance and release
 
 - [X] T022 [US4] Reconcile all inventory dispositions and every finding to implemented source and actual evidence; zero actionable missing/partial mechanisms remain in docs/legacy-backend-parity-audit.md (FR-010).
 - [ ] T023 [US4] Update README.md, ROADMAP.md and feature validation with actual status; run typecheck/docs/targeted domains/build and full exact-head CI, retaining failures and fixes (FR-011,FR-012).
-- [ ] T024 [US4] Exercise changed workflows with authenticated real Preview HTTP and CLI WebKit desktop/mobile/reload, actual ordinary native consumers and independent review; preserve prior model charges/holds and bounded scope (FR-011).
+- [X] T024 [US4] Exercise changed workflows with authenticated real Preview HTTP and CLI WebKit desktop/mobile/reload, actual ordinary native consumers and independent review; preserve prior model charges/holds and bounded scope (FR-011).
 - [ ] T025 [US4] Back up and rehearse explicit schema/grants if required, verify target and old/new compatibility, merge green exact head, verify actual Production commit/schema/authenticated behavior, clean merged branch and verify README on main (FR-012).
 
 - [X] T026 [US4] Restore any remaining backend consumer gaps discovered by complete root-page/config audit, including customer-directory signal filtering and operating-plan/portfolio consumers, with current-themed authorized UI and original calculations (FR-001,FR-003,FR-008,FR-010).

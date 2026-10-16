@@ -16,6 +16,7 @@ const image='pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e01
 const docker=(args:string[])=>spawnSync('docker',args,{encoding:'utf8'});
 const fixtureOwner='turas-native-file-'+randomUUID();
 let marker:string|undefined;
+let fixturePhase='owned_environment_preparation';
 try{await withPlanEvalEnvironment(async environment=>{
  const path=join(environment.appRoot,'agent/agent.ts'),source=await readFile(path,'utf8');
  const target='return wrapOrdinaryChatModel(parityBudgetModel(gateway(selectedModel),selectedModel),principal,ctx.session.id,turnId,{event});';
@@ -72,7 +73,12 @@ try{await withPlanEvalEnvironment(async environment=>{
    const warmupKey=randomUUID(),warmup=await context.request.post('/api/conversations',{headers,data:{requestKey:warmupKey}});if(!warmup.ok())throw Error('Thread warmup creation failed');
    const warmupId=(await warmup.json()).data.id;
    const warmupBinding=await context.request.post('/eve/v1/session',{headers:{...headers,'x-turas-conversation-id':warmupId},data:{operationId:warmupKey}});if(!warmupBinding.ok())throw Error('Thread warmup binding failed');
+   fixturePhase='warmup_thread_compile';
+   const threadCompiled=await context.request.get('/s/'+warmupId,{timeout:30000});
+   if(threadCompiled.status()!==200)throw Error('Owned thread compile request failed');
+   fixturePhase='initial_thread_navigation';
    await page.goto('/s/'+warmupId,{waitUntil:'domcontentloaded'});
+   fixturePhase='native_file_interaction';
    await page.getByLabel('Message Turi').waitFor({timeout:60000});
    if(boundaryMiB){
     const readyBytes=Buffer.alloc(1024*1024,0x62),key=randomUUID(),path='/api/conversations/'+warmupId+'/native-uploads';
@@ -232,7 +238,7 @@ try{await withPlanEvalEnvironment(async environment=>{
  await writeFile(join(appRoot,'agent/sandbox.ts'),`import {defineSandbox} from 'eve/sandbox';import {DockerSandbox} from 'eve/sandbox/docker';export const environment=DockerSandbox.image(${JSON.stringify(image)},{pullPolicy:'never',env:{TURAS_NATIVE_FILE_FIXTURE_OWNER:${JSON.stringify(fixtureOwner)}}});export default defineSandbox(()=>environment.open({networkPolicy:'deny-all'}));\n`,{mode:0o600});return {};
 }});}catch(error){
  const reason=(error instanceof Error?error.message:'Unknown fixture failure').split('\n')[0].replace(/[a-z][a-z0-9+.-]*:\/\/[^\s/@:]+:[^\s/@]+@/gi,'<redacted>@').slice(0,200);
- console.error(JSON.stringify({kind:'native_file_fixture_failure',name:error instanceof Error?error.name:'Unknown',reason}));throw error;
+ console.error(JSON.stringify({kind:'native_file_fixture_failure',phase:fixturePhase,name:error instanceof Error?error.name:'Unknown',reason}));throw error;
 }finally{
  delete process.env.TURAS_ORDINARY_MEMORY_FILE_FIXTURE;delete process.env.TURAS_ORDINARY_MEMORY_FIXTURE;delete process.env.TURAS_ORDINARY_NATIVE_FILE_STEERING_FIXTURE;delete process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED;delete process.env.TURAS_ORDINARY_NATIVE_FILE_FIXTURE;
  delete process.env.TURAS_ORDINARY_TASK_STATE_FIXTURE;
