@@ -14,6 +14,8 @@ import {pendingChatInputs,chatInputAnswer} from "../../lib/chat-inputs";
 import {ChatInputRequestCard} from "./chat-input-request";
 import { ChatMarkdown } from "./chat-markdown";
 import { visibleChatMessages, backgroundChatActivity } from "../../lib/chat-messages";
+import {RetainedChat} from './retained-chat';
+import type {RetainedChatEvent} from '../../lib/conversations/retained-history';
 import {NativeChatAttachment} from './attachments/native-chat-attachment';
 import {OrdinaryDocuments,ReceivedDocuments} from './attachments/ordinary-documents';
 import {parseAttachmentMessage} from '../../lib/conversations/attachment-text';
@@ -28,13 +30,15 @@ function UserChatText({text}:{text:string}) {
 }
 
 export function AgentChat({ conversationId, nativeSessionId, bindingState,
-  customerName, synthetic, csrfToken, customerId, contextStatus }: {
+  customerName, synthetic, csrfToken, customerId, contextStatus, nativeRetired = false, retainedHistory = [], historyTruncated = false }: {
   conversationId: string; nativeSessionId: string | null; bindingState: string;
   customerName: string; synthetic: boolean; csrfToken: string;
   customerId: string | null; contextStatus: "current" | "changed" | "historical";
+  nativeRetired?: boolean; retainedHistory?: RetainedChatEvent[]; historyTruncated?: boolean;
 }) {
   if (contextStatus !== "current") return <HistoricalChat conversationId={conversationId}
     customerId={customerId} customerName={customerName} />;
+  if (nativeRetired) return <RetainedChat conversationId={conversationId} customerId={customerId} initialHistory={retainedHistory} initialTruncated={historyTruncated}/>;
   if (!nativeSessionId || bindingState !== "bound") {
     return <main className="chat-page">
       <h1>{customerName}</h1><p role="status">Chat binding is {bindingState}. Reload to check again.</p>

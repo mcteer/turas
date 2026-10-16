@@ -1,6 +1,6 @@
 {
   "referenceCommit": "fd1e205d7fd258676d6fb12b3ade8a431d53a6af",
-  "status": "337 pinned legacy paths reviewed; all101 test/evaluation references concretely mapped; application repairs verified locally; exact-head CI and hosted release gates remain open",
+  "status": "337 pinned legacy paths reviewed; all101 test/evaluation references concretely mapped; PR36 merged/schema077; T030 native-retirement consumer recovery and final hosted acceptance remain open",
   "entries": [
     {
       "legacyPath": ".gitignore",
@@ -214,7 +214,7 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/repository.ts": "e881bb210b4877528781e539a92d296cf2b3808144834c9b90ce467cb7d93027",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
           "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
@@ -350,7 +350,7 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/repository.ts": "e881bb210b4877528781e539a92d296cf2b3808144834c9b90ce467cb7d93027",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
           "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
@@ -4994,7 +4994,8 @@
         "T022",
         "T004",
         "T013",
-        "T021"
+        "T021",
+        "T030"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -5012,7 +5013,10 @@
         "lib/server/conversations/reconcile.ts",
         "lib/server/conversations/watchdog.ts",
         "lib/server/conversations/maintenance.ts",
-        "lib/server/conversations/native-retirement-recovery.ts"
+        "lib/server/conversations/native-retirement-recovery.ts",
+        "app/_components/retained-chat.tsx",
+        "lib/conversations/retained-history.ts",
+        "lib/server/conversations/repository.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -5028,10 +5032,13 @@
           "lib/server/conversations/reconcile.ts",
           "lib/server/conversations/watchdog.ts",
           "lib/server/conversations/maintenance.ts",
-          "lib/server/conversations/native-retirement-recovery.ts"
+          "lib/server/conversations/native-retirement-recovery.ts",
+          "app/_components/retained-chat.tsx",
+          "lib/conversations/retained-history.ts",
+          "lib/server/conversations/repository.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "9bf6cc9c2ef42aa1fa6397407cece5a0fe35f9038805e510c175c460129f9924",
+          "app/_components/agent-chat.tsx": "211c17dbbb409944f8e9300133bdee2cac6158f7e8e5f77158d106be83485d6a",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
           "lib/chat-messages.ts": "ce785f0ea48d268733634746460168052995da374bcf8f25dae7bc4a1dd016f7",
@@ -5041,7 +5048,10 @@
           "lib/server/conversations/reconcile.ts": "df90ab5ea080ff0f58330b753396e81e1b2ec756c9793518dff56a20643199fd",
           "lib/server/conversations/watchdog.ts": "efa9c80ce31e4e79194104d4a56da63c63dac3a32d48cb14970507a42c79c367",
           "lib/server/conversations/maintenance.ts": "2421e7a8e8db2c2e874bcb36e0db6c63b9186d62332f492edbb5287114782222",
-          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
+          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
+          "app/_components/retained-chat.tsx": "2b0fbf3dca8ec4dd987b5795f55a9a92805223bcc387806df4448045bf45f0fd",
+          "lib/conversations/retained-history.ts": "7432acace54382bff4f5e3f33c8b740e7524a11b8c1dba65dddfeb0b1cf59d30",
+          "lib/server/conversations/repository.ts": "e881bb210b4877528781e539a92d296cf2b3808144834c9b90ce467cb7d93027"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -5049,13 +5059,16 @@
           "scripts/check-ordinary-questions-native.ts",
           "tests/fixtures/ordinary-questions-native-model.ts",
           "tests/integration/legacy-native-uploads.test.ts",
-          "specs/018-legacy-backend-parity/validation.md"
+          "specs/018-legacy-backend-parity/validation.md",
+          "tests/ui/legacy-retired-history.spec.ts",
+          "tests/unit/retained-chat-history.test.ts"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
         "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
-      }
+      },
+      "notes": " Actual Production retirement exposed a missing consumer of persisted application messages. T030 adds a read-only authorized view, step-specific interrupted text and explicit history-limit notice; actual hosted recovery remains required."
     },
     {
       "legacyPath": "app/_components/agent-message.tsx",
@@ -5203,7 +5216,7 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "9bf6cc9c2ef42aa1fa6397407cece5a0fe35f9038805e510c175c460129f9924",
+          "app/_components/agent-chat.tsx": "211c17dbbb409944f8e9300133bdee2cac6158f7e8e5f77158d106be83485d6a",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
           "lib/chat-messages.ts": "ce785f0ea48d268733634746460168052995da374bcf8f25dae7bc4a1dd016f7",
@@ -6308,7 +6321,7 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/repository.ts": "e881bb210b4877528781e539a92d296cf2b3808144834c9b90ce467cb7d93027",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
           "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
@@ -6399,7 +6412,7 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/repository.ts": "e881bb210b4877528781e539a92d296cf2b3808144834c9b90ce467cb7d93027",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
           "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
@@ -6490,7 +6503,7 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/repository.ts": "e881bb210b4877528781e539a92d296cf2b3808144834c9b90ce467cb7d93027",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
           "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
@@ -7282,7 +7295,7 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "9bf6cc9c2ef42aa1fa6397407cece5a0fe35f9038805e510c175c460129f9924",
+          "app/_components/agent-chat.tsx": "211c17dbbb409944f8e9300133bdee2cac6158f7e8e5f77158d106be83485d6a",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
           "lib/chat-messages.ts": "ce785f0ea48d268733634746460168052995da374bcf8f25dae7bc4a1dd016f7",
@@ -7377,7 +7390,7 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "9bf6cc9c2ef42aa1fa6397407cece5a0fe35f9038805e510c175c460129f9924",
+          "app/_components/agent-chat.tsx": "211c17dbbb409944f8e9300133bdee2cac6158f7e8e5f77158d106be83485d6a",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
           "lib/chat-messages.ts": "ce785f0ea48d268733634746460168052995da374bcf8f25dae7bc4a1dd016f7",
@@ -9155,7 +9168,7 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "9bf6cc9c2ef42aa1fa6397407cece5a0fe35f9038805e510c175c460129f9924",
+          "app/_components/agent-chat.tsx": "211c17dbbb409944f8e9300133bdee2cac6158f7e8e5f77158d106be83485d6a",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
           "lib/chat-messages.ts": "ce785f0ea48d268733634746460168052995da374bcf8f25dae7bc4a1dd016f7",
@@ -9247,7 +9260,7 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/repository.ts": "e881bb210b4877528781e539a92d296cf2b3808144834c9b90ce467cb7d93027",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
           "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",

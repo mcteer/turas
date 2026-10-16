@@ -164,3 +164,41 @@ Preview stays schema077 without another live migration; Production stays072 and 
 The broad generic verification job discovers the new isolated source-library and Journey suites while TURAS_UI_LEGACY_ONLY=1, without their required fixture database. Sixteen cases correctly reject that environment; a separate desktop-light Access case times out. The original failures remain preserved. The two fixture-owned files now use the existing dedicated-suite discovery boundary. Actual CLI listing verifies260 generic cases and all32 mandatory018 cases across four projects, including every source-library/Journey case. Database guards, application code, assertions, scenario clocks and retries are unchanged. This discovery check is not a runtime pass for the generic job; fresh complete exact-head CI is required.
 
 The preceding3fc9a1f parity run passes all seven gates after one bounded unchanged native-operations retry. Its first native failure publishes no inner phase; the exact unchanged local full operations/knowledge run also passes with preserved source fingerprint. Main CI separately misses the gap list benchmark by25.7ms against its strict2000ms limit and times out a nested Learning feedback browser case. The unchanged full owned benchmark passes list1327.2ms/detail82.1ms/review55.3ms; the unchanged Learning browser suite passes32/32, as does its separate same-head CI gate. These earlier failures are retained rather than relabeled. The test-discovery fix starts a fresh full CI run; it does not relax those benchmark or browser requirements.
+
+
+## Native retirement recovery follow-up — acceptance open
+
+PR 36 merged as `f1184774a879917cdaccc78274f1ad824dcda4a4`. Its exact pre-merge
+head passed all 50 required gates. Production runs schema 077 with the explicit
+migrations and runtime grants. Authenticated general HTTP/WebKit checks passed
+13 Production scenarios and four login/origin cases.
+
+Actual 4 MiB native-image execution and later file reuse produced two correct
+provider answers, preserved exact download bytes and denied another owner. The
+overall case failed because browser errors occurred around an uninstrumented
+authentication transition; that failure is retained. A separate fresh-login,
+zero-model read of the actually retired conversation then exposed an independent
+defect: the browser showed no messages although both received and completed
+messages remained in application-owned projections. Neither case is recorded as
+a complete hosted pass.
+
+T030 restores a read-only consumer of the existing authorized detail API after
+confirmed native retirement. It does not reconnect to the retired session or
+revive purged file bytes or input actions. Refresh failure clears the displayed
+history; changed context suppresses generated messages. A visible notice explains
+the existing 500-event history bound. Partial replies are grouped by turn and
+step so an earlier completed step does not suppress a later interrupted step.
+The marked disposable WebKit fixtures test recovery, owner denial, failed reads,
+long history and interrupted later steps. Actual hosted recovery, full exact-head
+CI, the remaining native formats and release closure are still required.
+
+Local follow-up verification: all 48 mandatory WebKit cases passed across four
+projects with no skips or retries; the generic suite still discovers 260 cases.
+The owned schema-077 domain run passed 58 files / 211 tests plus three actual
+HTTP route contracts. Type checking and all 218 authored-document checks passed.
+Original fixture parameter-type failure and the subsequent reload/prefetch
+browser-error failure remain preserved. The final run waits for navigation
+requests to settle before reload and retains the unfiltered browser-error guard.
+A read-only query of the actual Production image conversation confirmed that
+both appended and completed events carry step index zero, matching the new
+step-specific grouping without duplicating its completed messages.

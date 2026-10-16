@@ -9,6 +9,12 @@ See the [validation record](specs/018-legacy-backend-parity/validation.md) and
 [release tasks](specs/018-legacy-backend-parity/tasks.md) for the evidence and
 remaining acceptance gates. Earlier parity releases cover narrower scope.
 
+PR 36 merged the backend restoration on schema 077. Production acceptance found
+a remaining recovery defect: confirmed native retirement removes the native
+message stream while Turas retains its authorized message projections. The
+follow-up restores their read-only display, preserves owner/source checks and
+marks bounded history explicitly. Hosted recovery acceptance remains open.
+
 Customer maturity and delivery management for Vercel FDE, Professional Services,
 TAM, account teams and partners.
 
@@ -36,8 +42,8 @@ Preview chat starts its bounded maintenance worker on authenticated sends becaus
 
 Preview login supports both the immutable deployment URL and its exact Vercel branch alias.
 
-The legacy backend and chat parity repair merged in [PR 34](https://github.com/mcteer/turas/pull/34).
-Production serves that repair on schema 072 after an encrypted backup, verified
+The earlier legacy backend and chat parity repair merged in [PR 34](https://github.com/mcteer/turas/pull/34).
+That Production release used schema 072 after an encrypted backup, verified
 restore/migration rehearsal and explicit runtime grants. Authenticated HTTP and
 CLI WebKit checks pass for the real 184-customer directory, 1Password/Notion
 profiles, overview placement, product sources and Sandbox evidence search. One
@@ -51,8 +57,9 @@ Preview acceptance includes all three original Notion specialists, typed
 `evaluated / research_more` output and a fresh independent source-based review
 with zero material issues. The finite Preview allowance is $40 across three
 ledgers; original charges and unsettled ceilings are preserved without automatic
-top-ups. Native binary uploads remain disabled outside explicitly admitted
-infrastructure. The root Grok model is unchanged. These checks do not complete
+top-ups. Native binary uploads were disabled for the PR 34 release. Schema 077
+enables owner-bound ordinary native-file transport; actual format and recovery
+acceptance remain tracked in feature 018. The root Grok model is unchanged. These checks do not complete
 016 hosted recovery, operator or pilot acceptance.
 
 Customer Overview appears immediately below the customer heading, above workload controls.
