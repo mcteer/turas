@@ -234,3 +234,23 @@ pending/uncertain send state and never redispatches from polling. Reload still
 sends no duplicate message, and genuine conversation denial still hides the chat.
 The final 88-case matrix includes research preview, cancellation, conflict review
 and accessibility checks through the current Customer context disclosure.
+
+
+## Production deployment origin regression — 2026-10-15
+
+The direct Production deployment URL returned `403 invalid_origin` before
+credential validation while canonical Production login worked. A new regression
+failed on the original implementation, then all 13 configuration/auth unit checks
+passed after deriving the additional exact deployment origin from platform
+metadata. Foreign Vercel origins, lookalike suffixes, injected alias settings,
+Production branch aliases, missing origins and forwarded-host spoofing remain
+denied. Hosted browser-form acceptance is recorded separately in the release PR.
+
+
+Exact Preview `6993f535411603aa9c777842c05e58ffe3b053eb` passes six actual CLI
+WebKit browser-form login/logout checks: `mcteer` and `panel` on its immutable
+URL, exact branch alias and canonical Production URL. Each check verifies
+unauthenticated denial, HTTP 200 login/directory, HTTP 403 foreign-origin denial,
+logout and subsequent HTTP 401. Desktop/mobile captures have no overflow. No
+model dispatch occurs. The final documentation-updated head and post-merge
+Production deployment are recorded separately in PR 35.

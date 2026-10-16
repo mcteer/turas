@@ -270,3 +270,15 @@ is part of these 60 tasks.
   owned-clone check in [the visual contract](../../docs/design-reference.md).
 
 This cosmetic follow-up adds no roadmap capability or model-routing behavior.
+
+
+## Authorized hosted login repair — 2026-10-15
+
+- [x] Reproduce rejection of the exact Production deployment URL; add a failing
+  regression, then admit only its platform-provided `VERCEL_URL` in the shared
+  origin guard while preserving the canonical origin, Preview branch handling,
+  missing-origin rejection and foreign/forwarded-host denials.
+- [x] Verify browser-form login/logout for `mcteer` and `panel` on the exact hosted
+  Preview deployment/branch alias and canonical Production URL; record the exact
+  commit and results. Final Production deployment-origin acceptance remains a
+  post-merge release check recorded in the PR.

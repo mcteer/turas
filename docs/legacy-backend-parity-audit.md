@@ -1,10 +1,15 @@
 # Legacy backend parity audit
 
-Legacy source: `../turas-back` at `fd1e205d7fd258676d6fb12b3ade8a431d53a6af`. Current repair branch: `fix/profile-overview-placement`.
+Legacy source: `../turas-back` at `fd1e205d7fd258676d6fb12b3ade8a431d53a6af`. Repair merged in [PR 34](https://github.com/mcteer/turas/pull/34).
 
-Status: in progress. This is a repair audit, not a new feature specification. Each mechanic requires a source comparison and behavior check before it is marked complete. The user requires legacy backend behavior, the current visual theme, automatic acceptance of independent research, and no fake showcased customers.
+Status: merged and released to Production with bounded acceptance. The final
+Preview source-based review and actual hosted checks pass; earlier failures below
+remain historical evidence. Production schema 072, encrypted restore/migration
+rehearsal, explicit grants and authenticated HTTP/CLI WebKit checks are recorded in
+the [release record](production-parity-release-2026-10-15.md). This repair does not
+complete the separate 016 hosted recovery/operator/pilot gates.
 
-## Current hosted acceptance
+## Historical hosted acceptance checkpoints
 
 Earlier checkpoint (`68044c2`): independent review passes the original Baggu
 product-use answer and the customer-free firewall explanation, including the
@@ -1241,3 +1246,17 @@ DOM value instead of its platform accessibility-role exposure inside a collapsed
 select. The duplicate must still be disabled, and the complete mapping/actuals
 journey remains unchanged. The strengthened two-case local check passes; no
 application code changes. Fresh complete CI is required for this test-only repair.
+
+
+### Merge and Production release — 2026-10-15
+
+PR 34 merged as `1fceed37043c16589d00fabbafa6ff1b0012f7f2` after all 43 jobs in
+CI run `38799130984` passed. Its associated local and remote branch were deleted;
+README and the selected local database/workflow/model preservation were verified
+on `main`. The separately authorized Production release applied migrations
+056–072 and runtime grants after restoring the retained encrypted schema-55
+backup, preserving all 409 original tables and rehearsing both old/new code
+against the upgraded clone. Actual Production profile, evidence-search and one
+ordinary source-cited customer-chat check pass. See the
+[release record](production-parity-release-2026-10-15.md) for exact scope and
+recovery limits; these results do not establish full pilot readiness.

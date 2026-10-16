@@ -6,7 +6,8 @@ import type { CurrentSession } from "./sessions";
 export function checkMutationOrigin(request: Request, config: ServerConfig = getServerConfig()): void {
   const origin = request.headers.get("origin");
   if (origin !== config.TURAS_APP_ORIGIN &&
-      (!config.TURAS_PREVIEW_BRANCH_ORIGIN || origin !== config.TURAS_PREVIEW_BRANCH_ORIGIN)) {
+      (!config.TURAS_PREVIEW_BRANCH_ORIGIN || origin !== config.TURAS_PREVIEW_BRANCH_ORIGIN) &&
+      (!config.TURAS_DEPLOYMENT_ORIGIN || origin !== config.TURAS_DEPLOYMENT_ORIGIN)) {
     throw new HttpFailure(403, "invalid_origin", "Request origin denied");
   }
 }
