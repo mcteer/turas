@@ -315,3 +315,110 @@ attachment sandbox containers or images were needed or remained in the exact
 owned resource scan. The native memory/files gate also passes inline provider
 bytes, cross-session preferences, isolation and removal. These checks used a
 synthetic provider and do not establish hosted selected-provider acceptance.
+
+
+### PR38 merge and actual Production acceptance
+
+PR38 merged as0dd6548050d84160d8b53d11b81bf3d7eb5d3d10 after all50 exact
+65dfa553 CI gates passed. Staged-ten-MiB and expansion WebKit first attempts
+timed out without useful inner diagnostics; each passed one unchanged job-only
+retry after unchanged local reproduction passed. The full expansion reproduction
+passes84/84 journeys. Original failures remain preserved. Merged/tested trees
+match, the associated branch is deleted locally/remotely, and README was read on
+main. Duplicate main-push CI was cancelled only after that exact tree proof;
+cancellation is not a passing check.
+
+The fresh schema77 encrypted restore rehearsal preserves445 original table
+fingerprints and all34 runtime-grant checks, with exact452 rollback and65dfa
+candidate compatibility. Its first rollback checkout lacked a CSS dependency;
+correcting only its dependency symlink allowed the unchanged rehearsal to pass.
+The first merge guard encountered an expired Vercel access token; normal CLI
+credential refresh restored access and the unchanged guard passed.
+
+Actual canonical READY Production0dd6548 passes13 general and four login
+checks, plus both original retired conversations' owner/revoked-cookie, reload,
+desktop/mobile and unchanged profile/attempt/usage checks with zero model calls
+and browser errors. A provider quota initially blocked database access. The user
+upgraded the Neon plan; a fresh read-only check then verified schema77 and all34
+privilege assertions. No agent performed billing changes.
+
+Actual selected-model ten-MiB execution passes original10,485,760 bytes, owned
+download SHA, other-owner/revoked-cookie denial, reload, desktop/mobile and
+retirement HTTP200 with zero remaining chunks and archived state. Ten raw
+pre-retirement native events total3,544 bytes; the largest is630 bytes, with no
+staged file bytes. Independent semantic review confirms an accurate noise-image
+answer, not fabricated text. A separate read-only proof verifies the original
+canonical attempt/digests/deadline, settled provider operations and cleanup. Its
+first helper used raw JSONB text-key order for a digest; canonical reconstruction
+fixed that helper assertion. Its second run completed checks but failed its final
+console metric name. Both failures remain preserved; the corrected third run
+passes without another provider call.
+
+The actual malformed104-byte PDF follows parser failure to the raw-file path,
+preserves MIME and checksum, denies another owner and creates no accepted facts
+or research. The selected SDK/provider records explicit MODEL_CALL_FAILED;
+format support and successful extraction are not claimed. Its one unsettled
+8,192-token reservation remains preserved. The browser reload then exposes a
+real remaining gap: No messages yet despite an application-owned original user
+projection. The exact case was retired with HTTP200, zero chunks and archived.
+This is a failed browser acceptance, not an oracle-only failure. T033 restores
+active terminal history display; final release acceptance remains open.
+
+
+### T033 local recovery checks
+
+The new read contract adds only optional turn/step and validated retry-alias
+identity metadata under the existing owned/current-source detail reader. Active
+chat merges canonical display with native messages without reconstructing native
+events or authorizing controls. Saved completed prose wins over a shorter resume
+placeholder; partials require exact turn/step association. Owned staged links
+require exact event identity and matching immutable file metadata. Latest-applied
+read ordering prevents an old200 response from restoring content after a newer
+failed read while allowing slow successful reads to complete.
+
+The full unit suite passes719 tests; the server/domain suite passes60files/224
+tests plus a separate three-case check. TypeScript and219 documentation files
+pass. Independent review found and closed empty-placeholder, overlapping-read,
+visibility JSON/error and slow-read availability cases. The empty-wire UI fixture
+first missed its owned maintenance heartbeat, then the SDK stream-version header;
+both failures remain preserved and only fixture prerequisites were corrected.
+
+The existing staged-four-MiB actual-Eve gate now includes a controlled synthetic
+provider error, the failed user's own file card after reload, a successful next
+turn, unchanged failed holds and final retirement HTTP200. Existing byte,
+correction, reuse and private-file checks remain intact. One actual failed
+provider invocation is recorded. Local native history retained29 events, so this
+is failure-lifecycle proof rather than an empty-native reproduction. The run
+precedes the final visibility-read guard delta; complete exact-head CI will cover
+the final combined source. An immediate article-count assertion was corrected to
+wait for actual async history hydration; another initial test incorrectly sought
+a raw error string in deliberately sanitized projections. Their failures remain
+recorded. The final empty-wire WebKit gate passes all52 cases across four
+projects, with zero skips or retries and no paid provider calls. It covers the
+reviewed application and UI source before the final empty-history preservation
+guard; exact-head CI will cover that narrow guard too. Hosted active-failure
+recovery remains required.
+
+
+### T033 first candidate regression
+
+Candidate086318 reached READY Preview and passes14 general, six login and six
+original retired-history checks with zero model calls. The first general run
+completed all14 behavior checks but failed resource cleanup; an unchanged repeat
+with additional cleanup-error observability passes including cleanup. The first
+cleanup failure is preserved and its cause remains unconfirmed.
+
+Exact-head native-questions CI failed. Unchanged local reproduction finds the
+same question answer twice after reload: the actual continuation has an empty
+string turn ID, preserved by the public SDK reducer, while the display matcher
+incorrectly treats it as absent. This is an application regression, not a flaky
+test. Pending first-candidate CI was cancelled once the regression was confirmed;
+those runs do not constitute a passing release. The replacement uses exact
+turn/step identity including an empty string and requires fresh exact-head CI
+and Preview acceptance. Original failure evidence remains preserved.
+
+The replacement also preserves distinct canonical saved completions if the SDK
+coalesces them under the same empty turn and step. Exact event records remain
+visible without content deduplication. Thirteen focused tests and TypeScript
+pass, including actual public SDK reducer cases for empty and absent turn IDs,
+distinct steps and separate canonical completions.

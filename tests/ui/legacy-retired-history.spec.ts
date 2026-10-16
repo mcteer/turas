@@ -2,6 +2,7 @@ import {randomUUID} from 'node:crypto';
 import {Client} from 'pg';
 import {test as base,expect} from '@playwright/test';
 import {signIn,requireUiFixtureDatabaseUrl} from '../fixtures/ui';
+import {prepareAttempt} from '../../lib/server/conversations/dispatch';
 import {getCurrentSession} from '../../lib/server/auth/sessions';
 
 const test=base.extend<{retiredConversation:string}>({retiredConversation:[async({page},use)=>{
@@ -78,4 +79,60 @@ test('a later interrupted step survives an earlier completed step and long histo
  await expect(page.getByText('Retained interrupted later step',{exact:true})).toBeVisible();
  await expect(page.getByText('Partial response',{exact:true})).toBeVisible();
  await expect(page.getByText('This conversation is long. Only the first 500 saved events and recent partial responses are shown.',{exact:true})).toBeVisible();
+});
+
+// UI integration only: seed authoritative failed projections and let the real
+// SDK resume an explicitly empty transport. The native staged-file gate covers
+// the separate real provider-failure lifecycle.
+test('active failed history survives empty SDK resume, reload, a later send attempt and current-read fences',async({page,retiredConversation,browser})=>{
+ const db=new Client({connectionString:requireUiFixtureDatabaseUrl()});await db.connect();let nativeId:string;
+ try{
+  nativeId=(await db.query('SELECT eve_session_id FROM conversations WHERE id=$1',[retiredConversation])).rows[0].eve_session_id;
+  await db.query('DELETE FROM ordinary_native_retirements WHERE conversation_id=$1',[retiredConversation]);
+  const cookie=(await page.context().cookies()).find(c=>c.name==='turas_session'||c.name==='__Host-turas_session');if(!cookie)throw Error('Fixture owner cookie missing');const actor=await getCurrentSession(new Request(process.env.TURAS_APP_ORIGIN!,{headers:{cookie:`${cookie.name}=${cookie.value}`}}));if(!actor)throw Error('Fixture owner missing');await db.query("INSERT INTO maintenance_workers(environment_id,worker_id,last_seen_at) VALUES($1,$2,clock_timestamp()) ON CONFLICT(environment_id,worker_id) DO UPDATE SET last_seen_at=EXCLUDED.last_seen_at",[process.env.TURAS_ENVIRONMENT_ID,'ui-active-history-'+randomUUID()]);const prepared=await prepareAttempt(actor,retiredConversation,nativeId,randomUUID(),'Synthetic question');await db.query("UPDATE response_attempts SET response_state='failed',dispatch_state='admitted',native_turn_id='turn_0',input_event_id=(SELECT native_event_id FROM event_projections WHERE conversation_id=$2 AND event_type='message.received' ORDER BY emitted_at LIMIT 1) WHERE id=$1",[prepared.attemptId,retiredConversation]);
+ }finally{await db.end();}
+ let emptyResumes=0,sends=0;
+ await page.route(`**/eve/v1/session/${nativeId}/stream**`,route=>{emptyResumes++;return route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-tail-index':'-1','x-eve-stream-version':'25'},body:''});});
+ await page.route(`**/eve/v1/session/${nativeId}`,route=>{if(route.request().method()==='POST'){sends++;return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({code:'synthetic_display_send_unavailable'})});}return route.continue();});
+ await page.goto(`/s/${retiredConversation}`);
+ await expect(page.getByText('retired.png',{exact:true})).toBeVisible();
+ await expect(page.locator('.chat-message-assistant')).toHaveCount(2);
+ await expect.poll(()=>emptyResumes).toBeGreaterThan(0);
+ await page.reload();await expect(page.getByText('retired.png',{exact:true})).toBeVisible();
+ await page.getByRole('textbox',{name:'Message Turi',exact:true}).fill('A subsequent synthetic turn');
+ await expect(page.getByRole('button',{name:'Send message',exact:true})).toBeEnabled();
+ await page.getByRole('button',{name:'Send message',exact:true}).click();
+ await expect.poll(()=>sends).toBe(1);
+ await expect(page.getByText('retired.png',{exact:true})).toBeVisible();
+ await expect(page.getByText('Retained synthetic answer',{exact:true})).toHaveCount(1);
+ // The fallback must disappear after its real authenticated read fails, then
+ // recover only after another successful current authorized response.
+ await page.route(`**/api/conversations/${retiredConversation}`,route=>route.fulfill({status:503,contentType:'application/json',body:'{}'}));
+ await expect(page.locator('.chat-message-assistant')).toHaveCount(0);
+ await page.unroute(`**/api/conversations/${retiredConversation}`);
+ await expect(page.locator('.chat-message-assistant')).toHaveCount(2);
+ // Hold the older initial successful read across a newer failed refresh.
+ let releaseOld!:()=>void,seenNewerFailure!:()=>void;
+ const held=new Promise<void>(resolve=>{releaseOld=resolve;}),newerFailed=new Promise<void>(resolve=>{seenNewerFailure=resolve;});let heldFirst=false;
+ await page.route(`**/api/conversations/${retiredConversation}`,async route=>{
+  if(!heldFirst){heldFirst=true;const original=await route.fetch();await held;return route.fulfill({response:original});}
+  await route.fulfill({status:503,contentType:'application/json',body:'{}'});seenNewerFailure();
+ });
+ await page.reload({waitUntil:'domcontentloaded'});await newerFailed;
+ const oldResponse=page.waitForResponse(response=>response.url().endsWith(`/api/conversations/${retiredConversation}`)&&response.status()===200);
+ releaseOld();await oldResponse;await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ await expect(page.locator('.chat-message')).toHaveCount(0);
+ await page.unroute(`**/api/conversations/${retiredConversation}`);
+ await expect(page.locator('.chat-message-assistant')).toHaveCount(2);
+ // Slow successful reads remain usable while a newer poll is still pending.
+ let releaseSlow!:()=>void,releaseNewer!:()=>void,newerStarted!:()=>void;
+ const slow=new Promise<void>(resolve=>{releaseSlow=resolve;}),newer=new Promise<void>(resolve=>{releaseNewer=resolve;}),started=new Promise<void>(resolve=>{newerStarted=resolve;});let firstSlow=true;
+ await page.route(`**/api/conversations/${retiredConversation}`,async route=>{const response=await route.fetch();if(firstSlow){firstSlow=false;await slow;}else{newerStarted();await newer;}return route.fulfill({response});});
+ await page.reload({waitUntil:'domcontentloaded'});await started;releaseSlow();
+ await expect(page.locator('.chat-message-assistant')).toHaveCount(2);
+ releaseNewer();await page.unroute(`**/api/conversations/${retiredConversation}`);
+ await page.route(`**/api/conversations/${retiredConversation}`,async route=>{const response=await route.fetch(),body=await response.json();body.data.contextStatus='changed';body.data.history=body.data.history.filter((event:{eventType:string})=>event.eventType==='message.received');return route.fulfill({response,json:body});});
+ await expect(page.getByText('Customer context has changed. Start a new conversation to use current information.',{exact:true})).toBeVisible();
+ await expect(page.locator('.chat-message-assistant')).toHaveCount(0);
+ const other=await browser.newContext({baseURL:process.env.TURAS_UI_BASE_URL});try{const outsider=await other.newPage();await signIn(outsider,'panel');expect((await outsider.request.get(`/api/conversations/${retiredConversation}`)).status()).toBe(404);}finally{await other.close();}
 });

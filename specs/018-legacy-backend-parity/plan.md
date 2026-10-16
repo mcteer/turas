@@ -40,3 +40,15 @@ Foundation: pin all source paths/hashes and reconcile three research inventories
 ## Complexity Tracking
 
 No constitutional violations. Existing domain repositories are reused; dedicated channels cannot substitute for missing ordinary-chat consumers.
+
+## Active terminal-history recovery follow-up
+
+PR38 passes actual Production ten-MiB delivery with compact native events. A
+separate malformed-PDF provider error exposes a display gap before explicit
+retirement: BoundChat ignores the authorized persisted history when the native
+stream is empty. T033 merges missing application display messages with live
+messages by exact canonical/recorded-alias event and generated turn/step identity.
+Optional history identity metadata is a read contract addition, not a native event
+or input authorization. Denial or noncurrent evidence clears recovered generated
+content. Preserve the500-event bound, original failures and unknown model holds.
+No schema or runtime-grant change is required.

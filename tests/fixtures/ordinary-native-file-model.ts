@@ -13,10 +13,11 @@ export function createOrdinaryNativeFileFixtureModel(attemptId:string){
   // a correction, memory request or checklist action.
   const prompts=new Set(['Please inspect this native file.','Correct this using the attached file.','Remember that I prefer concise answers.',
    'Recall the saved preference.','Check for a stored preference.','Read the private checklist after reconnect.','Check private checklist isolation.',
-   'Inspect the previously attached file after reload.']);
+   'Inspect the previously attached file after reload.','Fail this native file turn explicitly.','Recover after the failed native file turn.']);
   const texts=messages.flatMap(message=>message.role==='user'?message.text.split('\n').map(text=>text.trim()):[]);
   const lastUserMessage=texts.flatMap(text=>[...prompts].filter(prompt=>text.includes(prompt))).at(-1)??[...prompts].find(prompt=>runtimeLastUserMessage?.includes(prompt))??runtimeLastUserMessage;
   console.info(JSON.stringify({kind:'owned_native_file_prompt',user:prompts.has(lastUserMessage??'')?lastUserMessage:'unmatched',tools:toolResults.map(result=>result.name)}));
+  if(lastUserMessage==='Fail this native file turn explicitly.'){console.error(JSON.stringify({kind:'owned_native_file_provider_failure',attemptId}));throw Error('OWNED_NATIVE_FILE_PROVIDER_FAILURE');}
   if(process.env.TURAS_ORDINARY_TASK_STATE_FIXTURE==='1'){
    const read=lastUserMessage==='Read the private checklist after reconnect.',isolated=lastUserMessage==='Check private checklist isolation.';
    const callId=`checklist-${attemptId}-${read?'read':isolated?'isolated':'replace'}`;
@@ -58,7 +59,7 @@ export function createOrdinaryNativeFileFixtureModel(attemptId:string){
   for(let i=0;i<5;i++){if(typeof value==='string'){try{value=JSON.parse(value);continue;}catch{break;}}if(value&&typeof value==='object'&&'value' in value){value=value.value;continue;}break;}
   if(!value||typeof value!=='object'||!('status' in value)||value.status!=='resolved'||!('account' in value)||!value.account||typeof value.account!=='object'||!('id' in value.account)||typeof value.account.id!=='string')throw Error('Native customer resolver did not return a canonical account');
   await query('INSERT INTO ordinary_native_file_fixture_resolutions(attempt_id,customer_id) VALUES($1,$2) ON CONFLICT DO NOTHING',[attemptId,value.account.id]);
-  return {text:lastUserMessage==='Inspect the previously attached file after reload.'?'Previously attached file bytes received.':'Native file bytes received.',usage:{inputTokens:11,outputTokens:7}};
+  return {text:lastUserMessage==='Recover after the failed native file turn.'?'Native file recovery completed.':lastUserMessage==='Inspect the previously attached file after reload.'?'Previously attached file bytes received.':'Native file bytes received.',usage:{inputTokens:11,outputTokens:7}};
  }});
  if(typeof model==='string')throw Error('Fixture model unavailable');
  return wrapLanguageModel({model,middleware:{async transformParams({params}){

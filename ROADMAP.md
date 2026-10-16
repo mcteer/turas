@@ -12,7 +12,7 @@ tasks. This does not complete unrelated feature-016 pilot work.
 parity repair. Its [audit](docs/legacy-backend-parity-audit.md) retains earlier
 failed checks and the passing final Preview evidence. The
 [2026-10-15 Production release](docs/production-parity-release-2026-10-15.md)
-applies schema 072 and runtime grants after encrypted restore/migration rehearsal,
+used schema 072 and runtime grants at that release after encrypted restore/migration rehearsal,
 with actual authenticated profile/search/chat checks. This repair and release do
 not complete 016 hosted recovery, operator or pilot acceptance.
 
@@ -300,3 +300,7 @@ production verification. Revise dependencies and scope when evidence changes.
 Update README in each relevant PR and verify it after merge.
 
 Feature 018 follow-up: PR 36 and PR 37 are merged on schema 077. Actual Production retired-history/profile checks pass (T030), with exact bounded retry recovery covered by T031. Ten-MiB acceptance exposed a platform user-stream chunk limit before provider admission; T032 tracks compact immutable file transport with verified bytes at the provider boundary. Full feature acceptance remains open.
+
+Feature018 PR38 is merged on Production schema077 with actual ten-MiB compact
+selected-provider delivery verified. T033 active failed-turn history recovery and
+final acceptance remain open; see the feature tasks and validation record.

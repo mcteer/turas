@@ -1318,3 +1318,20 @@ against the upgraded clone. Actual Production profile, evidence-search and one
 ordinary source-cited customer-chat check pass. See the
 [release record](production-parity-release-2026-10-15.md) for exact scope and
 recovery limits; these results do not establish full pilot readiness.
+
+
+### Restoration releases through PR38 — 2026-10-16
+
+PR36/37/38 merged restoration from the337-path/101-reference audit, retired history
+and exact native retries, then compact staged-file transport. Actual Production
+schema77 general/login/original-history checks and selected-provider ten-MiB
+execution pass; the largest captured native event is630bytes. See the
+[release record](production-parity-release-2026-10-16.md). Original findings and
+failed checks above remain historical evidence. Current implementation mappings
+and source hashes live in the feature018 inventory.
+
+One actionable acceptance gap remains: an active provider-failed conversation
+loses its visible history when Eve transient messages are purged. The original
+PDF browser check remains failed and its unknown reservation is preserved. T033
+restores authorized application-owned display without changing native authority;
+final acceptance and release closure remain open.
