@@ -21,3 +21,13 @@ describe('application-owned retired conversation history',()=>{
   expect(retainedChatMessages([event('d','message.appended',{messageDelta:'delta'}),event('t','message.received',{parts:[{type:'tool',text:'private'}]}),event('a','message.completed',{message:'complete'})])).toEqual([{id:'a',role:'assistant',parts:[{type:'text',text:'complete'}],partial:false}]);
  });
 });
+
+
+it('renders canonical application file metadata independently of the compact native replay envelope',()=>{
+ const raw={message:'Question\n[file: image.png (image/png)]',parts:[{type:'text',text:'Question\n[file: image.png (image/png)]'}],
+  applicationInputParts:[{type:'text',text:'Question'},{type:'file',filename:'image.png',mediaType:'image/png',size:10485760,data:'secret',url:'https://example.com/private'}]};
+ const before=JSON.stringify(raw),message=retainedChatMessages([{eventId:'u',eventType:'message.received',payload:raw}],false)[0];
+ expect(message.parts).toEqual([{type:'text',text:'Question'},{type:'file',filename:'image.png',mediaType:'image/png',size:10485760}]);
+ expect(JSON.stringify(raw)).toBe(before);
+ expect(JSON.stringify(message)).not.toContain('secret');expect(JSON.stringify(message)).not.toContain('https://example.com/private');
+});

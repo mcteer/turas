@@ -13,7 +13,7 @@ import {readCurrentAttemptContext} from '../profiles/attempt-context';
 import {messageDigest,normalizeMessageText} from './message-integrity';
 import {getServerConfig} from '../config';
 import {type OrdinaryNativeMessage,nativeMessageText} from '../../conversations/native-message';
-import {parseOrdinaryNativeMessage,nativeMessageDigest,summarizeNativeMessage,sameNativeUploadReferences} from './native-message';
+import {parseOrdinaryNativeMessage,nativeMessageDigest,summarizeNativeMessage,sameNativeUploadReferences,canonicalNativeUploadTransport} from './native-message';
 import {attachmentLimits,parseAttachmentMessage} from '../../conversations/attachment-text';
 import {bindNativeUploads,assertNativeAttemptFileLimit} from './native-uploads';
 
@@ -75,12 +75,10 @@ export async function prepareOrdinarySteering(actor:CurrentSession,conversationI
 }
 
 /** Called by the native channel's onMessage authorization, before execution. */
-export async function deriveSteeringAttempt(actor:CurrentSession,nativeSessionId:string,requestKey:string,message:string|OrdinaryNativeMessage,options:{trustedHydrated?:true}={}){
- const parts=typeof message==='string'?null:parseOrdinaryNativeMessage(message,options);
- const digest=parts?nativeMessageDigest(parts):messageDigest(message as string);
+export async function deriveSteeringAttempt(actor:CurrentSession,nativeSessionId:string,requestKey:string,message:unknown,options:{trustedHydrated?:true}={}){
  return withTransaction(async db=>{
   if(!await ready(db))return null;
-  const row=(await db.query(`SELECT d.attempt_id,m.body_digest,c.id AS conversation_id FROM ordinary_steering_deliveries d
+  const row=(await db.query(`SELECT d.attempt_id,m.body_digest,m.ordinary_native_parts,c.id AS conversation_id FROM ordinary_steering_deliveries d
     JOIN response_attempts a ON a.id=d.attempt_id JOIN submitted_messages m ON m.id=d.message_id
     JOIN conversations c ON c.id=a.conversation_id AND c.id=m.conversation_id
     WHERE c.eve_session_id=$1 AND c.owner_principal_id=$2 AND c.workspace_id=$3 AND c.environment_id=$4
@@ -89,8 +87,13 @@ export async function deriveSteeringAttempt(actor:CurrentSession,nativeSessionId
     [nativeSessionId,actor.principalId,actor.workspaceId,getServerConfig().TURAS_ENVIRONMENT_ID,requestKey,actor.sessionId])).rows[0];
   if(!row)return null;
   assertNativeFileEvaluationOpen(row.conversation_id);
+  const transport=canonicalNativeUploadTransport(row.ordinary_native_parts,message,row.body_digest),resolved=transport??message;
+  const parts=typeof resolved==='string'?null:transport!==null?transport as OrdinaryNativeMessage:parseOrdinaryNativeMessage(resolved,options);
+  const digest=parts?nativeMessageDigest(parts):messageDigest(resolved as string);
   if(parts&&!ordinaryNativeFilesEnabled(row.conversation_id))throw hiddenRecord();
-  if(row.body_digest!==digest)throw hiddenRecord();
+  const uploadTransport=transport!==null;
+  if(uploadTransport&&!ordinaryNativeFilesEnabled(row.conversation_id))throw hiddenRecord();
+  if(row.body_digest!==digest&&!uploadTransport)throw hiddenRecord();
   await lockOwnedBinding(db,actor,row.conversation_id);
   if((await conversationFeature(db,row.conversation_id)).kind!=='normal')throw hiddenRecord();
   await readCurrentAttemptContext(db,row.attempt_id,actor.principalId);

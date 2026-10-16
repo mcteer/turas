@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-15
 
-**Status**: Specified; comprehensive audit and implementation required
+**Status**: Backend restoration and history/retry fixes merged; staged-file stream-limit follow-up and final release acceptance in progress
 
 **Input**: “AUDIT ALL OF LEGACY. COPY BACKEND MECHANISMS.” Continue through working implementation, validation and merge without repeated approval requests. The reference is `../turas-back` at `fd1e205d7fd258676d6fb12b3ade8a431d53a6af`.
 
@@ -81,6 +81,7 @@ As the maintainer, I can inspect an exhaustive mechanism ledger and its evidence
 
 ### Edge Cases
 
+- A staged ten-MiB file expands past a hosted durable stream chunk limit before provider admission. Stream compact immutable references/summaries while verifying original bytes at the separately authorized model boundary; preserve inline files, mixed batches, steering, private previews and metadata-only retired history.
 - A durable native step is interrupted after accepted input projection and before provider admission; its retry emits a new event ID for the same delivery. Recovery must keep the original input, file metadata, deadline and allowance, and one visible send. A changed envelope, expired authority or any prior model reservation must not admit a new alias.
 - A research result arrives after an initial empty read but before the final answer/profile reload.
 - Multiple passages from one page, a truncated quote, incidental navigation/product names, reverse integrations, dated evaluations and source-specific ordering produce different product lists.

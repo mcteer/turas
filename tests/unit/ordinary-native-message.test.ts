@@ -2,7 +2,7 @@ import {nativeProviderFilePresent} from '../../lib/server/conversations/native-p
 import {createHash} from 'node:crypto';
 import {formatAttachmentText} from '../../lib/conversations/attachment-text';
 import {describe,expect,it} from 'vitest';
-import {parseOrdinaryNativeMessage,nativeMessageDigest,summarizeNativeMessage} from '../../lib/server/conversations/native-message';
+import {parseOrdinaryNativeMessage,nativeMessageDigest,summarizeNativeMessage,nativeUploadTransportMessage,matchesNativeUploadTransport,canonicalNativeUploadTransport} from '../../lib/server/conversations/native-message';
 const file=(text:string)=>({type:'file',filename:'source.bin',mediaType:'application/octet-stream',data:'data:application/octet-stream;base64,'+Buffer.from(text).toString('base64')});
 describe('legacy native file transport',()=>{
  it('binds actual bytes and metadata while keeping Eve’s original received-message summary',()=>{
@@ -33,4 +33,34 @@ it('deduplicates exact SDK staging aliases only with original immutable name, MI
  expect(nativeProviderFilePresent(identity,[{...part,filename:'original.png'}])).toBe(true);
  for(const changed of [{...part,filename:`/workspace/attachments/${sha256.slice(0,16)}/corrected.png`},{...part,filename:'/arbitrary/original.png'},{...part,mediaType:'text/plain'},{...part,data:{type:'data',data:Buffer.from('changed')}},{...part,data:{type:'url',url:'file:///workspace/attachments/original.png'}}])expect(nativeProviderFilePresent(identity,[changed])).toBe(false);
  expect(nativeProviderFilePresent({...identity,filename:'corrected.png'},[part])).toBe(false);
+});
+
+it('keeps staged bytes outside durable native streams without losing mixed inline parts or original digest',()=>{
+ const staged={type:'file',filename:'large.png',mediaType:'image/png',data:'turas-upload:00000000-0000-4000-8000-000000000001',sha256:'a'.repeat(64),size:10*1024*1024};
+ const original=parseOrdinaryNativeMessage([{type:'text',text:'Original prompt'},staged]);
+ const summary=nativeUploadTransportMessage(original);
+ expect(summary).toBe(summarizeNativeMessage(original));expect(JSON.stringify(summary).length).toBeLessThan(1024);
+ expect(matchesNativeUploadTransport(original,summary,nativeMessageDigest(original))).toBe(true);
+ expect(matchesNativeUploadTransport(original,String(summary)+' changed',nativeMessageDigest(original))).toBe(false);
+ const mixed=parseOrdinaryNativeMessage([{type:'text',text:'Original prompt'},file('inline'),staged]);
+ const forwarded=nativeUploadTransportMessage(mixed);expect(Array.isArray(forwarded)).toBe(true);
+ if(typeof forwarded==='string')throw Error('Mixed transport lost inline file');
+ expect(forwarded.filter(part=>part.type==='file')).toEqual([file('inline')]);
+ expect(summarizeNativeMessage(forwarded)).toBe(summarizeNativeMessage(mixed));
+ expect(matchesNativeUploadTransport(mixed,forwarded,nativeMessageDigest(mixed))).toBe(true);
+ expect(matchesNativeUploadTransport(mixed,summarizeNativeMessage(mixed),nativeMessageDigest(mixed))).toBe(false);
+ expect(matchesNativeUploadTransport(mixed,parseOrdinaryNativeMessage(forwarded.map(part=>part.type==='file'?file('substitution'):part)),nativeMessageDigest(mixed))).toBe(false);
+ expect(matchesNativeUploadTransport(mixed,forwarded,'b'.repeat(64))).toBe(false);
+});
+
+it.each(['utf8-boundary','document-envelope'])('recognizes only exact saved generated transport without reparsing %s as new user text',kind=>{
+ const prompt=kind==='utf8-boundary'?'界'.repeat(5461)+'a':formatAttachmentText('source.txt','text/plain','x'.repeat(120000));
+ const staged={type:'file',filename:'界'.repeat(240),mediaType:'application/octet-stream',data:'turas-upload:00000000-0000-4000-8000-000000000001',sha256:'a'.repeat(64),size:1};
+ const original=parseOrdinaryNativeMessage([{type:'text',text:prompt},file('inline'),staged]);
+ const transport=nativeUploadTransportMessage(original);if(typeof transport==='string')throw Error('Mixed transport lost inline');
+ expect(()=>parseOrdinaryNativeMessage(transport,{trustedHydrated:true})).toThrow();
+ expect(canonicalNativeUploadTransport(original,transport,nativeMessageDigest(original))).toEqual(transport);
+ const eveParsed=transport.map(part=>part.type==='file'?{type:part.type,mediaType:part.mediaType,data:part.data,filename:part.filename}:part);
+ expect(canonicalNativeUploadTransport(original,eveParsed,nativeMessageDigest(original))).toEqual(transport);
+ expect(canonicalNativeUploadTransport(original,[...transport,{type:'text',text:'untrusted additional text'}],nativeMessageDigest(original))).toBeNull();
 });

@@ -29,8 +29,8 @@ export const hydratedNativeMessageSchema=messageSchema(hydratedNativeMessageByte
 export type OrdinaryNativeMessage=z.infer<typeof ordinaryNativeMessageSchema>;
 export type OrdinaryNativeFile=z.infer<typeof nativeFilePartSchema>;
 
-/** Eve's documented text-summary contract for UserContent. The native runtime
- * receives the original parts, including bytes; this is only its audit summary. */
+/** Eve's documented text-summary contract for UserContent. Staged bytes stay in
+ * application storage and reach the model only at the governed provider boundary. */
 export function summarizeNativeMessage(parts:OrdinaryNativeMessage){
  return parts.map(part=>part.type==='text'?part.text:`[file: ${part.filename} (${part.mediaType})]`).join('\n');
 }
