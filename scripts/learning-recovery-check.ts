@@ -24,7 +24,13 @@ async function main(){
  if(process.argv.length!==2)throw Error('Recovery accepts no environment overrides');
  const currentSchema=JSON.parse(await readFile('migrations/manifest.json','utf8')).version;assert.ok(Number.isSafeInteger(currentSchema)&&currentSchema>=55);
  const sourceDigest=await featureSourceDigest('014');await mkdir('local-artifacts/014',{recursive:true,mode:0o700});const directory=await mkdtemp(resolve('local-artifacts/014/recovery-')),results:unknown[]=[];
- for(const priorSchema of [undefined,51] as const)await withLearningEnvironment(async environment=>{
+ for(const priorSchema of [undefined,51] as const){
+ const cohortStarted=Date.now();
+ const progress=(phase:'cohort_start'|'setup_ready'|'domain_ready'|'workers_recovered'|'restart_0_start'|'restart_1_start'|'maintenance_start'|'cohort_complete')=>
+  console.info(JSON.stringify({kind:'learning_recovery_progress',cohort:priorSchema===undefined?'empty':'51',phase,elapsedMs:Date.now()-cohortStarted}));
+ progress('cohort_start');
+ await withLearningEnvironment(async environment=>{
+  progress('setup_ready');
   const seeded=await withLearningDatabase(seedLearningPublicPractice),before=await predecessorDigest(),marker=randomUUID(),markerPath=join(environment.workflowRoot,'014-recovery-marker');await writeFile(markerPath,marker,{mode:0o600});
   if(priorSchema){await environment.startWorker();await environment.stop();assert.equal(await predecessorDigest(),before);await environment.upgradeToCurrent();}
   assert.equal(await predecessorDigest(),before);
@@ -40,21 +46,27 @@ async function main(){
   const f=await withLearningDatabase(db=>learningNativeFixture(db));await admitGovernedStaffingModelStep(f.principal,f.identity);await assertGovernedStaffingProviderRelease(f.principal,f.identity);
   const current=await learningDraftMeta(f.actor,f.meta.id);await cancelLearningDraft(f.actor,f.meta.id,{contractVersion:'learning-v1',requestId:randomUUID(),expectedVersion:current.version,rationale:'Synthetic interrupted-provider recovery'});
   const early=new Date(Date.now()+3600000);await withLearningDatabase(async db=>{await scheduleLearningPayloadPurge(db,f.meta.id,'attempt','global_invalidated',new Date(),early);await db.query('UPDATE learning_workspace_state SET enabled=false WHERE workspace_id=$1',[f.workspaceId]);});
+  progress('domain_ready');
   await environment.startWorker();await environment.crashWorker();await environment.startWorker();await environment.stop();
   await runLearningMaintenanceTick({nativeRetirement:false});assert.equal((await readLearningBudget(f.actors.admin,f.meta.budgetId)).blocked,true);
   await withLearningDatabase(async db=>{assert.equal((await db.query("SELECT purge_at FROM learning_payload_states WHERE kind='attempt' AND owner_id=$1",[f.meta.id])).rows[0].purge_at.getTime(),early.getTime());assert.equal(Number((await db.query('SELECT count(*)::int n FROM learning_budget_settlements s JOIN learning_budget_reservations r ON r.id=s.reservation_id WHERE r.attempt_id=$1',[f.meta.id])).rows[0].n),0);});
   assert.equal(await readFile(markerPath,'utf8'),marker);
   const restartIdentity=await predecessorDigest();
+  progress('workers_recovered');
   for(let restart=0;restart<2;restart++){
+   progress(restart===0?'restart_0_start':'restart_1_start');
    await environment.startNative();
    const response=await fetch(environment.origin+'/api/learning/drafts/'+f.meta.id,{headers:{cookie:'turas_session='+f.actor.token},signal:AbortSignal.timeout(90000)});assert.equal(response.status,200);const recovered=await response.json();assert.equal(recovered.data.id,f.meta.id);assert.equal(recovered.data.state,'cancelled');
    await environment.stop();assert.equal(await readFile(markerPath,'utf8'),marker);assert.equal(await predecessorDigest(),restartIdentity);
   }
   // Exact registered recovery assertions exercise disabled reads, source loss,
   // unknown holds and interrupted final retirement claims against this database.
+  progress('maintenance_start');
   const files=['tests/integration/learning-maintenance.test.ts'],report=join(directory,`schema-${priorSchema??'empty'}.json`),run=await capturePartnerProcess(['node_modules/vitest/vitest.mjs','run',...files,'--reporter=json','--outputFile='+report,'--testTimeout=120000'],240000,environment.signal);await writeFile(report+'.log',run.stdout+run.stderr,{mode:0o600});if(run.status!==0||run.error)throw Error('Recovery domain checks failed; inspect '+directory);const passed=verifyLearningTestReport(JSON.parse(await readFile(report,'utf8')),files);
   results.push({from:priorSchema??'empty',to:currentSchema,domainChecks:passed,activationSnapshot:true,oldWriterDenied:true,runtimeGrants:true,workerCrashAndSigterm:true,authenticatedNativeAppRestarts:2,sameDatabaseAndWorkflow:true,unknownCostHeld:true,earliestDeadlinePreserved:true});
  },{priorSchema,deadlineMs:600000});
+ progress('cohort_complete');
+ }
  assert.equal(await featureSourceDigest('014'),sourceDigest);const summary={sourceDigest,results,paidCalls:0,hostedProof:false};await writeFile(join(directory,'summary.json'),JSON.stringify(summary),{mode:0o600});console.info(JSON.stringify(summary));
 }
 main().catch(error=>{console.error(error instanceof Error?error.message:'Learning recovery failed');process.exitCode=1;});

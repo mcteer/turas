@@ -1,6 +1,6 @@
 import { spawnSync, spawn } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
-import { mkdtempSync, readFileSync, writeFileSync, rmSync, mkdirSync, existsSync, readdirSync, copyFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync, rmSync, mkdirSync, existsSync, readdirSync, copyFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client } from "pg";
@@ -20,14 +20,8 @@ if (process.argv.includes("--webkit-child")) {
     process.env.TURAS_UI_BASE_URL=environment.origin;
     process.env.TURAS_UI_FIXTURE_DATABASE_URL=process.env.DATABASE_URL_UNPOOLED;
     process.env.TURAS_EXECUTION_FIXTURE_READY="1";
-    // This is only the disposable development clone. Keep the real compiled
-    // routes resident while all four projects run; production config is intact.
-    const configPath=join(environment.appRoot,"next.config.ts"),config=readFileSync(configPath,"utf8");
-    const configAnchor="const nextConfig: NextConfig = {";
-    if(config.split(configAnchor).length!==2)throw Error("Owned Next config shape changed");
-    writeFileSync(configPath,config.replace(configAnchor,configAnchor+"\n  onDemandEntries: { maxInactiveAge: 1_200_000, pagesBufferLength: 32 },"));
     await environment.start();
-    // Pay cold Next compilation before the unchanged 30-second scenario clocks.
+    // Verify compiled production route readiness before the unchanged scenario clocks.
     // Every response is real authenticated HTTP against the marked owned clone.
     const warmupFolder="local-artifacts/018/ci-webkit";mkdirSync(warmupFolder,{recursive:true,mode:0o700});
     const warmupStarted=Date.now(),warmupDeadline=warmupStarted+180_000,warmup=[];
@@ -120,11 +114,9 @@ if (process.argv.includes("--webkit-child")) {
     if(report.stats.expected!==20||report.stats.unexpected||report.stats.flaky||report.stats.skipped)
       throw Error("018 WebKit requires all20cases acrossfourprojects without skips or retries");
     console.log(JSON.stringify({gate:"018-webkit",actualEve:true,projects:4,passed:20,skipped:0}));
-  },{feature:"010",deadlineAt:Date.now()+1_800_000,prepare:async({appRoot})=>{
-    const {readFile,writeFile,copyFile}=await import("node:fs/promises");
+  },{feature:"010",production:true,deadlineAt:Date.now()+1_800_000,prepare:async({appRoot})=>{
+    const {copyFile}=await import("node:fs/promises");
     await copyFile("playwright.config.ts",join(appRoot,"playwright.config.ts"));
-    const dev=join(appRoot,"scripts/dev.mjs");
-    await writeFile(dev,(await readFile(dev,"utf8")).replace('["dev"]','["dev","--webpack"]'),{mode:0o600});
     return {};
   }});
   process.exit(0);
