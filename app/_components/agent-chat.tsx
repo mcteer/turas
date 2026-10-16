@@ -6,6 +6,9 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { DemoDataNotice } from "./demo-data-notice";
 import { ChatStatus } from "./chat-status";
+import {ChatViewport} from "./chat-viewport";
+import {ChatAssistantParts,activityRequestIds,assistantHasContent} from "./chat-activity";
+import {ComposerLinks} from "./composer-links";
 import { ShareChatClaim } from "./profiles/share-chat-claim";
 import { ComposerAttachments } from "./attachments/composer-attachments";
 import type { DraftSourceSelection } from "./attachments/source-viewer";
@@ -26,6 +29,8 @@ import {composeOrdinaryMessage,splitOrdinaryMessage,type OrdinaryAttachment,type
 import {ordinaryNativeMessageSchema,summarizeNativeMessage} from "../../lib/conversations/native-message";
 import {uploadNativeFiles,cancelRemovedNativeFiles} from "../../lib/conversations/upload-native-files";
 
+const pendingQuestionFileNotice = 'Answer the pending question separately before sending files or selected evidence.';
+
 function UserChatText({text}:{text:string}) {
   const parsed=parseAttachmentMessage(text);
   return parsed?<>{parsed.prompt&&<p>{parsed.prompt}</p>}<ReceivedDocuments documents={parsed.documents}/></>:<p>{text}</p>;
@@ -38,7 +43,7 @@ export function AgentChat({ conversationId, nativeSessionId, bindingState,
   customerId: string | null; contextStatus: "current" | "changed" | "historical";
   nativeRetired?: boolean; retainedHistory?: RetainedChatEvent[]; historyTruncated?: boolean;
 }) {
-  if (contextStatus !== "current") return <HistoricalChat conversationId={conversationId}
+  if (contextStatus !== "current") return <HistoricalChat key={conversationId} conversationId={conversationId}
     customerId={customerId} customerName={customerName} />;
   if (nativeRetired) return <RetainedChat conversationId={conversationId} customerId={customerId} initialHistory={retainedHistory} initialTruncated={historyTruncated}/>;
   if (!nativeSessionId || bindingState !== "bound") {
@@ -55,19 +60,20 @@ function HistoricalChat({ conversationId, customerId, customerName }: {
   conversationId: string; customerId: string | null; customerName: string;
 }) {
   const [messages, setMessages] = useState<RetainedChatEvent[]>([]);
+  const [ready,setReady]=useState(false);
   useEffect(() => {
     let active = true;
     void fetch(`/api/conversations/${conversationId}`, { cache: "no-store" }).then(async (response) => {
       if (!response.ok) return;
       const result = await response.json() as { data: { history: typeof messages } };
-      if (active) setMessages(result.data.history);
+      if (active) {setMessages(result.data.history);setReady(true);}
     }).catch(() => undefined);
     return () => { active = false; };
   }, [conversationId]);
-  return <main className="chat-page"><h1 className="chat-heading">{customerName}</h1>
+  return <main className="chat-page chat-thread"><h1 className="chat-heading">{customerName}</h1>
     <p role="status" className="chat-notice">Customer context has changed. Start a new conversation to use current information.</p>
-    <div className="chat-messages">{retainedChatMessages(messages,false).map(message => <article className="chat-message" key={message.id}>
-      <h2>You</h2>{message.parts.map((part,index)=>part.type==='file'?<NativeChatAttachment key={index} filename={part.filename} mediaType={part.mediaType} size={part.size}/>:<UserChatText key={index} text={part.text}/>)}</article>)}</div>
+    <ChatViewport conversationId={conversationId} ready={ready}>{retainedChatMessages(messages,false).map(message => <article className="chat-message" key={message.id}>
+      <h2>You</h2>{message.parts.map((part,index)=>part.type==='file'?<NativeChatAttachment key={index} filename={part.filename} mediaType={part.mediaType} size={part.size}/>:<UserChatText key={index} text={part.text}/>)}</article>)}</ChatViewport>
     <p><Link className="primary-button" href={`/s?customerId=${encodeURIComponent(customerId ?? "")}`}>Start a New Conversation</Link></p>
   </main>;
 }
@@ -83,6 +89,9 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   const initialSent = useRef(false);
   const [draft, setDraft] = useState("");
   const [notice, setNotice] = useState("");
+  const clientFailures=useRef(0);
+  const noticeEpoch=useRef(0),preparingSend=useRef<symbol|null>(null),responding=useRef<{requestId:string;operation:number}|null>(null),stoppingNow=useRef(false);
+  const [historyReady,setHistoryReady]=useState(false);
   const [denied, setDenied] = useState(false);
   const [stale, setStale] = useState(false);
   const [stopping, setStopping] = useState(false);
@@ -101,12 +110,12 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   const [applicationHistory,setApplicationHistory]=useState<RetainedChatEvent[]>([]);
   const [historyTruncated,setHistoryTruncated]=useState(false);
   const historyReadEpoch=useRef(0),historyAppliedEpoch=useRef(0);
-  function clearApplicationHistory(epoch:number){if(epoch<historyAppliedEpoch.current)return;historyAppliedEpoch.current=epoch;setApplicationHistory([]);setNativeAttachments([]);}
+  function clearApplicationHistory(epoch:number){if(epoch<historyAppliedEpoch.current)return;historyAppliedEpoch.current=epoch;setApplicationHistory([]);setNativeAttachments([]);setHistoryReady(false);}
   function applyApplicationHistory(data:{contextStatus?:string;history?:RetainedChatEvent[];historyTruncated?:boolean;nativeAttachments?:FileReference[]},epoch:number){
     if(epoch<historyAppliedEpoch.current)return;historyAppliedEpoch.current=epoch;
     setNativeAttachments(data.contextStatus==='current'?data.nativeAttachments??[]:[]);
     setApplicationHistory(data.contextStatus==='current'&&Array.isArray(data.history)?data.history:[]);
-    setHistoryTruncated(data.historyTruncated===true);
+    setHistoryTruncated(data.historyTruncated===true);setHistoryReady(true);
   }
 
   const [documents,setDocuments]=useState<OrdinaryAttachment[]>([]);
@@ -129,14 +138,19 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     resume: true,
     headers: () => ({ "x-csrf-token": csrfToken,
       "x-turas-conversation-id": conversationId }),
+    onError(){clientFailures.current++;},
     onEvent(event) {
+      if(event.type==='input.resolved'&&event.data.resolutions.some(resolution=>resolution.requestId===responding.current?.requestId)){
+        responding.current=null;setAnswering(false);noticeEpoch.current++;setNotice('');
+      }
       if(event.type==='input.requested'){
-        setResponseState('waiting_input');setPendingKey(null);keyRef.current=null;
+        noticeEpoch.current++;setNotice('');setResponseState('waiting_input');setPendingKey(null);keyRef.current=null;
       }
       if (["turn.completed", "turn.failed", "turn.cancelled"].includes(event.type)) {
         setResponseState(event.type === "turn.completed" ? "completed"
           : event.type === "turn.failed" ? "failed" : "cancelled");
-        setStopping(false);
+        noticeEpoch.current++;setNotice("");
+        stoppingNow.current=false;setStopping(false);
         setPendingKey(null);
         keyRef.current = null;
         pendingSelections.current = null;
@@ -151,12 +165,12 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   const messages = visibleChatMessages(agent.data.messages, agent.events);
   const displayMessages=activeChatHistory(messages,canSteer?applicationHistory:[]);
   const background = backgroundChatActivity(agent.events);
-  const messagesPane = useRef<HTMLDivElement>(null);
-  const followBottom = useRef(true);
-  useEffect(() => {
-    const pane = messagesPane.current;
-    if (pane && followBottom.current) pane.scrollTop = pane.scrollHeight;
-  }, [agent.data.messages, agent.status]);
+  const displayedRequestIds=new Set(displayMessages.flatMap(item=>activityRequestIds(item.kind==='native'?item.message.parts:item.activity??[])));
+  const awaitingAuthorization=messages.some(message=>message.parts.some(part=>part.type==='authorization'&&part.state!=='completed'));
+  const awaitingUser=inputRequests.length>0||awaitingAuthorization;
+  const lastMessage=messages.at(-1);
+  const hasResponseProgress=lastMessage?.role==='assistant'&&assistantHasContent(lastMessage.parts,inputRequests);
+
 
   useEffect(() => {
     let active = true;
@@ -274,7 +288,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         } else if (["completed", "cancelled", "failed"].includes(result.data.responseState)) {
           setPendingKey(null);
           keyRef.current = null;
-          setStopping(false);
+          stoppingNow.current=false;setStopping(false);
         }
       } catch { if (active) {if(visibilityHistoryEpoch!==undefined)clearApplicationHistory(visibilityHistoryEpoch);setNotice("Status is unavailable. The message was not sent again.");} }
     };
@@ -285,10 +299,10 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
 
   useEffect(() => {
     const storageKey = `turas-chat-draft:${conversationId}`;
-    const saved = sessionStorage.getItem(storageKey);
-    if (!saved) return;
-    sessionStorage.removeItem(storageKey);
     try {
+      const saved = sessionStorage.getItem(storageKey);
+      if (!saved) return;
+      sessionStorage.removeItem(storageKey);
       const value = JSON.parse(saved);
       if(typeof value.requestKey!=="string")return;
       const checked=ordinaryNativeMessageSchema.safeParse(value.text);
@@ -306,42 +320,43 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     void send(false, initialDraft);
   }, [initialDraft, agent.status]);
 
-  async function respondToRequest(response:{requestId:string;optionId?:string;text?:string}) {
-    setAnswering(true);setNotice('Submitting your response…');
+  async function respondToRequest(response:{requestId:string;optionId?:string;text?:string},onRejected?:()=>void) {
+    if(responding.current)return;
+    const failuresBefore=clientFailures.current;const operation=++noticeEpoch.current;responding.current={requestId:response.requestId,operation};setAnswering(true);setNotice('Submitting your response…');
     try {
       if(response.optionId!==undefined)await agent.respond([{requestId:response.requestId,optionId:response.optionId}]);
       else await agent.respond([{requestId:response.requestId,text:response.text??''}]);
-      setNotice('Response submitted.');
-    }catch{setNotice('Your response could not be confirmed. Reload to check its status.');}
-    finally{setAnswering(false);}
+      if(operation===noticeEpoch.current){if(clientFailures.current!==failuresBefore){setNotice('Your response could not be confirmed. Reload to check its status.');onRejected?.();}else setNotice('');}
+    }catch{if(operation===noticeEpoch.current){setNotice('Your response could not be confirmed. Reload to check its status.');onRejected?.();}}
+    finally{if(responding.current?.operation===operation){responding.current=null;setAnswering(false);}}
   }
 
   async function send(retryPrepared = false, initialText?: OrdinarySendMessage) {
-    if(preparingDocuments)return;
+    if(preparingDocuments||preparingSend.current||responding.current)return;
     const selections = retryPrepared ? pendingSelections.current ?? [] : draftSelections;
     const prompt=draft.trim()||(selections.length?'Please discuss the selected customer source passages.':'');
     let message:OrdinarySendMessage;
     try{message=retryPrepared&&pendingMessage.current?pendingMessage.current:initialText??composeOrdinaryMessage(prompt,documents);}catch(failure){setNotice(failure instanceof Error?failure.message:'The documents could not be prepared.');return;}
     if(typeof message!=='string'&&selections.length){setNotice('Send native files separately from selected source passages.');return;}
     const text=typeof message==='string'?message:summarizeNativeMessage(message);
-    if((selections.length||documents.length)&&chatInputAnswer(inputRequests,prompt)){setNotice('Answer the pending question separately before sending files or selected evidence.');return;}
+    if((selections.length||documents.length)&&chatInputAnswer(inputRequests,prompt)){setNotice(pendingQuestionFileNotice);return;}
     const answer=typeof message==='string'&&!selections.length&&!documents.length?chatInputAnswer(inputRequests,text):null;
-    if(answer && agent.status==='ready' && !denied && !answering) {
-      await respondToRequest(answer);setDraft('');return;
+    if(answer && (agent.status==='ready'||agent.status==='error') && !denied && !answering) {
+      const answerDraft=draft;setDraft('');await respondToRequest(answer,()=>setDraft(current=>current||answerDraft));return;
     }
     if(text && canSteer && !denied && !stale && !stopping && !steering && !selections.length &&
       (agent.status==='submitted'||agent.status==='streaming')){
-      setSteering(true);setNotice('Sending correction…');
-      try{message=await uploadNativeFiles(message,conversationId,csrfToken);setDraft('');setDocuments([]);const delivery=agent.send(message,{turnPolicy:'steer',headers:{'x-turas-request-key':crypto.randomUUID()}});setSteering(false);await delivery;setNotice('Correction submitted.');}
-      catch{setNotice('The correction could not be confirmed. It was not sent again.');}
-      finally{setSteering(false);}
+      const preparation=Symbol();preparingSend.current=preparation;const failuresBefore=clientFailures.current;const operation=++noticeEpoch.current;setSteering(true);setNotice('Sending correction…');
+      try{message=await uploadNativeFiles(message,conversationId,csrfToken);setDraft('');setDocuments([]);const delivery=agent.send(message,{turnPolicy:'steer',headers:{'x-turas-request-key':crypto.randomUUID()}});setSteering(false);if(preparingSend.current===preparation)preparingSend.current=null;await delivery;if(operation===noticeEpoch.current)setNotice(clientFailures.current!==failuresBefore?'The correction could not be confirmed. It was not sent again.':'');}
+      catch{if(operation===noticeEpoch.current)setNotice('The correction could not be confirmed. It was not sent again.');}
+      finally{if(preparingSend.current===preparation){preparingSend.current=null;setSteering(false);}}
       return;
     }
-    if (!text.trim() || denied || (pendingKey && !(retryPrepared && dispatchState === "prepared")) ||
-        agent.status !== "ready") return;
-    setPreparingDocuments(true);
+    const canDispatch=agent.status==="ready"||agent.status==="error"&&((retryPrepared&&dispatchState==="prepared")||(!pendingKey&&["completed","cancelled","failed"].includes(responseState??"")));
+    if (!text.trim() || denied || (pendingKey && !(retryPrepared && dispatchState === "prepared")) || !canDispatch) return;
+    const preparation=Symbol();preparingSend.current=preparation;setPreparingDocuments(true);
     try { message=await uploadNativeFiles(message,conversationId,csrfToken); }
-    catch(error) { setNotice(error instanceof Error?error.message:'File preparation failed.');return; }
+    catch(error) { if(preparingSend.current===preparation)preparingSend.current=null;setNotice(error instanceof Error?error.message:'File preparation failed.');return; }
     finally { setPreparingDocuments(false); }
     const key = keyRef.current ?? crypto.randomUUID();
     keyRef.current = key;
@@ -350,7 +365,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     setPendingKey(key);
     setDispatchState("prepared");
     setResponseState("pending");
-    setNotice("Submitting message…");
+    const failuresBefore=clientFailures.current;const operation=++noticeEpoch.current;setNotice("Submitting message…");
     setDraft("");
     // agent.send resolves after streaming. Snapshot and clear only this send’s
     // composer state now, so a correction neither repeats files nor loses a new draft.
@@ -358,19 +373,20 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     setDocuments([]);
     setSelectionResetVersion((value) => value + 1);
     try {
-      await agent.send(message, { headers: { "x-turas-request-key": key,
+      const delivery=agent.send(message, { headers: { "x-turas-request-key": key,
         ...(selections.length ? { "x-turas-artifact-selections": btoa(JSON.stringify(selections)) } : {}) } });
-      setNotice("Message accepted. Waiting for the response…");
+      if(preparingSend.current===preparation)preparingSend.current=null;await delivery;
+      if(operation===noticeEpoch.current)setNotice(clientFailures.current!==failuresBefore?"Dispatch outcome is being reconciled. The message was not sent again.":"");
     } catch {
-      setNotice("Dispatch outcome is being reconciled. The message was not sent again.");
-    }
+      if(operation===noticeEpoch.current)setNotice("Dispatch outcome is being reconciled. The message was not sent again.");
+    } finally {if(preparingSend.current===preparation)preparingSend.current=null;}
   }
 
   async function cancel() {
-    setStopping(true);
+    if(stoppingNow.current)return;stoppingNow.current=true;const operation=++noticeEpoch.current;setStopping(true);setResponseState("stopping");
     try { const response=await fetch(`/eve/v1/session/${encodeURIComponent(nativeSessionId)}/cancel`,{method:'POST',headers:{'content-type':'application/json','x-csrf-token':csrfToken,'x-turas-conversation-id':conversationId},body:JSON.stringify({tasks:true})});
-      if(!response.ok)await agent.cancel();setNotice("Stopping requested. Waiting for confirmation…"); }
-    catch { setStopping(false); setNotice("Could not request a stop."); }
+      if(!response.ok)await agent.cancel();if(operation===noticeEpoch.current)setNotice("Stopping requested. Waiting for confirmation…"); }
+    catch {if(operation===noticeEpoch.current){stoppingNow.current=false;setStopping(false);setResponseState("running");setNotice("Could not request a stop.");}}
   }
 
   async function sendResearchTurn(turn: { message: string; requestKey: string }) {
@@ -382,11 +398,12 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     setDispatchState("prepared");
     setResponseState("pending");
     setNotice("Submitting research turn…");
-    try {
+    const failuresBefore=clientFailures.current;const operation=++noticeEpoch.current;try {
       await agent.send(turn.message,{ headers: { "x-turas-request-key": turn.requestKey } });
-      setNotice("Research turn accepted. Waiting for the response…");
+      if(operation===noticeEpoch.current&&clientFailures.current!==failuresBefore)throw Error("Unconfirmed research delivery");
+      if(operation===noticeEpoch.current)setNotice("");
     } catch {
-      setNotice("Research dispatch outcome is uncertain. The turn was not sent again.");
+      if(operation===noticeEpoch.current)setNotice("Research dispatch outcome is uncertain. The turn was not sent again.");
       throw new Error("Research dispatch outcome is uncertain. Check status before retrying.");
     }
   }
@@ -394,7 +411,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   if (denied) return <main className="chat-page">
     <h1>Chat Unavailable</h1><p role="alert">Access to this customer or chat has changed.</p>
   </main>;
-  if (stale) return <HistoricalChat conversationId={conversationId}
+  if (stale) return <HistoricalChat key={conversationId} conversationId={conversationId}
     customerId={customerId} customerName={customerName} />;
   const busy = agent.status === "submitted" || agent.status === "streaming";
   return <main className="chat-page chat-thread" aria-label={`Chat with Turi: ${customerName}`}>
@@ -412,26 +429,20 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         {shareOpen && <ShareChatClaim conversationId={conversationId} customerId={customerId} csrfToken={csrfToken} />}
       </div>}
     </>}
-    <div className="chat-messages" ref={messagesPane} tabIndex={0} role="region" aria-label="Conversation messages" aria-live="polite" onScroll={() => {
-      const pane = messagesPane.current;
-      if (pane) followBottom.current = pane.scrollHeight - pane.scrollTop - pane.clientHeight < 80;
-    }}>
+    <ChatViewport conversationId={conversationId} ready={historyReady&&agent.status!=='resuming'}>
       {historyTruncated&&<p role="status">This conversation is long. Only the first 500 saved events and recent partial responses are shown.</p>}
       {displayMessages.length === 0 && <p className="muted">No messages yet.</p>}
-      {displayMessages.map((item)=>{if(item.kind==='retained'){const message=item.message;return <article className={`chat-message chat-message-${message.role}`} aria-label={message.role==='assistant'?'Turi':'You'} key={'retained:'+message.id}>{retainedActiveParts(message,nativeAttachments.find(ref=>ref.eventId===message.id)).map((part,index)=>part.type==='file'?<NativeChatAttachment key={index} filename={part.filename} mediaType={part.mediaType} size={part.size} url={part.url}/>:message.role==='assistant'?<ChatMarkdown key={index} text={part.text}/>:<UserChatText key={index} text={part.text}/>)}{message.partial&&<small>Partial response</small>}</article>;}const message=item.message;return <article className={`chat-message chat-message-${message.role}`}
+      {displayMessages.map((item)=>{if(item.kind==='native'&&item.message.role==='assistant'&&!assistantHasContent(item.message.parts,inputRequests))return null;if(item.kind==='retained'){const message=item.message;return <article className={`chat-message chat-message-${message.role}`} aria-label={message.role==='assistant'?'Turi':'You'} key={'retained:'+message.id}>{message.role==='assistant'&&item.activity&&<ChatAssistantParts parts={item.activity} activityOnly streaming={busy} requests={inputRequests} disabled={answering||busy||agent.status==='resuming'} onResponse={respondToRequest}/>} {retainedActiveParts(message,nativeAttachments.find(ref=>ref.eventId===message.id)).map((part,index)=>part.type==='file'?<NativeChatAttachment key={index} filename={part.filename} mediaType={part.mediaType} size={part.size} url={part.url}/>:message.role==='assistant'?<ChatMarkdown key={index} text={part.text}/>:<UserChatText key={index} text={part.text}/>)}{message.partial&&<small>Partial response</small>}</article>;}const message=item.message;return <article className={`chat-message chat-message-${message.role}`}
         aria-label={message.role === "assistant" ? "Turi" : "You"} key={message.id}>
         {message.role==='user'?nativeUserDisplayParts(message,nativeAttachments.find(item=>item.eventId===message.id.replace(/:user$/,''))).map((part,index)=>part.type==='text'
-          ?<UserChatText key={index} text={part.text}/>:<NativeChatAttachment key={index} filename={part.filename} mediaType={part.mediaType} url={part.url} size={part.size}/>):message.parts.map((part, index) => part.type === "text"
-          ? message.role === "assistant"
-            ? <ChatMarkdown key={index} streaming={busy && message.id === messages.at(-1)?.id} text={part.text} />
-            : <UserChatText key={index} text={part.text}/>
-          :null)}
+          ?<UserChatText key={index} text={part.text}/>:<NativeChatAttachment key={index} filename={part.filename} mediaType={part.mediaType} url={part.url} size={part.size}/>):<ChatAssistantParts parts={message.parts} streaming={busy&&lastMessage?.role==='assistant'&&message.metadata?.turnId===lastMessage.metadata?.turnId} requests={inputRequests} disabled={answering||busy||agent.status==='resuming'} onResponse={respondToRequest}/>}
       </article>;})}
-      {inputRequests.map(request=><ChatInputRequestCard key={request.requestId} request={request}
+      {inputRequests.filter(request=>!displayedRequestIds.has(request.requestId)).map(request=><ChatInputRequestCard key={request.requestId} request={request}
         disabled={answering||busy||agent.status==='resuming'} onResponse={respondToRequest}/>) }
-      {(busy || background.thinking) && <p className="chat-thinking" role="status">
+      {agent.status==='resuming'&&<p className="chat-thinking" role="status">Restoring conversation…</p>}
+      {!awaitingUser&&!agent.error&&responseState!=='failed'&&((busy&&!hasResponseProgress)||background.thinking) && <p className="chat-thinking" role="status">
         {background.thinking ? "Researching…" : "Thinking…"}</p>}
-    </div>
+    </ChatViewport>
     <form className="chat-composer" onSubmit={(event) => { event.preventDefault(); void send(); }}>
       {customerId && attachmentsOpen && <ComposerAttachments conversationId={conversationId} customerId={customerId}
         customerName={customerName} csrfToken={csrfToken}
@@ -440,20 +451,21 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(); } }}
         maxLength={16_384} disabled={preparingDocuments || (!canSteer && busy) || (Boolean(pendingKey) && dispatchState !== "prepared" && !(canSteer&&busy)) || agent.status === "resuming" || stopping || steering} />
       <div className="chat-actions">
+        <ComposerLinks text={draft} onChange={setDraft} disabled={preparingDocuments||agent.status==='resuming'||stopping||steering}/>
         {canAttachDocuments&&<OrdinaryDocuments conversationId={conversationId} nativeFilesEnabled={canAttachNativeFiles} documents={documents} onChange={next=>void changeDocuments(next)} onPreparingChange={setPreparingDocuments}
           disabled={preparingDocuments||(!canSteer&&(busy||Boolean(pendingKey)))||answering||agent.status==='resuming'||stopping||steering}/>}
         {customerId && !canAttachDocuments && <button className="composer-attach" type="button" aria-label="Show attachments" aria-expanded={attachmentsOpen}
           onClick={() => setAttachmentsOpen(value => !value)}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m8 12 6-6a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l9-9" /></svg></button>}
         <button className="composer-send" type={busy && !(canSteer&&(draft.trim()||documents.length)) ? "button" : "submit"} aria-label={busy && !(canSteer&&(draft.trim()||documents.length)) ? "Stop response" : "Send message"}
           onClick={busy && !(canSteer&&(draft.trim()||documents.length)) ? () => void cancel() : undefined}
-          disabled={preparingDocuments||(busy ? stopping||steering||Boolean(draftSelections.length) : (!draft.trim() && !draftSelections.length&&!documents.length) || Boolean(pendingKey) || agent.status === "resuming" || stopping)}>
+          disabled={preparingDocuments||steering||(busy ? stopping||Boolean(draftSelections.length) : (!draft.trim() && !draftSelections.length&&!documents.length) || Boolean(pendingKey) || agent.status === "resuming" || stopping)}>
           {busy && !(canSteer&&(draft.trim()||documents.length)) ? <span aria-hidden="true">■</span> : <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" /></svg>}
         </button>
       </div>
     </form>
     {draft.trim() && !pendingKey && <p className="state-message" role="status">Draft not sent.</p>}
-    {notice==='Answer the pending question separately before sending files or selected evidence.'&&<p role="alert" className="status-alert">{notice}</p>}
-    <ChatStatus notice={notice} responseState={inputRequests.length?'waiting_input':responseState} error={Boolean(agent.error)} />
+    {notice===pendingQuestionFileNotice&&<p role="alert" className="status-alert">{notice}</p>}
+    <ChatStatus notice={notice===pendingQuestionFileNotice?undefined:notice} responseState={inputRequests.length?'waiting_input':responseState} error={Boolean(agent.error)} quietSuccess errorMessage={latestTurnFailure(agent.events)} />
     {pendingKey && dispatchState === "prepared" && !busy &&
       <button className="secondary-button" type="button" onClick={() => void send(true)}>
         Retry prepared message</button>}
@@ -467,4 +479,11 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         }).catch(() => setNotice("Status is unavailable."));
     }}>Check status</button>}
   </main>;
+}
+
+function latestTurnFailure(events:ReturnType<typeof useEveAgent>['events']):string|undefined{
+ for(let index=events.length-1;index>=0;index--){const event=events[index];
+  if(event.type==='turn.failed')return event.data.code==='MODEL_CALL_FAILED'?'The model is temporarily unavailable. Please try again.':event.data.message;
+  if(['turn.completed','turn.cancelled','message.received'].includes(event.type))return undefined;
+ }
 }

@@ -95,6 +95,12 @@ subsequent retrieval and use.
 
 ### Turi Conversations and Guidance
 
+Chat interaction parity is tracked in [019](specs/019-chat-interaction-parity/spec.md).
+It preserves the current visual design while restoring file paste/drop, link
+controls, tool activity, question feedback and per-conversation scroll recovery.
+See its [validation record](specs/019-chat-interaction-parity/validation.md) for
+local and hosted release status.
+
 Use owner-private chat for general technical questions or explicitly selected
 customer context. Ask Turi to draft plans or explain staffing and execution using
 permitted inputs. Stop running responses and inspect saved status. Suggestions do

@@ -1,5 +1,11 @@
 # Turas delivery roadmap
 
+The user-requested [019 chat interaction parity](specs/019-chat-interaction-parity/spec.md)
+preserves the current appearance while restoring legacy composer, activity and
+scrolling behavior. Implementation and verification are in progress; its
+[validation record](specs/019-chat-interaction-parity/validation.md) separates
+local checks from exact Preview/Production release acceptance.
+
 Complete legacy backend parity is implemented and released under
 [`018-legacy-backend-parity`](specs/018-legacy-backend-parity/spec.md), with its
 explicit [implementation tasks](specs/018-legacy-backend-parity/tasks.md).

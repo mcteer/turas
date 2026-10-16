@@ -2,7 +2,7 @@ import type {EveMessage} from 'eve/react';
 import {retainedChatMessages,type RetainedChatEvent,type RetainedChatMessage} from './retained-history';
 import type {NativeAttachmentReference,NativeUserDisplayPart} from './native-message-display';
 
-export type ChatDisplayMessage={kind:'native';message:EveMessage}|{kind:'retained';message:RetainedChatMessage};
+export type ChatDisplayMessage={kind:'native';message:EveMessage}|{kind:'retained';message:RetainedChatMessage;activity?:EveMessage['parts']};
 /** Presentation only. Application history never enters the native session,
  * event reducer, input controls, delivery admission or provider context. */
 export function activeChatHistory(native:readonly EveMessage[],history:readonly RetainedChatEvent[]):ChatDisplayMessage[]{
@@ -12,7 +12,8 @@ export function activeChatHistory(native:readonly EveMessage[],history:readonly 
  const slots=native.flatMap(message=>{
   if(message.role!=='assistant')return [message];
   const groups=new Map<number|undefined,typeof message.parts>();
-  for(const part of message.parts){if(part.type!=='text')continue;const group=groups.get(part.stepIndex)??[];groups.set(part.stepIndex,[...group,part]);}
+  const firstStep=message.parts.find(part=>part.type==='text')?.stepIndex;
+  for(const part of message.parts){if(part.type==='step-start')continue;const step='stepIndex' in part?part.stepIndex:firstStep;const group=groups.get(step)??[];groups.set(step,[...group,part]);}
   return groups.size>1?[...groups].map(([step,parts])=>({...message,id:message.id+':display-step:'+String(step),parts})):[message];
  });
  const used=new Set<number>(),result:ChatDisplayMessage[]=[];
@@ -33,7 +34,8 @@ export function activeChatHistory(native:readonly EveMessage[],history:readonly 
    // Identity was established above; text containment only prevents replacing
    // retained prose with a shorter or empty resume placeholder.
    const preferLive=saved.role==='user'?nativeVisible:saved.partial&&!!liveText.trim()&&liveText.includes(savedText);
-   result.push(preferLive?{kind:'native',message:live}:{kind:'retained',message:saved});
+   const activity=live.parts.filter(part=>part.type!=='text'&&part.type!=='step-start');
+   result.push(preferLive?{kind:'native',message:live}:{kind:'retained',message:saved,...(activity.length?{activity}:{})});
   }else result.push({kind:'retained',message:saved}); // Distinct persisted events are never consumed by another event's counterpart.
  }
  slots.forEach((message,index)=>{if(!used.has(index))result.push({kind:'native',message});});

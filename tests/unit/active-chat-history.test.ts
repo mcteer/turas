@@ -3,6 +3,16 @@ import type {EveMessage} from 'eve/react';
 import {defaultMessageReducer,type MessageStreamEvent} from 'eve/client';
 import {activeChatHistory,retainedActiveParts} from '../../lib/conversations/active-chat-history';
 import type {RetainedChatEvent} from '../../lib/conversations/retained-history';
+
+it('keeps authorized tool activity alongside canonical prose and does not drop nontext parts when splitting steps',()=>{
+ const tool={type:'dynamic-tool',toolCallId:'lookup',toolName:'get_customer',state:'output-available',input:{name:'Synthetic'},output:{found:true},stepIndex:0} as const;
+ const live={id:'turn:assistant',role:'assistant',metadata:{turnId:'turn'},parts:[tool,{type:'text',text:'Short placeholder',stepIndex:0},{type:'text',text:'Later live response',stepIndex:1}]} as EveMessage;
+ const saved:RetainedChatEvent={eventId:'canonical-answer',eventType:'message.completed',turnId:'turn',stepIndex:0,payload:{message:'Complete canonical answer'}};
+ const before=JSON.stringify(live),display=activeChatHistory([live],[saved]);
+ expect(display[0]).toMatchObject({kind:'retained',message:{id:'canonical-answer'},activity:[tool]});
+ expect(display[1]).toMatchObject({kind:'native',message:{parts:[{type:'text',text:'Later live response',stepIndex:1}]}});
+ expect(JSON.stringify(live)).toBe(before);
+});
 const history:RetainedChatEvent[]=[{eventId:'original',eventType:'message.received',turnId:'turn0',inputAliasEventIds:['alias'],payload:{applicationInputParts:[{type:'text',text:'Original input'},{type:'file',filename:'failed.pdf',mediaType:'application/pdf',size:104}]}},{eventId:'partial_turn0_1',eventType:'message.appended',turnId:'turn0',stepIndex:1,payload:{partial:true,messageDelta:'Interrupted answer'}}];
 const user=(id:string,turnId:string)=>({id:id+':user',role:'user',metadata:{turnId},parts:[{type:'text',text:'Original input'}]} as EveMessage);
 describe('authorized application history display alongside native messages',()=>{
