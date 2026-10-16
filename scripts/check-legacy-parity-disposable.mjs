@@ -1,6 +1,6 @@
 import { spawnSync, spawn } from "node:child_process";
-import { randomBytes } from "node:crypto";
-import { mkdtempSync, writeFileSync, rmSync, mkdirSync, existsSync, readdirSync, copyFileSync } from "node:fs";
+import { randomBytes, randomUUID } from "node:crypto";
+import { mkdtempSync, readFileSync, writeFileSync, rmSync, mkdirSync, existsSync, readdirSync, copyFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client } from "pg";
@@ -20,7 +20,49 @@ if (process.argv.includes("--webkit-child")) {
     process.env.TURAS_UI_BASE_URL=environment.origin;
     process.env.TURAS_UI_FIXTURE_DATABASE_URL=process.env.DATABASE_URL_UNPOOLED;
     process.env.TURAS_EXECUTION_FIXTURE_READY="1";
+    // This is only the disposable development clone. Keep the real compiled
+    // routes resident while all four projects run; production config is intact.
+    const configPath=join(environment.appRoot,"next.config.ts"),config=readFileSync(configPath,"utf8");
+    const configAnchor="const nextConfig: NextConfig = {";
+    if(config.split(configAnchor).length!==2)throw Error("Owned Next config shape changed");
+    writeFileSync(configPath,config.replace(configAnchor,configAnchor+"\n  onDemandEntries: { maxInactiveAge: 1_200_000, pagesBufferLength: 32 },"));
     await environment.start();
+    // Pay cold Next compilation before the unchanged 30-second scenario clocks.
+    // Every response is real authenticated HTTP against the marked owned clone.
+    const warmupFolder="local-artifacts/018/ci-webkit";mkdirSync(warmupFolder,{recursive:true,mode:0o700});
+    const warmupStarted=Date.now(),warmupDeadline=warmupStarted+180_000,warmup=[];
+    const warmupUrl=process.env.DATABASE_URL_UNPOOLED;
+    if(!warmupUrl||!['127.0.0.1','localhost','[::1]'].includes(new URL(warmupUrl).hostname)||!/^\/turas_test_010_eval_[a-f0-9]{12}$/.test(new URL(warmupUrl).pathname))throw Error("Owned route warmup database required");
+    const warmupDb=new Client({connectionString:warmupUrl,connectionTimeoutMillis:5000});
+    const warmupCustomer=randomUUID();await warmupDb.connect();
+    try{
+      const marker=(await warmupDb.query('SELECT environment_id FROM turas_environment')).rows;
+      if(marker.length!==1||marker[0].environment_id!==process.env.TURAS_ENVIRONMENT_ID)throw Error("Owned route warmup marker differs");
+      const actor=(await warmupDb.query("SELECT m.workspace_id FROM memberships m JOIN principals p ON p.id=m.principal_id WHERE p.login_name='mcteer' AND p.active AND m.active")).rows;
+      if(actor.length!==1)throw Error("Owned route warmup actor ambiguous");
+      await warmupDb.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,'Synthetic018 route compilation account',false)",[warmupCustomer,actor[0].workspace_id]);
+    }finally{await warmupDb.end();}
+    let warmupCookie,warmupCsrf;
+    const warmupFetch=async(path,options={})=>{
+      const remaining=warmupDeadline-Date.now();if(remaining<=0)throw Error("Owned route warmup deadline exceeded");
+      return fetch(environment.origin+path,{...options,signal:AbortSignal.timeout(Math.min(30_000,remaining))});
+    };
+    try{
+      const login=await warmupFetch('/api/auth/login',{method:'POST',headers:{origin:environment.origin,'content-type':'application/json'},body:JSON.stringify({username:'mcteer',password:process.env.TURAS_DEMO_PASSWORD})});
+      if(!login.ok)throw Error("Owned route warmup login failed");
+      warmupCookie=login.headers.getSetCookie().map(value=>value.split(';')[0]).join('; ');warmupCsrf=(await login.json()).data.csrfToken;
+      if(!warmupCookie||!warmupCsrf)throw Error("Owned route warmup session missing");
+      const routes=[['/login',200],['/api/auth/login',405],['/s',200],['/customers',200],['/portfolio',200],['/operating-model',200],
+        ['/context-approvals',200],[`/customers/${warmupCustomer}`,200],[`/customers/${warmupCustomer}/sources`,200],
+        [`/customers/${warmupCustomer}/review`,200],[`/customers/${warmupCustomer}/journey`,200],
+        ['/api/auth/session',200],['/api/conversations?limit=25&archived=false',200],['/api/context-approvals?includeDenied=false&offset=0',200],
+        [`/api/customers/${warmupCustomer}/sources`,200],[`/api/customers/${warmupCustomer}/review`,200],
+        [`/api/customers/${warmupCustomer}/profile`,200],[`/api/customers/${warmupCustomer}/journey`,200],
+        [`/api/customers/${warmupCustomer}/commands`,405],[`/api/customers/${warmupCustomer}/records/${randomUUID()}/history`,404]];
+      for(const[path,expected]of routes){const started=Date.now(),response=await warmupFetch(path,{headers:{cookie:warmupCookie}});await response.arrayBuffer();warmup.push({path,status:response.status,expected,durationMs:Date.now()-started});writeFileSync(join(warmupFolder,'warmup-private.json'),JSON.stringify({durationMs:Date.now()-warmupStarted,routes:warmup},null,2),{mode:0o600});if(response.status!==expected)throw Error("Owned route warmup response differs");}
+    }finally{
+      if(warmupCookie&&warmupCsrf){const logout=await warmupFetch('/api/auth/logout',{method:'POST',headers:{origin:environment.origin,cookie:warmupCookie,'x-csrf-token':warmupCsrf}});await logout.arrayBuffer();if(!logout.ok)throw Error("Owned route warmup logout unconfirmed");}
+    }
     // Keep draining the supervised Next/Eve log pipes while the CLI runs.
     // A synchronous wait fills those pipes and stalls the real application.
     const result=await new Promise(resolve=>{
