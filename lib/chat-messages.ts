@@ -64,7 +64,24 @@ export function visibleChatMessages(
       failedTurns.add(event.data.turnId);
     }
   }
-  const visible:EveMessage[]=messages.filter((message) =>
+  // A durable-step retry emits a new event ID for the same delivery. Fold only
+  // identical delivery envelopes whose user messages are actually present.
+  const presentUsers = new Set(messages.filter(message => message.role === "user").map(message => message.id));
+  const deliveriesSeen = new Map<string, { id: string; payload: string }>();
+  const replayUsers = new Set<string>();
+  for (const event of events) {
+    if (event.type !== "message.received" || event.data.kind !== undefined ||
+        !Number.isSafeInteger(event.data.sequence) || event.data.sequence < 0 ||
+        event.meta.deliveryIds?.length !== 1 || !event.meta.deliveryIds[0]) continue;
+    const id = `${event.meta.id}:user`;
+    if (!presentUsers.has(id)) continue;
+    const key = JSON.stringify([event.data.turnId, event.data.sequence, event.meta.deliveryIds[0]]);
+    const payload = JSON.stringify([event.data.message, event.data.parts ?? null]);
+    const first = deliveriesSeen.get(key);
+    if (!first) deliveriesSeen.set(key, { id, payload });
+    else if (first.id !== id && first.payload === payload) replayUsers.add(id);
+  }
+  const visible:EveMessage[]=messages.filter(message => !replayUsers.has(message.id)).filter((message) =>
     message.role !== "user" ||
     !message.metadata?.turnId ||
     !internalTurns.has(message.metadata.turnId),

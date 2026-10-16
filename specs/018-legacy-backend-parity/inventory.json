@@ -1,6 +1,6 @@
 {
   "referenceCommit": "fd1e205d7fd258676d6fb12b3ade8a431d53a6af",
-  "status": "337 pinned legacy paths reviewed; all101 test/evaluation references concretely mapped; application repairs verified locally; exact-head CI and hosted release gates remain open",
+  "status": "337 pinned legacy paths reviewed; all101 test/evaluation references concretely mapped; PR36 merged/schema077; T030 retained-history and T031 accepted-delivery recovery and final hosted acceptance remain open",
   "entries": [
     {
       "legacyPath": ".gitignore",
@@ -82,7 +82,8 @@
         "T022",
         "T004",
         "T013",
-        "T021"
+        "T021",
+        "T031"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -101,7 +102,9 @@
         "lib/server/conversations/token-allowance.ts",
         "agent/lib/normal-chat-tool.ts",
         "lib/server/conversations/native-retirement-recovery.ts",
-        "lib/server/conversations/native-provider-dedup.ts"
+        "lib/server/conversations/native-provider-dedup.ts",
+        "lib/server/conversations/native-input-replay.ts",
+        "lib/server/conversations/projection.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -118,7 +121,9 @@
           "lib/server/conversations/token-allowance.ts",
           "agent/lib/normal-chat-tool.ts",
           "lib/server/conversations/native-retirement-recovery.ts",
-          "lib/server/conversations/native-provider-dedup.ts"
+          "lib/server/conversations/native-provider-dedup.ts",
+          "lib/server/conversations/native-input-replay.ts",
+          "lib/server/conversations/projection.ts"
         ],
         "currentFileSha256": {
           "agent/agent.ts": "b41dad03e0d4481d4d05bc168280fcfaf6e427f6accd7768a998d29aba435737",
@@ -132,7 +137,9 @@
           "lib/server/conversations/token-allowance.ts": "039547338424a862106a9884baead702a1eb5acd34216355c4a3bd5a85260a94",
           "agent/lib/normal-chat-tool.ts": "3ab3e1168ec5afca3d4cfd3fa34cedc44d08569ea7d30b5b1b619cd6f49a5b46",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
-          "lib/server/conversations/native-provider-dedup.ts": "dfa36c3523fb0e1fc04ec58845f495a32b023f366eaa31fc940223f08035d092"
+          "lib/server/conversations/native-provider-dedup.ts": "dfa36c3523fb0e1fc04ec58845f495a32b023f366eaa31fc940223f08035d092",
+          "lib/server/conversations/native-input-replay.ts": "5ea96616a1a4f1e36305b25619631e88efc916c510ca5b18ad320bae7e4b7ad7",
+          "lib/server/conversations/projection.ts": "19f970cd00decc291bdb4644efd1ac360cb2db189b21e35edbed399371584858"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -140,12 +147,15 @@
           "scripts/check-ordinary-questions-native.ts",
           "tests/fixtures/ordinary-questions-native-model.ts",
           "tests/integration/legacy-native-uploads.test.ts",
-          "specs/018-legacy-backend-parity/validation.md"
+          "specs/018-legacy-backend-parity/validation.md",
+          "tests/integration/native-input-replay.test.ts",
+          "tests/unit/legacy-chat-mechanics.test.tsx"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
+        "retryRecovery": "Installed Eve durable-step retries emit new received-event IDs. Preserve distinct audit events and recognize only exact pre-provider same-delivery aliases; retain original input/file envelope/deadline/allowance and current authorization. Reconciliation accepts only recorded aliases and UI shows one send. Hosted exact-source acceptance remains required."
       }
     },
     {
@@ -214,7 +224,7 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
           "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
@@ -350,7 +360,7 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
           "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
@@ -4994,7 +5004,9 @@
         "T022",
         "T004",
         "T013",
-        "T021"
+        "T021",
+        "T030",
+        "T031"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -5012,7 +5024,12 @@
         "lib/server/conversations/reconcile.ts",
         "lib/server/conversations/watchdog.ts",
         "lib/server/conversations/maintenance.ts",
-        "lib/server/conversations/native-retirement-recovery.ts"
+        "lib/server/conversations/native-retirement-recovery.ts",
+        "app/_components/retained-chat.tsx",
+        "lib/conversations/retained-history.ts",
+        "lib/server/conversations/repository.ts",
+        "lib/server/conversations/native-input-replay.ts",
+        "lib/server/conversations/projection.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -5028,20 +5045,30 @@
           "lib/server/conversations/reconcile.ts",
           "lib/server/conversations/watchdog.ts",
           "lib/server/conversations/maintenance.ts",
-          "lib/server/conversations/native-retirement-recovery.ts"
+          "lib/server/conversations/native-retirement-recovery.ts",
+          "app/_components/retained-chat.tsx",
+          "lib/conversations/retained-history.ts",
+          "lib/server/conversations/repository.ts",
+          "lib/server/conversations/native-input-replay.ts",
+          "lib/server/conversations/projection.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "9bf6cc9c2ef42aa1fa6397407cece5a0fe35f9038805e510c175c460129f9924",
+          "app/_components/agent-chat.tsx": "211c17dbbb409944f8e9300133bdee2cac6158f7e8e5f77158d106be83485d6a",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
-          "lib/chat-messages.ts": "ce785f0ea48d268733634746460168052995da374bcf8f25dae7bc4a1dd016f7",
+          "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4",
           "lib/server/conversations/stream.ts": "9ad9f1cdd7a3154693ca23c2e9e6950ccad62cbbf7f0d384cf5977e86af69d47",
           "lib/server/conversations/cancel.ts": "c5aa6b6a68f89aee7c585c9d1c075e4423b12d134bc0b80f0533b9c13b767cd3",
           "lib/server/conversations/ordinary-retirement.ts": "2480c4f4a328346ee2ce17f584aaf5c54fed6936dcd12e668369dc5325fc7b76",
-          "lib/server/conversations/reconcile.ts": "df90ab5ea080ff0f58330b753396e81e1b2ec756c9793518dff56a20643199fd",
+          "lib/server/conversations/reconcile.ts": "20d04ea778e83d9c92d0cea3dfc5bff7b5a24ad2d11c46b55b91967176ce50fe",
           "lib/server/conversations/watchdog.ts": "efa9c80ce31e4e79194104d4a56da63c63dac3a32d48cb14970507a42c79c367",
           "lib/server/conversations/maintenance.ts": "2421e7a8e8db2c2e874bcb36e0db6c63b9186d62332f492edbb5287114782222",
-          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
+          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
+          "app/_components/retained-chat.tsx": "2b0fbf3dca8ec4dd987b5795f55a9a92805223bcc387806df4448045bf45f0fd",
+          "lib/conversations/retained-history.ts": "7432acace54382bff4f5e3f33c8b740e7524a11b8c1dba65dddfeb0b1cf59d30",
+          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
+          "lib/server/conversations/native-input-replay.ts": "5ea96616a1a4f1e36305b25619631e88efc916c510ca5b18ad320bae7e4b7ad7",
+          "lib/server/conversations/projection.ts": "19f970cd00decc291bdb4644efd1ac360cb2db189b21e35edbed399371584858"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -5049,13 +5076,19 @@
           "scripts/check-ordinary-questions-native.ts",
           "tests/fixtures/ordinary-questions-native-model.ts",
           "tests/integration/legacy-native-uploads.test.ts",
-          "specs/018-legacy-backend-parity/validation.md"
+          "specs/018-legacy-backend-parity/validation.md",
+          "tests/ui/legacy-retired-history.spec.ts",
+          "tests/unit/retained-chat-history.test.ts",
+          "tests/integration/native-input-replay.test.ts",
+          "tests/unit/legacy-chat-mechanics.test.tsx"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
-      }
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
+        "retryRecovery": "Installed Eve durable-step retries emit new received-event IDs. Preserve distinct audit events and recognize only exact pre-provider same-delivery aliases; retain original input/file envelope/deadline/allowance and current authorization. Reconciliation accepts only recorded aliases and UI shows one send. Hosted exact-source acceptance remains required."
+      },
+      "notes": " Actual Production retirement exposed a missing consumer of persisted application messages. T030 adds a read-only authorized view, step-specific interrupted text and explicit history-limit notice; actual hosted recovery remains required."
     },
     {
       "legacyPath": "app/_components/agent-message.tsx",
@@ -5203,14 +5236,14 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "9bf6cc9c2ef42aa1fa6397407cece5a0fe35f9038805e510c175c460129f9924",
+          "app/_components/agent-chat.tsx": "211c17dbbb409944f8e9300133bdee2cac6158f7e8e5f77158d106be83485d6a",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
-          "lib/chat-messages.ts": "ce785f0ea48d268733634746460168052995da374bcf8f25dae7bc4a1dd016f7",
+          "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4",
           "lib/server/conversations/stream.ts": "9ad9f1cdd7a3154693ca23c2e9e6950ccad62cbbf7f0d384cf5977e86af69d47",
           "lib/server/conversations/cancel.ts": "c5aa6b6a68f89aee7c585c9d1c075e4423b12d134bc0b80f0533b9c13b767cd3",
           "lib/server/conversations/ordinary-retirement.ts": "2480c4f4a328346ee2ce17f584aaf5c54fed6936dcd12e668369dc5325fc7b76",
-          "lib/server/conversations/reconcile.ts": "df90ab5ea080ff0f58330b753396e81e1b2ec756c9793518dff56a20643199fd",
+          "lib/server/conversations/reconcile.ts": "20d04ea778e83d9c92d0cea3dfc5bff7b5a24ad2d11c46b55b91967176ce50fe",
           "lib/server/conversations/watchdog.ts": "efa9c80ce31e4e79194104d4a56da63c63dac3a32d48cb14970507a42c79c367",
           "lib/server/conversations/maintenance.ts": "2421e7a8e8db2c2e874bcb36e0db6c63b9186d62332f492edbb5287114782222",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
@@ -6308,7 +6341,7 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
           "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
@@ -6399,7 +6432,7 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
           "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
@@ -6490,7 +6523,7 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
           "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
@@ -7282,14 +7315,14 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "9bf6cc9c2ef42aa1fa6397407cece5a0fe35f9038805e510c175c460129f9924",
+          "app/_components/agent-chat.tsx": "211c17dbbb409944f8e9300133bdee2cac6158f7e8e5f77158d106be83485d6a",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
-          "lib/chat-messages.ts": "ce785f0ea48d268733634746460168052995da374bcf8f25dae7bc4a1dd016f7",
+          "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4",
           "lib/server/conversations/stream.ts": "9ad9f1cdd7a3154693ca23c2e9e6950ccad62cbbf7f0d384cf5977e86af69d47",
           "lib/server/conversations/cancel.ts": "c5aa6b6a68f89aee7c585c9d1c075e4423b12d134bc0b80f0533b9c13b767cd3",
           "lib/server/conversations/ordinary-retirement.ts": "2480c4f4a328346ee2ce17f584aaf5c54fed6936dcd12e668369dc5325fc7b76",
-          "lib/server/conversations/reconcile.ts": "df90ab5ea080ff0f58330b753396e81e1b2ec756c9793518dff56a20643199fd",
+          "lib/server/conversations/reconcile.ts": "20d04ea778e83d9c92d0cea3dfc5bff7b5a24ad2d11c46b55b91967176ce50fe",
           "lib/server/conversations/watchdog.ts": "efa9c80ce31e4e79194104d4a56da63c63dac3a32d48cb14970507a42c79c367",
           "lib/server/conversations/maintenance.ts": "2421e7a8e8db2c2e874bcb36e0db6c63b9186d62332f492edbb5287114782222",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
@@ -7377,14 +7410,14 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "9bf6cc9c2ef42aa1fa6397407cece5a0fe35f9038805e510c175c460129f9924",
+          "app/_components/agent-chat.tsx": "211c17dbbb409944f8e9300133bdee2cac6158f7e8e5f77158d106be83485d6a",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
-          "lib/chat-messages.ts": "ce785f0ea48d268733634746460168052995da374bcf8f25dae7bc4a1dd016f7",
+          "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4",
           "lib/server/conversations/stream.ts": "9ad9f1cdd7a3154693ca23c2e9e6950ccad62cbbf7f0d384cf5977e86af69d47",
           "lib/server/conversations/cancel.ts": "c5aa6b6a68f89aee7c585c9d1c075e4423b12d134bc0b80f0533b9c13b767cd3",
           "lib/server/conversations/ordinary-retirement.ts": "2480c4f4a328346ee2ce17f584aaf5c54fed6936dcd12e668369dc5325fc7b76",
-          "lib/server/conversations/reconcile.ts": "df90ab5ea080ff0f58330b753396e81e1b2ec756c9793518dff56a20643199fd",
+          "lib/server/conversations/reconcile.ts": "20d04ea778e83d9c92d0cea3dfc5bff7b5a24ad2d11c46b55b91967176ce50fe",
           "lib/server/conversations/watchdog.ts": "efa9c80ce31e4e79194104d4a56da63c63dac3a32d48cb14970507a42c79c367",
           "lib/server/conversations/maintenance.ts": "2421e7a8e8db2c2e874bcb36e0db6c63b9186d62332f492edbb5287114782222",
           "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
@@ -8357,8 +8390,8 @@
           "lib/server/conversations/customer-accounts.ts": "6f937d42ab258c3a39485002c39ba3f477e66909f35625511853b8cec5d9a0db",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
           "lib/server/conversations/named-evidence-search.ts": "32189a43e797d4889ecc0970a8ea5f5c9918eb224f355f6f33da450f05dee3ad",
-          "lib/server/conversations/projection.ts": "379c1cd6f418c5fa8581460c5fd519371d8a6b5694840f719d9636d98c516ecb",
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/projection.ts": "19f970cd00decc291bdb4644efd1ac360cb2db189b21e35edbed399371584858",
+          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/knowledge/workspace-patterns/repository.ts": "5db2ca8504708af2949258f26a9e4ad887d5118090b06ddf7e16531a4e3f7fa9",
           "lib/server/learning/customer-adoption/repository.ts": "08ec69fad0831e3d5f98b2f5407748f7510a736cf2753a53bf22a2688c839a24",
@@ -9118,7 +9151,8 @@
         "T022",
         "T004",
         "T013",
-        "T021"
+        "T021",
+        "T031"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -9136,7 +9170,9 @@
         "lib/server/conversations/reconcile.ts",
         "lib/server/conversations/watchdog.ts",
         "lib/server/conversations/maintenance.ts",
-        "lib/server/conversations/native-retirement-recovery.ts"
+        "lib/server/conversations/native-retirement-recovery.ts",
+        "lib/server/conversations/native-input-replay.ts",
+        "lib/server/conversations/projection.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -9152,20 +9188,24 @@
           "lib/server/conversations/reconcile.ts",
           "lib/server/conversations/watchdog.ts",
           "lib/server/conversations/maintenance.ts",
-          "lib/server/conversations/native-retirement-recovery.ts"
+          "lib/server/conversations/native-retirement-recovery.ts",
+          "lib/server/conversations/native-input-replay.ts",
+          "lib/server/conversations/projection.ts"
         ],
         "currentFileSha256": {
-          "app/_components/agent-chat.tsx": "9bf6cc9c2ef42aa1fa6397407cece5a0fe35f9038805e510c175c460129f9924",
+          "app/_components/agent-chat.tsx": "211c17dbbb409944f8e9300133bdee2cac6158f7e8e5f77158d106be83485d6a",
           "app/_components/new-conversation.tsx": "8bba2f54336e2270ca4f676a59f3359217f695d03ff4679ebb41803fef3a142f",
           "app/_components/conversation-list.tsx": "6d6f52097418a1994d4df51fd0cce4ba2ab639d33f31191f70b79863c1580647",
-          "lib/chat-messages.ts": "ce785f0ea48d268733634746460168052995da374bcf8f25dae7bc4a1dd016f7",
+          "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4",
           "lib/server/conversations/stream.ts": "9ad9f1cdd7a3154693ca23c2e9e6950ccad62cbbf7f0d384cf5977e86af69d47",
           "lib/server/conversations/cancel.ts": "c5aa6b6a68f89aee7c585c9d1c075e4423b12d134bc0b80f0533b9c13b767cd3",
           "lib/server/conversations/ordinary-retirement.ts": "2480c4f4a328346ee2ce17f584aaf5c54fed6936dcd12e668369dc5325fc7b76",
-          "lib/server/conversations/reconcile.ts": "df90ab5ea080ff0f58330b753396e81e1b2ec756c9793518dff56a20643199fd",
+          "lib/server/conversations/reconcile.ts": "20d04ea778e83d9c92d0cea3dfc5bff7b5a24ad2d11c46b55b91967176ce50fe",
           "lib/server/conversations/watchdog.ts": "efa9c80ce31e4e79194104d4a56da63c63dac3a32d48cb14970507a42c79c367",
           "lib/server/conversations/maintenance.ts": "2421e7a8e8db2c2e874bcb36e0db6c63b9186d62332f492edbb5287114782222",
-          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
+          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
+          "lib/server/conversations/native-input-replay.ts": "5ea96616a1a4f1e36305b25619631e88efc916c510ca5b18ad320bae7e4b7ad7",
+          "lib/server/conversations/projection.ts": "19f970cd00decc291bdb4644efd1ac360cb2db189b21e35edbed399371584858"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -9173,12 +9213,15 @@
           "scripts/check-ordinary-questions-native.ts",
           "tests/fixtures/ordinary-questions-native-model.ts",
           "tests/integration/legacy-native-uploads.test.ts",
-          "specs/018-legacy-backend-parity/validation.md"
+          "specs/018-legacy-backend-parity/validation.md",
+          "tests/integration/native-input-replay.test.ts",
+          "tests/unit/legacy-chat-mechanics.test.tsx"
         ],
         "remainingAcceptance": [
           "Exact018 Preview/Production and final CI verification remain required."
         ],
-        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required."
+        "runtimeValidation": "Actual unpaid native WebKit passes built-in question button, freeform main composer, numeric plain-HTTP answer and parallel built-in dismissal across fresh owner login/reload, with exact settled original allowance, stale-answer refusal and retained draft rejection. Hosted018 behavior remains separately required.",
+        "retryRecovery": "Installed Eve durable-step retries emit new received-event IDs. Preserve distinct audit events and recognize only exact pre-provider same-delivery aliases; retain original input/file envelope/deadline/allowance and current authorization. Reconciliation accepts only recorded aliases and UI shows one send. Hosted exact-source acceptance remains required."
       }
     },
     {
@@ -9247,7 +9290,7 @@
           "lib/server/conversations/native-retirement-recovery.ts"
         ],
         "currentFileSha256": {
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
           "lib/server/conversations/eve-routes.ts": "69e9fc8ac9779d73f58703bf1de636e19e8ce7f9ee03fd1e98fa36799dc1b88a",
@@ -12282,7 +12325,7 @@
           ],
           "currentFileSha256": {
             "playwright.config.ts": "cb8ec0a739e40366056bbd2e3dec12d52d22fbd53204f149955e9307025d9396",
-            "scripts/check-legacy-parity-disposable.mjs": "f9405ca41b956833203b7e4494cb71ab4d11260690be1b9fe906bb1aa83a71ef",
+            "scripts/check-legacy-parity-disposable.mjs": "f72ee6f44ab2affa2fdd40e586f63e1f34a4f3f186ad4a27a946310c2832850f",
             ".github/workflows/legacy-backend-parity.yml": "231196ad1e5a10e6a0f5df9c5a73e63b991c75426cac5b77142b2fa81b788565",
             ".github/workflows/ci.yml": "550cb944cfe1f34ba7f59bc27c92798ea761bd40a4f0efe92c76e4a9c314bcfb"
           },
@@ -13746,7 +13789,7 @@
           "app/api/auth/login/route.ts": "0188c665f0a111a1b96a6a0e78f9e47ecc70b5b85a36d6c5213c44523a6134fe",
           "app/api/conversations/[id]/route.ts": "1f3f0a9b9fea20aa3ae863ebb54b8cca120e372d1521bb4dc7dbc71e36753bff",
           "app/api/conversations/route.ts": "a8c23bf6f453ce56a6931da71165e2c760868e31e93b616498e6ef8c302a6cd9",
-          "lib/chat-messages.ts": "ce785f0ea48d268733634746460168052995da374bcf8f25dae7bc4a1dd016f7",
+          "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4",
           "lib/server/auth/sessions.ts": "f5aa0b00dccd6e4af1fbf8e67ba605d04a780b41fbefa4ea0bdda9ebe948681e",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a"
         },
@@ -13819,7 +13862,7 @@
         "rationale": "Historical hosted trace metrics collector is operator tooling. Current persisted step/operation accounting and verifier cover incomplete/unknown usage and shared reservation ceiling; no old deployment/project identifiers copied. External retrieval/compute is never asserted to be included in provider token usage.",
         "gaps": [],
         "currentFileSha256": {
-          "lib/server/conversations/projection.ts": "379c1cd6f418c5fa8581460c5fd519371d8a6b5694840f719d9636d98c516ecb",
+          "lib/server/conversations/projection.ts": "19f970cd00decc291bdb4644efd1ac360cb2db189b21e35edbed399371584858",
           "lib/server/conversations/model-budget.ts": "dc8cdcb71708fe4a2c051830e6e4a8732475099efde01f18f30fd7baf6706702",
           "lib/server/research/specialists/evaluation-budget.ts": "43ac36a5a57d7474bb6e331a7408f19f17e786a70c558281cda001c36cb79270"
         },
@@ -14385,7 +14428,7 @@
         },
         "currentFileSha256": {
           "app/_components/agent-chat.tsx": "9bf6cc9c2ef42aa1fa6397407cece5a0fe35f9038805e510c175c460129f9924",
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab"
+          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925"
         },
         "currentTestFileSha256": {
           "tests/contracts/conversations.test.ts": "fbcd4ec92f1a9ddefc7c230dc35c79e0055d90b3b781194cce3cb47a15d9ab62",
@@ -14952,7 +14995,7 @@
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
           "lib/server/conversations/named-evidence-search.ts": "32189a43e797d4889ecc0970a8ea5f5c9918eb224f355f6f33da450f05dee3ad",
           "lib/server/conversations/practice-evidence.ts": "d3402512e8d6f14d67f9594b689d428f97b67bf911feb61f47157f65728fcfeb",
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/attempt-context.ts": "22401c3852f1e245d30644d59a4e5f47218fb9a11e3c5b7969ced65e11cea216",
           "lib/server/profiles/policy.ts": "76183dc888a3b17a3233c45c78424f51a280ddc713742f80c5afbc673479cde3",
@@ -15758,7 +15801,7 @@
         "releaseAssessment": "No remaining active backend contract blocker identified; residual listed gaps are exact UI acceptance breadth or separately explicit historical experimental limitations.",
         "currentFileSha256": {
           "app/_components/chat-markdown.tsx": "29ca97a65eca18bfa8e6db41753f40e91d6bc92f79ead6d13bc4efd9896cd7d0",
-          "lib/chat-messages.ts": "ce785f0ea48d268733634746460168052995da374bcf8f25dae7bc4a1dd016f7",
+          "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4",
           "lib/contracts/customer-journey.ts": "966644941ef79713dafcda34ae32868b46ad20a9975c47955ddeac9196679582",
           "lib/conversations/title.ts": "94942fd3e959fb585af986e36d6f7ee36a750e2a6fc6046537120094abbca4e6",
           "lib/server/bootstrap-ids.ts": "2766348ecd400e1c2515627324d6878b37035f75a1e9b0925e35bc44d2a492b8",
@@ -16100,7 +16143,7 @@
         "rationale": "Old helper is benchmark failure classification, not runtime application error authority. Current attempt state/projection and unknown usage mechanisms are mapped. Root now restored focused actual visible-message/background-working event contracts. The old terminalFailure/isProviderBudgetError helper only belonged to manual historical model-comparison runners; no active runtime consumer imports it.",
         "gaps": [],
         "currentFileSha256": {
-          "lib/server/conversations/projection.ts": "379c1cd6f418c5fa8581460c5fd519371d8a6b5694840f719d9636d98c516ecb",
+          "lib/server/conversations/projection.ts": "19f970cd00decc291bdb4644efd1ac360cb2db189b21e35edbed399371584858",
           "lib/server/conversations/model-budget.ts": "dc8cdcb71708fe4a2c051830e6e4a8732475099efde01f18f30fd7baf6706702"
         },
         "currentTestFileSha256": {
@@ -16948,7 +16991,7 @@
         },
         "currentFileSha256": {
           "app/_components/agent-chat.tsx": "9bf6cc9c2ef42aa1fa6397407cece5a0fe35f9038805e510c175c460129f9924",
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab"
+          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925"
         },
         "currentTestFileSha256": {
           "tests/contracts/conversations.test.ts": "fbcd4ec92f1a9ddefc7c230dc35c79e0055d90b3b781194cce3cb47a15d9ab62",
@@ -17023,7 +17066,7 @@
         "releaseAssessment": "No remaining active backend contract blocker identified; residual listed gaps are exact UI acceptance breadth or separately explicit historical experimental limitations.",
         "currentFileSha256": {
           "app/_components/chat-markdown.tsx": "29ca97a65eca18bfa8e6db41753f40e91d6bc92f79ead6d13bc4efd9896cd7d0",
-          "lib/chat-messages.ts": "ce785f0ea48d268733634746460168052995da374bcf8f25dae7bc4a1dd016f7",
+          "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4",
           "lib/conversations/title.ts": "94942fd3e959fb585af986e36d6f7ee36a750e2a6fc6046537120094abbca4e6"
         },
         "currentTestFileSha256": {
@@ -17303,7 +17346,7 @@
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/customer-accounts.ts": "6f937d42ab258c3a39485002c39ba3f477e66909f35625511853b8cec5d9a0db",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/conversations/stream.ts": "9ad9f1cdd7a3154693ca23c2e9e6950ccad62cbbf7f0d384cf5977e86af69d47",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/service.ts": "9cddfd16cfde7c785dd53d866d199ab23366eb4a50251b59ca438b8d6a62de56",
@@ -17962,7 +18005,7 @@
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
           "lib/server/conversations/named-evidence-search.ts": "32189a43e797d4889ecc0970a8ea5f5c9918eb224f355f6f33da450f05dee3ad",
           "lib/server/conversations/practice-evidence.ts": "d3402512e8d6f14d67f9594b689d428f97b67bf911feb61f47157f65728fcfeb",
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/policy.ts": "76183dc888a3b17a3233c45c78424f51a280ddc713742f80c5afbc673479cde3",
           "lib/server/profiles/read.ts": "a11208ff0d1324a52871c3ece172b8093fb4e6177c6b6a387427d0deebfce0d5",
@@ -18380,8 +18423,8 @@
           "lib/server/conversations/customer-accounts.ts": "6f937d42ab258c3a39485002c39ba3f477e66909f35625511853b8cec5d9a0db",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
           "lib/server/conversations/named-evidence-search.ts": "32189a43e797d4889ecc0970a8ea5f5c9918eb224f355f6f33da450f05dee3ad",
-          "lib/server/conversations/projection.ts": "379c1cd6f418c5fa8581460c5fd519371d8a6b5694840f719d9636d98c516ecb",
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/projection.ts": "19f970cd00decc291bdb4644efd1ac360cb2db189b21e35edbed399371584858",
+          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/customer-create.ts": "4e8b2b714b73c69c340058154621879561c349fca8040ac0ee8af0e98ccfa5d6",
           "lib/server/profiles/read.ts": "a11208ff0d1324a52871c3ece172b8093fb4e6177c6b6a387427d0deebfce0d5",
@@ -18679,8 +18722,8 @@
           "lib/server/conversations/customer-accounts.ts": "6f937d42ab258c3a39485002c39ba3f477e66909f35625511853b8cec5d9a0db",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
           "lib/server/conversations/named-evidence-search.ts": "32189a43e797d4889ecc0970a8ea5f5c9918eb224f355f6f33da450f05dee3ad",
-          "lib/server/conversations/projection.ts": "379c1cd6f418c5fa8581460c5fd519371d8a6b5694840f719d9636d98c516ecb",
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/projection.ts": "19f970cd00decc291bdb4644efd1ac360cb2db189b21e35edbed399371584858",
+          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/attempt-context.ts": "22401c3852f1e245d30644d59a4e5f47218fb9a11e3c5b7969ced65e11cea216",
           "lib/server/research/context-generation.ts": "eb5af831f02c5b23ac45b355eabd89c8dafe63478f221fadebcad185c5c0969a",
@@ -19269,7 +19312,7 @@
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
           "lib/server/conversations/named-evidence-search.ts": "32189a43e797d4889ecc0970a8ea5f5c9918eb224f355f6f33da450f05dee3ad",
           "lib/server/conversations/practice-evidence.ts": "d3402512e8d6f14d67f9594b689d428f97b67bf911feb61f47157f65728fcfeb",
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/policy.ts": "76183dc888a3b17a3233c45c78424f51a280ddc713742f80c5afbc673479cde3",
           "lib/server/profiles/read.ts": "a11208ff0d1324a52871c3ece172b8093fb4e6177c6b6a387427d0deebfce0d5",
@@ -19715,7 +19758,7 @@
           "agent/lib/legacy-research/research-handoff.ts": "abdd51f153362d17b7c3de92a0d08664f43b35064c56690391ea57111f6e1c93",
           "agent/lib/legacy-research/research-tools/read_research_passages.ts": "e2168bbcd5c24b627bec32e22dffe905ea1e5cd73c4c245815ca0ee6e45e8a37",
           "app/_components/chat-markdown.tsx": "29ca97a65eca18bfa8e6db41753f40e91d6bc92f79ead6d13bc4efd9896cd7d0",
-          "lib/chat-messages.ts": "ce785f0ea48d268733634746460168052995da374bcf8f25dae7bc4a1dd016f7",
+          "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4",
           "lib/conversations/title.ts": "94942fd3e959fb585af986e36d6f7ee36a750e2a6fc6046537120094abbca4e6",
           "lib/server/research/specialists/research-cache/fetch.ts": "c406aceca9b3689fa54f17457bf78048c1d954feef1cf3d957d2ac2406a995bc",
           "lib/server/research/specialists/research-cache/library.ts": "006afe2984dfd08c6d004cb6e1e1a01a385cb6ae5ca76a7e8bebe9e3b44f8d70",
@@ -19926,7 +19969,7 @@
         "currentFileSha256": {
           "lib/server/research/public-dossier.ts": "babfe6499a7135770182a111a695cd02fc47ba3681e9f89e01317792348dae78",
           "lib/server/research/specialists/solution-research/source-integrity.ts": "fd45c094d0a8e1f1d8a981dc9fb9f7148c47a4e8fb81aad762f97ca1eabdb448",
-          "lib/server/conversations/projection.ts": "379c1cd6f418c5fa8581460c5fd519371d8a6b5694840f719d9636d98c516ecb"
+          "lib/server/conversations/projection.ts": "19f970cd00decc291bdb4644efd1ac360cb2db189b21e35edbed399371584858"
         },
         "currentTestFileSha256": {
           "tests/unit/research-public-dossier.test.ts": "7a519bdf09f209137dab57b0e98c99cfbfb6dd362b447a1c25671a2c54011caf",
@@ -20121,7 +20164,7 @@
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
           "lib/server/conversations/named-evidence-search.ts": "32189a43e797d4889ecc0970a8ea5f5c9918eb224f355f6f33da450f05dee3ad",
           "lib/server/conversations/practice-evidence.ts": "d3402512e8d6f14d67f9594b689d428f97b67bf911feb61f47157f65728fcfeb",
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/policy.ts": "76183dc888a3b17a3233c45c78424f51a280ddc713742f80c5afbc673479cde3",
           "lib/server/profiles/quality.ts": "6b15e5cb2782942296dab16f436a1ac9d94e7fe308ef53b006ea3a2fa9b80399",
@@ -21273,12 +21316,12 @@
         "currentFileSha256": {
           "app/_components/chat-markdown.tsx": "29ca97a65eca18bfa8e6db41753f40e91d6bc92f79ead6d13bc4efd9896cd7d0",
           "app/api/auth/login/route.ts": "0188c665f0a111a1b96a6a0e78f9e47ecc70b5b85a36d6c5213c44523a6134fe",
-          "lib/chat-messages.ts": "ce785f0ea48d268733634746460168052995da374bcf8f25dae7bc4a1dd016f7",
+          "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4",
           "lib/conversations/title.ts": "94942fd3e959fb585af986e36d6f7ee36a750e2a6fc6046537120094abbca4e6",
           "lib/server/auth/sessions.ts": "f5aa0b00dccd6e4af1fbf8e67ba605d04a780b41fbefa4ea0bdda9ebe948681e",
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/attempt-context.ts": "22401c3852f1e245d30644d59a4e5f47218fb9a11e3c5b7969ced65e11cea216",
           "lib/server/profiles/tool-actor.ts": "c9ee809d96774236ef28b3495649fc7e9cf4e0586d679aaf044e40cee610d714"
@@ -21543,7 +21586,7 @@
           "lib/server/conversations/binding.ts": "b01fa2ff208d7e6477285e52082b60c4cb0870499c05ce47c1825c22c6388373",
           "lib/server/conversations/customer-accounts.ts": "6f937d42ab258c3a39485002c39ba3f477e66909f35625511853b8cec5d9a0db",
           "lib/server/conversations/dispatch.ts": "fb72232697317d0cdaae7a04a050e40ade1ce2de6db50c44dd6d10fb5c5e551a",
-          "lib/server/conversations/repository.ts": "1f566a70593d3b75fdc1e36c298452118ff1ffe76e523a50ddacf15d2beb6cab",
+          "lib/server/conversations/repository.ts": "fa4d56b39aed61cdedb40cfcd96ed70bc797ce8c242aa58fdf4c5edb23528925",
           "lib/server/db/client.ts": "b8114e7a121eb1aac8f48362ebcd83a2d2455079691f280aefe878569f64fee5",
           "lib/server/profiles/public-inventory-reference.ts": "ba9abb24b8c09e340e38f6ae0835f7fb58ae1cde079b2e7dcb7047bbe14285bd",
           "lib/server/profiles/public-inventory.ts": "ae9de643c51285d515e80dd9c5f90e218c89069fa9600ed6356fb1f3fa5083ee",
@@ -22058,7 +22101,7 @@
         "releaseAssessment": "Specific residual UI acceptance breadth remains; do not count generic layout or native proof as this exact assertion.",
         "currentFileSha256": {
           "app/_components/app-shell.tsx": "f57f2f0a4de54621edb96c345aaf2690f5b9fac9fc08b9b5f21e9190065ad336",
-          "lib/chat-messages.ts": "ce785f0ea48d268733634746460168052995da374bcf8f25dae7bc4a1dd016f7"
+          "lib/chat-messages.ts": "0581445eced7434e47abea77fae0b0064304af7b46bb7762719a73468eed09c4"
         },
         "currentTestFileSha256": {
           "tests/ui/legacy-layout.spec.ts": "fafca5fc0c206f6dc14230e86cc65b5bc831492219696dbb996085da4c3ea78c",
@@ -22137,7 +22180,7 @@
         "rationale": "Original tests target historical benchmark-only classifier, not a domain mutation. Current output/accounting/terminal state tests cover interrupted usage and owned response lifecycle but do not make equivalent quota diagnostics assertions. Root now restored focused actual visible-message/background-working event contracts. The old terminalFailure/isProviderBudgetError helper only belonged to manual historical model-comparison runners; no active runtime consumer imports it.",
         "gaps": [],
         "currentFileSha256": {
-          "lib/server/conversations/projection.ts": "379c1cd6f418c5fa8581460c5fd519371d8a6b5694840f719d9636d98c516ecb",
+          "lib/server/conversations/projection.ts": "19f970cd00decc291bdb4644efd1ac360cb2db189b21e35edbed399371584858",
           "lib/server/conversations/model-budget.ts": "dc8cdcb71708fe4a2c051830e6e4a8732475099efde01f18f30fd7baf6706702"
         },
         "currentTestFileSha256": {

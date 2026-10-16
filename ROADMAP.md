@@ -298,3 +298,5 @@ Record a slice as in progress when its spec/plan exists, and complete only when
 its exit evidence and merged PR are linked. Distinguish local, CI, preview and
 production verification. Revise dependencies and scope when evidence changes.
 Update README in each relevant PR and verify it after merge.
+
+Feature 018 follow-up: PR 36 is merged on schema 077; actual Production native-retirement acceptance uncovered a stored-message display gap. T030 tracks its read-only recovery fix and hosted verification. T031 tracks exact accepted-delivery recovery after pre-provider durable-step interruption, including unchanged input/deadline/allowance and one rendered send. Full feature acceptance remains open.

@@ -258,6 +258,25 @@ export async function getOwnedConversation(
   return toReference(result.rows[0], session);
 }
 
+async function nativeRetirementConfirmed(id: string, nativeId: string | null, schemaVersion: number) {
+  if (!nativeId || schemaVersion < 76) return false;
+  return Boolean((await query(`SELECT 1 FROM ordinary_native_retirements
+    WHERE conversation_id=$1 AND native_session_id=$2 AND state='confirmed'`, [id, nativeId])).rowCount);
+}
+
+/** Keep active chat startup small; hydrate application history only after retirement. */
+export async function getOwnedConversationPage(session: CurrentSession, id: string) {
+  const conversation = await getOwnedConversation(session, id);
+  const version = Number((await query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',
+    [getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0]?.schema_version ?? 0);
+  const nativeRetired = await nativeRetirementConfirmed(id, conversation.eveSessionId, version);
+  if (nativeRetired) {
+    const detail = await getOwnedConversationDetail(session, id);
+    return {conversation: detail, nativeRetired: true, retainedHistory: detail.history, historyTruncated: detail.historyTruncated};
+  }
+  return {conversation, nativeRetired: false, retainedHistory: [], historyTruncated: false};
+}
+
 const cursorSchema = z.object({ t: z.iso.datetime(), id: z.uuid() }).strict();
 function decodeCursor(encoded?: string): { t: string; id: string } | null {
   if (!encoded) return null;
@@ -430,16 +449,18 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
     }>(`SELECT native_event_id, event_type, visible_payload, stream_index, emitted_at
       FROM event_projections WHERE conversation_id = $1
         AND event_type <> 'message.appended'
+        AND NOT (event_type='message.received' AND visible_payload ? 'applicationInputReplay')
       ORDER BY emitted_at, native_event_id LIMIT 501`, [id]),
-    query<{ turn_id: string; message: string; emitted_at: Date }>(`
-      SELECT e.turn_id, string_agg(e.visible_payload->>'messageDelta', ''
+    query<{ turn_id: string; step_index: number | null; message: string; emitted_at: Date }>(`
+      SELECT e.turn_id, e.step_index, string_agg(e.visible_payload->>'messageDelta', ''
         ORDER BY e.emitted_at, e.native_event_id) AS message, max(e.emitted_at) AS emitted_at
       FROM event_projections e WHERE e.conversation_id = $1
         AND e.event_type = 'message.appended' AND e.turn_id IS NOT NULL
         AND NOT EXISTS (SELECT 1 FROM event_projections completed
           WHERE completed.conversation_id = e.conversation_id
-            AND completed.turn_id = e.turn_id AND completed.event_type = 'message.completed')
-      GROUP BY e.turn_id ORDER BY max(e.emitted_at) DESC LIMIT 5`, [id]),
+            AND completed.turn_id = e.turn_id AND completed.step_index IS NOT DISTINCT FROM e.step_index
+            AND completed.event_type = 'message.completed')
+      GROUP BY e.turn_id,e.step_index ORDER BY max(e.emitted_at) DESC LIMIT 5`, [id]),
     query<{
       request_key: string; dispatch_state: string; response_state: string;
       watchdog_state: string | null; created_at: Date;
@@ -463,6 +484,7 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
     stream_index: string | null; emitted_at: Date;
   }>(`SELECT native_event_id,event_type,visible_payload,stream_index,emitted_at
     FROM event_projections WHERE conversation_id=$1 AND event_type='message.received'
+      AND NOT (visible_payload ? 'applicationInputReplay')
     ORDER BY emitted_at,native_event_id LIMIT 501`, [id]) : null;
   const final = await getOwnedConversation(session, id);
   const finalPlanStale=await withTransaction((client)=>
@@ -472,6 +494,7 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
   const visibleEvents = hideGenerated ? (ownerEvents?.rows ?? events.rows.filter((row) => row.event_type === "message.received")) : events.rows;
   return {
     ...conversation, featureKind:feature.kind,
+    nativeRetired: await nativeRetirementConfirmed(id, conversation.eveSessionId, documentSchemaVersion),
     canAttachDocuments:feature.kind==='normal' && process.env.TURAS_ORDINARY_ATTACHMENTS_DISABLED!=='1' &&
       documentSchemaVersion>=71,
     canAttachNativeFiles:feature.kind==='normal'&&ordinaryNativeFilesEnabled(id)&&documentSchemaVersion>=72,
@@ -485,7 +508,7 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
       streamIndex: row.stream_index === null ? null : Number(row.stream_index),
       emittedAt: row.emitted_at.toISOString(),
     })), ...(hideGenerated ? [] : partials.rows.map((row) => ({
-      eventId: `partial_${row.turn_id}`, eventType: "message.appended",
+      eventId: `partial_${row.turn_id}_${row.step_index ?? "unknown"}`, eventType: "message.appended",
       payload: { messageDelta: row.message, partial: true }, streamIndex: null,
       emittedAt: row.emitted_at.toISOString(),
     })))].sort((a, b) => a.emittedAt.localeCompare(b.emittedAt)),

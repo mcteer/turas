@@ -46,7 +46,7 @@ Independent test: original ordinary operations and private/runtime/context workf
 
 ## Phase 6: US4 — Exhaustive acceptance and release
 
-- [X] T022 [US4] Reconcile all inventory dispositions and every finding to implemented source and actual evidence; zero actionable missing/partial mechanisms remain in docs/legacy-backend-parity-audit.md (FR-010).
+- [ ] T022 [US4] Reconcile all inventory dispositions and every finding to implemented source and actual evidence; zero actionable missing/partial mechanisms remain in docs/legacy-backend-parity-audit.md (FR-010).
 - [ ] T023 [US4] Update README.md, ROADMAP.md and feature validation with actual status; run typecheck/docs/targeted domains/build and full exact-head CI, retaining failures and fixes (FR-011,FR-012).
 - [X] T024 [US4] Exercise changed workflows with authenticated real Preview HTTP and CLI WebKit desktop/mobile/reload, actual ordinary native consumers and independent review; preserve prior model charges/holds and bounded scope (FR-011).
 - [ ] T025 [US4] Back up and rehearse explicit schema/grants if required, verify target and old/new compatibility, merge green exact head, verify actual Production commit/schema/authenticated behavior, clean merged branch and verify README on main (FR-012).
@@ -64,3 +64,7 @@ Parallel example: conversation repository search regression and ordinary deliver
 - [X] T028 [US3] Restore inspectable native approval action inputs in lib/chat-inputs.ts and app/_components/chat-input-request.tsx; retain exact authenticated responder session, durable approval continuation, actual original tool execution and current-theme desktop/mobile/reloaded review. Verify actual operations and reusable-knowledge native controls (FR-007,FR-009,FR-011).
 
 - [X] T029 [US4] Reconcile all101 legacy test/evaluation references to exact current assertions or justified historical exclusions; restore missing active backend regression contracts, zero-vector rejection and exact active attachment intake deduplication. Rerun changed-source release rehearsals and acceptance before merge (FR-010–FR-012).
+
+- [ ] T030 [US3] Restore authorized application-owned message rendering after confirmed ordinary native retirement, including owner denial, changed-source suppression, reload, interrupted later steps and explicit bounded-history notice; verify actual hosted retired conversation without reconnecting to purged native state (FR-006,FR-009,FR-011).
+
+- [ ] T031 [US3] Recover exact accepted native deliveries after a pre-provider durable-step interruption when Eve re-emits new event IDs; preserve canonical input, file metadata, original deadline and allowance; refuse changed envelopes, missing delivery identity, expired/revoked authority and any prior model operation. Cover actual native interruption, reconciliation and one visible user send (FR-006,FR-009,FR-011).

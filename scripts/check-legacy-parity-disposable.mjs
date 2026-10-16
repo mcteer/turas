@@ -11,7 +11,7 @@ if (Number(process.versions.node.split(".")[0]) !== 24) throw Error("Run this ch
 if (process.argv.includes("--webkit-child")) {
   const { withPlanEvalEnvironment } = await import("./plan-eval-environment.ts");
   const files = ["legacy-login-native.spec.ts", "legacy-source-library.spec.ts",
-    "ordinary-operations.spec.ts", "legacy-context-journey.spec.ts", "legacy-chat-shell-contracts.spec.ts"].map(file=>"tests/ui/"+file);
+    "ordinary-operations.spec.ts", "legacy-context-journey.spec.ts", "legacy-chat-shell-contracts.spec.ts", "legacy-retired-history.spec.ts"].map(file=>"tests/ui/"+file);
   await withPlanEvalEnvironment(async environment => {
     const bootstrap=spawnSync(process.execPath,["--experimental-strip-types","scripts/bootstrap-demo.ts"],
       {cwd:environment.appRoot,env:process.env,encoding:"utf8"});
@@ -111,9 +111,9 @@ if (process.argv.includes("--webkit-child")) {
       throw Error("018 actual WebKit acceptance failed; inspect private report");
     }
     const report=JSON.parse(result.stdout);
-    if(report.stats.expected!==32||report.stats.unexpected||report.stats.flaky||report.stats.skipped)
-      throw Error("018 WebKit requires all32cases acrossfourprojects without skips or retries");
-    console.log(JSON.stringify({gate:"018-webkit",actualEve:true,projects:4,passed:32,skipped:0}));
+    if(report.stats.expected!==48||report.stats.unexpected||report.stats.flaky||report.stats.skipped)
+      throw Error("018 WebKit requires all48cases acrossfourprojects without skips or retries");
+    console.log(JSON.stringify({gate:"018-webkit",actualEve:true,projects:4,passed:48,skipped:0}));
   },{feature:"010",production:true,deadlineAt:Date.now()+1_800_000,prepare:async({appRoot})=>{
     const {copyFile}=await import("node:fs/promises");
     await copyFile("playwright.config.ts",join(appRoot,"playwright.config.ts"));
@@ -167,7 +167,7 @@ try {
     DATABASE_URL_UNPOOLED:"postgresql://unused:unused@127.0.0.1:1/application",
     TURAS_TEST_DATABASE_URL:url,TURAS_TEST_ENVIRONMENT_ID:environment.TURAS_ENVIRONMENT_ID};
   if(!acceptanceOnly&&!process.argv.includes("--native-only")&&!process.argv.includes("--native-files-only"))run(["node_modules/vitest/vitest.mjs","run","tests/integration/named-customer-chat.test.ts",
-    "tests/integration/general-chat.test.ts","tests/integration/ordinary-attachments.test.ts","tests/integration/ordinary-native-files.test.ts","tests/integration/legacy-research-transactions.test.ts",
+    "tests/integration/general-chat.test.ts","tests/integration/ordinary-attachments.test.ts","tests/integration/ordinary-native-files.test.ts","tests/integration/native-input-replay.test.ts","tests/integration/legacy-research-transactions.test.ts",
     "tests/integration/parity-evaluation-budget.test.ts","tests/integration/specialist-profile-persistence.test.ts","tests/integration/legacy-knowledge-mechanics.test.ts","tests/integration/live-customer-chat.test.ts","tests/integration/ordinary-steering.test.ts","tests/integration/legacy-document-formats.test.ts","tests/integration/research-maintenance.test.ts","tests/integration/retrieval-retention.test.ts","tests/integration/retrieval-service.test.ts","tests/integration/profile-context.test.ts","tests/integration/public-customer-inventory.test.ts",
     "tests/integration/legacy-profile-products.test.ts","tests/integration/legacy-source-library.test.ts",
     "tests/integration/legacy-adoption-cohorts.test.ts","tests/integration/legacy-workspace-review.test.ts",
@@ -193,7 +193,7 @@ try {
     "tests/integration/legacy-pattern-contracts.test.ts",
     "tests/unit/legacy-pattern-contracts.test.ts",
     "tests/unit/legacy-specialist-regressions.test.ts","tests/unit/legacy-knowledge-instructions.test.ts",
-    "tests/unit/research-public-checkpoint.test.ts"],integrationEnvironment);
+    "tests/unit/research-public-checkpoint.test.ts", "tests/unit/retained-chat-history.test.ts"],integrationEnvironment);
   // Route contracts read DATABASE_URL directly; they do not use the integration
   // fixture's explicit test-database selector.
   const contractUrl=new URL(url);contractUrl.searchParams.set('options','-c role=turas_runtime');
