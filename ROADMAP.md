@@ -4,7 +4,7 @@ Complete legacy backend parity is the currently authorized repair under
 [`018-legacy-backend-parity`](specs/018-legacy-backend-parity/spec.md), with its
 explicit [implementation tasks](specs/018-legacy-backend-parity/tasks.md).
 It restores original mechanisms and consumers within existing governed domains.
-The337-file source audit maps the restored implementation to original mechanisms.
+The 337-file source audit maps the restored implementation to original mechanisms.
 Acceptance and release evidence is tracked in the feature validation record and
 tasks. This does not complete unrelated feature-016 pilot work.
 

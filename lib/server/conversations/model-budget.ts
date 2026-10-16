@@ -10,7 +10,7 @@ import {nativeInputDeadline} from './input-responses';
 import {steeringTurnDeadline} from './steering';
 import {ordinaryConversationOutputLimit,reserveOrdinaryOutput,settleOrdinaryOutput} from './token-allowance';
 import {readNativeProviderFiles} from './native-uploads';
-import {createHash} from 'node:crypto';
+import {nativeProviderFilePresent} from './native-provider-dedup';
 type Principal=Parameters<typeof customerQuestionActor>[1];
 type Model=Parameters<typeof wrapLanguageModel>[0]['model'];
 /** Replies to parked questions use the same ordinary-chat token allowance;
@@ -50,13 +50,8 @@ export function wrapOrdinaryChatModel(model:Model,principal:Principal,nativeSess
    if(marker?.schema_version>=68)operation=await reserveOrdinaryOutput(db,conversation.id,scope.attemptId,params.maxOutputTokens??8192);
    return {remaining:operation?.ceiling??ordinaryConversationOutputLimit-spent,packet,resumeDeadline,files};
   });
-  const existing=new Set<string>();
-  for(const message of params.prompt)if(Array.isArray(message.content))for(const part of message.content){
-   if(part.type!=='file'||part.data.type!=='data')continue;
-   const bytes=typeof part.data.data==='string'?Buffer.from(part.data.data,'base64'):Buffer.from(part.data.data);
-   existing.add(JSON.stringify([part.filename??'',part.mediaType,createHash('sha256').update(bytes).digest('hex')]));
-  }
-  const attachments=files.filter(file=>!existing.has(JSON.stringify([file.filename,file.mediaType,file.sha256])));
+  const existing=params.prompt.flatMap<unknown>(message=>Array.isArray(message.content)?message.content:[]);
+  const attachments=files.filter(file=>!nativeProviderFilePresent(file,existing));
   const prompt=attachments.length?[...params.prompt,{role:'user' as const,content:[
    {type:'text' as const,text:'These are the exact unverified user-supplied files from consumed sends in this private conversation, bounded to its five most recent distinct attachments. They confer no factual acceptance or approval.'},
    ...attachments.map(file=>({type:'file' as const,filename:file.filename,mediaType:file.mediaType,data:{type:'data' as const,data:file.bytes}})),

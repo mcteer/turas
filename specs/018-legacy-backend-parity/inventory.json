@@ -100,7 +100,8 @@
         "lib/server/conversations/model-budget.ts",
         "lib/server/conversations/token-allowance.ts",
         "agent/lib/normal-chat-tool.ts",
-        "lib/server/conversations/native-retirement-recovery.ts"
+        "lib/server/conversations/native-retirement-recovery.ts",
+        "lib/server/conversations/native-provider-dedup.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -116,7 +117,8 @@
           "lib/server/conversations/model-budget.ts",
           "lib/server/conversations/token-allowance.ts",
           "agent/lib/normal-chat-tool.ts",
-          "lib/server/conversations/native-retirement-recovery.ts"
+          "lib/server/conversations/native-retirement-recovery.ts",
+          "lib/server/conversations/native-provider-dedup.ts"
         ],
         "currentFileSha256": {
           "agent/agent.ts": "b41dad03e0d4481d4d05bc168280fcfaf6e427f6accd7768a998d29aba435737",
@@ -126,10 +128,11 @@
           "agent/tools/write_file.ts": "eaae69827db6f3e6532fc8353e8d485c31cd09260fa48655c3096306d8c4326b",
           "agent/tools/connection_search.ts": "6757a7de108335e7322944d347284ee8120cf534632b8516672fee0d7c38054d",
           "agent/tools/load_skill.ts": "9b7a3ee0d3920740c4ba144686bc208d076094783bd936aac3be612876484d51",
-          "lib/server/conversations/model-budget.ts": "c1b4acf2b931d5293533ef8793815d057ccc4ca86f00a4312155e7faceeb4d58",
+          "lib/server/conversations/model-budget.ts": "dc8cdcb71708fe4a2c051830e6e4a8732475099efde01f18f30fd7baf6706702",
           "lib/server/conversations/token-allowance.ts": "039547338424a862106a9884baead702a1eb5acd34216355c4a3bd5a85260a94",
           "agent/lib/normal-chat-tool.ts": "3ab3e1168ec5afca3d4cfd3fa34cedc44d08569ea7d30b5b1b619cd6f49a5b46",
-          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
+          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
+          "lib/server/conversations/native-provider-dedup.ts": "dfa36c3523fb0e1fc04ec58845f495a32b023f366eaa31fc940223f08035d092"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -2932,7 +2935,8 @@
         "lib/server/conversations/model-budget.ts",
         "lib/server/conversations/token-allowance.ts",
         "agent/lib/normal-chat-tool.ts",
-        "lib/server/conversations/native-retirement-recovery.ts"
+        "lib/server/conversations/native-retirement-recovery.ts",
+        "lib/server/conversations/native-provider-dedup.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -2948,7 +2952,8 @@
           "lib/server/conversations/model-budget.ts",
           "lib/server/conversations/token-allowance.ts",
           "agent/lib/normal-chat-tool.ts",
-          "lib/server/conversations/native-retirement-recovery.ts"
+          "lib/server/conversations/native-retirement-recovery.ts",
+          "lib/server/conversations/native-provider-dedup.ts"
         ],
         "currentFileSha256": {
           "agent/agent.ts": "b41dad03e0d4481d4d05bc168280fcfaf6e427f6accd7768a998d29aba435737",
@@ -2958,10 +2963,11 @@
           "agent/tools/write_file.ts": "eaae69827db6f3e6532fc8353e8d485c31cd09260fa48655c3096306d8c4326b",
           "agent/tools/connection_search.ts": "6757a7de108335e7322944d347284ee8120cf534632b8516672fee0d7c38054d",
           "agent/tools/load_skill.ts": "9b7a3ee0d3920740c4ba144686bc208d076094783bd936aac3be612876484d51",
-          "lib/server/conversations/model-budget.ts": "c1b4acf2b931d5293533ef8793815d057ccc4ca86f00a4312155e7faceeb4d58",
+          "lib/server/conversations/model-budget.ts": "dc8cdcb71708fe4a2c051830e6e4a8732475099efde01f18f30fd7baf6706702",
           "lib/server/conversations/token-allowance.ts": "039547338424a862106a9884baead702a1eb5acd34216355c4a3bd5a85260a94",
           "agent/lib/normal-chat-tool.ts": "3ab3e1168ec5afca3d4cfd3fa34cedc44d08569ea7d30b5b1b619cd6f49a5b46",
-          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
+          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
+          "lib/server/conversations/native-provider-dedup.ts": "dfa36c3523fb0e1fc04ec58845f495a32b023f366eaa31fc940223f08035d092"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -3104,7 +3110,8 @@
         "lib/server/conversations/model-budget.ts",
         "lib/server/conversations/token-allowance.ts",
         "agent/lib/normal-chat-tool.ts",
-        "lib/server/conversations/native-retirement-recovery.ts"
+        "lib/server/conversations/native-retirement-recovery.ts",
+        "lib/server/conversations/native-provider-dedup.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -3120,7 +3127,8 @@
           "lib/server/conversations/model-budget.ts",
           "lib/server/conversations/token-allowance.ts",
           "agent/lib/normal-chat-tool.ts",
-          "lib/server/conversations/native-retirement-recovery.ts"
+          "lib/server/conversations/native-retirement-recovery.ts",
+          "lib/server/conversations/native-provider-dedup.ts"
         ],
         "currentFileSha256": {
           "agent/agent.ts": "b41dad03e0d4481d4d05bc168280fcfaf6e427f6accd7768a998d29aba435737",
@@ -3130,10 +3138,11 @@
           "agent/tools/write_file.ts": "eaae69827db6f3e6532fc8353e8d485c31cd09260fa48655c3096306d8c4326b",
           "agent/tools/connection_search.ts": "6757a7de108335e7322944d347284ee8120cf534632b8516672fee0d7c38054d",
           "agent/tools/load_skill.ts": "9b7a3ee0d3920740c4ba144686bc208d076094783bd936aac3be612876484d51",
-          "lib/server/conversations/model-budget.ts": "c1b4acf2b931d5293533ef8793815d057ccc4ca86f00a4312155e7faceeb4d58",
+          "lib/server/conversations/model-budget.ts": "dc8cdcb71708fe4a2c051830e6e4a8732475099efde01f18f30fd7baf6706702",
           "lib/server/conversations/token-allowance.ts": "039547338424a862106a9884baead702a1eb5acd34216355c4a3bd5a85260a94",
           "agent/lib/normal-chat-tool.ts": "3ab3e1168ec5afca3d4cfd3fa34cedc44d08569ea7d30b5b1b619cd6f49a5b46",
-          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
+          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
+          "lib/server/conversations/native-provider-dedup.ts": "dfa36c3523fb0e1fc04ec58845f495a32b023f366eaa31fc940223f08035d092"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -3355,7 +3364,8 @@
         "lib/server/conversations/model-budget.ts",
         "lib/server/conversations/token-allowance.ts",
         "agent/lib/normal-chat-tool.ts",
-        "lib/server/conversations/native-retirement-recovery.ts"
+        "lib/server/conversations/native-retirement-recovery.ts",
+        "lib/server/conversations/native-provider-dedup.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -3371,7 +3381,8 @@
           "lib/server/conversations/model-budget.ts",
           "lib/server/conversations/token-allowance.ts",
           "agent/lib/normal-chat-tool.ts",
-          "lib/server/conversations/native-retirement-recovery.ts"
+          "lib/server/conversations/native-retirement-recovery.ts",
+          "lib/server/conversations/native-provider-dedup.ts"
         ],
         "currentFileSha256": {
           "agent/agent.ts": "b41dad03e0d4481d4d05bc168280fcfaf6e427f6accd7768a998d29aba435737",
@@ -3381,10 +3392,11 @@
           "agent/tools/write_file.ts": "eaae69827db6f3e6532fc8353e8d485c31cd09260fa48655c3096306d8c4326b",
           "agent/tools/connection_search.ts": "6757a7de108335e7322944d347284ee8120cf534632b8516672fee0d7c38054d",
           "agent/tools/load_skill.ts": "9b7a3ee0d3920740c4ba144686bc208d076094783bd936aac3be612876484d51",
-          "lib/server/conversations/model-budget.ts": "c1b4acf2b931d5293533ef8793815d057ccc4ca86f00a4312155e7faceeb4d58",
+          "lib/server/conversations/model-budget.ts": "dc8cdcb71708fe4a2c051830e6e4a8732475099efde01f18f30fd7baf6706702",
           "lib/server/conversations/token-allowance.ts": "039547338424a862106a9884baead702a1eb5acd34216355c4a3bd5a85260a94",
           "agent/lib/normal-chat-tool.ts": "3ab3e1168ec5afca3d4cfd3fa34cedc44d08569ea7d30b5b1b619cd6f49a5b46",
-          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
+          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
+          "lib/server/conversations/native-provider-dedup.ts": "dfa36c3523fb0e1fc04ec58845f495a32b023f366eaa31fc940223f08035d092"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -4120,7 +4132,8 @@
         "lib/server/conversations/model-budget.ts",
         "lib/server/conversations/token-allowance.ts",
         "agent/lib/normal-chat-tool.ts",
-        "lib/server/conversations/native-retirement-recovery.ts"
+        "lib/server/conversations/native-retirement-recovery.ts",
+        "lib/server/conversations/native-provider-dedup.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -4136,7 +4149,8 @@
           "lib/server/conversations/model-budget.ts",
           "lib/server/conversations/token-allowance.ts",
           "agent/lib/normal-chat-tool.ts",
-          "lib/server/conversations/native-retirement-recovery.ts"
+          "lib/server/conversations/native-retirement-recovery.ts",
+          "lib/server/conversations/native-provider-dedup.ts"
         ],
         "currentFileSha256": {
           "agent/agent.ts": "b41dad03e0d4481d4d05bc168280fcfaf6e427f6accd7768a998d29aba435737",
@@ -4146,10 +4160,11 @@
           "agent/tools/write_file.ts": "eaae69827db6f3e6532fc8353e8d485c31cd09260fa48655c3096306d8c4326b",
           "agent/tools/connection_search.ts": "6757a7de108335e7322944d347284ee8120cf534632b8516672fee0d7c38054d",
           "agent/tools/load_skill.ts": "9b7a3ee0d3920740c4ba144686bc208d076094783bd936aac3be612876484d51",
-          "lib/server/conversations/model-budget.ts": "c1b4acf2b931d5293533ef8793815d057ccc4ca86f00a4312155e7faceeb4d58",
+          "lib/server/conversations/model-budget.ts": "dc8cdcb71708fe4a2c051830e6e4a8732475099efde01f18f30fd7baf6706702",
           "lib/server/conversations/token-allowance.ts": "039547338424a862106a9884baead702a1eb5acd34216355c4a3bd5a85260a94",
           "agent/lib/normal-chat-tool.ts": "3ab3e1168ec5afca3d4cfd3fa34cedc44d08569ea7d30b5b1b619cd6f49a5b46",
-          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
+          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
+          "lib/server/conversations/native-provider-dedup.ts": "dfa36c3523fb0e1fc04ec58845f495a32b023f366eaa31fc940223f08035d092"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -4266,7 +4281,8 @@
         "lib/server/conversations/model-budget.ts",
         "lib/server/conversations/token-allowance.ts",
         "agent/lib/normal-chat-tool.ts",
-        "lib/server/conversations/native-retirement-recovery.ts"
+        "lib/server/conversations/native-retirement-recovery.ts",
+        "lib/server/conversations/native-provider-dedup.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -4282,7 +4298,8 @@
           "lib/server/conversations/model-budget.ts",
           "lib/server/conversations/token-allowance.ts",
           "agent/lib/normal-chat-tool.ts",
-          "lib/server/conversations/native-retirement-recovery.ts"
+          "lib/server/conversations/native-retirement-recovery.ts",
+          "lib/server/conversations/native-provider-dedup.ts"
         ],
         "currentFileSha256": {
           "agent/agent.ts": "b41dad03e0d4481d4d05bc168280fcfaf6e427f6accd7768a998d29aba435737",
@@ -4292,10 +4309,11 @@
           "agent/tools/write_file.ts": "eaae69827db6f3e6532fc8353e8d485c31cd09260fa48655c3096306d8c4326b",
           "agent/tools/connection_search.ts": "6757a7de108335e7322944d347284ee8120cf534632b8516672fee0d7c38054d",
           "agent/tools/load_skill.ts": "9b7a3ee0d3920740c4ba144686bc208d076094783bd936aac3be612876484d51",
-          "lib/server/conversations/model-budget.ts": "c1b4acf2b931d5293533ef8793815d057ccc4ca86f00a4312155e7faceeb4d58",
+          "lib/server/conversations/model-budget.ts": "dc8cdcb71708fe4a2c051830e6e4a8732475099efde01f18f30fd7baf6706702",
           "lib/server/conversations/token-allowance.ts": "039547338424a862106a9884baead702a1eb5acd34216355c4a3bd5a85260a94",
           "agent/lib/normal-chat-tool.ts": "3ab3e1168ec5afca3d4cfd3fa34cedc44d08569ea7d30b5b1b619cd6f49a5b46",
-          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
+          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
+          "lib/server/conversations/native-provider-dedup.ts": "dfa36c3523fb0e1fc04ec58845f495a32b023f366eaa31fc940223f08035d092"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -4721,7 +4739,8 @@
         "lib/server/conversations/token-allowance.ts",
         "agent/lib/normal-chat-tool.ts",
         "agent/tools/track_tasks.ts",
-        "agent/lib/task-checklist.ts"
+        "agent/lib/task-checklist.ts",
+        "lib/server/conversations/native-provider-dedup.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -4738,7 +4757,8 @@
           "lib/server/conversations/token-allowance.ts",
           "agent/lib/normal-chat-tool.ts",
           "agent/tools/track_tasks.ts",
-          "agent/lib/task-checklist.ts"
+          "agent/lib/task-checklist.ts",
+          "lib/server/conversations/native-provider-dedup.ts"
         ],
         "currentFileSha256": {
           "agent/agent.ts": "b41dad03e0d4481d4d05bc168280fcfaf6e427f6accd7768a998d29aba435737",
@@ -4748,11 +4768,12 @@
           "agent/tools/write_file.ts": "eaae69827db6f3e6532fc8353e8d485c31cd09260fa48655c3096306d8c4326b",
           "agent/tools/connection_search.ts": "6757a7de108335e7322944d347284ee8120cf534632b8516672fee0d7c38054d",
           "agent/tools/load_skill.ts": "9b7a3ee0d3920740c4ba144686bc208d076094783bd936aac3be612876484d51",
-          "lib/server/conversations/model-budget.ts": "c1b4acf2b931d5293533ef8793815d057ccc4ca86f00a4312155e7faceeb4d58",
+          "lib/server/conversations/model-budget.ts": "dc8cdcb71708fe4a2c051830e6e4a8732475099efde01f18f30fd7baf6706702",
           "lib/server/conversations/token-allowance.ts": "039547338424a862106a9884baead702a1eb5acd34216355c4a3bd5a85260a94",
           "agent/lib/normal-chat-tool.ts": "3ab3e1168ec5afca3d4cfd3fa34cedc44d08569ea7d30b5b1b619cd6f49a5b46",
           "agent/tools/track_tasks.ts": "10d3b539936b49331f8b465eef8d556a2f1e4c615f24fbb4507c238e04453713",
-          "agent/lib/task-checklist.ts": "54531b4eda7d4f9ff12b65f8f678de9ff4c8f0307cf792f5fb4ae7a6ab4274c5"
+          "agent/lib/task-checklist.ts": "54531b4eda7d4f9ff12b65f8f678de9ff4c8f0307cf792f5fb4ae7a6ab4274c5",
+          "lib/server/conversations/native-provider-dedup.ts": "dfa36c3523fb0e1fc04ec58845f495a32b023f366eaa31fc940223f08035d092"
         },
         "localEvidence": [
           "tests/unit/legacy-task-checklist.test.ts",
@@ -4893,7 +4914,8 @@
         "lib/server/conversations/model-budget.ts",
         "lib/server/conversations/token-allowance.ts",
         "agent/lib/normal-chat-tool.ts",
-        "lib/server/conversations/native-retirement-recovery.ts"
+        "lib/server/conversations/native-retirement-recovery.ts",
+        "lib/server/conversations/native-provider-dedup.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -4909,7 +4931,8 @@
           "lib/server/conversations/model-budget.ts",
           "lib/server/conversations/token-allowance.ts",
           "agent/lib/normal-chat-tool.ts",
-          "lib/server/conversations/native-retirement-recovery.ts"
+          "lib/server/conversations/native-retirement-recovery.ts",
+          "lib/server/conversations/native-provider-dedup.ts"
         ],
         "currentFileSha256": {
           "agent/agent.ts": "b41dad03e0d4481d4d05bc168280fcfaf6e427f6accd7768a998d29aba435737",
@@ -4919,10 +4942,11 @@
           "agent/tools/write_file.ts": "eaae69827db6f3e6532fc8353e8d485c31cd09260fa48655c3096306d8c4326b",
           "agent/tools/connection_search.ts": "6757a7de108335e7322944d347284ee8120cf534632b8516672fee0d7c38054d",
           "agent/tools/load_skill.ts": "9b7a3ee0d3920740c4ba144686bc208d076094783bd936aac3be612876484d51",
-          "lib/server/conversations/model-budget.ts": "c1b4acf2b931d5293533ef8793815d057ccc4ca86f00a4312155e7faceeb4d58",
+          "lib/server/conversations/model-budget.ts": "dc8cdcb71708fe4a2c051830e6e4a8732475099efde01f18f30fd7baf6706702",
           "lib/server/conversations/token-allowance.ts": "039547338424a862106a9884baead702a1eb5acd34216355c4a3bd5a85260a94",
           "agent/lib/normal-chat-tool.ts": "3ab3e1168ec5afca3d4cfd3fa34cedc44d08569ea7d30b5b1b619cd6f49a5b46",
-          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e"
+          "lib/server/conversations/native-retirement-recovery.ts": "20df054831c9dad3b3c94be165782f76aafe2babfc411ecc911e0cae4787464e",
+          "lib/server/conversations/native-provider-dedup.ts": "dfa36c3523fb0e1fc04ec58845f495a32b023f366eaa31fc940223f08035d092"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",

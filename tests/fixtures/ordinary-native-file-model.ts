@@ -67,7 +67,7 @@ export function createOrdinaryNativeFileFixtureModel(attemptId:string){
   if(process.env.TURAS_ORDINARY_MEMORY_FIXTURE==='1'||process.env.TURAS_ORDINARY_TASK_STATE_FIXTURE==='1'?files.length>2:files.length<1||files.length>2){
    const shape=params.prompt.map(message=>({role:message.role,parts:typeof message.content==='string'?['string']:message.content.map(part=>part.type)}));
    const notes=params.prompt.flatMap(message=>typeof message.content==='string'?[]:message.content.flatMap(part=>part.type==='text'&&/attach|file|upload/i.test(part.text)&&part.text.length<1200?[part.text.slice(0,300)]:[]));
-   console.info(JSON.stringify({kind:'owned_native_file_missing',shape,notes}));
+   console.info(JSON.stringify({kind:'owned_native_file_missing',shape,notes,files:files.map(file=>({filename:file.filename,mediaType:file.mediaType,dataType:file.data.type,sha256:file.data.type==='data'?createHash('sha256').update(typeof file.data.data==='string'?Buffer.from(file.data.data,'base64'):Buffer.from(file.data.data)).digest('hex'):null}))}));
    throw Error('The provider did not receive actual files');
   }
   const names=(params.tools??[]).map(tool=>tool.name);

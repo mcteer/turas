@@ -37,6 +37,8 @@ const visibleTypes = new Set([
   "step.failed", "turn.completed", "turn.failed", "turn.cancelled",
 ]);
 
+const ordinaryContinuationTypes = new Set(["turn.started", "approval.settled"]);
+
 function visiblePayload(event: NativeEvent): Record<string, unknown> {
   const data = event.data ?? {};
   switch (event.type) {
@@ -97,6 +99,18 @@ export async function projectNativeEvent(
   nativeSessionId: string, attemptId: string, event: NativeEvent, streamIndex?: number,
 ): Promise<void> {
   if (!visibleTypes.has(event.type)) return;
+  // These continuation boundaries belong only to ordinary conversations. Governed
+  // workflows retain their own message-first association and event contracts.
+  if (ordinaryContinuationTypes.has(event.type)) {
+    const normal = await withTransaction(async client => {
+      const owned = (await client.query(`SELECT a.conversation_id FROM response_attempts a
+        JOIN conversations c ON c.id=a.conversation_id WHERE a.id=$1 AND c.eve_session_id=$2 AND c.binding_state='bound'`,
+        [attemptId,nativeSessionId])).rows[0];
+      if (!owned) throw new Error("Native attempt association unavailable");
+      return (await conversationFeature(client,owned.conversation_id)).kind === 'normal';
+    });
+    if (!normal) return;
+  }
   // Session auth can already describe the next submitted attempt when an
   // earlier turn emits its terminal boundary. Resolve known native turns from
   // their durable association instead of attributing them to the newest send.
@@ -182,7 +196,9 @@ export async function projectNativeEventInTransaction(
     JOIN conversations c ON c.id=a.conversation_id WHERE a.id=$1 AND c.eve_session_id=$2 AND c.binding_state='bound'`,
     [attemptId, nativeSessionId])).rows[0];
   if (!owned) throw new Error("Native attempt association unavailable");
-  if((await conversationFeature(client,owned.conversation_id)).kind==='learning'){
+  const feature = await conversationFeature(client,owned.conversation_id);
+  if (ordinaryContinuationTypes.has(event.type) && feature.kind !== 'normal') return;
+  if(feature.kind==='learning'){
     const learningProjection=await projectLearningNativeEventInTransaction(client,nativeSessionId,attemptId,event,streamIndex);
     if(!learningProjection)throw new Error('Learning event association unavailable');
     return learningProjection;

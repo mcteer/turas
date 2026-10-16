@@ -53,13 +53,18 @@ describe("partner grant concurrency", () => {
   it("keeps the final administrator active", async () => {
     process.env.DATABASE_URL = process.env.TURAS_TEST_DATABASE_URL;
     process.env.TURAS_ENVIRONMENT_ID = process.env.TURAS_TEST_ENVIRONMENT_ID;
-    await expect(setMembershipActive({
-      actorPrincipalId: DEMO_IDS.mcteer,
-      membershipId: DEMO_IDS.mcteerMembership,
-      expectedRevision: 0,
-      active: false,
-      requestKey: randomUUID(),
-    })).rejects.toMatchObject({ code: "last_admin" });
+    const client = new Client({ connectionString: process.env.TURAS_TEST_DATABASE_URL });
+    await client.connect();
+    try {
+      const current = await client.query<{revision:string}>("SELECT revision FROM memberships WHERE id=$1",[DEMO_IDS.mcteerMembership]);
+      await expect(setMembershipActive({
+        actorPrincipalId: DEMO_IDS.mcteer,
+        membershipId: DEMO_IDS.mcteerMembership,
+        expectedRevision: Number(current.rows[0].revision),
+        active: false,
+        requestKey: randomUUID(),
+      })).rejects.toMatchObject({ code: "last_admin" });
+    } finally { await client.end(); }
   });
 
   it("does not allow two simultaneous disables to remove every administrator", async () => {
@@ -79,12 +84,13 @@ describe("partner grant concurrency", () => {
          VALUES ($1, $2, $3, 'internal', 'admin')`,
         [extraMembership, extraPrincipal, DEMO_IDS.workspace],
       );
+      const revisions = new Map((await client.query<{id:string;revision:string}>("SELECT id,revision FROM memberships WHERE id=ANY($1::uuid[])",[[DEMO_IDS.mcteerMembership,extraMembership]])).rows.map(row=>[row.id,Number(row.revision)]));
       const decisions = await Promise.allSettled([
         setMembershipActive({ actorPrincipalId: DEMO_IDS.mcteer,
-          membershipId: DEMO_IDS.mcteerMembership, expectedRevision: 0,
+          membershipId: DEMO_IDS.mcteerMembership, expectedRevision: revisions.get(DEMO_IDS.mcteerMembership)!,
           active: false, requestKey: randomUUID() }),
         setMembershipActive({ actorPrincipalId: DEMO_IDS.mcteer,
-          membershipId: extraMembership, expectedRevision: 0,
+          membershipId: extraMembership, expectedRevision: revisions.get(extraMembership)!,
           active: false, requestKey: randomUUID() }),
       ]);
       expect(decisions.filter((result) => result.status === "fulfilled")).toHaveLength(1);
@@ -94,7 +100,7 @@ describe("partner grant concurrency", () => {
       );
       expect(Number(remaining.rows[0].count)).toBe(1);
     } finally {
-      await client.query("UPDATE memberships SET active = true, revision = 0 WHERE id = $1", [DEMO_IDS.mcteerMembership]);
+      await client.query("UPDATE memberships SET active = true WHERE id = $1", [DEMO_IDS.mcteerMembership]);
       await client.query("DELETE FROM memberships WHERE id = $1", [extraMembership]);
       await client.query("DELETE FROM principals WHERE id = $1", [extraPrincipal]);
       await client.end();

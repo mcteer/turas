@@ -51,7 +51,28 @@ if (process.argv.includes("--webkit-child")) {
     if(existsSync(images))for(const name of readdirSync(images))
       if(/^(?:source-library|context-approvals|customer-journey)-webkit-(?:desktop|mobile)-(?:light|dark)\.png$/.test(name))
         copyFileSync(join(images,name),join(folder,name));
-    if(result.error||result.status!==0)throw Error("018 actual WebKit acceptance failed; inspect private report");
+    if(result.error||result.status!==0){
+      const failures=[];let reportParseFailed=false;
+      try{
+        const collect=suite=>{
+          for(const spec of suite.specs??[])for(const test of spec.tests??[]){
+            const failed=(test.results??[]).filter(value=>["failed","timedOut","interrupted"].includes(value.status));
+            for(const value of failed){
+              const text=String(value.error?.message??"");
+              failures.push({file:String(spec.file??suite.file??"").split(/[\\/]/).at(-1),line:spec.line,
+                project:test.projectName,status:value.status,
+                category:/timeout|timed out/i.test(text)?"timeout":/expect|assert/i.test(text)?"assertion":"runtime",
+                errorLine:value.error?.location?.line});
+            }
+          }
+          for(const child of suite.suites??[])collect(child);
+        };
+        for(const suite of JSON.parse(result.stdout).suites??[])collect(suite);
+      }catch{reportParseFailed=true;}
+      console.error(JSON.stringify({kind:"legacy_webkit_failure",reportParseFailed,
+        runnerFailed:Boolean(result.error),failures:failures.slice(0,20)}));
+      throw Error("018 actual WebKit acceptance failed; inspect private report");
+    }
     const report=JSON.parse(result.stdout);
     if(report.stats.expected!==20||report.stats.unexpected||report.stats.flaky||report.stats.skipped)
       throw Error("018 WebKit requires all20cases acrossfourprojects without skips or retries");
@@ -159,7 +180,7 @@ try {
   // details stay private; report the bounded test failure section only.
   const failure=output.indexOf("Failed Tests");
   if(failure>=0) console.error(output.slice(failure,failure+5000));
-  for(const line of output.split("\n"))if(line.startsWith('{"kind":"native_file_fixture_failure"'))console.error(line);
+  for(const line of output.split("\n"))if(line.startsWith('{"kind":"native_file_fixture_failure"')||line.startsWith('{"kind":"legacy_webkit_failure"'))console.error(line);
   process.exitCode=1;
 } finally {
   if(created && docker(["rm","-f","-v",name]).status!==0) {
