@@ -11,7 +11,7 @@ if (Number(process.versions.node.split(".")[0]) !== 24) throw Error("Run this ch
 if (process.argv.includes("--webkit-child")) {
   const { withPlanEvalEnvironment } = await import("./plan-eval-environment.ts");
   const files = ["legacy-login-native.spec.ts", "legacy-source-library.spec.ts",
-    "ordinary-operations.spec.ts", "legacy-context-journey.spec.ts"].map(file=>"tests/ui/"+file);
+    "ordinary-operations.spec.ts", "legacy-context-journey.spec.ts", "legacy-chat-shell-contracts.spec.ts"].map(file=>"tests/ui/"+file);
   await withPlanEvalEnvironment(async environment => {
     const bootstrap=spawnSync(process.execPath,["--experimental-strip-types","scripts/bootstrap-demo.ts"],
       {cwd:environment.appRoot,env:process.env,encoding:"utf8"});
@@ -111,9 +111,9 @@ if (process.argv.includes("--webkit-child")) {
       throw Error("018 actual WebKit acceptance failed; inspect private report");
     }
     const report=JSON.parse(result.stdout);
-    if(report.stats.expected!==20||report.stats.unexpected||report.stats.flaky||report.stats.skipped)
-      throw Error("018 WebKit requires all20cases acrossfourprojects without skips or retries");
-    console.log(JSON.stringify({gate:"018-webkit",actualEve:true,projects:4,passed:20,skipped:0}));
+    if(report.stats.expected!==32||report.stats.unexpected||report.stats.flaky||report.stats.skipped)
+      throw Error("018 WebKit requires all32cases acrossfourprojects without skips or retries");
+    console.log(JSON.stringify({gate:"018-webkit",actualEve:true,projects:4,passed:32,skipped:0}));
   },{feature:"010",production:true,deadlineAt:Date.now()+1_800_000,prepare:async({appRoot})=>{
     const {copyFile}=await import("node:fs/promises");
     await copyFile("playwright.config.ts",join(appRoot,"playwright.config.ts"));
@@ -181,7 +181,18 @@ try {
     "tests/unit/research-fetch.test.ts","tests/unit/research-finalization-failure.test.ts",
     "tests/unit/research-retained-claim.test.ts","tests/unit/research-public-dossier.test.ts",
     "tests/unit/legacy-specialist-contracts.test.ts","tests/unit/legacy-research-reader.test.ts",
+    "tests/unit/legacy-decision-contracts.test.ts","tests/unit/legacy-release-chronology.test.ts",
+    "tests/unit/legacy-page-recovery.test.ts","tests/integration/legacy-research-cache-lifecycle.test.ts",
+    "tests/unit/legacy-chat-event-contracts.test.ts","tests/unit/legacy-login-failure-contracts.test.ts",
     "tests/unit/research-refresh.test.ts","tests/unit/research-maintenance-route.test.ts",
+    "tests/unit/legacy-research-attribution.test.ts",
+    "tests/unit/legacy-research-citations.test.ts",
+    "tests/unit/legacy-research-handoff.test.ts",
+    "tests/unit/legacy-research-validation.test.ts",
+    "tests/unit/legacy-customer-update-finalizer.test.ts",
+    "tests/integration/legacy-pattern-contracts.test.ts",
+    "tests/unit/legacy-pattern-contracts.test.ts",
+    "tests/unit/legacy-specialist-regressions.test.ts","tests/unit/legacy-knowledge-instructions.test.ts",
     "tests/unit/research-public-checkpoint.test.ts"],integrationEnvironment);
   // Route contracts read DATABASE_URL directly; they do not use the integration
   // fixture's explicit test-database selector.

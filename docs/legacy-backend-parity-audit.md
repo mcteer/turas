@@ -23,6 +23,8 @@ to 3.745 seconds and 40 queries. Fresh HTTP authentication was bound to that
 database and logged out; this measures local code against Preview data, not
 deployed-code acceptance.
 
+The final acceptance-reference pass replaces101 generic test-folder mappings with exact current files/assertions or explicit historical exclusions. It restores direct contracts for cache concurrency/recovery/retention, signed artifacts and chronology, page retry boundaries, decision/process-impact calculations, attribution/citations/handoff, specialist finalization and pattern invalidation. It also reproduces and repairs zero-vector acceptance, attachment draft duplication, microsecond-losing pagination in four readers and unrecoverable Journey loading. Ordinary approved-knowledge/adoption routing and offline/causal guidance are restored. All337 original paths and101 exact acceptance reviews have separate independent review; historical paid benchmark scores and exact prior-theme UI controls are not claimed as reproduced.
+
 Confirmed divergences and current work:
 
 | Mechanism | Proven difference | Repair and verification status |

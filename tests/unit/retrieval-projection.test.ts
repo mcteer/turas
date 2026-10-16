@@ -53,6 +53,13 @@ describe("approved retrieval units", () => {
     expect(exactEmbeddingVector(vector)).toHaveLength(1_536);
   });
 
+  it("rejects zero embeddings that cannot support cosine retrieval", () => {
+    expect(() => exactEmbeddingVector(Array(1_536).fill(0))).toThrow("contract mismatch");
+    const sparse = Array(1_536).fill(0);
+    sparse[37] = -0.5;
+    expect(exactEmbeddingVector(sparse)).toEqual(sparse);
+  });
+
   it("keeps offsets in original text when combining characters are present", () => {
     const unitId = randomUUID();
     const original = "Cafe\u0301";

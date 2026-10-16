@@ -6,7 +6,7 @@ import {DEMO_IDS} from '../../lib/server/bootstrap-ids';
 import {submitProfileCommand} from '../../lib/server/profiles/service';
 import {readJourneyPage} from '../../lib/server/profiles/journey-page';
 import {readEligibleContext} from '../../lib/server/profiles/context';
-import {readProfileHistory} from '../../lib/server/profiles/read';
+import {readProfileHistory,listProfileRecords,listReviewQueue,listOwnSubmissions} from '../../lib/server/profiles/read';
 import {listWorkspaceReview} from '../../lib/server/profiles/workspace-review';
 import type {CustomerContext} from '../../lib/contracts/customer-journey';
 it('journey draft/deny/resubmit/accept/correct/retract preserves exact history, explicit review and confidential original source',async()=>{
@@ -52,5 +52,69 @@ it('journey draft/deny/resubmit/accept/correct/retract preserves exact history, 
   const resubmitted=await submitProfileCommand(member,customerId,{...revise,requestKey:randomUUID(),expectedRecordVersion:Number(head.version),expectedAcceptedRevisionId:null},db) as {revisionId:string};
   expect(JSON.stringify((await readEligibleContext(member,customerId,{journeyOnly:true,offset:0},db) as {entries:unknown[]}).entries)).not.toContain(resubmitted.revisionId);
   await expect(readJourneyPage({...partner,workspaceId:randomUUID()},customerId,{},db)).rejects.toBeDefined();
+ }finally{await db.query('ROLLBACK');}});}finally{process.env.TURAS_ENVIRONMENT_ID=prior;}
+},60000);
+
+it('reuses an identical active attachment proposal across request keys, but permits resubmission after denial',async()=>{
+ const prior=process.env.TURAS_ENVIRONMENT_ID;process.env.TURAS_ENVIRONMENT_ID=process.env.TURAS_TEST_ENVIRONMENT_ID;
+ try{await withTestDatabase(async db=>{await db.query('BEGIN');try{
+  const admin=await createProfileTestSession(db,'mcteer'),member=await createProfileTestSession(db,'panel');
+  const customerId=DEMO_IDS.sharedCustomer;
+  const journey:CustomerContext={title:'Attachment intake',summary:'A supplied attachment awaiting exact human review.',scope:'Synthetic scoped delivery',kind:'note',stage:'Adopt',observedAt:'2026-09-30',reviewAfter:'2026-12-30',confidence:'medium',impact:null,source:{kind:'attachment',reference:'synthetic-brief.docx',url:'',excerpt:'Synthetic supplied attachment excerpt.'}};
+  const command={action:'propose_record',requestKey:randomUUID(),requestedAudience:'delivery',dataCategory:'delivery_context',payload:{kind:'claim',text:journey.summary,sourceType:'manual',legacyJourney:journey}};
+  const first=await submitProfileCommand(member,customerId,command,db) as {recordId:string;revisionId:string};
+  const secondRequest={...command,requestKey:randomUUID()};
+  expect(await submitProfileCommand(member,customerId,secondRequest,db)).toEqual(first);
+  expect(await submitProfileCommand(member,customerId,secondRequest,db)).toEqual(first);
+  expect((await db.query('SELECT count(*)::int n FROM profile_revisions WHERE record_id=$1',[first.recordId])).rows[0].n).toBe(1);
+  const otherAuthor=await submitProfileCommand(admin,customerId,{...command,requestKey:randomUUID()},db) as {revisionId:string};
+  expect(otherAuthor.revisionId).not.toBe(first.revisionId);
+  await submitProfileCommand(admin,customerId,{action:'reject_revision',requestKey:randomUUID(),revisionId:first.revisionId,expectedRecordVersion:0,rationale:'The supplied source needs correction.',partnerSafeReason:'The source needs correction.'},db);
+  const resubmitted=await submitProfileCommand(member,customerId,{...command,requestKey:randomUUID()},db) as {revisionId:string};
+  expect(resubmitted.revisionId).not.toBe(first.revisionId);
+  const note={...journey,source:{...journey.source,kind:'note'}};
+  const noteCommand={...command,payload:{...command.payload,legacyJourney:note}};
+  const one=await submitProfileCommand(member,customerId,{...noteCommand,requestKey:randomUUID()},db) as {revisionId:string};
+  const two=await submitProfileCommand(member,customerId,{...noteCommand,requestKey:randomUUID()},db) as {revisionId:string};
+  expect(one.revisionId).not.toBe(two.revisionId);
+ }finally{await db.query('ROLLBACK');}});}finally{process.env.TURAS_ENVIRONMENT_ID=prior;}
+},60000);
+
+it('pages all 101 immutable history revisions without duplicates and binds the cursor to its record and actor',async()=>{
+ const prior=process.env.TURAS_ENVIRONMENT_ID;process.env.TURAS_ENVIRONMENT_ID=process.env.TURAS_TEST_ENVIRONMENT_ID;
+ try{await withTestDatabase(async db=>{await db.query('BEGIN');try{
+  const admin=await createProfileTestSession(db,'mcteer'),member=await createProfileTestSession(db,'panel');
+  const customerId=DEMO_IDS.sharedCustomer;
+  const first=await submitProfileCommand(member,customerId,{action:'propose_record',requestKey:randomUUID(),requestedAudience:'internal',dataCategory:'other_internal',payload:{kind:'claim',text:'Synthetic retained history fixture.',sourceType:'manual'}},db) as {recordId:string;revisionId:string};
+  // Seed retained history only; the behavior under test is the real authorized,
+  // keyset-paginated reader, including equal timestamps and its cursor binding.
+  await db.query(`INSERT INTO profile_revisions(id,record_id,workspace_id,customer_id,revision_number,
+    base_accepted_revision_id,payload_schema_version,payload,quality_input,author_membership_id,
+    origin,audience,data_category,source_references,content_digest,submission_channel,created_at)
+    SELECT gen_random_uuid(),record_id,workspace_id,customer_id,n,NULL,payload_schema_version,
+      payload,quality_input,author_membership_id,origin,audience,data_category,source_references,
+      content_digest,submission_channel,created_at FROM profile_revisions CROSS JOIN generate_series(2,101) n WHERE id=$1`,[first.revisionId]);
+  const expected=(await db.query('SELECT id FROM profile_revisions WHERE record_id=$1 ORDER BY created_at DESC,id DESC',[first.recordId])).rows.map(row=>row.id);
+  const ids:string[]=[];let cursor:string|undefined,firstCursor:string|undefined,pages=0;
+  do{
+   const page=await readProfileHistory(admin,customerId,first.recordId,{limit:25,cursor},db);
+   ids.push(...page.items.map(row=>String(row.id)));pages++;
+   firstCursor??=page.nextCursor??undefined;cursor=page.nextCursor??undefined;
+  }while(cursor&&pages<6);
+  expect(ids).toEqual(expected);expect(new Set(ids).size).toBe(101);expect(pages).toBe(5);expect(cursor).toBeUndefined();
+  // The same timestamp contract governs the journey collection, review queue
+  // and own submissions. Exercise each actual reader against this tied cohort.
+  type Result={items?:Record<string,unknown>[];pending?:Record<string,unknown>[];nextCursor:string|null};
+  for(const read of [
+   (cursor?:string)=>listProfileRecords(member,customerId,{limit:25,cursor,query:'Synthetic retained history fixture.'},db),
+   (cursor?:string)=>listReviewQueue(admin,customerId,{limit:25,cursor},db),
+   (cursor?:string)=>listOwnSubmissions(member,customerId,{limit:25,cursor},db),
+  ]){
+   const all:string[]=[];let next:string|undefined,rounds=0;
+   do{const result=await read(next) as Result;all.push(...(result.items??result.pending??[]).filter(row=>row.recordId===first.recordId).map(row=>String(row.id)));next=result.nextCursor??undefined;rounds++;}while(next&&rounds<10);
+   expect(all).toEqual(expected);expect(next).toBeUndefined();
+  }
+  await expect(readProfileHistory(member,customerId,first.recordId,{cursor:firstCursor},db)).rejects.toMatchObject({status:422});
+  await expect(readProfileHistory(admin,customerId,randomUUID(),{cursor:firstCursor},db)).rejects.toMatchObject({status:422});
  }finally{await db.query('ROLLBACK');}});}finally{process.env.TURAS_ENVIRONMENT_ID=prior;}
 },60000);

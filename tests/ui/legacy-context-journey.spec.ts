@@ -71,6 +71,24 @@ async function decide(page:Page,customerId:string,action:'Accept exact proposal'
 }
 async function facts(page:Page,customerId:string){const response=await page.request.get(`/api/customers/${customerId}/profile`);expect(response.status()).toBe(200);return (await response.json()).data.acceptedFacts as Array<{payload:{title?:string;legacyJourney?:unknown}}> ;}
 
+test('failed journey loading shows a retry and recovers without leaving stale records or a loading status',async({page,journeyCustomer})=>{
+ let reads=0;
+ await page.route(`**/api/customers/${journeyCustomer}/journey?*`,async route=>{
+  reads++;
+  if(reads===1)return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{message:'Synthetic journey unavailable'}})});
+  return route.continue();
+ });
+ await page.reload();
+ await expect(page.getByRole('alert').filter({hasText:'Synthetic journey unavailable'})).toHaveText('Synthetic journey unavailable');
+ await expect(page.getByText('Loading records…',{exact:true})).toHaveCount(0);
+ await expect(page.locator('article')).toHaveCount(0);
+ await page.getByRole('button',{name:'Retry loading records',exact:true}).click();
+ await expect(page.getByText('No journey records on this page.',{exact:true})).toBeVisible();
+ await expect(page.getByRole('alert').filter({hasText:'Synthetic journey unavailable'})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Retry loading records',exact:true})).toHaveCount(0);
+ expect(reads).toBe(2);
+});
+
 test('workspace approvals preserves pending facts, denied history and exact resubmission',async({page,journeyCustomer},testInfo)=>{
  const customerId=journeyCustomer,title='Synthetic queue proposal '+customerId.slice(0,8);
  await fillDraft(page,title);await command(page,customerId,'Save pending proposal');

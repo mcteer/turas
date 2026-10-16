@@ -144,7 +144,7 @@ export async function listProfileRecords(actor: ProfileActor, customerId: string
   const run = async (client: PoolClient) => {
     await lockProfileActor(client, actor, customerId);
     await enforceProfileRate(client, actor, customerId, "read");
-    const result = await client.query<RecordRow>(`WITH listed AS (
+    const result = await client.query<RecordRow & { cursor_at: string }>(`WITH listed AS (
       SELECT v.id,v.record_id,r.workload_id,r.kind,
       v.audience,v.data_category,v.author_membership_id,v.payload,v.quality_input,
       v.source_references,v.revision_number,d.rationale AS decision_rationale,
@@ -169,7 +169,7 @@ export async function listProfileRecords(actor: ProfileActor, customerId: string
         AND ($5::text IS NULL OR r.kind=$5)
         AND ($6::uuid IS NULL OR r.workload_id=$6)
         AND ($8::text IS NULL OR v.payload::text ILIKE '%' || $8 || '%')
-      ) SELECT * FROM listed
+      ) SELECT *,to_char(created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_at FROM listed
       WHERE ($7::text IS NULL OR review_state=$7)
         AND ($9::timestamptz IS NULL OR (created_at,id)<($9::timestamptz,$10::uuid))
       ORDER BY created_at DESC,id DESC LIMIT $11`,
@@ -184,7 +184,7 @@ export async function listProfileRecords(actor: ProfileActor, customerId: string
     const last = page.at(-1);
     const nextCursor = result.rows.length > options.limit && last ? Buffer.from(JSON.stringify({
       actor: actor.membershipId, customer: customerId, filter,
-      at: last.created_at.toISOString(), id: last.id,
+      at: last.cursor_at, id: last.id,
     })).toString("base64url") : null;
     return { items, nextCursor };
   };
@@ -401,10 +401,11 @@ export async function readProfileHistory(actor: ProfileActor, customerId: string
     const review = actor.kind === "internal" && (actor.role === "admin" || Boolean((await client.query(
       "SELECT 1 FROM customer_stewards WHERE customer_id=$1 AND membership_id=$2 AND active",
       [customerId, actor.membershipId])).rowCount));
-    const result = await client.query<RecordRow>(`SELECT v.id,v.record_id,r.workload_id,r.kind,
+    const result = await client.query<RecordRow & { cursor_at: string }>(`SELECT v.id,v.record_id,r.workload_id,r.kind,
       v.audience,v.data_category,v.author_membership_id,v.payload,v.quality_input,
       v.source_references,v.revision_number,d.rationale AS decision_rationale,
       d.partner_safe_reason,v.created_at,
+      to_char(v.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_at,
       CASE WHEN r.current_accepted_revision_id=v.id THEN 'accepted'
            WHEN d.decision='reject' THEN 'rejected'
            WHEN d.decision='accept' AND EXISTS (SELECT 1 FROM profile_lifecycle_events e
@@ -460,7 +461,7 @@ export async function readProfileHistory(actor: ProfileActor, customerId: string
       rationale: event.rationale, createdAt: event.created_at.toISOString() })) ?? [],
       nextCursor: result.rows.length > limit && last ? Buffer.from(JSON.stringify({
       actor: actor.membershipId, customer: customerId, filter: `history:${recordId}`,
-      at: last.created_at.toISOString(), id: last.id,
+      at: last.cursor_at, id: last.id,
     })).toString("base64url") : null };
   };
   return existingClient ? run(existingClient) : withTransaction(run);
@@ -537,7 +538,7 @@ export async function listReviewQueue(actor: ProfileActor, customerId: string,
     const pending = await client.query<RecordRow & { content_digest: string; record_version: string;
       current_accepted_revision_id: string | null; accepted_payload: unknown; author_kind: string;
       submission_channel: string; workload_name: string | null;
-      confirmed_conflict: boolean }>(`SELECT v.id,v.record_id,r.workload_id,r.kind,
+      confirmed_conflict: boolean; cursor_at: string }>(`SELECT v.id,v.record_id,r.workload_id,r.kind,
       v.audience,v.data_category,v.author_membership_id,v.payload,v.quality_input,
       v.source_references,v.revision_number,v.content_digest,v.submission_channel,
       r.version AS record_version,
@@ -546,7 +547,8 @@ export async function listReviewQueue(actor: ProfileActor, customerId: string,
       EXISTS (SELECT 1 FROM evidence_conflicts c WHERE c.state='confirmed'
         AND (c.first_revision_id=v.id OR c.second_revision_id=v.id)) AS confirmed_conflict,
       author.kind AS author_kind,NULL::text AS decision_rationale,
-      NULL::text AS partner_safe_reason,v.created_at,'pending'::text AS review_state
+      NULL::text AS partner_safe_reason,v.created_at,
+      to_char(v.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_at,'pending'::text AS review_state
       FROM profile_revisions v JOIN profile_records r ON r.id=v.record_id
       LEFT JOIN profile_review_decisions d ON d.revision_id=v.id
       LEFT JOIN profile_revisions prior ON prior.id=r.current_accepted_revision_id
@@ -604,7 +606,7 @@ export async function listReviewQueue(actor: ProfileActor, customerId: string,
         recordVersion: Number(row.record_version), createdAt: row.created_at.toISOString() })),
       nextCursor: pending.rows.length > limit && last ? Buffer.from(JSON.stringify({
         actor: actor.membershipId, customer: customerId, filter: "review",
-        at: last.created_at.toISOString(), id: last.id,
+        at: last.cursor_at, id: last.id,
       })).toString("base64url") : null };
   };
   return existingClient ? run(existingClient) : withTransaction(run);
@@ -620,11 +622,12 @@ export async function listOwnSubmissions(actor: ProfileActor, customerId: string
   const run = async (client: PoolClient) => {
     await lockProfileActor(client, actor, customerId);
     await enforceProfileRate(client, actor, customerId, "read");
-    const found = await client.query<RecordRow>(`SELECT v.id,v.record_id,r.workload_id,r.kind,
+    const found = await client.query<RecordRow & { cursor_at: string }>(`SELECT v.id,v.record_id,r.workload_id,r.kind,
       r.version AS record_version,
       v.audience,v.data_category,v.author_membership_id,v.payload,v.quality_input,
       v.source_references,v.revision_number,d.rationale AS decision_rationale,
       d.partner_safe_reason,v.created_at,
+      to_char(v.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_at,
       CASE WHEN r.current_accepted_revision_id=v.id THEN 'accepted'
            WHEN d.decision='reject' THEN 'rejected'
            WHEN d.decision='accept' THEN 'superseded' ELSE 'pending' END AS review_state
@@ -651,7 +654,7 @@ export async function listOwnSubmissions(actor: ProfileActor, customerId: string
     const last = page.at(-1);
     return { items, nextCursor: found.rows.length > limit && last ? Buffer.from(JSON.stringify({
       actor: actor.membershipId, customer: customerId, filter: "submissions",
-      at: last.created_at.toISOString(), id: last.id,
+      at: last.cursor_at, id: last.id,
     })).toString("base64url") : null };
   };
   return existingClient ? run(existingClient) : withTransaction(run);

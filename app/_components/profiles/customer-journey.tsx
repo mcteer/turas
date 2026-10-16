@@ -18,6 +18,7 @@ export function CustomerJourney({ customerId }: { customerId: string }) {
   const [context, setContext] = useState(empty);
   const [editing, setEditing] = useState<Entry>();
   const [page, setPage] = useState<Page>();
+  const [readError, setReadError] = useState("");
   const [query, setQuery] = useState("");
   const [cursor, setCursor] = useState<string>();
   const [refresh, setRefresh] = useState(0);
@@ -41,11 +42,12 @@ export function CustomerJourney({ customerId }: { customerId: string }) {
     if (query) params.set("query", query);
     if (cursor) params.set("cursor", cursor);
     setPage(undefined);
+    setReadError("");
     void fetch(`/api/customers/${customerId}/journey?${params}`, { cache: "no-store", signal: controller.signal })
       .then(async response => { const body = await response.json();
         if (!response.ok) throw Error(body.error?.message ?? "Journey unavailable"); return body.data; })
       .then(value => { if (!controller.signal.aborted) setPage(value); })
-      .catch(error => { if (!controller.signal.aborted) setStatus(error.message); });
+      .catch(error => { if (!controller.signal.aborted) setReadError(error instanceof Error ? error.message : "Journey unavailable"); });
     return () => controller.abort();
   }, [customerId, query, cursor, refresh]);
   function update<K extends keyof CustomerContext>(key: K, value: CustomerContext[K]) {
@@ -141,7 +143,8 @@ export function CustomerJourney({ customerId }: { customerId: string }) {
     <section className="profile-section"><h2>Journey Records</h2>
       <label className="field-label">Search context<input className="field" type="search" maxLength={200} value={query}
         onChange={event => { setQuery(event.target.value); setCursor(undefined); }} /></label>
-      {!page && <p role="status">Loading records…</p>}
+      {!page && !readError && <p role="status">Loading records…</p>}
+      {readError && <div><p role="alert">{readError}</p><button className="secondary-button" onClick={() => setRefresh(value => value+1)}>Retry loading records</button></div>}
       {page?.items.map(entry => <article className="profile-card" key={entry.id}>
         <p className="muted">{entry.reviewState} · {entry.context.kind} · {entry.context.scope}</p>
         <h3>{entry.context.title}</h3><p>{entry.context.summary}</p>

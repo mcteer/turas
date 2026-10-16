@@ -11,7 +11,8 @@ export const embeddingModelId = "openai/text-embedding-3-small";
 
 export function exactEmbeddingVector(value: readonly number[]): number[] {
   if (value.length !== retrievalLimits.embeddingDimensions ||
-      value.some((entry) => !Number.isFinite(entry))) {
+      value.some((entry) => !Number.isFinite(entry)) ||
+      !value.some((entry) => entry !== 0)) {
     throw new Error("Embedding contract mismatch");
   }
   return [...value];
