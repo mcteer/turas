@@ -20,7 +20,7 @@ Independent test: live/retained content, delayed layout, scroll escape/restorati
 Independent test: existing look, privacy/source fences, interrupted recovery, exact hosted read paths.
 - [X] T009 [US3] Add isolated headless check runner scripts/check-chat-interaction-ui.ts and include relevant existing history/question regressions; inspect captures (FR-006,FR-007).
 - [X] T010 [US3] Run typecheck, docs/build and independent implementation review; update README.md, ROADMAP.md and validation.md with actual scope/results (FR-001,FR-006,FR-007).
-- [ ] T011 [US3] Verify exact authenticated Preview, green CI, merge/cleanup and deployed Production behavior; record results in validation.md (FR-007).
+- [X] T011 [US3] Verify exact authenticated Preview, green CI, merge/cleanup and deployed Production behavior; record results in validation.md (FR-007).
 
 ## Dependencies and implementation strategy
 T001–T002 precede code. T003–T005 cover US1; T006–T008 cover US2. Both are required before T009–T011 release. Viewport and attachment modules may be developed independently, but integrate agent-chat sequentially to avoid edit conflicts. Validate each mechanism before broad release gates; all three stories are required, no partial MVP release.

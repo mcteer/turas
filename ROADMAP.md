@@ -2,7 +2,7 @@
 
 The user-requested [019 chat interaction parity](specs/019-chat-interaction-parity/spec.md)
 preserves the current appearance while restoring legacy composer, activity and
-scrolling behavior. Implementation and verification are in progress; its
+scrolling behavior and is released in [PR #41](https://github.com/mcteer/turas/pull/41). Its
 [validation record](specs/019-chat-interaction-parity/validation.md) separates
 local checks from exact Preview/Production release acceptance.
 

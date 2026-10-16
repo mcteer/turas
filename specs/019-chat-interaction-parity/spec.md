@@ -2,7 +2,7 @@
 
 **Feature Branch**: `019-chat-interaction-parity`
 **Created**: 2026-10-16
-**Status**: In progress
+**Status**: Released
 **Input**: “I don't feel like the chat interface and flow work the same as they did in legacy. I need that fixed. … I love the current look, I don't love how it works.”
 
 ## User Scenarios & Testing

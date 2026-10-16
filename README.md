@@ -95,7 +95,8 @@ subsequent retrieval and use.
 
 ### Turi Conversations and Guidance
 
-Chat interaction parity is tracked in [019](specs/019-chat-interaction-parity/spec.md).
+Chat interaction parity [019](specs/019-chat-interaction-parity/spec.md) is released in
+[PR #41](https://github.com/mcteer/turas/pull/41).
 It preserves the current visual design while restoring file paste/drop, link
 controls, tool activity, question feedback and per-conversation scroll recovery.
 See its [validation record](specs/019-chat-interaction-parity/validation.md) for
