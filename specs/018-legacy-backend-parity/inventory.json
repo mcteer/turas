@@ -249,7 +249,7 @@
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
           "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
-          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10",
+          "lib/conversations/active-chat-history.ts": "cb3e4d7bfb197ce1ed60f8653c3f4daba8be24f67f0206f1808ce1b3835a128d",
           "lib/conversations/retained-history.ts": "a30b228c9d9e85b1b178ff0880adb60b68c94668cf85992063308aa169d0e2f9"
         },
         "localEvidence": [
@@ -408,7 +408,7 @@
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
           "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
-          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10",
+          "lib/conversations/active-chat-history.ts": "cb3e4d7bfb197ce1ed60f8653c3f4daba8be24f67f0206f1808ce1b3835a128d",
           "lib/conversations/retained-history.ts": "a30b228c9d9e85b1b178ff0880adb60b68c94668cf85992063308aa169d0e2f9"
         },
         "localEvidence": [
@@ -5272,7 +5272,7 @@
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
           "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
-          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10"
+          "lib/conversations/active-chat-history.ts": "cb3e4d7bfb197ce1ed60f8653c3f4daba8be24f67f0206f1808ce1b3835a128d"
         },
         "localEvidence": [
           "tests/integration/legacy-conversation-search.test.ts",
@@ -5472,7 +5472,7 @@
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
           "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
-          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10",
+          "lib/conversations/active-chat-history.ts": "cb3e4d7bfb197ce1ed60f8653c3f4daba8be24f67f0206f1808ce1b3835a128d",
           "lib/conversations/retained-history.ts": "a30b228c9d9e85b1b178ff0880adb60b68c94668cf85992063308aa169d0e2f9",
           "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa"
         },
@@ -6647,7 +6647,7 @@
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
           "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
-          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10",
+          "lib/conversations/active-chat-history.ts": "cb3e4d7bfb197ce1ed60f8653c3f4daba8be24f67f0206f1808ce1b3835a128d",
           "lib/conversations/retained-history.ts": "a30b228c9d9e85b1b178ff0880adb60b68c94668cf85992063308aa169d0e2f9"
         },
         "localEvidence": [
@@ -6761,7 +6761,7 @@
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
           "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
-          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10",
+          "lib/conversations/active-chat-history.ts": "cb3e4d7bfb197ce1ed60f8653c3f4daba8be24f67f0206f1808ce1b3835a128d",
           "lib/conversations/retained-history.ts": "a30b228c9d9e85b1b178ff0880adb60b68c94668cf85992063308aa169d0e2f9"
         },
         "localEvidence": [
@@ -6875,7 +6875,7 @@
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
           "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
-          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10",
+          "lib/conversations/active-chat-history.ts": "cb3e4d7bfb197ce1ed60f8653c3f4daba8be24f67f0206f1808ce1b3835a128d",
           "lib/conversations/retained-history.ts": "a30b228c9d9e85b1b178ff0880adb60b68c94668cf85992063308aa169d0e2f9"
         },
         "localEvidence": [
@@ -7705,7 +7705,7 @@
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
           "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
-          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10",
+          "lib/conversations/active-chat-history.ts": "cb3e4d7bfb197ce1ed60f8653c3f4daba8be24f67f0206f1808ce1b3835a128d",
           "lib/conversations/retained-history.ts": "a30b228c9d9e85b1b178ff0880adb60b68c94668cf85992063308aa169d0e2f9",
           "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa"
         },
@@ -7826,7 +7826,7 @@
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
           "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
-          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10",
+          "lib/conversations/active-chat-history.ts": "cb3e4d7bfb197ce1ed60f8653c3f4daba8be24f67f0206f1808ce1b3835a128d",
           "lib/conversations/retained-history.ts": "a30b228c9d9e85b1b178ff0880adb60b68c94668cf85992063308aa169d0e2f9",
           "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa"
         },
@@ -9662,7 +9662,7 @@
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
           "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
-          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10",
+          "lib/conversations/active-chat-history.ts": "cb3e4d7bfb197ce1ed60f8653c3f4daba8be24f67f0206f1808ce1b3835a128d",
           "lib/conversations/retained-history.ts": "a30b228c9d9e85b1b178ff0880adb60b68c94668cf85992063308aa169d0e2f9",
           "lib/server/conversations/repository.ts": "0ed265ef2b42c92318d5af3e0aa375a6857b4aecdc1cdda35c73f3a75e1d41aa"
         },
@@ -9779,7 +9779,7 @@
           "lib/server/conversations/native-input-display.ts": "55ff81466e75c0e5912caa3af98336662d0c26cc312e1cada7a89acc9457e7cf",
           "lib/conversations/native-message-display.ts": "7eb8f11f38dd1ef6913e5016be79b0788d2fb0ce7955e8d784083050a9966619",
           "lib/server/conversations/native-message.ts": "d08da772dd689b0c0cf5af64506b969cd9f9a3dc546fb3a93c24bd0cc55f155b",
-          "lib/conversations/active-chat-history.ts": "4b7deaa63a613e66e8be8c4d3b0f98921d6bb0cf07551b904c1f6e602555ec10",
+          "lib/conversations/active-chat-history.ts": "cb3e4d7bfb197ce1ed60f8653c3f4daba8be24f67f0206f1808ce1b3835a128d",
           "lib/conversations/retained-history.ts": "a30b228c9d9e85b1b178ff0880adb60b68c94668cf85992063308aa169d0e2f9"
         },
         "localEvidence": [

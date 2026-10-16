@@ -1,5 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import type {EveMessage} from 'eve/react';
+import {defaultMessageReducer,type MessageStreamEvent} from 'eve/client';
 import {activeChatHistory,retainedActiveParts} from '../../lib/conversations/active-chat-history';
 import type {RetainedChatEvent} from '../../lib/conversations/retained-history';
 const history:RetainedChatEvent[]=[{eventId:'original',eventType:'message.received',turnId:'turn0',inputAliasEventIds:['alias'],payload:{applicationInputParts:[{type:'text',text:'Original input'},{type:'file',filename:'failed.pdf',mediaType:'application/pdf',size:104}]}},{eventId:'partial_turn0_1',eventType:'message.appended',turnId:'turn0',stepIndex:1,payload:{partial:true,messageDelta:'Interrupted answer'}}];
@@ -51,4 +52,31 @@ it('leaves exact native objects, IDs and multi-step parts untouched when applica
  const parts=native.parts,display=activeChatHistory([native],[]);
  expect(display).toHaveLength(1);expect(display[0]).toEqual({kind:'native',message:native});
  expect(display[0].message).toBe(native);expect(display[0].message.parts).toBe(parts);expect(display[0].message.id).toBe('original-assistant');
+});
+
+it('reconciles the actual SDK empty-turn question continuation by exact turn and step without collapsing another identical answer',()=>{
+ const reducer=defaultMessageReducer();
+ const completed=(id:string,turnId:string,stepIndex:number):MessageStreamEvent=>({type:'message.completed',data:{turnId,sequence:1,stepIndex,message:'Question answered: Desktop.',finishReason:'stop'},meta:{id,at:'2026-10-16T14:56:36.155Z'}});
+ let data=reducer.initial();data=reducer.reduce(data,completed('evt_actual','',0));
+ // The installed SDK explicitly preserves an empty turn ID rather than omitting it.
+ expect(data.messages[0].id).toBe(':assistant');expect(data.messages[0].metadata?.turnId).toBe('');
+ const saved:RetainedChatEvent={eventId:'evt_actual',eventType:'message.completed',turnId:'',stepIndex:0,payload:{message:'Question answered: Desktop.'}};
+ expect(activeChatHistory(data.messages,[saved])).toHaveLength(1);
+ data=reducer.reduce(data,completed('evt_separate','turn_other',0));
+ expect(activeChatHistory(data.messages,[saved])).toHaveLength(2);
+ data=reducer.reduce(data,completed('evt_next_step','',1));
+ expect(activeChatHistory(data.messages,[saved])).toHaveLength(3);
+ for(const absent of [null,undefined])expect(activeChatHistory(data.messages,[{...saved,turnId:absent}])).toHaveLength(4);
+});
+
+it('preserves distinct canonical completed event IDs when the SDK reuses an empty turn and step',()=>{
+ const reducer=defaultMessageReducer(),event=(id:string):MessageStreamEvent=>({type:'message.completed',data:{turnId:'',sequence:1,stepIndex:0,message:'Question answered: Desktop.',finishReason:'stop'},meta:{id,at:'2026-10-16T14:56:36.155Z'}});
+ let data=reducer.reduce(reducer.initial(),event('evt_first'));
+ const saved=['evt_first','evt_second'].map(eventId=>({eventId,eventType:'message.completed',turnId:'',stepIndex:0,payload:{message:'Question answered: Desktop.'}}));
+ for(let i=0;i<2;i++){
+  const display=activeChatHistory(data.messages,saved);
+  expect(display.map(item=>item.message.id)).toEqual(['evt_first','evt_second']);
+  expect(display.every(item=>item.kind==='retained')).toBe(true);
+  data=reducer.reduce(data,event('evt_second'));
+ }
 });

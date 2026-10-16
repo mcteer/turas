@@ -398,3 +398,27 @@ projects, with zero skips or retries and no paid provider calls. It covers the
 reviewed application and UI source before the final empty-history preservation
 guard; exact-head CI will cover that narrow guard too. Hosted active-failure
 recovery remains required.
+
+
+### T033 first candidate regression
+
+Candidate086318 reached READY Preview and passes14 general, six login and six
+original retired-history checks with zero model calls. The first general run
+completed all14 behavior checks but failed resource cleanup; an unchanged repeat
+with additional cleanup-error observability passes including cleanup. The first
+cleanup failure is preserved and its cause remains unconfirmed.
+
+Exact-head native-questions CI failed. Unchanged local reproduction finds the
+same question answer twice after reload: the actual continuation has an empty
+string turn ID, preserved by the public SDK reducer, while the display matcher
+incorrectly treats it as absent. This is an application regression, not a flaky
+test. Pending first-candidate CI was cancelled once the regression was confirmed;
+those runs do not constitute a passing release. The replacement uses exact
+turn/step identity including an empty string and requires fresh exact-head CI
+and Preview acceptance. Original failure evidence remains preserved.
+
+The replacement also preserves distinct canonical saved completions if the SDK
+coalesces them under the same empty turn and step. Exact event records remain
+visible without content deduplication. Thirteen focused tests and TypeScript
+pass, including actual public SDK reducer cases for empty and absent turn IDs,
+distinct steps and separate canonical completions.

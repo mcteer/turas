@@ -21,7 +21,7 @@ export function activeChatHistory(native:readonly EveMessage[],history:readonly 
    if(message.role!==saved.role)return false;
    const id=message.id.replace(/:(?:user|assistant)$/,'');
    if(saved.id===id||saved.role==='user'&&saved.inputAliasEventIds?.includes(id))return true;
-   if(saved.role==='user'||!saved.turnId||message.metadata?.turnId!==saved.turnId)return false;
+   if(saved.role==='user'||saved.turnId===undefined||saved.turnId===null||message.metadata?.turnId!==saved.turnId)return false;
    return saved.stepIndex!==undefined&&saved.stepIndex!==null&&message.parts.some(part=>part.type==='text'&&part.stepIndex===saved.stepIndex);
   });
   if(counterpart<0)result.push({kind:'retained',message:saved});
@@ -34,7 +34,7 @@ export function activeChatHistory(native:readonly EveMessage[],history:readonly 
    // retained prose with a shorter or empty resume placeholder.
    const preferLive=saved.role==='user'?nativeVisible:saved.partial&&!!liveText.trim()&&liveText.includes(savedText);
    result.push(preferLive?{kind:'native',message:live}:{kind:'retained',message:saved});
-  }
+  }else result.push({kind:'retained',message:saved}); // Distinct persisted events are never consumed by another event's counterpart.
  }
  slots.forEach((message,index)=>{if(!used.has(index))result.push({kind:'native',message});});
  return result;
