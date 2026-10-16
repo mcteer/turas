@@ -4,8 +4,7 @@ import type { CurrentSession } from "../auth/sessions";
 import { getServerConfig } from "../config";
 import { withTransaction } from "../db/client";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
-import {assertCustomerQuestionReads} from "./customer-accounts";
-import { readOwnedBinding,lockOwnedBinding } from "./binding";
+import { readOwnedBinding,lockOwnedOrdinaryCleanup } from "./binding";
 import type { PoolClient } from "pg";
 import { staffingScopeForConversation } from "../staffing/context";
 import { lockStaffingActor } from "../staffing/policy";
@@ -105,10 +104,7 @@ export async function requestCancellation(
  * control, and cancellation closes database admission before the native call. */
 export async function requestOwnedTaskCancellation(session:CurrentSession,nativeSessionId:string){
  await withTransaction(async db=>{
-  const row=(await db.query(`SELECT id FROM conversations WHERE eve_session_id=$1 AND owner_principal_id=$2 AND workspace_id=$3 AND environment_id=$4`,[nativeSessionId,session.principalId,session.workspaceId,getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
-  if(!row || (await conversationFeature(db,row.id)).kind!=='normal')throw hiddenRecord();
-  await lockOwnedBinding(db,session,row.id);
-  await assertCustomerQuestionReads(db,session,row.id,undefined,false);
+  const row=await lockOwnedOrdinaryCleanup(db,session,nativeSessionId);
   const requests=(await db.query(`SELECT r.key,parent.id AS attempt_id FROM turas_research_requests r
    LEFT JOIN LATERAL(SELECT a.id FROM response_attempts a JOIN general_context_receipts g ON g.attempt_id=a.id
     WHERE a.conversation_id=$1 AND g.as_of<=r.started_at ORDER BY g.as_of DESC LIMIT 1) parent ON true
@@ -125,10 +121,7 @@ export async function requestOwnedTaskCancellation(session:CurrentSession,native
  * accepted cancellation request alone does not prove a running turn stopped. */
 export async function settleInactiveOwnedCancellation(session:CurrentSession,nativeSessionId:string){
  return withTransaction(async db=>{
-  const row=(await db.query(`SELECT id FROM conversations WHERE eve_session_id=$1 AND owner_principal_id=$2
-    AND workspace_id=$3 AND environment_id=$4`,[nativeSessionId,session.principalId,session.workspaceId,getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
-  if(!row || (await conversationFeature(db,row.id)).kind!=='normal')return;
-  await lockOwnedBinding(db,session,row.id);
+  const row=await lockOwnedOrdinaryCleanup(db,session,nativeSessionId);
   const settled=(await db.query(`UPDATE response_attempts SET response_state='cancelled',updated_at=now(),revision=revision+1
     WHERE conversation_id=$1 AND response_state='stopping' RETURNING id`,[row.id])).rows;
   for(const attempt of settled)await db.query(`UPDATE watchdog_jobs SET state='settled',lease_owner=NULL,

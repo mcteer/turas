@@ -13,5 +13,6 @@ it('refuses oversized prompts, combined batches and native payloads before any d
  const image={type:'file' as const,filename:'pixel.png',mediaType:'image/png',data:'data:image/png;base64,eA=='};
  expect(()=>composeOrdinaryMessage('界'.repeat(5462),[image])).toThrow();
  expect(()=>composeOrdinaryMessage('Read these.',Array.from({length:6},()=>image))).toThrow();
- expect(()=>composeOrdinaryMessage('Read this.',[{...image,data:'data:image/png;base64,'+'A'.repeat(3*1024*1024)}])).toThrow();
+ for(const mib of [4,10])expect(composeOrdinaryMessage('Read this.',[{...image,data:'data:image/png;base64,'+Buffer.alloc(mib*1024*1024,0x5a).toString('base64')}])).toHaveLength(2);
+ expect(()=>composeOrdinaryMessage('Read this.',[{...image,data:'data:image/png;base64,'+Buffer.alloc(10*1024*1024+1,0x5a).toString('base64')}])).toThrow();
 });

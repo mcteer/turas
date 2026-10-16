@@ -2,7 +2,7 @@ import {normalChatTool} from "../lib/normal-chat-tool";
 import { defineTool } from "eve/tools";
 import { always } from "eve/tools/approval";
 import { z } from "zod";
-import {researchIdentity} from "../../lib/server/research/specialists/identity";
+import {researchIdentity,researchHumanResponderIdentity} from "../../lib/server/research/specialists/identity";
 import { accountIdSchema } from "../../lib/contracts/customer-journey";
 import {canReviewWorkspaceSolution} from "../../lib/server/knowledge/workspace-patterns/approval";
 import {HttpFailure} from "../../lib/contracts/http";
@@ -31,7 +31,7 @@ const authoredTool=defineTool({
   approval: {
     request: always(),
     response: async ({ responder, request }) => {
-      const identity = await researchIdentity(responder);
+      const identity = await researchHumanResponderIdentity(responder).catch(()=>null);
       if (!identity || (identity.kind!=="internal"||identity.role!=="admin") || !request.toolInput)
         return {
           status: "rejected",

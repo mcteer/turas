@@ -1,0 +1,2 @@
+import {ServicesPlanControls} from '../../_components/ordinary-services-plan';
+export default function OperatingModelPage(){return <main className="profile-page"><header className="profile-header"><div><p className="profile-eyebrow">Delivery operations</p><h1>Services Operating Model</h1><p>Compare explicit annual assumptions without changing revenue, prices or staffing.</p></div></header><ServicesPlanControls/></main>;}

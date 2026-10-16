@@ -1,3 +1,4 @@
+import {hasOwnedQuestionControl} from '../../lib/server/conversations/question-control';
 import { assertCustomerQuestionReads, customerQuestionActor } from "../../lib/server/conversations/customer-accounts";
 import {hasNativeInputWindow} from '../../lib/server/conversations/input-responses';
 import {hiddenRecord} from '../../lib/contracts/http';
@@ -25,7 +26,7 @@ export default defineHook({
       // provider admission still requires the original injected context and a
       // running, owner-bound attempt; this boundary grants neither.
       if (feature?.kind === "normal" && event.data.turnId === "") {
-        if(!await withTransaction(db=>hasNativeInputWindow(db,attemptId,ctx.session.id,event.data.turnId)))throw hiddenRecord();
+        if(!await withTransaction(async db=>await hasNativeInputWindow(db,attemptId,ctx.session.id,event.data.turnId)||await hasOwnedQuestionControl(db,principal,ctx.session.id)))throw hiddenRecord();
         return;
       }
       if(feature?.kind==='learning'){

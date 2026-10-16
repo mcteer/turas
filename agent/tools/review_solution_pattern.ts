@@ -2,7 +2,7 @@ import {normalChatTool} from "../lib/normal-chat-tool";
 import { defineTool } from "eve/tools";
 import { always } from "eve/tools/approval";
 import { z } from "zod";
-import { researchIdentity } from "../../lib/server/research/specialists/identity";
+import { researchIdentity,researchHumanResponderIdentity } from "../../lib/server/research/specialists/identity";
 import { accountIdSchema } from "../../lib/contracts/customer-journey";
 import {canReviewWorkspaceSolution} from "../../lib/server/knowledge/workspace-patterns/approval";
 import {HttpFailure} from "../../lib/contracts/http";
@@ -13,7 +13,7 @@ const authoredTool=defineTool({
   inputSchema: z.object({ accountId: accountIdSchema, command: patternCommandSchema }).strict(),
   outputSchema: z.object({ status: z.enum(["updated", "denied", "unavailable"]), receipt: z.object({ patternId: z.uuid(), version: z.number().int(), action: z.string() }).nullable(), reason: z.string() }),
   approval: { request: always(), response: async ({ responder, request }) => {
-    const identity = await researchIdentity(responder);
+    const identity = await researchHumanResponderIdentity(responder).catch(()=>null);
     if (!identity || !request.toolInput) return { status: "rejected", reason: "The account steward must approve this exact change." };
     try {
       const canWrite = await canReviewWorkspaceSolution(identity, request.toolInput.accountId);

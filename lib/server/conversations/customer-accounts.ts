@@ -12,6 +12,7 @@ import { retrievalSourceHasMaterialConflict } from "../retrieval/search";
 import { authorizeRetrievalScope } from "../retrieval/policy";
 import { assertRetrievalDependenciesCurrent } from "../retrieval/fences";
 import {readPublicInventoryReference} from '../profiles/public-inventory-reference';
+import {assertOperationsReadsCurrent} from '../ordinary-operations/consumption';
 
 type Principal = Parameters<typeof boundToolActor>[1];
 type Account = { id: string; name: string; aliases: string[]; workloads: string[] };
@@ -101,6 +102,7 @@ export async function readCustomerAccountEvidence(db: PoolClient, principal: Pri
  * customer context does. Naming an account never grants access to its data. */
 export async function assertCustomerQuestionReads(db: PoolClient, actor: CurrentSession,
   conversationId: string, attemptId?: string,validateSources=true) {
+  await assertOperationsReadsCurrent(db,actor,conversationId);
   const marker = (await db.query("SELECT schema_version FROM turas_environment LIMIT 1")).rows[0];
   if (marker?.schema_version < 56) return;
   // Retrieval dependencies survive turns. Recheck access to every consumed

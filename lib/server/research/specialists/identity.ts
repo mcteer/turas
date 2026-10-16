@@ -1,3 +1,4 @@
+import {humanResponderScope} from '../../conversations/human-responder';
 import type { CurrentSession } from "../../auth/sessions";
 import { getServerConfig } from "../../config";
 import { withTransaction } from "../../db/client";
@@ -27,4 +28,9 @@ export async function researchIdentity(principal: Parameters<typeof customerQues
   });
   return {...actor,userId:actor.principalId,environmentId:getServerConfig().TURAS_ENVIRONMENT_ID,
     responseAttemptId:principal?.attributes?.turasAttemptId as string,...(lineage?.workerSessionId?{workerSessionId:lineage.workerSessionId}:{})};
+}
+
+/** Human approval responses never use research-worker or latest-login fallback. */
+export async function researchHumanResponderIdentity(principal:Parameters<typeof customerQuestionActor>[1]):Promise<AppIdentity>{
+ return withTransaction(async db=>{const scope=await humanResponderScope(db,principal);const actor=scope.actor;return {...actor,userId:actor.principalId,environmentId:getServerConfig().TURAS_ENVIRONMENT_ID,responseAttemptId:scope.attemptId};});
 }

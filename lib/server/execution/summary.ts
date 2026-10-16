@@ -37,7 +37,7 @@ export async function readExecutionSummary(actor:ExecutionActor,engagementId:str
  * separately prove their admitted scope, persist budgets and fence dependencies.
  * This function cannot be selected through a request flag and never charges an
  * interactive read while holding the plan/source snapshot locks. */
-export async function selectExecutionSummarySnapshot(db:PoolClient,actor:ExecutionActor,engagementId:string,period:{from:string;to:string}){
+export async function selectExecutionSummarySnapshot(db:PoolClient,actor:ExecutionActor,engagementId:string,period:{from:string;to:string},sharedRead=false){
     const customerId=await executionCustomer(db,actor,engagementId);await lockExecutionActor(db,actor,customerId,"read");
     const selected=(await db.query(`SELECT r.id,r.kind,r.baseline_id,v.id AS revision_id,v.content_digest,v.revision_number
       FROM execution_records r JOIN execution_record_revisions v ON v.id=r.accepted_revision_id
@@ -45,11 +45,11 @@ export async function selectExecutionSummarySnapshot(db:PoolClient,actor:Executi
     if(selected.length>200)throw new HttpFailure(422,"scope_too_large","Narrow the reviewed execution snapshot");
     const baseline=(await db.query("SELECT active_baseline_id FROM engagements WHERE id=$1",[engagementId])).rows[0]?.active_baseline_id;
     const baselines=(await db.query("SELECT id,plan_id,baseline_number,content_digest FROM milestone_baselines WHERE engagement_id=$1 AND (id=$2 OR id=ANY($3::uuid[])) ORDER BY id",[engagementId,baseline,[...new Set(selected.map(r=>r.baseline_id))]])).rows;
-    await db.query("SELECT id FROM delivery_plans WHERE id=ANY($1::uuid[]) ORDER BY id FOR UPDATE",[[...new Set(baselines.map(b=>b.plan_id))].sort()]);
+    await db.query(`SELECT id FROM delivery_plans WHERE id=ANY($1::uuid[]) ORDER BY id FOR ${sharedRead?"SHARE":"UPDATE"}`,[[...new Set(baselines.map(b=>b.plan_id))].sort()]);
     const references:ExecutionSource[]=[...selected.map(r=>({kind:"execution_record" as const,id:r.id,sourceRevisionId:r.revision_id,generation:Number(r.revision_number),contentDigest:r.content_digest})),
       ...baselines.map(b=>({kind:"milestone_baseline" as const,id:b.id,sourceRevisionId:b.id,generation:Number(b.baseline_number),contentDigest:b.content_digest}))];
     await lockExecutionOriginalSources(db,actor,customerId,engagementId,references);
-    const view=await readExecutionOverviewSnapshot(db,actor,engagementId,customerId);if(!view.initialized)throw hiddenRecord();
+    const view=await readExecutionOverviewSnapshot(db,actor,engagementId,customerId,sharedRead);if(!view.initialized)throw hiddenRecord();
     const asOf=new Date().toISOString(),records:AcceptedExecutionRecord[]=[];
     for(const r of selected){
       const eligible=await executionRevisionEligible(db,actor,customerId,engagementId,r.revision_id,actor.kind==="partner"?"delivery":"internal",false);

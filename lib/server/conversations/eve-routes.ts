@@ -1,5 +1,5 @@
 import {assertNativeFileEvaluationOpen} from './native-file-policy';
-import {inputResponsesSchema,authorizeOwnedInputResponse} from "./input-responses";
+import {inputResponsesSchema,authorizeOwnedInputResponse,implicitOwnedQuestionResponse} from "./input-responses";
 import {prepareOrdinarySteering,recordSteeringReceipt,markSteeringUncertain} from './steering';
 import type { EveChannel } from "eve/channels/eve";
 import { z } from "zod";
@@ -19,11 +19,13 @@ import {authorizeExpansionRetirement} from "../expansion/native-retirement";
 import { authorizeSupportRetirement } from "../support/native-retirement";
 import { authorizeNativeRetirement } from "../artifacts/native-retirement";
 import { authorizeLearningRetirement } from '../learning/native-retirement';
+import {authorizeOrdinaryNativeRetirementRecovery} from './native-retirement-recovery';
 import {authorizeOwnedOrdinaryRetirement,reconcileOwnedOrdinaryRetirement} from './ordinary-retirement';
 import {intakeOrdinaryAttachmentContext} from './attachment-intake';
 import {ordinaryNativeMessageSchema,nativeMessageText} from '../../conversations/native-message';
 import {parseOrdinaryNativeMessage,summarizeNativeMessage} from './native-message';
 import {attachmentLimits,parseAttachmentMessage} from '../../conversations/attachment-text';
+import {hydrateNativeUploads} from './native-uploads';
 
 const createSchema = z.object({ operationId: z.uuid() }).strict();
 const sendSchema = z.object({ message: z.union([z.string(),ordinaryNativeMessageSchema]),
@@ -154,7 +156,8 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             let decoded: unknown;
             try { decoded = JSON.parse(raw); }
             catch { throw new HttpFailure(422, "invalid_input", "Invalid request"); }
-            const responses=inputResponsesSchema.safeParse(decoded);
+            let responses=inputResponsesSchema.safeParse(decoded);
+            if(!responses.success){const ordinary=sendSchema.safeParse(decoded);if(ordinary.success&&ordinary.data.turnPolicy!=='steer'){const implicit=await implicitOwnedQuestionResponse(session,args.params.sessionId,ordinary.data.message);if(implicit){if(ordinary.data.artifactSelections!==undefined||request.headers.has('x-turas-artifact-selections'))throw new HttpFailure(422,'question_answer_with_artifacts','Answer the pending question separately before sending selected evidence');responses=inputResponsesSchema.safeParse(implicit);}}}
             if(responses.success) {
               const conversation=await getOwnedConversationByNativeSession(session,args.params.sessionId);
               if(conversation.id!==conversationId)throw hiddenRecord();
@@ -199,7 +202,8 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
                 if(parseAttachmentMessage(typeof message==='string'?message:nativeMessageText(message)))
                   await intakeOrdinaryAttachmentContext(session,conversationId!,steering.attemptId,steering.id);
                 const headers=new Headers(request.headers);headers.delete('content-length');
-                const response=await native(new Request(request.url,{method:'POST',headers,body:JSON.stringify({message,turnPolicy:'steer'})}),args);
+                const hydrated=typeof message==='string'?message:await hydrateNativeUploads(session,conversationId!,requestKey!,message);
+                const response=await native(new Request(request.url,{method:'POST',headers,body:JSON.stringify({message:hydrated,turnPolicy:'steer'})}),args);
                 await recordSteeringReceipt(steering.id,args.params.sessionId,response);
                 return response;
               }
@@ -232,12 +236,13 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             const headers = new Headers(request.headers);
             headers.delete("content-length");
             headers.delete("x-turas-artifact-selections");
+            const hydrated=typeof message==='string'?message:await hydrateNativeUploads(session,conversationId!,requestKey!,message);
             let nativeResponse: Response | undefined;
             const started = Date.now();
             const dispatches = prepared.governed ? 1 : 5;
             for (let retry = 0; retry < dispatches && Date.now() - started < 20_000; retry++) {
               nativeResponse = await native(new Request(request.url, {
-                method: "POST", headers, body: JSON.stringify({ message }),
+                method: "POST", headers, body: JSON.stringify({ message:hydrated }),
               }), args);
               if (nativeResponse.status !== 409) break;
               let rejection: unknown;
@@ -341,7 +346,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             const sessionId = args.params.sessionId;
             if (!sessionId || !/^wrun_[A-Za-z0-9_-]+$/.test(sessionId)) return closed();
             const governed=await authorizeNativeRetirement(request,sessionId) || await authorizeExecutionRetirement(request,sessionId) || await authorizeSupportRetirement(request,sessionId) || await authorizeExpansionRetirement(request,sessionId) || await authorizeLearningRetirement(request,sessionId);
-            const ordinary=!governed && await authorizeOwnedOrdinaryRetirement(request,sessionId);
+            const ordinary=!governed && (await authorizeOrdinaryNativeRetirementRecovery(request,sessionId) || await authorizeOwnedOrdinaryRetirement(request,sessionId));
             if(!governed&&!ordinary)return closed();
             const response=await native(request,args);
             if(ordinary)await reconcileOwnedOrdinaryRetirement(request,sessionId,response);

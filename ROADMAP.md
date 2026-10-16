@@ -1,5 +1,13 @@
 # Turas delivery roadmap
 
+Complete legacy backend parity is the currently authorized repair under
+[`018-legacy-backend-parity`](specs/018-legacy-backend-parity/spec.md), with its
+explicit [implementation tasks](specs/018-legacy-backend-parity/tasks.md).
+It restores original mechanisms and consumers within existing governed domains.
+The 337-file source audit maps the restored implementation to original mechanisms.
+Acceptance and release evidence is tracked in the feature validation record and
+tasks. This does not complete unrelated feature-016 pilot work.
+
 [PR 34](https://github.com/mcteer/turas/pull/34) merged the legacy backend and chat
 parity repair. Its [audit](docs/legacy-backend-parity-audit.md) retains earlier
 failed checks and the passing final Preview evidence. The

@@ -1,3 +1,4 @@
+import {questionReconstructionEventWindow} from './question-reconstruction';
 import {customerQuestionActor,assertCustomerQuestionReads} from "./customer-accounts";
 import {hasNativeInputWindow} from './input-responses';
 import {projectSteeringMessage,steeringTurnDeadline,pendingSteering} from './steering';
@@ -32,9 +33,11 @@ export type NativeEvent = {
 };
 
 const visibleTypes = new Set([
-  "message.received", "message.appended", "message.completed", "input.requested", "input.resolved", "step.completed",
+  "approval.settled", "turn.started", "message.received", "message.appended", "message.completed", "input.requested", "input.resolved", "step.completed",
   "step.failed", "turn.completed", "turn.failed", "turn.cancelled",
 ]);
+
+const ordinaryContinuationTypes = new Set(["turn.started", "approval.settled"]);
 
 function visiblePayload(event: NativeEvent): Record<string, unknown> {
   const data = event.data ?? {};
@@ -53,8 +56,9 @@ function visiblePayload(event: NativeEvent): Record<string, unknown> {
     }
     case "message.appended": return { messageDelta: data.messageDelta };
     case "message.completed": return { message: data.message, finishReason: data.finishReason };
+    case "approval.settled": return {requestId:data.requestId,outcome:data.outcome,sequence:data.sequence};
     case "input.requested": return {requests:data.requests};
-    case "input.resolved": return {resolutions:data.resolutions};
+    case "input.resolved": return {resolutions:data.resolutions,...(Number.isSafeInteger(data.sequence)?{sequence:data.sequence}:{})};
     case "step.completed": return { usage: data.usage ?? null };
     case "step.failed":
     case "turn.failed": {
@@ -83,6 +87,7 @@ async function inputResolutionAttempt(db:PoolClient,nativeSessionId:string,curre
      WHERE bg.attempt_id=a.id AND bg.turn_id=requested.turn_id AND bg.native_session_id=$2)
     OR EXISTS(SELECT 1 FROM native_input_resume_windows resume JOIN event_projections prior ON prior.native_event_id=resume.native_event_id
       WHERE resume.attempt_id=a.id AND prior.turn_id=requested.turn_id AND prior.native_session_id=$2)
+    ${Number((await db.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0]?.schema_version??0)>=77?`OR EXISTS(SELECT 1 FROM ordinary_question_continuations question WHERE question.attempt_id=a.id AND question.native_turn_id=requested.turn_id AND question.native_session_id=$2)`:''}
     ${Number((await db.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0]?.schema_version??0)>=68?`OR EXISTS(SELECT 1 FROM ordinary_steering_deliveries steer WHERE steer.attempt_id=a.id AND steer.native_turn_id=requested.turn_id AND steer.native_event_id IS NOT NULL)`:''})
   CROSS JOIN LATERAL jsonb_array_elements(COALESCE(requested.visible_payload->'requests','[]'::jsonb)) request
   WHERE requested.conversation_id=$1 AND requested.native_session_id=$2 AND requested.event_type='input.requested'
@@ -94,6 +99,18 @@ export async function projectNativeEvent(
   nativeSessionId: string, attemptId: string, event: NativeEvent, streamIndex?: number,
 ): Promise<void> {
   if (!visibleTypes.has(event.type)) return;
+  // These continuation boundaries belong only to ordinary conversations. Governed
+  // workflows retain their own message-first association and event contracts.
+  if (ordinaryContinuationTypes.has(event.type)) {
+    const normal = await withTransaction(async client => {
+      const owned = (await client.query(`SELECT a.conversation_id FROM response_attempts a
+        JOIN conversations c ON c.id=a.conversation_id WHERE a.id=$1 AND c.eve_session_id=$2 AND c.binding_state='bound'`,
+        [attemptId,nativeSessionId])).rows[0];
+      if (!owned) throw new Error("Native attempt association unavailable");
+      return (await conversationFeature(client,owned.conversation_id)).kind === 'normal';
+    });
+    if (!normal) return;
+  }
   // Session auth can already describe the next submitted attempt when an
   // earlier turn emits its terminal boundary. Resolve known native turns from
   // their durable association instead of attributing them to the newest send.
@@ -107,6 +124,7 @@ export async function projectNativeEvent(
         (a.native_turn_id=$2
         ${marker>=61?`OR EXISTS(SELECT 1 FROM research_background_turns bg WHERE bg.attempt_id=a.id AND bg.turn_id=$2 AND bg.native_session_id=$3)`:''}
         ${marker>=65?`OR EXISTS(SELECT 1 FROM native_input_resume_windows resume JOIN event_projections resolution ON resolution.native_event_id=resume.native_event_id WHERE resume.attempt_id=a.id AND resolution.turn_id=$2 AND resolution.native_session_id=$3)`:''}
+        ${marker>=77?`OR EXISTS(SELECT 1 FROM ordinary_question_continuations question WHERE question.attempt_id=a.id AND question.native_turn_id=$2 AND question.native_session_id=$3)`:''}
         ${marker>=68?`OR EXISTS(SELECT 1 FROM ordinary_steering_deliveries steer WHERE steer.attempt_id=a.id AND steer.native_turn_id=$2 AND steer.native_event_id IS NOT NULL)`:''})`,[current.id,event.data!.turnId,nativeSessionId])).rows;
       if(targets.length>1)throw new Error('Native turn association is ambiguous');
       return targets[0]?.id??null;
@@ -128,7 +146,7 @@ export async function projectNativeEvent(
       const targets=(await db.query(`SELECT a.id FROM response_attempts a WHERE a.conversation_id=$1 AND EXISTS(SELECT 1 FROM conversations c WHERE c.id=a.conversation_id AND c.eve_session_id=$3) AND
         (a.native_turn_id=$2 OR EXISTS(SELECT 1 FROM research_background_turns bg WHERE bg.attempt_id=a.id AND bg.turn_id=$2 AND bg.native_session_id=$3)
          OR EXISTS(SELECT 1 FROM native_input_resume_windows resume JOIN event_projections resolution ON resolution.native_event_id=resume.native_event_id
-          WHERE resume.attempt_id=a.id AND resolution.turn_id=$2 AND resolution.native_session_id=$3))`,[current.id,event.data!.turnId,nativeSessionId])).rows;
+          WHERE resume.attempt_id=a.id AND resolution.turn_id=$2 AND resolution.native_session_id=$3) OR EXISTS(SELECT 1 FROM ordinary_question_continuations question WHERE question.attempt_id=a.id AND question.native_turn_id=$2 AND question.native_session_id=$3))`,[current.id,event.data!.turnId,nativeSessionId])).rows;
       return targets.length===1?targets[0].id:null;
     });
     if(original)attemptId=original;
@@ -178,7 +196,9 @@ export async function projectNativeEventInTransaction(
     JOIN conversations c ON c.id=a.conversation_id WHERE a.id=$1 AND c.eve_session_id=$2 AND c.binding_state='bound'`,
     [attemptId, nativeSessionId])).rows[0];
   if (!owned) throw new Error("Native attempt association unavailable");
-  if((await conversationFeature(client,owned.conversation_id)).kind==='learning'){
+  const feature = await conversationFeature(client,owned.conversation_id);
+  if (ordinaryContinuationTypes.has(event.type) && feature.kind !== 'normal') return;
+  if(feature.kind==='learning'){
     const learningProjection=await projectLearningNativeEventInTransaction(client,nativeSessionId,attemptId,event,streamIndex);
     if(!learningProjection)throw new Error('Learning event association unavailable');
     return learningProjection;
@@ -212,10 +232,10 @@ export async function projectNativeEventInTransaction(
       }
     }
     const attempt = await client.query<{
-      conversation_id: string; native_turn_id: string | null; input_event_id: string | null;
+      conversation_id: string; owner_principal_id:string; native_turn_id: string | null; input_event_id: string | null;
       input_digest: string; dispatch_state: string; response_state: string;
     }>(`
-      SELECT a.conversation_id, a.native_turn_id, a.input_event_id,
+      SELECT a.conversation_id,c.owner_principal_id, a.native_turn_id, a.input_event_id,
         a.input_digest, a.dispatch_state, a.response_state
       FROM response_attempts a JOIN conversations c ON c.id = a.conversation_id
       WHERE a.id = $1 AND c.eve_session_id = $2 AND c.binding_state = 'bound'
@@ -251,12 +271,47 @@ export async function projectNativeEventInTransaction(
     // the owned user-input request remains parked. This is neither an answer
     // nor a model admission; preserve the pending request and its allowance.
     if(event.type==='turn.completed' && row.response_state==='waiting_input' &&
-      (await conversationFeature(client,row.conversation_id)).kind==='normal')return;
+      (await conversationFeature(client,row.conversation_id)).kind==='normal' && !await questionReconstructionEventWindow(client,attemptId,nativeSessionId,data))return;
     const artifact = await artifactContextSchemaReady(client)
       ? await client.query<{ native_text_digest: string }>(
         "SELECT native_text_digest FROM artifact_context_receipts WHERE attempt_id=$1", [attemptId])
       : null;
     const nativeInputDigest = artifact?.rows[0]?.native_text_digest ?? row.input_digest;
+    let settlementDeadline:Date|undefined;
+    if(event.type==='approval.settled'){
+      if((await conversationFeature(client,row.conversation_id)).kind!=='normal')return;
+      if(typeof data.requestId!=='string'||!['approved','cancelled'].includes(String(data.outcome))||!Number.isSafeInteger(data.sequence)||data.responderPrincipalId!==row.owner_principal_id)return;
+      settlementDeadline=(await client.query<{deadline_at:Date}>(`SELECT posted.deadline_at FROM native_input_resume_windows posted
+       JOIN event_projections request ON request.native_event_id=posted.native_event_id
+       CROSS JOIN LATERAL jsonb_array_elements(COALESCE(request.visible_payload->'requests','[]'::jsonb)) pending
+       WHERE posted.attempt_id=$1 AND request.conversation_id=$2 AND request.native_session_id=$3 AND request.event_type='input.requested'
+        AND pending->>'kind'='tool-approval' AND pending->>'requestId'=$4 AND posted.deadline_at>clock_timestamp() LIMIT 1`,[attemptId,row.conversation_id,nativeSessionId,data.requestId])).rows[0]?.deadline_at;
+      if(!settlementDeadline)return;
+    }
+    let resumeParent:{native_event_id:string;deadline_at:Date}|undefined;
+    if(event.type==='turn.started'){
+      if(typeof data.turnId!=='string'||!Number.isSafeInteger(data.sequence)||Number(data.sequence)<1)return;
+      if((await conversationFeature(client,row.conversation_id)).kind!=='normal')return;
+      resumeParent=(await client.query<{native_event_id:string;deadline_at:Date}>(`SELECT resolution.native_event_id,resume.deadline_at
+       FROM native_input_resume_windows resume JOIN event_projections resolution ON resolution.native_event_id=resume.native_event_id
+       WHERE resume.attempt_id=$1 AND resolution.conversation_id=$2 AND resolution.native_session_id=$3
+        AND resolution.event_type='input.resolved' AND resume.deadline_at>clock_timestamp()
+        AND (
+         (NOT EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(resolution.visible_payload->'resolutions','[]'::jsonb)) item WHERE item->>'kind'='tool-approval') AND resolution.visible_payload->>'sequence'=($4::bigint-1)::text)
+         OR EXISTS(SELECT 1 FROM native_input_resume_windows settled JOIN event_projections settlement ON settlement.native_event_id=settled.native_event_id
+          WHERE settled.attempt_id=$1 AND settled.deadline_at=resume.deadline_at AND settlement.native_session_id=$3 AND settlement.event_type='approval.settled'
+           AND settlement.visible_payload->>'sequence'=$4::text AND EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(resolution.visible_payload->'resolutions','[]'::jsonb)) item
+            WHERE item->>'kind'='tool-approval' AND item->>'requestId'=settlement.visible_payload->>'requestId'
+             AND settlement.visible_payload->>'outcome'=CASE WHEN item->>'outcome'='approved' THEN 'approved' WHEN item->>'outcome'='denied' THEN 'cancelled' ELSE '' END)))
+        AND EXISTS(SELECT 1 FROM native_input_resume_windows posted JOIN event_projections request ON request.native_event_id=posted.native_event_id
+          CROSS JOIN LATERAL jsonb_array_elements(COALESCE(request.visible_payload->'requests','[]'::jsonb)) pending
+          WHERE posted.attempt_id=$1 AND request.native_session_id=$3 AND request.event_type='input.requested'
+           AND posted.deadline_at=resume.deadline_at AND EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(resolution.visible_payload->'resolutions','[]'::jsonb)) answer WHERE answer->>'requestId'=pending->>'requestId'))
+        AND NOT EXISTS(SELECT 1 FROM event_projections started JOIN native_input_resume_windows bound ON bound.native_event_id=started.native_event_id
+          WHERE bound.attempt_id=$1 AND started.event_type='turn.started' AND started.visible_payload->>'resumeForEventId'=resolution.native_event_id AND started.turn_id<>$5)
+       ORDER BY resolution.emitted_at DESC LIMIT 1`,[attemptId,row.conversation_id,nativeSessionId,data.sequence,data.turnId])).rows[0];
+      if(!resumeParent)return; // Initial/background starts require their own actual delivery association.
+    }
     const inserted = await client.query(`INSERT INTO event_projections
       (native_event_id, conversation_id, native_session_id, stream_index,
        event_type, turn_id, step_index, visible_payload, emitted_at)
@@ -265,7 +320,7 @@ export async function projectNativeEventInTransaction(
     [event.meta.id, row.conversation_id, nativeSessionId, streamIndex ?? null,
       event.type, typeof data.turnId === "string" ? data.turnId : null,
       Number.isInteger(data.stepIndex) ? data.stepIndex : null,
-      JSON.stringify(visiblePayload(event)), event.meta.at]);
+      JSON.stringify(resumeParent?{sequence:data.sequence,resumeForEventId:resumeParent.native_event_id}:visiblePayload(event)), event.meta.at]);
     if (!inserted.rowCount) {
       if (streamIndex !== undefined) {
         await client.query(`UPDATE event_projections SET stream_index = COALESCE(stream_index, $2)
@@ -273,6 +328,12 @@ export async function projectNativeEventInTransaction(
         [event.meta.id, streamIndex, row.conversation_id]);
       }
       return;
+    }
+    if(event.type==='approval.settled'&&settlementDeadline){
+      await client.query(`INSERT INTO native_input_resume_windows(attempt_id,native_event_id,deadline_at) VALUES($1,$2,$3) ON CONFLICT(native_event_id) DO NOTHING`,[attemptId,event.meta.id,settlementDeadline]);return;
+    }
+    if(event.type==='turn.started'&&resumeParent){
+      await client.query(`INSERT INTO native_input_resume_windows(attempt_id,native_event_id,deadline_at) VALUES($1,$2,$3) ON CONFLICT(native_event_id) DO NOTHING`,[attemptId,event.meta.id,resumeParent.deadline_at]);return;
     }
     if (event.type === "message.received") {
       if(await projectSteeringMessage(client,nativeSessionId,attemptId,event))return;
@@ -292,7 +353,7 @@ export async function projectNativeEventInTransaction(
       const marker=(await client.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0];
       const background=marker?.schema_version>=61 && typeof data.turnId==='string' && (await client.query(`SELECT 1 FROM research_background_turns
         WHERE native_session_id=$1 AND turn_id=$2 AND attempt_id=$3`,[nativeSessionId,data.turnId,attemptId])).rowCount;
-      const resumed=typeof data.turnId==='string' && (await hasNativeInputWindow(client,attemptId,nativeSessionId,data.turnId,false) || marker?.schema_version>=65 && !!(await client.query(`SELECT 1 FROM native_input_resume_windows resume
+      const resumed=typeof data.turnId==='string' && ((await hasNativeInputWindow(client,attemptId,nativeSessionId,data.turnId,false)||await questionReconstructionEventWindow(client,attemptId,nativeSessionId,data)) || marker?.schema_version>=65 && !!(await client.query(`SELECT 1 FROM native_input_resume_windows resume
         JOIN event_projections resolution ON resolution.native_event_id=resume.native_event_id
         WHERE resume.attempt_id=$1 AND resolution.native_session_id=$2 AND resolution.turn_id=$3`,[attemptId,nativeSessionId,data.turnId])).rowCount);
       const resolving=event.type==='input.resolved' && await inputResolutionAttempt(client,nativeSessionId,attemptId,data)===attemptId;
@@ -350,7 +411,7 @@ export async function projectNativeEventInTransaction(
         await hasNativeInputWindow(client,attemptId,nativeSessionId,'',true))return;
       await client.query(`UPDATE response_attempts SET response_state = $2,
         updated_at = now(), revision = revision + 1 WHERE id = $1
-        AND response_state IN ('pending','running','stopping')`, [attemptId, terminal[event.type]]);
+        AND (response_state IN ('pending','running','stopping') OR response_state='waiting_input' AND $3::boolean)`, [attemptId, terminal[event.type],await questionReconstructionEventWindow(client,attemptId,nativeSessionId,data)]);
       await client.query(`UPDATE watchdog_jobs SET state = 'settled', lease_owner = NULL,
         lease_expires_at = NULL, updated_at = now() WHERE attempt_id = $1`, [attemptId]);
     }

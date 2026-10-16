@@ -1,3 +1,4 @@
+import {processOrdinaryNativeRetirement} from './native-retirement-recovery';
 import {runRetrievalWorkerTick} from '../../../scripts/retrieval-worker';
 import {runRetrievalCleanupTick} from '../retrieval/cleanup';
 import {markDueResearch} from '../research/refresh';
@@ -10,6 +11,7 @@ import { HttpFailure } from "../../contracts/http";
 import { getServerConfig } from "../config";
 import { heartbeatWorker, claimDueJobs, finishDueJob } from "./watchdog";
 import { performMaintenance } from "./maintenance";
+import {cleanupNativeUploads} from './native-uploads';
 
 export function authorizeHostedWatchdog(request: Request, secret = process.env.CRON_SECRET): void {
   const supplied = request.headers.get("authorization") ?? "";
@@ -42,7 +44,7 @@ export async function runHostedWatchdog(attachSession: AttachSessionFn, options:
   const maintainResearch=()=>{
     if(stopping||Date.now()>=end||researchTick)return;
     let phase='index';
-    researchTick=(async()=>{await runRetrievalWorkerTick();phase='cleanup';await runRetrievalCleanupTick();phase='review-dates';await markDueResearch();})()
+    researchTick=(async()=>{await runRetrievalWorkerTick();phase='cleanup';await runRetrievalCleanupTick();await processOrdinaryNativeRetirement();await cleanupNativeUploads();phase='review-dates';await markDueResearch();})()
       .catch(error=>{console.warn(JSON.stringify({kind:'research_maintenance_failed',phase,
         code:typeof error==='object'&&error!==null&&'code' in error&&typeof error.code==='string'&&/^[A-Z0-9_]{1,40}$/.test(error.code)?error.code:null}));}).finally(()=>{researchTick=null;});
   };

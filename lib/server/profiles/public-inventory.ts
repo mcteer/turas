@@ -1,12 +1,14 @@
+import {recallPublicLearningForAccounts} from "../research/specialists/research-cache/public-learning-read";
+import {getServerConfig} from "../config";
 import {createHash,randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import {z} from 'zod';
 import type {CurrentSession} from '../auth/sessions';
 import {HttpFailure,hiddenRecord} from '../../contracts/http';
-import {lockWorkspaceActor,lockProfileActor} from './policy';
+import {lockWorkspaceActor,lockProfileActors} from './policy';
 import {withTransaction} from '../db/client';
 import {customerQuestionActor} from '../conversations/customer-accounts';
-import {productsFromResearch} from '../../profiles/research-products';
+import {productsFromResearch,couldMatchResearchProductLabel} from '../../profiles/research-products';
 import {communityAttributionWarning} from '../research/specialists/solution-research/attribution';
 import {inventoryStoryJoins,inventoryStoryEligibility} from './public-inventory-reference';
 
@@ -68,17 +70,24 @@ export async function importPublicCustomerInventory(actor:CurrentSession,raw:unk
  });
 }
 
-type InventoryAccount={id:string;name:string;aliases:string[];workloads:string[];reviewed_on:Date|null;directory_listed:boolean|null;story_count:number|null;
+type InventoryAccount={id:string;name:string;synthetic:boolean;aliases:string[];workloads:string[];reviewed_on:Date|null;directory_listed:boolean|null;story_count:number|null;
  products?:string[];productSourceIds?:string[];stories:Array<{sourceRevisionId:string;workload:string;products:string[];signals:string[]}>};
-export function filterPublicCustomerInventory(accounts:readonly InventoryAccount[],query:string,signal?:string){
+export function filterPublicCustomerInventory<T extends Omit<InventoryAccount,"synthetic">>(accounts:readonly T[],query:string,signal?:string){
  const normalized=query.trim().toLocaleLowerCase('en-US');
  return accounts.filter(account=>[account.name,...account.aliases,...account.workloads,...(account.products??[]),...account.stories.flatMap(story=>[story.workload,...story.products])]
   .some(value=>value.toLocaleLowerCase('en-US').includes(normalized))&&(!signal||account.stories.some(story=>story.signals.includes(signal))));
 }
 export async function listPublicCustomerInventory(db:PoolClient,principal:Parameters<typeof customerQuestionActor>[1],raw:unknown){
+ const scope=await customerQuestionActor(db,principal);
+ return readPublicCustomerInventory(db,scope.actor,raw,{customerId:scope.general?undefined:scope.customerId,attemptId:scope.attemptId});
+}
+/** Shared discovery reader for authenticated UI and ordinary agent consumers. */
+export async function readPublicCustomerInventory(db:PoolClient,actor:CurrentSession,raw:unknown,
+ options:{customerId?:string;attemptId?:string;includeSynthetic?:boolean}={}){
  const input=publicInventorySearchSchema.parse(raw);
- const scope=await customerQuestionActor(db,principal);await ready(db);
- const result=await db.query<InventoryAccount>(`SELECT c.id,c.display_name AS name,
+ await lockWorkspaceActor(db,actor,undefined,true);await ready(db);
+ const scope={actor,general:!options.customerId,customerId:options.customerId,attemptId:options.attemptId};
+ const result=await db.query<InventoryAccount>(`SELECT c.id,c.display_name AS name,c.synthetic,
   ARRAY(SELECT alias FROM customer_reference_aliases a WHERE a.customer_id=c.id AND a.kind='name') AS aliases,
   ARRAY(SELECT alias FROM customer_reference_aliases a WHERE a.customer_id=c.id AND a.kind='documented_workload'
    UNION SELECT w.display_name FROM customer_workloads w WHERE w.customer_id=c.id AND ($3='internal' OR EXISTS(
@@ -88,10 +97,12 @@ export async function listPublicCustomerInventory(db:PoolClient,principal:Parame
    ${inventoryStoryJoins} WHERE story.import_id=metadata.id AND ${inventoryStoryEligibility}), '[]'::jsonb) AS stories
   FROM customer_references c LEFT JOIN LATERAL(SELECT * FROM public_customer_inventory_imports m
    WHERE m.customer_id=c.id AND m.workspace_id=c.workspace_id ORDER BY m.created_at DESC,m.id DESC LIMIT 1) metadata ON true
-  WHERE c.workspace_id=$1 AND NOT c.synthetic AND ($3='internal' OR EXISTS(SELECT 1 FROM customer_grants g WHERE g.customer_id=c.id AND g.membership_id=$2 AND g.state='active'))
-   AND ($4::uuid IS NULL OR c.id=$4) ORDER BY c.display_name,c.id LIMIT 1001`,[scope.actor.workspaceId,scope.actor.membershipId,scope.actor.kind,scope.general?null:scope.customerId]);
+  WHERE c.workspace_id=$1 AND ($5::boolean OR NOT c.synthetic) AND ($3='internal' OR EXISTS(SELECT 1 FROM customer_grants g WHERE g.customer_id=c.id AND g.membership_id=$2 AND g.state='active'))
+   AND ($4::uuid IS NULL OR c.id=$4) ORDER BY c.display_name,c.id LIMIT 1001`,[scope.actor.workspaceId,scope.actor.membershipId,scope.actor.kind,scope.general?null:scope.customerId,options.includeSynthetic??false]);
  if(result.rows.length>1000)throw new HttpFailure(503,'inventory_incomplete','Narrow the customer inventory');
- const research=(await db.query<{id:string;customer_id:string;title:string;passage:string;location:string;information_type:string|null}>(`SELECT v.id,v.customer_id,v.title,v.passage,v.location,v.quality_input->>'informationType' AS information_type
+ const needsResearchProducts=Boolean(input.query)&&couldMatchResearchProductLabel(input.query);
+ if(needsResearchProducts){
+ const research=(await db.query<{id:string;customer_id:string;location:string;information_type:string|null}>(`SELECT v.id,v.customer_id,v.location,v.quality_input->>'informationType' AS information_type
   FROM evidence_source_revisions v JOIN evidence_sources s ON s.id=v.source_id AND s.origin='independent_research'
   JOIN research_checks checks ON checks.source_revision_id=v.id AND checks.identity_result AND checks.scope_result AND checks.integrity_result AND checks.content_result
   WHERE v.customer_id=ANY($1::uuid[]) AND v.workspace_id=$2 AND ($3='internal' OR v.audience='delivery')
@@ -99,16 +110,21 @@ export async function listPublicCustomerInventory(db:PoolClient,principal:Parame
    AND NOT EXISTS(SELECT 1 FROM evidence_conflicts conflict WHERE conflict.customer_id=v.customer_id AND conflict.workspace_id=v.workspace_id
     AND conflict.state IN('flagged','confirmed') AND v.id IN(conflict.first_revision_id,conflict.second_revision_id)) ORDER BY v.id LIMIT 5001`,[result.rows.map(account=>account.id),scope.actor.workspaceId,scope.actor.kind])).rows;
  if(research.length>5000)throw new HttpFailure(503,'inventory_incomplete','Narrow the customer evidence inventory');
- const byId=new Map(result.rows.map(account=>[account.id,account]));
- for(const source of research){
-  if(source.information_type==='product_capability'||communityAttributionWarning({url:source.location}))continue;
-  const products=productsFromResearch([{title:source.title,quote:source.passage}]),account=byId.get(source.customer_id)!;
-  if(products.length){account.products=[...new Set([...(account.products??[]),...products])];(account.productSourceIds??=[]).push(source.id);}
+ const identity={...actor,userId:actor.principalId,environmentId:getServerConfig().TURAS_ENVIRONMENT_ID};
+ const retained=await recallPublicLearningForAccounts(identity,[...new Set(research.map(source=>source.customer_id))],new AbortController().signal,db);
+ for(const account of result.rows){
+  if(!research.some(source=>source.customer_id===account.id))continue;
+  for(const source of research.filter(source=>source.customer_id===account.id)){
+   if(source.information_type==='product_capability'||communityAttributionWarning({url:source.location}))continue;
+   const products=productsFromResearch(retained.filter(passage=>passage.accountId===account.id&&passage.url===source.location));
+   if(products.length){account.products=[...new Set([...(account.products??[]),...products])];(account.productSourceIds??=[]).push(source.id);}
+  }
+ }
  }
  const matches=filterPublicCustomerInventory(result.rows,input.query,input.signal),page=matches.slice(input.offset,input.offset+input.limit);
+ await lockProfileActors(db,scope.actor,page.map(account=>account.id),undefined,true);
  for(const account of [...page].sort((a,b)=>a.id.localeCompare(b.id))){
-  await lockProfileActor(db,scope.actor,account.id,undefined,true);
-  if(scope.general)await db.query(`INSERT INTO general_customer_read_scopes(attempt_id,customer_id,audience,generation,citation_ids)
+  if(scope.general&&scope.attemptId)await db.query(`INSERT INTO general_customer_read_scopes(attempt_id,customer_id,audience,generation,citation_ids)
    SELECT $1,customer_id,$3,CASE WHEN $3='internal' THEN internal_generation ELSE delivery_generation END,$4::text[] FROM customer_profile_state WHERE customer_id=$2
    ON CONFLICT(attempt_id,customer_id) DO UPDATE SET citation_ids=ARRAY(SELECT DISTINCT unnest(general_customer_read_scopes.citation_ids||EXCLUDED.citation_ids))`,
    [scope.attemptId,account.id,scope.actor.kind==='internal'?'internal':'delivery',[...new Set([...account.stories.map(story=>story.sourceRevisionId),...(account.productSourceIds??[])])].map(id=>'attributed_research:'+id)]);
@@ -128,5 +144,5 @@ export async function listPublicCustomerInventory(db:PoolClient,principal:Parame
   coverage:`${result.rows.length} authorized customers; ${result.rows.filter(account=>account.reviewed_on).length} have dated public inventory metadata.`,
   limitations:'Dated public case-study signals describe only their cited workloads. They are not formal maturity grades, current CRM status, risk, engagement or commercial facts. Missing metadata is unknown. Withdrawn, superseded or conflicted stories do not match signal/product filters. Read get_customer_evidence before making claims.',
   total:matches.length,nextOffset:input.offset+input.limit<matches.length?input.offset+input.limit:null,
-  accounts:page.map(account=>({id:account.id,name:account.name,storyCount:account.story_count,directoryListed:account.directory_listed,formalMaturity:'unknown' as const}))};
+  accounts:page.map(account=>({id:account.id,name:account.name,synthetic:account.synthetic??false,storyCount:account.story_count,directoryListed:account.directory_listed,formalMaturity:'unknown' as const}))};
 }

@@ -20,6 +20,7 @@ import {parseAttachmentMessage} from '../../lib/conversations/attachment-text';
 
 import {composeOrdinaryMessage,splitOrdinaryMessage,type OrdinaryAttachment,type OrdinarySendMessage} from "../../lib/conversations/ordinary-documents";
 import {ordinaryNativeMessageSchema,summarizeNativeMessage} from "../../lib/conversations/native-message";
+import {uploadNativeFiles,cancelRemovedNativeFiles} from "../../lib/conversations/upload-native-files";
 
 function UserChatText({text}:{text:string}) {
   const parsed=parseAttachmentMessage(text);
@@ -89,10 +90,22 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   const [canSteer,setCanSteer]=useState(false);
   const [canAttachDocuments,setCanAttachDocuments]=useState(false);
   const [canAttachNativeFiles,setCanAttachNativeFiles]=useState(false);
+  type FileReference={eventId:string;files:{filename?:string;mediaType:string;size:number;url:string}[]};
+  const [nativeAttachments,setNativeAttachments]=useState<FileReference[]>([]);
   const [documents,setDocuments]=useState<OrdinaryAttachment[]>([]);
   const [preparingDocuments,setPreparingDocuments]=useState(false);
+  const changingDocuments=useRef(false);
   const pendingMessage=useRef<OrdinarySendMessage|null>(null);
   const [steering,setSteering]=useState(false);
+  async function changeDocuments(next:OrdinaryAttachment[]){
+    if(changingDocuments.current)return;
+    const removed=documents.some(file=>'sha256' in file&&!next.some(retained=>'data' in retained&&retained.data===file.data));
+    if(!removed){setDocuments(next);return;}
+    changingDocuments.current=true;setPreparingDocuments(true);
+    try{await cancelRemovedNativeFiles(documents,next,conversationId,csrfToken);setDocuments(next);}
+    catch(error){setNotice(error instanceof Error?error.message:'File removal could not be confirmed.');}
+    finally{changingDocuments.current=false;setPreparingDocuments(false);}
+  }
   const keyRef = useRef<string | null>(null);
   const agent = useEveAgent({
     initialSession: { sessionId: nativeSessionId, streamIndex: 0 },
@@ -135,7 +148,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
           return;
         }
         if (!response.ok) throw new Error();
-        const detail = await response.json() as { data: { contextStatus?: string;featureKind?:string;canAttachDocuments?:boolean;canAttachNativeFiles?:boolean; attempts: Array<{
+        const detail = await response.json() as { data: { nativeAttachments?:FileReference[];contextStatus?: string;featureKind?:string;canAttachDocuments?:boolean;canAttachNativeFiles?:boolean; attempts: Array<{
           requestKey: string; dispatchState: string; responseState: string;
           watchdogState: string | null;
         }> } };
@@ -143,6 +156,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         setCanSteer(detail.data.featureKind==='normal');
         setCanAttachDocuments(detail.data.canAttachDocuments===true);
         setCanAttachNativeFiles(detail.data.canAttachNativeFiles===true);
+        setNativeAttachments(detail.data.nativeAttachments??[]);
         if (detail.data.contextStatus !== "current") {
           agent.reset(); setStale(true); return;
         }
@@ -178,7 +192,8 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
           agent.reset();
           setDenied(true);
         } else if (response.ok) {
-          const detail = await response.json() as { data: { contextStatus?: string } };
+          const detail = await response.json() as { data: { contextStatus?: string;nativeAttachments?:FileReference[] } };
+          setNativeAttachments(detail.data.nativeAttachments??[]);
           if (detail.data.contextStatus !== "current") {
             agent.reset(); setStale(true);
           }
@@ -210,8 +225,9 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
             agent.reset(); setDenied(true); return;
           }
           if (!visibility.ok) throw new Error();
-          const detail = await visibility.json() as { data: { contextStatus?: string } };
+          const detail = await visibility.json() as { data: { contextStatus?: string;nativeAttachments?:FileReference[] } };
           if (!active) return;
+          setNativeAttachments(detail.data.nativeAttachments??[]);
           if (detail.data.contextStatus !== "current") {
             agent.reset(); setStale(true); return;
           }
@@ -281,20 +297,25 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     try{message=retryPrepared&&pendingMessage.current?pendingMessage.current:initialText??composeOrdinaryMessage(prompt,documents);}catch(failure){setNotice(failure instanceof Error?failure.message:'The documents could not be prepared.');return;}
     if(typeof message!=='string'&&selections.length){setNotice('Send native files separately from selected source passages.');return;}
     const text=typeof message==='string'?message:summarizeNativeMessage(message);
+    if((selections.length||documents.length)&&chatInputAnswer(inputRequests,prompt)){setNotice('Answer the pending question separately before sending files or selected evidence.');return;}
     const answer=typeof message==='string'&&!selections.length&&!documents.length?chatInputAnswer(inputRequests,text):null;
     if(answer && agent.status==='ready' && !denied && !answering) {
       await respondToRequest(answer);setDraft('');return;
     }
     if(text && canSteer && !denied && !stale && !stopping && !steering && !selections.length &&
       (agent.status==='submitted'||agent.status==='streaming')){
-      setSteering(true);setDraft('');setDocuments([]);setNotice('Sending correction…');
-      try{await agent.send(message,{turnPolicy:'steer',headers:{'x-turas-request-key':crypto.randomUUID()}});setNotice('Correction submitted.');}
+      setSteering(true);setNotice('Sending correction…');
+      try{message=await uploadNativeFiles(message,conversationId,csrfToken);setDraft('');setDocuments([]);const delivery=agent.send(message,{turnPolicy:'steer',headers:{'x-turas-request-key':crypto.randomUUID()}});setSteering(false);await delivery;setNotice('Correction submitted.');}
       catch{setNotice('The correction could not be confirmed. It was not sent again.');}
       finally{setSteering(false);}
       return;
     }
     if (!text.trim() || denied || (pendingKey && !(retryPrepared && dispatchState === "prepared")) ||
         agent.status !== "ready") return;
+    setPreparingDocuments(true);
+    try { message=await uploadNativeFiles(message,conversationId,csrfToken); }
+    catch(error) { setNotice(error instanceof Error?error.message:'File preparation failed.');return; }
+    finally { setPreparingDocuments(false); }
     const key = keyRef.current ?? crypto.randomUUID();
     keyRef.current = key;
     if (!retryPrepared) pendingSelections.current = selections;
@@ -375,7 +396,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
           ? message.role === "assistant"
             ? <ChatMarkdown key={index} streaming={busy && message.id === messages.at(-1)?.id} text={part.text} />
             : <UserChatText key={index} text={part.text}/>
-          : part.type==='file'&&message.role==='user'?<NativeChatAttachment key={index} filename={part.filename} mediaType={part.mediaType} url={part.url}/>:null)}
+          : part.type==='file'&&message.role==='user'?<NativeChatAttachment key={index} filename={part.filename} mediaType={part.mediaType} url={part.url} {...nativeAttachments.find(item=>item.eventId===message.id.replace(/:user$/,''))?.files.find(file=>file.filename===part.filename&&file.mediaType===part.mediaType)}/>:null)}
       </article>)}
       {inputRequests.map(request=><ChatInputRequestCard key={request.requestId} request={request}
         disabled={answering||busy||agent.status==='resuming'} onResponse={respondToRequest}/>) }
@@ -388,10 +409,10 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         onDraftSelectionsChange={setDraftSelections} resetSelectionVersion={selectionResetVersion} />}
       <textarea id="chat-message" aria-label="Message Turi" placeholder="Message Turi…" value={draft} onChange={(event) => setDraft(event.target.value)}
         onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(); } }}
-        maxLength={16_384} disabled={(!canSteer && busy) || (Boolean(pendingKey) && dispatchState !== "prepared" && !(canSteer&&busy)) || agent.status === "resuming" || stopping || steering} />
+        maxLength={16_384} disabled={preparingDocuments || (!canSteer && busy) || (Boolean(pendingKey) && dispatchState !== "prepared" && !(canSteer&&busy)) || agent.status === "resuming" || stopping || steering} />
       <div className="chat-actions">
-        {canAttachDocuments&&<OrdinaryDocuments nativeFilesEnabled={canAttachNativeFiles} documents={documents} onChange={setDocuments} onPreparingChange={setPreparingDocuments}
-          disabled={(!canSteer&&(busy||Boolean(pendingKey)))||answering||agent.status==='resuming'||stopping||steering}/>}
+        {canAttachDocuments&&<OrdinaryDocuments conversationId={conversationId} nativeFilesEnabled={canAttachNativeFiles} documents={documents} onChange={next=>void changeDocuments(next)} onPreparingChange={setPreparingDocuments}
+          disabled={preparingDocuments||(!canSteer&&(busy||Boolean(pendingKey)))||answering||agent.status==='resuming'||stopping||steering}/>}
         {customerId && !canAttachDocuments && <button className="composer-attach" type="button" aria-label="Show attachments" aria-expanded={attachmentsOpen}
           onClick={() => setAttachmentsOpen(value => !value)}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m8 12 6-6a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l9-9" /></svg></button>}
         <button className="composer-send" type={busy && !(canSteer&&(draft.trim()||documents.length)) ? "button" : "submit"} aria-label={busy && !(canSteer&&(draft.trim()||documents.length)) ? "Stop response" : "Send message"}
@@ -402,6 +423,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
       </div>
     </form>
     {draft.trim() && !pendingKey && <p className="state-message" role="status">Draft not sent.</p>}
+    {notice==='Answer the pending question separately before sending files or selected evidence.'&&<p role="alert" className="status-alert">{notice}</p>}
     <ChatStatus notice={notice} responseState={inputRequests.length?'waiting_input':responseState} error={Boolean(agent.error)} />
     {pendingKey && dispatchState === "prepared" && !busy &&
       <button className="secondary-button" type="button" onClick={() => void send(true)}>

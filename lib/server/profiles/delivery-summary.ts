@@ -17,7 +17,7 @@ export async function profileDeliverySummary(db: PoolClient, actor: ProfileActor
   let activeCount = 0, reviewRequired = false;
   for (const engagement of engagements) {
     try {
-      const overview = await readExecutionOverviewSnapshot(db, actor, engagement.id, customerId);
+      const overview = await readExecutionOverviewSnapshot(db, actor, engagement.id, customerId,true);
       if (overview.state === 'active') activeCount++;
       else if (overview.state === 'review_required') reviewRequired = true;
     } catch (error) {

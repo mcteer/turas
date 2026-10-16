@@ -1,5 +1,5 @@
 import {attachmentLimits,formatAttachmentText,parseAttachmentMessage,type AttachedDocumentText} from './attachment-text';
-import {ordinaryNativeMessageSchema,type OrdinaryNativeFile,type OrdinaryNativeMessage} from './native-message';
+import {hydratedNativeMessageSchema,type OrdinaryNativeFile,type OrdinaryNativeMessage} from './native-message';
 export type OrdinaryAttachment=AttachedDocumentText|OrdinaryNativeFile;
 export type OrdinarySendMessage=string|OrdinaryNativeMessage;
 export function composeOrdinaryMessage(prompt:string,documents:readonly OrdinaryAttachment[]):OrdinarySendMessage{
@@ -10,7 +10,7 @@ export function composeOrdinaryMessage(prompt:string,documents:readonly Ordinary
  const extracted=documents.filter((document):document is AttachedDocumentText=>!('data' in document));
  if(extracted.length===documents.length)return [text,...extracted.map(document=>formatAttachmentText(document.filename,document.mediaType,document.text,document.truncated))].join('\n\n');
  const parts=[{type:'text' as const,text},...documents.map(document=>'data' in document?document:{type:'text' as const,text:formatAttachmentText(document.filename,document.mediaType,document.text,document.truncated)})];
- const parsed=ordinaryNativeMessageSchema.safeParse(parts);
+ const parsed=hydratedNativeMessageSchema.safeParse(parts);
  if(!parsed.success)throw Error('These files exceed the native message limit. Remove an attachment or use a smaller file.');
  return parsed.data;
 }

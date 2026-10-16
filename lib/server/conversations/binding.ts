@@ -66,6 +66,24 @@ export async function readOwnedBinding(client: PoolClient, session: CurrentSessi
   return ownedBinding(client,session,id,true);
 }
 
+/** Cleanup releases only the owner's work; it never returns customer content.
+ * A withdrawn source or customer grant must not prevent stopping native work. */
+export async function lockOwnedOrdinaryCleanup(client: PoolClient, session: CurrentSession,
+  nativeSessionId: string): Promise<{id:string}> {
+  const owned = await client.query(`SELECT id FROM conversations WHERE eve_session_id=$1
+    AND owner_principal_id=$2 AND workspace_id=$3 AND environment_id=$4`,
+    [nativeSessionId,session.principalId,session.workspaceId,getServerConfig().TURAS_ENVIRONMENT_ID]);
+  if (!owned.rowCount) throw hiddenRecord();
+  await lockWorkspaceActor(client, session);
+  const result = await client.query<{id:string}>(`
+    SELECT id FROM conversations WHERE eve_session_id=$1 AND owner_principal_id=$2
+      AND workspace_id=$3 AND environment_id=$4 AND binding_state='bound' FOR UPDATE`,
+    [nativeSessionId, session.principalId, session.workspaceId, getServerConfig().TURAS_ENVIRONMENT_ID]);
+  const row=result.rows[0];
+  if (!row || (await conversationFeature(client,row.id)).kind!=='normal') throw hiddenRecord();
+  return row;
+}
+
 export type BindingClaim =
   | { state: "bound"; eveSessionId: string }
   | { state: "pending" }

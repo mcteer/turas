@@ -60,6 +60,35 @@ export async function addProposal(client: PoolClient, actor: ProfileActor, custo
   }
   await validateProfileRelationships(client, actor, customerId, workloadId, payload);
   const claimLineage = await validateOwnedClaimSource(client, actor, customerId, payload);
+  const supportIds = evidenceIds(payload, command.evidenceRevisionIds);
+  if (supportIds.length > 20) throw new HttpFailure(422, "too_many_evidence", "At most 20 evidence references are allowed");
+  const links = await validateEvidence(client, actor, customerId, supportIds);
+  if (payload.kind === "maturity_assessment") {
+    await validateMaturityEvidenceScope(client, workloadId, links);
+  }
+  // Repeated intake of the same supplied attachment must not create another
+  // pending assertion. Keep this scoped to the same author and exact support;
+  // ordinary notes and previously decided proposals remain separate records.
+  if (command.action === "propose_record" && submissionChannel === "profile_form" &&
+      !claimLineage && payload.kind === "claim" && payload.legacyJourney?.source.kind === "attachment") {
+    const intakeDigest = createHash("sha256").update(JSON.stringify({ payload,
+      qualityInput: command.qualityInput, audience: command.requestedAudience,
+      category: command.dataCategory, source: command.sourceUrl, excerpt: command.sourceExcerpt,
+      evidence: command.evidenceRevisionIds, artifactSelectionDigest: command.artifactSelectionDigest })).digest("hex");
+    await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))",
+      [`attachment-proposal:${actor.workspaceId}:${customerId}:${actor.membershipId}:${workloadId}:${intakeDigest}`]);
+    const prior = await client.query<{ record_id: string; id: string }>(`
+      SELECT v.record_id,v.id FROM profile_revisions v
+      JOIN profile_records r ON r.id=v.record_id
+      WHERE r.workspace_id=$1 AND r.customer_id=$2
+        AND r.workload_id IS NOT DISTINCT FROM $3::uuid AND r.kind='claim'
+        AND r.current_accepted_revision_id IS NULL AND v.author_membership_id=$4
+        AND v.content_digest=$5 AND v.submission_channel='profile_form'
+        AND NOT EXISTS (SELECT 1 FROM profile_review_decisions d WHERE d.revision_id=v.id)
+      ORDER BY v.created_at DESC,v.id DESC LIMIT 1`,
+    [actor.workspaceId,customerId,workloadId,actor.membershipId,intakeDigest]);
+    if (prior.rows[0]) return {recordId:prior.rows[0].record_id,revisionId:prior.rows[0].id,reviewState:"pending"};
+  }
   let recordId: string;
   if (command.action === "propose_revision") {
     const record = await client.query<{ id: string; kind: string; workload_id: string | null; canonical_key: string | null; version: string; current_accepted_revision_id: string | null }>(
@@ -86,6 +115,23 @@ export async function addProposal(client: PoolClient, actor: ProfileActor, custo
         payload={...payload,legacyJourney:{...original.legacyJourney,summary:payload.text,title:payload.title??original.legacyJourney.title}};
       }
     }
+    // A partner edits the approved delivery projection, whose source provenance
+    // is deliberately masked. Never replace the retained original with that mask.
+    if(actor.kind==='partner' && payload.kind==='claim' && payload.legacyJourney && row.current_accepted_revision_id){
+      const original=(await client.query<{payload:import('../../contracts/profile-payloads').ProfilePayload}>(
+        'SELECT payload FROM profile_revisions WHERE id=$1',[row.current_accepted_revision_id])).rows[0]?.payload;
+      if(original?.kind==='claim' && original.legacyJourney){
+        const supplied=payload.legacyJourney.source;
+        const masked=supplied.kind===original.legacyJourney.source.kind &&
+          supplied.reference==='Reviewed customer source' && supplied.url==='' &&
+          supplied.excerpt==='Original source provenance is private; only the approved delivery claim is shared.';
+        const unchanged=(['kind','reference','url','excerpt'] as const).every(key=>supplied[key]===original.legacyJourney!.source[key]);
+        if(!masked && !unchanged){
+          throw new HttpFailure(422,'journey_source_change','Submit a separate sourced proposal to change a reviewed record’s private source');
+        }
+        payload={...payload,legacyJourney:{...payload.legacyJourney,source:original.legacyJourney.source}};
+      }
+    }
     if (row.canonical_key !== canonicalRecordKey(payload.kind, workloadId, payload)) {
       throw new HttpFailure(422, "immutable_key", "Create a new record for a different key");
     }
@@ -109,12 +155,6 @@ export async function addProposal(client: PoolClient, actor: ProfileActor, custo
       if (!prior.rows[0]) throw new HttpFailure(503, "unavailable", "Service unavailable");
       recordId = prior.rows[0].id;
     } else throw new HttpFailure(503, "unavailable", "Service unavailable");
-  }
-  const supportIds = evidenceIds(payload, command.evidenceRevisionIds);
-  if (supportIds.length > 20) throw new HttpFailure(422, "too_many_evidence", "At most 20 evidence references are allowed");
-  const links = await validateEvidence(client, actor, customerId, supportIds);
-  if (payload.kind === "maturity_assessment") {
-    await validateMaturityEvidenceScope(client, workloadId, links);
   }
   const sequence = await client.query<{ candidate_sequence: string; current_accepted_revision_id: string | null }>(
     "UPDATE profile_records SET candidate_sequence=candidate_sequence+1 WHERE id=$1 RETURNING candidate_sequence,current_accepted_revision_id", [recordId]);

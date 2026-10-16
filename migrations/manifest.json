@@ -1,5 +1,5 @@
 {
-  "version": 72,
+  "version": 77,
   "migrations": [
     {
       "file": "001-identity-foundation.cjs",
@@ -288,6 +288,26 @@
     {
       "file": "072-ordinary-native-message.cjs",
       "sha256": "045f8a93647e607903ff7aa203315c8820c4587d0f7938b8d59cc2af1c9e76c7"
+    },
+    {
+      "file": "073-ordinary-intervention-decisions.cjs",
+      "sha256": "69a27a4abbc7d7181e0e3c91758576ee864b3470cfe0b697cb5e9845f0ce753e"
+    },
+    {
+      "file": "074-ordinary-native-uploads.cjs",
+      "sha256": "ac8ac396f7050a7439716b9e4b0c754dabc2f77d6c5c95291549d7bc128b37df"
+    },
+    {
+      "file": "075-ordinary-operations-read-dependencies.cjs",
+      "sha256": "d2bca98ad61385d31c57c6aa4c6892302482401c0347ead43e3cdabe8e381222"
+    },
+    {
+      "file": "076-ordinary-native-retirements.cjs",
+      "sha256": "248e7fc216b7180ff2e438e430c6eb105f5228f978da7895269a60a2e43baf8c"
+    },
+    {
+      "file": "077-ordinary-question-continuations.cjs",
+      "sha256": "847c6eafee63f2fdeaf76d0f1f998df7e92b6592c80ad84445dbc74177f41583"
     }
   ]
 }

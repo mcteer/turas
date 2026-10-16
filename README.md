@@ -1,5 +1,14 @@
 # Turas
 
+The complete legacy backend audit and restoration is tracked in
+[`018-legacy-backend-parity`](specs/018-legacy-backend-parity/spec.md).
+Its 337-file inventory and 101 concrete acceptance-reference reviews map original backend mechanisms to the current governed
+implementation and consumers, including shared retained research, source browsing,
+ordinary delivery tools, context review, journey controls and native-file transport.
+See the [validation record](specs/018-legacy-backend-parity/validation.md) and
+[release tasks](specs/018-legacy-backend-parity/tasks.md) for the evidence and
+remaining acceptance gates. Earlier parity releases cover narrower scope.
+
 Customer maturity and delivery management for Vercel FDE, Professional Services,
 TAM, account teams and partners.
 

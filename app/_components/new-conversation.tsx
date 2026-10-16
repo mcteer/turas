@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { OrdinaryDocuments } from "./attachments/ordinary-documents";
 import {composeOrdinaryMessage,type OrdinaryAttachment,type OrdinarySendMessage} from "../../lib/conversations/ordinary-documents";
 import { CustomerPicker, type CustomerChoice } from "./customer-picker";
+import { uploadNativeFiles } from "../../lib/conversations/upload-native-files";
 
 
 export function NewConversation({ csrfToken, canAttachDocuments = false, canAttachNativeFiles = false }: { csrfToken: string; canAttachDocuments?: boolean; canAttachNativeFiles?: boolean }) {
@@ -63,6 +64,7 @@ export function NewConversation({ csrfToken, canAttachDocuments = false, canAtta
         await new Promise((resolve) => setTimeout(resolve, 2_000));
       }
       if (!bound) throw new Error("Chat binding is pending. Reload the chat list to retry.");
+      text = await uploadNativeFiles(text, result.data.id, csrfToken);
       if (text) sessionStorage.setItem(`turas-chat-draft:${result.data.id}`, JSON.stringify({ text, requestKey: crypto.randomUUID(), autoSend: !attachments }));
       router.push(`/s/${result.data.id}${attachments ? "?attachments=1" : ""}`);
     } catch (cause) {
@@ -81,7 +83,7 @@ export function NewConversation({ csrfToken, canAttachDocuments = false, canAtta
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void start(); } }} />
         <div className="chat-actions">
-          {canAttachDocuments?<OrdinaryDocuments buttonLabel="Attach documents" nativeFilesEnabled={canAttachNativeFiles} documents={documents} onChange={setDocuments} onPreparingChange={setPreparingDocuments} disabled={state==="creating"}/>:<button className="composer-attach" type="button" aria-label="Attach documents" disabled={state === "creating"} onClick={() => void start(true)}>
+          {canAttachDocuments?<OrdinaryDocuments buttonLabel="Attach documents" nativeFilesEnabled={canAttachNativeFiles} documents={documents} onChange={setDocuments} onPreparingChange={setPreparingDocuments} disabled={state==="creating"||preparingDocuments}/>:<button className="composer-attach" type="button" aria-label="Attach documents" disabled={state === "creating"} onClick={() => void start(true)}>
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m8 12 6-6a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l9-9" /></svg>
           </button>}
           <button className="composer-send" type="submit" aria-label="Send message" disabled={(!draft.trim()&&!documents.length)||preparingDocuments||state === "creating"}>

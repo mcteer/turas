@@ -1,20 +1,14 @@
+export {publicLearningSchema,recallPublicLearning} from "./public-learning-read";
 import { z } from "zod";
 import type { AppIdentity } from "../identity";
-import { researchSourceIsEligible, requireResearchAccount } from "../account";
+import { requireResearchAccount } from "../account";
 import { customerUpdateSchema } from "../solution-research/customer-update";
 import { sourceSchema } from "../solution-research/schema";
 import { researchPassages, verifiedPublicationDate } from "../solution-research/source-integrity";
-import { communityAttributionWarning } from "../solution-research/attribution";
 import { digest } from "./schema";
 import { evidenceDatabase } from "./database";
 import { retainSpecialistProfileSources } from "../retain-profile";
 
-export const publicLearningSchema = z.object({
-  id: z.string(), accountId: z.string(), url: z.url(), title: z.string(), passageId: z.string(), quote: z.string(), quoteTruncated: z.boolean(),
-  publishedAt: z.string().nullable(), firstSeen: z.iso.datetime(), lastSeen: z.iso.datetime(),
-  attributionWarning: z.string().nullable(), queryMatched: z.boolean(),
-  evidenceState: z.enum(["recently_checked", "refresh_due", "changed", "historical"]),
-});
 type PublicPassageReference = { sourceId: string; passageId?: string; quote?: string; sourceType?: string };
 
 // Share exact server-bound PUBLIC passages, never a generated claim, private question,
@@ -65,38 +59,6 @@ export async function latestPublicLearningDate(identity: Pick<AppIdentity, "envi
   const latest = rows[0]?.latest_date;
   return latest ? z.coerce.date().parse(latest).toISOString().slice(0, 10) : null;
 }
-export async function recallPublicLearning(identity: AppIdentity, accountId: string, query: string, signal: AbortSignal, acrossAccounts = false) {
-  await requireResearchAccount(identity,accountId);
-  const sql = await evidenceDatabase();
-  const rows = await sql.query(`WITH ranked AS (SELECT l.*,s.refresh_after,
-      ($4='' OR l.search_text @@ websearch_to_tsquery('english',$4)) AS query_matched,
-      ts_rank_cd(l.search_text,websearch_to_tsquery('english',$4)) AS relevance,
-      row_number() OVER (PARTITION BY l.account_id,l.url ORDER BY ts_rank_cd(l.search_text,websearch_to_tsquery('english',$4)) DESC,l.last_seen DESC,l.id) AS passage_rank,
-      EXISTS(SELECT 1 FROM turas_evidence_snapshots n WHERE n.environment_id=l.environment_id AND n.workspace_id=l.workspace_id
-        AND n.url=l.url AND n.id<>l.snapshot_id AND n.checked_at>l.last_seen) AS changed
-    FROM turas_public_learning l LEFT JOIN turas_evidence_snapshots s ON s.environment_id=l.environment_id AND s.workspace_id=l.workspace_id AND s.id=l.snapshot_id
-    WHERE l.environment_id=$1 AND l.workspace_id=$2 AND (l.account_id=$3 OR $5::boolean)
-      AND EXISTS(SELECT 1 FROM customer_references c WHERE c.id::text=l.account_id
-        AND c.workspace_id::text=l.workspace_id AND ($7='internal' OR EXISTS(
-          SELECT 1 FROM customer_grants g WHERE g.customer_id=c.id
-            AND g.membership_id=$6::uuid AND g.state='active')))
-      ) SELECT * FROM ranked
-    WHERE query_matched OR NOT EXISTS(SELECT 1 FROM ranked WHERE query_matched)
-    ORDER BY (account_id=$3) DESC,passage_rank,relevance DESC,
-      (source_type IN ('customer_publication','vendor_case_study','conference_presentation','webinar')) DESC,
-      last_seen DESC,id LIMIT 8`,
-    [identity.environmentId, identity.workspaceId, accountId, query, acrossAccounts,identity.membershipId,identity.kind]);
-  signal.throwIfAborted();
-  const parsed = z.array(z.object({ id: z.string(), account_id: z.string(), url: z.string(), title: z.string(), passage_id: z.string(), quote: z.string(),
-    published_at: z.coerce.date().nullable(), first_seen: z.coerce.date(), last_seen: z.coerce.date(), refresh_after: z.coerce.date().nullable(), changed: z.boolean(), query_matched: z.boolean() })).parse(rows);
-  const eligible=[];
-  for(const row of parsed)if(await researchSourceIsEligible(identity,row.account_id,row.url))eligible.push(row);
-  return eligible.map(row => publicLearningSchema.parse({ id: row.id, accountId: row.account_id, url: row.url, title: row.title,
-    passageId: row.passage_id, queryMatched: row.query_matched, quote: row.quote.slice(0, 1600), quoteTruncated: row.quote.length > 1600, publishedAt: row.published_at?.toISOString().slice(0, 10) ?? null,
-    firstSeen: row.first_seen.toISOString(), attributionWarning: communityAttributionWarning({ url: row.url }), lastSeen: row.last_seen.toISOString(), evidenceState: row.changed ? "changed"
-      : !row.refresh_after ? "historical" : row.refresh_after.getTime() <= Date.now() ? "refresh_due" : "recently_checked" }));
-}
-
 // Use the existing authenticated maintenance job. Bounded public page checks, no
 // autonomous model sessions, internal connector access or customer writes.
 export async function refreshPublicLearning(environmentId:string,signal:AbortSignal) {

@@ -1,3 +1,5 @@
+import {nativeProviderFilePresent} from '../../lib/server/conversations/native-provider-dedup';
+import {createHash} from 'node:crypto';
 import {formatAttachmentText} from '../../lib/conversations/attachment-text';
 import {describe,expect,it} from 'vitest';
 import {parseOrdinaryNativeMessage,nativeMessageDigest,summarizeNativeMessage} from '../../lib/server/conversations/native-message';
@@ -22,4 +24,13 @@ describe('legacy native file transport',()=>{
    [{...file('one'),data:'data:application/octet-stream;base64,eA==AAAA'}],Array.from({length:6},()=>file('one'))])
    expect(()=>parseOrdinaryNativeMessage(input)).toThrow();
  });
+});
+
+it('deduplicates exact SDK staging aliases only with original immutable name, MIME and actual bytes',()=>{
+ const bytes=Buffer.from('owned original bytes'),sha256=createHash('sha256').update(bytes).digest('hex'),identity={filename:'original.png',mediaType:'image/png',sha256};
+ const part={type:'file',filename:`/workspace/attachments/${sha256.slice(0,16)}/original.png`,mediaType:'image/png',data:{type:'data',data:bytes}};
+ expect(nativeProviderFilePresent(identity,[part])).toBe(true);
+ expect(nativeProviderFilePresent(identity,[{...part,filename:'original.png'}])).toBe(true);
+ for(const changed of [{...part,filename:`/workspace/attachments/${sha256.slice(0,16)}/corrected.png`},{...part,filename:'/arbitrary/original.png'},{...part,mediaType:'text/plain'},{...part,data:{type:'data',data:Buffer.from('changed')}},{...part,data:{type:'url',url:'file:///workspace/attachments/original.png'}}])expect(nativeProviderFilePresent(identity,[changed])).toBe(false);
+ expect(nativeProviderFilePresent({...identity,filename:'corrected.png'},[part])).toBe(false);
 });

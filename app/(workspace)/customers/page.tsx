@@ -10,6 +10,7 @@ type Result = { data?: { items: Customer[]; nextCursor: string | null }; error?:
 export default function CustomersPage() {
   const [items, setItems] = useState<Customer[]>([]);
   const [query, setQuery] = useState("");
+  const [signal, setSignal] = useState("");
   const request = useRef<AbortController | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "unavailable">("loading");
@@ -21,9 +22,10 @@ export default function CustomersPage() {
     setState("loading");
     if (!cursor) { setItems([]); setNextCursor(null); }
     try {
-      const url = new URL("/api/customers", window.location.origin);
+      const url = new URL(query.trim() || signal ? "/api/customers/discovery" : "/api/customers", window.location.origin);
       if (cursor) url.searchParams.set("cursor", cursor);
       if (query.trim()) url.searchParams.set("query", query.trim());
+      if (signal) url.searchParams.set("signal", signal);
       const response = await fetch(url, { cache: "no-store", signal: controller.signal });
       const payload = await response.json() as Result;
       if (!response.ok || !payload.data) throw new Error(payload.error?.message ?? "Unavailable");
@@ -41,14 +43,19 @@ export default function CustomersPage() {
     setItems([]); setNextCursor(null); setState("loading");
     const timer = setTimeout(() => void load(), query ? 250 : 0);
     return () => { clearTimeout(timer); request.current?.abort(); };
-  }, [query]);
+  }, [query, signal]);
 
   return <main className="profile-page customer-directory">
     <header className="profile-header directory-header"><div><p className="profile-eyebrow">Workspace</p><h1>Customer Profiles</h1>
       <p className="muted">Customer knowledge, researched facts, and delivery in one place.</p></div></header>
     <div className="customer-directory-search"><label htmlFor="customer-search">Search Customers</label>
-      <input className="field" id="customer-search" type="search" placeholder="Search by customer name" maxLength={200}
+      <input className="field" id="customer-search" type="search" placeholder="Search customers, workloads or products" maxLength={160}
         value={query} onChange={event => setQuery(event.target.value)} />
+      <label htmlFor="customer-signal">Evidence Signals</label>
+      <select className="field" id="customer-signal" value={signal} onChange={event => setSignal(event.target.value)}>
+        <option value="">All signals</option>{["Operational trust","Platform reuse","Delivery collaboration","Measurement and learning","Product adoption"].map(value => <option key={value}>{value}</option>)}
+      </select>
+      <p className="muted">Signals describe dated public workload evidence. They are separate from formal customer maturity and current engagement status.</p>
     </div>
     {state === "loading" && <p role="status">Loading customers…</p>}
     {state === "unavailable" && <p role="alert">Customers are unavailable. <button onClick={() => void load()}>Retry</button></p>}

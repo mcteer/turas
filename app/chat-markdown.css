@@ -27,3 +27,7 @@
 .chat-input-options small { display: block; font-weight: 400; }
 .chat-input-request form { display: flex; align-items: end; gap: .5rem; margin-top: .75rem; }
 .chat-input-request label { display: grid; gap: .3rem; flex: 1; }
+
+.chat-approval-preview { min-width: 0; margin: .75rem 0; }
+.chat-approval-preview h3 { font-size: .9rem; margin: .5rem 0; }
+.chat-approval-preview pre { max-height: 24rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; border: 1px solid var(--border); border-radius: .5rem; padding: .75rem; font: .78rem/1.5 var(--font-mono), monospace; }

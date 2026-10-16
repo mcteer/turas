@@ -1,3 +1,4 @@
+import {processOrdinaryNativeRetirement} from '../lib/server/conversations/native-retirement-recovery';
 import {learningOperationalMetric} from '../lib/server/learning/observability';
 import {runMcpMaintenanceTick} from '../lib/server/mcp/retention';
 import {runLearningMaintenanceTick} from '../lib/server/learning/maintenance';
@@ -9,6 +10,7 @@ import { getServerConfig } from "../lib/server/config";
 import { claimDueJobs, finishDueJob, heartbeatWorker, signMaintenanceRequest } from "../lib/server/conversations/watchdog";
 import { runRetrievalWorkerTick } from "./retrieval-worker";
 import { runRetrievalCleanupTick } from "../lib/server/retrieval/cleanup";
+import {cleanupNativeUploads} from '../lib/server/conversations/native-uploads';
 import { suspendStaleKnowledge } from "../lib/server/knowledge/suspension";
 import { markDueResearch } from "../lib/server/research/refresh";
 import { runWorkforceWorkerTick } from "../lib/server/staffing/runner";
@@ -167,6 +169,8 @@ const cleanupTimer = setInterval(() => {
   if (stopping || cleanupScanning) return;
   cleanupScanning = true;
   void runRetrievalCleanupTick().then(() => suspendStaleKnowledge())
+    .then(() => processOrdinaryNativeRetirement())
+    .then(() => cleanupNativeUploads())
     .then(() => markDueResearch())
     .then(() => runPlanCleanupTick())
     .catch(() => undefined)

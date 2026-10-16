@@ -8,12 +8,12 @@ import type { ExecutionCommand } from "./schema";
 export type ExecutionHead = { id:string; current_baseline_id:string; version:string; generation:string; state:string; closeout_revision_id:string|null };
 export type Baseline = { id:string; revision_id:string; plan_id:string; baseline_number:string; content_digest:string; aggregate_version:string;
   workload_id:string|null; active_baseline_id:string; accepted_revision_id:string; audience:"internal"|"delivery" };
-export async function executionBaseline(db:PoolClient,actor:ExecutionActor,customerId:string,engagementId:string,baselineId:string,lock=false) {
+export async function executionBaseline(db:PoolClient,actor:ExecutionActor,customerId:string,engagementId:string,baselineId:string,lock:boolean|'share'=false) {
   const row = (await db.query<Baseline>(`SELECT b.id,b.revision_id,b.plan_id,b.baseline_number,b.content_digest,p.aggregate_version,
     p.accepted_revision_id,e.workload_id,e.active_baseline_id,e.audience FROM milestone_baselines b
     JOIN engagements e ON e.id=b.engagement_id JOIN delivery_plans p ON p.id=b.plan_id
     WHERE b.id=$1 AND b.engagement_id=$2 AND b.environment_id=$3 AND b.workspace_id=$4 AND b.customer_id=$5
-      AND (e.audience='delivery' OR $6='internal') ${lock ? "FOR UPDATE OF p" : ""}`,
+      AND (e.audience='delivery' OR $6='internal') ${lock==='share'?"FOR SHARE OF p":lock ? "FOR UPDATE OF p" : ""}`,
     [baselineId,engagementId,getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,customerId,actor.kind==='partner'?'delivery':'internal'])).rows[0];
   if (!row) throw hiddenRecord();
   return row;
