@@ -12269,11 +12269,31 @@
       "legacyPath": "playwright.config.ts",
       "sha256": "6ce22e32fdc2fcf5d7ee2fffd6fed208d0459dee6a1c1d10f0fb66fe919af202",
       "classification": "reviewed-consumer-or-config",
-      "status": "static review; implementation and validation tracked separately",
-      "reviews": [],
+      "status": "reviewed isolated CLI WebKit runner ownership; exact discovery verified and final runtime CI pending",
+      "reviews": [
+        {
+          "legacySha256": "6ce22e32fdc2fcf5d7ee2fffd6fed208d0459dee6a1c1d10f0fb66fe919af202",
+          "mechanism": "Scoped generic versus owned-fixture UI discovery",
+          "currentPaths": [
+            "playwright.config.ts",
+            "scripts/check-legacy-parity-disposable.mjs",
+            ".github/workflows/legacy-backend-parity.yml",
+            ".github/workflows/ci.yml"
+          ],
+          "currentFileSha256": {
+            "playwright.config.ts": "cb8ec0a739e40366056bbd2e3dec12d52d22fbd53204f149955e9307025d9396",
+            "scripts/check-legacy-parity-disposable.mjs": "f9405ca41b956833203b7e4494cb71ab4d11260690be1b9fe906bb1aa83a71ef",
+            ".github/workflows/legacy-backend-parity.yml": "231196ad1e5a10e6a0f5df9c5a73e63b991c75426cac5b77142b2fa81b788565",
+            ".github/workflows/ci.yml": "550cb944cfe1f34ba7f59bc27c92798ea761bd40a4f0efe92c76e4a9c314bcfb"
+          },
+          "evidence": "Actual CLI discovery: generic LEGACY_ONLY260 cases, omitting exactly two isolated fixture-owned018 files; mandatory01832 cases acrossfourprojects retains every source-library/journey case. Actual3fc01832 gate passed; discovery follow-up preserves scenario assertions, clocks, retries and strict database guard. New exact-head runtime CI remains required."
+        }
+      ],
       "currentPaths": [
         "playwright.config.ts",
-        "scripts"
+        "scripts/check-legacy-parity-disposable.mjs",
+        ".github/workflows/legacy-backend-parity.yml",
+        ".github/workflows/ci.yml"
       ],
       "notes": "CLI WebKit checks adapted to isolated owned project harnesses; host browser prohibited.",
       "tasks": [
