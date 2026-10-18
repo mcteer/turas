@@ -2439,3 +2439,26 @@ rollback envelope admitted before locking. The copy receipt intentionally keeps
 `cutoverVerified:false`: actual Blob copy, original/target configuration evidence,
 required service verification and explicit unlock remain T085 release evidence.
 No provider operation or budget renewal occurred in this checkpoint.
+
+### Current-interface pilot browser reconciliation — 2026-10-17
+
+The first owned headless WebKit attempt failed before its intended checks because
+pilot fixtures still expected the superseded `Customers` heading and used
+`Attach documents` for governed customer evidence. Login itself succeeded.
+Current interface behavior uses `Customer Profiles` and `Customer sources`;
+ordinary chat document attachment retains its separate current flow.
+
+After correcting those fixture entry points, all 40 fixed pilot cases passed
+across desktop/mobile and light/dark WebKit projects with zero skips. The tests
+include maximum-size private upload transport, cancellation/expiry, foreign
+completion denial, workspace selection/isolation, navigation and accessibility.
+This is owned local application/native-runtime evidence, not hosted Blob or
+scanner acceptance. The initial failures remain retained. The application build
+also passed. Exact source digest and individual browser reports remain private.
+
+Read-only provider/owner checks confirmed Production's released commit
+`34eb05c209346685446bf197dd455e5874e27aa3`, and both existing Production and
+Preview source databases at schema77 with77 ledger entries. Older private
+operator descriptors labeled them55/38; new observed descriptors were retained
+without altering the originals or either hosted database. Existing unrelated
+Blob storage remains untouched; no pilot backend has been provisioned yet.
