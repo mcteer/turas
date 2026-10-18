@@ -104,3 +104,21 @@ deduplication and a40-page bound; repeated cursors or incomplete loads fail
 visibly. A four-project browser regression selects an account from the second
 page. The earlier68-case proof remains historical; final72-case validation and
 exact hosted checks are in progress on this correction.
+
+The pagination correction passes all72 built-app WebKit cases on locked
+Next16.3.8/Eve0.67.1 and Node24, with no skips/retries/failures; TypeScript and
+docs checks pass. Final hosted/CI evidence remains separate.
+
+The first PR45 Preview (source268be7e) failed the unchanged profile comparator:
+its general Preview research differs from Production. No data was synchronized
+or overwritten. The retained isolated public-data target passes actual runtime
+login, schema077 ledger,34 grant/denial and encrypted-backup authentication
+checks. The earlier source-panel fixture remains exactly archived/retired, with
+no admitted messages, uploads or funded ledgers. Its existing recovery rehearsal
+is retained; no fresh restore or migration is claimed. Five encrypted settings
+were added only for `019-profile-history-fix`, with readback and unrelated-scope
+fingerprints verified. Production/global settings and original budget authority
+are unchanged; no gateway key or model allowance was added. The original failed
+fresh-target assertion (one previously archived validation conversation) is
+preserved; the passing recheck verifies that exact retired fixture rather than
+requiring deletion of its history.
