@@ -95,3 +95,12 @@ worktree's `local-artifacts/devolver-profile-fix/resume-locked-screenshots`).
 Validation made zero paid provider calls and preserved the selected database,
 private artifacts and durable workflow data. Exact hosted Preview/Production,
 full final-source CI, independent review, merge and branch cleanup remain open.
+
+### Release continuation — directory pagination
+
+Release review found that the landing page loaded only the first25 directory
+choices. The picker now follows authorized directory cursors with cancellation,
+deduplication and a40-page bound; repeated cursors or incomplete loads fail
+visibly. A four-project browser regression selects an account from the second
+page. The earlier68-case proof remains historical; final72-case validation and
+exact hosted checks are in progress on this correction.

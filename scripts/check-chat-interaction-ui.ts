@@ -21,5 +21,5 @@ await withPlanEvalEnvironment(async environment=>{
  const captures=join(environment.appRoot,'local-artifacts/019');await mkdir(join(directory,'captures'),{mode:0o700});
  for(const name of await readdir(captures).catch(()=>[]))if(/^[a-z-]+-webkit-(desktop|mobile)-(light|dark)\.png$/.test(name))await copyFile(join(captures,name),join(directory,'captures',name));
  const report=JSON.parse(result.stdout);console.log(JSON.stringify({gate:'019-chat-interaction',...report.stats,privateResults:directory,modelCalls:0}));
- if(result.code!==0||report.errors.length||report.stats.expected!==(preparationRace?4:68)||report.stats.unexpected||report.stats.flaky||report.stats.skipped)throw Error('Interaction UI requires all selected cases acrossfour WebKit projects');
+ if(result.code!==0||report.errors.length||report.stats.expected!==(preparationRace?4:72)||report.stats.unexpected||report.stats.flaky||report.stats.skipped)throw Error('Interaction UI requires all selected cases acrossfour WebKit projects');
 },{feature:'010',production:true,deadlineAt:Date.now()+1800000,prepare:async({appRoot})=>{await copyFile('playwright.config.ts',join(appRoot,'playwright.config.ts'));return {};}});

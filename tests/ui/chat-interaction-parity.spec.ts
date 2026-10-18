@@ -296,3 +296,20 @@ test('customer picker searches, supports keyboard selection and clears without l
  await page.screenshot({path:`local-artifacts/019/customer-picker-${info.project.name}.png`,fullPage:false});
  await search.press('Escape');
 });
+
+
+test('customer picker searches authorized customers beyond the first directory page',async({page})=>{
+ await signIn(page,'panel');
+ const first=Array.from({length:25},(_,index)=>({id:randomUUID(),displayName:`Synthetic account ${index}`,synthetic:true}));
+ const last={id:randomUUID(),displayName:'Zinnia pagination fixture',synthetic:true};let laterReads=0;
+ await page.route('**/api/customers**',route=>{
+  const cursor=new URL(route.request().url()).searchParams.get('cursor');
+  if(cursor){expect(cursor).toBe('fixture-next-page');laterReads++;}
+  return route.fulfill({status:200,json:{data:{items:cursor?[last]:first,nextCursor:cursor?null:'fixture-next-page'}}});
+ });
+ await page.goto('/s');const trigger=page.getByRole('button',{name:'Customer (optional)',exact:true});
+ await expect(trigger).toBeEnabled();await trigger.click();
+ await page.getByRole('combobox',{name:'Search customers',exact:true}).fill('Zinnia');
+ await page.getByRole('option',{name:last.displayName,exact:true}).click();
+ await expect(trigger).toHaveText(last.displayName);expect(laterReads).toBe(1);
+});

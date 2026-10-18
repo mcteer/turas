@@ -88,3 +88,7 @@ supports returning to general chat and exposes only authorized choices. Recent
 Conversations refreshes after creation, received messages and navigation without a
 page reload. Invalidation events carry no conversation content; every refresh reads
 the authorized server projection. Existing theme and source/owner controls remain.
+
+Customer search includes every page of authorized directory choices. Loading must
+fail visibly on repeated cursors or an exceeded page bound rather than silently
+exposing an incomplete list as complete; abandoned loads are cancelled.

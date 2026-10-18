@@ -1,4 +1,4 @@
-A local profile/chat follow-up restores searchable keyboard customer selection and
+A local profile/chat follow-up restores searchable keyboard customer selection across directory pages and
 refreshes Recent Conversations after creation, messages and navigation. Product
 projection also reads complete checked claims for already-selected research
 sources, preserving source limits and eligibility. Validation and hosted release

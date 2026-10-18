@@ -111,9 +111,9 @@ if (process.argv.includes("--webkit-child")) {
       throw Error("018 actual WebKit acceptance failed; inspect private report");
     }
     const report=JSON.parse(result.stdout);
-    if(report.stats.expected!==92||report.stats.unexpected||report.stats.flaky||report.stats.skipped)
-      throw Error("018 WebKit requires all92cases acrossfourprojects without skips or retries");
-    console.log(JSON.stringify({gate:"018-webkit",actualEve:true,projects:4,passed:92,skipped:0}));
+    if(report.stats.expected!==96||report.stats.unexpected||report.stats.flaky||report.stats.skipped)
+      throw Error("018 WebKit requires all96cases acrossfourprojects without skips or retries");
+    console.log(JSON.stringify({gate:"018-webkit",actualEve:true,projects:4,passed:96,skipped:0}));
   },{feature:"010",production:true,deadlineAt:Date.now()+1_800_000,prepare:async({appRoot})=>{
     const {copyFile}=await import("node:fs/promises");
     await copyFile("playwright.config.ts",join(appRoot,"playwright.config.ts"));
