@@ -567,3 +567,13 @@ required synthetic cursor-signing configuration; no application change was made
 for that setup issue. Root/execution types, documentation and diff checks pass.
 T034/T035 implementation and local verification are complete. T036 full CI and
 T037 authenticated hosted/review/merge/release acceptance remain open.
+
+
+Final supervisor review found that checking only the parent shell would miss
+production dotenv values loaded by Next itself, including CI's synthetic setup.
+The supervisor now loads the same production configuration before its gates.
+Three actual child-process unit cases pass: production dotenv precedence rejects
+a nonlocal/malformed database without leaking values, file-loaded provider keys
+are rejected, and explicit safe shell values reach the build prerequisite. Root
+types pass. These are startup-guard checks; the prior 653-unit and 28-browser
+receipts remain their recorded source checkpoints, with fresh final CI required.

@@ -91,3 +91,11 @@ Undici 8.9.0 override to 8.10.2. Preserve unrelated Undici 7 dependencies.
 Final current-source CI, real authenticated Preview, independent review and
 post-merge Production/schema 077 checks remain required; local prototype evidence
 from 016 does not establish this focused branch's release acceptance.
+
+
+The test supervisor loads Next's production dotenv configuration before checking
+loopback databases, scope and disabled provider credentials. `@next/env` is an
+explicit test dependency pinned to the installed Next patch version. A file-loaded
+cloud database or provider key fails before any service starts, with controlled
+errors that exclude credential values; explicit safe shell configuration retains
+Next's normal precedence. This also supports CI's synthetic dotenv configuration.

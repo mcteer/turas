@@ -1,16 +1,24 @@
 import { spawn, execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import nextEnvironment from '@next/env';
 
 // Test-only supervisor, restricted to loopback test databases.
 if (process.env.CI !== 'true' || process.env.TURAS_UI_PRODUCTION !== '1') throw Error('Explicit local production UI test scope required');
+// Next loads production dotenv files too. Validate that same effective
+// environment before starting any service, rather than only the parent shell.
+process.env.NODE_ENV = 'production';
+let environmentFailed = false;
+nextEnvironment.loadEnvConfig(process.cwd(), false, { info() {}, error() { environmentFailed = true; } });
+if (environmentFailed) throw Error('Local production UI environment could not be loaded');
 if (!/^(?:ci-|test-)/.test(process.env.TURAS_ENVIRONMENT_ID ?? '')) throw Error('Explicit test environment marker required');
 if (process.env.EVE_NEXT_PRODUCTION_ORIGIN) throw Error('Owned built-in native routing required');
 const local = new Set(['localhost', '127.0.0.1', '[::1]']);
-const origin = new URL(process.env.TURAS_APP_ORIGIN ?? '');
+function scopedUrl(value, message) { try { return new URL(value ?? ''); } catch { throw Error(message); } }
+const origin = scopedUrl(process.env.TURAS_APP_ORIGIN, 'Loopback UI origin required');
 if (origin.protocol !== 'http:' || !local.has(origin.hostname) || origin.href !== origin.origin + '/') throw Error('Loopback UI origin required');
 for (const key of ['DATABASE_URL', 'DATABASE_URL_UNPOOLED']) {
-  const database = new URL(process.env[key] ?? '');
+  const database = scopedUrl(process.env[key], 'Owned local UI database required');
   if (!['postgres:', 'postgresql:'].includes(database.protocol) || !local.has(database.hostname) || !/^\/turas_(?:ci|test(?:_[a-z0-9_]+)?)$/.test(database.pathname)) throw Error('Owned local UI database required');
 }
 if (['AI_GATEWAY_API_KEY', 'VERCEL_OIDC_TOKEN', 'CONTEXT_API_KEY', 'CONTEXT_DEV_API_KEY', 'RESEND_API_KEY'].some(key => process.env[key])) throw Error('Unpaid UI environment required');
