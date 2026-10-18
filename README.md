@@ -64,6 +64,9 @@ Current pilot integration preserves the released schema-077 ledger and authors
 retain unknown model usage and original chat allowances; the current pilot
 WebKit catalog passes 40 cases. Fresh full CI/local verification and hosted
 recovery/cutover acceptance remain in progress; Production is unchanged.
+The current deterministic catalog registers 745 cases in 138 suites. Local
+production build and native operations/file-correction checks pass with the
+restored dependency fixes; full current CI and hosted recovery remain pending.
 
 Recent Conversations provides owner-private Archive and Restore controls. Archived
 chats remain available in Archived Conversations and retain their history.

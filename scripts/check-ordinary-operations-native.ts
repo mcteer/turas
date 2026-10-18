@@ -57,6 +57,9 @@ try{await withPlanEvalEnvironment(async environment=>{
   async function pending(actor:Awaited<ReturnType<typeof login>>,prompt:string){
    const key=randomUUID(),created=await actor.context.request.post('/api/conversations',{headers:actor.headers,data:{requestKey:key,title:'Synthetic native intervention'}});if(!created.ok())throw Error('Conversation failed');const id=(await created.json()).data.id;
    let native='';for(let i=0;i<5;i++){const r=await actor.context.request.post('/eve/v1/session',{headers:{...actor.headers,'x-turas-conversation-id':id},data:{operationId:key}});if(r.ok()){native=(await r.json()).sessionId;break;}if(r.status()!==409)throw Error('Binding failed');await new Promise(r=>setTimeout(r,500));}if(!native)throw Error('Binding unconfirmed');
+   // Compile the real thread route before timing the browser/native intervention.
+   // A cold development build is not the approval interaction's response time.
+   const compiled=await actor.context.request.get('/s/'+id,{timeout:90000});if(compiled.status()!==200)throw Error('Owned operations thread compile failed');
    const page=await actor.context.newPage();await page.goto('/s/'+id,{waitUntil:'domcontentloaded'});await page.getByRole('textbox',{name:'Message Turi'}).fill(prompt);await page.getByRole('button',{name:'Send message',exact:true}).click();
    await page.getByRole('region',{name:'Your decision'}).waitFor({timeout:60000});const shown=JSON.parse(await page.getByRole('region',{name:'Your decision'}).locator('pre').innerText());for(const field of ['engagementId','proposalId','proposalRevisionId','expectedVersion','status','rationale'] as const)if(shown[field]!==command[field])throw Error('Exact proposed intervention preview differs: '+field);
    await until(async()=>Number((await query("SELECT count(*) AS n FROM response_attempts WHERE conversation_id=$1 AND response_state='waiting_input'",[id])).rows[0].n)===1,'native parked approval');

@@ -2667,3 +2667,23 @@ requested explicitly. Eleven focused unit cases pass, including a different alia
 deployment being rejected before cookie dispatch. Actual read-only platform
 lookups by deployed ID and `www.turas.dev` both returned the unchanged Production
 deployment. See [Vercel's endpoint contract](https://vercel.com/docs/rest-api/deployments/get-a-deployment-by-id-or-url).
+
+The c87d150 CI diagnostics locate native operations at its first thread navigation
+and file corrections at the ten-second post-Send attachment-clear assertion.
+The operations fixture now compiles the real thread route before browser timing.
+The file fixture compiles upload handlers using only a 405 method read and scoped
+404 reads of a random nonexistent upload. It creates no upload reservation and
+retains the existing ten-second assertion, turn deadlines and allowance bounds.
+Both complete actual Eve/CLI WebKit flows pass after these changes.
+
+A fresh dependency audit exposed lost pre-composition remediation: source-map-js
+had returned to 1.2.1 and Eve's pinned undici to 8.9.0. The narrow overrides restore
+source-map-js 1.2.2 and only undici@8.9.0 to 8.10.2. Eve stays 0.67.1, the separate
+undici 7.30.0 dependency is unchanged, and the root selected model is unchanged.
+An isolated clean install avoids mutating the dependencies under the frozen c87
+catalog run. Its actual native operations/file-correction checks, combined Next/Eve
+production build, root/pilot types and 33 focused unit cases pass. Lock audit now
+reports zero high/moderate and eight low findings in the existing math-rendering
+chain; it is not a zero-vulnerability claim. No framework major upgrade is applied.
+The relevant upstream advisories are [source-map-js](https://github.com/advisories/GHSA-68fv-2mgg-jv7q)
+and [undici](https://github.com/advisories/GHSA-w293-vg96-wgc3).

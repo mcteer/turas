@@ -96,6 +96,12 @@ try{await withPlanEvalEnvironment(async environment=>{
    fixturePhase='warmup_thread_compile';
    const threadCompiled=await context.request.get('/s/'+warmupId,{timeout:90000});
    if(threadCompiled.status()!==200)throw Error('Owned thread compile request failed');
+   // Compile native-upload handlers without reserving or sending any file.
+   // The random nonexistent upload produces only the ordinary scoped 404 reads.
+   fixturePhase='warmup_upload_routes';const unusedUpload=randomUUID(),uploadPath='/api/conversations/'+warmupId+'/native-uploads';
+   for(const [path,status] of [[uploadPath,405],[uploadPath+'/'+unusedUpload,404],[uploadPath+'/'+unusedUpload+'/chunks/0',404]] as const){
+    const compiled=await context.request.get(path,{timeout:90000});if(compiled.status()!==status)throw Error('Owned native upload route compile failed');
+   }
    fixturePhase='initial_thread_navigation';
    await page.goto('/s/'+warmupId,{waitUntil:'domcontentloaded'});
    fixturePhase='native_file_interaction';
