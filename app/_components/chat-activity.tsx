@@ -10,12 +10,6 @@ import { NativeChatAttachment } from "./attachments/native-chat-attachment";
 type Part = EveMessage["parts"][number];
 type Response = { requestId: string; optionId?: string; text?: string };
 
-function inspection(value: unknown) {
-  if (value === undefined) return undefined;
-  const text = typeof value === "string" ? value : JSON.stringify(value, null, 2);
-  return text.length > 32_000 ? text.slice(0, 32_000) + "\n… Preview shortened." : text;
-}
-
 export function activityRequestIds(parts: readonly Part[]) {
   return parts.flatMap(part => part.type === "dynamic-tool" && part.toolMetadata?.eve?.inputRequest
     ? [part.toolMetadata.eve.inputRequest.requestId] : []);
@@ -38,15 +32,10 @@ export function ChatAssistantParts({ parts, streaming, requests, disabled, onRes
   parts: readonly Part[]; streaming: boolean; requests: readonly ChatInputRequest[];
   disabled: boolean; onResponse: (response: Response) => Promise<void>; activityOnly?: boolean;
 }) {
-  const hasText = activityOnly || parts.some(part => part.type === "text" && part.text.trim());
-  const activeTool = streaming ? parts.findLastIndex(part => part.type === "dynamic-tool" &&
-    ["input-streaming", "input-available", "approval-requested"].includes(part.state)) : -1;
   return parts.map((part, index) => {
     if (part.type === "text") return activityOnly || !part.text ? null : <ChatMarkdown key={index} text={part.text} streaming={streaming&&part.state!=="done"} />;
-    if (part.type === "reasoning") return hasText || !part.text ? null : <details className="chat-activity" key={index} open>
-      <summary>Thinking</summary><div className="chat-activity-body"><ChatMarkdown text={part.text} streaming={streaming} /></div>
-    </details>;
-    if(part.type==='file')return <NativeChatAttachment key={index} filename={part.filename} mediaType={part.mediaType} size={part.size} url={part.url}/>;
+    if (part.type === "reasoning") return null;
+    if(part.type==='file')return activityOnly?null:<NativeChatAttachment key={index} filename={part.filename} mediaType={part.mediaType} size={part.size} url={part.url}/>;
     if (part.type === "authorization") {
       const url = part.authorization?.url ? getWebUrl(part.authorization.url) : undefined;
       return <section className="chat-input-request" aria-label={`${part.displayName} authorization`} key={index}>
@@ -71,18 +60,8 @@ export function ChatAssistantParts({ parts, streaming, requests, disabled, onRes
       </section>;
       return null;
     }
-    // Match legacy: show the current active tool while streaming, then leave
-    // completed tools collapsed and inspectable once the response settles.
-    if (activeTool >= 0 && index !== activeTool) return null;
-    const running = ["input-streaming", "input-available"].includes(part.state);
-    const label=part.state==="approval-requested"?"Waiting for approval":part.state==="approval-responded"?"Decision submitted":running?"Running…":part.state==="output-error"?"Failed":"Completed";
-    return <details className="chat-activity" key={part.toolCallId}>
-      <summary>{part.toolName.replaceAll("_", " ")} <span className="muted">{label}</span></summary>
-      <div className="chat-activity-body">
-        {part.input !== undefined && <><p>Inputs</p><pre>{inspection(part.input)}</pre></>}
-        {part.output !== undefined && <><p>Result</p><pre>{inspection(part.output)}</pre></>}
-        {part.errorText && <p role="alert">{part.errorText}</p>}
-      </div>
-    </details>;
+    // Ordinary tools and model reasoning run in the background. Explicit
+    // questions and authorization above remain actionable.
+    return null;
   });
 }

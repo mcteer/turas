@@ -54,3 +54,24 @@ export function retainedActiveParts(message:RetainedChatMessage,reference?:Nativ
   return file&&file.filename===part.filename&&file.mediaType===part.mediaType&&file.size===part.size?{...part,url:file.url}:part;
  });
 }
+
+/** Display only the settled answer for each user delivery. Intermediate model
+ * steps stay in the authorized history; this never changes execution or storage. */
+export function finalChatHistory(messages:readonly ChatDisplayMessage[],working:boolean):ChatDisplayMessage[]{
+ const result:ChatDisplayMessage[]=[];
+ let answer:ChatDisplayMessage|undefined;
+ const flush=()=>{if(answer)result.push(answer);answer=undefined;};
+ for(const item of messages){
+  if(item.message.role==='user'){flush();result.push(item);continue;}
+  const text=item.message.parts.some(part=>part.type==='text'&&part.text.trim());
+  const file=item.message.parts.some(part=>part.type==='file');
+  if(!text&&!file)continue;
+  if(item.kind==='native'){
+   const steps=item.message.parts.flatMap(part=>part.type==='text'&&part.text.trim()&&part.stepIndex!==undefined?[part.stepIndex]:[]);
+   const last=steps.length?Math.max(...steps):undefined;
+   answer={...item,message:{...item.message,parts:item.message.parts.filter(part=>part.type==='file'||part.type==='text'&&(last===undefined||part.stepIndex===last))}};
+  }else answer=item;
+ }
+ if(!working)flush();
+ return result;
+}

@@ -1,7 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import type {EveMessage} from 'eve/react';
 import {defaultMessageReducer,type MessageStreamEvent} from 'eve/client';
-import {activeChatHistory,retainedActiveParts} from '../../lib/conversations/active-chat-history';
+import {activeChatHistory,retainedActiveParts,finalChatHistory} from '../../lib/conversations/active-chat-history';
 import type {RetainedChatEvent} from '../../lib/conversations/retained-history';
 
 it('keeps authorized tool activity alongside canonical prose and does not drop nontext parts when splitting steps',()=>{
@@ -89,4 +89,23 @@ it('preserves distinct canonical completed event IDs when the SDK reuses an empt
   expect(display.every(item=>item.kind==='retained')).toBe(true);
   data=reducer.reduce(data,event('evt_second'));
  }
+});
+
+
+describe('quiet final-answer presentation',()=>{
+ const question=user('question','turn');
+ const answer=(id:string,step:number,text:string)=>({kind:'retained' as const,message:{id,role:'assistant' as const,parts:[{type:'text' as const,text}],partial:false,turnId:'turn',stepIndex:step}});
+ it('hides intermediate steps while running and shows the final answer when settled without mutating history',()=>{
+  const items=[{kind:'native' as const,message:question},answer('progress',0,'Looking up sources'),answer('final',2,'Supported final answer')];const before=JSON.stringify(items);
+  expect(finalChatHistory(items,true).map(x=>x.message.id)).toEqual(['question:user']);
+  expect(finalChatHistory(items,false).map(x=>x.message.id)).toEqual(['question:user','final']);expect(JSON.stringify(items)).toBe(before);
+ });
+ it('preserves prior answers and distinct user corrections while waiting for the latest answer',()=>{
+  const items=[{kind:'native' as const,message:question},answer('old',0,'Previous answer'),{kind:'native' as const,message:user('correction','turn')},answer('new',1,'New answer')];
+  expect(finalChatHistory(items,true).map(x=>x.message.id)).toEqual(['question:user','old','correction:user']);
+ });
+ it('selects only the final text step from one native message and keeps its file',()=>{
+  const message={id:'answer',role:'assistant',parts:[{type:'reasoning',text:'Private reasoning',stepIndex:0},{type:'text',text:'Progress',stepIndex:0},{type:'text',text:'Final',stepIndex:3},{type:'file',mediaType:'text/plain',filename:'result.txt'}]} as EveMessage;
+  expect(finalChatHistory([{kind:'native',message}],false)[0].message.parts).toEqual([{type:'text',text:'Final',stepIndex:3},{type:'file',mediaType:'text/plain',filename:'result.txt'}]);
+ });
 });
