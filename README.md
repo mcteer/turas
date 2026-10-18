@@ -246,7 +246,7 @@ Feature 016 has a [specification](specs/016-pilot-hardening/spec.md),
 assigned-partner pilot. The plan covers a synthetic Production pilot workspace,
 workspace-bound sessions, durable private files and hosted processing, recovery,
 retention, access, operating limits and attributable user feedback. Implementation
-is in progress, with 63 of 91 tasks complete. The complete local catalog passed
+is in progress, with 63 of 94 tasks complete. The complete local catalog passed
 640/640 named cases and all 43 required CI jobs passed at `08ef152`; full
 predecessor composition, WebKit, recovery/lifecycle and build gates are green.
 Owned load, dependency-fault and encrypted capture checks are recorded in the
