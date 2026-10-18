@@ -1,4 +1,4 @@
-import {researchReadActor} from './identity';
+import {researchReadActor} from './read-actor';
 import type {CurrentSession} from '../../auth/sessions';
 import type {PoolClient} from 'pg';
 import {readVerifiedResearchProjectionRows} from "../../retrieval/research-projection";

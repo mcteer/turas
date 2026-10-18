@@ -9,14 +9,6 @@ import { hiddenRecord } from "../../../contracts/http";
 /** The legacy receipt identity is backed by the current live session and role,
  * rather than legacy demo logins or a model-supplied owner/workspace. */
 export type AppIdentity = CurrentSession & { userId: string; environmentId: string;responseAttemptId?:string;workerSessionId?:string };
-/** Preserve the authenticated actor object when separate research metadata is
- * passed through an in-transaction governed read. Metadata never substitutes
- * for that actor or changes its session, role, workspace or environment. */
-export function researchReadActor(identity:AppIdentity,actor:CurrentSession=identity):CurrentSession{
- if(identity.environmentId!==getServerConfig().TURAS_ENVIRONMENT_ID||identity.userId!==actor.principalId||
-  (['sessionId','principalId','membershipId','workspaceId','token','kind','role','loginName'] as const).some(key=>identity[key]!==actor[key]))throw hiddenRecord();
- return actor;
-}
 export async function researchIdentity(principal: Parameters<typeof customerQuestionActor>[1],
   lineage?:{parentSessionId:string;workerSessionId?:string;kind?:string}): Promise<AppIdentity> {
   const {actor} = await withTransaction(async db=>{

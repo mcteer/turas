@@ -2,6 +2,7 @@ import {planExecutiveSlides} from '../../../report-renderer/layout';
 import {validateReportDocument} from '../../../lib/reports/document';
 import {randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';
+import type {CurrentSession} from '../../../lib/server/auth/sessions';
 import {requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
 import {mcpAcceptedPlan} from '../mcp/plans';
 import {submitExecutionCommand} from '../../../lib/server/execution/service';
@@ -24,7 +25,7 @@ export async function pilotLoadDeliveryBaseFixture(db:PoolClient,evidence:Awaite
  const activity=await addReviewedReportActivity(fixture,{eventDate:'2026-09-24',narrative:'Controlled synthetic load demonstration, not an actual customer outcome.'});
  return {plan,engagementId,baselineId,activity};
 }
-export async function pilotLoadReportFixture(db:PoolClient,evidence:Awaited<ReturnType<typeof pilotLoadEvidenceFixture>>,delivery:Awaited<ReturnType<typeof pilotLoadDeliveryBaseFixture>>,signal:AbortSignal){
+export async function pilotLoadReportFixture(db:PoolClient,evidence:{actors:CurrentSession[];customers:{id:string}[]},delivery:Awaited<ReturnType<typeof pilotLoadDeliveryBaseFixture>>,signal:AbortSignal){
  requireOwnedPilotDatabase(process.env,true);const {plan,engagementId,baselineId,activity}=delivery,author=evidence.actors[1],reviewer=evidence.actors[0],customerId=evidence.customers[0].id;
  if(process.env.TURAS_REPORTS_ENABLED!=='true'||!/^sha256:[a-f0-9]{64}$/.test(process.env.TURAS_PILOT_RENDERER_IMAGE??''))throw Error('Explicit prepared owned renderer required');
  const reports:any[]=[];

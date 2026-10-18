@@ -1,4 +1,4 @@
-import {researchReadActor} from '../identity';
+import {researchReadActor} from '../read-actor';
 import type {CurrentSession} from '../../../auth/sessions';
 import {hiddenRecord} from "../../../../contracts/http";
 import {getServerConfig} from "../../../config";

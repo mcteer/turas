@@ -563,6 +563,7 @@
         "integration.recovery-token-allowance.003",
         "integration.recovery-read-probe.001",
         "integration.recovery-read-probe.002",
+        "integration.recovery-read-probe.003",
         "unit.managed-workflow-provider.007",
         "unit.managed-workflow-inventory.001",
         "unit.managed-workflow-inventory.002",

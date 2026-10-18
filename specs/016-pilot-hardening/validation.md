@@ -2595,3 +2595,18 @@ has 732 cases across 136 suites; the frozen 7a11d49 run still has 731.
 The final bounded owned command check passed both integration cases in 21.79s,
 including the explicit SQL transaction deadline and the real success/failure CLI
 receipts. No hosted target, ordinary login or required quarantine was opened.
+
+A third owned recovery probe now prepares delivery through normal review, renders
+actual weekly/monthly/quarterly reports and publishes the reviewed weekly report
+before quarantine. The authenticated locked canonical report read passes, as does
+the version-2 operator command; a mismatched publication revision is rejected and
+leaves no live probe session. All three probe cases passed in 32.78s. The fixed
+catalog now contains 733 cases in 136 suites. The composed probe suite has a
+300-second process bound; original per-job and scenario bounds are unchanged.
+
+The first Eve build after the identity handoff change failed its authored memory
+module bundling check. Moving the metadata comparison into a small module with
+type-only identity imports removed the runtime import cycle; the next Eve build
+passed. The selected model and authored memory file remain unchanged.
+Read-only Production configuration inspection found the runtime connection value
+protected from decryption; it establishes no authenticated-login retirement proof.

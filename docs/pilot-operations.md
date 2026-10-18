@@ -707,3 +707,11 @@ Receipts contain response digests and identities, never credentials or profile
 prose. All seven quarantine scopes remain unresolved. This partial profile/plan
 diagnostic proves neither complete required service nor authenticated HTTP,
 managed Workflow reconciliation or unlock readiness.
+
+For exact current publication reads, scope contract
+`pilot-owned-recovery-read-scope-v2` adds a nonempty `acceptedReports` list of
+`{id, revisionId}` pairs. It permits explicitly empty profile-revision and plan
+lists for a report-only diagnostic; the customer profile is still authorized and
+read. Version 1 retains its original nonempty profile/plan requirements. Version 2
+receipts bind the actual current publication ID and validated report digest.
+Neither version infers that omitted required service is healthy.

@@ -19,6 +19,9 @@ import {resolve,join} from 'node:path';
 import {pilotSource} from '../../../scripts/pilot-source';
 import {writeEvidence,readEvidence} from '../../../scripts/pilot-evidence';
 import {pilotOwnedRecoveryRead} from '../../../scripts/pilot-owned-recovery-read';
+import {reportsDeliveryFixture,addReviewedReportActivity} from '../../fixtures/reports/delivery';
+import {pilotLoadReportFixture} from '../../fixtures/pilot/load-delivery';
+import {readCurrentPublishedReport} from '../../../lib/server/reports/read';
 import {recallPublicLearning} from '../../../lib/server/research/specialists/research-cache/public-learning-read';
 
 async function acceptedRecoveryProposal(actor:import('../../../lib/server/auth/sessions').CurrentSession,customerId:string){
@@ -123,6 +126,39 @@ it('authenticates an owned post-quarantine read and retires its temporary sessio
    await writeEvidence(root,'wrong-scope.json',{...commandScope,acceptedPlans:[{id:plan.planId,revisionId:randomUUID()}]});
    await expect(pilotOwnedRecoveryRead(['--probe-owned-service','--scope',join(root,'wrong-scope.json'),'--credential',join(root,'credential.json'),'--output',join(root,'failure')])).rejects.toThrow('Required accepted recovery plan differs');
    expect(await readEvidence(join(root,'failure'),'failure.json')).toMatchObject({stage:'canonical_plans',serviceOpened:false,restorationReady:false});
+   expect(Number((await owner.query('SELECT count(*) FROM login_sessions WHERE revoked_at IS NULL')).rows[0].count)).toBe(0);
+  }finally{await rm(root,{recursive:true,force:true});}
+ });
+},210000);
+
+
+it('reads a normally reviewed rendered publication through authenticated locked recovery',async()=>{
+ await withAuthorityEnvironment(async(owner,_runtime,environmentId)=>{
+  process.env.TURAS_REPORTS_ENABLED='true';
+  const db=owner as unknown as PoolClient,baseline=await reportsDeliveryFixture(),activity=await addReviewedReportActivity(baseline,{narrative:'Controlled synthetic recovery read of normally reviewed delivery evidence.'});
+  const delivery={plan:{created:baseline.created,content:baseline.content,decision:baseline.decision},engagementId:baseline.engagementId,baselineId:baseline.baselineId,activity};
+  const reports=await pilotLoadReportFixture(db,{actors:[baseline.reviewer,baseline.author],customers:[{id:baseline.customerId}]},delivery,AbortSignal.timeout(120000));
+  const expected=reports.reports[0],locked=await lockAuthorityTarget(owner,environmentId),scope={environmentId,recoveryId:locked.recoveryId,controlRevision:locked.controlRevision};
+  await quarantineRestoredAuthority(owner,scope);
+  await owner.query('BEGIN');
+  await withAuthenticatedOwnerRecoveryRead(db,{...scope,workspaceId:baseline.reviewer.workspaceId,deadline:Date.now()+60000,password:process.env.TURAS_DEMO_PASSWORD!},async actor=>{
+   const published=await readCurrentPublishedReport(db,actor,baseline.customerId,expected.reportId);
+   expect(published?.published.revision_id).toBe(expected.revisionId);
+   expect(published?.document.title).toBeTruthy();
+   await expect(readCurrentPublishedReport(db,{...actor},baseline.customerId,expected.reportId)).rejects.toThrow('Service temporarily unavailable');
+  });
+  expect(Number((await owner.query('SELECT count(*) FROM login_sessions WHERE revoked_at IS NULL')).rows[0].count)).toBe(0);
+  await owner.query('COMMIT');
+  expect((await owner.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');
+  await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});const root=await mkdtemp(resolve('local-artifacts/016/report-read-command-'));
+  try{
+   const source=await pilotSource(),commandScope={contract:'pilot-owned-recovery-read-scope-v2',...source,...scope,workspaceId:baseline.reviewer.workspaceId,customerId:baseline.customerId,expiresAt:new Date(Date.now()+60000).toISOString(),acceptedProfileRevisionIds:[],acceptedPlans:[],acceptedReports:[{id:expected.reportId,revisionId:expected.revisionId}]};
+   await writeEvidence(root,'scope.json',commandScope);await writeEvidence(root,'credential.json',{contract:'pilot-owned-recovery-credential-v1',loginName:'mcteer',password:process.env.TURAS_DEMO_PASSWORD!});
+   const result=await pilotOwnedRecoveryRead(['--probe-owned-service','--scope',join(root,'scope.json'),'--credential',join(root,'credential.json'),'--output',join(root,'success')]);
+   expect(result).toMatchObject({contract:'pilot-owned-recovery-read-v2',temporarySessionRevoked:true,requiredScopeHealthy:false,serviceOpened:false,restorationReady:false,reports:[{id:expected.reportId,revisionId:expected.revisionId}]});
+   await writeEvidence(root,'wrong-scope.json',{...commandScope,acceptedReports:[{id:expected.reportId,revisionId:randomUUID()}]});
+   await expect(pilotOwnedRecoveryRead(['--probe-owned-service','--scope',join(root,'wrong-scope.json'),'--credential',join(root,'credential.json'),'--output',join(root,'failure')])).rejects.toThrow('Required current recovery report differs');
+   expect(await readEvidence(join(root,'failure'),'failure.json')).toMatchObject({stage:'canonical_reports',serviceOpened:false,restorationReady:false});
    expect(Number((await owner.query('SELECT count(*) FROM login_sessions WHERE revoked_at IS NULL')).rows[0].count)).toBe(0);
   }finally{await rm(root,{recursive:true,force:true});}
  });

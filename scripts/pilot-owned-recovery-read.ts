@@ -9,11 +9,15 @@ import {withRecoveryCancellation} from '../lib/server/operations/recovery-cancel
 import {withAuthenticatedOwnerRecoveryRead} from '../lib/server/operations/authenticated-recovery-read';
 import {readProfile} from '../lib/server/profiles/read';
 import {readAcceptedPlan} from '../lib/server/plans/read';
+import {readCurrentPublishedReport} from '../lib/server/reports/read';
 import {currentRecoveryStateDigest} from '../lib/server/operations/recovery-state';
 
 const digest=z.string().regex(/^[a-f0-9]{64}$/);
-export const ownedRecoveryReadScopeSchema=z.strictObject({contract:z.literal('pilot-owned-recovery-read-scope-v1'),sourceCommit:z.string().regex(/^[a-f0-9]{40}$/),sourceDigest:digest,catalogDigest:digest,environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive(),workspaceId:z.uuid(),customerId:z.uuid(),expiresAt:z.iso.datetime({offset:true}),acceptedProfileRevisionIds:z.array(z.uuid()).min(1).max(50),acceptedPlans:z.array(z.strictObject({id:z.uuid(),revisionId:z.uuid()})).min(1).max(20)}).superRefine((value,ctx)=>{
+const ownedRecoveryReadV1=z.strictObject({contract:z.literal('pilot-owned-recovery-read-scope-v1'),sourceCommit:z.string().regex(/^[a-f0-9]{40}$/),sourceDigest:digest,catalogDigest:digest,environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive(),workspaceId:z.uuid(),customerId:z.uuid(),expiresAt:z.iso.datetime({offset:true}),acceptedProfileRevisionIds:z.array(z.uuid()).min(1).max(50),acceptedPlans:z.array(z.strictObject({id:z.uuid(),revisionId:z.uuid()})).min(1).max(20)});
+const ownedRecoveryReadV2=z.strictObject({...ownedRecoveryReadV1.shape,contract:z.literal('pilot-owned-recovery-read-scope-v2'),acceptedProfileRevisionIds:z.array(z.uuid()).max(50),acceptedPlans:z.array(z.strictObject({id:z.uuid(),revisionId:z.uuid()})).max(20),acceptedReports:z.array(z.strictObject({id:z.uuid(),revisionId:z.uuid()})).min(1).max(20)});
+export const ownedRecoveryReadScopeSchema=z.discriminatedUnion('contract',[ownedRecoveryReadV1,ownedRecoveryReadV2]).superRefine((value,ctx)=>{
  if(new Set(value.acceptedProfileRevisionIds).size!==value.acceptedProfileRevisionIds.length||new Set(value.acceptedPlans.map(plan=>plan.id)).size!==value.acceptedPlans.length)ctx.addIssue({code:'custom',message:'Unique exact recovery read records required'});
+ if(value.contract==='pilot-owned-recovery-read-scope-v2'&&new Set(value.acceptedReports.map(report=>report.id)).size!==value.acceptedReports.length)ctx.addIssue({code:'custom',message:'Unique exact recovery reports required'});
 });
 const credentialSchema=z.strictObject({contract:z.literal('pilot-owned-recovery-credential-v1'),loginName:z.literal('mcteer'),password:z.string().min(1).max(4096)});
 /** Actual governed reads on an owned locked restore only. This is a partial
@@ -42,7 +46,9 @@ export async function pilotOwnedRecoveryRead(args:string[]){
     if(profile.customer.id!==scope.customerId||scope.acceptedProfileRevisionIds.some(revision=>!profile.acceptedFacts.some(fact=>fact.id===revision)))throw Error('Required accepted recovery profile differs');
     const plans=[];stage='canonical_plans';
     for(const expected of scope.acceptedPlans){signal.throwIfAborted();const plan=await readAcceptedPlan(db as unknown as PoolClient,actor,scope.customerId,expected.id);if(!plan||plan.plan.accepted_revision_id!==expected.revisionId)throw Error('Required accepted recovery plan differs');plans.push({id:expected.id,revisionId:expected.revisionId,resultDigest:evidenceDigest(JSON.stringify(plan))});}
-    return {sessionId:actor.sessionId,profileDigest:evidenceDigest(JSON.stringify(profile)),plans};
+    const reports=[];stage='canonical_reports';
+    for(const expected of scope.contract==='pilot-owned-recovery-read-scope-v2'?scope.acceptedReports:[]){signal.throwIfAborted();const report=await readCurrentPublishedReport(db as unknown as PoolClient,actor,scope.customerId,expected.id);if(!report||report.published.revision_id!==expected.revisionId)throw Error('Required current recovery report differs');reports.push({id:expected.id,revisionId:expected.revisionId,publicationId:String(report.published.id),resultDigest:evidenceDigest(JSON.stringify(report))});}
+    return {sessionId:actor.sessionId,profileDigest:evidenceDigest(JSON.stringify(profile)),plans,reports};
    });
    stage='retired_session';signal.throwIfAborted();
    const retired=(await db.query('SELECT revoked_at IS NOT NULL AS retired FROM login_sessions WHERE id=$1',[probes.sessionId])).rows;
@@ -50,7 +56,7 @@ export async function pilotOwnedRecoveryRead(args:string[]){
    const currentStateDigest=await currentRecoveryStateDigest(db);signal.throwIfAborted();
    if(JSON.stringify(await pilotSource())!==JSON.stringify(source))throw Error('Owned recovery read source changed');
    await db.query('COMMIT');transaction=false;
-   const receipt={contract:'pilot-owned-recovery-read-v1',id,...source,scopeDigest:evidenceDigest(JSON.stringify(scope)),environmentId:scope.environmentId,recoveryId:scope.recoveryId,controlRevision:scope.controlRevision,workspaceId:scope.workspaceId,customerId:scope.customerId,completedAt:new Date().toISOString(),profileDigest:probes.profileDigest,acceptedProfileRevisions:scope.acceptedProfileRevisionIds,plans:probes.plans,currentStateDigest,temporarySessionRevoked:true,mode:'locked',requiredScopeHealthy:false,authenticatedHttpVerified:false,workflowReconciled:false,serviceOpened:false,restorationReady:false,modelCalls:0,providerCalls:0};
+   const receipt={...(scope.contract==='pilot-owned-recovery-read-scope-v2'?{contract:'pilot-owned-recovery-read-v2' as const,reports:probes.reports}:{contract:'pilot-owned-recovery-read-v1' as const}),id,...source,scopeDigest:evidenceDigest(JSON.stringify(scope)),environmentId:scope.environmentId,recoveryId:scope.recoveryId,controlRevision:scope.controlRevision,workspaceId:scope.workspaceId,customerId:scope.customerId,completedAt:new Date().toISOString(),profileDigest:probes.profileDigest,acceptedProfileRevisions:scope.acceptedProfileRevisionIds,plans:probes.plans,currentStateDigest,temporarySessionRevoked:true,mode:'locked',requiredScopeHealthy:false,authenticatedHttpVerified:false,workflowReconciled:false,serviceOpened:false,restorationReady:false,modelCalls:0,providerCalls:0};
    await writeEvidence(root,'reads.json',receipt);return receipt;
   }catch(error){if(transaction)await db.query('ROLLBACK').catch(()=>{});await writeEvidence(root,'failure.json',{id,...source,stage,safeFailure:'incomplete_owned_recovery_read',serviceOpened:false,restorationReady:false});throw error;}
   finally{await db.end();}

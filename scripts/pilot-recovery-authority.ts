@@ -21,7 +21,7 @@ import {z} from 'zod';
 import {pilotOwnedDenialReconciliation} from './pilot-owned-denial-reconciliation';
 export async function pilotRecoveryAuthority(args=process.argv.slice(2)){
  if(args[0]==='--probe-owned-service'){
-  const result=await pilotOwnedRecoveryRead(args);console.info(JSON.stringify({profilesRead:1,plansRead:result.plans.length,temporarySessionRevoked:result.temporarySessionRevoked,serviceOpened:false,restorationReady:false}));return result;
+  const result=await pilotOwnedRecoveryRead(args);console.info(JSON.stringify({profilesRead:1,plansRead:result.plans.length,reportsRead:result.contract==='pilot-owned-recovery-read-v2'?result.reports.length:0,temporarySessionRevoked:result.temporarySessionRevoked,serviceOpened:false,restorationReady:false}));return result;
  }
  if(args[0]==='--reconcile-owned-work-denials'){
   const receipt=await pilotOwnedDenialReconciliation(args);

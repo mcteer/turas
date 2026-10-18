@@ -282,7 +282,7 @@ quarantine, with atomic current-grant reconciliation from authenticated retained
 denials. Read-only managed-run inspection traverses all provider pages twice;
 terminal closure and retirement of old deployments remain unproved.
 An owned recovery command now authenticates temporary mcteer probes, reads actual
-accepted profiles/plans and retires its session even after SQL failure; this is a
+accepted profiles/plans/reports and retires its session even after SQL failure; this is a
 partial locked diagnostic and cannot grant recovery readiness.
 Recovery authority, hosted services, scheduled backups and actual participant
 acceptance remain pending; local checks do not establish pilot readiness. See the

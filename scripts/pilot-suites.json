@@ -1514,10 +1514,11 @@
     },
     {
       "file": "tests/integration/pilot/recovery-read-probe.test.ts",
-      "expectedCases": 2,
+      "expectedCases": 3,
       "cases": [
         "bounds owner recovery reads to one live actor, connection, control revision and deadline",
-        "authenticates an owned post-quarantine read and retires its temporary session even after a SQL failure"
+        "authenticates an owned post-quarantine read and retires its temporary session even after a SQL failure",
+        "reads a normally reviewed rendered publication through authenticated locked recovery"
       ]
     },
     {
