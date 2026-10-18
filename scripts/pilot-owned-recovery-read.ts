@@ -9,7 +9,7 @@ import {withRecoveryCancellation} from '../lib/server/operations/recovery-cancel
 import {withAuthenticatedOwnerRecoveryRead} from '../lib/server/operations/authenticated-recovery-read';
 import {readProfile} from '../lib/server/profiles/read';
 import {readAcceptedPlan} from '../lib/server/plans/read';
-import {readCurrentPublishedReport} from '../lib/server/reports/read';
+import {reportReadProjection} from '../lib/server/reports/read';
 import {currentRecoveryStateDigest} from '../lib/server/operations/recovery-state';
 
 const digest=z.string().regex(/^[a-f0-9]{64}$/);
@@ -47,7 +47,16 @@ export async function pilotOwnedRecoveryRead(args:string[]){
     const plans=[];stage='canonical_plans';
     for(const expected of scope.acceptedPlans){signal.throwIfAborted();const plan=await readAcceptedPlan(db as unknown as PoolClient,actor,scope.customerId,expected.id);if(!plan||plan.plan.accepted_revision_id!==expected.revisionId)throw Error('Required accepted recovery plan differs');plans.push({id:expected.id,revisionId:expected.revisionId,resultDigest:evidenceDigest(JSON.stringify(plan))});}
     const reports=[];stage='canonical_reports';
-    for(const expected of scope.contract==='pilot-owned-recovery-read-scope-v2'?scope.acceptedReports:[]){signal.throwIfAborted();const report=await readCurrentPublishedReport(db as unknown as PoolClient,actor,scope.customerId,expected.id);if(!report||report.published.revision_id!==expected.revisionId)throw Error('Required current recovery report differs');reports.push({id:expected.id,revisionId:expected.revisionId,publicationId:String(report.published.id),resultDigest:evidenceDigest(JSON.stringify(report))});}
+    for(const expected of scope.contract==='pilot-owned-recovery-read-scope-v2'?scope.acceptedReports:[]){
+     signal.throwIfAborted();
+     const current=(await db.query('SELECT id,revision_id FROM report_publications WHERE report_id=$1 AND environment_id=$2 AND workspace_id=$3 AND customer_id=$4 ORDER BY publication_number DESC LIMIT 1 FOR SHARE',[expected.id,scope.environmentId,scope.workspaceId,scope.customerId])).rows[0];
+     if(!current||current.revision_id!==expected.revisionId)throw Error('Required current recovery report differs');
+     // Use the normal authenticated browser projection, including authorized
+     // financial report content. MCP's narrower read projection is separate.
+     const report=await reportReadProjection(db as unknown as PoolClient,actor,expected.id,expected.revisionId);
+     if(report.customerId!==scope.customerId||report.publicationId!==current.id||report.state!=='published'||report.visibility!=='current'||!report.document)throw Error('Required current recovery report differs');
+     reports.push({id:expected.id,revisionId:expected.revisionId,publicationId:String(current.id),resultDigest:evidenceDigest(JSON.stringify(report))});
+    }
     return {sessionId:actor.sessionId,profileDigest:evidenceDigest(JSON.stringify(profile)),plans,reports};
    });
    stage='retired_session';signal.throwIfAborted();

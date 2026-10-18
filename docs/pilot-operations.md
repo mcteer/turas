@@ -715,3 +715,7 @@ lists for a report-only diagnostic; the customer profile is still authorized and
 read. Version 1 retains its original nonempty profile/plan requirements. Version 2
 receipts bind the actual current publication ID and validated report digest.
 Neither version infers that omitted required service is healthy.
+
+Current report verification uses the normal authenticated browser read and
+requires published/current state and the exact latest publication revision.
+MCP's separate narrower projection is not used to judge internal service health.

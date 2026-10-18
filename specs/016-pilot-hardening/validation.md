@@ -2610,3 +2610,8 @@ type-only identity imports removed the runtime import cycle; the next Eve build
 passed. The selected model and authored memory file remain unchanged.
 Read-only Production configuration inspection found the runtime connection value
 protected from decryption; it establishes no authenticated-login retirement proof.
+
+The version-2 report probe now uses the normal authenticated browser projection
+after verifying the exact current publication. It does not borrow MCP's narrower
+financial-content exclusion. All three composed probe cases passed again in
+33.54s, including success/failure operator receipts, and pilot types passed.
