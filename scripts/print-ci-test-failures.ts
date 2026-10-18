@@ -1,6 +1,7 @@
 import {readdir,lstat,readFile} from 'node:fs/promises';
 import {resolve,join,relative} from 'node:path';
 import {pathToFileURL} from 'node:url';
+import {processFailureMetadata} from './ci-process-diagnostics';
 import {browserFailureMetadata} from './ci-browser-diagnostics';
 export function redactTestDiagnostic(value:string){
  return value.replace(/\x1b\[[0-9;]*[A-Za-z]/g,'')
@@ -37,7 +38,13 @@ export async function printCiTestFailures(){
     const title=redactTestDiagnostic(String(test.title??'')),key=JSON.stringify([suite.name,title]);if(seen.has(key))continue;seen.add(key);
     console.info(JSON.stringify({kind:'ci_test_failure',report:relative(root,file),suite:redactTestDiagnostic(String(suite.name??'')),title,messages:(test.failureMessages??[]).slice(0,2).map((message:unknown)=>redactTestDiagnostic(String(message)))}));printed++;
    }
-   if(entry.name.endsWith('-process.json')&&report?.deadlineExpired===true&&typeof report.file==='string'&&printed<30){console.info(JSON.stringify({kind:'ci_test_deadline',suite:redactTestDiagnostic(report.file)}));printed++;}
+   if(Array.isArray(report?.testResults))for(const suite of report.testResults){
+    if(printed>=30)break;
+    if(suite.status==='failed'&&!(suite.assertionResults??[]).some((test:any)=>test.status==='failed')){
+     console.info(JSON.stringify({kind:'ci_suite_setup_failure',suite:redactTestDiagnostic(String(suite.name??'')),...processFailureMetadata({message:suite.message})}));printed++;
+    }
+   }
+   if(entry.name.endsWith('-process.json')&&(report?.deadlineExpired===true||report?.code!==0||report?.signal)&&typeof report.file==='string'&&printed<30){console.info(JSON.stringify({kind:'ci_test_process_failure',suite:redactTestDiagnostic(report.file),...processFailureMetadata(report)}));printed++;}
   }
  }
  await walk(root,0);console.info(JSON.stringify({kind:'ci_test_diagnostics',visitedReports:visited,failuresPrinted:printed,bounded:true}));

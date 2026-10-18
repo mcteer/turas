@@ -1,3 +1,4 @@
+import {processFailureMetadata} from '../../scripts/ci-process-diagnostics';
 import {describe,expect,it} from 'vitest';
 import {browserFailureMetadata} from '../../scripts/ci-browser-diagnostics';
 const allowed=new Set(['mcp-accessibility.spec.ts']);
@@ -16,4 +17,10 @@ describe('private browser failure diagnostics',()=>{
   expect(results.every(row=>row.file==='mcp-accessibility.spec.ts'&&row.line===0&&row.column===0&&row.project==='unknown'&&row.durationMs===null&&row.category==='test_timeout')).toBe(true);
   expect(JSON.stringify(results)).not.toContain('PRIVATE_');
  });
+});
+
+it('reports setup and child process failure classes without exposing private output',()=>{
+ const raw={code:1,signal:'SIGKILL',deadlineExpired:false,stdoutTail:'PRIVATE_TOKEN postgresql://private:password@private/db',stderrTail:'Hook timed out: PRIVATE_PROSE Cannot find module PRIVATE_PATH\n at scripts/pilot-environment.ts:115:7'};
+ const result=processFailureMetadata(raw);expect(result).toMatchObject({code:1,signal:'SIGKILL',deadlineExpired:false,signatures:['Cannot find module','Hook timed out'],locations:[{file:'scripts/pilot-environment.ts',line:115,column:7}]});expect(JSON.stringify(result)).not.toContain('PRIVATE_');expect(JSON.stringify(result)).not.toContain('postgresql:');
+ expect(processFailureMetadata({code:'private',signal:'PRIVATE_SIGNAL',message:'PRIVATE_PROSE'})).toEqual({code:null,signal:null,deadlineExpired:false,signatures:[],locations:[]});
 });

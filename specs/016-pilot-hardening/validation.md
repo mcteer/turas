@@ -2636,3 +2636,20 @@ and explicit target before sending its one cancellation request. These are local
 checks with controlled provider transport; no hosted run was cancelled. The full
 731-case run at 7a11d49 passed independently; it does not establish a complete
 pass of this newer catalog or hosted readiness.
+
+An actual owned Postgres 18 rehearsal of released schema 077 passed in 17.39s.
+It exported a read-only 77-entry ledger/content snapshot, cold restored its real
+dump into a separate owned 077 target, forward applied 078/079, reapplied a newer
+independently captured denial snapshot and verified both runtime roles cannot
+connect. All seven quarantines remain and owner unlock is denied. This proves
+the local released-schema path; no current Production cloud safety copy or hosted
+restore has been performed. T094 therefore remains open. Catalog: 744/138.
+
+Current-source CI at fa9bd1b remains incomplete and failed: the deterministic
+runner stopped in the MCP load suite without a failed assertion in the emitted
+reports; file corrections and native operations exited their disposable child;
+one Expansion authoring browser case reached its case deadline. Failure logs are
+retained privately. CI diagnostics now classify suite setup and child-process
+failures with fixed signatures, approved source locations and exit metadata;
+they do not publish arbitrary output, credentials or page content. Three focused
+diagnostic cases and six catalog-aggregation cases pass. Catalog: 745/138.

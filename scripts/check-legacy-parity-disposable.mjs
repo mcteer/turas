@@ -4,6 +4,7 @@ import { mkdtempSync, writeFileSync, rmSync, mkdirSync, existsSync, readdirSync,
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client } from "pg";
+import { processFailureMetadata } from "./ci-process-diagnostics.ts";
 
 if (Number(process.versions.node.split(".")[0]) !== 24) throw Error("Run this check with Node 24");
 // The same supervised withEve disposable application used by native acceptance.
@@ -159,7 +160,7 @@ try {
     const result = spawnSync(process.execPath,args,{env,encoding:"utf8",maxBuffer:12*1024*1024});
     output += (result.stdout??"")+(result.stderr??"");
     writeFileSync(join(directory,"checks.log"),output,{mode:0o600});
-    if(result.status!==0) { writeFileSync("local-artifacts/legacy-parity-disposable-failure-private.log",output,{mode:0o600}); throw Error(`Disposable parity check failed (${args.find(value=>value.startsWith("scripts/"))??"tests"})`); }
+    if(result.status!==0) { console.error(JSON.stringify({kind:"disposable_process_failure",...processFailureMetadata({code:result.status,signal:result.signal,stdoutTail:result.stdout,stderrTail:result.stderr})})); writeFileSync("local-artifacts/legacy-parity-disposable-failure-private.log",output,{mode:0o600}); throw Error(`Disposable parity check failed (${args.find(value=>value.startsWith("scripts/"))??"tests"})`); }
   }
   run(["--experimental-strip-types","scripts/db-migrate.ts","--init"]);
   run(["--experimental-strip-types","scripts/db-roles.ts"]);

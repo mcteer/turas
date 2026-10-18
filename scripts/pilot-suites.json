@@ -1403,10 +1403,11 @@
     },
     {
       "file": "tests/unit/ci-browser-diagnostics.test.ts",
-      "expectedCases": 2,
+      "expectedCases": 3,
       "cases": [
         "reports the failed source location and timeout class without private error or page content",
-        "ignores unapproved files and bounds records, projects and numeric metadata"
+        "ignores unapproved files and bounds records, projects and numeric metadata",
+        "reports setup and child process failure classes without exposing private output"
       ]
     },
     {
@@ -1564,6 +1565,13 @@
         "verifies platform deployment and alias before reading the authenticated locked binding",
         "rejects stale foreign or role-overridden database observations",
         "withholds application cookies on foreign deployment metadata and never follows redirects"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/released-safety-restore.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "cold restores the released 077 ledger through 079 and reapplies newer denials behind both runtime perimeters"
       ]
     }
   ],
