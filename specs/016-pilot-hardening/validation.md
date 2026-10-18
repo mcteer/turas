@@ -2556,3 +2556,14 @@ fences and table locks, using READ COMMITTED. All 16 credential-denial integrati
 cases passed, including an actual owner transaction that disables a replay guard
 while the audit waits; the audit rejects the changed guard. The audit receipt
 binds its measured current-state digest and still grants no recovery readiness.
+
+The frozen `b275bb7` local catalog passed all 718 cases across 133 suites
+(run `6a71e199-67cf-46a2-a166-6a75f64e3b8e`). This precedes the recovery completion
+changes and cannot substitute for their final-source full run. Canonical local
+preservation verified the selected environment, 40,615 workflow files and model.
+The first four-project legacy browser run passed 79/80; its sole failure set a
+saved scroll offset before initial authoritative positioning completed. The
+fixture now waits for initial positioning before testing the failed reload.
+A separate handoff diagnostic could not start because this auxiliary worktree's
+symlinked dependencies lay outside Turbopack's filesystem root; it did not reach
+the handoff scenario. Repeat it from the integration tree's real dependencies.

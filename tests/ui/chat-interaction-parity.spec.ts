@@ -142,6 +142,9 @@ test('a failed initial history read recovers saved scrolling on the next authori
  const chat=await ownedChat(page,native=>transcript(native,long));
  await page.getByRole('heading',{name:'Recovery item 40',exact:true}).waitFor({state:'attached'});
  const viewport=page.getByRole('region',{name:'Conversation messages',exact:true});
+ // Wait for the initial authoritative history positioning before introducing
+ // the saved offset; the failure under test happens on the subsequent reload.
+ await expect.poll(()=>viewport.evaluate(p=>p.scrollHeight-p.clientHeight-p.scrollTop)).toBeLessThan(5);
  await viewport.evaluate(p=>{p.scrollTop=220;p.dispatchEvent(new Event('scroll'));});
  await expect(page.getByRole('button',{name:'Scroll to bottom',exact:true})).toBeVisible();
  let reads=0;
