@@ -1,17 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import { OrdinaryDocuments } from "./attachments/ordinary-documents";
 import {composeOrdinaryMessage,type OrdinaryAttachment,type OrdinarySendMessage} from "../../lib/conversations/ordinary-documents";
 import {ComposerLinks} from "./composer-links";
 import { CustomerPicker, type CustomerChoice } from "./customer-picker";
+import { stageChatHandoff } from "./chat-handoff";
 import { uploadNativeFiles } from "../../lib/conversations/upload-native-files";
 
 
 export function NewConversation({ csrfToken, canAttachDocuments = false, canAttachNativeFiles = false }: { csrfToken: string; canAttachDocuments?: boolean; canAttachNativeFiles?: boolean }) {
-  const router = useRouter();
   const search = useSearchParams();
+  const pathname=usePathname();
+  const router=useRouter();
   const [customers, setCustomers] = useState<CustomerChoice[]>([]);
   const [selected, setSelected] = useState("");
   const [state, setState] = useState<"loading" | "ready" | "creating" | "unavailable">("loading");
@@ -52,22 +54,22 @@ export function NewConversation({ csrfToken, canAttachDocuments = false, canAtta
       });
       if (!created.ok) throw new Error(created.status === 404 ? "Customer access changed." : "Could not create chat.");
       const result = await created.json() as { data: { id: string } };
-      let bound = false;
+      let sessionId: string | null = null;
       for (let attempt = 0; attempt < 5; attempt++) {
         const native = await fetch("/eve/v1/session", {
           method: "POST", headers: { "content-type": "application/json",
             "x-csrf-token": csrfToken, "x-turas-conversation-id": result.data.id },
           body: JSON.stringify({ operationId }),
         });
-        if (native.ok) { bound = true; break; }
+        if (native.ok) { const data=await native.json() as {sessionId:string}; if(typeof data.sessionId!=="string"||!data.sessionId)throw Error("Chat binding is unavailable."); sessionId=data.sessionId; break; }
         const body = await native.json() as { code?: string };
         if (native.status !== 409 || body.code !== "turas_binding_pending") break;
         await new Promise((resolve) => setTimeout(resolve, 2_000));
       }
-      if (!bound) throw new Error("Chat binding is pending. Reload the chat list to retry.");
+      if (!sessionId) throw new Error("Chat binding is pending. Reload the chat list to retry.");
       text = await uploadNativeFiles(text, result.data.id, csrfToken);
-      if (text) sessionStorage.setItem(`turas-chat-draft:${result.data.id}`, JSON.stringify({ text, requestKey: crypto.randomUUID(), autoSend: !attachments }));
-      router.push(`/s/${result.data.id}${attachments ? "?attachments=1" : ""}`);
+      stageChatHandoff({conversationId:result.data.id,csrfToken,message:text,requestKey:crypto.randomUUID(),autoSend:!attachments});
+      router.push(`/s/${result.data.id}${attachments?"?attachments=1":""}`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Chat is unavailable.");
       starting.current = false;
@@ -75,11 +77,15 @@ export function NewConversation({ csrfToken, canAttachDocuments = false, canAtta
     }
   }
 
-  return <main className="chat-page chat-landing"><div className="chat-center">
-    <h1 className="chat-title">Turi</h1>
+  useEffect(()=>{if(pathname==='/s'&&starting.current){starting.current=false;operation.current=null;setState("ready");setDraft("");setDocuments([]);setSelected("");}},[pathname]);
+  const creating=state==="creating";
+  return <main className={`chat-page ${creating?"chat-thread chat-starting":"chat-landing"}`}>
+    {creating&&<div className="chat-messages"><article className="chat-message chat-message-user"><p>{draft}</p></article><p className="chat-thinking" role="status">Thinking</p></div>}
+    <div className={creating?"chat-starting-composer":"chat-center"}>
+    {!creating&&<h1 className="chat-title">Turi</h1>}
     <div className="landing-input">
       <form className="chat-composer" onSubmit={(event) => { event.preventDefault(); void start(); }}>
-        <textarea aria-label="Message Turi" placeholder="Message Turi…" value={draft}
+        <textarea aria-label="Message Turi" placeholder="Message Turi…" value={creating?"":draft}
           maxLength={16_384} disabled={state === "creating"}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void start(); } }} />
@@ -93,14 +99,13 @@ export function NewConversation({ csrfToken, canAttachDocuments = false, canAtta
           </button>
         </div>
       </form>
-      <div className="chat-context-bar" role="group" aria-label="Conversation context">
+      {!creating&&<div className="chat-context-bar" role="group" aria-label="Conversation context">
         <div className="optional-customer"><CustomerPicker customers={customers} selected={selected}
-        onSelect={(value) => { setSelected(value); operation.current = null; }} disabled={state === "creating" || state === "loading"} optional /></div>
-        {canAttachDocuments&&selected&&<button type="button" className="secondary-button" disabled={state==="creating"||preparingDocuments} onClick={()=>void start(true)}>Customer sources</button>}
+        onSelect={(value) => { setSelected(value); operation.current = null; }} disabled={state === "loading"} optional /></div>
+        {canAttachDocuments&&selected&&<button type="button" className="secondary-button" disabled={preparingDocuments} onClick={()=>void start(true)}>Customer sources</button>}
         <div className="chat-project-space" aria-hidden="true" />
-      </div>
+      </div>}
       {state === "unavailable" && <p className="state-message" role="status">Customer selection is unavailable. You can still ask a general question.</p>}
-      {state === "creating" && <p className="state-message" role="status">Starting chat…</p>}
       {error && <p role="alert">{error}</p>}
     </div>
   </div></main>;

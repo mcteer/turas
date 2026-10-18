@@ -84,7 +84,7 @@ test('scroll escape, late growth, jump to latest and reload preserve the reading
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
 });
 
-test('tools stay inspectable and pending questions suppress background thinking then show their settled reply',async({page},info)=>{
+test('ordinary tools stay hidden and pending questions suppress thinking then show their settled reply',async({page},info)=>{
  const action={kind:'tool-call' as const,callId:'lookup',toolName:'get_customer',input:{name:'Synthetic example'}};
  const request={requestId:'question-1',kind:'question' as const,action:{kind:'tool-call' as const,callId:'ask',toolName:'ask_question',input:{prompt:'Choose a target'}},prompt:'Choose a target',allowFreeform:true,options:[{id:'desktop',label:'Desktop'}]};
  const chat=await ownedChat(page,native=>{
@@ -93,9 +93,8 @@ test('tools stay inspectable and pending questions suppress background thinking 
   all.splice(-1,0,wire('subagent.completed',{callId:'research',subagentName:'implementation-research',output:'Working',backgroundTask:{taskId:'task_fixture',status:'working'}}),wire('input.requested',{turnId:'question-turn',sequence:1,stepIndex:0,requests:[request]}));
   return all;
  });
- await expect(page.getByRole('group',{name:'get customer Completed'})).toHaveCount(0); // Native details is a disclosure, not a decision.
- const tool=page.locator('details.chat-activity').filter({has:page.locator('summary',{hasText:'get customer'})});
- await expect(tool).toBeVisible();await tool.locator('summary').click();await expect(tool).toContainText('Synthetic example');await expect(tool).toContainText('found');
+ await expect(page.locator('details.chat-activity')).toHaveCount(0);
+ await expect(page.getByText('Synthetic example',{exact:true})).toHaveCount(0);
  await expect(page.getByRole('region',{name:'Turi question'})).toBeVisible();
  await expect(page.locator('.chat-thinking')).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Desktop',exact:true})).toBeEnabled();
@@ -200,4 +199,79 @@ test('an older failed delivery cannot unlock a newer file preparation',async({pa
   releaseUpload();await expect(text).toBeEditable();await expect(text).toHaveValue('A newer correction is preparing this file.');
   await expect(page.getByRole('button',{name:'Remove newer.png',exact:true})).toBeVisible();expect(sends).toBe(1);expect(uploads).toBe(1);
  }finally{releaseDelivery();releaseUpload();}
+});
+
+
+test('first send hides the landing immediately and starts in place with one Thinking loader',async({page},info)=>{
+ requireUiFixtureDatabaseUrl();await signIn(page,'mcteer');
+ let releaseCreate!:()=>void;const held=new Promise<void>(resolve=>{releaseCreate=resolve;});
+ const native='wrun_in_place_'+randomUUID().replaceAll('-','');let sends=0,documents=0;
+ page.on('request',r=>{if(r.isNavigationRequest()&&r.resourceType()==='document')documents++;});
+ await page.route('**/api/conversations',async route=>{
+  if(route.request().method()!=='POST')return route.continue();
+  const response=await route.fetch();await held;await route.fulfill({response});
+ });
+ await page.route('**/eve/v1/session',async route=>{
+  if(route.request().method()!=='POST')return route.continue();
+  const id=route.request().headers()['x-turas-conversation-id'];const db=new Client({connectionString:requireUiFixtureDatabaseUrl()});await db.connect();
+  try{await db.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2 WHERE id=$1",[id,native]);}finally{await db.end();}
+  await route.fulfill({status:202,json:{sessionId:native}});
+ });
+ const initial=[wire('session.started',{}),wire('session.waiting',{continuationToken:native,wait:'next-user-message'})];
+ const running=[...initial,wire('turn.started',{turnId:'in-place',sequence:0}),
+  wire('message.received',{turnId:'in-place',sequence:0,message:'Synthetic in-place question'}),
+  wire('step.started',{turnId:'in-place',sequence:0,stepIndex:0,modelId:'synthetic-ui-fixture'}),
+  wire('reasoning.completed',{turnId:'in-place',sequence:0,stepIndex:0,reasoning:'Internal reasoning that stays in the background.'}),
+  wire('message.completed',{turnId:'in-place',sequence:0,stepIndex:0,message:'Internal progress that must remain hidden.',finishReason:'tool-calls'}),
+  wire('actions.requested',{turnId:'in-place',sequence:0,stepIndex:0,actions:[{kind:'tool-call',callId:'lookup',toolName:'get_customer',input:{}}]})];
+ const received=running.findIndex(e=>e.type==='message.received');running[received]={...running[received],meta:{...running[received].meta,deliveryIds:['in-place-delivery']}};
+ let current=initial;
+ await page.route(`**/eve/v1/session/${native}/stream**`,route=>{const start=Number(new URL(route.request().url()).searchParams.get('startIndex')??0);return route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'25','x-eve-stream-tail-index':String(current.length-1)},body:current.slice(start).map(e=>JSON.stringify(e)).join('\n')+'\n'});});
+ await page.route(`**/eve/v1/session/${native}`,async route=>{if(route.request().method()!=='POST')return route.continue();sends++;current=running;await route.fulfill({status:202,json:{sessionId:native,deliveryId:'in-place-delivery'}});});
+ try{
+  const original=await page.locator('.chat-composer').boundingBox();await page.getByLabel('Message Turi',{exact:true}).fill('Synthetic in-place question');await page.getByRole('button',{name:'Send message',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Turi',exact:true})).toHaveCount(0);
+  await expect(page.locator('.chat-thinking')).toHaveText('Thinking');
+  await expect(page.locator('.chat-message-user')).toContainText('Synthetic in-place question');
+  expect((await page.locator('.chat-composer').boundingBox())!.y).toBeGreaterThan(original!.y);
+  releaseCreate();await expect(page).toHaveURL(/\/s\/[a-f0-9-]+$/);await expect.poll(()=>sends).toBe(1);
+  await expect(page.locator('.chat-thinking')).toHaveCount(1);await expect(page.locator('.chat-thinking')).toHaveText('Thinking');
+  await expect(page.getByText('Internal progress that must remain hidden.',{exact:true})).toHaveCount(0);
+  await expect(page.getByText('Submitting message…',{exact:true})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Check status',exact:true})).toHaveCount(0);
+  await expect(page.locator('details.chat-activity')).toHaveCount(0);await expect(page.getByText('Internal reasoning that stays in the background.',{exact:true})).toHaveCount(0);expect(documents).toBe(0);
+  expect(await page.evaluate(()=>Object.keys(sessionStorage).some(key=>key.startsWith('turas-chat-draft:')))).toBe(false);
+  await page.screenshot({path:`local-artifacts/019/thinking-${info.project.name}.png`,fullPage:true});
+  await page.goBack();await expect(page.getByRole('heading',{name:'Turi',exact:true})).toBeVisible();await expect(page.getByLabel('Message Turi',{exact:true})).toHaveValue('');
+  await page.goForward();await expect(page.getByRole('heading',{name:'Turi',exact:true})).toHaveCount(0);await expect(page.locator('.chat-thinking')).toHaveCount(1);expect(sends).toBe(1);
+  current=[...running,wire('step.started',{turnId:'in-place',sequence:0,stepIndex:1,modelId:'synthetic-ui-fixture'}),wire('message.completed',{turnId:'in-place',sequence:0,stepIndex:1,message:'Final in-place answer.',finishReason:'stop'}),wire('turn.completed',{turnId:'in-place',sequence:0}),wire('session.waiting',{continuationToken:native,wait:'next-user-message'})];
+  await expect(page.getByText('Final in-place answer.',{exact:true})).toBeVisible({timeout:15000});await expect(page.locator('.chat-thinking')).toHaveCount(0);expect(sends).toBe(1);
+  // Opening another saved conversation and returning must restore each
+  // server-owned binding without another delivery of the original question.
+  const csrf=(await (await page.request.get('/api/auth/session')).json()).data.csrfToken;
+  const other=await page.request.post('/api/conversations',{headers:{origin:process.env.TURAS_UI_BASE_URL!,'x-csrf-token':csrf},data:{requestKey:randomUUID(),title:'Synthetic other saved conversation'}});
+  expect(other.status()).toBe(201);const otherId=(await other.json()).data.id,otherNative='wrun_other_'+randomUUID().replaceAll('-','');
+  const db=new Client({connectionString:requireUiFixtureDatabaseUrl()});await db.connect();try{await db.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2 WHERE id=$1",[otherId,otherNative]);}finally{await db.end();}
+  const saved=transcript(otherNative,'A different saved answer.');await page.route(`**/eve/v1/session/${otherNative}/stream**`,route=>route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'25','x-eve-stream-tail-index':String(saved.length-1)},body:saved.map(e=>JSON.stringify(e)).join('\n')+'\n'}));
+  await page.goto('/s/'+otherId);
+  await expect(page.getByText('A different saved answer.',{exact:true})).toBeVisible({timeout:15000});await expect(page.getByRole('heading',{name:'Turi',exact:true})).toHaveCount(0);expect(sends).toBe(1);
+  await page.goBack();await expect(page.getByText('Final in-place answer.',{exact:true})).toBeVisible({timeout:15000});expect(sends).toBe(1);
+ }finally{releaseCreate();}
+});
+
+test('a broken stream reconnects by read only and displays only the final answer',async({page})=>{
+ const chat=await ownedChat(page,native=>transcript(native,'Previous settled answer.'));
+ let streamReads=0,sends=0;
+ const completed=transcript(chat.native,'Final answer after reconnect.');
+ completed.splice(4,0,wire('message.completed',{turnId:'turn',sequence:0,stepIndex:0,message:'Intermediate model narration.',finishReason:'tool-calls'}),wire('step.started',{turnId:'turn',sequence:0,stepIndex:1,modelId:'synthetic-ui-fixture'}));
+ // Keep only the final message at the later step.
+ const final=completed.find(e=>e.type==='message.completed'&&e.data.message==='Final answer after reconnect.');if(final?.type==='message.completed')final.data.stepIndex=1;
+ await page.route(`**/eve/v1/session/${chat.native}`,route=>{if(route.request().method()==='POST')sends++;return route.fulfill({status:500,json:{code:'unexpected_send'}});});
+ await page.route(`**/eve/v1/session/${chat.native}/stream**`,route=>{
+  if(++streamReads<=2)return route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'25','x-eve-stream-tail-index':'0'},body:'broken transport frame\n'});
+  return route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'25','x-eve-stream-tail-index':String(completed.length-1)},body:completed.map(e=>JSON.stringify(e)).join('\n')+'\n'});
+ });
+ await page.reload();await expect(page.getByText('Final answer after reconnect.',{exact:true})).toBeVisible({timeout:15000});
+ await expect(page.getByText('Intermediate model narration.',{exact:true})).toHaveCount(0);await expect(page.locator('.chat-thinking')).toHaveCount(0);
+ await expect(page.getByText('Connection interrupted. Reload to reconnect; your message will not be sent again.',{exact:true})).toHaveCount(0);expect(sends).toBe(0);
 });

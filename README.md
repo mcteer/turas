@@ -1,7 +1,15 @@
-A focused legacy-session follow-up is in progress: native server-redirect login,
-terminal chat polling and composed engagement lock order, with the current visual
-design retained. It requires fresh CI and authenticated Preview/Production checks;
-no hosted release is claimed yet. See [T034–T037](specs/018-legacy-backend-parity/tasks.md).
+The native-login/chat-read follow-up released in [PR #43](https://github.com/mcteer/turas/pull/43)
+as `2f83dca`. Actual Production login/logout, chat revocation/polling, schema077
+and permission checks passed; its feature branches and five temporary Preview
+settings were removed.
+
+A subsequent chat bug fix is in progress: first-send transition in place, one
+Thinking loader with intermediate reasoning/tools kept in the background, and
+research handoff after an independently checked source refresh. The backend
+regression passes with stale-output and revoked-grant denials retained. The
+232-case domain run, 13 display units and 44 built WebKit interaction/shell cases
+pass; focused final reasoning/reconnection/history-navigation checks also pass.
+These local checks do not yet establish a hosted release of this follow-up.
 
 # Turas
 

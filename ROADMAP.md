@@ -13,8 +13,11 @@ It restores original mechanisms and consumers within existing governed domains.
 The 337-file source audit maps the restored implementation to original mechanisms.
 Acceptance and release evidence is tracked in the feature validation record and
 tasks. This does not complete unrelated feature-016 pilot work.
-The018 session/read-lock follow-up T034–T037 is in progress with fresh release
-checks required; it retains the current look and the historical release evidence.
+The018 session/read-lock follow-up released in [PR #43](https://github.com/mcteer/turas/pull/43)
+with actual Production login/chat/schema checks and branch/Preview-setting cleanup.
+A subsequent bug fix addresses the first-send transition, background-only work
+presentation and the research handoff after source refresh. Its local regression
+checks do not establish hosted release completion.
 
 [PR 34](https://github.com/mcteer/turas/pull/34) merged the legacy backend and chat
 parity repair. Its [audit](docs/legacy-backend-parity-audit.md) retains earlier
