@@ -64,12 +64,16 @@ Current pilot integration preserves the released schema-077 ledger and authors
 retain unknown model usage and original chat allowances; the current pilot
 WebKit catalog passes 40 cases. Fresh full CI/local verification and hosted
 recovery/cutover acceptance remain in progress; Production is unchanged.
-The current deterministic catalog registers 752 cases in 139 suites. Local
-production build and native operations/file-correction checks pass with the
-restored dependency fixes; full current CI and hosted recovery remain pending.
+The complete local deterministic catalog passes **752/752 cases in 139 suites**
+at `152ecfa`, with cleanup complete. The same source passes the complete predecessor
+regression chain, all39 current-schema checks and all40 pilot WebKit cases across
+four projects. These are local results; full current pilot CI and hosted recovery
+remain pending. See the [checkpoint record](specs/016-pilot-hardening/validation.md#complete-152ecfa-local-catalog-and-predecessor-verification).
 The login form now follows legacy’s native POST and server-cookie redirect, with
 the current styling retained. All 16 owned built-app WebKit login checks pass;
-the latest CI native intervening-turn failure remains under investigation.
+the earlier CI native intervening-turn failure remains preserved. Separate
+[PR43](https://github.com/mcteer/turas/pull/43) passes all seven focused legacy
+acceptance jobs on schema077; this does not establish final pilot CI or release.
 Composed engagement reads now follow execution’s plan-before-engagement lock
 order, verified with actual concurrent transactions and an old-order negative
 check. Terminal denied live chats stop polling; full current CI remains pending.

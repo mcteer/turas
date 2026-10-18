@@ -2846,3 +2846,39 @@ rejection without value disclosure, and explicit safe shell precedence. Its
 `@next/env` test dependency matches Next 16.3.8. Default development and production
 application behavior are unchanged. The frozen 745-case result predates this guard;
 final current-source verification remains required.
+
+
+### Complete 152ecfa local catalog and predecessor verification
+
+Commit `152ecfa996180da870f56ece52a63730dcf0ebcb` passes **752/752 cases across139
+suites** in `run-cda37731-6ae6-4eba-93d4-b406d1ac3938`. Its actual process exits0
+and owned cleanup completes. The first invocation used a nonexistent preparation
+path and stopped before executing a case; that failure remains preserved. The
+passing invocation uses the existing integration-worktree image preparation, with
+verified scanner/parser/renderer identities and unchanged domain limits.
+
+The same frozen source passes the complete regression composition in
+`regressions-24f1fc05-cf0a-43b6-8cde-ada1d33dd752`: all eight predecessor groups,
+all39 current079/Postgres18 cases with no skips or retries, and all40 fresh pilot
+WebKit cases across four projects. The final receipt records three passing groups,
+paidCalls:0 and hostedProof:false. The process exits0 and cleanup completes.
+
+Released main34eb05c is already an ancestor of this checkpoint. No redundant merge
+is needed. T092 stays open for final release/current-main reconciliation, including
+the separate018 session/read-lock follow-up once released; later documentation or
+source changes cannot adopt these receipts as their own exact-source acceptance.
+No additional release or hosted tasks are checked from these local results.
+
+A fresh read-only managed inventory at this source finds484 runs and563 deployments
+with two six-page traversals and no unlisted referenced deployments. Application
+bindings remain unchanged; provider writes/model calls remain0. This observation
+has a fixed cutoff and predates the later focused018 deployment. Protection,
+retirement, paid-effect reconciliation and full recovery readiness remain unproved.
+
+Separate018 PR43 validates its native login/polling/read-lock fixes from released
+main without016 schema changes. It reuses an existing backed-up isolated real-data
+Preview for its unchanged strict profile comparison, preserving the general
+Preview's newer research and original holds. Its passing hosted profile check and
+all-seven legacy CI result do not establish016 hosted recovery, current-schema
+cloud capture, model catalogs, scheduled cadence or actual participant acceptance.
+Production, original protected state, budgets and unknown charges are preserved.
