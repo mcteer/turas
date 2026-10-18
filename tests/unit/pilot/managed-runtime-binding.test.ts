@@ -27,7 +27,7 @@ it('binds the database endpoint independently of passwords pooling and role over
 });
 it('verifies platform deployment and alias before reading the authenticated locked binding',async()=>{
  const f=fixture(),result=await verifyManagedRuntimeBinding({...input(),transport:f.transport});
- expect(f.calls).toHaveLength(3);expect(f.calls[1].url).toContain('&url=synthetic.vercel.app');expect(f.appCalls()).toBe(1);expect(f.calls.every(call=>call.method==='GET')).toBe(true);
+ expect(f.calls).toHaveLength(3);expect(f.calls[1].url).toBe('https://api.vercel.com/v13/deployments/synthetic.vercel.app?teamId=team_synthetic&withGitRepoInfo=true');expect(f.appCalls()).toBe(1);expect(f.calls.every(call=>call.method==='GET')).toBe(true);
  expect(result).toMatchObject({authenticatedStatusVerified:true,serviceOpened:false,restorationReady:false});
  for(const secret of [token,session.cookie,'private-database-key'])expect(JSON.stringify(result)).not.toContain(secret);
 });
@@ -38,6 +38,7 @@ it('rejects stale foreign or role-overridden database observations',async()=>{
 });
 it('withholds application cookies on foreign deployment metadata and never follows redirects',async()=>{
  for(const patch of [{projectId:'prj_foreign'},{ownerId:'team_foreign'},{target:null},{meta:{githubCommitSha:'d'.repeat(40)}}]){const f=fixture({},patch);await expect(verifyManagedRuntimeBinding({...input(),transport:f.transport})).rejects.toThrow();expect(f.appCalls()).toBe(0);}
+ const rebound=fixture();await expect(verifyManagedRuntimeBinding({...input(),transport:async(url,options)=>String(url).includes('/deployments/synthetic.vercel.app?')?Response.json({id:'dpl_foreign',projectId:scope.projectId,ownerId:scope.teamId,target:'production',readyState:'READY',meta:{githubCommitSha:scope.sourceCommit}}):rebound.transport(url,options)})).rejects.toThrow();expect(rebound.appCalls()).toBe(0);
  const f=fixture();await expect(verifyManagedRuntimeBinding({...input(),session:{...session,origin:'https://foreign.vercel.app'},transport:f.transport})).rejects.toThrow('session origin');expect(f.calls).toHaveLength(0);
  const redirected=fixture();await expect(verifyManagedRuntimeBinding({...input(),transport:async(url,options)=>String(url).startsWith(scope.origin)?new Response(null,{status:302,headers:{location:'https://foreign.vercel.app'}}):redirected.transport(url,options)})).rejects.toThrow('response unavailable');
 });

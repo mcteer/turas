@@ -1,5 +1,5 @@
 import {z} from 'zod';
-import {pilotHostedScopeSchema,verifyHostedDeployment,type PilotHostedScope} from '../lib/contracts/pilot-hosted';
+import {pilotHostedScopeSchema,verifyHostedDeployment,hostedDeploymentLookupPath,type PilotHostedScope} from '../lib/contracts/pilot-hosted';
 import {operationalDatabaseBindingSchema,databaseTargetDigest} from '../lib/server/operations/database-binding';
 import {boundedHostedJson} from './pilot-hosted-http';
 
@@ -17,9 +17,9 @@ export async function verifyManagedRuntimeBinding(input:{scope:PilotHostedScope;
   if(response.status!==200){await response.body?.cancel();throw Error('Runtime binding response unavailable');}
   return {body:await boundedHostedJson(response),version:response.headers.get('x-turas-code-version')};
  }
- const endpoint='https://api.vercel.com/v13/deployments/'+scope.deploymentId+'?teamId='+scope.teamId;
+ const endpoint='https://api.vercel.com'+hostedDeploymentLookupPath(scope);
  const deployment=verifyHostedDeployment((await get(endpoint,apiHeaders)).body,scope);
- if(JSON.stringify(verifyHostedDeployment((await get(endpoint+'&url='+encodeURIComponent(new URL(scope.origin).hostname),apiHeaders)).body,scope))!==JSON.stringify(deployment))throw Error('Runtime binding alias differs');
+ if(JSON.stringify(verifyHostedDeployment((await get('https://api.vercel.com'+hostedDeploymentLookupPath(scope,true),apiHeaders)).body,scope))!==JSON.stringify(deployment))throw Error('Runtime binding alias differs');
  const headers=new Headers({cookie:session.cookie});if(session.protectionBypass)headers.set('x-vercel-protection-bypass',session.protectionBypass);
  const response=await get(scope.origin+'/api/operations/status',headers);
  if(response.version!==scope.sourceCommit)throw Error('Runtime binding response version differs');

@@ -4,7 +4,7 @@ import {promisify} from 'node:util';
 import {randomUUID} from 'node:crypto';
 import {resolve,dirname,basename,join} from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {pilotHostedScopeSchema,verifyHostedDeployment,type PilotHostedScope} from '../lib/contracts/pilot-hosted';
+import {pilotHostedScopeSchema,verifyHostedDeployment,hostedDeploymentLookupPath,type PilotHostedScope} from '../lib/contracts/pilot-hosted';
 import {pilotRunSchema} from '../lib/contracts/pilot-readiness';
 import {assertPilotDatabaseOnConnection} from '../lib/server/db/readiness';
 import {readEvidence,createEvidenceDirectory,writeEvidence,evidenceDigest} from './pilot-evidence';
@@ -29,7 +29,7 @@ import {z} from 'zod';
 import {withRecoveryCancellation} from '../lib/server/operations/recovery-cancellation';
 const execute=promisify(execFile);
 async function platformDeployment(scope:PilotHostedScope,origin=false,signal?:AbortSignal){
- const endpoint='/v13/deployments/'+scope.deploymentId+'?teamId='+scope.teamId+(origin?'&url='+encodeURIComponent(new URL(scope.origin).hostname):'');
+ const endpoint=hostedDeploymentLookupPath(scope,origin);
  // Fixed GET transport, no shell, arbitrary commands, login, linking or deploy.
  const result=await execute('vercel',['api',endpoint,'--raw'],{timeout:30000,signal,maxBuffer:1024*1024,env:Object.fromEntries(['PATH','HOME','TMPDIR','LANG','LC_ALL'].flatMap(key=>process.env[key]===undefined?[]:[[key,process.env[key]]]))});
  return verifyHostedDeployment(JSON.parse(result.stdout),scope);

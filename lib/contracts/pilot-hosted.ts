@@ -20,3 +20,9 @@ export function verifyHostedDeployment(raw:unknown,scope:Pick<PilotHostedScope,'
    (scope.target==='production'?deployment.target!=='production':deployment.target!=null))throw Error('Hosted deployment identity or target differs');
  return {deploymentId:deployment.id,projectId:deployment.projectId,teamId:deployment.ownerId,commit};
 }
+
+/** Vercel resolves aliases through the idOrUrl path parameter, not a url query. */
+export function hostedDeploymentLookupPath(raw:Pick<PilotHostedScope,'deploymentId'|'origin'|'teamId'>,byOrigin=false){
+ const scope=pilotHostedScopeSchema.pick({deploymentId:true,origin:true,teamId:true}).parse({deploymentId:raw.deploymentId,origin:raw.origin,teamId:raw.teamId});
+ return '/v13/deployments/'+encodeURIComponent(byOrigin?new URL(scope.origin).hostname:scope.deploymentId)+'?teamId='+scope.teamId+'&withGitRepoInfo=true';
+}

@@ -2653,3 +2653,17 @@ retained privately. CI diagnostics now classify suite setup and child-process
 failures with fixed signatures, approved source locations and exit metadata;
 they do not publish arbitrary output, credentials or page content. Three focused
 diagnostic cases and six catalog-aggregation cases pass. Catalog: 745/138.
+
+A read-only current Production inventory at 09bfcb0 successfully repeated both
+five-page traversals: 484 runs, 467 provider-only. Schema 077 correctly produced
+no locked control or cancellation plan; provider writes remain zero. Actual
+native operations and composer/file-steering correction diagnostics passed
+locally using Eve and CLI WebKit; these do not substitute for governing CI.
+
+The deployment lookup was corrected to resolve the origin hostname using Vercel's
+documented `idOrUrl` path parameter, instead of an unsupported `url` query. Both
+the hosted runner and cancellation binding use that helper, with Git metadata
+requested explicitly. Eleven focused unit cases pass, including a different alias
+deployment being rejected before cookie dispatch. Actual read-only platform
+lookups by deployed ID and `www.turas.dev` both returned the unchanged Production
+deployment. See [Vercel's endpoint contract](https://vercel.com/docs/rest-api/deployments/get-a-deployment-by-id-or-url).
