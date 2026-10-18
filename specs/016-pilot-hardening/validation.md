@@ -2793,3 +2793,20 @@ The earlier setup/statistics-witness failures are retained. No runtime migration
 provider call, authority bypass, source withdrawal relaxation or timeout increase
 is involved. Current native/full CI and the separately failing Product Gaps UI
 matrix remain under verification.
+
+
+The actual built released-main follow-up exposed an unsupported WebKit fixture:
+`route.fulfill` rejects303 redirect responses. The unavailable login UI contract
+now reads the real error page directly; server route tests still assert actual
+native303/JSON503 failure contracts and no cookie. The first focused attempt's
+24passes/4fixturefailures are retained; the corrected focused release branch passes
+28built WebKit cases. This does not yet establish a new complete016 matrix.
+
+The local Product Gaps browser run passed84cases across four projects but its
+controller correctly rejected source drift during the run. It is retained as
+case-level evidence only, not an exact-source matrix pass. A focused018 release
+branch now carries the user-facing login, polling and composed-read lock fixes
+from released main without including unfinished016 schema/infrastructure changes.
+Its actual native operations/knowledge gate passes with independently retained
+owned Postgres diagnostics reporting zero deadlocks and statement timeouts. This
+is not hosted recovery or authorization to merge draft PR32 early.
