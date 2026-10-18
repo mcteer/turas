@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { DemoDataNotice } from "./demo-data-notice";
+import { readChatHandoff } from "./chat-handoff";
 import { ChatStatus } from "./chat-status";
 import {ChatViewport} from "./chat-viewport";
 import {ChatAssistantParts,activityRequestIds,assistantHasContent} from "./chat-activity";
@@ -44,6 +45,7 @@ export function AgentChat({ conversationId, nativeSessionId, bindingState,
   initialMessage?:{message:OrdinarySendMessage;requestKey:string;autoSend?:boolean;onConsumed?:()=>void};
   nativeRetired?: boolean; retainedHistory?: RetainedChatEvent[]; historyTruncated?: boolean;
 }) {
+  const handoff=initialMessage??readChatHandoff(conversationId,csrfToken);
   if (contextStatus !== "current") return <HistoricalChat key={conversationId} conversationId={conversationId}
     customerId={customerId} customerName={customerName} />;
   if (nativeRetired) return <RetainedChat conversationId={conversationId} customerId={customerId} initialHistory={retainedHistory} initialTruncated={historyTruncated}/>;
@@ -54,7 +56,7 @@ export function AgentChat({ conversationId, nativeSessionId, bindingState,
   }
   return <BoundChat key={conversationId} conversationId={conversationId}
     nativeSessionId={nativeSessionId} customerName={customerName}
-    synthetic={synthetic} csrfToken={csrfToken} customerId={customerId} initialMessage={initialMessage} />;
+    synthetic={synthetic} csrfToken={csrfToken} customerId={customerId} initialMessage={handoff} />;
 }
 
 function HistoricalChat({ conversationId, customerId, customerName }: {

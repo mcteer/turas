@@ -246,6 +246,16 @@ test('first send hides the landing immediately and starts in place with one Thin
   await page.goForward();await expect(page.getByRole('heading',{name:'Turi',exact:true})).toHaveCount(0);await expect(page.locator('.chat-thinking')).toHaveCount(1);expect(sends).toBe(1);
   current=[...running,wire('step.started',{turnId:'in-place',sequence:0,stepIndex:1,modelId:'synthetic-ui-fixture'}),wire('message.completed',{turnId:'in-place',sequence:0,stepIndex:1,message:'Final in-place answer.',finishReason:'stop'}),wire('turn.completed',{turnId:'in-place',sequence:0}),wire('session.waiting',{continuationToken:native,wait:'next-user-message'})];
   await expect(page.getByText('Final in-place answer.',{exact:true})).toBeVisible({timeout:15000});await expect(page.locator('.chat-thinking')).toHaveCount(0);expect(sends).toBe(1);
+  // Opening another saved conversation and returning must restore each
+  // server-owned binding without another delivery of the original question.
+  const csrf=(await (await page.request.get('/api/auth/session')).json()).data.csrfToken;
+  const other=await page.request.post('/api/conversations',{headers:{origin:process.env.TURAS_UI_BASE_URL!,'x-csrf-token':csrf},data:{requestKey:randomUUID(),title:'Synthetic other saved conversation'}});
+  expect(other.status()).toBe(201);const otherId=(await other.json()).data.id,otherNative='wrun_other_'+randomUUID().replaceAll('-','');
+  const db=new Client({connectionString:requireUiFixtureDatabaseUrl()});await db.connect();try{await db.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2 WHERE id=$1",[otherId,otherNative]);}finally{await db.end();}
+  const saved=transcript(otherNative,'A different saved answer.');await page.route(`**/eve/v1/session/${otherNative}/stream**`,route=>route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'25','x-eve-stream-tail-index':String(saved.length-1)},body:saved.map(e=>JSON.stringify(e)).join('\n')+'\n'}));
+  await page.goto('/s/'+otherId);
+  await expect(page.getByText('A different saved answer.',{exact:true})).toBeVisible({timeout:15000});await expect(page.getByRole('heading',{name:'Turi',exact:true})).toHaveCount(0);expect(sends).toBe(1);
+  await page.goBack();await expect(page.getByText('Final in-place answer.',{exact:true})).toBeVisible({timeout:15000});expect(sends).toBe(1);
  }finally{releaseCreate();}
 });
 

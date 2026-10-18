@@ -1,19 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams, usePathname } from "next/navigation";
+import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import { OrdinaryDocuments } from "./attachments/ordinary-documents";
 import {composeOrdinaryMessage,type OrdinaryAttachment,type OrdinarySendMessage} from "../../lib/conversations/ordinary-documents";
 import {ComposerLinks} from "./composer-links";
 import { CustomerPicker, type CustomerChoice } from "./customer-picker";
-import { AgentChat } from "./agent-chat";
+import { stageChatHandoff } from "./chat-handoff";
 import { uploadNativeFiles } from "../../lib/conversations/upload-native-files";
 
 
 export function NewConversation({ csrfToken, canAttachDocuments = false, canAttachNativeFiles = false }: { csrfToken: string; canAttachDocuments?: boolean; canAttachNativeFiles?: boolean }) {
   const search = useSearchParams();
   const pathname=usePathname();
-  const initialConsumed=useRef(false);
+  const router=useRouter();
   const [customers, setCustomers] = useState<CustomerChoice[]>([]);
   const [selected, setSelected] = useState("");
   const [state, setState] = useState<"loading" | "ready" | "creating" | "unavailable">("loading");
@@ -21,7 +21,6 @@ export function NewConversation({ csrfToken, canAttachDocuments = false, canAtta
   const starting = useRef(false);
   const operation = useRef<string | null>(null);
   const [draft, setDraft] = useState("");
-  const [activeChat,setActiveChat]=useState<{id:string;sessionId:string;message:OrdinarySendMessage;requestKey:string;attachments:boolean;customer:CustomerChoice|null}|null>(null);
   const [documents,setDocuments]=useState<OrdinaryAttachment[]>([]);
   const [preparingDocuments,setPreparingDocuments]=useState(false);
 
@@ -69,9 +68,8 @@ export function NewConversation({ csrfToken, canAttachDocuments = false, canAtta
       }
       if (!sessionId) throw new Error("Chat binding is pending. Reload the chat list to retry.");
       text = await uploadNativeFiles(text, result.data.id, csrfToken);
-      initialConsumed.current=false;
-      setActiveChat({id:result.data.id,sessionId,message:text,requestKey:crypto.randomUUID(),attachments,customer:customers.find(customer=>customer.id===selected)??null});
-      window.history.pushState(null,"",`/s/${result.data.id}${attachments?"?attachments=1":""}`);
+      stageChatHandoff({conversationId:result.data.id,csrfToken,message:text,requestKey:crypto.randomUUID(),autoSend:!attachments});
+      router.push(`/s/${result.data.id}${attachments?"?attachments=1":""}`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Chat is unavailable.");
       starting.current = false;
@@ -79,11 +77,7 @@ export function NewConversation({ csrfToken, canAttachDocuments = false, canAtta
     }
   }
 
-  useEffect(()=>{if(pathname==='/s'&&activeChat){starting.current=false;operation.current=null;setState("ready");setDraft("");setDocuments([]);setSelected("");}},[pathname]);
-  if(activeChat&&pathname===`/s/${activeChat.id}`)return <AgentChat conversationId={activeChat.id} nativeSessionId={activeChat.sessionId} bindingState="bound"
-    customerId={activeChat.customer?.id??null} customerName={activeChat.customer?.displayName??"General Technical Chat"}
-    synthetic={activeChat.customer?.synthetic??false} csrfToken={csrfToken} contextStatus="current"
-    initialMessage={initialConsumed.current?undefined:{message:activeChat.message,requestKey:activeChat.requestKey,autoSend:!activeChat.attachments,onConsumed:()=>{initialConsumed.current=true;}}} />;
+  useEffect(()=>{if(pathname==='/s'&&starting.current){starting.current=false;operation.current=null;setState("ready");setDraft("");setDocuments([]);setSelected("");}},[pathname]);
   const creating=state==="creating";
   return <main className={`chat-page ${creating?"chat-thread chat-starting":"chat-landing"}`}>
     {creating&&<div className="chat-messages"><article className="chat-message chat-message-user"><p>{draft}</p></article><p className="chat-thinking" role="status">Thinking</p></div>}
