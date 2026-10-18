@@ -134,3 +134,11 @@ must clear content and stop polling; temporary failures still recover. Composed
 engagement reads must follow plan-before-engagement lock order and complete against
 actual concurrent updates without weakening domain deadlines. The original release
 record remains historical evidence; fresh acceptance is required for these fixes.
+
+## Selected research claim correction — 2026-10-18
+
+Product projection retains the selected-source boundary and display excerpts,
+while also recognizing the complete checked supported claim on each selected URL
+with a valid evidence-quality contract. Full-document incidental mentions and
+unselected sources remain excluded. Profile and directory discovery must agree;
+withdrawal, conflict, partner scope and product-capability exclusions still apply.

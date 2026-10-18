@@ -1,3 +1,4 @@
+import {readPublicCustomerInventory} from '../../lib/server/profiles/public-inventory';
 import {projectNativeEvent} from '../../lib/server/conversations/projection';
 import {readOrdinaryPracticeEvidence,ordinaryPracticeAccount} from '../../lib/server/conversations/practice-evidence';
 import {searchNamedCustomerEvidence} from '../../lib/server/conversations/named-evidence-search';
@@ -208,6 +209,13 @@ it('retains new public research for an assigned partner, preserves curated claim
   expect(profile.publicResearchCoverage?.description).toBe('Original checked business description.');
   const passages=await db.query(`SELECT p.passage_text AS text FROM retrieval_passages p JOIN retrieval_sources s ON s.id=p.source_id WHERE s.customer_id=$1 AND p.passage_text LIKE '%Sandboxes%'`,[customerId]);
   expect(passages.rows.some(row=>row.text.includes(late))).toBe(true);
+  // Product projection must consume the complete checked selected claim,
+  // independently of the 1,600-character public-learning display excerpt.
+  const selectedLong=`${name} architecture: `+'Verified customer architecture detail. '.repeat(52)+`${name} uses Next.js and Vercel Blob.`;
+  await retain(selectedLong,`${name} uses Next.js and Vercel Blob.`,0);
+  const longProfile=z.object({attributedResearch:z.array(z.object({productNames:z.array(z.string())}))}).parse(await readProfile(actor,customerId));
+  expect(longProfile.attributedResearch[0].productNames).toEqual(expect.arrayContaining(['Next.js','Blob']));
+  expect((await withTransaction(client=>readPublicCustomerInventory(client,actor,{query:'Blob'}))).accounts.map(account=>account.id)).toContain(customerId);
   // Actual changed content must replace active facts in this same thread.
   const changed=`${name} now uses Vercel Sandboxes for its isolated execution service.`;
   await db.query(`INSERT INTO evidence_sources(id,workspace_id,customer_id,origin,canonical_location) VALUES($1,$2,$3,'manual',$4)`,[randomUUID(),actor.workspaceId,customerId,url]);

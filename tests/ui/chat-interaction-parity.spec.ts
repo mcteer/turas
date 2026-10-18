@@ -235,6 +235,10 @@ test('first send hides the landing immediately and starts in place with one Thin
   await expect(page.locator('.chat-message-user')).toContainText('Synthetic in-place question');
   expect((await page.locator('.chat-composer').boundingBox())!.y).toBeGreaterThan(original!.y);
   releaseCreate();await expect(page).toHaveURL(/\/s\/[a-f0-9-]+$/);await expect.poll(()=>sends).toBe(1);
+  // The sidebar was mounted before creation; it must update without a reload.
+  const conversationId=new URL(page.url()).pathname.split('/').at(-1);
+  await expect(page.locator(`.desktop-sidebar .history-link[href="/s/${conversationId}"]`)).toHaveCount(1);
+
   await expect(page.locator('.chat-thinking')).toHaveCount(1);await expect(page.locator('.chat-thinking')).toHaveText('Thinking');
   await expect(page.getByText('Internal progress that must remain hidden.',{exact:true})).toHaveCount(0);
   await expect(page.getByText('Submitting message…',{exact:true})).toHaveCount(0);
@@ -274,4 +278,38 @@ test('a broken stream reconnects by read only and displays only the final answer
  await page.reload();await expect(page.getByText('Final answer after reconnect.',{exact:true})).toBeVisible({timeout:15000});
  await expect(page.getByText('Intermediate model narration.',{exact:true})).toHaveCount(0);await expect(page.locator('.chat-thinking')).toHaveCount(0);
  await expect(page.getByText('Connection interrupted. Reload to reconnect; your message will not be sent again.',{exact:true})).toHaveCount(0);expect(sends).toBe(0);
+});
+
+
+test('customer picker searches, supports keyboard selection and clears without losing the draft',async({page},info)=>{
+ await signIn(page,'panel');await page.goto('/s');
+ const trigger=page.getByRole('button',{name:'Customer (optional)',exact:true});
+ await expect(trigger).toBeEnabled();await page.getByLabel('Message Turi',{exact:true}).fill('Preserve my question.');
+ await trigger.click();const search=page.getByRole('combobox',{name:'Search customers',exact:true});
+ await expect(search).toBeFocused();await search.fill('ced');await expect(page.getByRole('option',{name:'Cedar (synthetic)',exact:true})).toBeVisible();await expect(page.getByRole('option',{name:/Harbor/})).toHaveCount(0);
+ await search.press('Enter');await expect(trigger).toHaveText('Cedar (synthetic)');await expect(trigger).toBeFocused();
+ await expect(page.getByLabel('Message Turi',{exact:true})).toHaveValue('Preserve my question.');
+ await trigger.click();await search.fill('no-matching-synthetic-account');await expect(page.getByText('No customers found.',{exact:true})).toBeVisible();await search.press('Escape');await expect(trigger).toBeFocused();
+ await trigger.click();await search.fill('general');await search.press('Enter');await expect(trigger).toHaveText('Customer (optional)');
+ await trigger.click();await search.fill('ced');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.screenshot({path:`local-artifacts/019/customer-picker-${info.project.name}.png`,fullPage:false});
+ await search.press('Escape');
+});
+
+
+test('customer picker searches authorized customers beyond the first directory page',async({page})=>{
+ await signIn(page,'panel');
+ const first=Array.from({length:25},(_,index)=>({id:randomUUID(),displayName:`Synthetic account ${index}`,synthetic:true}));
+ const last={id:randomUUID(),displayName:'Zinnia pagination fixture',synthetic:true};let laterReads=0;
+ await page.route('**/api/customers**',route=>{
+  const cursor=new URL(route.request().url()).searchParams.get('cursor');
+  if(cursor){expect(cursor).toBe('fixture-next-page');laterReads++;}
+  return route.fulfill({status:200,json:{data:{items:cursor?[last]:first,nextCursor:cursor?null:'fixture-next-page'}}});
+ });
+ await page.goto('/s');const trigger=page.getByRole('button',{name:'Customer (optional)',exact:true});
+ await expect(trigger).toBeEnabled();await trigger.click();
+ await page.getByRole('combobox',{name:'Search customers',exact:true}).fill('Zinnia');
+ await page.getByRole('option',{name:last.displayName,exact:true}).click();
+ await expect(trigger).toHaveText(last.displayName);expect(laterReads).toBe(1);
 });

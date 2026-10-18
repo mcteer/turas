@@ -1,3 +1,4 @@
+import {selectCustomer} from '../fixtures/customer-picker';
 import { expect, test } from "@playwright/test";
 import { signIn, sanitizedScreenshot } from "../fixtures/ui";
 
@@ -7,7 +8,7 @@ test("uploads and inspects a real scanned and parsed source", async ({ page }) =
   test.setTimeout(120_000);
   await signIn(page,"panel");
   await page.goto("/s");
-  await page.getByLabel("Customer (optional)").selectOption({ label: "Cedar (synthetic)" });
+  await selectCustomer(page,"Cedar (synthetic)");
   await page.getByRole("button",{ name: "Customer sources" }).click();
   await page.getByLabel("Attach documents").setInputFiles("local-artifacts/004/fixtures/simple.txt");
   await page.getByLabel("Source rights note").fill("Synthetic local browser upload test");

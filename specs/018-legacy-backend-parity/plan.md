@@ -111,3 +111,13 @@ existing unfunded budget guard in this acceptance scope. No new model allowance,
 database, schema migration or Production configuration change is required.
 Verify the unchanged strict real-data profile check against the new deployment,
 then remove only this fix branch's five owned environment records after release.
+
+## Selected-claim product correction — 2026-10-18
+
+Keep the original eight-source selection and 1,600-character learning excerpts.
+For a selected URL with a valid evidence-quality contract, include its complete
+checked supported claim in product projection. Do not scan the full document or
+add unselected sources. Profile and inventory discovery use the same rule;
+product-capability and community sources retain their exclusions. This narrowly
+extends the earlier excerpt-only projection to retain checked product findings
+beyond its display boundary. No schema or provider change is required.

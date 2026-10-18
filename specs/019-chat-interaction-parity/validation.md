@@ -46,3 +46,79 @@ These checks make zero model calls or application mutations beyond login/logout;
 The merged feature branch is deleted locally/remotely and README verified on main. Five recorded encrypted 019-only Preview overrides were removed by exact created IDs after Production acceptance, preserving unrelated settings; the isolated public-only target and encrypted recovery artifacts remain retained. Duplicate identical-tree main-push CI was canceled after the complete 50-job source proof and tree equality; cancellation is not a passing result.
 
 A read-only Workflow audit still does not establish exact correlation of the earlier timed-out owned binding with a parked native candidate. Its application binding is failed/archived with no admitted turn; native cleanup remains unconfirmed and no cancellation/retirement claim is made.
+
+## Profile and recent-history follow-up — 2026-10-18
+
+Recovered the unfinished `019-profile-history-fix` worktree after the host power
+interruption. Searchable customer selection preserves keyboard focus and unsent
+drafts; recent conversations reread their authorized server projection after
+creation, received messages and navigation. Content-free invalidation carries no
+private history. Complete checked supported claims supplement display excerpts
+only for selected source URLs with valid quality contracts. Full documents,
+unselected sources, capability-only and community attribution remain excluded.
+No model, migration, runtime grant or Production configuration change is included.
+
+Final local checks with Node24 and the checked-in locked dependencies (including
+Next16.3.8 and Eve0.67.1):
+
+- TypeScript and documentation checks pass (228 authored Markdown files).
+- Eve build and production Next/Webpack build pass. Existing OfficeParser dynamic
+  import and staffing Temporal createRequire build warnings remain.
+- Four focused unit files pass22 tests (profile summary, active history, activity
+  and first-send handoff).
+- `node scripts/check-legacy-parity-disposable.mjs --profile-products` passes all7
+  legacy product projection tests, the selected real persistence/late-evidence
+  regression and3 general-chat route contracts on an owned schema077 database
+  with explicit runtime grants. Two unrelated specialist tests are intentionally
+  excluded by the named regression selector, not counted as passing.
+- The built application passes all68 chat-interaction, shell and retained-history
+  WebKit cases across desktop/mobile light/dark, with zero failures, skips or
+  retries. This includes the sidebar first-send assertion and searchable picker.
+  All four picker captures were visually inspected. Controlled native events
+  establish display behavior, not actual provider completion.
+- The initial recovered installation was Next16.3.4 despite the16.3.8 lockfile.
+  Its68-case run also passed, but final build/browser/type/domain/unit evidence was
+  repeated with an isolated locked install. The shared original installation was
+  preserved; this worktree uses the isolated locked dependency directory.
+
+Original failed runs remain private: the earlier full domain run had15 failures,
+including stale fixture session deadlines, native-authority fixtures and owned
+process-inventory failures. It also exposed an overlong new dossier fixture and
+unbounded product-claim selection. The fixture now uses an exact bounded selected
+quotation after the display boundary, and claim projection preserves selected
+sources and valid quality contracts. The focused rerun proves those corrections;
+this record does not claim the broader domain suite passes.
+
+Private logs, disposable runner and captures are retained under ignored
+`local-artifacts/` (resume-prefixed records; built captures under the main
+worktree's `local-artifacts/devolver-profile-fix/resume-locked-screenshots`).
+Validation made zero paid provider calls and preserved the selected database,
+private artifacts and durable workflow data. Exact hosted Preview/Production,
+full final-source CI, independent review, merge and branch cleanup remain open.
+
+### Release continuation — directory pagination
+
+Release review found that the landing page loaded only the first25 directory
+choices. The picker now follows authorized directory cursors with cancellation,
+deduplication and a40-page bound; repeated cursors or incomplete loads fail
+visibly. A four-project browser regression selects an account from the second
+page. The earlier68-case proof remains historical; final72-case validation and
+exact hosted checks are in progress on this correction.
+
+The pagination correction passes all72 built-app WebKit cases on locked
+Next16.3.8/Eve0.67.1 and Node24, with no skips/retries/failures; TypeScript and
+docs checks pass. Final hosted/CI evidence remains separate.
+
+The first PR45 Preview (source268be7e) failed the unchanged profile comparator:
+its general Preview research differs from Production. No data was synchronized
+or overwritten. The retained isolated public-data target passes actual runtime
+login, schema077 ledger,34 grant/denial and encrypted-backup authentication
+checks. The earlier source-panel fixture remains exactly archived/retired, with
+no admitted messages, uploads or funded ledgers. Its existing recovery rehearsal
+is retained; no fresh restore or migration is claimed. Five encrypted settings
+were added only for `019-profile-history-fix`, with readback and unrelated-scope
+fingerprints verified. Production/global settings and original budget authority
+are unchanged; no gateway key or model allowance was added. The original failed
+fresh-target assertion (one previously archived validation conversation) is
+preserved; the passing recheck verifies that exact retired fixture rather than
+requiring deletion of its history.

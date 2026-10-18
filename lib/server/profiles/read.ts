@@ -311,7 +311,9 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
         acceptanceState: "accepted", acceptanceBasis: "independent_research",
         productNames: communityAttributionWarning({url:row.location}) ? [] : [...new Set([
           ...curatedProductNames(publicInventory?.evidence.filter(story=>story.sourceRevisionId===row.id).flatMap(story=>story.products)??[]),
-          ...(input.informationType === "product_capability"?[]:productsFromResearch(productPassages))])],
+          ...(input.informationType === "product_capability"?[]:productsFromResearch([
+            ...productPassages,...(productPassages.length&&checked.success?[{title:'',quote:row.supported_claim}]:[]),
+          ]))])],
         documentDigest: document ? createHash('sha256').update(document).digest('hex') : null,
         location: row.location, passage: row.passage, supportedClaim: row.supported_claim,
         publicationAt: row.publication_at?.toISOString() ?? null,

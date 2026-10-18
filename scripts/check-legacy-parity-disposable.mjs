@@ -111,9 +111,9 @@ if (process.argv.includes("--webkit-child")) {
       throw Error("018 actual WebKit acceptance failed; inspect private report");
     }
     const report=JSON.parse(result.stdout);
-    if(report.stats.expected!==88||report.stats.unexpected||report.stats.flaky||report.stats.skipped)
-      throw Error("018 WebKit requires all88cases acrossfourprojects without skips or retries");
-    console.log(JSON.stringify({gate:"018-webkit",actualEve:true,projects:4,passed:88,skipped:0}));
+    if(report.stats.expected!==96||report.stats.unexpected||report.stats.flaky||report.stats.skipped)
+      throw Error("018 WebKit requires all96cases acrossfourprojects without skips or retries");
+    console.log(JSON.stringify({gate:"018-webkit",actualEve:true,projects:4,passed:96,skipped:0}));
   },{feature:"010",production:true,deadlineAt:Date.now()+1_800_000,prepare:async({appRoot})=>{
     const {copyFile}=await import("node:fs/promises");
     await copyFile("playwright.config.ts",join(appRoot,"playwright.config.ts"));
@@ -121,6 +121,7 @@ if (process.argv.includes("--webkit-child")) {
   }});
   process.exit(0);
 }
+const profileProductsOnly=process.argv.includes("--profile-products");
 const acceptanceOnly=["--chat-interaction","--webkit","--native-operations","--native-staged-4","--native-staged-10","--native-task-state","--native-questions"].some(flag=>process.argv.includes(flag));
 mkdirSync("local-artifacts",{recursive:true,mode:0o700});
 const name = `turas-parity-owned-${process.pid}`;
@@ -179,7 +180,7 @@ try {
     DATABASE_URL:"postgresql://unused:unused@127.0.0.1:1/application",
     DATABASE_URL_UNPOOLED:"postgresql://unused:unused@127.0.0.1:1/application",
     TURAS_TEST_DATABASE_URL:url,TURAS_TEST_ENVIRONMENT_ID:environment.TURAS_ENVIRONMENT_ID};
-  if(!acceptanceOnly&&!process.argv.includes("--native-only")&&!process.argv.includes("--native-files-only"))run(["node_modules/vitest/vitest.mjs","run","tests/integration/named-customer-chat.test.ts",
+  if(!profileProductsOnly&&!acceptanceOnly&&!process.argv.includes("--native-only")&&!process.argv.includes("--native-files-only"))run(["node_modules/vitest/vitest.mjs","run","tests/integration/named-customer-chat.test.ts",
     "tests/integration/general-chat.test.ts","tests/integration/ordinary-attachments.test.ts","tests/integration/ordinary-native-files.test.ts","tests/integration/native-input-replay.test.ts","tests/integration/legacy-research-transactions.test.ts",
     "tests/integration/parity-evaluation-budget.test.ts","tests/integration/specialist-profile-persistence.test.ts","tests/integration/legacy-knowledge-mechanics.test.ts","tests/integration/live-customer-chat.test.ts","tests/integration/ordinary-steering.test.ts","tests/integration/legacy-document-formats.test.ts","tests/integration/research-maintenance.test.ts","tests/integration/retrieval-retention.test.ts","tests/integration/retrieval-service.test.ts","tests/integration/profile-context.test.ts","tests/integration/public-customer-inventory.test.ts",
     "tests/integration/legacy-profile-products.test.ts","tests/integration/legacy-source-library.test.ts",
@@ -207,6 +208,11 @@ try {
     "tests/unit/legacy-pattern-contracts.test.ts",
     "tests/unit/legacy-specialist-regressions.test.ts","tests/unit/legacy-knowledge-instructions.test.ts",
     "tests/unit/research-public-checkpoint.test.ts", "tests/unit/retained-chat-history.test.ts", "tests/unit/active-chat-history.test.ts"],integrationEnvironment);
+  if(profileProductsOnly){
+    run(["node_modules/vitest/vitest.mjs","run","tests/integration/legacy-profile-products.test.ts"],integrationEnvironment);
+    run(["node_modules/vitest/vitest.mjs","run","tests/integration/specialist-profile-persistence.test.ts",
+      "--testNamePattern=retains new public research"],integrationEnvironment);
+  }
   // Route contracts read DATABASE_URL directly; they do not use the integration
   // fixture's explicit test-database selector.
   const contractUrl=new URL(url);contractUrl.searchParams.set('options','-c role=turas_runtime');
@@ -237,9 +243,9 @@ try {
     if(postgres.deadlocks||postgres.statementTimeouts)throw Error('Owned native operations encountered database lock/statement failures');
   }
   mkdirSync("local-artifacts/018/ci-disposable",{recursive:true,mode:0o700});
-  const gateName=process.argv.find(flag=>["--chat-interaction","--webkit","--native-operations","--native-staged-4","--native-staged-10","--native-task-state","--native-questions"].includes(flag))?.slice(2)??"domains";
+  const gateName=process.argv.find(flag=>["--profile-products","--chat-interaction","--webkit","--native-operations","--native-staged-4","--native-staged-10","--native-task-state","--native-questions"].includes(flag))?.slice(2)??"domains";
   writeFileSync(join("local-artifacts/018/ci-disposable",gateName+"-private.log"),output,{mode:0o600});
-  console.log(JSON.stringify({gate:acceptanceOnly?process.argv.find(flag=>["--chat-interaction","--webkit","--native-operations","--native-staged-4","--native-staged-10","--native-task-state","--native-questions"].includes(flag)):"domains",ownedDisposableDatabase:true,migrationsAndRuntimeGrants:true,passed:true,paidProviderCalls:0}));
+  console.log(JSON.stringify({gate:profileProductsOnly?"profile-products":acceptanceOnly?process.argv.find(flag=>["--chat-interaction","--webkit","--native-operations","--native-staged-4","--native-staged-10","--native-task-state","--native-questions"].includes(flag)):"domains",ownedDisposableDatabase:true,migrationsAndRuntimeGrants:true,passed:true,paidProviderCalls:0}));
 } catch(error) {
   console.error(error.message);
   // Tests contain only locally created fixture data. Credentials and startup

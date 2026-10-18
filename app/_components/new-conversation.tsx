@@ -7,6 +7,7 @@ import {composeOrdinaryMessage,type OrdinaryAttachment,type OrdinarySendMessage}
 import {ComposerLinks} from "./composer-links";
 import { CustomerPicker, type CustomerChoice } from "./customer-picker";
 import { stageChatHandoff } from "./chat-handoff";
+import {notifyConversationsUpdated} from './conversation-updates';
 import { uploadNativeFiles } from "../../lib/conversations/upload-native-files";
 
 
@@ -26,16 +27,30 @@ export function NewConversation({ csrfToken, canAttachDocuments = false, canAtta
 
   useEffect(() => {
     let active = true;
-    void fetch("/api/customers", { cache: "no-store" }).then(async (response) => {
-      if (!response.ok) throw new Error();
-      const body = await response.json() as { data: { items: CustomerChoice[] } };
-      if (!active) return;
-      setCustomers(body.data.items);
-      const requested = search.get("customerId");
-      if (requested && body.data.items.some((customer) => customer.id === requested)) setSelected(requested);
-      if (!starting.current) setState("ready");
-    }).catch(() => { if (active && !starting.current) setState("unavailable"); });
-    return () => { active = false; };
+    const controller=new AbortController();
+    void (async()=>{
+      const choices=new Map<string,CustomerChoice>(),cursors=new Set<string>();
+      let cursor:string|null=null;
+      for(let page=0;page<40;page++){
+        const response=await fetch('/api/customers'+(cursor?'?limit=50&cursor='+encodeURIComponent(cursor):''),{cache:'no-store',signal:controller.signal});
+        if(!response.ok)throw new Error('Customer selection unavailable');
+        const body=await response.json() as {data:{items:CustomerChoice[];nextCursor?:string|null}};
+        for(const customer of body.data.items)choices.set(customer.id,customer);
+        cursor=body.data.nextCursor??null;
+        if(!cursor){
+          if(!active)return;
+          const items=[...choices.values()];setCustomers(items);
+          const requested=search.get('customerId');
+          if(requested&&choices.has(requested))setSelected(requested);
+          if(!starting.current)setState('ready');
+          return;
+        }
+        if(cursors.has(cursor))throw new Error('Customer selection pagination repeated');
+        cursors.add(cursor);
+      }
+      throw new Error('Customer selection exceeded its page bound');
+    })().catch(()=>{if(active&&!starting.current)setState('unavailable');});
+    return ()=>{active=false;controller.abort();};
   }, [search]);
 
   async function start(attachments = false) {
@@ -54,6 +69,7 @@ export function NewConversation({ csrfToken, canAttachDocuments = false, canAtta
       });
       if (!created.ok) throw new Error(created.status === 404 ? "Customer access changed." : "Could not create chat.");
       const result = await created.json() as { data: { id: string } };
+      notifyConversationsUpdated();
       let sessionId: string | null = null;
       for (let attempt = 0; attempt < 5; attempt++) {
         const native = await fetch("/eve/v1/session", {
