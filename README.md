@@ -1,21 +1,19 @@
-A local profile/chat follow-up restores searchable keyboard customer selection across directory pages and
-refreshes Recent Conversations after creation, messages and navigation. Product
-projection also reads complete checked claims for already-selected research
-sources, preserving source limits and eligibility. Validation and hosted release
-status are recorded in [feature 019](specs/019-chat-interaction-parity/validation.md).
+The profile/chat fixes released in [PR #45](https://github.com/mcteer/turas/pull/45)
+as `60f7a4c`. Customer selection is searchable across directory pages, Recent
+Conversations refreshes after creation/messages/navigation, and product projection
+includes complete checked claims from selected eligible research sources.
+All50 final-source CI jobs pass, with one isolated cleanup retry retained.
+Authenticated Production HTTP/WebKit checks verify the original missing product,
+product search, four picker layouts and12 login cases. Schema077 and34 permission
+metadata checks pass; the feature branch and five temporary Preview settings are
+removed. See [feature019 validation](specs/019-chat-interaction-parity/validation.md)
+for evidence and limits.
 
 The native-login/chat-read follow-up released in [PR #43](https://github.com/mcteer/turas/pull/43)
-as `2f83dca`. Actual Production login/logout, chat revocation/polling, schema077
-and permission checks passed; its feature branches and five temporary Preview
-settings were removed.
-
-A subsequent chat bug fix is in progress: first-send transition in place, one
-Thinking loader with intermediate reasoning/tools kept in the background, and
-research handoff after an independently checked source refresh. The backend
-regression passes with stale-output and revoked-grant denials retained. The
-232-case domain run, 13 display units and 44 built WebKit interaction/shell cases
-pass; focused final reasoning/reconnection/history-navigation checks also pass.
-These local checks do not yet establish a hosted release of this follow-up.
+as `2f83dca`. The first-send/Thinking/research-handoff fix subsequently released in
+[PR #44](https://github.com/mcteer/turas/pull/44) as `716ad77`, with actual
+Production login/display/read checks. Those read-only release checks made no
+paid model calls and did not rerun live research.
 
 # Turas
 

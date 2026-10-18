@@ -122,3 +122,67 @@ are unchanged; no gateway key or model allowance was added. The original failed
 fresh-target assertion (one previously archived validation conversation) is
 preserved; the passing recheck verifies that exact retired fixture rather than
 requiring deletion of its history.
+
+
+### Completed profile/history release — PR45
+
+The earlier pending statements above describe historical checkpoints. Final
+candidate `4062a3f85915120b1fbd261291cd0f1abb0cbcfd` passes all50 CI jobs
+(43 main and7 backend parity). The first file-corrections job failed at native
+retirement after delivery assertions. Its original log is retained; an isolated
+same-source real-Eve local check and the isolated CI retry pass, including
+retirement HTTP200. The failure's infrastructure cause is not established.
+Execution and expansion WebKit both completed successfully. Delegated independent
+source/test/receipt review found no actionable blocker; no human GitHub approval
+is claimed.
+
+Exact Preview `dpl_6TrmHSpm7Pexy3bGpX6Bex7sSz8k` at
+[the immutable deployment](https://turas-1j8rex9jl-turas-6e414af3.vercel.app)
+passes the unchanged real-HTTP profile checker:184 directory entries match
+Production, and both required profiles match retained research (7/10 sources).
+Desktop/mobile captures were inspected. Four additional desktop/mobile light/dark
+picker cases select an actual directory entry beyond the first25, preserving
+draft, keyboard/focus, General, Escape and no-results behavior without overflow.
+The desktop/light case also creates an empty owned native conversation through
+Customer Sources and observes its actual sidebar row without reload. The other
+three cases cover picker behavior only. That fixture is confirmed retired and
+archived with zero history/attempts/model sends.
+
+Two earlier Preview UI runs failed strict error classification for external
+Vercel feedback code. They remain retained. The passing checker classifies only
+the exact external stack paired with its cancelled Vercel login-validation POST;
+unmatched application errors remain fatal. The original reported customer's
+newer product source is absent from the retained Preview snapshot. Its Preview
+check failed and is not reported as product acceptance. A read-only Production
+source comparison reproduced the old projection failure and candidate recovery,
+but used an owner connection without row locks: it was neither runtime-role nor
+hosted candidate proof. Actual post-deploy acceptance below supplies hosted behavior proof.
+
+[PR #45](https://github.com/mcteer/turas/pull/45) merged as
+`60f7a4c316e6fedae430bc396fb3c262f16ca19a`, with a tree identical to the reviewed
+candidate. Production `dpl_4Dhv5LwnfVqXtK6TQ8rbwiFLnLHN` is READY and serves
+[www.turas.dev](https://www.turas.dev). Fresh authenticated HTTP/headless WebKit
+checks pass for the original reported product in its actual profile, Next.js
+product discovery and source detail, all four picker layouts, and12 native
+login/form/cookie/logout/foreign-origin cases across all three roles. Captures
+were inspected. Production checks send no messages or model requests and make
+no customer/conversation mutations; sidebar creation was verified in Preview,
+while event/message behavior also has controlled-wire regression coverage.
+No fresh live research/provider completion is inferred.
+
+Schema077 and all34 grant/denial metadata checks pass in an owner read-only
+transaction; this does not prove execution under the runtime database role.
+No migration, grant, selected-model or Production configuration change was
+required. Original failed runs and private evidence are preserved under ignored
+`local-artifacts/release-45/`. Duplicate main-push CI on the identical tested tree
+was canceled, not counted as a passing run.
+
+The merged feature branch is absent locally/remotely. All five recorded encrypted
+branch-only Preview overrides were removed by exact created IDs after fresh
+Production acceptance, with unrelated settings unchanged. The isolated public
+snapshot, encrypted recovery artifacts, original ledgers/holds and local workflow
+data remain preserved. This closes T016 for this bounded fix, not unrelated
+feature016 pilot acceptance. PR44's earlier first-send/display/handoff release is
+also complete as `716ad77`; its actual login/display/read proof made zero paid
+calls and did not rerun live research. The earlier README's pending wording was
+stale and is corrected with this release record.
