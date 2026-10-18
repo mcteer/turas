@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { DemoDataNotice } from "./demo-data-notice";
 import { readChatHandoff } from "./chat-handoff";
+import {notifyConversationsUpdated} from './conversation-updates';
 import { ChatStatus } from "./chat-status";
 import {ChatViewport} from "./chat-viewport";
 import {ChatAssistantParts,activityRequestIds,assistantHasContent} from "./chat-activity";
@@ -150,6 +151,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         responding.current=null;setAnswering(false);noticeEpoch.current++;setNotice('');
       }
       if(event.type==='message.received'||event.type==='step.started'){noticeEpoch.current++;setNotice('');}
+      if(event.type==='message.received')notifyConversationsUpdated();
       if(event.type==='input.requested'){
         noticeEpoch.current++;setNotice('');setResponseState('waiting_input');setPendingKey(null);keyRef.current=null;
       }

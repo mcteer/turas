@@ -7,6 +7,7 @@ import {composeOrdinaryMessage,type OrdinaryAttachment,type OrdinarySendMessage}
 import {ComposerLinks} from "./composer-links";
 import { CustomerPicker, type CustomerChoice } from "./customer-picker";
 import { stageChatHandoff } from "./chat-handoff";
+import {notifyConversationsUpdated} from './conversation-updates';
 import { uploadNativeFiles } from "../../lib/conversations/upload-native-files";
 
 
@@ -54,6 +55,7 @@ export function NewConversation({ csrfToken, canAttachDocuments = false, canAtta
       });
       if (!created.ok) throw new Error(created.status === 404 ? "Customer access changed." : "Could not create chat.");
       const result = await created.json() as { data: { id: string } };
+      notifyConversationsUpdated();
       let sessionId: string | null = null;
       for (let attempt = 0; attempt < 5; attempt++) {
         const native = await fetch("/eve/v1/session", {

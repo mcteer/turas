@@ -1,3 +1,9 @@
+A local profile/chat follow-up restores searchable keyboard customer selection and
+refreshes Recent Conversations after creation, messages and navigation. Product
+projection also reads complete checked claims for already-selected research
+sources, preserving source limits and eligibility. Validation and hosted release
+status are recorded in [feature 019](specs/019-chat-interaction-parity/validation.md).
+
 The native-login/chat-read follow-up released in [PR #43](https://github.com/mcteer/turas/pull/43)
 as `2f83dca`. Actual Production login/logout, chat revocation/polling, schema077
 and permission checks passed; its feature branches and five temporary Preview

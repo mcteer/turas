@@ -46,3 +46,52 @@ These checks make zero model calls or application mutations beyond login/logout;
 The merged feature branch is deleted locally/remotely and README verified on main. Five recorded encrypted 019-only Preview overrides were removed by exact created IDs after Production acceptance, preserving unrelated settings; the isolated public-only target and encrypted recovery artifacts remain retained. Duplicate identical-tree main-push CI was canceled after the complete 50-job source proof and tree equality; cancellation is not a passing result.
 
 A read-only Workflow audit still does not establish exact correlation of the earlier timed-out owned binding with a parked native candidate. Its application binding is failed/archived with no admitted turn; native cleanup remains unconfirmed and no cancellation/retirement claim is made.
+
+## Profile and recent-history follow-up — 2026-10-18
+
+Recovered the unfinished `019-profile-history-fix` worktree after the host power
+interruption. Searchable customer selection preserves keyboard focus and unsent
+drafts; recent conversations reread their authorized server projection after
+creation, received messages and navigation. Content-free invalidation carries no
+private history. Complete checked supported claims supplement display excerpts
+only for selected source URLs with valid quality contracts. Full documents,
+unselected sources, capability-only and community attribution remain excluded.
+No model, migration, runtime grant or Production configuration change is included.
+
+Final local checks with Node24 and the checked-in locked dependencies (including
+Next16.3.8 and Eve0.67.1):
+
+- TypeScript and documentation checks pass (228 authored Markdown files).
+- Eve build and production Next/Webpack build pass. Existing OfficeParser dynamic
+  import and staffing Temporal createRequire build warnings remain.
+- Four focused unit files pass22 tests (profile summary, active history, activity
+  and first-send handoff).
+- `node scripts/check-legacy-parity-disposable.mjs --profile-products` passes all7
+  legacy product projection tests, the selected real persistence/late-evidence
+  regression and3 general-chat route contracts on an owned schema077 database
+  with explicit runtime grants. Two unrelated specialist tests are intentionally
+  excluded by the named regression selector, not counted as passing.
+- The built application passes all68 chat-interaction, shell and retained-history
+  WebKit cases across desktop/mobile light/dark, with zero failures, skips or
+  retries. This includes the sidebar first-send assertion and searchable picker.
+  All four picker captures were visually inspected. Controlled native events
+  establish display behavior, not actual provider completion.
+- The initial recovered installation was Next16.3.4 despite the16.3.8 lockfile.
+  Its68-case run also passed, but final build/browser/type/domain/unit evidence was
+  repeated with an isolated locked install. The shared original installation was
+  preserved; this worktree uses the isolated locked dependency directory.
+
+Original failed runs remain private: the earlier full domain run had15 failures,
+including stale fixture session deadlines, native-authority fixtures and owned
+process-inventory failures. It also exposed an overlong new dossier fixture and
+unbounded product-claim selection. The fixture now uses an exact bounded selected
+quotation after the display boundary, and claim projection preserves selected
+sources and valid quality contracts. The focused rerun proves those corrections;
+this record does not claim the broader domain suite passes.
+
+Private logs, disposable runner and captures are retained under ignored
+`local-artifacts/` (resume-prefixed records; built captures under the main
+worktree's `local-artifacts/devolver-profile-fix/resume-locked-screenshots`).
+Validation made zero paid provider calls and preserved the selected database,
+private artifacts and durable workflow data. Exact hosted Preview/Production,
+full final-source CI, independent review, merge and branch cleanup remain open.

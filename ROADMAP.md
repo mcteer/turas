@@ -321,3 +321,10 @@ PR36–39 restore the337-path/101-reference audited backend scope. Final source
 Production on schema77, including original retained history and actual failed-turn
 file-card reload recovery. See the [release record](docs/production-parity-release-2026-10-16.md).
 Historical failed checks remain recorded; this does not complete feature016.
+
+
+### Profile and chat follow-up — 2026-10-18
+
+Local follow-up work restores searchable customer selection, recent-conversation
+refresh and complete checked product claims for selected research sources.
+See feature019 tasks/validation. Hosted acceptance and release remain open.
