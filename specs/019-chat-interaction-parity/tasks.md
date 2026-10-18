@@ -31,4 +31,4 @@ T001–T002 precede code. T003–T005 cover US1; T006–T008 cover US2. Both are
 - [X] T013 Refresh the authorized recent-conversation list on creation, native messages and route changes, with content-free invalidation events.
 - [X] T014 Include complete checked claims from selected eligible research sources in profile and inventory products; preserve excerpt/source bounds, capability/community exclusions and legacy source precedence.
 - [X] T015 Verify final focused domains, built four-project WebKit, typecheck and documentation; record results and hosted limits.
-- [ ] T016 Complete reviewed PR, exact authenticated Preview/Production acceptance and merged-branch cleanup before claiming release.
+- [X] T016 Complete reviewed PR, exact authenticated Preview/Production acceptance and merged-branch cleanup before claiming release.
