@@ -1573,6 +1573,19 @@
       "cases": [
         "cold restores the released 077 ledger through 079 and reapplies newer denials behind both runtime perimeters"
       ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-deployment-inventory.test.ts",
+      "expectedCases": 7,
+      "cases": [
+        "repeats every project deployment page without dropping provider-only or other-target identities",
+        "binds project and team but removes workflow target filtering for the deployment collection",
+        "rejects changed metadata between complete traversals",
+        "rejects duplicate identities and nonadvancing or empty continuation pages",
+        "bounds deployment counts pages and retained metadata bytes",
+        "rejects foreign malformed or future metadata and invalid input before further reads",
+        "honors cancellation before requests and after a metadata response"
+      ]
     }
   ],
   "ui": {

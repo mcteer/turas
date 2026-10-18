@@ -587,7 +587,14 @@
         "unit.managed-runtime-binding.002",
         "unit.managed-runtime-binding.003",
         "unit.managed-runtime-binding.004",
-        "integration.released-safety-restore.001"
+        "integration.released-safety-restore.001",
+        "unit.managed-deployment-inventory.001",
+        "unit.managed-deployment-inventory.002",
+        "unit.managed-deployment-inventory.003",
+        "unit.managed-deployment-inventory.004",
+        "unit.managed-deployment-inventory.005",
+        "unit.managed-deployment-inventory.006",
+        "unit.managed-deployment-inventory.007"
       ]
     },
     {

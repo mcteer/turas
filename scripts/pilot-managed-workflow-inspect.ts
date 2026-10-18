@@ -1,6 +1,7 @@
 import {managedInventoryClosurePlanSchema} from '../lib/server/operations/managed-workflow-inventory-close';
 import {bindManagedRunProvider} from '../lib/server/operations/managed-workflow-provider';
 import {inventoryManagedRuns} from '../lib/server/operations/managed-workflow-inventory';
+import {inventoryManagedDeployments} from '../lib/server/operations/managed-deployment-inventory';
 import {Client} from 'pg';
 import {constants} from 'node:fs';
 import {open,lstat,realpath} from 'node:fs/promises';
@@ -61,6 +62,11 @@ export async function pilotManagedWorkflowInspect(args:string[]){
     const metadata=raw;if(metadata.runId!==runId)throw Error('Provider native run identity differs');
     runs.push({conversationId:conversation.id,bindingState:conversation.binding_state,...metadata,providerState:metadata.status});
    }
+   stage='project_deployment_inventory';
+   const projectDeployments=await inventoryManagedDeployments({projectId:scope.projectId,teamId:values.team,
+    cutoff:Date.now(),maximumDeployments:10000,maximumPages:100,signal,
+    referencedDeploymentIds:[...new Set(managedInventory.runs.map(row=>row.deploymentId))],
+    list:until=>provider.listProjectDeployments(until)});
    stage='final_binding';const after=await applicationInventory();
    if(recoveryDigest({conversations:inventory.conversations,attempts:inventory.attempts,control:inventory.control})!==recoveryDigest({conversations:after.conversations,attempts:after.attempts,control:after.control})||JSON.stringify(await pilotSource())!==JSON.stringify(source)||JSON.stringify(await pilotProtectedSnapshot())!==JSON.stringify(before))throw Error('Native source or protected checkout changed');
    const counts:Record<string,number>={};for(const run of runs)counts[run.providerState]=(counts[run.providerState]??0)+1;
@@ -69,7 +75,7 @@ export async function pilotManagedWorkflowInspect(args:string[]){
     const plan=managedInventoryClosurePlanSchema.parse({contract:'pilot-managed-inventory-closure-plan-v1',...source,environmentId:scope.environmentId,recoveryId:inventory.control.recovery_id,controlRevision:Number(inventory.control.revision),projectId:scope.projectId,teamId:values.team,target:scope.target,expectedIdentityDigest:managedInventory.identityDigest,expectedRuns:managedInventory.runs.length,maximumRuns:Math.max(1,managedInventory.runs.length),maximumPages:Math.max(...managedInventory.pages),expiresAt:new Date(Date.now()+900000).toISOString()});
     closurePlan={name:'closure-plan.json',digest:await writeEvidence(root,'closure-plan.json',plan)};
    }
-   const receipt={contract:'pilot-managed-workflow-inspection-v1',id,...source,projectId:scope.projectId,teamId:values.team,environmentId:scope.environmentId,sourceSchema:scope.schemaVersion,sourceTarget:scope.target,sourceConnectionBinding:scope.connectionBinding,...binding,control:inventory.control,closurePlan,capturedAt:inventory.capturedAt,completedAt:new Date().toISOString(),conversations:inventory.conversations,attempts:inventory.attempts,runs,managedInventory,providerStates:counts,applicationBindingsUnchanged:true,readOnly:true,providerWrites:0,modelCalls:0,workflowCheckpointVerified:false,workflowResumed:false,currentAuthorityVerified:false,restorationReady:false};
+   const receipt={contract:'pilot-managed-workflow-inspection-v1',id,...source,projectId:scope.projectId,teamId:values.team,environmentId:scope.environmentId,sourceSchema:scope.schemaVersion,sourceTarget:scope.target,sourceConnectionBinding:scope.connectionBinding,...binding,control:inventory.control,closurePlan,capturedAt:inventory.capturedAt,completedAt:new Date().toISOString(),conversations:inventory.conversations,attempts:inventory.attempts,runs,managedInventory,projectDeployments,providerStates:counts,applicationBindingsUnchanged:true,readOnly:true,providerWrites:0,modelCalls:0,workflowCheckpointVerified:false,workflowResumed:false,currentAuthorityVerified:false,restorationReady:false};
    await writeEvidence(root,'inspection.json',receipt);console.info(JSON.stringify({readOnly:true,conversationCount:runs.length,attemptCount:inventory.attempts.length,providerStates:counts,providerWrites:0,restorationReady:false}));return receipt;
   }catch(error){await writeEvidence(root,'failure.json',{id,...source,state:'fail',stage,safeFailure:'managed_workflow_inspection_incomplete',readOnly:true,providerWrites:0,restorationReady:false});throw error;}
  });

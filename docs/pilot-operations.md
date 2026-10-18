@@ -771,3 +771,23 @@ than an owner connection using SET ROLE. The complete-inventory command repeats
 this binding before every batch and after closure. An unavailable protected
 configuration value or a supplied healthy JSON document cannot replace this
 authenticated observation. These checks do not open service.
+
+
+### Complete project deployment metadata before retirement
+
+The existing `pilot:recovery:authority -- --inspect-managed-workflow` operator now
+also reads the complete selected project's deployment collection across both
+Preview and Production. It uses a fixed timestamp cutoff, up to 100 pages/10,000
+identities, bounded metadata bytes and two equal complete traversals. The provider
+omits workflow-target headers and branch/state/target filters for this collection.
+Private receipts discard unrelated metadata and list referenced deployments absent
+from the collection as unlisted, without claiming they were deleted or retired.
+
+This read-only inventory does not protect deployments, close aliases, revoke old
+credentials, cancel workflows, settle paid effects or approve retirement. Existing
+schema 079/owner/runtime-binding prerequisites still gate any cancellation plan;
+schema 077 inspection remains read-only with no closure plan. A stable collection
+is not an atomic provider snapshot or proof that an old deployment cannot admit
+work. `oldDeploymentsClosed`, `deploymentProtectionVerified`, `retirementAuthorized`
+and `restorationReady` remain false. Preserve current active deployments and all
+original evidence until the separately verified retirement procedure is complete.

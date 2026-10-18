@@ -209,7 +209,8 @@
     "tsx": "4.23.15",
     "typescript": "7.0.2",
     "vitest": "5.0.2",
-    "axe-core": "4.13.0"
+    "axe-core": "4.13.0",
+    "@next/env": "16.3.8"
   },
   "engines": {
     "node": "24.x"

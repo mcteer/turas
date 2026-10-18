@@ -2810,3 +2810,39 @@ from released main without including unfinished016 schema/infrastructure changes
 Its actual native operations/knowledge gate passes with independently retained
 owned Postgres diagnostics reporting zero deadlocks and statement timeouts. This
 is not hosted recovery or authorization to merge draft PR32 early.
+
+
+### Complete project deployment inspection and full checkpoint (2026-10-18)
+
+The frozen integration checkpoint `5b27e49` passes **745/745 cases across 138 suites**
+in `run-d7bd565c-88e9-4ac6-96b2-cdb610b39cb2`, with process exit 0 and owned cleanup
+complete. It retains `fullPilotReady:false` and predates later polling/read-lock,
+deployment-inventory and environment-supervisor changes. It cannot establish those
+later source checkpoints or hosted readiness.
+
+The existing read-only managed-workflow inspector now also inventories the entire
+project deployment collection at a fixed cutoff, across Preview and Production,
+using bounded pages/identities/metadata and two equal traversals. Workflow-target
+headers and branch/state/target filters are omitted for this collection; output
+strips unrelated fields. Unlisted run-referenced identities remain unverified,
+not silently retired. Seven new cases join G06; the registered pilot catalog is
+now **752 cases/139 suites**. All 15 focused new/provider cases pass, followed by all
+**363 pilot unit/contract cases across 62 files**. Root/pilot types and docs pass.
+
+The actual operator run `managed-inventory-production-20261018-6` passes against
+the selected schema 077 source: 18 conversations, 15 attempts, 484 managed runs and 561
+project deployments, with six deployment pages per traversal and zero unlisted
+run-referenced deployments. Application bindings and protected source remain
+unchanged. Provider writes/model calls are both zero. Control and closure plan
+remain null; deployment protection, retirement authority, old-deployment closure
+and recovery readiness remain false. Private original observations are retained.
+The earlier 44-deployment reference inspection is correctly narrower than this
+complete project collection.
+
+The test-only production UI supervisor also loads Next's effective production
+dotenv configuration before checking local databases and disabled provider keys.
+Three child-process tests pass, including dotenv precedence, file-loaded credential
+rejection without value disclosure, and explicit safe shell precedence. Its
+`@next/env` test dependency matches Next 16.3.8. Default development and production
+application behavior are unchanged. The frozen 745-case result predates this guard;
+final current-source verification remains required.

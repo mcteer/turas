@@ -298,3 +298,12 @@ and terminal receipt, and rechecks the entire identity/application/source set at
 completion. This automates batches without expanding the set after drift or
 retrying uncertainty. It does not establish old-deployment retirement or effect
 settlement, and therefore does not produce full recovery verification.
+
+
+Project deployment discovery now complements the complete managed-run inventory.
+The same read-only inspector traverses all project targets twice at a fixed cutoff,
+with finite identity/page/byte limits, unchanged application/source checks and
+private stripped metadata. Unlisted run-referenced deployments remain unresolved.
+This supplies metadata for T087/T091; actual current deployment/alias/credential
+protection and paid/workflow reconciliation remain necessary before verification
+or unlock. No new retirement authority is inferred from the inventory.
