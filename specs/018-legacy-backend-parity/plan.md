@@ -99,3 +99,15 @@ explicit test dependency pinned to the installed Next patch version. A file-load
 cloud database or provider key fails before any service starts, with controlled
 errors that exclude credential values; explicit safe shell configuration retains
 Next's normal precedence. This also supports CI's synthetic dotenv configuration.
+
+
+Preview acceptance reuses the existing isolated schema-077 real-data database
+previously prepared and restored for the released 019 checks. Verify its actual
+restricted runtime login, exact ledger/grants and retained encrypted backup before
+adding branch-only database/environment settings. Preserve the general Preview's
+newer retained research and all original holds; do not synchronize or overwrite
+either store to satisfy a comparison. Keep provider credentials disabled and the
+existing unfunded budget guard in this acceptance scope. No new model allowance,
+database, schema migration or Production configuration change is required.
+Verify the unchanged strict real-data profile check against the new deployment,
+then remove only this fix branch's five owned environment records after release.

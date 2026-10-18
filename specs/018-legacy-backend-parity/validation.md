@@ -585,3 +585,39 @@ Preview protection uses the existing automation cookie instead of intercepting
 browser requests, preserving ordinary navigation and browser caching. The verifier
 tracks sessions before receipt checks so failure cleanup can recover the logout
 token. Root typecheck and diff checks pass; actual hosted acceptance remains open.
+
+
+Hosted checkpoint ca9a728 passes twelve actual headless WebKit login/session/
+composer/logout cases for all three roles, desktop/mobile and light/dark. Actual
+303 redirects, secure server cookies, authenticated identities, foreign-origin
+403 and logout revocation pass; desktop dark/mobile light captures retain the
+current look. All seven legacy acceptance CI jobs pass on that commit. Its broader
+CI is still running at this checkpoint; no full final-source claim is made.
+
+The strict profile check passes the real 184-customer directory and 1Password,
+then fails Notion equality: the general Preview contains23 researched records
+versus Production's10, including later revisions at two shared URLs. A separately
+labelled visual diagnostic passes both actual customers' navigation, product/
+source display and evidence search, but explicitly records acceptance:false.
+Do not reinterpret that diagnostic as a passing strict check or overwrite newer
+research. A historical immutable Preview built from the exact Production Git tree
+reads the Production-matching dataset from the existing isolated schema077 target.
+
+Fresh read-only checks of that isolated target verify actual turas_runtime login
+without owner authority, all34 permission assertions, all77 ledger entries through
+the owner, denied runtime ledger reads, no private execution/budget rows and no
+active sessions. Its retained AES-GCM backup authenticates and matches the prior
+actual restore proof; this does not claim a fresh restore was performed. The first
+probe wrongly attempted owner-only ledger reads as runtime and received42501; the
+corrected probe preserves that denial and inspects the ledger through the owner.
+The fix branch will use this existing target with five scoped configuration values
+and no provider allowance. The original strict checker remains unchanged apart
+from its native-login/session compatibility; fresh deployment acceptance is pending.
+
+The additional source-header probe expected a header implemented only in draft016;
+released main and this focused018 branch have no such header. Its failed assertion
+is retained, and no serving-header proof is claimed. Actual deployment identity is
+bound through immutable READY platform metadata and the exact canonical Production
+identity, which was rechecked around the successful read-only schema077/34-grant
+baseline. No Production migration, model turn, billing change or unknown-hold
+reconciliation was performed.
