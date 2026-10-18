@@ -2882,3 +2882,20 @@ Preview's newer research and original holds. Its passing hosted profile check an
 all-seven legacy CI result do not establish016 hosted recovery, current-schema
 cloud capture, model catalogs, scheduled cadence or actual participant acceptance.
 Production, original protected state, budgets and unknown charges are preserved.
+
+
+### Read-only Gateway credential scope checkpoint
+
+The installed Vercel CLI59.19.0 supports the documented
+[read-only key-list command](https://vercel.com/docs/ai-gateway/observability-and-spend/budgets).
+A selected-team JSON inventory returns one ai-gateway key, with no project binding
+and no finite expiry; no leak is reported by that metadata. Raw key identifiers,
+masked-key metadata and authentication remain private. No key was created,
+updated, revoked or used for a model request; no budget or spend limit changed.
+
+This is not proof of exclusive Turas use, complete historical credential closure,
+OIDC retirement or any original request's charge. Other consumers remain
+unverified, so this observation grants no rotation/retirement authority and
+reconciles no unknown hold. The documented
+[Gateway authentication methods](https://vercel.com/docs/ai-gateway/authentication-and-byok)
+also include OIDC, which must be accounted for separately. T087/T091 remain open.

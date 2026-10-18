@@ -307,3 +307,11 @@ private stripped metadata. Unlisted run-referenced deployments remain unresolved
 This supplies metadata for T087/T091; actual current deployment/alias/credential
 protection and paid/workflow reconciliation remain necessary before verification
 or unlock. No new retirement authority is inferred from the inventory.
+
+
+Credential retirement must independently establish the actual provider credential
+scope; a key name, deployment list or aggregate spend does not establish exclusive
+Turas authority or reconcile an original operation. The read-only Gateway key
+inventory currently reports one selected-team key without a project binding or
+finite expiry. Other consumers and historical/OIDC credentials remain unverified.
+Do not rotate it, clear holds or mark old deployments closed from that metadata.
