@@ -5,6 +5,8 @@ import {withAuthorityEnvironment,lockAuthorityTarget} from '../../fixtures/pilot
 import {pilotPublishedKnowledgeFixture} from '../../fixtures/pilot/knowledge';
 import {withOwnerRecoveryReadCapability,requireOperationalOpen} from '../../../lib/server/operations/admission';
 import {lockProfileActor} from '../../../lib/server/profiles/policy';
+import {readProfile} from '../../../lib/server/profiles/read';
+import {recallPublicLearning} from '../../../lib/server/research/specialists/research-cache/public-learning-read';
 
 it('bounds owner recovery reads to one live actor, connection, control revision and deadline',async()=>{
  await withAuthorityEnvironment(async(owner,runtime,environmentId)=>{
@@ -20,6 +22,12 @@ it('bounds owner recovery reads to one live actor, connection, control revision 
   await expect(withOwnerRecoveryReadCapability(db,f.actor,{...scope,deadline:Date.now()-1},async()=>{})).rejects.toThrow('unavailable');
   await withOwnerRecoveryReadCapability(db,f.actor,scope,async()=>{
    await read();
+   const profile=await readProfile(f.actor,f.customerId,db,undefined,undefined,false,true) as {customer:{id:string};acceptedFacts:{id:string}[]};
+   expect(profile.customer.id).toBe(f.customerId);expect(profile.acceptedFacts.some(fact=>fact.id===f.originalRevisionId)).toBe(true);
+   const identity={...f.actor,userId:f.actor.principalId,environmentId};
+   for(const mismatch of [{userId:'foreign'},{environmentId:'foreign'},{sessionId:'foreign'},{principalId:'foreign'},{membershipId:'foreign'},{workspaceId:'foreign'},{token:'foreign'},{role:'member' as const},{kind:'partner' as const},{loginName:'panel'}]){
+    await expect(recallPublicLearning({...identity,...mismatch},f.customerId,'',AbortSignal.timeout(1000),false,db,f.actor)).rejects.toThrow();
+   }
    const concurrent=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await concurrent.connect();
    try{
     await concurrent.query("SET lock_timeout='250ms'");

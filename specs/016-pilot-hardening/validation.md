@@ -2567,3 +2567,17 @@ fixture now waits for initial positioning before testing the failed reload.
 A separate handoff diagnostic could not start because this auxiliary worktree's
 symlinked dependencies lay outside Turbopack's filesystem root; it did not reach
 the handoff scenario. Repeat it from the integration tree's real dependencies.
+
+The corrected legacy browser gate passed all 80 cases across four headless
+WebKit projects, with no retries/skips or paid calls. The execution handoff
+diagnostic also passed from the integration tree's actual dependency directory.
+These are local owned checks, not hosted acceptance or real participant feedback.
+
+An expanded recovery probe exposed a real canonical-read defect: profile research
+metadata copied the actor object and lost the owner-only read capability. The
+research reader now keeps the original authenticated actor for authorization and
+checks that all separate metadata identifies that exact session, principal,
+membership, workspace, token, role, login and environment. The full accepted
+profile read passes while locked; mismatched metadata remains denied. All existing
+probe bounds still pass, as do three normal customer-profile regression cases and
+root/pilot types. This fix is later than the frozen 7a11d49 catalog run.

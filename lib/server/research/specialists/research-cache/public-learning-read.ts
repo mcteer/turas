@@ -1,3 +1,5 @@
+import {researchReadActor} from '../identity';
+import type {CurrentSession} from '../../../auth/sessions';
 import {hiddenRecord} from "../../../../contracts/http";
 import {getServerConfig} from "../../../config";
 import type {PoolClient} from "pg";
@@ -14,19 +16,19 @@ export const publicLearningSchema = z.object({
   attributionWarning: z.string().nullable(), queryMatched: z.boolean(),
   evidenceState: z.enum(["recently_checked", "refresh_due", "changed", "historical"]),
 });
-export async function recallPublicLearning(identity: AppIdentity, accountId: string, query: string, signal: AbortSignal, acrossAccounts = false, existingClient?:PoolClient) {
+export async function recallPublicLearning(identity: AppIdentity, accountId: string, query: string, signal: AbortSignal, acrossAccounts = false, existingClient?:PoolClient, authorizationActor:CurrentSession=identity) {
   if(identity.environmentId!==getServerConfig().TURAS_ENVIRONMENT_ID)throw hiddenRecord();
-  if(existingClient)await lockProfileActor(existingClient,identity,accountId,undefined,true);
+  if(existingClient)await lockProfileActor(existingClient,researchReadActor(identity,authorizationActor),accountId,undefined,true);
   else await requireResearchAccount(identity,accountId);
   const sql = existingClient ? {query:async(text:string,values:unknown[])=>(await existingClient.query(text,values)).rows} : await evidenceDatabase();
   const rows = await sql.query(selectionSql(false),[identity.environmentId,identity.workspaceId,accountId,query,acrossAccounts,identity.membershipId,identity.kind,[]]);
   signal.throwIfAborted();
-  return parseSelected(identity,rows,existingClient);
+  return parseSelected(identity,rows,existingClient,authorizationActor);
 }
-async function parseSelected(identity:AppIdentity,rows:unknown,existingClient?:PoolClient){
+async function parseSelected(identity:AppIdentity,rows:unknown,existingClient?:PoolClient,authorizationActor:CurrentSession=identity){
   const parsed = z.array(z.object({ id: z.string(), account_id: z.string(), url: z.string(), title: z.string(), passage_id: z.string(), quote: z.string(),
     published_at: z.coerce.date().nullable(), first_seen: z.coerce.date(), last_seen: z.coerce.date(), refresh_after: z.coerce.date().nullable(), changed: z.boolean(), query_matched: z.boolean() })).parse(rows);
-  const authority=existingClient?await researchSourcesAreEligibleInTransaction(existingClient,identity,parsed.map(row=>({accountId:row.account_id,url:row.url}))):null;
+  const authority=existingClient?await researchSourcesAreEligibleInTransaction(existingClient,identity,parsed.map(row=>({accountId:row.account_id,url:row.url})),authorizationActor):null;
   const eligible=[];
   for(const row of parsed)if(authority?authority.get(researchSourceKey({accountId:row.account_id,url:row.url})):await researchSourceIsEligible(identity,row.account_id,row.url))eligible.push(row);
   return eligible.map(row => publicLearningSchema.parse({ id: row.id, accountId: row.account_id, url: row.url, title: row.title,

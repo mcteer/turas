@@ -676,3 +676,8 @@ leaves global admission closed.
 The request-fence audit also measures current state after its authority fences and
 table locks. Its receipt includes that digest; a later mutation requires a new
 audit. The receipt alone cannot resolve quarantine or open service.
+
+Canonical profile probes retain the original authenticated actor through nested
+research reads; separate research metadata must match that exact session and
+workspace. A successful actor lock alone is not proof of a successful profile
+read. The owned probe requires the actual accepted profile revision in the result.
