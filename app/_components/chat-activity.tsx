@@ -60,6 +60,8 @@ export function ChatAssistantParts({ parts, streaming, requests, disabled, onRes
       </section>;
       return null;
     }
+    if(part.state==='approval-requested'||part.state==='approval-responded')return <p className="chat-notice" role="status" key={part.toolCallId}>
+      {part.state==='approval-requested'?'Waiting for approval':'Decision submitted'}</p>;
     // Ordinary tools and model reasoning run in the background. Explicit
     // questions and authorization above remain actionable.
     return null;

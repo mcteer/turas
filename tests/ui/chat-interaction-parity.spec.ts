@@ -217,14 +217,16 @@ test('first send hides the landing immediately and starts in place with one Thin
   try{await db.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2 WHERE id=$1",[id,native]);}finally{await db.end();}
   await route.fulfill({status:202,json:{sessionId:native}});
  });
- const running=[wire('session.started',{}),wire('turn.started',{turnId:'in-place',sequence:0}),
+ const initial=[wire('session.started',{}),wire('session.waiting',{continuationToken:native,wait:'next-user-message'})];
+ const running=[...initial,wire('turn.started',{turnId:'in-place',sequence:0}),
   wire('message.received',{turnId:'in-place',sequence:0,message:'Synthetic in-place question'}),
   wire('step.started',{turnId:'in-place',sequence:0,stepIndex:0,modelId:'synthetic-ui-fixture'}),
   wire('reasoning.completed',{turnId:'in-place',sequence:0,stepIndex:0,reasoning:'Internal reasoning that stays in the background.'}),
   wire('message.completed',{turnId:'in-place',sequence:0,stepIndex:0,message:'Internal progress that must remain hidden.',finishReason:'tool-calls'}),
   wire('actions.requested',{turnId:'in-place',sequence:0,stepIndex:0,actions:[{kind:'tool-call',callId:'lookup',toolName:'get_customer',input:{}}]})];
- let current=[wire('session.started',{}),wire('session.waiting',{continuationToken:native,wait:'next-user-message'})];
- await page.route(`**/eve/v1/session/${native}/stream**`,route=>route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'25','x-eve-stream-tail-index':String(current.length-1)},body:current.map(e=>JSON.stringify(e)).join('\n')+'\n'}));
+ const received=running.findIndex(e=>e.type==='message.received');running[received]={...running[received],meta:{...running[received].meta,deliveryIds:['in-place-delivery']}};
+ let current=initial;
+ await page.route(`**/eve/v1/session/${native}/stream**`,route=>{const start=Number(new URL(route.request().url()).searchParams.get('startIndex')??0);return route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'25','x-eve-stream-tail-index':String(current.length-1)},body:current.slice(start).map(e=>JSON.stringify(e)).join('\n')+'\n'});});
  await page.route(`**/eve/v1/session/${native}`,async route=>{if(route.request().method()!=='POST')return route.continue();sends++;current=running;await route.fulfill({status:202,json:{sessionId:native,deliveryId:'in-place-delivery'}});});
  try{
   const original=await page.locator('.chat-composer').boundingBox();await page.getByLabel('Message Turi',{exact:true}).fill('Synthetic in-place question');await page.getByRole('button',{name:'Send message',exact:true}).click();
@@ -242,6 +244,8 @@ test('first send hides the landing immediately and starts in place with one Thin
   await page.screenshot({path:`local-artifacts/019/thinking-${info.project.name}.png`,fullPage:true});
   await page.goBack();await expect(page.getByRole('heading',{name:'Turi',exact:true})).toBeVisible();await expect(page.getByLabel('Message Turi',{exact:true})).toHaveValue('');
   await page.goForward();await expect(page.getByRole('heading',{name:'Turi',exact:true})).toHaveCount(0);await expect(page.locator('.chat-thinking')).toHaveCount(1);expect(sends).toBe(1);
+  current=[...running,wire('step.started',{turnId:'in-place',sequence:0,stepIndex:1,modelId:'synthetic-ui-fixture'}),wire('message.completed',{turnId:'in-place',sequence:0,stepIndex:1,message:'Final in-place answer.',finishReason:'stop'}),wire('turn.completed',{turnId:'in-place',sequence:0}),wire('session.waiting',{continuationToken:native,wait:'next-user-message'})];
+  await expect(page.getByText('Final in-place answer.',{exact:true})).toBeVisible({timeout:15000});await expect(page.locator('.chat-thinking')).toHaveCount(0);expect(sends).toBe(1);
  }finally{releaseCreate();}
 });
 

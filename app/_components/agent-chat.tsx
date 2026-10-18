@@ -172,7 +172,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   const historyMessages=activeChatHistory(messages,canSteer?applicationHistory:[]);
   const background = backgroundChatActivity(agent.events);
   const displayedRequestIds=new Set(historyMessages.flatMap(item=>activityRequestIds(item.kind==='native'?item.message.parts:item.activity??[])));
-  const awaitingAuthorization=messages.some(message=>message.parts.some(part=>part.type==='authorization'&&part.state!=='completed'));
+  const awaitingAuthorization=messages.some(message=>message.parts.some(part=>part.type==='authorization'&&part.state!=='completed'||part.type==='dynamic-tool'&&part.state==='approval-requested'));
   const awaitingUser=inputRequests.length>0||awaitingAuthorization;
   const lastMessage=messages.at(-1);
   const busy=agent.status==='submitted'||agent.status==='streaming';
