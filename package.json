@@ -159,7 +159,7 @@
     "ai": "^7.0.105",
     "eve": "^0.67.1",
     "ipaddr.js": "2.5.0",
-    "next": "16.3.4",
+    "next": "16.3.8",
     "node-pg-migrate": "9.0.0",
     "officeparser": "8.0.0",
     "parse5": "8.0.0",
@@ -191,6 +191,8 @@
   "overrides": {
     "pptxgenjs": {
       "image-size": "2.0.4"
-    }
+    },
+    "source-map-js": "1.2.2",
+    "undici@8.9.0": "8.10.2"
   }
 }

@@ -1,3 +1,8 @@
+A focused legacy-session follow-up is in progress: native server-redirect login,
+terminal chat polling and composed engagement lock order, with the current visual
+design retained. It requires fresh CI and authenticated Preview/Production checks;
+no hosted release is claimed yet. See [T034–T037](specs/018-legacy-backend-parity/tasks.md).
+
 # Turas
 
 The complete legacy backend audit and restoration is tracked in

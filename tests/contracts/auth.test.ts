@@ -56,6 +56,7 @@ describe("login/session/logout contract", () => {
       username: "panel", password: process.env.PANEL_PASSWORD,
     }));
     expect(loggedIn.status).toBe(200);
+    expect((await loggedIn.json()).data.returnTo).toBe("/s");
     const setCookie = loggedIn.headers.get("set-cookie") ?? "";
     expect(setCookie).toContain("HttpOnly");
     expect(setCookie).toContain("SameSite=Lax");

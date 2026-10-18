@@ -138,10 +138,14 @@ test('ordinary busy chat accepts a correction once, preserves the next draft and
 });
 
 test('a failed initial history read recovers saved scrolling on the next authoritative refresh',async({page})=>{
+ await page.clock.install();
  const long=Array.from({length:40},(_,i)=>`### Recovery item ${i+1}\n\nSynthetic long history for delayed restoration.`).join('\n\n');
  const chat=await ownedChat(page,native=>transcript(native,long));
  await page.getByRole('heading',{name:'Recovery item 40',exact:true}).waitFor({state:'attached'});
  const viewport=page.getByRole('region',{name:'Conversation messages',exact:true});
+ // Wait for the initial authoritative history positioning before introducing
+ // the saved offset; the failure under test happens on the subsequent reload.
+ await expect.poll(()=>viewport.evaluate(p=>p.scrollHeight-p.clientHeight-p.scrollTop)).toBeLessThan(5);
  await viewport.evaluate(p=>{p.scrollTop=220;p.dispatchEvent(new Event('scroll'));});
  await expect(page.getByRole('button',{name:'Scroll to bottom',exact:true})).toBeVisible();
  let reads=0;
@@ -151,6 +155,14 @@ test('a failed initial history read recovers saved scrolling on the next authori
  const pane=page.getByRole('region',{name:'Conversation messages',exact:true});
  await expect.poll(()=>pane.evaluate(p=>p.scrollTop)).toBeCloseTo(220,0);
  await expect(page.getByRole('button',{name:'Scroll to bottom',exact:true})).toBeVisible();
+ let deniedReads=0;
+ await page.route(`**/api/conversations/${chat.id}`,route=>{deniedReads++;return route.fulfill({status:404,json:{error:{code:'not_found'}}});});
+ await expect(page.getByRole('heading',{name:'Chat Unavailable',exact:true})).toBeVisible();
+ await expect(page.getByRole('textbox',{name:'Message Turi'})).toHaveCount(0);
+ const stopped=deniedReads;
+ await page.clock.fastForward(10_000);
+ await page.waitForLoadState('networkidle');
+ expect(deniedReads).toBe(stopped);
 });
 
 test('a rejected main-composer question answer retains its draft without a second delivery',async({page})=>{

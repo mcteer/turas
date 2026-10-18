@@ -56,6 +56,27 @@ it('ordinary real-domain reads and human intervention decisions preserve finance
   expect(brief.finance).toMatchObject({values:{fee:null,nonlabor:null},periodFinancials:{fee:'100000',nonlabor:'20000',wholeEngagementBasis:false}});
   expect((await calculateOrdinaryScenario(owner,{...input,remainingHours:40,wholeEngagementLoadedRateMinorUnitsPerHour:'12500',currency:'USD'})).metrics).toMatchObject({status:'unknown',contribution:null});
   expect((await readOrdinaryEngagement(member,input)).finance.status).toBe('withheld');
+  // A composed engagement read must wait at the plan prefix without first
+  // holding the engagement. Exercise actual concurrent row locks and domains.
+  const planBlocker=await getRuntimePool().connect();await planBlocker.query('BEGIN');
+  let concurrentBrief:ReturnType<typeof readOrdinaryEngagement>|undefined;
+  try{
+   expect((await planBlocker.query('SELECT p.id FROM delivery_plans p JOIN milestone_baselines b ON b.plan_id=p.id WHERE b.id=$1 FOR UPDATE OF p',[baselineId])).rowCount).toBe(1);
+   let earlyFailure:unknown;
+   concurrentBrief=readOrdinaryEngagement(owner,input).catch(error=>{earlyFailure=error;throw error;});void concurrentBrief.catch(()=>{});
+   let waiting=false;const deadline=Date.now()+4000;
+   while(Date.now()<deadline){
+    if(earlyFailure)throw earlyFailure;
+    await planBlocker.query('SELECT pg_stat_clear_snapshot()');
+    waiting=(await planBlocker.query("SELECT EXISTS(SELECT 1 FROM pg_stat_activity a WHERE pg_backend_pid()=ANY(pg_blocking_pids(a.pid))) AS waiting")).rows[0].waiting;
+    if(waiting)break;await new Promise(resolve=>setTimeout(resolve,10));
+   }
+   expect(waiting).toBe(true);
+   await planBlocker.query('SELECT id FROM engagements WHERE id=$1 FOR UPDATE NOWAIT',[engagementId]);
+   await planBlocker.query('COMMIT');
+   expect((await concurrentBrief).proposals.map(row=>row.id)).toContain(proposed.id);
+  }catch(error){await planBlocker.query('ROLLBACK');await concurrentBrief?.catch(()=>{});throw error;}finally{planBlocker.release();}
+
   await expect(calculateOrdinaryScenario(member,{...input,remainingHours:40})).rejects.toMatchObject({status:403});
   const before=(await db.query('SELECT version,generation FROM execution_workspaces WHERE engagement_id=$1',[engagementId])).rows[0];
   const whatif=await calculateOrdinaryScenario(owner,{...input,remainingHours:40,wholeEngagementFeeMinorUnits:'6000000',wholeEngagementNonlaborMinorUnits:'0',wholeEngagementLoadedRateMinorUnitsPerHour:'12500',currency:'USD'});

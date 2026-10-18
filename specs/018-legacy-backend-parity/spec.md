@@ -122,3 +122,15 @@ As the maintainer, I can inspect an exhaustive mechanism ledger and its evidence
 - **SC-003**: The reported research-to-product-footprint scenario and its later-read/reload variants pass with retained evidence, source qualifications and consistent account knowledge.
 - **SC-004**: All changed workflow scenarios pass their authority, idempotency, persistence and interrupted/recovery checks without weakening limits or replacing real hosted data with fixtures.
 - **SC-005**: The final merged release passes its complete required checks and authenticated Preview/Production acceptance, with remaining non-parity pilot limitations stated accurately.
+
+
+## Supplemental acceptance — native sessions and composed reads
+
+The 2026-10-18 follow-up T034–T037 is in progress. Hydrated login must use the same
+native credential POST and server cookie/303 redirect as legacy, retain the current
+look, never place credentials in URLs, preserve safe JSON/native unavailable
+behavior and support all existing roles. Terminal denied/context-changed live chats
+must clear content and stop polling; temporary failures still recover. Composed
+engagement reads must follow plan-before-engagement lock order and complete against
+actual concurrent updates without weakening domain deadlines. The original release
+record remains historical evidence; fresh acceptance is required for these fixes.

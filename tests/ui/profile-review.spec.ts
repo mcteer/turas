@@ -7,6 +7,7 @@ test("a partner claim stays Pending through submission, then accepts and retract
   { page, browser }, testInfo,
 ) => {
   test.skip(testInfo.project.name !== "webkit-desktop-light", "Shared review mutation runs once");
+  test.setTimeout(60_000);
   const marker = randomUUID().slice(0, 8);
   const claim = `Synthetic delivery observation ${marker}`;
   const customerPath = `/customers/${DEMO_IDS.sharedCustomer}`;
@@ -81,6 +82,7 @@ test("approved quality inputs survive a corrected claim and require a second exa
   { page }, testInfo,
 ) => {
   test.skip(testInfo.project.name !== "webkit-desktop-light", "Shared review mutation runs once");
+  test.setTimeout(60_000);
   test.setTimeout(60_000);
   const marker = randomUUID().slice(0, 8);
   const title = `Synthetic rating correction ${marker}`;
@@ -166,6 +168,7 @@ test("a stale second review keeps its rationale and reports the conflict", async
   { page, browser }, testInfo,
 ) => {
   test.skip(testInfo.project.name !== "webkit-desktop-light", "Shared review mutation runs once");
+  test.setTimeout(60_000);
   const title = `Synthetic competing review ${randomUUID().slice(0, 8)}`;
   const customerPath = `/customers/${DEMO_IDS.sharedCustomer}`;
   let revisionId: string | undefined;

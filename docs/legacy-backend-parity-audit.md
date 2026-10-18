@@ -1351,3 +1351,24 @@ covered by actual-Eve synthetic-provider and empty-native UI checks. All337 path
 and101 acceptance references are dispositioned; zero actionable backend gaps
 remain in this audited scope. See the [release record](production-parity-release-2026-10-16.md)
 for actual release checks, original failures and remaining evidence limitations.
+
+
+## Session and composed-read follow-up — 2026-10-18
+
+All 337 pinned legacy files were rehashed unchanged. T034–T037 correct a gap in the
+previous login disposition: the pre-hydration fallback was native, but hydrated
+login still replaced the working legacy form with JSON fetch and two client
+navigations. `app/login/login-form.tsx` now uses the actual native POST/cookie/303
+mechanism for both cases, preserving current styling. Failed storage renders a
+safe unavailable page for native forms while JSON remains 503; controlled legacy
+diagnostic categories exclude raw provider errors and credentials.
+
+Terminal live-chat denial/context change stops history and attempt polling after
+clearing content. Temporary reads still recover saved scroll/history normally.
+Actual owned Postgres traces also identified a composed-read lock inversion;
+assignment projections now lock the plan before the engagement, matching execution.
+A concurrent domain regression and negative old-order check distinguish the fix.
+Completed native fixture pages close after assertions and synthetic tool results
+are scoped to their actual submitted attempt. No model, customer data, schema or
+governed decision is replaced. Final focused-branch CI and hosted release acceptance
+are pending; the prior release record and unfinished 016 work remain separate.

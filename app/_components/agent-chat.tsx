@@ -219,6 +219,9 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   }, [conversationId]);
 
   useEffect(() => {
+    // Access loss/context change is terminal for this mounted live chat.
+    // Keep transient failures retryable, but stop polling a denied history.
+    if (denied || stale) return;
     let active=true;
     const check = async () => {
       const historyEpoch=++historyReadEpoch.current;
@@ -241,10 +244,10 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     };
     const timer = setInterval(() => { void check(); }, 2_000);
     return () => {active=false;historyAppliedEpoch.current=++historyReadEpoch.current;clearInterval(timer);};
-  }, [conversationId]);
+  }, [conversationId, denied, stale]);
 
   useEffect(() => {
-    if (!pendingKey || denied) return;
+    if (!pendingKey || denied || stale) return;
     let active = true;
     const check = async () => {
       let visibilityHistoryEpoch:number|undefined;
@@ -295,7 +298,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     void check();
     const timer = setInterval(() => { void check(); }, 5_000);
     return () => { active = false; clearInterval(timer); };
-  }, [agent, conversationId, denied, pendingKey]);
+  }, [agent, conversationId, denied, stale, pendingKey]);
 
   useEffect(() => {
     const storageKey = `turas-chat-draft:${conversationId}`;

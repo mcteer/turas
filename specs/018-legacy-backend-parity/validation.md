@@ -57,7 +57,7 @@ Actual native question continuation exposed an unknown-turn rejection before inp
 
 The separate origin repair PR35 passed all43 exact-head CI gates and merged as20f1445c9f3b738e06dd06282292eafa4671bb97. Its Production deployment/hosted verification is separate from018 completion.
 
-The attempted schema-free question fix was rejected by real execution: the public dynamic-model callback has sequence/turn/step but no native event ID or timestamp. Migration077 now stores an explicit immutable application continuation receipt from the actual owner-posted question window to that actual callback turn; it does not fabricate framework events. Runtime grants are SELECT/INSERT only. Exact submitting-login revocation remains enforced on later admission. Focused checks pass; actual native recheck remains in progress. Release schema is077, including explicit073–077 migrations and runtime grants.
+The attempted schema-free question fix was rejected by real execution: the public dynamic-model callback has sequence/turn/step but no native event ID or timestamp. Migration 077 now stores an explicit immutable application continuation receipt from the actual owner-posted question window to that actual callback turn; it does not fabricate framework events. Runtime grants are SELECT/INSERT only. Exact submitting-login revocation remains enforced on later admission. Focused checks pass; actual native recheck remains in progress. Release schema is077, including explicit073–077 migrations and runtime grants.
 
 The schema077 source now passes the full configured130-file/562-test unit suite and complete Eve+Next production build, including TypeScript. Read-only independent review confirms exact posted-login binding, original deadlines, immutable receipts and schema-version compatibility guards. Actual basic question continuation now passes fresh-login/reload/Desktop reply, original workflow final answer and retained reload. Dismissal/older questions and final approval regression are still running; these are not marked passed prematurely.
 
@@ -496,3 +496,74 @@ with zero unclassified paths or actionable gaps in the authorized backend scope.
 Canonical environment, all40,615 original workflow files and selected root model
 remain unchanged. Documentation consolidation changes only release records; it does not create
 new backend execution evidence.
+
+
+## Session/read-lock follow-up — 2026-10-18 (in progress)
+
+Branch `018-legacy-session-fixes` starts from released main34eb05c. It ports the
+native legacy form/cookie/303 mechanism, terminal live-chat polling guard and
+plan-before-engagement assignment read lock, retaining current styling and all
+server authorization/decision boundaries. JSON unavailable remains 503; native
+storage failure returns a private safe error page without a session cookie.
+No 016 workspace sessions, infrastructure, schema 078/079, model changes or provider
+calls are included. The development supervisor remains unchanged.
+
+Earlier016-owned checks provide implementation evidence only:16 built WebKit
+login checks,4 history/scroll/denied-poll cases, the actual native operations and
+knowledge gate, and a real concurrent domain regression with an old-order negative
+check. They do not establish final-source acceptance for this branch. Its fresh
+local, CI, Preview, independent and Production checks remain pending.
+
+The fresh released-main dependency audit reports 1 critical,2 high,1 moderate and8 low
+findings. This fix pins Next 16.3.8 and narrowly overrides source-map-js 1.2.2 and
+Undici 8.9.0→8.10.2, preserving Eve 0.67.1 and unrelated Undici 7. The advisory sources
+are [Next image response](https://github.com/advisories/GHSA-vcvr-r3jv-pc5j),
+[Next image optimization](https://github.com/advisories/GHSA-cjq9-62q9-8jv4),
+[source-map-js](https://github.com/advisories/GHSA-68fv-2mgg-jv7q) and
+[Undici](https://github.com/advisories/GHSA-w293-vg96-wgc3). Dependency findings do
+not by themselves establish exploitability of the application's configured paths.
+The patched fresh-install audit reports 0 critical/high/moderate and8 low findings;
+it is not a zero-vulnerability claim. Eve remains0.67.1. Nine auth/privacy unit
+cases and root/execution types pass. Current-source browser, native and release
+validation remain pending.
+
+
+Focused branch local checkpoint: a fresh patched Next/Eve production build and
+**28/28 headless WebKit cases pass in 49.1 seconds** across all four projects. These
+include all three roles' login/logout, one actual native credential POST/cookie/303,
+JavaScript-disabled invalid/valid login and safe return, the real unavailable page,
+and history/scroll recovery followed by terminal denial with no later polling.
+Desktop-dark and mobile-light login captures were visually inspected. There is no
+intercepted successful login or modeled provider execution. The first attempt
+retains 24 passes/4 fixture failures: WebKit rejects `route.fulfill` with 303. The failure
+page check now performs a real GET; actual native/JSON storage failures and cookie
+privacy remain independently asserted in server contracts. No assertion is treated
+as proof of hosted behavior.
+
+The actual native operations/knowledge rerun is pending. Its owned Postgres logs
+are retained privately before cleanup; this gate now also rejects any actual
+deadlock or statement timeout instead of accepting a superficially passing UI.
+The existing cold-thread/upload route compilation setup is performed before
+unchanged interaction assertions. The long partner review journey uses its adjacent
+review case's 60-second bound; individual 5-second assertions and domain limits remain.
+
+
+The final owned local checkpoint explicitly forward-migrates the historical 012
+fixture through the released 077 manifest and reapplies runtime grants before
+building. **28/28 built UI cases pass in 46.6 seconds on that owned 077 target**.
+The earlier 28-case run used the helper's historical 049 fixture and is retained as
+that narrower evidence. The first lock-regression attempts on 049 fail on the
+missing 064 conversation column and do not establish a regression result. After
+explicit owned 077 migration/grants, the actual concurrency regression passes in
+3.49 seconds and the old-order negative check fails as intended. The full actual
+native operations/knowledge gate also passes on 077 with zero Postgres deadlocks
+and zero statement timeouts. No Production/Preview database was migrated.
+
+
+The broader focused-branch unit command passes **653/653 cases across 147 files**
+with synthetic configuration and disconnected loopback database URLs. Its first
+attempt retained 651 passes/2 configuration failures because the shell lacked the
+required synthetic cursor-signing configuration; no application change was made
+for that setup issue. Root/execution types, documentation and diff checks pass.
+T034/T035 implementation and local verification are complete. T036 full CI and
+T037 authenticated hosted/review/merge/release acceptance remain open.
