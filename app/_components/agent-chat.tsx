@@ -376,6 +376,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     try { message=await uploadNativeFiles(message,conversationId,csrfToken); }
     catch(error) { if(preparingSend.current===preparation)preparingSend.current=null;setNotice(error instanceof Error?error.message:'File preparation failed.');return; }
     finally { setPreparingDocuments(false); }
+    initialMessage?.onConsumed?.();
     const key = keyRef.current ?? crypto.randomUUID();
     keyRef.current = key;
     if (!retryPrepared) pendingSelections.current = selections;

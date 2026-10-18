@@ -6,8 +6,10 @@ settings were removed.
 A subsequent chat bug fix is in progress: first-send transition in place, one
 Thinking loader with intermediate reasoning/tools kept in the background, and
 research handoff after an independently checked source refresh. The backend
-regression passes with stale-output and revoked-grant denials retained. Local
-checks do not yet establish a hosted release of this follow-up.
+regression passes with stale-output and revoked-grant denials retained. The
+232-case domain run, 13 display units and 44 built WebKit interaction/shell cases
+pass; focused final reasoning/reconnection/history-navigation checks also pass.
+These local checks do not yet establish a hosted release of this follow-up.
 
 # Turas
 
