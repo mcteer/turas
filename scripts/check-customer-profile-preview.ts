@@ -23,9 +23,21 @@ const sessions:Array<{context:BrowserContext;origin:string;csrf:string}>=[];
 const username=process.env.TURAS_DEMO_USERNAME??'mcteer',password=process.env.TURAS_DEMO_PASSWORD;
 async function signedIn(origin:string,preview=false){
  const context=await browser.newContext({baseURL:origin,viewport:{width:1440,height:1100},colorScheme:'dark'});contexts.push(context);
- if(preview)await context.route(origin+'/**',route=>route.continue({headers:{...route.request().headers(),
-  'x-vercel-protection-bypass':entries[0][0],'x-vercel-set-bypass-cookie':'true'}}));
- const loginPage=await context.newPage();await loginPage.goto('/login?returnTo=/customers');await loginPage.getByLabel('Username',{exact:true}).fill(username);await loginPage.getByLabel('Password',{exact:true}).fill(password);const loginResponse=loginPage.waitForResponse(response=>new URL(response.url()).pathname==='/api/auth/login'&&response.request().method()==='POST');await loginPage.getByRole('button',{name:'Sign in',exact:true}).click();const login=await loginResponse;if(!login.ok())throw Error('Hosted browser authentication failed');const body=await login.json();if(typeof body.data?.csrfToken!=='string')throw Error('Hosted session receipt unavailable');sessions.push({context,origin,csrf:body.data.csrfToken});await loginPage.waitForURL('**/customers');await loginPage.close();return sessions.at(-1)!;
+ if(preview){
+  const bypass=await context.request.get(origin+'/login',{headers:{'x-vercel-protection-bypass':entries[0][0],'x-vercel-set-bypass-cookie':'true'},maxRedirects:0});
+  if(![200,302,303,307,308].includes(bypass.status()))throw Error('Preview protection bootstrap failed');
+ }
+ const loginPage=await context.newPage();await loginPage.goto('/login?returnTo=/customers');
+ if(new URL(loginPage.url()).origin!==origin)throw Error('Unexpected hosted login origin');
+ await loginPage.getByLabel('Username',{exact:true}).fill(username);await loginPage.getByLabel('Password',{exact:true}).fill(password);
+ const loginResponse=loginPage.waitForResponse(response=>new URL(response.url()).origin===origin&&new URL(response.url()).pathname==='/api/auth/login'&&response.request().method()==='POST');
+ await loginPage.getByRole('button',{name:'Sign in',exact:true}).click();const login=await loginResponse;
+ if(preview?login.status()!==303:![200,303].includes(login.status()))throw Error('Hosted browser authentication failed');
+ const session={context,origin,csrf:''};sessions.push(session);
+ await loginPage.waitForURL(origin+'/customers');
+ const current=await context.request.get('/api/auth/session',{maxRedirects:0});if(!current.ok())throw Error('Hosted session receipt unavailable');
+ const body=await current.json();if(typeof body.data?.csrfToken!=='string'||body.data?.principal?.loginName!==username)throw Error('Hosted session identity mismatch');
+ session.csrf=body.data.csrfToken;await loginPage.close();return session;
 }
 async function directory(context:BrowserContext){const items:Array<{id:string;displayName:string;synthetic:boolean}>=[];let cursor:string|null=null;for(let count=0;count<11;count++){
  const response=await context.request.get('/api/customers?limit=50'+(cursor?'&cursor='+encodeURIComponent(cursor):''));if(!response.ok())throw Error('Hosted directory unavailable');const data=(await response.json()).data;items.push(...data.items.filter((item:{synthetic:boolean})=>!item.synthetic));cursor=data.nextCursor;if(!cursor)return items.sort((a,b)=>a.id.localeCompare(b.id));}throw Error('Hosted directory exceeded bound');}
@@ -53,6 +65,6 @@ try{
  }
  const receipt={gate:'customer-profile-hosted-preview',id:randomUUID(),origin:options.origin,commit:options.commit,verifiedAt:new Date().toISOString(),actualHttpData:true,responseSubstitution:false,browserFormLogin:true,branchOrigin,branchLogin:true,realCustomerCount:previewCustomers.length,directoryMatchesProduction:true,webkit:true,customers};await writeFile(join(root,'receipt.json'),JSON.stringify(receipt),{mode:0o600});console.log(JSON.stringify(receipt));
 }finally{
- let cleanupFailed=false;for(const session of sessions){try{const response=await session.context.request.post('/api/auth/logout',{headers:{Origin:session.origin,'x-csrf-token':session.csrf}});if(!response.ok())cleanupFailed=true;}catch{cleanupFailed=true;}}
+ let cleanupFailed=false;for(const session of sessions){try{if(!session.csrf){const current=await session.context.request.get('/api/auth/session',{maxRedirects:0});if(current.ok())session.csrf=(await current.json()).data?.csrfToken??'';if(!session.csrf)throw Error('Session cleanup token unavailable');}const response=await session.context.request.post('/api/auth/logout',{headers:{Origin:session.origin,'x-csrf-token':session.csrf}});if(!response.ok())cleanupFailed=true;}catch{cleanupFailed=true;}}
  await Promise.all(contexts.map(context=>context.close()));await browser.close();if(cleanupFailed)throw Error('Hosted test session cleanup failed');
 }

@@ -577,3 +577,11 @@ a nonlocal/malformed database without leaking values, file-loaded provider keys
 are rejected, and explicit safe shell values reach the build prerequisite. Root
 types pass. These are startup-guard checks; the prior 653-unit and 28-browser
 receipts remain their recorded source checkpoints, with fresh final CI required.
+
+The hosted customer-profile verifier now accepts the restored native 303 login on
+Preview and obtains identity/CSRF from the authenticated session endpoint. The
+unchanged Production comparison may use its existing 200 login until release.
+Preview protection uses the existing automation cookie instead of intercepting
+browser requests, preserving ordinary navigation and browser caching. The verifier
+tracks sessions before receipt checks so failure cleanup can recover the logout
+token. Root typecheck and diff checks pass; actual hosted acceptance remains open.
