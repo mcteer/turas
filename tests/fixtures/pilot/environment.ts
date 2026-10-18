@@ -14,13 +14,12 @@ export async function openOwnedPilotSuite(options:Parameters<typeof withPilotEnv
 /** Each full population owns its environment: governance permits only one
  * active pilot workspace per environment. Preserve every earlier population.
  * Only the already selected immutable renderer is carried into this scope. */
-export async function openOwnedPilotLoadSuite(options:{renderer?:boolean;http?:boolean}={}){
+export async function openOwnedPilotLoadSuite(options:{renderer?:boolean}={}){
  const renderer=process.env.TURAS_PILOT_RENDERER_IMAGE;
  if(options.renderer&&(!/^sha256:[a-f0-9]{64}$/.test(renderer??'')||process.env.TURAS_REPORTS_ENABLED!=='true'))throw Error('Explicit prepared renderer required');
  const owned=await openOwnedPilotSuite({postgresMajor:18,queryStatistics:true,deadlineMs:660000});
  try{
   if(options.renderer){process.env.TURAS_PILOT_RENDERER_IMAGE=renderer;process.env.TURAS_REPORTS_ENABLED='true';}
-  if(options.http)await owned.environment.startProduction();
   return owned;
  }catch(error){await owned.close();throw error;}
 }

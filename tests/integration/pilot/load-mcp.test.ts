@@ -11,7 +11,10 @@ import {mcpToolOutputs,type McpToolName} from '../../../lib/contracts/mcp';
 import {closeRuntimePool} from '../../../lib/server/db/client';
 import {openOwnedPilotLoadSuite} from '../../fixtures/pilot/environment';
 let owned:Awaited<ReturnType<typeof openOwnedPilotLoadSuite>>;
-beforeAll(async()=>{owned=await openOwnedPilotLoadSuite({renderer:true,http:true});},120000);
+// Retain the owned handle before the full Next/Eve build so a setup timeout
+// still reaches afterAll cleanup. Use the same production-build hook bound as
+// hosted-sdk; the complete load environment and process stay capped at 660s.
+beforeAll(async()=>{owned=await openOwnedPilotLoadSuite({renderer:true});await owned.environment.startProduction();},240000);
 afterAll(async()=>{await owned?.close();});
 it('all twenty-five actual SDK consumers read five categories from normally reviewed load records without widening partner scope',async()=>{
  const pool=new Pool({connectionString:requireOwnedPilotDatabase(process.env,true)}),db=await pool.connect(),signal=AbortSignal.timeout(600000);

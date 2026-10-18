@@ -2687,3 +2687,13 @@ reports zero high/moderate and eight low findings in the existing math-rendering
 chain; it is not a zero-vulnerability claim. No framework major upgrade is applied.
 The relevant upstream advisories are [source-map-js](https://github.com/advisories/GHSA-68fv-2mgg-jv7q)
 and [undici](https://github.com/advisories/GHSA-w293-vg96-wgc3).
+
+The current c87 deterministic CI failure is now attributed: the MCP load suite's
+120-second beforeAll hook expired while constructing the production application;
+there was no failed SDK assertion. The fixture now returns the owned environment
+before starting that build, so afterAll can clean it even when setup fails, and
+uses the existing hosted-sdk suite's 240-second production-build setup bound.
+The complete environment/process remains capped at 660 seconds; the SDK population,
+125 positive category reads, 2,500 grants and all workload/job limits are unchanged.
+The corrected actual owned SDK case passes in 190.52 seconds with the isolated
+patched dependency install. Pilot types and documentation checks pass.
