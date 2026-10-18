@@ -25,6 +25,11 @@ async function ownerTarget(db:Client|PoolClient,scope:z.infer<typeof scopeSchema
  try{await selectedDb.connect();const actual=(await selectedDb.query("SELECT current_database() AS name,encode(sha256(convert_to((pg_control_system()).system_identifier::text,'UTF8')),'hex') AS server_identity")).rows[0];if(actual.name!==row[0].name||actual.server_identity!==row[0].server_identity)throw Error('Selected owned integrity endpoint differs');}finally{await selectedDb.end();}
  return {databaseName:String(row[0].name),serverAddress:String(row[0].address),serverPort:Number(row[0].port),serverIdentity:String(row[0].server_identity)};
 }
+/** Exact selected owned cluster and locked revision, without creating an
+ * integrity capability or changing target admission. */
+export async function requireOwnedLockedRecoveryTarget(db:Client|PoolClient,scope:z.infer<typeof scopeSchema>){
+ return ownerTarget(db,scopeSchema.parse(scope));
+}
 async function storeIdentity(root:string){
  const direct=resolve(root),info=await lstat(direct);
  if(!info.isDirectory()||info.isSymbolicLink()||info.uid!==process.getuid?.()||(info.mode&0o777)!==0o700||await realpath(direct)!==direct)throw Error('Exact private restored store required');

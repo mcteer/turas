@@ -681,3 +681,29 @@ Canonical profile probes retain the original authenticated actor through nested
 research reads; separate research metadata must match that exact session and
 workspace. A successful actor lock alone is not proof of a successful profile
 read. The owned probe requires the actual accepted profile revision in the result.
+
+### Authenticated reads after owned quarantine
+
+```sh
+npm run pilot:recovery:authority -- --probe-owned-service --scope <private-current-scope.json> --credential <private-credential.json> --output <new-private-directory>
+```
+
+The strict scope contract is defined in
+`scripts/pilot-owned-recovery-read.ts`. It binds the current source commit and
+digests, exact environment/recovery/revision/workspace/customer, accepted profile
+revision IDs, accepted plan/revision pairs and an expiry within five minutes.
+The separate private credential file uses contract
+`pilot-owned-recovery-credential-v1`, `loginName: mcteer` and the configured password.
+Both files require a direct private directory and mode 0600. Never put the
+password in CLI arguments, receipts or commits.
+
+The command accepts only the exact selected owned local cluster and a locked
+schema-079 target. It checks the actual configured credential and live admin
+membership, creates a short-lived transaction-local session, performs canonical
+reads and revokes the session before committing. Callback SQL failures roll back
+the read savepoint and retire the session; command failures roll back the whole
+transaction. SQL and operator deadlines remain bounded by the original expiry.
+Receipts contain response digests and identities, never credentials or profile
+prose. All seven quarantine scopes remain unresolved. This partial profile/plan
+diagnostic proves neither complete required service nor authenticated HTTP,
+managed Workflow reconciliation or unlock readiness.

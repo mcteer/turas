@@ -2581,3 +2581,17 @@ membership, workspace, token, role, login and environment. The full accepted
 profile read passes while locked; mismatched metadata remains denied. All existing
 probe bounds still pass, as do three normal customer-profile regression cases and
 root/pilot types. This fix is later than the frozen 7a11d49 catalog run.
+
+A normally reviewed accepted plan now joins the canonical profile recovery probe.
+A separate post-quarantine case verifies the actual owned operator command using
+configured credentials, a fresh short-lived session and canonical profile/plan
+reads. It rejects unowned/runtime/autocommit access, wrong credentials/workspace
+and wrong accepted plan revision; SQL callback failure leaves no live session.
+All seven quarantines and the global lock remain. Both integration cases and
+root/pilot types passed before the additional explicit SQL transaction deadline;
+the final bounded command check is recorded separately. The current catalog now
+has 732 cases across 136 suites; the frozen 7a11d49 run still has 731.
+
+The final bounded owned command check passed both integration cases in 21.79s,
+including the explicit SQL transaction deadline and the real success/failure CLI
+receipts. No hosted target, ordinary login or required quarantine was opened.

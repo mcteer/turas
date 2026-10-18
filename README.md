@@ -281,6 +281,9 @@ The work-restore path now measures actual database content and private files bef
 quarantine, with atomic current-grant reconciliation from authenticated retained
 denials. Read-only managed-run inspection traverses all provider pages twice;
 terminal closure and retirement of old deployments remain unproved.
+An owned recovery command now authenticates temporary mcteer probes, reads actual
+accepted profiles/plans and retires its session even after SQL failure; this is a
+partial locked diagnostic and cannot grant recovery readiness.
 Recovery authority, hosted services, scheduled backups and actual participant
 acceptance remain pending; local checks do not establish pilot readiness. See the
 [handoff](specs/016-pilot-hardening/handoff.md) for scope and execution gates.
