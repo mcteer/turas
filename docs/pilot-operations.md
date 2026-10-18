@@ -409,6 +409,8 @@ npm run pilot:recovery:workflow -- --close-managed-workflows \
   --destination /protected/independent-archive.json \
   --input /protected/current-run-bindings.json \
   --auth-file /protected/operator-auth.json \
+  --runtime-scope /protected/exact-hosted-scope.json \
+  --session-file /protected/exact-operations-session.json \
   --output local-artifacts/016/exact-closure-attempt
 ```
 
@@ -719,3 +721,53 @@ Neither version infers that omitted required service is healthy.
 Current report verification uses the normal authenticated browser read and
 requires published/current state and the exact latest publication revision.
 MCP's separate narrower projection is not used to judge internal service health.
+
+### Finite complete managed-run inventory closure
+
+After the exact source is schema 079 and locked, the read-only managed inspection
+command emits `closure-plan.json`. Its identity digest binds every enumerated
+run/deployment/workflow name without binding the status that cancellation changes.
+It records the exact source commit/digests, target/project/team/environment,
+recovery UUID/revision, observed count and page/run bounds, and a fifteen-minute
+expiry. Open or historical-schema inspection never emits a cancellation plan.
+
+```sh
+npm run pilot:recovery:workflow -- --close-managed-inventory --source <private-current-source.json> --destination <private-independent-archive.json> --input <inspection-directory/closure-plan.json> --auth-file <protected-operator-auth.json> --runtime-scope <private-exact-hosted-scope.json> --session-file <private-exact-operations-session.json> --output <new-private-directory>
+```
+
+The command requires committed source and retired legacy login admission. It
+re-reads all provider metadata before dispatch, validates every workflow kind,
+and processes at most 50 runs per batch using the existing independently durable
+once-only intents and terminal observations. Each batch has an immutable private
+receipt. A repeat with the same identities reads terminal state and retained
+receipts; an existing uncertain intent never authorizes another cancellation.
+Use a fresh output directory on resume, retain all earlier receipts and obtain a
+fresh read-only plan if its original expiry passed. This does not renew paid
+operation authority or release any unknown charge.
+
+A final complete repeated traversal must contain the same identities, unchanged
+application bindings/source state and only terminal states. New identities,
+source/control drift, unsupported workflow names, missing archive, a lost owner
+connection or uncertain cancellation stops the command. New runs are never
+automatically added to the cancellation set. A verified empty inventory still
+requires the actual independent archive contract. Enumeration closure is not
+proof that old deployments cannot create future work: old-deployment retirement,
+paid-effect reconciliation and full recovery remain separate gates. The command
+never opens service, deletes deployments or resumes a captured turn.
+
+Both cancellation modes require an exact `pilot-hosted-scope-v1` runtime scope
+and a private `pilot-hosted-operations-session-v1` file containing `origin`,
+`cookie` and optional `protectionBypass`. The cookie must be the real
+`__Host-turas_session` cookie from an authorized mcteer operations session
+established before locking. Protect these files with mode 0600; never place
+cookies, passwords or bypass credentials in CLI arguments or receipts.
+
+Before sending that cookie, the command verifies the deployment and alias through
+the platform API. The authenticated operations status must then identify the same
+committed source, locked schema-079 environment/recovery/revision and database
+endpoint as the owner connection. A fresh endpoint digest excludes passwords and
+role names; the observation must separately show a direct runtime login, rather
+than an owner connection using SET ROLE. The complete-inventory command repeats
+this binding before every batch and after closure. An unavailable protected
+configuration value or a supplied healthy JSON document cannot replace this
+authenticated observation. These checks do not open service.

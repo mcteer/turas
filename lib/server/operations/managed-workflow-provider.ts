@@ -23,6 +23,12 @@ export async function bindManagedRunProvider(raw:z.infer<typeof scopeSchema>,sig
    return managedRunPageSchema.parse(await call('/v1/workflow/v2/runs?'+query.toString(),'GET'));
   },
   read:async(id:string)=>metadata.parse(await call('/v1/workflow/v2/runs/'+encodeURIComponent(runId(id))+'?remoteRefBehavior=lazy&teamId='+scope.teamId,'GET')),
-  cancel:async(id:string)=>metadata.parse(await call('/v1/workflow/v1/runs/'+encodeURIComponent(runId(id))+'/cancel?remoteRefBehavior=lazy&teamId='+scope.teamId,'PUT')),
+  cancel:async(rawId:string)=>{
+   const id=runId(rawId),run=metadata.parse(await call('/v1/workflow/v2/runs/'+encodeURIComponent(id)+'?remoteRefBehavior=lazy&teamId='+scope.teamId,'GET'));
+   if(run.runId!==id)throw Error('Exact cancellation run differs');
+   const deployment=z.object({id:z.string(),projectId:z.string(),ownerId:z.string(),target:z.enum(['production']).nullable()}).parse(await call('/v13/deployments/'+encodeURIComponent(run.deploymentId)+'?teamId='+scope.teamId,'GET'));
+   if(deployment.id!==run.deploymentId||deployment.projectId!==scope.projectId||deployment.ownerId!==scope.teamId||(scope.target==='production'?deployment.target!=='production':deployment.target!==null))throw Error('Cancellation deployment project or environment differs');
+   signal.throwIfAborted();return metadata.parse(await call('/v1/workflow/v1/runs/'+encodeURIComponent(id)+'/cancel?remoteRefBehavior=lazy&teamId='+scope.teamId,'PUT'));
+  },
  };
 }

@@ -281,6 +281,8 @@ The work-restore path now measures actual database content and private files bef
 quarantine, with atomic current-grant reconciliation from authenticated retained
 denials. Read-only managed-run inspection traverses all provider pages twice;
 terminal closure and retirement of old deployments remain unproved.
+A finite inventory command now automates the protected closure batches and
+refuses drift or uncertain cancellation retries; its hosted execution is pending.
 An owned recovery command now authenticates temporary mcteer probes, reads actual
 accepted profiles/plans/reports and retires its session even after SQL failure; this is a
 partial locked diagnostic and cannot grant recovery readiness.

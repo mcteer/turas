@@ -289,3 +289,12 @@ actual authenticated retained-reader object and composes effect retirement and
 permanent denial/replay fences in one owner transaction. These mechanisms are
 implemented; they are not a completed recovery verification producer, hosted drill,
 or authorization to unlock service.
+
+
+Managed closure now has a finite inventory orchestrator in addition to the
+explicit-run batch command. The locked schema-079 inspector stages a source-bound
+plan; execution repeats the provider inventory, preserves each independent intent
+and terminal receipt, and rechecks the entire identity/application/source set at
+completion. This automates batches without expanding the set after drift or
+retrying uncertainty. It does not establish old-deployment retirement or effect
+settlement, and therefore does not produce full recovery verification.

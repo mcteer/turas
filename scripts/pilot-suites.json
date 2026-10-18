@@ -1238,7 +1238,7 @@
     },
     {
       "file": "tests/unit/pilot/managed-workflow-provider.test.ts",
-      "expectedCases": 7,
+      "expectedCases": 8,
       "cases": [
         "binds the actual work project and uses lazy metadata reads and a single exact cancellation request",
         "rejects an invalid run identity without dispatching another request",
@@ -1246,7 +1246,8 @@
         "does not retry an unavailable provider response",
         "bounds the response body before accepting project metadata",
         "returns only run metadata and discards native input and output bodies",
-        "lists unfiltered lazy metadata in the explicitly selected provider environment"
+        "lists unfiltered lazy metadata in the explicitly selected provider environment",
+        "checks actual deployment ownership and environment before issuing cancellation"
       ]
     },
     {
@@ -1271,14 +1272,19 @@
     },
     {
       "file": "tests/integration/pilot/managed-workflow-batch.test.ts",
-      "expectedCases": 6,
+      "expectedCases": 11,
       "cases": [
         "withholds provider reads and cancellation until legacy database admission is retired",
         "cancels the exact bounded batch under a locked owner fence and retains independent terminal receipts",
         "reconciles a repeated batch with reads and existing receipts without another cancellation",
         "rejects a stale recovery control revision before any provider read",
         "rejects duplicated run identities before touching the provider",
-        "stops provider reconciliation on actual owner connection loss and retains its uncertain independent intent"
+        "stops provider reconciliation on actual owner connection loss and retains its uncertain independent intent",
+        "closes and resumes a complete 53-run inventory through bounded batches without cancelling twice",
+        "stops on provider identity drift without cancelling newly discovered runs",
+        "retains an uncertain inventory cancellation intent and refuses automatic retry on resume",
+        "rejects a foreign planned identity digest and unsupported workflow kind before cancellation",
+        "verifies an explicitly empty provider inventory and still requires the independent archive"
       ]
     },
     {
@@ -1548,6 +1554,16 @@
       "cases": [
         "preserves an unchanged current grant while revoking newer denials and all restored credentials",
         "rolls back grant-preserving quarantine when actual current-denial validation fails"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-runtime-binding.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "binds the database endpoint independently of passwords pooling and role overrides",
+        "verifies platform deployment and alias before reading the authenticated locked binding",
+        "rejects stale foreign or role-overridden database observations",
+        "withholds application cookies on foreign deployment metadata and never follows redirects"
       ]
     }
   ],

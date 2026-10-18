@@ -1,3 +1,4 @@
+import {databaseTargetDigest,readOperationalDatabaseBinding} from '../../../lib/server/operations/database-binding';
 import {it,expect} from 'vitest';
 import {Client} from 'pg';
 import {randomUUID} from 'node:crypto';
@@ -22,7 +23,9 @@ async function fixture(run:()=>Promise<void>){
 }
 it('public health returns only readiness and cannot write observation samples',async()=>fixture(async()=>{const before=(await owner.query('SELECT count(*)::int AS n FROM operations_health_samples')).rows[0].n;const response=await ready();expect(response.status).toBe(503);expect(await response.json()).toEqual({ready:false});expect((await owner.query('SELECT count(*)::int AS n FROM operations_health_samples')).rows[0].n).toBe(before);}),150000);
 
-it('canonical admin receives bounded safe per-class diagnostics',async()=>fixture(async()=>{const response=await status(request(admin.token));expect(response.status).toBe(200);const body=await response.json();expect(body.data.database).toBe('healthy');expect(body.data.maintenance.classes).toHaveLength(15);expect(body.data.ready).toBe(false);expect(JSON.stringify(body).length).toBeLessThan(10000);}),150000);
+it('canonical admin receives bounded safe per-class diagnostics',async()=>fixture(async()=>{const response=await status(request(admin.token));expect(response.status).toBe(200);const body=await response.json();expect(body.data.database).toBe('healthy');expect(body.data.maintenance.classes).toHaveLength(15);expect(body.data.ready).toBe(false);expect(body.data.connectionBinding).toMatchObject({databaseBindingDigest:databaseTargetDigest(requireOwnedPilotDatabase(process.env,true),process.env.TURAS_ENVIRONMENT_ID!),schemaVersion:79,environmentId:process.env.TURAS_ENVIRONMENT_ID,effectiveRuntimeRole:true,directRuntimeLogin:true});expect(JSON.stringify(body)).not.toContain(requireOwnedPilotDatabase(process.env,true));expect(JSON.stringify(body).length).toBeLessThan(10000);
+ await owner.query('BEGIN');try{await owner.query('SET LOCAL ROLE turas_runtime');const overridden=await readOperationalDatabaseBinding(owner as unknown as import('pg').PoolClient,{connection:requireOwnedPilotDatabase(process.env,true),environmentId:process.env.TURAS_ENVIRONMENT_ID!,codeVersion:process.env.TURAS_CODE_VERSION!});expect(overridden).toMatchObject({effectiveRuntimeRole:true,directRuntimeLogin:false});}finally{await owner.query('ROLLBACK');}
+}),150000);
 
 it('denies internal members partners bearer MCP and arbitrary admin headers',async()=>fixture(async()=>{for(const actor of [member,partner])expect((await status(request(actor.token))).status).toBe(403);const connection=await createMcpConnection(admin,{requestKey:randomUUID(),name:'Synthetic status scope denial',categories:['knowledge'],customerIds:[],lifetimeDays:1});if(!connection.secretAvailable)throw Error('Owned MCP credential required');const bearer=new Request(process.env.TURAS_APP_ORIGIN+'/api/operations/status',{headers:{authorization:`Bearer ${connection.credential}`,'x-role':'admin','x-principal-id':admin.principalId}});expect((await status(bearer)).status).toBe(401);expect((await status(request())).status).toBe(401);}),150000);
 

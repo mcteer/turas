@@ -2615,3 +2615,24 @@ The version-2 report probe now uses the normal authenticated browser projection
 after verifying the exact current publication. It does not borrow MCP's narrower
 financial-content exclusion. All three composed probe cases passed again in
 33.54s, including success/failure operator receipts, and pilot types passed.
+
+The fixed-inventory closure orchestrator passed 19 cases across its inventory unit
+and actual two-owned-database integration suites. New coverage closes 53 controlled
+provider runs in two batches and resumes without duplicate cancellation; detects
+new identity drift; retains an uncertain independent intent and refuses retry;
+rejects wrong identity digests/unsupported workflow names before cancellation; and
+requires the independent archive even for verified empty inventory. Provider
+responses are controlled fixtures: no actual hosted run was cancelled. Root/pilot
+types passed. The current catalog contains 738 cases across 136 suites.
+
+The current catalog contains **743 cases across 137 suites**. Four new runtime
+binding unit cases passed, and all nine actual owned-database health integration
+cases passed. Health observations distinguish a direct restricted runtime login
+from owner SET ROLE and bind the actual database endpoint without exposing its URL.
+Both cancellation commands now require a fresh authenticated deployed observation
+verified against platform deployment/alias metadata before cookie dispatch.
+Provider cancellation additionally verifies the original deployment project, owner
+and explicit target before sending its one cancellation request. These are local
+checks with controlled provider transport; no hosted run was cancelled. The full
+731-case run at 7a11d49 passed independently; it does not establish a complete
+pass of this newer catalog or hosted readiness.

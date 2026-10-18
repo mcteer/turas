@@ -519,6 +519,11 @@
         "unit.managed-workflow-command.004",
         "unit.managed-workflow-command.005",
         "integration.managed-workflow-batch.006",
+        "integration.managed-workflow-batch.007",
+        "integration.managed-workflow-batch.008",
+        "integration.managed-workflow-batch.009",
+        "integration.managed-workflow-batch.010",
+        "integration.managed-workflow-batch.011",
         "integration.recovery-quarantine.010",
         "integration.recovery-quarantine.011",
         "integration.storage-migrate.001",
@@ -565,6 +570,7 @@
         "integration.recovery-read-probe.002",
         "integration.recovery-read-probe.003",
         "unit.managed-workflow-provider.007",
+        "unit.managed-workflow-provider.008",
         "unit.managed-workflow-inventory.001",
         "unit.managed-workflow-inventory.002",
         "unit.managed-workflow-inventory.003",
@@ -575,7 +581,11 @@
         "unit.managed-workflow-inventory.008",
         "unit.retained-denial-proof.001",
         "integration.recovery-current-grants.001",
-        "integration.recovery-current-grants.002"
+        "integration.recovery-current-grants.002",
+        "unit.managed-runtime-binding.001",
+        "unit.managed-runtime-binding.002",
+        "unit.managed-runtime-binding.003",
+        "unit.managed-runtime-binding.004"
       ]
     },
     {

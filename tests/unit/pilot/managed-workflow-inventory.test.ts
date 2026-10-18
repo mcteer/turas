@@ -1,11 +1,11 @@
 import {it,expect} from 'vitest';
-import {inventoryManagedRuns} from '../../../lib/server/operations/managed-workflow-inventory';
+import {inventoryManagedRuns,managedRunIdentityDigest} from '../../../lib/server/operations/managed-workflow-inventory';
 const run=(id:string,status='completed')=>({runId:'wrun_'+id,deploymentId:'dpl_synthetic',workflowName:'workflow//eve//taskRunWorkflow',status,input:{private:'discarded'}});
 const page=(data:unknown[],cursor:string|null=null,hasMore=false)=>({data,cursor,hasMore});
 const scope=()=>({signal:AbortSignal.timeout(1000),maxRuns:10,maxPages:4,expectedRunIds:['wrun_app']});
 it('traverses every page twice and retains provider-only child runs without closure claims',async()=>{
  const calls:(string|null)[]=[];const result=await inventoryManagedRuns({...scope(),list:async cursor=>{calls.push(cursor);return cursor===null?page([run('app')],'next',true):page([run('child')],'last');}});
- expect(calls).toEqual([null,'next',null,'next']);expect(result.providerOnlyRunIds).toEqual(['wrun_child']);expect(result.repeatedTraversalVerified).toBe(true);expect(result.allProviderRunsClosed).toBe(false);expect(result.providerSnapshotVerified).toBe(false);expect(result.restorationReady).toBe(false);expect(JSON.stringify(result)).not.toContain('discarded');
+ expect(calls).toEqual([null,'next',null,'next']);expect(result.providerOnlyRunIds).toEqual(['wrun_child']);expect(result.repeatedTraversalVerified).toBe(true);expect(result.allProviderRunsClosed).toBe(false);expect(result.providerSnapshotVerified).toBe(false);expect(result.restorationReady).toBe(false);expect(JSON.stringify(result)).not.toContain('discarded');expect(result.identityDigest).toBe(managedRunIdentityDigest([run('child','running'),run('app','failed')]));
 });
 it('rejects a missing application binding and duplicate expected identities',async()=>{
  await expect(inventoryManagedRuns({...scope(),list:async()=>page([run('other')])})).rejects.toThrow('binding missing');

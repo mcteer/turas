@@ -1,3 +1,4 @@
+import {readOperationalDatabaseBinding} from './database-binding';
 import {readPrivateStoreHealth} from './store-observations';
 import {readHostedImageHealth} from './image-health';
 import {readVerifiedBackupHealth} from './backup-health';
@@ -41,7 +42,7 @@ export async function readOperationalHealth(){
      AND v.required_scope_healthy AND v.integrity_verified AND v.denial_verified AND v.replay_verified AND v.workflow_verified)
     ORDER BY q.scope_kind`,[environmentId])).rows.map(row=>String(row.scope_kind));
    const now=Number((await db.query('SELECT extract(epoch FROM clock_timestamp())*1000 AS now')).rows[0].now);
-   return {dispatch:await readHostedDispatchHealth(db,environmentId),deployment:{codeVersion},...await readCapacityHealth(db,environmentId),admission:control?.mode==='open'?'open' as const:'closed' as const,recovery:{quarantinedScopes,requiredScopesQuarantined:quarantinedScopes.length},maintenance:assessMaintenanceHealth(rows,now,codeVersion),stores:await readPrivateStoreHealth(db,environmentId,codeVersion),images:await readHostedImageHealth(db,environmentId,codeVersion),backups:await readVerifiedBackupHealth(db,environmentId,codeVersion)};
+   return {connectionBinding:await readOperationalDatabaseBinding(db,{connection:getServerConfig().DATABASE_URL,environmentId,codeVersion}),dispatch:await readHostedDispatchHealth(db,environmentId),deployment:{codeVersion},...await readCapacityHealth(db,environmentId),admission:control?.mode==='open'?'open' as const:'closed' as const,recovery:{quarantinedScopes,requiredScopesQuarantined:quarantinedScopes.length},maintenance:assessMaintenanceHealth(rows,now,codeVersion),stores:await readPrivateStoreHealth(db,environmentId,codeVersion),images:await readHostedImageHealth(db,environmentId,codeVersion),backups:await readVerifiedBackupHealth(db,environmentId,codeVersion)};
   });
   const ready=observed.dispatch==='ready'&&!observed.costs.truncated&&observed.costs.budgets.every(budget=>budget.unknownReservations===0)&&observed.admission==='open'&&observed.recovery.requiredScopesQuarantined===0&&observed.maintenance.healthy&&observed.stores==='healthy'&&observed.images==='healthy'&&observed.backups==='healthy';
   return {ready,database:'healthy' as const,...observed,configuration:readHostedConfiguration()};
