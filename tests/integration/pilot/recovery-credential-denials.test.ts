@@ -33,6 +33,16 @@ it('preserves ordinary nullable unique identities while fencing concrete recover
  await owner.query('ALTER TABLE pilot_nullable_replay_attempts DISABLE TRIGGER recovered_request_replay');
  await expect(auditRecoveredRequestFences(owner,snapshot,scope)).rejects.toThrow('request guard unavailable');
  await owner.query('ALTER TABLE pilot_nullable_replay_attempts ENABLE TRIGGER recovered_request_replay');
+ const blocker=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await blocker.connect();
+ try{
+  await blocker.query('BEGIN');await blocker.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16020))',[environmentId]);
+  const pid=(await owner.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
+  const audit=auditRecoveredRequestFences(owner,snapshot,scope).then(value=>({value,error:null}),error=>({value:null,error}));
+  const deadline=Date.now()+2000;while(!(await blocker.query("SELECT 1 FROM pg_stat_activity WHERE pid=$1 AND wait_event='advisory'",[pid])).rowCount){if(Date.now()>deadline)throw Error('Replay audit barrier not reached');await new Promise(done=>setTimeout(done,20));}
+  await blocker.query('ALTER TABLE pilot_nullable_replay_attempts DISABLE TRIGGER recovered_request_replay');await blocker.query('COMMIT');
+  const result=await audit;expect(result.value).toBeNull();expect(result.error).toBeInstanceOf(Error);expect(result.error.message).toContain('request guard unavailable');
+  await blocker.query('ALTER TABLE pilot_nullable_replay_attempts ENABLE TRIGGER recovered_request_replay');
+ }finally{await blocker.query('ROLLBACK').catch(()=>{});await blocker.end();}
  await expect(auditRecoveredRequestFences(runtime,snapshot,scope)).rejects.toThrow('actual owner');
  await expect(auditRecoveredRequestFences(owner,snapshot,{...scope,controlRevision:scope.controlRevision+1})).rejects.toThrow('Exact locked');
  await runtime.query('INSERT INTO pilot_nullable_replay_attempts(id,environment_id,request_key) VALUES($1,$2,NULL),($3,$2,NULL)',[randomUUID(),environmentId,randomUUID()]);

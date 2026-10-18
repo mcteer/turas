@@ -2550,3 +2550,9 @@ suites. The reader now has a finite 256-artifact bound and accepts only exact
 registered suite paths. A full-current-catalog regression passed, including
 rejection of omissions, duplicates and foreign source bindings. The preceding
 recovery checkpoint passed 350 unit/contract cases across 60 files.
+
+The replay-fence audit now takes its current-state measurement after both recovery
+fences and table locks, using READ COMMITTED. All 16 credential-denial integration
+cases passed, including an actual owner transaction that disables a replay guard
+while the audit waits; the audit rejects the changed guard. The audit receipt
+binds its measured current-state digest and still grants no recovery readiness.

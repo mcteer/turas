@@ -672,3 +672,7 @@ sessions, MCP credentials and effects are retired. No grant is created or
 reactivated. Without that authenticated proof, quarantine revokes every restored
 grant. A failed reconciliation rolls back the entire quarantine transaction and
 leaves global admission closed.
+
+The request-fence audit also measures current state after its authority fences and
+table locks. Its receipt includes that digest; a later mutation requires a new
+audit. The receipt alone cannot resolve quarantine or open service.

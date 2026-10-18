@@ -2,6 +2,7 @@ import type {Client,PoolClient} from 'pg';
 import {z} from 'zod';
 import {createRequire} from 'node:module';
 import {recoveryDigest} from '../../contracts/pilot-recovery';
+import {currentRecoveryStateDigest} from './recovery-state';
 import {recoveryDenialSnapshotSchema,verifyRecoveryDenialSnapshot} from './recovery-denial-snapshot';
 const scopeSchema=z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive(),snapshotDigest:z.string().regex(/^[a-f0-9]{64}$/),backupCapturedAt:z.iso.datetime({offset:true})});
 const inheritedFence=z.strictObject({environment_id:z.string(),table_name:z.string().regex(/^[a-z_][a-z0-9_]*$/),key_columns:z.array(z.string().regex(/^[a-z_][a-z0-9_]*$/)).min(1).max(16),key_digest:z.string().regex(/^[a-f0-9]{64}$/)});
@@ -21,12 +22,15 @@ function installedReplayFunctions(){
 export async function auditRecoveredRequestFences(db:Client|PoolClient,raw:unknown,rawScope:z.infer<typeof scopeSchema>){
  const scope=scopeSchema.parse(rawScope),snapshot=recoveryDenialSnapshotSchema.parse(raw);
  if(snapshot.contract!=='pilot-denial-replay-snapshot-v7'||snapshot.schemaVersion!==79)throw Error('Complete current schema-079 replay inventory required');
- await db.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
+ await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');
  try{
   await db.query("SET LOCAL lock_timeout='3000ms'");await db.query("SET LOCAL statement_timeout='10000ms'");await db.query("SET LOCAL transaction_timeout='120s'");
   if((await db.query("SELECT current_user=pg_get_userbyid(relowner) AS owner FROM pg_class WHERE oid='operations_control'::regclass")).rows[0]?.owner!==true)throw Error('Request fence audit requires actual owner authority');
   await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16020))',[scope.environmentId]);
   await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[scope.environmentId]);
+  // Take table locks only after the waited-for authority fences, then measure
+  // the current committed state rather than an earlier repeatable snapshot.
+  const currentStateDigest=await currentRecoveryStateDigest(db);
   const marker=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;
   if(marker.length!==1||marker[0].environment_id!==scope.environmentId||Number(marker[0].schema_version)!==79)throw Error('Request fence audit target differs');
   const control=(await db.query('SELECT mode,revision,recovery_id FROM operations_control WHERE environment_id=$1 FOR SHARE',[scope.environmentId])).rows[0];
@@ -73,7 +77,7 @@ export async function auditRecoveredRequestFences(db:Client|PoolClient,raw:unkno
    if(Number(missing)!==0)throw Error('Captured permanent request fence missing');
    tables.push({name,indexes:entry.columns.size,keys:keys.length,keySetDigest:recoveryDigest(keys)});
   }
-  const proofDigest=recoveryDigest({scope,functionDigest,tables});await db.query('COMMIT');
-  return {contract:'pilot-request-fence-audit-v1',...scope,proofDigest,functionDigest,tables,permanentRequestFencesVerified:true,authorityGranted:false,quarantineCleared:false,providerCalls:0,currentAuthorityVerified:false,replayReconciled:false,restorationReady:false};
+  const proofDigest=recoveryDigest({scope,currentStateDigest,functionDigest,tables});await db.query('COMMIT');
+  return {contract:'pilot-request-fence-audit-v1',...scope,currentStateDigest,proofDigest,functionDigest,tables,permanentRequestFencesVerified:true,authorityGranted:false,quarantineCleared:false,providerCalls:0,currentAuthorityVerified:false,replayReconciled:false,restorationReady:false};
  }catch(error){await db.query('ROLLBACK');throw error;}
 }
