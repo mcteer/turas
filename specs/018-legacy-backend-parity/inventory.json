@@ -1,6 +1,6 @@
 {
   "referenceCommit": "fd1e205d7fd258676d6fb12b3ade8a431d53a6af",
-  "status": "Complete:337 pinned legacy paths reviewed and101 acceptance references dispositioned; PR36\u201339 merged, final50 exact-head CI/26Preview checks pass, canonical Production/schema077 and actual active failed-turn reload recovery independently verified; evidence limits preserved",
+  "status": "Historical337-path/101-reference release audit retained; all337 legacy hashes rechecked unchanged on2026-10-18. Session/read-lock follow-up T034\u2013T037 is in progress; fresh release acceptance remains pending.",
   "entries": [
     {
       "legacyPath": ".gitignore",
@@ -5795,7 +5795,7 @@
       "legacyPath": "app/api/auth/login/route.ts",
       "sha256": "347ab73a9ff1377c0a410cd406ff73b5496301ec8dc3a1ad016e7859ec492746",
       "classification": "reviewed-source",
-      "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
+      "status": "Native session mechanism follow-up implemented; exact-source acceptance pending",
       "reviews": [
         {
           "audit": "audit-runtime.json",
@@ -5822,7 +5822,9 @@
         "T027",
         "T023",
         "T024",
-        "T025"
+        "T025",
+        "T034",
+        "T037"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -5870,7 +5872,8 @@
           "tests/unit/config.test.ts"
         ],
         "remainingAcceptance": []
-      }
+      },
+      "notes": " Follow-up restores the actual hydrated native form/cookie/303 path and safe controlled failure diagnostics; JSON unavailable503 and current server authority remain enforced."
     },
     {
       "legacyPath": "app/api/auth/logout/route.ts",
@@ -7186,15 +7189,17 @@
       "legacyPath": "app/login/login-form.tsx",
       "sha256": "2ed9e5abdc7166798c1e94a034f3d598a8a735b5c876daea4554fbc78a153a39",
       "classification": "reviewed-consumer-or-config",
-      "status": "static review; implementation and validation tracked separately",
+      "status": "Native session mechanism follow-up implemented; exact-source acceptance pending",
       "reviews": [],
       "currentPaths": [
         "app/login/login-form.tsx",
         "app/api/auth/login/route.ts"
       ],
-      "notes": "Native credential form, safe return path and explicit failure/unavailable retained; origin repair separately017.",
+      "notes": "Native credential form, safe return path and explicit failure/unavailable retained; origin repair separately017. Follow-up restores the actual hydrated native form/cookie/303 path and safe controlled failure diagnostics; JSON unavailable503 and current server authority remain enforced.",
       "tasks": [
-        "T021"
+        "T021",
+        "T034",
+        "T037"
       ]
     },
     {
@@ -8925,7 +8930,7 @@
       "legacyPath": "lib/auth/diagnostics.ts",
       "sha256": "dde3abe5279b5cf3eda4d371730bd1f4f36e92c84d17a4e67c8c842f7224d744",
       "classification": "reviewed-source",
-      "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
+      "status": "Native session mechanism follow-up implemented; exact-source acceptance pending",
       "reviews": [
         {
           "audit": "audit-runtime.json",
@@ -8952,7 +8957,9 @@
         "T027",
         "T023",
         "T024",
-        "T025"
+        "T025",
+        "T034",
+        "T037"
       ],
       "historicalNote": {
         "status": "source entry chain reviewed; consult per-audit findings and task evidence, not a completion claim",
@@ -8968,7 +8975,8 @@
         "app/api/auth/login/route.ts",
         "app/api/auth/logout/route.ts",
         "app/api/auth/session/route.ts",
-        "app/login/login-form.tsx"
+        "app/login/login-form.tsx",
+        "lib/server/auth/diagnostics.ts"
       ],
       "currentImplementation": {
         "disposition": "implemented governed adaptation; remaining runtime/hosted evidence explicitly listed",
@@ -9000,7 +9008,8 @@
           "tests/unit/config.test.ts"
         ],
         "remainingAcceptance": []
-      }
+      },
+      "notes": " Follow-up restores the actual hydrated native form/cookie/303 path and safe controlled failure diagnostics; JSON unavailable503 and current server authority remain enforced."
     },
     {
       "legacyPath": "lib/auth/next.ts",

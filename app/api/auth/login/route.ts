@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { failure, HttpFailure, success } from "../../../../lib/contracts/http";
+import { sessionFailureDiagnostic } from "../../../../lib/server/auth/diagnostics";
 import { authenticateDemoPrincipal } from "../../../../lib/server/auth/credentials";
 import { checkMutationOrigin, csrfTokenForSession } from "../../../../lib/server/auth/csrf";
 import { issueSession, sessionCookie } from "../../../../lib/server/auth/sessions";
@@ -14,7 +15,7 @@ const loginInput = z.object({
 }).strict();
 
 function safeReturnPath(value: string | undefined, origin: string): string {
-  if (!value) return "/";
+  if (!value || value === "/") return "/s";
   if (!value.startsWith("/") || value.startsWith("//") || value.includes("\\")) {
     throw new HttpFailure(422, "invalid_return_path", "Invalid return path");
   }
@@ -23,9 +24,17 @@ function safeReturnPath(value: string | undefined, origin: string): string {
   return parsed.pathname + parsed.search + parsed.hash;
 }
 
+function nativeLoginFailure(error: "invalid" | "unavailable", returnTo: string) {
+  return new Response(null, { status: 303, headers: {
+    location: `/login?error=${error}&returnTo=${encodeURIComponent(returnTo)}`,
+    "Cache-Control": "private, no-store",
+  } });
+}
+
 export async function POST(request: Request): Promise<Response> {
   const nativeForm = request.headers.get("content-type")?.split(";",1)[0] === "application/x-www-form-urlencoded";
-  let returnTo = "/";
+  let returnTo = "/s";
+  let phase = "validate";
   try {
     const config = getServerConfig();
     checkMutationOrigin(request, config);
@@ -40,12 +49,14 @@ export async function POST(request: Request): Promise<Response> {
     returnTo = safeReturnPath(input.data.returnTo, config.TURAS_APP_ORIGIN);
     const clientAddress = trustedLocalClientAddress();
     await checkLoginThrottle(input.data.username, clientAddress);
+    phase = "authenticate";
     const identity = await authenticateDemoPrincipal(input.data.username, input.data.password);
     if (!identity) {
       await recordFailedLogin(input.data.username, clientAddress);
       recordOperationalEvent({ action: "login", outcome: "denied", correlationId: crypto.randomUUID() });
       throw new HttpFailure(401, "invalid_credentials", "Invalid credentials");
     }
+    phase = "issue_session";
     const { token, expiresAt } = await issueSession(identity);
     const response = nativeForm ? new Response(null, { status: 303,
       headers: { location: returnTo, "Cache-Control": "private, no-store" } }) : success({
@@ -60,11 +71,15 @@ export async function POST(request: Request): Promise<Response> {
     return response;
   } catch (error) {
     if (nativeForm && error instanceof HttpFailure && error.code === "invalid_credentials") {
-      return new Response(null, { status: 303, headers: {
-        location: `/login?error=invalid&returnTo=${encodeURIComponent(returnTo)}`,
-        "Cache-Control": "private, no-store",
-      } });
+      return nativeLoginFailure("invalid", returnTo);
     }
-    return failure(error);
+    const response = failure(error);
+    if (response.status >= 500) {
+      const diagnostic = sessionFailureDiagnostic(error);
+      recordOperationalEvent({ action: "login", outcome: "failed", correlationId: crypto.randomUUID(),
+        errorCode: `${phase}_${diagnostic.reason}${diagnostic.sqlState ? "_" + diagnostic.sqlState : ""}` });
+    }
+    if (nativeForm && response.status >= 500) return nativeLoginFailure("unavailable", returnTo);
+    return response;
   }
 }

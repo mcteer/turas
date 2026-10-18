@@ -131,6 +131,19 @@ writeFileSync(envFile,`POSTGRES_PASSWORD=${password}\nPOSTGRES_DB=turas_test_par
 let created = false;
 let output = "";
 function docker(args) { return spawnSync("docker",args,{encoding:"utf8"}); }
+let postgresDiagnostics;
+function captureOwnedPostgres() {
+  if (!created || postgresDiagnostics) return postgresDiagnostics;
+  const logs=docker(['logs',name]);
+  if(logs.status!==0) return null;
+  const text=(logs.stdout??'')+(logs.stderr??'');
+  mkdirSync('local-artifacts/018/ci-disposable',{recursive:true,mode:0o700});
+  writeFileSync(join('local-artifacts/018/ci-disposable',name+'-postgres-private.log'),text,{mode:0o600});
+  postgresDiagnostics={deadlocks:(text.match(/ERROR:  deadlock detected/g)??[]).length,
+    statementTimeouts:(text.match(/ERROR:  canceling statement due to statement timeout/g)??[]).length};
+  return postgresDiagnostics;
+}
+
 try {
   const context = docker(["context","inspect"]);
   if(context.status!==0 || !JSON.parse(context.stdout)[0]?.Endpoints?.docker?.Host?.startsWith("unix://") || process.env.DOCKER_HOST && !process.env.DOCKER_HOST.startsWith("unix://")) throw Error("A local Docker socket is required");
@@ -217,6 +230,12 @@ try {
   if(process.argv.includes('--earlier-regressions'))run(['--import','tsx','scripts/test-staffing-regressions.ts'],integrationEnvironment);
   if(process.argv.includes('--artifact-journey'))run(['--import','tsx','scripts/check-legacy-artifact-publication.ts'],integrationEnvironment);
   if(process.argv.includes('--native')||process.argv.includes('--native-only'))run(['--import','tsx','scripts/check-ordinary-chat-native.ts'],integrationEnvironment);
+  const postgres=captureOwnedPostgres();
+  if(process.argv.includes('--native-operations')) {
+    if(!postgres)throw Error('Owned native database diagnostics unavailable');
+    console.log(JSON.stringify({kind:'owned_native_database_diagnostics',...postgres}));
+    if(postgres.deadlocks||postgres.statementTimeouts)throw Error('Owned native operations encountered database lock/statement failures');
+  }
   mkdirSync("local-artifacts/018/ci-disposable",{recursive:true,mode:0o700});
   const gateName=process.argv.find(flag=>["--chat-interaction","--webkit","--native-operations","--native-staged-4","--native-staged-10","--native-task-state","--native-questions"].includes(flag))?.slice(2)??"domains";
   writeFileSync(join("local-artifacts/018/ci-disposable",gateName+"-private.log"),output,{mode:0o600});
@@ -230,6 +249,7 @@ try {
   for(const line of output.split("\n"))if(line.startsWith('{"kind":"native_file_fixture_failure"')||line.startsWith('{"kind":"legacy_webkit_failure"'))console.error(line);
   process.exitCode=1;
 } finally {
+  try { captureOwnedPostgres(); } catch { console.error("Owned database diagnostic capture failed");process.exitCode=1; }
   if(created && docker(["rm","-f","-v",name]).status!==0) {
     console.error(`Cleanup failed for owned container ${name}`); process.exitCode=1;
   }

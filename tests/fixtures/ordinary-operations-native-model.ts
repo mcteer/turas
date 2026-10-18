@@ -7,8 +7,15 @@ export function createOrdinaryOperationsNativeModel(attemptId:string,turnId:stri
  assertDeterministicTestMode();
  if(process.env.TURAS_OPERATIONS_NATIVE_FIXTURE!=='1'||process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN||!/^\/turas_test_010_eval_[a-f0-9]{12}$/.test(new URL(process.env.DATABASE_URL!).pathname)||!process.env.TURAS_ENVIRONMENT_ID?.startsWith('test-')||process.env.TURAS_ENVIRONMENT_ID!==process.env.TURAS_TEST_ENVIRONMENT_ID||new URL(process.env.DATABASE_URL!).pathname!==new URL(process.env.TURAS_TEST_DATABASE_URL!).pathname)throw Error('Owned unpaid operations fixture required');
  return mockModel({provider:'turas-owned-operations-fixture',modelId:'spacexai/grok-4.7',respond:async(request)=>{
-  const {toolResults}=request;const knowledgeKey=messages.flatMap(message=>message.role==='user'?(typeof message.content==='string'?[message.content]:message.content.filter(part=>part.type==='text').map(part=>part.text)):[]).map(text=>text.match(/^Knowledge native: ([a-z-]+)/)?.[1]).find(Boolean);if(knowledgeKey)return ordinaryKnowledgeNativeResponse(attemptId,request,knowledgeKey);
-  if(messages.some(message=>message.role==='user'&&(typeof message.content==='string'?message.content:message.content.filter(part=>part.type==='text').map(part=>part.text).join('')).trim()==='Intervening ordinary turn.')&&!toolResults.some(t=>t.name==='record_engagement_intervention'))return {text:'Intervening ordinary turn completed.',usage:{inputTokens:11,outputTokens:7}};
+  // Tool results include prior turns. Bind decisions to this actual submitted
+  // attempt, so an older parked approval cannot select the intervening reply.
+  const toolResults=request.toolResults.filter(result=>result.id.startsWith(`operations-${attemptId}-`));
+  const original=(await query('SELECT m.text FROM response_attempts a JOIN submitted_messages m ON m.id=a.message_id WHERE a.id=$1',[attemptId])).rows[0]?.text;
+  const knowledgeKey=messages.flatMap(message=>message.role==='user'?(typeof message.content==='string'?[message.content]:message.content.filter(part=>part.type==='text').map(part=>part.text)):[]).map(text=>text.match(/^Knowledge native: ([a-z-]+)/)?.[1]).find(Boolean);if(knowledgeKey)return ordinaryKnowledgeNativeResponse(attemptId,request,knowledgeKey);
+  if(original==='Intervening ordinary turn.'){
+   if(!request.messages.some(message=>message.role==='user'&&message.text.includes(original)))throw Error('Actual intervening message missing');
+   return {text:'Intervening ordinary turn completed.',usage:{inputTokens:11,outputTokens:7}};
+  }
   const row=(await query('SELECT command,period FROM ordinary_operations_native_fixture LIMIT 1')).rows[0];if(!row)throw Error('Missing fixture');
   if(!toolResults.some(t=>t.name==='get_engagement_brief'))return {toolCalls:[{id:`operations-${attemptId}-brief`,name:'get_engagement_brief',input:{engagementId:row.command.engagementId,...row.period}}],usage:{inputTokens:11,outputTokens:7}};
   if(!toolResults.some(t=>t.name==='record_engagement_intervention')){

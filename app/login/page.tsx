@@ -9,9 +9,9 @@ export default async function LoginPage({ searchParams }: {
     <main className="login-page"><div className="login-card">
       <p className="login-brand"><BrandMark />Turas</p>
       <h1>Sign in</h1>
-      <p>Use a configured demo account to enter the synthetic workspace.</p>
-      <LoginForm initialError={params.error === "invalid" ? "Invalid credentials" : ""}
-        returnTo={typeof params.returnTo === "string" && params.returnTo.length <= 500 ? params.returnTo : "/"} />
+      <p>Use your configured account to enter an assigned workspace.</p>
+      <LoginForm initialError={params.error === "invalid" ? "Invalid credentials" : params.error === "unavailable" ? "Sign-in is temporarily unavailable. Please try again." : ""}
+        returnTo={typeof params.returnTo === "string" && params.returnTo.length <= 500 ? params.returnTo : "/s"} />
       <p className="login-footnote">Customer knowledge. Thoughtful delivery.</p>
     </div></main>
   );

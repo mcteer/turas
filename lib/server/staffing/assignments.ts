@@ -25,6 +25,11 @@ export async function readDeliveryAssignments(db: PoolClient, actor: PlanActor,
     projection: "delivery_assignments", engagementId: engagement.engagementId, baselineId: engagement.activeBaselineId };
   const after = readStaffingPageCursor(paging.cursor, scope);
   const asOf = ((await db.query("SELECT clock_timestamp() AS now")).rows[0].now as Date).toISOString();
+  // Canonical execution readers/writers lock plans before engagements. Holding
+  // the engagement here first deadlocks a composed summary's later plan read.
+  await db.query(`SELECT p.id FROM delivery_plans p JOIN engagements e ON e.plan_id=p.id
+    WHERE e.id=$1 AND e.environment_id=$2 AND e.workspace_id=$3 FOR SHARE OF p`,
+    [engagement.engagementId, env, actor.workspaceId]);
   const locked = (await db.query(`SELECT active_baseline_id FROM engagements WHERE id=$1 AND environment_id=$2 AND workspace_id=$3 FOR SHARE`,
     [engagement.engagementId, env, actor.workspaceId])).rows[0];
   if (locked?.active_baseline_id !== engagement.activeBaselineId) throw new HttpFailure(409, "baseline_changed", "Engagement changed; reload");
