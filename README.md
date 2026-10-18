@@ -67,6 +67,9 @@ recovery/cutover acceptance remain in progress; Production is unchanged.
 The current deterministic catalog registers 745 cases in 138 suites. Local
 production build and native operations/file-correction checks pass with the
 restored dependency fixes; full current CI and hosted recovery remain pending.
+The login form now follows legacy’s native POST and server-cookie redirect, with
+the current styling retained. All 16 owned built-app WebKit login checks pass;
+the latest CI native intervening-turn failure remains under investigation.
 
 Recent Conversations provides owner-private Archive and Restore controls. Archived
 chats remain available in Archived Conversations and retain their history.

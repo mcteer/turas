@@ -3,15 +3,15 @@ import {signIn} from '../fixtures/ui';
 
 test('unavailable sign-in keeps the form usable and issues no session cookie',async({page})=>{
  await page.goto('/login');
- await page.route('**/api/auth/login',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{code:'unavailable',message:'Service unavailable'}})}));
+ await page.route('**/api/auth/login',route=>route.fulfill({status:303,headers:{location:'/login?error=unavailable','cache-control':'private, no-store'}}));
  await page.getByLabel('Username',{exact:true}).fill('mcteer');
  await page.getByLabel('Password',{exact:true}).fill('synthetic-storage-failure');
  await page.getByRole('button',{name:'Sign in',exact:true}).click();
- await expect(page.locator('.login-form').getByRole('alert')).toHaveText('Service unavailable');
+ await expect(page.locator('.login-form').getByRole('alert')).toHaveText('Sign-in is temporarily unavailable. Please try again.');
  await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeEnabled();
  await expect(page.getByLabel('Username',{exact:true})).toBeEditable();
  expect((await page.context().cookies()).filter(cookie=>cookie.name.endsWith('turas_session'))).toEqual([]);
- await expect(page).toHaveURL(/\/login$/);
+ await expect(page).toHaveURL(url=>url.pathname==='/login'&&url.searchParams.get('error')==='unavailable');
 });
 
 test('New Chat clears an unsent landing draft and the wordmark opens the empty composer',async({page})=>{

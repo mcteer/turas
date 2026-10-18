@@ -2721,3 +2721,40 @@ a return to login despite a live cookie and successful authenticated session rea
 They are not silently reclassified as passes. The production/warmed results do not
 prove cold-development startup reliability or hosted behavior. Root/pilot types,
 nine auth/failure-privacy unit cases and documentation checks pass.
+
+
+### Native legacy login restoration and built UI checks (2026-10-18)
+
+Further inspection of `../turas-back/app/login/login-form.tsx` and its login route
+shows the working mechanism is a native form POST with the cookie on the server's
+303 redirect. That mechanism now replaces the preceding experimental JavaScript
+document replacement. The existing field styling, workspace selection and server
+origin/return-path/role checks remain. Native unavailable storage returns a private
+303 error page with no cookie; JSON clients retain the unavailable 503 contract.
+Operational diagnostics contain controlled phase/category/SQLSTATE only.
+
+An actual owned production Next/Eve build passes, followed by **16/16 headless
+WebKit checks in 28.7 seconds** across all four projects: mcteer, panel and partner
+login/logout, plus exactly one form credential POST, 303 `/s` redirect, positive
+session and logout. No request routing or simulated success is used for these
+positive cases. The separately mocked unavailable UI fixture remains a contract
+check. Five failed-storage/privacy cases pass, as do root/pilot types and all
+**356 pilot unit/contract cases across 61 files**. The first unit attempt retained
+355 passes and a source-workspace failure because the new authored files were
+untracked; staging them restores the existing exact-source comparison without
+changing its guard.
+
+The CI general UI job now uses its already-built application through a restricted
+local production test supervisor, which owns Next, Eve and the three unchanged
+worker entrypoints. Default development supervision is unchanged. The owned
+login run recorded initial maintenance wrong-version/missing observations and
+workforce lane warnings; its browser success does not establish healthy workers,
+full readiness, a hosted deployment, or cold-development reliability. A later
+supervisor adjustment sends internal worker traffic directly to its owned native
+origin, matching existing development supervision; the browser run precedes that
+worker-only adjustment.
+
+CI at `02e5175` passes six of seven legacy parity gates, including WebKit, but the
+native operations gate times out waiting for the intervening ordinary reply.
+That failure remains open. The complete current-source catalog and final CI have
+not passed, and Production/schema 077 are unchanged.

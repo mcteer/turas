@@ -23,7 +23,7 @@ export default defineConfig({
   // Feature runners own and supervise their already-started app.
    webServer: process.env.TURAS_EXECUTION_FIXTURE_READY === "1" || process.env.TURAS_REPORT_UI_READY === "1" ||
      process.env.TURAS_SUPPORT_UI_FIXTURE_READY === "1" || process.env.TURAS_EXPANSION_UI_FIXTURE_READY === "1" || process.env.TURAS_GAPS_UI_FIXTURE_READY === "1" || process.env.TURAS_PARTNERS_UI_FIXTURE_READY === "1" || process.env.TURAS_LEARNING_UI_FIXTURE_READY === "1" || process.env.TURAS_MCP_UI_FIXTURE_READY === "1" || process.env.TURAS_PILOT_UI_FIXTURE_READY === "1" ? undefined : {
-    command: "npm run dev",
+    command: process.env.TURAS_UI_PRODUCTION === "1" ? "node scripts/start-ui-production.mjs" : "npm run dev",
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

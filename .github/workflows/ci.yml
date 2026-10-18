@@ -499,8 +499,11 @@ jobs:
       - name: Exercise the local UI in WebKit
         env:
           TURAS_UI_LEGACY_ONLY: '1'
+          TURAS_UI_PRODUCTION: '1'
         run: npm run test:ui
       - name: Exercise 005 UI on isolated disposable Postgres
+        env:
+          TURAS_UI_PRODUCTION: '1'
         run: |
           DATABASE_URL="$TURAS_TEST_DATABASE_URL" \
           DATABASE_URL_UNPOOLED="$TURAS_TEST_DATABASE_URL" \
