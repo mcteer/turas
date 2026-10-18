@@ -326,6 +326,9 @@ DO $$ BEGIN
   GRANT SELECT ON operations_recovery_quarantines TO turas_runtime;
   REVOKE ALL ON operations_recovery_paid_holds FROM turas_runtime;
   GRANT SELECT ON operations_recovery_paid_holds TO turas_runtime;
+  REVOKE ALL ON operations_recovery_model_holds,operations_recovery_model_observations FROM turas_runtime;
+  GRANT SELECT ON operations_recovery_model_holds,operations_recovery_model_observations TO turas_runtime;
+  GRANT EXECUTE ON FUNCTION turas_ordinary_output_used(uuid) TO turas_runtime;
   REVOKE ALL ON operations_recovery_quarantine_resolutions FROM turas_runtime;
   GRANT SELECT ON operations_recovery_quarantine_resolutions TO turas_runtime;
   REVOKE ALL ON operations_maintenance_status,operations_hosted_jobs FROM turas_runtime;

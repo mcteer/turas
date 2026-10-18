@@ -4,7 +4,7 @@ import {join} from "node:path";
 import {featureSourceDigest} from "./execution-source-digest";
 const gate=process.argv[2],sourceDigest=await featureSourceDigest("013");if(process.argv.length!==3||!process.env.TURAS_013_EXPECTED_SOURCE_DIGEST||sourceDigest!==process.env.TURAS_013_EXPECTED_SOURCE_DIGEST)throw Error("Partner CI source identity mismatch");
 const schemaVersion=JSON.parse(await readFile('migrations/manifest.json','utf8')).version;
-if(schemaVersion!==57)throw Error('Unsupported partner recovery schema');
+if(schemaVersion!==79)throw Error('Unsupported partner recovery schema');
 function check(value:unknown):asserts value{if(!value)throw Error("Incomplete partner CI evidence: "+gate);}
 const root="local-artifacts/013",paths:string[]=[];async function scan(path:string){for(const entry of await readdir(path,{withFileTypes:true})){if(entry.name.startsWith("owned-")||entry.name.startsWith("runtime-"))continue;const file=join(path,entry.name);if(entry.isDirectory())await scan(file);else if(entry.name==="completed.json"||entry.name==="summary.json"||entry.name.endsWith(".summary.json")||entry.name==="build.json")paths.push(file);}}await scan(root);
 const evidence=[];for(const path of paths){const data=JSON.parse(await readFile(path,"utf8"));if(data.sourceDigest===sourceDigest)evidence.push({path,data});}

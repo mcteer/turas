@@ -247,3 +247,24 @@ service unlock remain distinct explicit release operations. The implementation
 belongs in `lib/server/operations/storage-cutover.ts` and the existing storage
 operator entry point; tests use actual isolated database/bytes without claiming
 that local adapters establish hosted Blob behavior.
+
+### Recovery bootstrap and original chat allowances (T087/T088/T093)
+
+A restored database remains closed until real verification is produced. Resolve
+bootstrap with a credential-verified, owner-locked, deadline-limited in-process
+read-only probe bound to the exact database client, actor and recovery revision;
+never accept a JSON actor/healthy label as a capability or open public login for
+preflight. Revoke temporary probe sessions before the final state digest.
+Actual normal login/HTTP/WebKit after explicit unlock is still required for
+verified-service timing.
+
+Preserve an ordinary conversation's original 20,000-token allowance using its
+independently captured immutable baseline and an operation-ID-deduplicated union
+of local model operations and recovery holds. Unknown operations consume their
+entire original ceiling; authenticated known usage is retained without inventing
+zeroes or restoring spent allowance. Enforce the same deterministic used amount
+under the conversation row lock in database admission. Missing immutable baseline
+metadata must fail closed. Captured control/question/native request identities
+remain permanently fenced; this accounting does not revive interrupted attempts
+or establish that a cancelled native workflow can resume. That capability needs
+its own actual supported execution proof, or the scope stays restricted.

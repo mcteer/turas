@@ -19,6 +19,7 @@ const fixtureOwner='turas-native-file-'+randomUUID();
 let marker:string|undefined;
 let fixturePhase='owned_environment_preparation';
 try{await withPlanEvalEnvironment(async environment=>{
+ environment.bootstrapDemo();
  const path=join(environment.appRoot,'agent/agent.ts'),source=await readFile(path,'utf8');
  const target='return wrapOrdinaryChatModel(parityBudgetModel(gateway(selectedModel),selectedModel),principal,ctx.session.id,turnId,{event});';
  if(source.split(target).length!==2)throw Error('Authored model shape changed');
@@ -291,7 +292,7 @@ try{await withPlanEvalEnvironment(async environment=>{
  // auto-installing an unrelated default provider during the browser turn.
  for(const specialist of ['customer-recon-worker','implementation-research-worker','vercel-best-practices-worker'])
   await writeFile(join(appRoot,'agent/subagents',specialist,'sandbox.ts'),"import {defineParentSandbox} from 'eve/sandbox';export default defineParentSandbox();\n",{mode:0o600});
- const dev=join(appRoot,'scripts/dev.mjs');await writeFile(dev,"import {execFileSync} from 'node:child_process';\nexecFileSync(process.execPath,['--experimental-strip-types','scripts/bootstrap-demo.ts'],{stdio:'ignore'});\n"+(await readFile(dev,'utf8')).replace('["dev"]','["dev","--webpack"]'),{mode:0o600});
+ const dev=join(appRoot,'scripts/dev.mjs');await writeFile(dev,(await readFile(dev,'utf8')).replace('["dev"]','["dev","--webpack"]'),{mode:0o600});
  await writeFile(join(appRoot,'agent/sandbox.ts'),`import {defineSandbox} from 'eve/sandbox';import {DockerSandbox} from 'eve/sandbox/docker';export const environment=DockerSandbox.image(${JSON.stringify(image)},{pullPolicy:'never',env:{TURAS_NATIVE_FILE_FIXTURE_OWNER:${JSON.stringify(fixtureOwner)}}});export default defineSandbox(()=>environment.open({networkPolicy:'deny-all'}));\n`,{mode:0o600});return {};
 }});}catch(error){
  const reason=(error instanceof Error?error.message:'Unknown fixture failure').split('\n')[0].replace(/[a-z][a-z0-9+.-]*:\/\/[^\s/@:]+:[^\s/@]+@/gi,'<redacted>@').slice(0,200);

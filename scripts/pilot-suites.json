@@ -1500,6 +1500,22 @@
         "rejects a concurrent copy of the same admitted operation",
         "expires admitted authority during IO without releasing its ceiling"
       ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-token-allowance.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "counts an existing operation and its recovery hold once and retains its unknown ceiling",
+        "counts post-backup missing operations against the same original allowance",
+        "rejects conflicting immutable baselines without allocating a fresh allowance"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-read-probe.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "bounds owner recovery reads to one live actor, connection, control revision and deadline"
+      ]
     }
   ],
   "ui": {

@@ -12,7 +12,7 @@ it('retains missing post-backup token and dollar operations without refunding th
  const message=randomUUID(),attempt=randomUUID(),ordinary=randomUUID(),budget=randomUUID(),parity=randomUUID();
  await owner.query("INSERT INTO submitted_messages(id,conversation_id,request_key,body_digest,text) VALUES($1,$2,$3,repeat('a',64),'Synthetic metadata test')",[message,conversation.id,randomUUID()]);
  await owner.query("INSERT INTO response_attempts(id,conversation_id,message_id,input_digest,dispatch_state,response_state,deadline_at) VALUES($1,$2,$3,repeat('a',64),'admitted','running',clock_timestamp()+interval '5 minutes')",[attempt,conversation.id,message]);
- await owner.query('INSERT INTO ordinary_conversation_allowances(conversation_id,baseline_output_tokens) VALUES($1,0)',[conversation.id]);
+ await owner.query('INSERT INTO ordinary_conversation_allowances(conversation_id,baseline_output_tokens) VALUES($1,5000)',[conversation.id]);
  await owner.query('INSERT INTO ordinary_model_operations(id,conversation_id,attempt_id,ceiling_tokens) VALUES($1,$2,$3,8192)',[ordinary,conversation.id,attempt]);
  await owner.query("INSERT INTO parity_evaluation_budgets(id,environment_id,workspace_id,owner_principal_id,cap_micro_usd,reserved_micro_usd,pricing,expires_at) VALUES($1,$2,$3,$4,1000000,200000,'{}',clock_timestamp()+interval '1 hour')",[budget,environmentId,f.actor.workspaceId,f.actor.principalId]);
  await owner.query("INSERT INTO parity_evaluation_operations(id,budget_id,provider,ceiling_micro_usd,actual_micro_usd,settled_at) VALUES($1,$2,'synthetic-no-provider',200000,150000,clock_timestamp())",[parity,budget]);
@@ -21,15 +21,19 @@ it('retains missing post-backup token and dollar operations without refunding th
  // reconciliation test, not evidence of a hosted backup/restore or provider call.
  await owner.query('DELETE FROM ordinary_model_operations WHERE id=$1',[ordinary]);
  await owner.query('DELETE FROM parity_evaluation_operations WHERE id=$1',[parity]);
+ // Controlled older-backup model: no allowance row existed yet.
+ await owner.query('TRUNCATE ordinary_conversation_allowances CASCADE');
  const scope=await lockAuthorityTarget(owner,environmentId,snapshot,snapshot.capturedAt);
  const result=await reconcileOwnedCredentialDenials(owner,snapshot,scope);
  expect(result.typedModelHoldsAdded).toBe(2);
+ expect((await owner.query('SELECT baseline_output_tokens FROM ordinary_conversation_allowances WHERE conversation_id=$1',[conversation.id])).rows[0].baseline_output_tokens).toBe(5000);
+ expect((await runtime.query('SELECT turas_ordinary_output_used($1) AS used',[conversation.id])).rows[0].used).toBe('13192');
  const holds=(await owner.query('SELECT operation_kind,operation_id,scope_id,ceiling_tokens,ceiling_micro_usd,actual_micro_usd,settled_at FROM operations_recovery_model_holds ORDER BY operation_kind')).rows;
  expect(holds).toEqual([
   expect.objectContaining({operation_kind:'ordinary_tokens',operation_id:ordinary,scope_id:conversation.id,ceiling_tokens:8192,actual_micro_usd:null}),
   expect.objectContaining({operation_kind:'parity_dollars',operation_id:parity,scope_id:budget,ceiling_micro_usd:'200000',actual_micro_usd:'150000',settled_at:expect.any(Date)})
  ]);
- await expect(runtime.query('INSERT INTO ordinary_model_operations(id,conversation_id,attempt_id,ceiling_tokens) VALUES($1,$2,$3,1)',[randomUUID(),conversation.id,attempt])).rejects.toThrow('Recovered model scope requires explicit accounting');
+ await expect(runtime.query('INSERT INTO ordinary_model_operations(id,conversation_id,attempt_id,ceiling_tokens) VALUES($1,$2,$3,1)',[randomUUID(),conversation.id,attempt])).rejects.toThrow('Model admission closed for recovery');
  await expect(runtime.query("INSERT INTO parity_evaluation_operations(id,budget_id,provider,ceiling_micro_usd) VALUES($1,$2,'synthetic-no-provider',1)",[randomUUID(),budget])).rejects.toThrow('Recovered model scope requires explicit accounting');
  await expect(runtime.query('UPDATE parity_evaluation_budgets SET reserved_micro_usd=0 WHERE id=$1',[budget])).rejects.toThrow(/Recovered (?:budget cannot be refunded|permanent request cannot be repeated)/);
  await expect(runtime.query("UPDATE parity_evaluation_budgets SET state='open' WHERE id=$1",[budget])).rejects.toThrow(/Recovered (?:budget cannot be refunded|permanent request cannot be repeated)/);

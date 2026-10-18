@@ -24,9 +24,9 @@ export async function quarantineRestoredAuthority(db:Client|PoolClient,raw:z.inf
   const serviceBudgets=await db.query("UPDATE operations_cost_budgets SET state='revoked' WHERE environment_id=$1 AND state='active'",[scope.environmentId]);
   // Record typed unknown effects without manufacturing settlement or borrowing
   // a learning reservation identity. Retire the original scope permanently.
-  const ordinaryHolds=await db.query(`INSERT INTO operations_recovery_model_holds(environment_id,operation_kind,operation_id,scope_id,ceiling_tokens,evidence_digest,evidence_digest_kind,source_captured_at,recovery_id,control_revision)
-   SELECT $1,'ordinary_tokens',o.id,o.conversation_id,o.ceiling_tokens,encode(sha256(convert_to(to_jsonb(o)::text,'UTF8')),'hex'),'operation_row',clock_timestamp(),$2,$3
-   FROM ordinary_model_operations o JOIN conversations c ON c.id=o.conversation_id WHERE c.environment_id=$1 AND o.settled_at IS NULL
+  const ordinaryHolds=await db.query(`INSERT INTO operations_recovery_model_holds(environment_id,operation_kind,operation_id,scope_id,ceiling_tokens,baseline_output_tokens,evidence_digest,evidence_digest_kind,source_captured_at,recovery_id,control_revision)
+   SELECT $1,'ordinary_tokens',o.id,o.conversation_id,o.ceiling_tokens,a.baseline_output_tokens,encode(sha256(convert_to(to_jsonb(o)::text,'UTF8')),'hex'),'operation_row',clock_timestamp(),$2,$3
+   FROM ordinary_model_operations o JOIN ordinary_conversation_allowances a ON a.conversation_id=o.conversation_id JOIN conversations c ON c.id=o.conversation_id WHERE c.environment_id=$1 AND o.settled_at IS NULL
    ON CONFLICT(environment_id,operation_kind,operation_id) DO NOTHING`,[scope.environmentId,scope.recoveryId,scope.controlRevision]);
   const parityHolds=await db.query(`INSERT INTO operations_recovery_model_holds(environment_id,operation_kind,operation_id,scope_id,ceiling_micro_usd,evidence_digest,evidence_digest_kind,source_captured_at,recovery_id,control_revision)
    SELECT $1,'parity_dollars',o.id,o.budget_id,o.ceiling_micro_usd,encode(sha256(convert_to(to_jsonb(o)::text,'UTF8')),'hex'),'operation_row',clock_timestamp(),$2,$3

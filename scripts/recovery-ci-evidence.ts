@@ -2,7 +2,7 @@ export type RecoveryFeature='012'|'013'|'014';
 /** Current-schema recovery receipts are not historical feature releases. Keep
  * the supported target explicit; a future manifest requires a reviewed update. */
 export function completeRecoveryCiEvidence(feature:RecoveryFeature,schemaVersion:number,value:unknown):boolean{
- if(schemaVersion!==57||!Array.isArray(value)||value.length!==2)return false;
+ if(schemaVersion!==79||!Array.isArray(value)||value.length!==2)return false;
  const records=value as Record<string,unknown>[];
  if(records.some(row=>!row||typeof row!=='object'||Array.isArray(row)))return false;
  const every=(flags:readonly string[])=>records.every(row=>flags.every(flag=>row[flag]===true));

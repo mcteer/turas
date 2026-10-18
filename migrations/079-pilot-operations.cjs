@@ -99,15 +99,16 @@ exports.up = (pgm) => pgm.sql(`
   environment_id text NOT NULL REFERENCES operations_control(environment_id),
   operation_kind text NOT NULL CHECK(operation_kind IN('ordinary_tokens','parity_dollars')),
   operation_id uuid NOT NULL,scope_id uuid NOT NULL,
-  ceiling_tokens integer CHECK(ceiling_tokens>=0),ceiling_micro_usd bigint CHECK(ceiling_micro_usd>=0),
+  ceiling_tokens integer CHECK(ceiling_tokens BETWEEN 1 AND 20000),ceiling_micro_usd bigint CHECK(ceiling_micro_usd>=0),
   actual_tokens integer CHECK(actual_tokens>=0),actual_micro_usd bigint CHECK(actual_micro_usd>=0),settled_at timestamptz,
+  baseline_output_tokens integer CHECK(baseline_output_tokens>=0),
   evidence_digest text NOT NULL CHECK(evidence_digest ~ '^[a-f0-9]{64}$'),
   evidence_digest_kind text NOT NULL CHECK(evidence_digest_kind IN('operation_row','snapshot')),
   source_captured_at timestamptz NOT NULL,recovery_id uuid NOT NULL,control_revision bigint NOT NULL,
   recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   PRIMARY KEY(environment_id,operation_kind,operation_id),
-  CHECK((operation_kind='ordinary_tokens' AND ceiling_tokens IS NOT NULL AND ceiling_micro_usd IS NULL AND actual_micro_usd IS NULL AND ((actual_tokens IS NULL)=(settled_at IS NULL)))
-    OR (operation_kind='parity_dollars' AND ceiling_micro_usd IS NOT NULL AND ceiling_tokens IS NULL AND actual_tokens IS NULL AND ((actual_micro_usd IS NULL)=(settled_at IS NULL)))));
+  CHECK((operation_kind='ordinary_tokens' AND baseline_output_tokens IS NOT NULL AND ceiling_tokens IS NOT NULL AND ceiling_micro_usd IS NULL AND actual_micro_usd IS NULL AND ((actual_tokens IS NULL)=(settled_at IS NULL)))
+    OR (operation_kind='parity_dollars' AND baseline_output_tokens IS NULL AND ceiling_micro_usd IS NOT NULL AND ceiling_tokens IS NULL AND actual_tokens IS NULL AND ((actual_micro_usd IS NULL)=(settled_at IS NULL)))));
  CREATE TRIGGER recovery_model_hold_immutable BEFORE UPDATE OR DELETE ON operations_recovery_model_holds
   FOR EACH ROW EXECUTE FUNCTION turas_pilot_immutable_recovery_receipt();
  CREATE TRIGGER recovery_model_hold_admission BEFORE INSERT ON operations_recovery_model_holds
@@ -116,7 +117,7 @@ exports.up = (pgm) => pgm.sql(`
   environment_id text NOT NULL,operation_kind text NOT NULL,operation_id uuid NOT NULL,
   observed_evidence_digest text NOT NULL CHECK(observed_evidence_digest ~ '^[a-f0-9]{64}$'),
   observed_captured_at timestamptz NOT NULL,observed_digest_kind text NOT NULL CHECK(observed_digest_kind IN('operation_row','snapshot')),evidence_kind text NOT NULL CHECK(evidence_kind IN('operation','inherited_hold')),
-  ceiling_tokens integer CHECK(ceiling_tokens>=0),ceiling_micro_usd bigint CHECK(ceiling_micro_usd>=0),
+  ceiling_tokens integer CHECK(ceiling_tokens BETWEEN 1 AND 20000),ceiling_micro_usd bigint CHECK(ceiling_micro_usd>=0),
   actual_tokens integer CHECK(actual_tokens>=0),actual_micro_usd bigint CHECK(actual_micro_usd>=0),settled_at timestamptz,
   snapshot_digest text NOT NULL CHECK(snapshot_digest ~ '^[a-f0-9]{64}$'),source_captured_at timestamptz NOT NULL,
   recovery_id uuid NOT NULL,control_revision bigint NOT NULL,recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
@@ -128,14 +129,33 @@ exports.up = (pgm) => pgm.sql(`
   FOR EACH ROW EXECUTE FUNCTION turas_pilot_immutable_recovery_receipt();
  CREATE TRIGGER recovery_model_observation_admission BEFORE INSERT ON operations_recovery_model_observations
   FOR EACH ROW EXECUTE FUNCTION turas_recovery_quarantine_admission();
+ -- Count every original operation once. An interrupted operation retains its
+ -- complete ceiling even if an older restored database lacks its original row.
+ CREATE FUNCTION turas_ordinary_output_used(conversation uuid) RETURNS bigint LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,public AS $$
+  SELECT a.baseline_output_tokens::bigint+COALESCE((SELECT sum(usage.tokens) FROM (
+   SELECT COALESCE(o.actual_tokens,o.ceiling_tokens)::bigint AS tokens FROM public.ordinary_model_operations o
+    WHERE o.conversation_id=conversation AND NOT EXISTS(SELECT 1 FROM public.operations_recovery_model_holds h WHERE h.operation_kind='ordinary_tokens' AND h.operation_id=o.id AND h.scope_id=o.conversation_id)
+   UNION ALL SELECT COALESCE(h.actual_tokens,h.ceiling_tokens)::bigint FROM public.operations_recovery_model_holds h
+    WHERE h.operation_kind='ordinary_tokens' AND h.scope_id=conversation
+  ) usage),0) FROM public.ordinary_conversation_allowances a WHERE a.conversation_id=conversation
+ $$;
+ REVOKE ALL ON FUNCTION turas_ordinary_output_used(uuid) FROM PUBLIC;
+ GRANT EXECUTE ON FUNCTION turas_ordinary_output_used(uuid) TO turas_runtime;
  CREATE FUNCTION turas_recovery_model_admission() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
- DECLARE environment text; scope uuid; kind text;
+ DECLARE environment text; scope uuid; kind text; used bigint; baseline integer;
  BEGIN
   SELECT environment_id INTO STRICT environment FROM public.turas_environment;
   IF TG_TABLE_NAME='ordinary_model_operations' THEN scope:=NEW.conversation_id;kind:='ordinary_tokens';
   ELSE scope:=NEW.budget_id;kind:='parity_dollars'; END IF;
   IF EXISTS(SELECT 1 FROM public.operations_recovery_model_holds WHERE environment_id=environment AND operation_kind=kind AND scope_id=scope) THEN
-   RAISE EXCEPTION 'Recovered model scope requires explicit accounting' USING ERRCODE='23514'; END IF;
+   IF kind='parity_dollars' THEN RAISE EXCEPTION 'Recovered model scope requires explicit accounting' USING ERRCODE='23514'; END IF;
+   PERFORM 1 FROM public.conversations WHERE id=scope FOR UPDATE;
+   SELECT baseline_output_tokens INTO baseline FROM public.ordinary_conversation_allowances WHERE conversation_id=scope;
+   IF baseline IS NULL OR EXISTS(SELECT 1 FROM public.operations_recovery_model_holds WHERE operation_kind='ordinary_tokens' AND scope_id=scope AND baseline_output_tokens<>baseline)
+    OR NEW.actual_tokens IS NOT NULL OR NEW.settled_at IS NOT NULL THEN RAISE EXCEPTION 'Recovered conversation allowance differs' USING ERRCODE='23514'; END IF;
+   SELECT public.turas_ordinary_output_used(scope) INTO used;
+   IF used IS NULL OR used+NEW.ceiling_tokens>20000 THEN RAISE EXCEPTION 'Recovered conversation output allowance exhausted' USING ERRCODE='23514'; END IF;
+  END IF;
   IF NOT EXISTS(SELECT 1 FROM public.operations_control WHERE environment_id=environment AND mode='open') THEN
    RAISE EXCEPTION 'Model admission closed for recovery' USING ERRCODE='23514'; END IF;
   RETURN NEW;
@@ -161,7 +181,7 @@ exports.up = (pgm) => pgm.sql(`
   IF TG_TABLE_NAME='ordinary_model_operations' THEN scope:=OLD.conversation_id;kind:='ordinary_tokens';
   ELSE scope:=OLD.budget_id;kind:='parity_dollars'; END IF;
   IF session_user<>pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='public.operations_control'::regclass))
-   AND EXISTS(SELECT 1 FROM public.operations_recovery_model_holds WHERE operation_kind=kind AND scope_id=scope) THEN
+   AND EXISTS(SELECT 1 FROM public.operations_recovery_model_holds WHERE operation_kind=kind AND scope_id=scope AND (operation_id=OLD.id OR kind='parity_dollars')) THEN
    RAISE EXCEPTION 'Recovered model settlement requires owner accounting' USING ERRCODE='23514'; END IF;
   RETURN NEW;
  END $$;

@@ -18,6 +18,7 @@ export type PlanEvalEnvironment = {
   appRoot: string;
   storeRoot: string;
   origin: string;
+  bootstrapDemo: () => void;
   start: () => Promise<void>;
   stop: () => Promise<void>;
   restart: () => Promise<void>;
@@ -318,6 +319,8 @@ export async function withPlanEvalEnvironment<T>(
       });
       child.stdout?.on("data",capture);
       child.stderr?.on("data",capture);
+      const readinessStarted=Date.now();
+      let lastAuthStatus:number|null=null,lastEveStatus:number|null=null;
       const readinessDeadline = Date.now()+remaining(90_000);
       while (Date.now()<readinessDeadline) {
         if (child.exitCode !== null || productionEve&&productionEve.exitCode!==null) break;
@@ -326,6 +329,7 @@ export async function withPlanEvalEnvironment<T>(
             fetch(`${origin}/api/auth/session`,{signal:AbortSignal.timeout(ownedEvalTimeout(readinessDeadline,2_000))}),
             fetch(`${origin}/eve/v1/health`,{signal:AbortSignal.timeout(ownedEvalTimeout(readinessDeadline,2_000))}),
           ]);
+          lastAuthStatus=auth.status;lastEveStatus=eve.status;
           const ready = auth.status === 401 && eve.ok;
           await Promise.all([auth.body?.cancel(),eve.body?.cancel()]);
           if (ready) { remaining();return; }
@@ -334,11 +338,23 @@ export async function withPlanEvalEnvironment<T>(
       }
       await writeFile(resolve(`local-artifacts/${feature}/eval-startup-failure.log`),
         startupTail,{mode:0o600});
+      const workerExitKinds=[...new Set([...startupTail.matchAll(/"kind":"turas_worker_exit","worker":"(maintenance|artifacts|reports)"/g)].map(match=>match[1]))];
+      const categories=[...new Set([
+        /ERR_MODULE_NOT_FOUND|Cannot find module/.test(startupTail)?'module_not_found':null,
+        /fatal: not a git repository/.test(startupTail)?'git_identity':null,
+        /Invalid environment|Invalid server configuration|ZodError/.test(startupTail)?'configuration':null,
+        /Failed to compile|Module not found|Build error/.test(startupTail)?'compile':null,
+        workerExitKinds.length?'worker_exit':null,
+      ].filter(Boolean))];
+      const diagnostic={kind:'owned_app_readiness_failure',mode:options.production?'production':'development',elapsedMs:Date.now()-readinessStarted,
+        nextExitCode:child.exitCode,nextExitSignal:child.signalCode,eveExitCode:productionEve?.exitCode??null,eveExitSignal:productionEve?.signalCode??null,lastAuthStatus,lastEveStatus,workerExitKinds,categories};
+      await writeFile(resolve(`local-artifacts/${feature}/eval-startup-failure.json`),JSON.stringify(diagnostic),{mode:0o600});
+      console.error(JSON.stringify(diagnostic));
       throw new Error("Disposable app failed readiness");
     }
     async function stop(): Promise<void> { await stopChild(child);child = null;await stopChild(productionEve);productionEve=null;await closeProductionProxy();await stopOwnedAppProcesses(appRoot); }
     remaining();
-    return await run({databaseName:name,appRoot,storeRoot,origin,start,stop,
+    return await run({databaseName:name,appRoot,storeRoot,origin,bootstrapDemo:()=>runGuardedScript("scripts/bootstrap-demo.ts",appRoot,process.env,[],options.deadlineAt),start,stop,
       restart:async () => { await stop();await start(); },
       diagnosticLines:()=>startupTail.split("\n").filter((line)=>
         line.includes("PLAN_DIAGNOSTIC")),

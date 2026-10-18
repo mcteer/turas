@@ -49,7 +49,7 @@ audits actual permanent request fences, preserving committed denials across fail
 audits. It remains an isolated recovery step; service recovery and hosted acceptance
 are pending.
 
-The current complete local checkpoint passes 703 cases across 129 suites at
+The historical complete local checkpoint passed 703 cases across 129 suites at
 `d3e8f8b`. Further staffing/runtime and hosted-chain implementation requires
 fresh complete proof. The earlier actual-model batch failed 003's citation gate,
 and independent LLM review failed one 002 capability reply. Instruction corrections
@@ -58,6 +58,12 @@ Context credits. Hosted recovery and participant acceptance remain open.
 The unused recovery operator project was removed on 2026-10-14 at the user's
 direction; recovery keys and the archive were preserved. See the
 [operations record](docs/pilot-operations.md#work-controlled-neon-archive-destination).
+
+Current pilot integration preserves the released schema-077 ledger and authors
+078/079 for workspace sessions and operations. Focused owned recovery checks
+retain unknown model usage and original chat allowances; the current pilot
+WebKit catalog passes 40 cases. Fresh full CI/local verification and hosted
+recovery/cutover acceptance remain in progress; Production is unchanged.
 
 Recent Conversations provides owner-private Archive and Restore controls. Archived
 chats remain available in Archived Conversations and retain their history.
@@ -236,7 +242,7 @@ disabled. See [learning operations](docs/learning-operations.md), the
 
 Feature 016 has a [specification](specs/016-pilot-hardening/spec.md),
 [implementation plan](specs/016-pilot-hardening/plan.md) and
-[91 tasks](specs/016-pilot-hardening/tasks.md) for a controlled internal and
+[94 tasks](specs/016-pilot-hardening/tasks.md) for a controlled internal and
 assigned-partner pilot. The plan covers a synthetic Production pilot workspace,
 workspace-bound sessions, durable private files and hosted processing, recovery,
 retention, access, operating limits and attributable user feedback. Implementation

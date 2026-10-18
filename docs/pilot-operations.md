@@ -1,8 +1,9 @@
 # Controlled pilot operations
 
 016 is in implementation. None of this document establishes hosted readiness.
-At `08ef152`, the owned complete local catalog passed 640/640 named cases and
-all 43 required CI jobs passed. The exact source and retained failed attempts
+The `08ef152` checkpoint passed its historical 640-case local catalog and
+43 CI jobs. Current integration targets schema 079 while Production remains
+on released schema 077; fresh complete source-bound verification is in progress. The exact source and retained failed attempts
 are recorded in [validation](../specs/016-pilot-hardening/validation.md).
 Storage cutover, complete recovery/current-authority reconciliation and hosted
 journeys remain unfinished; the operational blockers below are not waived by CI.
@@ -11,7 +12,7 @@ mcteer readiness decision is implied by this checkpoint.
 
 | Component | Current implementation | Required hosted capability | Readiness blocker |
 |---|---|---|---|
-| Database | Explicit migration ledger through 055, runtime role grants | 056/057 forward migration and exact grants | Not applied |
+| Database | Released ledger through 077; pilot 078/079 authored | 078/079 forward migration and exact grants | Not applied to hosted targets |
 | Original artifact bytes | Private local artifact store | Private Blob, verified inventory cutover | Hosted adapter/cutover pending |
 | Workforce bytes | Private local workforce store | Private Blob with immutable digest verification | Hosted adapter/cutover pending |
 | Reports and gap reports | Private local report store | Private Blob, authorized uncached streaming | Hosted adapter/cutover pending |
@@ -158,7 +159,7 @@ The minimal public readiness response is `{ready: boolean}`, with 503 for failed
 
 ### Isolated physical restore and absent-authority fallback
 
-The current restore command is restricted to separately provisioned, owned loopback 016 databases on PostgreSQL 17 or 18. It does not restore Preview or Production and does not initialize the target, start processes, change aliases, or unlock. Set the explicit target owner/runtime environment through the owned runner; keep the selected checkout environment untouched. The target must already have schema 057 and be locked.
+The current restore command is restricted to separately provisioned, owned loopback 016 databases on PostgreSQL 17 or 18. It does not restore Preview or Production and does not initialize the target, start processes, change aliases, or unlock. Set the explicit target owner/runtime environment through the owned runner; keep the selected checkout environment untouched. The target must already have schema 079 and be locked.
 
 Run `npm run pilot:recovery:check -- --restore-isolated --environment <source-marker> --ledger-digest <source-ledger-sha256> --manifest <private-manifest.json> --bundle <private-encrypted-bundle> --key-file <separately-controlled-key> --source-database <owned-source-database-name> --output <new-private-result-directory>`. Source and target markers/database names must differ. Recovery manifests and authenticated archive provenance bind `acceptedContentDigest`, covering every captured domain table and sequence except control/observational recovery tables. The ledger digest hashes the canonically ordered `SELECT name FROM turas_migrations ORDER BY name` rows. Recovery metadata digests canonicalize object property order; array order remains significant.
 
@@ -213,7 +214,7 @@ npm run pilot:recovery:check -- --restore-database-safety-copy --receipt <privat
 
 The source configuration binds the exact Production project/environment/schema and explicit unpooled Neon `verify-full` connection. A readable platform connection must match. When the platform withholds a sensitive Production variable, only the explicitly designated `protected-operator-connection` binding is accepted; the receipt retains `platformConnectionBindingVerified: false`. This does not change the variable's secrecy or infer a connection from the selected checkout.
 
-The v2 safety-copy context authenticates the exported snapshot's application-content digest, full migration-ledger digest, source database identity, server major and dump bytes. The restore command accepts only a fresh schema-055 v2 context. It retrieves the key independently, authenticates the cold archive, provisions a disposable matching-major database, denies runtime/public connections before restoration, verifies copied application content and applies 056/057 explicitly. It then revokes/quarantines restored authority, verifies the lock and destroys the owned target. The actual Production-copy rehearsal passed these checks; Production remains on 055.
+The v2 safety-copy context authenticates the exported snapshot's application-content digest, full migration-ledger digest, source database identity, server major and dump bytes. The restore command accepts only a fresh schema-055 v2 context. It retrieves the key independently, authenticates the cold archive, provisions a disposable matching-major database, denies runtime/public connections before restoration, verifies copied application content and applied the then-current 056/057 explicitly. It then revokes/quarantines restored authority, verifies the lock and destroys the owned target. That historical Production-copy rehearsal passed these checks on schema 055. Production is now schema 077; it requires a fresh matched backup/rehearsal and explicit 078/079 upgrade before this pilot release.
 
 This is a database-only safety copy and forward-migration rehearsal. Private objects, managed Workflow, independently current denial/replay reconciliation, scheduled execution, full RPO/RTO and complete service restoration remain unproven. The archive is a separate work resource in the same region; provider/regional failure independence is not established. Current Neon [Free-plan limits](https://neon.com/blog/neon-free-plan-1-gb-per-project) informed the bounded capacity policy; the operator migration does not upgrade billing or make an unbounded storage claim.
 
@@ -225,7 +226,7 @@ The independent archive has an explicitly installed [retention migration](../inf
 npm run pilot:recovery:authority -- --capture-work-denials --source <private-source-config.json> --destination <private-operator-config.json> --output <new-private-evidence-directory>
 ```
 
-This command uses an actual owner-held read-only repeatable-read source transaction. Its current v5 inventory covers required credential/grant/source/publication metadata, conversation-to-native-run bindings and watchdog status, paid/native/provider attempts, operational charges at schema 057 and permanent request/management/lifecycle identities and row digests. It records exact primary keys, schema digests, lifecycle status and a transaction watermark. It omits source text, accepted facts, addresses, filenames, result payloads and credential bytes; a credential-presence bit does not confer authorization. Every required table must exist. More than 10,000 rows/table, 100 tables or 8 MiB fails rather than truncating proof.
+This command uses an actual owner-held read-only repeatable-read source transaction. Its current v7 inventory covers required credential/grant/source/publication metadata, conversation-to-native-run bindings and watchdog status, paid/native/provider attempts, operational charges at schema 079 and permanent request/management/lifecycle identities and row digests. It records exact primary keys, schema digests, lifecycle status and a transaction watermark. It omits source text, accepted facts, addresses, filenames, result payloads and credential bytes; a credential-presence bit does not confer authorization. Every required table must exist. More than 10,000 rows/table, 128 tables or 8 MiB fails rather than truncating proof.
 
 The command binds the explicit work source/destination, encrypts the minimized snapshot, creates a unique separately encrypted work-project key, authenticates a fresh-connection download/decryption, validates a fresh independently bound snapshot digest and places only those minimized encrypted bytes under permanent retention. Temporary plaintext and keys are removed. The actual Production schema-055 v2 run captured 60 tables and 775,172 minimized bytes. No full database dump is permanently held under this procedure.
 
@@ -279,7 +280,7 @@ For an incident requiring a global fence, first run `npm run pilot:control -- --
 
 The preliminary hosted reader runs with `npm run pilot:hosted:check -- --scope <private-scope.json> --run <private-run.json> --configuration <private-configuration.json>`. Its strict scope binds the run UUID, Vercel project/team/deployment, HTTPS origin, environment marker, synthetic workspace, Preview or Production target, and exact source/catalog digests. The run's scope digest is the evidence SHA-256 of `JSON.stringify` on the parsed scope. Use a clean committed checkout and an explicitly supplied Neon runtime connection with `sslmode=verify-full`; it never selects `.env.local` implicitly. Supply all three synthetic pilot account passwords through protected operator configuration.
 
-The reader verifies actual Vercel deployment and alias metadata, schema 057, runtime grants and the exact synthetic workspace before logging in. It then checks session binding, internal and assigned-partner customer visibility, protected operations access, Product Gaps access and the serving commit header. Each created session must be revoked through normal logout and verified in the actual database. Cancellation retains this cleanup path. Private receipts contain identifiers and counts, never passwords, cookies or customer bodies.
+The reader verifies actual Vercel deployment and alias metadata, schema 079, runtime grants and the exact synthetic workspace before logging in. It then checks session binding, internal and assigned-partner customer visibility, protected operations access, Product Gaps access and the serving commit header. Each created session must be revoked through normal logout and verified in the actual database. Cancellation retains this cleanup path. Private receipts contain identifiers and counts, never passwords, cookies or customer bodies.
 
 After the bound role checks, the current runner also selects ordinarily accepted delivery records within that role’s visible synthetic customers and exercises the actual pinned MCP SDK across profiles, evidence, knowledge, accepted plans and published reports. It checks citation identity, a customer outside the individual connection ceiling, and exact credential revocation. Connection creation uses normal management requests; a damaged response is reconciled by its original request key and the exact created credential is revoked without reissuing it. Every SDK/management response must match the serving commit; credentials and customer prose stay out of receipts. The administrator hook also proposes a distinct synthetic product-use record, checks that pending content is absent from facts, reviews its exact digest/version, accepts a correction, then retracts the corrected revision through ordinary profile commands. An uncertain mutation response is reconciled by its original request key without another mutation. This boundary demonstration leaves no current accepted fact of its own and does not supply the linked chain. These role and SDK reads are not the accepted cross-feature hosted journey catalog. The command deliberately exits unsuccessfully with an incomplete-catalog receipt after successful role reads until the remaining journeys are implemented. Do not use a preflight or role-read receipt to claim hosted acceptance, scheduled recovery, publication, readiness or permission to release.
 
@@ -303,7 +304,7 @@ The actual Production-copy rehearsal reapplied credential denials after explicit
 
 ### Owned old-runtime credential retirement rehearsal
 
-For a disposable owned schema-057 target already locked at an exact recovery UUID/revision, run `npm run pilot:recovery:authority -- --retire-owned-runtime --input <private-input.json> --output <new-private-directory>`. The protected input contains `environmentId`, `recoveryId`, `controlRevision` and a separately selected 43-character random base64url `password`. Do not commit or paste it.
+For a disposable owned schema-079 target already locked at an exact recovery UUID/revision, run `npm run pilot:recovery:authority -- --retire-owned-runtime --input <private-input.json> --output <new-private-directory>`. The protected input contains `environmentId`, `recoveryId`, `controlRevision` and a separately selected 43-character random base64url `password`. Do not commit or paste it.
 
 The command disables LOGIN on the legacy permission role, terminates its backends, and creates a separately bound replacement login inheriting the existing restricted grants. Exact repeats preserve the same credential; conflicts never rotate or adopt an existing role. It does not edit hosted environments, unlock recovery, or authorize a Production cutover. The actual owned command and five-case catalog passed. Hosted credential retirement and old-deployment HTTP denial must still be proven before pilot memberships are enabled.
 
@@ -331,7 +332,7 @@ Within the owning 016 disposable PostgreSQL runner, use:
 npm run pilot:recovery:check -- --restore-work-isolated --environment <captured-environment> --candidate <private-candidate.json> --bundle <private-candidate.encrypted> --key-file <separate-private-key> --output <new-private-output>
 ```
 
-The target must be a fresh, locked schema-057 PostgreSQL 18 database in its own
+The target must be a fresh, locked schema-079 PostgreSQL 18 database in its own
 disposable cluster. The command authenticates the complete archive before SQL
 restoration, restores the public application schema without copied grants, checks
 the exact migration ledger and accepted-content digest, and restores all six
@@ -411,7 +412,7 @@ npm run pilot:recovery:workflow -- --close-managed-workflows \
   --output local-artifacts/016/exact-closure-attempt
 ```
 
-The source must already be schema 57, locked at the exact supplied revision, drained, and have the legacy database login disabled with no legacy backends. The command verifies current work project/archive bindings and holds the owner capture fence during the bounded batch. It checks the dedicated owner connection before every provider operation and before retaining terminal proof; loss of that connection stops further requests and leaves the independent intent held. Each cancellation intent commits durably in the independent archive before the single provider request. Existing intents permit reconciliation reads only. A cancelled response alone cannot establish closure: a subsequent lazy provider read must confirm the same run/deployment/definition is terminal. An interrupted or uncertain request remains held; retain the lock and reconcile rather than sending another cancellation.
+The source must already be schema 79, locked at the exact supplied revision, drained, and have the legacy database login disabled with no legacy backends. The command verifies current work project/archive bindings and holds the owner capture fence during the bounded batch. It checks the dedicated owner connection before every provider operation and before retaining terminal proof; loss of that connection stops further requests and leaves the independent intent held. Each cancellation intent commits durably in the independent archive before the single provider request. Existing intents permit reconciliation reads only. A cancelled response alone cannot establish closure: a subsequent lazy provider read must confirm the same run/deployment/definition is terminal. An interrupted or uncertain request remains held; retain the lock and reconcile rather than sending another cancellation.
 
 The provider paths and methods follow [Vercel Workflow's run adapter](https://github.com/vercel/workflow/blob/main/packages/world-vercel/src/runs.ts). All requests forbid redirects/retries and bound each request to ten seconds and its response to 1 MiB. Terminal observations bind the source commit, source digest and catalog digest. A receipt for one batch does not establish closure of every provider run or old deployment, settled model/send effects, recovered conversations, full service recovery, or permission to unlock. Complete fresh project-wide inventory and separate paid/send reconciliation remain required. Production's schema-55 target has not been passed to this command.
 
@@ -419,7 +420,7 @@ The provider paths and methods follow [Vercel Workflow's run adapter](https://gi
 
 `pilot:recovery:authority -- --audit-work-request-fences` reads the current encrypted
 work-archive snapshot through the independent destination and cold key, then checks
-an exact locked schema-057 owner target. Supply `--environment`, `--recovery-id`,
+an exact locked schema-079 owner target. Supply `--environment`, `--recovery-id`,
 `--expected-revision`, `--denials` (the retained snapshot receipt), `--destination`
 (the protected archive configuration), `--backup-captured-at` and a new private
 `--output` directory. It accepts no raw-snapshot healthy flag or supplied context
@@ -455,7 +456,7 @@ npm run pilot:recovery:authority -- --reconcile-owned-work-denials \
 The command rejects hosted/unowned connections and checks actual owner, marker,
 schema and locked revision before contacting the independent archive. It retrieves
 and authenticates current encrypted bytes and their independently retained key,
-requires the complete schema-057 v6 inventory, applies credential/grant/source/
+requires the complete schema-079 v7 inventory, applies credential/grant/source/
 publication denials and permanent request fences, then audits actual database
 functions, indexes, triggers and immutable protections. Proof older than the backup
 or five minutes, unavailable bytes and incomplete inventories cannot authorize
@@ -615,3 +616,20 @@ If no applicable rollback reservation was admitted before locking, keep service
 closed and preserve both stores. Do not briefly open service merely to obtain
 cost admission or bypass an unknown charge. An unavailable rollback envelope is
 a release blocker, not permission to reuse a dispatched operation.
+
+### Locked recovery read probe and original output allowance
+
+The internal owner probe requires an explicit caller-owned transaction, a live
+credential-matched mcteer session, exact recovery UUID/revision and a deadline
+within five minutes. It holds the operational fence and authority rows for the
+transaction, grants only governed reads on that same client/actor, and removes
+the capability when its callback ends. It does not open public login or allow
+writes. Revoke temporary sessions before calculating the final recovery-state
+digest. Normal authenticated HTTP/WebKit verification after explicit unlock
+remains required; this helper alone produces no recovery verification receipt.
+
+Ordinary chat accounting preserves the authenticated immutable conversation
+baseline and counts each operation ID once across current rows and retained
+recovery holds. Unknown usage consumes its full original ceiling. Admission
+uses the original 20,000-token limit under the conversation lock; it neither
+creates a fresh allowance nor revives a captured native request/attempt.

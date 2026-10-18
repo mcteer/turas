@@ -222,12 +222,14 @@ try {
   writeFileSync(join("local-artifacts/018/ci-disposable",gateName+"-private.log"),output,{mode:0o600});
   console.log(JSON.stringify({gate:acceptanceOnly?process.argv.find(flag=>["--chat-interaction","--webkit","--native-operations","--native-staged-4","--native-staged-10","--native-task-state","--native-questions"].includes(flag)):"domains",ownedDisposableDatabase:true,migrationsAndRuntimeGrants:true,passed:true,paidProviderCalls:0}));
 } catch(error) {
+  mkdirSync("local-artifacts/018/ci-disposable",{recursive:true,mode:0o700});
+  writeFileSync(join("local-artifacts/018/ci-disposable","failed-"+randomUUID()+"-private.log"),output,{mode:0o600});
   console.error(error.message);
   // Tests contain only locally created fixture data. Credentials and startup
   // details stay private; report the bounded test failure section only.
   const failure=output.indexOf("Failed Tests");
   if(failure>=0) console.error(output.slice(failure,failure+5000));
-  for(const line of output.split("\n"))if(line.startsWith('{"kind":"native_file_fixture_failure"')||line.startsWith('{"kind":"legacy_webkit_failure"'))console.error(line);
+  for(const line of output.split("\n"))if(line.startsWith('{"kind":"native_file_fixture_failure"')||line.startsWith('{"kind":"legacy_webkit_failure"')||line.startsWith('{"kind":"owned_app_readiness_failure"'))console.error(line);
   process.exitCode=1;
 } finally {
   if(created && docker(["rm","-f","-v",name]).status!==0) {

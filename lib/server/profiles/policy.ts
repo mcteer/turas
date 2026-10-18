@@ -17,7 +17,7 @@ export async function lockWorkspaceActor(client: PoolClient, actor: CurrentReadA
   }
   await client.query("SELECT set_config('lock_timeout',CASE WHEN current_setting('turas.partner_operation',true)='013' OR current_setting('turas.learning_operation',true)='014' THEN '2000ms' ELSE $1 END,true)",[`${lockTimeoutMs}ms`]);
   await client.query("SET LOCAL statement_timeout = '5000ms'");
-  await requireOperationalOpen(client,actor);
+  await requireOperationalOpen(client,actor,readOnly);
   const lock = readOnly ? "FOR SHARE" : "FOR UPDATE";
   const memberIds = [...new Set([actor.membershipId, ...(typeof affectedMembershipId === "string" ? [affectedMembershipId] : affectedMembershipId ?? [])].filter((id): id is string => Boolean(id)))].sort();
   const locked = new Map<string, { principal_id: string; workspace_id: string; kind: string; role: string; active: boolean; partner_org_id: string | null }>();

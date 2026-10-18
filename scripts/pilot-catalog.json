@@ -556,7 +556,11 @@
         "integration.storage-cutover.004",
         "integration.storage-cutover.005",
         "integration.storage-cutover.006",
-        "integration.storage-cutover.007"
+        "integration.storage-cutover.007",
+        "integration.recovery-token-allowance.001",
+        "integration.recovery-token-allowance.002",
+        "integration.recovery-token-allowance.003",
+        "integration.recovery-read-probe.001"
       ]
     },
     {

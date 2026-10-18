@@ -2462,3 +2462,39 @@ Preview source databases at schema77 with77 ledger entries. Older private
 operator descriptors labeled them55/38; new observed descriptors were retained
 without altering the originals or either hosted database. Existing unrelated
 Blob storage remains untouched; no pilot backend has been provisioned yet.
+
+### Recovery allowances, transaction-bound read probe and CI repair — 2026-10-17
+
+Six focused owned PostgreSQL recovery/accounting cases passed. They preserve
+unknown ceilings, count overlapping operations once, retain the original
+20,000-token allowance and reject conflicting baselines. A modeled older backup
+missing its immutable allowance reconstructs the independently authenticated
+baseline before installing permanent insertion fences in the same locked
+transaction; repeated reconciliation remains idempotent. Runtime grants cannot
+write recovery hold/observation rows. No provider accounting is invented.
+
+The protected owner read probe passed its actual owned-database case, including
+rejection of autocommit, forged token/actor, another connection, writes, changed
+revision and revoked session. Concurrent owner revision/session changes time out
+against the probe's held transaction/row locks. Independent review identified
+the earlier autocommit gap; the implementation now requires a caller-owned
+transaction and holds the operational fence plus authority rows. The capability
+is removed on callback success/failure. This remains an internal mechanism, not
+a required-service verification producer or evidence of supported native resume.
+
+The first integration CI exposed obsolete schema-57 evidence guards for features
+012/013/014. Those explicit current-target guards and their six unit assertions
+now use 79. Native owned startup also exposed a duplicate injected execFileSync
+import, then a fixture bootstrap attempted after selecting runtime privileges.
+Bootstrap now runs against the migrated owned clone before runtime selection.
+The actual Eve/headless-WebKit questions check passes locally, with zero paid
+provider calls. Failed attempts remain preserved. Safe readiness metadata and
+private wrapper failure logs now survive future startup failures. A separate
+mobile learning-publication CI timeout remains under investigation.
+
+Root/pilot typechecks and authored documentation checks passed at this checkpoint.
+A combined 346-case pilot unit/contract run had 345 passes and one source-copy
+identity failure while the source was being edited; it is not a complete pass
+and requires a stable-source repeat. The expanded catalog has 718 named cases
+across 133 suites. Full final-source local/CI runs remain required. No hosted
+schema/configuration, deployment, budget, storage or Production change occurred.
