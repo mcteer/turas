@@ -633,3 +633,42 @@ baseline and counts each operation ID once across current rows and retained
 recovery holds. Unknown usage consumes its full original ceiling. Admission
 uses the original 20,000-token limit under the conversation lock; it neither
 creates a fresh allowance nor revives a captured native request/attempt.
+
+### Complete managed-run metadata traversal
+
+`--inspect-managed-workflow` now requests every run page without workflow/status
+filters, using lazy metadata in the explicit source environment. It performs two
+complete traversals, bounded to 10,000 runs and 200 pages each, and checks their
+run/deployment/workflow/status inventories agree. A missing conversation binding,
+duplicate row, non-advancing cursor, incomplete page contract, changed inventory
+or exceeded bound fails the command. Provider-only child/orphan runs are retained
+for reconciliation. Native input/output bodies are discarded before receipts.
+
+The operator adapter follows the canonical provider [run-list
+implementation](https://github.com/vercel/workflow/blob/main/packages/world-vercel/src/runs.ts)
+and [pagination contract](https://github.com/vercel/workflow/blob/main/packages/world/src/shared.ts),
+checked 2026-10-17. Actual hosted API compatibility remains a separate check.
+Repeated pagination is not an atomic provider snapshot. The inspection never
+cancels a run, closes an old deployment, settles a charge, resumes work or grants
+recovery readiness; all of those proof boundaries remain explicit.
+
+### Physical restore checkpoint and current grant reconciliation
+
+An isolated work restore authenticates the encrypted candidate again and measures
+the restored ledger, accepted database content and all six private object namespaces
+before quarantine changes authority. Measurement acquires both recovery fences and
+table locks before reading current state. It binds the actual owned database
+cluster and private store directory. Serialized receipts cannot substitute for the
+in-process checkpoint; later verification rechecks the target and object bytes.
+Source grant provenance and the closed target's runtime grants are recorded
+separately. This checkpoint does not establish service health or unlock readiness.
+
+`--restore-work-isolated` accepts paired `--denials` and `--destination` options
+for an independently retained current denial archive. The reader authenticates
+that archive, binds it to the candidate capture time and rechecks freshness in the
+locked owner transaction. Only existing unchanged current partner grants survive.
+Newer revocations and permanent replay fences apply atomically after restored
+sessions, MCP credentials and effects are retired. No grant is created or
+reactivated. Without that authenticated proof, quarantine revokes every restored
+grant. A failed reconciliation rolls back the entire quarantine transaction and
+leaves global admission closed.

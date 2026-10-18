@@ -33,7 +33,7 @@ export async function pilotManagedWorkflowClose(args=process.argv.slice(2)){
   let stage='platform_binding',cancelAttempts=0;
   try{
    const sourceBinding=await verifyDatabaseSafetySourceBinding(target,destination.teamId,signal),archiveBinding=await verifyWorkNeonDestination(destination,signal);
-   const token=await readManagedWorkflowOperatorToken(values['auth-file']),provider=await bindManagedRunProvider({projectId:target.projectId,teamId:destination.teamId,token},signal);
+   const token=await readManagedWorkflowOperatorToken(values['auth-file']),provider=await bindManagedRunProvider({projectId:target.projectId,teamId:destination.teamId,token,target:target.target},signal);
    const primary=new Client({connectionString:target.databaseUrl,connectionTimeoutMillis:10000,statement_timeout:5000}),archive=new Client({connectionString:destination.databaseUrl,connectionTimeoutMillis:10000,statement_timeout:5000});
    let result:Awaited<ReturnType<typeof closeManagedRunBatch>>;
    try{

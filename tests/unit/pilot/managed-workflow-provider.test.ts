@@ -1,6 +1,6 @@
 import {it,expect} from 'vitest';
 import {bindManagedRunProvider} from '../../../lib/server/operations/managed-workflow-provider';
-const scope={projectId:'prj_synthetic',teamId:'team_synthetic',token:'synthetic-operator-token'};
+const scope={projectId:'prj_synthetic',teamId:'team_synthetic',token:'synthetic-operator-token',target:'production' as const};
 function fixture(){
  const calls:{url:string;method:string}[]=[];
  const transport:typeof fetch=async(url,options)=>{
@@ -26,4 +26,14 @@ it('bounds the response body before accepting project metadata',async()=>{
 });
 it('returns only run metadata and discards native input and output bodies',async()=>{
  const f=fixture(),api=await bindManagedRunProvider(scope,AbortSignal.timeout(1000),f.transport);const result=await api.read('wrun_synthetic');expect(Object.keys(result).sort()).toEqual(['deploymentId','runId','status','workflowName']);expect(JSON.stringify(result)).not.toContain('discarded');expect(JSON.stringify(result)).not.toContain(scope.token);
+});
+
+it('lists unfiltered lazy metadata in the explicitly selected provider environment',async()=>{
+ let count=0;const api=await bindManagedRunProvider({...scope,target:'preview'},AbortSignal.timeout(1000),async(url,options)=>{
+  expect(new Headers(options?.headers).get('x-vercel-environment')).toBe('preview');count++;
+  if(count===1)return Response.json({id:scope.projectId,accountId:scope.teamId});
+  const query=new URL(String(url)).searchParams;expect(query.get('remoteRefBehavior')).toBe('lazy');expect(query.get('cursor')).toBe('opaque + cursor');expect(query.has('workflowName')).toBe(false);expect(query.has('status')).toBe(false);
+  return Response.json({data:[{runId:'wrun_synthetic',deploymentId:'dpl_synthetic',workflowName:'workflow//eve//taskRunWorkflow',status:'running',input:{private:'discarded'}}],cursor:null,hasMore:false,private:'discarded'});
+ });
+ const page=await api.list('opaque + cursor');expect(JSON.stringify(page)).not.toContain('discarded');expect(count).toBe(2);
 });

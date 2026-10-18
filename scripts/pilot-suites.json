@@ -1237,14 +1237,15 @@
     },
     {
       "file": "tests/unit/pilot/managed-workflow-provider.test.ts",
-      "expectedCases": 6,
+      "expectedCases": 7,
       "cases": [
         "binds the actual work project and uses lazy metadata reads and a single exact cancellation request",
         "rejects an invalid run identity without dispatching another request",
         "rejects a different project before any run operation",
         "does not retry an unavailable provider response",
         "bounds the response body before accepting project metadata",
-        "returns only run metadata and discards native input and output bodies"
+        "returns only run metadata and discards native input and output bodies",
+        "lists unfiltered lazy metadata in the explicitly selected provider environment"
       ]
     },
     {
@@ -1515,6 +1516,35 @@
       "expectedCases": 1,
       "cases": [
         "bounds owner recovery reads to one live actor, connection, control revision and deadline"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-workflow-inventory.test.ts",
+      "expectedCases": 8,
+      "cases": [
+        "traverses every page twice and retains provider-only child runs without closure claims",
+        "rejects a missing application binding and duplicate expected identities",
+        "rejects repeated cursors and empty nonterminal pages",
+        "rejects duplicate provider identities rather than merging incomplete pages",
+        "requires explicit pagination completion and a cursor while more pages remain",
+        "fails finite page run and metadata bounds without claiming a truncated inventory",
+        "rejects changed run sets or metadata between complete traversals",
+        "stops on cancellation before metadata dispatch and rejects malformed run identities"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/retained-denial-proof.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "rejects serialized current snapshots and healthy labels without an actual retained-reader result"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-current-grants.test.ts",
+      "expectedCases": 2,
+      "cases": [
+        "preserves an unchanged current grant while revoking newer denials and all restored credentials",
+        "rolls back grant-preserving quarantine when actual current-denial validation fails"
       ]
     }
   ],

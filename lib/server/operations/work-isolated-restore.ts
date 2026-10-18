@@ -1,3 +1,5 @@
+import {requireAuthenticatedRetainedDenials,type RetainedWorkDenials} from '../../../scripts/pilot-denial-reader';
+import {measureRestoredWorkIntegrity} from './restored-work-integrity';
 import {Client} from 'pg';
 import {join,resolve} from 'node:path';
 import {readFile,rm} from 'node:fs/promises';
@@ -17,7 +19,7 @@ import {quarantineRestoredAuthority} from './recovery-quarantine';
  * Restores public application data and private objects, then quarantines all
  * authority. No provider schema, managed execution or current permission proof
  * is inferred, and no runtime is started or granted access. */
-export async function restoreIsolatedWorkCapture(input:{candidate:unknown;bundle:string;keyFile:string;output:string;signal:AbortSignal}){
+export async function restoreIsolatedWorkCapture(input:{candidate:unknown;bundle:string;keyFile:string;output:string;signal:AbortSignal;currentDenials?:RetainedWorkDenials}){
  const targetUrl=requireOwnedPilotDatabase(process.env,true),candidate=workCaptureCandidateSchema.parse(input.candidate),root=resolve(input.output);
  await verifyRecoveryCandidate({...input,candidate,environmentId:candidate.environmentId});
  const archive=join(root,'work.archive'),unpacked=join(root,'unpacked');
@@ -41,8 +43,10 @@ export async function restoreIsolatedWorkCapture(input:{candidate:unknown;bundle
    const objects=await restoreOwnedRecoveryObjects({header,unpacked,target:join(root,'objects'),signal:input.signal});
    if(objects.inventoryDigest!==candidate.objects.inventoryDigest||objects.objectCount!==candidate.objects.objectCount)throw Error('Restored work object inventory differs');
    if(!restored.recoveryId||!restored.controlRevision)throw Error('Restored work lock identity unavailable');
-   const quarantine=await quarantineRestoredAuthority(db,{environmentId:candidate.environmentId,recoveryId:restored.recoveryId,controlRevision:restored.controlRevision});
-   return {...restored,contract:'pilot-work-isolated-restore-v1' as const,environmentId:candidate.environmentId,acceptedContentVerified:true,ledgerVerified:true,objectsVerified:true,objectCount:objects.objectCount,requiredScopeQuarantined:quarantine.allRequiredScopesQuarantined,workflowReconciled:false,permanentReplayVerified:false,currentAuthorityVerified:false,restorationReady:false,mode:'locked' as const};
+   const physicalIntegrity=await measureRestoredWorkIntegrity(db,{candidate,scope:{environmentId:candidate.environmentId,recoveryId:restored.recoveryId,controlRevision:restored.controlRevision},storeRoot:join(root,'objects'),bundle:input.bundle,keyFile:input.keyFile,signal:input.signal});
+   if(input.currentDenials){requireAuthenticatedRetainedDenials(input.currentDenials,candidate.environmentId);if(input.currentDenials.backupCapturedAt!==candidate.capturedAt)throw Error('Current authority backup boundary differs');}
+   const quarantine=await quarantineRestoredAuthority(db,{environmentId:candidate.environmentId,recoveryId:restored.recoveryId,controlRevision:restored.controlRevision},input.currentDenials);
+   return {...restored,contract:'pilot-work-isolated-restore-v1' as const,environmentId:candidate.environmentId,physicalIntegrity,currentGrantsPreserved:quarantine.currentGrantsPreserved,acceptedContentVerified:true,ledgerVerified:true,objectsVerified:true,objectCount:objects.objectCount,requiredScopeQuarantined:quarantine.allRequiredScopesQuarantined,workflowReconciled:false,permanentReplayVerified:false,currentAuthorityVerified:false,restorationReady:false,mode:'locked' as const};
   }finally{await db.end();}
  }finally{await rm(archive,{force:true});}
 }

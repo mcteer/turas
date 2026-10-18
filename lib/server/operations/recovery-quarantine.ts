@@ -1,3 +1,5 @@
+import {requireAuthenticatedRetainedDenials,type RetainedWorkDenials} from '../../../scripts/pilot-denial-reader';
+import {reconcileOwnedCredentialDenialsInTransaction} from './recovery-credential-denials';
 import type {Client,PoolClient} from 'pg';
 import {z} from 'zod';
 const scopeSchema=z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive()});
@@ -5,8 +7,12 @@ export const requiredRecoveryQuarantineScopes=Object.freeze(['sessions','mcp','g
 /** No independently current authority is available. Preserve captured factual
  * histories, revoke restored credentials/partner grants, and retain a global
  * service fence. This is restricted recovery, never full readiness or unlock. */
-export async function quarantineRestoredAuthority(db:Client|PoolClient,raw:z.infer<typeof scopeSchema>){
- const scope=scopeSchema.parse(raw);await db.query('BEGIN');
+export async function quarantineRestoredAuthority(db:Client|PoolClient,raw:z.infer<typeof scopeSchema>,currentDenials?:RetainedWorkDenials){
+ const scope=scopeSchema.parse(raw);
+ // Default unknown-proof recovery still revokes every grant. This alternate
+ // path first applies genuine cold current denials; it never creates a grant.
+ const current=currentDenials?requireAuthenticatedRetainedDenials(currentDenials,scope.environmentId):undefined;
+ await db.query('BEGIN');
  try{
   await db.query("SET LOCAL lock_timeout='3000ms'");await db.query("SET LOCAL statement_timeout='5000ms'");
   if((await db.query("SELECT current_user=pg_get_userbyid(relowner) AS owner FROM pg_class WHERE oid='operations_control'::regclass")).rows[0]?.owner!==true)throw Error('Authority quarantine requires actual owner');
@@ -16,6 +22,10 @@ export async function quarantineRestoredAuthority(db:Client|PoolClient,raw:z.inf
   if(marker.length!==1||marker[0].environment_id!==scope.environmentId||Number(marker[0].schema_version)!==79)throw Error('Authority quarantine marker differs');
   const control=(await db.query('SELECT mode,revision,recovery_id FROM operations_control WHERE environment_id=$1 FOR UPDATE',[scope.environmentId])).rows[0];
   if(control?.mode!=='locked'||Number(control.revision)!==scope.controlRevision||control.recovery_id!==scope.recoveryId)throw Error('Exact locked authority quarantine required');
+  if(current){
+   const now=Number((await db.query('SELECT extract(epoch FROM clock_timestamp())*1000 AS now')).rows[0].now);
+   requireAuthenticatedRetainedDenials(current,scope.environmentId,now);
+  }
   for(const kind of requiredRecoveryQuarantineScopes){await db.query("INSERT INTO operations_recovery_quarantines(environment_id,recovery_id,control_revision,scope_kind,reason) VALUES($1,$2,$3,$4,'current_proof_unavailable') ON CONFLICT(environment_id,recovery_id,scope_kind) DO NOTHING",[scope.environmentId,scope.recoveryId,scope.controlRevision,kind]);}
   const quarantines=(await db.query('SELECT scope_kind,control_revision FROM operations_recovery_quarantines WHERE environment_id=$1 AND recovery_id=$2 ORDER BY scope_kind',[scope.environmentId,scope.recoveryId])).rows;
   if(quarantines.length!==requiredRecoveryQuarantineScopes.length||quarantines.some(row=>Number(row.control_revision)!==scope.controlRevision||!requiredRecoveryQuarantineScopes.includes(row.scope_kind)))throw Error('Exact durable quarantine scope differs');
@@ -53,7 +63,7 @@ export async function quarantineRestoredAuthority(db:Client|PoolClient,raw:z.inf
   // Credential removal is permanent under the existing MCP identity trigger.
   // Do not invent a human revoker membership for an owner recovery operation.
   const mcp=await db.query('UPDATE mcp_connections SET credential_hash=NULL WHERE environment_id=$1 AND credential_hash IS NOT NULL',[scope.environmentId]);
-  const grants=await db.query("UPDATE customer_grants SET state='revoked',revision=revision+1,changed_at=clock_timestamp() WHERE state='active' RETURNING customer_id");
+  const grants=current?{rows:[],rowCount:0}:await db.query("UPDATE customer_grants SET state='revoked',revision=revision+1,changed_at=clock_timestamp() WHERE state='active' RETURNING customer_id");
   if(grants.rows.length)await db.query('UPDATE customer_profile_state SET delivery_generation=delivery_generation+1,updated_at=clock_timestamp() WHERE customer_id=ANY($1::uuid[])',[[...new Set(grants.rows.map(row=>row.customer_id))]]);
   // An actually dispatched but unreconciled charge cannot become retry authority.
   // Settled charges and their permanent reconciliation receipts remain intact.
@@ -63,8 +73,11 @@ export async function quarantineRestoredAuthority(db:Client|PoolClient,raw:z.inf
   const native=await db.query("UPDATE response_attempts a SET dispatch_state=CASE WHEN a.dispatch_state IN('dispatching','admitted','uncertain') THEN 'uncertain' ELSE a.dispatch_state END,response_state='failed',last_error_code='recovery_current_proof_unavailable',revision=a.revision+1,updated_at=clock_timestamp() FROM conversations c WHERE a.conversation_id=c.id AND c.environment_id=$1 AND a.response_state IN('pending','running','stopping','waiting_input') RETURNING a.id",[scope.environmentId]);
   if(native.rows.length)await db.query("UPDATE watchdog_jobs SET state='needs_attention',lease_owner=NULL,lease_expires_at=NULL,last_error_code='recovery_current_proof_unavailable',updated_at=clock_timestamp() WHERE attempt_id=ANY($1::uuid[])",[native.rows.map(row=>row.id)]);
   const sends=await db.query("UPDATE report_deliveries SET state='uncertain',next_attempt_at=NULL,lease_token=NULL,lease_until=NULL,failure_code=CASE WHEN audit_expired_at IS NULL THEN 'recovery_current_proof_unavailable' ELSE NULL END,version=version+1 WHERE environment_id=$1 AND state IN('authorized','queued','retryable_failure','dispatching')",[scope.environmentId]);
+  // Apply denials and permanent fences after retiring old effects, atomically
+  // with this quarantine. No accepted grant is re-created or reactivated.
+  const applied=current?await reconcileOwnedCredentialDenialsInTransaction(db,current.snapshot,{...scope,snapshotDigest:current.contextDigest,backupCapturedAt:current.backupCapturedAt}):undefined;
   await db.query('COMMIT');
-  return {version:'pilot-authority-quarantine-v1' as const,...scope,mode:'locked' as const,newlyRevokedSessions:sessions.rowCount??0,newlyRevokedMcpConnections:mcp.rowCount??0,newlyRevokedGrants:grants.rowCount??0,
+  return {version:'pilot-authority-quarantine-v1' as const,currentGrantsPreserved:!!current,independentDenialsApplied:!!applied,...scope,mode:'locked' as const,newlyRevokedSessions:sessions.rowCount??0,newlyRevokedMcpConnections:mcp.rowCount??0,newlyRevokedGrants:grants.rowCount??0,
    newlyCancelledResearchRequests:researchRequests.rowCount??0,newlyInterruptedResearchRuns:researchRuns.rowCount??0,newlyInterruptedAdvisoryAttempts:advisoryAttempts,newlyPausedReportSchedules:schedules.rowCount??0,
    newlyHeldOrdinaryOperations:ordinaryHolds.rowCount??0,newlyHeldParityOperations:parityHolds.rowCount??0,newlyHeldLearningReservations:learningHolds.rowCount??0,newlyRevokedServiceBudgets:serviceBudgets.rowCount??0,newlyHeldPaidReservations:paid.rowCount??0,newlyInterruptedNativeAttempts:native.rowCount??0,newlyHeldReportDeliveries:sends.rowCount??0,quarantinedScopes:quarantines.map(row=>row.scope_kind),capturedHistoriesRetained:true,allRequiredScopesQuarantined:true,currentAuthorityVerified:false,permanentReplayProofAvailable:false,restorationReady:false};
  }catch(error){await db.query('ROLLBACK');throw error;}

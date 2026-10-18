@@ -2498,3 +2498,48 @@ identity failure while the source was being edited; it is not a complete pass
 and requires a stable-source repeat. The expanded catalog has 718 named cases
 across 133 suites. Full final-source local/CI runs remain required. No hosted
 schema/configuration, deployment, budget, storage or Production change occurred.
+
+### Managed-run pagination mechanism — 2026-10-17
+
+The operator provider adapter and existing inspection CLI now perform unfiltered,
+lazy, explicitly environment-bound run listing. Two complete metadata traversals
+must agree and contain every application binding. Provider-only children/orphans
+remain visible. Missing completion metadata, duplicate identities, cursor cycles,
+empty nonterminal pages, changes and finite bounds all fail closed.
+
+Fifteen focused unit cases pass across the provider adapter and new inventory
+module; root/pilot typechecks pass. These are synthetic transport checks, not
+actual provider traversal or closure evidence. Metadata parsing discards native
+input/output fields. Receipts explicitly withhold atomic-provider-snapshot,
+old-deployment-closure, all-runs-closed, effects-reconciled, native-resume and
+restoration-ready claims. No provider operation occurred in this checkpoint.
+
+The subsequent actual read-only Production inspection passed against the existing
+schema-077 source: 18 conversation records (17 bound native runs), 15 response
+attempts and 484 provider workflow records. Each full traversal required five
+pages; both metadata inventories agreed. The 467 provider-only records are not
+a claim that all are active or orphaned. No provider cancellation/write, model
+call, configuration change, hosted migration or readiness assertion occurred.
+Initial failed captures are retained: private evidence directory permissions,
+then an obsolete inspector expectation for a createdAt field discarded by the
+minimized metadata adapter. The inspector now consumes its validated minimized
+record directly. Complete deployment closure and required-service verification
+still remain unproved.
+
+
+Recovery completion checkpoint, 2026-10-17: the owned PostgreSQL encrypted work
+restore passed actual ledger/content/six-namespace measurements and an advisory
+lock race regression. JSON-cloned proof and a different store directory were
+rejected. The current-grant reconciliation fixtures passed unchanged-grant
+preservation, newer revocation, credential retirement, idempotence and atomic
+rollback. Those fixtures stub only the external archive reader boundary; they
+do not prove a real Neon/Vercel independent denial archive or hosted recovery.
+The production read-only inventory completed two stable traversals of 484 managed
+runs (five pages each), including 467 provider-only records. This establishes
+metadata enumeration, not cancellation, effect settlement or deployment closure.
+Native question and text-preference checks passed locally with bounded route
+warmup. Full final-source validation and hosted recovery/release remain pending.
+
+The native task-state check also passed on the recovery completion source using
+actual local eve and headless WebKit, with no paid provider calls. Root and pilot
+type checks and the authored-document hygiene check passed.

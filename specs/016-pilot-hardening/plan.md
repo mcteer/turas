@@ -268,3 +268,24 @@ metadata must fail closed. Captured control/question/native request identities
 remain permanently fenced; this accounting does not revive interrupted attempts
 or establish that a cancelled native workflow can resume. That capability needs
 its own actual supported execution proof, or the scope stays restricted.
+
+### Managed execution inventory before closure (T087/T088)
+
+The explicit operator provider adapter lists unfiltered lazy run metadata with
+bounded pages and byte counts in the selected Preview/Production environment.
+Traverse the entire run catalog twice, require stable run identities/metadata,
+retain provider-only child/orphan identities and reject missing application
+bindings, cursor cycles, duplicate rows and any overflow. The existing managed
+inspection command includes this graph before its final unchanged-application
+check. This is observed repeated pagination, not an atomic provider snapshot or
+proof that old deployments cannot admit work. Durable exact-run cancellation,
+complete deployment retirement and effect reconciliation must precede any
+composed recovery verification writer.
+
+
+Recovery completion implementation now separates pre-quarantine physical integrity
+from subsequent deny-only transformations. Current grant preservation requires the
+actual authenticated retained-reader object and composes effect retirement and
+permanent denial/replay fences in one owner transaction. These mechanisms are
+implemented; they are not a completed recovery verification producer, hosted drill,
+or authorization to unlock service.

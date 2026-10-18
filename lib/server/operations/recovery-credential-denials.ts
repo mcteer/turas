@@ -1,3 +1,4 @@
+import {currentRecoveryStateDigest} from './recovery-state';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
@@ -10,9 +11,15 @@ const uuid=z.uuid();
  * owner target. Never grant/revive authority, dispatch work, clear quarantine,
  * or represent full source/publication/provider/replay verification as complete. */
 export async function reconcileOwnedCredentialDenials(db:Client|PoolClient,raw:unknown,input:z.infer<typeof command>){
- const scope=command.parse(input),snapshot=recoveryDenialSnapshotSchema.parse(raw);
  await db.query('BEGIN');
- try{
+ try{const result=await reconcileOwnedCredentialDenialsInTransaction(db,raw,input);await db.query('COMMIT');return result;}
+ catch(error){await db.query('ROLLBACK');throw error;}
+}
+/** Internal composed recovery step. Requires the caller's owner transaction;
+ * never commits partial state or turns supplied labels into proof. */
+export async function reconcileOwnedCredentialDenialsInTransaction(db:Client|PoolClient,raw:unknown,input:z.infer<typeof command>){
+ const scope=command.parse(input),snapshot=recoveryDenialSnapshotSchema.parse(raw);
+ await db.query('SAVEPOINT current_denial_reconciliation');await db.query('RELEASE SAVEPOINT current_denial_reconciliation');
   await db.query("SET LOCAL lock_timeout='3000ms'");await db.query("SET LOCAL statement_timeout='10000ms'");await db.query("SET LOCAL transaction_timeout='60s'");
   const identity=(await db.query(`SELECT current_database() AS name,current_user AS role,
    current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='operations_control'::regclass)) AS owner FROM pg_database d WHERE d.datname=current_database()`)).rows[0];
@@ -202,7 +209,6 @@ export async function reconcileOwnedCredentialDenials(db:Client|PoolClient,raw:u
     }
    }
   }
-  await db.query('COMMIT');
-  return {contract:'pilot-owned-credential-denials-v5' as const,...scope,mode:'locked' as const,revokedWorkspaces,revokedPartnerOrganizations,revokedPrincipals,revokedMemberships,revokedSessions,revokedMcpConnections,revokedGrants,clearedAcceptedHeads,withdrawnArtifacts,withdrawnResearch,retiredProjections,suspendedPublications,permanentReplayFencesAdded,typedModelHoldsAdded,sourcePublicationDenialsApplied:snapshot.contract!=='pilot-denial-replay-snapshot-v2',scope:'credentials-grants-and-source-denials' as const,authorityGranted:false,quarantineCleared:false,currentAuthorityVerified:false,replayReconciled:false,restorationReady:false};
- }catch(error){await db.query('ROLLBACK');throw error;}
+  const currentStateDigest=await currentRecoveryStateDigest(db);
+  return {currentStateDigest,contract:'pilot-owned-credential-denials-v5' as const,...scope,mode:'locked' as const,revokedWorkspaces,revokedPartnerOrganizations,revokedPrincipals,revokedMemberships,revokedSessions,revokedMcpConnections,revokedGrants,clearedAcceptedHeads,withdrawnArtifacts,withdrawnResearch,retiredProjections,suspendedPublications,permanentReplayFencesAdded,typedModelHoldsAdded,sourcePublicationDenialsApplied:snapshot.contract!=='pilot-denial-replay-snapshot-v2',scope:'credentials-grants-and-source-denials' as const,authorityGranted:false,quarantineCleared:false,currentAuthorityVerified:false,replayReconciled:false,restorationReady:false};
 }

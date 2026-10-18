@@ -277,6 +277,10 @@ removes current learning credit. These are owned synthetic checks, with no real
 participant feedback or skills certification.
 Report source checks now reconcile a cited plan's current retrieval digest as
 well as direct profile digests, preserving audience and withdrawal fences.
+The work-restore path now measures actual database content and private files before
+quarantine, with atomic current-grant reconciliation from authenticated retained
+denials. Read-only managed-run inspection traverses all provider pages twice;
+terminal closure and retirement of old deployments remain unproved.
 Recovery authority, hosted services, scheduled backups and actual participant
 acceptance remain pending; local checks do not establish pilot readiness. See the
 [handoff](specs/016-pilot-hardening/handoff.md) for scope and execution gates.

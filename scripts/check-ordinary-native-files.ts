@@ -94,7 +94,7 @@ try{await withPlanEvalEnvironment(async environment=>{
    const warmupId=(await warmup.json()).data.id;
    const warmupBinding=await context.request.post('/eve/v1/session',{headers:{...headers,'x-turas-conversation-id':warmupId},data:{operationId:warmupKey}});if(!warmupBinding.ok())throw Error('Thread warmup binding failed');
    fixturePhase='warmup_thread_compile';
-   const threadCompiled=await context.request.get('/s/'+warmupId,{timeout:30000});
+   const threadCompiled=await context.request.get('/s/'+warmupId,{timeout:90000});
    if(threadCompiled.status()!==200)throw Error('Owned thread compile request failed');
    fixturePhase='initial_thread_navigation';
    await page.goto('/s/'+warmupId,{waitUntil:'domcontentloaded'});
@@ -133,6 +133,8 @@ try{await withPlanEvalEnvironment(async environment=>{
   }else{
   const created=await context.request.post('/api/conversations',{headers,data:{requestKey:operationId}});if(!created.ok())throw Error('Fixture conversation creation failed');id=(await created.json()).data.id;
   for(let i=0;i<5;i++){const response=await context.request.post('/eve/v1/session',{headers:{...headers,'x-turas-conversation-id':id},data:{operationId}});if(response.ok()){native=(await response.json()).sessionId;break;}if(response.status()!==409)throw Error('Native binding failed');await new Promise(resolve=>setTimeout(resolve,1000));}if(!native)throw Error('Native binding unconfirmed');
+  fixturePhase='warmup_thread_compile';const compiled=await context.request.get('/s/'+id,{timeout:90000});if(compiled.status()!==200)throw Error('Owned thread compile request failed');
+  fixturePhase='native_file_interaction';
   const sent=await context.request.post('/eve/v1/session/'+native,{headers:{...headers,'x-turas-conversation-id':id,'x-turas-request-key':randomUUID()},data:{message:process.argv.includes('--memory')?firstPrompt:[{type:'text',text:firstPrompt},{type:'file',filename:'pixel.png',mediaType:'image/png',data:'data:image/png;base64,'+bytes.toString('base64')}]}});
   if(!sent.ok()){await writeFile(join(out,'send-private.json'),JSON.stringify({status:sent.status(),body:await sent.text()}),{mode:0o600});throw Error('Native file send rejected');}
   }
@@ -157,7 +159,7 @@ try{await withPlanEvalEnvironment(async environment=>{
   if((process.argv.includes('--steer')?calls.length<2:calls.length!==(process.argv.includes('--memory')||process.argv.includes('--memory-files')||process.argv.includes('--task-state')?3:2))||calls.some(call=>call.bytes_digest!==createHash('sha256').update(process.argv.includes('--memory')?Buffer.alloc(0):bytes).digest('hex')))throw Error('Provider file bytes differ');
   if(process.argv.includes('--steer')){const projected=(await query('SELECT native_event_id FROM ordinary_steering_deliveries d JOIN response_attempts a ON a.id=d.attempt_id WHERE a.conversation_id=$1',[id])).rows;if(projected.length!==1||!projected[0].native_event_id)throw Error('Native file correction was not consumed');if(Number((await query('SELECT count(*) AS n FROM response_attempts WHERE conversation_id=$1',[id])).rows[0].n)!==1)throw Error('Correction created a second response allowance');}
   const resolutions=(await query('SELECT customer_id FROM ordinary_native_file_fixture_resolutions')).rows;if(resolutions.length!==1||resolutions[0].customer_id!==fixtureCustomerId)throw Error('Actual native resolver did not return the seeded canonical account');
-  if(!process.argv.includes('--composer'))await page.goto('/s/'+id,{waitUntil:'domcontentloaded'});await page.getByText('Native file bytes received.',{exact:true}).waitFor({timeout:30000});await page.reload();await page.getByText('Native file bytes received.',{exact:true}).waitFor({timeout:30000});if(process.argv.includes('--composer')){await page.getByText('pixel.png',{exact:true}).waitFor();if(process.argv.includes('--steer'))await page.getByText('corrected.png',{exact:true}).waitFor();await page.screenshot({path:join(out,'native-file-desktop.png'),fullPage:true});await page.setViewportSize({width:390,height:844});await page.screenshot({path:join(out,'native-file-mobile.png'),fullPage:true});}
+  if(!process.argv.includes('--composer')){fixturePhase='completed_thread_navigation';await page.goto('/s/'+id,{waitUntil:'domcontentloaded'});}await page.getByText('Native file bytes received.',{exact:true}).waitFor({timeout:30000});await page.reload();await page.getByText('Native file bytes received.',{exact:true}).waitFor({timeout:30000});if(process.argv.includes('--composer')){await page.getByText('pixel.png',{exact:true}).waitFor();if(process.argv.includes('--steer'))await page.getByText('corrected.png',{exact:true}).waitFor();await page.screenshot({path:join(out,'native-file-desktop.png'),fullPage:true});await page.setViewportSize({width:390,height:844});await page.screenshot({path:join(out,'native-file-mobile.png'),fullPage:true});}
   if(boundaryMiB){
    await page.getByRole('button',{name:'View pixel.png',exact:true}).click();
    const preview=page.locator('.chat-file-card a[download="pixel.png"]');await preview.waitFor({timeout:30000});
@@ -184,7 +186,7 @@ try{await withPlanEvalEnvironment(async environment=>{
      const created=await isolated.request.post('/api/conversations',{headers:ownHeaders,data:{requestKey:operationId}});if(!created.ok())throw Error('Preference conversation creation failed');const ownedId=(await created.json()).data.id;
      const bound=await isolated.request.post('/eve/v1/session',{headers:{...ownHeaders,'x-turas-conversation-id':ownedId},data:{operationId}});if(!bound.ok())throw Error('Preference session binding failed');const ownedNative=(await bound.json()).sessionId;
      const sent=await isolated.request.post('/eve/v1/session/'+ownedNative,{headers:{...ownHeaders,'x-turas-conversation-id':ownedId,'x-turas-request-key':randomUUID()},data:{message:prompt}});if(!sent.ok())throw Error('Preference check send failed');
-     const page=await isolated.newPage();await page.goto('/s/'+ownedId,{waitUntil:'domcontentloaded'});await page.getByText(expected,{exact:true}).waitFor({timeout:60000});
+     fixturePhase='preference_thread_navigation';const page=await isolated.newPage();await page.goto('/s/'+ownedId,{waitUntil:'domcontentloaded'});await page.getByText(expected,{exact:true}).waitFor({timeout:60000});
      const retired=await isolated.request.post('/eve/v1/session/'+ownedNative+'/reset',{headers:ownHeaders,data:{reason:'Owned preference fixture complete'}});if(!retired.ok())throw Error('Preference session retirement failed');
     }finally{if(token)await isolated.request.post('/api/auth/logout',{headers:{origin:environment.origin,'x-csrf-token':token}}).catch(()=>{});await isolated.close();}
    };
