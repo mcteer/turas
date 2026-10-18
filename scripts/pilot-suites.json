@@ -1487,6 +1487,19 @@
         "quarantines existing unknown model holds and denies runtime zero settlements",
         "preserves known accounting alongside an earlier unknown hold and inherits both observations"
       ]
+    },
+    {
+      "file": "tests/integration/pilot/storage-cutover.test.ts",
+      "expectedCases": 7,
+      "cases": [
+        "copies fenced originals with fresh clients and preserves the entire admitted ceiling for accounting",
+        "denies changed recovery scope before byte writes and never resets its paid hold",
+        "refuses stale cost authority without changing admission or original bytes",
+        "retains originals and the full hold when provider IO fails",
+        "keeps partial copied bytes and the full hold after cancellation during IO",
+        "rejects a concurrent copy of the same admitted operation",
+        "expires admitted authority during IO without releasing its ceiling"
+      ]
     }
   ],
   "ui": {

@@ -12,7 +12,7 @@ const deploymentSchema=z.object({id:z.string(),projectId:z.string(),ownerId:z.st
  meta:z.record(z.string(),z.string()).optional(),gitSource:z.object({sha:z.string().optional()}).optional()});
 /** Only metadata returned by the authenticated platform transport is used by the
  * runner. A proposed scope is not evidence of ownership or deployed identity. */
-export function verifyHostedDeployment(raw:unknown,scope:PilotHostedScope){
+export function verifyHostedDeployment(raw:unknown,scope:Pick<PilotHostedScope,'deploymentId'|'projectId'|'teamId'|'sourceCommit'|'target'>){
  const deployment=deploymentSchema.parse(raw);
  const commits=[deployment.meta?.githubCommitSha,deployment.gitSource?.sha].filter(value=>value!==undefined);
  const commit=commits[0];

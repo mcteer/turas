@@ -549,3 +549,69 @@ is passed to the uploader. Workforce originals/located cells remain separate fro
 customer retrieval and shared knowledge. The linked validation chain requires
 six admitted program jobs (source scan/parse, workforce scan/parse, two renders),
 within the unchanged 32-job total. This partial chain is not full catalog proof.
+
+## Hosted private-store copy and configuration readback
+
+The operator path supports a finite hosted copy without deleting the retained
+source or opening service. Actual Blob acceptance still requires the admitted
+hosted run; isolated local-adapter tests prove only the shared copy mechanism.
+
+Prepare a private `pilot-storage-cutover-plan-v1` manifest using
+`lib/contracts/pilot-storage-cutover.ts`. Bind the exact source commit/digest,
+environment, Preview/Production target, origin, distinct source/destination
+stores, full expected hosted configuration, existing Blob budget/scope/pricing
+and complete upper-bound reservation. Set finite object/byte limits and expiry.
+Keep credential values outside the manifest. The original store stays readable;
+rollback means keeping service locked and re-copying verified retained originals
+under a new admitted operation after accounting, never an empty hosted local store.
+
+1. While operational control is open, provision only an already authorized,
+   applicable Blob budget with `pilot:cost`. Then run
+   `npm run pilot:storage:copy -- --admit-hosted --plan /private/plan.json --output /private/admission`.
+   This durably holds the entire ceiling before any provider IO. Repeating an
+   admitted operation cannot dispatch it twice or reset its cost hold.
+2. Use the explicit control/release procedure to quiesce, drain and lock the
+   exact environment, and deploy the target configuration while it stays locked.
+   Use eve for the deployment. Retain the source store and the admission receipt.
+3. Supply the exact owner connection and environment, a current mcteer session in
+   `TURAS_STORAGE_ADMIN_COOKIE`, and `VERCEL_BLOB_RETRIES=0`. Supply source/destination
+   credentials separately through `TURAS_STORAGE_SOURCE_BLOB_TOKEN` /
+   `TURAS_STORAGE_DESTINATION_BLOB_TOKEN` or the corresponding `_OIDC_TOKEN`
+   variables. The CLI resolves each origin through the authenticated platform
+   before attaching a cookie; redirects and another commit/project/team fail.
+4. Run `npm run pilot:storage:copy -- --copy-hosted --plan /private/plan.json --output /private/copy --reservation <uuid> --recovery-id <uuid> --control-revision <revision>`.
+   The command checks owner/schema/cost identity, takes the existing exclusive IO
+   fence, checks required original ledgers and full inventories, copies immutable
+   bytes and repeats parity with fresh clients. Authenticated configuration
+   readback must match before and after, including the same actual deployment.
+5. Retain the successful receipt and original source inventory. The full cost
+   ceiling remains held as unknown until an explicit applicable `pilot:cost`
+   accounting receipt; a conclusive copy is not a provider invoice. Failure also
+   preserves the hold and service lock. A new paid attempt requires reconciliation
+   and new applicable authority; do not repurpose or reset the old reservation.
+   Complete the existing required-service/recovery verification and explicit
+   unlock procedure before allowing writes. A copy receipt never unlocks service.
+
+Before any configuration change, retain a private allowlisted readback of the
+original deployment/commit and storage/executor settings with the original store
+inventory. A copy plus destination readback is not the complete cutover receipt:
+release verification must also retain that original readback and prove required
+service after explicit unlock.
+
+Executable forward rollback before unlock uses the same copy command: retain the
+lock and use a separately budgeted exact rollback plan/operation admitted before
+the initial lock. Prepare that bounded fallback alongside the forward operation;
+an unknown forward charge cannot fund it or reset its allowance. Reconcile any
+old reservation explicitly before reusing its budget. Deploy the corrected destination configuration with
+eve, and execute `--copy-hosted` against the retained original bytes. If the old
+source was Blob, a reverse migration can instead bind the current complete Blob
+store as source and the retained old Blob store as destination; the command
+requires exact digest parity and rejects conflicting destination objects. After
+service has accepted new writes, do not use a stale pre-cutover source: capture
+and verify the complete current destination first, then use that current inventory
+for the reverse copy. Preserve both stores and both accounting histories throughout.
+
+If no applicable rollback reservation was admitted before locking, keep service
+closed and preserve both stores. Do not briefly open service merely to obtain
+cost admission or bypass an unknown charge. An unavailable rollback envelope is
+a release blocker, not permission to reuse a dispatched operation.

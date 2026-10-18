@@ -549,7 +549,14 @@
         "integration.preview-safety-restore.001",
         "integration.recovery-model-holds.001",
         "integration.recovery-model-holds.002",
-        "integration.recovery-model-holds.003"
+        "integration.recovery-model-holds.003",
+        "integration.storage-cutover.001",
+        "integration.storage-cutover.002",
+        "integration.storage-cutover.003",
+        "integration.storage-cutover.004",
+        "integration.storage-cutover.005",
+        "integration.storage-cutover.006",
+        "integration.storage-cutover.007"
       ]
     },
     {

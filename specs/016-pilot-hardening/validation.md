@@ -2416,3 +2416,26 @@ Existing expired authorities and unknown charges remain preserved. Full hosted
 storage cutover, matched capture/recovery, the complete ordinary hosted catalog,
 actual scheduled cadence, real participant feedback and final release remain
 pending under T085–T094 and their original tasks.
+
+### Hosted storage operator implementation checkpoint — 2026-10-17
+
+The existing storage command now supports explicit hosted admission and copy,
+with an exact-source finite plan, an applicable durable Blob cost ceiling,
+locked owner checkpoint, fresh adapter parity and authenticated platform/runtime
+configuration readback. The shared deployment identity verifier is reused before
+sending the administrator cookie. SDK retries must be disabled. Unknown charges
+block further work from that budget; all copy outcomes preserve the complete
+hold until explicit accounting. Original bytes are never deleted.
+
+Seven actual isolated-database/local-byte integration assertions passed: normal
+copy, changed recovery scope, revoked authority, provider failure, partial-copy
+cancellation, same-operation concurrency and expiry during IO. These are local
+mechanism checks, not actual Blob acceptance. Deployment identity/configuration
+contract checks and root/pilot typechecks passed. Independent bounded source
+review found no remaining authorization/hold bypass in this path.
+
+The runbook requires an original configuration/inventory readback and a separate
+rollback envelope admitted before locking. The copy receipt intentionally keeps
+`cutoverVerified:false`: actual Blob copy, original/target configuration evidence,
+required service verification and explicit unlock remain T085 release evidence.
+No provider operation or budget renewal occurred in this checkpoint.

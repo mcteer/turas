@@ -232,3 +232,18 @@ Preserve all018backend and019chat mechanisms, current appearance and root model.
 Expired016quality/infrastructure and separate parity budgets remain unchanged, including every unsettled dollar/token hold. Prepare concrete current source/target/cost manifests before paid admission; no automatic top-up or reuse of the narrower Notion allowance. Current-source backup coverage must include the newly released ordinary/provider/replay records, not only the original055 table inventory. Historical signed receipts remain historical; schema labels cannot turn them into current evidence.
 
 Finish implementation and owned validation first, then target-bound Preview/Production acceptance and cleanup. Two scheduled backups at least12hours apart and genuine operator/internal/assigned-partner observations remain distinct actual acceptance requirements; automation cannot impersonate them. Reuse applicable user authorization without repetitive permission prompts, and request only information or material authority actually absent after the work is concrete.
+
+### Hosted storage completion (T085)
+
+Use the existing governed Blob/local adapters, required-original inventory and
+exclusive recovery IO checkpoint. A private exact-source cutover plan binds the
+full target configuration, finite byte/object bounds and an applicable Blob cost
+budget. Admit/hold the complete operation while open, then quiesce/lock and
+release the configured deployment. Copy with fresh clients and cold digest
+parity under the existing fence; authenticated platform and runtime readbacks
+must agree before/after. Preserve originals and unknown cost ceilings on failure
+or success until explicit accounting. Configuration deployment and verified
+service unlock remain distinct explicit release operations. The implementation
+belongs in `lib/server/operations/storage-cutover.ts` and the existing storage
+operator entry point; tests use actual isolated database/bytes without claiming
+that local adapters establish hosted Blob behavior.
