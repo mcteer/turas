@@ -2758,3 +2758,38 @@ CI at `02e5175` passes six of seven legacy parity gates, including WebKit, but t
 native operations gate times out waiting for the intervening ordinary reply.
 That failure remains open. The complete current-source catalog and final CI have
 not passed, and Production/schema 077 are unchanged.
+
+
+### Chat polling, native fixture ownership and engagement lock order (2026-10-18)
+
+The built-app four-project history/scrolling case now also verifies that a 404
+clears the live chat/composer and stops history polling through ten seconds of
+browser clock advancement. All **4/4 cases pass in 37.7 seconds** with actual
+application authentication and explicitly substituted native wire/history failure
+responses. This is UI contract evidence, not managed-provider execution. Temporary
+history failures still recover normally; terminal denied/context-changed live chats
+stop both history and attempt polling. The final stale-attempt guard was added
+after this focused browser run and requires final-source matrix verification.
+
+The actual unpaid native operations/knowledge catalog passes after closing browser
+pages only after their complete scenario assertions and scoping deterministic
+model tool results to their submitted attempt. The original parked approval,
+intervening turn, fresh-owner decision, other-member refusal, changed-source
+rejection and all five governed knowledge actions remain required. The failed
+attempts are retained: one reached the knowledge application stage before a native
+statement timeout; another timed out during the changed-source execution read.
+The passing native run still contained an actual Postgres deadlock, so it is not
+accepted as deadlock-free or as final-source proof.
+
+Its retained owned Postgres log identifies opposite lock order: execution waits
+for an engagement while the composed ordinary read holds it and waits for a plan.
+Delivery-assignment reads now take the shared plan prefix before the engagement,
+matching execution's plan-before-engagement order. The actual domain regression
+passes **1/1 in 3.34 seconds**. A separate owned negative check removes only that
+new prefix and the same regression rejects the old order with a NOWAIT engagement
+lock failure. It observes actual blocking backend identities, refreshes Postgres's
+transaction-cached statistics and preserves all domain lock/statement deadlines.
+The earlier setup/statistics-witness failures are retained. No runtime migration,
+provider call, authority bypass, source withdrawal relaxation or timeout increase
+is involved. Current native/full CI and the separately failing Product Gaps UI
+matrix remain under verification.

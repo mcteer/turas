@@ -70,6 +70,9 @@ restored dependency fixes; full current CI and hosted recovery remain pending.
 The login form now follows legacy’s native POST and server-cookie redirect, with
 the current styling retained. All 16 owned built-app WebKit login checks pass;
 the latest CI native intervening-turn failure remains under investigation.
+Composed engagement reads now follow execution’s plan-before-engagement lock
+order, verified with actual concurrent transactions and an old-order negative
+check. Terminal denied live chats stop polling; full current CI remains pending.
 
 Recent Conversations provides owner-private Archive and Restore controls. Archived
 chats remain available in Archived Conversations and retain their history.
