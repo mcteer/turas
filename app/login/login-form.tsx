@@ -1,12 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
 type LoginResponse = { data?: { returnTo: string }; error?: { message: string } };
 
 export function LoginForm({ initialError = "", returnTo = "/" }: { initialError?: string; returnTo?: string }) {
-  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(initialError);
 
@@ -16,6 +14,7 @@ export function LoginForm({ initialError = "", returnTo = "/" }: { initialError?
     setBusy(true);
     setError("");
     const form = new FormData(event.currentTarget);
+    let navigating = false;
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -33,12 +32,14 @@ export function LoginForm({ initialError = "", returnTo = "/" }: { initialError?
         setError(response.status === 401 ? "Invalid credentials" : payload.error?.message ?? "Sign-in unavailable");
         return;
       }
-      router.replace(payload.data?.returnTo ?? "/");
-      router.refresh();
+      // Start one authenticated document navigation after the cookie is set.
+      // A queued client refresh can otherwise redirect over the next page.
+      window.location.replace(payload.data?.returnTo ?? "/");
+      navigating = true;
     } catch {
       setError("Sign-in unavailable");
     } finally {
-      setBusy(false);
+      if (!navigating) setBusy(false);
     }
   }
 

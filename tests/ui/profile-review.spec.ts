@@ -7,6 +7,7 @@ test("a partner claim stays Pending through submission, then accepts and retract
   { page, browser }, testInfo,
 ) => {
   test.skip(testInfo.project.name !== "webkit-desktop-light", "Shared review mutation runs once");
+  test.setTimeout(60_000);
   const marker = randomUUID().slice(0, 8);
   const claim = `Synthetic delivery observation ${marker}`;
   const customerPath = `/customers/${DEMO_IDS.sharedCustomer}`;

@@ -2697,3 +2697,27 @@ The complete environment/process remains capped at 660 seconds; the SDK populati
 125 positive category reads, 2,500 grants and all workload/job limits are unchanged.
 The corrected actual owned SDK case passes in 190.52 seconds with the isolated
 patched dependency install. Pilot types and documentation checks pass.
+
+The frozen c87d150 catalog stopped after 654 passed cases and one stale command
+unit failure: its unknown-flag input still had the earlier eleven arguments.
+The input now includes both required runtime/session files before the unknown
+flag, preserving its assertion that rejection happens before any protected read
+or platform call. All five command unit cases pass. This is not a full catalog
+pass; its exact failed report and process receipts are retained.
+
+The general CI failure reaches the thirty-second deadline near the end of the
+partner's acceptance/retraction/rejection journey. That multi-stage case now uses
+the adjacent review test's existing sixty-second bound; five-second assertions
+and all domain limits remain unchanged. An owned cold-development diagnostic also
+exposes a competing post-login navigation. Successful JSON login now makes one
+authenticated document replacement and keeps its button busy until navigation,
+rather than queuing client replacement plus refresh. This preserves the form and
+server-side origin, return-path, session and role checks.
+
+The entire normally reviewed partner journey passes with the built production
+app in 4.6 seconds and warmed development routes in 17.0 seconds. Two cold local
+development diagnostics failed and remain retained: navigation interruption, then
+a return to login despite a live cookie and successful authenticated session read.
+They are not silently reclassified as passes. The production/warmed results do not
+prove cold-development startup reliability or hosted behavior. Root/pilot types,
+nine auth/failure-privacy unit cases and documentation checks pass.
