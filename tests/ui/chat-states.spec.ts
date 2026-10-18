@@ -53,9 +53,9 @@ test("bound chat retains visible customer and scope notice", async ({ page }) =>
   await signIn(page, "panel");
   await page.goto("/s");
   await page.getByLabel("Customer (optional)").selectOption({ label: "Cedar (synthetic)" });
-  await page.getByRole("button", { name: "Attach documents" }).click();
+  await page.getByRole("button", { name: "Customer sources" }).click();
   await expect(page).toHaveURL(/\/s\/[0-9a-f-]+(?:\?attachments=1)?$/);
-  await expect(page.getByRole("heading", { name: "Cedar (synthetic)" })).toBeVisible();
+  await expect(page.getByRole("main", { name: "Chat with Turi: Cedar (synthetic)" })).toBeVisible();
   await page.getByRole("button", { name: "Customer context", exact: true }).click();
   await expect(page.getByText("Synthetic customer data and public research only")).toBeVisible();
   await expect(page.getByLabel("Message Turi")).toBeVisible();
@@ -108,7 +108,7 @@ test("a revoked conversation clears the protected chat view", async ({ page }) =
   await signIn(page, "partner");
   await page.goto("/s");
   await page.getByLabel("Customer (optional)").selectOption({ label: "Cedar (synthetic)" });
-  await page.getByRole("button", { name: "Attach documents" }).click();
+  await page.getByRole("button", { name: "Customer sources" }).click();
   await expect(page.getByLabel("Message Turi")).toBeVisible();
   await page.route(/\/api\/conversations\/[0-9a-f-]+$/, async (route) => {
     await route.fulfill({ status: 404, body: JSON.stringify({ ok: false }),
@@ -123,7 +123,7 @@ test("a reload shows an uncertain send without dispatching it again", async ({ p
   await signIn(page, "panel");
   await page.goto("/s");
   await page.getByLabel("Customer (optional)").selectOption({ label: "Cedar (synthetic)" });
-  await page.getByRole("button", { name: "Attach documents" }).click();
+  await page.getByRole("button", { name: "Customer sources" }).click();
   await expect(page).toHaveURL(/\/s\/[0-9a-f-]+(?:\?attachments=1)?$/);
   await expect(page.getByLabel("Message Turi")).toBeVisible();
   const conversationId = new URL(page.url()).pathname.split("/").at(-1)!;
@@ -147,7 +147,7 @@ test("a cancelled response stays visibly interrupted after reload", async ({ pag
   await signIn(page, "panel");
   await page.goto("/s");
   await page.getByLabel("Customer (optional)").selectOption({ label: "Cedar (synthetic)" });
-  await page.getByRole("button", { name: "Attach documents" }).click();
+  await page.getByRole("button", { name: "Customer sources" }).click();
   await expect(page).toHaveURL(/\/s\/[0-9a-f-]+(?:\?attachments=1)?$/);
   const conversationId = new URL(page.url()).pathname.split("/").at(-1)!;
   syntheticCleanup.push(conversationId);
@@ -174,7 +174,7 @@ test("an unconfirmed deadline remains blocked and visible after reload", async (
   await signIn(page, "panel");
   await page.goto("/s");
   await page.getByLabel("Customer (optional)").selectOption({ label: "Cedar (synthetic)" });
-  await page.getByRole("button", { name: "Attach documents" }).click();
+  await page.getByRole("button", { name: "Customer sources" }).click();
   await expect(page).toHaveURL(/\/s\/[0-9a-f-]+(?:\?attachments=1)?$/);
   const conversationId = new URL(page.url()).pathname.split("/").at(-1)!;
   syntheticCleanup.push(conversationId);

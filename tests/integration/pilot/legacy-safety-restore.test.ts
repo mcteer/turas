@@ -29,7 +29,7 @@ afterAll(async()=>{if(root)await rm(root,{recursive:true,force:true});});
 it('restores schema 055 content rehearses both forward migrations and leaves runtime and recovery closed',async()=>{
  await withPilotEnvironment(async environment=>{
   const result=await restoreOwnedLegacySafetyCopy(scope,environment.signal);
-  expect(result).toMatchObject({sourceSchema:55,targetSchema:57,applicationContentVerified:true,sourceLedgerVerified:true,forwardMigrationsVerified:true,mode:'locked',runtimeConnectionDenied:true,currentAuthorityVerified:false,workflowResumed:false,restorationReady:false});
+  expect(result).toMatchObject({sourceSchema:55,targetSchema:79,applicationContentVerified:true,sourceLedgerVerified:true,forwardMigrationsVerified:true,mode:'locked',runtimeConnectionDenied:true,currentAuthorityVerified:false,workflowResumed:false,restorationReady:false});
   const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)}),runtime=new Client({connectionString:requireOwnedPilotDatabase()});await owner.connect();
   try{
    expect((await owner.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');

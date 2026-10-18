@@ -3,10 +3,11 @@ import type { PoolClient } from "pg";
 import type { CurrentSession } from "../auth/sessions";
 import { getServerConfig } from "../config";
 import { withTransaction } from "../db/client";
-import { artifactLifecycleActionSchema } from "../../contracts/artifacts";
+import { artifactParserPolicyVersion,artifactLifecycleActionSchema } from "../../contracts/artifacts";
 import { hiddenRecord, HttpFailure } from "../../contracts/http";
 import { requireSteward } from "../profiles/policy";
 import { lockArtifactHumanScope } from "./policy";
+import {preparedArtifactImages} from "./prepared";
 import { queueNativeRetirement } from "./native-retirement";
 import { retireRetrievalProjection } from "../retrieval/projections";
 import { enqueuePlanCleanupForSource } from "../plans/cleanup";
@@ -186,11 +187,9 @@ export async function retryArtifactVersion(actor: CurrentSession, versionId: str
        initiating_principal_id,lifecycle_generation,original_digest,scan_policy_version,
        parser_policy_version,parser_image_digest,attempt_number)
       SELECT $2,id,environment_id,workspace_id,customer_id,owner_principal_id,
-        $3,lifecycle_generation,sha256_digest,'004-scan-v1','004-parser-v1',
-        parser_image_digest,$4 FROM artifact_versions v
-      JOIN LATERAL (SELECT parser_image_digest FROM artifact_extraction_runs r
-        WHERE r.version_id=v.id ORDER BY created_at DESC LIMIT 1) last_run ON true
-      WHERE v.id=$1`, [versionId,runId,actor.principalId,attemptNumber]);
+        $3,lifecycle_generation,sha256_digest,'004-scan-v1',$5,
+        $6,$4 FROM artifact_versions v
+      WHERE v.id=$1`, [versionId,runId,actor.principalId,attemptNumber,artifactParserPolicyVersion,preparedArtifactImages().parserDigest]);
     await client.query(`UPDATE artifact_versions SET state='processing',safe_error_code=NULL,
       updated_at=now() WHERE id=$1`, [versionId]);
     const eventId = randomUUID();

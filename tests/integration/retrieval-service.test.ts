@@ -85,6 +85,19 @@ describe("retrieval domain service", () => {
             SELECT count(*)::text AS count FROM retrieval_receipt_sources
             WHERE receipt_id=$1`,[response.receiptId]);
           expect(receipt.rows[0]?.count).toBe("1");
+          // Character-valid multilingual passages plus provenance can exceed the
+          // response byte limit. Keep whole passages and exactly matching receipts.
+          for (let index=0;index<9;index++) await source(customer,`Cache ${index} ${"漢字".repeat(700)}`);
+          const bounded = await searchEvidence(actor,{scope:"customer",customerId:customer,
+            query:"cache",use:"discovery",limit:10});
+          expect(Buffer.byteLength(JSON.stringify(bounded),"utf8")).toBeLessThanOrEqual(24_576);
+          expect(bounded.results.length).toBeGreaterThan(0);
+          expect(bounded.results.length).toBeLessThan(10);
+          expect(bounded.completenessWarnings).toContain("Lower-ranked evidence omitted to fit the response size limit");
+          for (const result of bounded.results) expect(passageDigest(result.text)).toBe(result.passageDigest);
+          const persisted = await client.query<{id:string}>(
+            "SELECT id FROM retrieval_receipt_sources WHERE receipt_id=$1 ORDER BY ordinal",[bounded.receiptId]);
+          expect(persisted.rows.map(row=>row.id)).toEqual(bounded.results.map(result=>result.citationId));
         } finally { await client.query("ROLLBACK"); }
       });
     } finally { vi.unstubAllEnvs(); }

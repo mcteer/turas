@@ -19,11 +19,11 @@ import {readOnlyDatabaseSafetyDigest} from '../lib/server/operations/recovery-co
 const execute=promisify(execFile);
 export const databaseSafetySourceSchema=z.strictObject({
  contract:z.literal('pilot-database-safety-source-v1'),projectId:z.string().regex(/^prj_[A-Za-z0-9]+$/),
- environmentId:z.string().min(1).max(256).regex(/^[A-Za-z0-9_.:-]+$/),target:z.literal('production'),schemaVersion:z.union([z.literal(55),z.literal(57)]),
+ environmentId:z.string().min(1).max(256).regex(/^[A-Za-z0-9_.:-]+$/),target:z.literal('production'),schemaVersion:z.union([z.literal(55),z.literal(57),z.literal(77),z.literal(79)]),
  connectionBinding:z.enum(['platform-readable','protected-operator-connection']),
  databaseUrl:z.string().max(4096).refine(raw=>{try{const url=new URL(raw);return ['postgres:','postgresql:'].includes(url.protocol)&&url.hostname.endsWith('.neon.tech')&&!url.hostname.includes('-pooler.')&&url.searchParams.get('sslmode')==='verify-full';}catch{return false;}},'Explicit unpooled verified Neon source required'),
 });
-export const previewDatabaseSafetySourceSchema=databaseSafetySourceSchema.extend({target:z.literal('preview'),schemaVersion:z.union([z.literal(38),z.literal(55),z.literal(57)])});
+export const previewDatabaseSafetySourceSchema=databaseSafetySourceSchema.extend({target:z.literal('preview'),schemaVersion:z.union([z.literal(38),z.literal(55),z.literal(57),z.literal(77),z.literal(79)])});
 export const databaseSafetyCaptureSourceSchema=z.union([databaseSafetySourceSchema,previewDatabaseSafetySourceSchema]);
 async function api(endpoint:string,signal:AbortSignal,input?:string){
  const result=await execute('vercel',['api',endpoint,'--raw',...(input?['--method','POST','--input',input]:[])],{signal,timeout:30000,maxBuffer:1048576,env:{NODE_ENV:process.env.NODE_ENV??'production',...Object.fromEntries(['PATH','HOME','TMPDIR','LANG','LC_ALL'].flatMap(key=>process.env[key]===undefined?[]:[[key,process.env[key]]]))}});

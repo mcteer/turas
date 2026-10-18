@@ -2378,3 +2378,41 @@ primary database mutation, hosted backup or recovery readiness is claimed.
 The completed local catalog at code checkpoint `072d2eb` passed 703/703 cases.
 This cleanup does not close T080's later release-time checks or any remaining
 016 acceptance gates.
+
+## Current-release integration checkpoint — 2026-10-17
+
+Resumed against released main `34eb05c209346685446bf197dd455e5874e27aa3`
+(schema 77), preserving all 77 released migration bytes and the selected root
+model. The two unreleased pilot migrations are now 078 and 079. This checkpoint
+is implementation evidence; it does not establish hosted pilot readiness.
+
+- Actual owned Postgres 18 upgrade from 77 to 79: six assertions passed,
+  including migration ledger, session/membership binding, provenance and runtime
+  denial checks. Repeated after the final recovery provenance changes.
+- Current workspace isolation: nine assertions passed. Ordinary refresh forwards
+  the workspace to shared-publication eligibility; own pilot evidence remains
+  current, foreign pilot evidence is denied, and withdrawal retires it.
+- Focused denial-capture/accounting: seven assertions passed. Version 7 adds the
+  newer ordinary/native/evaluation metadata and full unique replay identities;
+  bounded snapshots exclude private text, upload bytes and credentials. Typed
+  holds preserve absent post-backup operations without borrowing learning IDs.
+  Immutable observations retain earlier unknown holds and later known charges,
+  including subsequent recovery inheritance, and distinguish row/snapshot hashes.
+- Recovery quarantine with the freshly prepared renderer: all eleven assertions
+  passed, including interrupted `waiting_input` attempts. The first run used an
+  older fallback renderer and failed the actual rendered-code binding check;
+  that failure is retained separately.
+- Current unit/contract batch: 350 assertions passed across 60 files. Root and
+  pilot typechecks and documentation checks passed. Scheduler coverage includes
+  independent ordinary upload/retirement cleanup and Preview worker admission.
+- The first full pilot catalog run was deliberately superseded when independent
+  source review found the accounting-observation gap. Partial suite receipts and
+  all earlier failures remain private evidence, not a complete catalog pass.
+
+Private receipts are retained under `local-artifacts/016/resume-20261017` in the
+canonical checkout. No provider model call, hosted schema change, deployment,
+new service provisioning or budget renewal occurred during this checkpoint.
+Existing expired authorities and unknown charges remain preserved. Full hosted
+storage cutover, matched capture/recovery, the complete ordinary hosted catalog,
+actual scheduled cadence, real participant feedback and final release remain
+pending under T085–T094 and their original tasks.

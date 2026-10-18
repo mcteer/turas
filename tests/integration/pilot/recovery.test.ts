@@ -131,7 +131,7 @@ it('holds uncertain paid and send attempts',async()=>withAuthorityEnvironment(as
 it('rejects a wrong marker or schema',async()=>withAuthorityEnvironment(async(owner,_runtime,environmentId)=>{
  const scope=await lockAuthorityTarget(owner,environmentId);let called=false;
  await expect(withRecoveryDatabaseCheckpoint(owner,{...scope,environmentId:'foreign',signal:AbortSignal.timeout(10000)},async()=>{called=true;})).rejects.toThrow('target differs');
- await owner.query('UPDATE turas_environment SET schema_version=56');
+ await owner.query('UPDATE turas_environment SET schema_version=78');
  await expect(withRecoveryDatabaseCheckpoint(owner,{...scope,signal:AbortSignal.timeout(10000)},async()=>{called=true;})).rejects.toThrow('target differs');
  await expect(restoreOwnedRecoveryDump({...source,signal:AbortSignal.timeout(10000)})).rejects.toThrow('marker required');
  expect(called).toBe(false);expect((await owner.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');

@@ -85,7 +85,7 @@ export async function pilotHosted(args=process.argv.slice(2)){
    await db.query('COMMIT');
   }catch(error){if(connected)await db.query('ROLLBACK');throw error;}finally{await db.end();}
   if(JSON.stringify(await platformDeployment(scope,true,signal))!==JSON.stringify(deployment)||JSON.stringify(await pilotSource())!==JSON.stringify(source)||JSON.stringify(await pilotProtectedSnapshot())!==JSON.stringify(protectedBefore))throw Error('Hosted identity or protected checkout changed');
-  const receipt={contract:'pilot-hosted-preflight-v1',id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,startedAt,completedAt:new Date().toISOString(),state:'pass',deployment,origin:scope.origin,schemaVersion:57,schemaLedgerDigest,runtimeGrantsVerified:true,syntheticWorkspaceVerified:true,readOnly:true,paidCalls:0,authenticatedJourneysVerified:false,hostedCatalogVerified:false,restorationReady:false};
+  const receipt={contract:'pilot-hosted-preflight-v1',id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,startedAt,completedAt:new Date().toISOString(),state:'pass',deployment,origin:scope.origin,schemaVersion:79,schemaLedgerDigest,runtimeGrantsVerified:true,syntheticWorkspaceVerified:true,readOnly:true,paidCalls:0,authenticatedJourneysVerified:false,hostedCatalogVerified:false,restorationReady:false};
   await writeEvidence(root,'preflight.json',receipt);
   const credentials=['TURAS_PILOT_HOSTED_ADMIN_PASSWORD','TURAS_PILOT_HOSTED_MEMBER_PASSWORD','TURAS_PILOT_HOSTED_PARTNER_PASSWORD'];
   if(credentials.some(key=>!process.env[key])){

@@ -8,12 +8,18 @@
       "schedule": "* * * * *"
     },
     {
+      "path": "/api/internal/research-maintenance",
+      "schedule": "17 3 * * *"
+    },
+    {
       "path": "/eve/v1/turas/jobs",
       "schedule": "* * * * *"
     }
   ],
   "git": {
     "deploymentEnabled": {
+      "main": true,
+      "fix/customer-profiles": false,
       "016-pilot-hardening": false
     }
   }

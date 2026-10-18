@@ -19,8 +19,8 @@ export function privateStoreObserver(environmentId:string,env:NodeJS.ProcessEnv=
   if(namespace==='backup')throw Error('Application store observation scope differs');
   const marker=(await query('SELECT environment_id,schema_version FROM turas_environment')).rows;
   if(marker.length!==1||marker[0].environment_id!==environmentId)throw Error('Store observation environment differs');
-  if(Number(marker[0].schema_version)<57)return;
-  if(Number(marker[0].schema_version)!==57)throw Error('Store observation schema differs');
+  if(Number(marker[0].schema_version)<79)return;
+  if(Number(marker[0].schema_version)!==79)throw Error('Store observation schema differs');
   const keyDigest=createHash('sha256').update(object.key).digest('hex');
   const proof=createHash('sha256').update(JSON.stringify({contract:'pilot-verified-private-write-v1',keyDigest,digest:object.digest,sizeBytes:object.sizeBytes})).digest('hex');
   await query('INSERT INTO operations_store_observations(id,environment_id,namespace,store_binding_digest,code_version,proof_digest) VALUES($1,$2,$3,$4,$5,$6)',[randomUUID(),environmentId,namespace,binding,version,proof]);

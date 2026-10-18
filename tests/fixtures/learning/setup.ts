@@ -8,7 +8,7 @@ export async function insertLearningFixtureSession(db:PoolClient,actor:Pick<Curr
  requireOwnedLearningDatabase(process.env,true);
  const marker=(await db.query('SELECT schema_version FROM turas_environment')).rows;
  if(marker.length!==1)throw Error('Owned learning schema marker required');
- if(Number(marker[0].schema_version)>=56)await db.query("INSERT INTO login_sessions(id,principal_id,token_hash,expires_at,membership_id,workspace_id) VALUES($1,$2,$3,clock_timestamp()+interval '1 hour',$4,$5)",[actor.sessionId,actor.principalId,hashSessionToken(actor.token),actor.membershipId,actor.workspaceId]);
+ if(Number(marker[0].schema_version)>=78)await db.query("INSERT INTO login_sessions(id,principal_id,token_hash,expires_at,membership_id,workspace_id) VALUES($1,$2,$3,clock_timestamp()+interval '1 hour',$4,$5)",[actor.sessionId,actor.principalId,hashSessionToken(actor.token),actor.membershipId,actor.workspaceId]);
  else await db.query("INSERT INTO login_sessions(id,principal_id,token_hash,expires_at) VALUES($1,$2,$3,clock_timestamp()+interval '1 hour')",[actor.sessionId,actor.principalId,hashSessionToken(actor.token)]);
 }
 /** Synthetic sessions are created only inside the runner's disposable database. */

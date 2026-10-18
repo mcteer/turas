@@ -101,3 +101,12 @@ describe("partner profile projection", () => {
     expect(JSON.stringify(internal)).not.toContain("00000000-0000-4000-8000-000000000303");
   });
 });
+
+it('retains reviewed journey measurements while withholding nested private conversation provenance',()=>{
+ const projected=projectRevision(row({payload:{kind:'claim',text:'Approved bounded delivery outcome',sourceType:'manual',legacyJourney:{
+  scope:'The approved pilot',observedAt:'2026-09-30',reviewAfter:'2026-12-01',impact:{metric:'Weekly active administrators',baseline:20,current:40,basis:'measured'},
+  source:{kind:'conversation',reference:'wrun_private-conversation',url:'https://example.com/private',excerpt:'Private original conversation excerpt'},
+ }}}),'partner',own);
+ expect(projected).toMatchObject({payload:{legacyJourney:{scope:'The approved pilot',impact:{baseline:20,current:40,basis:'measured'}}}});
+ for(const secret of ['wrun_private-conversation','https://example.com/private','Private original conversation excerpt'])expect(JSON.stringify(projected)).not.toContain(secret);
+});

@@ -1,3 +1,4 @@
+import {runRetrievalWorkerTick} from '../../../scripts/retrieval-worker';
 import {startMaintenanceScheduler} from '../operations/maintenance';
 import {createMaintenanceBindings} from '../operations/maintenance-bindings';
 import {operationalCodeVersion} from '../operations/code-version';
@@ -26,13 +27,25 @@ export function authorizeHostedWatchdog(request: Request, secret = process.env.C
   }
 }
 
-/** Protected minute invocations overlap by five seconds. Durable per-class leases
- * fence duplicate work, and each cleanup class runs independently of heavy jobs. */
-export async function runHostedWatchdog(attachSession:AttachSessionFn):Promise<void>{
- const scheduler=startMaintenanceScheduler(getServerConfig().TURAS_ENVIRONMENT_ID,operationalCodeVersion(),createMaintenanceBindings({attachSession}));
- let stopping=false,pending:Promise<unknown>|null=null;
- const reconcile=()=>{if(stopping||pending)return;pending=runHostedReconciliation({limit:20,signal:AbortSignal.timeout(30000)}).catch(()=>{console.warn(JSON.stringify({kind:'hosted_reconciliation_failed'}));}).finally(()=>{pending=null;});};
- const timer=setInterval(reconcile,30000);reconcile();
- try{await new Promise(resolve=>setTimeout(resolve,65000));}
- finally{stopping=true;clearInterval(timer);await Promise.allSettled([scheduler.stop(),pending]);}
+/** Cleanup classes retain independent durable leases; already-admitted indexing
+ * stays outside cleanup authority. Preview keeps its original bounded lifetime. */
+export async function runHostedWatchdog(attachSession:AttachSessionFn,options:{preview?:boolean;ready?:()=>void;unavailable?:(error:unknown)=>void}={}):Promise<void>{
+ const scheduler=startMaintenanceScheduler(getServerConfig().TURAS_ENVIRONMENT_ID,operationalCodeVersion(),createMaintenanceBindings({attachSession}),(id,result)=>{
+  if(id==='conversation'){if(result.state==='pass')options.ready?.();else if(result.state==='fail')options.unavailable?.(Error('Conversation worker unavailable'));}
+ });
+ let stopping=false;const pending=new Map<string,Promise<unknown>>(),timers:ReturnType<typeof setInterval>[]=[];
+ const lane=(id:string,interval:number,run:()=>Promise<unknown>)=>{const tick=()=>{if(stopping||pending.has(id))return;const task=run().catch(()=>{console.warn(JSON.stringify({kind:'hosted_worker_lane_failed',lane:id}));}).finally(()=>pending.delete(id));pending.set(id,task);};timers.push(setInterval(tick,interval));tick();};
+ lane('reconciliation',30000,()=>runHostedReconciliation({limit:20,signal:AbortSignal.timeout(30000)}));
+ lane('retrieval-index',5000,()=>runRetrievalWorkerTick());
+ try{await new Promise(resolve=>setTimeout(resolve,options.preview?180000:65000));}
+ finally{stopping=true;for(const timer of timers)clearInterval(timer);await Promise.allSettled([scheduler.stop(),...pending.values()]);}
+}
+
+/** A Preview send is admitted only after an actual cancellation claim/heartbeat. */
+export async function startPreviewChatWorker(attachSession:AttachSessionFn,waitUntil:(task:Promise<unknown>)=>void):Promise<void>{
+ if(process.env.VERCEL_ENV!=='preview')return;
+ let ready!:()=>void,failed!:(error:unknown)=>void;
+ const admission=new Promise<void>((resolve,reject)=>{ready=resolve;failed=reject;});
+ const running=runHostedWatchdog(attachSession,{preview:true,ready,unavailable:failed}).then(()=>{failed(Error('Preview worker ended before readiness'));}).catch(error=>{failed(error);console.warn(JSON.stringify({kind:'preview_chat_worker_failed'}));});
+ waitUntil(running);await admission;
 }

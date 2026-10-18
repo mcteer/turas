@@ -11,7 +11,7 @@ it('admits actual owned sources and prepares artifact retrieval and plan clones 
   expect(requireEvaluationSourceDatabase()).toBe(process.env.DATABASE_URL_UNPOOLED);
   expect(process.env.AI_GATEWAY_API_KEY).toBeUndefined();expect(process.env.CONTEXT_API_KEY).toBeUndefined();
   const source=process.env.DATABASE_URL_UNPOOLED,marker=process.env.TURAS_ENVIRONMENT_ID;
-  const probe=async()=>{const raw=process.env.DATABASE_URL_UNPOOLED!;expect(raw).not.toBe(source);expect(raw).toBe(process.env.TURAS_TEST_DATABASE_URL);expect(process.env.TURAS_ENVIRONMENT_ID).toBe(marker);const db=new Client({connectionString:raw});try{await db.connect();expect((await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows).toEqual([{environment_id:marker,schema_version:57}]);}finally{await db.end();}};
+  const probe=async()=>{const raw=process.env.DATABASE_URL_UNPOOLED!;expect(raw).not.toBe(source);expect(raw).toBe(process.env.TURAS_TEST_DATABASE_URL);expect(process.env.TURAS_ENVIRONMENT_ID).toBe(marker);const db=new Client({connectionString:raw});try{await db.connect();expect((await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows).toEqual([{environment_id:marker,schema_version:79}]);}finally{await db.end();}};
   await withArtifactEvalEnvironment(probe);expect(process.env.DATABASE_URL_UNPOOLED).toBe(source);
   await withRetrievalEvalEnvironment(probe);expect(process.env.DATABASE_URL_UNPOOLED).toBe(source);
   await withPlanEvalEnvironment(async clone=>{await clone.start();await probe();});expect(process.env.DATABASE_URL_UNPOOLED).toBe(source);

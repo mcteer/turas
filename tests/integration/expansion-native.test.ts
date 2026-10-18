@@ -1,3 +1,5 @@
+import {randomUUID} from 'node:crypto';
+import {projectNativeEvent,projectNativeEventInTransaction} from '../../lib/server/conversations/projection';
 import {wrapExpansionModel} from '../../lib/server/expansion/model-budget';
 import {beforeAll,describe,it,expect} from 'vitest';
 import {withExpansionDatabase} from '../fixtures/expansion/environment';
@@ -18,6 +20,17 @@ describe('Expansion governed native domain paths',()=>{
  beforeAll(async()=>{({actor,other}=await withExpansionDatabase(async db=>({actor:await createProfileTestSession(db,'panel'),other:await createProfileTestSession(db,'mcteer')})));});
  it('requires exact injection, persists paid admission, denies SDK retries and enforces the six-step/read boundaries',async()=>{
   const f=await startExpansionNative(actor);
+  const before=await withExpansionDatabase(db=>db.query('SELECT native_turn_id,input_event_id FROM response_attempts WHERE id=$1',[f.responseAttemptId]));
+  const countBefore=await withExpansionDatabase(db=>db.query('SELECT count(*) AS n FROM event_projections WHERE conversation_id=$1',[f.conversationId]));
+  // Ordinary continuation callbacks must never reach governed association logic,
+  // including when their turn is not the governed delivery's reserved turn.
+  for(const type of ['turn.started','approval.settled']){
+   const event={type,meta:{id:`evt_${randomUUID()}`,at:new Date().toISOString()},data:{turnId:'turn_unassociated',sequence:0,requestId:'not-a-governed-request',outcome:'approved'}};
+   await expect(projectNativeEvent(f.nativeSessionId,f.responseAttemptId,event)).resolves.toBeUndefined();
+   await expect(withTransaction(db=>projectNativeEventInTransaction(db,f.nativeSessionId,f.responseAttemptId,event))).resolves.toBeUndefined();
+  }
+  expect((await withExpansionDatabase(db=>db.query('SELECT native_turn_id,input_event_id FROM response_attempts WHERE id=$1',[f.responseAttemptId]))).rows).toEqual(before.rows);
+  expect((await withExpansionDatabase(db=>db.query('SELECT count(*) AS n FROM event_projections WHERE conversation_id=$1',[f.conversationId]))).rows).toEqual(countBefore.rows);
   await expect(admitGovernedModelStep(f.principal,f.identity)).rejects.toMatchObject({code:'expansion_context_changed'});
   expect(await readExpansionInitialContext(f.principal,f.turnId,f.nativeSessionId)).toMatchObject({question:'What should the operating owner validate?',evidence:[],hypotheses:[]});
   expect((await admitGovernedModelStep(f.principal,f.identity)).mode).toBe('expansion');await assertGovernedProviderRelease(f.principal,f.identity);

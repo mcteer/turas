@@ -17,13 +17,15 @@ type Model=Parameters<typeof wrapLanguageModel>[0]["model"];
 /** Keep the planning output limit inside the provider call for both generate and stream. */
 export function wrapPlanModel(model:Model):ReturnType<typeof wrapLanguageModel> {
   return wrapLanguageModel({model,middleware:{
-    transformParams:async({params})=>({
-      ...params,
-      maxOutputTokens:Number.isSafeInteger(params.maxOutputTokens) &&
-        (params.maxOutputTokens ?? 0)>0 ?
-        Math.min(params.maxOutputTokens!,planLimits.outputTokensPerStep):
-        planLimits.outputTokensPerStep,
-    }),
+    transformParams:async({params})=>{
+      // Durable workflow tools must be static in this Eve release. Keep the
+      // ordinary-chat workflows outside the governed planning model's catalog.
+      const ordinary=new Set(['customer-recon','vercel-best-practices','implementation-research','wait_for_customer_research','ask_question','task_cancel']);
+      if(params.toolChoice?.type==='tool' && ordinary.has(params.toolChoice.toolName))throw new HttpFailure(403,'planning_tool_denied','Use the bound planning capabilities');
+      return {...params,tools:params.tools?.filter(tool=>tool.type!=='function'||!ordinary.has(tool.name)),
+        maxOutputTokens:Number.isSafeInteger(params.maxOutputTokens) && (params.maxOutputTokens??0)>0?
+          Math.min(params.maxOutputTokens!,planLimits.outputTokensPerStep):planLimits.outputTokensPerStep};
+    },
   }});
 }
 

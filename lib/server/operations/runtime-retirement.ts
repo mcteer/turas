@@ -45,7 +45,7 @@ export async function retireLockedLegacyRuntime(db:Client,input:z.infer<typeof s
   await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[scope.environmentId]);
   const marker=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;
   const control=(await db.query('SELECT mode,revision,recovery_id FROM operations_control WHERE environment_id=$1 FOR UPDATE',[scope.environmentId])).rows[0];
-  if(marker.length!==1||marker[0].environment_id!==scope.environmentId||Number(marker[0].schema_version)!==57||control?.mode!=='locked'||Number(control.revision)!==scope.controlRevision||control.recovery_id!==scope.recoveryId)throw Error('Exact locked runtime retirement required');
+  if(marker.length!==1||marker[0].environment_id!==scope.environmentId||Number(marker[0].schema_version)!==79||control?.mode!=='locked'||Number(control.revision)!==scope.controlRevision||control.recovery_id!==scope.recoveryId)throw Error('Exact locked runtime retirement required');
   if(!await restrictedPermissionRole(db,'turas_runtime'))throw Error('Restricted legacy permission role required');
   // The owner-bound role comment makes interruption after commit repeatable.
   // Never upsert a password or adopt an unrelated pre-existing login.

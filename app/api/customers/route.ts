@@ -12,7 +12,7 @@ export async function GET(request: Request): Promise<Response> {
     if (!session) throw new HttpFailure(401, "authentication_required", "Sign in required");
     const url = new URL(request.url);
     const limit = Number(url.searchParams.get("limit") ?? "25");
-    return success(await listCustomers(session, limit, url.searchParams.get("cursor")));
+    return success(await listCustomers(session, limit, url.searchParams.get("cursor"), url.searchParams.get("query")));
   } catch (error) {
     return failure(error);
   }

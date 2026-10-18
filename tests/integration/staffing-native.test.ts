@@ -127,7 +127,7 @@ describe("owned eve native staffing transport with a bounded fixture provider", 
 
   it("uses actual native association/injection/tool/usage events, exact replay, bounded catalog and one provider call per paid receipt", async () => {
     const f = await prepare("Synthetic native exact replay explanation");
-    const sent = await send(f); expect(sent.status).toBe(202); const receipt = await sent.json();
+    const sent = await send(f); expect(sent.status, sent.ok ? "accepted" : await sent.clone().text()).toBe(202); const receipt = await sent.json();
     const completed = await until(() => status(f.reserved.attemptId), value => value.state === "completed");
     expect(completed).toMatchObject({ outputReadable: true, fenced: false, stepsAdmitted: 2, readCalls: 1, inputTokens: 22, outputTokens: 7 });
     const calls = (await query("SELECT step_index,max_output_tokens,tools,responded_at FROM staffing_native_fixture_calls WHERE response_attempt_id=$1 ORDER BY step_index", [completed.responseAttemptId])).rows;
@@ -145,7 +145,7 @@ describe("owned eve native staffing transport with a bounded fixture provider", 
 
   it("suppresses already saved history, reconnect and exact dispatch replay after actual required-skill retirement", async () => {
     const f = await prepare("Synthetic native source retirement explanation");
-    expect((await send(f)).status).toBe(202);
+    const sent=await send(f);expect(sent.status,sent.ok ? "accepted" : await sent.clone().text()).toBe(202);
     const completed = await until(() => status(f.reserved.attemptId), value => value.state === "completed");
     await retireRequiredSkill(f);
     const withdrawn = await until(() => status(f.reserved.attemptId),

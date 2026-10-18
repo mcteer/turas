@@ -141,6 +141,11 @@
     "benchmark:mcp": "node --import tsx scripts/benchmark-mcp.ts",
     "build:mcp:check": "node --import tsx scripts/check-mcp-build.ts",
     "test:mcp:regressions": "node --import tsx scripts/test-mcp-regressions.ts",
+    "profiles:bugs:check": "vitest run tests/unit/customer-profile-summary.test.ts tests/integration/customer-profile-bugs.test.ts",
+    "profiles:ui:check": "node --import tsx scripts/check-customer-profile-ui.ts",
+    "profiles:preview:check": "node --env-file-if-exists=.env.local --import tsx scripts/check-customer-profile-preview.ts",
+    "profiles:preview:sync": "node --env-file-if-exists=.env.local --import tsx scripts/sync-preview-public-research.ts",
+    "postinstall": "node scripts/eve-memory-context-compat.mjs",
     "pilot:check": "node --import tsx scripts/pilot-readiness.ts",
     "typecheck:pilot": "tsc -p tsconfig.pilot.json",
     "test:pilot": "node --import tsx scripts/test-pilot.ts",
@@ -168,35 +173,43 @@
   "dependencies": {
     "@js-temporal/polyfill": "0.5.1",
     "@modelcontextprotocol/server": "2.3.1",
+    "@streamdown/cjk": "1.0.3",
+    "@streamdown/code": "1.1.1",
+    "@streamdown/math": "1.0.2",
+    "@streamdown/mermaid": "1.0.2",
     "@vercel/analytics": "2.0.1",
-    "@vercel/blob": "2.8.1",
     "@vercel/connect": "2.2.0",
-    "@vercel/sandbox": "3.6.1",
     "ai": "^7.0.105",
     "eve": "^0.67.1",
     "ipaddr.js": "2.5.0",
     "next": "16.3.8",
     "node-pg-migrate": "9.0.0",
+    "officeparser": "8.0.0",
     "parse5": "8.0.0",
     "pg": "8.23.0",
     "pptxgenjs": "4.0.1",
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "resend": "6.32.0",
-    "zod": "4.5.4"
+    "streamdown": "2.5.0",
+    "zod": "4.5.4",
+    "@vercel/blob": "2.8.1",
+    "@vercel/sandbox": "3.6.1"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
     "@modelcontextprotocol/client": "2.3.1",
     "@playwright/test": "1.63.0",
+    "@tailwindcss/postcss": "4.3.0",
     "@types/node": "24.x",
     "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "axe-core": "4.13.0",
+    "tailwindcss": "4.3.0",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
-    "vitest": "5.0.2"
+    "vitest": "5.0.2",
+    "axe-core": "4.13.0"
   },
   "engines": {
     "node": "24.x"
@@ -204,10 +217,6 @@
   "overrides": {
     "pptxgenjs": {
       "image-size": "2.0.4"
-    },
-    "eve": {
-      "undici": "8.10.2"
-    },
-    "source-map-js": "1.2.2"
+    }
   }
 }

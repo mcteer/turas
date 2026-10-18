@@ -59,7 +59,7 @@ writes remain denied. The backup command never promotes a target or changes DNS.
 
 ## Required recovery cases
 
-- Empty initialization and 055→056→057 with exact migration manifest/runtime grants.
+- Empty initialization and 055→078→079 with exact migration manifest/runtime grants.
 - Full matched snapshot with profiles, objects, plans, execution, reports, training,
   shared knowledge, learning and MCP. Verify content/history, not merely row counts.
 - Post-snapshot session/MCP revocation, partner grant withdrawal, source deletion,

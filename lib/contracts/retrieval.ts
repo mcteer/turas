@@ -21,7 +21,7 @@ export const writeEnvelopeFields = {
 export const writeEnvelopeSchema = z.object(writeEnvelopeFields).strict();
 
 export const retrievalScopeSchema = z.enum(["customer", "shared", "combined"]);
-export const retrievalUseSchema = z.enum(["discovery", "current_fact"]);
+export const retrievalUseSchema = z.enum(["discovery", "accepted_fact", "current_fact"]);
 export const retrievalSourceKindSchema = z.enum([
   "accepted_profile", "approved_excerpt", "verified_research", "published_shared",
 ]);
@@ -72,6 +72,8 @@ export const evidenceQualitySchema = z.object({
 export const retrievalResultSchema = z.object({
   citationId: governedIdSchema,
   sourceKind: retrievalSourceKindSchema,
+  acceptance: z.object({ state: z.enum(["accepted", "discovery_only"]),
+    basis: z.enum(["human_review", "independent_research", "shared_publication"]) }).strict().optional(),
   sourceRevisionId: governedIdSchema,
   passageDigest: sha256Schema,
   title: z.string().min(1).max(200),

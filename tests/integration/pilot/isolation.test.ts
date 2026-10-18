@@ -12,7 +12,7 @@ import { readPublishedKnowledge,currentKnowledgeHeaders } from "../../../lib/ser
 import { searchEvidence } from "../../../lib/server/retrieval/search";
 import { resolveRetrievalCitation } from "../../../lib/server/retrieval/citations";
 import { authorizeRetrievalScope,recheckRetrievalSource } from "../../../lib/server/retrieval/policy";
-import { assertRetrievalDependenciesCurrent,recordRetrievalConsumption } from "../../../lib/server/retrieval/fences";
+import { originalCurrent,assertRetrievalDependenciesCurrent,recordRetrievalConsumption } from "../../../lib/server/retrieval/fences";
 import { createOwnedConversation } from "../../../lib/server/conversations/repository";
 import { readLearningCohort } from "../../../lib/server/learning/cohorts";
 import { createMcpConnection } from "../../../lib/server/mcp/management";
@@ -31,3 +31,11 @@ it("denies pilot sources in primary native context",async()=>{const result=await
 it("denies foreign workspace job publication",async()=>{const row=(await db.query("SELECT * FROM retrieval_sources WHERE source_revision_id=$1 AND lifecycle_state='current'",[pilot.revisionId])).rows[0];expect(!!row).toBe(true);const scope=await authorizeRetrievalScope(db,primary,"shared",undefined,undefined,true);expect(await recheckRetrievalSource(db,{id:row.id,kind:row.source_kind,revisionId:row.source_revision_id,generation:Number(row.source_generation),audience:row.audience,contentDigest:row.content_digest,projectionContract:row.projection_contract},scope)).toBe(false);});
 it("denies pilot content to primary MCP",async()=>{const connection=await createMcpConnection(primary,{requestKey:randomUUID(),name:"Synthetic isolation connection",categories:["knowledge"],customerIds:[],lifetimeDays:1});if(!connection.secretAvailable)throw new Error("Synthetic credential unavailable");const actor=await authenticateMcpBearer(`Bearer ${connection.credential}`);expect((await readMcpKnowledge(db,actor,{publicationId:pilot.publicationId})).status).toBe("unavailable");});
 it("permits eligible sanitized primary knowledge in pilot",async()=>{expect((await readPublishedKnowledge(db,pilot.actor,original.publicationId)).id).toBe(original.publicationId);const result=await search(pilot.actor);expect(result.results.some(r=>r.sourceRevisionId===original.revisionId)).toBe(true);const created=await createOwnedConversation(pilot.actor,{requestKey:randomUUID(),title:"Synthetic permitted shared native scope"});await db.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2 WHERE id=$1",[created.conversation.id,"synthetic-native-"+randomUUID()]);await recordRetrievalConsumption(db,pilot.actor,result.receiptId,created.conversation.id);await expect(assertRetrievalDependenciesCurrent(db,created.conversation.id)).resolves.toBeUndefined();});
+
+it("keeps own pilot publication current, denies foreign workspace, and retires withdrawn publication",async()=>{
+ const dependency={source_kind:'published_shared',source_revision_id:pilot.revisionId,source_generation:String(pilot.generation),source_digest:pilot.digest};
+ expect(await originalCurrent(db,dependency,pilot.actor.workspaceId)).toBe(true);
+ expect(await originalCurrent(db,dependency,primary.workspaceId)).toBe(false);
+ await db.query('BEGIN');
+ try{await db.query("UPDATE knowledge_publications SET state='withdrawn' WHERE id=$1",[pilot.publicationId]);expect(await originalCurrent(db,dependency,pilot.actor.workspaceId)).toBe(false);}finally{await db.query('ROLLBACK');}
+});

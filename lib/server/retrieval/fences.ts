@@ -1,4 +1,5 @@
 import { sharedOriginSql } from "../access/policy";
+import { ownResearchGenerationIsCurrent } from "../research/context-generation";
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
@@ -6,6 +7,7 @@ import type { CurrentSession } from "../auth/sessions";
 import { getServerConfig } from "../config";
 import { knowledgeLineageIsCurrent, unsupportedProfileRevisionIds } from "../profiles/eligibility";
 import { authorizeRetrievalScope,retrievalIntakeEnabled } from "./policy";
+import { readGeneralAttemptContext } from "../conversations/general-context";
 
 async function schemaReady(client: PoolClient): Promise<boolean> {
   const result = await client.query<{ schema_version: number }>(`
@@ -115,11 +117,37 @@ export async function originalCurrent(client: PoolClient, dependency: Dependency
   return false;
 }
 
+/** Only an active research turn's own replacement can bridge a consumed public
+ * source. Exact citation resolution still rejects the superseded revision. */
+async function ownCheckedReplacement(client:PoolClient,conversationId:string,dependency:Dependency):Promise<boolean>{
+  if(dependency.source_kind!=="verified_research")return false;
+  const bound=(await client.query<{attempt_id:string;customer_id:string;workspace_id:string;membership_id:string;login_session_id:string;generation:string;current:string}>(`
+    SELECT a.id AS attempt_id,r.customer_id,r.workspace_id,r.membership_id,r.login_session_id,r.generation,
+      CASE WHEN r.audience='internal' THEN state.internal_generation ELSE state.delivery_generation END AS current
+    FROM response_attempts a JOIN context_snapshot_receipts r ON r.attempt_id=a.id
+    JOIN customer_profile_state state ON state.customer_id=r.customer_id AND state.workspace_id=r.workspace_id
+    WHERE a.conversation_id=$1 AND a.response_state IN('pending','running','stopping')
+    ORDER BY a.created_at DESC LIMIT 1`,[conversationId])).rows[0];
+  if(!bound||!await ownResearchGenerationIsCurrent(client,{attemptId:bound.attempt_id,conversationId,customerId:bound.customer_id,workspaceId:bound.workspace_id,membershipId:bound.membership_id,sessionId:bound.login_session_id,generation:bound.generation,current:bound.current}))return false;
+  return Boolean((await client.query(`SELECT 1 FROM evidence_source_revisions original
+    JOIN evidence_source_revisions latest ON latest.source_id=original.source_id AND latest.version>original.version
+    JOIN research_checks checked ON checked.source_revision_id=latest.id
+    JOIN research_observations o ON checked.trusted_ingest_identity='public-fetch-v1:observation:'||o.id::text
+    JOIN research_evidence_links l ON l.observation_id=o.id AND l.source_revision_id=latest.id AND l.linkage_state='attributed'
+    JOIN research_runs run ON run.id=o.run_id AND run.conversation_attempt_id=$4
+    WHERE original.id=$1 AND original.version=$2 AND original.passage_digest=$3
+      AND EXISTS(SELECT 1 FROM evidence_source_events e WHERE e.source_revision_id=original.id AND e.event_type='supersede')
+      AND NOT EXISTS(SELECT 1 FROM evidence_source_events e WHERE e.source_revision_id=original.id AND e.event_type='withdraw')
+      AND latest.version=(SELECT max(v.version) FROM evidence_source_revisions v WHERE v.source_id=original.source_id)`,[dependency.source_revision_id,dependency.source_generation,dependency.source_digest,bound.attempt_id])).rowCount);
+}
+
 /** Revalidate the append-only union before every model/output/history release. */
 export async function assertRetrievalDependenciesCurrent(client: PoolClient,
   conversationId: string): Promise<void> {
   if (!await schemaReady(client)) return;
   const workspace=(await client.query<{workspace_id:string}>("SELECT workspace_id FROM conversations WHERE id=$1",[conversationId])).rows[0]?.workspace_id;
+  const marker=Number((await client.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0]?.schema_version??0);
+  const refreshed=marker>=66 ? `AND NOT EXISTS(SELECT 1 FROM ordinary_evidence_refreshes refreshed WHERE refreshed.dependency_id=dependency.id)` : '';
   const dependencies = await client.query<Dependency & { valid_until: Date;
     receipt_as_of: Date | null }>(`
     SELECT dependency.source_kind,dependency.source_revision_id,
@@ -127,7 +155,7 @@ export async function assertRetrievalDependenciesCurrent(client: PoolClient,
       receipt.as_of AS receipt_as_of
     FROM session_evidence_dependencies dependency
     LEFT JOIN retrieval_receipts receipt ON receipt.id=dependency.receipt_id
-    WHERE dependency.conversation_id=$1
+    WHERE dependency.conversation_id=$1 ${refreshed}
     ORDER BY dependency.consumed_at,dependency.id`,
   [conversationId]);
   if (dependencies.rows.length && !retrievalIntakeEnabled()) {
@@ -138,7 +166,7 @@ export async function assertRetrievalDependenciesCurrent(client: PoolClient,
     if (!dependency.receipt_as_of || dependency.valid_until.getTime() <= Date.now() ||
         await confirmedConflictAfter(client,dependency.source_kind,
           dependency.source_revision_id,dependency.receipt_as_of) ||
-        !workspace || !await originalCurrent(client,dependency,workspace)) {
+        !workspace || (!await originalCurrent(client,dependency,workspace) && !await ownCheckedReplacement(client,conversationId,dependency))) {
       throw new HttpFailure(409,"retrieval_context_changed",
         "Start a new conversation for current evidence");
     }
@@ -232,10 +260,12 @@ export async function recordRetrievalConsumption(client: PoolClient, actor: Curr
       AND valid_until>now()`,
   [receiptId,actor.membershipId,getServerConfig().TURAS_ENVIRONMENT_ID]);
   const selected = receipt.rows[0];
-  if (!selected || (selected.customer_id && selected.customer_id !== bound.customer_id)) {
-    throw hiddenRecord();
-  }
-  await authorizeRetrievalScope(client,actor,selected.scope,bound.customer_id);
+  const attempt=(await client.query<{id:string}>(`SELECT id FROM response_attempts
+    WHERE conversation_id=$1 AND response_state IN('pending','running') ORDER BY created_at DESC LIMIT 1`,[conversationId])).rows[0];
+  const liveNamed=!!attempt && !!await readGeneralAttemptContext(client,attempt.id,actor.principalId);
+  if(!selected || !liveNamed && bound.customer_id && selected.customer_id && selected.customer_id!==bound.customer_id)throw hiddenRecord();
+  if(!bound.customer_id && !liveNamed && selected.scope!=='shared')throw hiddenRecord();
+  await authorizeRetrievalScope(client,actor,selected.scope,selected.customer_id ?? bound.customer_id,undefined,true);
   const sources = await client.query<Omit<Dependency,"source_digest">>(`
     SELECT s.source_kind,s.source_revision_id,s.source_generation
     FROM retrieval_receipt_sources rs

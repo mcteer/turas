@@ -22,13 +22,16 @@ current state and checked retained findings before answering. A cancelled run
 can retain completed findings, but incomplete work is not a finding. Summarize
 a prior run in at most 80 words: state, one checked citation and the remaining
 gap. Do not list unrelated product details from the fetched page. Do not infer
-private deployment, savings, staffing, terms or accepted
-customer facts from marketing or public pages. For missing evidence, explain the
+private deployment, savings, staffing or terms from public pages. Checked independent
+research updates shared customer knowledge and retrieval projections automatically;
+its factual acceptance does not require human review. Human-submitted claims remain Pending.
+After research, use the current findings and customer_context; do not cite superseded sources.
+Retain source publication/event dates separately from the new check date. For missing evidence, explain the
 gap and offer a new user-started bounded request rather than hidden follow-up.`,
 });
 
 export default defineDynamic({ events: {
   async "turn.started"(_event, ctx) {
-    return ["staffing", "execution", "expansion", "learning"].includes((await responseFeature(ctx.session.auth.current))?.kind ?? "") ? null : instructions;
+    return (await responseFeature(ctx.session.auth.current))?.kind=== "planning" ? instructions : null;
   },
 } });

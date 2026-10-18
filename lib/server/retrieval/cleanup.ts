@@ -44,12 +44,16 @@ export async function runRetrievalCleanupTick(existingClient?: PoolClient): Prom
       safe_reason_code='provider_outcome_unconfirmed',updated_at=now()
       FROM uncertain WHERE run.id=uncertain.run_id AND run.state IN ('running','partial')`,
     [getServerConfig().TURAS_ENVIRONMENT_ID]);
+    // The immutable payload table deliberately has no runtime UPDATE grant.
+    // DELETE acquires its own row locks; concurrent bounded ticks may select
+    // the same IDs and safely delete zero rows after the first one commits.
+    // SELECT FOR UPDATE would require an unrelated UPDATE privilege.
     await client.query(`WITH expired AS (
       SELECT payload.observation_id FROM research_observation_payloads payload
       JOIN research_observations observation ON observation.id=payload.observation_id
       JOIN research_runs run ON run.id=observation.run_id
       WHERE run.environment_id=$1 AND payload.raw_body_expires_at<now()
-      ORDER BY payload.raw_body_expires_at LIMIT 100 FOR UPDATE OF run SKIP LOCKED
+      ORDER BY payload.raw_body_expires_at,payload.observation_id LIMIT 100
     ) DELETE FROM research_observation_payloads payload USING expired
       WHERE payload.observation_id=expired.observation_id`,
     [getServerConfig().TURAS_ENVIRONMENT_ID]);
@@ -62,7 +66,7 @@ export async function runRetrievalCleanupTick(existingClient?: PoolClient): Prom
       JOIN evidence_source_events event ON event.source_revision_id=link.source_revision_id
         AND event.event_type IN ('withdraw','supersede')
       WHERE run.environment_id=$1
-      ORDER BY payload.observation_id LIMIT 100 FOR UPDATE OF run SKIP LOCKED
+      ORDER BY payload.observation_id LIMIT 100
     ) DELETE FROM research_observation_payloads payload USING retired
       WHERE payload.observation_id=retired.observation_id`,
     [getServerConfig().TURAS_ENVIRONMENT_ID]);

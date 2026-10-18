@@ -16,10 +16,12 @@ it('captures minimized actual denial and replay metadata without source text or 
  const conversation=await createOwnedConversation(f.actor,{customerId:f.customerId,requestKey:randomUUID(),title:'Synthetic private title omitted from recovery metadata'}),nativeId='wrun_synthetic_'+randomUUID().replaceAll('-','');
  await owner.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2 WHERE id=$1",[conversation.conversation.id,nativeId]);
  const snapshot=await captureRecoveryDenialSnapshot(owner,environmentId,AbortSignal.timeout(60000)),serialized=JSON.stringify(snapshot);
- expect(snapshot).toMatchObject({schemaVersion:57,currentAuthorityVerified:false,replayReconciled:false,restorationReady:false});
+ expect(snapshot).toMatchObject({schemaVersion:79,currentAuthorityVerified:false,replayReconciled:false,restorationReady:false});
  for(const secret of [session,credential,f.actor.token,connection.credential,'Synthetic observed build stage timing','Synthetic private title omitted from recovery metadata'])expect(serialized).not.toContain(secret);
  expect(snapshot.tables.find(t=>t.name==='mcp_connections')?.rows.find(r=>r.identity.id===connection.connection.id)?.status.credential_hash).toBe(true);
  expect(snapshot.tables.find(t=>t.name==='mcp_management_receipts')?.rows.length).toBeGreaterThan(0);
+ for(const name of ['ordinary_model_operations','ordinary_conversation_allowances','parity_evaluation_operations','parity_evaluation_budgets','ordinary_question_posts','ordinary_question_continuations','ordinary_native_uploads','retrieval_embedding_operations'])expect(snapshot.tables.some(t=>t.name===name)).toBe(true);
+ expect(snapshot.tables.find(t=>t.name==='ordinary_question_posts')?.replayKeyColumns?.some(columns=>columns.includes('request_event_id'))).toBe(true);
  expect(snapshot.tables.some(t=>t.name==='conversations')).toBe(true);expect(snapshot.tables.some(t=>t.name==='watchdog_jobs')).toBe(true);
  expect(snapshot.tables.find(t=>t.name==='conversations')?.rows.find(row=>row.identity.id===conversation.conversation.id)?.status).toMatchObject({binding_state:'bound',eve_session_id:nativeId,owner_principal_id:f.actor.principalId});
  expect(snapshot.tables.find(t=>t.name==='profile_records')?.rows.some(row=>row.status.current_accepted_revision_id===f.originalRevisionId)).toBe(true);
@@ -45,7 +47,7 @@ it('captures later MCP denial and permanent management receipt at a distinct cur
  // later. Retain only that presence bit, never the actual credential bytes.
  const {authenticateMcpBearer}=await import('../../../lib/server/mcp/credentials');if(!connection.secretAvailable)throw Error('Fresh synthetic credential required');await expect(authenticateMcpBearer('Bearer '+connection.credential)).rejects.toThrow();
  expect(after.tables.find(t=>t.name==='mcp_management_receipts')?.rows.length).toBeGreaterThan(before.tables.find(t=>t.name==='mcp_management_receipts')!.rows.length);
- const receipt=after.tables.find(t=>t.name==='mcp_management_receipts')?.rows.find(row=>row.identity.request_key===requestKey);expect(after.contract).toBe('pilot-denial-replay-snapshot-v6');expect(receipt?.status).toMatchObject({request_key:requestKey,request_digest:expect.stringMatching(/^[a-f0-9]{64}$/),actor_membership_id:f.actor.membershipId,action:'revoke'});
+ const receipt=after.tables.find(t=>t.name==='mcp_management_receipts')?.rows.find(row=>row.identity.request_key===requestKey);expect(after.contract).toBe('pilot-denial-replay-snapshot-v7');expect(receipt?.status).toMatchObject({request_key:requestKey,request_digest:expect.stringMatching(/^[a-f0-9]{64}$/),actor_membership_id:f.actor.membershipId,action:'revoke'});
  expect(verifyRecoveryDenialSnapshot(after,{environmentId,contextDigest:after.snapshotDigest,after:before.capturedAt,now:Date.now()}).currentAuthorityVerified).toBe(false);
 }),210000);
 it('rejects runtime foreign cancelled stale and changed denial snapshots without granting recovery authority',async()=>fixture(async(owner,runtime,environmentId)=>{

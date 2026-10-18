@@ -2,10 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { OrdinaryDocuments } from "./attachments/ordinary-documents";
+import {composeOrdinaryMessage,type OrdinaryAttachment,type OrdinarySendMessage} from "../../lib/conversations/ordinary-documents";
+import {ComposerLinks} from "./composer-links";
 import { CustomerPicker, type CustomerChoice } from "./customer-picker";
+import { uploadNativeFiles } from "../../lib/conversations/upload-native-files";
 
 
-export function NewConversation({ csrfToken }: { csrfToken: string }) {
+export function NewConversation({ csrfToken, canAttachDocuments = false, canAttachNativeFiles = false }: { csrfToken: string; canAttachDocuments?: boolean; canAttachNativeFiles?: boolean }) {
   const router = useRouter();
   const search = useSearchParams();
   const [customers, setCustomers] = useState<CustomerChoice[]>([]);
@@ -15,6 +19,8 @@ export function NewConversation({ csrfToken }: { csrfToken: string }) {
   const starting = useRef(false);
   const operation = useRef<string | null>(null);
   const [draft, setDraft] = useState("");
+  const [documents,setDocuments]=useState<OrdinaryAttachment[]>([]);
+  const [preparingDocuments,setPreparingDocuments]=useState(false);
 
   useEffect(() => {
     let active = true;
@@ -31,8 +37,9 @@ export function NewConversation({ csrfToken }: { csrfToken: string }) {
   }, [search]);
 
   async function start(attachments = false) {
-    if ((!draft.trim() && !attachments) || starting.current) return;
-    if (attachments && !selected) { setError("Choose a customer below to attach customer documents."); document.getElementById("chat-customer")?.focus(); return; }
+    if ((!draft.trim() && !documents.length && !attachments) || starting.current || preparingDocuments) return;
+    let text:OrdinarySendMessage;
+    try{text=composeOrdinaryMessage(draft,documents);}catch(failure){setError(failure instanceof Error?failure.message:'The documents could not be prepared.');return;}
     starting.current = true;
     setState("creating");
     setError("");
@@ -58,7 +65,8 @@ export function NewConversation({ csrfToken }: { csrfToken: string }) {
         await new Promise((resolve) => setTimeout(resolve, 2_000));
       }
       if (!bound) throw new Error("Chat binding is pending. Reload the chat list to retry.");
-      if (draft.trim()) sessionStorage.setItem(`turas-chat-draft:${result.data.id}`, JSON.stringify({ text: draft.trim(), requestKey: crypto.randomUUID() }));
+      text = await uploadNativeFiles(text, result.data.id, csrfToken);
+      if (text) sessionStorage.setItem(`turas-chat-draft:${result.data.id}`, JSON.stringify({ text, requestKey: crypto.randomUUID(), autoSend: !attachments }));
       router.push(`/s/${result.data.id}${attachments ? "?attachments=1" : ""}`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Chat is unavailable.");
@@ -76,10 +84,11 @@ export function NewConversation({ csrfToken }: { csrfToken: string }) {
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void start(); } }} />
         <div className="chat-actions">
-          <button className="composer-attach" type="button" aria-label="Attach documents" disabled={state === "creating"} onClick={() => void start(true)}>
+          <ComposerLinks text={draft} onChange={setDraft} disabled={state==="creating"||preparingDocuments}/>
+          {canAttachDocuments?<OrdinaryDocuments buttonLabel="Attach documents" nativeFilesEnabled={canAttachNativeFiles} documents={documents} onChange={setDocuments} onPreparingChange={setPreparingDocuments} disabled={state==="creating"||preparingDocuments}/>:<button className="composer-attach" type="button" aria-label="Attach documents" disabled={state === "creating"} onClick={() => void start(true)}>
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m8 12 6-6a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l9-9" /></svg>
-          </button>
-          <button className="composer-send" type="submit" aria-label="Send message" disabled={!draft.trim() || state === "creating"}>
+          </button>}
+          <button className="composer-send" type="submit" aria-label="Send message" disabled={(!draft.trim()&&!documents.length)||preparingDocuments||state === "creating"}>
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" /></svg>
           </button>
         </div>
@@ -87,6 +96,7 @@ export function NewConversation({ csrfToken }: { csrfToken: string }) {
       <div className="chat-context-bar" role="group" aria-label="Conversation context">
         <div className="optional-customer"><CustomerPicker customers={customers} selected={selected}
         onSelect={(value) => { setSelected(value); operation.current = null; }} disabled={state === "creating" || state === "loading"} optional /></div>
+        {canAttachDocuments&&selected&&<button type="button" className="secondary-button" disabled={state==="creating"||preparingDocuments} onClick={()=>void start(true)}>Customer sources</button>}
         <div className="chat-project-space" aria-hidden="true" />
       </div>
       {state === "unavailable" && <p className="state-message" role="status">Customer selection is unavailable. You can still ask a general question.</p>}

@@ -16,7 +16,8 @@ import {readLearningEvaluation} from '../lib/server/learning/evaluation-captures
 import {prepareLearningEvaluationArm} from '../lib/server/learning/evaluation';
 import type {CurrentSession} from '../lib/server/auth/sessions';
 import {featureSourceDigest} from './execution-source-digest';
-const assert=(value:unknown,message:string)=>{if(!value)throw Error(message);};
+import {learningNativeAssertion} from './learning-native-diagnostics';
+const assert=(value:unknown,message:string)=>{if(!value){console.error(JSON.stringify(learningNativeAssertion(message)));throw Error(message);}};
 if(process.argv.length!==2)throw Error('Learning native acceptance takes no filters');
 const digest=await featureSourceDigest('014');let checks=0;
 await withLearningEnvironment(async environment=>{
@@ -61,9 +62,28 @@ await withLearningEnvironment(async environment=>{
  }
  const reviewed=await readLearningEvaluation(evaluation.actors.admin,evaluation.evaluationId);assert(reviewed.state==='awaiting_review','Real native evaluation must require human review');
  await withLearningDatabase(async db=>{const calls=(await db.query(`SELECT f.tools FROM learning_native_fixture_calls f JOIN learning_attempts a ON a.response_attempt_id=f.response_attempt_id JOIN learning_bindings b ON b.id=a.binding_id WHERE b.evaluation_id=$1`,[evaluation.evaluationId])).rows;assert(calls.length===16&&calls.every(c=>c.tools.length===0),'Real evaluation arms must use no tools');const sessions=(await db.query('SELECT count(DISTINCT a.native_session_id)::int n FROM learning_attempts a JOIN learning_bindings b ON b.id=a.binding_id WHERE b.evaluation_id=$1',[evaluation.evaluationId])).rows[0];assert(sessions.n===16,'Each evaluation arm needs a fresh private native session');});
+ await environment.crashWorker();
  await withLearningDatabase(async db=>{await db.query('DELETE FROM learning_native_fixture_retirement_hold');await db.query("UPDATE learning_cleanup_jobs SET next_attempt_at=clock_timestamp() WHERE state='pending'");});
  // Exercise the actual protected hosted-watchdog adapter in the owned eve service.
- await environment.crashWorker();process.env.TURAS_015_DISABLED='0';const mcpProbe=await createMcpConnection(evaluation.actors.admin,{requestKey:randomUUID(),name:'Synthetic hosted cleanup proof',categories:['knowledge'],customerIds:[],lifetimeDays:1});await revokeMcpConnection(evaluation.actors.admin,mcpProbe.connection.id,{requestKey:randomUUID(),expectedConnectionId:mcpProbe.connection.id});process.env.TURAS_015_DISABLED='1';await withLearningDatabase(async db=>{assert((await db.query('SELECT credential_hash FROM mcp_connections WHERE id=$1',[mcpProbe.connection.id])).rows[0]?.credential_hash,'Hosted cleanup needs a retained revoked-hash positive control');});const hosted=await fetch(`${environment.origin}/eve/v1/turas/watchdog`,{headers:{authorization:`Bearer ${process.env.CRON_SECRET}`},signal:AbortSignal.timeout(90000)});if(!hosted.ok){let code='unknown';try{const body=await hosted.json();if(typeof body?.error?.code==='string'&&/^[a-z_]{1,80}$/.test(body.error.code))code=body.error.code;}catch{}throw Error(`Owned hosted learning maintenance failed (${hosted.status}; ${code})`);}await hosted.body?.cancel();const hostedDeadline=Date.now()+75000;let retiredCount=0;while(Date.now()<hostedDeadline){retiredCount=await withLearningDatabase(async db=>Number((await db.query('SELECT count(*)::int n FROM learning_native_retirement_receipts')).rows[0].n));if(retiredCount===22)break;await new Promise(r=>setTimeout(r,200));}assert(retiredCount===22,'Actual hosted adapter must retire all owned native sessions');const mcpDeadline=Date.now()+35000;for(;;){const purged=await withLearningDatabase(async db=>{const row=(await db.query('SELECT credential_hash,revoked_at FROM mcp_connections WHERE id=$1',[mcpProbe.connection.id])).rows[0];return row?.credential_hash===null&&!!row.revoked_at;});if(purged)break;assert(Date.now()<mcpDeadline,'Actual disabled hosted adapter must purge revoked MCP hashes');await new Promise(r=>setTimeout(r,200));}await withLearningDatabase(async db=>{assert((await db.query('SELECT count(*)::int n FROM mcp_management_receipts WHERE connection_id=$1',[mcpProbe.connection.id])).rows[0].n===2,'Hosted cleanup must retain exact create/revoke receipts');});checks++;
+ process.env.TURAS_015_DISABLED='0';const mcpProbe=await createMcpConnection(evaluation.actors.admin,{requestKey:randomUUID(),name:'Synthetic hosted cleanup proof',categories:['knowledge'],customerIds:[],lifetimeDays:1});await revokeMcpConnection(evaluation.actors.admin,mcpProbe.connection.id,{requestKey:randomUUID(),expectedConnectionId:mcpProbe.connection.id});process.env.TURAS_015_DISABLED='1';await withLearningDatabase(async db=>{assert((await db.query('SELECT credential_hash FROM mcp_connections WHERE id=$1',[mcpProbe.connection.id])).rows[0]?.credential_hash,'Hosted cleanup needs a retained revoked-hash positive control');});let hostedMaintenanceTicks=0;
+ const hostedTick=async()=>{
+  const hosted=await fetch(`${environment.origin}/eve/v1/turas/watchdog`,{headers:{authorization:`Bearer ${process.env.CRON_SECRET}`},signal:AbortSignal.timeout(90000)});
+  if(!hosted.ok){let code='unknown';try{const body=await hosted.json();if(typeof body?.error?.code==='string'&&/^[a-z_]{1,80}$/.test(body.error.code))code=body.error.code;}catch{}throw Error(`Owned hosted learning maintenance failed (${hosted.status}; ${code})`);}
+  await hosted.body?.cancel();hostedMaintenanceTicks++;
+ };
+ await hostedTick();
+ const hostedDeadline=Date.now()+75000,nextHostedTick=Date.now()+60000;let retiredCount=0;
+ while(Date.now()<hostedDeadline){
+  retiredCount=await withLearningDatabase(async db=>Number((await db.query('SELECT count(*)::int n FROM learning_native_retirement_receipts')).rows[0].n));
+  if(retiredCount===22)break;
+  // Match the existing minute cron: a bounded tick is not a promise that a
+  // complete backlog drains in one call. Keep the original overall deadline.
+  if(hostedMaintenanceTicks===1&&Date.now()>=nextHostedTick)await hostedTick();
+  await new Promise(r=>setTimeout(r,200));
+ }
+ if(retiredCount!==22)console.info(JSON.stringify({kind:'learning_native_cleanup_incomplete',retiredCount:Math.min(999,retiredCount),expected:22,ticks:hostedMaintenanceTicks}));
+ assert(retiredCount===22,'Actual hosted adapter must retire all owned native sessions');
+ const mcpDeadline=Date.now()+35000;for(;;){const purged=await withLearningDatabase(async db=>{const row=(await db.query('SELECT credential_hash,revoked_at FROM mcp_connections WHERE id=$1',[mcpProbe.connection.id])).rows[0];return row?.credential_hash===null&&!!row.revoked_at;});if(purged)break;assert(Date.now()<mcpDeadline,'Actual disabled hosted adapter must purge revoked MCP hashes');await new Promise(r=>setTimeout(r,200));}await withLearningDatabase(async db=>{assert((await db.query('SELECT count(*)::int n FROM mcp_management_receipts WHERE connection_id=$1',[mcpProbe.connection.id])).rows[0].n===2,'Hosted cleanup must retain exact create/revoke receipts');});checks++;
  // Run the same cleanup implementation against the real owned eve service.
  for(let index=0;index<32;index++){if(!await processLearningNativeRetirement())break;}
  await withLearningDatabase(async db=>{const receipts=(await db.query('SELECT count(*)::int n FROM learning_native_retirement_receipts')).rows[0];assert(receipts.n===22,'Every real native session requires its exact retirement receipt');});checks++;

@@ -15,7 +15,7 @@ test("maturity proposal keeps all six dimensions separate from the journey stage
     "Operational Trust", "Platform Organization", "Innovation AI"]) {
     await expect(page.getByRole("group", { name: key }).getByLabel("State")).toHaveValue("Unknown");
   }
-  await expect(page.getByText("No Accepted Facts Yet")).toBeVisible();
+  await expect(page.getByText("No Reviewed Human Claims Yet")).toBeVisible();
 });
 
 test("a known dimension cannot be saved without reviewed support", async ({ page }) => {

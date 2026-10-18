@@ -28,8 +28,8 @@ Zod 4.5.4 and MCP SDK 2.3.1. Add reviewed/pinned public `@vercel/blob` and
 route-handler and upload guides and installed eve deployment/sandbox/auth pages
 before code. Registry discovery found no suitable domain-store integration.
 
-**Storage**: Existing Postgres/pgvector with explicit 056 session/pilot isolation
-and 057 operational control/worker/hosted-job metadata (reconfirm free numbers).
+**Storage**: Existing Postgres/pgvector with explicit 078 session/pilot isolation
+and 079 operational control/worker/hosted-job metadata (reconfirm free numbers).
 Private Blob for hosted artifact/workforce/report/gap bytes; existing local adapters
 for development. Workflow remains eve's actual configured backend. Private operator
 evidence and backup manifests are separate from customer truth.
@@ -72,7 +72,7 @@ gates. Production synthetic proof and actual user feedback are distinct.
 | V — Human decisions | mcteer owns release, domain reviewers retain decisions | Checker only computes eligibility; no CLI owner-string approval |
 | VI — eve core | Installed docs read; registry investigated | Public bounded job SDK adapter; existing eve agent/runtime/model preserved |
 | VII — Verification | Access/storage/worker changes need behavior checks | Full affected gates, actual hosted services, recovery and WebKit evidence |
-| VIII — Operability | Costs/time, failures, migration and privacy bounded | Leases, exact receipts, explicit 055→056→057/grants and recovery fence |
+| VIII — Operability | Costs/time, failures, migration and privacy bounded | Leases, exact receipts, explicit 055→078→079/grants and recovery fence |
 
 All design gates pass. No constitution exception. Infrastructure provisioning,
 real-user feedback, controlled sends and live-model budget are execution-time inputs,
@@ -106,8 +106,8 @@ app/api/operations/status/route.ts
 app/api/artifacts/intents/[intentId]/upload/route.ts
 app/api/staffing/imports/[importId]/upload/route.ts
 agent/channels/maintenance.ts + lib/server/conversations/hosted-watchdog.ts
-migrations/056-pilot-workspace-sessions.cjs
-migrations/057-pilot-operations.cjs
+migrations/078-pilot-workspace-sessions.cjs
+migrations/079-pilot-operations.cjs
 scripts/pilot-{source,catalog,environment,readiness,backup,recovery,lifecycle,hosted,feedback}.ts
 scripts/pilot-catalog.json scripts/pilot-suites.json
 scripts/{test-pilot,benchmark-pilot,check-pilot-ui,check-pilot-regressions}.ts
@@ -124,14 +124,14 @@ vercel.json .github/workflows/ci.yml package.json .env.example
 The new workforce upload route extends the existing staffing import route tree
 and retains its authorized import intent. No duplicate
 business service or public readiness dashboard is introduced. Add operational
-metadata to 057, not a parallel customer/plan/report data model.
+metadata to 079, not a parallel customer/plan/report data model.
 
 ## Design and execution stages
 
 1. **Evidence foundation / US1**: Freeze the gate and source catalog, strict private
    receipts, run/resume semantics, owner-independent eligibility checker and owned
    harness. A CLI can report blockers before hosted changes exist.
-2. **Pilot isolation / US3 foundation**: Apply 056 with session membership backfill;
+2. **Pilot isolation / US3 foundation**: Apply 078 with session membership backfill;
    retain primary default and add explicit Pilot Workspace login choice for already
    assigned users. Bind every resumed session to its membership. Pilot knowledge,
    metrics, jobs and MCP stay in their eligibility lane; normal sanitized shared
@@ -139,7 +139,7 @@ metadata to 057, not a parallel customer/plan/report data model.
 3. **Hosted persistence / US3**: Add Blob/local interface and direct upload path;
    migrate artifact/workforce/report/gap callers without changing domain authority,
    immutable digests or limits. Add protected finite dispatcher and nonpersistent
-   Sandbox adapters around existing fixed scan/parse/render programs. Add 057,
+   Sandbox adapters around existing fixed scan/parse/render programs. Add 079,
    source-fenced provider identities/leases, per-class health and runtime grants.
 4. **Recovery / US2**: Back up matched DB/object inventories/workflow capability and
    separate current denial/replay state. Recovery fence is persisted and denies
@@ -196,8 +196,8 @@ complete before Production or human feedback; report those states separately.
 
 ## Release, migration and recovery order
 
-Reconfirm latest main and free migration numbers. 056 backfills each old session to
-its unique active primary membership and revokes ambiguity; 057 adds operational
+Reconfirm latest main and free migration numbers. 078 backfills each old session to
+its unique active primary membership and revokes ambiguity; 079 adds operational
 controls, worker runs and hosted job leases. Update migration manifest, explicit
 runtime grants and each feature readiness/activation compatibility check for exact
 new versions. Never simply allow all future schemas.
@@ -221,3 +221,14 @@ The runbook covers Blob migration by copying exact verified objects while source
 writes are fenced and switching only after inventory parity. Keep the old store
 readable for reconciliation until the verified transition closes; do not silently
 move or delete existing customer originals during operator cleanup.
+
+
+## Authorized resumption — 2026-10-17
+
+The user requested completion of all remaining hosted workflow and operational-readiness work through release. Resume PR32 from650f5f4 against released main34eb05c; the earlier schema055 planning and evidence above remain historical. The immutable released migration ledger001–077 is preserved. Pilot workspace/session changes now use078 and operational controls use079. Exact current-schema guards, archive provenance, predecessor fixtures and recovery consumers must agree before any hosted migration.
+
+Preserve all018backend and019chat mechanisms, current appearance and root model. Shared maintenance must retain ordinary native retirement/upload-byte expiry with actual backlog, Preview's180-second worker and real claim/heartbeat admission, plus a separately admitted embedding lane outside cleanup authority. No selected environment or workflow files may change.
+
+Expired016quality/infrastructure and separate parity budgets remain unchanged, including every unsettled dollar/token hold. Prepare concrete current source/target/cost manifests before paid admission; no automatic top-up or reuse of the narrower Notion allowance. Current-source backup coverage must include the newly released ordinary/provider/replay records, not only the original055 table inventory. Historical signed receipts remain historical; schema labels cannot turn them into current evidence.
+
+Finish implementation and owned validation first, then target-bound Preview/Production acceptance and cleanup. Two scheduled backups at least12hours apart and genuine operator/internal/assigned-partner observations remain distinct actual acceptance requirements; automation cannot impersonate them. Reuse applicable user authorization without repetitive permission prompts, and request only information or material authority actually absent after the work is concrete.

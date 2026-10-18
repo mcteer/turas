@@ -12,10 +12,10 @@ describe("bounded public research preview", () => {
     const recon = researchPreviewInputSchema.parse({ ...common,mode: "recon",
       publicName: "Public Example",publicDomain: "public.example.org",identityConfirmed: true });
     expect(renderResearchQueries(recon)).toEqual([
-      '"Public Example" "public.example.org" company products architecture',
-      '"Public Example" Vercel case study outcomes',
-      '"Public Example" engineer conference webinar architecture',
-      '"Public Example" product releases user experience limitations',
+      '"Public Example" product releases "public.example.org"',
+      '"Public Example" engineer conference presentation',
+      '"Public Example" firsthand workflow experience',
+      '"Public Example" Vercel customer stories documentation products workloads',
     ]);
     const practices = researchPreviewInputSchema.parse({ ...common,mode: "practices",
       product: "Vercel",version: "2026",topic: "build cache" });

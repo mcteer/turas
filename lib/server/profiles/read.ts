@@ -1,6 +1,13 @@
+import {recallPublicLearning} from "../research/specialists/research-cache/public-learning-read";
+import {communityAttributionWarning} from "../research/attribution";
+import { productsFromResearch } from "../../profiles/research-products";
+import {readPublicInventoryReference,curatedProductNames} from './public-inventory-reference';
+import { profileDeliverySummary } from "./delivery-summary";
+import { retrievalSourceHasMaterialConflict } from "../retrieval/search";
 import { readPublicCustomerCoverage } from "../research/public-read";
 import {lockLearningOriginalClosure} from '../learning/sources';
 import { getServerConfig } from "../config";
+import { createHash } from "node:crypto";
 import type { PoolClient } from "pg";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
 import { profileListQuerySchema } from "../../contracts/profiles";
@@ -127,39 +134,48 @@ function decodeCursor(raw: string | undefined, actor: ProfileActor, customerId: 
 }
 
 export async function listProfileRecords(actor: ProfileActor, customerId: string, input: unknown,
-  existingClient?: PoolClient): Promise<{ items: Record<string, unknown>[]; nextCursor: string | null }> {
+  existingClient?: PoolClient, includeRetractedHeads=false): Promise<{ items: Record<string, unknown>[]; nextCursor: string | null }> {
   const parsed = profileListQuerySchema.safeParse(input);
   if (!parsed.success) throw new HttpFailure(422, "invalid_query", "Invalid profile query");
   const options = parsed.data;
   const filter = JSON.stringify({ kind: options.kind, workloadId: options.workloadId,
-    state: options.state, query: options.query });
+    state: options.state, query: options.query, ...(includeRetractedHeads?{includeRetractedHeads:true}:{}) });
   const cursor = decodeCursor(options.cursor, actor, customerId, filter);
   const run = async (client: PoolClient) => {
     await lockProfileActor(client, actor, customerId);
     await enforceProfileRate(client, actor, customerId, "read");
-    const result = await client.query<RecordRow>(`SELECT v.id,v.record_id,r.workload_id,r.kind,
+    const result = await client.query<RecordRow & { cursor_at: string }>(`WITH listed AS (
+      SELECT v.id,v.record_id,r.workload_id,r.kind,
       v.audience,v.data_category,v.author_membership_id,v.payload,v.quality_input,
       v.source_references,v.revision_number,d.rationale AS decision_rationale,
-      d.partner_safe_reason,v.created_at,
+      d.partner_safe_reason,
+      CASE WHEN $12::boolean AND r.current_accepted_revision_id IS NULL AND retired.revision_id=v.id
+        THEN retired.created_at ELSE v.created_at END AS created_at,
       CASE WHEN r.current_accepted_revision_id=v.id THEN 'accepted'
-           WHEN d.decision='reject' THEN 'rejected' ELSE 'pending' END AS review_state
+           WHEN d.decision='reject' THEN 'rejected'
+           WHEN r.current_accepted_revision_id IS NULL AND retired.revision_id=v.id THEN 'retracted'
+           ELSE 'pending' END AS review_state
       FROM profile_revisions v JOIN profile_records r ON r.id=v.record_id
       LEFT JOIN profile_review_decisions d ON d.revision_id=v.id
+      LEFT JOIN LATERAL (SELECT e.revision_id,e.created_at FROM profile_lifecycle_events e
+        WHERE e.record_id=r.id AND e.event_type='retract'
+        ORDER BY e.created_at DESC,e.id DESC LIMIT 1) retired ON true
       WHERE v.workspace_id=$1 AND v.customer_id=$2
         AND (r.current_accepted_revision_id=v.id OR
-             (v.author_membership_id=$3 AND (d.decision='reject' OR d.revision_id IS NULL)))
+             (v.author_membership_id=$3 AND (d.decision='reject' OR d.revision_id IS NULL)) OR
+             ($12::boolean AND $4::boolean AND r.current_accepted_revision_id IS NULL
+               AND retired.revision_id=v.id AND d.decision='accept' AND v.payload?'legacyJourney'))
         AND ($4::boolean OR (v.audience='delivery' AND v.data_category='delivery_context'))
         AND ($5::text IS NULL OR r.kind=$5)
         AND ($6::uuid IS NULL OR r.workload_id=$6)
-        AND ($7::text IS NULL OR
-          CASE WHEN r.current_accepted_revision_id=v.id THEN 'accepted'
-               WHEN d.decision='reject' THEN 'rejected' ELSE 'pending' END=$7)
         AND ($8::text IS NULL OR v.payload::text ILIKE '%' || $8 || '%')
-        AND ($9::timestamptz IS NULL OR (v.created_at,v.id)<($9::timestamptz,$10::uuid))
-      ORDER BY v.created_at DESC,v.id DESC LIMIT $11`,
+      ) SELECT *,to_char(created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_at FROM listed
+      WHERE ($7::text IS NULL OR review_state=$7)
+        AND ($9::timestamptz IS NULL OR (created_at,id)<($9::timestamptz,$10::uuid))
+      ORDER BY created_at DESC,id DESC LIMIT $11`,
     [actor.workspaceId, customerId, actor.membershipId, actor.kind === "internal",
       options.kind ?? null, options.workloadId ?? null, options.state ?? null,
-      options.query ?? null, cursor?.at ?? null, cursor?.id ?? null, options.limit + 1]);
+      options.query ?? null, cursor?.at ?? null, cursor?.id ?? null, options.limit + 1,includeRetractedHeads]);
     const page = result.rows.slice(0, options.limit);
     const support = await supportMetadata(client, actor, page);
     const items = page.map((row) => projectRevision({ ...projectionRow(row), ...support.get(row.id) },
@@ -168,7 +184,7 @@ export async function listProfileRecords(actor: ProfileActor, customerId: string
     const last = page.at(-1);
     const nextCursor = result.rows.length > options.limit && last ? Buffer.from(JSON.stringify({
       actor: actor.membershipId, customer: customerId, filter,
-      at: last.created_at.toISOString(), id: last.id,
+      at: last.cursor_at, id: last.id,
     })).toString("base64url") : null;
     return { items, nextCursor };
   };
@@ -241,11 +257,18 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
         ...(!unsupportedIds.has(row.id) && artifactExcerpts.has(row.id)
           ? { approvedArtifactExcerpt: artifactExcerpts.get(row.id) } : {}) };
     }).filter((row) => row !== null);
+    const researchSchema = (await client.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0]?.schema_version ?? 0;
+    // The original profile and account-learning tool consume the same ordered,
+    // bounded quotations. Full documents are retained for retrieval separately.
+    const learned=researchSchema>=60 ? await recallPublicLearning(
+      {...actor,userId:actor.principalId,environmentId:getServerConfig().TURAS_ENVIRONMENT_ID},
+      customerId,"",new AbortController().signal,false,client) : [];
+
     const research = await client.query<{
       id: string; title: string; location: string; supported_claim: string;
       publication_at: Date | null; observation_at: Date | null; retrieval_at: Date;
-      quality_input: Record<string, unknown>;
-    }>(`SELECT v.id,v.title,v.location,v.supported_claim,v.publication_at,
+      quality_input: Record<string, unknown>; passage: string;
+    }>(`SELECT v.id,v.title,v.location,v.passage,v.supported_claim,v.publication_at,
       v.observation_at,v.retrieval_at,v.quality_input
       FROM evidence_source_revisions v
       JOIN evidence_sources s ON s.id=v.source_id AND s.origin='independent_research'
@@ -255,9 +278,24 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
         AND ($3::boolean OR v.audience='delivery')
         AND NOT EXISTS (SELECT 1 FROM evidence_source_events e
           WHERE e.source_revision_id=v.id AND e.event_type IN ('withdraw','supersede'))
-      ORDER BY v.created_at DESC,v.id DESC LIMIT 50`,
-    [actor.workspaceId, customerId, allowInternal]);
-    const attributedResearch = research.rows.map((row) => {
+      ORDER BY (v.location=ANY($4::text[])) DESC,v.created_at DESC,v.id DESC LIMIT 50`,
+    [actor.workspaceId, customerId, allowInternal,learned.map(source=>source.url)]);
+    const eligibleResearch = [];
+    for (const row of research.rows) {
+      if (researchSchema >= 28 && await retrievalSourceHasMaterialConflict(client,
+        {source_kind:'verified_research',source_revision_id:row.id},actor,{scope:'customer',customerId})) continue;
+      eligibleResearch.push(row);
+    }
+    const documents=new Map<string,string>();
+    if(researchSchema>=60 && eligibleResearch.length) {
+      const retained=await client.query<{source_revision_id:string;document_text:string;document_digest:string}>(
+        'SELECT source_revision_id,document_text,document_digest FROM independent_research_documents WHERE source_revision_id=ANY($1::uuid[])',
+        [eligibleResearch.map(row=>row.id)]);
+      for(const document of retained.rows)if(createHash('sha256').update(document.document_text).digest('hex')===document.document_digest)
+        documents.set(document.source_revision_id,document.document_text);
+    }
+    const publicInventory=await readPublicInventoryReference(client,actor,customerId);
+    const attributedResearch = eligibleResearch.map((row) => {
       const checked = qualityInputSchema.safeParse(row.quality_input);
       const input = checked.success ? checked.data : unknownQualityInput;
       const date = input.dateBasis === "publication" ? row.publication_at :
@@ -265,8 +303,17 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
       const rated = rateEvidence({ R: input.R, D: input.D, C: input.C,
         informationType: input.informationType, dateBasis: input.dateBasis,
         evidenceAt: date, asOf: new Date() });
+      const document=documents.get(row.id);
+      // Adoption comes from retained customer evidence, not incidental product
+      // mentions in navigation or recommendations elsewhere in a full document.
+      const productPassages=learned.filter(item=>item.url===row.location);
       return { sourceRevisionId: row.id, state: "researched", title: row.title,
-        location: row.location, supportedClaim: row.supported_claim,
+        acceptanceState: "accepted", acceptanceBasis: "independent_research",
+        productNames: communityAttributionWarning({url:row.location}) ? [] : [...new Set([
+          ...curatedProductNames(publicInventory?.evidence.filter(story=>story.sourceRevisionId===row.id).flatMap(story=>story.products)??[]),
+          ...(input.informationType === "product_capability"?[]:productsFromResearch(productPassages))])],
+        documentDigest: document ? createHash('sha256').update(document).digest('hex') : null,
+        location: row.location, passage: row.passage, supportedClaim: row.supported_claim,
         publicationAt: row.publication_at?.toISOString() ?? null,
         observationAt: row.observation_at?.toISOString() ?? null,
         retrievalAt: row.retrieval_at.toISOString(),
@@ -289,7 +336,7 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
     return { customer: { id: customer.rows[0].id, displayName: customer.rows[0].display_name,
       synthetic: customer.rows[0].synthetic }, workloads: workloads.rows.map((row) => ({
       id: row.id, displayName: row.display_name, lifecycle: row.lifecycle })),
-      acceptedFacts, attributedResearch, publicResearchCoverage: await readPublicCustomerCoverage(client,actor,customerId),
+      acceptedFacts, attributedResearch, publicInventory, activeDelivery: await profileDeliverySummary(client,actor,customerId,selectedWorkloadId,allowInternal,customerWideOnly), publicResearchCoverage: await readPublicCustomerCoverage(client,actor,customerId),
       canReview,
       ...(openConflicts ? { openConflicts: openConflicts.rows.map((row) => ({
         id: row.id, state: row.state, version: Number(row.version),
@@ -354,10 +401,11 @@ export async function readProfileHistory(actor: ProfileActor, customerId: string
     const review = actor.kind === "internal" && (actor.role === "admin" || Boolean((await client.query(
       "SELECT 1 FROM customer_stewards WHERE customer_id=$1 AND membership_id=$2 AND active",
       [customerId, actor.membershipId])).rowCount));
-    const result = await client.query<RecordRow>(`SELECT v.id,v.record_id,r.workload_id,r.kind,
+    const result = await client.query<RecordRow & { cursor_at: string }>(`SELECT v.id,v.record_id,r.workload_id,r.kind,
       v.audience,v.data_category,v.author_membership_id,v.payload,v.quality_input,
       v.source_references,v.revision_number,d.rationale AS decision_rationale,
       d.partner_safe_reason,v.created_at,
+      to_char(v.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_at,
       CASE WHEN r.current_accepted_revision_id=v.id THEN 'accepted'
            WHEN d.decision='reject' THEN 'rejected'
            WHEN d.decision='accept' AND EXISTS (SELECT 1 FROM profile_lifecycle_events e
@@ -413,7 +461,7 @@ export async function readProfileHistory(actor: ProfileActor, customerId: string
       rationale: event.rationale, createdAt: event.created_at.toISOString() })) ?? [],
       nextCursor: result.rows.length > limit && last ? Buffer.from(JSON.stringify({
       actor: actor.membershipId, customer: customerId, filter: `history:${recordId}`,
-      at: last.created_at.toISOString(), id: last.id,
+      at: last.cursor_at, id: last.id,
     })).toString("base64url") : null };
   };
   return existingClient ? run(existingClient) : withTransaction(run);
@@ -455,8 +503,13 @@ export async function readProfileSource(actor: ProfileActor, customerId: string,
     const rated = rateEvidence({ R: input.R, D: input.D, C: input.C,
       informationType: input.informationType, dateBasis: input.dateBasis,
       evidenceAt: date, asOf: new Date() });
+    const researchSchema = (await client.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0]?.schema_version ?? 0;
+    const conflicted = researchSchema >= 28 && await retrievalSourceHasMaterialConflict(client,
+      {source_kind:'verified_research',source_revision_id:row.id},actor,{scope:'customer',customerId});
     return { sourceRevisionId: row.id, state: row.withdrawn ? "withdrawn" :
       row.superseded ? "superseded" : "researched",
+      acceptanceState: row.withdrawn || row.superseded || conflicted ? "unavailable" : "accepted",
+      acceptanceBasis: "independent_research", materialConflict: conflicted,
       title: row.title, location: row.location, passage: row.passage,
       supportedClaim: row.supported_claim, publicationAt: row.publication_at?.toISOString() ?? null,
       observationAt: row.observation_at?.toISOString() ?? null,
@@ -485,7 +538,7 @@ export async function listReviewQueue(actor: ProfileActor, customerId: string,
     const pending = await client.query<RecordRow & { content_digest: string; record_version: string;
       current_accepted_revision_id: string | null; accepted_payload: unknown; author_kind: string;
       submission_channel: string; workload_name: string | null;
-      confirmed_conflict: boolean }>(`SELECT v.id,v.record_id,r.workload_id,r.kind,
+      confirmed_conflict: boolean; cursor_at: string }>(`SELECT v.id,v.record_id,r.workload_id,r.kind,
       v.audience,v.data_category,v.author_membership_id,v.payload,v.quality_input,
       v.source_references,v.revision_number,v.content_digest,v.submission_channel,
       r.version AS record_version,
@@ -494,7 +547,8 @@ export async function listReviewQueue(actor: ProfileActor, customerId: string,
       EXISTS (SELECT 1 FROM evidence_conflicts c WHERE c.state='confirmed'
         AND (c.first_revision_id=v.id OR c.second_revision_id=v.id)) AS confirmed_conflict,
       author.kind AS author_kind,NULL::text AS decision_rationale,
-      NULL::text AS partner_safe_reason,v.created_at,'pending'::text AS review_state
+      NULL::text AS partner_safe_reason,v.created_at,
+      to_char(v.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_at,'pending'::text AS review_state
       FROM profile_revisions v JOIN profile_records r ON r.id=v.record_id
       LEFT JOIN profile_review_decisions d ON d.revision_id=v.id
       LEFT JOIN profile_revisions prior ON prior.id=r.current_accepted_revision_id
@@ -552,7 +606,7 @@ export async function listReviewQueue(actor: ProfileActor, customerId: string,
         recordVersion: Number(row.record_version), createdAt: row.created_at.toISOString() })),
       nextCursor: pending.rows.length > limit && last ? Buffer.from(JSON.stringify({
         actor: actor.membershipId, customer: customerId, filter: "review",
-        at: last.created_at.toISOString(), id: last.id,
+        at: last.cursor_at, id: last.id,
       })).toString("base64url") : null };
   };
   return existingClient ? run(existingClient) : withTransaction(run);
@@ -568,11 +622,12 @@ export async function listOwnSubmissions(actor: ProfileActor, customerId: string
   const run = async (client: PoolClient) => {
     await lockProfileActor(client, actor, customerId);
     await enforceProfileRate(client, actor, customerId, "read");
-    const found = await client.query<RecordRow>(`SELECT v.id,v.record_id,r.workload_id,r.kind,
+    const found = await client.query<RecordRow & { cursor_at: string }>(`SELECT v.id,v.record_id,r.workload_id,r.kind,
       r.version AS record_version,
       v.audience,v.data_category,v.author_membership_id,v.payload,v.quality_input,
       v.source_references,v.revision_number,d.rationale AS decision_rationale,
       d.partner_safe_reason,v.created_at,
+      to_char(v.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_at,
       CASE WHEN r.current_accepted_revision_id=v.id THEN 'accepted'
            WHEN d.decision='reject' THEN 'rejected'
            WHEN d.decision='accept' THEN 'superseded' ELSE 'pending' END AS review_state
@@ -599,7 +654,7 @@ export async function listOwnSubmissions(actor: ProfileActor, customerId: string
     const last = page.at(-1);
     return { items, nextCursor: found.rows.length > limit && last ? Buffer.from(JSON.stringify({
       actor: actor.membershipId, customer: customerId, filter: "submissions",
-      at: last.created_at.toISOString(), id: last.id,
+      at: last.cursor_at, id: last.id,
     })).toString("base64url") : null };
   };
   return existingClient ? run(existingClient) : withTransaction(run);

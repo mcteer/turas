@@ -15,7 +15,7 @@ import {readRetrievalQuality} from '../../../lib/server/retrieval/quality-read';
 export async function pilotLoadEvidenceFixture(db:PoolClient,signal:AbortSignal){
  requireOwnedPilotDatabase(process.env,true);signal.throwIfAborted();
  const marker=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;
- if(marker.length!==1||marker[0].environment_id!==process.env.TURAS_ENVIRONMENT_ID||Number(marker[0].schema_version)!==57)throw Error('Exact owned load schema required');
+ if(marker.length!==1||marker[0].environment_id!==process.env.TURAS_ENVIRONMENT_ID||Number(marker[0].schema_version)!==79)throw Error('Exact owned load schema required');
  const workspaceId=randomUUID(),organizationId=randomUUID();
  await db.query("INSERT INTO workspaces(id,name,classification,pilot_environment_id,pilot_provisioning_id) VALUES($1,'Synthetic fixed pilot load','synthetic_pilot',$2,$3)",[workspaceId,process.env.TURAS_ENVIRONMENT_ID,randomUUID()]);
  await db.query("INSERT INTO partner_organizations(id,workspace_id,name) VALUES($1,$2,'Synthetic load organization')",[organizationId,workspaceId]);

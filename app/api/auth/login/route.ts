@@ -25,6 +25,8 @@ function safeReturnPath(value: string | undefined, origin: string): string {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  const nativeForm = request.headers.get("content-type")?.split(";",1)[0] === "application/x-www-form-urlencoded";
+  let returnTo = "/";
   try {
     const config = getServerConfig();
     checkMutationOrigin(request, config);
@@ -33,10 +35,10 @@ export async function POST(request: Request): Promise<Response> {
       throw new HttpFailure(413, "body_too_large", "Request too large");
     }
     let parsed: unknown;
-    try { parsed = JSON.parse(text); } catch { throw new HttpFailure(422, "invalid_input", "Invalid request"); }
+    try { parsed = nativeForm ? Object.fromEntries(new URLSearchParams(text)) : JSON.parse(text); } catch { throw new HttpFailure(422, "invalid_input", "Invalid request"); }
     const input = loginInput.safeParse(parsed);
     if (!input.success) throw new HttpFailure(422, "invalid_input", "Invalid request");
-    const returnTo = safeReturnPath(input.data.returnTo, config.TURAS_APP_ORIGIN);
+    returnTo = safeReturnPath(input.data.returnTo, config.TURAS_APP_ORIGIN);
     const clientAddress = trustedLocalClientAddress();
     await checkLoginThrottle(input.data.username, clientAddress);
     const identity = await authenticateDemoPrincipal(input.data.username, input.data.password, input.data.workspace);
@@ -46,7 +48,8 @@ export async function POST(request: Request): Promise<Response> {
       throw new HttpFailure(401, "invalid_credentials", "Invalid credentials");
     }
     const { token, expiresAt } = await issueSession(identity);
-    const response = success({
+    const response = nativeForm ? new Response(null, { status: 303,
+      headers: { location: returnTo, "Cache-Control": "private, no-store" } }) : success({
       principal: { id: identity.principalId, loginName: identity.loginName, displayName: identity.displayName },
       workspace: { id: identity.workspaceId, classification: identity.workspaceClassification },
       membership: { kind: identity.kind, role: identity.role },
@@ -57,6 +60,12 @@ export async function POST(request: Request): Promise<Response> {
     recordOperationalEvent({ action: "login", outcome: "allowed", correlationId: crypto.randomUUID(), actorId: identity.principalId, workspaceId: identity.workspaceId });
     return response;
   } catch (error) {
+    if (nativeForm && error instanceof HttpFailure && error.code === "invalid_credentials") {
+      return new Response(null, { status: 303, headers: {
+        location: `/login?error=invalid&returnTo=${encodeURIComponent(returnTo)}`,
+        "Cache-Control": "private, no-store",
+      } });
+    }
     return failure(error);
   }
 }

@@ -125,7 +125,8 @@
         "unit.hosted-configuration.002",
         "unit.hosted-configuration.003",
         "unit.hosted-configuration.004",
-        "integration.hosted-role-reads.010"
+        "integration.hosted-role-reads.010",
+        "integration.isolation.009"
       ]
     },
     {
@@ -545,7 +546,10 @@
         "unit.storage-inventory.011",
         "unit.storage-inventory.012",
         "integration.required-objects.001",
-        "integration.preview-safety-restore.001"
+        "integration.preview-safety-restore.001",
+        "integration.recovery-model-holds.001",
+        "integration.recovery-model-holds.002",
+        "integration.recovery-model-holds.003"
       ]
     },
     {

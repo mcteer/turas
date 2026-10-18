@@ -25,7 +25,7 @@ npm run test:pilot
 Expected: complete registered case inventory, strict evidence failures rejected,
 provider keys absent and no paid dispatch. Test stale/tampered receipts, duplicate
 attempts, missing hosted identity, arbitrary owner strings and fail→resume history.
-Verify new 056/057 schema, explicit runtime grants and locked-runtime denials on
+Verify new 078/079 schema, explicit runtime grants and locked-runtime denials on
 empty and 055 databases. Do not initialize any existing target database.
 
 ## 2. Workspace and hosted storage/execution adapters

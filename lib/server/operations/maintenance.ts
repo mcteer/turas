@@ -46,14 +46,14 @@ export async function runMaintenanceClass(environmentId:string,codeVersion:strin
 
 /** Every class gets its own lane; a slow/failing tick never serializes the others.
  * Stop prevents new work and waits for the already bounded domain ticks. */
-export function startMaintenanceScheduler(environmentId:string,codeVersion:string,bindings:MaintenanceBinding[]){
+export function startMaintenanceScheduler(environmentId:string,codeVersion:string,bindings:MaintenanceBinding[],onResult?:(classId:MaintenanceClassId,result:Awaited<ReturnType<typeof runMaintenanceClass>>)=>void){
  if(!environmentId||!/^[a-f0-9]{40}$/.test(codeVersion))throw Error('Exact maintenance identity required');
  const validated=validateMaintenanceBindings(bindings);
  if(validated.some(row=>!row.configured||!row.enabled))throw Error('All required maintenance classes must be bound');
  let stopping=false;const pending=new Map<string,Promise<unknown>>(),timers:ReturnType<typeof setInterval>[]=[];
  const schedule=(binding:MaintenanceBinding)=>{
   if(stopping||pending.has(binding.id))return;
-  const running=runMaintenanceClass(environmentId,codeVersion,binding).catch(()=>({state:'fail' as const})).finally(()=>pending.delete(binding.id));
+  const running=runMaintenanceClass(environmentId,codeVersion,binding).catch(()=>({state:'fail' as const})).then(result=>{onResult?.(binding.id,result);return result;}).finally(()=>pending.delete(binding.id));
   pending.set(binding.id,running);
  };
  for(const binding of bindings){const interval=binding.intervalMs??maintenanceClasses.find(row=>row.id===binding.id)!.intervalMs;timers.push(setInterval(()=>schedule(binding),interval));schedule(binding);}

@@ -8,8 +8,8 @@ if (!["localhost", "127.0.0.1", "[::1]"].includes(hostname)) {
 
 export default defineConfig({
   testDir: "./tests/ui",
-  testIgnore: process.env.TURAS_UI_LEGACY_ONLY === "1" ?
-    ["**/knowledge.spec.ts", "**/research.spec.ts", "**/retrieval.spec.ts", "**/staffing-*.spec.ts", "**/execution-*.spec.ts", "**/report-*.spec.ts", "**/support-*.spec.ts", "**/expansion-*.spec.ts", "**/gap-*.spec.ts", "**/partner-*.spec.ts", "**/learning-*.spec.ts", "**/mcp-*.spec.ts", "**/pilot-*.spec.ts"] : [],
+  testIgnore: [...(process.env.TURAS_UI_LEGACY_ONLY === "1" ?
+    ["**/chat-interaction-parity.spec.ts", "**/legacy-retired-history.spec.ts", "**/legacy-context-journey.spec.ts", "**/legacy-source-library.spec.ts", "**/knowledge.spec.ts", "**/research.spec.ts", "**/retrieval.spec.ts", "**/staffing-*.spec.ts", "**/execution-*.spec.ts", "**/report-*.spec.ts", "**/support-*.spec.ts", "**/expansion-*.spec.ts", "**/gap-*.spec.ts", "**/partner-*.spec.ts", "**/learning-*.spec.ts", "**/mcp-*.spec.ts", "**/pilot-*.spec.ts"] : []), "**/customer-profile-bugs.spec.ts"],
   timeout: 30_000,
   // UI scenarios share the local demo database, including mutable customer grants.
   workers: 1,

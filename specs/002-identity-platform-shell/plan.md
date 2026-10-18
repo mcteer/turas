@@ -238,3 +238,12 @@ No constitution violations requiring an exception. The dispatch ledger and nativ
 route wrapper are necessary for the spec's idempotency and revocation guarantees;
 a second auth platform, orchestration engine, Blob integration and vector database
 are deliberately outside this feature's implementation scope.
+
+
+## Authorized hosted origin correction — 2026-10-15
+
+Hosted mutations admit the configured canonical Production origin and the exact
+platform-provided `VERCEL_URL` over HTTPS. Preview also admits only its exact
+platform-provided branch alias. These derived origins ignore caller-supplied
+alias settings and request `Host`/forwarded headers; no wildcard is admitted.
+Production retains its canonical app origin for other configuration consumers.

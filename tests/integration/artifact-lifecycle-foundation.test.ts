@@ -4,6 +4,10 @@ import { createProfileTestSession } from "../fixtures/profiles";
 import { createArtifactDatabaseFixture } from "../fixtures/artifact-database";
 import { DEMO_IDS } from "../fixtures/identities";
 import { nextArtifactGeneration, retireArtifactVersion, retryArtifactVersion } from "../../lib/server/artifacts/lifecycle";
+import { preparedArtifactImages } from "../../lib/server/artifacts/prepared";
+import { mkdtemp,writeFile,rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 describe("artifact lifecycle tombstones", () => {
   it("requires exact generation, keeps idempotent receipts and excludes source text from audit", async () => {
@@ -49,6 +53,14 @@ describe("artifact lifecycle tombstones", () => {
   });
   it("queues one retry for a failed unpublished source", async () => {
     const old = process.env.TURAS_ENVIRONMENT_ID;
+    const oldStore=process.env.TURAS_ARTIFACT_STORE_ROOT;
+    // Validate the configured preparation before switching to the separate
+    // fixture database. Only its public image manifest belongs in this store.
+    const images=preparedArtifactImages();
+    const store=await mkdtemp(join(tmpdir(),"turas-artifact-retry-test-"));
+    await writeFile(join(store,".turas-artifact-store.json"),JSON.stringify({environmentId:process.env.TURAS_TEST_ENVIRONMENT_ID}),{mode:0o600});
+    await writeFile(join(store,"runtime-images.json"),JSON.stringify(images),{mode:0o600});
+    process.env.TURAS_ARTIFACT_STORE_ROOT=store;
     process.env.TURAS_ENVIRONMENT_ID = process.env.TURAS_TEST_ENVIRONMENT_ID;
     try {
       await withTestDatabase(async (client) => {
@@ -71,6 +83,10 @@ describe("artifact lifecycle tombstones", () => {
           ]);
         } finally { await client.query("ROLLBACK"); }
       });
-    } finally { process.env.TURAS_ENVIRONMENT_ID = old; }
+    } finally {
+      process.env.TURAS_ENVIRONMENT_ID = old;
+      if(oldStore===undefined)delete process.env.TURAS_ARTIFACT_STORE_ROOT;else process.env.TURAS_ARTIFACT_STORE_ROOT=oldStore;
+      await rm(store,{recursive:true,force:true});
+    }
   });
 });

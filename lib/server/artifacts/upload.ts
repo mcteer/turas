@@ -5,7 +5,7 @@ import type { CurrentSession } from "../auth/sessions";
 import { getServerConfig, parseArtifactStoreConfig } from "../config";
 import { withTransaction } from "../db/client";
 import { hiddenRecord, HttpFailure } from "../../contracts/http";
-import { artifactUploadIntentReceiptSchema, type ArtifactUploadIntentReceipt } from "../../contracts/artifacts";
+import { artifactParserPolicyVersion, artifactUploadIntentReceiptSchema, type ArtifactUploadIntentReceipt } from "../../contracts/artifacts";
 import { lockOwnedBinding } from "../conversations/binding";
 import { createArtifactStore } from "./store-factory";
 import type { ArtifactStore } from "./store";
@@ -217,10 +217,10 @@ export async function completeArtifactUpload(actor: CurrentSession, intentId: st
       (id,version_id,environment_id,workspace_id,customer_id,owner_principal_id,
        initiating_principal_id,lifecycle_generation,original_digest,scan_policy_version,
        parser_policy_version,parser_image_digest)
-      VALUES($1,$2,$3,$4,$5,$6,$7,1,$8,'004-scan-v1','004-parser-v1',$9)`,
+      VALUES($1,$2,$3,$4,$5,$6,$7,1,$8,'004-scan-v1',$10,$9)`,
     [randomUUID(),versionId,row.environment_id,row.workspace_id,row.customer_id,row.owner_principal_id,
       actor.principalId,row.staged_sha256_digest,
-      parserImageDigest]);
+      parserImageDigest,artifactParserPolicyVersion]);
     await client.query(`UPDATE artifact_upload_intents SET state='completed',version_id=$2,
       reservation_state='converted',finalized_object_key=$3,completion_receipt=$4,updated_at=now() WHERE id=$1`,
     [row.id,versionId,objectKey,JSON.stringify({ idempotencyKey, versionId })]);

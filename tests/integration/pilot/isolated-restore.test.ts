@@ -37,7 +37,7 @@ beforeAll(async()=>{
     const objects=await captureRecoveryObjects({store,environmentId:environment.environmentId,target:join(root,'captured-objects'),signal:environment.signal});
     const ledgerDigest=recoveryDigest((await db.query('SELECT name FROM turas_migrations ORDER BY name')).rows);
     header={contract:'pilot-archive-v1',checkpointId:id,environmentId:environment.environmentId,capturedAt:boundary.capturedAt,
-     provenance:{recoveryId,controlRevision:revision,sourceCommit:source.sourceCommit,sourceDigest:source.sourceDigest,schemaVersion:57,ledgerDigest,runtimeGrantsDigest:boundary.runtimeGrantsDigest,acceptedContentDigest:boundary.acceptedContentDigest,configurationDigest:recoveryDigest({backend:'owned-local'}),keyReference:'owned-test-key',keyVersion:'1'},
+     provenance:{recoveryId,controlRevision:revision,sourceCommit:source.sourceCommit,sourceDigest:source.sourceDigest,schemaVersion:79,ledgerDigest,runtimeGrantsDigest:boundary.runtimeGrantsDigest,acceptedContentDigest:boundary.acceptedContentDigest,configurationDigest:recoveryDigest({backend:'owned-local'}),keyReference:'owned-test-key',keyVersion:'1'},
      entries:[{name:'database.dump',sizeBytes:database.sizeBytes,digest:database.digest},...objects.entries]};
     // Source identity has a catalog digest too; only contract provenance belongs
     // in the encrypted archive, never extra source metadata or caller flags.

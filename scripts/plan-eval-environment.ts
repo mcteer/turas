@@ -1,7 +1,8 @@
 import {qualityChildEnvironment} from "./pilot-quality-runtime";
+import {createServer,request as httpRequest,type Server} from 'node:http';
 import { randomUUID } from "node:crypto";
 import { spawn,spawnSync,type ChildProcess } from "node:child_process";
-import { mkdir,mkdtemp,rm,symlink,writeFile,readdir,readlink } from "node:fs/promises";
+import { mkdir,mkdtemp,rm,symlink,writeFile,readdir,readlink,readFile,realpath,lstat } from "node:fs/promises";
 import {mkdirSync,writeFileSync,readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import { reserveOwnedEvalPort } from "./eval-port";
@@ -26,6 +27,8 @@ export type PlanEvalEnvironment = {
 };
 
 export type PlanEvalOptions = {
+  /** Build once and run the owned Next production server; existing callers stay in dev. */
+  production?: boolean;
   deadlineAt?: number;
   empty?: boolean;
   sourceDatabaseUrl?: string;
@@ -162,6 +165,8 @@ export async function withPlanEvalEnvironment<T>(
   const storeRoot = join(root,"store");
   const portLease = await reserveOwnedEvalPort();
   const origin = `http://127.0.0.1:${portLease.port}`;
+  let evePortLease:Awaited<ReturnType<typeof reserveOwnedEvalPort>>|undefined;
+  let eveProxyLease:Awaited<ReturnType<typeof reserveOwnedEvalPort>>|undefined;
   const prior: Record<string, string | undefined> = Object.fromEntries(["DATABASE_URL","DATABASE_URL_UNPOOLED",
     "TURAS_TEST_DATABASE_URL","TURAS_ENVIRONMENT_ID","TURAS_APP_ORIGIN",
     "TURAS_ARTIFACT_STORE_ROOT","TURAS_TEST_SOURCE_DATABASE_URL"].map((key) =>
@@ -170,8 +175,11 @@ export async function withPlanEvalEnvironment<T>(
   const ownership = `turas-owned-${feature}-${randomUUID()}`;
   let prepared = false;
   let child: ChildProcess | null = null;
+  let productionEve:ChildProcess|null=null,productionProxy:Server|null=null;
+  const closeProductionProxy=async()=>{const current=productionProxy;productionProxy=null;if(current){current.closeAllConnections();await new Promise<void>(done=>current.close(()=>done()));}};
   let startupTail = "";
   try {
+    if(options.production){evePortLease=await reserveOwnedEvalPort();eveProxyLease=await reserveOwnedEvalPort();}
     const admin = new Client({connectionString:adminUrl.toString(),connectionTimeoutMillis:remaining()});
     await admin.connect();
     try {
@@ -199,6 +207,18 @@ export async function withPlanEvalEnvironment<T>(
     const testStore = process.env.TURAS_TEST_ARTIFACT_STORE_ROOT;
     if (testStore) {
       copyOwnedEvalFiles(testStore,storeRoot,{deadlineAt:options.deadlineAt});
+    }else if(process.env.TURAS_ARTIFACT_STORE_ROOT){
+      // Nested owned regression clones inherit public runtime assets, never
+      // originals or app payloads from a configured application store.
+      const sourceStore=process.env.TURAS_ARTIFACT_STORE_ROOT;
+      const sourcePath=await realpath(sourceStore).catch(()=>null),ownedRoot=await realpath(resolve('local-artifacts'));
+      if(sourcePath?.startsWith(ownedRoot+'/')&&!(await lstat(sourceStore)).isSymbolicLink()){
+        const marker=JSON.parse(await readFile(join(sourceStore,'.turas-artifact-store.json'),'utf8'));
+        if(marker.environmentId===process.env.TURAS_ENVIRONMENT_ID&&String(marker.environmentId).startsWith('test-')){
+          for(const component of ['runtime-images.json','signatures','assets'])if(await lstat(join(sourceStore,component)).catch(()=>null))
+            copyOwnedEvalFiles(join(sourceStore,component),join(storeRoot,component),{deadlineAt:options.deadlineAt});
+        }
+      }
     }
     await writeFile(join(storeRoot,".turas-artifact-store.json"),
       JSON.stringify({environmentId:testMarker}),{mode:0o600});
@@ -231,23 +251,76 @@ export async function withPlanEvalEnvironment<T>(
       options.empty ? ["--init"]:[],options.deadlineAt);
     runGuardedScript("scripts/db-roles.ts",appRoot,process.env,[],options.deadlineAt);
 
+    let productionBuilt=false;
     async function start(): Promise<void> {
       remaining();
       if (child) throw new Error("Disposable app already running");
       startupTail = "";
       const port = new URL(origin).port;
-      await portLease.release();
-      child = spawn(process.execPath,["scripts/dev.mjs"],{
-        cwd:appRoot,env:{...process.env,NODE_ENV:"development",PORT:port,...await qualityChildEnvironment()},
-        stdio:["ignore","pipe","pipe"],detached:true,
-      });
+      const productionEnv=options.production?{
+        EVE_NEXT_PRODUCTION_PORT:String(evePortLease!.port),
+        EVE_NEXT_PRODUCTION_ORIGIN:`http://127.0.0.1:${eveProxyLease!.port}`,
+        // The unnamed public agent remains at /eve/v1; only the private
+        // service prefix is stripped by our owned self-hosting proxy.
+        EVE_PUBLIC_ROUTE_PREFIX:"",
+      }:{};
       const capture = (chunk: Buffer) => { startupTail =
         (startupTail+chunk.toString("utf8")).slice(-200_000); };
+      if(options.production&&!productionBuilt){
+        const buildDeadline=Date.now()+remaining(600_000);
+        const building=spawn(process.execPath,["scripts/build-check.mjs"],{
+          cwd:appRoot,env:{...process.env,...productionEnv,...await qualityChildEnvironment(),NODE_ENV:"production",PORT:port,NODE_OPTIONS:""},
+          stdio:["ignore","pipe","pipe"],detached:true,
+        });
+        child=building;building.stdout?.on("data",capture);building.stderr?.on("data",capture);
+        let timedOut=false;
+        const code=await new Promise<number|null>((done,reject)=>{
+          const timer=setTimeout(()=>{timedOut=true;void stopChild(building).catch(reject);},ownedEvalTimeout(buildDeadline,600_000));
+          building.once("error",error=>{clearTimeout(timer);reject(error);});
+          building.once("exit",code=>{clearTimeout(timer);done(code);});
+        });
+        child=null;remaining();
+        if(timedOut||code!==0){
+          await writeFile(resolve(`local-artifacts/${feature}/eval-production-build-failure.log`),startupTail,{mode:0o600});
+          throw Error(timedOut?"Disposable production build deadline exceeded":"Disposable production build failed");
+        }
+        productionBuilt=true;
+      }
+      if(options.production){
+        await evePortLease!.release();
+        productionEve=spawn(process.execPath,[join(appRoot,".output/server/index.mjs")],{
+          cwd:appRoot,env:{...process.env,...productionEnv,...await qualityChildEnvironment(),NODE_ENV:"production",NODE_OPTIONS:"",
+            HOST:"127.0.0.1",NITRO_HOST:"127.0.0.1",PORT:String(evePortLease!.port),NITRO_PORT:String(evePortLease!.port)},
+          stdio:["ignore","pipe","pipe"],detached:true,
+        });
+        productionEve.stdout?.on("data",capture);productionEve.stderr?.on("data",capture);
+        // Documented non-Vercel composition: stream the actual service response
+        // after stripping only its exact private mount. No response is mocked.
+        productionProxy=createServer((incoming,outgoing)=>{
+          const prefix="/_eve_internal/eve";
+          if(!incoming.url?.startsWith(prefix+"/")){outgoing.destroy();return;}
+          const upstream=httpRequest({hostname:"127.0.0.1",port:evePortLease!.port,
+            method:incoming.method,path:incoming.url.slice(prefix.length),headers:incoming.headers},response=>{
+            if(!response.statusCode){outgoing.destroy();return;}
+            outgoing.writeHead(response.statusCode,response.headers);response.pipe(outgoing);
+          });
+          upstream.on("error",()=>outgoing.destroy());incoming.on("aborted",()=>upstream.destroy());
+          outgoing.on("close",()=>upstream.destroy());incoming.pipe(upstream);
+        });
+        await eveProxyLease!.release();
+        await new Promise<void>((done,reject)=>{productionProxy!.once("error",reject);productionProxy!.listen(eveProxyLease!.port,"127.0.0.1",done);});
+      }
+      await portLease.release();
+      child = spawn(process.execPath,options.production?
+        ["node_modules/next/dist/bin/next","start","--hostname","127.0.0.1","--port",port]:["scripts/dev.mjs"],{
+        cwd:appRoot,env:{...process.env,...productionEnv,...await qualityChildEnvironment(),NODE_ENV:options.production?"production":"development",PORT:port,NODE_OPTIONS:""},
+        stdio:["ignore","pipe","pipe"],detached:true,
+      });
       child.stdout?.on("data",capture);
       child.stderr?.on("data",capture);
       const readinessDeadline = Date.now()+remaining(90_000);
       while (Date.now()<readinessDeadline) {
-        if (child.exitCode !== null) break;
+        if (child.exitCode !== null || productionEve&&productionEve.exitCode!==null) break;
         try {
           const [auth,eve] = await Promise.all([
             fetch(`${origin}/api/auth/session`,{signal:AbortSignal.timeout(ownedEvalTimeout(readinessDeadline,2_000))}),
@@ -263,7 +336,7 @@ export async function withPlanEvalEnvironment<T>(
         startupTail,{mode:0o600});
       throw new Error("Disposable app failed readiness");
     }
-    async function stop(): Promise<void> { await stopChild(child);child = null;await stopOwnedAppProcesses(appRoot); }
+    async function stop(): Promise<void> { await stopChild(child);child = null;await stopChild(productionEve);productionEve=null;await closeProductionProxy();await stopOwnedAppProcesses(appRoot); }
     remaining();
     return await run({databaseName:name,appRoot,storeRoot,origin,start,stop,
       restart:async () => { await stop();await start(); },
@@ -280,7 +353,11 @@ export async function withPlanEvalEnvironment<T>(
       privateLogTail:()=>startupTail});
   } finally {
     await portLease.release();
+    await evePortLease?.release();
+    await eveProxyLease?.release();
     await stopChild(child);
+    await stopChild(productionEve);
+    await closeProductionProxy();
     await stopOwnedAppProcesses(appRoot);
     await closeRuntimePool();
     for (const [key,value] of Object.entries(prior)) {

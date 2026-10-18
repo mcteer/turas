@@ -11,7 +11,7 @@ export class DatabaseUnavailableError extends Error {
 type EnvironmentRow = { environment_id: string; schema_version: number };
 const environmentSql = "SELECT environment_id, schema_version FROM turas_environment LIMIT 1";
 export const requiredSchemaVersion = 13;
-export const supportedSchemaVersion = 57;
+export const supportedSchemaVersion = 79;
 
 export async function assertDatabaseEnvironment(
   minimumSchemaVersion = requiredSchemaVersion,

@@ -5,7 +5,7 @@ import {featureSourceDigest} from './execution-source-digest';
 import {verifyLearningSuites} from './learning-suites';
 const gate=process.argv[2],sourceDigest=await featureSourceDigest('014'),manifest=await verifyLearningSuites();
 const schemaVersion=JSON.parse(await readFile('migrations/manifest.json','utf8')).version;
-if(schemaVersion!==57)throw Error('Unsupported learning recovery schema');
+if(schemaVersion!==79)throw Error('Unsupported learning recovery schema');
 if(process.argv.length!==3||sourceDigest!==process.env.TURAS_014_EXPECTED_SOURCE_DIGEST)throw Error('Learning CI source identity mismatch');
 const evidence:Record<string,any>[]=[];
 async function scan(path:string){for(const e of await readdir(path,{withFileTypes:true})){if(e.name.startsWith('owned-'))continue;const file=join(path,e.name);if(e.isDirectory())await scan(file);else if(e.name==='summary.json'||e.name.endsWith('.summary.json')||e.name==='build.json'||e.name==='fixture-capture.json'){const d=JSON.parse(await readFile(file,'utf8'));if(d.sourceDigest===sourceDigest)evidence.push(d);}}}

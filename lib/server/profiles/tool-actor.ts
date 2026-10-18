@@ -1,3 +1,5 @@
+import {customerQuestionActor} from "../conversations/customer-accounts";
+import {lockProfileActor} from "./policy";
 import { conversationFeature } from "../conversations/feature";
 import type { PoolClient } from "pg";
 import type { CurrentSession } from "../auth/sessions";
@@ -26,7 +28,14 @@ export async function boundToolActor(client: PoolClient, principal: ToolPrincipa
   if (feature?.kind === "staffing") {
     throw new HttpFailure(403, "staffing_tool_denied", "Use the governed staffing read tools for this explanation");
   }
-  if (await readGeneralAttemptContext(client,attemptId,principal.principalId)) throw new HttpFailure(403,"customer_scope_required","Customer tools require an explicitly selected customer");
+  if (await readGeneralAttemptContext(client,attemptId,principal.principalId)) {
+    const selected=(await client.query('SELECT customer_id FROM conversations WHERE id=$1',[conversation.conversation_id])).rows[0];
+    if(!selected?.customer_id || feature?.kind!=='normal')throw new HttpFailure(403,"customer_scope_required","Customer tools require an explicitly selected customer");
+    const {actor}=await customerQuestionActor(client,principal);
+    await lockProfileActor(client,actor,selected.customer_id,undefined,true);
+    const state=(await client.query('SELECT internal_generation,delivery_generation FROM customer_profile_state WHERE customer_id=$1',[selected.customer_id])).rows[0];
+    return {actor,customerId:selected.customer_id,generation:String(actor.kind==='internal'?state.internal_generation:state.delivery_generation),attemptId,planning:null};
+  }
   await readCurrentAttemptContext(client, attemptId, principal.principalId);
   const artifact = await readCurrentArtifactDraft(client,attemptId,principal.principalId);
   if (artifact) {

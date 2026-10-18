@@ -13,6 +13,8 @@ const schema = z.object({
   DATABASE_URL_UNPOOLED: databaseUrl,
   TURAS_ENVIRONMENT_ID: z.string().min(1),
   TURAS_APP_ORIGIN: z.string().url().refine((value) => new URL(value).origin === value, "An exact application origin is required"),
+  TURAS_PREVIEW_BRANCH_ORIGIN: z.string().url().optional(),
+  TURAS_DEPLOYMENT_ORIGIN: z.string().url().optional(),
   TURAS_DEMO_USERNAME: z.literal("mcteer"),
   TURAS_DEMO_PASSWORD: credential,
   PANEL_USERNAME: z.literal("panel"),
@@ -30,13 +32,24 @@ export type ServerConfig = z.infer<typeof schema>;
 
 export function parseServerConfig(environment: Record<string, string | undefined>): ServerConfig {
   if (typeof window !== "undefined") throw new Error("Server configuration cannot run in a browser");
-  const previewHost = environment.VERCEL_ENV === "preview" ? environment.VERCEL_URL : undefined;
-  if (previewHost && !/^[a-zA-Z0-9-]+\.vercel\.app$/.test(previewHost)) {
+  const hosted = environment.VERCEL_ENV === "preview" || environment.VERCEL_ENV === "production";
+  const deploymentHost = hosted ? environment.VERCEL_URL : undefined;
+  if (deploymentHost && !/^[a-zA-Z0-9-]+\.vercel\.app$/.test(deploymentHost)) {
     throw new Error("Turas configuration invalid: VERCEL_URL");
   }
-  const parsed = schema.safeParse(previewHost
-    ? { ...environment, TURAS_APP_ORIGIN: `https://${previewHost}` }
-    : environment);
+  const previewHost = environment.VERCEL_ENV === "preview" ? deploymentHost : undefined;
+  const branchHost = previewHost ? environment.VERCEL_BRANCH_URL : undefined;
+  if (branchHost && !/^[a-zA-Z0-9-]+\.vercel\.app$/.test(branchHost)) {
+    throw new Error("Turas configuration invalid: VERCEL_BRANCH_URL");
+  }
+  // Only platform deployment metadata supplies aliases; never trust request hosts
+  // or a caller-configured alias. Production keeps its canonical app origin.
+  const parsed = schema.safeParse({
+    ...environment,
+    TURAS_APP_ORIGIN: previewHost ? `https://${previewHost}` : environment.TURAS_APP_ORIGIN,
+    TURAS_PREVIEW_BRANCH_ORIGIN: branchHost ? `https://${branchHost}` : undefined,
+    TURAS_DEPLOYMENT_ORIGIN: deploymentHost ? `https://${deploymentHost}` : undefined,
+  });
   if (!parsed.success) {
     const names = parsed.error.issues.map((issue) => issue.path.join(".")).filter(Boolean);
     throw new Error(`Turas configuration invalid: ${[...new Set(names)].join(", ")}`);

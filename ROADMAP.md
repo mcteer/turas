@@ -2,12 +2,37 @@
 
 Baseline: 2026-09-26; updated 2026-10-10. **001 merged in PR 1; 002 merged in
 [PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 merged in [PR 11](https://github.com/mcteer/turas/pull/11) after local and CI validation, without a hosted release; 007 merged in [PR 13](https://github.com/mcteer/turas/pull/13) after local and CI validation, without a hosted release. 008 merged in [PR 16](https://github.com/mcteer/turas/pull/16) after passing CI; hosted execution acceptance remains separate. 009 merged in [PR 17](https://github.com/mcteer/turas/pull/17); live reporting delivery remains deferred. 010 implementation and acceptance are recorded in [PR 19](https://github.com/mcteer/turas/pull/19); 011 merged in [PR 22](https://github.com/mcteer/turas/pull/22) after local, actual-model independent review and passing CI; 012 merged in [PR 23](https://github.com/mcteer/turas/pull/23); 013 merged in [PR 24](https://github.com/mcteer/turas/pull/24); 014 merged in [PR 25](https://github.com/mcteer/turas/pull/25), with Production schema 054 and internal hosted read checks recorded; 015 merged in [PR 28](https://github.com/mcteer/turas/pull/28), with acceptance tracked in its validation record; Production is enabled on schema 055 with runtime grants and authenticated SDK/HTTP/CLI WebKit acceptance, including research passage/citation reads; 016 implementation is in progress for a controlled internal and assigned-partner pilot; local workspace, storage and governed execution checkpoints are recorded in its validation record. Full pilot acceptance remains pending.**
+The user-requested [019 chat interaction parity](specs/019-chat-interaction-parity/spec.md)
+preserves the current appearance while restoring legacy composer, activity and
+scrolling behavior and is released in [PR #41](https://github.com/mcteer/turas/pull/41). Its
+[validation record](specs/019-chat-interaction-parity/validation.md) separates
+local checks from exact Preview/Production release acceptance.
+
+Complete legacy backend parity is implemented and released under
+[`018-legacy-backend-parity`](specs/018-legacy-backend-parity/spec.md), with its
+explicit [implementation tasks](specs/018-legacy-backend-parity/tasks.md).
+It restores original mechanisms and consumers within existing governed domains.
+The 337-file source audit maps the restored implementation to original mechanisms.
+Acceptance and release evidence is tracked in the feature validation record and
+tasks. This does not complete unrelated feature-016 pilot work.
+
+[PR 34](https://github.com/mcteer/turas/pull/34) merged the legacy backend and chat
+parity repair. Its [audit](docs/legacy-backend-parity-audit.md) retains earlier
+failed checks and the passing final Preview evidence. The
+[2026-10-15 Production release](docs/production-parity-release-2026-10-15.md)
+used schema 072 and runtime grants at that release after encrypted restore/migration rehearsal,
+with actual authenticated profile/search/chat checks. This repair and release do
+not complete 016 hosted recovery, operator or pilot acceptance.
+
+Baseline: 2026-09-26; updated 2026-10-15. **001 merged in PR 1; 002 merged in
+[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 merged in [PR 11](https://github.com/mcteer/turas/pull/11) after local and CI validation, without a hosted release; 007 merged in [PR 13](https://github.com/mcteer/turas/pull/13) after local and CI validation, without a hosted release. 008 merged in [PR 16](https://github.com/mcteer/turas/pull/16) after passing CI; hosted execution acceptance remains separate. 009 merged in [PR 17](https://github.com/mcteer/turas/pull/17); live reporting delivery remains deferred. 010 implementation and acceptance are recorded in [PR 19](https://github.com/mcteer/turas/pull/19); 011 merged in [PR 22](https://github.com/mcteer/turas/pull/22) after local, actual-model independent review and passing CI; 012 merged in [PR 23](https://github.com/mcteer/turas/pull/23); 013 merged in [PR 24](https://github.com/mcteer/turas/pull/24); 014 merged in [PR 25](https://github.com/mcteer/turas/pull/25), with Production schema 054 and internal hosted read checks recorded; 015 merged in [PR 28](https://github.com/mcteer/turas/pull/28), with acceptance tracked in its validation record; The initial Production activation used schema 055 with runtime grants and authenticated SDK/HTTP/CLI WebKit acceptance, including research passage/citation reads; 016 remains a roadmap proposal.**
 
 Owner-private chat archiving released in [PR 20](https://github.com/mcteer/turas/pull/20).
 The [public research remediation](https://github.com/mcteer/turas/pull/21) saved and
 indexed the authorized 184-entry public customer inventory in Production; its
 application release and hosted UI checks remain separate from the data proof.
 011 is merged with local/CI acceptance; hosted release remains separate. 012 is merged in PR 23; local and CI acceptance are tracked in its validation record. 013 merged in PR 24; 014 merged in PR 25, with schema 054 and internal Production read checks recorded; 015 merged in [PR 28](https://github.com/mcteer/turas/pull/28), with acceptance tracked in its validation record; Production is enabled on schema 055 with runtime grants and authenticated SDK/HTTP/CLI WebKit acceptance, including research passage/citation reads; 016 implementation is in progress (63/91 tasks), with [draft PR 32](https://github.com/mcteer/turas/pull/32); the prior complete local catalog passed 640/640 at `08ef152`, and all 43 required CI jobs passed at `94d3dc3`. Subsequent uncommitted storage/recovery work passed the expanded 653-case local catalog; it has no new CI proof. Remaining storage/recovery/hosted implementation and actual participant/release acceptance remain pending.
+011 is merged with local/CI acceptance; hosted release remains separate. 012 is merged in PR 23; local and CI acceptance are tracked in its validation record. 013 merged in PR 24; 014 merged in PR 25, with schema 054 and internal Production read checks recorded; 015 merged in [PR 28](https://github.com/mcteer/turas/pull/28), with acceptance tracked in its validation record; The initial Production activation used schema 055 with runtime grants and authenticated SDK/HTTP/CLI WebKit acceptance, including research passage/citation reads; 016 remains a proposal.
 
 005 now has [specification](specs/005-governed-rag-research/spec.md),
 [design](specs/005-governed-rag-research/plan.md) and
@@ -286,3 +311,15 @@ Record a slice as in progress when its spec/plan exists, and complete only when
 its exit evidence and merged PR are linked. Distinguish local, CI, preview and
 production verification. Revise dependencies and scope when evidence changes.
 Update README in each relevant PR and verify it after merge.
+
+Feature018 was released incrementally through PR36–39. The original stream-size
+and active-history failures remain recorded in feature validation; the final
+verified release is summarized below.
+
+### Feature018 release closure — 2026-10-16
+
+PR36–39 restore the337-path/101-reference audited backend scope. Final source
+395b53 passes all50CI jobs and26Preview checks; merge2d9dc01 is verified in
+Production on schema77, including original retained history and actual failed-turn
+file-card reload recovery. See the [release record](docs/production-parity-release-2026-10-16.md).
+Historical failed checks remain recorded; this does not complete feature016.

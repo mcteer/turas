@@ -6,7 +6,7 @@ import {recoveryDenialSnapshotSchema,verifyRecoveryDenialSnapshot} from './recov
 const scopeSchema=z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive(),snapshotDigest:z.string().regex(/^[a-f0-9]{64}$/),backupCapturedAt:z.iso.datetime({offset:true})});
 const inheritedFence=z.strictObject({environment_id:z.string(),table_name:z.string().regex(/^[a-z_][a-z0-9_]*$/),key_columns:z.array(z.string().regex(/^[a-z_][a-z0-9_]*$/)).min(1).max(16),key_digest:z.string().regex(/^[a-f0-9]{64}$/)});
 function installedReplayFunctions(){
- let sql='';const migration=createRequire(import.meta.url)('../../../migrations/057-pilot-operations.cjs');
+ let sql='';const migration=createRequire(import.meta.url)('../../../migrations/079-pilot-operations.cjs');
  // Read the authored migration's SQL through its normal static emitter. Never
  // execute a migration or schema initialization against the audit database.
  migration.up({sql(value:string){sql+=value;}});
@@ -20,7 +20,7 @@ function installedReplayFunctions(){
  * source denials and workflow closure still need their separate verification. */
 export async function auditRecoveredRequestFences(db:Client|PoolClient,raw:unknown,rawScope:z.infer<typeof scopeSchema>){
  const scope=scopeSchema.parse(rawScope),snapshot=recoveryDenialSnapshotSchema.parse(raw);
- if(snapshot.contract!=='pilot-denial-replay-snapshot-v6'||snapshot.schemaVersion!==57)throw Error('Complete current schema-057 replay inventory required');
+ if(snapshot.contract!=='pilot-denial-replay-snapshot-v7'||snapshot.schemaVersion!==79)throw Error('Complete current schema-079 replay inventory required');
  await db.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
  try{
   await db.query("SET LOCAL lock_timeout='3000ms'");await db.query("SET LOCAL statement_timeout='10000ms'");await db.query("SET LOCAL transaction_timeout='120s'");
@@ -28,7 +28,7 @@ export async function auditRecoveredRequestFences(db:Client|PoolClient,raw:unkno
   await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16020))',[scope.environmentId]);
   await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[scope.environmentId]);
   const marker=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;
-  if(marker.length!==1||marker[0].environment_id!==scope.environmentId||Number(marker[0].schema_version)!==57)throw Error('Request fence audit target differs');
+  if(marker.length!==1||marker[0].environment_id!==scope.environmentId||Number(marker[0].schema_version)!==79)throw Error('Request fence audit target differs');
   const control=(await db.query('SELECT mode,revision,recovery_id FROM operations_control WHERE environment_id=$1 FOR SHARE',[scope.environmentId])).rows[0];
   if(control?.mode!=='locked'||Number(control.revision)!==scope.controlRevision||control.recovery_id!==scope.recoveryId)throw Error('Exact locked request fence audit required');
   const now=Number((await db.query('SELECT extract(epoch FROM clock_timestamp())*1000 AS now')).rows[0].now);
@@ -46,7 +46,7 @@ export async function auditRecoveredRequestFences(db:Client|PoolClient,raw:unkno
   }
   for(const table of snapshot.tables){for(const columns of table.replayKeyColumns??[])include(table.name,columns);for(const row of table.rows)for(const key of row.replayKeys??[])include(table.name,key.columns,key.digest);}
   for(const row of snapshot.tables.find(table=>table.name==='operations_replay_fences')!.rows){const fence=inheritedFence.parse(row.identity);if(fence.environment_id!==scope.environmentId)throw Error('Inherited request fence environment differs');include(fence.table_name,fence.key_columns,fence.key_digest);}
-  if(entries.size>100)throw Error('Request fence audit inventory exceeds bound');
+  if(entries.size>128)throw Error('Request fence audit inventory exceeds bound');
   await db.query('LOCK TABLE operations_replay_fences IN SHARE MODE');
   const immutable=(await db.query(`SELECT t.tgenabled='O' AND t.tgtype=27 AND t.tgqual IS NULL AS enabled,p.prosrc,p.prosecdef,p.proconfig,l.lanname,
    p.proowner=(SELECT relowner FROM pg_class WHERE oid='operations_control'::regclass) AS owner

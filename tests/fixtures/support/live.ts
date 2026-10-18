@@ -12,7 +12,7 @@ export async function installSupportLiveObservation(environment: { appRoot: stri
   const mocked = source.includes("createSupportNativeFixtureModel");
   if (mocked) assertDeterministicTestMode();
   else if (process.env.TURAS_ALLOW_LIVE_MODEL_TESTS !== "1" || !process.env.AI_GATEWAY_API_KEY) throw new Error("Explicit live opt-in required");
-  const base = mocked ? "createSupportNativeFixtureModel(principal, identity)" : "gateway(selectedModel)";
+  const base = mocked ? "createSupportNativeFixtureModel(principal, identity)" : "parityBudgetModel(gateway(selectedModel),selectedModel)";
   const target = `wrapStaffingModel(${base}, admitted.mode`;
   if (source.split(target).length !== 2 || !source.includes('const selectedModel = "spacexai/grok-4.7";') || !source.includes('reasoning: "low"'))
     throw new Error("Support selected model shape changed");

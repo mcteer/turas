@@ -23,7 +23,7 @@ export async function readResearchFindings(client: PoolClient,actor: CurrentSess
     title: string; quality_input: unknown; observation_at: Date | null;
     publication_at: Date | null; projection_id: string; source_generation: string;
     audience: string; content_digest: string; projection_contract: string }>(`
-    SELECT o.id AS observation_id,o.canonical_url,o.passage_text,o.passage_digest,
+    SELECT o.id AS observation_id,o.canonical_url,v.passage AS passage_text,v.passage_digest,
       v.id AS source_revision_id,v.title,v.quality_input,v.observation_at,
       v.publication_at,s.id AS projection_id,s.source_generation,s.audience,
       s.content_digest,s.projection_contract
@@ -49,9 +49,10 @@ export async function readResearchFindings(client: PoolClient,actor: CurrentSess
       observationAt: item.observation_at,publicationAt: item.publication_at },asOf);
     results.push({ observationId: item.observation_id,sourceRevisionId: item.source_revision_id,
       origin: "independent_discovery" as const,canonicalUrl: item.canonical_url,
+      acceptanceState: "accepted" as const, acceptanceBasis: "independent_research" as const,
       title: item.title,verbatimPassage: item.passage_text,
       passageDigest: item.passage_digest,quality,
-      caveats: quality.R < 2 ? ["Public authority requires steward review"] : [] });
+      caveats: quality.R < 2 ? ["Limited source authority; retain attribution and scope"] : [] });
   }
   if (Buffer.byteLength(JSON.stringify(results)) > 24_576) {
     throw new HttpFailure(503,"unavailable","Research findings unavailable");

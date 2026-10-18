@@ -5,10 +5,10 @@ import { useState, type FormEvent } from "react";
 
 type LoginResponse = { data?: { returnTo: string }; error?: { message: string } };
 
-export function LoginForm() {
+export function LoginForm({ initialError = "", returnTo = "/" }: { initialError?: string; returnTo?: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(initialError);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -43,7 +43,8 @@ export function LoginForm() {
   }
 
   return (
-    <form className="login-form" onSubmit={submit}>
+    <form className="login-form" method="post" action="/api/auth/login" onSubmit={submit}>
+      <input type="hidden" name="returnTo" value={returnTo} />
       <p><label className="field-label" htmlFor="username">Username</label><input className="field" id="username" name="username" autoComplete="username" required /></p>
       <p><label className="field-label" htmlFor="password">Password</label><input className="field" id="password" name="password" type="password" autoComplete="current-password" required /></p>
       <p><label className="field-label" htmlFor="workspace">Workspace</label><select className="field" id="workspace" name="workspace" defaultValue="primary"><option value="primary">Primary Workspace</option><option value="pilot">Synthetic Pilot</option></select></p>

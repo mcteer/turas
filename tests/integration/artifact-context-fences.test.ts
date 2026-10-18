@@ -1,3 +1,4 @@
+import {captureAttemptContext} from "../../lib/server/profiles/attempt-context";
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { withTestDatabase } from "../fixtures/database";
@@ -61,6 +62,7 @@ describe("artifact conversation fence", () => {
             (id,conversation_id,message_id,input_digest,dispatch_state,response_state)
             VALUES($1,$2,$3,$4,'dispatching','running')`,
           [attemptId,source.conversationId,messageId,"a".repeat(64)]);
+          await captureAttemptContext(client,actor,source.conversationId,attemptId,DEMO_IDS.sharedCustomer);
           await expect(projectNativeEventInTransaction(client,nativeId,attemptId,{
             type: "message.completed",data: { turnId: "turn_late",message: "Stale output" },
             meta: { id: `evt_${randomUUID()}`,at: new Date().toISOString() },

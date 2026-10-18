@@ -1,6 +1,7 @@
 import { Pool } from 'pg';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import {readFileSync} from 'node:fs';
 import { knowledgeLineageIsCurrent } from '../lib/server/profiles/eligibility';
 /** Operator-only transaction: snapshot eligible heads and activate once atomically. */
 export async function activateLearning(environmentId:string,workspaceId:string,enabled:boolean,url:string){
@@ -10,7 +11,8 @@ export async function activateLearning(environmentId:string,workspaceId:string,e
   await db.query("SET LOCAL transaction_timeout='30s'");
   await db.query("SET LOCAL lock_timeout='2s'");
   const marker=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;
-  if(marker.length!==1||marker[0].environment_id!==environmentId||![54,55,56,57].includes(Number(marker[0].schema_version)))throw Error('Explicit supported learning schema 054–057 environment required');
+  const currentSchema=JSON.parse(readFileSync(new URL('../migrations/manifest.json',import.meta.url),'utf8')).version;
+  if(!Number.isSafeInteger(currentSchema)||currentSchema<55||marker.length!==1||marker[0].environment_id!==environmentId||![54,55,currentSchema].includes(Number(marker[0].schema_version)))throw Error('Explicit schema 054, 055 or current supported schema environment required');
   const authority=(await db.query(`SELECT current_user=pg_get_userbyid(relowner) AS owner FROM pg_class WHERE oid='learning_workspace_state'::regclass`)).rows[0];
   if(!authority?.owner)throw Error('Learning activation requires the migration owner');
   const state=(await db.query(`SELECT gate_activated_at FROM learning_workspace_state WHERE environment_id=$1 AND workspace_id=$2 FOR UPDATE`,[environmentId,workspaceId])).rows[0];

@@ -62,20 +62,21 @@ it('holds dispatched charges while preserving settled permanent cost receipts',a
 
 it('holds interrupted native dispatch without altering completed attempts or extending replay',async()=>fixture(async(owner,_runtime,environmentId)=>{
  const f=await pilotPublishedKnowledgeFixture(owner as unknown as PoolClient,'primary');
- async function attempt(completed:boolean){
+ async function attempt(completed:boolean,waiting=false){
   const conversation=await createOwnedConversation(f.actor,{customerId:f.customerId,requestKey:randomUUID(),title:'Synthetic interrupted recovery turn'});
   const conversationId=conversation.conversation.id,messageId=randomUUID(),attemptId=randomUUID(),nativeId='synthetic-native-'+randomUUID();
   await owner.query("INSERT INTO submitted_messages(id,conversation_id,request_key,body_digest,text) VALUES($1,$2,$3,$4,'Synthetic recovery question')",[messageId,conversationId,randomUUID(),'d'.repeat(64)]);
-  await owner.query("INSERT INTO response_attempts(id,conversation_id,message_id,input_digest,dispatch_state,response_state,native_delivery_id,native_turn_id,dispatch_started_at,deadline_at,dispatch_start_index) VALUES($1,$2,$3,repeat('d',64),'admitted',$4,$5,$5,clock_timestamp(),clock_timestamp()+interval '5 minutes',0)",[attemptId,conversationId,messageId,completed?'completed':'running',nativeId]);
+  await owner.query("INSERT INTO response_attempts(id,conversation_id,message_id,input_digest,dispatch_state,response_state,native_delivery_id,native_turn_id,dispatch_started_at,deadline_at,dispatch_start_index) VALUES($1,$2,$3,repeat('d',64),'admitted',$4,$5,$5,clock_timestamp(),clock_timestamp()+interval '5 minutes',0)",[attemptId,conversationId,messageId,completed?'completed':waiting?'waiting_input':'running',nativeId]);
   await owner.query("INSERT INTO watchdog_jobs(attempt_id,deadline_at,state,next_attempt_at) SELECT id,deadline_at,$2,clock_timestamp() FROM response_attempts WHERE id=$1",[attemptId,completed?'settled':'pending']);
   return attemptId;
  }
- const interrupted=await attempt(false),completed=await attempt(true),before=(await owner.query('SELECT * FROM response_attempts WHERE id=$1',[completed])).rows[0];
+ const interrupted=await attempt(false),waiting=await attempt(false,true),completed=await attempt(true),before=(await owner.query('SELECT * FROM response_attempts WHERE id=$1',[completed])).rows[0];
  const scope=await lock(owner,environmentId);
- expect((await quarantineRestoredAuthority(owner,scope)).newlyInterruptedNativeAttempts).toBe(1);
+ expect((await quarantineRestoredAuthority(owner,scope)).newlyInterruptedNativeAttempts).toBe(2);
  const held=(await owner.query('SELECT * FROM response_attempts WHERE id=$1',[interrupted])).rows[0];
  expect(held).toMatchObject({dispatch_state:'uncertain',response_state:'failed',last_error_code:'recovery_current_proof_unavailable',native_delivery_id:expect.any(String),native_turn_id:expect.any(String)});
  expect((await owner.query('SELECT state,lease_owner,lease_expires_at FROM watchdog_jobs WHERE attempt_id=$1',[interrupted])).rows[0]).toEqual({state:'needs_attention',lease_owner:null,lease_expires_at:null});
+ expect((await owner.query('SELECT response_state,last_error_code FROM response_attempts WHERE id=$1',[waiting])).rows[0]).toEqual({response_state:'failed',last_error_code:'recovery_current_proof_unavailable'});
  expect((await owner.query('SELECT * FROM response_attempts WHERE id=$1',[completed])).rows[0]).toEqual(before);
  expect((await quarantineRestoredAuthority(owner,scope)).newlyInterruptedNativeAttempts).toBe(0);
  expect((await owner.query('SELECT * FROM response_attempts WHERE id=$1',[interrupted])).rows[0]).toEqual(held);

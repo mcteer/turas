@@ -69,6 +69,10 @@ exports.up = (pgm) => pgm.sql(`
   IF NOT EXISTS(SELECT 1 FROM operations_control WHERE environment_id=NEW.environment_id AND mode='locked'
    AND recovery_id=NEW.recovery_id AND revision=NEW.control_revision) THEN
    RAISE EXCEPTION 'Exact locked quarantine required' USING ERRCODE='23514'; END IF;
+  IF TG_TABLE_NAME IN('operations_recovery_model_holds','operations_recovery_model_observations') THEN
+   IF NEW.source_captured_at>clock_timestamp() OR NEW.source_captured_at<clock_timestamp()-interval '5 minutes' THEN
+   RAISE EXCEPTION 'Fresh model hold source required' USING ERRCODE='23514'; END IF;
+  END IF;
   NEW.recorded_at:=clock_timestamp();RETURN NEW;
  END $$;
  CREATE TRIGGER recovery_quarantine_admission BEFORE INSERT ON operations_recovery_quarantines FOR EACH ROW EXECUTE FUNCTION turas_recovery_quarantine_admission();
@@ -89,6 +93,83 @@ exports.up = (pgm) => pgm.sql(`
  END $$;
  CREATE TRIGGER recovery_paid_release_guard BEFORE INSERT ON learning_reservation_releases
   FOR EACH ROW EXECUTE FUNCTION turas_recovery_paid_release_guard();
+ -- Typed recovery holds also represent operations absent from an older backup.
+ -- Their scope remains retired; settlement never silently refunds that scope.
+ CREATE TABLE operations_recovery_model_holds(
+  environment_id text NOT NULL REFERENCES operations_control(environment_id),
+  operation_kind text NOT NULL CHECK(operation_kind IN('ordinary_tokens','parity_dollars')),
+  operation_id uuid NOT NULL,scope_id uuid NOT NULL,
+  ceiling_tokens integer CHECK(ceiling_tokens>=0),ceiling_micro_usd bigint CHECK(ceiling_micro_usd>=0),
+  actual_tokens integer CHECK(actual_tokens>=0),actual_micro_usd bigint CHECK(actual_micro_usd>=0),settled_at timestamptz,
+  evidence_digest text NOT NULL CHECK(evidence_digest ~ '^[a-f0-9]{64}$'),
+  evidence_digest_kind text NOT NULL CHECK(evidence_digest_kind IN('operation_row','snapshot')),
+  source_captured_at timestamptz NOT NULL,recovery_id uuid NOT NULL,control_revision bigint NOT NULL,
+  recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  PRIMARY KEY(environment_id,operation_kind,operation_id),
+  CHECK((operation_kind='ordinary_tokens' AND ceiling_tokens IS NOT NULL AND ceiling_micro_usd IS NULL AND actual_micro_usd IS NULL AND ((actual_tokens IS NULL)=(settled_at IS NULL)))
+    OR (operation_kind='parity_dollars' AND ceiling_micro_usd IS NOT NULL AND ceiling_tokens IS NULL AND actual_tokens IS NULL AND ((actual_micro_usd IS NULL)=(settled_at IS NULL)))));
+ CREATE TRIGGER recovery_model_hold_immutable BEFORE UPDATE OR DELETE ON operations_recovery_model_holds
+  FOR EACH ROW EXECUTE FUNCTION turas_pilot_immutable_recovery_receipt();
+ CREATE TRIGGER recovery_model_hold_admission BEFORE INSERT ON operations_recovery_model_holds
+  FOR EACH ROW EXECUTE FUNCTION turas_recovery_quarantine_admission();
+ CREATE TABLE operations_recovery_model_observations(
+  environment_id text NOT NULL,operation_kind text NOT NULL,operation_id uuid NOT NULL,
+  observed_evidence_digest text NOT NULL CHECK(observed_evidence_digest ~ '^[a-f0-9]{64}$'),
+  observed_captured_at timestamptz NOT NULL,observed_digest_kind text NOT NULL CHECK(observed_digest_kind IN('operation_row','snapshot')),evidence_kind text NOT NULL CHECK(evidence_kind IN('operation','inherited_hold')),
+  ceiling_tokens integer CHECK(ceiling_tokens>=0),ceiling_micro_usd bigint CHECK(ceiling_micro_usd>=0),
+  actual_tokens integer CHECK(actual_tokens>=0),actual_micro_usd bigint CHECK(actual_micro_usd>=0),settled_at timestamptz,
+  snapshot_digest text NOT NULL CHECK(snapshot_digest ~ '^[a-f0-9]{64}$'),source_captured_at timestamptz NOT NULL,
+  recovery_id uuid NOT NULL,control_revision bigint NOT NULL,recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  PRIMARY KEY(environment_id,operation_kind,operation_id,observed_evidence_digest,evidence_kind),
+  FOREIGN KEY(environment_id,operation_kind,operation_id) REFERENCES operations_recovery_model_holds(environment_id,operation_kind,operation_id),
+  CHECK((operation_kind='ordinary_tokens' AND ceiling_tokens IS NOT NULL AND ceiling_micro_usd IS NULL AND actual_micro_usd IS NULL AND ((actual_tokens IS NULL)=(settled_at IS NULL)))
+   OR (operation_kind='parity_dollars' AND ceiling_micro_usd IS NOT NULL AND ceiling_tokens IS NULL AND actual_tokens IS NULL AND ((actual_micro_usd IS NULL)=(settled_at IS NULL)))));
+ CREATE TRIGGER recovery_model_observation_immutable BEFORE UPDATE OR DELETE ON operations_recovery_model_observations
+  FOR EACH ROW EXECUTE FUNCTION turas_pilot_immutable_recovery_receipt();
+ CREATE TRIGGER recovery_model_observation_admission BEFORE INSERT ON operations_recovery_model_observations
+  FOR EACH ROW EXECUTE FUNCTION turas_recovery_quarantine_admission();
+ CREATE FUNCTION turas_recovery_model_admission() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
+ DECLARE environment text; scope uuid; kind text;
+ BEGIN
+  SELECT environment_id INTO STRICT environment FROM public.turas_environment;
+  IF TG_TABLE_NAME='ordinary_model_operations' THEN scope:=NEW.conversation_id;kind:='ordinary_tokens';
+  ELSE scope:=NEW.budget_id;kind:='parity_dollars'; END IF;
+  IF EXISTS(SELECT 1 FROM public.operations_recovery_model_holds WHERE environment_id=environment AND operation_kind=kind AND scope_id=scope) THEN
+   RAISE EXCEPTION 'Recovered model scope requires explicit accounting' USING ERRCODE='23514'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.operations_control WHERE environment_id=environment AND mode='open') THEN
+   RAISE EXCEPTION 'Model admission closed for recovery' USING ERRCODE='23514'; END IF;
+  RETURN NEW;
+ END $$;
+ REVOKE ALL ON FUNCTION turas_recovery_model_admission() FROM PUBLIC;
+ CREATE TRIGGER recovery_ordinary_model_admission BEFORE INSERT ON ordinary_model_operations
+  FOR EACH ROW EXECUTE FUNCTION turas_recovery_model_admission();
+ CREATE TRIGGER recovery_parity_model_admission BEFORE INSERT ON parity_evaluation_operations
+  FOR EACH ROW EXECUTE FUNCTION turas_recovery_model_admission();
+ CREATE FUNCTION turas_recovery_parity_budget_guard() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
+ BEGIN
+  IF EXISTS(SELECT 1 FROM public.operations_recovery_model_holds WHERE operation_kind='parity_dollars' AND scope_id=OLD.id)
+   AND (NEW.reserved_micro_usd<OLD.reserved_micro_usd OR (OLD.state<>'open' AND NEW.state='open')) THEN
+   RAISE EXCEPTION 'Recovered budget cannot be refunded or reopened' USING ERRCODE='23514'; END IF;
+  RETURN NEW;
+ END $$;
+ REVOKE ALL ON FUNCTION turas_recovery_parity_budget_guard() FROM PUBLIC;
+ CREATE TRIGGER recovery_parity_budget_guard BEFORE UPDATE ON parity_evaluation_budgets
+  FOR EACH ROW EXECUTE FUNCTION turas_recovery_parity_budget_guard();
+ CREATE FUNCTION turas_recovery_model_settlement_guard() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
+ DECLARE scope uuid; kind text;
+ BEGIN
+  IF TG_TABLE_NAME='ordinary_model_operations' THEN scope:=OLD.conversation_id;kind:='ordinary_tokens';
+  ELSE scope:=OLD.budget_id;kind:='parity_dollars'; END IF;
+  IF session_user<>pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='public.operations_control'::regclass))
+   AND EXISTS(SELECT 1 FROM public.operations_recovery_model_holds WHERE operation_kind=kind AND scope_id=scope) THEN
+   RAISE EXCEPTION 'Recovered model settlement requires owner accounting' USING ERRCODE='23514'; END IF;
+  RETURN NEW;
+ END $$;
+ REVOKE ALL ON FUNCTION turas_recovery_model_settlement_guard() FROM PUBLIC;
+ CREATE TRIGGER recovery_ordinary_settlement_guard BEFORE UPDATE ON ordinary_model_operations
+  FOR EACH ROW EXECUTE FUNCTION turas_recovery_model_settlement_guard();
+ CREATE TRIGGER recovery_parity_settlement_guard BEFORE UPDATE ON parity_evaluation_operations
+  FOR EACH ROW EXECUTE FUNCTION turas_recovery_model_settlement_guard();
  CREATE TABLE operations_recovery_quarantine_resolutions(
   environment_id text NOT NULL,recovery_id uuid NOT NULL,scope_kind text NOT NULL,
   verification_id uuid NOT NULL REFERENCES operations_recovery_verifications(id),
@@ -446,11 +527,11 @@ exports.up = (pgm) => pgm.sql(`
  REVOKE ALL ON FUNCTION turas_recovery_replay_guard() FROM PUBLIC;
  DO $$ DECLARE receipt record; BEGIN
   FOR receipt IN SELECT c.relname AS tablename FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
-   WHERE n.nspname='public' AND c.relkind='r' AND EXISTS(
+   WHERE n.nspname='public' AND c.relkind='r' AND (c.relname IN('event_projections','general_context_injections','general_context_receipts','general_customer_read_scopes','native_input_resume_windows','ordinary_context_refreshes','ordinary_continuation_authorities','ordinary_conversation_allowances','ordinary_evidence_refreshes','ordinary_intervention_authorizations','ordinary_intervention_decisions','ordinary_model_operations','ordinary_native_retirements','ordinary_native_uploads','ordinary_operations_read_dependencies','ordinary_question_continuations','ordinary_question_posts','ordinary_question_reconstructions','ordinary_steering_deliveries','parity_evaluation_budgets','parity_evaluation_operations','session_evidence_dependencies','retrieval_embedding_operations') OR EXISTS(
     SELECT 1 FROM pg_index i CROSS JOIN LATERAL unnest(i.indkey) WITH ORDINALITY k(attnum,ordinal)
     JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum=k.attnum
     WHERE i.indrelid=c.oid AND i.indisunique AND i.indpred IS NULL AND i.indexprs IS NULL
-     AND k.ordinal<=i.indnkeyatts AND a.attname IN('request_key','idempotency_key','native_request_id','provider_key','binding_id')) LOOP
+     AND k.ordinal<=i.indnkeyatts AND a.attname IN('request_key','idempotency_key','native_request_id','provider_key','binding_id'))) LOOP
    EXECUTE format('CREATE TRIGGER recovered_request_replay BEFORE INSERT OR UPDATE ON public.%I FOR EACH ROW EXECUTE FUNCTION public.turas_recovery_replay_guard()',receipt.tablename);
   END LOOP;
  END $$;

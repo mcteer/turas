@@ -5,21 +5,29 @@ import { retrievalLimits } from "../../contracts/retrieval";
 import { finishEmbeddingOperation, markEmbeddingDispatched,
   reserveEmbeddingOperation } from "./jobs";
 import { recordRetrievalMetric } from "./telemetry";
+import { reserveParityEmbedding,settleParityProvider } from "../research/specialists/evaluation-budget";
 
 export const embeddingModelId = "openai/text-embedding-3-small";
 
 export function exactEmbeddingVector(value: readonly number[]): number[] {
   if (value.length !== retrievalLimits.embeddingDimensions ||
-      value.some((entry) => !Number.isFinite(entry))) {
+      value.some((entry) => !Number.isFinite(entry)) ||
+      !value.some((entry) => entry !== 0)) {
     throw new Error("Embedding contract mismatch");
   }
   return [...value];
 }
 
-export async function embedRetrievalTexts(values: readonly string[],
-  options: { jobId?: string; operationKey?: string } = {}): Promise<number[][]> {
+export async function embedRetrievalTexts(values: readonly string[],options:{jobId?:string;operationKey?:string}={}) {
+ return embedGovernedTexts(values,options,2000);
+}
+export async function embedWorkspacePatternText(value:string):Promise<number[]> {
+ return (await embedGovernedTexts([value],{},16000))[0];
+}
+async function embedGovernedTexts(values: readonly string[],
+  options: { jobId?: string; operationKey?: string },characterLimit:number): Promise<number[][]> {
   if (values.length < 1 || values.length > retrievalLimits.embeddingBatch ||
-      values.some((value) => !value.trim() || Array.from(value).length > 2_000) ||
+      values.some((value) => !value.trim() || Array.from(value).length > characterLimit) ||
       !process.env.AI_GATEWAY_API_KEY) throw new Error("Embedding unavailable or input exceeds limit");
   const normalized = values.map((value) => value.normalize("NFC"));
   const inputCharacters = normalized.reduce((sum,value) => sum + Array.from(value).length,0);
@@ -35,10 +43,12 @@ export async function embedRetrievalTexts(values: readonly string[],
   });
   const started = Date.now();
   try {
+    const budget=await reserveParityEmbedding(inputCharacters);
     const response = await embedMany({ model: gateway.embeddingModel(embeddingModelId),
       values: normalized,maxRetries: 0,maxParallelCalls: retrievalLimits.concurrentEmbeddingCalls,
       abortSignal: AbortSignal.timeout(retrievalLimits.embeddingTimeoutMs),
       experimental_telemetry: { isEnabled: false } });
+    await settleParityProvider(budget,response.providerMetadata);
     if (response.embeddings.length !== normalized.length) throw new Error("Embedding count mismatch");
     const vectors = response.embeddings.map(exactEmbeddingVector);
     await withTransaction((client) => finishEmbeddingOperation(client,operation.id,"succeeded"));

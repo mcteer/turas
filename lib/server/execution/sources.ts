@@ -63,7 +63,7 @@ export async function executionStoredReferences(db:PoolClient,revisionId:string,
  * closure, lock the complete original-source union, then execution heads, and
  * recheck exact pointers before any accepted content can leave the transaction. */
 export async function verifyExecutionSources(db: PoolClient, actor: ExecutionActor, customerId: string,
-  engagementId: string, audience: "internal" | "delivery", refs: readonly ExecutionSource[], lock = false, lockExecutionSuffix = true): Promise<string> {
+  engagementId: string, audience: "internal" | "delivery", refs: readonly ExecutionSource[], lock = false, lockExecutionSuffix = true,sharedRead=false): Promise<string> {
   const env = getServerConfig().TURAS_ENVIRONMENT_ID;
   const scope = (await db.query<{ workload_id: string | null; active_baseline_id: string }>(`SELECT workload_id,active_baseline_id
     FROM engagements WHERE id=$1 AND environment_id=$2 AND workspace_id=$3 AND customer_id=$4`,
@@ -115,8 +115,8 @@ export async function verifyExecutionSources(db: PoolClient, actor: ExecutionAct
   await verifyPlanSources(db,actor,customerId,scope.workload_id,audience,evidence,false,true);
   for (const baseline of baselines) await currentPlanSourceDigest(db,actor,baseline.revisionId,customerId,scope.workload_id,audience,false,true);
   if (lock && lockExecutionSuffix) {
-    await db.query("SELECT id FROM engagements WHERE id=$1 FOR UPDATE",[engagementId]);
-    await db.query("SELECT id FROM execution_workspaces WHERE engagement_id=$1 FOR UPDATE",[engagementId]);
+    await db.query(`SELECT id FROM engagements WHERE id=$1 FOR ${sharedRead?"SHARE":"UPDATE"}`,[engagementId]);
+    await db.query(`SELECT id FROM execution_workspaces WHERE engagement_id=$1 FOR ${sharedRead?"SHARE":"UPDATE"}`,[engagementId]);
     for (const id of [...new Set(records.map(r => r.recordId))].sort()) await db.query("SELECT id FROM execution_records WHERE id=$1 FOR SHARE",[id]);
     for (const record of records) {
       const row = (await db.query("SELECT accepted_revision_id FROM execution_records WHERE id=$1",[record.recordId])).rows[0];
@@ -128,12 +128,12 @@ export async function verifyExecutionSources(db: PoolClient, actor: ExecutionAct
 }
 
 export async function executionRevisionEligible(db: PoolClient, actor: ExecutionActor, customerId: string,
-  engagementId: string, revisionId: string, audience: "internal" | "delivery", lock = false): Promise<boolean> {
+  engagementId: string, revisionId: string, audience: "internal" | "delivery", lock = false,sharedRead=false): Promise<boolean> {
   const row = (await db.query<{ audience:"internal"|"delivery"; content:{references?:unknown} }>(`SELECT v.audience,p.content
     FROM execution_record_revisions v JOIN execution_record_payloads p ON p.revision_id=v.id
     WHERE v.id=$1 AND v.environment_id=$2 AND v.workspace_id=$3 AND v.customer_id=$4 AND v.engagement_id=$5
       AND (v.audience='delivery' OR $6='internal')`,[revisionId,getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,customerId,engagementId,audience])).rows[0];
   if (!row) return false;
-  try { await verifyExecutionSources(db,actor,customerId,engagementId,row.audience,await executionStoredReferences(db,revisionId,row.content),lock); return true; }
+  try { await verifyExecutionSources(db,actor,customerId,engagementId,row.audience,await executionStoredReferences(db,revisionId,row.content),lock,true,sharedRead); return true; }
   catch (error) { if (error instanceof HttpFailure && [403,404,409].includes(error.status)) return false; throw error; }
 }

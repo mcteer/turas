@@ -14,7 +14,7 @@ workspace label in the shell. Existing primary login remains the default. Failed
 selection returns the existing generic denied response. Re-login is required to
 switch; old sessions, conversations and MCP scopes do not move.
 
-Migration 056 adds compatible nullable session-binding columns as a pair and
+Migration 078 adds compatible nullable session-binding columns as a pair and
 backfills only unambiguous primary memberships. New code issues bound sessions and
 rejects unresolved legacy sessions. Complete recheck/backfill/revocation before
 adding second memberships. Retire or protect historical deployments using the old
@@ -103,7 +103,7 @@ each class's tighter batch/deadline. Domain cleanup remains active while authori
 is disabled. A class failure must not starve conversation deadlines or other cleanup.
 
 Record actual start/completion/success, lease and safe failure category, bounded
-backlog/count truncation, duration and code version in 057. Expected classes are
+backlog/count truncation, duration and code version in 079. Expected classes are
 fixed by configuration/catalog; absence is unhealthy. Hosted and local runners use
 the same registry. Heavy work has independent durable admission.
 

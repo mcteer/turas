@@ -20,7 +20,7 @@ function citation(locator: ArtifactLocator): ApprovedArtifactExcerpt["citation"]
     case "xlsx": return { kind: "xlsx", sheetOrdinal: locator.sheetOrdinal,
       row: locator.row, column: locator.column };
     case "csv": return { kind: "csv", record: locator.record, column: locator.column };
-    case "txt": case "md": return { kind: locator.kind,
+    case "txt": case "md": case "document_text": return { kind: locator.kind,
       lineStart: locator.lineStart, lineEnd: locator.lineEnd };
     case "image": return { kind: "image", regionNumber: 1 };
   }

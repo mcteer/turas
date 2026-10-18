@@ -1,12 +1,38 @@
 # Turas
 
+The complete legacy backend audit and restoration is tracked in
+[`018-legacy-backend-parity`](specs/018-legacy-backend-parity/spec.md).
+Its 337-file inventory and 101 concrete acceptance-reference reviews map original backend mechanisms to the current governed
+implementation and consumers, including shared retained research, source browsing,
+ordinary delivery tools, context review, journey controls and native-file transport.
+See the [validation record](specs/018-legacy-backend-parity/validation.md) and
+[release tasks](specs/018-legacy-backend-parity/tasks.md) for completed
+release gates and evidence limits. Earlier parity releases cover narrower scope.
+
+PR 36 merged the backend restoration on schema 077. PR 37 restored authorized
+read-only history after native retirement and exact pre-provider retry identity.
+[PR 38](https://github.com/mcteer/turas/pull/38) removed staged bytes from Eve's
+durable user stream; actual ten-MiB Production delivery passes with a largest
+captured native event of 630 bytes.
+[PR 39](https://github.com/mcteer/turas/pull/39) restores authorized active history
+after native messages disappear, including exact empty-turn question identity.
+All 50 final-source CI jobs and 26 Preview checks pass. Backend release merge
+`2d9dc018eec88c41e8e52accb91169eef54ca43f` was verified in Production on schema 077
+with authenticated
+HTTP/headless WebKit general, login, original-history and actual failed-turn
+reload checks. The malformed-PDF attempt fails explicitly; its original message
+and private file card survive reload without claiming extraction success.
+Original failed checks and unsettled holds remain preserved. See the
+[2026-10-16 release record](docs/production-parity-release-2026-10-16.md).
+
 Customer maturity and delivery management for Vercel FDE, Professional Services,
 TAM, account teams and partners.
 
 Turas brings reviewed customer context, planning, staffing, execution and reporting
 into one workspace. **Turi**, its eve-powered assistant, explains and proposes next
-steps using authorized evidence. Human review—not a model response—determines which
-facts and decisions become accepted.
+steps using authorized evidence. Independently checked research updates customer
+knowledge automatically. Manually supplied claims and governed decisions retain
+their separate human review requirements.
 
 **Status:** active development. Customer profiles through executive reporting and
 TAM/support guidance (010), product expansion (011), product gaps (012) and partner enablement (013) are implemented. Local validation and basic hosted smoke
@@ -42,6 +68,38 @@ runtime grants as part of each schema-dependent release.
 
 ### Customer Profiles and Maturity
 
+Preview chat starts its bounded maintenance worker on authenticated sends because platform cron runs only in Production.
+
+Preview login supports both the immutable deployment URL and its exact Vercel branch alias.
+
+The earlier legacy backend and chat parity repair merged in [PR 34](https://github.com/mcteer/turas/pull/34).
+That Production release used schema 072 after an encrypted backup, verified
+restore/migration rehearsal and explicit runtime grants. Authenticated HTTP and
+CLI WebKit checks pass for the real 184-customer directory, 1Password/Notion
+profiles, overview placement, product sources and Sandbox evidence search. One
+ordinary Production chat resolves 1Password by name, answers from retained public
+research with citations and preserves the answer across reload; another internal
+account is denied access to that private conversation. The owned check session
+is retired and archived. See the [release record](docs/production-parity-release-2026-10-15.md)
+and [repair audit](docs/legacy-backend-parity-audit.md) for exact evidence and limits.
+
+Preview acceptance includes all three original Notion specialists, typed
+`evaluated / research_more` output and a fresh independent source-based review
+with zero material issues. The finite Preview allowance is $40 across three
+ledgers; original charges and unsettled ceilings are preserved without automatic
+top-ups. Native binary uploads were disabled for the PR 34 release. Schema 077
+enables owner-bound ordinary native-file transport; actual format and recovery
+acceptance remain tracked in feature 018. The root Grok model is unchanged. These checks do not complete
+016 hosted recovery, operator or pilot acceptance.
+
+Customer Overview appears immediately below the customer heading, above workload controls.
+Search the Customer Profiles directory and open profiles directly from customer
+names. The overview shows scoped maturity, current risks, active delivery and
+sourced products. Independently checked research is accepted factual context
+without human review; human-entered claims require review. Evidence search offers
+Accepted Facts, Fresh Decision Evidence and Discovery, preserving source dates,
+quality and workload scope.
+
 Maintain customer/workload profiles, stakeholders and operating context. Record
 maturity assessments against a versioned rubric, with evidence, unknowns and the
 next measurable capability. Review proposed changes and inspect their history;
@@ -56,6 +114,13 @@ review conflicts and refresh stale sources. Withdrawal and access changes govern
 subsequent retrieval and use.
 
 ### Turi Conversations and Guidance
+
+Chat interaction parity [019](specs/019-chat-interaction-parity/spec.md) is released in
+[PR #41](https://github.com/mcteer/turas/pull/41).
+It preserves the current visual design while restoring file paste/drop, link
+controls, tool activity, question feedback and per-conversation scroll recovery.
+See its [validation record](specs/019-chat-interaction-parity/validation.md) for
+local and hosted release status.
 
 Use owner-private chat for general technical questions or explicitly selected
 customer context. Ask Turi to draft plans or explain staffing and execution using
@@ -116,7 +181,7 @@ Read-only MCP access (015) has a [specification](specs/015-read-only-mcp/spec.md
 [plan](specs/015-read-only-mcp/plan.md) and [tasks](specs/015-read-only-mcp/tasks.md),
 merged in [PR 28](https://github.com/mcteer/turas/pull/28). It supports internal users and assigned partners
 through scoped revocable access. Local and CI acceptance are recorded in the
-[validation record](specs/015-read-only-mcp/validation.md); Production is enabled on schema 055 with runtime grants and authenticated SDK/HTTP/CLI WebKit validation, including actual research passage and citation reads. See [operations](docs/mcp-operations.md). Further
+[validation record](specs/015-read-only-mcp/validation.md); The initial Production activation used schema 055 with runtime grants and authenticated SDK/HTTP/CLI WebKit validation, including actual research passage and citation reads. See [operations](docs/mcp-operations.md). Further
 delivery/learning automation remains roadmap work. There is no external support-ticket connector. See the
 [roadmap](ROADMAP.md) for proposed slices and dependencies.
 
@@ -436,10 +501,48 @@ reports outside the customer's own domain. Existing admitted requests retain the
 original host policy. Source text is quoted evidence; a host, mention or generated
 summary never establishes employer-wide deployment or accepted internal facts.
 
+Checked independent research automatically updates shared customer knowledge, including
+an initially empty profile, without human claim review. A new checked observation
+creates a current source revision and both authorized retrieval projections; an
+unchanged recheck advances the observation time, while a replacement retires the
+old index projection. When the complete retained document is unchanged, rechecks
+keep the already checked customer quotations and their source-supported overview;
+changed documents and explicit withdrawals still invalidate old citations. Recheck deadlines follow the latest successful check; evidence quality still uses
+the original publication or observation date.
+Only human-entered claims use the manual review workflow. The protected hosted
+watchdog drains the existing retrieval queue and marks research recheck deadlines;
+checked ordinary research for real customers is eligible for vector indexing.
+
+Hosted Preview verification uses real customer data, not browser response replacements.
+`npm run profiles:preview:check -- --origin <Preview origin> --commit <PR SHA> --output local-artifacts/customer-profile-fixes/preview-check`
+checks the exact deployment, compares the real customer directory and checked
+1Password/Notion research with Production, and captures desktop/mobile WebKit views.
+It verifies name navigation, overview placement, researched products, source detail
+and Sandbox evidence search. Review the captures before merge.
+
+The operator-only `profiles:preview:sync` command copies a current, checked public
+research snapshot from an explicit protected Production connection descriptor to a
+distinct, migrated Preview descriptor. Both databases must be schema 055 and the
+Preview administrator must be active. Pass `--source`, `--target` and a private
+`--output` receipt. It preserves source dates and original evidence identities,
+reuses ready vectors, retires superseded copied projections, and creates no provider
+calls. Manual claims, private conversations and delivery records are not copied.
+Verify the Preview target, recovery backup and migration/grant rehearsal before
+refreshing its dataset; the sync command never migrates a database.
+
+The research reader, source passage boundaries, publication-date checks, community
+attribution warning and product catalog reuse the corresponding legacy behavior.
+Customer Profiles derive product names from eligible retained source quotations,
+rather than requiring a product name in a generated summary. Focused public
+research preserves other still-eligible description and coverage receipts. An
+active research turn may finish after its own checked writes; changes from other
+actors, revoked access, expired receipts and superseded citations still fail their
+existing checks.
+
 The authorized operator batch researches a reviewed official Vercel directory and
 paginated story inventory. It records six coverage areas, exact source passages,
 dates, caveats, unknowns and provider usage, with source signatures and checkpointed
-provider dispatches. Customer Profiles show attributed findings and public research
+provider dispatches. Customer Profiles show accepted, attributed research findings and public research
 coverage. Rejected or withdrawn evidence is not restored by a cached result.
 
 ```sh
@@ -499,3 +602,60 @@ Quality stages retain private source-bound workspaces and native captures until
 independent review, including retrieval query, citation and partner-scope evidence.
 Temporary containers and app processes still clean up after each stage.
 Evaluation clones initialize their evidence roots in clean owned environments.
+The legacy chat parity bug fix merged in PR #34 and is released to Production. Normal chat
+resolves accessible named customers without a picker and reads their dated account
+evidence inventory. Focused full-document search remains separate from that
+inventory. Independently checked research updates current customer knowledge and
+retrieval projections automatically; human submissions remain pending review.
+
+Ordinary shared search also reads official Vercel product documentation without a
+customer selection. Broader customer-derived practice references retain customer
+grant/source checks. Public references are distinct from customer adoption and
+published shared learnings; private originating research queries and briefs are
+excluded. Complete retained passages preserve original citation IDs, while bounded
+responses identify references whose passages were omitted.
+
+Actual Preview checks establish the real 184-customer directory, overview before
+workload controls, sourced 1Password/Notion products, hybrid Sandbox evidence
+search, preference persistence/isolation/removal, document preparation and native
+image correction with unsent-draft retention. The temporary native session and
+feature window were retired; native binary uploads remain disabled outside
+explicitly admitted infrastructure. Preview schema 072 migrations/grants were
+backed up and rehearsed. Production is now schema 072; its separate encrypted
+backup, rehearsal and actual hosted checks are in the [release record](docs/production-parity-release-2026-10-15.md).
+
+Installation applies a guarded compatibility repair for Eve 0.67.1: its durable
+memory-tool callback context must serialize native-file URL data as the equivalent
+supported string form. The framework version and reviewed source hash must match;
+future framework changes require reviewing this repair. The file-memory provider,
+backend selection, scope, stored format and root model remain unchanged.
+
+Ordinary Stop and native retirement cover a turn parked for user input. Retirement
+settles its application attempt only after Eve confirms the exact session is reset
+or already inactive; an accepted request alone leaves it stopping.
+
+Actual Preview `3179bea` completes the original three specialists for the Notion
+solution question, returns the typed `evaluated / research_more` assessment, and
+passes CLI WebKit desktop, mobile and reloaded-history checks. A fresh independent
+source-based model review passes with zero material issues against the exact
+answer, fourteen retained customer sources, original product-reference passages
+and actual typed evaluation. Two minor presentation/source-metadata issues remain
+recorded. This is model review of retained sources, not human approval or an audit
+of current private customer configuration. Earlier source-bound Baggu and
+customer-free firewall answers also retain passing independent reviews.
+
+Source retention binds retries to the complete signed input. Native-input control
+turns preserve unanswered requests without approving them. The learning native
+retention probe tolerates only entries that disappear during traversal; its owned
+hosted-cleanup fixture stops the local worker before release and follows the normal
+minute cadence within its original deadline. The 22-session requirement and domain
+retry bounds remain unchanged. Earlier failures and exact validation results are
+retained in the [backend parity audit](docs/legacy-backend-parity-audit.md).
+
+The finite Preview allowance is $40 across three ledgers, with original charges
+and unsettled ceilings preserved and no automatic top-ups. Completed checks'
+native sessions are retired after evidence capture. Production is on schema 072
+with verified runtime grants and actual authenticated HTTP/CLI WebKit acceptance.
+Automatic Git deployment of `main` is restored by the compatibility-safe release
+configuration. These checks do not establish the separate 016 hosted
+recovery/operator/pilot acceptance. See the [release record](docs/production-parity-release-2026-10-15.md).

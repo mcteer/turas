@@ -40,7 +40,7 @@ current platform duration/resources cannot honor this envelope. No hidden retrie
 
 ## Persistent application metadata
 
-### Workspace and session (migration 056)
+### Workspace and session (migration 078)
 
 Add workspace classification `primary | synthetic_pilot`, default `primary`, and an
 operator-owned pilot provisioning identity. A partial unique index permits one
@@ -66,7 +66,7 @@ publications require the same pilot workspace. Recheck at direct read, search,
 citation, derived output and MCP boundaries. Aggregations must filter synthetic
 sources before grouping; an accepted synthetic result cannot count as real benefit.
 
-### Environment control (migration 057)
+### Environment control (migration 079)
 
 `operations_control`: one row per environment; mode (C14), monotonically increasing
 revision, nullable recovery UUID, updated timestamp, owner operation digest, nullable
@@ -82,7 +82,7 @@ before application traffic is bound; an old snapshot's `open` value is never tru
 Unlock checks current ledger/grants, matched bytes, denial/replay reconciliation and
 allowed scope. It never dispatches pending paid work or sends.
 
-### Maintenance status and hosted job lease (migration 057)
+### Maintenance status and hosted job lease (migration 079)
 
 `operations_maintenance_status`: key `(environment_id, class_id)` from a frozen
 server catalog; generation, current lease/expiry, last start/completion/success,
@@ -197,7 +197,7 @@ post-merge evidence. It is an operator record of an actual human decision, not a
 server permission or a trusted JSON `actor` claim. Merge authorization and launch
 approval are separately recorded according to their actual scope.
 
-### Direct staging upload capabilities (057)
+### Direct staging upload capabilities (079)
 
 `operations_upload_capabilities` binds an opaque staging identity to environment,
 workspace, existing principal, exact membership/session, artifact/workforce intent,
@@ -212,7 +212,7 @@ admission are enforced by the database.
 
 ### Immutable operator cost reconciliation
 
-Draft migration 057 also stores `operations_cost_reconciliations`, keyed permanently
+Draft migration 079 also stores `operations_cost_reconciliations`, keyed permanently
 by reservation UUID. Each receipt binds the exact parsed request digest, charge
 evidence digest, operator review digest, integer micro-USD amount and charge kind
 `actual | estimate`, with a server timestamp. Owner accounting inserts the receipt
@@ -231,7 +231,7 @@ exact replay. These metadata receipts are not ninety-day health samples.
 
 The owner domain operation verifies the unchanged current state before appending resolutions. Resolution rows are observational receipts excluded from the content-state hash to avoid a circular proof; their table schema, grants, functions and triggers remain part of that hash. The subsequent explicit control transition rechecks current state and requires a qualifying resolution for every retained quarantine. A resolution does not create verification, revive credentials, open service, or prove an actual hosted recovery.
 
-### Infrastructure health observations (migration 057)
+### Infrastructure health observations (migration 079)
 
 `operations_store_observations` retains environment, active namespace, exact store
 binding hash, code version and verified-write proof hash with database sample time

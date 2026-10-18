@@ -1,6 +1,7 @@
 import yauzl, { type Entry, type ZipFile } from "yauzl";
 
-export type Format = "pdf" | "docx" | "pptx" | "xlsx" | "csv" | "txt" | "md" | "png" | "jpeg";
+export type Format = "pdf" | "docx" | "pptx" | "xlsx" | "csv" | "txt" | "md" | "png" | "jpeg" |
+  "json" | "html" | "rtf" | "epub" | "odt" | "ods" | "odp" | "odg";
 export class ArtifactPreflightError extends Error {
   constructor(readonly code: string) { super(code); this.name = "ArtifactPreflightError"; }
 }
@@ -13,13 +14,23 @@ const byExtension: Record<string, { format: Format; mime: string }> = {
   csv: { format: "csv", mime: "text/csv" }, txt: { format: "txt", mime: "text/plain" },
   md: { format: "md", mime: "text/markdown" }, png: { format: "png", mime: "image/png" },
   jpg: { format: "jpeg", mime: "image/jpeg" }, jpeg: { format: "jpeg", mime: "image/jpeg" },
+  json: { format: "json", mime: "application/json" },
+  log: { format: "txt", mime: "text/plain" },
+  yaml: { format: "txt", mime: "text/yaml" }, yml: { format: "txt", mime: "text/yaml" },
+  xml: { format: "txt", mime: "application/xml" },
+  html: { format: "html", mime: "text/html" }, rtf: { format: "rtf", mime: "application/rtf" },
+  epub: { format: "epub", mime: "application/epub+zip" },
+  odt: { format: "odt", mime: "application/vnd.oasis.opendocument.text" },
+  ods: { format: "ods", mime: "application/vnd.oasis.opendocument.spreadsheet" },
+  odp: { format: "odp", mime: "application/vnd.oasis.opendocument.presentation" },
+  odg: { format: "odg", mime: "application/vnd.oasis.opendocument.graphics" },
 };
 
 export type Preflight = { format: Format; entryNames: string[]; text?: string };
 
 function fail(code: string): never { throw new ArtifactPreflightError(code); }
 
-async function inspectZip(bytes: Buffer, format: "docx" | "pptx" | "xlsx"): Promise<string[]> {
+async function inspectZip(bytes: Buffer, format: "docx" | "pptx" | "xlsx" | "epub" | "odt" | "ods" | "odp" | "odg"): Promise<string[]> {
   return new Promise((resolve, reject) => {
     let done = false;
     let zip: ZipFile | undefined;
@@ -42,9 +53,10 @@ async function inspectZip(bytes: Buffer, format: "docx" | "pptx" | "xlsx"): Prom
         if (done) return;
         done = true;
         zip?.close();
-        const required = format === "docx" ? "word/document.xml" :
-          format === "pptx" ? "ppt/presentation.xml" : "xl/workbook.xml";
-        if (!seen.has("[content_types].xml") || !seen.has(required)) {
+        const office = ["docx","pptx","xlsx"].includes(format);
+        const required = format === "docx" ? "word/document.xml" : format === "pptx" ? "ppt/presentation.xml" :
+          format === "xlsx" ? "xl/workbook.xml" : format === "epub" ? "meta-inf/container.xml" : "content.xml";
+        if (!seen.has(office ? "[content_types].xml" : "mimetype") || !seen.has(required)) {
           reject(new ArtifactPreflightError("type_mismatch")); return;
         }
         resolve(names);
@@ -63,9 +75,10 @@ async function inspectZip(bytes: Buffer, format: "docx" | "pptx" | "xlsx"): Prom
         }
         if ((entry.generalPurposeBitFlag & 1) !== 0) { stop(new ArtifactPreflightError("encrypted")); return; }
         if (/\.(zip|jar|7z|rar)$/i.test(name)) { stop(new ArtifactPreflightError("active_content")); return; }
-        if (/(?:vbaProject|activeX|embeddings|oleObject|scripts?\/|\.exe$|\.dll$)/i.test(name)) {
+        if (/(?:vbaProject|activeX|embeddings|oleObject|scripts?\/|\.exe$|\.dll$|\.js$)/i.test(name)) {
           stop(new ArtifactPreflightError("active_content")); return;
         }
+        if (canonical === "meta-inf/encryption.xml") { stop(new ArtifactPreflightError("encrypted")); return; }
         if (name.endsWith("/")) { zip?.readEntry(); return; }
         zip?.openReadStream(entry, (streamError, stream) => {
           if (streamError || !stream) { stop(new ArtifactPreflightError("malformed")); return; }
@@ -74,7 +87,7 @@ async function inspectZip(bytes: Buffer, format: "docx" | "pptx" | "xlsx"): Prom
           stream.on("data", (chunk: Buffer) => {
             actual += chunk.length;
             if (actual > 20 * 1024 * 1024) { stream.destroy(); stop(new ArtifactPreflightError("entry_expansion_limit")); return; }
-            if (/\.(xml|rels)$/i.test(name)) chunks.push(chunk);
+            if (/\.(xml|rels|opf|xhtml|html)$/i.test(name) || canonical === "mimetype") chunks.push(chunk);
           });
           stream.on("error", () => stop(new ArtifactPreflightError("malformed")));
           stream.on("end", () => {
@@ -82,7 +95,9 @@ async function inspectZip(bytes: Buffer, format: "docx" | "pptx" | "xlsx"): Prom
             if (actual !== entry.uncompressedSize) { stop(new ArtifactPreflightError("malformed")); return; }
             if (chunks.length) {
               const xml = Buffer.concat(chunks).toString("utf8");
-              if (/<!DOCTYPE|<!ENTITY/i.test(xml)) { stop(new ArtifactPreflightError("xxe")); return; }
+              if (canonical === "mimetype" && xml.trim() !== byExtension[format].mime) { stop(new ArtifactPreflightError("type_mismatch")); return; }
+              if (/<!ENTITY|<!DOCTYPE[^>]*\[/i.test(xml) || /\.(xml|rels|opf)$/i.test(name) && /<!DOCTYPE/i.test(xml)) { stop(new ArtifactPreflightError("xxe")); return; }
+              if (/<(?:[\w-]+:)?encryption-data\b/i.test(xml)) { stop(new ArtifactPreflightError("encrypted")); return; }
               if (/TargetMode\s*=\s*["']External["']/i.test(xml)) {
                 stop(new ArtifactPreflightError("external_relationship")); return;
               }
@@ -101,10 +116,16 @@ export async function preflightArtifact(bytes: Uint8Array, filename: string, dec
   if (filename.length > 255 || /[\\/\x00-\x1f\x7f]/.test(filename)) fail("unsafe_filename");
   const extension = filename.split(".").at(-1)?.toLowerCase() ?? "";
   const expected = byExtension[extension];
-  if (!expected || expected.mime !== declaredType) fail("type_mismatch");
+  const alias = (extension === "yaml" || extension === "yml") && declaredType === "application/x-yaml" ||
+    extension === "xml" && declaredType === "text/xml";
+  if (!expected || expected.mime !== declaredType && !alias) fail("type_mismatch");
   const buffer = Buffer.from(bytes);
   const format = expected.format;
-  if (format === "txt" || format === "md" || format === "csv") {
+  if (format === "rtf") {
+    if (!buffer.subarray(0,32).toString('ascii').trimStart().startsWith("{\\rtf")) fail("type_mismatch");
+    return {format,entryNames:[]};
+  }
+  if (format === "txt" || format === "md" || format === "csv" || format === "json" || format === "html") {
     try {
       const text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
       if (text.includes("\0")) fail("invalid_utf8");

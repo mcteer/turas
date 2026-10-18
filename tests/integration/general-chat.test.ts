@@ -1,3 +1,4 @@
+import {settleSyntheticConversationAttempts} from '../fixtures/ordinary-attempt-cleanup';
 import { randomUUID } from "node:crypto";
 import { Client } from "pg";
 import { beforeAll, expect, it } from "vitest";
@@ -12,6 +13,7 @@ import { readCurrentAttemptContext } from "../../lib/server/profiles/attempt-con
 import { boundToolActor } from "../../lib/server/profiles/tool-actor";
 
 const isolatedTestUrl = requireTestDatabaseUrl();
+const ownedConversationIds:string[]=[];
 beforeAll(() => { process.env.DATABASE_URL = isolatedTestUrl; process.env.TURAS_ENVIRONMENT_ID = process.env.TURAS_TEST_ENVIRONMENT_ID; });
 
 it("binds a general turn, deduplicates sends, denies customer tools and rechecks revocation", async () => {
@@ -28,6 +30,7 @@ it("binds a general turn, deduplicates sends, denies customer tools and rechecks
     if (!actor) throw Error("Synthetic identity unavailable");
     const operationId = randomUUID();
     const { conversation } = await createOwnedConversation(actor, { requestKey: operationId });
+    ownedConversationIds.push(conversation.id);
     const binding = await claimBinding(actor, conversation.id, operationId);
     if (binding.state !== "claimed") throw Error("Binding not claimed");
     const nativeId = `wrun_${randomUUID()}`;
@@ -47,5 +50,5 @@ it("binds a general turn, deduplicates sends, denies customer tools and rechecks
     await owner.query("UPDATE login_sessions SET revoked_at=now() WHERE id=$1", [actor.sessionId]);
     await expect(withTransaction(db => readCurrentAttemptContext(db, attempt.attemptId, actor.principalId))).rejects.toMatchObject({ status: 404 });
     await expect(prepareAttempt(actor, conversation.id, nativeId, randomUUID(), "After logout")).rejects.toMatchObject({ status: 401 });
-  } finally { await owner.end(); }
+  } finally{try{await settleSyntheticConversationAttempts(owner,ownedConversationIds);}finally{await owner.end();}}
 });

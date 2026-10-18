@@ -1,3 +1,4 @@
+import {conversationFeature} from "./feature";
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import type { CurrentSession } from "../auth/sessions";
@@ -19,6 +20,7 @@ type BindingRow = {
   binding_claim_token: string | null;
   binding_claim_expires_at: Date | null;
   context_snapshot_schema: string | null;
+  context_audience?:string|null;live_customer_context?:boolean;
   context_login_session_id: string | null;
   context_membership_id: string | null;
 };
@@ -42,6 +44,10 @@ async function ownedBinding(client: PoolClient, session: CurrentSession, id: str
     if (row.context_snapshot_schema !== "general-context-v1") throw hiddenRecord();
     return row;
   }
+  if(row.live_customer_context && (await conversationFeature(client,id)).kind==='normal') {
+    if(row.context_audience!==(session.kind==='internal'?'internal':'delivery'))throw hiddenRecord();
+    return row;
+  }
   if (row.context_snapshot_schema !== "customer-context-v1" ||
       row.context_login_session_id !== session.sessionId ||
       row.context_membership_id !== session.membershipId) {
@@ -58,6 +64,24 @@ export async function lockOwnedBinding(client: PoolClient, session: CurrentSessi
 export async function readOwnedBinding(client: PoolClient, session: CurrentSession,
   id: string): Promise<BindingRow> {
   return ownedBinding(client,session,id,true);
+}
+
+/** Cleanup releases only the owner's work; it never returns customer content.
+ * A withdrawn source or customer grant must not prevent stopping native work. */
+export async function lockOwnedOrdinaryCleanup(client: PoolClient, session: CurrentSession,
+  nativeSessionId: string): Promise<{id:string}> {
+  const owned = await client.query(`SELECT id FROM conversations WHERE eve_session_id=$1
+    AND owner_principal_id=$2 AND workspace_id=$3 AND environment_id=$4`,
+    [nativeSessionId,session.principalId,session.workspaceId,getServerConfig().TURAS_ENVIRONMENT_ID]);
+  if (!owned.rowCount) throw hiddenRecord();
+  await lockWorkspaceActor(client, session);
+  const result = await client.query<{id:string}>(`
+    SELECT id FROM conversations WHERE eve_session_id=$1 AND owner_principal_id=$2
+      AND workspace_id=$3 AND environment_id=$4 AND binding_state='bound' FOR UPDATE`,
+    [nativeSessionId, session.principalId, session.workspaceId, getServerConfig().TURAS_ENVIRONMENT_ID]);
+  const row=result.rows[0];
+  if (!row || (await conversationFeature(client,row.id)).kind!=='normal') throw hiddenRecord();
+  return row;
 }
 
 export type BindingClaim =

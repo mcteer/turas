@@ -19,7 +19,7 @@ export async function preparePilotRecoveryOperator(args=process.argv.slice(2)){
  await promisify(execFile)(resolve('node_modules/esbuild/bin/esbuild'),['infra/pilot/recovery-operator/handler.ts','--bundle','--platform=node','--format=cjs','--target=node24','--external:pg-native','--outfile='+join(root,'src/runtime.cjs')],{timeout:60000,maxBuffer:1048576});
  const runtimeDigest=createHash('sha256').update(await readFile(join(root,'src/runtime.cjs'))).digest('hex');
  const manifest=JSON.parse(await readFile('migrations/manifest.json','utf8'));
- if(manifest.version!==57||manifest.migrations.length!==57)throw Error('Exact current operator migration ledger required');
+ if(manifest.version!==79||manifest.migrations.length!==79)throw Error('Exact current operator migration ledger required');
  const ledger=manifest.migrations.map((row:{file:string})=>({name:row.file.replace(/\.cjs$/,'')})).sort((a:{name:string},b:{name:string})=>a.name.localeCompare(b.name));
  const metadata={contract:'pilot-recovery-operator-build-v1',source:{...source,ledgerDigest:recoveryDigest(ledger)},runtimeDigest,nativeManifestDigest:client.manifestDigest};
  await writeFile(join(root,'src/source.json'),JSON.stringify(metadata),{mode:0o600,flag:'wx'});

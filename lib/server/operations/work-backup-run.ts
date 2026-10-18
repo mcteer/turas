@@ -63,7 +63,7 @@ async function runWorkBackup(input:Parameters<typeof runScheduledWorkBackup>[0],
   // Source admission is read-only and precedes the actual bounded operation.
   const primary=new Client({connectionString:config.sourceConnection,connectionTimeoutMillis:5000,statement_timeout:5000});let revision:number;
   try{await primary.connect();const rows=(await primary.query('SELECT c.mode,c.revision,e.schema_version FROM operations_control c JOIN turas_environment e ON e.environment_id=c.environment_id WHERE c.environment_id=$1',[config.environmentId])).rows;
-   if(rows.length!==1||rows[0].mode!=='open'||Number(rows[0].schema_version)!==57)throw Error('Current open work backup source required');revision=Number(rows[0].revision);
+   if(rows.length!==1||rows[0].mode!=='open'||Number(rows[0].schema_version)!==79)throw Error('Current open work backup source required');revision=Number(rows[0].revision);
   }finally{await primary.end();}
   if(!dispatched){await transitionWorkBackupCost(archive,config.cost,reservations,'dispatched');dispatched=true;}
   const id=randomUUID();key=deriveWorkBackupKey(input.key.master,{installationId:config.installationId,environmentId:config.environmentId,archiveId:id});

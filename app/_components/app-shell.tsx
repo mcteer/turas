@@ -22,6 +22,7 @@ function SidebarContent({ role, loginName, csrfToken, staffing, kind, workspaceC
     <ConversationList csrfToken={csrfToken} navigation={<nav className="workspace-nav" aria-label="Workspace">
       <p className="nav-group-label">Workspace</p>
       {navItem("/customers", "Customer Profiles", "customers")}
+      {kind === "internal" && navItem("/context-approvals", "Context Approvals", "plan")}
       {navItem("/knowledge", "Shared Knowledge", "knowledge")}
       {navItem('/learning','Learning','knowledge')}
       {navItem('/settings/connections','Connections','access')}
@@ -30,6 +31,8 @@ function SidebarContent({ role, loginName, csrfToken, staffing, kind, workspaceC
       {customerScope && <><p className="nav-group-label">Current Customer</p>{navItem(`/customers/${customerScope}/reports`, "Customer Reports", "plan")}</>}
       {staffing.resources && <p className="nav-group-label">Delivery</p>}
       {staffing.resources && navItem("/staffing", "Staffing Operations", "operations")}
+      {kind === "internal" && navItem("/portfolio", "Delivery Operations", "operations")}
+      {kind === "internal" && navItem("/operating-model", "Services Operating Model", "finance")}
       {staffing.resources && navItem("/staffing/resources", "Resources and Skills", "people")}
       {staffing.imports && navItem("/staffing/imports", "Workforce Imports", "upload")}
       {staffing.finance && navItem("/staffing/finance", "Planning Finance", "finance")}

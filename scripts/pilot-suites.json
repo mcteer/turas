@@ -93,7 +93,7 @@
     },
     {
       "file": "tests/integration/pilot/isolation.test.ts",
-      "expectedCases": 8,
+      "expectedCases": 9,
       "cases": [
         "denies pilot publications in primary reads",
         "denies pilot publications in primary search",
@@ -102,7 +102,8 @@
         "denies pilot sources in primary native context",
         "denies foreign workspace job publication",
         "denies pilot content to primary MCP",
-        "permits eligible sanitized primary knowledge in pilot"
+        "permits eligible sanitized primary knowledge in pilot",
+        "keeps own pilot publication current, denies foreign workspace, and retires withdrawn publication"
       ]
     },
     {
@@ -1445,7 +1446,7 @@
       "file": "tests/integration/pilot/preview-safety-restore.test.ts",
       "expectedCases": 1,
       "cases": [
-        "restores an explicit schema 38 Preview snapshot through 57 and keeps both runtime roles denied"
+        "restores an explicit schema 38 Preview snapshot through 79 and keeps both runtime roles denied"
       ]
     },
     {
@@ -1476,6 +1477,15 @@
       "expectedCases": 1,
       "cases": [
         "reviews six located personnel cells through ordinary HTTP and keeps the original outside customer retrieval"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-model-holds.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "retains missing post-backup token and dollar operations without refunding their original scopes",
+        "quarantines existing unknown model holds and denies runtime zero settlements",
+        "preserves known accounting alongside an earlier unknown hold and inherits both observations"
       ]
     }
   ],

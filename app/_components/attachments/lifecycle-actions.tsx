@@ -2,6 +2,7 @@
 import {uploadPrivateOriginal} from "../direct-upload";
 
 import { useEffect, useState } from "react";
+import {artifactFileTypes as types,artifactFileAccept} from "../../../lib/contracts/artifact-file-types";
 
 type Source = { id: string; state: string; lifecycleGeneration: number;
   canManageLifecycle: boolean; submitted: boolean };
@@ -61,12 +62,6 @@ export function LifecycleActions({ source, onChanged }: { source: Source; onChan
     const completeKey = completionKey ?? crypto.randomUUID();
     setReplacementKey(requestKey); setCompletionKey(completeKey); setBusy(true);
     setMessage("Creating replacement upload…");
-    const types: Record<string,string> = { pdf: "application/pdf",
-      docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-      xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      csv: "text/csv",txt: "text/plain",md: "text/markdown",
-      png: "image/png",jpg: "image/jpeg",jpeg: "image/jpeg" };
     try {
       const session = await fetch("/api/auth/session", { cache: "no-store" });
       if (!session.ok) throw new Error("Session unavailable");
@@ -111,7 +106,7 @@ export function LifecycleActions({ source, onChanged }: { source: Source; onChan
       <h4>Replace with a New Version</h4><p>The old version and its review history stay separate.</p>
       <label className="field-label" htmlFor={`artifact-replacement-${source.id}`}>Replacement file</label>
       <input id={`artifact-replacement-${source.id}`} type="file"
-        accept=".pdf,.docx,.pptx,.xlsx,.csv,.txt,.md,.png,.jpg,.jpeg" disabled={busy}
+        accept={artifactFileAccept} disabled={busy}
         onChange={(event) => { setReplacementFile(event.target.files?.[0] ?? null); setReplacementKey(null); }} />
       <label className="field-label" htmlFor={`artifact-replacement-rights-${source.id}`}>Rights note</label>
       <input id={`artifact-replacement-rights-${source.id}`} className="field" maxLength={500}

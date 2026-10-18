@@ -1,3 +1,5 @@
+import {processOrdinaryNativeRetirement} from '../conversations/native-retirement-recovery';
+import {cleanupNativeUploads} from '../conversations/native-uploads';
 import type {AttachSessionFn} from 'eve/channels';
 import {randomUUID} from 'node:crypto';
 import {query} from '../db/client';
@@ -33,7 +35,7 @@ import {runMcpMaintenanceTick} from '../mcp/retention';
  * timestamps and counters, never source payloads or customer labels. */
 const backlogSql:Record<string,string>={
  conversation:"SELECT greatest(j.deadline_at,j.next_attempt_at,coalesce(j.lease_expires_at,j.deadline_at)) AS due_at FROM watchdog_jobs j JOIN response_attempts a ON a.id=j.attempt_id JOIN conversations c ON c.id=a.conversation_id WHERE c.environment_id=$1 AND j.state IN ('pending','leased','cancel_requested')",
- artifacts:"SELECT greatest(next_attempt_at,coalesce(lease_expires_at,next_attempt_at)) AS due_at FROM artifact_cleanup_jobs WHERE environment_id=$1 AND state<>'done' UNION ALL SELECT CASE WHEN state='leased' THEN least(lease_expires_at,deadline_at) ELSE next_attempt_at END FROM artifact_extraction_runs WHERE environment_id=$1 AND state IN ('queued','leased')",
+ artifacts:"SELECT greatest(next_attempt_at,coalesce(lease_expires_at,next_attempt_at)) AS due_at FROM artifact_cleanup_jobs WHERE environment_id=$1 AND state<>'done' UNION ALL SELECT CASE WHEN state='leased' THEN least(lease_expires_at,deadline_at) ELSE next_attempt_at END FROM artifact_extraction_runs WHERE environment_id=$1 AND state IN ('queued','leased') UNION ALL SELECT next_attempt_at FROM ordinary_native_retirements WHERE environment_id=$1 AND state='requested' UNION ALL SELECT CASE WHEN u.state IN('purged','expired','cancelled') THEN u.created_at ELSE u.expires_at END FROM ordinary_native_uploads u WHERE u.environment_id=$1 AND (u.state IN('uploading','ready') OR u.state IN('purged','expired','cancelled') AND EXISTS(SELECT 1 FROM ordinary_native_upload_chunks chunks WHERE chunks.upload_id=u.id))",
  workforce:"SELECT greatest(not_before,coalesce(lease_expires_at,not_before)) AS due_at FROM workforce_cleanup_jobs WHERE environment_id=$1 AND state<>'completed' UNION ALL SELECT CASE WHEN state='running' THEN least(lease_expires_at,deadline_at) ELSE created_at END FROM workforce_import_jobs WHERE environment_id=$1 AND state IN ('queued','running')",
  retrieval:"SELECT CASE WHEN state='leased' THEN lease_until ELSE created_at END AS due_at FROM retrieval_jobs WHERE environment_id=$1 AND state IN ('queued','leased','failed','unconfirmed')",
  'research-freshness':"SELECT due_at FROM research_review_due WHERE environment_id=$1 AND state='due'",
@@ -61,7 +63,7 @@ export function createMaintenanceBindings(options:{attachSession?:AttachSessionF
  const workerId=randomUUID();
  const steps:Record<string,((input:Parameters<MaintenanceTick>[0])=>Promise<unknown>)[]>={
   conversation:[async({limit,signal})=>{for(const job of await claimDueJobs(workerId,Math.min(1,limit))){signal.throwIfAborted();try{const result=options.cancelDue?await options.cancelDue(job.attemptId):options.attachSession?await performMaintenance({action:'cancel_due',attemptId:job.attemptId,environmentId:getServerConfig().TURAS_ENVIRONMENT_ID},options.attachSession):(()=>{throw Error('Cancellation transport unavailable');})();await finishDueJob(workerId,job.attemptId,result);}catch{await finishDueJob(workerId,job.attemptId,'retry','maintenance_call_failed');throw Error('Conversation cancellation unavailable');}}await heartbeatWorker(workerId);} ],
-  artifacts:[input=>runLocalReconciliation(input),async()=>{const job=await claimArtifactCleanup();if(job)await runArtifactCleanup(job);},()=>reconcileExpiredArtifactIntents(),()=>reconcileArtifactOrphans(),()=>processNativeRetirement()],
+  artifacts:[()=>processOrdinaryNativeRetirement(),()=>cleanupNativeUploads(),input=>runLocalReconciliation(input),async()=>{const job=await claimArtifactCleanup();if(job)await runArtifactCleanup(job);},()=>reconcileExpiredArtifactIntents(),()=>reconcileArtifactOrphans(),()=>processNativeRetirement()],
   workforce:[()=>expireStaffingReservations(),()=>runWorkforceCleanupTick(),()=>settleDueStaffingAdvisories()],
   retrieval:[()=>runRetrievalLifecycleTick(),()=>runRetrievalCleanupTick()],
   'research-freshness':[()=>markDueResearch()],knowledge:[()=>suspendStaleKnowledge()],plans:[()=>runPlanCleanupTick()],
@@ -74,7 +76,7 @@ export function createMaintenanceBindings(options:{attachSession?:AttachSessionF
  return maintenanceClasses.map(definition=>({id:definition.id,enabled:true,optional:false,intervalMs:definition.intervalMs,tick:async input=>{
   input.signal.throwIfAborted();
   const marker=(await query('SELECT environment_id,schema_version FROM turas_environment')).rows;
-  if(marker.length!==1||marker[0].environment_id!==getServerConfig().TURAS_ENVIRONMENT_ID||Number(marker[0].schema_version)!==57)throw Error('Exact maintenance schema required');
+  if(marker.length!==1||marker[0].environment_id!==getServerConfig().TURAS_ENVIRONMENT_ID||Number(marker[0].schema_version)!==79)throw Error('Exact maintenance schema required');
   const operations=steps[definition.id];if(!operations)throw Error('Missing required maintenance binding');
   for(const operation of operations){input.signal.throwIfAborted();await operation(input);}
   input.signal.throwIfAborted();return maintenanceBacklog(definition.id);

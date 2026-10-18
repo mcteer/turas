@@ -8,6 +8,7 @@ import { MaturityAssessment } from "./maturity-assessment";
 import { EvidenceDetail } from "./evidence-detail";
 import { RecordHistory } from "./record-history";
 import { ConflictReview,TypedConflictReview } from "./conflict-review";
+import { CustomerSummary } from "./customer-summary";
 import { EvidenceSearch } from "./evidence-search";
 
 type ApprovedExcerpt = { sourceLabel: string; excerpt: string; attestation: string;
@@ -20,10 +21,11 @@ type Fact = { id: string; recordId: string; workloadId: string | null; kind: str
 type Profile = { customer: { id: string; displayName: string; synthetic: boolean };
   workloads: { id: string; displayName: string; lifecycle: string }[];
   canReview: boolean;
+  activeDelivery?: { state: "ready" | "review_required" | "unavailable"; activeCount: number | null };
   publicResearchCoverage?: { asOf: string; description?: string; coverage: { area: string; state: string; explanation: string }[]; unknowns: string[] } | null;
   openConflicts?: { id: string; state: "flagged" | "confirmed"; version: number;
     firstRevisionId: string; secondRevisionId: string; rationale: string }[];
-  acceptedFacts: Fact[]; attributedResearch: { sourceRevisionId: string; title: string;
+  acceptedFacts: Fact[]; attributedResearch: { sourceRevisionId: string; title: string; location: string;
     supportedClaim: string; quality: { band: string; Q: number } }[] };
 type Envelope = { data?: Profile; error?: { message: string } };
 
@@ -77,6 +79,11 @@ export function ProfileOverview({ customerId }: { customerId: string }) {
   const [internal,setInternal]=useState(false);
   useEffect(()=>{const controller=new AbortController();void fetch("/api/auth/session",{cache:"no-store",signal:controller.signal}).then(async response=>{const body=await response.json() as {data?:{membership:{kind:string}}};setInternal(response.ok&&body.data?.membership.kind==="internal");}).catch(()=>setInternal(false));return()=>controller.abort();},[customerId]);
   const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!selectedSourceId) return;
+    const heading = document.getElementById("source-detail-heading");
+    heading?.scrollIntoView({ block: "start" }); heading?.focus({ preventScroll: true });
+  }, [selectedSourceId]);
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
   useEffect(() => {
     const refresh = () => setRetry((value) => value + 1);
@@ -107,16 +114,20 @@ export function ProfileOverview({ customerId }: { customerId: string }) {
   }, [customerId, workloadId, retry]);
 
   return <main className="profile-page">
-    <nav aria-label="Breadcrumb" className="profile-breadcrumb"><Link href="/customers">Customers</Link><span aria-hidden="true">/</span><span>Profile</span></nav>
+    <nav aria-label="Breadcrumb" className="profile-breadcrumb"><Link href="/customers">Customer Profiles</Link><span aria-hidden="true">/</span><span>Profile</span></nav>
     {status === "loading" && <p role="status" className="profile-state">Loading customer profile…</p>}
-    {status === "denied" && <div role="alert" className="profile-state"><h1>Profile Unavailable</h1><p>This customer is unavailable to your account.</p><Link href="/customers">Back to Customers</Link></div>}
+    {status === "denied" && <div role="alert" className="profile-state"><h1>Profile Unavailable</h1><p>This customer is unavailable to your account.</p><Link href="/customers">Back to Customer Profiles</Link></div>}
     {status === "unavailable" && <div role="alert" className="profile-state"><h1>Could Not Load This Profile</h1><button type="button" className="secondary-button" onClick={() => setRetry((value) => value + 1)}>Retry</button></div>}
     {status === "ready" && profile && <>
       <header className="profile-header"><div><p className="profile-eyebrow">Customer Profile</p><h1>{profile.customer.displayName}</h1>
-        <p className="muted">Accepted customer context and attributed research</p></div>
+        <p className="muted">Accepted customer context and researched facts</p></div>
         <div className="profile-header-actions">{profile.customer.synthetic && <span className="profile-badge">Synthetic demo</span>}
+          <Link className="secondary-button" href={`/customers/${customerId}/sources`}>Research Sources</Link>
+          <Link className="secondary-button" href={`/customers/${customerId}/journey`}>Customer Journey</Link>
           {profile.canReview && <Link className="secondary-button" href={`/customers/${customerId}/review`}>Review Proposals</Link>}</div>
       </header>
+      <CustomerSummary facts={profile.acceptedFacts} research={profile.attributedResearch} description={profile.publicResearchCoverage?.description}
+        workloadId={workloadId || null} delivery={profile.activeDelivery} onSource={setSelectedSourceId} />
       <div className="profile-toolbar"><label htmlFor="profile-workload">Workload</label>
         <select id="profile-workload" className="field" value={workloadId} onChange={(event) => setWorkloadId(event.target.value)}>
           <option value="">All workloads</option>
@@ -126,7 +137,7 @@ export function ProfileOverview({ customerId }: { customerId: string }) {
         <Link className="secondary-button" href={`/customers/${customerId}/support`}>Support Guidance</Link>{internal&&<><Link className="secondary-button" href={`/customers/${customerId}/expansion`}>Expansion Opportunities</Link><Link className="secondary-button" href={`/customers/${customerId}/product-gaps`}>Product Gaps</Link></>}</div>
       <EvidenceSearch customerId={customerId} workloadId={workloadId || undefined} />
       <TypedConflictReview customerId={customerId} canReview={profile.canReview} />
-      {profile.acceptedFacts.length === 0 && <div className="profile-state"><h2>No Accepted Facts Yet</h2><p>Submitted context appears here after review. An empty section is not a negative assessment.</p></div>}
+      {profile.acceptedFacts.length === 0 && <div className="profile-state"><h2>No Reviewed Human Claims Yet</h2><p>Human-submitted claims appear here after review. Independently checked research is available as factual context below.</p></div>}
       {order.map((kind) => {
         const facts = profile.acceptedFacts.filter((fact) => fact.kind === kind);
         if (!facts.length) return null;
@@ -145,15 +156,15 @@ export function ProfileOverview({ customerId }: { customerId: string }) {
       {selectedRecordId && <RecordHistory key={selectedRecordId} customerId={customerId} recordId={selectedRecordId}
         scope={scopeLabel(profile.acceptedFacts.find((fact) => fact.recordId === selectedRecordId)?.workloadId ?? null)}
         onClose={() => setSelectedRecordId(null)} />}
-      <section className="profile-section" aria-labelledby="profile-research"><div className="profile-section-head"><h2 id="profile-research">Attributed Research</h2><span>{profile.attributedResearch.length}</span></div>
+      <section className="profile-section" aria-labelledby="profile-research"><div className="profile-section-head"><h2 id="profile-research">Researched Facts</h2><span>{profile.attributedResearch.length}</span></div>
         {profile.publicResearchCoverage && <details className="profile-card"><summary>Public Research Coverage</summary>
           <p className="muted">Checked {new Date(profile.publicResearchCoverage.asOf).toLocaleDateString()}. Public evidence does not establish private engagement or formal maturity.</p>
           {profile.publicResearchCoverage.description && <><h3>Attributed Public Overview</h3><p>{profile.publicResearchCoverage.description}</p></>}
           <ul>{profile.publicResearchCoverage.coverage.map(area => <li key={area.area}><strong>{researchAreaTitles[area.area] ?? "Public Research"}</strong>: {researchStateTitles[area.state] ?? "Incomplete"} — {area.explanation}</li>)}</ul>
           {profile.publicResearchCoverage.unknowns.length > 0 && <><h3>Unknowns</h3><ul>{profile.publicResearchCoverage.unknowns.map((item, index) => <li key={index}>{item}</li>)}</ul></>}
         </details>}
-        {profile.attributedResearch.length === 0 ? <p className="muted">No attributed research is available.</p> :
-          <div className="profile-grid">{profile.attributedResearch.map((item) => <article key={item.sourceRevisionId} className="profile-card"><h3>{item.title}</h3><p>{item.supportedClaim}</p><span className="profile-badge">{item.quality.band}</span><button type="button" className="secondary-button" onClick={() => setSelectedSourceId(item.sourceRevisionId)}>View source</button></article>)}</div>}
+        {profile.attributedResearch.length === 0 ? <p className="muted">No independently checked research is available.</p> :
+          <div className="profile-grid">{profile.attributedResearch.map((item) => <article key={item.sourceRevisionId} className="profile-card"><h3>{item.title}</h3><p>{item.supportedClaim}</p><span className="profile-badge">Accepted Research</span><span className="profile-badge">{item.quality.band}</span><button type="button" className="secondary-button" onClick={() => setSelectedSourceId(item.sourceRevisionId)}>View source</button></article>)}</div>}
       </section>
       {selectedSourceId && <EvidenceDetail customerId={customerId} sourceRevisionId={selectedSourceId}
         canReview={profile.canReview}

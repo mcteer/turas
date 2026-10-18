@@ -22,7 +22,7 @@ export async function reconcileOwnedCredentialDenials(db:Client|PoolClient,raw:u
   const owned=await promisify(execFile)('docker',['inspect','--format','{{index .Config.Labels \"turas.016.owner\"}}','turas-016-check-'+token],{timeout:5000,maxBuffer:8192});
   if(owned.stdout.trim()!==token)throw Error('Actual owned isolated credential target required');
   const marker=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;
-  if(marker.length!==1||marker[0].environment_id!==scope.environmentId||Number(marker[0].schema_version)!==57)throw Error('Exact credential recovery target differs');
+  if(marker.length!==1||marker[0].environment_id!==scope.environmentId||Number(marker[0].schema_version)!==79)throw Error('Exact credential recovery target differs');
   await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16020))',[scope.environmentId]);await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[scope.environmentId]);
   const control=(await db.query('SELECT mode,revision,recovery_id FROM operations_control WHERE environment_id=$1 FOR UPDATE',[scope.environmentId])).rows[0];
   if(control?.mode!=='locked'||Number(control.revision)!==scope.controlRevision||control.recovery_id!==scope.recoveryId)throw Error('Exact locked credential reconciliation required');
@@ -30,7 +30,7 @@ export async function reconcileOwnedCredentialDenials(db:Client|PoolClient,raw:u
   verifyRecoveryDenialSnapshot(snapshot,{environmentId:scope.environmentId,contextDigest:scope.snapshotDigest,after:scope.backupCapturedAt,now});
   const index=(name:string)=>new Map(snapshot.tables.find(table=>table.name===name)!.rows.map(row=>[uuid.parse(row.identity.id),row.status]));
   const principals=index('principals'),memberships=index('memberships'),sessions=index('login_sessions'),connections=index('mcp_connections'),grants=index('customer_grants');
-  const workspaces=snapshot.contract==='pilot-denial-replay-snapshot-v6'?index('workspaces'):new Map<string,Record<string,unknown>>(),organizations=snapshot.contract==='pilot-denial-replay-snapshot-v6'?index('partner_organizations'):new Map<string,Record<string,unknown>>();
+  const workspaces=['pilot-denial-replay-snapshot-v6','pilot-denial-replay-snapshot-v7'].includes(snapshot.contract)?index('workspaces'):new Map<string,Record<string,unknown>>(),organizations=['pilot-denial-replay-snapshot-v6','pilot-denial-replay-snapshot-v7'].includes(snapshot.contract)?index('partner_organizations'):new Map<string,Record<string,unknown>>();
   const targetWorkspaces=new Map((await db.query('SELECT id,active,classification,pilot_environment_id,pilot_provisioning_id FROM workspaces FOR SHARE')).rows.map(row=>[row.id,row]));
   const workspaceCurrent=(id:string)=>{const current=workspaces.get(id),target=targetWorkspaces.get(id);return current?.active===true&&target?.active===true&&(snapshot.schemaVersion===55&&current.classification===undefined?target.classification==='primary'&&target.pilot_environment_id===null&&target.pilot_provisioning_id===null:current.classification===target.classification&&current.pilot_environment_id===target.pilot_environment_id&&current.pilot_provisioning_id===target.pilot_provisioning_id);};
   const targetPrincipals=new Map((await db.query('SELECT id,active FROM principals FOR SHARE')).rows.map(row=>[row.id,row]));
@@ -75,7 +75,7 @@ export async function reconcileOwnedCredentialDenials(db:Client|PoolClient,raw:u
   let retiredProjections=0,suspendedPublications=0,clearedAcceptedHeads=0,withdrawnArtifacts=0,withdrawnResearch=0;
   const auditDenial=async(kind:string,id:string,generation:number)=>{await db.query(`INSERT INTO operations_source_denials(environment_id,recovery_id,control_revision,source_kind,source_id,observed_target_generation,snapshot_digest,source_captured_at)
    VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT DO NOTHING`,[scope.environmentId,scope.recoveryId,scope.controlRevision,kind,id,generation,scope.snapshotDigest,snapshot.capturedAt]);};
-  if(['pilot-denial-replay-snapshot-v4','pilot-denial-replay-snapshot-v5','pilot-denial-replay-snapshot-v6'].includes(snapshot.contract)){
+  if(['pilot-denial-replay-snapshot-v4','pilot-denial-replay-snapshot-v5','pilot-denial-replay-snapshot-v6','pilot-denial-replay-snapshot-v7'].includes(snapshot.contract)){
    const records=index('profile_records'),artifacts=index('artifact_versions'),research=index('evidence_source_revisions');
    const targetHeads=(await db.query('SELECT id,workspace_id,customer_id,current_accepted_revision_id,version FROM profile_records WHERE current_accepted_revision_id IS NOT NULL FOR UPDATE')).rows;
    const changedCustomers=new Set<string>();
@@ -112,7 +112,7 @@ export async function reconcileOwnedCredentialDenials(db:Client|PoolClient,raw:u
    const published=(await db.query("SELECT id,revision_id,head_generation FROM knowledge_publications WHERE environment_id=$1 AND state='published' FOR UPDATE",[scope.environmentId])).rows;
    for(const publication of published){const current=publications.get(publication.id);
     if(!current||current.state!=='published'||current.revision_id!==publication.revision_id||Number(current.head_generation)!==Number(publication.head_generation)){
-     if(['pilot-denial-replay-snapshot-v4','pilot-denial-replay-snapshot-v5','pilot-denial-replay-snapshot-v6'].includes(snapshot.contract))await auditDenial('shared_publication',publication.revision_id,Number(publication.head_generation));
+     if(['pilot-denial-replay-snapshot-v4','pilot-denial-replay-snapshot-v5','pilot-denial-replay-snapshot-v6','pilot-denial-replay-snapshot-v7'].includes(snapshot.contract))await auditDenial('shared_publication',publication.revision_id,Number(publication.head_generation));
      suspendedPublications+=(await db.query("UPDATE knowledge_publications SET state='suspended',head_generation=head_generation+1,updated_at=clock_timestamp() WHERE id=$1 AND state='published'",[publication.id])).rowCount??0;
     }
    }
@@ -125,7 +125,7 @@ export async function reconcileOwnedCredentialDenials(db:Client|PoolClient,raw:u
    }
   }
   let permanentReplayFencesAdded=0;
-  if(['pilot-denial-replay-snapshot-v4','pilot-denial-replay-snapshot-v5','pilot-denial-replay-snapshot-v6'].includes(snapshot.contract)){
+  if(['pilot-denial-replay-snapshot-v4','pilot-denial-replay-snapshot-v5','pilot-denial-replay-snapshot-v6','pilot-denial-replay-snapshot-v7'].includes(snapshot.contract)){
    const replayEntries=snapshot.tables.map(entry=>({name:entry.name,replayKeyColumns:entry.replayKeyColumns??[],keys:entry.rows.flatMap(row=>row.replayKeys??[])}));
    const inheritedFence=z.strictObject({environment_id:z.string(),table_name:z.string().regex(/^[a-z_][a-z0-9_]*$/),key_columns:z.array(z.string().regex(/^[a-z_][a-z0-9_]*$/)).min(1).max(16),key_digest:z.string().regex(/^[a-f0-9]{64}$/)});
    for(const row of snapshot.tables.find(entry=>entry.name==='operations_replay_fences')?.rows??[]){
@@ -147,7 +147,42 @@ export async function reconcileOwnedCredentialDenials(db:Client|PoolClient,raw:u
     }
    }
   }
+  let typedModelHoldsAdded=0;
+  if(snapshot.contract==='pilot-denial-replay-snapshot-v7'){
+   const holds:Array<{kind:'ordinary_tokens'|'parity_dollars';id:string;scopeId:string;ceiling:number;actual:number|null;settledAt:string|null;evidenceKind:'operation'|'inherited_hold';observedDigest:string;observedAt:string;observedDigestKind:'operation_row'|'snapshot'}>=[];
+   for(const entry of snapshot.tables){
+    if(!['ordinary_model_operations','parity_evaluation_operations','operations_recovery_model_holds'].includes(entry.name))continue;
+    for(const row of entry.rows){
+     const actualValue=entry.name==='ordinary_model_operations'||row.identity.operation_kind==='ordinary_tokens'?row.status.actual_tokens:row.status.actual_micro_usd;
+     const actual=actualValue==null?null:z.coerce.number().int().nonnegative().safe().parse(actualValue),settledAt=row.status.settled_at==null?null:z.iso.datetime({offset:true}).parse(row.status.settled_at);
+     if(entry.name==='operations_recovery_model_holds'){
+      const kind=z.enum(['ordinary_tokens','parity_dollars']).parse(row.identity.operation_kind);
+      holds.push({kind,id:uuid.parse(row.identity.operation_id),scopeId:uuid.parse(row.status.scope_id),actual,settledAt,evidenceKind:'inherited_hold',observedDigestKind:z.enum(['operation_row','snapshot']).parse(row.status.evidence_digest_kind),observedDigest:z.string().regex(/^[a-f0-9]{64}$/).parse(row.status.evidence_digest),observedAt:z.iso.datetime({offset:true}).parse(row.status.source_captured_at),ceiling:z.coerce.number().int().nonnegative().safe().parse(kind==='ordinary_tokens'?row.status.ceiling_tokens:row.status.ceiling_micro_usd)});
+     }else{
+      const ordinary=entry.name==='ordinary_model_operations';
+      holds.push({kind:ordinary?'ordinary_tokens':'parity_dollars',id:uuid.parse(row.identity.id),scopeId:uuid.parse(ordinary?row.status.conversation_id:row.status.budget_id),actual,settledAt,evidenceKind:'operation',observedDigestKind:'snapshot',observedDigest:snapshot.snapshotDigest,observedAt:snapshot.capturedAt,ceiling:z.coerce.number().int().nonnegative().safe().parse(ordinary?row.status.ceiling_tokens:row.status.ceiling_micro_usd)});
+     }
+    }
+   }
+   for(const hold of holds)typedModelHoldsAdded+=(await db.query(`INSERT INTO operations_recovery_model_holds(environment_id,operation_kind,operation_id,scope_id,ceiling_tokens,ceiling_micro_usd,evidence_digest,source_captured_at,recovery_id,control_revision,actual_tokens,actual_micro_usd,settled_at,evidence_digest_kind)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'snapshot') ON CONFLICT(environment_id,operation_kind,operation_id) DO NOTHING`,[scope.environmentId,hold.kind,hold.id,hold.scopeId,hold.kind==='ordinary_tokens'?hold.ceiling:null,hold.kind==='parity_dollars'?hold.ceiling:null,scope.snapshotDigest,snapshot.capturedAt,scope.recoveryId,scope.controlRevision,hold.kind==='ordinary_tokens'?hold.actual:null,hold.kind==='parity_dollars'?hold.actual:null,hold.settledAt])).rowCount??0;
+   for(const hold of holds){
+    const retained=(await db.query('SELECT scope_id,ceiling_tokens,ceiling_micro_usd FROM operations_recovery_model_holds WHERE environment_id=$1 AND operation_kind=$2 AND operation_id=$3',[scope.environmentId,hold.kind,hold.id])).rows[0];
+    if(!retained||retained.scope_id!==hold.scopeId||Number(hold.kind==='ordinary_tokens'?retained.ceiling_tokens:retained.ceiling_micro_usd)!==hold.ceiling)throw Error('Recovered model hold identity differs');
+   }
+   const observations=holds.map(hold=>({kind:hold.kind,id:hold.id,ceiling:hold.ceiling,actual:hold.actual,settledAt:hold.settledAt,evidenceKind:hold.evidenceKind,observedDigest:hold.observedDigest,observedAt:hold.observedAt,observedDigestKind:hold.observedDigestKind}));
+   for(const row of snapshot.tables.find(entry=>entry.name==='operations_recovery_model_observations')?.rows??[]){
+    const kind=z.enum(['ordinary_tokens','parity_dollars']).parse(row.identity.operation_kind),ordinary=kind==='ordinary_tokens';
+    observations.push({kind,id:uuid.parse(row.identity.operation_id),ceiling:z.coerce.number().int().nonnegative().safe().parse(ordinary?row.status.ceiling_tokens:row.status.ceiling_micro_usd),
+     actual:(ordinary?row.status.actual_tokens:row.status.actual_micro_usd)==null?null:z.coerce.number().int().nonnegative().safe().parse(ordinary?row.status.actual_tokens:row.status.actual_micro_usd),
+     settledAt:row.status.settled_at==null?null:z.iso.datetime({offset:true}).parse(row.status.settled_at),evidenceKind:z.enum(['operation','inherited_hold']).parse(row.identity.evidence_kind),
+     observedDigestKind:z.enum(['operation_row','snapshot']).parse(row.status.observed_digest_kind),observedDigest:z.string().regex(/^[a-f0-9]{64}$/).parse(row.identity.observed_evidence_digest),observedAt:z.iso.datetime({offset:true}).parse(row.status.observed_captured_at)});
+   }
+   for(const observation of observations)await db.query(`INSERT INTO operations_recovery_model_observations(environment_id,operation_kind,operation_id,observed_evidence_digest,observed_captured_at,evidence_kind,ceiling_tokens,ceiling_micro_usd,actual_tokens,actual_micro_usd,settled_at,snapshot_digest,source_captured_at,recovery_id,control_revision,observed_digest_kind)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) ON CONFLICT(environment_id,operation_kind,operation_id,observed_evidence_digest,evidence_kind) DO NOTHING`,[scope.environmentId,observation.kind,observation.id,observation.observedDigest,observation.observedAt,observation.evidenceKind,observation.kind==='ordinary_tokens'?observation.ceiling:null,observation.kind==='parity_dollars'?observation.ceiling:null,observation.kind==='ordinary_tokens'?observation.actual:null,observation.kind==='parity_dollars'?observation.actual:null,observation.settledAt,scope.snapshotDigest,snapshot.capturedAt,scope.recoveryId,scope.controlRevision,observation.observedDigestKind]);
+   await db.query("UPDATE parity_evaluation_budgets SET state='closed' WHERE environment_id=$1 AND state='open' AND id IN(SELECT scope_id FROM operations_recovery_model_holds WHERE environment_id=$1 AND operation_kind='parity_dollars')",[scope.environmentId]);
+  }
   await db.query('COMMIT');
-  return {contract:'pilot-owned-credential-denials-v5' as const,...scope,mode:'locked' as const,revokedWorkspaces,revokedPartnerOrganizations,revokedPrincipals,revokedMemberships,revokedSessions,revokedMcpConnections,revokedGrants,clearedAcceptedHeads,withdrawnArtifacts,withdrawnResearch,retiredProjections,suspendedPublications,permanentReplayFencesAdded,sourcePublicationDenialsApplied:snapshot.contract!=='pilot-denial-replay-snapshot-v2',scope:'credentials-grants-and-source-denials' as const,authorityGranted:false,quarantineCleared:false,currentAuthorityVerified:false,replayReconciled:false,restorationReady:false};
+  return {contract:'pilot-owned-credential-denials-v5' as const,...scope,mode:'locked' as const,revokedWorkspaces,revokedPartnerOrganizations,revokedPrincipals,revokedMemberships,revokedSessions,revokedMcpConnections,revokedGrants,clearedAcceptedHeads,withdrawnArtifacts,withdrawnResearch,retiredProjections,suspendedPublications,permanentReplayFencesAdded,typedModelHoldsAdded,sourcePublicationDenialsApplied:snapshot.contract!=='pilot-denial-replay-snapshot-v2',scope:'credentials-grants-and-source-denials' as const,authorityGranted:false,quarantineCleared:false,currentAuthorityVerified:false,replayReconciled:false,restorationReady:false};
  }catch(error){await db.query('ROLLBACK');throw error;}
 }

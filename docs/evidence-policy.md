@@ -21,8 +21,9 @@ rights, extraction version, reviewer and decision separately.
 - User-origin evidence stays user-origin if a researcher fetches its URL or repeats
   its contents. Independent corroboration is a separate linked evidence record;
   it cannot silently approve the submitted claim.
-- Independently found research may attach automatically as **researched evidence**
-  after identity, source-integrity, scope and content checks. It is visibly attributed
+- Independently performed research is **accepted factual context** automatically
+  after identity, source-integrity, scope and content checks, without human review.
+  This includes customer research performed by Turi’s research agents. It is visibly attributed
   and may support only what its passage establishes. Private engagement history,
   financial terms and staffing are not inferred from public sources.
 - Reports and plans distinguish accepted internal context from attributed public
@@ -171,3 +172,9 @@ internal only, require five independently accepted populations and omit particip
 identities and counts. Source or rights loss withholds the whole released family
 without corrected-subset disclosure. Due review preserves original dates and needs
 fresh research scope/budget admission. See [operations](learning-operations.md).
+
+Customer evidence search separates `accepted_fact` (checked independent research,
+reviewed human claims and eligible published knowledge) from `current_fact`
+(additional freshness and quality requirements for decisions). Acceptance never
+changes original dates or guarantees truth beyond the exact sourced claim; material
+conflicts, withdrawal, supersession and access revocation still withhold facts.

@@ -11,6 +11,35 @@ DO $$ BEGIN
     REVOKE UPDATE, DELETE ON TABLE public_customer_research_results FROM turas_runtime;
   END IF;
 END $$;
+DO $$ BEGIN
+ IF to_regclass('public.ordinary_operations_read_dependencies') IS NOT NULL THEN
+  REVOKE ALL ON ordinary_operations_read_dependencies FROM turas_runtime;
+  GRANT SELECT,INSERT ON ordinary_operations_read_dependencies TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.public_customer_inventory_imports') IS NOT NULL THEN
+  REVOKE ALL ON public_customer_inventory_imports,public_customer_inventory_stories FROM turas_runtime;
+  GRANT SELECT,INSERT ON public_customer_inventory_imports,public_customer_inventory_stories TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.independent_research_documents') IS NOT NULL THEN
+  GRANT SELECT,INSERT ON independent_research_documents TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.parity_evaluation_budgets') IS NOT NULL THEN
+  REVOKE ALL ON parity_evaluation_budgets,parity_evaluation_operations FROM turas_runtime;
+  GRANT SELECT ON parity_evaluation_budgets TO turas_runtime;
+  GRANT UPDATE(reserved_micro_usd,state) ON parity_evaluation_budgets TO turas_runtime;
+  GRANT SELECT,INSERT ON parity_evaluation_operations TO turas_runtime;
+  GRANT UPDATE(actual_micro_usd,settled_at) ON parity_evaluation_operations TO turas_runtime;
+ END IF;
+END $$;
 
 DO $$
 DECLARE table_name text;
@@ -340,5 +369,98 @@ DO $$ BEGIN
   REVOKE ALL ON operations_backup_observations FROM turas_runtime;
   GRANT SELECT ON operations_backup_observations TO turas_runtime;
   GRANT EXECUTE ON FUNCTION turas_expire_backup_observations(text,integer) TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.general_customer_read_scopes') IS NOT NULL THEN
+  GRANT SELECT ON customer_reference_aliases TO turas_runtime;
+  GRANT SELECT,INSERT,UPDATE ON general_customer_read_scopes TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.turas_research_requests') IS NOT NULL THEN
+  GRANT SELECT,INSERT,UPDATE,DELETE ON turas_evidence_fetches,turas_evidence_snapshots,
+   turas_evidence_passages,turas_evidence_accounts,turas_public_learning,
+   turas_vercel_practice_sources,turas_vercel_practice_runs,turas_research_requests,
+   turas_research_artifacts TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.research_background_turns') IS NOT NULL THEN
+  GRANT SELECT,INSERT ON research_background_turns TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.workspace_solution_patterns') IS NOT NULL THEN
+  GRANT SELECT,INSERT ON workspace_solution_patterns,workspace_solution_applications TO turas_runtime;
+  GRANT UPDATE(embedding,embedding_model) ON workspace_solution_patterns TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.customer_adoption_contributions') IS NOT NULL THEN
+  GRANT SELECT,INSERT ON customer_adoption_contributions TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.native_input_resume_windows') IS NOT NULL THEN
+  GRANT SELECT,INSERT ON native_input_resume_windows TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.ordinary_continuation_authorities') IS NOT NULL THEN
+  GRANT SELECT,INSERT ON ordinary_continuation_authorities TO turas_runtime;
+  GRANT SELECT ON ordinary_chat_authorities TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.ordinary_context_refreshes') IS NOT NULL THEN
+  GRANT SELECT,INSERT ON ordinary_context_refreshes,ordinary_evidence_refreshes TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.ordinary_steering_deliveries') IS NOT NULL THEN
+  REVOKE ALL ON ordinary_steering_deliveries,ordinary_conversation_allowances,ordinary_model_operations FROM turas_runtime;
+  GRANT SELECT,INSERT ON ordinary_steering_deliveries,ordinary_conversation_allowances,ordinary_model_operations TO turas_runtime;
+  GRANT UPDATE(dispatch_state,native_delivery_id,native_event_id,native_turn_id,native_receipt,native_status,updated_at) ON ordinary_steering_deliveries TO turas_runtime;
+  GRANT UPDATE(actual_tokens,settled_at) ON ordinary_model_operations TO turas_runtime;
+ END IF;
+END $$;
+DO $$ BEGIN
+ IF to_regclass('public.ordinary_intervention_decisions') IS NOT NULL THEN
+  REVOKE ALL ON ordinary_intervention_decisions,ordinary_intervention_authorizations FROM turas_runtime;
+  GRANT SELECT,INSERT ON ordinary_intervention_decisions,ordinary_intervention_authorizations TO turas_runtime;
+ END IF;
+END $$;
+DO $$ BEGIN
+ IF to_regclass('public.ordinary_native_uploads') IS NOT NULL THEN
+  REVOKE ALL ON ordinary_native_uploads,ordinary_native_upload_chunks FROM turas_runtime;
+  GRANT SELECT,INSERT ON ordinary_native_uploads TO turas_runtime;
+  GRANT UPDATE(state,bound_message_id) ON ordinary_native_uploads TO turas_runtime;
+  GRANT SELECT,INSERT,DELETE ON ordinary_native_upload_chunks TO turas_runtime;
+ END IF;
+END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.ordinary_question_continuations') IS NOT NULL THEN
+  REVOKE ALL ON ordinary_question_reconstructions FROM turas_runtime;
+  GRANT SELECT,INSERT ON ordinary_question_reconstructions TO turas_runtime;
+  REVOKE ALL ON ordinary_question_posts FROM turas_runtime;
+  GRANT SELECT,INSERT ON ordinary_question_posts TO turas_runtime;
+  REVOKE ALL ON ordinary_question_continuations FROM turas_runtime;
+  GRANT SELECT,INSERT ON ordinary_question_continuations TO turas_runtime;
+ END IF;
+ IF to_regclass('public.ordinary_native_retirements') IS NOT NULL THEN
+  REVOKE ALL ON ordinary_native_retirements FROM turas_runtime;
+  GRANT SELECT,INSERT ON ordinary_native_retirements TO turas_runtime;
+  GRANT UPDATE(state,confirmed_at,next_attempt_at,attempts,safe_error_code) ON ordinary_native_retirements TO turas_runtime;
  END IF;
 END $$;

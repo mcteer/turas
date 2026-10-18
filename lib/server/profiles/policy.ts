@@ -59,22 +59,26 @@ export async function lockWorkspaceActor(client: PoolClient, actor: CurrentReadA
       marker.rows[0].schema_version < requiredSchemaVersion) throw new HttpFailure(503, "unavailable", "Service unavailable");
 }
 
-export async function lockProfileActor(client: PoolClient, actor: CurrentReadActor, customerId: string, affectedMembershipId?: string | readonly string[], readOnly = false): Promise<void> {
+/** Authorize and lock a bounded customer set in the same transaction. */
+export async function lockProfileActors(client: PoolClient, actor: CurrentReadActor, customerIds: readonly string[], affectedMembershipId?: string | readonly string[], readOnly = false): Promise<void> {
   await lockWorkspaceActor(client, actor, affectedMembershipId, readOnly);
+  const ids=[...new Set(customerIds)].sort();
+  if(!ids.length)return;
   if(isMcpReadActor(actor)) {
-    const selected=await client.query("SELECT customer_id FROM mcp_connection_customers WHERE connection_id=$1 AND workspace_id=$2 AND customer_id=$3 FOR SHARE",[actor.connectionId,actor.workspaceId,customerId]);
-    if(!selected.rowCount)throw hiddenRecord();
+    const selected=await client.query("SELECT customer_id FROM mcp_connection_customers WHERE connection_id=$1 AND workspace_id=$2 AND customer_id=ANY($3::uuid[]) ORDER BY customer_id FOR SHARE",[actor.connectionId,actor.workspaceId,ids]);
+    if(selected.rowCount!==ids.length)throw hiddenRecord();
   }
-  const lock = readOnly ? "FOR SHARE" : "FOR UPDATE";
-  const state = await client.query(`SELECT customer_id FROM customer_profile_state WHERE customer_id=$1 AND workspace_id=$2 ${lock}`,
-    [customerId, actor.workspaceId]);
-  if (!state.rowCount) throw hiddenRecord();
-  if (actor.kind === "partner") {
-    const grant = await client.query<{ state: string }>(
-      `SELECT state FROM customer_grants WHERE customer_id=$1 AND membership_id=$2 ${lock}`,
-      [customerId, actor.membershipId]);
-    if (grant.rows[0]?.state !== "active") throw hiddenRecord();
+  const lock=readOnly?"FOR SHARE":"FOR UPDATE";
+  const states=await client.query(`SELECT customer_id FROM customer_profile_state WHERE customer_id=ANY($1::uuid[]) AND workspace_id=$2 ORDER BY customer_id ${lock}`,[ids,actor.workspaceId]);
+  if(states.rowCount!==ids.length)throw hiddenRecord();
+  if(actor.kind==='partner') {
+    const grants=await client.query<{state:string}>(`SELECT state FROM customer_grants WHERE customer_id=ANY($1::uuid[]) AND membership_id=$2 ORDER BY customer_id ${lock}`,[ids,actor.membershipId]);
+    if(grants.rowCount!==ids.length||grants.rows.some(row=>row.state!=='active'))throw hiddenRecord();
   }
+}
+
+export async function lockProfileActor(client: PoolClient, actor: CurrentReadActor, customerId: string, affectedMembershipId?: string | readonly string[], readOnly = false): Promise<void> {
+  return lockProfileActors(client,actor,[customerId],affectedMembershipId,readOnly);
 }
 
 export async function requireSteward(client: PoolClient, actor: ProfileActor, customerId: string): Promise<void> {

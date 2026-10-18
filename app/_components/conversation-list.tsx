@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useEffect, useId, useState, type ReactNode } from "react";
 
-type Conversation = { id: string; title: string; customerId: string | null };
+type Conversation = { id: string; title: string; customerId: string | null;version?:number };
 
 export function ConversationList({ customerId, navigation, csrfToken }: { customerId?: string; navigation?: ReactNode; csrfToken: string }) {
   const [archived, setArchived] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [editing,setEditing]=useState<{id:string;title:string;version:number}|null>(null);
   const [revision, setRevision] = useState(0);
   const searchId = useId();
   const [query, setQuery] = useState("");
@@ -33,12 +34,22 @@ export function ConversationList({ customerId, navigation, csrfToken }: { custom
     setBusy(id); setError("");
     try {
       const response = await fetch(`/api/conversations/${id}`, { method: "PATCH", headers: {
-        "content-type": "application/json", "x-csrf-token": csrfToken }, body: JSON.stringify({ archived: !archived }) });
+        "content-type": "application/json", "x-csrf-token": csrfToken }, body: JSON.stringify({ archived: !archived,version:items.find(item=>item.id===id)?.version }) });
       if (!response.ok) throw new Error();
       setItems(current => current.filter(item => item.id !== id));
       setRevision(current => current + 1);
     } catch { setError("Could not update this chat. Try again."); }
     finally { setBusy(null); }
+  }
+  async function rename(){
+    if(!editing || !editing.title.trim())return;
+    setBusy(editing.id);setError('');
+    try{
+      const response=await fetch(`/api/conversations/${editing.id}`,{method:'PATCH',headers:{'content-type':'application/json','x-csrf-token':csrfToken},body:JSON.stringify({title:editing.title,version:editing.version})});
+      if(!response.ok)throw new Error(response.status===409?'This chat changed. Open Rename again to use its latest version.':'Could not rename this chat. Try again.');
+      setEditing(null);setRevision(value=>value+1);
+    }catch(error){setError(error instanceof Error?error.message:'Could not rename this chat.');setEditing(null);setRevision(value=>value+1);}
+    finally{setBusy(null);}
   }
   return <>
     <input className="field nav-search" id={searchId} aria-label="Search chat titles" placeholder="Search Chats"
@@ -52,9 +63,14 @@ export function ConversationList({ customerId, navigation, csrfToken }: { custom
       {state === "loading" && <p className="history-empty">Loading chats…</p>}
       {state === "unavailable" && <p className="history-empty">Chats are unavailable.</p>}
       {state === "ready" && items.length === 0 && <p className="history-empty">{query ? "No matching chats." : archived ? "No archived chats." : "No chats yet."}</p>}
-      {state === "ready" && items.map((item) => <div className="history-row" key={item.id}><Link className="history-link"
+      {state === "ready" && items.map((item) => <div className="history-row" key={item.id}>{editing?.id===item.id?<form className="history-rename" onSubmit={event=>{event.preventDefault();void rename();}}>
+        <input className="field" aria-label="Chat title" value={editing.title} maxLength={80} autoFocus onChange={event=>setEditing({...editing,title:event.target.value})} disabled={busy!==null}/>
+        <button className="history-archive" type="submit" disabled={busy!==null||!editing.title.trim()}>Save</button>
+        <button className="history-archive" type="button" disabled={busy!==null} onClick={()=>setEditing(null)}>Cancel</button>
+      </form>:<><Link className="history-link"
         href={`/s/${item.id}`} title={item.title}><svg aria-hidden="true" className="history-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z" /></svg><span className="history-title">{item.title}</span></Link><button type="button" className="history-archive" disabled={busy !== null}
-          aria-label={`${archived ? "Restore" : "Archive"} ${item.title}`} onClick={() => void toggleArchive(item.id)}>{archived ? "Restore" : "Archive"}</button></div>)}
+          aria-label={`${archived ? "Restore" : "Archive"} ${item.title}`} onClick={() => void toggleArchive(item.id)}>{archived ? "Restore" : "Archive"}</button>
+        {item.version!==undefined&&<button className="history-archive" type="button" disabled={busy!==null} aria-label={`Rename ${item.title}`} title="Rename chat" onClick={()=>{setEditing({id:item.id,title:item.title.slice(0,80),version:item.version!});setError('');}}><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m16 3 5 5-12 12-6 1 1-6Z M14 5l5 5"/></svg></button>}</>}</div>)}
     </div>
   </>;
 }

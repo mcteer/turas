@@ -1,3 +1,4 @@
+import {readVerifiedResearchProjectionRows} from "./research-projection";
 import { createHash, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { profilePayloadSchema } from "../../contracts/profile-payloads";
@@ -38,6 +39,7 @@ type SourceCandidate = {
   workloadId: string | null; sourceKind: "accepted_profile" | "approved_excerpt" | "verified_research";
   revisionId: string; audience: "internal" | "delivery"; generation: number;
   chunks: RetrievalChunk[];
+  documentProjection?:boolean;
 };
 
 const narrativeKeys = new Set([
@@ -141,26 +143,15 @@ export async function buildCurrentProjection(client: PoolClient,
       workloadId: row.workload_id,sourceKind: kind,revisionId,audience,
       generation: Number(row.lifecycle_generation),chunks };
   }
-  const found = await client.query<{ workspace_id: string; customer_id: string;
-    version: string; passage: string; location: string; audience: string }>(`
-    SELECT v.workspace_id,v.customer_id,v.version,v.passage,v.location,v.audience
-    FROM evidence_source_revisions v
-    JOIN evidence_sources s ON s.id=v.source_id AND s.origin='independent_research'
-    JOIN research_checks c ON c.source_revision_id=v.id
-      AND c.identity_result AND c.scope_result AND c.integrity_result AND c.content_result
-    WHERE v.id=$1 AND NOT EXISTS (SELECT 1 FROM evidence_source_events e
-      WHERE e.source_revision_id=v.id AND e.event_type IN ('withdraw','supersede'))`,
-  [revisionId]);
-  const row = found.rows[0];
-  if (!row || (audience === "delivery" && row.audience !== "delivery")) return null;
-  const url = new URL(row.location);
-  if (url.protocol !== "https:" || url.username || url.password) return null;
-  const chunks = simpleChunks(row.passage,(start,end) => ({ kind: "research_passage",
+  const row=(await readVerifiedResearchProjectionRows(client,[revisionId],audience,environmentId)).get(revisionId);
+  if(!row)return null;
+  const text=row.text,documentProjection=row.documentProjection,url=new URL(row.location);
+  const chunks = simpleChunks(text,(start,end) => ({ kind: "research_passage",
     canonicalUrl: url.toString(),start,end }));
   if (!chunks.length) return null;
   return { environmentId,workspaceId: row.workspace_id,customerId: row.customer_id,
     workloadId: null,sourceKind: kind,revisionId,audience,
-    generation: Number(row.version),chunks };
+    generation: Number(row.version),chunks,documentProjection };
 }
 
 /** Writes a separate audience copy; indexing still requires a current worker lease. */
@@ -176,6 +167,8 @@ export async function materializeCurrentProjection(client: PoolClient,
       locators: chunk.locators,warnings: chunk.warnings }))))
     .digest("hex");
   const id = randomUUID();
+  const contract=candidate.documentProjection?'retrieval-research-document-v1':projectionContract;
+  const contractDigest=candidate.documentProjection?createHash('sha256').update(`${contract}:nfc:checked-document:no-overlap:2000:duplicate-locators`).digest('hex'):projectionContractDigest;
   const source = await client.query<{ id: string }>(`
     INSERT INTO retrieval_sources(id,environment_id,workspace_id,customer_id,workload_id,
       scope,source_kind,source_revision_id,audience,projection_contract,contract_digest,
@@ -186,7 +179,7 @@ export async function materializeCurrentProjection(client: PoolClient,
       WHERE retrieval_sources.content_digest=EXCLUDED.content_digest
     RETURNING id`,
   [id,candidate.environmentId,candidate.workspaceId,candidate.customerId,candidate.workloadId,
-    kind,revisionId,audience,projectionContract,projectionContractDigest,
+    kind,revisionId,audience,contract,contractDigest,
     candidate.generation,contentDigest]);
   const sourceId = source.rows[0]?.id;
   if (!sourceId) return null;

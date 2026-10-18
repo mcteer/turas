@@ -1,12 +1,14 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-const mocks=vi.hoisted(()=>({heartbeat:vi.fn(),claim:vi.fn(),finish:vi.fn(),maintain:vi.fn(),learning:vi.fn(),mcp:vi.fn()}));
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+const mocks=vi.hoisted(()=>({heartbeat:vi.fn(),claim:vi.fn(),finish:vi.fn(),maintain:vi.fn(),learning:vi.fn(),mcp:vi.fn(),retrieval:vi.fn()}));
+vi.mock('../../scripts/retrieval-worker',()=>({runRetrievalWorkerTick:mocks.retrieval}));
 vi.mock('../../lib/server/db/client',()=>({getOperationalFencePool:()=>({connect:async()=>({query:async()=>({rows:[{released:true}],rowCount:1}),release:vi.fn()})}),query:vi.fn(async()=>({rowCount:1,rows:[{generation:1}]}))}));
 vi.mock('../../lib/server/config',()=>({getServerConfig:()=>({TURAS_ENVIRONMENT_ID:'synthetic-production'})}));
 vi.mock('../../lib/server/operations/code-version',()=>({operationalCodeVersion:()=> 'a'.repeat(40)}));
 vi.mock('../../lib/server/operations/hosted-reconciliation',()=>({runHostedReconciliation:async()=>({backlog:0,truncated:false})}));
 vi.mock('../../lib/server/operations/maintenance-bindings',async()=>{const {maintenanceClasses}=await import('../../lib/server/operations/maintenance');return {createMaintenanceBindings:({attachSession}: {attachSession:unknown})=>maintenanceClasses.map(row=>({id:row.id,enabled:true,optional:false,tick:async()=>{if(row.id==='conversation'){const jobs=await mocks.claim('controlled-worker',1);for(const job of jobs){try{await mocks.maintain(job,attachSession);}catch{await mocks.finish('controlled-worker',job.attemptId,'retry','maintenance_call_failed');}}await mocks.heartbeat();}if(row.id==='learning')await mocks.learning({attachSession});if(row.id==='mcp')await mocks.mcp();return {backlog:0,truncated:false};}}))};});
-import { authorizeHostedWatchdog, runHostedWatchdog } from "../../lib/server/conversations/hosted-watchdog";
-afterEach(() => { vi.useRealTimers(); vi.resetAllMocks(); });
+import { authorizeHostedWatchdog, runHostedWatchdog, startPreviewChatWorker } from "../../lib/server/conversations/hosted-watchdog";
+beforeEach(()=>{mocks.retrieval.mockResolvedValue(undefined);});
+afterEach(() => { vi.useRealTimers(); vi.resetAllMocks(); vi.unstubAllEnvs(); });
 
 describe("hosted watchdog authentication", () => {
   const secret = "synthetic-watchdog-secret-not-real-12345";
@@ -31,6 +33,23 @@ describe("hosted watchdog authentication", () => {
 });
 
 describe('bounded hosted watchdog',()=>{
+ it('admits a Preview send only after a real conversation tick and keeps its original worker lifetime',async()=>{
+  vi.useFakeTimers();vi.stubEnv('VERCEL_ENV','preview');
+  let release!:()=>void;mocks.claim.mockReturnValueOnce(new Promise(resolve=>{release=()=>resolve([]);})).mockResolvedValue([]);
+  let retained!:Promise<unknown>,admitted=false;
+  const admission=startPreviewChatWorker((()=>{throw Error('unused');}) as Parameters<typeof runHostedWatchdog>[0],task=>{retained=task;}).then(()=>{admitted=true;});
+  await vi.advanceTimersByTimeAsync(1);expect(admitted).toBe(false);expect(mocks.heartbeat).not.toHaveBeenCalled();
+  release();await vi.advanceTimersByTimeAsync(1);await admission;expect(mocks.heartbeat).toHaveBeenCalled();expect(admitted).toBe(true);
+  await vi.advanceTimersByTimeAsync(179998);await retained;expect(mocks.retrieval).toHaveBeenCalled();expect(vi.getTimerCount()).toBe(0);
+ });
+ it('refuses Preview admission when the conversation worker fails while independent cleanup continues',async()=>{
+  vi.useFakeTimers();vi.stubEnv('VERCEL_ENV','preview');mocks.claim.mockRejectedValue(Error('Controlled claim failure'));
+  let retained!:Promise<unknown>;
+  const admission=startPreviewChatWorker((()=>{throw Error('unused');}) as Parameters<typeof runHostedWatchdog>[0],task=>{retained=task;});
+  const refused=expect(admission).rejects.toThrow('Conversation worker unavailable');
+  await vi.advanceTimersByTimeAsync(1);await refused;expect(mocks.heartbeat).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(179999);await retained;expect(mocks.mcp).toHaveBeenCalled();expect(vi.getTimerCount()).toBe(0);
+ });
  it('refreshes independently for 65 seconds and records cancellation retries',async()=>{
   vi.useFakeTimers();mocks.learning.mockResolvedValue({processed:0});mocks.mcp.mockResolvedValue({processed:0});mocks.claim.mockResolvedValue([]).mockResolvedValueOnce([{attemptId:'synthetic-attempt'}]);mocks.maintain.mockRejectedValueOnce(Error('Controlled native failure'));
   const running=runHostedWatchdog((()=>{throw Error('unused');}) as Parameters<typeof runHostedWatchdog>[0]);await vi.advanceTimersByTimeAsync(65000);await running;

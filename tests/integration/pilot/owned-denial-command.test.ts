@@ -45,7 +45,7 @@ it('withholds mutations for unavailable, older-schema or stale current proof',as
  reader.mockRejectedValueOnce(Error('Independent archive unavailable'));
  await expect(pilotOwnedDenialReconciliation(args(environmentId,scope.recoveryId,scope.controlRevision,backup,root))).rejects.toThrow('archive unavailable');
  reader.mockResolvedValueOnce({snapshot:{...snapshot,schemaVersion:55},contextDigest:snapshot.snapshotDigest,backupCapturedAt:backup});
- await expect(pilotOwnedDenialReconciliation(args(environmentId,scope.recoveryId,scope.controlRevision,backup,root))).rejects.toThrow('schema-057');
+ await expect(pilotOwnedDenialReconciliation(args(environmentId,scope.recoveryId,scope.controlRevision,backup,root))).rejects.toThrow('schema-079');
  reader.mockResolvedValueOnce({snapshot,contextDigest:snapshot.snapshotDigest,backupCapturedAt:new Date(Date.parse(snapshot.capturedAt)+1).toISOString()});
  await expect(pilotOwnedDenialReconciliation(args(environmentId,scope.recoveryId,scope.controlRevision,backup,root))).rejects.toThrow();
  expect((await owner.query('SELECT revoked_at FROM login_sessions WHERE id=$1',[f.actor.sessionId])).rows[0].revoked_at).toBeNull();

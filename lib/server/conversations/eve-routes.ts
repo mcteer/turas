@@ -1,13 +1,17 @@
+import {assertNativeFileEvaluationOpen} from './native-file-policy';
+import {inputResponsesSchema,authorizeOwnedInputResponse,implicitOwnedQuestionResponse} from "./input-responses";
+import {prepareOrdinarySteering,recordSteeringReceipt,markSteeringUncertain} from './steering';
 import type { EveChannel } from "eve/channels/eve";
 import { z } from "zod";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
+import { startPreviewChatWorker } from "./hosted-watchdog";
 import { checkSessionCsrf } from "../auth/csrf";
 import { getCurrentSession } from "../auth/sessions";
 import { bindNativeSession, claimBinding, markBindingUncertain } from "./binding";
 import { claimDispatch, getAttemptReceipt, markDispatchUncertain, normalizeMessageText, prepareAttempt, recordNativePreAdmissionRejection, recordNativeReceipt } from "./dispatch";
 import { getOwnedConversationByNativeSession } from "./repository";
 import { guardNativeStream } from "./stream";
-import { requestCancellation } from "./cancel";
+import { requestCancellation,requestOwnedTaskCancellation,settleInactiveOwnedCancellation } from "./cancel";
 import { assertNativeContextCurrent, releaseNativeChunk } from "./context-fence";
 import { artifactDraftSelectionSchema } from "../../contracts/artifacts";
 import { authorizeExecutionRetirement } from "../execution/native-retirement";
@@ -15,10 +19,18 @@ import {authorizeExpansionRetirement} from "../expansion/native-retirement";
 import { authorizeSupportRetirement } from "../support/native-retirement";
 import { authorizeNativeRetirement } from "../artifacts/native-retirement";
 import { authorizeLearningRetirement } from '../learning/native-retirement';
+import {authorizeOrdinaryNativeRetirementRecovery} from './native-retirement-recovery';
+import {authorizeOwnedOrdinaryRetirement,reconcileOwnedOrdinaryRetirement} from './ordinary-retirement';
+import {intakeOrdinaryAttachmentContext} from './attachment-intake';
+import {ordinaryNativeMessageSchema,nativeMessageText} from '../../conversations/native-message';
+import {parseOrdinaryNativeMessage,summarizeNativeMessage} from './native-message';
+import {attachmentLimits,parseAttachmentMessage} from '../../conversations/attachment-text';
+import {prepareNativeUploadMessage} from './native-uploads';
 
 const createSchema = z.object({ operationId: z.uuid() }).strict();
-const sendSchema = z.object({ message: z.string(),
-  artifactSelections: z.array(artifactDraftSelectionSchema).max(5).optional() }).strict();
+const sendSchema = z.object({ message: z.union([z.string(),ordinaryNativeMessageSchema]),
+  artifactSelections: z.array(artifactDraftSelectionSchema).max(5).optional(),
+  turnPolicy:z.enum(['queue','steer']).optional() }).strict();
 const nativeSessionSchema = z.object({ ok: z.literal(true), sessionId: z.string().min(1) }).passthrough();
 
 function nativeFailure(error: unknown): Response {
@@ -126,6 +138,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
           let conversationId: string | undefined;
           let attemptId: string | undefined;
           let dispatchClaimed = false;
+          let steeringId:string|undefined;
           try {
             session = await getCurrentSession(request);
             if (!session) throw new HttpFailure(401, "authentication_required", "Sign in required");
@@ -133,17 +146,33 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             conversationId = request.headers.get("x-turas-conversation-id") ?? undefined;
             const requestKey = request.headers.get("x-turas-request-key") ?? undefined;
             if (!z.uuid().safeParse(conversationId).success ||
-                !z.uuid().safeParse(requestKey).success ||
                 !/^wrun_[A-Za-z0-9_-]+$/.test(args.params.sessionId ?? "")) {
               throw new HttpFailure(422, "invalid_input", "Invalid request");
             }
             const raw = await request.text();
-            if (Buffer.byteLength(raw) > 32 * 1024) {
+            if (Buffer.byteLength(raw) > Math.max(attachmentLimits.messageBytes, 6 * attachmentLimits.files * attachmentLimits.characters) + 128 * 1024) {
               throw new HttpFailure(413, "too_large", "Request too large");
             }
             let decoded: unknown;
             try { decoded = JSON.parse(raw); }
             catch { throw new HttpFailure(422, "invalid_input", "Invalid request"); }
+            let responses=inputResponsesSchema.safeParse(decoded);
+            if(!responses.success){const ordinary=sendSchema.safeParse(decoded);if(ordinary.success&&ordinary.data.turnPolicy!=='steer'){const implicit=await implicitOwnedQuestionResponse(session,args.params.sessionId,ordinary.data.message);if(implicit){if(ordinary.data.artifactSelections!==undefined||request.headers.has('x-turas-artifact-selections'))throw new HttpFailure(422,'question_answer_with_artifacts','Answer the pending question separately before sending selected evidence');responses=inputResponsesSchema.safeParse(implicit);}}}
+            if(responses.success) {
+              const conversation=await getOwnedConversationByNativeSession(session,args.params.sessionId);
+              if(conversation.id!==conversationId)throw hiddenRecord();
+              assertNativeFileEvaluationOpen(conversation.id);
+              await authorizeOwnedInputResponse(session,args.params.sessionId,responses.data);
+              await startPreviewChatWorker(args.attachSession,args.waitUntil);
+              await assertNativeContextCurrent(session,args.params.sessionId,false);
+              const headers=new Headers(request.headers);headers.delete("content-length");
+              // The native runtime validates request IDs/options against its own
+              // pending batch. This is an owner/CSRF-checked continuation, never
+              // a new chat dispatch or a model-authored approval.
+              return native(new Request(request.url,{method:"POST",headers,
+                body:JSON.stringify(responses.data)}),args);
+            }
+            if(!z.uuid().safeParse(requestKey).success)throw new HttpFailure(422,"invalid_input","Invalid request");
             const parsed = sendSchema.safeParse(decoded);
             if (!parsed.success) throw new HttpFailure(422, "invalid_input", "Invalid request");
             const selectionHeader = request.headers.get("x-turas-artifact-selections");
@@ -160,16 +189,35 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
               selectionHeader ? headerSelections : parsed.data.artifactSelections ?? []);
             if (!checkedSelections.success) throw new HttpFailure(422,"invalid_input","Invalid source selections");
             const selections = checkedSelections.data;
-            const text = normalizeMessageText(parsed.data.message.trim() || (selections.length ?
-              "Please discuss the selected customer source passages." : ""));
+            const message=typeof parsed.data.message==='string'?normalizeMessageText(parsed.data.message.trim()||(selections.length?"Please discuss the selected customer source passages.":"")):parseOrdinaryNativeMessage(parsed.data.message);
+            const text=typeof message==='string'?message:summarizeNativeMessage(message);
+            await getOwnedConversationByNativeSession(session, args.params.sessionId);
+            await startPreviewChatWorker(args.attachSession, args.waitUntil);
+            if(parsed.data.turnPolicy==='steer'){
+              if(selections.length)throw new HttpFailure(422,'steering_sources','Send new source selections after the active response');
+              const steering=await prepareOrdinarySteering(session,conversationId!,args.params.sessionId,requestKey!,message);
+              if(steering){
+                if(steering.kind==='replay')return steering.response;
+                steeringId=steering.id;
+                if(parseAttachmentMessage(typeof message==='string'?message:nativeMessageText(message)))
+                  await intakeOrdinaryAttachmentContext(session,conversationId!,steering.attemptId,steering.id);
+                const headers=new Headers(request.headers);headers.delete('content-length');
+                const forwarded=typeof message==='string'?message:await prepareNativeUploadMessage(session,conversationId!,requestKey!,message);
+                const response=await native(new Request(request.url,{method:'POST',headers,body:JSON.stringify({message:forwarded,turnPolicy:'steer'})}),args);
+                await recordSteeringReceipt(steering.id,args.params.sessionId,response);
+                return response;
+              }
+            }
             const prepared = await prepareAttempt(session, conversationId!, args.params.sessionId,
-              requestKey!, text, selections);
+              requestKey!, message, selections);
             attemptId = prepared.attemptId;
             if (!prepared.created && prepared.dispatchState !== "prepared") {
               const receipt = await getAttemptReceipt(session, conversationId!, attemptId);
               if (receipt) return receipt;
               throw new HttpFailure(409, "turas_dispatch_pending", "Dispatch outcome pending");
             }
+            if(!prepared.governed && parseAttachmentMessage(typeof message==='string'?message:nativeMessageText(message)))
+              await intakeOrdinaryAttachmentContext(session,conversationId!,attemptId);
             let tailIndex: number;
             try {
               tailIndex = await args.attachSession(args.params.sessionId).getStreamTailIndex();
@@ -188,12 +236,13 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             const headers = new Headers(request.headers);
             headers.delete("content-length");
             headers.delete("x-turas-artifact-selections");
+            const forwarded=typeof message==='string'?message:await prepareNativeUploadMessage(session,conversationId!,requestKey!,message);
             let nativeResponse: Response | undefined;
             const started = Date.now();
             const dispatches = prepared.governed ? 1 : 5;
             for (let retry = 0; retry < dispatches && Date.now() - started < 20_000; retry++) {
               nativeResponse = await native(new Request(request.url, {
-                method: "POST", headers, body: JSON.stringify({ message: text }),
+                method: "POST", headers, body: JSON.stringify({ message:forwarded }),
               }), args);
               if (nativeResponse.status !== 409) break;
               let rejection: unknown;
@@ -221,6 +270,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             await recordNativeReceipt(session, conversationId!, attemptId, nativeResponse);
             return nativeResponse;
           } catch (error) {
+            if(steeringId)await markSteeringUncertain(steeringId).catch(()=>{});
             if (dispatchClaimed && session && conversationId && attemptId) {
               try { await markDispatchUncertain(session, conversationId, attemptId); }
               catch { /* durable claim remains blocked */ }
@@ -236,19 +286,19 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             const current = await getCurrentSession(request);
             if (!current) throw new HttpFailure(401, "authentication_required", "Sign in required");
             await getOwnedConversationByNativeSession(current, args.params.sessionId);
-            await assertNativeContextCurrent(current, args.params.sessionId);
+            await assertNativeContextCurrent(current, args.params.sessionId,false);
             const response = await native(request, args);
             if (!response.ok) return response;
             return guardNativeStream(response, async () => {
               const refreshed = await getCurrentSession(request);
               if (!refreshed) return false;
               await getOwnedConversationByNativeSession(refreshed, args.params.sessionId);
-              await assertNativeContextCurrent(refreshed, args.params.sessionId);
+              await assertNativeContextCurrent(refreshed, args.params.sessionId,false);
               return true;
             }, 10_000, 15_000, async (_chunk, enqueue) => {
               const refreshed = await getCurrentSession(request);
               if (!refreshed) throw hiddenRecord();
-              await releaseNativeChunk(refreshed, args.params.sessionId, enqueue);
+              await releaseNativeChunk(refreshed, args.params.sessionId, enqueue,false);
             });
           } catch (error) {
             return nativeFailure(error);
@@ -269,14 +319,21 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             let decoded: unknown;
             try { decoded = JSON.parse(raw); }
             catch { throw new HttpFailure(422, "invalid_input", "Invalid request"); }
-            const parsed = z.object({ turnId: z.string().min(1).max(200) }).strict().safeParse(decoded);
+            const parsed = z.object({ turnId: z.string().min(1).max(200).optional(),tasks:z.boolean().optional() }).strict().refine(value=>!!value.turnId||value.tasks===true).safeParse(decoded);
             if (!parsed.success) throw new HttpFailure(422, "invalid_input", "Invalid request");
-            await requestCancellation(session, args.params.sessionId, parsed.data.turnId);
+            if(parsed.data.tasks)await requestOwnedTaskCancellation(session,args.params.sessionId);
+            else await requestCancellation(session, args.params.sessionId, parsed.data.turnId!);
             const headers = new Headers(request.headers);
             headers.delete("content-length");
-            return native(new Request(request.url, {
-              method: "POST", headers, body: JSON.stringify({ turnId: parsed.data.turnId }),
+            const response=await native(new Request(request.url, {
+              method: "POST", headers, body: JSON.stringify(parsed.data),
             }), args);
+            if(response.ok){
+              const receipt:unknown=await response.clone().json().catch(()=>null);
+              if(receipt && typeof receipt==='object' && 'ok' in receipt && receipt.ok===true &&
+                'status' in receipt && receipt.status==='no_active_turn')await settleInactiveOwnedCancellation(session,args.params.sessionId);
+            }
+            return response;
           } catch (error) {
             return nativeFailure(error);
           }
@@ -287,9 +344,13 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
         return { ...route, handler: async (request, args) => {
           try {
             const sessionId = args.params.sessionId;
-            if (!sessionId || !/^wrun_[A-Za-z0-9_-]+$/.test(sessionId) ||
-                !await authorizeNativeRetirement(request,sessionId) && !await authorizeExecutionRetirement(request,sessionId) && !await authorizeSupportRetirement(request,sessionId) && !await authorizeExpansionRetirement(request,sessionId) && !await authorizeLearningRetirement(request,sessionId)) return closed();
-            return native(request,args);
+            if (!sessionId || !/^wrun_[A-Za-z0-9_-]+$/.test(sessionId)) return closed();
+            const governed=await authorizeNativeRetirement(request,sessionId) || await authorizeExecutionRetirement(request,sessionId) || await authorizeSupportRetirement(request,sessionId) || await authorizeExpansionRetirement(request,sessionId) || await authorizeLearningRetirement(request,sessionId);
+            const ordinary=!governed && (await authorizeOrdinaryNativeRetirementRecovery(request,sessionId) || await authorizeOwnedOrdinaryRetirement(request,sessionId));
+            if(!governed&&!ordinary)return closed();
+            const response=await native(request,args);
+            if(ordinary)await reconcileOwnedOrdinaryRetirement(request,sessionId,response);
+            return response;
           } catch (error) { return nativeFailure(error); }
         } };
       }

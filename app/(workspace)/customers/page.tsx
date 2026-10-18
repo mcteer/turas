@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { UiIcon } from "../../_components/ui-icon";
 import { EmptyState } from "../../_components/empty-state";
 
 type Customer = { id: string; displayName: string; synthetic: boolean };
@@ -10,51 +9,65 @@ type Result = { data?: { items: Customer[]; nextCursor: string | null }; error?:
 
 export default function CustomersPage() {
   const [items, setItems] = useState<Customer[]>([]);
-  const [selected, setSelected] = useState<Customer | null>(null);
+  const [query, setQuery] = useState("");
+  const [signal, setSignal] = useState("");
+  const request = useRef<AbortController | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "unavailable">("loading");
 
   async function load(cursor?: string) {
+    request.current?.abort();
+    const controller = new AbortController();
+    request.current = controller;
     setState("loading");
+    if (!cursor) { setItems([]); setNextCursor(null); }
     try {
-      const url = new URL("/api/customers", window.location.origin);
+      const url = new URL(query.trim() || signal ? "/api/customers/discovery" : "/api/customers", window.location.origin);
       if (cursor) url.searchParams.set("cursor", cursor);
-      const response = await fetch(url, { cache: "no-store" });
+      if (query.trim()) url.searchParams.set("query", query.trim());
+      if (signal) url.searchParams.set("signal", signal);
+      const response = await fetch(url, { cache: "no-store", signal: controller.signal });
       const payload = await response.json() as Result;
       if (!response.ok || !payload.data) throw new Error(payload.error?.message ?? "Unavailable");
-      setItems((current) => cursor ? [...current, ...payload.data!.items] : payload.data!.items);
+      if (controller.signal.aborted) return;
+      setItems(current => cursor ? [...current, ...payload.data!.items] : payload.data!.items);
       setNextCursor(payload.data.nextCursor);
       setState("ready");
     } catch {
-      setState("unavailable");
+      if (!controller.signal.aborted) setState("unavailable");
     }
   }
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    request.current?.abort();
+    setItems([]); setNextCursor(null); setState("loading");
+    const timer = setTimeout(() => void load(), query ? 250 : 0);
+    return () => { clearTimeout(timer); request.current?.abort(); };
+  }, [query, signal]);
 
-  return (
-    <main className="profile-page customer-directory">
-      <header className="profile-header directory-header"><div><p className="profile-eyebrow">Workspace</p><h1>Customers</h1>
-      <p className="muted">Customer knowledge, reviewed evidence, and delivery in one place.</p></div>
-      </header>
-      {state === "loading" && <p role="status">Loading customers…</p>}
-      {state === "unavailable" && <p role="alert">Customers are unavailable. <button onClick={() => void load()}>Retry</button></p>}
-      {state === "ready" && items.length === 0 && <EmptyState icon="customers" title="No customers are assigned to this account.">Assigned customer profiles will appear here.</EmptyState>}
-      <ul className="customer-grid">{items.map((item) => (
-        <li className="customer-card" key={item.id}>
-          <div className="customer-card-heading"><span className="customer-avatar" aria-hidden="true">{item.displayName.slice(0, 2).toUpperCase()}</span>
-            <div><h2><button className="customer-select" type="button" onClick={() => setSelected(item)} aria-pressed={selected?.id === item.id}>
-              {item.displayName}
-            </button></h2><p className="muted">Customer workspace{item.synthetic ? " · Synthetic" : ""}</p></div></div>
-          <p className="customer-card-description">Explore accepted context, evidence, and delivery plans.</p>
-          <div className="customer-card-actions"><Link className="text-action" href={`/customers/${item.id}`}>Open Profile <UiIcon name="arrow" size={15} /></Link>
-          <Link className="secondary-button" href={`/s?customerId=${item.id}`}>Start Chat</Link></div>
-        </li>
-      ))}</ul>
-      {nextCursor && <button className="secondary-button" type="button" onClick={() => void load(nextCursor)}>Load more</button>}
-      {selected && <p role="status">Selected customer: {selected.displayName}{" "}
-        <Link href={`/customers/${selected.id}`}>Open Profile</Link>{" · "}
-        <Link href={`/s?customerId=${selected.id}`}>Start Chat</Link></p>}
-    </main>
-  );
+  return <main className="profile-page customer-directory">
+    <header className="profile-header directory-header"><div><p className="profile-eyebrow">Workspace</p><h1>Customer Profiles</h1>
+      <p className="muted">Customer knowledge, researched facts, and delivery in one place.</p></div></header>
+    <div className="customer-directory-search"><label htmlFor="customer-search">Search Customers</label>
+      <input className="field" id="customer-search" type="search" placeholder="Search customers, workloads or products" maxLength={160}
+        value={query} onChange={event => setQuery(event.target.value)} />
+      <label htmlFor="customer-signal">Evidence Signals</label>
+      <select className="field" id="customer-signal" value={signal} onChange={event => setSignal(event.target.value)}>
+        <option value="">All signals</option>{["Operational trust","Platform reuse","Delivery collaboration","Measurement and learning","Product adoption"].map(value => <option key={value}>{value}</option>)}
+      </select>
+      <p className="muted">Signals describe dated public workload evidence. They are separate from formal customer maturity and current engagement status.</p>
+    </div>
+    {state === "loading" && <p role="status">Loading customers…</p>}
+    {state === "unavailable" && <p role="alert">Customers are unavailable. <button onClick={() => void load()}>Retry</button></p>}
+    {state === "ready" && items.length === 0 && <EmptyState icon="customers" title={query.trim() ? "No Matching Customers" : "No customers are assigned to this account."}>
+      {query.trim() ? "Try another customer name." : "Assigned customer profiles will appear here."}</EmptyState>}
+    <ul className="customer-grid">{items.map(item => <li className="customer-card" key={item.id}>
+      <div className="customer-card-heading"><span className="customer-avatar" aria-hidden="true">{item.displayName.slice(0, 2).toUpperCase()}</span>
+        <div><h2><Link className="customer-select" href={`/customers/${item.id}`}>{item.displayName}</Link></h2>
+          <p className="muted">Customer workspace{item.synthetic ? " · Synthetic" : ""}</p></div></div>
+      <p className="customer-card-description">Explore accepted context, researched facts, and delivery plans.</p>
+      <div className="customer-card-actions"><Link className="secondary-button" href={`/s?customerId=${item.id}`}>Start Chat</Link></div>
+    </li>)}</ul>
+    {nextCursor && state === "ready" && <button className="secondary-button" type="button" onClick={() => void load(nextCursor)}>Load more</button>}
+  </main>;
 }

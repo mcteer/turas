@@ -17,7 +17,7 @@ export async function pilotWorkRuntimeRetirement(args:string[]){
  if(args.length!==7||args[0]!=='--retire-work-runtime'||args[1]!=='--source'||args[3]!=='--input'||args[5]!=='--output'||[args[2],args[4],args[6]].some(value=>!value||value.startsWith('--')))throw Error('Explicit protected work retirement scope required');
  const sourceFile=resolve(args[2]),inputFile=resolve(args[4]),root=resolve(args[6]);
  const target=databaseSafetySourceSchema.parse(await readEvidence(dirname(sourceFile),basename(sourceFile))),scope=scopeSchema.parse(await readEvidence(dirname(inputFile),basename(inputFile)));
- if(target.schemaVersion!==57||target.projectId!==scope.projectId||target.environmentId!==scope.environmentId)throw Error('Exact work retirement project and current schema required');
+ if(target.schemaVersion!==79||target.projectId!==scope.projectId||target.environmentId!==scope.environmentId)throw Error('Exact work retirement project and current schema required');
  const source=await pilotSource(),before=await pilotProtectedSnapshot(),id=randomUUID();await createEvidenceDirectory(root);
  return withRecoveryCancellation(90000,async signal=>{
   let stage='platform_binding',retired=false;
@@ -30,7 +30,7 @@ export async function pilotWorkRuntimeRetirement(args:string[]){
    stage='replacement_connection';signal.throwIfAborted();
    const replacementUrl=new URL(target.databaseUrl);replacementUrl.username=result.replacementRole;replacementUrl.password=scope.password;
    const replacement=new Client({connectionString:replacementUrl.toString(),connectionTimeoutMillis:10000,statement_timeout:5000});
-   try{await replacement.connect();const marker=(await replacement.query('SELECT environment_id,schema_version FROM turas_environment')).rows,control=(await replacement.query('SELECT mode,revision,recovery_id FROM operations_control WHERE environment_id=$1',[scope.environmentId])).rows[0];if(marker.length!==1||marker[0].environment_id!==scope.environmentId||Number(marker[0].schema_version)!==57||control?.mode!=='locked'||Number(control.revision)!==scope.controlRevision||control.recovery_id!==scope.recoveryId)throw Error('Replacement connection binding differs');}finally{await replacement.end();}
+   try{await replacement.connect();const marker=(await replacement.query('SELECT environment_id,schema_version FROM turas_environment')).rows,control=(await replacement.query('SELECT mode,revision,recovery_id FROM operations_control WHERE environment_id=$1',[scope.environmentId])).rows[0];if(marker.length!==1||marker[0].environment_id!==scope.environmentId||Number(marker[0].schema_version)!==79||control?.mode!=='locked'||Number(control.revision)!==scope.controlRevision||control.recovery_id!==scope.recoveryId)throw Error('Replacement connection binding differs');}finally{await replacement.end();}
    stage='final_binding';
    if(JSON.stringify(await verifyDatabaseSafetySourceBinding(target,scope.teamId,signal))!==JSON.stringify(binding)||JSON.stringify(await pilotSource())!==JSON.stringify(source)||JSON.stringify(await pilotProtectedSnapshot())!==JSON.stringify(before))throw Error('Retirement binding or protected checkout changed');
    const receipt={...result,id,...source,projectId:scope.projectId,teamId:scope.teamId,...binding,recordedAt:new Date().toISOString(),replacementConnectionVerified:true,hostedCredentialsChanged:false,providerRunsRetired:false,paidEffectsReconciled:false,restorationReady:false};
