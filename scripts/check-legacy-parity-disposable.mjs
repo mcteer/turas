@@ -88,7 +88,7 @@ if (process.argv.includes("--webkit-child")) {
       if(/^(?:source-library|context-approvals|customer-journey)-webkit-(?:desktop|mobile)-(?:light|dark)\.png$/.test(name))
         copyFileSync(join(images,name),join(folder,name));
     if(result.error||result.status!==0){
-      const failures=[];let reportParseFailed=false;
+      const failures=[];let reportParseFailed=false,globalErrors=[];
       try{
         const collect=suite=>{
           for(const spec of suite.specs??[])for(const test of spec.tests??[]){
@@ -104,10 +104,12 @@ if (process.argv.includes("--webkit-child")) {
           }
           for(const child of suite.suites??[])collect(child);
         };
-        for(const suite of JSON.parse(result.stdout).suites??[])collect(suite);
+        const parsed=JSON.parse(result.stdout);
+        for(const suite of parsed.suites??[])collect(suite);
+        globalErrors=(parsed.errors??[]).slice(0,10).map(error=>({category:/timeout|timed out/i.test(String(error.message??''))?'timeout':'runner',file:String(error.location?.file??'').split(/[\\/]/).at(-1),line:error.location?.line}));
       }catch{reportParseFailed=true;}
       console.error(JSON.stringify({kind:"legacy_webkit_failure",reportParseFailed,
-        runnerFailed:Boolean(result.error),failures:failures.slice(0,20)}));
+        runnerFailed:Boolean(result.error),globalErrors,failures:failures.slice(0,20)}));
       throw Error("018 actual WebKit acceptance failed; inspect private report");
     }
     const report=JSON.parse(result.stdout);

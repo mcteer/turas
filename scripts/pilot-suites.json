@@ -46,14 +46,15 @@
     },
     {
       "file": "tests/unit/pilot/suite-results.test.ts",
-      "expectedCases": 6,
+      "expectedCases": 7,
       "cases": [
         "checks the complete named suite inventory",
         "rejects an unknown registered suite",
         "rejects a partial case list despite a successful exit",
         "rejects duplicate case titles",
         "rejects skipped cases despite successful summary counts",
-        "rejects a retried pass"
+        "rejects a retried pass",
+        "aggregates the complete current CI catalog beyond 128 suites and rejects omissions duplicates and foreign source"
       ]
     },
     {

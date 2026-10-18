@@ -2543,3 +2543,10 @@ warmup. Full final-source validation and hosted recovery/release remain pending.
 The native task-state check also passed on the recovery completion source using
 actual local eve and headless WebKit, with no paid provider calls. Root and pilot
 type checks and the authored-document hygiene check passed.
+
+CI receipt aggregation rejected the expanded catalog because it retained a
+128-suite cap and a path pattern excluding two explicitly registered shared unit
+suites. The reader now has a finite 256-artifact bound and accepts only exact
+registered suite paths. A full-current-catalog regression passed, including
+rejection of omissions, duplicates and foreign source bindings. The preceding
+recovery checkpoint passed 350 unit/contract cases across 60 files.
