@@ -15,8 +15,7 @@
   "git": {
     "deploymentEnabled": {
       "main": true,
-      "fix/customer-profiles": false,
-      "018-legacy-session-fixes": false
+      "fix/customer-profiles": false
     }
   }
 }
