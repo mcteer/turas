@@ -8,6 +8,8 @@ describe('private browser failure diagnostics',()=>{
   const results=browserFailureMetadata(raw,allowed);
   expect(results).toHaveLength(1);expect(results[0]).toMatchObject({file:'mcp-accessibility.spec.ts',line:9,column:24,project:'webkit-desktop-dark',status:'failed',durationMs:5100,category:'operation_timeout',signatures:['Timeout','toBeFocused']});
   expect(JSON.stringify(results)).not.toContain('PRIVATE_');expect(JSON.stringify(results)).not.toContain('/private/customer');
+  const transport=browserFailureMetadata({suites:[{specs:[{file:'mcp-accessibility.spec.ts',tests:[{projectName:'webkit-desktop-dark',results:[{status:'failed',error:{message:'page.reload: PRIVATE_PAGE WebKit encountered an internal error'},steps:[{title:'Reload retained failed history',error:{message:'PRIVATE_PROSE'}},{title:'PRIVATE_PHASE',error:{}}]}]}]}]}]},allowed);
+  expect(transport[0]).toMatchObject({signatures:['page.reload','WebKit encountered an internal error'],phases:['Reload retained failed history']});expect(JSON.stringify(transport)).not.toContain('PRIVATE_');
   expect(results[0].mentionedAccessibilityRules).toEqual(['color-contrast']);expect(JSON.stringify(results)).not.toContain('private-customer-rule');
  });
  it('ignores unapproved files and bounds records, projects and numeric metadata',()=>{
@@ -22,5 +24,7 @@ describe('private browser failure diagnostics',()=>{
 it('reports setup and child process failure classes without exposing private output',()=>{
  const raw={code:1,signal:'SIGKILL',deadlineExpired:false,stdoutTail:'PRIVATE_TOKEN postgresql://private:password@private/db',stderrTail:'Hook timed out: PRIVATE_PROSE Cannot find module PRIVATE_PATH\n at scripts/pilot-environment.ts:115:7'};
  const result=processFailureMetadata(raw);expect(result).toMatchObject({code:1,signal:'SIGKILL',deadlineExpired:false,signatures:['Cannot find module','Hook timed out'],locations:[{file:'scripts/pilot-environment.ts',line:115,column:7}]});expect(JSON.stringify(result)).not.toContain('PRIVATE_');expect(JSON.stringify(result)).not.toContain('postgresql:');
+ const native=processFailureMetadata({message:'PRIVATE_PROSE at tests/fixtures/ordinary-knowledge-native.ts:41:7 {"kind":"knowledge_native_failure","case":"include","phase":"fresh-proposal"} {"kind":"knowledge_native_failure","case":"PRIVATE_CASE","phase":"PRIVATE_PHASE"}'});
+ expect(native).toMatchObject({locations:[{file:'tests/fixtures/ordinary-knowledge-native.ts',line:41,column:7}],phases:[{case:'include',phase:'fresh-proposal'}]});expect(JSON.stringify(native)).not.toContain('PRIVATE_');
  expect(processFailureMetadata({code:'private',signal:'PRIVATE_SIGNAL',message:'PRIVATE_PROSE'})).toEqual({code:null,signal:null,deadlineExpired:false,signatures:[],locations:[]});
 });

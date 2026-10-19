@@ -4,6 +4,7 @@ import { mkdtempSync, writeFileSync, rmSync, mkdirSync, existsSync, readdirSync,
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client } from "pg";
+import { browserFailureMetadata } from "./ci-browser-diagnostics.ts";
 import { processFailureMetadata } from "./ci-process-diagnostics.ts";
 
 if (Number(process.versions.node.split(".")[0]) !== 24) throw Error("Run this check with Node 24");
@@ -110,7 +111,7 @@ if (process.argv.includes("--webkit-child")) {
         globalErrors=(parsed.errors??[]).slice(0,10).map(error=>({category:/timeout|timed out/i.test(String(error.message??''))?'timeout':'runner',file:String(error.location?.file??'').split(/[\\/]/).at(-1),line:error.location?.line}));
       }catch{reportParseFailed=true;}
       console.error(JSON.stringify({kind:"legacy_webkit_failure",reportParseFailed,
-        runnerFailed:Boolean(result.error),globalErrors,failures:failures.slice(0,20)}));
+        runnerFailed:Boolean(result.error),globalErrors,failures:failures.slice(0,20),operationFailures:reportParseFailed?[]:browserFailureMetadata(JSON.parse(result.stdout),new Set(files.map(file=>file.split("/").at(-1))))}));
       throw Error("018 actual WebKit acceptance failed; inspect private report");
     }
     const report=JSON.parse(result.stdout);

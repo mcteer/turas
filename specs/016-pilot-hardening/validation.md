@@ -3466,3 +3466,22 @@ unreleased and amended again; prior rehearsals retain their original identities.
 Both TypeScript projects, authored-document checks and web/eve builds pass for
 this report/drain change. The separate cdf6773 legacy CI WebKit/native-operation
 failures remain unresolved and are not established as report-path regressions.
+
+
+### Legacy acceptance failure diagnostics
+
+The cdf6773 Legacy backend parity run39197365105 failed WebKit desktop-dark
+retained-history at the combined reload/visibility line and native-operations
+with `TimeoutError` inside the knowledge helper. The safe reports did not identify
+a product defect: browser transport details were discarded, and the helper
+filename was absent from the process-location allowlist. No raw run artifact was
+available. Both failures remain historical failures; their causes remain unknown.
+
+The existing sanitizer now permits that exact helper location and fixed knowledge
+case/phase markers. The helper emits only these markers on failure. Retained-history
+reload and visibility use separate named steps, and the legacy collector includes
+standard bounded browser signatures and whitelisted phases. Three existing
+sanitization cases pass with injected private strings, as do both TypeScript
+projects, a native Node24 sanitizer import and controller syntax check. Independent
+review found no privacy or behavior issue. No assertion, retry, timeout, product
+behavior or raw-artifact publishing changed. Subsequent CI remains required.
