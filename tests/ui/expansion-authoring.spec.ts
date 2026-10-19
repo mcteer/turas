@@ -21,7 +21,9 @@ test('assigned partner cannot open expansion or see internal counts',async({page
  await expect(page.getByRole('button',{name:'New Hypothesis',exact:true})).toHaveCount(0);
 });
 test('structured benefit edits remain proposed and preserve immutable identity',async({page},info)=>{
- await expansionUiCustomer(page);await fillExpansionDiscovery(page);
+ await test.step('Authenticate and open expansion',async()=>{await expansionUiCustomer(page);});
+ await test.step('Create the initial proposal',async()=>{await fillExpansionDiscovery(page);});
+ await test.step('Edit and save structured benefit',async()=>{
  await page.getByRole('button',{name:'Edit Hypothesis',exact:true}).click();
  await expect(page.getByLabel('Product Key',{exact:true})).toHaveAttribute('readonly','');
  await page.getByText('Evidence, Benefit, and Validation Details',{exact:true}).click();
@@ -32,12 +34,17 @@ test('structured benefit edits remain proposed and preserve immutable identity',
  await page.getByRole('button',{name:'Save as Proposed',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Revised synthetic structured hypothesis',exact:true})).toBeVisible();
  await expect(page.getByText('Disposition: Proposed',{exact:true})).toBeVisible();
+ });
+ await test.step('Reopen and verify persisted benefit',async()=>{
  await page.getByRole('button',{name:'Edit Hypothesis',exact:true}).click();
  await page.getByText('Evidence, Benefit, and Validation Details',{exact:true}).click();
  await expect(page.getByLabel('Benefit Validation Criterion',{exact:true})).toHaveValue('Customer operating owner validates the observed improvement');
+ });
+ await test.step('Check accessibility and capture editor',async()=>{
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  const axe=await new AxeBuilder({page}).analyze();expect(axe.violations.filter(v=>['serious','critical'].includes(v.impact??''))).toHaveLength(0);
  await page.screenshot({path:info.outputPath('structured-editor.png'),fullPage:true});
+ });
 });
 
 test('lost save acknowledgement survives reload and reconciles one saved revision',async({page})=>{

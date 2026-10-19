@@ -16,6 +16,9 @@ describe("support disposable ownership guard", () => {
     expect(supportUiCaseDiagnostic(report)).toEqual({ failedResults: 3, statuses: ["failed", "timedOut", "unknown"],
       categories: ["case_error", "case_timeout", "locator_assertion"], locations: ["tests/ui/support-readiness.spec.ts:43:10"] });
     expect(JSON.stringify(supportUiCaseDiagnostic(report))).not.toContain("SYNTHETIC_PRIVATE_TEXT");
+    const expansion=supportUiCaseDiagnostic({tests:[{results:[{status:'timedOut',steps:[{title:'Authenticate and open expansion',error:{message:'SYNTHETIC_PRIVATE_TEXT'}},{title:'SYNTHETIC_PRIVATE_TEXT',error:{message:'SYNTHETIC_PRIVATE_TEXT'}}],error:{message:'Test timeout SYNTHETIC_PRIVATE_TEXT',location:{file:'/private/customer/tests/ui/expansion-authoring.spec.ts',line:24,column:3}}}]}]},'expansion');
+    expect(expansion).toMatchObject({phases:['Authenticate and open expansion'],locations:['tests/ui/expansion-authoring.spec.ts:24:3']});
+    expect(JSON.stringify(expansion)).not.toContain('SYNTHETIC_PRIVATE_TEXT');
     expect(supportUiCaseDiagnostic(null)).toEqual({ failedResults: 0, statuses: [], categories: [], locations: [] });
     expect(supportUiCaseDiagnostic({ tests: [{ results: [{ status: "failed", error: { message: "Private assertion",
       location: { file: "/private/customer/tests/ui/support-advice.spec.ts", line: 50, column: 80 } } }] }] }).locations)

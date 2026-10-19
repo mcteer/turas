@@ -57,7 +57,7 @@ async function main() {
         await environment.start();
         const output = resolve(directory, `${project}-${index}`);
         const run = spawnSync(process.execPath, ["node_modules/@playwright/test/cli.js", "test", `${current.file}:${current.line}`, `--project=${project}`,
-          "--reporter=json", "--forbid-only", "--retries=0", `--output=${output}`], {
+          "--reporter=json", "--forbid-only", "--retries=0", "--trace=retain-on-failure", `--output=${output}`], {
           env: { ...process.env, TURAS_UI_BASE_URL: environment.origin, TURAS_EXPANSION_UI_FIXTURE_READY: "1" },
           encoding: "utf8", timeout: 240000, maxBuffer: 10000000,
         });
@@ -66,7 +66,7 @@ async function main() {
         await privateCaptures(output);
         const report = JSON.parse(run.stdout), diagnostic = expansionUiGlobalDiagnostic(report);
         if (diagnostic.globalErrors) console.error(JSON.stringify({ gate: "expansion-ui-runner", phase: "execution", project, file: current.file, ...diagnostic }));
-        const caseDiagnostic = expansionUiCaseDiagnostic(report);
+        const caseDiagnostic = expansionUiCaseDiagnostic(report,"expansion");
         if (caseDiagnostic.failedResults) console.error(JSON.stringify({ gate: "expansion-ui-case", project,
           file: current.file, line: current.line, ...caseDiagnostic }));
         const counts = verifyExecutionUiReport(report, [current]);

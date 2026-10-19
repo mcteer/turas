@@ -3385,3 +3385,20 @@ Startup and issuance are enclosed by child-stop cleanup. No lease, case or
 fixture deadline was extended. These are filesystem
 and owned runtime observations; maintenance HTTP private-byte reads, personnel
 and report authorization, composed verification and hosted recovery remain pending.
+
+
+### Expansion timeout diagnostics
+
+The earlier574e241 CI WebKit structured-edit case exceeded its unchanged30-second
+limit without a useful failing-operation location. No product race was established.
+At the a6c3176 source plus named-phase/private-trace diagnostic diff, the owned
+authoring matrix passed20/20 across all four WebKit projects, without retries,
+with source digest77e250641fb8bbbab609f4009a6443b9c9d420a97e4dddfc60ee6d378db0fab6.
+The desktop structured edit took19.1seconds: authentication/navigation11.8seconds,
+initial creation2.9seconds, structured edit0.4seconds and accessibility/capture1.4seconds.
+These timings do not establish the historical CI failure cause. The a6c3176 main
+CI run39194860128 also passed, including expansion WebKit.
+
+The runner now retains private failure traces and reports only whitelisted public
+phase names and expansion source locations, with a sanitization assertion in the
+existing diagnostic test. No timeout, retry allowance or assertion was relaxed.
