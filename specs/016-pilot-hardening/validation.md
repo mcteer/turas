@@ -4860,3 +4860,32 @@ remains locked with zero verification rows. Root/pilot types, documentation and
 eight journal/deadline checks pass. These are owned integration results; actual
 candidate hosted controls, cron/native admission, held-effect safety and full
 service composition remain required. Inventory:910cases across167suites.
+
+
+### Installed enforcement and conservative accounting audits — 2026-10-19
+
+The genuine locked-owner decision now inspects14 authored hold, admission,
+settlement and cost triggers, their actual function bodies/security/ownership,
+the original output-used SQL function and effective table/column accounting
+authority for both legacy and replacement runtime roles. An owned check rejects
+a disabled trigger, a replaced guard or quota function, and direct column/table
+grants to either runtime role. No migrations execute during the audit.
+
+The typed-model audit compares all current and independently retained ordinary
+and parity operations, holds and observations. Original ceilings, scopes,
+baselines, known higher exposures and the retained parity reservation floor
+cannot disappear. Baseline-only conversations are checked even without operation
+or hold rows. Unknown amounts remain held; no settlement/refund or model call
+is performed. A separate database audit rejects active attempts, send retries,
+schedules, budgets, watchdogs, hosted/local jobs and the complete physical lease
+inventory. Provider execution and ingress remain separate obligations.
+
+Independent review found and corrected replacement-role grants, the retained
+parity reservation floor, baseline-only quota resets and omitted hosted/worker
+leases. It found no remaining blocker in these scoped components. The owned
+eight-case decision suite passes before the final hosted-dispatch negative;
+the latest focused case passes that negative and all typed-model boundary checks.
+Final complete rerun remains pending. Root/pilot types and documentation checks
+pass. The catalog is912cases/167suites. These audits do not establish all paid
+effect accounting, provider/cron closure, required service, hosted acceptance
+or unlock authority; T096/T097 remain open.

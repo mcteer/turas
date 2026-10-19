@@ -1,3 +1,7 @@
+import {auditRecoveryDispatchState} from '../../../lib/server/operations/recovery-dispatch-audit';
+import {auditRecoveryModelHolds} from '../../../lib/server/operations/recovery-model-hold-audit';
+import {createOwnedConversation} from '../../../lib/server/conversations/repository';
+import {auditRecoveryEffectGuards} from '../../../lib/server/operations/recovery-effect-guards';
 import {measureWorkOldHttpAdmission,requireMeasuredWorkOldHttpAdmission} from '../../../lib/server/operations/work-old-http-admission';
 import {PilotHostHttpJournal} from '../../../scripts/pilot-host-http-journal';
 import {measureWorkManagedTerminalInventory,requireMeasuredWorkManagedTerminalInventory} from '../../../lib/server/operations/work-managed-terminal-inventory';
@@ -214,3 +218,79 @@ it('repeats real-target old HTTP admission under owner fences and one exact cumu
   const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();try{expect((await owner.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');expect((await owner.query('SELECT count(*)::int AS count FROM operations_recovery_verifications')).rows[0].count).toBe(0);}finally{await owner.end();}
  }finally{transport.mockRestore();}
 }),210000);
+
+
+it('audits installed immutable holds and effect admission guards and refuses disabled altered or writable enforcement',async()=>fixture(async input=>{
+ const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
+ try{
+  const inspect=()=>withLockedWorkRecoveryDecision(input,(db,target)=>auditRecoveryEffectGuards(db,target));
+  expect(await inspect()).toMatchObject({guards:14,installedEffectGuardsVerified:true,heldAccountingVerified:false,providerExecutionClosed:false,restorationReady:false});
+  await owner.query('ALTER TABLE operations_recovery_model_holds DISABLE TRIGGER recovery_model_hold_immutable');
+  try{await expect(inspect()).rejects.toThrow('Installed recovery effect enforcement differs');}finally{await owner.query('ALTER TABLE operations_recovery_model_holds ENABLE TRIGGER recovery_model_hold_immutable');}
+  const original=(await owner.query("SELECT pg_get_functiondef('public.turas_recovery_paid_release_guard()'::regprocedure) AS sql")).rows[0].sql;
+  await owner.query('CREATE OR REPLACE FUNCTION turas_recovery_paid_release_guard() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$');
+  try{await expect(inspect()).rejects.toThrow('Installed recovery effect enforcement differs');}finally{await owner.query(original);}
+  await owner.query('GRANT UPDATE(ceiling_tokens) ON operations_recovery_model_holds TO turas_runtime');
+  try{await expect(inspect()).rejects.toThrow('Runtime recovery accounting authority differs');}finally{await owner.query('REVOKE UPDATE(ceiling_tokens) ON operations_recovery_model_holds FROM turas_runtime');}
+  const originalOutput=(await owner.query("SELECT pg_get_functiondef('public.turas_ordinary_output_used(uuid)'::regprocedure) AS sql")).rows[0].sql;
+  await owner.query('CREATE OR REPLACE FUNCTION turas_ordinary_output_used(conversation uuid) RETURNS bigint LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,public AS $$ SELECT 0::bigint $$');
+  try{await expect(inspect()).rejects.toThrow('Installed ordinary held accounting function differs');}finally{await owner.query(originalOutput);}
+  await owner.query('GRANT INSERT ON operations_cost_reconciliations TO turas_runtime_016');
+  try{await expect(inspect()).rejects.toThrow('Runtime recovery accounting authority differs');}finally{await owner.query('REVOKE INSERT ON operations_cost_reconciliations FROM turas_runtime_016');}
+  expect(await inspect()).toMatchObject({installedEffectGuardsVerified:true,restorationReady:false});
+  expect((await owner.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');
+  expect(Number((await owner.query('SELECT count(*) FROM operations_recovery_verifications')).rows[0].count)).toBe(0);
+ }finally{await owner.end();}
+}),210000);
+
+
+it('audits genuine retained and current typed model holds without settling unknowns or reopening budgets',async()=>{
+ let operation='',budget='',conversationId='',baselineOnly='';
+ await fixture(async input=>{
+  const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
+  try{await withRetainedDenialFixture(owner,input.scope.environmentId,dirname(input.sourceFile),{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async retained=>{
+   await quarantineRestoredAuthority(owner,input.scope,retained);
+   const inspectDispatch=()=>withLockedWorkRecoveryDecision(input,(db,target)=>auditRecoveryDispatchState(db,target));
+   expect(await inspectDispatch()).toMatchObject({currentDatabaseDispatchClosed:true,providerExecutionClosed:false,restorationReady:false});
+   await owner.query("INSERT INTO watchdog_jobs(attempt_id,deadline_at,state,lease_owner,lease_expires_at,next_attempt_at) SELECT id,deadline_at,'leased','controlled-unretired-lease',clock_timestamp()+interval '20 seconds',clock_timestamp() FROM response_attempts WHERE conversation_id=$1",[conversationId]);
+   try{await expect(inspectDispatch()).rejects.toThrow('Recovery database effect remains dispatchable: watchdogs');}finally{await owner.query('DELETE FROM watchdog_jobs WHERE attempt_id IN(SELECT id FROM response_attempts WHERE conversation_id=$1)',[conversationId]);}
+
+   const hostedJob=randomUUID();await owner.query('ALTER TABLE operations_hosted_jobs DISABLE TRIGGER hosted_job_admission');
+   try{await owner.query(`INSERT INTO operations_hosted_jobs(id,environment_id,domain_kind,domain_job_id,source_generation,source_digest,code_version,lease_id,lease_expires_at,creation_tag,image_digest,state,deadline_at,input_digest,input_bytes,budget_reservation_id)
+    VALUES($1,$2,'artifact',$3,1,repeat('a',64),repeat('a',40),$4,clock_timestamp()+interval '20 seconds',$5,repeat('a',64),'admitted',clock_timestamp()+interval '1 minute',repeat('a',64),16,$6)`,[hostedJob,input.scope.environmentId,randomUUID(),randomUUID(),randomUUID(),randomUUID()]);}finally{await owner.query('ALTER TABLE operations_hosted_jobs ENABLE TRIGGER hosted_job_admission');}
+   try{await expect(inspectDispatch()).rejects.toThrow('Recovery database effect remains dispatchable: hosted-jobs');}finally{await owner.query('DELETE FROM operations_hosted_jobs WHERE id=$1',[hostedJob]);}
+   const inspect=()=>withLockedWorkRecoveryDecision(input,(db,target)=>auditRecoveryModelHolds(db,target,retained));
+   expect(await inspect()).toMatchObject({operations:2,holds:2,typedModelAccountingVerified:true,allPaidEffectsVerified:false,providerExecutionClosed:false,restorationReady:false});
+   await withLockedWorkRecoveryDecision(input,async(db,target)=>{await expect(auditRecoveryModelHolds(db,target,{...retained})).rejects.toThrow('Actual independently retained');});
+   await owner.query('ALTER TABLE operations_recovery_model_holds DISABLE TRIGGER recovery_model_hold_immutable');
+   await owner.query('UPDATE operations_recovery_model_holds SET ceiling_micro_usd=1 WHERE operation_id=$1',[operation]);
+   await owner.query('ALTER TABLE operations_recovery_model_holds ENABLE TRIGGER recovery_model_hold_immutable');
+   try{await expect(inspect()).rejects.toThrow('Original typed model hold missing or changed');}finally{await owner.query('ALTER TABLE operations_recovery_model_holds DISABLE TRIGGER recovery_model_hold_immutable');await owner.query('UPDATE operations_recovery_model_holds SET ceiling_micro_usd=200000 WHERE operation_id=$1',[operation]);await owner.query('ALTER TABLE operations_recovery_model_holds ENABLE TRIGGER recovery_model_hold_immutable');}
+   await owner.query(`INSERT INTO operations_recovery_model_observations(environment_id,operation_kind,operation_id,observed_evidence_digest,observed_captured_at,evidence_kind,ceiling_tokens,ceiling_micro_usd,actual_tokens,actual_micro_usd,settled_at,snapshot_digest,source_captured_at,recovery_id,control_revision,observed_digest_kind)
+    SELECT environment_id,operation_kind,operation_id,repeat('e',64),observed_captured_at,evidence_kind,ceiling_tokens,ceiling_micro_usd,9000,NULL,clock_timestamp(),snapshot_digest,source_captured_at,recovery_id,control_revision,observed_digest_kind FROM operations_recovery_model_observations WHERE operation_kind='ordinary_tokens' LIMIT 1`);
+   try{await expect(inspect()).rejects.toThrow('Known higher model exposure is not held');}finally{await owner.query('ALTER TABLE operations_recovery_model_observations DISABLE TRIGGER recovery_model_observation_immutable');await owner.query("DELETE FROM operations_recovery_model_observations WHERE observed_evidence_digest=repeat('e',64)");await owner.query('ALTER TABLE operations_recovery_model_observations ENABLE TRIGGER recovery_model_observation_immutable');}
+   await owner.query('ALTER TABLE parity_evaluation_budgets DISABLE TRIGGER recovery_parity_budget_guard');await owner.query('ALTER TABLE parity_evaluation_budgets DISABLE TRIGGER recovered_request_replay');
+   await owner.query('UPDATE parity_evaluation_budgets SET reserved_micro_usd=200000 WHERE id=$1',[budget]);
+   await owner.query('ALTER TABLE parity_evaluation_budgets ENABLE TRIGGER recovery_parity_budget_guard');await owner.query('ALTER TABLE parity_evaluation_budgets ENABLE TRIGGER recovered_request_replay');
+   try{await expect(inspect()).rejects.toThrow('original reservation floor differs');}finally{await owner.query('ALTER TABLE parity_evaluation_budgets DISABLE TRIGGER recovered_request_replay');await owner.query('UPDATE parity_evaluation_budgets SET reserved_micro_usd=500000 WHERE id=$1',[budget]);await owner.query('ALTER TABLE parity_evaluation_budgets ENABLE TRIGGER recovered_request_replay');}
+   await owner.query('ALTER TABLE ordinary_conversation_allowances DISABLE TRIGGER ordinary_allowance_immutable');await owner.query('ALTER TABLE ordinary_conversation_allowances DISABLE TRIGGER recovered_request_replay');
+   await owner.query('UPDATE ordinary_conversation_allowances SET baseline_output_tokens=0 WHERE conversation_id=$1',[baselineOnly]);
+   await owner.query('ALTER TABLE ordinary_conversation_allowances ENABLE TRIGGER ordinary_allowance_immutable');await owner.query('ALTER TABLE ordinary_conversation_allowances ENABLE TRIGGER recovered_request_replay');
+   try{await expect(inspect()).rejects.toThrow('Retained ordinary conversation baseline missing or changed');}finally{await owner.query('ALTER TABLE ordinary_conversation_allowances DISABLE TRIGGER ordinary_allowance_immutable');await owner.query('ALTER TABLE ordinary_conversation_allowances DISABLE TRIGGER recovered_request_replay');await owner.query('UPDATE ordinary_conversation_allowances SET baseline_output_tokens=3000 WHERE conversation_id=$1',[baselineOnly]);await owner.query('ALTER TABLE ordinary_conversation_allowances ENABLE TRIGGER ordinary_allowance_immutable');await owner.query('ALTER TABLE ordinary_conversation_allowances ENABLE TRIGGER recovered_request_replay');}
+   expect(await inspect()).toMatchObject({typedModelAccountingVerified:true});
+   expect((await owner.query('SELECT actual_micro_usd,settled_at FROM parity_evaluation_operations WHERE id=$1',[operation])).rows[0]).toEqual({actual_micro_usd:null,settled_at:null});
+   expect((await owner.query('SELECT reserved_micro_usd,state FROM parity_evaluation_budgets WHERE id=$1',[budget])).rows[0]).toEqual({reserved_micro_usd:'500000',state:'closed'});
+   expect((await owner.query('SELECT turas_ordinary_output_used($1) AS used',[conversationId])).rows[0].used).toBe('13192');
+  });}finally{await owner.end();}
+ },async owner=>{
+  const f=await pilotPublishedKnowledgeFixture(owner as unknown as PoolClient,'primary'),created=await createOwnedConversation(f.actor,{requestKey:randomUUID(),title:'Controlled original recovery accounting'});conversationId=created.conversation.id;const message=randomUUID(),attempt=randomUUID();operation=randomUUID();budget=randomUUID();
+  await owner.query("INSERT INTO submitted_messages(id,conversation_id,request_key,body_digest,text) VALUES($1,$2,$3,repeat('a',64),'Synthetic accounting')",[message,conversationId,randomUUID()]);
+  await owner.query("INSERT INTO response_attempts(id,conversation_id,message_id,input_digest,dispatch_state,response_state,deadline_at) VALUES($1,$2,$3,repeat('a',64),'admitted','running',clock_timestamp()+interval '5 minutes')",[attempt,conversationId,message]);
+  baselineOnly=(await createOwnedConversation(f.actor,{requestKey:randomUUID(),title:'Controlled baseline-only recovery accounting'})).conversation.id;
+  await owner.query('INSERT INTO ordinary_conversation_allowances(conversation_id,baseline_output_tokens) VALUES($1,3000)',[baselineOnly]);
+  await owner.query('INSERT INTO ordinary_conversation_allowances(conversation_id,baseline_output_tokens) VALUES($1,5000)',[conversationId]);
+  await owner.query('INSERT INTO ordinary_model_operations(id,conversation_id,attempt_id,ceiling_tokens) VALUES($1,$2,$3,8192)',[randomUUID(),conversationId,attempt]);
+  await owner.query("INSERT INTO parity_evaluation_budgets(id,environment_id,workspace_id,owner_principal_id,cap_micro_usd,reserved_micro_usd,pricing,expires_at) VALUES($1,$2,$3,$4,1000000,500000,'{}',clock_timestamp()+interval '1 hour')",[budget,(await owner.query('SELECT environment_id FROM turas_environment')).rows[0].environment_id,f.actor.workspaceId,f.actor.principalId]);
+  await owner.query("INSERT INTO parity_evaluation_operations(id,budget_id,provider,ceiling_micro_usd) VALUES($1,$2,'synthetic-no-provider',200000)",[operation,budget]);
+ });
+},210000);
