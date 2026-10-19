@@ -3408,7 +3408,7 @@ existing diagnostic test. No timeout, retry allowance or assertion was relaxed.
 
 The fixed artifact maintenance path extends the unreleased079 admission with
 exact read kind/version/digest/size/generation. The actual owned encrypted
-capture/cold restore contains a normal published synthetic artifact and its
+capture/cold restore contains a synthetic published artifact fixture and its
 original bytes. Through the restricted child runtime, the canonical original
 reader and same authenticated transaction returned the exact bytes. The final
 focused integration passed1/1 in82.04seconds: both wrong-kind directions,
@@ -3428,3 +3428,41 @@ Personnel/report/gap byte HTTP coverage, hosted admission, current-denial/effect
 reconciliation and complete recovery verification remain pending. Prior079
 rehearsals retain their original identities; another final-manifest cold
 rehearsal is required before release.
+
+
+### Canonical published report maintenance bytes and local drain
+
+The owned work-capture exercise now normally authors, renders and reviews report
+artifacts with the explicit prepared immutable local renderer, then publishes a
+monthly report through the governed preview/decision path. All four rendered
+originals join the six-namespace inventory, producing10 objects. The independently
+restored restricted child returns the actual published PDF through the canonical
+report reader; its size and digest match the captured record. Exact report/revision
+binding, wrong-type denial, ordinary-route denial, corrupted-copy503 and retained
+request ceiling429 pass. The final integrated exercise passed1/1 in94.28seconds.
+
+The expanded fixture exposed a real drain bug: completed local render jobs retain
+immutable future lease timestamps, but the generic drain list omitted their
+terminal `succeeded` state. Only that known local terminal case is now excluded;
+running jobs and unknown/other tables remain conservative. Six checkpoint cases
+pass, including a running job that blocks and the same terminal job that permits
+capture. Explicit migration6/6 and admission/object-restore17/17 also pass, for
+30 focused passing cases with the actual report HTTP exercise.
+
+Earlier failures are retained: an incorrect preparation-manifest array lookup,
+the completed-local-job drain failure, and503 `brand_unapproved` when the restored
+fixture omitted the renderer identity used in the accepted brand digest. The
+existing bounded manifest parser and explicit matching renderer configuration
+correct the fixture; brand/source checks remain intact. Independent review found
+no blocking scope, authorization, transaction or drain issue.
+
+Report bytes are buffered and final-authenticated within the normal repeatable
+read snapshot; the helper's ordinary behavior still uses fresh transactions per
+chunk. This is owned recovery proof, not hosted admission, complete current
+denial/effect reconciliation or client-network revocation. Workforce/gap byte
+coverage and the composed recovery verifier remain pending. Migration079 is
+unreleased and amended again; prior rehearsals retain their original identities.
+
+Both TypeScript projects, authored-document checks and web/eve builds pass for
+this report/drain change. The separate cdf6773 legacy CI WebKit/native-operation
+failures remain unresolved and are not established as report-path regressions.

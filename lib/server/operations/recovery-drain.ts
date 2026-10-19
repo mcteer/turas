@@ -7,6 +7,9 @@ export async function recoveryLeasesOutstanding(db:Client|PoolClient){
   WHERE c.table_schema='public' AND t.table_type='BASE TABLE' AND c.column_name IN('lease_until','lease_expires_at') ORDER BY c.table_name,c.column_name`)).rows;
  if(!columns.length||columns.length>100||columns.some(c=>!/^[a-z_][a-z0-9_]*$/.test(c.table_name)||!['lease_until','lease_expires_at'].includes(c.column_name)))throw Error('Recovery lease inventory unavailable');
  const tables=[...new Set<string>(columns.map(c=>c.table_name))];await db.query('LOCK TABLE '+tables.map(name=>'public."'+name+'"').join(',')+' IN SHARE MODE');
- const expressions=columns.map(c=>`EXISTS(SELECT 1 FROM public."${c.table_name}" WHERE "${c.column_name}">clock_timestamp()${c.has_state?" AND state::text NOT IN('done','failed','cancelled','expired','stale','completed','released','deleted')":''})`);
+ // Local success is terminal after the bounded executor has exited; its
+ // immutable lease timestamp is audit metadata, not ongoing execution. Unknown
+ // tables/states retain the conservative active-lease behavior.
+ const expressions=columns.map(c=>`EXISTS(SELECT 1 FROM public."${c.table_name}" WHERE "${c.column_name}">clock_timestamp()${c.has_state?` AND state::text NOT IN('done','failed','cancelled','expired','stale','completed','released','deleted'${c.table_name==='operations_local_jobs'?",'succeeded'":''})`:''})`);
  return (await db.query('SELECT '+expressions.join(' OR ')+" OR EXISTS(SELECT 1 FROM public.report_deliveries WHERE state='dispatching') AS active")).rows[0]?.active!==false;
 }

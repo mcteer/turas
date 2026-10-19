@@ -1,3 +1,8 @@
+import {parsePilotImagePreparation} from '../../../lib/contracts/pilot-images';
+import {reportsDeliveryFixture,addReviewedReportActivity} from '../../fixtures/reports/delivery';
+import {pilotLoadReportFixture} from '../../fixtures/pilot/load-delivery';
+import {previewReportPublication,submitReportPublicationDecision} from '../../../lib/server/reports/service';
+import {readReportObject} from '../../../lib/server/reports/store';
 import {createArtifactDatabaseFixture} from '../../fixtures/artifact-database';
 import {authenticateRecoveryHttpRead} from '../../../lib/server/operations/recovery-http-read';
 import {issueOwnedRecoveryHttpRead,retireOwnedRecoveryHttpRead} from '../../../lib/server/operations/recovery-http-read-issuer';
@@ -25,7 +30,10 @@ import {activeObjectNamespaces} from '../../../lib/server/storage/inventory';
 import {pilotPublishedKnowledgeFixture} from '../../fixtures/pilot/knowledge';
 
 it('authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority',async()=>{
+ const preparation=process.env.TURAS_PILOT_UI_PREPARATION_FILE,renderer=process.env.TURAS_PILOT_RENDERER_IMAGE??(preparation?parsePilotImagePreparation(await readFile(preparation)).images.find(image=>image.kind==='renderer')?.localImageId:undefined);
+ if(!renderer||!/^sha256:[a-f0-9]{64}$/.test(renderer))throw Error('Explicit prepared recovery report renderer required');
  await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});const root=await mkdtemp(resolve('local-artifacts/016/work-rehearsal-')),key=randomBytes(32);
+ let sourceReport:{artifactId:string;reportId:string;revisionId:string;customerId:string;workspaceId:string;digest:string;sizeBytes:number;objectKey:string}|undefined;
  let candidate:WorkCaptureCandidate|undefined,sourceEnvironmentId='',sourceProfile:{workspaceId:string;customerId:string;revisionId:string;artifactVersionId:string}|undefined;
  try{
   await mkdir(join(root,'keys'),{mode:0o700});await writeFile(join(root,'keys','key'),key,{mode:0o600});await mkdir(join(root,'cold'),{mode:0o700});
@@ -33,10 +41,20 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
    const db=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await db.connect();
    try{
     sourceEnvironmentId=environment.environmentId;const profile=await pilotPublishedKnowledgeFixture(db as any,'primary');await db.query('BEGIN');const original=Buffer.from('Synthetic work restore artifact'),source=await createArtifactDatabaseFixture(db as unknown as PoolClient,profile.actor,profile.customerId,null,original,createHash('sha256').update(original).digest('hex'));await db.query("UPDATE artifact_extraction_runs SET state='published',scan_receipt='{}',coverage='{\"total\":1,\"visited\":1,\"omitted\":[]}',manifest_digest=$2,published_at=now() WHERE id=$1",[source.runId,source.originalDigest]);await db.query("UPDATE artifact_versions SET state='processing' WHERE id=$1",[source.versionId]);await db.query("UPDATE artifact_versions SET state='ready',submitted_at=now() WHERE id=$1",[source.versionId]);sourceProfile={workspaceId:profile.actor.workspaceId,customerId:profile.customerId,revisionId:profile.originalRevisionId,artifactVersionId:source.versionId};await db.query('COMMIT');
+    process.env.TURAS_PILOT_RENDERER_IMAGE=renderer;process.env.TURAS_REPORTS_ENABLED='true';
+    const baseline=await reportsDeliveryFixture(),activity=await addReviewedReportActivity(baseline,{narrative:'Controlled normally reviewed recovery byte fixture.'});
+    const delivery={plan:{created:baseline.created,content:baseline.content,decision:baseline.decision},engagementId:baseline.engagementId,baselineId:baseline.baselineId,activity};
+    const reports=await pilotLoadReportFixture(db as unknown as PoolClient,{actors:[baseline.reviewer,baseline.author],customers:[{id:baseline.customerId}]},delivery,environment.signal);
+    const report=reports.reports[1],publication=await previewReportPublication(baseline.reviewer,report.reportId,{action:'publish',expectedVersion:report.version});
+    await submitReportPublicationDecision(baseline.reviewer,report.reportId,{action:'publish',expectedVersion:report.version,requestKey:randomUUID(),rationale:'Review normally rendered synthetic recovery artifact',previewId:publication.previewId,previewDigest:publication.previewDigest});
+    const reportArtifacts=(await db.query('SELECT a.*,r.report_id FROM report_artifacts a JOIN report_revisions r ON r.id=a.revision_id ORDER BY a.id')).rows;expect(reportArtifacts).toHaveLength(4);
+    const pdf=reportArtifacts.find(row=>row.revision_id===report.revisionId&&row.format==='pdf');if(!pdf)throw Error('Normally rendered published PDF missing');
+    sourceReport={artifactId:pdf.id,reportId:pdf.report_id,revisionId:pdf.revision_id,customerId:pdf.customer_id,workspaceId:pdf.workspace_id,digest:pdf.content_digest,sizeBytes:Number(pdf.size_bytes),objectKey:pdf.object_key};
     const recoveryId=randomUUID(),revision=Number((await db.query("UPDATE operations_control SET mode='locked',revision=revision+1,recovery_id=$2 WHERE environment_id=$1 RETURNING revision",[environment.environmentId,recoveryId])).rows[0].revision);
     const objects=join(root,'source-objects'),workflow=join(root,'empty-workflow');await mkdir(objects,{mode:0o700});await mkdir(workflow,{mode:0o700});
     const store=new LocalPrivateObjects(objects,environment.environmentId,10485760);
     for(const namespace of activeObjectNamespaces){await mkdir(join(objects,'e_'+environmentObjectId(environment.environmentId),namespace),{recursive:true,mode:0o700});const bytes=Buffer.from('Synthetic work restore '+namespace),digest=createHash('sha256').update(bytes).digest('hex');await store.put(objectKey(environment.environmentId,namespace,namespace.startsWith('artifact')?digest:randomUUID()),(async function*(){yield bytes;})(),{sizeBytes:bytes.length,digest});}
+    for(const artifact of reportArtifacts){const bytes=await readReportObject(artifact.object_key,artifact.content_digest,Number(artifact.size_bytes));await store.put(objectKey(environment.environmentId,'report',artifact.object_key),(async function*(){yield bytes;})(),{sizeBytes:bytes.length,digest:artifact.content_digest});}
     const owned=await captureOwnedRecoveryCandidate({environmentId:environment.environmentId,recoveryId,controlRevision:revision,sourceRoot:objects,workflowRoot:workflow,keyFile:join(root,'keys','key'),keyReference:'synthetic-work-key',keyVersion:'1',output:join(root,'capture')},environment.signal);
     // This synthetic fixture supplies an empty managed-execution inventory;
     // it makes no claim to checkpoint or resume any provider workflow.
@@ -47,9 +65,10 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
    }finally{await db.end();}
   },{postgresMajor:18,deadlineMs:180000});
   await rm(join(root,'capture'),{recursive:true,force:true});await rm(join(root,'source-objects'),{recursive:true,force:true});await rm(join(root,'empty-workflow'),{recursive:true,force:true});
-  if(!candidate||!sourceProfile)throw Error('Synthetic work candidate unavailable');const captured=candidate,expectedProfile=sourceProfile;
+  if(!candidate||!sourceProfile||!sourceReport)throw Error('Synthetic work candidate unavailable');const captured=candidate,expectedProfile=sourceProfile,expectedReport=sourceReport;
   await writeFile(join(root,'cold','candidate.json'),JSON.stringify(captured),{mode:0o600});
   await withPilotEnvironment(async environment=>{
+   process.env.TURAS_PILOT_RENDERER_IMAGE=renderer;
    const db=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await db.connect();
    try{
     const ownedTarget=await mintOwnedRestoreTarget({container:environment.databaseContainer,ownerLabel:environment.databaseOwnerLabel,environmentId:environment.environmentId},environment.signal);
@@ -58,10 +77,10 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
     await expect(mintOwnedRestoreTarget({container:environment.databaseContainer,ownerLabel:'0'.repeat(12),environmentId:environment.environmentId},environment.signal)).rejects.toThrow('Original owned');
     await db.query("UPDATE operations_control SET mode='locked'");
     const result=await pilotRecovery(['--restore-work-isolated','--environment',captured.environmentId,'--candidate',join(root,'cold','candidate.json'),'--bundle',join(root,'cold','candidate.encrypted'),'--key-file',join(root,'keys','key'),'--output',join(root,'restore')]);
-    expect(result).toMatchObject({acceptedContentVerified:true,ledgerVerified:true,objectsVerified:true,objectCount:6,requiredScopeQuarantined:true,currentAuthorityVerified:false,permanentReplayVerified:false,workflowReconciled:false,restorationReady:false,mode:'locked'});
+    expect(result).toMatchObject({acceptedContentVerified:true,ledgerVerified:true,objectsVerified:true,objectCount:10,requiredScopeQuarantined:true,currentAuthorityVerified:false,permanentReplayVerified:false,workflowReconciled:false,restorationReady:false,mode:'locked'});
     if(!('physicalIntegrity' in result))throw Error('Measured physical checkpoint missing');
     const proof=result.physicalIntegrity,scope={environmentId:sourceEnvironmentId,recoveryId:proof.recoveryId,controlRevision:proof.controlRevision},storeRoot=join(root,'restore','objects');
-    expect(Object.isFrozen(proof)).toBe(true);expect(proof.restorationReady).toBe(false);expect(proof.acceptedContentDigest).toBe(captured.acceptedContentDigest);expect(proof.objectCount).toBe(6);
+    expect(Object.isFrozen(proof)).toBe(true);expect(proof.restorationReady).toBe(false);expect(proof.acceptedContentDigest).toBe(captured.acceptedContentDigest);expect(proof.objectCount).toBe(10);
     await db.query('BEGIN');
     expect(await requireMeasuredWorkIntegrity(db,proof,scope,storeRoot,environment.signal)).toBe(proof);
     await expect(requireMeasuredWorkIntegrity(db,JSON.parse(JSON.stringify(proof)),scope,storeRoot,environment.signal)).rejects.toThrow('Actual measured');
@@ -126,7 +145,7 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
     const warmSaved={DATABASE_URL:process.env.DATABASE_URL,DATABASE_URL_UNPOOLED:process.env.DATABASE_URL_UNPOOLED};
     try{
      Object.assign(process.env,{DATABASE_URL:warmUrl.toString(),DATABASE_URL_UNPOOLED:warmUrl.toString()});await environment.start();
-     for(const path of ['/api/operations/recovery-read/'+randomUUID()+'/profile','/api/customers/'+expectedProfile.customerId+'/profile','/api/operations/recovery-read/'+randomUUID()+'/artifact']){const response=await fetch(environment.origin+path,{redirect:'manual',signal:environment.signal});expect([401,403,503]).toContain(response.status);await response.body?.cancel();}
+     for(const path of ['/api/operations/recovery-read/'+randomUUID()+'/profile','/api/customers/'+expectedProfile.customerId+'/profile','/api/operations/recovery-read/'+randomUUID()+'/artifact','/api/operations/recovery-read/'+randomUUID()+'/report']){const response=await fetch(environment.origin+path,{redirect:'manual',signal:environment.signal});expect([401,403,503]).toContain(response.status);await response.body?.cancel();}
     }finally{await environment.stop();Object.assign(process.env,warmSaved);}
     await interruptedPreparation(false);
     await withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async(runtime,_signal,applicationEnvironment)=>{
@@ -182,6 +201,22 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
 
       }finally{await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,artifactProof.id);}
 
+      let reportAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
+      await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{await owner.query('BEGIN');try{reportAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedReport.workspaceId,customerId:expectedReport.customerId,deadline:Date.now()+20000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:2,deploymentId:null,readKind:'report',recordId:expectedReport.artifactId});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}});
+      if(!reportAdmission)throw Error('Actual report admission missing');
+      const reportProof=reportAdmission,reportPath=environment.origin+'/api/operations/recovery-read/'+reportProof.id+'/report',reportHeaders={cookie:sessionCookie(reportProof.actor.token,reportProof.actor.expiresAt).split(';')[0],'x-turas-recovery-read':reportProof.secret};
+      try{
+       const wrongType=await fetch(reportPath.replace('/report','/artifact'),{headers:reportHeaders,redirect:'manual'});expect(wrongType.status).toBe(403);await wrongType.body?.cancel();
+       await db.query('UPDATE operations_recovery_http_reads SET record_revision_id=$2 WHERE id=$1',[reportProof.id,randomUUID()]);
+       try{const drift=await fetch(reportPath,{headers:reportHeaders,redirect:'manual'});expect(drift.status).toBe(403);await drift.body?.cancel();}finally{await db.query('UPDATE operations_recovery_http_reads SET record_revision_id=$2 WHERE id=$1',[reportProof.id,expectedReport.revisionId]);}
+       await db.query('UPDATE operations_recovery_http_reads SET record_parent_id=$2 WHERE id=$1',[reportProof.id,randomUUID()]);
+       try{const drift=await fetch(reportPath,{headers:reportHeaders,redirect:'manual'});expect(drift.status).toBe(403);await drift.body?.cancel();}finally{await db.query('UPDATE operations_recovery_http_reads SET record_parent_id=$2 WHERE id=$1',[reportProof.id,expectedReport.reportId]);}
+       const reportResponse=await fetch(reportPath,{headers:reportHeaders,redirect:'manual'});if(reportResponse.status!==200){const failure=await reportResponse.json() as {error:{code:string}};throw Error('Recovery report HTTP denied: '+reportResponse.status+' '+failure.error.code);}expect(reportResponse.status).toBe(200);expect(reportResponse.headers.get('content-type')).toBe('application/pdf');const bytes=Buffer.from(await reportResponse.arrayBuffer());expect(bytes.length).toBe(expectedReport.sizeBytes);expect(createHash('sha256').update(bytes).digest('hex')).toBe(expectedReport.digest);
+       const ordinary=await fetch(environment.origin+'/api/reports/artifacts/'+expectedReport.artifactId,{headers:reportHeaders,redirect:'manual'});expect([401,403,503]).toContain(ordinary.status);await ordinary.body?.cancel();
+       const copied=join(applicationEnvironment.TURAS_REPORT_STORE_ROOT,'objects',expectedReport.objectKey);await writeFile(copied,Buffer.alloc(bytes.length),{mode:0o600});
+       try{const corrupt=await fetch(reportPath,{headers:reportHeaders,redirect:'manual'});expect(corrupt.status).toBe(503);await corrupt.body?.cancel();}finally{await writeFile(copied,bytes,{mode:0o600});}
+       const exhausted=await fetch(reportPath,{headers:reportHeaders,redirect:'manual'});expect(exhausted.status).toBe(429);await exhausted.body?.cancel();
+      }finally{await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,reportProof.id);}
       expect(body.data.customer.id).toBe(expectedProfile.customerId);expect(body.data.acceptedFacts.some(fact=>fact.id===expectedProfile.revisionId)).toBe(true);
       // A correctly ordered owner transition waits on the shared recovery
       // fence, then proceeds when the actual runtime read transaction closes.

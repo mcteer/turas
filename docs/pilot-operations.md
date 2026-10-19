@@ -750,7 +750,7 @@ removes them after closing runtime access; authenticated restored originals rema
 Filesystem parity does not prove personnel/report authority or HTTP byte service. This helper does not start HTTP service,
 permit ordinary locked routes or create a recovery verification receipt.
 
-### Fixed maintenance profile and artifact reads
+### Fixed maintenance profile, artifact and report reads
 
 The unreleased079 migration includes owner-controlled, short-lived recovery HTTP
 admissions. Existing001–078 migrations are unchanged. This amendment requires a
@@ -786,8 +786,17 @@ at final release, not continuous network-stream revocation after release. Failed
 corrupt reads retain their committed request reservation. Wrong type, changed
 metadata and Range requests deny; the ordinary artifact route stays locked.
 The source-reader policy alone is explicitly read-only; destructive operations
-retain their normal closed admission. Report, workforce and gap-export HTTP
-read coverage, current authority/effect reconciliation and composed verification
+retain their normal closed admission. Report GET `/api/operations/recovery-read/<admission-id>/report` additionally
+binds the report and revision identities and revision number. It uses the canonical
+validated/published artifact reader, including brand, visibility and current-source
+fences, with the normal repeatable-read semantics and versioned response headers.
+The entire file is consumed and final-authenticated within the capability. The
+owned exercise explicitly supplies the same immutable prepared renderer identity
+to both source and restored applications; an omitted/mismatched identity correctly
+withholds the bytes under the existing brand check. This is not a generic image
+configuration or hosted provisioning proof.
+
+Workforce and gap-export HTTP read coverage, current authority/effect reconciliation and composed verification
 are still required.
 
 ### Finite complete managed-run inventory closure
@@ -926,3 +935,10 @@ continuation does not append it twice or extend its expiry. Source corrections
 outside its exact scope require separately applicable authority. No continuation
 settles an unknown charge, releases a reservation, tops up a cap, changes billing,
 changes the selected model or authorizes hosted infrastructure.
+
+
+Completed local execution records keep immutable lease timestamps for audit. The
+capture drain check now recognizes `operations_local_jobs.succeeded` as terminal,
+after executor completion and publication checks. A running local job with the
+same future timestamp still blocks capture. Other tables and unknown states keep
+the existing conservative treatment. This does not prove provider/effect closure.
