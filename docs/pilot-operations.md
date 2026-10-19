@@ -732,6 +732,17 @@ This foundation neither launches restricted HTTP service nor creates complete
 recovery verification. Callers retain transaction responsibility; a final drift
 check cannot undo writes already committed by the callback.
 
+For direct restricted database diagnostics, `withOwnedRestoredRuntime` applies the
+checked-in runtime grants only to a capability-bound owned restore. An owner-held
+nonblocking database lease excludes concurrent capabilities for the same target.
+The legacy role stays retired; the replacement receives a temporary credential
+and direct connection for at most60seconds. Success, callback failure, rollback,
+ambiguous commit acknowledgment and cancellation all close the login, clear its
+credential, drain its backends and revoke CONNECT and inheritance. An unrelated
+role binding or changed closed grant boundary is rejected. The callback receives
+no connection URL or owner credential. This helper does not start HTTP service,
+permit ordinary locked routes or create a recovery verification receipt.
+
 ### Finite complete managed-run inventory closure
 
 After the exact source is schema 079 and locked, the read-only managed inspection

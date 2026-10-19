@@ -3319,3 +3319,17 @@ The lightweight AsyncLocalStorage accessor now lives separately from the owned
 operator constructor, leaving normal configuration free of restoration imports
 and authored bundle splitting. The exact-source eve build passes after this
 correction; the earlier CI failures remain recorded and require fresh CI.
+
+
+The owned restored-runtime foundation rechecks the actual measured bytes and
+closed grant boundary under recovery locks, applies authored runtime grants and
+opens only a temporary direct restricted database connection. A nonblocking
+owner-held database lease excludes separate capabilities for the same target.
+The positive connection and control/DDL denials, pre-COMMIT rollback, lost COMMIT
+acknowledgment, callback failure, cancellation and same-database lease exclusion
+pass in the expanded existing work-restore case. Ten integration/configuration
+cases passed; the final measured-integrity correction also passes the actual
+work-restore integration case. Root/pilot TypeScript, web/eve builds, documentation
+and diff checks pass. Independent review found no remaining blocker. No URL or
+owner credential is exposed to the callback. Both runtime logins remain closed
+afterward. This does not prove restricted HTTP service or complete T088 recovery.

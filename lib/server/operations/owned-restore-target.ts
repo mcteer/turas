@@ -2,6 +2,9 @@ import {Client} from 'pg';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {resolve} from 'node:path';
+import {readFile} from 'node:fs/promises';
+import {randomBytes} from 'node:crypto';
+import {recoveryGrantCheckpoint} from './grant-checkpoint';
 import {z} from 'zod';
 import {requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
 import {recoveryDigest} from '../../contracts/pilot-recovery';
@@ -10,9 +13,10 @@ import {requireMeasuredWorkIntegrity,type RestoredWorkIntegrity} from './restore
 const scopeSchema=z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive()});
 type Scope=z.infer<typeof scopeSchema>;
 export type OwnedRestoreTarget=Readonly<{contract:'pilot-owned-restore-target-v1';runnerEnvironmentId:string;targetDigest:string}>;
-type Binding={connection:string;container:string;ownerLabel:string;containerId:string;runnerEnvironmentId:string;identity:string;restored?:{scope:Scope;integrity:RestoredWorkIntegrity;storeRoot:string}};
+type Binding={connection:string;container:string;ownerLabel:string;containerId:string;runnerEnvironmentId:string;identity:string;restored?:{scope:Scope;integrity:RestoredWorkIntegrity;storeRoot:string};runtime?:{binding:string|null;closedDigest:string;active:boolean}};
 const targets=new WeakMap<object,Binding>(),connections=new WeakMap<object,{target:OwnedRestoreTarget;scope:Scope}>();
 const execute=promisify(execFile);
+const runtimeActive=new WeakSet<object>();
 function binding(target:OwnedRestoreTarget){const b=targets.get(target);if(!b)throw Error('Actual owned restore target capability required');return b;}
 async function containerIdentity(b:Pick<Binding,'connection'|'container'|'ownerLabel'>,signal:AbortSignal){
  signal.throwIfAborted();
@@ -88,4 +92,75 @@ export async function withOwnedRestoreTarget<T>(target:OwnedRestoreTarget,scope:
   connections.set(db,{target,scope:selectedScope});await requireOwnedRestoreConnection(db,target,selectedScope,signal);
   const result=await run(db);await requireOwnedRestoreConnection(db,target,selectedScope,signal);return result;
  });
+}
+
+/** Temporary direct restricted connection for an owned restored target. Authored
+ * runtime grants are explicit here, never a request-handler migration. No URL or
+ * owner credential leaves this helper. This is not HTTP admission or recovery
+ * verification. Both logins are closed and temporary backends drained on exit. */
+export async function withOwnedRestoredRuntime<T>(target:OwnedRestoreTarget,raw:Scope,signal:AbortSignal,run:(runtime:Client,signal:AbortSignal)=>Promise<T>){
+ const b=binding(target),scope=Object.freeze(scopeSchema.parse(raw));
+ if(runtimeActive.has(target))throw Error('Owned restored runtime already active');
+ runtimeActive.add(target);
+ // One immutable target/scope operation may be resumed only from its measured
+ // closed state; an unrelated pre-existing role comment is never adopted.
+ const operation=recoveryDigest({target:target.targetDigest,scope}),deadline=AbortSignal.any([signal,AbortSignal.timeout(60000)]);
+ try{return await withOwnedRestoreTarget(target,scope,deadline,async owner=>{
+  // Session-level exclusion lasts through callback and cleanup, even for a
+  // separately minted capability targeting this same physical database.
+  if((await owner.query("SELECT pg_try_advisory_lock(hashtextextended('pilot-owned-restored-runtime',16021)) AS acquired")).rows[0]?.acquired!==true)throw Error('Owned restored runtime database lease active');
+  const proof=b.restored!.integrity;
+  if(await recoveryGrantCheckpoint(owner)!==(b.runtime?.closedDigest??proof.closedTargetGrantsDigest))throw Error('Restored runtime grant boundary changed');
+  const roles=(await owner.query("SELECT oid,rolname,rolcanlogin,rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls,shobj_description(oid,'pg_authid') AS binding FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') ORDER BY rolname")).rows;
+  if(roles.length!==2||roles.some(role=>role.rolcanlogin||role.rolsuper||role.rolcreatedb||role.rolcreaterole||role.rolreplication||role.rolbypassrls)||roles[1].binding!==(b.runtime?.binding??null))throw Error('Closed restricted restored runtime roles required');
+  if((await owner.query("SELECT 1 FROM pg_auth_members WHERE member=ANY($1::oid[]) OR roleid=ANY($1::oid[])",[roles.map(role=>role.oid)])).rowCount||(await owner.query("SELECT 1 FROM pg_stat_activity WHERE usename IN('turas_runtime','turas_runtime_016')")).rowCount)throw Error('Unbound restored runtime membership or backend');
+  const password=randomBytes(32).toString('base64url'),url=new URL(b.connection);url.username='turas_runtime_016';url.password=password;
+  const runtime=new Client({connectionString:url.toString(),connectionTimeoutMillis:5000,statement_timeout:5000});runtime.on('error',()=>{});
+  const state=b.runtime??{binding:null as string|null,closedDigest:proof.closedTargetGrantsDigest,active:false};b.runtime=state;state.active=true;
+  try{
+   const grants=await readFile(resolve('scripts/db-role-setup.sql'),'utf8');deadline.throwIfAborted();
+   await owner.query('BEGIN');
+   try{
+    await owner.query("SET LOCAL lock_timeout='3000ms'; SET LOCAL transaction_timeout='30s'");
+    await owner.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16020))',[scope.environmentId]);await owner.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[scope.environmentId]);
+    await requireOwnedRestoreConnection(owner,target,scope,deadline);
+    if(await recoveryGrantCheckpoint(owner)!==state.closedDigest)throw Error('Restored runtime grant boundary changed');
+    await requireMeasuredWorkIntegrity(owner,proof,scope,b.restored!.storeRoot,deadline);
+    await owner.query(grants);
+    await owner.query('GRANT turas_runtime TO turas_runtime_016');
+    await owner.query((await owner.query("SELECT format('GRANT CONNECT ON DATABASE %I TO turas_runtime_016',current_database()) AS sql")).rows[0].sql);
+    await owner.query((await owner.query("SELECT format('COMMENT ON ROLE turas_runtime_016 IS %L',$1::text) AS sql",[operation])).rows[0].sql);
+    await owner.query((await owner.query("SELECT format('ALTER ROLE turas_runtime_016 LOGIN INHERIT PASSWORD %L VALID UNTIL %L',$1::text,$2::text) AS sql",[password,new Date(Date.now()+60000).toISOString()])).rows[0].sql);
+    const valid=(await owner.query(`SELECT has_schema_privilege('turas_runtime_016','public','USAGE')
+      AND has_table_privilege('turas_runtime_016','login_sessions','SELECT')
+      AND NOT has_schema_privilege('turas_runtime_016','public','CREATE')
+      AND NOT has_database_privilege('turas_runtime_016',current_database(),'CREATE')
+      AND NOT has_table_privilege('turas_runtime_016','operations_control','UPDATE')
+      AND NOT has_table_privilege('turas_runtime_016','operations_recovery_verifications','INSERT')
+      AND NOT EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND pg_has_role('turas_runtime_016',c.relowner,'MEMBER')) AS valid`)).rows[0]?.valid;
+    if(valid!==true)throw Error('Restored runtime restricted grants differ');deadline.throwIfAborted();await owner.query('COMMIT');state.binding=operation;
+   }catch(error){await owner.query('ROLLBACK');throw error;}
+   await runtime.connect();deadline.throwIfAborted();
+   const identity=(await runtime.query("SELECT current_user,session_user,current_database() AS database,environment_id,schema_version FROM turas_environment")).rows;
+   if(identity.length!==1||identity[0].current_user!=='turas_runtime_016'||identity[0].session_user!=='turas_runtime_016'||identity[0].database!==decodeURIComponent(url.pathname.slice(1))||identity[0].environment_id!==scope.environmentId||Number(identity[0].schema_version)!==79)throw Error('Actual direct restored runtime required');
+   let interrupted!:()=>void;
+   const cancelled=new Promise<never>((_,reject)=>{interrupted=()=>reject(Error('Owned restored runtime interrupted'));deadline.addEventListener('abort',interrupted,{once:true});if(deadline.aborted)interrupted();});
+   try{return await Promise.race([run(runtime,deadline),cancelled]);}
+   finally{deadline.removeEventListener('abort',interrupted);}
+  }finally{
+   // Cleanup uses a fresh bounded signal: cancellation must never skip closing
+   // an already committed temporary login. The pinned cluster is checked again.
+   try{await connect(b,AbortSignal.timeout(30000),async cleanup=>{
+    await cleanup.query('ALTER ROLE turas_runtime NOLOGIN; ALTER ROLE turas_runtime_016 NOLOGIN PASSWORD NULL');
+    await cleanup.query("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE usename IN('turas_runtime','turas_runtime_016') AND pid<>pg_backend_pid()");
+    await cleanup.query((await cleanup.query("SELECT format('REVOKE CONNECT ON DATABASE %I FROM PUBLIC,turas_runtime,turas_runtime_016',current_database()) AS sql")).rows[0].sql);
+    await cleanup.query('REVOKE turas_runtime FROM turas_runtime_016');
+    const remaining=(await cleanup.query("SELECT 1 FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') AND rolcanlogin UNION ALL SELECT 1 FROM pg_stat_activity WHERE usename IN('turas_runtime','turas_runtime_016')")).rows;
+    if(remaining.length)throw Error('Owned restored runtime closure unverified');
+    const comment=(await cleanup.query("SELECT shobj_description(oid,'pg_authid') AS binding FROM pg_roles WHERE rolname='turas_runtime_016'")).rows;
+    if(comment.length!==1||(comment[0].binding!==null&&comment[0].binding!==operation))throw Error('Restored runtime operation binding changed');
+    state.binding=comment[0].binding;state.closedDigest=await recoveryGrantCheckpoint(cleanup);
+   });}finally{state.active=false;await runtime.end();}
+  }
+ });}finally{runtimeActive.delete(target);}
 }

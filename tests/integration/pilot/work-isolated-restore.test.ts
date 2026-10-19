@@ -3,7 +3,7 @@ import {getServerConfig} from '../../../lib/server/config';
 import {withAuthenticatedOwnerRecoveryRead} from '../../../lib/server/operations/authenticated-recovery-read';
 import {readProfile} from '../../../lib/server/profiles/read';
 import type {PoolClient} from 'pg';
-import {mintOwnedRestoreTarget,bindOwnedRestoredSource,withOwnedRestoreTarget,requireOwnedRestoreConnection} from '../../../lib/server/operations/owned-restore-target';
+import {mintOwnedRestoreTarget,bindOwnedRestoredSource,withOwnedRestoreTarget,requireOwnedRestoreConnection,withOwnedRestoredRuntime} from '../../../lib/server/operations/owned-restore-target';
 import {restoreOwnedWorkDump} from '../../../lib/server/operations/pg-restore';
 import {measureRestoredWorkIntegrity,requireMeasuredWorkIntegrity} from '../../../lib/server/operations/restored-work-integrity';
 import {it,expect} from 'vitest';
@@ -49,6 +49,7 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
    const db=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await db.connect();
    try{
     const ownedTarget=await mintOwnedRestoreTarget({container:environment.databaseContainer,ownerLabel:environment.databaseOwnerLabel,environmentId:environment.environmentId},environment.signal);
+    const otherOwnedTarget=await mintOwnedRestoreTarget({container:environment.databaseContainer,ownerLabel:environment.databaseOwnerLabel,environmentId:environment.environmentId},environment.signal);
     expect(Object.isFrozen(ownedTarget)).toBe(true);
     await expect(mintOwnedRestoreTarget({container:environment.databaseContainer,ownerLabel:'0'.repeat(12),environmentId:environment.environmentId},environment.signal)).rejects.toThrow('Original owned');
     await db.query("UPDATE operations_control SET mode='locked'");
@@ -65,6 +66,7 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
     await db.query('COMMIT');
     await expect(bindOwnedRestoredSource(ownedTarget,JSON.parse(JSON.stringify(proof)),storeRoot,environment.signal)).rejects.toThrow('Actual measured');
     await bindOwnedRestoredSource(ownedTarget,proof,storeRoot,environment.signal);
+    await bindOwnedRestoredSource(otherOwnedTarget,proof,storeRoot,environment.signal);
     await expect(withOwnedRestoreTarget(JSON.parse(JSON.stringify(ownedTarget)),scope,environment.signal,async()=>{})).rejects.toThrow('Actual owned restore target');
     await expect(withOwnedRestoreTarget(ownedTarget,{...scope,recoveryId:randomUUID()},environment.signal,async()=>{})).rejects.toThrow('Actual bound');
     await withOwnedRestoreTarget(ownedTarget,scope,environment.signal,async owner=>{
@@ -95,6 +97,41 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
     finally{process.env.DATABASE_URL=priorRuntime;}
     await expect(withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async()=>{throw Error('Controlled scoped read failure');})).rejects.toThrow('Controlled scoped read failure');
     expect(getServerConfig().TURAS_ENVIRONMENT_ID).toBe(environment.environmentId);
+    // Real SQL rollback and ambiguous COMMIT acknowledgments must both close
+    // the role and leave an explicitly repeatable owned operation.
+    const originalQuery=Client.prototype.query;
+    async function interruptedPreparation(afterCommit:boolean){
+     let failNext=true;
+     Client.prototype.query=function(this:Client,...args:any[]){
+      if(failNext&&args[0]==='COMMIT'){
+       failNext=false;
+       if(afterCommit)return (originalQuery as any).apply(this,args).then(()=>{throw Error('Controlled commit acknowledgment loss');});
+       return Promise.reject(Error('Controlled preparation rollback'));
+      }
+      return (originalQuery as any).apply(this,args);
+     } as typeof Client.prototype.query;
+     try{await expect(withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async()=>{throw Error('Unexpected runtime callback');})).rejects.toThrow(afterCommit?'Controlled commit acknowledgment loss':'Controlled preparation rollback');}
+     finally{Client.prototype.query=originalQuery;}
+     expect(failNext).toBe(false);
+     expect((await db.query("SELECT 1 FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') AND rolcanlogin")).rowCount).toBe(0);
+     expect((await db.query("SELECT 1 FROM pg_auth_members WHERE member='turas_runtime_016'::regrole")).rowCount).toBe(0);
+    }
+    await interruptedPreparation(false);
+    await withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async runtime=>{
+     expect((await runtime.query('SELECT current_user,session_user')).rows[0]).toEqual({current_user:'turas_runtime_016',session_user:'turas_runtime_016'});
+     expect((await runtime.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');
+     await expect(runtime.query("UPDATE operations_control SET mode='open'")).rejects.toMatchObject({code:'42501'});
+     await expect(runtime.query('CREATE TABLE runtime_escalation(id int)')).rejects.toMatchObject({code:'42501'});
+     await expect(withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async()=>{})).rejects.toThrow('already active');
+     await expect(withOwnedRestoredRuntime(otherOwnedTarget,scope,environment.signal,async()=>{})).rejects.toThrow('database lease active');
+    });
+    expect((await db.query("SELECT 1 FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') AND rolcanlogin")).rowCount).toBe(0);
+    await interruptedPreparation(true);
+    await expect(withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async()=>{throw Error('Controlled runtime failure');})).rejects.toThrow('Controlled runtime failure');
+    const interrupted=new AbortController();
+    await expect(withOwnedRestoredRuntime(ownedTarget,scope,interrupted.signal,async runtime=>{interrupted.abort();await runtime.query('SELECT pg_sleep(20)');})).rejects.toThrow('interrupted');
+    expect((await db.query("SELECT 1 FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') AND rolcanlogin")).rowCount).toBe(0);
+    expect((await db.query("SELECT 1 FROM pg_stat_activity WHERE usename IN('turas_runtime','turas_runtime_016')")).rowCount).toBe(0);
     await expect(withOwnedRestoreTarget(ownedTarget,scope,environment.signal,async owner=>{await owner.query('UPDATE operations_control SET revision=revision+1');})).rejects.toThrow('Exact bound locked');
     expect((await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows[0]).toEqual({environment_id:sourceEnvironmentId,schema_version:79});
     expect(Number((await db.query('SELECT count(*) FROM operations_recovery_quarantines')).rows[0].count)).toBe(7);
