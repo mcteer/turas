@@ -5079,3 +5079,30 @@ starting an isolated evaluation app. Its governing evaluation-source suite passe
 all3 local cases on recheck. Bounded auth/eve/child/signature diagnostics were added
 without increasing startup deadlines or adding retries; this is not a claim that
 the older CI failure has been resolved. Inventory:921cases across167suites.
+
+
+### Legacy Production pool exclusion — 2026-10-19 (component)
+
+The released077 peer pool measurement now requires exact sourcef8d196f, current
+Production deployment and both known cron bindings. Owner-issued finite nonces
+are durably recorded before insertion, observed through the immutable runtime,
+independently revoked and checked for actual denial. Exclusive phase admission
+precedes all provider requests; repeated initial/final phases cannot reset the
+six-app/eight-metadata request envelope. Direct owner URLs reject timeout and
+transport overrides. Private namespace contents and parent entries are fsynced
+before external work; restart cleanup uses the original identity and source.
+
+Focused owned case18 passes (one executed, seventeen unselected), including
+wrong routing/body/cron, copied proof, phase replay, original-nonce restart
+cleanup and parent-directory sync failure with zero external work. Evidence:
+`local-artifacts/016/legacy-production-pool-owned-v2-private.json`. Independent
+read-only review found no remaining concrete blocker in this narrow component.
+This is not password authentication, all-provider closure or hosted readiness.
+
+At b747e76, the complete seventeen-case recovery-decision suite and both Eve and
+Next builds pass. The older thirteen-of-fifteen failure and CI startup failure
+remain retained; these newer local results do not establish fresh complete CI.
+The current inventory is922cases across167suites. The whole-file recovery suite
+bound is3900seconds: seventeen210-second cases, one270-second case and60seconds
+for startup/cleanup. Individual domain and case deadlines are unchanged.
+T096/T097, hosted acceptance and directory cleanup remain incomplete.

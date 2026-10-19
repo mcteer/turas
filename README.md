@@ -800,6 +800,6 @@ automated captures from human reports and preserve immutable capture provenance;
 G20/G21 require hosted attribution and freshness. These contracts do not establish
 completed hosted exercises or grant release approval.
 
-The current local deterministic inventory is921cases across167suites. Fresh
+The current local deterministic inventory is922cases across167suites. Fresh
 complete current-source verification remains required; focused contract checks
 and historical catalog passes do not establish that result.

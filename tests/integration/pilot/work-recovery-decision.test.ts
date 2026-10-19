@@ -28,9 +28,16 @@ import {closeRuntimePool} from '../../../lib/server/db/client';
 import {retireOwnedLegacyRuntime} from '../../../lib/server/operations/runtime-retirement';
 import {requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
 import {withWorkRecoveryReadDeadline,withLockedWorkRecoveryDecision,withLockedWorkRecoveryTarget,requireLockedWorkRecoveryConnection} from '../../../lib/server/operations/locked-work-recovery-target';
-const state=vi.hoisted(()=>({connections:new Map<string,string>(),blobObjects:new Map<string,Uint8Array>(),retainedKey:null as Uint8Array|null,platformChanged:false,sourceChanged:false,dirty:false,cleanupUnavailable:false,commit:'a'.repeat(40),digest:'b'.repeat(64),catalog:'c'.repeat(64)}));
+const state=vi.hoisted(()=>({connections:new Map<string,string>(),blobObjects:new Map<string,Uint8Array>(),retainedKey:null as Uint8Array|null,platformChanged:false,sourceChanged:false,dirty:false,cleanupUnavailable:false,directorySyncFailurePath:null as string|null,commit:'a'.repeat(40),digest:'b'.repeat(64),catalog:'c'.repeat(64)}));
 // Actual owned PostgreSQL; only cloud transport/DNS and source attribution are
 // controlled. These checks do not establish hosted platform acceptance.
+vi.mock('node:fs/promises',async original=>{
+ const actual=await original<typeof import('node:fs/promises')>(),{constants}=await import('node:fs');
+ return {...actual,open:async(...args:unknown[])=>{const handle=await Reflect.apply(actual.open,actual,args);
+  if(state.directorySyncFailurePath&&typeof args[0]==='string'&&resolve(args[0])===state.directorySyncFailurePath&&typeof args[1]==='number'&&(args[1]&constants.O_DIRECTORY)!==0)Object.defineProperty(handle,'sync',{value:async()=>{throw Error('Controlled peer parent namespace sync failure');}});
+  return handle;
+ }};
+});
 vi.mock('pg',async original=>{const actual=await original<typeof import('pg')>();return {...actual,Client:class extends actual.Client{constructor(config?:import('pg').ClientConfig){if(state.cleanupUnavailable&&config?.connectionString?.includes('fixture.neon.tech'))throw Error('Controlled cleanup connection unavailable');super(config?.connectionString&&state.connections.has(config.connectionString)?{...config,connectionString:state.connections.get(config.connectionString)}:config);}}};});
 vi.mock('../../../lib/server/operations/database-binding',async original=>{const actual=await original<typeof import('../../../lib/server/operations/database-binding')>();return {...actual,databaseTargetDigest:(connection:string,environmentId:string,name?:string)=>actual.databaseTargetDigest(state.connections.get(connection)??connection,environmentId,name)};});
 vi.mock('../../../scripts/pilot-source',()=>({pilotSource:async()=>({sourceCommit:state.sourceChanged?'d'.repeat(40):state.commit,sourceDigest:state.digest,catalogDigest:state.catalog})}));
@@ -631,3 +638,62 @@ it('serves exact private conversation recovery HTTP for each real role and refus
   }
  });
 },210000);
+
+it('binds an unrelated released Production pool with durable owner nonces and refuses override URLs replayed phases and false routing',async()=>{
+ const {withPilotEnvironment}=await import('../../../scripts/pilot-environment');
+ const {measureWorkLegacyProductionPool,requireMeasuredWorkLegacyProductionPool,retireOriginalWorkLegacyProductionNonce}=await import('../../../lib/server/operations/work-legacy-production-pool');
+ const {hashSessionToken}=await import('../../../lib/server/auth/sessions');
+ const {readdir}=await import('node:fs/promises');
+ await withPilotEnvironment(async peerEnvironment=>{
+  const peerConnection=requireOwnedPilotDatabase(process.env,true),peer=new Client({connectionString:peerConnection});await peer.connect();
+  try{await fixture(async input=>{
+   const root=dirname(input.sourceFile),peerUrl=new URL(peerConnection);peerUrl.hostname='production.fixture.neon.tech';peerUrl.port='';peerUrl.search='?sslmode=verify-full';state.connections.set(peerUrl.href,peerConnection);
+   const sourceFile=join(root,'peer-source-private.json'),source={contract:'pilot-database-safety-source-v1',projectId:'prj_recovery',environmentId:peerEnvironment.environmentId,target:'production',schemaVersion:77,connectionBinding:'protected-operator-connection',databaseUrl:peerUrl.href};await writeFile(sourceFile,JSON.stringify(source),{mode:0o600});
+   let mode:'normal'|'wrong-routing'|'changed-response'|'changed-cron'='normal',calls=0;const legacy='f8d196fad60a96698656188074d0abe668bc7991';
+   const targetOwner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await targetOwner.connect();
+   const transport=vi.spyOn(globalThis,'fetch').mockImplementation(async(raw,options)=>{
+    calls++;const request=new Request(raw,options),url=new URL(request.url);if(request.method!=='GET')throw Error('Peer metadata and auth GETs only');
+    if(url.origin==='https://api.vercel.com'){
+     if(request.headers.get('authorization')!=='Bearer controlled-peer-token')throw Error('Exact controlled peer operator required');
+     if(url.pathname==='/v9/projects/prj_recovery')return Response.json({id:'prj_recovery',accountId:'team_recovery',targets:{production:{id:'dpl_production'}},crons:{deploymentId:'dpl_production',enabledAt:1000,disabledAt:null,updatedAt:1000,definitions:[{host:'production.vercel.app',path:'/api/internal/research-maintenance',schedule:'17 3 * * *'},{host:'production.vercel.app',path:'/eve/v1/turas/watchdog',schedule:mode==='changed-cron'?'*/2 * * * *':'* * * * *'}]},protectionBypass:{controlled_peer_key:{scope:'automation-bypass',createdAt:1000,createdBy:'operator'}}});
+     if(url.pathname==='/v13/deployments/dpl_production')return Response.json({id:'dpl_production',projectId:'prj_recovery',ownerId:'team_recovery',target:'production',readyState:'READY',url:'production.vercel.app',meta:{githubCommitSha:legacy}});
+     throw Error('Unexpected peer metadata route');
+    }
+    if(url.origin!=='https://production.vercel.app'||url.pathname!=='/api/auth/session'||url.search||request.headers.get('x-vercel-protection-bypass')!=='controlled_peer_key')throw Error('Exact immutable peer auth GET required');
+    const nonce=request.headers.get('cookie')?.match(/^__Host-turas_session=([A-Za-z0-9_-]{43})$/)?.[1];if(!nonce)throw Error('Controlled normal secure cookie required');
+    const owner=mode==='wrong-routing'?targetOwner:peer;
+    // Actual independent077 database and released auth projection. Only its
+    // cloud transport is controlled; this is not hosted peer acceptance.
+    const row=(await owner.query(`SELECT s.expires_at,p.id AS principal_id,p.login_name,p.display_name,m.id AS membership_id,m.workspace_id,m.kind,m.role
+     FROM login_sessions s JOIN principals p ON p.id=s.principal_id JOIN memberships m ON m.principal_id=p.id JOIN workspaces w ON w.id=m.workspace_id
+     WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>clock_timestamp() AND p.active AND m.active AND w.active ORDER BY m.id LIMIT 1`,[hashSessionToken(nonce)])).rows[0];
+    if(!row)return Response.json({error:{code:'authentication_required'}},{status:401,headers:{'cache-control':'private, no-store'}});
+    return Response.json({data:{principal:{id:row.principal_id,loginName:row.login_name,displayName:row.display_name},workspace:{id:mode==='changed-response'?randomUUID():row.workspace_id},membership:{id:row.membership_id,kind:row.kind,role:row.role},expiresAt:row.expires_at.toISOString(),csrfToken:'a'.repeat(64)}},{headers:{'cache-control':'private, no-store'}});
+   });
+   try{
+    const args={target:input,productionSourceFile:sourceFile,token:'controlled-peer-token',journalDirectory:root};
+    for(const parameter of ['statement_timeout','query_timeout','connectionTimeoutMillis','options','host']){
+     const unsafe=new URL(peerUrl);unsafe.searchParams.set(parameter,parameter==='host'?'foreign.example.com':'0');const file=join(root,'unsafe-'+parameter+'.json');await writeFile(file,JSON.stringify({...source,databaseUrl:unsafe.href}),{mode:0o600});const count=calls;
+     await expect(measureWorkLegacyProductionPool({...args,productionSourceFile:file})).rejects.toThrow();expect(calls).toBe(count);
+    }
+    const duplicate=new URL(peerUrl);duplicate.searchParams.append('sslmode','verify-full');const duplicateFile=join(root,'duplicate-ssl.json');await writeFile(duplicateFile,JSON.stringify({...source,databaseUrl:duplicate.href}),{mode:0o600});const beforeInvalid=calls;await expect(measureWorkLegacyProductionPool({...args,productionSourceFile:duplicateFile})).rejects.toThrow();expect(calls).toBe(beforeInvalid);
+    const beforeSyncFailure=calls;state.directorySyncFailurePath=root;
+    try{await expect(measureWorkLegacyProductionPool({...args,journalDirectory:join(root,'sync-failure')})).rejects.toThrow('parent namespace sync failure');expect(calls).toBe(beforeSyncFailure);expect((await peer.query('SELECT count(*)::int AS active FROM login_sessions WHERE revoked_at IS NULL')).rows[0].active).toBe(0);}
+    finally{state.directorySyncFailurePath=null;}
+    const proof=await measureWorkLegacyProductionPool(args);expect(proof).toMatchObject({ownerIssuedNonceRetired:true,legacyProductionRuntimePoolExcluded:true,reviewedPeerCronRuntimeExcluded:true,passwordAuthenticationVerified:false,allProviderIngressClosed:false,restorationReady:false,apiCalls:4,httpCalls:3});
+    const initialCalls=calls;await expect(measureWorkLegacyProductionPool(args)).rejects.toThrow();expect(calls).toBe(initialCalls);
+    await withLockedWorkRecoveryDecision(input,async(db,target)=>{
+     const count=calls;await expect(requireMeasuredWorkLegacyProductionPool(db,target,{...proof},input.signal)).rejects.toThrow('Genuine fresh');expect(calls).toBe(count);
+     expect(await requireMeasuredWorkLegacyProductionPool(db,target,proof,input.signal)).toBe(proof);const repeated=calls;await expect(requireMeasuredWorkLegacyProductionPool(db,target,proof,input.signal)).rejects.toThrow();expect(calls).toBe(repeated);
+    });
+    const journal=join(root,(await readdir(root)).find(name=>name.startsWith('peer-pool-'))!);
+    expect(await retireOriginalWorkLegacyProductionNonce(journal,'initial')).toMatchObject({retired:true,newNonceIssued:false,requestEnvelopeReset:false});
+    const original=JSON.parse(await readFile(join(journal,'initial-credentials-private.json'),'utf8'));await peer.query('UPDATE login_sessions SET revoked_at=NULL WHERE id=$1',[original.id]);expect(await retireOriginalWorkLegacyProductionNonce(journal,'initial')).toMatchObject({retired:true,newNonceIssued:false});
+    for(const scenario of ['wrong-routing','changed-response','changed-cron'] as const){mode=scenario;await expect(measureWorkLegacyProductionPool({...args,journalDirectory:join(root,scenario)})).rejects.toThrow();}mode='normal';
+    expect((await peer.query('SELECT count(*)::int AS active FROM login_sessions WHERE revoked_at IS NULL')).rows[0].active).toBe(0);
+    expect((await targetOwner.query('SELECT count(*)::int AS probes FROM login_sessions WHERE principal_id=$1 AND revoked_at IS NULL',[DEMO_IDS.mcteer])).rows[0].probes).toBe(0);
+    expect((await targetOwner.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');
+   }finally{transport.mockRestore();await targetOwner.end();}
+  });}finally{await peer.end();}
+ },{postgresMajor:18,priorSchema:77,deadlineMs:240000});
+},270000);
