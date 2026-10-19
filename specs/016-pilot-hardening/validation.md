@@ -4432,3 +4432,55 @@ unselected cases, now measuring the remaining current profile records and consum
 the exact union successfully as well as rejecting partial/duplicate/forged coverage.
 Catalog remains853cases/155suites. Post-quarantine fresh SDK credentials, complete
 service/Workflow/effect composition and T097 remain pending.
+
+### Fresh post-quarantine MCP probes — 2026-10-19
+
+Captured MCP credentials intentionally remain permanently removed by authority
+quarantine. The work-only issuer now applies genuine authenticated retained current
+v7 denials before generating a new bounded MCP identity. Actual configured
+participant passwords, active memberships/organizations and canonical current
+customer ceilings remain mandatory. The original owned guards and ordinary MCP
+management lock remain. Shared MCP issuance retains the ten-active-connection cap,
+existing category/customer ceilings and scope digest. Probe connection, session and
+HTTP admission are created atomically under a savepoint; bearer and admission
+secrets are independently generated and journaled before insertion. All lifetimes
+remain at most59seconds and ten HTTP requests.
+
+Unreleased079 adds a durable original bearer digest and a probe-connection marker
+to the existing owner-controlled HTTP admission. Runtime auth rechecks the original
+bearer hash. Exact preimage/scope/creation/expiry/customer bindings constrain
+independent cleanup and restart; global durable probe checks reject a surviving
+connection even when a supplied journal omits its identity. Probe revocation clears
+its credential while retaining original hash evidence. Existing v2 session/admission
+journals remain supported; new MCP journals use v3 intent/v2 credential contracts.
+Migrations001–077 remain unchanged; the079 manifest digest is updated.
+
+`work-http-fresh-mcp-target-v1-private.json` passes1/1 with15unselected cases: actual current
+v7 capture, encryption, a distinct owned archive database, immutable retention,
+actual cold-reader capability, quarantine, rejected receipt clone/password,
+restricted-runtime SDK profile read using a NEW bearer, and original-identity
+retirement after lost acknowledgement and restarted reconciliation. Only provider,
+key transport, DNS and deployment/source attribution are controlled; this is not
+hosted independent placement or actual hosted acceptance. Complete target, ordinary
+MCP acceptance, authored bundle, updated network and catalog checks are pending.
+The full catalog now contains854cases in155suites. T096/T097 remain open.
+
+The complete target checkpoint passes16/16 in
+`work-http-fresh-mcp-target-v2-private.json`; actual production-build five-category
+HTTP check passes1/1 in `mcp-http-network-v8-private.json`. Ordinary MCP acceptance
+passes54/54 in19suites, including three actual SDK consumers and its production
+build (`fresh-mcp-public-consumer-v1-private.log`). Review found one recovery-only
+scope-validation omission: customer categories with no customers were accepted.
+Recovery now reuses the normal category/customer schemas and shared refinement.
+Contract/deadline checks pass6/6, and the corrected focused target passes1/1 with15
+unselected cases in `work-http-fresh-mcp-target-v3-private.json`.
+
+Expanded `work-http-fresh-mcp-target-v5-private.json` passes1/1 with15unselected:
+actual fresh internal and assigned-partner bearer SDK identity/nonempty profile
+reads, unassigned-customer denial, and grant-loss denial that does not revive the
+revoked grant. The v4 fixture attempt failed before issuance on an automatically
+created profile-state row; its idempotent setup correction retains the failure.
+These focused post-review results supplement the earlier checkpoint rather than
+relabeling its54-test source fingerprint as the final source. Types and docs pass;
+final complete current-source catalog, actual079 rehearsal, hosted acceptance and
+T096/T097 composition remain pending.

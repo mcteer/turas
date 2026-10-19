@@ -244,3 +244,16 @@ async function reconcileCredentialDenialsInTransaction(db:Client|PoolClient,snap
   const currentStateDigest=await currentRecoveryStateDigest(db);
   return {currentStateDigest,contract:'pilot-owned-credential-denials-v5' as const,...scope,mode:'locked' as const,revokedWorkspaces,revokedPartnerOrganizations,revokedPrincipals,revokedMemberships,revokedSessions,revokedMcpConnections,revokedGrants,clearedAcceptedHeads,withdrawnArtifacts,withdrawnResearch,retiredProjections,suspendedPublications,permanentReplayFencesAdded,typedModelHoldsAdded,sourcePublicationDenialsApplied:snapshot.contract!=='pilot-denial-replay-snapshot-v2',scope:'credentials-grants-and-source-denials' as const,authorityGranted:false,quarantineCleared:false,currentAuthorityVerified:false,replayReconciled:false,restorationReady:false};
 }
+
+/** Deny-only composition within an actual platform controller's owner transaction.
+ * This cannot grant authority or replace the original owned entry point. */
+export async function reconcileAuthenticatedWorkCredentialDenialsInTransaction(db:Client,retained:RetainedWorkDenials,input:z.infer<typeof command>){
+ const scope=command.parse(input);requireAuthenticatedRetainedDenials(retained,scope.environmentId);
+ if(retained.contextDigest!==scope.snapshotDigest||retained.backupCapturedAt!==scope.backupCapturedAt)throw Error('Exact independently retained work denial scope required');
+ await db.query('SAVEPOINT authenticated_work_denials');await db.query('RELEASE SAVEPOINT authenticated_work_denials');
+ if((await db.query("SELECT current_setting('transaction_isolation') AS isolation")).rows[0]?.isolation!=='read committed')throw Error('Work denial composition requires read committed isolation');
+ if((await db.query("SELECT current_user=pg_get_userbyid(relowner) AS owner FROM pg_class WHERE oid='operations_control'::regclass")).rows[0]?.owner!==true)throw Error('Actual work denial owner required');
+ await requireRetiredLegacyWorkRuntime(db);
+ const result=await reconcileCredentialDenialsInTransaction(db,retained.snapshot,scope);
+ requireAuthenticatedRetainedDenials(retained,scope.environmentId);return result;
+}

@@ -12,7 +12,10 @@ import {pilotSource} from '../../../scripts/pilot-source';
 import {databaseSafetyCaptureSourceSchema,verifyDatabaseSafetySourceBinding} from '../../../scripts/pilot-database-safety-copy';
 import {pilotHostedScopeSchema,verifyHostedDeployment,hostedDeploymentLookupPath,type PilotHostedScope} from '../../contracts/pilot-hosted';
 import {databaseTargetDigest} from './database-binding';
-import {requireRetiredLegacyWorkRuntime} from './recovery-credential-denials';
+import {requireRetiredLegacyWorkRuntime,reconcileAuthenticatedWorkCredentialDenialsInTransaction} from './recovery-credential-denials';
+import type {RetainedWorkDenials} from '../../../scripts/pilot-denial-reader';
+import {newMcpCredential,mcpCredentialScopeDigest} from '../mcp/credentials';
+import {mcpBearerSchema,mcpCreateConnectionSchema,mcpConnectionScopeAllowed} from '../../contracts/mcp';
 
 const scopeSchema=z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive()});
 type Scope=z.infer<typeof scopeSchema>;
@@ -77,7 +80,9 @@ export async function withLockedWorkRecoveryTarget<T>(input:{sourceFile:string;h
   let result:T;try{result=await Promise.race([Promise.resolve().then(()=>run(db,target)),cancellation]);}finally{signal.removeEventListener('abort',abort);}
   signal.throwIfAborted();await db.query('ROLLBACK');
   const registered=pending.get(target)??[];if(registered.length&&(await db.query('SELECT 1 FROM login_sessions WHERE id=ANY($1::uuid[]) AND revoked_at IS NULL LIMIT 1',[registered.map(intent=>intent.sessionId)])).rowCount)throw Error('Work recovery session retirement incomplete');
+  if(registered.some(intent=>intent.mcp)&&(await db.query('SELECT 1 FROM mcp_connections WHERE id=ANY($1::uuid[]) AND (revoked_at IS NULL OR credential_hash IS NOT NULL) LIMIT 1',[registered.flatMap(intent=>intent.mcp?[intent.mcp.connectionId]:[])])).rowCount)throw Error('Work recovery MCP probe retirement incomplete');
   await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');try{await requireLockedWorkRecoveryConnection(db,target,scope);if((await db.query('SELECT 1 FROM operations_recovery_http_reads a JOIN login_sessions s ON s.id=a.session_id WHERE a.environment_id=$1 AND a.recovery_id=$2 AND a.control_revision=$3 AND (a.revoked_at IS NULL OR s.revoked_at IS NULL) LIMIT 1',[scope.environmentId,scope.recoveryId,scope.controlRevision])).rowCount)throw Error('Work recovery probe retirement incomplete');await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}
+  if((await db.query('SELECT 1 FROM operations_recovery_http_reads a JOIN mcp_connections mc ON mc.id=a.record_id WHERE a.environment_id=$1 AND a.recovery_id=$2 AND a.control_revision=$3 AND a.mcp_probe_connection AND (mc.revoked_at IS NULL OR mc.credential_hash IS NOT NULL) LIMIT 1',[scope.environmentId,scope.recoveryId,scope.controlRevision])).rowCount)throw Error('Work recovery durable MCP probe retirement incomplete');
   await requireSource(hosted);if(JSON.stringify(await verifyDatabaseSafetySourceBinding(source,hosted.teamId,signal))!==JSON.stringify(platform)||JSON.stringify(await deployment(hosted,signal,false))!==JSON.stringify(deployed)||JSON.stringify(await deployment(hosted,signal,true))!==JSON.stringify(deployed))throw Error('Work recovery platform changed');
   return result;
  }catch(error){failure=error;throw error;}finally{
@@ -91,23 +96,36 @@ export async function withLockedWorkRecoveryTarget<T>(input:{sourceFile:string;h
  }
 }
 
-type Intent=Readonly<{principalId:string;sessionId:string;admissionId:string;workspaceId:string;membershipId:string;journalDirectory:string;sessionToken:string;admissionSecret:string;sourceCommit:string;origin:string;deploymentId:string;databaseBindingDigest:string}>;
+const mcpProbeScopeSchema=z.strictObject({categories:mcpCreateConnectionSchema.shape.categories,customerIds:mcpCreateConnectionSchema.shape.customerIds,expiresAt:z.iso.datetime({offset:true})}).refine(mcpConnectionScopeAllowed,'Customer categories require selected customers');
+const mcpProbeIdentitySchema=z.strictObject({...mcpProbeScopeSchema.shape,connectionId:z.uuid(),scopeDigest:z.string().regex(/^[a-f0-9]{64}$/),createdAt:z.iso.datetime({offset:true}),denialDigest:z.string().regex(/^[a-f0-9]{64}$/)}).refine(mcpConnectionScopeAllowed,'Customer categories require selected customers');
+type McpProbeScope=z.infer<typeof mcpProbeScopeSchema>;
+type McpProbe=Readonly<z.infer<typeof mcpProbeIdentitySchema>&{credential:string}>;
+type Intent=Readonly<{principalId:string;sessionId:string;admissionId:string;workspaceId:string;membershipId:string;journalDirectory:string;sessionToken:string;admissionSecret:string;sourceCommit:string;origin:string;deploymentId:string;databaseBindingDigest:string;mcp?:McpProbe}>;
 const pending=new WeakMap<object,Intent[]>();
 const secretHash=(value:string)=>createHash('sha256').update(value).digest('hex');
 /** Persist exact identities before either session/admission INSERT. Secrets stay
  * in a separate private credential file and never enter ordinary receipts. The enclosing target owns independent finally cleanup of these IDs. */
-export async function reserveWorkRecoveryProbe(db:Client,target:LockedWorkRecoveryTarget,input:{workspaceId:string;membershipId:string;journalDirectory:string}){
+export async function reserveWorkRecoveryProbe(db:Client,target:LockedWorkRecoveryTarget,input:{workspaceId:string;membershipId:string;journalDirectory:string;mcp?:McpProbeScope&{retained:RetainedWorkDenials}}){
  const workspaceId=z.uuid().parse(input.workspaceId),membershipId=z.uuid().parse(input.membershipId);
  await requireLockedWorkRecoveryConnection(db,target,{environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision});
+ let mcp:McpProbe|undefined;
+ if(input.mcp){
+  const {retained,...raw}=input.mcp,scope=mcpProbeScopeSchema.parse(raw);
+  await reconcileAuthenticatedWorkCredentialDenialsInTransaction(db,retained,{environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision,snapshotDigest:retained.contextDigest,backupCapturedAt:retained.backupCapturedAt});
+  const now=(await db.query('SELECT clock_timestamp() AS now')).rows[0].now as Date,expiry=Date.parse(scope.expiresAt);
+  if(expiry<=now.getTime()||expiry>now.getTime()+59000||expiry>target.deadline)throw Error('Finite fresh work MCP probe lifetime required');
+  Object.freeze(scope.categories);Object.freeze(scope.customerIds);const credential=newMcpCredential();mcp=Object.freeze({...scope,expiresAt:new Date(expiry).toISOString(),connectionId:credential.id,credential:credential.credential,scopeDigest:mcpCredentialScopeDigest(scope.categories,scope.customerIds),createdAt:now.toISOString(),denialDigest:retained.contextDigest});
+ }
  const rows=(await db.query(`SELECT m.id,m.principal_id FROM memberships m JOIN principals p ON p.id=m.principal_id JOIN workspaces w ON w.id=m.workspace_id
  WHERE m.id=$1 AND m.workspace_id=$2 AND m.active AND p.active AND w.active AND ((p.id=$3 AND p.login_name='mcteer' AND m.kind='internal' AND m.role='admin') OR (p.id=$5 AND p.login_name='panel' AND m.kind='internal') OR (p.id=$6 AND p.login_name='partner' AND m.kind='partner' AND EXISTS(SELECT 1 FROM partner_organizations o WHERE o.id=m.partner_org_id AND o.workspace_id=m.workspace_id AND o.active)))
  AND (w.classification='primary' OR (w.classification='synthetic_pilot' AND w.pilot_environment_id=$4)) FOR SHARE OF m,p,w`,[membershipId,workspaceId,DEMO_IDS.mcteer,target.environmentId,DEMO_IDS.panel,DEMO_IDS.partner])).rows;
  if(rows.length!==1)throw Error('Exact configured work recovery probe owner required');
  let intents=pending.get(target);if(!intents){intents=[];pending.set(target,intents);}if(intents.length>=32)throw Error('Work recovery probe inventory exceeds bound');
- const intent=Object.freeze({principalId:rows[0].principal_id as string,sessionId:randomUUID(),admissionId:randomUUID(),workspaceId,membershipId,journalDirectory:input.journalDirectory,sessionToken:randomBytes(32).toString('base64url'),admissionSecret:randomBytes(32).toString('base64url'),sourceCommit:target.sourceCommit,origin:target.origin,deploymentId:target.deploymentId,databaseBindingDigest:target.databaseBindingDigest});
+ const intent=Object.freeze({principalId:rows[0].principal_id as string,sessionId:randomUUID(),admissionId:randomUUID(),workspaceId,membershipId,journalDirectory:input.journalDirectory,sessionToken:randomBytes(32).toString('base64url'),admissionSecret:randomBytes(32).toString('base64url'),sourceCommit:target.sourceCommit,origin:target.origin,deploymentId:target.deploymentId,databaseBindingDigest:target.databaseBindingDigest,...(mcp?{mcp}:{})});
  intents.push(intent);
- try{const credentialDigest=await writeEvidence(input.journalDirectory,'private-probe-'+intent.sessionId+'-credentials.json',{contract:'pilot-work-recovery-probe-credentials-v1',sessionId:intent.sessionId,admissionId:intent.admissionId,sessionToken:intent.sessionToken,admissionSecret:intent.admissionSecret});
- await writeEvidence(input.journalDirectory,'probe-'+intent.sessionId+'-intent.json',{...target,contract:'pilot-work-recovery-probe-intent-v2',credentialDigest,sessionId:intent.sessionId,admissionId:intent.admissionId,principalId:intent.principalId,workspaceId,membershipId,recordedAt:new Date().toISOString(),serviceOpened:false});
+ try{const credentialDigest=await writeEvidence(input.journalDirectory,'private-probe-'+intent.sessionId+'-credentials.json',{contract:mcp?'pilot-work-recovery-probe-credentials-v2':'pilot-work-recovery-probe-credentials-v1',sessionId:intent.sessionId,admissionId:intent.admissionId,sessionToken:intent.sessionToken,admissionSecret:intent.admissionSecret,...(mcp?{mcpCredential:mcp.credential}:{})});
+ const mcpIdentity=mcp?mcpProbeIdentitySchema.parse(Object.fromEntries(Object.keys(mcpProbeIdentitySchema.shape).map(key=>[key,mcp[key as keyof McpProbe]]))):undefined;
+ await writeEvidence(input.journalDirectory,'probe-'+intent.sessionId+'-intent.json',{...target,contract:mcp?'pilot-work-recovery-probe-intent-v3':'pilot-work-recovery-probe-intent-v2',credentialDigest,sessionId:intent.sessionId,admissionId:intent.admissionId,principalId:intent.principalId,workspaceId,membershipId,...(mcpIdentity?{mcp:mcpIdentity}:{}),recordedAt:new Date().toISOString(),serviceOpened:false});
  await requireLockedWorkRecoveryConnection(db,target,{environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision});return intent;
  }catch(error){const index=intents.indexOf(intent);if(index>=0)intents.splice(index,1);throw error;}
 }
@@ -127,7 +145,7 @@ async function retireWorkRecoveryProbes(target:LockedWorkRecoveryTarget,connect:
    await revokeWorkRecoveryProbeIdentities(db,target,intents);
    await db.query('COMMIT');
   }catch(error){await db.query('ROLLBACK');throw error;}
-  for(const intent of intents){if((await db.query('SELECT 1 FROM login_sessions WHERE id=$1 AND revoked_at IS NULL UNION ALL SELECT 1 FROM operations_recovery_http_reads WHERE id=$2 AND revoked_at IS NULL',[intent.sessionId,intent.admissionId])).rowCount)throw Error('Committed work recovery probe retirement unverified');await recordWorkRecoveryProbeRetirement(target,intent);}
+  for(const intent of intents){if(intent.mcp&&(await db.query('SELECT 1 FROM mcp_connections WHERE id=$1 AND (revoked_at IS NULL OR credential_hash IS NOT NULL)',[intent.mcp.connectionId])).rowCount)throw Error('Committed work MCP probe retirement unverified');if((await db.query('SELECT 1 FROM login_sessions WHERE id=$1 AND revoked_at IS NULL UNION ALL SELECT 1 FROM operations_recovery_http_reads WHERE id=$2 AND revoked_at IS NULL',[intent.sessionId,intent.admissionId])).rowCount)throw Error('Committed work recovery probe retirement unverified');await recordWorkRecoveryProbeRetirement(target,intent);}
   pending.delete(target);
  }finally{await db.end();}
 }
@@ -136,8 +154,10 @@ async function revokeWorkRecoveryProbeIdentities(db:Client,target:LockedWorkReco
  for(const intent of intents){
   const sessions=(await db.query('SELECT principal_id,membership_id,workspace_id,token_hash FROM login_sessions WHERE id=$1 FOR UPDATE',[intent.sessionId])).rows;
   if(sessions.length>1||sessions.some(row=>row.principal_id!==intent.principalId||row.membership_id!==intent.membershipId||row.workspace_id!==intent.workspaceId||row.token_hash!==secretHash(intent.sessionToken)))throw Error('Work recovery session cleanup identity differs');
-  const admissions=(await db.query('SELECT environment_id,recovery_id,control_revision,session_id,workspace_id,secret_hash,source_commit,origin,deployment_id,database_binding_digest FROM operations_recovery_http_reads WHERE id=$1 FOR UPDATE',[intent.admissionId])).rows;
+  const admissions=(await db.query('SELECT environment_id,recovery_id,control_revision,session_id,workspace_id,secret_hash,source_commit,origin,deployment_id,database_binding_digest,read_kind,record_id,record_digest,mcp_probe_connection,mcp_credential_digest FROM operations_recovery_http_reads WHERE id=$1 FOR UPDATE',[intent.admissionId])).rows;
   if(admissions.length>1||admissions.some(row=>row.environment_id!==target.environmentId||row.recovery_id!==target.recoveryId||Number(row.control_revision)!==target.controlRevision||row.session_id!==intent.sessionId||row.workspace_id!==intent.workspaceId||row.secret_hash!==secretHash(intent.admissionSecret)||row.source_commit!==intent.sourceCommit||row.origin!==intent.origin||row.deployment_id!==intent.deploymentId||row.database_binding_digest!==intent.databaseBindingDigest))throw Error('Work recovery admission cleanup identity differs');
+  if(intent.mcp&&admissions.some(row=>row.read_kind!=='mcp'||row.record_id!==intent.mcp!.connectionId||row.record_digest!==intent.mcp!.scopeDigest||row.mcp_probe_connection!==true||row.mcp_credential_digest!==secretHash(intent.mcp!.credential.split('.')[2])))throw Error('Work MCP admission cleanup identity differs');
+  if(intent.mcp)await retireExactWorkMcpProbe(db,target,intent,apply);
   if(!apply)continue;
   await db.query('UPDATE operations_recovery_http_reads SET revoked_at=COALESCE(revoked_at,clock_timestamp()) WHERE id=$1',[intent.admissionId]);
   await db.query('UPDATE login_sessions SET revoked_at=COALESCE(revoked_at,clock_timestamp()) WHERE id=$1',[intent.sessionId]);
@@ -146,10 +166,10 @@ async function revokeWorkRecoveryProbeIdentities(db:Client,target:LockedWorkReco
 }
 async function recordWorkRecoveryProbeRetirement(target:LockedWorkRecoveryTarget,intent:Intent){
  const name='probe-'+intent.sessionId+'-retired.json';
- try{await writeEvidence(intent.journalDirectory,name,{...target,contract:'pilot-work-recovery-probe-retirement-v1',sessionId:intent.sessionId,admissionId:intent.admissionId,completedAt:new Date().toISOString(),credentialsAbsentOrRevoked:true,serviceOpened:false});}
+ try{await writeEvidence(intent.journalDirectory,name,{...target,contract:'pilot-work-recovery-probe-retirement-v1',sessionId:intent.sessionId,admissionId:intent.admissionId,completedAt:new Date().toISOString(),credentialsAbsentOrRevoked:true,...(intent.mcp?{mcpConnectionId:intent.mcp.connectionId}:{}),serviceOpened:false});}
  catch(error){if((error as NodeJS.ErrnoException).code!=='EEXIST')throw error;const retained=z.object({contract:z.literal('pilot-work-recovery-probe-retirement-v1'),sessionId:z.literal(intent.sessionId),admissionId:z.literal(intent.admissionId),environmentId:z.literal(target.environmentId),recoveryId:z.literal(target.recoveryId),controlRevision:z.literal(target.controlRevision),databaseBindingDigest:z.literal(target.databaseBindingDigest),credentialsAbsentOrRevoked:z.literal(true)}).parse(await readEvidence(intent.journalDirectory,name));if(!retained)throw error;}
 }
-const probeJournalSchema=z.object({contract:z.literal('pilot-work-recovery-probe-intent-v2'),principalId:z.uuid().default(DEMO_IDS.mcteer),projectId:z.string(),teamId:z.string(),environmentId:z.string(),recoveryId:z.uuid(),controlRevision:z.number().int().positive(),databaseBindingDigest:z.string().regex(/^[a-f0-9]{64}$/),sourceCommit:z.string().regex(/^[a-f0-9]{40}$/),origin:z.url(),deploymentId:z.string().regex(/^dpl_[A-Za-z0-9]+$/),sessionId:z.uuid(),admissionId:z.uuid(),workspaceId:z.uuid(),membershipId:z.uuid(),credentialDigest:z.string().regex(/^[a-f0-9]{64}$/)});
+const probeJournalSchema=z.object({contract:z.enum(['pilot-work-recovery-probe-intent-v2','pilot-work-recovery-probe-intent-v3']),mcp:mcpProbeIdentitySchema.optional(),principalId:z.uuid().default(DEMO_IDS.mcteer),projectId:z.string(),teamId:z.string(),environmentId:z.string(),recoveryId:z.uuid(),controlRevision:z.number().int().positive(),databaseBindingDigest:z.string().regex(/^[a-f0-9]{64}$/),sourceCommit:z.string().regex(/^[a-f0-9]{40}$/),origin:z.url(),deploymentId:z.string().regex(/^dpl_[A-Za-z0-9]+$/),sessionId:z.uuid(),admissionId:z.uuid(),workspaceId:z.uuid(),membershipId:z.uuid(),credentialDigest:z.string().regex(/^[a-f0-9]{64}$/)});
 /** Deny-only restart reconciliation. Actual original secret preimages bind the
  * private journal to stored credentials; no session or admission is created or
  * renewed. The caller must commit its owner transaction before returning. */
@@ -163,8 +183,10 @@ export async function reconcileWorkRecoveryProbeJournal(db:Client,target:LockedW
   if(!/^probe-[a-f0-9-]{36}-intent\.json$/.test(name))throw Error('Exact work recovery probe journal name required');
   const row=probeJournalSchema.parse(await readEvidence(input.journalDirectory,name));
   if(name!=='probe-'+row.sessionId+'-intent.json'||row.environmentId!==target.environmentId||row.recoveryId!==target.recoveryId||row.controlRevision!==target.controlRevision||row.projectId!==target.projectId||row.teamId!==target.teamId||row.databaseBindingDigest!==target.databaseBindingDigest)throw Error('Work recovery probe journal target differs');
-  const credentials=z.strictObject({contract:z.literal('pilot-work-recovery-probe-credentials-v1'),sessionId:z.literal(row.sessionId),admissionId:z.literal(row.admissionId),sessionToken:z.string().regex(/^[A-Za-z0-9_-]{43}$/),admissionSecret:z.string().regex(/^[A-Za-z0-9_-]{43}$/)}).parse(await readEvidence(input.journalDirectory,'private-probe-'+row.sessionId+'-credentials.json',row.credentialDigest));
-  intents.push(Object.freeze({principalId:row.principalId,sessionId:row.sessionId,admissionId:row.admissionId,workspaceId:row.workspaceId,membershipId:row.membershipId,journalDirectory:input.journalDirectory,sessionToken:credentials.sessionToken,admissionSecret:credentials.admissionSecret,sourceCommit:row.sourceCommit,origin:row.origin,deploymentId:row.deploymentId,databaseBindingDigest:row.databaseBindingDigest}));
+  if((row.contract==='pilot-work-recovery-probe-intent-v3')!==!!row.mcp)throw Error('Complete work MCP probe journal required');
+  const credentials=z.strictObject({contract:z.enum(['pilot-work-recovery-probe-credentials-v1','pilot-work-recovery-probe-credentials-v2']),sessionId:z.literal(row.sessionId),admissionId:z.literal(row.admissionId),sessionToken:z.string().regex(/^[A-Za-z0-9_-]{43}$/),admissionSecret:z.string().regex(/^[A-Za-z0-9_-]{43}$/),mcpCredential:mcpBearerSchema.optional()}).parse(await readEvidence(input.journalDirectory,'private-probe-'+row.sessionId+'-credentials.json',row.credentialDigest));
+  if(!!row.mcp!==(credentials.contract==='pilot-work-recovery-probe-credentials-v2')||!!row.mcp!==!!credentials.mcpCredential||row.mcp&&!credentials.mcpCredential?.startsWith('tmcp.'+row.mcp.connectionId+'.'))throw Error('Original work MCP probe preimage required');
+  intents.push(Object.freeze({principalId:row.principalId,sessionId:row.sessionId,admissionId:row.admissionId,workspaceId:row.workspaceId,membershipId:row.membershipId,journalDirectory:input.journalDirectory,sessionToken:credentials.sessionToken,admissionSecret:credentials.admissionSecret,sourceCommit:row.sourceCommit,origin:row.origin,deploymentId:row.deploymentId,databaseBindingDigest:row.databaseBindingDigest,...(row.mcp?{mcp:Object.freeze({...row.mcp,credential:credentials.mcpCredential!})}:{})}));
  }
  // Validate every original credential first. Re-read the shared registry only
  // after all awaits, then append synchronously so concurrent calls cannot lose
@@ -175,4 +197,26 @@ export async function reconcileWorkRecoveryProbeJournal(db:Client,target:LockedW
  if(existing.length+intents.length>32||intents.some((row,index)=>intents.slice(0,index).some(prior=>prior.sessionId===row.sessionId||prior.admissionId===row.admissionId))||intents.some(row=>existing.some(prior=>prior.sessionId===row.sessionId||prior.admissionId===row.admissionId)))throw Error('Ambiguous work recovery probe journal');
  existing.push(...intents);await revokeWorkRecoveryProbeIdentities(db,target,intents);
  return Object.freeze({contract:'pilot-work-recovery-probe-reconciliation-v1',environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision,probes:intents.length,serviceOpened:false,restorationReady:false});
+}
+
+async function retireExactWorkMcpProbe(db:Client,target:LockedWorkRecoveryTarget,intent:Intent,apply:boolean){
+ const expected=intent.mcp!;
+ if(mcpCredentialScopeDigest(expected.categories,expected.customerIds)!==expected.scopeDigest||!expected.credential.startsWith('tmcp.'+expected.connectionId+'.'))throw Error('Work MCP probe scope or preimage differs');
+ const rows=(await db.query('SELECT environment_id,workspace_id,principal_id,membership_id,categories,scope_digest,credential_hash,created_at,expires_at FROM mcp_connections WHERE id=$1 FOR UPDATE',[expected.connectionId])).rows;
+ if(rows.length>1||rows.some(row=>row.environment_id!==target.environmentId||row.workspace_id!==intent.workspaceId||row.principal_id!==intent.principalId||row.membership_id!==intent.membershipId||JSON.stringify([...row.categories].sort())!==JSON.stringify([...expected.categories].sort())||row.scope_digest!==expected.scopeDigest||row.credential_hash!==null&&row.credential_hash!==secretHash(expected.credential.split('.')[2])||row.created_at.toISOString()!==expected.createdAt||row.expires_at.toISOString()!==expected.expiresAt))throw Error('Work MCP cleanup identity differs');
+ if(rows.length){const customers=(await db.query('SELECT customer_id FROM mcp_connection_customers WHERE connection_id=$1 AND workspace_id=$2 ORDER BY customer_id',[expected.connectionId,intent.workspaceId])).rows.map(row=>row.customer_id);if(JSON.stringify(customers)!==JSON.stringify([...expected.customerIds].sort()))throw Error('Work MCP cleanup customer scope differs');}
+ if(apply){await db.query('UPDATE mcp_connections SET revoked_at=COALESCE(revoked_at,clock_timestamp()),revoker_membership_id=COALESCE(revoker_membership_id,membership_id),credential_hash=NULL WHERE id=$1',[expected.connectionId]);if((await db.query('SELECT 1 FROM mcp_connections WHERE id=$1 AND (revoked_at IS NULL OR credential_hash IS NOT NULL)',[expected.connectionId])).rowCount)throw Error('Work MCP probe retirement unverified');}
+}
+/** In-process reservation only. The original constructor applied authenticated
+ * current denials before selecting this live owner and generating new identities. */
+export async function requireRegisteredWorkMcpProbe(db:Client,target:LockedWorkRecoveryTarget,intent:Intent){
+ await requireLockedWorkRecoveryConnection(db,target,{environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision});
+ if(!pending.get(target)?.includes(intent)||!intent.mcp||Date.parse(intent.mcp.expiresAt)<=Date.now()||Date.parse(intent.mcp.expiresAt)>target.deadline)throw Error('Actual current work MCP reservation required');return intent.mcp;
+}
+/** Retire only this target's original registered connection/session preimages;
+ * expired probes remain cleanup candidates and cannot regain any authority. */
+export async function retireRegisteredWorkMcpProbe(db:Client,target:LockedWorkRecoveryTarget,intent:Intent){
+ await requireLockedWorkRecoveryConnection(db,target,{environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision});
+ if(!pending.get(target)?.includes(intent)||!intent.mcp)throw Error('Actual work MCP retirement reservation required');
+ await revokeWorkRecoveryProbeIdentities(db,target,[intent]);
 }

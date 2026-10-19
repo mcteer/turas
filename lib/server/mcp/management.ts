@@ -1,5 +1,6 @@
+import {requireRegisteredWorkMcpProbe,type LockedWorkRecoveryTarget,reserveWorkRecoveryProbe} from '../operations/locked-work-recovery-target';
 import { createHash,randomBytes } from "node:crypto";
-import type { PoolClient } from "pg";
+import type { Client,PoolClient } from "pg";
 import { mcpCreateConnectionSchema,mcpRevokeConnectionSchema,mcpConnectionMetadataSchema,mcpManagementPageSchema,mcpIdSchema,type McpCreateConnection } from "../../contracts/mcp";
 import { HttpFailure,hiddenRecord } from "../../contracts/http";
 import { isMcpReadActor } from "../auth/read-actor";
@@ -10,7 +11,7 @@ import { isCanonicalAdmin } from "../access/admin-guard";
 import { getServerConfig } from "../config";
 import { assertMcpReady } from "./schema";
 import { admitMcpManagement } from "./limits";
-import { newMcpCredential } from "./credentials";
+import { newMcpCredential,mcpCredentialScopeDigest } from "./credentials";
 
 function digest(value:unknown){return createHash('sha256').update(JSON.stringify(value)).digest('hex');}
 export type McpConnectionRow={id:string;name:string;categories:unknown;created_at:Date;expires_at:Date;revoked_at:Date|null;last_used_at:Date|null;credential_hash?:string|null};
@@ -45,18 +46,30 @@ export async function createMcpConnection(actor:CurrentSession,raw:McpCreateConn
     const requestDigest=digest({action:'create',...input.data}),previous=await receipt(db,actor,input.data.requestKey,requestDigest,'create');
     if(previous){const row=(await db.query('SELECT * FROM mcp_connections WHERE id=$1 AND membership_id=$2 AND workspace_id=$3',[previous.connection_id,actor.membershipId,actor.workspaceId])).rows[0];if(!row)throw hiddenRecord();return {connection:connectionMetadata(row),secretAvailable:false as const};}
     await assertMcpReady(db,true);
-    const count=(await db.query("SELECT count(*)::integer AS n FROM mcp_connections WHERE environment_id=$1 AND membership_id=$2 AND workspace_id=$3 AND revoked_at IS NULL AND credential_hash IS NOT NULL AND expires_at>clock_timestamp()",[getServerConfig().TURAS_ENVIRONMENT_ID,actor.membershipId,actor.workspaceId])).rows[0].n;
-    if(count>=10)throw new HttpFailure(409,'conflict','Active connection limit reached');
-    for(const customerId of [...input.data.customerIds].sort())await lockProfileActor(db,actor,customerId);
-    const credential=newMcpCredential(),scopeDigest=digest({categories:[...input.data.categories].sort(),customerIds:[...input.data.customerIds].sort()});
-    const row=(await db.query(`WITH timing AS MATERIALIZED(SELECT clock_timestamp() AS at)
-      INSERT INTO mcp_connections(id,environment_id,workspace_id,principal_id,membership_id,name,categories,scope_digest,credential_hash,created_at,expires_at)
-      SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,at,at+$10*interval '1 day' FROM timing RETURNING *`,
-      [credential.id,getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,actor.principalId,actor.membershipId,input.data.name,input.data.categories,scopeDigest,credential.hash,input.data.lifetimeDays])).rows[0];
-    for(const customerId of input.data.customerIds)await db.query('INSERT INTO mcp_connection_customers(connection_id,workspace_id,customer_id) VALUES($1,$2,$3)',[credential.id,actor.workspaceId,customerId]);
+    const credential=newMcpCredential(),row=await insertScopedMcpConnection(db,actor,input.data,credential,false);
     await saveReceipt(db,actor,input.data.requestKey,credential.id,requestDigest,'create');
     return {connection:connectionMetadata(row),secretAvailable:true as const,credential:credential.credential};
   });
+}
+async function insertScopedMcpConnection(db:PoolClient,actor:CurrentSession,input:Pick<McpCreateConnection,'name'|'categories'|'customerIds'|'lifetimeDays'>,credential:{id:string;hash:string},recoveryRead:boolean,timing?:{createdAt:string;expiresAt:string}){
+ const count=(await db.query("SELECT count(*)::integer AS n FROM mcp_connections WHERE environment_id=$1 AND membership_id=$2 AND workspace_id=$3 AND revoked_at IS NULL AND credential_hash IS NOT NULL AND expires_at>clock_timestamp()",[getServerConfig().TURAS_ENVIRONMENT_ID,actor.membershipId,actor.workspaceId])).rows[0].n;
+ if(count>=10)throw new HttpFailure(409,'conflict','Active connection limit reached');
+ for(const customerId of [...input.customerIds].sort())await lockProfileActor(db,actor,customerId,undefined,recoveryRead);
+ const scopeDigest=mcpCredentialScopeDigest(input.categories,input.customerIds);
+ const row=(await db.query(`WITH timing AS MATERIALIZED(SELECT clock_timestamp() AS at)
+ INSERT INTO mcp_connections(id,environment_id,workspace_id,principal_id,membership_id,name,categories,scope_digest,credential_hash,created_at,expires_at)
+ SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,COALESCE($11::timestamptz,at),COALESCE($12::timestamptz,at+$10*interval '1 day') FROM timing RETURNING *`,
+ [credential.id,getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId,actor.principalId,actor.membershipId,input.name,input.categories,scopeDigest,credential.hash,input.lifetimeDays,timing?.createdAt??null,timing?.expiresAt??null])).rows[0];
+ for(const customerId of input.customerIds)await db.query('INSERT INTO mcp_connection_customers(connection_id,workspace_id,customer_id) VALUES($1,$2,$3)',[credential.id,actor.workspaceId,customerId]);return row;
+}
+/** Internal finite recovery issuer. JSON actors/reservations cannot manufacture
+ * the target, registered preimages or active canonical participant capability. */
+export async function insertWorkRecoveryMcpConnection(db:Client,target:LockedWorkRecoveryTarget,actor:CurrentSession,intent:Awaited<ReturnType<typeof reserveWorkRecoveryProbe>>){
+ const probe=await requireRegisteredWorkMcpProbe(db,target,intent),client=db as unknown as PoolClient;
+ if(isMcpReadActor(actor)||actor.principalId!==intent.principalId||actor.membershipId!==intent.membershipId||actor.workspaceId!==intent.workspaceId||actor.sessionId!==intent.sessionId||actor.token!==intent.sessionToken||actor.expiresAt.getTime()<Date.parse(probe.expiresAt))throw new HttpFailure(403,'forbidden','Actual authenticated recovery MCP issuer required');
+ await assertMcpReady(client,true);await lockWorkspaceActor(client,actor,undefined,true,2000);
+ const row=await insertScopedMcpConnection(client,actor,{name:'Finite recovery verification',categories:probe.categories,customerIds:probe.customerIds,lifetimeDays:1},{id:probe.connectionId,hash:createHash('sha256').update(probe.credential.split('.')[2]).digest('hex')},true,{createdAt:probe.createdAt,expiresAt:probe.expiresAt});
+ return {connection:connectionMetadata(row),credential:probe.credential};
 }
 export async function revokeMcpConnection(actor:CurrentSession,id:string,raw:{requestKey:string;expectedConnectionId:string}){
   const input=mcpRevokeConnectionSchema.safeParse(raw);if(!input.success || input.data.expectedConnectionId!==id)throw new HttpFailure(422,'invalid_input','Invalid request');

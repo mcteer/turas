@@ -52,6 +52,9 @@ exports.up = (pgm) => pgm.sql(`
    (read_kind='execution' AND record_id IS NOT NULL AND record_digest IS NOT NULL AND record_digest ~ '^[a-f0-9]{64}$' AND record_size IS NULL AND record_generation IS NOT NULL AND record_generation>0 AND record_parent_id IS NOT NULL AND record_revision_id IS NOT NULL) OR
    (read_kind='plan' AND record_id IS NOT NULL AND record_digest IS NOT NULL AND record_digest ~ '^[a-f0-9]{64}$' AND record_size IS NULL AND record_generation>0 AND record_generation IS NOT NULL AND record_revision_id IS NOT NULL AND record_parent_id IS NULL) OR
    (read_kind IN('artifact','report','workforce','gap') AND record_id IS NOT NULL AND record_digest ~ '^[a-f0-9]{64}$' AND record_size BETWEEN 1 AND 10485760 AND record_generation>0 AND record_digest IS NOT NULL AND record_size IS NOT NULL AND record_generation IS NOT NULL AND ((read_kind='artifact' AND record_parent_id IS NULL AND record_revision_id IS NULL) OR (read_kind IN('report','workforce','gap') AND record_parent_id IS NOT NULL AND record_revision_id IS NOT NULL)))),
+  mcp_probe_connection boolean NOT NULL DEFAULT false,mcp_credential_digest text,
+  CHECK((read_kind='mcp' AND mcp_credential_digest IS NOT NULL AND mcp_credential_digest ~ '^[a-f0-9]{64}$') OR
+   (read_kind<>'mcp' AND NOT mcp_probe_connection AND mcp_credential_digest IS NULL)),
   source_commit text NOT NULL CHECK(source_commit ~ '^[a-f0-9]{40}$'),
   origin text NOT NULL,deployment_id text,
   secret_hash text NOT NULL CHECK(secret_hash ~ '^[a-f0-9]{64}$'),

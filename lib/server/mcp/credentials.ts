@@ -34,3 +34,6 @@ export async function authenticateMcpCredential(db:PoolClient,authorization:stri
       kind:row.kind,role:row.role,categories:mcpCategorySchema.array().parse(row.categories),scopeDigest:row.scope_digest,expiresAt:row.expires_at};
     return Object.freeze(actor);
 }
+
+/** Stable scope identity shared by ordinary issuance and finite recovery probes. */
+export function mcpCredentialScopeDigest(categories:readonly string[],customerIds:readonly string[]){return createHash('sha256').update(JSON.stringify({categories:[...categories].sort(),customerIds:[...customerIds].sort()})).digest('hex');}

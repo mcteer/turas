@@ -1747,7 +1747,7 @@
     },
     {
       "file": "tests/integration/pilot/locked-work-recovery-target.test.ts",
-      "expectedCases": 15,
+      "expectedCases": 16,
       "cases": [
         "binds an actual locked owner and authenticated runtime for one work recovery lifetime",
         "rejects serialized capabilities foreign clients and nontransactional use",
@@ -1763,7 +1763,8 @@
         "rechecks canonical work session expiry and revocation after the read while the target remains active",
         "authenticates real participant credentials and preserves customer grants across locked canonical reads",
         "uses the actual SDK and persisted bearer scope for locked recovery with customer pagination and revocation",
-        "measures actual selected work HTTP reads without granting full service and rejects forged or changed batch proofs"
+        "measures actual selected work HTTP reads without granting full service and rejects forged or changed batch proofs",
+        "issues a fresh bounded MCP probe after genuine cold denial reconciliation and retires original identities through interruption and restart"
       ]
     },
     {

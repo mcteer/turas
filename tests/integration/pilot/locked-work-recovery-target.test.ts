@@ -1,3 +1,7 @@
+import {withRetainedDenialFixture} from '../../fixtures/pilot/retained-denials';
+import {issueWorkRecoveryMcpProbe} from '../../../lib/server/operations/recovery-mcp-probe-issuer';
+import {quarantineRestoredAuthority} from '../../../lib/server/operations/recovery-quarantine';
+import {createMcpConnection} from '../../../lib/server/mcp/management';
 import {measureWorkMaintenanceHttpBatch,requireMeasuredWorkMaintenanceHttpBatch,requireMeasuredWorkMaintenanceHttpCoverage} from '../../../lib/server/operations/work-maintenance-verification';
 import {GET as maintenanceArtifact} from '../../../app/api/operations/recovery-read/[admissionId]/artifact/route';
 import {POST as maintenanceMcp} from '../../../app/api/operations/recovery-read/[admissionId]/mcp/route';
@@ -25,14 +29,15 @@ import {withAuthorityEnvironment,lockAuthorityTarget} from '../../fixtures/pilot
 import {closeRuntimePool} from '../../../lib/server/db/client';
 import {retireOwnedLegacyRuntime} from '../../../lib/server/operations/runtime-retirement';
 import {requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
-import {withLockedWorkRecoveryTarget,requireLockedWorkRecoveryConnection,reserveWorkRecoveryProbe,reconcileWorkRecoveryProbeJournal} from '../../../lib/server/operations/locked-work-recovery-target';
-const state=vi.hoisted(()=>({connections:new Map<string,string>(),platformChanged:false,sourceChanged:false,dirty:false,cleanupUnavailable:false,commit:'a'.repeat(40),digest:'b'.repeat(64),catalog:'c'.repeat(64)}));
+import {withLockedWorkRecoveryTarget,requireLockedWorkRecoveryConnection,reserveWorkRecoveryProbe,reconcileWorkRecoveryProbeJournal,retireRegisteredWorkMcpProbe} from '../../../lib/server/operations/locked-work-recovery-target';
+const state=vi.hoisted(()=>({connections:new Map<string,string>(),retainedKey:null as Uint8Array|null,platformChanged:false,sourceChanged:false,dirty:false,cleanupUnavailable:false,commit:'a'.repeat(40),digest:'b'.repeat(64),catalog:'c'.repeat(64)}));
 // Actual owned PostgreSQL; only cloud transport/DNS and source attribution are
 // controlled. These checks do not establish hosted platform acceptance.
 vi.mock('pg',async original=>{const actual=await original<typeof import('pg')>();return {...actual,Client:class extends actual.Client{constructor(config?:import('pg').ClientConfig){if(state.cleanupUnavailable&&config?.connectionString?.includes('fixture.neon.tech'))throw Error('Controlled cleanup connection unavailable');super(config?.connectionString&&state.connections.has(config.connectionString)?{...config,connectionString:state.connections.get(config.connectionString)}:config);}}};});
 vi.mock('../../../lib/server/operations/database-binding',async original=>{const actual=await original<typeof import('../../../lib/server/operations/database-binding')>();return {...actual,databaseTargetDigest:(connection:string,environmentId:string,name?:string)=>actual.databaseTargetDigest(state.connections.get(connection)??connection,environmentId,name)};});
 vi.mock('../../../scripts/pilot-source',()=>({pilotSource:async()=>({sourceCommit:state.sourceChanged?'d'.repeat(40):state.commit,sourceDigest:state.digest,catalogDigest:state.catalog})}));
-vi.mock('../../../scripts/pilot-database-safety-copy',async original=>{const actual=await original<typeof import('../../../scripts/pilot-database-safety-copy')>();return {...actual,verifyDatabaseSafetySourceBinding:async()=>({platformConnectionBindingVerified:true})};});
+vi.mock('../../../scripts/pilot-database-safety-copy',async original=>{const actual=await original<typeof import('../../../scripts/pilot-database-safety-copy')>();return {...actual,verifyDatabaseSafetySourceBinding:async()=>({platformConnectionBindingVerified:true}),readWorkRecoveryKey:async()=>{if(!state.retainedKey)throw Error('Controlled archive key absent');return Buffer.from(state.retainedKey);}};});
+vi.mock('../../../scripts/pilot-neon-archive',async original=>{const actual=await original<typeof import('../../../scripts/pilot-neon-archive')>();return {...actual,verifyWorkNeonDestination:async()=>({controlledProviderIdentity:true})};});
 vi.mock('node:child_process',async original=>{const actual=await original<typeof import('node:child_process')>(),{promisify}=await import('node:util');const execute=((...args:unknown[])=>Reflect.apply(actual.execFile,actual,args)) as typeof actual.execFile;Object.defineProperty(execute,promisify.custom,{value:async(command:string,args:string[],options:unknown)=>{if(command==='git'&&args[0]==='status')return {stdout:state.dirty?' M authored-source.ts':'',stderr:''};if(command!=='vercel')return (promisify(actual.execFile) as Function)(command,args,options);return {stdout:JSON.stringify({id:state.platformChanged?'dpl_changed':'dpl_recovery',projectId:'prj_recovery',ownerId:'team_recovery',readyState:'READY',target:null,meta:{githubCommitSha:state.commit}}),stderr:''};}});return {...actual,execFile:execute};});
 async function fixture(run:(input:Parameters<typeof withLockedWorkRecoveryTarget>[0])=>Promise<void>,beforeLock?:(owner:Client)=>Promise<void>){
  state.connections.clear();state.platformChanged=false;state.sourceChanged=false;state.dirty=false;state.cleanupUnavailable=false;
@@ -299,4 +304,49 @@ it('measures actual selected work HTTP reads without granting full service and r
    const db=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});try{await db.connect();expect((await db.query('SELECT 1 FROM operations_recovery_http_reads a JOIN login_sessions s ON s.id=a.session_id WHERE a.workspace_id=$1 AND (a.revoked_at IS NULL OR s.revoked_at IS NULL)',[workspaceId])).rowCount).toBe(0);}finally{await db.end();}
   }finally{transport.mockRestore();expect(globalThis.fetch).toBe(originalFetch);}
  },async owner=>{const f=await pilotPublishedKnowledgeFixture(owner as unknown as PoolClient,'primary');customerId=f.customerId;workspaceId=f.actor.workspaceId;});
+},210000);
+
+it('issues a fresh bounded MCP probe after genuine cold denial reconciliation and retires original identities through interruption and restart',async()=>{
+ let workspaceId='',customerId='',capturedConnectionId='',partnerMembershipId='',foreignCustomerId='';
+ await fixture(async input=>{
+  const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
+  try{await withRetainedDenialFixture(owner,input.scope.environmentId,dirname(input.sourceFile),{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async retained=>{
+   await quarantineRestoredAuthority(owner,input.scope,retained);
+   expect((await owner.query('SELECT credential_hash FROM mcp_connections WHERE id=$1',[capturedConnectionId])).rows[0].credential_hash).toBeNull();
+   let fresh:Awaited<ReturnType<typeof issueWorkRecoveryMcpProbe>>|undefined;
+   await withLockedWorkRecoveryTarget(input,async(db,target)=>{
+    const issue=async(current:typeof retained,password=process.env.TURAS_DEMO_PASSWORD!,customers=[customerId],username:'mcteer'|'partner'='mcteer')=>{
+     const deadline=Math.min(Date.now()+55000,target.deadline);await db.query('BEGIN');
+     try{const result=await issueWorkRecoveryMcpProbe(db,target,{...input.scope,workspaceId,deadline,password,username,mcp:{categories:['profiles'],customerIds:customers,expiresAt:new Date(deadline).toISOString(),retained:current}},dirname(input.sourceFile));await db.query('COMMIT');return result;}catch(error){await db.query('ROLLBACK');throw error;}
+    };
+    await expect(issue({...retained})).rejects.toThrow('Actual independently retained');await expect(issue(retained,'incorrect')).rejects.toThrow('Recovery authentication unavailable');
+    await expect(issue(retained,process.env.TURAS_DEMO_PASSWORD!,[])).rejects.toThrow('Customer categories require selected customers');
+    fresh=await issue(retained);expect(fresh.connection.id).not.toBe(capturedConnectionId);expect(Date.parse(fresh.connection.expiresAt)-Date.now()).toBeLessThanOrEqual(59000);
+    expect((await db.query('SELECT mcp_probe_connection,mcp_credential_digest FROM operations_recovery_http_reads WHERE id=$1',[fresh.admission.id])).rows).toEqual([{mcp_probe_connection:true,mcp_credential_digest:createHash('sha256').update(fresh.credential.split('.')[2]).digest('hex')}]);
+    async function readAndRetire(issued:NonNullable<typeof fresh>){const client=new McpClient({name:'synthetic-fresh-recovery',version:'1.0.0'},{versionNegotiation:{mode:{pin:mcpProtocolVersion},probe:{maxRetries:0,timeoutMs:10000}}});
+    const sdkFetch:typeof fetch=async(url,options)=>withTargetRuntime(input,target,async()=>{
+     const request=new Request(url,options),headers=new Headers(request.headers);headers.set('host',new URL(target.origin).host);headers.set('cookie',sessionCookie(issued.admission.actor.token,issued.admission.actor.expiresAt).split(';')[0]);headers.set('x-turas-recovery-read',issued.admission.secret);
+     return maintenanceMcp(new Request(target.origin+'/api/operations/recovery-read/'+issued.admission.id+'/mcp',{method:request.method,headers,body:await request.arrayBuffer(),signal:request.signal}),{params:Promise.resolve({admissionId:issued.admission.id})});
+    });
+    try{await client.connect(new StreamableHTTPClientTransport(new URL('/api/mcp/v1',target.origin),{fetch:sdkFetch,requestInit:{headers:{authorization:'Bearer '+issued.credential}},reconnectionOptions:{maxRetries:0,maxReconnectionDelay:0,initialReconnectionDelay:0,reconnectionDelayGrowFactor:1}}),{timeout:10000});const identity=mcpToolOutputs.turas_identity_v1.parse((await client.callTool({name:'turas_identity_v1',arguments:{}})).structuredContent);expect(identity.status).toBe('available');if(identity.status==='available')expect(identity.data.kind).toBe(issued.admission.actor.kind);const profile=mcpToolOutputs.turas_profile_read_v1.parse((await client.callTool({name:'turas_profile_read_v1',arguments:{customerId,section:'facts',limit:20}})).structuredContent);expect(profile.status).toBe('available');if(profile.status==='available')expect(profile.data.items.length).toBeGreaterThan(0);}
+    finally{await client.close();await db.query('BEGIN');try{await retireRegisteredWorkMcpProbe(db,target,issued.probe);await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}}
+    }
+    await readAndRetire(fresh);
+    const partner=await issue(retained,process.env.PARTNER_PASSWORD!,[customerId],'partner');await readAndRetire(partner);
+    await expect(issue(retained,process.env.PARTNER_PASSWORD!,[foreignCustomerId],'partner')).rejects.toThrow();
+    await db.query("UPDATE customer_grants SET state='revoked',revision=revision+1 WHERE membership_id=$1 AND customer_id=$2",[partnerMembershipId,customerId]);
+    await expect(issue(retained,process.env.PARTNER_PASSWORD!,[customerId],'partner')).rejects.toThrow();
+    expect((await db.query('SELECT state FROM customer_grants WHERE membership_id=$1 AND customer_id=$2',[partnerMembershipId,customerId])).rows[0].state).toBe('revoked');
+   });
+   expect((await owner.query('SELECT revoked_at IS NOT NULL AND credential_hash IS NULL AS retired FROM mcp_connections WHERE id=$1',[fresh!.connection.id])).rows).toEqual([{retired:true}]);
+   let interrupted:typeof fresh;
+   await expect(withLockedWorkRecoveryTarget(input,async(db,target)=>{
+    const deadline=Math.min(Date.now()+55000,target.deadline);await db.query('BEGIN');try{interrupted=await issueWorkRecoveryMcpProbe(db,target,{...input.scope,workspaceId,deadline,password:process.env.TURAS_DEMO_PASSWORD!,username:'mcteer',mcp:{categories:['profiles'],customerIds:[customerId],expiresAt:new Date(deadline).toISOString(),retained}},dirname(input.sourceFile));await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}state.cleanupUnavailable=true;throw Error('Controlled fresh MCP lost acknowledgement');
+   })).rejects.toThrow('Work recovery and independent probe cleanup incomplete');state.cleanupUnavailable=false;
+   await withLockedWorkRecoveryTarget(input,async(db,target)=>{await db.query('BEGIN');try{await reconcileWorkRecoveryProbeJournal(db,target,{journalDirectory:dirname(input.sourceFile),intentNames:['probe-'+interrupted!.probe.sessionId+'-intent.json'],password:process.env.TURAS_DEMO_PASSWORD!});await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}});
+   expect((await owner.query('SELECT revoked_at IS NOT NULL AND credential_hash IS NULL AS retired FROM mcp_connections WHERE id=$1',[interrupted!.connection.id])).rows).toEqual([{retired:true}]);
+   expect((await owner.query('SELECT credential_hash FROM mcp_connections WHERE id=$1',[capturedConnectionId])).rows[0].credential_hash).toBeNull();
+  });}finally{state.cleanupUnavailable=false;state.retainedKey=null;await owner.end();}
+ },async owner=>{const f=await pilotPublishedKnowledgeFixture(owner as unknown as PoolClient,'primary');workspaceId=f.actor.workspaceId;customerId=f.customerId;
+ const org=randomUUID();partnerMembershipId=randomUUID();foreignCustomerId=randomUUID();await owner.query("INSERT INTO partner_organizations(id,workspace_id,name) VALUES($1,$2,'Synthetic fresh MCP partner')",[org,workspaceId]);await owner.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role,partner_org_id) VALUES($1,$2,$3,'partner','member',$4)",[partnerMembershipId,DEMO_IDS.partner,workspaceId,org]);await owner.query("INSERT INTO customer_grants(id,membership_id,workspace_id,customer_id,state,revision,granted_by) VALUES($1,$2,$3,$4,'active',1,$5)",[randomUUID(),partnerMembershipId,workspaceId,customerId,DEMO_IDS.mcteer]);await owner.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,'Synthetic unassigned fresh MCP customer',true)",[foreignCustomerId,workspaceId]);await owner.query('INSERT INTO customer_profile_state(customer_id,workspace_id) VALUES($1,$2) ON CONFLICT DO NOTHING',[foreignCustomerId,workspaceId]);const created=await createMcpConnection(f.actor,{requestKey:randomUUID(),name:'Synthetic captured credential',categories:['profiles'],customerIds:[customerId],lifetimeDays:1});capturedConnectionId=created.connection.id;});
 },210000);

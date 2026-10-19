@@ -41,9 +41,11 @@ export type McpToolName = keyof typeof mcpToolInputs;
 export const mcpUnavailableReasonSchema = z.enum(["not_found","source_changed","incomplete","oversized","expired","unavailable"]);
 const categories = z.array(mcpCategorySchema).min(1).max(5).refine(values => new Set(values).size===values.length,"Distinct categories required");
 const customerIds = z.array(mcpIdSchema).max(100).refine(values => new Set(values).size===values.length,"Distinct customers required");
+/** Customer-bearing categories always require an explicit customer ceiling. */
+export const mcpConnectionScopeAllowed=(value:{categories:readonly string[];customerIds:readonly string[]})=>value.categories.every(category=>category==='knowledge')||value.customerIds.length>0;
 export const mcpCreateConnectionSchema = z.strictObject({requestKey:mcpIdSchema,name:z.string().trim().min(1).max(80),
   categories,customerIds,lifetimeDays:z.number().int().min(1).max(30).default(7),
-}).refine(value => value.categories.every(category => category==="knowledge") || value.customerIds.length>0,"Customer categories require selected customers");
+}).refine(mcpConnectionScopeAllowed,"Customer categories require selected customers");
 export type McpCreateConnection = z.infer<typeof mcpCreateConnectionSchema>;
 export const mcpRevokeConnectionSchema = z.strictObject({requestKey:mcpIdSchema,expectedConnectionId:mcpIdSchema});
 export const mcpManagementPageSchema = z.strictObject(page);
