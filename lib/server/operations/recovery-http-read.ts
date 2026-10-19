@@ -8,13 +8,13 @@ import {type CurrentSession,tokenFromRequest,hashSessionToken} from '../auth/ses
 import {HttpFailure} from '../../contracts/http';
 
 const hash=(secret:string)=>createHash('sha256').update(secret).digest('hex');
-export type RecoveryHttpRead={actor:CurrentSession;customerId:string;environmentId:string;recoveryId:string;controlRevision:number;deadline:number};
+export type RecoveryHttpRead={actor:CurrentSession;customerId:string;environmentId:string;recoveryId:string;controlRevision:number;deadline:number;readKind:'profile'|'artifact';recordId:string|null;recordDigest:string|null;recordSize:number|null;recordGeneration:number|null};
 /** Only the fixed maintenance endpoint calls this. No ordinary route/session or
  * serialized actor receives recovery authority. Caller holds a transaction. */
 export async function authenticateRecoveryHttpRead(db:PoolClient,request:Request,id:string,reserve:boolean):Promise<RecoveryHttpRead>{
  const url=new URL(request.url),config=getServerConfig(),secret=request.headers.get('x-turas-recovery-read'),token=tokenFromRequest(request);
  if(!z.uuid().safeParse(id).success)throw new HttpFailure(403,'recovery_request_denied','Recovery read unavailable');
- if(request.method!=='GET'||url.pathname!==`/api/operations/recovery-read/${id}/profile`||request.headers.get('host')!==new URL(config.TURAS_APP_ORIGIN).host||url.search||request.headers.has('range')||!secret||!/^[A-Za-z0-9_-]{43}$/.test(secret)||!token)throw new HttpFailure(403,'recovery_request_denied','Recovery read unavailable');
+ if(request.method!=='GET'||!['profile','artifact'].some(kind=>url.pathname===`/api/operations/recovery-read/${id}/${kind}`)||request.headers.get('host')!==new URL(config.TURAS_APP_ORIGIN).host||url.search||request.headers.has('range')||!secret||!/^[A-Za-z0-9_-]{43}$/.test(secret)||!token)throw new HttpFailure(403,'recovery_request_denied','Recovery read unavailable');
  request.signal.throwIfAborted();
  await db.query('SAVEPOINT recovery_http_read_admission');await db.query('RELEASE SAVEPOINT recovery_http_read_admission');
  await db.query("SET LOCAL lock_timeout='3000ms'; SET LOCAL transaction_timeout='15s'");
@@ -24,7 +24,7 @@ export async function authenticateRecoveryHttpRead(db:PoolClient,request:Request
    AND session_id=(SELECT id FROM login_sessions WHERE token_hash=$3)
   FOR ${reserve?'UPDATE':'SHARE'}`,[id,hash(secret),hashSessionToken(token)])).rows;
  if(admission.length!==1)throw new HttpFailure(403,'recovery_scope_denied','Recovery read unavailable');
- const rows=(await db.query(`SELECT a.customer_id,a.environment_id,a.recovery_id,a.control_revision,a.expires_at,a.maximum_requests,a.used_requests,
+ const rows=(await db.query(`SELECT a.read_kind,a.record_id,a.record_digest,a.record_size,a.record_generation,a.customer_id,a.environment_id,a.recovery_id,a.control_revision,a.expires_at,a.maximum_requests,a.used_requests,
  s.id AS session_id,s.principal_id,s.membership_id,s.workspace_id,p.login_name,p.display_name,w.classification
  FROM operations_recovery_http_reads a JOIN operations_control c USING(environment_id) JOIN turas_environment e USING(environment_id)
  JOIN login_sessions s ON s.id=a.session_id JOIN memberships m ON m.id=s.membership_id AND m.principal_id=s.principal_id AND m.workspace_id=s.workspace_id
@@ -36,13 +36,15 @@ export async function authenticateRecoveryHttpRead(db:PoolClient,request:Request
  AND c.mode='locked' AND c.recovery_id=a.recovery_id AND c.revision=a.control_revision AND e.schema_version=79
  AND current_user='turas_runtime_016' AND session_user='turas_runtime_016'
  AND m.active AND p.active AND w.active AND m.kind='internal' AND m.role='admin' AND p.login_name='mcteer'
+ AND (a.read_kind='profile' OR EXISTS(SELECT 1 FROM artifact_versions v WHERE v.id=a.record_id AND v.environment_id=a.environment_id AND v.workspace_id=a.workspace_id AND v.customer_id=a.customer_id AND v.sha256_digest=a.record_digest AND v.actual_size_bytes=a.record_size AND v.lifecycle_generation=a.record_generation))
  AND (w.classification='primary' OR (w.classification='synthetic_pilot' AND w.pilot_environment_id=a.environment_id))
  FOR SHARE OF s,m,p,w`,[id,hash(secret),hashSessionToken(token),config.TURAS_ENVIRONMENT_ID,config.TURAS_APP_ORIGIN,operationalCodeVersion(),process.env.VERCEL_DEPLOYMENT_ID??null,databaseTargetDigest(config.DATABASE_URL,config.TURAS_ENVIRONMENT_ID),decodeURIComponent(new URL(config.DATABASE_URL).pathname.slice(1))])).rows;
  if(rows.length!==1||(process.env.VERCEL==='1'&&!process.env.VERCEL_DEPLOYMENT_ID))throw new HttpFailure(403,'recovery_scope_denied','Recovery read unavailable');
- const row=rows[0],remaining=row.expires_at.getTime()-Date.now();
+ const row=rows[0];if(url.pathname!==`/api/operations/recovery-read/${id}/${row.read_kind}`)throw new HttpFailure(403,'recovery_scope_denied','Recovery read unavailable');
+ const remaining=row.expires_at.getTime()-Date.now();
  if(remaining<=0||remaining>60000)throw new HttpFailure(403,'forbidden','Recovery read unavailable');
  await db.query("SELECT set_config('transaction_timeout',$1,true),set_config('statement_timeout',$2,true)",[Math.max(1,remaining)+'ms',Math.max(1,Math.min(5000,remaining))+'ms']);
  request.signal.throwIfAborted();
  if(reserve){const updated=await db.query('UPDATE operations_recovery_http_reads SET used_requests=used_requests+1 WHERE id=$1 AND used_requests<maximum_requests RETURNING id',[id]);if(updated.rowCount!==1)throw new HttpFailure(429,'rate_limited','Recovery read limit reached');}
- return {actor:Object.freeze({principalId:row.principal_id,loginName:row.login_name,displayName:row.display_name,membershipId:row.membership_id,workspaceId:row.workspace_id,workspaceClassification:row.classification,kind:'internal',role:'admin',sessionId:row.session_id,token,expiresAt:row.expires_at}),customerId:row.customer_id,environmentId:row.environment_id,recoveryId:row.recovery_id,controlRevision:Number(row.control_revision),deadline:row.expires_at.getTime()};
+ return {actor:Object.freeze({principalId:row.principal_id,loginName:row.login_name,displayName:row.display_name,membershipId:row.membership_id,workspaceId:row.workspace_id,workspaceClassification:row.classification,kind:'internal',role:'admin',sessionId:row.session_id,token,expiresAt:row.expires_at}),customerId:row.customer_id,environmentId:row.environment_id,recoveryId:row.recovery_id,controlRevision:Number(row.control_revision),deadline:row.expires_at.getTime(),readKind:row.read_kind,recordId:row.record_id,recordDigest:row.record_digest,recordSize:row.record_size===null?null:Number(row.record_size),recordGeneration:row.record_generation===null?null:Number(row.record_generation)};
 }

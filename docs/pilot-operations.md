@@ -750,7 +750,7 @@ removes them after closing runtime access; authenticated restored originals rema
 Filesystem parity does not prove personnel/report authority or HTTP byte service. This helper does not start HTTP service,
 permit ordinary locked routes or create a recovery verification receipt.
 
-### Fixed maintenance profile reads
+### Fixed maintenance profile and artifact reads
 
 The unreleased079 migration includes owner-controlled, short-lived recovery HTTP
 admissions. Existing001–078 migrations are unchanged. This amendment requires a
@@ -773,7 +773,22 @@ limited to at most10 within60seconds. Ordinary login/routes remain locked. There
 is no arbitrary URL, SQL, customer selector or write dispatcher. HEAD and query
 expansion are denied. No response is cached. Teardown atomically revokes the
 admission and its session, retaining the minimal observations. This profile-only
-path proves neither private-byte service nor complete recovery/unlock eligibility.
+path does not establish complete recovery/unlock eligibility.
+
+An artifact admission additionally binds one exact version, digest, size and
+lifecycle generation. GET `/api/operations/recovery-read/<admission-id>/artifact`
+accepts only that read kind and current record binding. The canonical artifact
+reader runs on the explicitly injected authenticated transaction; its ordinary
+owner/steward, publication, readiness and per-chunk source checks remain intact.
+The handler consumes and hashes the complete bounded stream, checks the recorded
+size/digest and reauthenticates before returning a buffer. This proves authority
+at final release, not continuous network-stream revocation after release. Failed
+corrupt reads retain their committed request reservation. Wrong type, changed
+metadata and Range requests deny; the ordinary artifact route stays locked.
+The source-reader policy alone is explicitly read-only; destructive operations
+retain their normal closed admission. Report, workforce and gap-export HTTP
+read coverage, current authority/effect reconciliation and composed verification
+are still required.
 
 ### Finite complete managed-run inventory closure
 

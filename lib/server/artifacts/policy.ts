@@ -12,9 +12,9 @@ export type ArtifactScope = {
 };
 
 /** Human commands always recheck the live login and current customer grant. */
-export async function lockArtifactHumanScope(client: PoolClient, actor: CurrentSession, scope: ArtifactScope): Promise<void> {
+export async function lockArtifactHumanScope(client: PoolClient, actor: CurrentSession, scope: ArtifactScope, readOnly=false): Promise<void> {
   if (scope.environmentId !== getServerConfig().TURAS_ENVIRONMENT_ID || scope.workspaceId !== actor.workspaceId) throw hiddenRecord();
-  await lockProfileActor(client, actor, scope.customerId);
+  await lockProfileActor(client, actor, scope.customerId,undefined,readOnly);
   const marker = await client.query<{ schema_version: number }>(
     "SELECT schema_version FROM turas_environment WHERE environment_id=$1", [scope.environmentId]);
   if ((marker.rows[0]?.schema_version ?? 0) < 18) throw new HttpFailure(503, "artifact_schema_unavailable", "Artifact intake unavailable");
@@ -65,7 +65,7 @@ export async function requireArtifactSourceReader(
   actor: CurrentSession,
   scope: ArtifactScope & { submittedAt: Date | null },
 ): Promise<void> {
-  await lockArtifactHumanScope(client, actor, scope);
+  await lockArtifactHumanScope(client, actor, scope,true);
   if (actor.principalId === scope.ownerPrincipalId) return;
   if (!scope.submittedAt) throw hiddenRecord();
   try {

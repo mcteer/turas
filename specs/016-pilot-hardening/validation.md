@@ -3402,3 +3402,29 @@ CI run39194860128 also passed, including expansion WebKit.
 The runner now retains private failure traces and reports only whitelisted public
 phase names and expansion source locations, with a sanitization assertion in the
 existing diagnostic test. No timeout, retry allowance or assertion was relaxed.
+
+
+### Canonical artifact maintenance HTTP bytes
+
+The fixed artifact maintenance path extends the unreleased079 admission with
+exact read kind/version/digest/size/generation. The actual owned encrypted
+capture/cold restore contains a normal published synthetic artifact and its
+original bytes. Through the restricted child runtime, the canonical original
+reader and same authenticated transaction returned the exact bytes. The final
+focused integration passed1/1 in82.04seconds: both wrong-kind directions,
+changed generation/digest, ordinary route denial, Range denial, corrupt copied
+bytes503 and exhausted allowance429 after that failed read all passed. The
+initial exploratory fixture failed because completed intent/version insertion
+was outside a transaction; the existing deferred contract is now preserved by
+committing the matching fixture together. No production schema/grants changed.
+
+The subsequent17 admission/object-restore cases and6 explicit migration cases
+passed, for24 focused passing cases including the actual artifact HTTP exercise.
+Root and pilot TypeScript checks, authored-doc checks, and both web/eve builds
+pass. Independent review found no blocking authorization, identity, request-limit or
+lifetime issue. The response is fully buffered and final-authenticated inside
+the live capability; it does not claim client-network revocation after return.
+Personnel/report/gap byte HTTP coverage, hosted admission, current-denial/effect
+reconciliation and complete recovery verification remain pending. Prior079
+rehearsals retain their original identities; another final-manifest cold
+rehearsal is required before release.

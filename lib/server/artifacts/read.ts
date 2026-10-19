@@ -132,9 +132,9 @@ export async function readArtifactUnits(actor: CurrentSession, id: string, rawQu
   });
 }
 
-export async function streamArtifactOriginal(actor: CurrentSession, id: string, request: Request): Promise<Response> {
+export async function streamArtifactOriginal(actor: CurrentSession, id: string, request: Request, readTransaction:typeof withTransaction=withTransaction): Promise<Response> {
   if (request.headers.has("range")) throw new HttpFailure(400, "range_unsupported", "Range requests are unsupported");
-  const row = await withTransaction(async (client) => {
+  const row = await readTransaction(async (client) => {
     const found = await readableVersion(client, actor, id);
     readableContent(found);
     return found;
@@ -150,7 +150,7 @@ export async function streamArtifactOriginal(actor: CurrentSession, id: string, 
   const stream = new ReadableStream<Uint8Array>({
     async pull(controller) {
       try {
-        await withTransaction(async (client) => {
+        await readTransaction(async (client) => {
           const current = await readableVersion(client, actor, id);
           readableContent(current);
           if (current.object_key !== row.object_key || current.lifecycle_generation !== row.lifecycle_generation) {

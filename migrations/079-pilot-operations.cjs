@@ -44,6 +44,10 @@ exports.up = (pgm) => pgm.sql(`
   recovery_id uuid NOT NULL,control_revision bigint NOT NULL CHECK(control_revision>0),
   session_id uuid NOT NULL REFERENCES login_sessions(id),workspace_id uuid NOT NULL REFERENCES workspaces(id),
   customer_id uuid NOT NULL REFERENCES customer_references(id),
+  read_kind text NOT NULL DEFAULT 'profile' CHECK(read_kind IN('profile','artifact')),
+  record_id uuid,record_digest text,record_size integer,record_generation bigint,
+  CHECK((read_kind='profile' AND record_id IS NULL AND record_digest IS NULL AND record_size IS NULL AND record_generation IS NULL) OR
+   (read_kind='artifact' AND record_id IS NOT NULL AND record_digest ~ '^[a-f0-9]{64}$' AND record_size BETWEEN 1 AND 10485760 AND record_generation>0 AND record_digest IS NOT NULL AND record_size IS NOT NULL AND record_generation IS NOT NULL)),
   source_commit text NOT NULL CHECK(source_commit ~ '^[a-f0-9]{40}$'),
   origin text NOT NULL,deployment_id text,
   secret_hash text NOT NULL CHECK(secret_hash ~ '^[a-f0-9]{64}$'),

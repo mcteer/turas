@@ -1,3 +1,4 @@
+import {createArtifactDatabaseFixture} from '../../fixtures/artifact-database';
 import {authenticateRecoveryHttpRead} from '../../../lib/server/operations/recovery-http-read';
 import {issueOwnedRecoveryHttpRead,retireOwnedRecoveryHttpRead} from '../../../lib/server/operations/recovery-http-read-issuer';
 import {sessionCookie} from '../../../lib/server/auth/sessions';
@@ -25,13 +26,13 @@ import {pilotPublishedKnowledgeFixture} from '../../fixtures/pilot/knowledge';
 
 it('authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority',async()=>{
  await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});const root=await mkdtemp(resolve('local-artifacts/016/work-rehearsal-')),key=randomBytes(32);
- let candidate:WorkCaptureCandidate|undefined,sourceEnvironmentId='',sourceProfile:{workspaceId:string;customerId:string;revisionId:string}|undefined;
+ let candidate:WorkCaptureCandidate|undefined,sourceEnvironmentId='',sourceProfile:{workspaceId:string;customerId:string;revisionId:string;artifactVersionId:string}|undefined;
  try{
   await mkdir(join(root,'keys'),{mode:0o700});await writeFile(join(root,'keys','key'),key,{mode:0o600});await mkdir(join(root,'cold'),{mode:0o700});
   await withPilotEnvironment(async environment=>{
    const db=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await db.connect();
    try{
-    sourceEnvironmentId=environment.environmentId;const profile=await pilotPublishedKnowledgeFixture(db as any,'primary');sourceProfile={workspaceId:profile.actor.workspaceId,customerId:profile.customerId,revisionId:profile.originalRevisionId};
+    sourceEnvironmentId=environment.environmentId;const profile=await pilotPublishedKnowledgeFixture(db as any,'primary');await db.query('BEGIN');const original=Buffer.from('Synthetic work restore artifact'),source=await createArtifactDatabaseFixture(db as unknown as PoolClient,profile.actor,profile.customerId,null,original,createHash('sha256').update(original).digest('hex'));await db.query("UPDATE artifact_extraction_runs SET state='published',scan_receipt='{}',coverage='{\"total\":1,\"visited\":1,\"omitted\":[]}',manifest_digest=$2,published_at=now() WHERE id=$1",[source.runId,source.originalDigest]);await db.query("UPDATE artifact_versions SET state='processing' WHERE id=$1",[source.versionId]);await db.query("UPDATE artifact_versions SET state='ready',submitted_at=now() WHERE id=$1",[source.versionId]);sourceProfile={workspaceId:profile.actor.workspaceId,customerId:profile.customerId,revisionId:profile.originalRevisionId,artifactVersionId:source.versionId};await db.query('COMMIT');
     const recoveryId=randomUUID(),revision=Number((await db.query("UPDATE operations_control SET mode='locked',revision=revision+1,recovery_id=$2 WHERE environment_id=$1 RETURNING revision",[environment.environmentId,recoveryId])).rows[0].revision);
     const objects=join(root,'source-objects'),workflow=join(root,'empty-workflow');await mkdir(objects,{mode:0o700});await mkdir(workflow,{mode:0o700});
     const store=new LocalPrivateObjects(objects,environment.environmentId,10485760);
@@ -125,7 +126,7 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
     const warmSaved={DATABASE_URL:process.env.DATABASE_URL,DATABASE_URL_UNPOOLED:process.env.DATABASE_URL_UNPOOLED};
     try{
      Object.assign(process.env,{DATABASE_URL:warmUrl.toString(),DATABASE_URL_UNPOOLED:warmUrl.toString()});await environment.start();
-     for(const path of ['/api/operations/recovery-read/'+randomUUID()+'/profile','/api/customers/'+expectedProfile.customerId+'/profile']){const response=await fetch(environment.origin+path,{redirect:'manual',signal:environment.signal});expect([401,403,503]).toContain(response.status);await response.body?.cancel();}
+     for(const path of ['/api/operations/recovery-read/'+randomUUID()+'/profile','/api/customers/'+expectedProfile.customerId+'/profile','/api/operations/recovery-read/'+randomUUID()+'/artifact']){const response=await fetch(environment.origin+path,{redirect:'manual',signal:environment.signal});expect([401,403,503]).toContain(response.status);await response.body?.cancel();}
     }finally{await environment.stop();Object.assign(process.env,warmSaved);}
     await interruptedPreparation(false);
     await withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async(runtime,_signal,applicationEnvironment)=>{
@@ -161,6 +162,26 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
       const normal=await fetch(environment.origin+'/api/customers/'+expectedProfile.customerId+'/profile',{headers,redirect:'manual'});expect([401,503]).toContain(normal.status);await normal.body?.cancel();
       const response=await fetch(path,{headers,redirect:'manual'});if(response.status!==200){const failure=await response.json() as {error:{code:string}};throw Error('Recovery HTTP denied: '+response.status+' '+failure.error.code);}expect(response.status).toBe(200);
       const body=await response.json() as {data:{customer:{id:string};acceptedFacts:{id:string}[]}};
+      let artifactAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
+      await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{await owner.query('BEGIN');try{artifactAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedProfile.workspaceId,customerId:expectedProfile.customerId,deadline:Date.now()+20000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:2,deploymentId:null,readKind:'artifact',recordId:expectedProfile.artifactVersionId});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}});
+      if(!artifactAdmission)throw Error('Actual artifact admission missing');
+      const reverseKind=await fetch(path.replace('/profile','/artifact'),{headers,redirect:'manual'});expect(reverseKind.status).toBe(403);await reverseKind.body?.cancel();
+      const artifactProof=artifactAdmission,artifactPath=environment.origin+'/api/operations/recovery-read/'+artifactProof.id+'/artifact',artifactHeaders={cookie:sessionCookie(artifactProof.actor.token,artifactProof.actor.expiresAt).split(';')[0],'x-turas-recovery-read':artifactProof.secret};
+      try{
+       const wrongKind=await fetch(artifactPath.replace('/artifact','/profile'),{headers:artifactHeaders,redirect:'manual'});expect(wrongKind.status).toBe(403);await wrongKind.body?.cancel();
+       await db.query('UPDATE operations_recovery_http_reads SET record_generation=record_generation+1 WHERE id=$1',[artifactProof.id]);
+       try{const changed=await fetch(artifactPath,{headers:artifactHeaders,redirect:'manual'});expect(changed.status).toBe(403);await changed.body?.cancel();}finally{await db.query('UPDATE operations_recovery_http_reads SET record_generation=record_generation-1 WHERE id=$1',[artifactProof.id]);}
+       await db.query('UPDATE operations_recovery_http_reads SET record_digest=$2 WHERE id=$1',[artifactProof.id,'0'.repeat(64)]);
+       try{const changed=await fetch(artifactPath,{headers:artifactHeaders,redirect:'manual'});expect(changed.status).toBe(403);await changed.body?.cancel();}finally{await db.query('UPDATE operations_recovery_http_reads SET record_digest=$2 WHERE id=$1',[artifactProof.id,createHash('sha256').update('Synthetic work restore artifact').digest('hex')]);}
+       const originalResponse=await fetch(artifactPath,{headers:artifactHeaders,redirect:'manual'});expect(originalResponse.status).toBe(200);expect(Buffer.from(await originalResponse.arrayBuffer()).toString()).toBe('Synthetic work restore artifact');
+       const ordinary=await fetch(environment.origin+'/api/artifacts/'+expectedProfile.artifactVersionId+'/original',{headers:artifactHeaders,redirect:'manual'});expect([401,403,503]).toContain(ordinary.status);await ordinary.body?.cancel();
+       const deniedRange=await fetch(artifactPath,{headers:{...artifactHeaders,range:'bytes=0-2'},redirect:'manual'});expect(deniedRange.status).toBe(403);await deniedRange.body?.cancel();
+       const canonicalPath=join(applicationEnvironment.TURAS_ARTIFACT_STORE_ROOT,'objects',artifactNames[0]);await writeFile(canonicalPath,Buffer.alloc(Buffer.byteLength('Synthetic work restore artifact')),{mode:0o600});
+       try{const corrupt=await fetch(artifactPath,{headers:artifactHeaders,redirect:'manual'});expect(corrupt.status).toBe(503);await corrupt.body?.cancel();}finally{await writeFile(canonicalPath,'Synthetic work restore artifact',{mode:0o600});}
+       const exhausted=await fetch(artifactPath,{headers:artifactHeaders,redirect:'manual'});expect(exhausted.status).toBe(429);await exhausted.body?.cancel();
+
+      }finally{await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,artifactProof.id);}
+
       expect(body.data.customer.id).toBe(expectedProfile.customerId);expect(body.data.acceptedFacts.some(fact=>fact.id===expectedProfile.revisionId)).toBe(true);
       // A correctly ordered owner transition waits on the shared recovery
       // fence, then proceeds when the actual runtime read transaction closes.
