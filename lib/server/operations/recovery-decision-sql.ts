@@ -20,11 +20,11 @@ export function assertRecoveryDecisionSql(sql:string){
  for(const statement of statements){
   const words=statement.trim().match(/^[A-Za-z]+(?:\s+[A-Za-z]+)?/)?.[0].toUpperCase().split(/\s+/)??[];
   if(words[0]==='ROLLBACK'){if(words[1]!=='TO')fail();}
-  else if(words[0]==='SET'){if(!/^SET\s+LOCAL\s+(?:transaction_timeout|statement_timeout|lock_timeout)\s*(?:=|TO\b)/i.test(statement.trim()))fail();}
+  else if(words[0]==='SET'){if(!/^SET\s+LOCAL\s+(?:statement_timeout|lock_timeout)\s*(?:=|TO\b)/i.test(statement.trim()))fail();}
   else if(!['SELECT','WITH','INSERT','UPDATE','DELETE','LOCK','SAVEPOINT','RELEASE'].includes(words[0]))fail();
  }
  // Keep the parser's quoted-string rules fixed; canonical helpers use static
  // setting names and LOCAL timeouts, never parameterized parser configuration.
  if(/\b(?:standard_conforming_strings|backslash_quote)\b/i.test(clean))fail();
- for(const call of clean.matchAll(/\bset_config\s*\(\s*([^,]*)/gi)){const literal=/^__recovery_literal_(\d+)__\s*$/.exec(call[1]);if(!literal||!['transaction_timeout','statement_timeout','lock_timeout'].includes(literals[Number(literal[1])]))fail();}
+ for(const call of clean.matchAll(/\bset_config\s*\(\s*([^,]*)/gi)){const literal=/^__recovery_literal_(\d+)__\s*$/.exec(call[1]);if(!literal||!['statement_timeout','lock_timeout'].includes(literals[Number(literal[1])]))fail();}
 }

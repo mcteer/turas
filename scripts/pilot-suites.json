@@ -654,7 +654,7 @@
     },
     {
       "file": "tests/unit/pilot/feedback.test.ts",
-      "expectedCases": 8,
+      "expectedCases": 9,
       "cases": [
         "records named internal and assigned partner observations without approving release",
         "rejects missing roles reused principal identities and duplicate scope",
@@ -663,7 +663,8 @@
         "rejects skipped reversed duplicate and terminal transitions",
         "requires blocker correction and digest-bound recheck before resolution",
         "permits explicit nonblocker deferral with future follow-up and retained owner",
-        "rejects future observations arbitrary fields and claimed release approval"
+        "rejects future observations arbitrary fields and claimed release approval",
+        "binds automated role observations to immutable hosted capture provenance without human or release claims"
       ]
     },
     {
@@ -1400,12 +1401,13 @@
     },
     {
       "file": "tests/unit/pilot/evaluation-source.test.ts",
-      "expectedCases": 4,
+      "expectedCases": 5,
       "cases": [
         "preserves ordinary separated test database selection without inspecting containers",
         "accepts only the actual owned pilot endpoint with a distinct runtime login",
         "rejects hosted unmarked mismatched and owner-as-runtime sources before inspection",
-        "rejects missing containers foreign labels and mismatched actual port bindings"
+        "rejects missing containers foreign labels and mismatched actual port bindings",
+        "keeps nested owned Next copies within their actual linked dependency root"
       ]
     },
     {
@@ -1796,10 +1798,11 @@
     },
     {
       "file": "tests/integration/pilot/work-recovery-decision.test.ts",
-      "expectedCases": 2,
+      "expectedCases": 3,
       "cases": [
         "commits a pending recovery decision only after live checks and rolls back drift cancellation and callback commit attempts",
-        "measures exhaustive fresh work MCP category pages through SDK and rejects changed projections or forged measurements"
+        "measures exhaustive fresh work MCP category pages through SDK and rejects changed projections or forged measurements",
+        "cancels a pending owner transaction when a single read deadline ends and preserves independent cleanup"
       ]
     }
   ],

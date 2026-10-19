@@ -42,7 +42,7 @@ export async function pilotFeedback(args=process.argv.slice(2)){
   await db.connect();await validatePilotFeedbackScope(db,record.scope);const current=await pilotSource();
   if(JSON.stringify(current)!==JSON.stringify(source))throw Error('Feedback source changed');
   const fileDigest=await writeEvidence(root,'feedback.json',record);
-  console.info(JSON.stringify({recorded:true,state:record.transitions.at(-1)!.state,recordDigest:feedbackDigest(record),fileDigest,humanReported:true,releaseApproved:false,messagesSent:0}));
+  console.info(JSON.stringify({recorded:true,state:record.transitions.at(-1)!.state,recordDigest:feedbackDigest(record),fileDigest,humanReported:record.humanReported,releaseApproved:false,messagesSent:0}));
  }finally{await db.end();}
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)pilotFeedback().catch(()=>{console.error('Feedback recording refused; no feedback or release decision was invented.');process.exitCode=1;});

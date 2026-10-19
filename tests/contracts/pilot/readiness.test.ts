@@ -18,7 +18,7 @@ describe("pilot evidence attribution",()=>{
  it("rejects incomplete inventories",()=>{const r=fixture();r.receipts[0].expectedCases=2;expect(pilotRunSchema.safeParse(r).success).toBe(false);});
  it("rejects unstable passes",()=>{const r=fixture();r.receipts[0].flakyCases=1;expect(pilotRunSchema.safeParse(r).success).toBe(false);});
  it("rejects unknown gates",()=>expect(pilotReceiptSchema.safeParse({...fixture().receipts[0],gateId:"G99"}).success).toBe(false));
- it("requires hosted identity",()=>expect(pilotReceiptSchema.safeParse({...fixture().receipts[0],method:"hosted"}).success).toBe(false));
+ it("requires hosted identity",()=>{for(const method of ["hosted","automated-role-exercise"])expect(pilotReceiptSchema.safeParse({...fixture().receipts[0],method}).success).toBe(false);});
  it("rejects unsafe hosted origins",()=>{const r=fixture().receipts[0];expect(pilotReceiptSchema.safeParse({...r,method:"hosted",hosted:{deploymentId:"deployment",commit:r.sourceCommit,origin:"https://user:password@example.com/path",environmentMarker:r.environmentMarker,schemaLedgerDigest:"a".repeat(64),runtimeGrantsVerified:true}}).success).toBe(false);});
  it("limits metadata before parsing",()=>expect(()=>parsePilotRun(" ".repeat(1024*1024+1))).toThrow("exceeds limit"));
 });

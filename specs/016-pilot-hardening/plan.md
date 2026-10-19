@@ -155,15 +155,15 @@ metadata to 079, not a parallel customer/plan/report data model.
    current quality/cost evidence without inferring free/unknown service use.
 7. **Pilot/release / US5**: Provision the separately marked workspace idempotently
    with owned records and exact grants; run normal proposals/reviews, actual hosted
-   file processing and five-category SDK reads. Collect user feedback, fix blockers,
+   file processing and five-category SDK reads. Collect automated role observations per the 2026-10-19 directive, fix blockers,
    finish target migrations/grants and exact-version post-merge checks; record the
-   mcteer decision and owned cleanup. Never mark human-feedback tasks complete from
-   automated or agent-generated participant comments.
+   mcteer decision and owned cleanup. Record actual hosted captures as automated observations, never as human
+   comments; retain independent capture review and the separate release decision.
 
 Stages can use multiple PRs. A feature branch may be replaced after each merge to
 honor branch cleanup; keep `SPECIFY_FEATURE_DIRECTORY` fixed and tasks cumulative.
 No intermediate PR advertises the full pilot as ready. Local and CI evidence may
-complete before Production or human feedback; report those states separately.
+complete before Production or hosted role exercises; report those states separately.
 
 ## Architecture boundaries
 

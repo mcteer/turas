@@ -1,3 +1,4 @@
+import {configureOwnedNextDependencyRoot} from './owned-next-config';
 import {qualityChildEnvironment} from "./pilot-quality-runtime";
 import {recoveryPostgresImage,type RecoveryPostgresMajor} from '../lib/server/operations/postgres-version';
 import { pilotProtectedSnapshot } from "./pilot-preservation";
@@ -89,6 +90,7 @@ export async function withPilotEnvironment<T>(run: (environment: PilotEnvironmen
   // Nested owned scopes inherit the same physical dependency root.
   // Add this configuration once; duplicate object keys fail production builds.
   if(!config.includes('// owned-pilot-next-config-v1'))await writeFile(configPath,config.replace('const nextConfig: NextConfig = {',`const nextConfig: NextConfig = {\n  // owned-pilot-next-config-v1\n  devIndicators: false,\n  turbopack: { root: ${JSON.stringify(resolve('.'))} },`));
+  await configureOwnedNextDependencyRoot(appRoot);
   const origin=`http://127.0.0.1:${portLease.port}`;
   const env={...safeEnv,TURAS_CODE_VERSION:codeVersion,DATABASE_URL:runtimeUrl,DATABASE_URL_UNPOOLED:ownerUrl,TURAS_TEST_DATABASE_URL:ownerUrl,TURAS_ENVIRONMENT_ID:environmentId,TURAS_TEST_ENVIRONMENT_ID:environmentId,TURAS_PILOT_OWNED:'1',TURAS_PILOT_LOGIN_ENABLED:'1',TURAS_015_DISABLED:'0',TURAS_PRIVATE_OBJECT_BACKEND:'local',TURAS_JOB_EXECUTOR:'local',TURAS_APP_ORIGIN:origin,TURAS_EVE_INTERNAL_ORIGIN:origin+'/',TURAS_REPORT_STORE_ROOT:storeRoot,TURAS_ARTIFACT_STORE_ROOT:artifactRoot,TURAS_WORKFORCE_STORE_ROOT:workforceRoot,TURAS_MAINTENANCE_SECRET:randomBytes(32).toString('hex'),TURAS_012_RECEIPT_HASH_KEYS:JSON.stringify([randomBytes(32).toString('hex')]),TURAS_DEMO_USERNAME:'mcteer',TURAS_DEMO_PASSWORD:'SyntheticPilotPassword1!',PANEL_USERNAME:'panel',PANEL_PASSWORD:'SyntheticPilotPassword2!',PARTNER_USERNAME:'partner',PARTNER_PASSWORD:'SyntheticPilotPassword3!',TURAS_TEST_MODEL_MODE:'deterministic',NODE_ENV:'test',TURAS_REPORTS_ENABLED:'0',TURAS_REPORT_DELIVERY_ENABLED:'0'};
   for(const key of Object.keys(process.env))delete process.env[key];Object.assign(process.env,env);

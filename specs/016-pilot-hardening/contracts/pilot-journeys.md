@@ -59,8 +59,8 @@ public customer/source scope, never all customers as an implicit test run.
 | G17 Core hosted chain | J002–012 positive journeys including accepted records, actual file artifacts and read/denial checks |
 | G18 Partner/learning | J013–014 with assigned partner, normal reviewed demonstrations and publication/rejection boundaries |
 | G19 MCP consumer | J015 with actual SDK five-category positive reads/citations and revocation, no fabricated fixture DTOs |
-| G20 Operations | Runbooks exercised by a separate operator/reviewer; attributable observations and incident/recovery timings |
-| G21 Human feedback | At least one internal participant and one assigned-partner participant provide observed-journey feedback; all blockers corrected/rechecked |
+| G20 Operations | Actual automated runbook exercises with independent capture review; attributable observations and incident/recovery timings |
+| G21 Role observations | Actual hosted automated internal and assigned-partner exercises per the 2026-10-19 directive, labeled automated with exact deployment/capture provenance; all blockers corrected/rechecked |
 | G22 Final release record | Fresh complete evidence bundle, source/schema/config binding, safe summary and owned-resource cleanup; human approval recorded separately |
 
 All 22 are mandatory for full controlled-pilot readiness. A failed core gate cannot

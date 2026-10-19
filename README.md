@@ -793,3 +793,13 @@ SDK/canonical comparisons and rechecks the exact current role/customer union
 under final decision locks. Local three-role coverage passes; real-work capacity,
 Workflow/effect composition and the authoritative recovery producer remain
 pending. Full pilot readiness and cleanup remain incomplete.
+
+The user-authorized operator/internal/partner exercises can run automatically
+against the actual hosted deployment. Versioned observation records distinguish
+automated captures from human reports and preserve immutable capture provenance;
+G20/G21 require hosted attribution and freshness. These contracts do not establish
+completed hosted exercises or grant release approval.
+
+The current local deterministic inventory is862cases across157suites. Fresh
+complete current-source verification remains required; focused contract checks
+and historical catalog passes do not establish that result.

@@ -1,4 +1,5 @@
 import type {Client,PoolClient} from 'pg';
+import {isWorkRecoveryDecisionClient} from './locked-work-recovery-target';
 import {z} from 'zod';
 import {createRequire} from 'node:module';
 import {recoveryDigest} from '../../contracts/pilot-recovery';
@@ -33,7 +34,7 @@ export async function auditRecoveredRequestFencesInTransaction(db:Client|PoolCli
  // SAVEPOINT fails outside a transaction, before any audit or authority check.
  await db.query('SAVEPOINT recovered_request_fence_audit');await db.query('RELEASE SAVEPOINT recovered_request_fence_audit');
  if((await db.query("SELECT current_setting('transaction_isolation') AS isolation")).rows[0]?.isolation!=='read committed')throw Error('Request fence audit requires read committed isolation');
-  await db.query("SET LOCAL lock_timeout='3000ms'");await db.query("SET LOCAL statement_timeout='10000ms'");await db.query("SET LOCAL transaction_timeout='120s'");
+  await db.query("SET LOCAL lock_timeout='3000ms'");await db.query("SET LOCAL statement_timeout='10000ms'");if(!isWorkRecoveryDecisionClient(db))await db.query("SET LOCAL transaction_timeout='120s'");
   if((await db.query("SELECT current_user=pg_get_userbyid(relowner) AS owner FROM pg_class WHERE oid='operations_control'::regclass")).rows[0]?.owner!==true)throw Error('Request fence audit requires actual owner authority');
   await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16020))',[scope.environmentId]);
   await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[scope.environmentId]);

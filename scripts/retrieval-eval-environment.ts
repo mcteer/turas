@@ -1,3 +1,4 @@
+import {configureOwnedNextDependencyRoot} from './owned-next-config';
 import {stopOwnedAppProcesses} from './plan-eval-environment';
 import {copyOwnedEvalFiles} from './eval-owned-copy';
 import {qualityChildEnvironment} from "./pilot-quality-runtime";
@@ -94,6 +95,7 @@ export async function withRetrievalEvalEnvironment<T>(
     }
     await symlink(resolve("node_modules"),join(app,"node_modules"));
     await symlink(resolve("packages/artifact-extractor/node_modules"),join(app,"packages/artifact-extractor/node_modules"));
+    await configureOwnedNextDependencyRoot(app);
     if (adminUrl) {
       const admin = new Client({ connectionString: adminUrl.toString() });
       await admin.connect();

@@ -141,11 +141,11 @@ are accounting evidence, not proof of hosted invoices or production readiness.
 
 ## Private participant feedback
 
-`npm run pilot:feedback -- --environment E --input /private/request.json --output /private/new-record-directory` records explicitly supplied human observations only. The input and prior records use the existing private evidence guards (directory 0700, file 0600, no symlinks or hard links). The command never contacts participants, creates accepted facts or approves a release.
+`npm run pilot:feedback -- --environment E --input /private/request.json --output /private/new-record-directory` records attributable human reports (v1) or actual automated role observations (v2). The input and prior records use the existing private evidence guards (directory 0700, file 0600, no symlinks or hard links). The command never contacts participants, creates accepted facts or approves a release.
 
 The request contains `record` and, for an append, `previous: {file, digest}`. The previous file digest is the exact SHA-256 returned as `fileDigest`; the record’s `previousDigest` is the canonical `recordDigest`. Each append writes a new directory and preserves the original observation, scope and transition prefix. Scope contains the exact environment and synthetic workspace, customer UUIDs and distinct named internal and partner participant references with actual principal and membership UUIDs. All listed customers must have active explicit grants for each listed partner; a narrower feedback cohort needs its own separately recorded scope. Current database membership, principal, partner organization, workspace and grant eligibility are checked at every recording.
 
-Each UUID feedback item identifies J002–J015, participant, observed time, private observation reference and severity. The state advances `recorded → triaged → resolved | deferred`, with an internal follow-up owner. Blockers cannot be deferred. Resolution requires the supplied recheck reference and digest; nonblocker deferral requires rationale and a future follow-up. These are retained operator reports, not automatic verification of the referenced recheck. G21 acceptance still requires review of the actual participant observations and underlying current journey proof; synthetic fixture feedback cannot satisfy it. No real participant observations have been supplied by this implementation.
+Each UUID feedback item identifies J002–J015, participant, observed time, private observation reference and severity. The state advances `recorded → triaged → resolved | deferred`, with an internal follow-up owner. Blockers cannot be deferred. Resolution requires the supplied recheck reference and digest; nonblocker deferral requires rationale and a future follow-up. These are retained operator reports, not automatic verification of the referenced recheck. G21 acceptance requires independent review of actual hosted observations and current journey proof. Synthetic fixture feedback cannot satisfy it; v2 observations must be labeled automated.
 
 The owned workflow staging primitive rejects indirect/hard-linked/writable entries, takes bounded SHA-256 byte inventories before and after staging, and removes only its new partial destination on interruption. It retains source files. Stable file bytes alone do not prove a stopped native process or database-matched boundary: the returned `workflowRuntimeStoppedVerified` and `matchedCheckpointVerified` remain false. The operator capture must independently stop/protect the relevant native runtime before using those entries in a full recovery manifest. Managed Workflow must use its verified interrupted-reconciliation capability; no generic local-files export is inferred for it.
 
@@ -477,28 +477,28 @@ Temporary decrypted files are removed on both success and failure. Successful
 charges/sends, managed Workflow, full service verification and RPO/RTO remain
 separate requirements.
 
-## Human operator and participant walkthrough
+## Automated operator and role exercises
 
-`mcteer` is the nominated human operator/reviewer for the next exercise. This is
-an assignment, not a completed observation. In an owned isolated environment,
-follow the capture, cold restore, current-denial application and failure/resume
-commands above. Record your actual start/end times, which step was unclear, the
-observed locked/denied behavior and whether another operator could repeat it.
-Keep observations and supporting receipts private under `local-artifacts/016/`.
-An unresolved quarantine or unavailable required scope remains a blocker; do not
-test unlock by bypassing the owner verification path.
+The 2026-10-19 user directive authorizes automated operator, internal-member and
+assigned-partner exercises. Execute the actual capture, cold restore, current-denial
+and failure/resume commands in the isolated target. Retain start/end times, command
+results, locked/denied outcomes and private capture digests. Unresolved quarantine
+remains a blocker; the owner verification path must establish unlock.
 
-For hosted pilot feedback, use distinct current internal and assigned-partner
-member identities in the synthetic pilot workspace. Follow the linked journey
-catalog in [pilot journeys](../specs/016-pilot-hardening/contracts/pilot-journeys.md)
-with normal proposals, reviews and explicit grants. Each participant supplies
-their own observed result and difficulties. Bind each observation to its journey,
-time and exact deployment; assign an internal follow-up owner and severity.
-Record the protected `pilot-feedback-record-v1` input with
-`npm run pilot:feedback -- --environment <exact-marker> --input <private-input.json>
---output <new-private-directory>`. Blockers require correction and an evidenced
-recheck; other dispositions require an owner. Automated synthetic outcomes and
-operator nomination cannot supply participant observations or release approval.
+For hosted role exercises, use distinct current internal and assigned-partner
+identities in the synthetic pilot workspace. Run the normal journey catalog with
+explicit grants and normal proposals/reviews. Retain the exact deployment, origin,
+role, journey, timestamps and actual HTTP/WebKit captures. Independent review
+checks these captures and records uncertainties; generated participant opinions
+cannot count as observations.
+
+Record automated observations with `pilot-feedback-record-v2`, `humanReported:false`
+and `automation` containing `method:automated-role-exercise`, `deploymentId`,
+canonical HTTPS `origin`, `captureDigest` and `runnerReference`. The protected
+`pilot:feedback` command validates current scope and preserves immutable history.
+Version1 remains available for real human reports. Both formats retain severity,
+internal follow-up ownership and blocker rechecks; neither approves release.
+G20/G21 require current hosted attribution and actual complete exercise proof.
 
 
 ## OrbStack and generated-data closeout

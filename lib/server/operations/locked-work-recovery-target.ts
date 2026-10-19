@@ -21,8 +21,19 @@ import {mcpBearerSchema,mcpCreateConnectionSchema,mcpConnectionScopeAllowed} fro
 const scopeSchema=z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive()});
 type Scope=z.infer<typeof scopeSchema>;
 export type LockedWorkRecoveryTarget=Readonly<{contract:'pilot-locked-work-recovery-target-v1';environmentId:string;recoveryId:string;controlRevision:number;projectId:string;teamId:string;sourceCommit:string;sourceDigest:string;catalogDigest:string;origin:string;deploymentId:string;databaseBindingDigest:string;deadline:number}>;
-type Binding={db:Client;scope:Scope;databaseName:string;ownerRole:string;runtimeConnection:string;signal:AbortSignal};
+type Binding={db:Client;scope:Scope;databaseName:string;ownerRole:string;runtimeConnection:string;signal:AbortSignal;decision:boolean;abort:(reason:unknown)=>void};
 const bindings=new WeakMap<object,Binding>();
+const decisionClients=new WeakMap<object,Binding>();
+/** Only a privately registered decision transport owns its aggregate timer. */
+export function isWorkRecoveryDecisionClient(db:Client|import('pg').PoolClient){return decisionClients.get(db)?.decision===true;}
+/** An individual owner read cannot outlive its original deadline. Timeout aborts
+ * the whole genuine writer; the transport rolls back and cleans independently. */
+export async function withWorkRecoveryReadDeadline<T>(db:Client,target:LockedWorkRecoveryTarget,readSignal:AbortSignal,run:(signal:AbortSignal)=>Promise<T>){
+ const binding=bindings.get(target);if(!binding||binding.db!==db)throw Error('Actual active work recovery read target required');
+ const signal=AbortSignal.any([binding.signal,readSignal]),abort=()=>binding.abort(signal.reason??Error('Work recovery read deadline ended'));
+ signal.addEventListener('abort',abort,{once:true});
+ try{if(signal.aborted)abort();signal.throwIfAborted();return await run(signal);}finally{signal.removeEventListener('abort',abort);}
+}
 const execute=promisify(execFile);
 function directConnection(raw:string,role?:string){
  const url=new URL(raw);
@@ -46,7 +57,7 @@ export async function requireLockedWorkRecoveryConnection(db:Client,target:Locke
  binding.signal.throwIfAborted();
  await db.query('SAVEPOINT locked_work_recovery_target');await db.query('RELEASE SAVEPOINT locked_work_recovery_target');
  if((await db.query("SELECT current_setting('transaction_isolation') AS isolation")).rows[0]?.isolation!=='read committed')throw Error('Work recovery requires read committed decision isolation');
- await db.query("SET LOCAL lock_timeout='3000ms'; SET LOCAL statement_timeout='10000ms'; SET LOCAL transaction_timeout='60s'");
+ await db.query("SET LOCAL lock_timeout='3000ms'; SET LOCAL statement_timeout='10000ms'"+(!binding.decision?"; SET LOCAL transaction_timeout='60s'":""));
  await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16020))',[scope.environmentId]);
  await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[scope.environmentId]);
  const rows=(await db.query(`SELECT current_database() AS name,current_user AS role,e.environment_id,e.schema_version,c.mode,c.recovery_id,c.revision,
@@ -84,12 +95,12 @@ async function withWorkRecoveryTransport<T>(input:LockedWorkRecoveryInput,run:(d
  const target:LockedWorkRecoveryTarget=Object.freeze({contract:'pilot-locked-work-recovery-target-v1',...scope,projectId:hosted.projectId,teamId:hosted.teamId,sourceCommit:hosted.sourceCommit,sourceDigest:hosted.sourceDigest,catalogDigest:hosted.catalogDigest,origin:hosted.origin,deploymentId:hosted.deploymentId,databaseBindingDigest:databaseTargetDigest(runtime.href,scope.environmentId),deadline:input.deadline});
  let failure:unknown;
  try{
-  await db.connect();if(decision)await db.query('SET standard_conforming_strings=on');bindings.set(target,{db:exposed,scope,databaseName:decodeURIComponent(owner.pathname.slice(1)),ownerRole:decodeURIComponent(owner.username),runtimeConnection:runtime.href,signal});
+  await db.connect();if(decision)await db.query('SET standard_conforming_strings=on');const binding:Binding={db:exposed,scope,databaseName:decodeURIComponent(owner.pathname.slice(1)),ownerRole:decodeURIComponent(owner.username),runtimeConnection:runtime.href,signal,decision,abort:reason=>connectionLost.abort(reason)};bindings.set(target,binding);if(decision)decisionClients.set(exposed,binding);
   await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');try{await requireLockedWorkRecoveryConnection(exposed,target,scope);await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}
   // Authenticate the exact runtime credential without invoking domain work.
   const probe=new Client({connectionString:runtime.href,connectionTimeoutMillis:5000,statement_timeout:5000,query_timeout:6000});
   try{await probe.connect();const rows=(await probe.query('SELECT current_database() AS name,current_user AS role,session_user AS session_role,environment_id,schema_version FROM turas_environment')).rows;if(rows.length!==1||rows[0].name!==decodeURIComponent(owner.pathname.slice(1))||rows[0].role!=='turas_runtime_016'||rows[0].session_role!=='turas_runtime_016'||rows[0].environment_id!==scope.environmentId||Number(rows[0].schema_version)!==79)throw Error('Actual work recovery runtime differs');}finally{await probe.end();}
-  let decisionTransaction:string|undefined;if(decision){await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');await requireLockedWorkRecoveryConnection(exposed,target,scope);decisionTransaction=String((await db.query('SELECT pg_current_xact_id()::text AS id')).rows[0].id);}
+  let decisionTransaction:string|undefined;if(decision){await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');await db.query("SELECT set_config('transaction_timeout',$1,true)",[Math.max(1,input.deadline-Date.now())+'ms']);await requireLockedWorkRecoveryConnection(exposed,target,scope);decisionTransaction=String((await db.query('SELECT pg_current_xact_id()::text AS id')).rows[0].id);}
   let abort:()=>void=()=>{};
   const cancellation=new Promise<never>((_,reject)=>{abort=()=>reject(signal.reason??Error('Work recovery cancelled'));signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort();});
   let result:T;try{result=await Promise.race([Promise.resolve().then(()=>run(exposed,target)),cancellation]);}finally{signal.removeEventListener('abort',abort);}
@@ -102,7 +113,7 @@ async function withWorkRecoveryTransport<T>(input:LockedWorkRecoveryInput,run:(d
   signal.throwIfAborted();if(decision)await db.query('COMMIT');
   return result;
  }catch(error){failure=error;throw error;}finally{
-  bindings.delete(target);const retirementErrors:unknown[]=[];
+  bindings.delete(target);decisionClients.delete(exposed);const retirementErrors:unknown[]=[];
   // Close the original writer before reconciling ambiguous effects. A callback
   // that outlives cancellation cannot enqueue later writes on this connection.
   try{await db.end();}catch(error){retirementErrors.push(error);}

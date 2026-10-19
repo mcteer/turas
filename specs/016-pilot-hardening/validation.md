@@ -4587,3 +4587,49 @@ The earlier unsplit target checkpoint `work-mcp-category-target-v14-private.json
 also passes18/18 with no skips. Its filename/case inventory predates the suite
 split and is not the current catalog. Hosted checks, final source CI/catalog,
 remaining Workflow/effect/authoritative producer and release remain pending.
+
+
+### Automated role exercise contract — 2026-10-19
+
+The user's explicit directive to automate operator/internal/assigned-partner
+exercises supersedes the former human-only acceptance clarification. The spec,
+plan, tasks, journey catalog and runbook now require actual hosted automated
+observations, truthful method labels and independent capture review. A separate
+release decision remains required.
+
+`pilot-feedback-record-v2` preserves immutable hosted capture provenance with
+`humanReported:false`; existing v1 human reports and their canonical digest order
+remain compatible. G20/G21 use `automated-role-exercise`, requiring the same exact
+hosted identity/schema/grant attribution and freshness as hosted receipts. The
+recorder still validates current synthetic workspace, identities and partner grants.
+No observation record grants release approval or proves its referenced capture by
+itself. Actual hosted runs and independently reviewed capture evidence remain open.
+
+All34 focused feedback/readiness/deadline checks pass, root and pilot typechecks
+pass, and authored documentation checks pass. Independent review found no concrete
+blocker. The first focused contract attempt exposed a canonical property-order
+compatibility regression; it was corrected before the passing run. No actual
+hosted exercise is claimed by this local validation.
+
+
+### Recovery deadline ownership and nested evaluation setup — 2026-10-19
+
+The decision transport owns one aggregate transaction deadline from the original
+remaining target lifetime. Each canonical MCP request retains its independent
+10-second bound; expiration cancels the actual pending writer and independent
+cleanup verifies rollback. Callback SQL cannot reset `transaction_timeout`.
+Completed read listeners are removed so their later expiry cannot cancel a new
+read. All six focused decision/SQL cases pass, including all47 current role/customer
+category scopes, two successive six-second statements after canonical reads, and
+pending-write cancellation. Earlier compound fixture timeouts remain failures;
+the fixture uses a140-second target and150-second input within its unchanged
+180-second parent/210-second case bound. No domain/read/credential bound changed.
+
+The frozen7955427 full catalog stopped at suite117: the nested evaluation app's
+Turbopack filesystem root excluded the physical target of its dependency symlink.
+The shared disposable-config helper now computes the common physical ancestor for
+pilot/artifact/retrieval/plan copies, preserves authored options and rejects unsafe
+file/configuration shapes. All five focused setup unit checks and all three
+actual evaluation-source integration cases pass. These checks do not turn the
+failed historical full run into a pass. A fresh complete862-case/157-suite run
+remains required. Independent review found no concrete blockers in both fixes.

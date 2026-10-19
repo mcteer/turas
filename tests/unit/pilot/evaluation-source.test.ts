@@ -20,3 +20,14 @@ it('rejects missing containers foreign labels and mismatched actual port binding
  const wrongLabel=metadata();wrongLabel.Config.Labels['turas.016.owner']='foreign';const wrongPort=metadata();wrongPort.NetworkSettings.Ports['5432/tcp'][0].HostPort='34568';const publicPort=metadata();publicPort.NetworkSettings.Ports['5432/tcp'][0].HostIp='0.0.0.0';
  for(const value of [[],[metadata(),metadata()],[wrongLabel],[wrongPort],[publicPort],[{...metadata(),Name:'/foreign'}]]){inspect(value);expect(()=>requireEvaluationSourceDatabase(environment)).toThrow();}inspect([metadata()],1);expect(()=>requireEvaluationSourceDatabase(environment)).toThrow();
 });
+
+it('keeps nested owned Next copies within their actual linked dependency root',async()=>{
+ const {mkdtemp,mkdir,writeFile,readFile,symlink,rm}=await import('node:fs/promises'),{join,resolve}=await import('node:path');
+ const {configureOwnedNextDependencyRoot}=await import('../../../scripts/owned-next-config');
+ const root=await mkdtemp(resolve('local-artifacts/016/owned-next-root-'));
+ try{const app=join(root,'nested/app'),dependencies=join(root,'dependencies');await mkdir(join(app,'packages/artifact-extractor'),{recursive:true});await mkdir(dependencies);await symlink(dependencies,join(app,'node_modules'));await symlink(dependencies,join(app,'packages/artifact-extractor/node_modules'));
+ const file=join(app,'next.config.ts'),authored="const nextConfig = {turbopack:{rules:{}},serverExternalPackages:['retained']};\nexport default withEve(nextConfig);\n";await writeFile(file,authored);
+ expect(await configureOwnedNextDependencyRoot(app)).toBe(root);await configureOwnedNextDependencyRoot(app);const configured=await readFile(file,'utf8');expect(configured.match(/owned-next-dependency-root-v1/g)).toHaveLength(1);expect(configured).toContain("serverExternalPackages:['retained']");expect(configured).toContain('...nextConfig.turbopack');expect(configured).toContain(JSON.stringify(root));
+ await writeFile(file,'unsupported config');await expect(configureOwnedNextDependencyRoot(app)).rejects.toThrow('shape changed');expect(await readFile(file,'utf8')).toBe('unsupported config');
+ }finally{await rm(root,{recursive:true,force:true});}
+});

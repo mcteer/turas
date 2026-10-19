@@ -1,3 +1,4 @@
+import {configureOwnedNextDependencyRoot} from './owned-next-config';
 import {stopOwnedAppProcesses} from './plan-eval-environment';
 import {installBehaviorReviewCapture} from './pilot-behavior-review-capture';
 import {qualityChildEnvironment} from "./pilot-quality-runtime";
@@ -88,6 +89,7 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
     await cp(resolve("scripts/fixtures/artifact-eval-agent.ts"),join(app,"agent/agent.ts"));
     await symlink(resolve("node_modules"),join(app,"node_modules"));
     await symlink(resolve("packages/artifact-extractor/node_modules"),join(app,"packages/artifact-extractor/node_modules"));
+    await configureOwnedNextDependencyRoot(app);
     const dump = execFileSync("docker",["exec",container,"pg_dump","-U",username,
       "-d",database,"-Fc","--no-owner","--no-acl"],{ timeout: 60_000,maxBuffer: 100*1024*1024 });
     execFileSync("docker",["exec",container,"createdb","-U",username,cloneName],{

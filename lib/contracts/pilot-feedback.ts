@@ -21,12 +21,20 @@ const transition=z.discriminatedUnion('state',[
  z.strictObject({state:z.literal('resolved'),at:z.iso.datetime({offset:true}),ownerReference:reference,rationale:z.string().trim().min(1).max(2000),recheckReference:reference,recheckDigest:digest}),
  z.strictObject({state:z.literal('deferred'),at:z.iso.datetime({offset:true}),ownerReference:reference,rationale:z.string().trim().min(1).max(2000),followUpAt:z.iso.datetime({offset:true})}),
 ]);
-export const pilotFeedbackRecordSchema=z.strictObject({
- contract:z.literal('pilot-feedback-record-v1'),scope:pilotFeedbackScopeSchema,scopeDigest:digest,item:pilotFeedbackItemSchema,
+const feedbackRecordFields={
+ scope:pilotFeedbackScopeSchema,scopeDigest:digest,item:pilotFeedbackItemSchema,
  transitions:z.array(transition).min(1).max(3),previousDigest:digest.nullable(),
  sourceCommit:z.string().regex(/^[a-f0-9]{40}$/),sourceDigest:digest,catalogDigest:digest,
- humanReported:z.literal(true),releaseApproved:z.literal(false),messagesSent:z.literal(0),
-}).superRefine((v,c)=>{
+};
+const automatedObservation=z.strictObject({
+ method:z.literal('automated-role-exercise'),deploymentId:reference,
+ origin:z.url().refine(value=>{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password&&u.pathname==='/'&&!u.search&&!u.hash;}),
+ captureDigest:digest,runnerReference:reference,
+});
+export const pilotFeedbackRecordSchema=z.discriminatedUnion('contract',[
+ z.strictObject({contract:z.literal('pilot-feedback-record-v1'),...feedbackRecordFields,humanReported:z.literal(true),releaseApproved:z.literal(false),messagesSent:z.literal(0)}),
+ z.strictObject({contract:z.literal('pilot-feedback-record-v2'),...feedbackRecordFields,humanReported:z.literal(false),releaseApproved:z.literal(false),messagesSent:z.literal(0),automation:automatedObservation}),
+]).superRefine((v,c)=>{
  const states=v.transitions.map(t=>t.state);
  if(states[0]!=='recorded'||states[1]!==undefined&&states[1]!=='triaged'||states[2]!==undefined&&!['resolved','deferred'].includes(states[2]))c.addIssue({code:'custom',message:'Feedback transitions differ'});
  if(v.item.severity==='blocker'&&states.includes('deferred'))c.addIssue({code:'custom',message:'Blockers require correction and recheck'});
@@ -37,12 +45,12 @@ export const pilotFeedbackRecordSchema=z.strictObject({
  if((v.transitions.length===1)!==(v.previousDigest===null))c.addIssue({code:'custom',message:'Append requires a previous immutable record'});
 });
 export function feedbackDigest(value:unknown){return createHash('sha256').update(JSON.stringify(value)).digest('hex');}
-/** This records operator-supplied human observations; it is not release acceptance. */
+/** Records attributable observations; neither method grants release acceptance. */
 export function validateFeedbackAppend(raw:unknown,previousRaw?:unknown,now=Date.now()){
  const next=pilotFeedbackRecordSchema.parse(raw);
  if(!Number.isFinite(now)||Date.parse(next.transitions.at(-1)!.at)>now)throw Error('Future feedback observation');
  if(previousRaw===undefined){if(next.transitions.length!==1)throw Error('Prior feedback record required');return next;}
  const previous=pilotFeedbackRecordSchema.parse(previousRaw);
- if(next.previousDigest!==feedbackDigest(previous)||JSON.stringify(next.scope)!==JSON.stringify(previous.scope)||JSON.stringify(next.item)!==JSON.stringify(previous.item)||next.transitions.length!==previous.transitions.length+1||JSON.stringify(next.transitions.slice(0,-1))!==JSON.stringify(previous.transitions))throw Error('Feedback history or fixed scope differs');
+ if(next.contract!==previous.contract||JSON.stringify("automation" in next?next.automation:null)!==JSON.stringify("automation" in previous?previous.automation:null)||next.previousDigest!==feedbackDigest(previous)||JSON.stringify(next.scope)!==JSON.stringify(previous.scope)||JSON.stringify(next.item)!==JSON.stringify(previous.item)||next.transitions.length!==previous.transitions.length+1||JSON.stringify(next.transitions.slice(0,-1))!==JSON.stringify(previous.transitions))throw Error('Feedback history or fixed scope differs');
  return next;
 }

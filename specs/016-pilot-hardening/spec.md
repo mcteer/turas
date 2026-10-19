@@ -323,6 +323,15 @@ mcteer explicitly requested another LLM as the independent semantic judge. Use a
 separate judge with the exact actual-output captures, available tool/fixture evidence
 and each governing rubric; record its model identity, capture digests, per-case
 scores, rationale and uncertainties. The target Turi model remains unchanged.
-Uncertain or failed cases stay failed/pending. Actual human operator exercises,
-internal/assigned-partner observations and the scoped mcteer release decision remain
-required under FR-019/FR-020. No simulated observation may substitute for them.
+Uncertain or failed cases stay failed/pending.
+
+### Automated exercise clarification — 2026-10-19
+
+mcteer explicitly directed automation of the operator, internal-member and
+assigned-partner exercises. Run actual hosted workflows using distinct authorized
+role identities and retain exact deployment, timestamps and capture digests.
+Label these observations automated; do not invent participant comments or claim
+human usability feedback. G20/G21 accept these attributable automated exercises
+with independent review of the actual captures. Local fixtures cannot substitute
+for hosted outcomes. The separate scoped release decision remains required under
+FR-003; automated observations do not approve release.

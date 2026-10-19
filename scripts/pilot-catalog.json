@@ -669,7 +669,8 @@
         "unit.recovery-decision-sql.001",
         "unit.recovery-decision-sql.002",
         "unit.recovery-decision-sql.003",
-        "integration.work-recovery-decision.002"
+        "integration.work-recovery-decision.002",
+        "integration.work-recovery-decision.003"
       ]
     },
     {
@@ -764,7 +765,8 @@
         "integration.evaluation-source.003",
         "unit.behavior-review-capture.001",
         "unit.behavior-review-capture.002",
-        "unit.behavior-review-capture.003"
+        "unit.behavior-review-capture.003",
+        "unit.evaluation-source.005"
       ]
     },
     {
@@ -1036,7 +1038,7 @@
       "id": "G20",
       "name": "Operations",
       "methods": [
-        "human-feedback"
+        "automated-role-exercise"
       ],
       "dependsOn": [
         "G06",
@@ -1051,9 +1053,9 @@
     },
     {
       "id": "G21",
-      "name": "Human feedback",
+      "name": "Pilot role observations",
       "methods": [
-        "human-feedback"
+        "automated-role-exercise"
       ],
       "dependsOn": [
         "G18"

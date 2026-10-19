@@ -22,7 +22,7 @@ export function checkPilotReadiness(run: PilotRun, now = Date.now()) {
         for (const receipt of receipts) {
           const age = now - Date.parse(receipt.completedAt);
           const limit = ["G16", "G17", "G18", "G19", "G22"].includes(gate.id) ? 30 * 60_000 : 24 * 60 * 60_000;
-          if (age < 0 || receipt.method === "hosted" && age > limit) state = "unverified";
+          if (age < 0 || ["hosted", "automated-role-exercise"].includes(receipt.method) && age > limit) state = "unverified";
         }
       }
       if(latest?.id!==attempt.id)state="unverified";

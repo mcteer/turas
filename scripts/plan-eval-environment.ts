@@ -1,3 +1,4 @@
+import {configureOwnedNextDependencyRoot} from './owned-next-config';
 import {qualityChildEnvironment} from "./pilot-quality-runtime";
 import {createServer,request as httpRequest,type Server} from 'node:http';
 import { randomUUID } from "node:crypto";
@@ -237,17 +238,7 @@ export async function withPlanEvalEnvironment<T>(
     await symlink(resolve("node_modules"),join(appRoot,"node_modules"));
     await symlink(resolve("packages/artifact-extractor/node_modules"),
       join(appRoot,"packages/artifact-extractor/node_modules"));
-    // Installed Next requires the root to contain linked dependencies too.
-    // Change only this disposable copy, preserving other authored options.
-    const dependencies=await Promise.all([realpath(resolve('node_modules')),realpath(resolve('packages/artifact-extractor/node_modules'))]);
-    let bundlerRoot=await realpath(appRoot);
-    while(dependencies.some(path=>path!==bundlerRoot&&!path.startsWith(bundlerRoot+'/'))){
-      const parent=dirname(bundlerRoot);if(parent===bundlerRoot)throw Error('Bounded owned dependency root required');bundlerRoot=parent;
-    }
-    const configPath=join(appRoot,'next.config.ts'),config=await readFile(configPath,'utf8');
-    const exported='export default withEve(nextConfig);';if(config.split(exported).length!==2)throw Error('Owned Next configuration shape changed');
-    const configured=config.replace(/^nextConfig\.turbopack = .*\/\/ owned-plan-turbopack-root-v1\n/gm,'');
-    await writeFile(configPath,configured.replace(exported,`nextConfig.turbopack = {...nextConfig.turbopack, root: ${JSON.stringify(bundlerRoot)}}; // owned-plan-turbopack-root-v1\n${exported}`));
+    await configureOwnedNextDependencyRoot(appRoot);
     if (options.prepare) {
       remaining();
       const extra = await options.prepare({ appRoot, storeRoot, environmentId: testMarker });

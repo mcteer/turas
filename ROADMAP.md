@@ -342,3 +342,8 @@ settings are removed. See [feature019 validation](specs/019-chat-interaction-par
 for Preview proof, historical failures and hosted limits.
 
 Pilot recovery now includes a bounded command-level maintenance verifier with database-derived record coverage and transaction-bound inventory/retirement rechecks. Its partial proof cannot unlock service. The820-case/149-suite inventory still needs final-source local/CI proof; ordinary hosted recovery, current denials, Workflow reconciliation and pilot acceptance remain pending.
+
+Feature016's authorized operator/internal/partner acceptance now uses actual
+hosted automated role exercises, labeled automated and independently reviewed.
+The local catalog is862cases/157suites; complete current-source proof, composed
+real-work recovery verification, hosted exercises and release remain open.

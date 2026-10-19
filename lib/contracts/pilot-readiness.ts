@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const PILOT_CONTRACT_VERSION = "pilot-readiness-v1" as const;
 export const pilotGateIds = Array.from({ length: 22 }, (_, i) => `G${String(i + 1).padStart(2, "0")}`) as [string, ...string[]];
-export const pilotMethods = ["local", "ci", "hosted", "actual-model-reviewed", "human-feedback"] as const;
+export const pilotMethods = ["local", "ci", "hosted", "actual-model-reviewed", "human-feedback", "automated-role-exercise"] as const;
 export const pilotRoles = ["internal-admin", "internal-member", "assigned-partner", "operator", "reviewer", "automation"] as const;
 export const pilotDigest = z.string().regex(/^[a-f0-9]{64}$/);
 export const pilotCommit = z.string().regex(/^[a-f0-9]{40}$/);
@@ -34,8 +34,8 @@ export const pilotReceiptSchema = z.strictObject({
   if (Date.parse(receipt.completedAt) < Date.parse(receipt.startedAt)) ctx.addIssue({ code: "custom", message: "Invalid time interval" });
   if (receipt.passedCases + receipt.failedCases + receipt.skippedCases !== receipt.expectedCases) ctx.addIssue({ code: "custom", message: "Incomplete case inventory" });
   if (receipt.state === "pass" && (receipt.passedCases !== receipt.expectedCases || receipt.failedCases || receipt.skippedCases || receipt.flakyCases)) ctx.addIssue({ code: "custom", message: "Incomplete or unstable pass" });
-  if (receipt.method === "hosted" && (!receipt.hosted || !receipt.hosted.runtimeGrantsVerified || receipt.hosted.environmentMarker !== receipt.environmentMarker || receipt.hosted.commit !== receipt.sourceCommit)) ctx.addIssue({ code: "custom", message: "Invalid hosted attribution" });
-  if (receipt.method !== "hosted" && receipt.hosted) ctx.addIssue({ code: "custom", message: "Unexpected hosted identity" });
+  if (["hosted", "automated-role-exercise"].includes(receipt.method) && (!receipt.hosted || !receipt.hosted.runtimeGrantsVerified || receipt.hosted.environmentMarker !== receipt.environmentMarker || receipt.hosted.commit !== receipt.sourceCommit)) ctx.addIssue({ code: "custom", message: "Invalid hosted attribution" });
+  if (!["hosted", "automated-role-exercise"].includes(receipt.method) && receipt.hosted) ctx.addIssue({ code: "custom", message: "Unexpected hosted identity" });
 });
 export const pilotAttemptSchema = z.strictObject({
   id: uuid, gateId: z.enum(pilotGateIds), complete: z.literal(true),
