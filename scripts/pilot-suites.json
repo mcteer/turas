@@ -1695,6 +1695,25 @@
         "retains both original holds and the genuine Gateway identity after an actual wrapped SDK failure",
         "rolls back hosted consumption with a failed domain claim and never releases its original reservation"
       ]
+    },
+    {
+      "file": "tests/integration/pilot/hosted-learning-preparation.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "prepares one actual HTTP feedback revision and independent review against the ordinarily published baseline without a model dispatch"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/hosted-learning-capture.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "orchestrates all sixteen fixed arms with one original held dispatch at a time and retains independent review and retirement requirements",
+        "stops on the first unresolved charge and preserves the original unknown hold without a paid retry",
+        "rejects an unaffordable next full provider step before any native binding or provider reservation",
+        "rejects a deployed database mismatch before preparing or sending any arm",
+        "retains original bind intent and readback after lost acknowledgement without creating another session or sending a model request",
+        "retains completed accounting and runs original evaluation cleanup after cancellation between arms"
+      ]
     }
   ],
   "ui": {

@@ -4008,3 +4008,52 @@ through079 with runtime perimeters. Root/pilot typechecks, authored documentatio
 and tracked-file hygiene pass. The delegated independent reviewer found no
 remaining concrete bridge blocker after the fixes; this is implementation review,
 not hosted execution or release acceptance.
+
+### Ordinary learning preparation, bounded paired capture and native cleanup
+
+The actual owned HTTP preparation exercise passes1/1: distinct panel/mcteer
+sessions author and review a pre-activation baseline, then ordinary feedback,
+same-contribution revision, candidate review, feedback linkage and evaluation
+preparation preserve the published baseline. Its first preflight run rejected
+an extra source-option label before revision; the corrected parser retains only
+the governed lineage fields. No model was dispatched.
+
+The capture orchestrator now uses exact platform/source/deployed database and
+original-journal authority checks. It admits each sequential full provider step
+against the unchanged remaining cap, not an invented smaller output limit or
+sixteen simultaneous ceilings. Prepare/bind/send intents precede effects. Native
+responses rely on actual platform and versioned authenticated API checks rather
+than an unsupported native release header. Unknown acknowledgement reads only
+original identities, retains accounting and registers/fences operational cleanup.
+Cancellation between arms and finalization errors share the same bounded cleanup.
+
+The controlled transport harness passes6/6 with a real synthetic append-only
+journal, synthetic8/24USD-per-million price and16million-micro-dollar per-step
+hold: all16ordered calls, unresolved-accounting stop, insufficient remaining
+step budget, database mismatch, lost bind acknowledgement and between-arm
+cancellation. This harness is not actual model or hosted proof. Bounded owner
+connections are factory-created with5second server statements/connect and a
+6second client timeout; final retirement polls exact actual worker receipts under
+an independent90second cleanup clock.
+
+The owned learning maintenance runner passes11/11, including a native session
+bound before its first learning send: creating/reconciling stays pending, later
+exact binding can retire without rewriting the attempt identity, and foreign
+signed sessions are denied. The first accompanying learning typecheck exposed
+a ProcessEnv typing issue in platform lookup; the type-only correction preserves
+the runtime environment and subsequent learning/pilot typechecks pass.
+
+A separate outer hosted-catalog cancellation wrapper accepts the intended bounded
+two-hour catalog without changing recovery's15minute bound or any native/file
+job deadline. Four existing cancellation cases include actual process signals,
+cleanup and deadline checks. Current catalog is820cases/149suites; complete
+source-bound acceptance remains required. No real quality-journal event, hosted
+schema change, paid model or Production release occurred here.
+
+Final combined capture/cancellation/catalog checks pass20/20 in
+`hosted-learning-capture-final-private.json`. Connection URL timeout/options
+overrides are refused; server/client deadlines cannot be removed by the parser.
+The delegated independent review found no remaining concrete blocker in the
+capture, cleanup or cancellation changes. These results remain focused local
+implementation evidence; actual hosted captures and final-source complete
+acceptance are still required.

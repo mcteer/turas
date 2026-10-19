@@ -28,12 +28,12 @@ import {runHostedLinkedJourney} from './pilot-hosted-linked';
 import {runHostedTrainingJourney} from './pilot-hosted-training';
 import {runHostedSourceWithdrawal} from './pilot-hosted-withdrawal';
 import {z} from 'zod';
-import {withRecoveryCancellation} from '../lib/server/operations/recovery-cancellation';
+import {withHostedCatalogCancellation} from '../lib/server/operations/recovery-cancellation';
 const execute=promisify(execFile);
 export async function platformDeployment(scope:PilotHostedScope,origin=false,signal?:AbortSignal){
  const endpoint=hostedDeploymentLookupPath(scope,origin);
  // Fixed GET transport, no shell, arbitrary commands, login, linking or deploy.
- const result=await execute('vercel',['api',endpoint,'--raw'],{timeout:30000,signal,maxBuffer:1024*1024,env:Object.fromEntries(['PATH','HOME','TMPDIR','LANG','LC_ALL'].flatMap(key=>process.env[key]===undefined?[]:[[key,process.env[key]]]))});
+ const result=await execute('vercel',['api',endpoint,'--raw'],{timeout:30000,signal,maxBuffer:1024*1024,env:Object.fromEntries(['PATH','HOME','TMPDIR','LANG','LC_ALL'].flatMap(key=>process.env[key]===undefined?[]:[[key,process.env[key]]])) as NodeJS.ProcessEnv});
  return verifyHostedDeployment(JSON.parse(result.stdout),scope);
 }
 function explicitRuntimeUrl(env:NodeJS.ProcessEnv){
@@ -68,7 +68,7 @@ export async function pilotHosted(args=process.argv.slice(2)){
  // This finite catalog may wait for multiple independently bounded 300s jobs.
  // Their original deadlines/concurrency remain unchanged; authority expiry also
  // cancels the whole operator run, rather than extending a job or approval.
- return withRecoveryCancellation(Math.max(1,Math.min(7200000,Date.parse(authorization.expiresAt)-Date.now())),async signal=>{
+ return withHostedCatalogCancellation(Math.max(1,Math.min(7200000,Date.parse(authorization.expiresAt)-Date.now())),async signal=>{
  let stage='preflight';
  let paidDispatchPossible=false;
  try{

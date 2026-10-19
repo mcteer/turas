@@ -848,7 +848,14 @@
         "integration.hosted-learning-admission.003",
         "integration.hosted-learning-admission.004",
         "integration.hosted-learning-admission.005",
-        "integration.hosted-learning-admission.006"
+        "integration.hosted-learning-admission.006",
+        "integration.hosted-learning-preparation.001",
+        "unit.hosted-learning-capture.001",
+        "unit.hosted-learning-capture.002",
+        "unit.hosted-learning-capture.003",
+        "unit.hosted-learning-capture.004",
+        "unit.hosted-learning-capture.005",
+        "unit.hosted-learning-capture.006"
       ]
     },
     {

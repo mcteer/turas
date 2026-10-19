@@ -14,7 +14,7 @@ const longSuiteSeconds:Readonly<Record<string,number>>={
  'evaluation-source':780,
  'provisioning':840,'runtime-retirement':840,'image-health':840,'backup-health':840,
  'load-fixture':840,'load-delivery':840,'load-training':840,'load-internal':840,'load-learning':840,
- 'isolated-restore':900,'released-safety-restore':1140,'capture-candidate':900,'recovery-denial-snapshot':900,'owned-denial-command':900,'hosted-root-budget':1320,'hosted-learning-admission':1500,'hosted-root-reconcile':2160,
+ 'isolated-restore':900,'released-safety-restore':1140,'capture-candidate':900,'recovery-denial-snapshot':900,'owned-denial-command':900,'hosted-root-budget':1320,'hosted-learning-admission':1500,'hosted-learning-preparation':360,'hosted-root-reconcile':2160,
  'load-mcp':960,'owned-database-restore':1200,'store-observations':1260,
  'legacy-safety-restore':1320,'recovery-resolution':1320,'health':1440,'storage-cutover':1560,
  'recovery-authority':1740,'recovery':1980,'hosted-role-reads':2160,'neon-archive':2160,

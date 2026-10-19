@@ -22,7 +22,7 @@ restricted-runtime teardown have focused positive/denial/concurrency proof. Full
 private-byte/recovery verification, hosted journeys/configuration, actual cadence,
 participant observations and the owner decision remain unfinished. The779-case/142-suite
 local catalog passes at e9d2c21; its source-bound receipt is retained. The updated
-813-case/147-suite catalog includes the asynchronous UI-child and scoped hosted root-budget regression cases
+820-case/149-suite catalog includes the asynchronous UI-child and scoped hosted root-budget regression cases
 and requires fresh complete acceptance after implementation. Production remains
 released f8d196f/schema077 after verified bypass credential repair. No016
 Production migration, feature merge or directory cleanup is implied.
@@ -481,5 +481,5 @@ remain durable, preserve the first charge and block subsequent sends. The option
 authenticated configuration, and the same owner/runtime database endpoint before
 actual desktop/mobile WebKit streaming-reload and Stop exercises. Each successful
 exercise requires real generation accounting and confirmed native retirement.
-Current inventory is813cases/147suites; focused results and final-source complete
+Current inventory is820cases/149suites; focused results and final-source complete
 verification are recorded in validation. No hosted acceptance is inferred.

@@ -1,4 +1,5 @@
 import {it,expect} from 'vitest';
+import {withRecoveryCancellation,withHostedCatalogCancellation} from '../../../lib/server/operations/recovery-cancellation';
 import {spawn} from 'node:child_process';
 import {resolve} from 'node:path';
 async function interrupted(signal:'SIGINT'|'SIGTERM'|null,repeated=false){
@@ -11,6 +12,6 @@ async function interrupted(signal:'SIGINT'|'SIGTERM'|null,repeated=false){
 }
 it('settles recovery cleanup on an actual SIGINT',()=>interrupted('SIGINT'));
 it('settles recovery cleanup on an actual SIGTERM',()=>interrupted('SIGTERM'));
-it('settles recovery cleanup at the bounded deadline',()=>interrupted(null));
+it('settles recovery cleanup at the bounded deadline',async()=>{await interrupted(null);await expect(withRecoveryCancellation(900001,async()=>true)).rejects.toThrow('Bounded operation');expect(await withHostedCatalogCancellation(7200000,async signal=>!signal.aborted)).toBe(true);await expect(withHostedCatalogCancellation(7200001,async()=>true)).rejects.toThrow('Bounded operation');});
 
 it('keeps cleanup protected across repeated termination signals',()=>interrupted('SIGTERM',true));

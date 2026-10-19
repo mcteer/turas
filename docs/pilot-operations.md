@@ -1124,3 +1124,22 @@ settling the original journal. Historical accounting can proceed after spending
 expiry without renewing authority. Unknown/mismatched charges and known overruns
 retain their exposure; no accounting action retries a model or repairs output.
 The hosted J014 batch and independent actual capture review remain required.
+
+The hosted learning preparation helper uses ordinary separate author/reviewer
+requests and preserves the existing published baseline while preparing its next
+revision. The capture helper requires `createHostedLearningOwnerClient`, which
+creates an explicit direct Neon connection with bounded startup settings and
+rejects URL options that could override them. Prepare/bind/send intents are
+retained before effects. Native response provenance comes from exact platform
+checks and versioned authenticated API reads, not an assumed native header.
+
+A lost acknowledgement or interruption never repeats native create or paid
+send. Exact original evaluation metadata and cleanup intent remain private and
+durable. A normal cancellation fences incomplete work; terminal cleanup uses
+existing maintenance jobs and exact native retirement receipts. Creating or
+reconciling bindings stay pending, and a bind discovered before its first send
+can retire through the original conversation without rewriting its attempt.
+The orchestrator returns only after bounded cleanup; actual paired captures
+still require independent review and appropriate normal rejection/publication.
+Controlled transport fixtures establish neither hosted behavior nor human
+observations.
