@@ -1,3 +1,4 @@
+import {assertRecoveryDecisionSql} from './recovery-decision-sql';
 import {Client} from 'pg';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
@@ -58,32 +59,47 @@ export async function requireLockedWorkRecoveryConnection(db:Client,target:Locke
 /** Platform-bound owner transport only. The target is usable solely during run;
  * no JSON flags, caller-created client or owned Docker guard exemption is accepted.
  * Caller must retire its probes before returning; full service is not certified. */
-export async function withLockedWorkRecoveryTarget<T>(input:{sourceFile:string;hostedScope:PilotHostedScope;scope:Scope;runtimeConnection:string;deadline:number;signal:AbortSignal},run:(db:Client,target:LockedWorkRecoveryTarget)=>Promise<T>){
+export type LockedWorkRecoveryInput={sourceFile:string;hostedScope:PilotHostedScope;scope:Scope;runtimeConnection:string;deadline:number;signal:AbortSignal};
+export function withLockedWorkRecoveryTarget<T>(input:LockedWorkRecoveryInput,run:(db:Client,target:LockedWorkRecoveryTarget)=>Promise<T>){return withWorkRecoveryTransport(input,run,false);}
+/** Private producer transport: callback receives query-only, transaction-guarded
+ * owner IO. Complete pending verification commits only after final live checks.
+ * This constructor alone never establishes service health or opens admission. */
+export function withLockedWorkRecoveryDecision<T>(input:LockedWorkRecoveryInput,run:(db:Client,target:LockedWorkRecoveryTarget)=>Promise<T>){return withWorkRecoveryTransport(input,run,true);}
+async function withWorkRecoveryTransport<T>(input:LockedWorkRecoveryInput,run:(db:Client,target:LockedWorkRecoveryTarget)=>Promise<T>,decision:boolean){
  const hosted=pilotHostedScopeSchema.parse(input.hostedScope),scope=scopeSchema.parse(input.scope),file=resolve(input.sourceFile);
  if(!Number.isSafeInteger(input.deadline)||input.deadline<=Date.now()||input.deadline>Date.now()+300000||hosted.environmentMarker!==scope.environmentId)throw Error('Finite exact work recovery scope required');
- const signal=AbortSignal.any([input.signal,AbortSignal.timeout(input.deadline-Date.now())]);signal.throwIfAborted();
+ const connectionLost=new AbortController(),signal=AbortSignal.any([input.signal,AbortSignal.timeout(input.deadline-Date.now()),connectionLost.signal]);signal.throwIfAborted();
  const source=databaseSafetyCaptureSourceSchema.parse(await readEvidence(dirname(file),basename(file))),owner=directConnection(source.databaseUrl),runtime=directConnection(input.runtimeConnection,'turas_runtime_016');
  if(source.schemaVersion!==79||source.projectId!==hosted.projectId||source.target!==hosted.target||source.environmentId!==scope.environmentId||databaseTargetDigest(owner.href,scope.environmentId)!==databaseTargetDigest(runtime.href,scope.environmentId))throw Error('Work recovery platform and runtime target differ');
  await requireSource(hosted);const platform=await verifyDatabaseSafetySourceBinding(source,hosted.teamId,signal),deployed=await deployment(hosted,signal,false);
  if(JSON.stringify(await deployment(hosted,signal,true))!==JSON.stringify(deployed))throw Error('Work recovery serving deployment differs');
  const db=new Client({connectionString:owner.href,connectionTimeoutMillis:5000,statement_timeout:10000,query_timeout:11000});
+ db.on('error',error=>connectionLost.abort(error));
+ const exposed=decision?Object.freeze({query:(...args:unknown[])=>{
+  // Never hand pg a caller-owned query config: submit hooks and text getters
+  // can bypass SQL validation or receive the raw transaction connection.
+  if(args.length<1||args.length>2||typeof args[0]!=='string'||(args.length===2&&!Array.isArray(args[1])))throw Error('Explicit recovery decision SQL string and parameters required');
+  assertRecoveryDecisionSql(args[0]);return db.query(args[0],args[1] as unknown[]|undefined);
+ }}) as unknown as Client:db;
  const target:LockedWorkRecoveryTarget=Object.freeze({contract:'pilot-locked-work-recovery-target-v1',...scope,projectId:hosted.projectId,teamId:hosted.teamId,sourceCommit:hosted.sourceCommit,sourceDigest:hosted.sourceDigest,catalogDigest:hosted.catalogDigest,origin:hosted.origin,deploymentId:hosted.deploymentId,databaseBindingDigest:databaseTargetDigest(runtime.href,scope.environmentId),deadline:input.deadline});
  let failure:unknown;
  try{
-  await db.connect();bindings.set(target,{db,scope,databaseName:decodeURIComponent(owner.pathname.slice(1)),ownerRole:decodeURIComponent(owner.username),runtimeConnection:runtime.href,signal});
-  await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');try{await requireLockedWorkRecoveryConnection(db,target,scope);await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}
+  await db.connect();if(decision)await db.query('SET standard_conforming_strings=on');bindings.set(target,{db:exposed,scope,databaseName:decodeURIComponent(owner.pathname.slice(1)),ownerRole:decodeURIComponent(owner.username),runtimeConnection:runtime.href,signal});
+  await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');try{await requireLockedWorkRecoveryConnection(exposed,target,scope);await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}
   // Authenticate the exact runtime credential without invoking domain work.
   const probe=new Client({connectionString:runtime.href,connectionTimeoutMillis:5000,statement_timeout:5000,query_timeout:6000});
   try{await probe.connect();const rows=(await probe.query('SELECT current_database() AS name,current_user AS role,session_user AS session_role,environment_id,schema_version FROM turas_environment')).rows;if(rows.length!==1||rows[0].name!==decodeURIComponent(owner.pathname.slice(1))||rows[0].role!=='turas_runtime_016'||rows[0].session_role!=='turas_runtime_016'||rows[0].environment_id!==scope.environmentId||Number(rows[0].schema_version)!==79)throw Error('Actual work recovery runtime differs');}finally{await probe.end();}
+  let decisionTransaction:string|undefined;if(decision){await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');await requireLockedWorkRecoveryConnection(exposed,target,scope);decisionTransaction=String((await db.query('SELECT pg_current_xact_id()::text AS id')).rows[0].id);}
   let abort:()=>void=()=>{};
   const cancellation=new Promise<never>((_,reject)=>{abort=()=>reject(signal.reason??Error('Work recovery cancelled'));signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort();});
-  let result:T;try{result=await Promise.race([Promise.resolve().then(()=>run(db,target)),cancellation]);}finally{signal.removeEventListener('abort',abort);}
-  signal.throwIfAborted();await db.query('ROLLBACK');
+  let result:T;try{result=await Promise.race([Promise.resolve().then(()=>run(exposed,target)),cancellation]);}finally{signal.removeEventListener('abort',abort);}
+  signal.throwIfAborted();if(decision){await db.query('SAVEPOINT recovery_decision_control');await db.query('RELEASE SAVEPOINT recovery_decision_control');if(String((await db.query('SELECT pg_current_xact_id()::text AS id')).rows[0].id)!==decisionTransaction)throw Error('Original recovery decision transaction required');}else await db.query('ROLLBACK');
   const registered=pending.get(target)??[];if(registered.length&&(await db.query('SELECT 1 FROM login_sessions WHERE id=ANY($1::uuid[]) AND revoked_at IS NULL LIMIT 1',[registered.map(intent=>intent.sessionId)])).rowCount)throw Error('Work recovery session retirement incomplete');
   if(registered.some(intent=>intent.mcp)&&(await db.query('SELECT 1 FROM mcp_connections WHERE id=ANY($1::uuid[]) AND (revoked_at IS NULL OR credential_hash IS NOT NULL) LIMIT 1',[registered.flatMap(intent=>intent.mcp?[intent.mcp.connectionId]:[])])).rowCount)throw Error('Work recovery MCP probe retirement incomplete');
-  await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');try{await requireLockedWorkRecoveryConnection(db,target,scope);if((await db.query('SELECT 1 FROM operations_recovery_http_reads a JOIN login_sessions s ON s.id=a.session_id WHERE a.environment_id=$1 AND a.recovery_id=$2 AND a.control_revision=$3 AND (a.revoked_at IS NULL OR s.revoked_at IS NULL) LIMIT 1',[scope.environmentId,scope.recoveryId,scope.controlRevision])).rowCount)throw Error('Work recovery probe retirement incomplete');await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}
+  if(!decision)await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');try{await requireLockedWorkRecoveryConnection(exposed,target,scope);if((await db.query('SELECT 1 FROM operations_recovery_http_reads a JOIN login_sessions s ON s.id=a.session_id WHERE a.environment_id=$1 AND a.recovery_id=$2 AND a.control_revision=$3 AND (a.revoked_at IS NULL OR s.revoked_at IS NULL) LIMIT 1',[scope.environmentId,scope.recoveryId,scope.controlRevision])).rowCount)throw Error('Work recovery probe retirement incomplete');if(!decision)await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}
   if((await db.query('SELECT 1 FROM operations_recovery_http_reads a JOIN mcp_connections mc ON mc.id=a.record_id WHERE a.environment_id=$1 AND a.recovery_id=$2 AND a.control_revision=$3 AND a.mcp_probe_connection AND (mc.revoked_at IS NULL OR mc.credential_hash IS NOT NULL) LIMIT 1',[scope.environmentId,scope.recoveryId,scope.controlRevision])).rowCount)throw Error('Work recovery durable MCP probe retirement incomplete');
   await requireSource(hosted);if(JSON.stringify(await verifyDatabaseSafetySourceBinding(source,hosted.teamId,signal))!==JSON.stringify(platform)||JSON.stringify(await deployment(hosted,signal,false))!==JSON.stringify(deployed)||JSON.stringify(await deployment(hosted,signal,true))!==JSON.stringify(deployed))throw Error('Work recovery platform changed');
+  signal.throwIfAborted();if(decision)await db.query('COMMIT');
   return result;
  }catch(error){failure=error;throw error;}finally{
   bindings.delete(target);const retirementErrors:unknown[]=[];

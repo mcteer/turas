@@ -664,7 +664,11 @@
         "integration.recovery-execution-http.004",
         "integration.recovery-execution-http.005",
         "integration.recovery-mcp-http.001",
-        "integration.locked-work-recovery-target.016"
+        "integration.locked-work-recovery-target.016",
+        "integration.locked-work-recovery-target.017",
+        "unit.recovery-decision-sql.001",
+        "unit.recovery-decision-sql.002",
+        "unit.recovery-decision-sql.003"
       ]
     },
     {

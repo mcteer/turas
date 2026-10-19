@@ -4484,3 +4484,35 @@ These focused post-review results supplement the earlier checkpoint rather than
 relabeling its54-test source fingerprint as the final source. Types and docs pass;
 final complete current-source catalog, actual079 rehearsal, hosted acceptance and
 T096/T097 composition remain pending.
+
+
+### Recovery decision transaction boundary — 2026-10-19
+
+Added a separate exact-target decision transport while preserving the existing
+measurement transport. The controller starts READ COMMITTED, retains the same
+transaction, checks retired sessions/admissions/MCP probes, revalidates clean
+source and actual platform/deployment identity, then commits. Cancellation or
+failure closes the writer before independent cleanup. The callback receives only
+SQL-string/parameter query IO; caller query objects, transaction commands and
+unsupported quoting fail closed. The controller fixes standard string quoting.
+Only the canonical local timeout settings are admitted.
+
+Independent review identified query-object submission/getter bypasses and
+PostgreSQL CR, Unicode-dollar-tag and escape-string continuation differences.
+The wrapper no longer forwards query objects; unsupported escape, Unicode-quoted
+and dollar-payload syntax is rejected. Regression cases exercise pending writes,
+source/platform drift, cancellation, commit attempts, CR/dollar/escape payloads,
+and untouched getter/submit hooks against actual owned PostgreSQL.
+
+Protected authoring receipts: `recovery-decision-target-v2-private.json` passes
+all17 target cases without skips (before the final parser restrictions);
+`recovery-decision-target-v4-private.json` passes the final focused transaction
+case with16 unselected; `recovery-decision-sql-v4-private.json` passes3/3 unit
+cases. Pilot types pass. Current catalog858cases/156suites; no final catalog
+execution is inferred. Frozen1e5e1b5 passed851/851; frozen7955427 (854cases)
+continues separately. These receipts are local, not hosted acceptance.
+
+T096/T097 remain incomplete. This transport does not produce a healthy
+verification, resolve quarantines, open service or establish cross-platform
+atomicity. The external maintenance perimeter and explicit release checks remain
+required. Actual-target lock/release and cleanup have not occurred.
