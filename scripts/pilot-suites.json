@@ -1775,6 +1775,13 @@
         "fails missing accepted payload coverage and retains the committed finite allowance after reader failure",
         "inventories accepted older-baseline records instead of omitting them when current delivery needs reconciliation"
       ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-mcp-http.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "serves actual SDK maintenance HTTP through the restricted runtime while ordinary MCP and retired credentials stay denied"
+      ]
     }
   ],
   "ui": {

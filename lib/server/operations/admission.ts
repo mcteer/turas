@@ -69,10 +69,28 @@ export async function withAuthenticatedMcpRecoveryReadCapability<T>(client:PoolC
  * admission on this direct runtime transaction, never a caller-supplied actor. */
 export async function withRecoveryHttpReadCapability<T>(db:PoolClient,request:Request,id:string,read:(actor:CurrentSession,customerId:string|null,proof:RecoveryHttpRead)=>Promise<T>){
  const proof=await authenticateRecoveryHttpRead(db,request,id,false);
+ if(proof.readKind==='mcp')throw new HttpFailure(403,'forbidden','Dedicated MCP recovery capability required');
  await db.query('SELECT pg_advisory_xact_lock_shared(hashtextextended($1,16017))',[proof.environmentId]);
  recoveryReadActors.set(proof.actor,{client:db,environmentId:proof.environmentId,recoveryId:proof.recoveryId,revision:proof.controlRevision,deadline:proof.deadline});
  try{const result=await read(proof.actor,proof.customerId,proof);await authenticateRecoveryHttpRead(db,request,id,false);return result;}
  finally{recoveryReadActors.delete(proof.actor);}
+}
+/** Runtime MCP exception requires both the owner-issued finite HTTP admission
+ * and the independent actual bearer for that same principal/membership/connection. */
+export async function withRecoveryMcpHttpReadCapability<T>(db:PoolClient,request:Request,id:string,read:(actor:McpReadActor)=>Promise<T>){
+ const proof=await authenticateRecoveryHttpRead(db,request,id,false);
+ if(proof.readKind!=='mcp'||!proof.recordId)throw new HttpFailure(403,'forbidden','Recovery MCP admission required');
+ const actor=await authenticateMcpCredential(db,request.headers.get('authorization'));
+ if(actor.connectionId!==proof.recordId||actor.scopeDigest!==proof.recordDigest||actor.principalId!==proof.actor.principalId||actor.membershipId!==proof.actor.membershipId||actor.workspaceId!==proof.actor.workspaceId||actor.environmentId!==proof.environmentId)throw new HttpFailure(403,'forbidden','Recovery MCP credential differs');
+ const deadline=Math.min(proof.deadline,Date.now()+10000);
+ recoveryReadActors.set(actor,{client:db,environmentId:proof.environmentId,recoveryId:proof.recoveryId,revision:proof.controlRevision,deadline});
+ try{
+  await db.query("SELECT set_config('transaction_timeout',$1,true)",[Math.max(1,deadline-Date.now())+'ms']);
+  await lockWorkspaceActor(db,actor,undefined,true,2000);const result=await read(actor);
+  const current=await authenticateMcpCredential(db,request.headers.get('authorization'));
+  if(JSON.stringify(current)!==JSON.stringify(actor))throw new HttpFailure(403,'forbidden','Recovery MCP credential changed');
+  await lockWorkspaceActor(db,actor,undefined,true,2000);await authenticateRecoveryHttpRead(db,request,id,false);request.signal.throwIfAborted();if(Date.now()>=deadline)throw new HttpFailure(503,'unavailable','Recovery MCP deadline ended');return result;
+ }finally{recoveryReadActors.delete(actor);}
 }
 const cancelledPaths=/^(?:\/api\/artifacts\/intents\/[a-f0-9-]{36}\/cancel|\/eve\/v1\/session\/wrun_[A-Za-z0-9_-]+\/cancel)$/;
 /** The exception is an in-process capability attached only to a verified session on a fixed cancellation handler. */

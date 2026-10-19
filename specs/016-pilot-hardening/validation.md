@@ -4335,3 +4335,37 @@ panel and an assigned partner, then404 after grant revocation, with every probe
 retired. Root/pilot types, authored Eve bundle and independent review pass. This
 handler/database execution is local controlled-cloud coverage, not hosted HTTP
 acceptance or complete required-service/reopen proof.
+
+### Restricted-runtime maintenance MCP transport — 2026-10-19
+
+A fixed POST maintenance endpoint now requires a finite owner-issued HTTP admission,
+its independently authenticated browser session and the actual MCP bearer for the
+same principal, membership, workspace and sealed connection scope. Unreleased079
+metadata binds the connection ID, scope digest and membership with explicit NULL
+checks. The ordinary MCP endpoint remains closed during recovery. The dedicated
+runtime capability rechecks the bearer and HTTP admission after the shared SDK
+reader; MCP admissions cannot create the generic browser-read capability. Request,
+response, transaction and absolute deadlines remain bounded, and admission allowance
+commits before reader failure. Existing owned constructors retain their guards.
+
+The actual SDK check through the restricted-runtime handler passes1/1 with thirteen
+unselected cases (`mcp-http-v1-private.json`). The production application/actual HTTP
+check also passes1/1 (`mcp-http-network-v4-private.json`): current identity and accepted
+profile facts, foreign cookie/secret/Origin denial, bearer revocation, retired probe
+denial and ordinary locked MCP denial. It executes actual local HTTP and both
+production builds, not hosted acceptance. Failed attempts remain retained: a new
+fixture TypeScript error; an added URL-origin equality check rejected the production
+request; and a manual probe omitted required SDK protocol negotiation. Host and
+configured deployment binding remain mandatory, and an explicit Origin header is
+checked against configured app origin. The actual SDK performs negotiation without
+retries. The complete target regression is running. Current catalog is852cases in155
+suites; fresh complete proof and a new actual079 migration rehearsal remain required.
+
+The complete current target regression passes14/14 with zero skips
+(`mcp-http-target-v2-private.json`). Expanded actual network verification passes1/1
+(`mcp-http-network-v5-private.json`), additionally rejecting a valid distinct MCP
+connection paired with this admission, checking the serving code-version header,
+and retiring both fixture connections. Root/pilot types, catalog/deadline tests,
+production builds and documentation checks pass; independent review found no
+remaining authorization blocker. Full required-service, Workflow/effect composition,
+actual hosted acceptance and the authoritative reopen producer remain pending.

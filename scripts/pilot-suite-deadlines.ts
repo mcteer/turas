@@ -22,6 +22,7 @@ const longSuiteSeconds:Readonly<Record<string,number>>={
  'work-denial-reconciliation':900,
  'recovery-plan-http':900,
  'recovery-execution-http':1140,
+ 'recovery-mcp-http':480,
  'locked-work-recovery-target':3000,
 };
 for(const name of Object.keys(longSuiteSeconds)){

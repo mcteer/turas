@@ -1,3 +1,5 @@
+import {POST as maintenanceMcp} from '../../../app/api/operations/recovery-read/[admissionId]/mcp/route';
+import {handleMcpRequest} from '../../../lib/server/mcp/transport';
 import {deriveWorkMaintenanceInventoryInTransaction} from '../../../lib/server/operations/owned-maintenance-inventory';
 import {Client as McpClient,StreamableHTTPClientTransport} from '@modelcontextprotocol/client';
 import {mcpProtocolVersion,mcpToolOutputs} from '../../../lib/contracts/mcp';
@@ -220,18 +222,21 @@ it('uses the actual SDK and persisted bearer scope for locked recovery with cust
  let workspaceId='',customerId='',otherCustomerId='',credential='',connectionId='';
  await fixture(async input=>{
   await withLockedWorkRecoveryTarget(input,async(db,target)=>{
+   await db.query('BEGIN');let admission:Awaited<ReturnType<typeof issueWorkRecoveryHttpRead>>;
+   try{admission=await issueWorkRecoveryHttpRead(db,target,{...input.scope,workspaceId,customerId:null,password:process.env.TURAS_DEMO_PASSWORD!,deadline:Date.now()+59000,maximumRequests:10,deploymentId:target.deploymentId,readKind:'mcp',recordId:connectionId},dirname(input.sourceFile));await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}
    const client=new McpClient({name:'synthetic-locked-recovery',version:'1.0.0'},{versionNegotiation:{mode:{pin:mcpProtocolVersion},probe:{maxRetries:0,timeoutMs:10000}}});
-   const sdkFetch:typeof fetch=async(url,options)=>{
-    const request=new Request(url,options),headers=new Headers(request.headers);headers.set('host',new URL(request.url).host);
-    await db.query('BEGIN');try{const response=await readWorkRecoveryMcpRequest(db,target,new Request(request,{headers}));await db.query('COMMIT');return response;}catch(error){await db.query('ROLLBACK');throw error;}
-   };
+   const sdkFetch:typeof fetch=async(url,options)=>withTargetRuntime(input,target,async()=>{
+    const request=new Request(url,options),headers=new Headers(request.headers);headers.set('host',new URL(request.url).host);headers.set('cookie',sessionCookie(admission.actor.token,admission.actor.expiresAt).split(';')[0]);headers.set('x-turas-recovery-read',admission.secret);
+    return maintenanceMcp(new Request(target.origin+'/api/operations/recovery-read/'+admission.id+'/mcp',{method:request.method,headers,body:await request.arrayBuffer(),signal:request.signal}),{params:Promise.resolve({admissionId:admission.id})});
+   });
    try{
-    await expect(sdkFetch(target.origin+'/api/mcp/v1',{method:'POST',headers:{authorization:'Bearer tmcp.'+connectionId+'.'+randomBytes(32).toString('base64url'),'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list'})})).rejects.toThrow('Authentication required');
+    expect((await sdkFetch(target.origin+'/api/mcp/v1',{method:'POST',headers:{authorization:'Bearer tmcp.'+connectionId+'.'+randomBytes(32).toString('base64url'),'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list'})})).status).toBe(401);
     await expect(readWorkRecoveryMcpRequest(db,target,new Request(target.origin+'/api/mcp/v1?unexpected=1',{method:'POST',headers:{host:new URL(target.origin).host,'content-type':'application/json'},body:'{}'}))).rejects.toThrow('Recovery MCP request unavailable');
     await client.connect(new StreamableHTTPClientTransport(new URL('/api/mcp/v1',target.origin),{fetch:sdkFetch,requestInit:{headers:{authorization:'Bearer '+credential}},reconnectionOptions:{maxRetries:0,maxReconnectionDelay:0,initialReconnectionDelay:0,reconnectionDelayGrowFactor:1}}),{timeout:10000});
     const identity=mcpToolOutputs.turas_identity_v1.parse((await client.callTool({name:'turas_identity_v1',arguments:{}})).structuredContent);expect(identity.status).toBe('available');if(identity.status==='available')expect(identity.data.workspaceId).toBe(workspaceId);
     const customers=mcpToolOutputs.turas_customers_list_v1.parse((await client.callTool({name:'turas_customers_list_v1',arguments:{limit:1}})).structuredContent);expect(customers.status).toBe('available');expect(customers.nextCursor).toBeTruthy();
     const next=mcpToolOutputs.turas_customers_list_v1.parse((await client.callTool({name:'turas_customers_list_v1',arguments:{limit:1,cursor:customers.nextCursor}})).structuredContent);expect(next.status).toBe('available');expect(next.nextCursor).toBeNull();if(customers.status==='available'&&next.status==='available')expect(new Set([...customers.data.items,...next.data.items].map(row=>row.customerId))).toEqual(new Set([customerId,otherCustomerId]));
+    await withTargetRuntime(input,target,async()=>{expect((await handleMcpRequest(new Request(target.origin+'/api/mcp/v1',{method:'POST',headers:{host:new URL(target.origin).host,authorization:'Bearer '+credential,'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list'})}))).status).toBe(503);});
     const profile=mcpToolOutputs.turas_profile_read_v1.parse((await client.callTool({name:'turas_profile_read_v1',arguments:{customerId,section:'facts',limit:20}})).structuredContent);expect(profile.status).toBe('available');if(profile.status==='available')expect(profile.data.items.length).toBeGreaterThan(0);
     const denied=await client.callTool({name:'turas_profile_read_v1',arguments:{customerId:randomUUID(),section:'facts',limit:20}});expect(denied.isError||mcpToolOutputs.turas_profile_read_v1.parse(denied.structuredContent).status==='unavailable').toBeTruthy();
     await db.query('BEGIN');
@@ -239,7 +244,7 @@ it('uses the actual SDK and persisted bearer scope for locked recovery with cust
      await db.query('UPDATE mcp_connections SET revoked_at=clock_timestamp(),revoker_membership_id=membership_id,credential_hash=NULL WHERE id=$1',[connectionId]);return {mustNotEscape:true};
     })).rejects.toThrow('Authentication required');await db.query('COMMIT');
     await expect(client.callTool({name:'turas_identity_v1',arguments:{}})).rejects.toThrow();
-   }finally{await client.close();}
+   }finally{try{await client.close();}finally{await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,admission.id);}}
   });
  },async owner=>{
   const f=await pilotPublishedKnowledgeFixture(owner as unknown as PoolClient,'primary');workspaceId=f.actor.workspaceId;customerId=f.customerId;otherCustomerId=randomUUID();

@@ -661,7 +661,8 @@
         "integration.recovery-execution-http.002",
         "integration.recovery-execution-http.003",
         "integration.recovery-execution-http.004",
-        "integration.recovery-execution-http.005"
+        "integration.recovery-execution-http.005",
+        "integration.recovery-mcp-http.001"
       ]
     },
     {

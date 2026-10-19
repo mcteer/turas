@@ -781,3 +781,4 @@ Reporting CI installs both root and artifact-extractor lockfiles, as required by
 the shared disposable application setup.
 
 Work-recovery authentication now includes independently authenticated internal/partner reads and an actual-bearer MCP SDK reader. These are local implementation checkpoints; complete service measurement, authoritative reopen verification and hosted acceptance remain pending in [Feature 016](specs/016-pilot-hardening/tasks.md).
+The maintenance MCP endpoint additionally binds its finite recovery admission and browser session to the same actual MCP bearer connection. Local restricted-runtime HTTP/SDK checks pass; hosted acceptance and the complete reopen verifier remain pending.
