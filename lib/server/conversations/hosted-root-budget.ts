@@ -6,6 +6,7 @@ import {HttpFailure} from '../../contracts/http';
 import {withTransaction} from '../db/client';
 import {operationalCodeVersion} from '../operations/code-version';
 import {modelCostCeiling,settleParityProvider} from '../research/specialists/evaluation-budget';
+import {lockHostedRootAccounting,settleLockedHostedRoot} from './hosted-root-settlement';
 
 /** Separate from the Preview-wide parity switch. Each environment receives at
  * most half the authorized $5, and only these precreated ordinary conversations
@@ -63,7 +64,7 @@ export async function hostedRootAttempt(db:PoolClient,principal:Principal){
 export type HostedRootOperation=NonNullable<Parameters<typeof settleParityProvider>[0]>;
 /** Called after all ordinary prompt/file/current-knowledge enrichment. Unknown
  * outcomes retain their full ceiling and prevent subsequent exercise dispatch. */
-export async function reserveHostedRoot(principal:Principal,nativeSessionId:string,turnId:string,inputBytes:number,outputTokens:number){
+export async function reserveHostedRoot(principal:Principal,nativeSessionId:string,turnId:string,inputBytes:number,outputTokens:number,providerPath:'generate'|'stream'='stream'){
  if(!process.env.TURAS_PILOT_HOSTED_ROOT_BUDGET_JSON)return null;
  return withTransaction(async db=>{
   const scope=await hostedRootAttempt(db,principal);if(!scope)return null;
@@ -77,25 +78,40 @@ export async function reserveHostedRoot(principal:Principal,nativeSessionId:stri
    AND workspace_id=$3 AND owner_principal_id=$4 AND state='open' AND expires_at>clock_timestamp() FOR UPDATE`,
    [configured.budgetId,configured.environmentMarker,configured.workspaceId,configured.ownerPrincipalId])).rows[0];
   if(!budget||Number(budget.cap_micro_usd)!==configured.capMicroUsd||budget.expires_at.getTime()>Date.parse(configured.expiresAt)
-   ||(await db.query('SELECT 1 FROM parity_evaluation_operations WHERE budget_id=$1 AND settled_at IS NULL LIMIT 1',[configured.budgetId])).rowCount)throw denied();
+   ||(await db.query(`SELECT 1 FROM parity_evaluation_operations o LEFT JOIN operations_hosted_root_generation_receipts r ON r.operation_id=o.id
+    WHERE o.budget_id=$1 AND (o.settled_at IS NULL OR o.actual_micro_usd>o.ceiling_micro_usd
+     OR r.actual_micro_usd>o.ceiling_micro_usd OR r.actual_micro_usd IS NOT NULL AND r.actual_micro_usd IS DISTINCT FROM o.actual_micro_usd) LIMIT 1`,[configured.budgetId])).rowCount)throw denied();
   const price=pricingSchema.parse(budget.pricing)['spacexai/grok-4.7'];if(!price)throw denied();
   const amount=modelCostCeiling(inputBytes,outputTokens,price.input,price.output);
   if(!Number.isSafeInteger(amount)||BigInt(budget.reserved_micro_usd)+BigInt(amount)>BigInt(budget.cap_micro_usd))throw denied();
   const id=randomUUID();
   await db.query('UPDATE parity_evaluation_budgets SET reserved_micro_usd=reserved_micro_usd+$2 WHERE id=$1',[configured.budgetId,amount]);
   await db.query('INSERT INTO parity_evaluation_operations(id,budget_id,provider,ceiling_micro_usd) VALUES($1,$2,$3,$4)',
-   [id,configured.budgetId,JSON.stringify({contract:'pilot-root-dispatch-v1',model:'spacexai/grok-4.7',attemptId:scope.attemptId,nativeSessionId,turnId}),amount]);
+   [id,configured.budgetId,JSON.stringify({contract:'pilot-root-dispatch-v2',model:'spacexai/grok-4.7',attemptId:scope.attemptId,nativeSessionId,turnId,sourceCommit:configured.sourceCommit,deploymentId:process.env.VERCEL_DEPLOYMENT_ID,projectId:configured.projectId,target:configured.target,providerPath}),amount]);
   return {id,budgetId:configured.budgetId,amount};
  });
 }
-export const settleHostedRoot=settleParityProvider;
-async function rememberIdentity(operation:HostedRootOperation,value:unknown){
- const identity=z.string().min(1).max(256).parse(value);
+export async function settleHostedRoot(operation:Parameters<typeof settleParityProvider>[0],metadata:unknown){
+ if(!operation)return;
+ const dollars=z.union([z.number().finite().nonnegative(),z.string().regex(/^(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][+-]?\d+)?$/).transform(Number).pipe(z.number().finite().nonnegative())]);
+ const reported=z.object({gateway:z.object({cost:dollars,totalCost:dollars.optional()})}).safeParse(metadata);
+ if(!reported.success)return;
+ const {cost:usd,totalCost}=reported.data.gateway,actual=Math.ceil(usd*1000000);
+ if(totalCost!==undefined&&totalCost!==usd||!Number.isSafeInteger(actual))return;
+ const result=await withTransaction(async db=>settleLockedHostedRoot(db,await lockHostedRootAccounting(db,operation),actual));
+ if(result.discrepancy)throw denied();
+}
+async function rememberIdentity(operation:HostedRootOperation,kind:'provider_response'|'gateway_generation',value:unknown){
+ const identity=(kind==='gateway_generation'?z.string().regex(/^gen_[A-Za-z0-9_-]{1,240}$/):z.string().min(1).max(256)).parse(value);
  await withTransaction(async db=>{
-  await db.query('INSERT INTO operations_hosted_root_provider_identities(operation_id,provider_key) VALUES($1,$2) ON CONFLICT(operation_id) DO NOTHING',[operation.id,identity]);
-  const row=(await db.query('SELECT provider_key FROM operations_hosted_root_provider_identities WHERE operation_id=$1',[operation.id])).rows[0];
+  await db.query('INSERT INTO operations_hosted_root_provider_identities(operation_id,identity_kind,provider_key) VALUES($1,$2,$3) ON CONFLICT(operation_id,identity_kind) DO NOTHING',[operation.id,kind,identity]);
+  const row=(await db.query('SELECT provider_key FROM operations_hosted_root_provider_identities WHERE operation_id=$1 AND identity_kind=$2',[operation.id,kind])).rows[0];
   if(row?.provider_key!==identity)throw denied();
  });
+}
+function gatewayGeneration(value:unknown){
+ const metadata=z.object({providerMetadata:z.object({gateway:z.object({generationId:z.string()})})}).safeParse(value);
+ return metadata.success?metadata.data.providerMetadata.gateway.generationId:undefined;
 }
 /** Refuse even provider-executed or adversarial tool frames before Eve sees
  * them. The provider also receives no tools and an explicit none choice. */
@@ -104,28 +120,32 @@ export function assertHostedRootPart(part:{type:string}){
 }
 export function wrapHostedRootBudget(model:Parameters<typeof wrapLanguageModel>[0]['model'],principal:Principal,nativeSessionId:string,turnId:string){
  if(!process.env.TURAS_PILOT_HOSTED_ROOT_BUDGET_JSON)return model;
- let called=false,operation:HostedRootOperation|null=null,providerIdentity:string|undefined;
+ let called=false,operation:HostedRootOperation|null=null,generationId:string|undefined;
+ async function rememberError(error:unknown){if(operation){const parsed=z.object({generationId:z.string()}).safeParse(error);if(parsed.success)await rememberIdentity(operation,'gateway_generation',parsed.data.generationId);}}
  return wrapLanguageModel({model,middleware:{
-  async transformParams({params}){
+  async transformParams({params,type}){
    if(called)throw denied();called=true;
    operation=await reserveHostedRoot(principal,nativeSessionId,turnId,
-    Buffer.byteLength(JSON.stringify({prompt:params.prompt,tools:[]}))+8192+128*params.prompt.length,params.maxOutputTokens??8192);
+    Buffer.byteLength(JSON.stringify({prompt:params.prompt,tools:[]}))+8192+128*params.prompt.length,params.maxOutputTokens??8192,type);
    return operation?{...params,tools:[],toolChoice:{type:'none' as const}}:params;
   },
   async wrapGenerate({doGenerate}){
-   const result=await doGenerate();if(operation){
+   let result;try{result=await doGenerate();}catch(error){await rememberError(error);throw error;}if(operation){
     const response=z.object({id:z.string()}).safeParse(result.response);
-    if(response.success)await rememberIdentity(operation,response.data.id);
+    if(response.success)await rememberIdentity(operation,'provider_response',response.data.id);
+    const generation=gatewayGeneration(result);if(generation)await rememberIdentity(operation,'gateway_generation',generation);
     for(const part of result.content)assertHostedRootPart(part);
-    if(response.success)await settleHostedRoot(operation,result.providerMetadata);
+    if(generation)await settleHostedRoot(operation,result.providerMetadata);
    }return result;
   },
   async wrapStream({doStream}){
-   const result=await doStream();return {...result,stream:result.stream.pipeThrough(new TransformStream({
+   let result;try{result=await doStream();}catch(error){await rememberError(error);throw error;}return {...result,stream:result.stream.pipeThrough(new TransformStream({
     async transform(part,controller){if(operation){
+     const generation=gatewayGeneration(part);if(generation){await rememberIdentity(operation,'gateway_generation',generation);generationId=generation;}
+     if(part.type==='response-metadata'&&part.id)await rememberIdentity(operation,'provider_response',part.id);
+     if(part.type==='error')await rememberError(part.error);
      assertHostedRootPart(part);
-     if(part.type==='response-metadata'&&part.id){await rememberIdentity(operation,part.id);providerIdentity=part.id;}
-     if(part.type==='finish'&&providerIdentity)await settleHostedRoot(operation,part.providerMetadata);
+     if(part.type==='finish'&&generationId)await settleHostedRoot(operation,part.providerMetadata);
     }controller.enqueue(part);},
    }))};
   },

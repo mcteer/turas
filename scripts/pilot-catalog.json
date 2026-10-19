@@ -830,7 +830,19 @@
         "integration.hosted-root-budget.001",
         "integration.hosted-root-budget.002",
         "integration.hosted-root-budget.003",
-        "integration.hosted-root-budget.004"
+        "integration.hosted-root-budget.004",
+        "integration.hosted-root-budget.005",
+        "integration.hosted-root-budget.006",
+        "integration.hosted-root-reconcile.001",
+        "integration.hosted-root-reconcile.002",
+        "integration.hosted-root-reconcile.003",
+        "integration.hosted-root-reconcile.004",
+        "integration.hosted-root-reconcile.005",
+        "integration.hosted-root-reconcile.006",
+        "integration.hosted-root-reconcile.007",
+        "integration.hosted-root-reconcile.008",
+        "integration.hosted-root-reconcile.009",
+        "integration.hosted-root-reconcile.010"
       ]
     },
     {

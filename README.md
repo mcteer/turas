@@ -99,7 +99,7 @@ Completion work now includes released main `f8d196f`. New pilot logins default
 off through `TURAS_PILOT_LOGIN_ENABLED`; explicit enablement still requires a
 current assigned membership. A separate exact-source Production infrastructure
 authorization can now be verified without promoting the original Preview envelope.
-The composed workspace/upload WebKit matrix passes40cases; the updated795-case
+The composed workspace/upload WebKit matrix passes40cases; the updated807-case
 catalog requires fresh complete verification. Expired infrastructure/model approvals,
 original charges and holds remain unchanged; no hosted pilot readiness is claimed.
 Current Production remains released `f8d196f` on schema077. Its host firewall
@@ -743,6 +743,17 @@ The isolated work restore command verifies required ledger originals against res
 
 Mobile navigation remains disabled until its click handler is ready. Pilot research UI fixtures use ordinary live customer context and verify generation changes without relaxing historical-chat restrictions. The785-case local pass at23e8b2c predates these follow-up checks; fresh final-source CI remains required.
 
-Owned recovery now supports optional command-level maintenance HTTP verification against its restored target. It derives the record inventory, verifies profiles and eligible artifact/report/workforce/gap originals, and retires probe sessions and supervised application processes. A consuming transaction rechecks inventory and runtime/probe closure; serialized receipts cannot authorize recovery. The current795-case/145-suite catalog requires fresh complete proof. Ordinary service, current-denial/Workflow reconciliation and full readiness remain incomplete.
+Owned recovery now supports optional command-level maintenance HTTP verification against its restored target. It derives the record inventory, verifies profiles and eligible artifact/report/workforce/gap originals, and retires probe sessions and supervised application processes. A consuming transaction rechecks inventory and runtime/probe closure; serialized receipts cannot authorize recovery. The current807-case/146-suite catalog requires fresh complete proof. Ordinary service, current-denial/Workflow reconciliation and full readiness remain incomplete.
 
 The optional hosted root transport exercise has a separate finite synthetic-conversation budget, with at most $2.50 per environment. Owner admission binds the actual ready deployment while retaining the original charges and uncertain reservations. This mode disables tools, preserves the selected model and records original provider identities. Four owned PostgreSQL checks pass; actual hosted streaming/resume/stop acceptance remains pending.
+
+Root-only hosted transport can optionally run desktop and mobile CLI WebKit
+stream/reload/Stop exercises with `pilot:hosted:check -- ... --root-binding <private-file>`.
+The two conversations must already belong to the deployed finite root budget.
+The runner compares the authenticated configuration, retains original attempt
+identities and deadlines across reload, and reconciles each actual Gateway
+generation through the provider lookup. `pilot:hosted:root:reconcile` can record
+an interrupted generation separately without another model call. Unknown costs
+retain their ceiling; closed/recovered budgets never refund or reopen. Conflicting
+actual charges retain an immutable receipt and block further dispatch. These
+runners are implemented; their existence does not establish hosted acceptance.

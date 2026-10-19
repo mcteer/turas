@@ -1658,12 +1658,30 @@
     },
     {
       "file": "tests/integration/pilot/hosted-root-budget.test.ts",
-      "expectedCases": 4,
+      "expectedCases": 6,
       "cases": [
         "binds actual synthetic attempts and retains unknown concurrent reservations without changing unrelated dispatch",
         "settles successful Production-bound root generate and stream calls with immutable original provider identities",
         "withholds adversarial generated tool calls and preserves their complete paid reservation",
-        "charges resumed root dispatches and rejects every tool stream before forwarding an auxiliary effect"
+        "charges resumed root dispatches and rejects every tool stream before forwarding an auxiliary effect",
+        "retains a full unknown reservation when only an upstream response identity is available",
+        "captures the Gateway generation from an actual SDK failure before retaining its interrupted hold"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/hosted-root-reconcile.test.ts",
+      "expectedCases": 10,
+      "cases": [
+        "reconciles only the original Gateway identity and atomically preserves its actual charge across replay",
+        "retains unknown ceilings for mismatched nonterminal BYOK tool and invalid provider accounting",
+        "rolls back a receipt and refund together when settlement fails before commit",
+        "refuses lookup without a recorded Gateway identity and never substitutes the upstream response ID",
+        "records known accounting in a retired budget without refunding or reopening its original scope",
+        "records an actual provider overrun without increasing the original cap or admitting another dispatch",
+        "retains the original ceiling when provider completion follows a closed budget boundary",
+        "retains the original ceiling when provider completion follows a recovered budget boundary",
+        "commits authoritative charge discrepancies before refusing any further dispatch or replay refund",
+        "serializes concurrent provider completion and owner reconciliation without losing or repeating refunds"
       ]
     }
   ],

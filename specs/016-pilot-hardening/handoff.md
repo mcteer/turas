@@ -22,7 +22,7 @@ restricted-runtime teardown have focused positive/denial/concurrency proof. Full
 private-byte/recovery verification, hosted journeys/configuration, actual cadence,
 participant observations and the owner decision remain unfinished. The779-case/142-suite
 local catalog passes at e9d2c21; its source-bound receipt is retained. The updated
-795-case/145-suite catalog includes the asynchronous UI-child and scoped hosted root-budget regression cases
+807-case/146-suite catalog includes the asynchronous UI-child and scoped hosted root-budget regression cases
 and requires fresh complete acceptance after implementation. Production remains
 released f8d196f/schema077 after verified bypass credential repair. No016
 Production migration, feature merge or directory cleanup is implied.
@@ -470,3 +470,16 @@ checks pass, including Production-bound fixtures; actual hosted transport remain
 pending. The current inventory is795 cases/145 suites. Current71aa399 CI has an
 execution recovery restart-readiness failure under investigation; do not treat its
 38 passing jobs or an older complete catalog as final-source acceptance.
+
+
+Gateway accounting now distinguishes the upstream response ID from the actual
+Gateway generation ID. The fixed owner lookup records immutable terminal costs
+and atomically settles the original058 operation; unknown outcomes retain their
+ceiling. Closed/recovered scopes do not refund or reopen. Conflicting costs
+remain durable, preserve the first charge and block subsequent sends. The optional
+`--root-binding` hosted runner requires two precreated conversations, matching
+authenticated configuration, and the same owner/runtime database endpoint before
+actual desktop/mobile WebKit streaming-reload and Stop exercises. Each successful
+exercise requires real generation accounting and confirmed native retirement.
+Current inventory is807cases/146suites; focused results and final-source complete
+verification are recorded in validation. No hosted acceptance is inferred.

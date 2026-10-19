@@ -1076,3 +1076,29 @@ Missing identity, interrupted output or absent actual cost retains the full hold
 This bounded mode can establish root streaming/reload/stop mechanics only after
 actual hosted execution. It supplies no specialist/research/tool acceptance,
 participant observation, hosted file catalog, recovery unlock or readiness claim.
+
+
+For actual desktop/mobile root transport checks, bind exactly two precreated
+ordinary conversations and append `--root-binding <private-root-binding.json>`
+to the existing `pilot:hosted:check` invocation. The authenticated configuration
+and its digest must match; direct owner accounting and runtime connections must
+share the actual Neon endpoint/database, and the explicit Gateway lookup credential
+is required before sends. Each conversation performs one streaming reload without
+resending and a second actual UI send followed by Stop. An early-completing response
+fails that exercise rather than triggering another paid send. Exact native reset
+and durable retirement are required before archive, including failure cleanup.
+
+To reconcile an interrupted original operation separately:
+
+```sh
+npm run pilot:hosted:root:reconcile -- --scope <private-original-hosted-scope.json> --operation <original-operation-uuid> --output <new-private-directory>
+```
+
+This performs a fixed read-only Gateway generation lookup using the immutable
+`gateway_generation` identity, never the upstream response ID. There is no model
+call, retry or caller-supplied provider receipt. Missing identity or incomplete
+accounting retains the original ceiling. Finite actual accounting and its receipt
+commit together; closed/recovered budgets keep their full hold. An authoritative
+conflicting charge is recorded, preserves the first charge, blocks dispatch and
+returns unsuccessful reconciliation. Neither path changes caps or expiry. Keep
+the original private receipt and journal even when an exercise fails.

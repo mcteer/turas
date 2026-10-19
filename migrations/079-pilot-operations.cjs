@@ -622,13 +622,30 @@ exports.up = (pgm) => pgm.sql(`
  CREATE TRIGGER hosted_root_admission_immutable BEFORE UPDATE OR DELETE ON operations_hosted_root_admissions
   FOR EACH ROW EXECUTE FUNCTION turas_pilot_immutable_recovery_receipt();
  CREATE TABLE operations_hosted_root_provider_identities(
-  operation_id uuid PRIMARY KEY REFERENCES parity_evaluation_operations(id),
-  provider_key text UNIQUE NOT NULL CHECK(length(provider_key) BETWEEN 1 AND 256),
-  recorded_at timestamptz NOT NULL DEFAULT clock_timestamp());
+  operation_id uuid NOT NULL REFERENCES parity_evaluation_operations(id),
+  identity_kind text NOT NULL CHECK(identity_kind IN('provider_response','gateway_generation')),
+  provider_key text NOT NULL CHECK(length(provider_key) BETWEEN 1 AND 256),
+  recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  PRIMARY KEY(operation_id,identity_kind),UNIQUE(identity_kind,provider_key),UNIQUE(operation_id,identity_kind,provider_key));
  CREATE TRIGGER hosted_root_provider_identity_immutable BEFORE UPDATE OR DELETE ON operations_hosted_root_provider_identities
   FOR EACH ROW EXECUTE FUNCTION turas_pilot_immutable_recovery_receipt();
- CREATE TRIGGER recovered_request_replay BEFORE INSERT ON operations_hosted_root_provider_identities
+ CREATE TRIGGER recovered_request_replay BEFORE INSERT OR UPDATE ON operations_hosted_root_provider_identities
+  FOR EACH ROW EXECUTE FUNCTION turas_recovery_replay_guard();
+ CREATE TABLE operations_hosted_root_generation_receipts(
+  operation_id uuid PRIMARY KEY REFERENCES parity_evaluation_operations(id),
+  identity_kind text NOT NULL DEFAULT 'gateway_generation' CHECK(identity_kind='gateway_generation'),
+  provider_key text UNIQUE NOT NULL,
+  actual_micro_usd bigint NOT NULL CHECK(actual_micro_usd>=0),
+  input_tokens bigint NOT NULL CHECK(input_tokens BETWEEN 0 AND 500000),
+  output_tokens bigint NOT NULL CHECK(output_tokens BETWEEN 0 AND 500000),
+  response_digest text NOT NULL CHECK(response_digest ~ '^[a-f0-9]{64}$'),
+  provider_created_at timestamptz NOT NULL,recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  FOREIGN KEY(operation_id,identity_kind,provider_key) REFERENCES operations_hosted_root_provider_identities(operation_id,identity_kind,provider_key));
+ CREATE TRIGGER hosted_root_generation_receipt_immutable BEFORE UPDATE OR DELETE ON operations_hosted_root_generation_receipts
+  FOR EACH ROW EXECUTE FUNCTION turas_pilot_immutable_recovery_receipt();
+ CREATE TRIGGER recovered_request_replay BEFORE INSERT OR UPDATE ON operations_hosted_root_generation_receipts
   FOR EACH ROW EXECUTE FUNCTION turas_recovery_replay_guard();
  GRANT SELECT ON operations_hosted_root_admissions TO turas_runtime;
  GRANT SELECT,INSERT ON operations_hosted_root_provider_identities TO turas_runtime;
+ GRANT SELECT ON operations_hosted_root_generation_receipts TO turas_runtime;
 `);

@@ -3867,3 +3867,57 @@ retirement and a disposable-only linked-dependency Turbopack root adjustment.
 Private report: `local-artifacts/008/deterministic-XDotEO/result.json`. This local
 pass does not establish the historical Linux CI cause; fresh CI remains required. Hosted079
 has not been applied, and no readiness or participant gate is completed here.
+
+
+### Gateway identity and root accounting follow-up
+
+The root adapter now keeps the Gateway generation ID separately from the upstream
+response ID, including IDs supplied by actual SDK errors. Interrupted accounting
+uses only the fixed read-only Gateway generation lookup; missing IDs, invalid or
+nonterminal accounting remain unknown. Owner receipts and original058 settlement
+commit together. Completion and reconciliation share budget-then-operation locks;
+closed/recovered scopes keep their full ceilings. An authoritative conflicting
+charge is recorded immutably and blocks dispatch without replacing the first
+charge, increasing a cap, or reopening authority. Ordinary parity settlement is
+unchanged. The updated inventory is807cases/146suites and needs complete proof
+from its final committed source.
+
+The optional hosted root browser producer performs two actual UI sends per
+desktop/mobile conversation, requires a streaming reload with the same attempt
+and deadline, observes native Stop cancellation, reconciles actual generations,
+and requires exact native reset plus durable retirement before archive. No
+actual hosted send or provider lookup has been performed for this follow-up;
+root transport and full hosted readiness remain unverified.
+
+
+The prior committed71aa399 complete local execution finished successfully with
+791/791 cases across144 suites and owning cleanup process exit0. Its private
+receipt is `turas-pilot-finish/local-artifacts/016/run-b5781b32-3da4-43af-b5a6-16250edb3247/execution.json`,
+source digest5467d9be6840e5e3d81293ca55b29389f2830f5815aadacabcd7369ae6a8c717,
+catalog digest420e5f2f94d69deefbef2606c74e0ac05b570e3de36eb044160f8439f72009e1.
+The c6d9cbf795-case execution remains running separately; neither receipt can
+substitute for complete acceptance of the newer807-case source. Ten updated
+case-inventory/result/deadline contracts pass without provider calls.
+
+
+Focused root identity/accounting checks pass16/16 with Node24 in
+`local-artifacts/016/reviewer-root-accounting-fixes-v3-private.json`. The expanded
+same-title discrepancy regression passes1/1 (nine intentionally filtered cases)
+in `reviewer-root-accounting-discrepancy-final-private.json`; this narrow check is
+not a complete catalog. Genuine runtime recovered-settlement denial, owner
+reconciliation without refund, concurrent two-connection budget contention,
+strict missing/blank/invalid/contradictory cost holds, receipt rollback and replay
+are exercised. Independent review found the original accounting gaps, verified
+the fixes and reviewed the root browser target binding and cleanup; no remaining
+concrete blocker was reported in that scope. Root and pilot typechecks,243-file
+documentation hygiene and whitespace checks pass. No provider call was made.
+
+The c6d9cbf complete execution failed in suite84 at recovery-credential-denials:
+the new root provider-identity replay trigger covered INSERT only, while the
+existing audit requires INSERT and UPDATE. The audit correctly refused recovery
+before the fixture's expected missing-fence error. Both new root replay triggers
+now cover INSERT OR UPDATE; immutable-update triggers remain intact. The failed
+execution is retained and cannot count as795-case acceptance. The complete16-case recovery-denial suite passes16/16, and the final077-to079
+forward rehearsal passes4/4 against the corrected SQL. Private reports:
+`root-provider-replay-audit-private.json` and
+`root-replay-trigger-077-forward-private.json`.

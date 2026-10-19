@@ -1,4 +1,6 @@
 import {Client,type QueryResultRow} from 'pg';
+import {runHostedRootBrowser} from './pilot-hosted-root-browser';
+import {hostedRootBudgetSchema} from '../lib/server/conversations/hosted-root-budget';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {randomUUID} from 'node:crypto';
@@ -43,7 +45,7 @@ function explicitRuntimeUrl(env:NodeJS.ProcessEnv){
 /** Read-only admission before any authenticated hosted journey. Completion here
  * is not the hosted catalog, file processing, participant proof or readiness. */
 export async function pilotHosted(args=process.argv.slice(2)){
- if(args.length!==8||args[0]!=='--scope'||args[2]!=='--run'||args[4]!=='--configuration'||args[6]!=='--authorization')throw Error('Explicit private hosted scope, run, configuration and infrastructure authorization required');
+ if(![8,10].includes(args.length)||(args.length===10&&args[8]!=='--root-binding')||args[0]!=='--scope'||args[2]!=='--run'||args[4]!=='--configuration'||args[6]!=='--authorization')throw Error('Explicit private hosted scope, run, configuration and infrastructure authorization required');
  process.umask(0o077);
  process.env.VERCEL_BLOB_RETRIES='0';
  const scopePath=resolve(args[1]),runPath=resolve(args[3]);
@@ -54,6 +56,9 @@ export async function pilotHosted(args=process.argv.slice(2)){
  if(configuration.environmentMarker!==scope.environmentMarker||configuration.projectId!==scope.projectId||configuration.teamId!==scope.teamId||!configuration.dispatcherEnabled)throw Error('Hosted configuration target or enabled dispatcher differs');
  const authorizationPath=resolve(args[7]),rawAuthorization=await readEvidence(dirname(authorizationPath),basename(authorizationPath)),authorization=verifyHostedInfrastructureAuthorization(rawAuthorization,scope),authorizationDigest=authorization.authorizationDigest;
  if(authorization.environmentMarker!==scope.environmentMarker||authorization.projectId!==scope.projectId||authorization.teamId!==scope.teamId||authorization.maximumSandboxJobs!==configuration.maximumSandboxDispatches||Date.parse(authorization.approvedAt)>Date.now()||Date.parse(authorization.expiresAt)<=Date.now())throw Error('Fresh applicable exact-target infrastructure authority required');
+ const rootBindingPath=args.length===10?resolve(args[9]):null;
+ const rootBinding=rootBindingPath?hostedRootBudgetSchema.parse(await readEvidence(dirname(rootBindingPath),basename(rootBindingPath))):null;
+ if(rootBinding&&rootBinding.conversationIds.length!==2)throw Error('Two original root conversations required for desktop and mobile');
  const source=await pilotSource();
  if(run.id!==scope.runId||run.environmentMarker!==scope.environmentMarker||run.scopeDigest!==evidenceDigest(JSON.stringify(scope)))throw Error('Hosted run and scope differ');
  for(const key of ['sourceCommit','sourceDigest','catalogDigest'] as const)if(run[key]!==scope[key]||scope[key]!==source[key])throw Error('Hosted source or catalog differs');
@@ -109,6 +114,31 @@ export async function pilotHosted(args=process.argv.slice(2)){
      // The reader verified the actual version-bound diagnostic before this hook.
      stage='configuration_boundary';
      await writeEvidence(root,'configuration.json',{contract:'pilot-hosted-configuration-readback-v1',runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),configuration,configurationDigest:evidenceDigest(JSON.stringify(configuration)),actualReadbackVerified:true,providerPermissionVerified:false,hostedCatalogVerified:false});
+    }
+    if(context.role==='internal-admin'&&rootBinding){
+     stage='root_transport';
+     const diagnostic=z.object({data:z.object({rootAcceptanceConfiguration:z.unknown()})}).parse(await pilotHostedRequest({scope,headers:context.headers,signal})('/api/operations/status','GET'));
+     const {bindingDigest,...actual}=hostedRootBudgetSchema.extend({bindingDigest:z.string().regex(/^[a-f0-9]{64}$/)}).parse(diagnostic.data.rootAcceptanceConfiguration);
+     if(bindingDigest!==evidenceDigest(JSON.stringify(rootBinding)))throw Error('Actual root authority digest differs');
+     if(JSON.stringify(actual)!==JSON.stringify(rootBinding))throw Error('Actual deployed root authority differs');
+     const raw=process.env.TURAS_PILOT_HOSTED_OWNER_DATABASE_URL;if(!raw)throw Error('Explicit original owner accounting connection required');
+     const url=new URL(raw);
+     if(!['postgres:','postgresql:'].includes(url.protocol)||!url.hostname.endsWith('.neon.tech')||url.hostname.includes('-pooler.')||url.searchParams.get('sslmode')!=='verify-full')throw Error('Explicit direct Neon verify-full accounting required');
+     const runtimeTarget=new URL(explicitRuntimeUrl(process.env));
+     const endpoint=(value:URL)=>JSON.stringify([value.hostname.replace('-pooler.','.'),value.port||'5432',decodeURIComponent(value.pathname)]);
+     if(endpoint(url)!==endpoint(runtimeTarget))throw Error('Owner accounting target differs from actual hosted runtime');
+     const ownerDb=new Client({connectionString:raw,connectionTimeoutMillis:5000,statement_timeout:5000});
+     try{
+      await ownerDb.connect();
+      const owner=(await ownerDb.query("SELECT current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='parity_evaluation_budgets'::regclass)) AS owner")).rows[0];
+      const target=(await ownerDb.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[scope.environmentMarker])).rows;
+      if(target.length!==1||target[0].schema_version!==79||owner?.owner!==true||!process.env.AI_GATEWAY_API_KEY)throw Error('Actual owner accounting and Gateway lookup required before sends');
+      paidDispatchPossible=true;
+      for(const [index,conversationId] of rootBinding.conversationIds.entries()){
+       const proof=await runHostedRootBrowser({scope,db:readDb,ownerDb,headers:context.headers,binding:rootBinding,conversationId,signal,mobile:index===1,evidenceDirectory:root});
+       await writeEvidence(root,'root-transport-'+(index===1?'mobile':'desktop')+'.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,deployment,completedAt:new Date().toISOString(),proof});
+      }
+     }finally{await ownerDb.end();}
     }
     stage='conversation_boundary';
     conversationJourneys.push({...await runHostedConversationBoundary({scope,db:readDb,headers:context.headers,customerId:context.partnerCustomerIds[0],signal,foreignConversationIds:conversationJourneys.map(row=>row.conversationId)}),role:context.role});
