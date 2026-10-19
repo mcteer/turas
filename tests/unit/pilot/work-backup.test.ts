@@ -4,6 +4,7 @@ import {createServer} from 'node:http';
 import {createRequire} from 'node:module';
 import {rm} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
+import {pathToFileURL} from 'node:url';
 import {workBackupConfigurationSchema,workBackupScopeDigest,deriveWorkBackupKey} from '../../../lib/server/operations/work-backup-run';
 import {preparePilotRecoveryOperator} from '../../../scripts/prepare-pilot-recovery-operator';
 import {sealWorkCandidate,unsealWorkCandidate} from '../../../lib/server/operations/work-candidate-capsule';
@@ -44,7 +45,12 @@ it('refuses capsule metadata that claims release approval or hides infrastructur
 it('builds the actual operator transport and rejects unauthorized disabled and nonproduction requests',async()=>{
  const root=resolve('local-artifacts/016/operator-transport-'+randomUUID()),previous={...process.env};let server:ReturnType<typeof createServer>|undefined;
  try{
-  await preparePilotRecoveryOperator(['--output',root]);const loaded=createRequire(import.meta.url)(join(root,'.vercel/output/functions/api/backup.func/runtime.cjs')).default;
+  await preparePilotRecoveryOperator(['--output',root]);
+  // Exercise the installed CLI's real project detector without linking a cloud
+  // project. A build alone accepted a package that eve link could not discover.
+  const {isEveProjectRoot}=await import(pathToFileURL(resolve('node_modules/eve/dist/src/internal/eve-project-root.js')).href);
+  expect(await isEveProjectRoot(root)).toBe(true);
+  const loaded=createRequire(import.meta.url)(join(root,'.vercel/output/functions/api/backup.func/runtime.cjs')).default;
   server=createServer((request,response)=>{void loaded(request,response);});await new Promise<void>((done,reject)=>{server!.once('error',reject);server!.listen(0,'127.0.0.1',done);});
   const address=server.address();if(!address||typeof address==='string')throw Error('Owned transport listener unavailable');const origin='http://127.0.0.1:'+address.port;
   process.env.CRON_SECRET='synthetic-operator-secret-'.padEnd(64,'x');process.env.TURAS_WORK_BACKUP_ENABLED='1';process.env.TURAS_WORK_BACKUP_CONFIG='invalid-protected-config';delete process.env.VERCEL;

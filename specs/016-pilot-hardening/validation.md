@@ -3145,3 +3145,29 @@ The complete pilot unit/contract set passes378/378 across65 files, including all
 typechecks, authored documentation checks and diff checks pass. The delegated
 reviewer found no implementation blocker. These are unpaid local checks; they
 do not renew authority, prove semantic model quality or complete hosted recovery.
+
+### Backup operator project discovery and current task authority (2026-10-18)
+
+Atac31bb1 both exact local native-operations/knowledge and native-staged-4 gates
+passed with zero paid provider calls. The preceding38c72fa CI failures remain
+retained separately: operations timed out at its intervening-turn assertion;
+staged-4 reported a proxy socket hangup and its provider-failure settlement limit.
+The local passes do not establish their original causes. The complete771-case
+ac31bb1 catalog remains source-bound to that frozen worktree.
+
+The current operator package built locally, but its actual `eve link` invocation
+failed project discovery before any cloud project creation: the generator placed
+Eve only in development dependencies, while the installed CLI requires
+`dependencies.eve`. The generator now places the same pinned0.67.1 dependency
+there. Its existing eight-case work-backup suite passes, including the installed
+project detector on the actual built package. Root typecheck and diff checks pass;
+independent review found no blocker. A successful build alone did not prove link
+or deployment, and no hosted scheduler is claimed from this correction.
+
+In response to the concrete$2/48-hour dedicated backup operator proposal, the user
+instructed proceeding without asking for task spending below$100. That actual
+instruction is privately retained with a$99 aggregate ceiling and finite
+allocations; historical charges and holds remain separate and unchanged. The
+bounded operator recreation is now authorized. No original approval was edited,
+real continuation applied, billing plan changed or top-up enabled by this record.
+Every actual service budget still requires its exact target/source/pricing bound.

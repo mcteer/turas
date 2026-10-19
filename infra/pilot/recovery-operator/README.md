@@ -6,6 +6,12 @@ Neon archive remains. This package is retained source/reference; the preparation
 linking and deployment examples below do not authorize recreation. No scheduled
 operator is currently deployed.
 
+On2026-10-18 the user authorized proceeding with task spending below$100 in
+response to the concrete$2/48-hour operator recreation proposal. That instruction
+now permits its bounded recreation; retain the original retirement and previous
+archive/key history. Current preparation and actual hosted schedule execution are
+separate evidence. Do not infer a running schedule from a locally built package.
+
 The deterministic Function in this package is published separately from Turas.
 It takes no customer request body and exposes no conversation or model transport.
 Vercel Cron calls `/api/backup` every twelve hours in UTC. The handler requires the
@@ -22,6 +28,8 @@ only the protected deterministic Function and licensed PostgreSQL tools.
 
 `build.mjs` emits Vercel's [Build Output API](https://vercel.com/docs/build-output-api/primitives).
 Cron authentication follows [Vercel's documented `CRON_SECRET` header](https://vercel.com/docs/cron-jobs/manage-cron-jobs).
+Eve is a pinned runtime dependency of the prepared package: the installed CLI's
+project discovery does not accept an Eve entry only in development dependencies.
 The prepared runtime and all native files are bound by SHA-256. The source
 provenance and migration ledger come from the exact canonical preparation source.
 Local build output is not hosted execution proof.
@@ -45,7 +53,7 @@ alone does not prove durable key retention.
 
 Install archive migrations 004, 005 and 006 explicitly with the independent owner;
 handlers cannot initialize schemas or grant budgets. The source requires schema
-057 and retirement of its old runtime login. Routine captures hold the exclusive
+079 and retirement of its old runtime login. Routine captures hold the exclusive
 IO fence and require drained leases while keeping open service control unchanged.
 Busy sources fail within the deadline. There is one admitted operation at a time,
 no automatic retry of a twelve-hour slot, and unknown work costs hold admission.
