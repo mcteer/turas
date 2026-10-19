@@ -12,7 +12,7 @@ Make the existing product operable for a controlled internal/assigned-partner pi
 Bind sessions to workspace membership and isolate a synthetic Production workspace;
 provide durable private file storage and bounded hosted scan/parse/render execution;
 make every maintenance class observable; rehearse consistent recovery and lifecycle
-rules; collect exact-version readiness evidence and attributable user feedback.
+rules; collect exact-version readiness evidence and attributable automated role observations.
 
 Use existing domain authorization, review, job/lease, deletion and evaluation paths.
 The readiness checker reports eligibility, not human approval. No broad customer
@@ -59,7 +59,7 @@ no source-digest relabeling; no host browser. Model selection remains unchanged.
 
 **Scale/Scope**: Five stories, 25 functional requirements and 10 success criteria.
 Split implementation into the stages below; whole-pilot approval requires all core
-gates. Production synthetic proof and actual user feedback are distinct.
+gates. Production workflow proof and independently reviewed automated role observations retain distinct records.
 
 ## Constitution Check
 
@@ -75,7 +75,7 @@ gates. Production synthetic proof and actual user feedback are distinct.
 | VIII — Operability | Costs/time, failures, migration and privacy bounded | Leases, exact receipts, explicit 055→078→079/grants and recovery fence |
 
 All design gates pass. No constitution exception. Infrastructure provisioning,
-real-user feedback, controlled sends and live-model budget are execution-time inputs,
+automated role capture evidence, controlled sends and live-model budget are execution-time inputs,
 not facts to invent or approvals obtained by this plan.
 
 ## Project Structure
@@ -322,5 +322,5 @@ Reconcile with actual released main `f8d196f` before final checks, preserving th
 completed PR43–46 fixes and their historical proof. Existing pilot migrations
 078/079 remain additive after the immutable released001–077 ledger. Final-source
 validation and target-bound hosted recovery/storage acceptance remain required;
-expired budget envelopes are not renewed by a source merge. Genuine participant
+expired budget envelopes are not renewed by a source merge. Actual hosted automated role
 observations and two scheduled backups at least12hours apart remain required.

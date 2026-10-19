@@ -4657,3 +4657,25 @@ bound overflow. It confirms control remains locked and no recovery verification
 is created. This is local component proof, not actual hosted recovery readiness.
 The registered inventory is863cases/157suites; complete current-source verification
 and actual hosted acceptance remain outstanding.
+
+
+### Genuine terminal provider inventory — 2026-10-19
+
+The real-target component now binds the actual managed provider internally,
+requires every current application run identity in complete repeated provider
+lists, verifies every enumerated run's terminal readback, inventories all project
+deployments twice without target/status/branch filtering, and repeats the run
+inventory after deployment traversal. Final consumption repeats actual live
+observations under the genuine decision fences and rejects copied or changed
+proofs. Unknown/active/omitted runs and missing referenced deployments fail closed.
+This component performs no cancellation or other provider write.
+
+All five decision integration cases pass, including actual owned PostgreSQL with
+controlled cloud HTTP metadata and rejection of changed project/deployment/native
+inventories. Root/pilot types and34 focused contract/deadline checks pass.
+Independent review found no blocker for this scoped component. It remains drift
+detection rather than a provider-atomic snapshot; old HTTP/cron admission,
+independent closure journals, effects and the final authoritative producer remain
+separate requirements. Its old-host/effect/readiness flags remain false.
+The registered inventory is864cases across157suites; no full current-source or
+hosted completion is claimed.

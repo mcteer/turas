@@ -36,7 +36,7 @@ onboarding and authentication/federation remain deferred.
   assigned-partner pilot; broader authentication and onboarding remain deferred.
 - Q: Which records should prove the missing Production workflows? → A: A clearly
   labeled synthetic Production pilot workspace using normal reviews and explicit
-  partner assignments, followed by separately recorded real-user feedback.
+  partner assignments, followed by separately recorded automated role observations per the 2026-10-19 directive.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -211,8 +211,8 @@ production data in traces; pilot feedback containing private customer material.
   behavior as well as denial cases. Missing data leaves its gate unverified.
 - **FR-014**: Use synthetic owned environments for destructive, replay, fault and
   load checks. Hosted validation uses the separately marked synthetic Production pilot workspace
-  with explicit assignments and ordinary reviews, then separately recorded real-user
-  feedback. Synthetic outcomes never count as actual customer outcomes; never invent
+  with explicit assignments and ordinary reviews, then separately recorded automated role
+  observations per the 2026-10-19 directive. Synthetic outcomes never count as actual customer outcomes; never invent
   customer facts, grants, learning outcomes or publication decisions to pass a gate.
 - **FR-015**: Measure a bounded pilot workload of 25 concurrent sessions, 250 customer
   references and 10,000 eligible evidence passages, including throttled MCP use.

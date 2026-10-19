@@ -1,3 +1,4 @@
+import {measureWorkManagedTerminalInventory,requireMeasuredWorkManagedTerminalInventory} from '../../../lib/server/operations/work-managed-terminal-inventory';
 import {measureWorkTargetIntegrity,requireMeasuredWorkTargetIntegrity} from '../../../lib/server/operations/work-target-integrity';
 import {measureWorkMcpCategoryBatch,measureWorkMcpCategory,requireMeasuredWorkMcpCategory,deriveWorkMcpScopeInTransaction,requireMeasuredWorkMcpCoverage} from '../../../lib/server/operations/work-mcp-verification';
 import {withRetainedDenialFixture} from '../../fixtures/pilot/retained-denials';
@@ -151,4 +152,30 @@ it('authenticates real work integrity bytes and rejects forged changed-object ar
   await writeFile(keyFile,randomBytes(32),{mode:0o600});await expect(withLockedWorkRecoveryDecision(input,(db,target)=>requireMeasuredWorkTargetIntegrity(db,target,proof,signal))).rejects.toThrow();await writeFile(keyFile,key,{mode:0o600});
   const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();try{expect((await owner.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');expect((await owner.query('SELECT count(*)::int AS count FROM operations_recovery_verifications')).rows[0].count).toBe(0);await owner.query('ALTER ROLE turas_runtime_016 CONNECTION LIMIT 9');await expect(withLockedWorkRecoveryDecision(input,(db,target)=>requireMeasuredWorkTargetIntegrity(db,target,proof,signal))).rejects.toThrow('grant binding changed');}finally{await owner.end();}
  }finally{key.fill(0);state.blobObjects.clear();}
+}),210000);
+
+it('rechecks exhaustive native provider and deployment inventories without claiming old-host or effect closure',async()=>fixture(async input=>{
+ const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
+ let mode:'normal'|'active'|'omitted'|'deployment'|'project'='normal',writes=0;
+ try{
+  await owner.query("INSERT INTO conversations(id,environment_id,workspace_id,customer_id,owner_principal_id,creation_operation_id,binding_state,title,eve_session_id) VALUES($1,$2,$3,$4,$5,$6,'bound','Controlled native inventory','wrun_original')",[randomUUID(),input.scope.environmentId,DEMO_IDS.workspace,DEMO_IDS.sharedCustomer,DEMO_IDS.mcteer,randomUUID()]);
+  const runs=[{runId:'wrun_original',deploymentId:'dpl_old',workflowName:'workflow//eve//workflowEntry',status:'completed'},{runId:'wrun_provider_only',deploymentId:'dpl_old',workflowName:'workflow//eve//turnWorkflow',status:'cancelled'}];
+  const transport=vi.spyOn(globalThis,'fetch').mockImplementation(async(raw,options)=>{
+   const request=new Request(raw,options),url=new URL(request.url),headers=request.headers;
+   if(url.origin!=='https://api.vercel.com'||headers.get('authorization')!=='Bearer controlled-provider-token'||headers.get('x-vercel-project-id')!=='prj_recovery'||headers.get('x-vercel-team-id')!=='team_recovery')throw Error('Exact controlled provider binding required');
+   if(request.method!=='GET'){writes++;throw Error('Managed measurement must remain read only');}
+   if(url.pathname==='/v9/projects/prj_recovery')return Response.json({id:mode==='project'?'prj_foreign':'prj_recovery',accountId:'team_recovery'});
+   if(url.pathname==='/v6/deployments'){expect(headers.has('x-vercel-environment')).toBe(false);expect(url.searchParams.has('target')).toBe(false);return Response.json({deployments:['dpl_recovery','dpl_old'].map((id,index)=>({uid:id,projectId:'prj_recovery',created:1000+index,url:mode==='deployment'&&index===1?'changed.vercel.app':id.replace('_','-')+'.vercel.app',target:index===0?null:'production',readyState:'READY',meta:{githubCommitSha:'a'.repeat(40)}})),pagination:{next:null}});}
+   expect(headers.get('x-vercel-environment')).toBe('preview');
+   const rows=runs.filter(row=>mode!=='omitted'||row.runId!=='wrun_original').map(row=>({...row,status:mode==='active'&&row.runId==='wrun_original'?'running':row.status}));
+   if(url.pathname==='/v1/workflow/v2/runs'){expect(url.searchParams.get('remoteRefBehavior')).toBe('lazy');return Response.json({data:rows,cursor:null,hasMore:false});}
+   const found=rows.find(row=>url.pathname==='/v1/workflow/v2/runs/'+row.runId);if(found)return Response.json(found);throw Error('Controlled provider route unavailable');
+  });
+  try{
+   const proof=await measureWorkManagedTerminalInventory({target:input,token:'controlled-provider-token'});expect(proof).toMatchObject({enumeratedRuns:2,providerOnlyRuns:1,deployments:2,enumeratedInventoryTerminalVerified:true,oldDeploymentsClosed:false,paidEffectsReconciled:false,restorationReady:false});
+   await withLockedWorkRecoveryDecision(input,async(db,target)=>{expect(await requireMeasuredWorkManagedTerminalInventory(db,target,proof,input.signal)).toBe(proof);await expect(requireMeasuredWorkManagedTerminalInventory(db,target,{...proof},input.signal)).rejects.toThrow('Genuine fresh');});
+   for(const change of ['active','omitted','deployment','project'] as const){mode=change;await expect(withLockedWorkRecoveryDecision(input,(db,target)=>requireMeasuredWorkManagedTerminalInventory(db,target,proof,input.signal))).rejects.toThrow();}mode='normal';
+   expect(writes).toBe(0);expect((await owner.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');expect((await owner.query('SELECT count(*)::int AS count FROM operations_recovery_verifications')).rows[0].count).toBe(0);
+  }finally{transport.mockRestore();}
+ }finally{await owner.end();}
 }),210000);

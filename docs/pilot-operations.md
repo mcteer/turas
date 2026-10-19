@@ -248,7 +248,7 @@ This rehearsal retains all originals and leaves configuration unchanged. It supp
 
 `npm run pilot:faults` runs the fixed nine-suite deterministic fault catalog, followed by an actual owned PostgreSQL stop/start with role-bound HTTP checks. It accepts no filters. Each suite uses a fresh marked PostgreSQL 18 environment; its fixed case counts and titles must pass without skips. Remote sandbox/store fault cases use controlled SDK/domain fixtures and dispatch no paid provider request. The database outage actually stops the labelled owned container, verifies unavailable database health, rejects profile retrieval without returning data, and requires minimal 503 readiness. A 401 admission denial is safe when the database cannot verify the session; the checker does not mistake it for a successful read. Restart must preserve the bound session and ordinarily reviewed profile.
 
-The wrapper verifies unchanged source and owned cleanup. Its measured incident-to-profile-recovery interval is not full-service RPO/RTO, hosted provider-fault proof, or an independent operator runbook exercise. Actual hosted service verification and the human exercise remain separate gates.
+The wrapper verifies unchanged source and owned cleanup. Its measured incident-to-profile-recovery interval is not full-service RPO/RTO, hosted provider-fault proof, or an independent operator runbook exercise. Actual hosted service verification and the automated operator runbook exercise remain separate gates.
 
 ### Encrypted owned capture candidate
 
@@ -1300,3 +1300,11 @@ actual archive/key/native/configuration, installed ledger, runtime grants and
 required original bytes. Its descriptive receipt cannot be rehydrated as authority.
 It never writes a healthy verification or unlocks service; complete current-denial,
 replay, Workflow/external-effect and required-service composition remains pending.
+
+
+The genuine managed terminal-inventory component measures complete application,
+provider-run and all-target deployment metadata with actual per-run terminal
+readback. Final consumption repeats the live census and rejects drift. It performs
+no provider mutation, cancellation, settlement or service unlock. Repeated metadata
+is not an atomic cloud snapshot, and terminal runs alone do not prove old HTTP/cron
+admission or external-effect closure. These remain required by the final producer.
