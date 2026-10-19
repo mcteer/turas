@@ -3837,3 +3837,33 @@ The current inventory is791 cases/144 suites. The complete five-case recovery re
 ### Complete1972595 frozen catalog (2026-10-19)
 
 The complete local catalog passes788/788 cases across144 suites at `1972595762c24e125600c9abe4628668faf8936b`, source digest `3e39541e4b98f8c520f7c5bd6dcae677f1e0a76d6974adb46a90c77486a9cf83`, catalog digest `166ccfca85af66c994970d915847f74cc99366143a2043e8373ba82efed0531a`. Private frozen-worktree receipt: `local-artifacts/016/run-2fdd52f2-097a-456b-9d67-377024b67fec/execution.json`. This includes the authored launcher/coordinated retirement checkpoint, not the subsequent791-case command-verifier follow-up. Full pilot readiness remains false; fresh final-source local/CI proof is required.
+
+## Scoped hosted root budget follow-up
+
+The default-off root-only transport guard reserves against an existing058 budget
+only for finite fresh synthetic ordinary conversations. Its inner model wrapper
+runs after ordinary prompt enrichment, preserves the selected model, disables
+tools and rejects adversarial tool output before forwarding. An owner-only079
+admission binds the actual READY deployment without a build-time deployment-ID
+circularity. Immutable original provider identities and the existing dollar
+reservations survive interruption; replacement environment budgets are rejected.
+The explicit operator command performs platform/origin and direct-owner target
+checks and never creates a budget or sends a message.
+
+Four owned PostgreSQL18 integration cases pass4/4, zero skipped:
+`local-artifacts/016/hosted-root-budget-v5-private.json`. They cover concurrent
+admission, scope/target/source/native/cap denial, unrelated attempt exclusion,
+Production-bound successful generate/stream settlement, immutable provider IDs,
+owner-only deployment admission, original-budget replacement denial, denial
+snapshot/replay metadata, adversarial generated/provider-executed stream tools,
+and retained unknown reservations. Fixture providers make zero actual model calls;
+these checks do not establish hosted streaming/resume/stop acceptance. Catalog
+contract checks and typechecking pass. The current inventory is795 cases/145
+suites; complete final-source local/CI verification remains required. At71aa399,
+CI39270220721 has an execution deterministic restart-readiness failure; its
+available public diagnostic identifies no startup signature. The corrected owned
+execution-specific recovery rerun passes2/2 after verified process-group/pipe
+retirement and a disposable-only linked-dependency Turbopack root adjustment.
+Private report: `local-artifacts/008/deterministic-XDotEO/result.json`. This local
+pass does not establish the historical Linux CI cause; fresh CI remains required. Hosted079
+has not been applied, and no readiness or participant gate is completed here.

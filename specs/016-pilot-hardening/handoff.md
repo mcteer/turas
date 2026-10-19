@@ -22,7 +22,7 @@ restricted-runtime teardown have focused positive/denial/concurrency proof. Full
 private-byte/recovery verification, hosted journeys/configuration, actual cadence,
 participant observations and the owner decision remain unfinished. The779-case/142-suite
 local catalog passes at e9d2c21; its source-bound receipt is retained. The updated
-788-case/144-suite catalog includes the asynchronous UI-child regression cases
+795-case/145-suite catalog includes the asynchronous UI-child and scoped hosted root-budget regression cases
 and requires fresh complete acceptance after implementation. Production remains
 released f8d196f/schema077 after verified bypass credential repair. No016
 Production migration, feature merge or directory cleanup is implied.
@@ -461,3 +461,12 @@ Private Preview backup inputs now bind the rechecked exact schema-38 marker and 
 ### Command maintenance verifier follow-up — 2026-10-19
 
 The optional private maintenance configuration enables real loopback HTTP verification within the owned restore command. Coverage derives from the restored ledger before owner filtering; missing eligible authority fails. Actual record generations, original hashes, release binding, denial paths and probe retirement are checked. The partial in-process proof rechecks inventory and runtime/probe closure under caller-owned decision fences. Full service/current authority/Workflow/RPO/RTO/readiness remain false. Current inventory:791 cases/144 suites. See the current validation checkpoint; no hosted or participant acceptance is implied.
+
+The next follow-up adds default-off root-only hosted dollar admission under the
+original per-environment058 budget (maximum$2.50 each). It binds a READY deployment
+through owner-only079 records, records immutable original provider identities,
+retains unknown holds and refuses tools before effects. Four owned PostgreSQL
+checks pass, including Production-bound fixtures; actual hosted transport remains
+pending. The current inventory is795 cases/145 suites. Current71aa399 CI has an
+execution recovery restart-readiness failure under investigation; do not treat its
+38 passing jobs or an older complete catalog as final-source acceptance.

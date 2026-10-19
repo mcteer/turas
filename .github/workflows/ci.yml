@@ -626,6 +626,16 @@ jobs:
             const log = await readFile(`local-artifacts/${feature}/eval-startup-failure.log`, 'utf8').catch(() => null);
             if (log !== null) console.log(JSON.stringify({ feature, startupFailure: true,
               signatures: signatures.filter(value => log.toLowerCase().includes(value.toLowerCase())) }));
+            const raw = await readFile(`local-artifacts/${feature}/eval-startup-failure.json`, 'utf8').catch(() => null);
+            if (raw !== null) {
+              try {
+                const diagnostic = JSON.parse(raw);
+                const keys = ['mode', 'elapsedMs', 'nextExitCode', 'nextExitSignal', 'eveExitCode',
+                  'eveExitSignal', 'lastAuthStatus', 'lastEveStatus', 'workerExitKinds', 'categories'];
+                console.log(JSON.stringify({ feature, kind: 'owned_startup_status',
+                  ...Object.fromEntries(keys.filter(key => Object.hasOwn(diagnostic, key)).map(key => [key, diagnostic[key]])) }));
+              } catch { console.log(JSON.stringify({ feature, kind: 'owned_startup_status_unreadable' })); }
+            }
           }
           JS
 

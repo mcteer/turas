@@ -826,7 +826,11 @@
         "unit.quality-budget.011",
         "unit.quality-budget.012",
         "unit.quality-budget.013",
-        "unit.quality-budget.014"
+        "unit.quality-budget.014",
+        "integration.hosted-root-budget.001",
+        "integration.hosted-root-budget.002",
+        "integration.hosted-root-budget.003",
+        "integration.hosted-root-budget.004"
       ]
     },
     {

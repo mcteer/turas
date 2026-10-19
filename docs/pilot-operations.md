@@ -1030,3 +1030,49 @@ A live runtime environment and each child retirement resource are in-process cap
 The command retains `physical-restored.json` after authenticating the archive, restoring the disposable target and verifying database-derived required originals. Optional maintenance verification derives its own bounded record inventory before filtering by owner, explicitly classifies retained physical-only history, and refuses missing ownership/export authority. It starts the authored loopback application with unchanged runtime leases, reads profiles and all eligible artifact/report/workforce/gap originals, checks exact content and release identity, verifies wrong-session/kind/ordinary-route denials and revokes every probe. Four records at most share each60-second lease; every batch shares the original15-minute operation deadline.
 
 The resulting in-process maintenance capability is partial. Its consumer requires a bound owner connection and caller-owned READ COMMITTED transaction, rederives inventory under ordered recovery fences, and rechecks runtime/probe closure before composition. Serialized receipts cannot replace it. This check does not establish ordinary service, independently current denials, managed Workflow recovery, accepted-work RPO or full incident RTO. Those gates and explicit owner unlock remain required; all full-readiness flags stay false.
+
+## Scoped hosted root transport budget
+
+`TURAS_PILOT_HOSTED_ROOT_BUDGET_JSON` is default-off and independent of the
+Preview parity switch. Its strict `pilot-hosted-root-budget-v1` binding contains
+`budgetId`, `target`, `projectId`, `sourceCommit`, `environmentMarker`,
+`workspaceId`, `ownerPrincipalId`, one to four unique `conversationIds`,
+`recordedAt`, `expiresAt` and integer `capMicroUsd` (maximum2,500,000).
+Each environment uses its original schema058 dollar budget. Across Preview and
+Production these ceilings fit the separately authorized $5 model partition.
+No command here creates or replenishes that budget, changes pricing, releases
+unknown charges, extends approval, or enables billing.
+
+Precreate the designated ordinary synthetic conversations through normal owner
+APIs without binding or sending. Record the binding after their creation and
+before any response attempt. Its expiry must be within24h. Configure the exact
+binding for the intended deployment; the selected root model remains unchanged.
+After the provider reports READY, use the existing authenticated platform CLI,
+a direct owner connection supplied only in
+`TURAS_PILOT_HOSTED_OWNER_DATABASE_URL`, and the current committed clean checkout:
+
+```sh
+npm run pilot:hosted:root:admit -- --scope <private-exact-hosted-scope.json> --binding <private-root-binding.json> --output <new-private-directory>
+```
+
+The operator verifies both the deployment ID and origin against the platform,
+schema079/open admission, actual database owner, exact original budget and fresh
+owned synthetic ordinary records. It appends an immutable owner-only deployment
+admission. Later deployments retain the same original budget and charges; a
+replacement budget for the environment is rejected. A repeated exact admission
+is read back without dispatch or mutation. The protected operations diagnostic
+exposes `rootAcceptanceConfiguration` for exact configuration readback; configured
+identity alone does not establish admission, funds, provider health or acceptance.
+
+Every actual root provider dispatch rechecks attempt/native/owner/workspace and
+synthetic classification, source, target, deployment and immutable binding. The
+reservation prices the fully enriched ordinary prompt and actual output limit.
+An unsettled operation blocks later exercise dispatch. The provider receives no
+tools and an explicit none choice; generated or streamed tool frames are refused
+before forwarding to Eve, including provider-executed variants. Original provider
+identities are append-only and included in current-denial/replay inventories.
+Missing identity, interrupted output or absent actual cost retains the full hold.
+
+This bounded mode can establish root streaming/reload/stop mechanics only after
+actual hosted execution. It supplies no specialist/research/tool acceptance,
+participant observation, hosted file catalog, recovery unlock or readiness claim.

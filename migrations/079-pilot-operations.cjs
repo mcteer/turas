@@ -598,4 +598,37 @@ exports.up = (pgm) => pgm.sql(`
   PRIMARY KEY(environment_id,recovery_id,source_kind,source_id,snapshot_digest));
  CREATE TRIGGER source_denial_admission BEFORE INSERT ON operations_source_denials FOR EACH ROW EXECUTE FUNCTION turas_replay_fence_admission();
  CREATE TRIGGER source_denial_immutable BEFORE UPDATE OR DELETE ON operations_source_denials FOR EACH ROW EXECUTE FUNCTION turas_pilot_immutable_recovery_receipt();
+
+ -- Owner admission happens after a deployment has its immutable provider ID;
+ -- a build-time environment variable cannot know that ID in advance.
+ CREATE TABLE operations_hosted_root_admissions(
+  budget_id uuid NOT NULL REFERENCES parity_evaluation_budgets(id),
+  deployment_id text NOT NULL CHECK(deployment_id ~ '^dpl_[A-Za-z0-9]+$'),
+  binding_digest text NOT NULL CHECK(binding_digest ~ '^[a-f0-9]{64}$'),
+  recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),PRIMARY KEY(budget_id,deployment_id));
+ CREATE FUNCTION turas_hosted_root_original_budget() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
+ DECLARE marker text;
+ BEGIN
+  SELECT environment_id INTO STRICT marker FROM public.parity_evaluation_budgets WHERE id=NEW.budget_id;
+  PERFORM pg_advisory_xact_lock(hashtextextended(marker,16022));
+  IF EXISTS(SELECT 1 FROM public.operations_hosted_root_admissions a JOIN public.parity_evaluation_budgets b ON b.id=a.budget_id
+   WHERE b.environment_id=marker AND a.budget_id<>NEW.budget_id) THEN
+   RAISE EXCEPTION 'Original hosted root budget cannot be replaced' USING ERRCODE='23514'; END IF;
+  RETURN NEW;
+ END $$;
+ REVOKE ALL ON FUNCTION turas_hosted_root_original_budget() FROM PUBLIC;
+ CREATE TRIGGER hosted_root_original_budget BEFORE INSERT ON operations_hosted_root_admissions
+  FOR EACH ROW EXECUTE FUNCTION turas_hosted_root_original_budget();
+ CREATE TRIGGER hosted_root_admission_immutable BEFORE UPDATE OR DELETE ON operations_hosted_root_admissions
+  FOR EACH ROW EXECUTE FUNCTION turas_pilot_immutable_recovery_receipt();
+ CREATE TABLE operations_hosted_root_provider_identities(
+  operation_id uuid PRIMARY KEY REFERENCES parity_evaluation_operations(id),
+  provider_key text UNIQUE NOT NULL CHECK(length(provider_key) BETWEEN 1 AND 256),
+  recorded_at timestamptz NOT NULL DEFAULT clock_timestamp());
+ CREATE TRIGGER hosted_root_provider_identity_immutable BEFORE UPDATE OR DELETE ON operations_hosted_root_provider_identities
+  FOR EACH ROW EXECUTE FUNCTION turas_pilot_immutable_recovery_receipt();
+ CREATE TRIGGER recovered_request_replay BEFORE INSERT ON operations_hosted_root_provider_identities
+  FOR EACH ROW EXECUTE FUNCTION turas_recovery_replay_guard();
+ GRANT SELECT ON operations_hosted_root_admissions TO turas_runtime;
+ GRANT SELECT,INSERT ON operations_hosted_root_provider_identities TO turas_runtime;
 `);

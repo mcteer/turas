@@ -1,12 +1,13 @@
 import {qualityChildEnvironment} from "./pilot-quality-runtime";
 import {createServer,request as httpRequest,type Server} from 'node:http';
 import { randomUUID } from "node:crypto";
-import { spawn,spawnSync,type ChildProcess } from "node:child_process";
+import { spawnSync,type ChildProcess } from "node:child_process";
+import {spawnOwnedProcess,retireOwnedProcess,type OwnedProcessRetirement} from './pilot-owned-process';
 import { mkdir,mkdtemp,rm,symlink,writeFile,readdir,readlink,readFile,realpath,lstat } from "node:fs/promises";
 import {mkdirSync,writeFileSync,readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import { reserveOwnedEvalPort } from "./eval-port";
-import { join,resolve } from "node:path";
+import { join,resolve,dirname } from "node:path";
 import { Client } from "pg";
 import { closeRuntimePool } from "../lib/server/db/client";
 import { requireEvaluationSourceDatabase } from "./eval-source-database";
@@ -43,19 +44,12 @@ export type PlanEvalOptions = {
 const sourceFiles = ["app","agent","lib","migrations","scripts","public","evals","tests",
   "packages","infra","report-templates","report-renderer","next.config.ts","next-env.d.ts","tsconfig.json","package.json"] as const;
 
+const ownedChildren=new WeakMap<ChildProcess,OwnedProcessRetirement>();
+function spawnPlanChild(command:string,args:string[],options:{cwd:string;env:NodeJS.ProcessEnv}){
+ const owned=spawnOwnedProcess({command,args,cwd:options.cwd,environment:options.env});ownedChildren.set(owned.child,owned.retirement);return owned.child;
+}
 async function stopChild(child: ChildProcess | null): Promise<void> {
-  if (!child?.pid) return;
-  // The owned supervisor has its own process group. A parent exit alone does
-  // not prove Next/eve and maintenance descendants released their DB sockets.
-  const terminate=(signal:NodeJS.Signals)=>{try{process.kill(-child.pid!,signal);}catch(error){if((error as NodeJS.ErrnoException).code!=="ESRCH")throw error;}};
-  if(child.exitCode!==null||child.signalCode!==null){terminate("SIGKILL");return;}
-  await new Promise<void>((done) => {
-    let complete = false;
-    const finish = () => { if (complete) return;complete = true;clearTimeout(timer);terminate("SIGKILL");done(); };
-    const timer = setTimeout(finish,5_000);
-    child.once("exit",finish);
-    terminate("SIGTERM");
-  });
+ if(!child)return;const retirement=ownedChildren.get(child);if(!retirement)throw Error('Actual owned evaluation child required');await retireOwnedProcess(retirement);
 }
 
 /** eve's dev server can detach from the Next supervisor. Match only processes
@@ -81,6 +75,9 @@ export async function stopOwnedAppProcesses(appRoot:string):Promise<void>{
   const deadline=Date.now()+5000;
   while(Date.now()<deadline){if(!(await owned()).length)return;await new Promise(done=>setTimeout(done,100));}
   for(const pid of await owned())signal(pid,"SIGKILL");
+  const killedDeadline=Date.now()+5000;
+  while(Date.now()<killedDeadline){if(!(await owned()).length)return;await new Promise(done=>setTimeout(done,100));}
+  throw Error('Owned evaluation process retirement unverified');
 }
 
 function runGuardedScript(file: string,cwd: string,env: NodeJS.ProcessEnv,
@@ -179,6 +176,14 @@ export async function withPlanEvalEnvironment<T>(
   let productionEve:ChildProcess|null=null,productionProxy:Server|null=null;
   const closeProductionProxy=async()=>{const current=productionProxy;productionProxy=null;if(current){current.closeAllConnections();await new Promise<void>(done=>current.close(()=>done()));}};
   let startupTail = "";
+  let bodyFailed=false,bodyFailure:unknown;
+    async function stopRuntime(): Promise<void> {
+      const children=await Promise.allSettled([stopChild(child),stopChild(productionEve)]);
+      if(children[0].status==='fulfilled')child=null;if(children[1].status==='fulfilled')productionEve=null;
+      const remaining=await Promise.allSettled([closeProductionProxy(),stopOwnedAppProcesses(appRoot)]);
+      const failures=[...children,...remaining].filter((result):result is PromiseRejectedResult=>result.status==='rejected');
+      if(failures.length)throw new AggregateError(failures.map(result=>result.reason),'Owned evaluation runtime retirement unverified');
+    }
   try {
     if(options.production){evePortLease=await reserveOwnedEvalPort();eveProxyLease=await reserveOwnedEvalPort();}
     const admin = new Client({connectionString:adminUrl.toString(),connectionTimeoutMillis:remaining()});
@@ -232,6 +237,17 @@ export async function withPlanEvalEnvironment<T>(
     await symlink(resolve("node_modules"),join(appRoot,"node_modules"));
     await symlink(resolve("packages/artifact-extractor/node_modules"),
       join(appRoot,"packages/artifact-extractor/node_modules"));
+    // Installed Next requires the root to contain linked dependencies too.
+    // Change only this disposable copy, preserving other authored options.
+    const dependencies=await Promise.all([realpath(resolve('node_modules')),realpath(resolve('packages/artifact-extractor/node_modules'))]);
+    let bundlerRoot=await realpath(appRoot);
+    while(dependencies.some(path=>path!==bundlerRoot&&!path.startsWith(bundlerRoot+'/'))){
+      const parent=dirname(bundlerRoot);if(parent===bundlerRoot)throw Error('Bounded owned dependency root required');bundlerRoot=parent;
+    }
+    const configPath=join(appRoot,'next.config.ts'),config=await readFile(configPath,'utf8');
+    const exported='export default withEve(nextConfig);';if(config.split(exported).length!==2)throw Error('Owned Next configuration shape changed');
+    const configured=config.replace(/^nextConfig\.turbopack = .*\/\/ owned-plan-turbopack-root-v1\n/gm,'');
+    await writeFile(configPath,configured.replace(exported,`nextConfig.turbopack = {...nextConfig.turbopack, root: ${JSON.stringify(bundlerRoot)}}; // owned-plan-turbopack-root-v1\n${exported}`));
     if (options.prepare) {
       remaining();
       const extra = await options.prepare({ appRoot, storeRoot, environmentId: testMarker });
@@ -269,9 +285,8 @@ export async function withPlanEvalEnvironment<T>(
         (startupTail+chunk.toString("utf8")).slice(-200_000); };
       if(options.production&&!productionBuilt){
         const buildDeadline=Date.now()+remaining(600_000);
-        const building=spawn(process.execPath,["scripts/build-check.mjs"],{
+        const building=spawnPlanChild(process.execPath,["scripts/build-check.mjs"],{
           cwd:appRoot,env:{...process.env,...productionEnv,...await qualityChildEnvironment(),NODE_ENV:"production",PORT:port,NODE_OPTIONS:""},
-          stdio:["ignore","pipe","pipe"],detached:true,
         });
         child=building;building.stdout?.on("data",capture);building.stderr?.on("data",capture);
         let timedOut=false;
@@ -280,7 +295,7 @@ export async function withPlanEvalEnvironment<T>(
           building.once("error",error=>{clearTimeout(timer);reject(error);});
           building.once("exit",code=>{clearTimeout(timer);done(code);});
         });
-        child=null;remaining();
+        await stopChild(building);child=null;remaining();
         if(timedOut||code!==0){
           await writeFile(resolve(`local-artifacts/${feature}/eval-production-build-failure.log`),startupTail,{mode:0o600});
           throw Error(timedOut?"Disposable production build deadline exceeded":"Disposable production build failed");
@@ -289,10 +304,9 @@ export async function withPlanEvalEnvironment<T>(
       }
       if(options.production){
         await evePortLease!.release();
-        productionEve=spawn(process.execPath,[join(appRoot,".output/server/index.mjs")],{
+        productionEve=spawnPlanChild(process.execPath,[join(appRoot,".output/server/index.mjs")],{
           cwd:appRoot,env:{...process.env,...productionEnv,...await qualityChildEnvironment(),NODE_ENV:"production",NODE_OPTIONS:"",
             HOST:"127.0.0.1",NITRO_HOST:"127.0.0.1",PORT:String(evePortLease!.port),NITRO_PORT:String(evePortLease!.port)},
-          stdio:["ignore","pipe","pipe"],detached:true,
         });
         productionEve.stdout?.on("data",capture);productionEve.stderr?.on("data",capture);
         // Documented non-Vercel composition: stream the actual service response
@@ -312,10 +326,9 @@ export async function withPlanEvalEnvironment<T>(
         await new Promise<void>((done,reject)=>{productionProxy!.once("error",reject);productionProxy!.listen(eveProxyLease!.port,"127.0.0.1",done);});
       }
       await portLease.release();
-      child = spawn(process.execPath,options.production?
+      child = spawnPlanChild(process.execPath,options.production?
         ["node_modules/next/dist/bin/next","start","--hostname","127.0.0.1","--port",port]:["scripts/dev.mjs"],{
         cwd:appRoot,env:{...process.env,...productionEnv,...await qualityChildEnvironment(),NODE_ENV:options.production?"production":"development",PORT:port,NODE_OPTIONS:""},
-        stdio:["ignore","pipe","pipe"],detached:true,
       });
       child.stdout?.on("data",capture);
       child.stderr?.on("data",capture);
@@ -352,10 +365,10 @@ export async function withPlanEvalEnvironment<T>(
       console.error(JSON.stringify(diagnostic));
       throw new Error("Disposable app failed readiness");
     }
-    async function stop(): Promise<void> { await stopChild(child);child = null;await stopChild(productionEve);productionEve=null;await closeProductionProxy();await stopOwnedAppProcesses(appRoot); }
+
     remaining();
-    return await run({databaseName:name,appRoot,storeRoot,origin,bootstrapDemo:()=>runGuardedScript("scripts/bootstrap-demo.ts",appRoot,process.env,[],options.deadlineAt),start,stop,
-      restart:async () => { await stop();await start(); },
+    return await run({databaseName:name,appRoot,storeRoot,origin,bootstrapDemo:()=>runGuardedScript("scripts/bootstrap-demo.ts",appRoot,process.env,[],options.deadlineAt),start,stop:stopRuntime,
+      restart:async () => { await stopRuntime();await start(); },
       diagnosticLines:()=>startupTail.split("\n").filter((line)=>
         line.includes("PLAN_DIAGNOSTIC")),
       diagnosticClasses:()=>["GatewayAuthenticationError","Invalid API key",
@@ -367,18 +380,11 @@ export async function withPlanEvalEnvironment<T>(
         "overloaded","fetch failed","quota"]
         .filter((value)=>startupTail.toLowerCase().includes(value.toLowerCase())),
       privateLogTail:()=>startupTail});
-  } finally {
-    await portLease.release();
-    await evePortLease?.release();
-    await eveProxyLease?.release();
-    await stopChild(child);
-    await stopChild(productionEve);
-    await closeProductionProxy();
-    await stopOwnedAppProcesses(appRoot);
-    await closeRuntimePool();
-    for (const [key,value] of Object.entries(prior)) {
-      if (value === undefined) delete process.env[key]; else process.env[key] = value;
-    }
+  } catch(error){bodyFailed=true;bodyFailure=error;throw error;} finally {
+   try{
+    const retirement=await Promise.allSettled([portLease.release(),evePortLease?.release(),eveProxyLease?.release(),stopRuntime(),closeRuntimePool()]);
+    const failures=retirement.filter((result):result is PromiseRejectedResult=>result.status==='rejected');
+    if(failures.length)throw new AggregateError(failures.map(result=>result.reason),'Owned evaluation cleanup unverified; target retained');
     if (created && prepared && options.cleanupGuard) {
       await options.cleanupGuard({ appRoot, storeRoot, databaseName: name,
         databaseUrl: cloneUrl.toString(), environmentId: testMarker });
@@ -403,5 +409,7 @@ export async function withPlanEvalEnvironment<T>(
       // Retry only this owned temporary tree; keep ownership checks above intact.
       await rm(root,{recursive:true,force:true,maxRetries:5,retryDelay:200});
     }
+   }catch(error){if(bodyFailed)throw new AggregateError([bodyFailure,error],'Owned evaluation and cleanup failed');throw error;}
+   finally{for(const [key,value]of Object.entries(prior)){if(value===undefined)delete process.env[key];else process.env[key]=value;}}
   }
 }

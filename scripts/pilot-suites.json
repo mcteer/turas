@@ -1655,6 +1655,16 @@
         "waits through transient denied probes before verifying real group closure",
         "refuses retirement when owned group probes remain denied"
       ]
+    },
+    {
+      "file": "tests/integration/pilot/hosted-root-budget.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "binds actual synthetic attempts and retains unknown concurrent reservations without changing unrelated dispatch",
+        "settles successful Production-bound root generate and stream calls with immutable original provider identities",
+        "withholds adversarial generated tool calls and preserves their complete paid reservation",
+        "charges resumed root dispatches and rejects every tool stream before forwarding an auxiliary effect"
+      ]
     }
   ],
   "ui": {

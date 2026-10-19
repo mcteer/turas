@@ -7,12 +7,10 @@ export class OwnedProcessRetirementError extends Error{constructor(cause:unknown
 
 /** Own a new Unix process group, including descendants that outlive its parent.
  * Caller supplies an explicit environment; no credentials are inherited. */
-export async function withOwnedProcess<T>(input:{command:string;args:string[];cwd:string;environment:NodeJS.ProcessEnv;signal:AbortSignal;deadline:number;onProcess?:(process:OwnedProcessRetirement)=>void},run:(child:ChildProcess)=>Promise<T>){
- input.signal.throwIfAborted();if(!Number.isSafeInteger(input.deadline)||input.deadline<=Date.now()||input.deadline>Date.now()+900000)throw Error('Finite original owned process deadline required');
- const deadline=AbortSignal.any([input.signal,AbortSignal.timeout(Math.max(1,input.deadline-Date.now()))]);
+export function spawnOwnedProcess(input:{command:string;args:string[];cwd:string;environment:NodeJS.ProcessEnv}){
  const child=spawn(input.command,input.args,{cwd:input.cwd,env:input.environment,detached:true,stdio:['ignore','pipe','pipe']});
- let closed=false,failed=false;
- child.once('close',()=>{closed=true;});child.once('error',()=>{failed=true;});
+ let closed=false;
+ child.once('close',()=>{closed=true;});child.once('error',()=>{});
  // Drain both streams even if a caller only observes a bounded diagnostic tail.
  child.stdout?.on('data',()=>{});child.stderr?.on('data',()=>{});
  const group=child.pid;
@@ -32,10 +30,16 @@ export async function withOwnedProcess<T>(input:{command:string;args:string[];cw
  const resource:OwnedProcessRetirement=Object.freeze({contract:'pilot-owned-process-retirement-v1'});
  const retire=()=>retirement??=(async()=>{try{await closeGroup();}catch(error){let snapshot='unavailable';if(group)try{snapshot=execFileSync('ps',['-g',String(group),'-o','pid=,ppid=,pgid=,uid=,stat=,comm='],{encoding:'utf8',timeout:1000,maxBuffer:8192}).trim();}catch{}throw new OwnedProcessRetirementError(new Error((error instanceof Error?error.message:'unknown')+'; group='+group+'; childClosed='+closed+'; ownedGroup='+snapshot));}})();
  retirements.set(resource,retire);
+ return {child,retirement:resource};
+}
+export async function withOwnedProcess<T>(input:{command:string;args:string[];cwd:string;environment:NodeJS.ProcessEnv;signal:AbortSignal;deadline:number;onProcess?:(process:OwnedProcessRetirement)=>void},run:(child:ChildProcess)=>Promise<T>){
+ input.signal.throwIfAborted();if(!Number.isSafeInteger(input.deadline)||input.deadline<=Date.now()||input.deadline>Date.now()+900000)throw Error('Finite original owned process deadline required');
+ const deadline=AbortSignal.any([input.signal,AbortSignal.timeout(Math.max(1,input.deadline-Date.now()))]);
+ const {child,retirement:resource}=spawnOwnedProcess(input);let failed=false;child.once('error',()=>{failed=true;});
  let interrupted!:()=>void;
  const cancelled=new Promise<never>((_,reject)=>{interrupted=()=>reject(deadline.reason??Error('Owned process interrupted'));deadline.addEventListener('abort',interrupted,{once:true});if(deadline.aborted)interrupted();});
  try{
   input.onProcess?.(resource);
   const result=await Promise.race([run(child),cancelled]);deadline.throwIfAborted();if(failed)throw Error('Owned process could not start');return result;
- }finally{deadline.removeEventListener('abort',interrupted);await retire();}
+ }finally{deadline.removeEventListener('abort',interrupted);await retireOwnedProcess(resource);}
 }

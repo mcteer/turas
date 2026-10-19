@@ -154,6 +154,7 @@
     "pilot:lifecycle:check": "node --import tsx scripts/pilot-lifecycle.ts",
     "benchmark:pilot": "node --import tsx scripts/benchmark-pilot.ts",
     "pilot:hosted:check": "node --import tsx scripts/pilot-hosted.ts",
+    "pilot:hosted:root:admit": "node --import tsx scripts/pilot-hosted-root-admission.ts",
     "pilot:backup": "node --import tsx scripts/pilot-backup.ts",
     "pilot:provision": "node --import tsx scripts/provision-pilot-workspace.ts",
     "pilot:feedback": "node --import tsx scripts/pilot-feedback.ts",

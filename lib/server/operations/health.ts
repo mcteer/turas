@@ -12,6 +12,7 @@ import {isCanonicalAdmin} from '../access/admin-guard';
 import {getCurrentSession} from '../auth/sessions';
 import {HttpFailure} from '../../contracts/http';
 import {readHostedConfiguration} from './hosted-configuration';
+import {readHostedRootConfiguration} from '../conversations/hosted-root-budget';
 /** Identity is resolved from an actual current bound session, including while
  * recovery is locked. Neither bearer MCP nor supplied admin claims qualify. */
 export async function requireOperationsAdministrator(request:Request){
@@ -45,6 +46,6 @@ export async function readOperationalHealth(){
    return {connectionBinding:await readOperationalDatabaseBinding(db,{connection:getServerConfig().DATABASE_URL,environmentId,codeVersion}),dispatch:await readHostedDispatchHealth(db,environmentId),deployment:{codeVersion},...await readCapacityHealth(db,environmentId),admission:control?.mode==='open'?'open' as const:'closed' as const,recovery:{quarantinedScopes,requiredScopesQuarantined:quarantinedScopes.length},maintenance:assessMaintenanceHealth(rows,now,codeVersion),stores:await readPrivateStoreHealth(db,environmentId,codeVersion),images:await readHostedImageHealth(db,environmentId,codeVersion),backups:await readVerifiedBackupHealth(db,environmentId,codeVersion)};
   });
   const ready=observed.dispatch==='ready'&&!observed.costs.truncated&&observed.costs.budgets.every(budget=>budget.unknownReservations===0)&&observed.admission==='open'&&observed.recovery.requiredScopesQuarantined===0&&observed.maintenance.healthy&&observed.stores==='healthy'&&observed.images==='healthy'&&observed.backups==='healthy';
-  return {ready,database:'healthy' as const,...observed,configuration:readHostedConfiguration()};
+  return {ready,database:'healthy' as const,...observed,configuration:readHostedConfiguration(),rootAcceptanceConfiguration:readHostedRootConfiguration()};
  }catch{return {ready:false,database:'healthy' as const,admission:'unavailable' as const,maintenance:null,stores:'unverified' as const,images:'unverified' as const,backups:'unverified' as const};}
 }

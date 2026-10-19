@@ -28,7 +28,7 @@ import {runHostedSourceWithdrawal} from './pilot-hosted-withdrawal';
 import {z} from 'zod';
 import {withRecoveryCancellation} from '../lib/server/operations/recovery-cancellation';
 const execute=promisify(execFile);
-async function platformDeployment(scope:PilotHostedScope,origin=false,signal?:AbortSignal){
+export async function platformDeployment(scope:PilotHostedScope,origin=false,signal?:AbortSignal){
  const endpoint=hostedDeploymentLookupPath(scope,origin);
  // Fixed GET transport, no shell, arbitrary commands, login, linking or deploy.
  const result=await execute('vercel',['api',endpoint,'--raw'],{timeout:30000,signal,maxBuffer:1024*1024,env:Object.fromEntries(['PATH','HOME','TMPDIR','LANG','LC_ALL'].flatMap(key=>process.env[key]===undefined?[]:[[key,process.env[key]]]))});
