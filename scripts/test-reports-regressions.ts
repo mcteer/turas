@@ -6,6 +6,7 @@ import {reportsSourceDigest} from './reports-source';
 import {verifyExecutionTestReport} from './test-execution';
 import {withReportsLocalEnvironment} from './reports-local-environment';
 import {withExecutionEvalEnvironment} from './execution-eval-environment';
+import {setupFailureMetadata} from './ci-process-diagnostics';
 
 /** The fast prior-feature regression layer; integration/recovery remain separate gates. */
 export const REPORT_REGRESSION_SUITES=[
@@ -30,29 +31,32 @@ export function validateReportRegressionManifest(suites:readonly string[]=REPORT
  if(new Set(suites).size!==suites.length||suites.length!==REPORT_REGRESSION_SUITES.length||REPORT_REGRESSION_SUITES.some(path=>!suites.includes(path)))throw new Error('Prior-feature regression manifest mismatch');
  return [...suites];
 }
+let stage='manifest';
+let evidenceDirectory:string|undefined;
 async function main(){
  if(process.argv.length!==2)throw new Error('Regression gate accepts no overrides');
  const suites=validateReportRegressionManifest(),sourceDigest=await reportsSourceDigest();
  await mkdir('local-artifacts/009',{recursive:true,mode:0o700});const directory=await mkdtemp(resolve('local-artifacts/009/regressions-'));
- const report=resolve(directory,'tests.json');
+ evidenceDirectory=directory;
+ const report=resolve(directory,'tests.json');stage='unit-tests';
  const result=spawnSync(process.execPath,['node_modules/vitest/vitest.mjs','run',...suites,'--reporter=json',`--outputFile=${report}`],{env:{...process.env,AI_GATEWAY_API_KEY:'',TURAS_ALLOW_LIVE_MODEL_TESTS:'0'},encoding:'utf8',timeout:120000});
  await writeFile(resolve(directory,'tests.log'),result.stdout+result.stderr,{mode:0o600,flag:'wx'});
  if(result.error||result.status!==0)throw new Error('Prior-feature unit regressions failed');
- const counts=verifyExecutionTestReport(JSON.parse(await readFile(report,'utf8')),suites);
- if(sourceDigest!==await reportsSourceDigest())throw new Error('Regression source changed');
+ stage='unit-report';const counts=verifyExecutionTestReport(JSON.parse(await readFile(report,'utf8')),suites);
+ stage='source-check';if(sourceDigest!==await reportsSourceDigest())throw new Error('Regression source changed');
  let integrationPassed=0;
- for(const [index,suite]of REPORT_INTEGRATION_REGRESSIONS.entries())await withReportsLocalEnvironment(async()=>{
+ for(const [index,suite]of REPORT_INTEGRATION_REGRESSIONS.entries()){stage='integration-environment';await withReportsLocalEnvironment(async()=>{
   const run=async()=>{
-   const file=resolve(directory,`integration-${index}.json`);
+   stage='integration-tests';const file=resolve(directory,`integration-${index}.json`);
    const result=spawnSync(process.execPath,['node_modules/vitest/vitest.mjs','run',suite,'--reporter=json',`--outputFile=${file}`,'--testTimeout=120000','--hookTimeout=120000'],{env:process.env,encoding:'utf8',timeout:360000});
    await writeFile(resolve(directory,`integration-${index}.log`),result.stdout+result.stderr,{mode:0o600,flag:'wx'});
    if(result.error||result.status!==0)throw new Error(`Prior-feature integration failed at ${suite}`);
    integrationPassed+=verifyExecutionTestReport(JSON.parse(await readFile(file,'utf8')),[suite]).passed;
   };
   if(suite.includes('/execution-'))await withExecutionEvalEnvironment(run);else await run();
- });
+ });}
  if(sourceDigest!==await reportsSourceDigest())throw new Error('Regression source changed');
  const evidence={gate:'reports-prior-feature-regressions',sourceDigest,...counts,integrationSuites:REPORT_INTEGRATION_REGRESSIONS.length,integrationPassed,status:'passed'};
  await writeFile(resolve(directory,'completed.json'),JSON.stringify(evidence),{mode:0o600,flag:'wx'});console.log(JSON.stringify(evidence));
 }
-if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)main().catch(()=>{console.error('Reporting regression gate failed; inspect private evidence');process.exitCode=1;});
+if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)main().catch(async error=>{if(evidenceDirectory)await writeFile(resolve(evidenceDirectory,'failure.json'),JSON.stringify({stage,error:error instanceof Error?{message:error.message,stack:error.stack}:String(error)}),{mode:0o600,flag:'wx'});console.error(JSON.stringify({gate:'reports-prior-feature-regressions',status:'failed',...setupFailureMetadata({stage,error})}));console.error('Reporting regression gate failed; inspect private evidence');process.exitCode=1;});

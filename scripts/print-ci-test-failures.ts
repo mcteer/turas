@@ -1,7 +1,7 @@
 import {readdir,lstat,readFile} from 'node:fs/promises';
 import {resolve,join,relative} from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {processFailureMetadata} from './ci-process-diagnostics';
+import {processFailureMetadata,setupFailureMetadata} from './ci-process-diagnostics';
 import {browserFailureMetadata} from './ci-browser-diagnostics';
 export function redactTestDiagnostic(value:string){
  return value.replace(/\x1b\[[0-9;]*[A-Za-z]/g,'')
@@ -28,6 +28,12 @@ export async function printCiTestFailures(){
    if(!entry.isFile()||!entry.name.endsWith('.json'))continue;visited++;
    const size=(await lstat(file)).size;if(size>1048576)continue;bytes+=size;
    let report:any;try{report=JSON.parse(await readFile(file,'utf8'));}catch{continue;}
+   if(entry.name==='failure.json'&&relative(root,file).startsWith('009/')&&printed<30){
+    console.info(JSON.stringify({kind:'ci_reporting_controller_failure',...setupFailureMetadata(report)}));printed++;
+   }
+   if(relative(root,file).startsWith('eval-diagnostics/')&&['scripts/db-migrate.ts','scripts/db-roles.ts','scripts/bootstrap-demo.ts'].includes(report?.file)&&printed<30){
+    console.info(JSON.stringify({kind:'ci_owned_setup_process_failure',file:report.file,...setupFailureMetadata({code:report.status,signal:report.signal,error:{message:report.output}})}));printed++;
+   }
    if(Array.isArray(report?.suites))for(const failure of browserFailureMetadata(report,browserFiles)){
     if(printed>=30)break;
     const key=JSON.stringify(['browser',failure]);if(seen.has(key))continue;seen.add(key);

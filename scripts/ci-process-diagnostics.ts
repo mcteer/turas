@@ -8,3 +8,14 @@ export function processFailureMetadata(value:unknown){
  const phases=[...new Set([...prose.matchAll(/\{"kind":"knowledge_native_failure","case":"(include|publish|apply|revoke|withdraw)","phase":"(create|bind|first-proposal|fresh-proposal|approve|receipt|reload|retire)"\}/g)].map(match=>JSON.stringify({case:match[1],phase:match[2]})))].slice(0,5).map(value=>JSON.parse(value));
  return {...(phases.length?{phases}:{}),code:typeof raw.code==='number'&&Number.isInteger(raw.code)&&raw.code>=0&&raw.code<=255?raw.code:null,signal:['SIGTERM','SIGKILL','SIGABRT','SIGSEGV'].includes(String(raw.signal))?raw.signal:null,deadlineExpired:raw.deadlineExpired===true,signatures,locations};
 }
+
+/** Controllers sometimes fail before a test report exists. Classify only fixed
+ * setup operations; neither an exception message nor its arbitrary paths escape. */
+export function setupFailureMetadata(value:unknown){
+ const row=value&&typeof value==='object'?value as Record<string,unknown>:{},error=row.error&&typeof row.error==='object'?row.error as Record<string,unknown>:row;
+ const message=[error.message,error.stack].filter((v):v is string=>typeof v==='string').map(v=>v.slice(-131072)).join('\n');
+ const stages=['manifest','unit-tests','unit-report','integration-environment','integration-tests','source-check','suite-or-owned-environment','ui-discovery','ui-environment','ui-case','ui-report'];
+ const operations=['scripts/db-migrate.ts','scripts/db-roles.ts','scripts/bootstrap-demo.ts'].filter(file=>message.includes(file));
+ const signatures=['Owned local setup failed','Disposable clone','Marked disposable test source required','Disposable production build failed','Disposable app failed readiness','Report UI discovery failed','Prior-feature integration failed','Report suite failed','Regression source changed','Report source changed','Report UI source changed','Migration digest mismatch','Migration manifest does not match','Turas configuration invalid','Rendered binding changed'];
+ return {stage:typeof row.stage==='string'&&stages.includes(row.stage)?row.stage:'unknown',operations,setupSignatures:signatures.filter(s=>message.includes(s)),...processFailureMetadata({message,code:row.code,signal:row.signal})};
+}

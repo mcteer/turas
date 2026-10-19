@@ -1,4 +1,4 @@
-import {processFailureMetadata} from '../../scripts/ci-process-diagnostics';
+import {processFailureMetadata,setupFailureMetadata} from '../../scripts/ci-process-diagnostics';
 import {describe,expect,it} from 'vitest';
 import {browserFailureMetadata} from '../../scripts/ci-browser-diagnostics';
 const allowed=new Set(['mcp-accessibility.spec.ts']);
@@ -27,4 +27,7 @@ it('reports setup and child process failure classes without exposing private out
  const native=processFailureMetadata({message:'PRIVATE_PROSE at tests/fixtures/ordinary-knowledge-native.ts:41:7 {"kind":"knowledge_native_failure","case":"include","phase":"fresh-proposal"} {"kind":"knowledge_native_failure","case":"PRIVATE_CASE","phase":"PRIVATE_PHASE"}'});
  expect(native).toMatchObject({locations:[{file:'tests/fixtures/ordinary-knowledge-native.ts',line:41,column:7}],phases:[{case:'include',phase:'fresh-proposal'}]});expect(JSON.stringify(native)).not.toContain('PRIVATE_');
  expect(processFailureMetadata({code:'private',signal:'PRIVATE_SIGNAL',message:'PRIVATE_PROSE'})).toEqual({code:null,signal:null,deadlineExpired:false,signatures:[],locations:[]});
+ const setup=setupFailureMetadata({stage:'integration-environment',code:1,signal:'SIGKILL',error:{message:'PRIVATE_PROSE Disposable scripts/db-migrate.ts failed: Migration digest mismatch postgresql://PRIVATE_TOKEN',stack:'PRIVATE_STACK at scripts/plan-eval-environment.ts:109:7'}});
+ expect(setup).toMatchObject({stage:'integration-environment',operations:['scripts/db-migrate.ts'],setupSignatures:['Migration digest mismatch'],code:1,signal:'SIGKILL',locations:[{file:'scripts/plan-eval-environment.ts',line:109,column:7}]});expect(JSON.stringify(setup)).not.toContain('PRIVATE_');expect(JSON.stringify(setup)).not.toContain('postgresql:');
+ expect(setupFailureMetadata({stage:'PRIVATE_STAGE',error:{message:'PRIVATE_MESSAGE',stack:'PRIVATE_PATH'}})).toEqual({stage:'unknown',operations:[],setupSignatures:[],code:null,signal:null,deadlineExpired:false,signatures:[],locations:[]});
 });

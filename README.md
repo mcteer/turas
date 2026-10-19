@@ -764,3 +764,8 @@ checks pass, and all four owned executions are confirmed absent. The existing
 private Blob store passes six-namespace permission/cold-read/cleanup checks. These
 infrastructure results do not establish application storage cutover or hosted pilot
 acceptance; the recorded original holds and new cost ceilings remain retained.
+
+Reporting CI failures now expose fixed setup stages, approved script identities
+and bounded failure signatures when a controller stops before a test report exists.
+Full exception text and child output remain private. These diagnostics preserve
+all existing reporting assertions, rendering bindings and deadlines.

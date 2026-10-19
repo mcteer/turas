@@ -4057,3 +4057,30 @@ The delegated independent review found no remaining concrete blocker in the
 capture, cleanup or cancellation changes. These results remain focused local
 implementation evidence; actual hosted captures and final-source complete
 acceptance are still required.
+
+### 2026-10-19 reporting setup diagnostics and operator OIDC verification
+
+At10cab32, three reporting CI jobs fail without a surfaced test assertion; their
+private logs do not establish a historical cause. The independent review identifies
+a diagnostic gap in controller/setup failures. Fixed allowlisted stages, setup
+operations and failure signatures now cover those paths and guarded setup process
+receipts; raw exceptions and child output remain private. The three existing
+privacy/bounds cases pass with additional setup assertions, and root types and
+tracked documentation hygiene pass. No assertion, rendering binding or deadline
+is weakened. A stale local renderer correctly fails its binding check; the actual
+fresh prepared renderer passes the audience contract. The complete reporting
+regression gate also passes locally with generated disposable credentials. Neither
+local result relabels the failed CI jobs. Fresh source-bound checks remain required.
+
+The dedicated disabled backup operator's new connection initially used a legacy
+static-token API path. Two failed OIDC probes retain their ceilings and exact-key
+reconciliation: all twelve nonce keys are actually verified absent. The installed
+official CLI specifies the separate upgrade-to-oidc operation. That exact owned
+connection upgrade and removal of its unused generated static token succeed.
+A new bounded OIDC-only probe passes immutable write/cold-read/metadata/delete
+checks in all six active namespaces. The temporary development scope is restored
+to production-only, and the original application connection is unchanged.
+The backup operator remains disabled; this local permission exercise does not
+prove a Production Function invocation, a matched backup or scheduled cadence.
+No quality-journal charge/hold is reset. The original journal remains at
+1,806,543microUSD spent, zero held/unknown and four unused Context credits.
