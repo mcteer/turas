@@ -1643,6 +1643,15 @@
         "enforces a finite UI deadline and terminates an unresponsive descendant process group",
         "bounds combined UI stdout and stderr without retaining excess bytes"
       ]
+    },
+    {
+      "file": "tests/unit/pilot/owned-process.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "retires the actual owned process group and its live descendant after success",
+        "retires descendants after their direct parent has already exited",
+        "cancels a pending callback and verifies complete group retirement"
+      ]
     }
   ],
   "ui": {

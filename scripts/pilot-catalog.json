@@ -624,7 +624,10 @@
         "unit.legacy-safety-context.001",
         "unit.legacy-safety-context.002",
         "unit.legacy-safety-context.003",
-        "unit.legacy-safety-context.004"
+        "unit.legacy-safety-context.004",
+        "unit.owned-process.001",
+        "unit.owned-process.002",
+        "unit.owned-process.003"
       ]
     },
     {

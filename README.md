@@ -99,7 +99,7 @@ Completion work now includes released main `f8d196f`. New pilot logins default
 off through `TURAS_PILOT_LOGIN_ENABLED`; explicit enablement still requires a
 current assigned membership. A separate exact-source Production infrastructure
 authorization can now be verified without promoting the original Preview envelope.
-The composed workspace/upload WebKit matrix passes40cases; the updated785-case
+The composed workspace/upload WebKit matrix passes40cases; the updated788-case
 catalog requires fresh complete verification. Expired infrastructure/model approvals,
 original charges and holds remain unchanged; no hosted pilot readiness is claimed.
 Current Production remains released `f8d196f` on schema077. Its host firewall
@@ -742,3 +742,5 @@ together. This does not establish hosted recovery readiness.
 The isolated work restore command verifies required ledger originals against restored bytes before emitting success. This physical coverage check does not establish service recovery or pilot readiness.
 
 Mobile navigation remains disabled until its click handler is ready. Pilot research UI fixtures use ordinary live customer context and verify generation changes without relaxing historical-chat restrictions. The785-case local pass at23e8b2c predates these follow-up checks; fresh final-source CI remains required.
+
+Owned recovery now uses an authored maintenance-only application launcher with restricted runtime credentials. Actual child groups retire before canonical stores are removed; unverified retirement retains stores and blocks another lease. All four focused recovery surfaces pass. The current788-case/144-suite catalog requires fresh complete proof; the earlier785-case pass remains bound to23e8b2c. Command-level exhaustive maintenance verification is still being completed.

@@ -1,3 +1,5 @@
+import {withOwnedProcess} from '../../../scripts/pilot-owned-process';
+import {prepareOwnedRecoveryApplication,warmOwnedRecoveryApplication,withOwnedRecoveryApplication,withOwnedRecoveryApplicationConfiguration,retireOwnedRecoveryApplication,type OwnedRecoveryApplication} from '../../../scripts/pilot-owned-recovery-application';
 import {reviewedSyntheticGap,gapEnvelope} from '../../fixtures/gaps/authoring';
 import {prepareGapReport,readGapReport} from '../../../lib/server/gaps/reports';
 import {claimGapReportJobs,runGapReportJob} from '../../../lib/server/gaps/report-jobs';
@@ -22,7 +24,7 @@ import {getServerConfig} from '../../../lib/server/config';
 import {withAuthenticatedOwnerRecoveryRead} from '../../../lib/server/operations/authenticated-recovery-read';
 import {readProfile} from '../../../lib/server/profiles/read';
 import type {PoolClient} from 'pg';
-import {verifyOwnedRestoredRequiredObjects,mintOwnedRestoreTarget,bindOwnedRestoredSource,withOwnedRestoreTarget,requireOwnedRestoreConnection,withOwnedRestoredRuntime} from '../../../lib/server/operations/owned-restore-target';
+import {registerOwnedRestoredRuntimeProcess,requireOwnedRestoredRuntimeEnvironment,verifyOwnedRestoredRequiredObjects,mintOwnedRestoreTarget,bindOwnedRestoredSource,withOwnedRestoreTarget,requireOwnedRestoreConnection,withOwnedRestoredRuntime} from '../../../lib/server/operations/owned-restore-target';
 import {restoreOwnedWorkDump} from '../../../lib/server/operations/pg-restore';
 import {measureRestoredWorkIntegrity,requireMeasuredWorkIntegrity} from '../../../lib/server/operations/restored-work-integrity';
 import {it,expect} from 'vitest';
@@ -44,6 +46,7 @@ it.each(['artifact','report','workforce','gap'] as const)('%s authenticates sepa
  const preparation=process.env.TURAS_PILOT_UI_PREPARATION_FILE,renderer=process.env.TURAS_PILOT_RENDERER_IMAGE??(preparation?parsePilotImagePreparation(await readFile(preparation)).images.find(image=>image.kind==='renderer')?.localImageId:undefined);
  if(!renderer||!/^sha256:[a-f0-9]{64}$/.test(renderer))throw Error('Explicit prepared recovery report renderer required');
  await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});const root=await mkdtemp(resolve('local-artifacts/016/work-rehearsal-')),key=randomBytes(32);
+ let application:OwnedRecoveryApplication|undefined;
  let sourceGap:{exportId:string;reportId:string;revisionId:string;workspaceId:string;digest:string;sizeBytes:number;objectKey:string}|undefined;
  let sourceWorkforce:{importId:string;sourceId:string;versionId:string;workspaceId:string;digest:string;bytes:Buffer}|undefined;
  let sourceReport:{artifactId:string;reportId:string;revisionId:string;customerId:string;workspaceId:string;digest:string;sizeBytes:number;objectKey:string}|undefined;
@@ -186,18 +189,17 @@ it.each(['artifact','report','workforce','gap'] as const)('%s authenticates sepa
      expect((await db.query("SELECT 1 FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') AND rolcanlogin")).rowCount).toBe(0);
      expect((await db.query("SELECT 1 FROM pg_auth_members WHERE member='turas_runtime_016'::regrole")).rowCount).toBe(0);
     }
-    // Compile denied routes while both runtime logins remain closed. This is
-    // fixture preparation, outside the unchanged 60-second restricted lease.
-    const warmUrl=new URL(process.env.DATABASE_URL!);warmUrl.username='turas_runtime_016';warmUrl.password=randomBytes(32).toString('base64url');
-    const warmSaved={DATABASE_URL:process.env.DATABASE_URL,DATABASE_URL_UNPOOLED:process.env.DATABASE_URL_UNPOOLED};
-    try{
-     Object.assign(process.env,{DATABASE_URL:warmUrl.toString(),DATABASE_URL_UNPOOLED:warmUrl.toString()});await environment.start();
-     for(const path of ['/api/operations/recovery-read/'+randomUUID()+'/profile','/api/customers/'+expectedProfile.customerId+'/profile','/api/operations/recovery-read/'+randomUUID()+'/artifact','/api/operations/recovery-read/'+randomUUID()+'/report','/api/operations/recovery-read/'+randomUUID()+'/workforce','/api/operations/recovery-read/'+randomUUID()+'/gap']){const response=await fetch(environment.origin+path,{redirect:'manual',signal:environment.signal});expect([401,403,503]).toContain(response.status);await response.body?.cancel();}
-    }finally{await environment.stop();Object.assign(process.env,warmSaved);}
+    const recoveryApplication=await prepareOwnedRecoveryApplication({target:ownedTarget,scope,signal:environment.signal,deadline:Date.now()+120000});application=recoveryApplication;
+    await warmOwnedRecoveryApplication(recoveryApplication,environment.signal);
     await interruptedPreparation(false);
     async function verifyRuntimePhase(kinds:readonly ('artifact'|'report'|'workforce'|'gap')[]){
     let phase='runtime-admission';const started=Date.now();
     try{await withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async(runtime,_signal,applicationEnvironment)=>{
+     expect(()=>requireOwnedRestoredRuntimeEnvironment(ownedTarget,scope,JSON.parse(JSON.stringify(applicationEnvironment)))).toThrow('Actual active');
+     expect(()=>requireOwnedRestoredRuntimeEnvironment(otherOwnedTarget,scope,applicationEnvironment)).toThrow('Actual active');
+     phase='application-start';
+     return withOwnedRecoveryApplication(recoveryApplication,applicationEnvironment,_signal,async()=>{
+     const fetch:typeof globalThis.fetch=(input,init)=>globalThis.fetch(input,{...init,signal:AbortSignal.any([_signal,...(init?.signal?[init.signal]:[])])});
      phase='shared-profile-controls';
      expect((await runtime.query('SELECT current_user,session_user')).rows[0]).toEqual({current_user:'turas_runtime_016',session_user:'turas_runtime_016'});
      expect((await runtime.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');
@@ -209,10 +211,7 @@ it.each(['artifact','report','workforce','gap'] as const)('%s authenticates sepa
      const artifactNames=await readdir(join(applicationEnvironment.TURAS_ARTIFACT_STORE_ROOT,'objects'));expect(artifactNames).toHaveLength(1);expect(await readFile(join(applicationEnvironment.TURAS_ARTIFACT_STORE_ROOT,'objects',artifactNames[0]),'utf8')).toBe('Synthetic work restore artifact');
      let httpAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
      try{
-     const saved=Object.fromEntries(Object.keys(applicationEnvironment).map(key=>[key,process.env[key]]));
-     try{phase='application-start';Object.assign(process.env,applicationEnvironment);await environment.start();}
-     finally{for(const [key,value] of Object.entries(saved)){if(value===undefined)delete process.env[key];else process.env[key]=value;}}
-    await withOwnedRecoveryConfiguration(ownedTarget,scope,_signal,async owner=>{
+    await withOwnedRecoveryApplicationConfiguration(recoveryApplication,_signal,async owner=>{
      await owner.query('BEGIN');
      try{httpAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedProfile.workspaceId,customerId:expectedProfile.customerId,deadline:Date.now()+59000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:3,deploymentId:null});await owner.query('COMMIT');}
      catch(error){await owner.query('ROLLBACK');throw error;}
@@ -221,24 +220,24 @@ it.each(['artifact','report','workforce','gap'] as const)('%s authenticates sepa
     const admission=httpAdmission;
 
       phase='shared-profile-controls';
-      const path=environment.origin+'/api/operations/recovery-read/'+admission.id+'/profile';
+      const path=recoveryApplication.origin+'/api/operations/recovery-read/'+admission.id+'/profile';
       const cookie=sessionCookie(admission.actor.token,admission.actor.expiresAt).split(';')[0];
-      const headers={cookie,'x-turas-recovery-read':admission.secret,host:new URL(environment.origin).host};
+      const headers={cookie,'x-turas-recovery-read':admission.secret,host:new URL(recoveryApplication.origin).host};
       await runtime.query('BEGIN');
-      try{await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,()=>authenticateRecoveryHttpRead(runtime as unknown as PoolClient,new Request(path,{headers}),admission.id,false));await runtime.query('COMMIT');}
+      try{await withOwnedRecoveryApplicationConfiguration(recoveryApplication,_signal,()=>authenticateRecoveryHttpRead(runtime as unknown as PoolClient,new Request(path,{headers}),admission.id,false));await runtime.query('COMMIT');}
       catch(error){await runtime.query('ROLLBACK');throw error;}
       const noSecret=await fetch(path,{headers:{cookie},redirect:'manual'});expect(noSecret.status).toBe(403);await noSecret.body?.cancel();
       const noSession=await fetch(path,{headers:{'x-turas-recovery-read':admission.secret},redirect:'manual'});expect(noSession.status).toBe(403);await noSession.body?.cancel();
-      const normal=await fetch(environment.origin+'/api/customers/'+expectedProfile.customerId+'/profile',{headers,redirect:'manual'});expect([401,503]).toContain(normal.status);await normal.body?.cancel();
+      const normal=await fetch(recoveryApplication.origin+'/api/customers/'+expectedProfile.customerId+'/profile',{headers,redirect:'manual'});expect([401,503]).toContain(normal.status);await normal.body?.cancel();
       const response=await fetch(path,{headers,redirect:'manual'});if(response.status!==200){const failure=await response.json() as {error:{code:string}};throw Error('Recovery HTTP denied: '+response.status+' '+failure.error.code);}expect(response.status).toBe(200);
       const body=await response.json() as {data:{customer:{id:string};acceptedFacts:{id:string}[]}};
       if(kinds.includes('artifact')){
       phase='artifact-controls';
       let artifactAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
-      await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{await owner.query('BEGIN');try{artifactAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedProfile.workspaceId,customerId:expectedProfile.customerId,deadline:Date.now()+20000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:2,deploymentId:null,readKind:'artifact',recordId:expectedProfile.artifactVersionId});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}});
+      await withOwnedRecoveryApplicationConfiguration(recoveryApplication,_signal,async owner=>{await owner.query('BEGIN');try{artifactAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedProfile.workspaceId,customerId:expectedProfile.customerId,deadline:Date.now()+20000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:2,deploymentId:null,readKind:'artifact',recordId:expectedProfile.artifactVersionId});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}});
       if(!artifactAdmission)throw Error('Actual artifact admission missing');
       const reverseKind=await fetch(path.replace('/profile','/artifact'),{headers,redirect:'manual'});expect(reverseKind.status).toBe(403);await reverseKind.body?.cancel();
-      const artifactProof=artifactAdmission,artifactPath=environment.origin+'/api/operations/recovery-read/'+artifactProof.id+'/artifact',artifactHeaders={cookie:sessionCookie(artifactProof.actor.token,artifactProof.actor.expiresAt).split(';')[0],'x-turas-recovery-read':artifactProof.secret};
+      const artifactProof=artifactAdmission,artifactPath=recoveryApplication.origin+'/api/operations/recovery-read/'+artifactProof.id+'/artifact',artifactHeaders={cookie:sessionCookie(artifactProof.actor.token,artifactProof.actor.expiresAt).split(';')[0],'x-turas-recovery-read':artifactProof.secret};
       try{
        const wrongKind=await fetch(artifactPath.replace('/artifact','/profile'),{headers:artifactHeaders,redirect:'manual'});expect(wrongKind.status).toBe(403);await wrongKind.body?.cancel();
        await db.query('UPDATE operations_recovery_http_reads SET record_generation=record_generation+1 WHERE id=$1',[artifactProof.id]);
@@ -246,7 +245,7 @@ it.each(['artifact','report','workforce','gap'] as const)('%s authenticates sepa
        await db.query('UPDATE operations_recovery_http_reads SET record_digest=$2 WHERE id=$1',[artifactProof.id,'0'.repeat(64)]);
        try{const changed=await fetch(artifactPath,{headers:artifactHeaders,redirect:'manual'});expect(changed.status).toBe(403);await changed.body?.cancel();}finally{await db.query('UPDATE operations_recovery_http_reads SET record_digest=$2 WHERE id=$1',[artifactProof.id,createHash('sha256').update('Synthetic work restore artifact').digest('hex')]);}
        const originalResponse=await fetch(artifactPath,{headers:artifactHeaders,redirect:'manual'});expect(originalResponse.status).toBe(200);expect(Buffer.from(await originalResponse.arrayBuffer()).toString()).toBe('Synthetic work restore artifact');
-       const ordinary=await fetch(environment.origin+'/api/artifacts/'+expectedProfile.artifactVersionId+'/original',{headers:artifactHeaders,redirect:'manual'});expect([401,403,503]).toContain(ordinary.status);await ordinary.body?.cancel();
+       const ordinary=await fetch(recoveryApplication.origin+'/api/artifacts/'+expectedProfile.artifactVersionId+'/original',{headers:artifactHeaders,redirect:'manual'});expect([401,403,503]).toContain(ordinary.status);await ordinary.body?.cancel();
        const deniedRange=await fetch(artifactPath,{headers:{...artifactHeaders,range:'bytes=0-2'},redirect:'manual'});expect(deniedRange.status).toBe(403);await deniedRange.body?.cancel();
        const canonicalPath=join(applicationEnvironment.TURAS_ARTIFACT_STORE_ROOT,'objects',artifactNames[0]);await writeFile(canonicalPath,Buffer.alloc(Buffer.byteLength('Synthetic work restore artifact')),{mode:0o600});
        try{const corrupt=await fetch(artifactPath,{headers:artifactHeaders,redirect:'manual'});expect(corrupt.status).toBe(503);await corrupt.body?.cancel();}finally{await writeFile(canonicalPath,'Synthetic work restore artifact',{mode:0o600});}
@@ -258,9 +257,9 @@ it.each(['artifact','report','workforce','gap'] as const)('%s authenticates sepa
       if(kinds.includes('report')){
       phase='report-controls';
       let reportAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
-      await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{await owner.query('BEGIN');try{reportAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedReport.workspaceId,customerId:expectedReport.customerId,deadline:Date.now()+20000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:2,deploymentId:null,readKind:'report',recordId:expectedReport.artifactId});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}});
+      await withOwnedRecoveryApplicationConfiguration(recoveryApplication,_signal,async owner=>{await owner.query('BEGIN');try{reportAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedReport.workspaceId,customerId:expectedReport.customerId,deadline:Date.now()+20000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:2,deploymentId:null,readKind:'report',recordId:expectedReport.artifactId});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}});
       if(!reportAdmission)throw Error('Actual report admission missing');
-      const reportProof=reportAdmission,reportPath=environment.origin+'/api/operations/recovery-read/'+reportProof.id+'/report',reportHeaders={cookie:sessionCookie(reportProof.actor.token,reportProof.actor.expiresAt).split(';')[0],'x-turas-recovery-read':reportProof.secret};
+      const reportProof=reportAdmission,reportPath=recoveryApplication.origin+'/api/operations/recovery-read/'+reportProof.id+'/report',reportHeaders={cookie:sessionCookie(reportProof.actor.token,reportProof.actor.expiresAt).split(';')[0],'x-turas-recovery-read':reportProof.secret};
       try{
        const wrongType=await fetch(reportPath.replace('/report','/artifact'),{headers:reportHeaders,redirect:'manual'});expect(wrongType.status).toBe(403);await wrongType.body?.cancel();
        await db.query('UPDATE operations_recovery_http_reads SET record_revision_id=$2 WHERE id=$1',[reportProof.id,randomUUID()]);
@@ -268,7 +267,7 @@ it.each(['artifact','report','workforce','gap'] as const)('%s authenticates sepa
        await db.query('UPDATE operations_recovery_http_reads SET record_parent_id=$2 WHERE id=$1',[reportProof.id,randomUUID()]);
        try{const drift=await fetch(reportPath,{headers:reportHeaders,redirect:'manual'});expect(drift.status).toBe(403);await drift.body?.cancel();}finally{await db.query('UPDATE operations_recovery_http_reads SET record_parent_id=$2 WHERE id=$1',[reportProof.id,expectedReport.reportId]);}
        const reportResponse=await fetch(reportPath,{headers:reportHeaders,redirect:'manual'});if(reportResponse.status!==200){const failure=await reportResponse.json() as {error:{code:string}};throw Error('Recovery report HTTP denied: '+reportResponse.status+' '+failure.error.code);}expect(reportResponse.status).toBe(200);expect(reportResponse.headers.get('content-type')).toBe('application/pdf');const bytes=Buffer.from(await reportResponse.arrayBuffer());expect(bytes.length).toBe(expectedReport.sizeBytes);expect(createHash('sha256').update(bytes).digest('hex')).toBe(expectedReport.digest);
-       const ordinary=await fetch(environment.origin+'/api/reports/artifacts/'+expectedReport.artifactId,{headers:reportHeaders,redirect:'manual'});expect([401,403,503]).toContain(ordinary.status);await ordinary.body?.cancel();
+       const ordinary=await fetch(recoveryApplication.origin+'/api/reports/artifacts/'+expectedReport.artifactId,{headers:reportHeaders,redirect:'manual'});expect([401,403,503]).toContain(ordinary.status);await ordinary.body?.cancel();
        const copied=join(applicationEnvironment.TURAS_REPORT_STORE_ROOT,'objects',expectedReport.objectKey);await writeFile(copied,Buffer.alloc(bytes.length),{mode:0o600});
        try{const corrupt=await fetch(reportPath,{headers:reportHeaders,redirect:'manual'});expect(corrupt.status).toBe(503);await corrupt.body?.cancel();}finally{await writeFile(copied,bytes,{mode:0o600});}
        const exhausted=await fetch(reportPath,{headers:reportHeaders,redirect:'manual'});expect(exhausted.status).toBe(429);await exhausted.body?.cancel();
@@ -277,9 +276,9 @@ it.each(['artifact','report','workforce','gap'] as const)('%s authenticates sepa
       if(kinds.includes('workforce')){
       phase='workforce-controls';
       let workforceAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
-      await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{await owner.query('BEGIN');try{workforceAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedWorkforce.workspaceId,customerId:null,deadline:Date.now()+20000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:2,deploymentId:null,readKind:'workforce',recordId:expectedWorkforce.importId});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}});
+      await withOwnedRecoveryApplicationConfiguration(recoveryApplication,_signal,async owner=>{await owner.query('BEGIN');try{workforceAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedWorkforce.workspaceId,customerId:null,deadline:Date.now()+20000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:2,deploymentId:null,readKind:'workforce',recordId:expectedWorkforce.importId});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}});
       if(!workforceAdmission)throw Error('Actual workforce admission missing');
-      const workforceProof=workforceAdmission,workforcePath=environment.origin+'/api/operations/recovery-read/'+workforceProof.id+'/workforce',workforceHeaders={cookie:sessionCookie(workforceProof.actor.token,workforceProof.actor.expiresAt).split(';')[0],'x-turas-recovery-read':workforceProof.secret};
+      const workforceProof=workforceAdmission,workforcePath=recoveryApplication.origin+'/api/operations/recovery-read/'+workforceProof.id+'/workforce',workforceHeaders={cookie:sessionCookie(workforceProof.actor.token,workforceProof.actor.expiresAt).split(';')[0],'x-turas-recovery-read':workforceProof.secret};
       try{
        const wrongType=await fetch(workforcePath.replace('/workforce','/profile'),{headers:workforceHeaders,redirect:'manual'});expect(wrongType.status).toBe(403);await wrongType.body?.cancel();
        await db.query('UPDATE operations_recovery_http_reads SET record_revision_id=$2 WHERE id=$1',[workforceProof.id,randomUUID()]);
@@ -291,7 +290,7 @@ it.each(['artifact','report','workforce','gap'] as const)('%s authenticates sepa
        await db.query('UPDATE operations_recovery_http_reads SET record_generation=record_generation+1 WHERE id=$1',[workforceProof.id]);
        try{const drift=await fetch(workforcePath,{headers:workforceHeaders,redirect:'manual'});expect(drift.status).toBe(403);await drift.body?.cancel();}finally{await db.query('UPDATE operations_recovery_http_reads SET record_generation=record_generation-1 WHERE id=$1',[workforceProof.id]);}
        const original=await fetch(workforcePath,{headers:workforceHeaders,redirect:'manual'});if(original.status!==200){const failed=await original.json() as {error:{code:string}};throw Error('Recovery workforce HTTP denied: '+original.status+' '+failed.error.code);}expect(Buffer.from(await original.arrayBuffer())).toEqual(expectedWorkforce.bytes);
-       const ordinary=await fetch(environment.origin+'/api/staffing/imports/'+expectedWorkforce.importId+'/content',{headers:workforceHeaders,redirect:'manual'});expect([401,403,503]).toContain(ordinary.status);await ordinary.body?.cancel();
+       const ordinary=await fetch(recoveryApplication.origin+'/api/staffing/imports/'+expectedWorkforce.importId+'/content',{headers:workforceHeaders,redirect:'manual'});expect([401,403,503]).toContain(ordinary.status);await ordinary.body?.cancel();
        const copied=join(applicationEnvironment.TURAS_WORKFORCE_STORE_ROOT,'objects',expectedWorkforce.importId);await writeFile(copied,Buffer.alloc(expectedWorkforce.bytes.length),{mode:0o600});
        try{const corrupt=await fetch(workforcePath,{headers:workforceHeaders,redirect:'manual'});expect(corrupt.status).toBe(503);await corrupt.body?.cancel();}finally{await writeFile(copied,expectedWorkforce.bytes,{mode:0o600});}
        const exhausted=await fetch(workforcePath,{headers:workforceHeaders,redirect:'manual'});expect(exhausted.status).toBe(429);await exhausted.body?.cancel();
@@ -300,9 +299,9 @@ it.each(['artifact','report','workforce','gap'] as const)('%s authenticates sepa
       if(kinds.includes('gap')){
       phase='gap-controls';
       let gapAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
-      await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{await owner.query('BEGIN');try{gapAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedGap.workspaceId,customerId:null,deadline:Date.now()+20000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:3,deploymentId:null,readKind:'gap',recordId:expectedGap.exportId});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}});
+      await withOwnedRecoveryApplicationConfiguration(recoveryApplication,_signal,async owner=>{await owner.query('BEGIN');try{gapAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedGap.workspaceId,customerId:null,deadline:Date.now()+20000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:3,deploymentId:null,readKind:'gap',recordId:expectedGap.exportId});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}});
       if(!gapAdmission)throw Error('Actual gap admission missing');
-      const gapProof=gapAdmission,gapPath=environment.origin+'/api/operations/recovery-read/'+gapProof.id+'/gap',gapHeaders={cookie:sessionCookie(gapProof.actor.token,gapProof.actor.expiresAt).split(';')[0],'x-turas-recovery-read':gapProof.secret};
+      const gapProof=gapAdmission,gapPath=recoveryApplication.origin+'/api/operations/recovery-read/'+gapProof.id+'/gap',gapHeaders={cookie:sessionCookie(gapProof.actor.token,gapProof.actor.expiresAt).split(';')[0],'x-turas-recovery-read':gapProof.secret};
       try{
        const wrongType=await fetch(gapPath.replace('/gap','/report'),{headers:gapHeaders,redirect:'manual'});expect(wrongType.status).toBe(403);await wrongType.body?.cancel();
        const wrongSession=await fetch(gapPath,{headers:{...gapHeaders,cookie},redirect:'manual'});expect(wrongSession.status).toBe(403);await wrongSession.body?.cancel();
@@ -317,7 +316,7 @@ it.each(['artifact','report','workforce','gap'] as const)('%s authenticates sepa
        await db.query('UPDATE gap_report_revision_states SET invalidated_at=clock_timestamp() WHERE revision_id=$1',[expectedGap.revisionId]);
        try{const withheld=await fetch(gapPath,{headers:gapHeaders,redirect:'manual'});expect(withheld.status).toBe(409);await withheld.body?.cancel();}finally{await db.query('UPDATE gap_report_revision_states SET invalidated_at=NULL WHERE revision_id=$1',[expectedGap.revisionId]);}
        expect((await db.query('SELECT state,version,lease_token,lease_until,completed_at FROM gap_export_receipts WHERE id=$1',[expectedGap.exportId])).rows[0]).toEqual(settled);
-       const ordinary=await fetch(environment.origin+'/api/product-gaps/reports/'+expectedGap.reportId+'/exports/'+expectedGap.exportId,{headers:gapHeaders,redirect:'manual'});expect([401,403,503]).toContain(ordinary.status);await ordinary.body?.cancel();
+       const ordinary=await fetch(recoveryApplication.origin+'/api/product-gaps/reports/'+expectedGap.reportId+'/exports/'+expectedGap.exportId,{headers:gapHeaders,redirect:'manual'});expect([401,403,503]).toContain(ordinary.status);await ordinary.body?.cancel();
        const copied=join(applicationEnvironment.TURAS_REPORT_STORE_ROOT,'objects',expectedGap.objectKey);await writeFile(copied,Buffer.alloc(bytes.length),{mode:0o600});
        try{const corrupt=await fetch(gapPath,{headers:gapHeaders,redirect:'manual'});expect(corrupt.status).toBe(503);await corrupt.body?.cancel();}finally{await writeFile(copied,bytes,{mode:0o600});}
        expect((await db.query('SELECT state,version,lease_token,lease_until,completed_at FROM gap_export_receipts WHERE id=$1',[expectedGap.exportId])).rows[0]).toEqual(settled);
@@ -331,7 +330,7 @@ it.each(['artifact','report','workforce','gap'] as const)('%s authenticates sepa
       const transitioning=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await transitioning.connect();
       let waiting:Promise<unknown>|undefined;
       try{
-       await runtime.query('BEGIN');await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,()=>authenticateRecoveryHttpRead(runtime as unknown as PoolClient,new Request(path,{headers}),admission.id,false));
+       await runtime.query('BEGIN');await withOwnedRecoveryApplicationConfiguration(recoveryApplication,_signal,()=>authenticateRecoveryHttpRead(runtime as unknown as PoolClient,new Request(path,{headers}),admission.id,false));
        const pid=Number((await transitioning.query('SELECT pg_backend_pid() AS pid')).rows[0].pid);
        await transitioning.query('BEGIN');waiting=transitioning.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[scope.environmentId]);
        const until=Date.now()+3000;
@@ -352,15 +351,15 @@ it.each(['artifact','report','workforce','gap'] as const)('%s authenticates sepa
       await db.query("UPDATE operations_recovery_http_reads SET expires_at=created_at+interval '1 millisecond' WHERE id=$1",[admission.id]);
       const expired=await fetch(path,{headers,redirect:'manual'});expect(expired.status).toBe(403);await expired.body?.cancel();
       let retirementAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
-      await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{
+      await withOwnedRecoveryApplicationConfiguration(recoveryApplication,_signal,async owner=>{
        await owner.query('BEGIN');try{retirementAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedProfile.workspaceId,customerId:expectedProfile.customerId,deadline:Date.now()+59000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:1,deploymentId:null});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}
       });
       if(!retirementAdmission)throw Error('Actual retirement admission missing');
       const retiring=retirementAdmission,retirementOwner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await retirementOwner.connect();
       let closing:Promise<{error:unknown}>|undefined;
-      const retirementPath=environment.origin+'/api/operations/recovery-read/'+retiring.id+'/profile',retirementHeaders={...headers,cookie:sessionCookie(retiring.actor.token,retiring.actor.expiresAt).split(';')[0],'x-turas-recovery-read':retiring.secret};
+      const retirementPath=recoveryApplication.origin+'/api/operations/recovery-read/'+retiring.id+'/profile',retirementHeaders={...headers,cookie:sessionCookie(retiring.actor.token,retiring.actor.expiresAt).split(';')[0],'x-turas-recovery-read':retiring.secret};
       try{
-       await runtime.query('BEGIN');await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,()=>authenticateRecoveryHttpRead(runtime as unknown as PoolClient,new Request(retirementPath,{headers:retirementHeaders}),retiring.id,false));
+       await runtime.query('BEGIN');await withOwnedRecoveryApplicationConfiguration(recoveryApplication,_signal,()=>authenticateRecoveryHttpRead(runtime as unknown as PoolClient,new Request(retirementPath,{headers:retirementHeaders}),retiring.id,false));
        const pid=Number((await retirementOwner.query('SELECT pg_backend_pid() AS pid')).rows[0].pid);
        closing=retireOwnedRecoveryHttpRead(retirementOwner as unknown as PoolClient,retiring.id).then(()=>({error:null}),error=>({error}));
        const until=Date.now()+2000;
@@ -370,8 +369,9 @@ it.each(['artifact','report','workforce','gap'] as const)('%s authenticates sepa
        expect((await db.query('SELECT revoked_at IS NOT NULL AS revoked FROM login_sessions WHERE id=$1',[retiring.actor.sessionId])).rows[0].revoked).toBe(true);
       }finally{await runtime.query('ROLLBACK');if(closing)await closing;await retirementOwner.end();await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,retiring.id);}
 
-     }finally{await environment.stop();if(httpAdmission)await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,httpAdmission.id);}
+     }finally{if(httpAdmission)await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,httpAdmission.id);}
 
+    });
     });}catch(error){throw new Error(`Owned recovery ${surface} incomplete at ${phase}`,{cause:error});}finally{
     expect((await db.query("SELECT 1 FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') AND rolcanlogin")).rowCount).toBe(0);
     expect((await db.query("SELECT 1 FROM pg_stat_activity WHERE usename IN('turas_runtime','turas_runtime_016')")).rowCount).toBe(0);
@@ -385,11 +385,44 @@ it.each(['artifact','report','workforce','gap'] as const)('%s authenticates sepa
     await verifyRuntimePhase([surface]);
     await interruptedPreparation(true);
     await expect(withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async()=>{throw Error('Controlled runtime failure');})).rejects.toThrow('Controlled runtime failure');
-    const interrupted=new AbortController();
-    await expect(withOwnedRestoredRuntime(ownedTarget,scope,interrupted.signal,async runtime=>{interrupted.abort();await runtime.query('SELECT pg_sleep(20)');})).rejects.toThrow('interrupted');
+    const interrupted=new AbortController();let held:Promise<boolean>|undefined,expiredEnvironment:Readonly<Record<string,string>>|undefined;
+    await expect(withOwnedRestoredRuntime(ownedTarget,scope,interrupted.signal,async(_runtime,signal,environment)=>{
+     expiredEnvironment=environment;
+     await withOwnedProcess({command:process.execPath,args:['-e',"process.on('SIGTERM',()=>{});console.log('ready');setInterval(()=>{},1000)"],cwd:process.cwd(),environment:{NODE_ENV:'test' as const},signal,deadline:Date.now()+10000,onProcess:process=>registerOwnedRestoredRuntimeProcess(ownedTarget,scope,environment,process)},async child=>{
+      await new Promise<void>((done,reject)=>{const timer=setTimeout(()=>reject(Error('Controlled child readiness absent')),3000);child.stdout!.once('data',()=>{clearTimeout(timer);done();});});
+      held=new Promise<boolean>(done=>setTimeout(async()=>{let alive=false;try{process.kill(-child.pid!,0);alive=true;}catch{}const present=await readdir(environment.TURAS_ARTIFACT_STORE_ROOT).then(()=>true,()=>false);done(alive&&present);},100));
+      interrupted.abort(Error('Controlled runtime interrupted'));await new Promise(()=>{});
+     });
+    })).rejects.toThrow('interrupted');
+    expect(await held).toBe(true);
+    expect(()=>requireOwnedRestoredRuntimeEnvironment(ownedTarget,scope,expiredEnvironment!)).toThrow('Actual active');
     expect((await db.query("SELECT 1 FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') AND rolcanlogin")).rowCount).toBe(0);
     expect((await db.query("SELECT 1 FROM pg_stat_activity WHERE usename IN('turas_runtime','turas_runtime_016')")).rowCount).toBe(0);
     expect((await readdir(join(root,'restore'))).filter(name=>name.startsWith('canonical-runtime-'))).toEqual([]);
+    // A genuine process whose retirement fails must keep its canonical stores
+    // and block future leases, even after database authority is safely closed.
+    let failedChild=0,retainedRoot='';const originalKill=process.kill;
+    try{
+     await expect(withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async(_runtime,signal,runtimeEnvironment)=>{
+      retainedRoot=dirname(runtimeEnvironment.TURAS_ARTIFACT_STORE_ROOT);
+      await withOwnedProcess({command:process.execPath,args:['-e',"console.log('ready');setInterval(()=>{},1000)"],cwd:process.cwd(),environment:{NODE_ENV:'test' as const},signal,deadline:Date.now()+10000,onProcess:process=>registerOwnedRestoredRuntimeProcess(ownedTarget,scope,runtimeEnvironment,process)},async child=>{
+       failedChild=child.pid!;
+       await new Promise<void>((done,reject)=>{const timer=setTimeout(()=>reject(Error('Controlled cleanup child unavailable')),3000);child.stdout!.once('data',()=>{clearTimeout(timer);done();});});
+       process.kill=((pid,signal)=>{if(pid===-failedChild&&signal!==0)throw Object.assign(Error('Controlled group retirement refusal'),{code:'EPERM'});return originalKill(pid,signal);}) as typeof process.kill;
+      });
+     })).rejects.toThrow('Owned restored child closure unverified');
+     expect((await readdir(retainedRoot)).length).toBeGreaterThan(0);
+     expect((await db.query("SELECT 1 FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') AND rolcanlogin")).rowCount).toBe(0);
+     await expect(withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async()=>{})).rejects.toThrow('already active');
+    }finally{
+     process.kill=originalKill;
+     if(failedChild){
+      try{originalKill(-failedChild,'SIGKILL');}catch(error){if((error as NodeJS.ErrnoException).code!=='ESRCH')throw error;}
+      const until=Date.now()+5000;
+      for(;;){let alive=false;try{originalKill(-failedChild,0);alive=true;}catch(error){if((error as NodeJS.ErrnoException).code!=='ESRCH')throw error;}if(!alive)break;if(Date.now()>=until)throw Error('Controlled refused child cleanup unverified');await new Promise(done=>setTimeout(done,20));}
+     }
+     if(retainedRoot)await rm(retainedRoot,{recursive:true,force:true});
+    }
     await expect(withOwnedRestoreTarget(ownedTarget,scope,environment.signal,async owner=>{await owner.query('UPDATE operations_control SET revision=revision+1');})).rejects.toThrow('Exact bound locked');
     expect((await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows[0]).toEqual({environment_id:sourceEnvironmentId,schema_version:79});
     expect(Number((await db.query('SELECT count(*) FROM operations_recovery_quarantines')).rows[0].count)).toBe(7);
@@ -413,5 +446,5 @@ it.each(['artifact','report','workforce','gap'] as const)('%s authenticates sepa
     const outcome=await measurement;expect(outcome.value).toBeNull();expect(outcome.error).toBeInstanceOf(Error);expect(outcome.error.message).toContain('accepted content differs');
    }finally{await blocker.query('ROLLBACK').catch(()=>{});await blocker.end();await db.end();}
   },{postgresMajor:18,deadlineMs:180000});
- }finally{key.fill(0);await rm(root,{recursive:true,force:true});}
+ }finally{if(application)await retireOwnedRecoveryApplication(application);key.fill(0);await rm(root,{recursive:true,force:true});}
 },420000);

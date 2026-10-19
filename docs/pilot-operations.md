@@ -1016,3 +1016,9 @@ controls remain healthy. The strict census and full recovery readiness stay fals
 retain its4,593-request accounting and unknown cost hold under the5,000-request cap.
 
 The isolated work recovery command now authenticates the disposable container and owner before restoring, then binds the measured restore and checks every required ledger original against restored bytes in a repeatable-read transaction. Its `requiredOriginals` receipt is physical coverage only: service, current authority, Workflow reconciliation, and readiness remain false. A missing original prevents a successful restore receipt.
+
+### Owned maintenance application lifetime
+
+The authored recovery application launcher copies application source into an owned private directory, reserves a loopback port, and warms denied maintenance routes while runtime logins remain closed. Its child receives the restricted runtime environment, configured login values and exact renderer identity; owner database URLs, provider keys, selected environment files and selected workflow state are excluded. This maintenance-only process uses the installed Eve integration's external base-URL override with unavailable port zero, preventing automatic development-agent startup. It provides no native or managed Workflow proof.
+
+A live runtime environment and each child retirement resource are in-process capabilities; serialized descriptions cannot replace them. The runtime coordinator closes database authority, awaits every registered process group's bounded retirement, and then removes canonical stores. An unverified retirement preserves stores and active ownership, blocking another lease. Group retirement covers descendants after parent exit and escalates TERM to KILL within its finite allowance. These primitives support the pending exhaustive command-level maintenance producer; they do not authorize unlock or establish ordinary hosted service recovery.

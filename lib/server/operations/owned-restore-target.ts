@@ -1,3 +1,4 @@
+import {retireOwnedProcess,requireOwnedProcessRetirement,type OwnedProcessRetirement} from '../../../scripts/pilot-owned-process';
 import {requiredRecoveryObjects} from './required-objects';
 import {LocalPrivateObjects} from '../storage/local-objects';
 import {verifiedObjectInventory,activeObjectNamespaces} from '../storage/inventory';
@@ -21,7 +22,17 @@ type Binding={connection:string;container:string;ownerLabel:string;containerId:s
 const targets=new WeakMap<object,Binding>(),connections=new WeakMap<object,{target:OwnedRestoreTarget;scope:Scope}>();
 const execute=promisify(execFile);
 const runtimeActive=new WeakSet<object>();
+const runtimeEnvironments=new WeakMap<object,{target:OwnedRestoreTarget;scope:Scope;signal:AbortSignal;processes:Set<OwnedProcessRetirement>}>();
+export function requireOwnedRestoredRuntimeEnvironment(target:OwnedRestoreTarget,raw:Scope,environment:Readonly<Record<string,string>>){
+ const actual=runtimeEnvironments.get(environment),scope=scopeSchema.parse(raw);
+ if(!actual||actual.target!==target||recoveryDigest(actual.scope)!==recoveryDigest(scope)||!runtimeActive.has(target)||!binding(target).runtime?.active)throw Error('Actual active restored runtime environment required');
+ actual.signal.throwIfAborted();return actual.signal;
+}
+
 function binding(target:OwnedRestoreTarget){const b=targets.get(target);if(!b)throw Error('Actual owned restore target capability required');return b;}
+export function registerOwnedRestoredRuntimeProcess(target:OwnedRestoreTarget,scope:Scope,environment:Readonly<Record<string,string>>,process:OwnedProcessRetirement){
+ requireOwnedRestoredRuntimeEnvironment(target,scope,environment);requireOwnedProcessRetirement(process);runtimeEnvironments.get(environment)!.processes.add(process);
+}
 async function containerIdentity(b:Pick<Binding,'connection'|'container'|'ownerLabel'>,signal:AbortSignal){
  signal.throwIfAborted();
  const format='{"id":{{json .Id}},"labels":{{json .Config.Labels}},"ports":{{json .NetworkSettings.Ports}},"running":{{json .State.Running}}}';
@@ -114,7 +125,7 @@ export async function withOwnedRestoreTarget<T>(target:OwnedRestoreTarget,scope:
  * verification. Both logins are closed and temporary backends drained on exit. */
 export async function withOwnedRestoredRuntime<T>(target:OwnedRestoreTarget,raw:Scope,signal:AbortSignal,run:(runtime:Client,signal:AbortSignal,applicationEnvironment:Readonly<Record<string,string>>)=>Promise<T>){
  const b=binding(target),scope=Object.freeze(scopeSchema.parse(raw));
- if(runtimeActive.has(target))throw Error('Owned restored runtime already active');
+ if(runtimeActive.has(target)||b.runtime?.active)throw Error('Owned restored runtime already active');
  runtimeActive.add(target);
  // One immutable target/scope operation may be resumed only from its measured
  // closed state; an unrelated pre-existing role comment is never adopted.
@@ -130,6 +141,7 @@ export async function withOwnedRestoredRuntime<T>(target:OwnedRestoreTarget,raw:
   if((await owner.query("SELECT 1 FROM pg_auth_members WHERE member=ANY($1::oid[]) OR roleid=ANY($1::oid[])",[roles.map(role=>role.oid)])).rowCount||(await owner.query("SELECT 1 FROM pg_stat_activity WHERE usename IN('turas_runtime','turas_runtime_016')")).rowCount)throw Error('Unbound restored runtime membership or backend');
   const password=randomBytes(32).toString('base64url'),url=new URL(b.connection);url.username='turas_runtime_016';url.password=password;
   const runtime=new Client({connectionString:url.toString(),connectionTimeoutMillis:5000,statement_timeout:5000});runtime.on('error',()=>{});
+  const ownedProcesses=new Set<OwnedProcessRetirement>();
   let recoveryStores:Awaited<ReturnType<typeof materializeOwnedRecoveryStores>>|undefined;
   const state=b.runtime??{binding:null as string|null,closedDigest:proof.closedTargetGrantsDigest,active:false};b.runtime=state;state.active=true;
   try{
@@ -162,12 +174,15 @@ export async function withOwnedRestoredRuntime<T>(target:OwnedRestoreTarget,raw:
    if(identity.length!==1||identity[0].current_user!=='turas_runtime_016'||identity[0].session_user!=='turas_runtime_016'||identity[0].database!==decodeURIComponent(url.pathname.slice(1))||identity[0].environment_id!==scope.environmentId||Number(identity[0].schema_version)!==79)throw Error('Actual direct restored runtime required');
    let interrupted!:()=>void;
    const cancelled=new Promise<never>((_,reject)=>{interrupted=()=>reject(Error('Owned restored runtime interrupted'));deadline.addEventListener('abort',interrupted,{once:true});if(deadline.aborted)interrupted();});
-   try{deadline.throwIfAborted();return await Promise.race([run(runtime,deadline,Object.freeze({DATABASE_URL:url.toString(),DATABASE_URL_UNPOOLED:url.toString(),TURAS_ENVIRONMENT_ID:scope.environmentId,TURAS_PRIVATE_OBJECT_BACKEND:'local',TURAS_ARTIFACT_STORE_ROOT:recoveryStores!.artifactRoot,TURAS_WORKFORCE_STORE_ROOT:recoveryStores!.workforceRoot,TURAS_REPORT_STORE_ROOT:recoveryStores!.reportRoot})),cancelled]);}
-   finally{deadline.removeEventListener('abort',interrupted);}
+   const applicationEnvironment=Object.freeze({DATABASE_URL:url.toString(),DATABASE_URL_UNPOOLED:url.toString(),TURAS_ENVIRONMENT_ID:scope.environmentId,TURAS_PRIVATE_OBJECT_BACKEND:'local',TURAS_ARTIFACT_STORE_ROOT:recoveryStores!.artifactRoot,TURAS_WORKFORCE_STORE_ROOT:recoveryStores!.workforceRoot,TURAS_REPORT_STORE_ROOT:recoveryStores!.reportRoot});
+   runtimeEnvironments.set(applicationEnvironment,{target,scope,signal:deadline,processes:ownedProcesses});
+   try{deadline.throwIfAborted();return await Promise.race([run(runtime,deadline,applicationEnvironment),cancelled]);}
+   finally{runtimeEnvironments.delete(applicationEnvironment);deadline.removeEventListener('abort',interrupted);}
   }finally{
    // Cleanup uses a fresh bounded signal: cancellation must never skip closing
    // an already committed temporary login. The pinned cluster is checked again.
-   try{await connect(b,AbortSignal.timeout(30000),async cleanup=>{
+   let authorityClosed=false,processesClosed=false;
+   try{try{await connect(b,AbortSignal.timeout(30000),async cleanup=>{
     await cleanup.query('ALTER ROLE turas_runtime NOLOGIN; ALTER ROLE turas_runtime_016 NOLOGIN PASSWORD NULL');
     await cleanup.query("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE usename IN('turas_runtime','turas_runtime_016') AND pid<>pg_backend_pid()");
     await cleanup.query((await cleanup.query("SELECT format('REVOKE CONNECT ON DATABASE %I FROM PUBLIC,turas_runtime,turas_runtime_016',current_database()) AS sql")).rows[0].sql);
@@ -177,7 +192,15 @@ export async function withOwnedRestoredRuntime<T>(target:OwnedRestoreTarget,raw:
     const comment=(await cleanup.query("SELECT shobj_description(oid,'pg_authid') AS binding FROM pg_roles WHERE rolname='turas_runtime_016'")).rows;
     if(comment.length!==1||(comment[0].binding!==null&&comment[0].binding!==operation))throw Error('Restored runtime operation binding changed');
     state.binding=comment[0].binding;state.closedDigest=await recoveryGrantCheckpoint(cleanup);
-   });}finally{state.active=false;try{await runtime.end();}finally{if(recoveryStores)await rm(dirname(recoveryStores.artifactRoot),{recursive:true,force:true});}}
+   });authorityClosed=true;}finally{
+    try{await runtime.end();}finally{
+     const closure=await Promise.allSettled([...ownedProcesses].map(retireOwnedProcess));
+     processesClosed=closure.every(result=>result.status==='fulfilled');
+     if(!processesClosed)throw new AggregateError(closure.filter(result=>result.status==='rejected').map(result=>result.reason),'Owned restored child closure unverified');
+    }
+   }}finally{
+    if(authorityClosed&&processesClosed){if(recoveryStores)await rm(dirname(recoveryStores.artifactRoot),{recursive:true,force:true});state.active=false;}
+   }
   }
- });}finally{runtimeActive.delete(target);}
+ });}finally{if(!b.runtime?.active)runtimeActive.delete(target);}
 }
