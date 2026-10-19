@@ -3038,3 +3038,45 @@ reading the original shared journal showed131 historical dispatches,1806543
 micro-USD charged, zero held/unknown, no Context dispatch or consumed credit,
 and admission held under the expired original authorization. No allowance,
 expiry, event, historical failure or provider settlement was reset.
+
+
+### Partner review focus race found during current CI (2026-10-18)
+
+Atd83e6ed, CI run39181383855 job117835027532 failed the partner-learning
+WebKit journey at its90s test limit with focus/visibility signatures. The original
+private diagnostic is retained at
+`local-artifacts/016/ci-d83e6ed-partner-webkit-failure-private.log`.
+Investigation found that canceling an exact checkpoint preview scheduled a single
+animation-frame focus callback; an overlapping access refresh removed the button
+before that callback, leaving no retained focus intent. This does not establish
+that it was the only cause of the original CI timeout.
+
+The regression retains ordinary Cancel coverage, then focuses Cancel, cancels
+and triggers the real window-focus access refresh with100ms latency on the real
+assignment GET. It substitutes no authorization response or domain data. Against
+the unchanged component, desktop-light fails exactly at the forced-refresh focus
+assertion (partner-learning.spec.ts:33:502); original failure retained in
+`local-artifacts/016/partner-cancel-refresh-baseline-private.log` and its013 UI
+report. The fix retains only a ref-bound focus intent through the transient
+`view=null`, waits for an enabled committed Prepare button, and binds the intent
+to assignment/version, checkpoint, attempt/revision and both actor identities.
+Access-cleared events, a different known scope or deliberate focus elsewhere
+retire the intent. Projection clearing, denied-state handling, abort/generation
+checks and server/domain authorization remain unchanged.
+
+The independently reviewed fix passes all12 tests in that complete development
+file across the four CLI WebKit configurations, without failures or skips.
+Private log: `local-artifacts/016/partner-cancel-refresh-fixed-private.log`;
+013 source digest813651817a97256db2f0b3d0cbc124866cb94e31d24d2415f208b8a9c78983d6.
+This diagnostic correctly emits `acceptance:false`; the complete five-file partner
+UI acceptance and current-source CI/composed regressions still must pass.
+Root typecheck and diff checks pass. No hosted write or provider call occurred.
+
+Current read-only platform observation separately confirms Production remains
+f8d196fad60a96698656188074d0abe668bc7991, PostgreSQL18, exact schema077/77-entry
+ledger. The historical backup destination fails current binding verification and
+is not adopted. A fresh repeated metadata inventory contains507 managed runs and
+576 deployments (487 provider-only runs); it verifies neither old-deployment
+protection nor paid-effect reconciliation. Private observations are under the
+root checkout's `local-artifacts/016/resume-20261018/`. No schema, credential,
+archive, traffic, deployment, run state or existing budget was changed.
