@@ -600,7 +600,9 @@
         "unit.managed-deployment-inventory.007",
         "unit.suite-deadlines.001",
         "unit.suite-deadlines.002",
-        "unit.suite-deadlines.003"
+        "unit.suite-deadlines.003",
+        "integration.released-safety-restore.002",
+        "integration.released-safety-restore.003"
       ]
     },
     {

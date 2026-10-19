@@ -18,7 +18,7 @@ const scopeSchema=z.strictObject({dump:z.string().min(1),digest,sizeBytes:z.numb
  if(value.sourceSchema===38&&value.sourceTarget!=='preview')ctx.addIssue({code:'custom',message:'Schema 38 rehearsal requires explicit Preview source'});
 });
 const quote=(name:string)=>'"'+name.replaceAll('"','""')+'"';
-/** Restore/rehearse only in an independently owned schema-055 disposable target.
+/** Restore/rehearse only in an independently owned matching-schema disposable target.
  * Public/runtime CONNECT is removed before restore. No application, worker,
  * native runtime, provider dispatch, Production target or unlock is available. */
 export async function restoreOwnedLegacySafetyCopy(raw:z.input<typeof scopeSchema>,signal:AbortSignal,denials?:{snapshot:unknown;contextDigest:string;backupCapturedAt:string}){

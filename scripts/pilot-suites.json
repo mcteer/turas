@@ -1571,9 +1571,11 @@
     },
     {
       "file": "tests/integration/pilot/released-safety-restore.test.ts",
-      "expectedCases": 1,
+      "expectedCases": 3,
       "cases": [
-        "cold restores the released 077 ledger through 079 and reapplies newer denials behind both runtime perimeters"
+        "cold restores the released 077 ledger through 079 and reapplies newer denials behind both runtime perimeters",
+        "rejects tampered 077 archive bytes before changing the target perimeter",
+        "keeps both runtime roles closed when 077 accepted content verification fails"
       ]
     },
     {

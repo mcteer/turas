@@ -1,4 +1,4 @@
-import {it,expect} from 'vitest';
+import {beforeAll,afterAll,it,expect} from 'vitest';
 import {Client} from 'pg';
 import {mkdir,mkdtemp,rm} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
@@ -9,10 +9,9 @@ import {recoveryDigest} from '../../../lib/contracts/pilot-recovery';
 import {restoreOwnedLegacySafetyCopy} from '../../../lib/server/operations/legacy-safety-restore';
 import {captureRecoveryDenialSnapshot} from '../../../lib/server/operations/recovery-denial-snapshot';
 
-it('cold restores the released 077 ledger through 079 and reapplies newer denials behind both runtime perimeters',async()=>{
- await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});const root=await mkdtemp(resolve('local-artifacts/016/released-safety-'));
- let source:Parameters<typeof restoreOwnedLegacySafetyCopy>[0]|undefined,denials:Parameters<typeof restoreOwnedLegacySafetyCopy>[2];
- try{
+let root:string,source:Parameters<typeof restoreOwnedLegacySafetyCopy>[0]|undefined,denials:Parameters<typeof restoreOwnedLegacySafetyCopy>[2];
+beforeAll(async()=>{
+ await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});root=await mkdtemp(resolve('local-artifacts/016/released-safety-'));
   await withPilotEnvironment(async environment=>{
    const db=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await db.connect();
    try{
@@ -27,6 +26,9 @@ it('cold restores the released 077 ledger through 079 and reapplies newer denial
     denials={snapshot,contextDigest:snapshot.snapshotDigest,backupCapturedAt:boundary.captured_at.toISOString()};
    }finally{await db.query('ROLLBACK').catch(()=>undefined);await db.end();}
   },{priorSchema:77,postgresMajor:18,deadlineMs:180000});
+},210000);
+afterAll(async()=>{if(root)await rm(root,{recursive:true,force:true});});
+it('cold restores the released 077 ledger through 079 and reapplies newer denials behind both runtime perimeters',async()=>{
   if(!source||!denials)throw Error('Actual released-schema owned snapshot and newer denials required');
   const captured=source,current=denials;
   await withPilotEnvironment(async environment=>{
@@ -43,5 +45,34 @@ it('cold restores the released 077 ledger through 079 and reapplies newer denial
     await expect(owner.query("UPDATE operations_control SET mode='open'")).rejects.toThrow('quarantined');
    }finally{await owner.end();}
   },{priorSchema:77,postgresMajor:18,deadlineMs:180000});
- }finally{await rm(root,{recursive:true,force:true});}
-},420000);
+},210000);
+
+it('rejects tampered 077 archive bytes before changing the target perimeter',async()=>{
+ if(!source)throw Error('Released snapshot required');const captured=source;
+ await withPilotEnvironment(async environment=>{
+  const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)}),runtime=new Client({connectionString:requireOwnedPilotDatabase()});
+  await owner.connect();
+  try{
+   await expect(restoreOwnedLegacySafetyCopy({...captured,digest:'0'.repeat(64)},environment.signal)).rejects.toThrow('dump digest differs');
+   await runtime.connect();
+   expect((await owner.query('SELECT environment_id,schema_version FROM turas_environment')).rows).toEqual([{environment_id:environment.environmentId,schema_version:77}]);
+   expect((await runtime.query('SELECT count(*)::int AS n FROM principals')).rows[0].n).toBeGreaterThan(0);
+  }finally{await runtime.end();await owner.end();}
+ },{priorSchema:77,postgresMajor:18,deadlineMs:180000});
+},210000);
+it('keeps both runtime roles closed when 077 accepted content verification fails',async()=>{
+ if(!source)throw Error('Released snapshot required');const captured=source;
+ await withPilotEnvironment(async environment=>{
+  const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
+  const second=new URL(requireOwnedPilotDatabase());second.username='turas_runtime_016';second.password='SyntheticRuntime16Only';
+  try{
+   await owner.query("CREATE ROLE turas_runtime_016 LOGIN PASSWORD 'SyntheticRuntime16Only'");
+   await expect(restoreOwnedLegacySafetyCopy({...captured,applicationContentDigest:'0'.repeat(64)},environment.signal)).rejects.toThrow('application content differs');
+   expect((await owner.query('SELECT environment_id,schema_version FROM turas_environment')).rows).toEqual([{environment_id:captured.sourceEnvironmentId,schema_version:77}]);
+   expect((await owner.query('SELECT count(*)::int AS n FROM turas_migrations')).rows[0].n).toBe(77);
+   for(const connectionString of [requireOwnedPilotDatabase(),second.href]){
+    const runtime=new Client({connectionString});try{await expect(runtime.connect()).rejects.toMatchObject({code:'42501'});}finally{await runtime.end();}
+   }
+  }finally{await owner.end();}
+ },{priorSchema:77,postgresMajor:18,deadlineMs:180000});
+},210000);

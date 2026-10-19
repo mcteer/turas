@@ -2987,3 +2987,29 @@ label/database name and zero client backends were verified before removing only
 that container and its anonymous volumes. Cleanup evidence is retained; selected
 local state and sibling project directories are unchanged. Directory cleanup is
 explicitly deferred until pilot hardening is finished, per the user's instruction.
+
+
+### Released-schema failure coverage and independent runbook exercise (2026-10-18)
+
+The existing positive schema077-to079 owned rehearsal is retained. Its expanded
+three-case suite now also rejects a tampered dump before changing the target and
+keeps both runtime roles unable to connect after accepted-content verification
+fails. No migration through079 is attempted after that failure; the source ledger
+remains077. All three actual disposable PostgreSQL18 cases and three controller
+bound cases passed (6/6,66.33s). The controller allows a finite900s whole-file bound
+for the declared210s setup plus three210s cases; per-case/domain limits are unchanged.
+Private output: `local-artifacts/016/released-safety-077-expanded-private.log`.
+The registered inventory is now767cases/142suites; the currently running complete
+765-case checkpoint at1b25f6a predates this change and is not final-source proof.
+
+The separately delegated technical reviewer exercised17 tests including all three
+actual isolated physical-restore cases, backup verification, schedule admission and
+physical timing. The documented schedule-check command also passed against an
+owned synthetic schedule inventory. It retained `scheduleExecutionVerified:false`
+and `restorationReady:false`. Private independent commands/results are under
+`local-artifacts/016/reviewer-runbook-1b25f6a/`. Its two documentation findings
+were corrected: current safety-copy v3 schema/target support and read-only managed
+Workflow inspection schema support now match the implementations. The reviewer
+performed no hosted write, model/provider call or source edit. This is attributable
+independent technical review, not human participant feedback, actual backup cadence,
+full recovery, incident RPO/RTO, or release approval. Those tasks remain pending.

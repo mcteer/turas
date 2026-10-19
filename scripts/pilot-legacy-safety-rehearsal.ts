@@ -20,8 +20,8 @@ export const legacySafetyContextSchema=z.strictObject({contract:z.literal('pilot
 export const targetedSafetyContextSchema=z.strictObject({...legacySafetyContextSchema.shape,contract:z.literal('pilot-database-safety-copy-v3'),sourceTarget:z.enum(['preview','production']),schemaVersion:z.union([z.literal(38),z.literal(55),z.literal(57),z.literal(77),z.literal(79)])}).superRefine((value,ctx)=>{
  if(value.schemaVersion===38&&value.sourceTarget!=='preview')ctx.addIssue({code:'custom',message:'Schema 38 safety context requires Preview'});
 });
-/** Decrypt/restore a source-055 work archive into a newly owned disposable target,
- * rehearse 056/057, keep it quarantined, then destroy only that owned target. */
+/** Authenticate a supported target-bound safety archive in an owned disposable
+ * target, rehearse through079, quarantine, then destroy only that owned target. */
 export async function pilotLegacySafetyRehearsal(args:string[]){
  const denialReceipt=args.length===9&&args[7]==='--denial-receipt'?args[8]:undefined;
  if((args.length!==7&&!denialReceipt)||denialReceipt?.startsWith('--')||args[0]!=='--restore-database-safety-copy'||args[1]!=='--receipt'||args[3]!=='--destination'||args[5]!=='--output'||args.slice(1,7).some((value,index)=>index%2===1&&(!value||value.startsWith('--'))))throw Error('Explicit legacy safety-copy receipt destination and output required');
