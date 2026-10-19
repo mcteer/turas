@@ -131,7 +131,8 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
     if (!ready) {
       await writeFile(resolve('local-artifacts/004/eval-startup-failure.log'),startupOutput,{mode:0o600});
       await writeFile(resolve('local-artifacts/004/eval-startup-failure.json'),JSON.stringify({lastAuthStatus,lastEveStatus}),{mode:0o600});
-      throw new Error("Isolated evaluation app did not become ready");
+      const signatures=['EADDRINUSE','ECONNREFUSED','Module not found','Cannot find module','Failed to compile','Error:'].filter(value=>startupOutput.includes(value));
+      throw new Error('Isolated evaluation app did not become ready: '+JSON.stringify({lastAuthStatus,lastEveStatus,exitCode:dev.exitCode,signatures}));
     }
     return await run();
   } finally {

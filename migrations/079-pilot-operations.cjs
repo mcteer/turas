@@ -44,10 +44,11 @@ exports.up = (pgm) => pgm.sql(`
   recovery_id uuid NOT NULL,control_revision bigint NOT NULL CHECK(control_revision>0),
   session_id uuid NOT NULL REFERENCES login_sessions(id),workspace_id uuid NOT NULL REFERENCES workspaces(id),
   customer_id uuid REFERENCES customer_references(id),
-  CHECK((read_kind IN('workforce','gap','mcp') AND customer_id IS NULL) OR (read_kind NOT IN('workforce','gap','mcp') AND customer_id IS NOT NULL)),
-  read_kind text NOT NULL DEFAULT 'profile' CHECK(read_kind IN('profile','artifact','report','workforce','gap','plan','execution','mcp')),
+  CHECK((read_kind='conversation') OR (read_kind IN('workforce','gap','mcp') AND customer_id IS NULL) OR (read_kind NOT IN('workforce','gap','mcp') AND customer_id IS NOT NULL)),
+  read_kind text NOT NULL DEFAULT 'profile' CHECK(read_kind IN('profile','artifact','report','workforce','gap','plan','execution','mcp','conversation')),
   record_id uuid,record_digest text,record_size integer,record_generation bigint,record_parent_id uuid,record_revision_id uuid,
   CHECK((read_kind='profile' AND record_id IS NULL AND record_digest IS NULL AND record_size IS NULL AND record_generation IS NULL AND record_parent_id IS NULL AND record_revision_id IS NULL) OR
+   (read_kind='conversation' AND record_id IS NOT NULL AND record_digest IS NOT NULL AND record_digest ~ '^[a-f0-9]{64}$' AND record_size IS NULL AND record_generation IS NOT NULL AND record_generation>=0 AND record_parent_id IS NULL AND record_revision_id IS NULL) OR
    (read_kind='mcp' AND record_id IS NOT NULL AND record_digest IS NOT NULL AND record_digest ~ '^[a-f0-9]{64}$' AND record_size IS NULL AND record_generation IS NOT NULL AND record_generation=1 AND record_parent_id IS NOT NULL AND record_revision_id IS NULL) OR
    (read_kind='execution' AND record_id IS NOT NULL AND record_digest IS NOT NULL AND record_digest ~ '^[a-f0-9]{64}$' AND record_size IS NULL AND record_generation IS NOT NULL AND record_generation>0 AND record_parent_id IS NOT NULL AND record_revision_id IS NOT NULL) OR
    (read_kind='plan' AND record_id IS NOT NULL AND record_digest IS NOT NULL AND record_digest ~ '^[a-f0-9]{64}$' AND record_size IS NULL AND record_generation>0 AND record_generation IS NOT NULL AND record_revision_id IS NOT NULL AND record_parent_id IS NULL) OR

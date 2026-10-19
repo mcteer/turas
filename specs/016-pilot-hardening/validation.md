@@ -5042,3 +5042,40 @@ actor503s, post-retirement503s and actual session revocation. Ordinary open read
 also pass in that fixture. Independent review found no concrete blocker. This is
 a canonical read prerequisite, not full HTTP/hosted required-service acceptance.
 No provider calls occurred. Inventory:920cases across167suites.
+
+### Private conversation HTTP recovery composition — 2026-10-19 (in progress)
+
+A fixed finite conversation-reference GET uses the existing recovery HTTP
+admission, with exact owner/workspace/customer/row digest and actual revision
+(including initial revision0). Unreleased079 adds this read kind and its explicit
+metadata shape; its manifest checksum is updated. Normal ingress stays governed
+by its existing operational gates. HEAD, query overrides, wrong secrets,
+exhausted requests and retired credentials fail closed.
+
+The new batch component derives the whole conversation inventory, authenticates
+each selected record's actual owner, compares bounded serving-version HTTP with
+its canonical projection or current404, verifies normal-ingress denial and probe
+retirement, and brands only after independent cleanup. Final union consumption
+requires every current record exactly once. Its canonical companion authenticates
+all eligible configured roles, measures private ownership/current grant denial,
+retires sessions and privately binds observations to the same final transaction
+and full post-retirement state digest. HTTP/current-canonical matching does not
+claim full required-service readiness. Subsequent role/grant/probe changes must
+invalidate that canonical proof; it must run after other probes retire.
+
+Independent review found no concrete blocker in these components. Canonical
+case16 with the new auditor passed before the final HTTP matching additions.
+Fresh final matching/HTTP execution remains pending. Initial HTTP fixtures exposed
+revision0 and root-http/target-https cookie-name mismatches; the contract and
+fixture now use the actual revision and target configuration. No hosted target
+was locked or released and no provider calls occurred.
+
+The previous full15 run at498773e produced13 passes and2 failures: the MCP matrix
+failed near its finite target deadline under concurrent owned workloads, and the
+report fixture did not inherit its prepared renderer through the outer owned
+harness. The affected cases are rerunning serially with explicit prepared-image
+binding; those failures are retained. The older4a01126 CI deterministic job failed
+starting an isolated evaluation app. Its governing evaluation-source suite passed
+all3 local cases on recheck. Bounded auth/eve/child/signature diagnostics were added
+without increasing startup deadlines or adding retries; this is not a claim that
+the older CI failure has been resolved. Inventory:921cases across167suites.

@@ -514,6 +514,13 @@ it('reads private conversations through genuine recovery actors while denying cr
       expect((await getOwnedConversation(actor,id,client)).id).toBe(id);
       await expect(getOwnedConversation({...actor},id,client)).rejects.toMatchObject({code:'recovery_locked'});
      }
+     if(username==='partner'){
+      await db.query('SAVEPOINT conversation_grant_denial');
+      try{
+       await db.query("UPDATE customer_grants SET state='revoked' WHERE membership_id=$1 AND customer_id=$2",[actor.membershipId,DEMO_IDS.sharedCustomer]);
+       await expect(getOwnedConversation(actor,conversations.get(username)![1],client)).rejects.toMatchObject({status:404});
+      }finally{await db.query('ROLLBACK TO SAVEPOINT conversation_grant_denial');await db.query('RELEASE SAVEPOINT conversation_grant_denial');}
+     }
      for(const [other,ids] of conversations)if(other!==username)for(const id of ids)await expect(getOwnedConversation(actor,id,client)).rejects.toMatchObject({status:404});
     };
     if(username==='mcteer')await withAuthenticatedWorkRecoveryRead(db,target,request,dirname(input.sourceFile),read);
@@ -521,6 +528,13 @@ it('reads private conversations through genuine recovery actors while denying cr
     await expect(getOwnedConversation(retired!,conversations.get(username)![0],client)).rejects.toMatchObject({code:'recovery_locked'});
     expect((await db.query('SELECT revoked_at IS NOT NULL AS retired FROM login_sessions WHERE id=$1',[retired!.sessionId])).rows[0].retired).toBe(true);
    }
+   const {auditRecoveryConversationReads}=await import('../../../lib/server/operations/recovery-conversation-reads');
+   expect(await auditRecoveryConversationReads(db,target,{mcteer:process.env.TURAS_DEMO_PASSWORD!,panel:process.env.PANEL_PASSWORD!,partner:process.env.PARTNER_PASSWORD!},dirname(input.sourceFile))).toMatchObject({conversations:6,ownReads:6,foreignDenials:12,unavailableOwners:0,probeRetirementVerified:true,authenticatedHttpVerified:false,requiredScopeHealthy:false});
+   await db.query('SAVEPOINT canonical_conversation_grant_audit');
+   try{
+    await db.query("UPDATE customer_grants SET state='revoked' WHERE membership_id=$1 AND customer_id=$2",[DEMO_IDS.partnerMembership,DEMO_IDS.sharedCustomer]);
+    expect(await auditRecoveryConversationReads(db,target,{mcteer:process.env.TURAS_DEMO_PASSWORD!,panel:process.env.PANEL_PASSWORD!,partner:process.env.PARTNER_PASSWORD!},dirname(input.sourceFile))).toMatchObject({conversations:6,ownReads:5,restrictedOwnerDenials:1,foreignDenials:12,unavailableOwners:0,probeRetirementVerified:true});
+   }finally{await db.query('ROLLBACK TO SAVEPOINT canonical_conversation_grant_audit');await db.query('RELEASE SAVEPOINT canonical_conversation_grant_audit');}
    expect((await db.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');
   });
  },async owner=>{
@@ -536,6 +550,84 @@ it('reads private conversations through genuine recovery actors while denying cr
     expect((await getOwnedConversation(actor,created.conversation.id)).id).toBe(created.conversation.id);
    }
    conversations.set(username,ids);
+  }
+ });
+},210000);
+
+it('serves exact private conversation recovery HTTP for each real role and refuses changed ownership grants and exhausted credentials',async()=>{
+ const records=new Map<string,{id:string;customerId:string|null}>();
+ await fixture(async input=>{
+  const {issueWorkRecoveryHttpRead,issueWorkParticipantRecoveryHttpRead,retireOwnedRecoveryHttpRead}=await import('../../../lib/server/operations/recovery-http-read-issuer');
+  const {GET,HEAD}=await import('../../../app/api/operations/recovery-read/[admissionId]/conversation/route');
+  const {sessionCookieName}=await import('../../../lib/server/auth/sessions');
+  const {getServerConfig}=await import('../../../lib/server/config');
+  await withLockedWorkRecoveryTarget(input,async(db,target)=>{
+   for(const username of ['mcteer','panel','partner'] as const){
+    const record=records.get(username)!,request={...input.scope,workspaceId:DEMO_IDS.workspace,customerId:record.customerId,deadline:Math.min(target.deadline,Date.now()+59000),password:process.env[username==='mcteer'?'TURAS_DEMO_PASSWORD':username==='panel'?'PANEL_PASSWORD':'PARTNER_PASSWORD']!,maximumRequests:2,deploymentId:target.deploymentId,readKind:'conversation' as const,recordId:record.id};
+    await db.query('BEGIN');let admission;
+    try{admission=username==='mcteer'?await issueWorkRecoveryHttpRead(db,target,request,dirname(input.sourceFile)):await issueWorkParticipantRecoveryHttpRead(db,target,{...request,username},dirname(input.sourceFile));await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}
+    const path='/api/operations/recovery-read/'+admission.id+'/conversation',headers={host:new URL(target.origin).host,cookie:sessionCookieName({...getServerConfig(),TURAS_APP_ORIGIN:target.origin})+'='+admission.actor.token,'x-turas-recovery-read':admission.secret};
+    const read=(suffix='',extra:Record<string,string>={})=>withTargetRuntime(input,target,()=>GET(new Request(target.origin+path+suffix,{headers:{...headers,...extra}}),{params:Promise.resolve({admissionId:admission.id})}));
+    try{
+     expect((await read('',{'x-turas-recovery-read':'x'.repeat(43)})).status).toBe(403);
+     expect((await read('?record='+randomUUID())).status).toBe(403);
+     expect((await HEAD()).status).toBe(403);
+     const response=await read();expect(response.status).toBe(200);expect((await response.json()).data).toMatchObject({id:record.id,ownerPrincipalId:DEMO_IDS[username]});
+     if(username==='partner'){
+      await db.query("UPDATE customer_grants SET state='revoked' WHERE membership_id=$1 AND customer_id=$2",[admission.actor.membershipId,record.customerId]);
+      expect((await read()).status).toBe(404);
+      await db.query("UPDATE customer_grants SET state='active' WHERE membership_id=$1 AND customer_id=$2",[admission.actor.membershipId,record.customerId]);
+     }else expect((await read()).status).toBe(200);
+     expect((await read()).status).toBe(429);
+    }finally{await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,admission.id);}
+    expect((await read()).status).toBe(403);
+    expect((await db.query('SELECT revoked_at IS NOT NULL AS retired FROM login_sessions WHERE id=$1',[admission.actor.sessionId])).rows[0].retired).toBe(true);
+   }
+   // Even the owner cannot issue a private reference for another principal.
+   const foreign=records.get('panel')!;await db.query('BEGIN');
+   try{await expect(issueWorkRecoveryHttpRead(db,target,{...input.scope,workspaceId:DEMO_IDS.workspace,customerId:foreign.customerId,deadline:Math.min(target.deadline,Date.now()+59000),password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:1,deploymentId:target.deploymentId,readKind:'conversation',recordId:foreign.id},dirname(input.sourceFile))).rejects.toThrow('private recovery conversation binding');}
+   finally{await db.query('ROLLBACK');}
+   const {measureWorkConversationHttpBatch,requireMeasuredWorkConversationHttpCoverage,requireCurrentWorkConversationHttpCoverage}=await import('../../../lib/server/operations/work-conversation-http');
+   const {GET:ordinaryRead}=await import('../../../app/api/conversations/[id]/route');
+   let corrupt=false;
+   const transport=vi.spyOn(globalThis,'fetch').mockImplementation(async(raw,options)=>{
+    const incoming=new Request(raw,options),url=new URL(incoming.url),requestHeaders=new Headers(incoming.headers);requestHeaders.set('host',url.host);
+    if(url.origin!==target.origin||incoming.method!=='GET')throw Error('Controlled conversation HTTP left exact target');
+    const request=new Request(incoming,{headers:requestHeaders});
+    if(url.pathname.startsWith('/api/conversations/'))return withTargetRuntime(input,target,()=>ordinaryRead(request,{params:Promise.resolve({id:url.pathname.split('/').at(-1)!})}));
+    const id=url.pathname.split('/')[4];
+    const response=await withTargetRuntime(input,target,()=>GET(request,{params:Promise.resolve({admissionId:id})}));
+    if(corrupt&&response.status===200){const body=await response.json();body.data.title='Controlled changed projection';return Response.json(body,{headers:response.headers});}return response;
+   });
+   try{
+    const args={target:input,recordIds:[...records.values()].map(record=>record.id),passwords:{mcteer:process.env.TURAS_DEMO_PASSWORD!,panel:process.env.PANEL_PASSWORD!,partner:process.env.PARTNER_PASSWORD!},journalDirectory:dirname(input.sourceFile)};
+    const proof=await measureWorkConversationHttpBatch(args);expect(proof).toMatchObject({privateConversationHttpVerified:true,probeRetirementVerified:true,requiredScopeHealthy:false,restorationReady:false});expect(proof.observations).toHaveLength(3);expect(proof.observations.every(row=>row.status===200)).toBe(true);
+    await withLockedWorkRecoveryDecision(input,async(owner,current)=>{
+     expect(await requireMeasuredWorkConversationHttpCoverage(owner,current,[proof])).toMatchObject({conversations:3,privateConversationHttpVerified:true,requiredScopeHealthy:false});
+     const {auditRecoveryConversationReads}=await import('../../../lib/server/operations/recovery-conversation-reads');
+     const canonical=await auditRecoveryConversationReads(owner,current,args.passwords,args.journalDirectory);
+     expect(await requireCurrentWorkConversationHttpCoverage(owner,current,[proof],canonical)).toMatchObject({conversations:3,currentCanonicalAuthorizationVerified:true,requiredScopeHealthy:false});
+     await expect(requireCurrentWorkConversationHttpCoverage(owner,current,[proof],{...canonical})).rejects.toThrow('Genuine current');
+     await owner.query('SAVEPOINT canonical_conversation_state_drift');
+     try{await owner.query('UPDATE memberships SET active=false WHERE id=$1',[DEMO_IDS.panelMembership]);await expect(requireCurrentWorkConversationHttpCoverage(owner,current,[proof],canonical)).rejects.toThrow('authorization state changed');}
+     finally{await owner.query('ROLLBACK TO SAVEPOINT canonical_conversation_state_drift');await owner.query('RELEASE SAVEPOINT canonical_conversation_state_drift');}
+
+
+     await expect(requireMeasuredWorkConversationHttpCoverage(owner,current,[{...proof}])).rejects.toThrow('Genuine fresh');
+     await expect(requireMeasuredWorkConversationHttpCoverage(owner,current,[proof,proof])).rejects.toThrow('Complete unique');
+     await expect(requireMeasuredWorkConversationHttpCoverage(owner,current,[])).rejects.toThrow('Complete private');
+    });
+    corrupt=true;await expect(measureWorkConversationHttpBatch(args)).rejects.toThrow('canonical projection differs');corrupt=false;
+   }finally{transport.mockRestore();}
+   expect((await db.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');
+  });
+ },async owner=>{
+  const {issueSession,getCurrentSession,sessionCookieName}=await import('../../../lib/server/auth/sessions');
+  for(const username of ['mcteer','panel','partner'] as const){
+   const membershipId=DEMO_IDS[username==='mcteer'?'mcteerMembership':username==='panel'?'panelMembership':'partnerMembership'],member=(await owner.query('SELECT kind,role FROM memberships WHERE id=$1',[membershipId])).rows[0];
+   const session=await issueSession({principalId:DEMO_IDS[username],loginName:username,displayName:username,membershipId,workspaceId:DEMO_IDS.workspace,kind:member.kind,role:member.role});
+   const actor=(await getCurrentSession(new Request(process.env.TURAS_APP_ORIGIN!,{headers:{cookie:sessionCookieName()+'='+session.token}})))!,customerId=username==='panel'?null:DEMO_IDS.sharedCustomer;
+   const created=await createOwnedConversation(actor,{customerId,requestKey:randomUUID()},owner as unknown as PoolClient);records.set(username,{id:created.conversation.id,customerId});
   }
  });
 },210000);
