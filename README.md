@@ -331,7 +331,9 @@ partial locked diagnostic and cannot grant recovery readiness.
 The fixed maintenance profile endpoint now uses an owner-issued session and a
 short-lived, database/deployment-bound secret through a direct restricted runtime
 login. Finite request reservations, current-scope rechecks and atomic teardown
-leave ordinary routes locked. This is owned profile-only proof; private-byte
+leave ordinary routes locked. The owned runtime now materializes and cold-verifies
+canonical local copies of all six restored file namespaces, then removes those
+copies after its probe; restored originals remain. This is owned profile-only proof; private-byte
 service and complete recovery verification remain unfinished.
 Recovery authority, hosted services, scheduled backups and actual participant
 acceptance remain pending; local checks do not establish pilot readiness. See the

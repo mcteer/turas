@@ -11,7 +11,7 @@ import {restoreOwnedWorkDump} from '../../../lib/server/operations/pg-restore';
 import {measureRestoredWorkIntegrity,requireMeasuredWorkIntegrity} from '../../../lib/server/operations/restored-work-integrity';
 import {it,expect} from 'vitest';
 import {Client} from 'pg';
-import {mkdir,mkdtemp,writeFile,readFile,rm,copyFile,chmod} from 'node:fs/promises';
+import {mkdir,mkdtemp,writeFile,readFile,rm,readdir,copyFile,chmod} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {randomUUID,randomBytes,createHash} from 'node:crypto';
 import {withPilotEnvironment,requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
@@ -35,7 +35,7 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
     const recoveryId=randomUUID(),revision=Number((await db.query("UPDATE operations_control SET mode='locked',revision=revision+1,recovery_id=$2 WHERE environment_id=$1 RETURNING revision",[environment.environmentId,recoveryId])).rows[0].revision);
     const objects=join(root,'source-objects'),workflow=join(root,'empty-workflow');await mkdir(objects,{mode:0o700});await mkdir(workflow,{mode:0o700});
     const store=new LocalPrivateObjects(objects,environment.environmentId,10485760);
-    for(const namespace of activeObjectNamespaces){await mkdir(join(objects,'e_'+environmentObjectId(environment.environmentId),namespace),{recursive:true,mode:0o700});const bytes=Buffer.from('Synthetic work restore '+namespace),digest=createHash('sha256').update(bytes).digest('hex');await store.put(objectKey(environment.environmentId,namespace,randomUUID()),(async function*(){yield bytes;})(),{sizeBytes:bytes.length,digest});}
+    for(const namespace of activeObjectNamespaces){await mkdir(join(objects,'e_'+environmentObjectId(environment.environmentId),namespace),{recursive:true,mode:0o700});const bytes=Buffer.from('Synthetic work restore '+namespace),digest=createHash('sha256').update(bytes).digest('hex');await store.put(objectKey(environment.environmentId,namespace,namespace.startsWith('artifact')?digest:randomUUID()),(async function*(){yield bytes;})(),{sizeBytes:bytes.length,digest});}
     const owned=await captureOwnedRecoveryCandidate({environmentId:environment.environmentId,recoveryId,controlRevision:revision,sourceRoot:objects,workflowRoot:workflow,keyFile:join(root,'keys','key'),keyReference:'synthetic-work-key',keyVersion:'1',output:join(root,'capture')},environment.signal);
     // This synthetic fixture supplies an empty managed-execution inventory;
     // it makes no claim to checkpoint or resume any provider workflow.
@@ -100,14 +100,6 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
     finally{process.env.DATABASE_URL=priorRuntime;}
     await expect(withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async()=>{throw Error('Controlled scoped read failure');})).rejects.toThrow('Controlled scoped read failure');
     expect(getServerConfig().TURAS_ENVIRONMENT_ID).toBe(environment.environmentId);
-    let httpAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
-    await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{
-     await owner.query('BEGIN');
-     try{httpAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedProfile.workspaceId,customerId:expectedProfile.customerId,deadline:Date.now()+59000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:3,deploymentId:null});await owner.query('COMMIT');}
-     catch(error){await owner.query('ROLLBACK');throw error;}
-    });
-    if(!httpAdmission)throw Error('Actual owner-issued HTTP admission missing');
-    const admission=httpAdmission;
     // Real SQL rollback and ambiguous COMMIT acknowledgments must both close
     // the role and leave an explicitly repeatable owned operation.
     const originalQuery=Client.prototype.query;
@@ -127,6 +119,14 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
      expect((await db.query("SELECT 1 FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') AND rolcanlogin")).rowCount).toBe(0);
      expect((await db.query("SELECT 1 FROM pg_auth_members WHERE member='turas_runtime_016'::regrole")).rowCount).toBe(0);
     }
+    // Compile denied routes while both runtime logins remain closed. This is
+    // fixture preparation, outside the unchanged 60-second restricted lease.
+    const warmUrl=new URL(process.env.DATABASE_URL!);warmUrl.username='turas_runtime_016';warmUrl.password=randomBytes(32).toString('base64url');
+    const warmSaved={DATABASE_URL:process.env.DATABASE_URL,DATABASE_URL_UNPOOLED:process.env.DATABASE_URL_UNPOOLED};
+    try{
+     Object.assign(process.env,{DATABASE_URL:warmUrl.toString(),DATABASE_URL_UNPOOLED:warmUrl.toString()});await environment.start();
+     for(const path of ['/api/operations/recovery-read/'+randomUUID()+'/profile','/api/customers/'+expectedProfile.customerId+'/profile']){const response=await fetch(environment.origin+path,{redirect:'manual',signal:environment.signal});expect([401,403,503]).toContain(response.status);await response.body?.cancel();}
+    }finally{await environment.stop();Object.assign(process.env,warmSaved);}
     await interruptedPreparation(false);
     await withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async(runtime,_signal,applicationEnvironment)=>{
      expect((await runtime.query('SELECT current_user,session_user')).rows[0]).toEqual({current_user:'turas_runtime_016',session_user:'turas_runtime_016'});
@@ -135,10 +135,21 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
      await expect(runtime.query('CREATE TABLE runtime_escalation(id int)')).rejects.toMatchObject({code:'42501'});
      await expect(withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async()=>{})).rejects.toThrow('already active');
      await expect(withOwnedRestoredRuntime(otherOwnedTarget,scope,environment.signal,async()=>{})).rejects.toThrow('database lease active');
+     expect(applicationEnvironment.TURAS_PRIVATE_OBJECT_BACKEND).toBe('local');
+     const artifactNames=await readdir(join(applicationEnvironment.TURAS_ARTIFACT_STORE_ROOT,'objects'));expect(artifactNames).toHaveLength(1);expect(await readFile(join(applicationEnvironment.TURAS_ARTIFACT_STORE_ROOT,'objects',artifactNames[0]),'utf8')).toBe('Synthetic work restore artifact');
+     let httpAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
+     try{
      const saved=Object.fromEntries(Object.keys(applicationEnvironment).map(key=>[key,process.env[key]]));
      try{Object.assign(process.env,applicationEnvironment);await environment.start();}
      finally{for(const [key,value] of Object.entries(saved)){if(value===undefined)delete process.env[key];else process.env[key]=value;}}
-     try{
+    await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{
+     await owner.query('BEGIN');
+     try{httpAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedProfile.workspaceId,customerId:expectedProfile.customerId,deadline:Date.now()+59000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:3,deploymentId:null});await owner.query('COMMIT');}
+     catch(error){await owner.query('ROLLBACK');throw error;}
+    });
+    if(!httpAdmission)throw Error('Actual owner-issued HTTP admission missing');
+    const admission=httpAdmission;
+
       const path=environment.origin+'/api/operations/recovery-read/'+admission.id+'/profile';
       const cookie=sessionCookie(admission.actor.token,admission.actor.expiresAt).split(';')[0];
       const headers={cookie,'x-turas-recovery-read':admission.secret,host:new URL(environment.origin).host};
@@ -194,16 +205,18 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
        expect((await db.query('SELECT revoked_at IS NOT NULL AS revoked FROM login_sessions WHERE id=$1',[retiring.actor.sessionId])).rows[0].revoked).toBe(true);
       }finally{await runtime.query('ROLLBACK');if(closing)await closing;await retirementOwner.end();await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,retiring.id);}
 
-     }finally{await environment.stop();await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,admission.id);}
+     }finally{await environment.stop();if(httpAdmission)await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,httpAdmission.id);}
 
     });
     expect((await db.query("SELECT 1 FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') AND rolcanlogin")).rowCount).toBe(0);
+    expect((await readdir(join(root,'restore'))).filter(name=>name.startsWith('canonical-runtime-'))).toEqual([]);
     await interruptedPreparation(true);
     await expect(withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async()=>{throw Error('Controlled runtime failure');})).rejects.toThrow('Controlled runtime failure');
     const interrupted=new AbortController();
     await expect(withOwnedRestoredRuntime(ownedTarget,scope,interrupted.signal,async runtime=>{interrupted.abort();await runtime.query('SELECT pg_sleep(20)');})).rejects.toThrow('interrupted');
     expect((await db.query("SELECT 1 FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') AND rolcanlogin")).rowCount).toBe(0);
     expect((await db.query("SELECT 1 FROM pg_stat_activity WHERE usename IN('turas_runtime','turas_runtime_016')")).rowCount).toBe(0);
+    expect((await readdir(join(root,'restore'))).filter(name=>name.startsWith('canonical-runtime-'))).toEqual([]);
     await expect(withOwnedRestoreTarget(ownedTarget,scope,environment.signal,async owner=>{await owner.query('UPDATE operations_control SET revision=revision+1');})).rejects.toThrow('Exact bound locked');
     expect((await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows[0]).toEqual({environment_id:sourceEnvironmentId,schema_version:79});
     expect(Number((await db.query('SELECT count(*) FROM operations_recovery_quarantines')).rows[0].count)).toBe(7);

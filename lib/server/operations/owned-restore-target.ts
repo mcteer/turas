@@ -1,9 +1,10 @@
+import {materializeOwnedRecoveryStores} from './object-restore';
 import {Client} from 'pg';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
-import {resolve} from 'node:path';
-import {readFile} from 'node:fs/promises';
-import {randomBytes} from 'node:crypto';
+import {resolve,join,dirname} from 'node:path';
+import {readFile,rm} from 'node:fs/promises';
+import {randomBytes,randomUUID} from 'node:crypto';
 import {recoveryGrantCheckpoint} from './grant-checkpoint';
 import {z} from 'zod';
 import {requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
@@ -116,6 +117,7 @@ export async function withOwnedRestoredRuntime<T>(target:OwnedRestoreTarget,raw:
   if((await owner.query("SELECT 1 FROM pg_auth_members WHERE member=ANY($1::oid[]) OR roleid=ANY($1::oid[])",[roles.map(role=>role.oid)])).rowCount||(await owner.query("SELECT 1 FROM pg_stat_activity WHERE usename IN('turas_runtime','turas_runtime_016')")).rowCount)throw Error('Unbound restored runtime membership or backend');
   const password=randomBytes(32).toString('base64url'),url=new URL(b.connection);url.username='turas_runtime_016';url.password=password;
   const runtime=new Client({connectionString:url.toString(),connectionTimeoutMillis:5000,statement_timeout:5000});runtime.on('error',()=>{});
+  let recoveryStores:Awaited<ReturnType<typeof materializeOwnedRecoveryStores>>|undefined;
   const state=b.runtime??{binding:null as string|null,closedDigest:proof.closedTargetGrantsDigest,active:false};b.runtime=state;state.active=true;
   try{
    const grants=await readFile(resolve('scripts/db-role-setup.sql'),'utf8');deadline.throwIfAborted();
@@ -125,6 +127,8 @@ export async function withOwnedRestoredRuntime<T>(target:OwnedRestoreTarget,raw:
     await owner.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16020))',[scope.environmentId]);await owner.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[scope.environmentId]);
     await requireOwnedRestoreConnection(owner,target,scope,deadline);
     if(await recoveryGrantCheckpoint(owner)!==state.closedDigest)throw Error('Restored runtime grant boundary changed');
+    await requireMeasuredWorkIntegrity(owner,proof,scope,b.restored!.storeRoot,deadline);
+    recoveryStores=await materializeOwnedRecoveryStores({sourceRoot:b.restored!.storeRoot,target:join(dirname(b.restored!.storeRoot),'canonical-runtime-'+randomUUID()),environmentId:scope.environmentId,signal:deadline});
     await requireMeasuredWorkIntegrity(owner,proof,scope,b.restored!.storeRoot,deadline);
     await owner.query(grants);
     await owner.query('GRANT turas_runtime TO turas_runtime_016');
@@ -145,7 +149,7 @@ export async function withOwnedRestoredRuntime<T>(target:OwnedRestoreTarget,raw:
    if(identity.length!==1||identity[0].current_user!=='turas_runtime_016'||identity[0].session_user!=='turas_runtime_016'||identity[0].database!==decodeURIComponent(url.pathname.slice(1))||identity[0].environment_id!==scope.environmentId||Number(identity[0].schema_version)!==79)throw Error('Actual direct restored runtime required');
    let interrupted!:()=>void;
    const cancelled=new Promise<never>((_,reject)=>{interrupted=()=>reject(Error('Owned restored runtime interrupted'));deadline.addEventListener('abort',interrupted,{once:true});if(deadline.aborted)interrupted();});
-   try{deadline.throwIfAborted();return await Promise.race([run(runtime,deadline,Object.freeze({DATABASE_URL:url.toString(),DATABASE_URL_UNPOOLED:url.toString(),TURAS_ENVIRONMENT_ID:scope.environmentId})),cancelled]);}
+   try{deadline.throwIfAborted();return await Promise.race([run(runtime,deadline,Object.freeze({DATABASE_URL:url.toString(),DATABASE_URL_UNPOOLED:url.toString(),TURAS_ENVIRONMENT_ID:scope.environmentId,TURAS_PRIVATE_OBJECT_BACKEND:'local',TURAS_ARTIFACT_STORE_ROOT:recoveryStores!.artifactRoot,TURAS_WORKFORCE_STORE_ROOT:recoveryStores!.workforceRoot,TURAS_REPORT_STORE_ROOT:recoveryStores!.reportRoot})),cancelled]);}
    finally{deadline.removeEventListener('abort',interrupted);}
   }finally{
    // Cleanup uses a fresh bounded signal: cancellation must never skip closing
@@ -160,7 +164,7 @@ export async function withOwnedRestoredRuntime<T>(target:OwnedRestoreTarget,raw:
     const comment=(await cleanup.query("SELECT shobj_description(oid,'pg_authid') AS binding FROM pg_roles WHERE rolname='turas_runtime_016'")).rows;
     if(comment.length!==1||(comment[0].binding!==null&&comment[0].binding!==operation))throw Error('Restored runtime operation binding changed');
     state.binding=comment[0].binding;state.closedDigest=await recoveryGrantCheckpoint(cleanup);
-   });}finally{state.active=false;await runtime.end();}
+   });}finally{state.active=false;try{await runtime.end();}finally{if(recoveryStores)await rm(dirname(recoveryStores.artifactRoot),{recursive:true,force:true});}}
   }
  });}finally{runtimeActive.delete(target);}
 }

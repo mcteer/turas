@@ -3358,3 +3358,30 @@ are unchanged and Production remains077. Earlier079 receipts retain their origin
 source/manifest identity; a fresh exact-manifest cold rehearsal is required before
 release. The issuer currently supports owned drills and profiles only. No private-
 byte service, complete T085/T088 recovery, hosted acceptance or unlock is claimed.
+
+
+### Canonical restored file-store materialization
+
+The owned restricted-runtime preparation now materializes every measured restored
+namespace into fresh private roots for the existing canonical local adapters,
+cold-verifies full digest parity and rechecks the original opaque integrity
+capability before granting the bounded runtime lease. Invalid canonical artifact
+IDs and report/gap-report collisions fail before creation. Incomplete copies are
+removed; runtime teardown removes successful temporary copies while retaining
+the authenticated restored originals. The runtime-only child configuration
+explicitly selects these roots and local storage.
+
+The focused restored-runtime integration and object-restore unit suite passed
+6/6 cases, including all-six-namespace parity and actual canonical artifact and
+workforce byte reads. Root and pilot TypeScript checks and documentation checks
+pass. Independent review found no remaining blocker. The final prepared focused run passed6/6 in162.14seconds, including explicit
+success/failure/cancellation cleanup assertions. An intervening repeat failed
+the unchanged60-second runtime lease: admission had been issued before rollback
+preparation and cold app startup. Its failure is retained. The fixture now warms
+only unauthenticated denied routes with both logins closed and random invalid
+restricted credentials in both database variables, stops that child, and issues
+the actual short-lived admission after the real restricted child is ready.
+Startup and issuance are enclosed by child-stop cleanup. No lease, case or
+fixture deadline was extended. These are filesystem
+and owned runtime observations; maintenance HTTP private-byte reads, personnel
+and report authorization, composed verification and hosted recovery remain pending.

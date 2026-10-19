@@ -740,7 +740,14 @@ and direct connection for at most60seconds. Success, callback failure, rollback,
 ambiguous commit acknowledgment and cancellation all close the login, clear its
 credential, drain its backends and revoke CONNECT and inheritance. An unrelated
 role binding or changed closed grant boundary is rejected. The callback receives restricted runtime-only child configuration; it contains
-credentials and must remain private. No owner credential is supplied. This helper does not start HTTP service,
+credentials and must remain private. No owner credential is supplied. Before granting
+runtime access, the helper copies all six measured restored namespaces into fresh
+private sibling roots for the unchanged canonical artifact/workforce/report adapters.
+It rejects incompatible identities and report/gap-report collisions, cold-checks
+full digest parity, and rechecks the original integrity capability under the owner
+fences. The child configuration explicitly selects these local copies. Teardown
+removes them after closing runtime access; authenticated restored originals remain.
+Filesystem parity does not prove personnel/report authority or HTTP byte service. This helper does not start HTTP service,
 permit ordinary locked routes or create a recovery verification receipt.
 
 ### Fixed maintenance profile reads
