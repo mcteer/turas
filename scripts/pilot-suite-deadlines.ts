@@ -23,7 +23,7 @@ const longSuiteSeconds:Readonly<Record<string,number>>={
  'recovery-plan-http':900,
  'recovery-execution-http':1140,
  'recovery-mcp-http':480,
- 'locked-work-recovery-target':3540,'work-recovery-decision':1950,
+ 'locked-work-recovery-target':3540,'work-recovery-decision':2160,
 };
 for(const name of Object.keys(longSuiteSeconds)){
  if(!catalog.suites.some(suite=>suite.file==='tests/integration/pilot/'+name+'.test.ts'))throw Error('Unregistered pilot deadline override');

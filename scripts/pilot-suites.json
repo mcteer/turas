@@ -1798,7 +1798,7 @@
     },
     {
       "file": "tests/integration/pilot/work-recovery-decision.test.ts",
-      "expectedCases": 9,
+      "expectedCases": 10,
       "cases": [
         "commits a pending recovery decision only after live checks and rolls back drift cancellation and callback commit attempts",
         "measures exhaustive fresh work MCP category pages through SDK and rejects changed projections or forged measurements",
@@ -1808,7 +1808,8 @@
         "repeats real-target old HTTP admission under owner fences and one exact cumulative journal without unlocking",
         "audits installed immutable holds and effect admission guards and refuses disabled altered or writable enforcement",
         "audits genuine retained and current typed model holds without settling unknowns or reopening budgets",
-        "retains original operational service cost ceilings unknown holds and provider job identities"
+        "retains original operational service cost ceilings unknown holds and provider job identities",
+        "retains genuine original learning reservations and rejects missing unknown cost holds"
       ]
     },
     {

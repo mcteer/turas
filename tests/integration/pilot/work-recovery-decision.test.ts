@@ -1,3 +1,4 @@
+import {auditRecoveryLearningCosts} from '../../../lib/server/operations/recovery-learning-cost-audit';
 import {auditRecoveryServiceCosts} from '../../../lib/server/operations/recovery-service-cost-audit';
 import {auditRecoveryDispatchState} from '../../../lib/server/operations/recovery-dispatch-audit';
 import {auditRecoveryModelHolds} from '../../../lib/server/operations/recovery-model-hold-audit';
@@ -324,5 +325,27 @@ it('retains original operational service cost ceilings unknown holds and provide
   await owner.query("UPDATE operations_cost_reservations SET state='settled',charged_micro_usd=150000,charge_kind='actual' WHERE id=$1",[settled]);
   await owner.query("UPDATE operations_cost_reservations SET state='unknown' WHERE id=$1",[reservation]);
 
+ });
+},210000);
+
+
+it('retains genuine original learning reservations and rejects missing unknown cost holds',async()=>{
+ let reservation='';
+ await fixture(async input=>{
+  const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
+  try{await withRetainedDenialFixture(owner,input.scope.environmentId,dirname(input.sourceFile),{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async retained=>{
+   await quarantineRestoredAuthority(owner,input.scope,retained);const inspect=()=>withLockedWorkRecoveryDecision(input,(db,target)=>auditRecoveryLearningCosts(db,target,retained));
+   expect(await inspect()).toMatchObject({budgets:1,unknownReservationsHeld:1,originalLearningCostAccountingVerified:true,providerExecutionClosed:false,allPaidEffectsVerified:false,restorationReady:false});
+   const original=(await owner.query('SELECT to_jsonb(h) AS value FROM operations_recovery_paid_holds h WHERE reservation_id=$1',[reservation])).rows[0].value;
+   await owner.query('ALTER TABLE operations_recovery_paid_holds DISABLE TRIGGER recovery_paid_hold_immutable');await owner.query('DELETE FROM operations_recovery_paid_holds WHERE reservation_id=$1',[reservation]);await owner.query('ALTER TABLE operations_recovery_paid_holds ENABLE TRIGGER recovery_paid_hold_immutable');
+   try{await expect(inspect()).rejects.toThrow('Original unknown learning reservation lacks immutable hold');}finally{await owner.query('INSERT INTO operations_recovery_paid_holds SELECT * FROM jsonb_populate_record(NULL::operations_recovery_paid_holds,$1::jsonb)',[JSON.stringify(original)]);}
+   expect(await inspect()).toMatchObject({originalLearningCostAccountingVerified:true});
+   expect(Number((await owner.query('SELECT count(*) FROM learning_budget_settlements WHERE reservation_id=$1',[reservation])).rows[0].count)).toBe(0);
+   expect(Number((await owner.query('SELECT count(*) FROM learning_reservation_releases WHERE reservation_id=$1',[reservation])).rows[0].count)).toBe(0);
+  });}finally{await owner.end();}
+ },async owner=>{
+  const {learningNativeFixture}=await import('../../fixtures/learning/native'),{admitGovernedStaffingModelStep}=await import('../../../lib/server/staffing/native-admission');
+  const f=await learningNativeFixture(owner as unknown as PoolClient);await admitGovernedStaffingModelStep(f.principal,f.identity);
+  reservation=(await owner.query('SELECT id FROM learning_budget_reservations WHERE attempt_id=$1',[f.meta.id])).rows[0].id;
  });
 },210000);

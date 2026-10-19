@@ -4911,3 +4911,23 @@ No provider/model calls or real cost settlement occurred. Types pass; the new
 inventory is913cases/167suites. Full current catalog and hosted acceptance remain
 open, alongside original learning accounting, native/send effect identity,
 execution/ingress closure and the authoritative producer.
+
+
+### Original learning financial journal audit — 2026-10-19
+
+The genuine owner audit now verifies every original learning budget's scope,
+limit and price-contract hash, requiring closed/blocked state. Current and
+independently retained reservation, settlement, provider-dispatch and release
+inventories must have identical cardinality and complete immutable row digests.
+This preserves native IDs, original ceilings and timestamps rather than
+reconstructing or settling missing provider work. Every unsettled/unreleased
+reservation retains a same-environment immutable hold; inherited holds cannot
+change and held reservations cannot be released.
+
+The owned PostgreSQL18 check passes with an actual governed synthetic learning
+reservation. Removing its unknown-cost hold with enforcement restored before
+the audit is refused; restoring its exact original bytes passes. Zero settlement
+or release rows are created. Independent review found no blocker in this scoped
+accounting audit. Root/pilot types pass. Inventory:914cases/167suites. No actual
+model/provider work was dispatched. Native/send identity, execution/ingress,
+full service composition and hosted acceptance remain pending.
