@@ -1,3 +1,4 @@
+import {requireOperationalOpen} from '../lib/server/operations/admission';
 import {responseFeature} from "../lib/server/conversations/feature";
 import {wrapOrdinaryChatModel} from "../lib/server/conversations/model-budget";
 import { gateway } from "ai";
@@ -50,6 +51,7 @@ export default defineAgent({
       return withTransaction(async (client) => {
         const marker = await client.query<{schema_version:number}>(
           "SELECT schema_version FROM turas_environment LIMIT 1");
+        if ((marker.rows[0]?.schema_version ?? 0) >= 79) await requireOperationalOpen(client);
         if ((marker.rows[0]?.schema_version ?? 0) < 31) return currentModel();
         if ((marker.rows[0]?.schema_version ?? 0) >= 34) {
           const conversation = (await client.query<{ id: string }>(`SELECT id FROM conversations
@@ -60,7 +62,13 @@ export default defineAgent({
           JOIN planning_conversation_bindings plan
             ON plan.conversation_id=conversation.id
           WHERE conversation.eve_session_id=$1 LIMIT 1`, [ctx.session.id]);
-        if (!binding.rowCount) return currentModel();
+        if (!binding.rowCount) {
+          // Current root calls require a durable governed conversation/attempt.
+          // Returning a naked provider here would bypass both its accounting
+          // and any recovery lock acquired after this resolver transaction.
+          if ((marker.rows[0]?.schema_version ?? 0) >= 79) throw hiddenRecord();
+          return currentModel();
+        }
         const principal = ctx.session.auth.current;
         const responseAttemptId = principal?.attributes?.turasAttemptId;
         if (!principal?.principalId || typeof responseAttemptId !== "string") {

@@ -54,6 +54,7 @@ export async function quarantineRestoredAuthority(db:Client|PoolClient,raw:z.inf
   // capture. Stop every old admission without inventing dispatch or settlement.
   const researchRequests=await db.query("UPDATE research_requests SET state='cancelled',revision_number=revision_number+1,updated_at=clock_timestamp() WHERE environment_id=$1 AND state IN('draft','admitted')",[scope.environmentId]);
   const researchRuns=await db.query("UPDATE research_runs SET state='unconfirmed',safe_reason_code='recovery_current_proof_unavailable',updated_at=clock_timestamp() WHERE environment_id=$1 AND state IN('queued','running')",[scope.environmentId]);
+  const plans=await db.query("UPDATE plan_drafting_attempts SET state='unconfirmed',safe_error_code='recovery_current_proof_unavailable',updated_at=clock_timestamp() WHERE environment_id=$1 AND state IN('prepared','running')",[scope.environmentId]);
   let advisoryAttempts=0;
   for(const table of ['staffing_advisory_attempts','execution_advice_attempts','support_advice_attempts','expansion_advice_attempts']){
    const changed=await db.query(`UPDATE ${table} SET state='unconfirmed',failure_code='recovery_current_proof_unavailable',updated_at=clock_timestamp() WHERE environment_id=$1 AND state IN('prepared','running')`,[scope.environmentId]);advisoryAttempts+=changed.rowCount??0;
@@ -78,7 +79,7 @@ export async function quarantineRestoredAuthority(db:Client|PoolClient,raw:z.inf
   const applied=current?await reconcileOwnedCredentialDenialsInTransaction(db,current.snapshot,{...scope,snapshotDigest:current.contextDigest,backupCapturedAt:current.backupCapturedAt}):undefined;
   await db.query('COMMIT');
   return {version:'pilot-authority-quarantine-v1' as const,currentGrantsPreserved:!!current,independentDenialsApplied:!!applied,...scope,mode:'locked' as const,newlyRevokedSessions:sessions.rowCount??0,newlyRevokedMcpConnections:mcp.rowCount??0,newlyRevokedGrants:grants.rowCount??0,
-   newlyCancelledResearchRequests:researchRequests.rowCount??0,newlyInterruptedResearchRuns:researchRuns.rowCount??0,newlyInterruptedAdvisoryAttempts:advisoryAttempts,newlyPausedReportSchedules:schedules.rowCount??0,
+   newlyCancelledResearchRequests:researchRequests.rowCount??0,newlyInterruptedResearchRuns:researchRuns.rowCount??0,newlyInterruptedAdvisoryAttempts:advisoryAttempts,newlyInterruptedPlanDrafts:plans.rowCount??0,newlyPausedReportSchedules:schedules.rowCount??0,
    newlyHeldOrdinaryOperations:ordinaryHolds.rowCount??0,newlyHeldParityOperations:parityHolds.rowCount??0,newlyHeldLearningReservations:learningHolds.rowCount??0,newlyRevokedServiceBudgets:serviceBudgets.rowCount??0,newlyHeldPaidReservations:paid.rowCount??0,newlyInterruptedNativeAttempts:native.rowCount??0,newlyHeldReportDeliveries:sends.rowCount??0,quarantinedScopes:quarantines.map(row=>row.scope_kind),capturedHistoriesRetained:true,allRequiredScopesQuarantined:true,currentAuthorityVerified:false,permanentReplayProofAvailable:false,restorationReady:false};
  }catch(error){await db.query('ROLLBACK');throw error;}
 }

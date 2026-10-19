@@ -185,9 +185,16 @@ it('rechecks exhaustive native provider and deployment inventories without claim
    const found=rows.find(row=>url.pathname==='/v1/workflow/v2/runs/'+row.runId);if(found)return Response.json(found);throw Error('Controlled provider route unavailable');
   });
   try{
-   const proof=await measureWorkManagedTerminalInventory({target:input,token:'controlled-provider-token'});expect(proof).toMatchObject({enumeratedRuns:2,providerOnlyRuns:1,deployments:2,enumeratedInventoryTerminalVerified:true,oldDeploymentsClosed:false,paidEffectsReconciled:false,restorationReady:false});
+   await withRetainedDenialFixture(owner,input.scope.environmentId,dirname(input.sourceFile),{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async retained=>{
+   const args={target:input,token:'controlled-provider-token',retained};
+   await expect(measureWorkManagedTerminalInventory({...args,retained:{...retained}})).rejects.toThrow();
+   const proof=await measureWorkManagedTerminalInventory(args);expect(proof).toMatchObject({enumeratedRuns:2,providerOnlyRuns:1,deployments:2,enumeratedInventoryTerminalVerified:true,oldDeploymentsClosed:false,paidEffectsReconciled:false,restorationReady:false});
    await withLockedWorkRecoveryDecision(input,async(db,target)=>{expect(await requireMeasuredWorkManagedTerminalInventory(db,target,proof,input.signal)).toBe(proof);await expect(requireMeasuredWorkManagedTerminalInventory(db,target,{...proof},input.signal)).rejects.toThrow('Genuine fresh');});
    for(const change of ['active','omitted','deployment','project','alias'] as const){mode=change;await expect(withLockedWorkRecoveryDecision(input,(db,target)=>requireMeasuredWorkManagedTerminalInventory(db,target,proof,input.signal))).rejects.toThrow();}mode='normal';
+   await owner.query("DELETE FROM conversations WHERE eve_session_id='wrun_original'");
+   const missingCurrent=await measureWorkManagedTerminalInventory(args);expect(missingCurrent.providerOnlyRuns).toBe(1);
+   mode='omitted';await expect(measureWorkManagedTerminalInventory(args)).rejects.toThrow('missing from provider inventory');mode='normal';
+   });
    expect(writes).toBe(0);expect((await owner.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');expect((await owner.query('SELECT count(*)::int AS count FROM operations_recovery_verifications')).rows[0].count).toBe(0);
   }finally{transport.mockRestore();}
  }finally{await owner.end();}
@@ -452,5 +459,41 @@ it('repeats actual Sandbox SDK metadata without resume and includes retained mis
     VALUES($1,$2,'artifact',$3,1,repeat('a',64),repeat('a',40),$4,clock_timestamp()+interval '20 seconds',$5,repeat('a',64),'admitted',clock_timestamp()+interval '1 minute',repeat('a',64),16,$6)`,[id,environment,randomUUID(),randomUUID(),tag,randomUUID()]);
    await owner.query("UPDATE operations_hosted_jobs SET state='starting',started_at=clock_timestamp() WHERE id=$1",[id]);await owner.query("UPDATE operations_hosted_jobs SET state='running',provider_id=$2 WHERE id=$1",[id,provider]);
   }
+ });
+},210000);
+
+
+it('retires prepared plan drafting before reopening without changing original identities or dispatching work',async()=>{
+ let attempt='';
+ await fixture(async input=>{
+  const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
+  try{await withRetainedDenialFixture(owner,input.scope.environmentId,dirname(input.sourceFile),{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async retained=>{
+   const original=(await owner.query('SELECT request_key,request_digest,conversation_id,steps_admitted FROM plan_drafting_attempts WHERE id=$1',[attempt])).rows[0];
+   expect(await quarantineRestoredAuthority(owner,input.scope,retained)).toMatchObject({newlyInterruptedPlanDrafts:1});
+   expect((await owner.query('SELECT request_key,request_digest,conversation_id,steps_admitted FROM plan_drafting_attempts WHERE id=$1',[attempt])).rows[0]).toEqual(original);
+   expect((await owner.query('SELECT state,safe_error_code FROM plan_drafting_attempts WHERE id=$1',[attempt])).rows[0]).toEqual({state:'unconfirmed',safe_error_code:'recovery_current_proof_unavailable'});
+   expect(await quarantineRestoredAuthority(owner,input.scope,retained)).toMatchObject({newlyInterruptedPlanDrafts:0});
+   expect(await withLockedWorkRecoveryDecision(input,(db,target)=>auditRecoveryDispatchState(db,target))).toMatchObject({currentDatabaseDispatchClosed:true,providerExecutionClosed:false,restorationReady:false});
+   expect(Number((await owner.query('SELECT count(*) FROM response_attempts')).rows[0].count)).toBe(0);
+  });}finally{await owner.end();}
+ },async owner=>{
+  const {submitPlanCommand}=await import('../../../lib/server/plans/commands'),{startPlanDraft}=await import('../../../lib/server/plans/drafting'),{syntheticPlanContent}=await import('../../fixtures/plans/seed');
+  const f=await pilotPublishedKnowledgeFixture(owner as unknown as PoolClient,'primary'),content=syntheticPlanContent();content.assertions=[];content.sourceDependencies=[];
+  await owner.query('BEGIN');try{const created=await submitPlanCommand(f.actor,{action:'create',requestKey:'plan_'+randomUUID(),workspaceId:f.actor.workspaceId,customerId:f.customerId,workloadId:null,audience:'delivery',ownerMembershipId:f.actor.membershipId,content},owner as unknown as PoolClient);
+  attempt=(await startPlanDraft(f.actor,{requestKey:randomUUID(),planId:created.planId,baseRevisionId:created.revisionId,expectedAggregateVersion:created.aggregateVersion,instructions:'Controlled synthetic plan draft without any model dispatch'},owner as unknown as PoolClient)).attemptId;await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}
+ });
+},210000);
+
+
+it('rejects unaccounted current root model steps before provider selection while preserving legacy model selection',async()=>{
+ const {default:agent}=await import('../../../agent/agent'),resolveModel=(agent.model as unknown as {events:{'step.started':(event:unknown,context:unknown)=>Promise<unknown>}}).events['step.started'];
+ const resolve=()=>resolveModel({data:{turnId:'synthetic-unbound-turn',stepIndex:0}},{session:{id:'wrun_synthetic_unbound',auth:{current:null}}});
+ await fixture(async input=>{
+  await withLockedWorkRecoveryTarget(input,async(_db,target)=>{await expect(withTargetRuntime(input,target,resolve)).rejects.toMatchObject({code:'recovery_locked',status:503});});
+ },async owner=>{
+  await expect(resolve()).rejects.toMatchObject({status:404});
+  await owner.query('UPDATE turas_environment SET schema_version=77');
+  try{expect(await resolve()).toBe('spacexai/grok-4.7');}
+  finally{await owner.query('UPDATE turas_environment SET schema_version=79');}
  });
 },210000);

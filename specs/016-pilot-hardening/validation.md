@@ -5002,3 +5002,26 @@ used unsupported SHOW syntax; its corrected SELECT current_setting check passes.
 Independent review found no blocker in these scoped components. Root/pilot types
 pass. Inventory:917cases/167suites; full current catalog and hosted release remain
 open.
+
+### Recovery admission and interrupted plans — 2026-10-19
+
+Restored prepared/running plan drafts now become unconfirmed during quarantine;
+original attempt/model identities remain intact. The owned PostgreSQL regression
+passes without provider dispatch. Current-schema unbound root model steps now
+fail before returning a provider; supported normal/governed/planning bindings
+retain their existing admission paths. This removes the naked fallback whose
+resolver-only open check could race a later recovery lock. An actual authored
+resolver regression passes for open079 denial, locked079 denial and preserved077
+selected-model fallback. No model selection changed or provider calls occurred.
+Pilot typecheck and docs pass. Inventory is919cases across167suites. The prior
+646854a full13 recovery-decision cases and both builds passed; the expanded full
+catalog and actual hosted release remain pending.
+
+Native terminal measurement now requires genuine independently retained authority
+and unions its original conversation bindings with current bindings. Original
+identities therefore remain required after application-row loss. The owned test
+passes for retained capability authenticity, missing-current-row coverage and
+omitted-provider rejection. An initial fixture attempted an immutable association
+update and was correctly rejected; the corrected loss fixture deletes its owned
+synthetic row. All provider transport is controlled in this test; it makes no
+hosted acceptance claim or provider writes.

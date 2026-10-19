@@ -1798,7 +1798,7 @@
     },
     {
       "file": "tests/integration/pilot/work-recovery-decision.test.ts",
-      "expectedCases": 13,
+      "expectedCases": 15,
       "cases": [
         "commits a pending recovery decision only after live checks and rolls back drift cancellation and callback commit attempts",
         "measures exhaustive fresh work MCP category pages through SDK and rejects changed projections or forged measurements",
@@ -1812,7 +1812,9 @@
         "retains genuine original learning reservations and rejects missing unknown cost holds",
         "fences original native business identities after missing rows while allowing distinct messages and owner cleanup",
         "fences an original publication recipient after outbox loss despite fresh delivery and provider keys",
-        "repeats actual Sandbox SDK metadata without resume and includes retained missing provider references"
+        "repeats actual Sandbox SDK metadata without resume and includes retained missing provider references",
+        "retires prepared plan drafting before reopening without changing original identities or dispatching work",
+        "rejects unaccounted current root model steps before provider selection while preserving legacy model selection"
       ]
     },
     {
