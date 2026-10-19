@@ -3610,3 +3610,74 @@ uncommitted reconciliation nor acquire its authority fence, and rollback removed
 the reconciled fences. Root/pilot types and documentation checks passed. Independent
 review found no remaining blocker. This is a composition foundation, not a complete
 service/Workflow/effect verification or permission to resolve quarantine.
+
+### Complete current local catalog and released credential repair (2026-10-19)
+
+The complete local catalog passes on `e9d2c2142d672db9c05aabbc898fc6ba47a54433`:
+779/779 cases across142 suites, with no partial receipt substitution. Its execution
+source digest is `6d8dcee537506f0d889860a31819cc5e0a1cf8d4e396f8fea6d8cc541f96643c`;
+the private run is `0ad185f4-2d10-4d5f-9193-356cecd5adf5`. This closes that local
+catalog attempt, not hosted recovery or full pilot acceptance.
+
+CI at the same commit retains separate failures: native-staged-4 timed out waiting
+for its authenticated file preview; the main browser job timed out preparing a
+research refresh; expansion WebKit timed out in structured benefit authoring.
+A fresh isolated native-staged-4 reproduction passes with real browser/framework
+and byte assertions, no paid provider calls. The earlier expansion/gap focused
+reproductions also passed; intermittent causes remain unresolved. Assertions,
+scenario deadlines and retry policy are unchanged.
+
+An exposed deployment-protection automation bypass was replaced. Its exact existing
+Production override now matches the replacement. The obsolete Preview override
+for the deleted018 branch could not be edited because the provider rejects the
+missing branch; after authenticated branch-absence verification and independent
+review, that exact stale row was removed. Other environment identities, scopes
+and update timestamps were unchanged. The corrected release uses existing main
+`f8d196fad60a96698656188074d0abe668bc7991` at actual Production deployment
+`dpl_2wM1dwDx5vV544AfaaEQPiURx8K5`, schema077. The preceding deployment attempt
+and its unknown cost remain retained; the second build followed verified consumer
+correction within the existing finite Production allocation.
+
+Actual authenticated HTTP, CLI WebKit desktop/mobile and one owned empty native
+session passed. The original native retirement was confirmed before and after
+revocation; the exposed credential is absent and the replacement remains default.
+The owned conversation was archived and temporary login revocation verified in
+Postgres. Model response admissions and model calls were0. This is released-route
+verification, not a signed-worker-path test or an016 release. No schema migration,
+full-readiness verification, merge or Projects-directory cleanup occurred.
+
+### Bounded UI orchestration and recovery batches
+
+Expansion and support UI runners now await Playwright asynchronously, keeping the
+supervised application's log pipes draining. The unchanged240-second runner limit
+and10MB combined output bound terminate the owned process group on failure. Partial
+bounded failures are rejected before parsing their private output. Three real
+subprocess regressions pass:4MiB sibling log pressure while the UI child waits for
+its response, forced termination of an unresponsive descendant, and combined output
+limits. Catalog/readiness contracts plus these regressions pass32/32; root/pilot
+types and documentation checks pass. Independent review found no blocker.
+
+Actual isolated WebKit acceptance passes all20 expansion authoring cases across
+four projects, with no retries/skips. The support proposal/review journey passes
+1/1 with the asynchronous child. The research refresh case from the main CI failure
+passes1/1 on mobile-dark in9.78seconds after correcting the private reproduction's
+clone/dependency/fixture setup. These results do not establish the causes of the
+historical CI timeouts. The actual native-staged-4 CI rerun also passes; its original
+failed attempt remains recorded.
+
+The e9d2c21 CI pilot catalog later exhausted the60-second temporary runtime lease
+in the multi-surface restore fault test. The fixture now runs artifact/report and
+workforce/gap batches in separate leases on the same target and locked revision.
+All existing assertions remain; shared profile/concurrency checks repeat, and each
+batch verifies retired admissions/sessions, closed roles, absent runtime backends
+and removed canonical roots. Runtime60seconds, fixture180seconds and testcase
+420seconds remain unchanged. The actual restore check passes1/1; the run took127.24seconds.
+This proves two bounded maintenance batches, not one continuous full-service window.
+Independent review found no blocker. The updated catalog is782cases across143suites;
+the earlier complete779-case receipt remains bound to e9d2c21 and is not relabeled.
+
+A fresh repeated hosted inventory finds578 deployments and79 aliases after credential
+repair, with4 exact current Production hosts and653 other hosts. Read-only firewall
+preflight confirms an empty preimage, current-host controls and effective worker-origin
+coverage. The firewall is unchanged. This inventory/preflight is not old-host closure,
+Workflow/effect reconciliation or a completed recovery verification.

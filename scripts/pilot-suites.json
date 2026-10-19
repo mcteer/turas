@@ -1631,6 +1631,15 @@
         "keeps every registered suite within a finite controller deadline",
         "rejects unregistered suite names before process execution"
       ]
+    },
+    {
+      "file": "tests/unit/ui-child.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "drains a supervised sibling under log pressure while the UI child awaits its response",
+        "enforces a finite UI deadline and terminates an unresponsive descendant process group",
+        "bounds combined UI stdout and stderr without retaining excess bytes"
+      ]
     }
   ],
   "ui": {

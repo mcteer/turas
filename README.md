@@ -99,7 +99,7 @@ Completion work now includes released main `f8d196f`. New pilot logins default
 off through `TURAS_PILOT_LOGIN_ENABLED`; explicit enablement still requires a
 current assigned membership. A separate exact-source Production infrastructure
 authorization can now be verified without promoting the original Preview envelope.
-The composed workspace/upload WebKit matrix passes40cases; the updated777-case
+The composed workspace/upload WebKit matrix passes40cases; the updated782-case
 catalog requires fresh complete verification. Expired infrastructure/model approvals,
 original charges and holds remain unchanged; no hosted pilot readiness is claimed.
 Expired evaluation authority can be continued only by an explicitly approved,

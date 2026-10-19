@@ -194,6 +194,7 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
      for(const path of ['/api/operations/recovery-read/'+randomUUID()+'/profile','/api/customers/'+expectedProfile.customerId+'/profile','/api/operations/recovery-read/'+randomUUID()+'/artifact','/api/operations/recovery-read/'+randomUUID()+'/report','/api/operations/recovery-read/'+randomUUID()+'/workforce','/api/operations/recovery-read/'+randomUUID()+'/gap']){const response=await fetch(environment.origin+path,{redirect:'manual',signal:environment.signal});expect([401,403,503]).toContain(response.status);await response.body?.cancel();}
     }finally{await environment.stop();Object.assign(process.env,warmSaved);}
     await interruptedPreparation(false);
+    async function verifyRuntimePhase(kinds:readonly ('artifact'|'report'|'workforce'|'gap')[]){
     await withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async(runtime,_signal,applicationEnvironment)=>{
      expect((await runtime.query('SELECT current_user,session_user')).rows[0]).toEqual({current_user:'turas_runtime_016',session_user:'turas_runtime_016'});
      expect((await runtime.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');
@@ -227,6 +228,7 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
       const normal=await fetch(environment.origin+'/api/customers/'+expectedProfile.customerId+'/profile',{headers,redirect:'manual'});expect([401,503]).toContain(normal.status);await normal.body?.cancel();
       const response=await fetch(path,{headers,redirect:'manual'});if(response.status!==200){const failure=await response.json() as {error:{code:string}};throw Error('Recovery HTTP denied: '+response.status+' '+failure.error.code);}expect(response.status).toBe(200);
       const body=await response.json() as {data:{customer:{id:string};acceptedFacts:{id:string}[]}};
+      if(kinds.includes('artifact')){
       let artifactAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
       await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{await owner.query('BEGIN');try{artifactAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedProfile.workspaceId,customerId:expectedProfile.customerId,deadline:Date.now()+20000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:2,deploymentId:null,readKind:'artifact',recordId:expectedProfile.artifactVersionId});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}});
       if(!artifactAdmission)throw Error('Actual artifact admission missing');
@@ -246,7 +248,9 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
        const exhausted=await fetch(artifactPath,{headers:artifactHeaders,redirect:'manual'});expect(exhausted.status).toBe(429);await exhausted.body?.cancel();
 
       }finally{await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,artifactProof.id);}
+      }
 
+      if(kinds.includes('report')){
       let reportAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
       await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{await owner.query('BEGIN');try{reportAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedReport.workspaceId,customerId:expectedReport.customerId,deadline:Date.now()+20000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:2,deploymentId:null,readKind:'report',recordId:expectedReport.artifactId});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}});
       if(!reportAdmission)throw Error('Actual report admission missing');
@@ -263,6 +267,8 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
        try{const corrupt=await fetch(reportPath,{headers:reportHeaders,redirect:'manual'});expect(corrupt.status).toBe(503);await corrupt.body?.cancel();}finally{await writeFile(copied,bytes,{mode:0o600});}
        const exhausted=await fetch(reportPath,{headers:reportHeaders,redirect:'manual'});expect(exhausted.status).toBe(429);await exhausted.body?.cancel();
       }finally{await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,reportProof.id);}
+      }
+      if(kinds.includes('workforce')){
       let workforceAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
       await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{await owner.query('BEGIN');try{workforceAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedWorkforce.workspaceId,customerId:null,deadline:Date.now()+20000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:2,deploymentId:null,readKind:'workforce',recordId:expectedWorkforce.importId});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}});
       if(!workforceAdmission)throw Error('Actual workforce admission missing');
@@ -283,6 +289,8 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
        try{const corrupt=await fetch(workforcePath,{headers:workforceHeaders,redirect:'manual'});expect(corrupt.status).toBe(503);await corrupt.body?.cancel();}finally{await writeFile(copied,expectedWorkforce.bytes,{mode:0o600});}
        const exhausted=await fetch(workforcePath,{headers:workforceHeaders,redirect:'manual'});expect(exhausted.status).toBe(429);await exhausted.body?.cancel();
       }finally{await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,workforceProof.id);}
+      }
+      if(kinds.includes('gap')){
       let gapAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
       await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{await owner.query('BEGIN');try{gapAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedGap.workspaceId,customerId:null,deadline:Date.now()+20000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:3,deploymentId:null,readKind:'gap',recordId:expectedGap.exportId});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}});
       if(!gapAdmission)throw Error('Actual gap admission missing');
@@ -307,6 +315,7 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
        expect((await db.query('SELECT state,version,lease_token,lease_until,completed_at FROM gap_export_receipts WHERE id=$1',[expectedGap.exportId])).rows[0]).toEqual(settled);
        const exhausted=await fetch(gapPath,{headers:gapHeaders,redirect:'manual'});expect(exhausted.status).toBe(429);await exhausted.body?.cancel();
       }finally{await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,gapProof.id);}
+      }
       expect(body.data.customer.id).toBe(expectedProfile.customerId);expect(body.data.acceptedFacts.some(fact=>fact.id===expectedProfile.revisionId)).toBe(true);
       // A correctly ordered owner transition waits on the shared recovery
       // fence, then proceeds when the actual runtime read transaction closes.
@@ -355,7 +364,15 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
 
     });
     expect((await db.query("SELECT 1 FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') AND rolcanlogin")).rowCount).toBe(0);
+    expect((await db.query("SELECT 1 FROM pg_stat_activity WHERE usename IN('turas_runtime','turas_runtime_016')")).rowCount).toBe(0);
+    expect((await db.query('SELECT 1 FROM operations_recovery_http_reads a JOIN login_sessions s ON s.id=a.session_id WHERE a.environment_id=$1 AND (a.revoked_at IS NULL OR s.revoked_at IS NULL)',[sourceEnvironmentId])).rowCount).toBe(0);
     expect((await readdir(join(root,'restore'))).filter(name=>name.startsWith('canonical-runtime-'))).toEqual([]);
+    }
+    // Exercise separate bounded maintenance batches rather than spending one
+    // 60-second restricted lease on the entire multi-surface fault catalog.
+    // Both retain the exact restored target, locked revision and all assertions.
+    await verifyRuntimePhase(['artifact','report']);
+    await verifyRuntimePhase(['workforce','gap']);
     await interruptedPreparation(true);
     await expect(withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async()=>{throw Error('Controlled runtime failure');})).rejects.toThrow('Controlled runtime failure');
     const interrupted=new AbortController();

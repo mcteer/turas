@@ -68,7 +68,10 @@
         "unit.hosted-request.007",
         "unit.gap-release-header.001",
         "unit.gap-release-header.002",
-        "unit.ci-browser-diagnostics.003"
+        "unit.ci-browser-diagnostics.003",
+        "unit.ui-child.001",
+        "unit.ui-child.002",
+        "unit.ui-child.003"
       ]
     },
     {

@@ -20,9 +20,11 @@ contains owner-controlled maintenance profile admissions; older rehearsal receip
 retain their original manifest/source identities. Fixed HTTP profile access and
 restricted-runtime teardown have focused positive/denial/concurrency proof. Full
 private-byte/recovery verification, hosted journeys/configuration, actual cadence,
-participant observations and the owner decision remain unfinished. The777-case
-catalog needs fresh complete proof after implementation; the3983853 run failed
-owned production-build setup after64successful suites/402passing cases. No
+participant observations and the owner decision remain unfinished. The779-case/142-suite
+local catalog passes at e9d2c21; its source-bound receipt is retained. The updated
+782-case/143-suite catalog includes the asynchronous UI-child regression cases
+and requires fresh complete acceptance after implementation. Production remains
+released f8d196f/schema077 after verified bypass credential repair. No016
 Production migration, feature merge or directory cleanup is implied.
 
 ## User decisions

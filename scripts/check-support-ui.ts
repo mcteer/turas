@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import {captureUiChild} from './capture-ui-child';
 import { mkdir, mkdtemp, writeFile, readdir, lstat, chmod } from "node:fs/promises";
 import { resolve } from "node:path";
 import { withSupportEvalEnvironment } from "./support-eval-environment";
@@ -45,13 +46,14 @@ async function main() {
       try {
         await environment.start();
         const output = resolve(directory, `${project}-${index}`);
-        const run = spawnSync(process.execPath, ["node_modules/@playwright/test/cli.js", "test", `${current.file}:${current.line}`, `--project=${project}`,
+        const run = await captureUiChild(["node_modules/@playwright/test/cli.js", "test", `${current.file}:${current.line}`, `--project=${project}`,
           "--reporter=json", "--forbid-only", "--retries=0", `--output=${output}`], {
           env: { ...process.env, TURAS_UI_BASE_URL: environment.origin, TURAS_SUPPORT_UI_FIXTURE_READY: "1" },
-          encoding: "utf8", timeout: 240000, maxBuffer: 10000000,
+          timeout: 240000, maximumBytes: 10000000,
         });
         await writeFile(resolve(directory, `${project}-${index}.json`), run.stdout, { mode: 0o600 });
         await writeFile(resolve(directory, `${project}-${index}.log`), run.stderr + environment.privateLogTail(), { mode: 0o600 });
+        if(run.error)throw new Error("Support UI runner did not complete within bounds");
         await privateCaptures(output);
         const report = JSON.parse(run.stdout), diagnostic = supportUiGlobalDiagnostic(report);
         if (diagnostic.globalErrors) console.error(JSON.stringify({ gate: "support-ui-runner", phase: "execution", project, file: current.file, ...diagnostic }));
@@ -59,7 +61,7 @@ async function main() {
         if (caseDiagnostic.failedResults) console.error(JSON.stringify({ gate: "support-ui-case", project,
           file: current.file, line: current.line, ...caseDiagnostic }));
         const counts = verifyExecutionUiReport(report, [current]);
-        if (run.status !== 0 || counts.unexpected || counts.skipped || counts.flaky || counts.expected !== 1) throw new Error("Support UI case failed");
+        if (run.error || run.status !== 0 || counts.unexpected || counts.skipped || counts.flaky || counts.expected !== 1) throw new Error("Support UI case failed");
         passed++;
       } finally {
         await environment.stop();
