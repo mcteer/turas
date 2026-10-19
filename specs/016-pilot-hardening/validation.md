@@ -4753,3 +4753,28 @@ receipt reports protection-credential verification, HTTP closure and readiness
 false. This diagnostic does not prove the unreleased candidate and must be
 repeated in final composition. The current registered inventory is884cases
 across162suites; full current catalog and hosted acceptance remain outstanding.
+
+
+### Version-bound protection controls — 2026-10-19
+
+Provider-derived approved bindings now carry process-local provenance and a
+five-minute exact-scope freshness limit; copied receipts cannot authorize
+application probes. The control component requires an actual Vercel challenge
+without credentials, then header, query and freshly provider-issued scoped
+cookie access to the exact release's unauthenticated session boundary. Every
+request requires admission before dispatch and a bounded response observation.
+Foreign redirects, revoked tokens, unprotected hosts, wrong releases and denied
+admission fail closed. Eight focused binding/control cases pass, with no
+credential or cookie in resulting receipts; independent review found no blocker.
+
+The actual baseline control failed after two requests, retaining both intents
+and the original cost hold. A separately journaled single diagnostic within the
+original five-request allowance reached401authentication_required but found no
+code-version header on the currently deployed pre-pilot Production build. This
+is a failed control rather than release proof; the version requirement remains.
+Three requests total were dispatched in this local control journal, without
+automatic retries, billing changes or resetting the historical strict census.
+The initial local runner import error occurred before any request and is retained
+separately. Actual candidate controls remain required after deployment.
+The inventory is888cases across163suites; full current-source and hosted
+acceptance remain incomplete.

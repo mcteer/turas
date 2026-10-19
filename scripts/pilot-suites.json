@@ -1857,6 +1857,16 @@
         "requires an approved selected host and exact canonical unique hostnames",
         "requires the selected Production deployment to be the actual current baseline and honors cancellation"
       ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-protection-controls.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "verifies actual protected negative header query and provider-issued cookie controls with per-request admission",
+        "rejects unprotected hosts revoked tokens wrong releases and foreign bootstrap redirects",
+        "rejects cloned bindings and never dispatches after admission denial or cancellation",
+        "recognizes only fixed-provider challenges returning to the exact requested host and path"
+      ]
     }
   ],
   "ui": {

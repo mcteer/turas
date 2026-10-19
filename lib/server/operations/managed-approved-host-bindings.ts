@@ -3,6 +3,7 @@ import {recoveryDigest} from '../../contracts/pilot-recovery';
 import {canonicalManagedHost} from './managed-alias-inventory';
 const id=z.string().regex(/^dpl_[A-Za-z0-9]+$/),commit=z.string().regex(/^[a-f0-9]{40}$/);
 const scopeSchema=z.strictObject({projectId:z.string().regex(/^prj_[A-Za-z0-9]+$/),teamId:z.string().regex(/^team_[A-Za-z0-9]+$/),token:z.string().min(1).max(8192),target:z.enum(['preview','production']),deploymentId:id,sourceCommit:commit,approvedHosts:z.array(z.string()).min(1).max(16)});
+const measuredBindings=new WeakMap<object,{measuredAt:number;scopeDigest:string}>();
 const projectSchema=z.object({id:z.string(),accountId:z.string(),targets:z.object({production:z.object({id})})});
 const deploymentSchema=z.object({id,projectId:z.string(),ownerId:z.string(),readyState:z.literal('READY'),target:z.enum(['production']).nullable(),meta:z.object({githubCommitSha:commit.optional()}).optional(),gitSource:z.object({sha:commit.optional()}).optional()});
 /** Fixed actual control-plane lookups. Only the selected recovery deployment and
@@ -36,5 +37,11 @@ export async function readManagedApprovedHostBindings(raw:z.infer<typeof scopeSc
  for(const host of [...hosts].sort()){const bound=await deployment(host);if(recoveryDigest(bound)!==recoveryDigest(expected.get(bound.deploymentId)))throw Error('Approved host deployment metadata changed');rows.push({host,...bound});}
  if(!rows.some(row=>row.deploymentId===scope.deploymentId))throw Error('Selected recovery deployment has no approved host');
  const after=projectSchema.parse(await read(projectPath));if(recoveryDigest(after)!==recoveryDigest(project))throw Error('Current project Production binding changed');
- signal.throwIfAborted();return Object.freeze({contract:'pilot-managed-approved-host-bindings-v1' as const,projectId:scope.projectId,teamId:scope.teamId,productionDeploymentId:productionId,selectedDeploymentId:scope.deploymentId,rows:Object.freeze(rows.map(row=>Object.freeze(row))),bindingsDigest:recoveryDigest(rows),providerReadVerified:true as const,protectionCredentialsVerified:false as const,httpAdmissionClosed:false as const,restorationReady:false as const});
+ signal.throwIfAborted();const proof=Object.freeze({contract:'pilot-managed-approved-host-bindings-v1' as const,projectId:scope.projectId,teamId:scope.teamId,productionDeploymentId:productionId,selectedDeploymentId:scope.deploymentId,rows:Object.freeze(rows.map(row=>Object.freeze(row))),bindingsDigest:recoveryDigest(rows),providerReadVerified:true as const,protectionCredentialsVerified:false as const,httpAdmissionClosed:false as const,restorationReady:false as const});
+ measuredBindings.set(proof,{measuredAt:Date.now(),scopeDigest:recoveryDigest({...scope,token:undefined})});return proof;
+}
+/** Provider provenance is process-local; JSON copies cannot authorize probes. */
+export function requireManagedApprovedHostBindings(proof:Awaited<ReturnType<typeof readManagedApprovedHostBindings>>,raw:z.infer<typeof scopeSchema>){
+ const scope=scopeSchema.parse(raw),actual=measuredBindings.get(proof),age=actual?Date.now()-actual.measuredAt:Infinity;
+ if(!actual||age<0||age>300000||actual.scopeDigest!==recoveryDigest({...scope,token:undefined}))throw Error('Genuine fresh exact approved-host bindings required');return proof;
 }

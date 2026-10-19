@@ -1,5 +1,5 @@
 import {it,expect,vi,afterEach} from 'vitest';
-import {readManagedApprovedHostBindings} from '../../../lib/server/operations/managed-approved-host-bindings';
+import {readManagedApprovedHostBindings,requireManagedApprovedHostBindings} from '../../../lib/server/operations/managed-approved-host-bindings';
 const sha='a'.repeat(40),scope={projectId:'prj_original',teamId:'team_original',token:'controlled-token',target:'preview' as const,deploymentId:'dpl_preview',sourceCommit:sha,approvedHosts:['preview.vercel.app','app.example.com']};
 function transport(mode='normal'){
  let projectReads=0;
@@ -13,7 +13,7 @@ function transport(mode='normal'){
 }
 afterEach(()=>vi.restoreAllMocks());
 it('binds each allowed host to the selected Preview or current Production baseline',async()=>{
- const fetch=transport();const proof=await readManagedApprovedHostBindings(scope,new AbortController().signal);expect(proof.rows.map(row=>[row.host,row.deploymentId])).toEqual([['app.example.com','dpl_production'],['preview.vercel.app','dpl_preview']]);expect(proof).toMatchObject({providerReadVerified:true,protectionCredentialsVerified:false,httpAdmissionClosed:false,restorationReady:false});expect(fetch).toHaveBeenCalledTimes(6);
+ const fetch=transport();const proof=await readManagedApprovedHostBindings(scope,new AbortController().signal);expect(proof.rows.map(row=>[row.host,row.deploymentId])).toEqual([['app.example.com','dpl_production'],['preview.vercel.app','dpl_preview']]);expect(proof).toMatchObject({providerReadVerified:true,protectionCredentialsVerified:false,httpAdmissionClosed:false,restorationReady:false});expect(fetch).toHaveBeenCalledTimes(6);expect(requireManagedApprovedHostBindings(proof,scope)).toBe(proof);expect(()=>requireManagedApprovedHostBindings({...proof},scope)).toThrow('Genuine fresh');expect(()=>requireManagedApprovedHostBindings(proof,{...scope,sourceCommit:'b'.repeat(40)})).toThrow('exact');
 });
 it('rejects old foreign mismatched-source and changing Production bindings',async()=>{
  for(const mode of ['old','foreign','wrong-source','project-drift','host-source-drift']){transport(mode);await expect(readManagedApprovedHostBindings(scope,new AbortController().signal)).rejects.toThrow();vi.restoreAllMocks();}
