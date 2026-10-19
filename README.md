@@ -323,6 +323,8 @@ The work-restore path now measures actual database content and private files bef
 quarantine, with atomic current-grant reconciliation from authenticated retained
 denials. Read-only managed-run inspection traverses all provider pages twice;
 terminal closure and retirement of old deployments remain unproved.
+Fresh read-only inspection separates Preview and Production Workflow inventories;
+completed legacy tool runs can be retained without cancellation or restart authority.
 A finite inventory command now automates the protected closure batches and
 refuses drift or uncertain cancellation retries; its hosted execution is pending.
 An owned recovery command now authenticates temporary mcteer probes, reads actual

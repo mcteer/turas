@@ -23,3 +23,14 @@ it('does not accept a cancellation response when the independent terminal read f
 it('rejects a different workflow definition before cancellation',async()=>{
  let writes=0;await expect(reconcileManagedRun({binding,signal:AbortSignal.timeout(1000),read:async()=>({...binding,workflowName:'workflow//foreign//entry',status:'running'}),claimIntent:async()=>true,cancel:async()=>{writes++;}})).rejects.toThrow('binding differs');expect(writes).toBe(0);
 });
+
+it('retains an observed terminal legacy tool run without dispatch or retry authority',async()=>{
+ const legacy={...binding,workflowName:'workflow//eve//workflowToolRunWorkflow' as const};let reads=0;
+ const result=await reconcileManagedRun({binding:legacy,signal:AbortSignal.timeout(1000),read:async()=>{reads++;return {...legacy,status:'completed'};},claimIntent:async()=>{throw Error('No legacy cancellation intent permitted');},cancel:async()=>{throw Error('No legacy tool dispatch permitted');}});
+ expect(reads).toBe(1);expect(result).toMatchObject({terminalVerified:true,cancelDispatched:false,paidEffectsReconciled:false,workflowResumed:false,restorationReady:false});
+});
+it('withholds an active legacy tool run before claiming a cancellation intent',async()=>{
+ for(const status of ['pending','running']){const legacy={...binding,workflowName:'workflow//eve//workflowToolRunWorkflow' as const};let writes=0;
+  await expect(reconcileManagedRun({binding:legacy,signal:AbortSignal.timeout(1000),read:async()=>({...legacy,status}),claimIntent:async()=>{writes++;return true;},cancel:async()=>{writes++;}})).rejects.toThrow('already terminal');expect(writes).toBe(0);
+ }
+});

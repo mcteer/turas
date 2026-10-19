@@ -1233,7 +1233,7 @@
     },
     {
       "file": "tests/unit/pilot/managed-workflow-closure.test.ts",
-      "expectedCases": 9,
+      "expectedCases": 11,
       "cases": [
         "reads an already completed run without creating an intent or dispatching cancellation",
         "reads an already failed run without creating an intent or dispatching cancellation",
@@ -1243,7 +1243,9 @@
         "reconciles an existing intent with reads only and withholds a still running run",
         "rejects a different deployment before cancellation",
         "does not accept a cancellation response when the independent terminal read fails",
-        "rejects a different workflow definition before cancellation"
+        "rejects a different workflow definition before cancellation",
+        "retains an observed terminal legacy tool run without dispatch or retry authority",
+        "withholds an active legacy tool run before claiming a cancellation intent"
       ]
     },
     {

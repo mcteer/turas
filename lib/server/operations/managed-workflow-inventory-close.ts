@@ -2,7 +2,7 @@ import type {Client} from 'pg';
 import {z} from 'zod';
 import {recoveryDigest} from '../../contracts/pilot-recovery';
 import {withRecoveryDatabaseCheckpoint} from './database-checkpoint';
-import {bindingSchema} from './managed-workflow-closure';
+import {bindingSchema,legacyToolRunWorkflow} from './managed-workflow-closure';
 import {closeManagedRunBatch} from './managed-workflow-batch';
 import {inventoryManagedRuns,managedRunIdentityDigest} from './managed-workflow-inventory';
 
@@ -36,6 +36,7 @@ export async function closeManagedRunInventory(input:{source:Client;archive:Clie
   const initial=await inspect();
   if(initial.inventory.runs.length!==plan.expectedRuns||initial.inventory.identityDigest!==plan.expectedIdentityDigest)throw Error('Exact planned managed inventory differs');
   // Validate every workflow kind before any cancellation, including provider-only runs.
+  if(initial.inventory.runs.some(run=>run.workflowName===legacyToolRunWorkflow&&!['completed','failed','cancelled'].includes(run.status)))throw Error('Legacy tool workflow must already be terminal before any managed cancellation');
   const bindings=initial.inventory.runs.map(run=>bindingSchema.parse({...scope,projectId:plan.projectId,teamId:plan.teamId,runId:run.runId,deploymentId:run.deploymentId,workflowName:run.workflowName}));
   let batches=0,terminalRuns=0;
   for(let offset=0;offset<bindings.length;offset+=50){

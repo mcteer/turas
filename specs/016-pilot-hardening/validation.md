@@ -3566,3 +3566,31 @@ archive remains byte-perfect. The fixture restores its original reference and
 triggers before continuing. Both typed target and original store checks remain;
 no caller-supplied file list or healthy label is accepted. Independent review found
 no blocker. Physical coverage alone cannot grant service readiness.
+
+
+### Actual Workflow environment separation and terminal legacy tool history
+
+Fresh read-only provider inspection at05acf54 found disjoint environment inventories:
+Preview1613 (running398, completed1077, cancelled129, failed9) and Production507
+(running171, completed319, cancelled14, failed3), with no overlapping run identity.
+Repeated complete traversals took17pages per Preview pass and6 per Production pass.
+These are observations, not cancellations, global admission closure or cost settlement.
+The earlier Production-only507 inventory does not cover Preview.
+
+Both contain legacy `workflow//eve//workflowToolRunWorkflow` histories:58 Preview
+and5 Production, all completed. The existing four-name closure binding rejected
+those terminal records and therefore prevented a complete inventory from reaching
+its batches. The exact legacy name is now accepted only for terminal readback and
+independent receipt retention. Active legacy runs fail before an intent; inventory
+preflight checks every row before any batch cancellation. Unknown kinds still deny.
+No legacy capability is installed, invoked, cancelled or resumed by this change.
+
+The24 unit cases across3files pass. The11 actual two-owned-database batch cases
+pass in22.60seconds, including53 runs with one terminal legacy history,52 once-only
+cancellations and all53 independent terminal receipts; repeat reconciliation performs
+no additional cancellation. An active legacy run blocks an earlier normal run with
+zero cancellation intents. These providers are controlled fixtures, not hosted
+cancellations. Independent code review found no blocker. Two new registered unit
+cases make the current complete catalog779cases across142suites; no full current
+execution receipt is claimed. Real provider writes and paid model dispatches remain0
+for this resumption.

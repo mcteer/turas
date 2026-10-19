@@ -36,13 +36,13 @@ function inventoryPlan(runs:{runId:string;deploymentId:string;workflowName:strin
 }
 const metadata=(runId:string,status='running'):{runId:string;deploymentId:string;workflowName:string;status:string}=>({runId,deploymentId:binding.deploymentId,workflowName:binding.workflowName,status});
 it('closes and resumes a complete 53-run inventory through bounded batches without cancelling twice',async()=>{
- const rows=Array.from({length:53},(_,i)=>metadata('wrun_inventory_'+String(i).padStart(3,'0'))),plan=inventoryPlan(rows);let cancelled=0,before=0;const sizes:number[]=[];
+ const rows=Array.from({length:53},(_,i)=>metadata('wrun_inventory_'+String(i).padStart(3,'0')));rows[25].workflowName='workflow//eve//workflowToolRunWorkflow';rows[25].status='completed';const plan=inventoryPlan(rows);let cancelled=0,before=0;const sizes:number[]=[];
  const provider={list:async()=>({data:rows,cursor:null,hasMore:false}),read:async(id:string)=>rows.find(row=>row.runId===id),cancel:async(id:string)=>{cancelled++;rows.find(row=>row.runId===id)!.status='cancelled';}};
  const run=()=>closeManagedRunInventory({source,archive,installationId,plan,signal:sourceOwned.environment.signal,provider,beforeBatch:async()=>{before++;},onBatch:async(_index,result)=>{sizes.push(result.requestedRuns);}});
  expect(await run()).toMatchObject({requestedRuns:53,verifiedTerminalRuns:53,batches:2,enumeratedInventoryTerminalVerified:true,independentClosureReceiptsRetained:true,allProviderRunsClosed:false,oldDeploymentsClosed:false,restorationReady:false});
- expect(sizes).toEqual([50,3]);expect(cancelled).toBe(53);expect(before).toBe(2);
+ expect(sizes).toEqual([50,3]);expect(cancelled).toBe(52);expect(before).toBe(2);
  expect((await archive.query("SELECT count(*)::int AS n FROM turas_backup.native_closure_observations WHERE run_id LIKE 'wrun_inventory_%'")).rows[0].n).toBe(53);
- expect((await run()).enumeratedInventoryTerminalVerified).toBe(true);expect(cancelled).toBe(53);
+ expect((await run()).enumeratedInventoryTerminalVerified).toBe(true);expect(cancelled).toBe(52);
 });
 it('stops on provider identity drift without cancelling newly discovered runs',async()=>{
  const row=metadata('wrun_drift_original'),extra=metadata('wrun_drift_new'),plan=inventoryPlan([row]);let introduced=false,cancelled=0;
@@ -58,10 +58,13 @@ it('retains an uncertain inventory cancellation intent and refuses automatic ret
  expect((await archive.query("SELECT count(*)::int AS n FROM turas_backup.native_closure_observations WHERE run_id='wrun_inventory_uncertain'")).rows[0].n).toBe(0);
 });
 it('rejects a foreign planned identity digest and unsupported workflow kind before cancellation',async()=>{
- const row=metadata('wrun_unapproved_kind'),plan=inventoryPlan([row]);let cancelled=0;
- const run=(selected:typeof plan)=>closeManagedRunInventory({source,archive,installationId,plan:selected,signal:sourceOwned.environment.signal,provider:{list:async()=>({data:[row],cursor:null,hasMore:false}),read:async()=>row,cancel:async()=>{cancelled++;}},beforeBatch:async()=>{},onBatch:async()=>{}});
+ const row=metadata('wrun_unapproved_kind'),plan=inventoryPlan([row]);let rows=[row],cancelled=0;
+ const run=(selected:typeof plan)=>closeManagedRunInventory({source,archive,installationId,plan:selected,signal:sourceOwned.environment.signal,provider:{list:async()=>({data:rows,cursor:null,hasMore:false}),read:async()=>row,cancel:async()=>{cancelled++;}},beforeBatch:async()=>{},onBatch:async()=>{}});
  await expect(run({...plan,expectedIdentityDigest:'f'.repeat(64)})).rejects.toThrow('planned managed inventory differs');
  row.workflowName='workflow//unknown//not-approved';await expect(run(inventoryPlan([row]))).rejects.toThrow();expect(cancelled).toBe(0);
+ row.workflowName='workflow//eve//workflowToolRunWorkflow';rows=[metadata('wrun_earlier_normal'),row];
+ await expect(run(inventoryPlan(rows))).rejects.toThrow('already be terminal');expect(cancelled).toBe(0);
+ expect((await archive.query("SELECT count(*)::int AS n FROM turas_backup.native_cancel_intents WHERE run_id=ANY($1::text[])",[rows.map(item=>item.runId)])).rows[0].n).toBe(0);
 });
 it('verifies an explicitly empty provider inventory and still requires the independent archive',async()=>{
  const plan=inventoryPlan([]);let listed=0;

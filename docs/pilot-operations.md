@@ -972,3 +972,19 @@ the existing256object/24MiB envelope, owner fences, opaque target/integrity chec
 and private-store identity checks. Missing or mismatched required bytes deny runtime
 access. This physical coverage observation does not establish canonical service
 health, current authority, Workflow/effect closure or complete recovery readiness.
+
+
+### Environment-specific Workflow inventory and legacy terminal history
+
+Workflow provider listing is environment-specific: the observed Preview and
+Production identities are disjoint. A Production inventory cannot certify Preview
+closure. Any composed old-project closure must retain independently scoped
+inventories and exact original provider identities for both environments.
+
+The exact observed legacy eve `workflowToolRunWorkflow` name is supported only
+for already terminal readback and retained independent closure receipts. An active
+legacy tool run blocks the whole inventory before any cancellation batch begins;
+the single-run reconciler also refuses its cancellation intent. Unknown workflow
+names remain rejected. This compatibility does not install or restart legacy tools,
+create settlement, release charges, prove old-host admission closure or grant full
+recovery readiness.

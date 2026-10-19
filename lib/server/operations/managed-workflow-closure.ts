@@ -1,5 +1,8 @@
 import {z} from 'zod';
-export const bindingSchema=z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive(),projectId:z.string().regex(/^prj_[A-Za-z0-9]+$/),teamId:z.string().regex(/^team_[A-Za-z0-9]+$/),runId:z.string().regex(/^wrun_[A-Za-z0-9_-]{1,240}$/),deploymentId:z.string().regex(/^dpl_[A-Za-z0-9]+$/),workflowName:z.enum(['workflow//eve//workflowEntry','workflow//eve//sessionTimeoutWorkflow','workflow//eve//taskRunWorkflow','workflow//eve//turnWorkflow'])});
+/** Observed legacy eve tool runs may be retained only after terminal readback.
+ * This does not authorize cancelling, resuming or re-executing that old tool. */
+export const legacyToolRunWorkflow='workflow//eve//workflowToolRunWorkflow' as const;
+export const bindingSchema=z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive(),projectId:z.string().regex(/^prj_[A-Za-z0-9]+$/),teamId:z.string().regex(/^team_[A-Za-z0-9]+$/),runId:z.string().regex(/^wrun_[A-Za-z0-9_-]{1,240}$/),deploymentId:z.string().regex(/^dpl_[A-Za-z0-9]+$/),workflowName:z.enum(['workflow//eve//workflowEntry','workflow//eve//sessionTimeoutWorkflow','workflow//eve//taskRunWorkflow','workflow//eve//turnWorkflow',legacyToolRunWorkflow])});
 const metadata=z.object({runId:z.string(),deploymentId:z.string(),workflowName:z.string(),status:z.enum(['pending','running','completed','failed','cancelled'])});
 export type ClosureBinding=z.infer<typeof bindingSchema>;
 export type RunMetadata=z.infer<typeof metadata>;
@@ -12,6 +15,7 @@ export async function reconcileManagedRun(input:{binding:ClosureBinding;signal:A
  const initial=await current();
  const terminal=(state:RunMetadata['status'])=>state==='completed'||state==='failed'||state==='cancelled';
  if(!terminal(initial.status)){
+  if(binding.workflowName===legacyToolRunWorkflow)throw Error('Legacy tool workflow requires an already terminal provider read');
   const claimed=await input.claimIntent(binding);input.signal.throwIfAborted();
   if(claimed){dispatched=true;try{await input.cancel();}catch{uncertain=true;}}
   // Never use a cancellation response alone as terminal proof. A failed read or
