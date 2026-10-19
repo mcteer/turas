@@ -1,3 +1,6 @@
+import {requiredRecoveryObjects} from './required-objects';
+import {LocalPrivateObjects} from '../storage/local-objects';
+import {verifiedObjectInventory,activeObjectNamespaces} from '../storage/inventory';
 import {materializeOwnedRecoveryStores} from './object-restore';
 import {Client} from 'pg';
 import {execFile} from 'node:child_process';
@@ -78,6 +81,16 @@ export async function requireOwnedRestoreConnection(db:Client,target:OwnedRestor
  if(actual.identity!==b.identity||actual.environmentId!==scope.environmentId||actual.schemaVersion!==79||control.length!==1||control[0].mode!=='locked'||Number(control[0].revision)!==scope.controlRevision||control[0].recovery_id!==scope.recoveryId)throw Error('Exact bound locked recovery source required');
  signal.throwIfAborted();return b.restored.integrity;
 }
+/** Derive required originals from the actual restored ledger, never from a
+ * supplied object list. Physical archive parity alone cannot prove coverage. */
+export async function verifyOwnedRestoredRequiredObjects(db:Client,target:OwnedRestoreTarget,raw:Scope,signal:AbortSignal){
+ const scope=scopeSchema.parse(raw),b=binding(target),proof=await requireOwnedRestoreConnection(db,target,scope,signal);
+ await requireMeasuredWorkIntegrity(db,proof,scope,b.restored!.storeRoot,signal);
+ const required=await requiredRecoveryObjects(db,scope.environmentId),physical=await verifiedObjectInventory(new LocalPrivateObjects(b.restored!.storeRoot,scope.environmentId,10485760),scope.environmentId,activeObjectNamespaces,signal,{maximumObjects:256,maximumBytes:24*1024*1024});
+ const actual=new Map(physical.objects.map(object=>[object.key,object]));
+ if(required.length>256||required.some(object=>{const stored=actual.get(object.key);return !stored||stored.digest!==object.digest||stored.sizeBytes!==object.sizeBytes;}))throw Error('Required restored original coverage differs');
+ return Object.freeze({contract:'pilot-owned-required-originals-v1' as const,environmentId:scope.environmentId,recoveryId:scope.recoveryId,controlRevision:scope.controlRevision,requiredObjectCount:required.length,requiredObjectBytes:required.reduce((sum,object)=>sum+object.sizeBytes,0),requiredObjectsDigest:recoveryDigest(required),physicalInventoryDigest:physical.digest,requiredOriginalsVerified:true as const,serviceVerified:false as const,restorationReady:false as const});
+}
 /** Scoped canonical reads may change the source marker, never their database.
  * This exposes no connection or credential and does not configure an app. */
 export function requireOwnedRestoreConfigurationTarget(target:OwnedRestoreTarget,runtime:string,owner:string){
@@ -127,7 +140,7 @@ export async function withOwnedRestoredRuntime<T>(target:OwnedRestoreTarget,raw:
     await owner.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16020))',[scope.environmentId]);await owner.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[scope.environmentId]);
     await requireOwnedRestoreConnection(owner,target,scope,deadline);
     if(await recoveryGrantCheckpoint(owner)!==state.closedDigest)throw Error('Restored runtime grant boundary changed');
-    await requireMeasuredWorkIntegrity(owner,proof,scope,b.restored!.storeRoot,deadline);
+    await verifyOwnedRestoredRequiredObjects(owner,target,scope,deadline);
     recoveryStores=await materializeOwnedRecoveryStores({sourceRoot:b.restored!.storeRoot,target:join(dirname(b.restored!.storeRoot),'canonical-runtime-'+randomUUID()),environmentId:scope.environmentId,signal:deadline});
     await requireMeasuredWorkIntegrity(owner,proof,scope,b.restored!.storeRoot,deadline);
     await owner.query(grants);

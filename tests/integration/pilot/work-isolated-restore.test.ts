@@ -22,7 +22,7 @@ import {getServerConfig} from '../../../lib/server/config';
 import {withAuthenticatedOwnerRecoveryRead} from '../../../lib/server/operations/authenticated-recovery-read';
 import {readProfile} from '../../../lib/server/profiles/read';
 import type {PoolClient} from 'pg';
-import {mintOwnedRestoreTarget,bindOwnedRestoredSource,withOwnedRestoreTarget,requireOwnedRestoreConnection,withOwnedRestoredRuntime} from '../../../lib/server/operations/owned-restore-target';
+import {verifyOwnedRestoredRequiredObjects,mintOwnedRestoreTarget,bindOwnedRestoredSource,withOwnedRestoreTarget,requireOwnedRestoreConnection,withOwnedRestoredRuntime} from '../../../lib/server/operations/owned-restore-target';
 import {restoreOwnedWorkDump} from '../../../lib/server/operations/pg-restore';
 import {measureRestoredWorkIntegrity,requireMeasuredWorkIntegrity} from '../../../lib/server/operations/restored-work-integrity';
 import {it,expect} from 'vitest';
@@ -129,6 +129,17 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
     await expect(withOwnedRestoreTarget(ownedTarget,{...scope,recoveryId:randomUUID()},environment.signal,async()=>{})).rejects.toThrow('Actual bound');
     await withOwnedRestoreTarget(ownedTarget,scope,environment.signal,async owner=>{
      expect(await requireOwnedRestoreConnection(owner,ownedTarget,scope,environment.signal)).toBe(proof);
+     await owner.query('BEGIN');
+     try{expect(await verifyOwnedRestoredRequiredObjects(owner,ownedTarget,scope,environment.signal)).toMatchObject({requiredObjectCount:8,requiredOriginalsVerified:true,serviceVerified:false,restorationReady:false});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}
+     const originalArtifact=(await owner.query('SELECT object_key FROM artifact_versions WHERE id=$1',[expectedProfile.artifactVersionId])).rows[0].object_key;
+     // Deliberately corrupt only the disposable ledger's object reference. A
+     // byte-perfect archive inventory must not hide a missing required original.
+     await owner.query('ALTER TABLE artifact_versions DISABLE TRIGGER USER');
+     try{
+      await owner.query('UPDATE artifact_versions SET object_key=$2 WHERE id=$1',[expectedProfile.artifactVersionId,'0'.repeat(64)]);
+      await owner.query('BEGIN');try{await expect(verifyOwnedRestoredRequiredObjects(owner,ownedTarget,scope,environment.signal)).rejects.toThrow('coverage differs');}finally{await owner.query('ROLLBACK');}
+     }finally{await owner.query('UPDATE artifact_versions SET object_key=$2 WHERE id=$1',[expectedProfile.artifactVersionId,originalArtifact]);await owner.query('ALTER TABLE artifact_versions ENABLE TRIGGER USER');}
+
      await expect(requireOwnedRestoreConnection(db,ownedTarget,scope,environment.signal)).rejects.toThrow('Actual bound');
      const previous=process.env.TURAS_ENVIRONMENT_ID;process.env.TURAS_ENVIRONMENT_ID=sourceEnvironmentId;
      try{expect(()=>requireOwnedPilotDatabase(process.env,true)).toThrow('owning runner');expect(await requireOwnedRestoreConnection(owner,ownedTarget,scope,environment.signal)).toBe(proof);}

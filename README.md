@@ -332,7 +332,8 @@ The fixed maintenance profile, artifact, report, workforce and gap-export endpoi
 short-lived, database/deployment-bound secret through a direct restricted runtime
 login. Finite request reservations, current-scope rechecks and atomic teardown
 leave ordinary routes locked. The owned runtime now materializes and cold-verifies
-canonical local copies of all six restored file namespaces, then removes those
+canonical local copies of all six restored file namespaces, verifies that every
+ledger-required original is present with its exact digest and size, then removes those
 copies after its probe; restored originals remain. The artifact path uses the
 canonical source reader with an exact version/digest/generation and a bounded
 fully checked buffer. Workspace-scoped workforce reads retain manager and original-owner authorization. Gap exports retain reviewer, current approval and audience checks, with bounded

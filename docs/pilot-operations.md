@@ -960,3 +960,15 @@ capture drain check now recognizes `operations_local_jobs.succeeded` as terminal
 after executor completion and publication checks. A running local job with the
 same future timestamp still blocks capture. Other tables and unknown states keep
 the existing conservative treatment. This does not prove provider/effect closure.
+
+
+### Required originals before temporary runtime access
+
+A byte-perfect archive inventory can still omit an original referenced by its
+restored database. Before granting the temporary runtime, the owned verifier now
+derives required object keys, digests and sizes from the actual restored ledger
+and compares each against the authenticated cold physical inventory. It retains
+the existing256object/24MiB envelope, owner fences, opaque target/integrity checks
+and private-store identity checks. Missing or mismatched required bytes deny runtime
+access. This physical coverage observation does not establish canonical service
+health, current authority, Workflow/effect closure or complete recovery readiness.

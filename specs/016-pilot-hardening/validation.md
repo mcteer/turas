@@ -3547,3 +3547,22 @@ operations. The main product-gaps deterministic job failed before tests while
 `retrieval:prepare --offline` hit its existing Docker120second setup timeout;
 no test report was produced. Other main jobs were still running at observation.
 No case deadline, assertion or retry policy was relaxed.
+
+
+### Committed079 rehearsal and required-original coverage
+
+The actual retained Production077 v4 archive cold rehearsal passes at committed
+`d5ac68d`, with its final amended079 manifest: schema077→079, locked service and
+retired runtime admission. The owned target is removed afterward; Production is
+unchanged. This is database preservation/rehearsal evidence, not hosted release.
+
+A further guard closes the gap between archive parity and ledger coverage. Before
+temporary runtime grants, it derives every required original from actual restored
+rows and verifies its key/digest/size against the authenticated cold inventory.
+The existing actual restore case passes1/1 in106.10seconds with8 ledger-required
+originals among13 physical objects, then all five maintenance surfaces. A deliberately
+missing object reference in the disposable ledger denies, even though the physical
+archive remains byte-perfect. The fixture restores its original reference and
+triggers before continuing. Both typed target and original store checks remain;
+no caller-supplied file list or healthy label is accepted. Independent review found
+no blocker. Physical coverage alone cannot grant service readiness.
