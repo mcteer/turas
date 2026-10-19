@@ -728,3 +728,7 @@ with verified runtime grants and actual authenticated HTTP/CLI WebKit acceptance
 Automatic Git deployment of `main` is restored by the compatibility-safe release
 configuration. These checks do not establish the separate 016 hosted
 recovery/operator/pilot acceptance. See the [release record](docs/production-parity-release-2026-10-15.md).
+
+The isolated recovery owner can compose current-denial reconciliation and the
+permanent request-fence audit in one transaction; incomplete decisions roll back
+together. This does not establish hosted recovery readiness.

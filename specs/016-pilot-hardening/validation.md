@@ -3594,3 +3594,19 @@ cancellations. Independent code review found no blocker. Two new registered unit
 cases make the current complete catalog779cases across142suites; no full current
 execution receipt is claimed. Real provider writes and paid model dispatches remain0
 for this resumption.
+
+### Transaction-scoped request-fence audit
+
+The owner audit now has an internal transaction-scoped entry point for the final
+composed recovery decision. It requires an existing READ COMMITTED transaction,
+retains both authority fences and table locks, and never commits or rolls back
+its caller. Repeatable-read and serializable snapshots are rejected explicitly.
+The standalone audit and committed-denial checkpoint keep their existing behavior.
+
+Actual owned PostgreSQL verification: all 16 credential/denial integration cases
+passed (92.13 seconds); the changed composition case passed again with both
+isolation rejection cases (11.37 seconds). A separate owner could neither see
+uncommitted reconciliation nor acquire its authority fence, and rollback removed
+the reconciled fences. Root/pilot types and documentation checks passed. Independent
+review found no remaining blocker. This is a composition foundation, not a complete
+service/Workflow/effect verification or permission to resolve quarantine.

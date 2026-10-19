@@ -20,10 +20,19 @@ function installedReplayFunctions(){
  * bytes. This checks permanent request fences only: provider effects, charges,
  * source denials and workflow closure still need their separate verification. */
 export async function auditRecoveredRequestFences(db:Client|PoolClient,raw:unknown,rawScope:z.infer<typeof scopeSchema>){
+ await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');
+ try{const result=await auditRecoveredRequestFencesInTransaction(db,raw,rawScope);await db.query('COMMIT');return result;}
+ catch(error){await db.query('ROLLBACK');throw error;}
+}
+/** Compose with owner reconciliation and its final decision without committing
+ * partial state. The caller retains both authority fences and all table locks
+ * until its transaction ends; returned flags never authorize service. */
+export async function auditRecoveredRequestFencesInTransaction(db:Client|PoolClient,raw:unknown,rawScope:z.infer<typeof scopeSchema>){
  const scope=scopeSchema.parse(rawScope),snapshot=recoveryDenialSnapshotSchema.parse(raw);
  if(snapshot.contract!=='pilot-denial-replay-snapshot-v7'||snapshot.schemaVersion!==79)throw Error('Complete current schema-079 replay inventory required');
- await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');
- try{
+ // SAVEPOINT fails outside a transaction, before any audit or authority check.
+ await db.query('SAVEPOINT recovered_request_fence_audit');await db.query('RELEASE SAVEPOINT recovered_request_fence_audit');
+ if((await db.query("SELECT current_setting('transaction_isolation') AS isolation")).rows[0]?.isolation!=='read committed')throw Error('Request fence audit requires read committed isolation');
   await db.query("SET LOCAL lock_timeout='3000ms'");await db.query("SET LOCAL statement_timeout='10000ms'");await db.query("SET LOCAL transaction_timeout='120s'");
   if((await db.query("SELECT current_user=pg_get_userbyid(relowner) AS owner FROM pg_class WHERE oid='operations_control'::regclass")).rows[0]?.owner!==true)throw Error('Request fence audit requires actual owner authority');
   await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16020))',[scope.environmentId]);
@@ -77,7 +86,6 @@ export async function auditRecoveredRequestFences(db:Client|PoolClient,raw:unkno
    if(Number(missing)!==0)throw Error('Captured permanent request fence missing');
    tables.push({name,indexes:entry.columns.size,keys:keys.length,keySetDigest:recoveryDigest(keys)});
   }
-  const proofDigest=recoveryDigest({scope,currentStateDigest,functionDigest,tables});await db.query('COMMIT');
+  const proofDigest=recoveryDigest({scope,currentStateDigest,functionDigest,tables});
   return {contract:'pilot-request-fence-audit-v1',...scope,currentStateDigest,proofDigest,functionDigest,tables,permanentRequestFencesVerified:true,authorityGranted:false,quarantineCleared:false,providerCalls:0,currentAuthorityVerified:false,replayReconciled:false,restorationReady:false};
- }catch(error){await db.query('ROLLBACK');throw error;}
 }

@@ -1,11 +1,11 @@
 import {it,expect} from 'vitest';
-import {auditRecoveredRequestFences} from '../../../lib/server/operations/recovery-replay-audit';
+import {auditRecoveredRequestFences,auditRecoveredRequestFencesInTransaction} from '../../../lib/server/operations/recovery-replay-audit';
 import {authorityCheckpointTime} from '../../fixtures/pilot/recovery-authority';
 import {Client} from 'pg';
 import {randomUUID} from 'node:crypto';
 import {withPilotEnvironment,requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
 import {captureRecoveryDenialSnapshot} from '../../../lib/server/operations/recovery-denial-snapshot';
-import {reconcileOwnedCredentialDenials} from '../../../lib/server/operations/recovery-credential-denials';
+import {reconcileOwnedCredentialDenials,reconcileOwnedCredentialDenialsInTransaction} from '../../../lib/server/operations/recovery-credential-denials';
 import {pilotPublishedKnowledgeFixture} from '../../fixtures/pilot/knowledge';
 import {createMcpConnection,revokeMcpConnection} from '../../../lib/server/mcp/management';
 import {revokeSession,getCurrentSession,sessionCookieName} from '../../../lib/server/auth/sessions';
@@ -20,6 +20,26 @@ it('preserves ordinary nullable unique identities while fencing concrete recover
  const concrete=randomUUID(),oldId=randomUUID(),backup=await authorityCheckpointTime(owner);
  await owner.query('INSERT INTO pilot_nullable_replay_attempts(id,environment_id,request_key) VALUES($1,$2,NULL),($3,$2,$4)',[randomUUID(),environmentId,oldId,concrete]);
  const snapshot=await captureRecoveryDenialSnapshot(owner,environmentId,AbortSignal.timeout(60000)),scope=await lock(owner,environmentId,snapshot,backup);
+ await expect(auditRecoveredRequestFences(owner,snapshot,scope)).rejects.toThrow('request fence missing');
+ await expect(auditRecoveredRequestFencesInTransaction(owner,snapshot,scope)).rejects.toThrow('transaction');
+ for(const isolation of ['REPEATABLE READ','SERIALIZABLE']){
+  await owner.query('BEGIN ISOLATION LEVEL '+isolation);
+  await expect(auditRecoveredRequestFencesInTransaction(owner,snapshot,scope)).rejects.toThrow('read committed isolation');
+  // Rejection leaves the caller transaction open and usable.
+  expect((await owner.query('SELECT 1 AS alive')).rows[0].alive).toBe(1);
+  await owner.query('ROLLBACK');
+ }
+ await owner.query('BEGIN');
+ await reconcileOwnedCredentialDenialsInTransaction(owner,snapshot,scope);
+ const composed=await auditRecoveredRequestFencesInTransaction(owner,snapshot,scope);
+ expect(composed).toMatchObject({permanentRequestFencesVerified:true,restorationReady:false});
+ // An audit must neither commit reconciliation nor release its authority fence.
+ const observer=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await observer.connect();
+ try{
+  expect((await observer.query('SELECT count(*)::int AS count FROM operations_replay_fences WHERE environment_id=$1',[environmentId])).rows[0].count).toBe(0);
+  expect((await observer.query('SELECT pg_try_advisory_lock(hashtextextended($1,16020)) AS acquired',[environmentId])).rows[0].acquired).toBe(false);
+ }finally{await observer.end();}
+ await owner.query('ROLLBACK');
  await expect(auditRecoveredRequestFences(owner,snapshot,scope)).rejects.toThrow('request fence missing');
  await reconcileOwnedCredentialDenials(owner,snapshot,scope);
  expect(await auditRecoveredRequestFences(owner,snapshot,scope)).toMatchObject({permanentRequestFencesVerified:true,currentAuthorityVerified:false,replayReconciled:false,quarantineCleared:false,providerCalls:0});

@@ -677,7 +677,13 @@ leaves global admission closed.
 
 The request-fence audit also measures current state after its authority fences and
 table locks. Its receipt includes that digest; a later mutation requires a new
-audit. The receipt alone cannot resolve quarantine or open service.
+audit. The internal transaction-scoped audit can run after current-denial
+reconciliation without committing it or releasing its locks. Its caller must
+commit the complete owner decision or roll everything back; calling it outside
+a transaction fails before inspection, and a transaction with repeatable-read or
+serializable isolation is rejected because a waited-for fence must expose current
+committed state. The receipt alone cannot resolve
+quarantine or open service.
 
 Canonical profile probes retain the original authenticated actor through nested
 research reads; separate research metadata must match that exact session and
