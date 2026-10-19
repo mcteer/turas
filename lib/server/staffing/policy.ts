@@ -19,8 +19,8 @@ export function requireStaffingCapability(actor: StaffingActor, capability: Staf
  * Caller DTOs are never authority; current database rows must match them. */
 export async function lockStaffingActor(client: PoolClient, actor: StaffingActor,
   capability: StaffingCapability,
-  options: { customerId?: string; write?: boolean; allowDisabled?: boolean } = {}): Promise<void> {
-  await requireOperationalOpen(client,actor);
+  options: { customerId?: string; write?: boolean; allowDisabled?: boolean; readOnly?: boolean } = {}): Promise<void> {
+  await requireOperationalOpen(client,actor,options.readOnly===true&&!options.write);
   await client.query("SET LOCAL lock_timeout='3000ms'");
   await client.query("SET LOCAL statement_timeout='5000ms'");
   const member = (await client.query<{ principal_id: string; workspace_id: string;

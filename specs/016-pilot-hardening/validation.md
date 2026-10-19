@@ -3485,3 +3485,26 @@ sanitization cases pass with injected private strings, as do both TypeScript
 projects, a native Node24 sanitizer import and controller syntax check. Independent
 review found no privacy or behavior issue. No assertion, retry, timeout, product
 behavior or raw-artifact publishing changed. Subsequent CI remains required.
+
+### Workspace personnel maintenance bytes
+
+The fixed workforce maintenance GET now has an explicit workspace scope with no
+customer association. The amended unreleased079 admission binds the original
+import, source, current version, generation, digest and size. The owner issuer and
+runtime require the original owner membership, completed intent and clean
+extraction; the canonical reader retains manager authorization and its post-IO
+session/source recheck on the explicitly injected authenticated transaction.
+Only that reader opts into read-only recovery admission; write paths remain closed.
+
+The existing owned encrypted-capture/cold-restore case now creates a real workforce
+CSV through normal intent/upload/completion and genuine prepared local scan/parse.
+Its restored restricted HTTP runtime returns the exact original. Wrong session,
+workspace, read kind, version and generation deny; the ordinary workforce route
+stays locked. Corrupt copied bytes fail without restoring request allowance, and
+the next exhausted request denies. Final integration1/1 passes in110.75seconds;
+admission12/12, object-store5/5 and migration6/6 pass. Current pilot unit336/336
+across61files, both TypeScript projects, documentation and web/Eve builds pass.
+Independent code review found no blocker. This does not prove hosted processing,
+participant approval, skills certification, gap-export HTTP coverage or composed
+recovery readiness. Production remains077 and the operator remains disabled.
+The amended079 still requires a final-manifest cold restore rehearsal before release.

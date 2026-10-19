@@ -145,10 +145,10 @@ export async function completeImport(actor: StaffingActor, rawId: unknown, raw: 
       return { importId, sourceId: intent.source_id, sourceVersionId: versionId, generation: input.sourceGeneration, state: "quarantined" };
     });
 }
-export async function readImportOriginal(actor: StaffingActor, rawId: unknown) {
+export async function readImportOriginal(actor: StaffingActor, rawId: unknown, readTransaction: typeof withTransaction = withTransaction) {
   const importId = parseStaffing(staffingIdSchema, rawId);
-  const identity = await withTransaction(async db => {
-    await lockStaffingActor(db, actor, "manager");
+  const identity = await readTransaction(async db => {
+    await lockStaffingActor(db, actor, "manager", {readOnly:true});
     const intent = await lockImportIntent(db, actor, importId);
     if (!intent.current_version_id || !["ready", "partial", "reviewed"].includes(intent.source_state)) throw hiddenRecord();
     const clean = await db.query(`SELECT id FROM workforce_extractions WHERE source_version_id=$1 AND scan_clean`,
@@ -158,8 +158,8 @@ export async function readImportOriginal(actor: StaffingActor, rawId: unknown) {
   });
   const bytes = await new WorkforceStore().read(importId);
   // Reauthorize after IO; withdrawal and revoked sessions cannot release old bytes.
-  await withTransaction(async db => {
-    await lockStaffingActor(db, actor, "manager");
+  await readTransaction(async db => {
+    await lockStaffingActor(db, actor, "manager", {readOnly:true});
     const current = await lockImportIntent(db, actor, importId);
     if (current.generation !== identity.generation || !["ready", "partial", "reviewed"].includes(current.source_state)) throw hiddenRecord();
   });

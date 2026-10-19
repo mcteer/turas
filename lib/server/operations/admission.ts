@@ -34,7 +34,7 @@ export async function withOwnerRecoveryReadCapability<T>(client:PoolClient,actor
 }
 /** The fixed maintenance handler authenticates an actual owner-issued database
  * admission on this direct runtime transaction, never a caller-supplied actor. */
-export async function withRecoveryHttpReadCapability<T>(db:PoolClient,request:Request,id:string,read:(actor:CurrentSession,customerId:string,proof:RecoveryHttpRead)=>Promise<T>){
+export async function withRecoveryHttpReadCapability<T>(db:PoolClient,request:Request,id:string,read:(actor:CurrentSession,customerId:string|null,proof:RecoveryHttpRead)=>Promise<T>){
  const proof=await authenticateRecoveryHttpRead(db,request,id,false);
  await db.query('SELECT pg_advisory_xact_lock_shared(hashtextextended($1,16017))',[proof.environmentId]);
  recoveryReadActors.set(proof.actor,{client:db,environmentId:proof.environmentId,recoveryId:proof.recoveryId,revision:proof.controlRevision,deadline:proof.deadline});

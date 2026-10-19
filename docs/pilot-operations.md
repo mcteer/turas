@@ -796,8 +796,16 @@ to both source and restored applications; an omitted/mismatched identity correct
 withholds the bytes under the existing brand check. This is not a generic image
 configuration or hosted provisioning proof.
 
-Workforce and gap-export HTTP read coverage, current authority/effect reconciliation and composed verification
-are still required.
+Workforce GET `/api/operations/recovery-read/<admission-id>/workforce` uses an
+explicit workspace scope with no customer selector. It binds the original import,
+source, current version, generation, digest and size, requiring the same original
+owner membership and a clean extraction. The canonical reader retains manager
+authorization and rechecks source and session after IO on the explicitly injected
+transaction. The complete bounded bytes are hash-checked before final authentication;
+ordinary workforce routes and every write path remain closed.
+
+Gap-export HTTP read coverage, current authority/effect reconciliation and composed
+verification are still required.
 
 ### Finite complete managed-run inventory closure
 

@@ -13,6 +13,7 @@ export async function GET(request:Request,context:{params:Promise<{admissionId:s
   // restore request allowance by rolling its transaction back.
   await withTransaction(db=>authenticateRecoveryHttpRead(db,request,admissionId,true));
   const result=await withTransaction(db=>withRecoveryHttpReadCapability(db,request,admissionId,async(actor,customerId)=>{
+   if(!customerId)throw new HttpFailure(403,'forbidden','Recovery read unavailable');
    const profile=await readProfile(actor,customerId,db,undefined,undefined,false,true);
    if(Buffer.byteLength(JSON.stringify(profile))>2097152)throw new HttpFailure(413,'too_large','Recovery response exceeds bound');
    return profile;

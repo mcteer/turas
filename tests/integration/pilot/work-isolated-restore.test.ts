@@ -1,3 +1,7 @@
+import {createImportIntent,uploadImportOriginal,completeImport,readImportOriginal} from '../../../lib/server/staffing/imports';
+import {claimWorkforceImport} from '../../../lib/server/staffing/jobs';
+import {runWorkforceImport} from '../../../lib/server/staffing/runner';
+import {WorkforceStore} from '../../../lib/server/staffing/store';
 import {parsePilotImagePreparation} from '../../../lib/contracts/pilot-images';
 import {reportsDeliveryFixture,addReviewedReportActivity} from '../../fixtures/reports/delivery';
 import {pilotLoadReportFixture} from '../../fixtures/pilot/load-delivery';
@@ -17,8 +21,8 @@ import {restoreOwnedWorkDump} from '../../../lib/server/operations/pg-restore';
 import {measureRestoredWorkIntegrity,requireMeasuredWorkIntegrity} from '../../../lib/server/operations/restored-work-integrity';
 import {it,expect} from 'vitest';
 import {Client} from 'pg';
-import {mkdir,mkdtemp,writeFile,readFile,rm,readdir,copyFile,chmod} from 'node:fs/promises';
-import {join,resolve} from 'node:path';
+import {mkdir,mkdtemp,writeFile,readFile,rm,readdir,copyFile,chmod,cp} from 'node:fs/promises';
+import {join,resolve,dirname} from 'node:path';
 import {randomUUID,randomBytes,createHash} from 'node:crypto';
 import {withPilotEnvironment,requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
 import {captureOwnedRecoveryCandidate} from '../../../lib/server/operations/capture-candidate';
@@ -33,6 +37,7 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
  const preparation=process.env.TURAS_PILOT_UI_PREPARATION_FILE,renderer=process.env.TURAS_PILOT_RENDERER_IMAGE??(preparation?parsePilotImagePreparation(await readFile(preparation)).images.find(image=>image.kind==='renderer')?.localImageId:undefined);
  if(!renderer||!/^sha256:[a-f0-9]{64}$/.test(renderer))throw Error('Explicit prepared recovery report renderer required');
  await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});const root=await mkdtemp(resolve('local-artifacts/016/work-rehearsal-')),key=randomBytes(32);
+ let sourceWorkforce:{importId:string;sourceId:string;versionId:string;workspaceId:string;digest:string;bytes:Buffer}|undefined;
  let sourceReport:{artifactId:string;reportId:string;revisionId:string;customerId:string;workspaceId:string;digest:string;sizeBytes:number;objectKey:string}|undefined;
  let candidate:WorkCaptureCandidate|undefined,sourceEnvironmentId='',sourceProfile:{workspaceId:string;customerId:string;revisionId:string;artifactVersionId:string}|undefined;
  try{
@@ -50,11 +55,25 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
     const reportArtifacts=(await db.query('SELECT a.*,r.report_id FROM report_artifacts a JOIN report_revisions r ON r.id=a.revision_id ORDER BY a.id')).rows;expect(reportArtifacts).toHaveLength(4);
     const pdf=reportArtifacts.find(row=>row.revision_id===report.revisionId&&row.format==='pdf');if(!pdf)throw Error('Normally rendered published PDF missing');
     sourceReport={artifactId:pdf.id,reportId:pdf.report_id,revisionId:pdf.revision_id,customerId:pdf.customer_id,workspaceId:pdf.workspace_id,digest:pdf.content_digest,sizeBytes:Number(pdf.size_bytes),objectKey:pdf.object_key};
+    if(!preparation)throw Error('Explicit prepared workforce recovery images required');
+    const images=parsePilotImagePreparation(await readFile(preparation)),parser=images.images.find(image=>image.kind==='parser')!,scanner=images.images.find(image=>image.kind==='scanner')!,preparedStore=join(dirname(preparation),'store');
+    process.env.TURAS_PILOT_PARSER_IMAGE=parser.localImageId;process.env.TURAS_PILOT_SCANNER_IMAGE=scanner.localImageId;
+    await cp(join(preparedStore,'signatures'),join(process.env.TURAS_ARTIFACT_STORE_ROOT!,'signatures'),{recursive:true});
+    await cp(join(preparedStore,'assets'),join(process.env.TURAS_ARTIFACT_STORE_ROOT!,'assets'),{recursive:true});
+    await writeFile(join(process.env.TURAS_WORKFORCE_STORE_ROOT!,'runtime-images.json'),JSON.stringify({contract:'workforce-table-v1',environmentId:environment.environmentId,parserImage:parser.localImageId,parserDigest:parser.localImageId.slice(7),scannerImage:scanner.localImageId,scannerDigest:scanner.localImageId.slice(7)}),{mode:0o600});
+    const personnel=Buffer.from('resource,skill\nsynthetic,web\n'),personnelDigest=createHash('sha256').update(personnel).digest('hex');
+    const intent=await createImportIntent(profile.actor,{requestKey:randomUUID(),filename:'synthetic-recovery.csv',format:'csv',byteSize:personnel.length,contentDigest:personnelDigest});
+    await uploadImportOriginal(profile.actor,intent.importId!,(async function*(){yield personnel;})());
+    const completed=await completeImport(profile.actor,intent.importId!,{requestKey:randomUUID(),contentDigest:personnelDigest,sourceGeneration:1}),claim=await claimWorkforceImport();
+    if(!claim||claim.sourceVersionId!==completed.sourceVersionId)throw Error('Exact owned workforce recovery job required');
+    await runWorkforceImport(claim,environment.signal);expect((await readImportOriginal(profile.actor,intent.importId!)).bytes).toEqual(personnel);
+    sourceWorkforce={importId:intent.importId!,sourceId:intent.sourceId!,versionId:completed.sourceVersionId!,workspaceId:profile.actor.workspaceId,digest:personnelDigest,bytes:personnel};
     const recoveryId=randomUUID(),revision=Number((await db.query("UPDATE operations_control SET mode='locked',revision=revision+1,recovery_id=$2 WHERE environment_id=$1 RETURNING revision",[environment.environmentId,recoveryId])).rows[0].revision);
     const objects=join(root,'source-objects'),workflow=join(root,'empty-workflow');await mkdir(objects,{mode:0o700});await mkdir(workflow,{mode:0o700});
     const store=new LocalPrivateObjects(objects,environment.environmentId,10485760);
     for(const namespace of activeObjectNamespaces){await mkdir(join(objects,'e_'+environmentObjectId(environment.environmentId),namespace),{recursive:true,mode:0o700});const bytes=Buffer.from('Synthetic work restore '+namespace),digest=createHash('sha256').update(bytes).digest('hex');await store.put(objectKey(environment.environmentId,namespace,namespace.startsWith('artifact')?digest:randomUUID()),(async function*(){yield bytes;})(),{sizeBytes:bytes.length,digest});}
     for(const artifact of reportArtifacts){const bytes=await readReportObject(artifact.object_key,artifact.content_digest,Number(artifact.size_bytes));await store.put(objectKey(environment.environmentId,'report',artifact.object_key),(async function*(){yield bytes;})(),{sizeBytes:bytes.length,digest:artifact.content_digest});}
+    await store.put(objectKey(environment.environmentId,'workforce',sourceWorkforce.importId),(async function*(){yield await new WorkforceStore().read(sourceWorkforce!.importId);})(),{sizeBytes:personnel.length,digest:personnelDigest});
     const owned=await captureOwnedRecoveryCandidate({environmentId:environment.environmentId,recoveryId,controlRevision:revision,sourceRoot:objects,workflowRoot:workflow,keyFile:join(root,'keys','key'),keyReference:'synthetic-work-key',keyVersion:'1',output:join(root,'capture')},environment.signal);
     // This synthetic fixture supplies an empty managed-execution inventory;
     // it makes no claim to checkpoint or resume any provider workflow.
@@ -65,7 +84,7 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
    }finally{await db.end();}
   },{postgresMajor:18,deadlineMs:180000});
   await rm(join(root,'capture'),{recursive:true,force:true});await rm(join(root,'source-objects'),{recursive:true,force:true});await rm(join(root,'empty-workflow'),{recursive:true,force:true});
-  if(!candidate||!sourceProfile||!sourceReport)throw Error('Synthetic work candidate unavailable');const captured=candidate,expectedProfile=sourceProfile,expectedReport=sourceReport;
+  if(!candidate||!sourceProfile||!sourceReport||!sourceWorkforce)throw Error('Synthetic work candidate unavailable');const captured=candidate,expectedProfile=sourceProfile,expectedReport=sourceReport,expectedWorkforce=sourceWorkforce;
   await writeFile(join(root,'cold','candidate.json'),JSON.stringify(captured),{mode:0o600});
   await withPilotEnvironment(async environment=>{
    process.env.TURAS_PILOT_RENDERER_IMAGE=renderer;
@@ -77,10 +96,10 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
     await expect(mintOwnedRestoreTarget({container:environment.databaseContainer,ownerLabel:'0'.repeat(12),environmentId:environment.environmentId},environment.signal)).rejects.toThrow('Original owned');
     await db.query("UPDATE operations_control SET mode='locked'");
     const result=await pilotRecovery(['--restore-work-isolated','--environment',captured.environmentId,'--candidate',join(root,'cold','candidate.json'),'--bundle',join(root,'cold','candidate.encrypted'),'--key-file',join(root,'keys','key'),'--output',join(root,'restore')]);
-    expect(result).toMatchObject({acceptedContentVerified:true,ledgerVerified:true,objectsVerified:true,objectCount:10,requiredScopeQuarantined:true,currentAuthorityVerified:false,permanentReplayVerified:false,workflowReconciled:false,restorationReady:false,mode:'locked'});
+    expect(result).toMatchObject({acceptedContentVerified:true,ledgerVerified:true,objectsVerified:true,objectCount:11,requiredScopeQuarantined:true,currentAuthorityVerified:false,permanentReplayVerified:false,workflowReconciled:false,restorationReady:false,mode:'locked'});
     if(!('physicalIntegrity' in result))throw Error('Measured physical checkpoint missing');
     const proof=result.physicalIntegrity,scope={environmentId:sourceEnvironmentId,recoveryId:proof.recoveryId,controlRevision:proof.controlRevision},storeRoot=join(root,'restore','objects');
-    expect(Object.isFrozen(proof)).toBe(true);expect(proof.restorationReady).toBe(false);expect(proof.acceptedContentDigest).toBe(captured.acceptedContentDigest);expect(proof.objectCount).toBe(10);
+    expect(Object.isFrozen(proof)).toBe(true);expect(proof.restorationReady).toBe(false);expect(proof.acceptedContentDigest).toBe(captured.acceptedContentDigest);expect(proof.objectCount).toBe(11);
     await db.query('BEGIN');
     expect(await requireMeasuredWorkIntegrity(db,proof,scope,storeRoot,environment.signal)).toBe(proof);
     await expect(requireMeasuredWorkIntegrity(db,JSON.parse(JSON.stringify(proof)),scope,storeRoot,environment.signal)).rejects.toThrow('Actual measured');
@@ -145,7 +164,7 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
     const warmSaved={DATABASE_URL:process.env.DATABASE_URL,DATABASE_URL_UNPOOLED:process.env.DATABASE_URL_UNPOOLED};
     try{
      Object.assign(process.env,{DATABASE_URL:warmUrl.toString(),DATABASE_URL_UNPOOLED:warmUrl.toString()});await environment.start();
-     for(const path of ['/api/operations/recovery-read/'+randomUUID()+'/profile','/api/customers/'+expectedProfile.customerId+'/profile','/api/operations/recovery-read/'+randomUUID()+'/artifact','/api/operations/recovery-read/'+randomUUID()+'/report']){const response=await fetch(environment.origin+path,{redirect:'manual',signal:environment.signal});expect([401,403,503]).toContain(response.status);await response.body?.cancel();}
+     for(const path of ['/api/operations/recovery-read/'+randomUUID()+'/profile','/api/customers/'+expectedProfile.customerId+'/profile','/api/operations/recovery-read/'+randomUUID()+'/artifact','/api/operations/recovery-read/'+randomUUID()+'/report','/api/operations/recovery-read/'+randomUUID()+'/workforce']){const response=await fetch(environment.origin+path,{redirect:'manual',signal:environment.signal});expect([401,403,503]).toContain(response.status);await response.body?.cancel();}
     }finally{await environment.stop();Object.assign(process.env,warmSaved);}
     await interruptedPreparation(false);
     await withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async(runtime,_signal,applicationEnvironment)=>{
@@ -217,6 +236,26 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
        try{const corrupt=await fetch(reportPath,{headers:reportHeaders,redirect:'manual'});expect(corrupt.status).toBe(503);await corrupt.body?.cancel();}finally{await writeFile(copied,bytes,{mode:0o600});}
        const exhausted=await fetch(reportPath,{headers:reportHeaders,redirect:'manual'});expect(exhausted.status).toBe(429);await exhausted.body?.cancel();
       }finally{await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,reportProof.id);}
+      let workforceAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
+      await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{await owner.query('BEGIN');try{workforceAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedWorkforce.workspaceId,customerId:null,deadline:Date.now()+20000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:2,deploymentId:null,readKind:'workforce',recordId:expectedWorkforce.importId});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}});
+      if(!workforceAdmission)throw Error('Actual workforce admission missing');
+      const workforceProof=workforceAdmission,workforcePath=environment.origin+'/api/operations/recovery-read/'+workforceProof.id+'/workforce',workforceHeaders={cookie:sessionCookie(workforceProof.actor.token,workforceProof.actor.expiresAt).split(';')[0],'x-turas-recovery-read':workforceProof.secret};
+      try{
+       const wrongType=await fetch(workforcePath.replace('/workforce','/profile'),{headers:workforceHeaders,redirect:'manual'});expect(wrongType.status).toBe(403);await wrongType.body?.cancel();
+       await db.query('UPDATE operations_recovery_http_reads SET record_revision_id=$2 WHERE id=$1',[workforceProof.id,randomUUID()]);
+       try{const drift=await fetch(workforcePath,{headers:workforceHeaders,redirect:'manual'});expect(drift.status).toBe(403);await drift.body?.cancel();}finally{await db.query('UPDATE operations_recovery_http_reads SET record_revision_id=$2 WHERE id=$1',[workforceProof.id,expectedWorkforce.versionId]);}
+       const wrongSession=await fetch(workforcePath,{headers:{...workforceHeaders,cookie},redirect:'manual'});expect(wrongSession.status).toBe(403);await wrongSession.body?.cancel();
+       const otherWorkspace=(await db.query('SELECT id FROM workspaces WHERE id<>$1 ORDER BY id LIMIT 1',[expectedWorkforce.workspaceId])).rows[0].id;
+       await db.query('UPDATE operations_recovery_http_reads SET workspace_id=$2 WHERE id=$1',[workforceProof.id,otherWorkspace]);
+       try{const denied=await fetch(workforcePath,{headers:workforceHeaders,redirect:'manual'});expect(denied.status).toBe(403);await denied.body?.cancel();}finally{await db.query('UPDATE operations_recovery_http_reads SET workspace_id=$2 WHERE id=$1',[workforceProof.id,expectedWorkforce.workspaceId]);}
+       await db.query('UPDATE operations_recovery_http_reads SET record_generation=record_generation+1 WHERE id=$1',[workforceProof.id]);
+       try{const drift=await fetch(workforcePath,{headers:workforceHeaders,redirect:'manual'});expect(drift.status).toBe(403);await drift.body?.cancel();}finally{await db.query('UPDATE operations_recovery_http_reads SET record_generation=record_generation-1 WHERE id=$1',[workforceProof.id]);}
+       const original=await fetch(workforcePath,{headers:workforceHeaders,redirect:'manual'});if(original.status!==200){const failed=await original.json() as {error:{code:string}};throw Error('Recovery workforce HTTP denied: '+original.status+' '+failed.error.code);}expect(Buffer.from(await original.arrayBuffer())).toEqual(expectedWorkforce.bytes);
+       const ordinary=await fetch(environment.origin+'/api/staffing/imports/'+expectedWorkforce.importId+'/content',{headers:workforceHeaders,redirect:'manual'});expect([401,403,503]).toContain(ordinary.status);await ordinary.body?.cancel();
+       const copied=join(applicationEnvironment.TURAS_WORKFORCE_STORE_ROOT,'objects',expectedWorkforce.importId);await writeFile(copied,Buffer.alloc(expectedWorkforce.bytes.length),{mode:0o600});
+       try{const corrupt=await fetch(workforcePath,{headers:workforceHeaders,redirect:'manual'});expect(corrupt.status).toBe(503);await corrupt.body?.cancel();}finally{await writeFile(copied,expectedWorkforce.bytes,{mode:0o600});}
+       const exhausted=await fetch(workforcePath,{headers:workforceHeaders,redirect:'manual'});expect(exhausted.status).toBe(429);await exhausted.body?.cancel();
+      }finally{await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,workforceProof.id);}
       expect(body.data.customer.id).toBe(expectedProfile.customerId);expect(body.data.acceptedFacts.some(fact=>fact.id===expectedProfile.revisionId)).toBe(true);
       // A correctly ordered owner transition waits on the shared recovery
       // fence, then proceeds when the actual runtime read transaction closes.
