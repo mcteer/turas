@@ -4138,3 +4138,25 @@ dependency fix. Reporting WebKit remains pending. Product-gap WebKit has two
 retained failures: a loading page with no captured browser API responses, and a
 created eligible record whose expected title heading is absent. Current diagnostics
 do not establish their causes; no timeout or assertion is relaxed.
+
+### Verified work-target foundation
+
+The separate work-target capability now owns its bounded owner/runtime transports,
+checks actual platform/deployment/origin and selected owner bindings, requires
+clean committed source, exact locked079 scope and retired legacy credentials, and
+expires with its exact callback/client lifetime. The original owned Docker path
+is unchanged. Four actual-owned-PostgreSQL cases pass with controlled cloud/DNS
+and source transport at the initial checkpoint; a follow-up adds dirty-source
+rejection. The first fixture attempt used the wrong retirement API shape and
+failed before target admission; it is retained. Root/pilot types pass after that
+fixture correction. This does not establish real Neon/platform acceptance.
+
+The foundation is not yet wired to session or HTTP admission issuers. Probe
+reservation now durably records exact IDs before effects, and private bounded
+reconnection retires exact sessions/admissions after closing the original writer,
+independently of callback failure/cancellation. All six corrected controlled-cloud actual-PG cases pass, including a committed
+session with no admission, callback failure, and cancellation of a callback that
+never resolves. Root/pilot types pass. Independent review finds no remaining
+concrete blocker in this foundation. Journal-based restart reconciliation and issuer
+integration remain required. T096/T097 remain open. Current inventory838cases/153suites requires fresh complete
+source-bound validation; prior catalog passes do not cover it.

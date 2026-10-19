@@ -1744,6 +1744,18 @@
         "rejects changed bytes invalid schema and forged derived sections even with matching hashes",
         "rejects foreign plan customer revision accepted head and changed aggregate generation"
       ]
+    },
+    {
+      "file": "tests/integration/pilot/locked-work-recovery-target.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "binds an actual locked owner and authenticated runtime for one work recovery lifetime",
+        "rejects serialized capabilities foreign clients and nontransactional use",
+        "refuses changed recovery control and releases its owned connection after failure",
+        "rejects changed platform or source and mismatched runtime endpoints without certifying recovery",
+        "durably registers exact probe identities and independently retires committed sessions after callback failure",
+        "retires registered credentials after cancellation using an independent uncancelled owner connection"
+      ]
     }
   ],
   "ui": {

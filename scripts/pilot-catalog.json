@@ -642,7 +642,13 @@
         "unit.recovery-plan-projection.001",
         "unit.recovery-plan-projection.002",
         "unit.recovery-plan-projection.003",
-        "unit.recovery-plan-projection.004"
+        "unit.recovery-plan-projection.004",
+        "integration.locked-work-recovery-target.001",
+        "integration.locked-work-recovery-target.002",
+        "integration.locked-work-recovery-target.003",
+        "integration.locked-work-recovery-target.004",
+        "integration.locked-work-recovery-target.005",
+        "integration.locked-work-recovery-target.006"
       ]
     },
     {

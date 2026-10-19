@@ -1166,3 +1166,23 @@ content hashes matching its recorded digest. Matching withheld/null responses
 do not establish recovery. Probes and sessions must be retired before final state
 measurement. This adds one service surface; it does not certify all required roles,
 SDK scopes, managed Workflow/effects, or authorize service reopening.
+
+### Locked work-target capability
+
+The work-target verifier creates its own bounded direct Neon owner connection and
+checks the independently selected platform project, owner connection, deployment
+and serving origin before and after its callback. It requires clean committed
+source matching the deployment, exact schema079/locked recovery scope under the
+ordered decision fences, retired legacy LOGIN/backends, and a separate actual
+runtime016 credential probe against the same database. Its private capability
+binds that exact connection and expires when the callback returns or fails;
+serialized receipts and caller-created clients cannot reuse it.
+
+This is target authentication plumbing, not complete service verification or an
+unlock command. It currently creates no persistent sessions or HTTP admissions.
+Probe reservation durably records exact session/admission identities before effects.
+The target privately owns reconnection and retirement on callback failure or
+cancellation, closing its original writer before cleanup. Success also requires
+registered sessions to be retired even when no admission was inserted. Session
+and HTTP issuers are not yet integrated; journal-based restart reconciliation
+and complete service measurements remain required.
