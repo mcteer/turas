@@ -1747,14 +1747,17 @@
     },
     {
       "file": "tests/integration/pilot/locked-work-recovery-target.test.ts",
-      "expectedCases": 6,
+      "expectedCases": 9,
       "cases": [
         "binds an actual locked owner and authenticated runtime for one work recovery lifetime",
         "rejects serialized capabilities foreign clients and nontransactional use",
         "refuses changed recovery control and releases its owned connection after failure",
         "rejects changed platform or source and mismatched runtime endpoints without certifying recovery",
         "durably registers exact probe identities and independently retires committed sessions after callback failure",
-        "retires registered credentials after cancellation using an independent uncancelled owner connection"
+        "retires registered credentials after cancellation using an independent uncancelled owner connection",
+        "reconciles genuine retained session preimages after restart and refuses forged journals or wrong operator credentials",
+        "reconciles original admission credentials idempotently after a lost commit acknowledgement without renewing authority",
+        "retains every concurrent reservation for cleanup and enforces the shared thirty-two probe bound"
       ]
     }
   ],

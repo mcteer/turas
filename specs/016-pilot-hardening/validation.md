@@ -4160,3 +4160,21 @@ never resolves. Root/pilot types pass. Independent review finds no remaining
 concrete blocker in this foundation. Journal-based restart reconciliation and issuer
 integration remain required. T096/T097 remain open. Current inventory838cases/153suites requires fresh complete
 source-bound validation; prior catalog passes do not cover it.
+
+
+### Probe restart reconciliation and concurrency
+
+All nine corrected target cases pass on actual owned PostgreSQL with controlled
+cloud/DNS/source transport. Separate private0600 original nonce files authenticate
+restart cleanup against actual stored hashes; ordinary intents/receipts omit
+secrets. Tests cover wrong operator credentials, forged journal preimages, original
+admission cleanup, lost commit acknowledgement, idempotent retained receipts,
+a pending cancelled callback and session-only effects. A four-way reservation
+interruption retires every session;33parallel reservations admit exactly32and
+retain/revoke all32. Independent review identified and the implementation corrected
+the shared-registry overwrite race before this pass. Prior failed fixture/report
+evidence remains retained. Current catalog841cases/153suites needs complete proof.
+
+CI39301788519 at c6334b0 reports a retained pilot-regression predecessor failure in
+014WebKit learning-draft line7 (30-second case timeout). Domain/native predecessor
+phases pass. The CI gate remains unresolved; no assertion or deadline is relaxed.

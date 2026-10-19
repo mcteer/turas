@@ -1184,5 +1184,22 @@ Probe reservation durably records exact session/admission identities before effe
 The target privately owns reconnection and retirement on callback failure or
 cancellation, closing its original writer before cleanup. Success also requires
 registered sessions to be retired even when no admission was inserted. Session
-and HTTP issuers are not yet integrated; journal-based restart reconciliation
-and complete service measurements remain required.
+and HTTP issuers are not yet integrated; complete service measurements remain required.
+
+
+Probe reservation now writes original nonce credentials only to a separate private
+0600 file in its0700 operator directory. Ordinary intents and retirement receipts
+contain no secrets. Restart reconciliation requires a fresh genuine target and
+current configured operator password, checks the exact private file digest,
+ownership, modes and single links, and matches original secret preimages against
+actual stored session/admission hashes and scope. It only revokes: expired probe
+credentials cannot create sessions, extend expiry, restore access or replay work.
+The caller commits its explicit owner transaction; independent finally cleanup
+handles a lost acknowledgement, with confirmed readback before immutable receipts.
+Forged or mismatched identities stay unresolved. Retain private credentials until
+all exact probe identities are confirmed retired.
+
+Reservations share a synchronous bounded registry before asynchronous persistence.
+Parallel reservations cannot overwrite cleanup obligations or exceed32probes per
+callback. Restart reconciliation validates every credential before mutations and
+appends to the same registry. These mechanisms do not certify full service.

@@ -68,7 +68,9 @@ are pending.
 The locked maintenance reader also covers accepted plan content, requiring current
 accepted identity and canonical stored-byte hashes. Withheld or missing content
 cannot count as positive recovery coverage. Full service and unlock verification
-remain in progress.
+remain in progress. Work-target authentication and deny-only probe restart cleanup
+are implemented with private credential evidence; full service verification and
+issuer integration remain pending.
 
 The historical complete local checkpoint passed 703 cases across 129 suites at
 `d3e8f8b`. Further staffing/runtime and hosted-chain implementation requires
