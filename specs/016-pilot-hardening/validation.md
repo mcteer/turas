@@ -3080,3 +3080,33 @@ is not adopted. A fresh repeated metadata inventory contains507 managed runs and
 protection nor paid-effect reconciliation. Private observations are under the
 root checkout's `local-artifacts/016/resume-20261018/`. No schema, credential,
 archive, traffic, deployment, run state or existing budget was changed.
+
+### Complete historical catalog and current regression composition (2026-10-18)
+
+The frozen1b25f6a catalog completed all765 cases across142 suites with zero
+failures. Private execution receipt in the pilot-finish checkout:
+`local-artifacts/016/run-0ef29aac-4eb4-4bc1-b533-c58b349078b6/execution.json`.
+Source digest8b6ac19c10dc6ca62751a674adbb2d554d13e46bb4245370d3787ad406c3564e,
+catalog digesta7c6881ec05c17389d5292cd5d8bb2cd2f6f2a001539bf725dd02a1abe411caf.
+This predates the two additional released-schema safety failure cases and the
+partner focus correction; it does not replace the current767-case catalog.
+
+At committed069c1a7, the complete composed regression command passed all eight
+015 predecessor groups, all39 current schema079/PostgreSQL18 checks and a fresh
+40-case/four-project pilot WebKit run. Source digest
+97d5eba51c2a8f568883b1e5bd4386ae28636ca97ff710607ca90eb1a7a1e2af,
+catalog digest4dc3044a56434369bdc8fdde9ebaf36e4673f134f6ccb3a9b3046b50799dd5b4.
+Private receipt in the recovery checkout:
+`local-artifacts/016/regressions-d21fb284-727a-419d-9557-d1349c4e2860/completed.json`.
+The complete partner UI gate also passed48/48 across all five files and four
+projects. All these checks made zero paid calls and establish no hosted proof.
+
+CI run39182896771 job117839587547 separately failed the014 draft journey's
+unchanged serious/critical Axe assertion with `document-title`. That failure is
+retained in `local-artifacts/016/ci-069c1a7-pilot-regressions-failure-private.log`;
+it did not recur in the complete local predecessor gate. The journey now also
+requires the authored `Turas` document title after destination URL/content checks
+and before Axe. This adds a bounded metadata-readiness assertion without sleeps,
+retries or rule exclusions. Static root metadata remains unchanged. The available
+evidence does not establish the cause of the original missing-title observation.
+Fresh validation of this assertion and current-source CI remain required.
