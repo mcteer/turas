@@ -3171,3 +3171,19 @@ allocations; historical charges and holds remain separate and unchanged. The
 bounded operator recreation is now authorized. No original approval was edited,
 real continuation applied, billing plan changed or top-up enabled by this record.
 Every actual service budget still requires its exact target/source/pricing bound.
+
+
+### Retained archive plan and recreated operator binding
+
+The corrected cf6f930 package successfully linked through Eve to a new dedicated
+operator project. The retained archive resource was connected only to that project
+and its Production environment. Fresh credential readback matches the retained
+Neon project. Actual inspection found the existing Launch plan; no plan change,
+operator deployment, scheduled execution or archive write was performed.
+
+The original v1 destination remains Free-only. A strict v2 destination binds the
+explicit observed Free or Launch plan and rechecks it against platform metadata,
+while preserving independent project, ownership, resource attachment, credentials
+and 400 MiB capacity boundaries. Six focused destination cases pass, including
+plan drift and foreign attachments. Plan identity grants no spending authority.
+The current catalog contains773cases; the separate ac31bb1 run remains historical.

@@ -936,12 +936,14 @@
     },
     {
       "file": "tests/unit/pilot/neon-destination.test.ts",
-      "expectedCases": 4,
+      "expectedCases": 6,
       "cases": [
         "accepts an explicit separate bounded Neon recovery destination",
         "rejects an application project used as its own archive operator project",
         "rejects non Neon insecure or missing explicit archive transport",
-        "rejects unbounded archive capacity and arbitrary command fields"
+        "rejects unbounded archive capacity and arbitrary command fields",
+        "preserves Free-only v1 and binds v2 to the actual inspected resource plan",
+        "rejects missing unknown or drifting v2 plans and retains resource attachment and capacity boundaries"
       ]
     },
     {

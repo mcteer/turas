@@ -14,36 +14,44 @@ import {pilotSource} from './pilot-source';
 import {pilotProtectedSnapshot} from './pilot-preservation';
 import {copyWorkCapture} from '../lib/server/operations/work-capture-copy';
 const execute=promisify(execFile);
-export const neonArchiveDestinationSchema=z.strictObject({
+const legacyNeonArchiveDestinationSchema=z.strictObject({
  contract:z.literal('pilot-neon-operator-config-v1'),teamId:z.string().regex(/^team_[A-Za-z0-9]+$/),
  operatorProject:z.string().regex(/^[a-z0-9][a-z0-9-]{1,99}$/),operatorProjectId:z.string().regex(/^prj_[A-Za-z0-9]+$/),
  sourceProjectId:z.string().regex(/^prj_[A-Za-z0-9]+$/),resourceId:z.string().min(1).max(256),resourceName:z.string().regex(/^[a-z0-9][a-z0-9-]{1,99}$/),
  neonProjectId:z.string().min(1).max(256),installationId:z.uuid(),maximumBytes:z.number().int().min(1048576).max(419430400),
  databaseUrl:z.string().max(4096).refine(raw=>{try{const url=new URL(raw);return ['postgres:','postgresql:'].includes(url.protocol)&&url.hostname.endsWith('.neon.tech')&&url.searchParams.get('sslmode')==='verify-full';}catch{return false;}},'Explicit Neon verify-full connection required'),
-}).refine(value=>value.sourceProjectId!==value.operatorProjectId,'Separate operator project required');
+});
+/** Plan identity is not pricing, spending authority or settlement. Preserve the
+ * original Free-only contract; an explicit v2 can bind an existing Launch plan. */
+export const neonArchiveDestinationSchema=z.discriminatedUnion('contract',[
+ legacyNeonArchiveDestinationSchema,
+ legacyNeonArchiveDestinationSchema.extend({contract:z.literal('pilot-neon-operator-config-v2'),billingPlanId:z.enum(['free_v3','launch_v3'])}),
+]).refine(value=>value.sourceProjectId!==value.operatorProjectId,'Separate operator project required');
 type Destination=z.infer<typeof neonArchiveDestinationSchema>;
 async function platform(args:string[],signal:AbortSignal){
  const result=await execute('vercel',args,{signal,timeout:30000,maxBuffer:1048576,env:{NODE_ENV:process.env.NODE_ENV??'production',...Object.fromEntries(['PATH','HOME','TMPDIR','LANG','LC_ALL'].flatMap(key=>process.env[key]===undefined?[]:[[key,process.env[key]]]))}});
  return JSON.parse(result.stdout) as any;
 }
-export async function verifyWorkNeonDestination(destination:Destination,signal:AbortSignal){
- const teams=await platform(['api','/v2/teams','--raw'],signal),team=teams.teams?.find((team:any)=>team.id===destination.teamId);
+export async function verifyWorkNeonDestination(destination:Destination,signal:AbortSignal,read:typeof platform=platform){
+ destination=neonArchiveDestinationSchema.parse(destination);
+ const expectedPlan=destination.contract==='pilot-neon-operator-config-v1'?'free_v3':destination.billingPlanId;
+ const teams=await read(['api','/v2/teams','--raw'],signal),team=teams.teams?.find((team:any)=>team.id===destination.teamId);
  if(!team?.slug)throw Error('Current work team access unavailable');
- const project=await platform(['api','/v9/projects/'+destination.operatorProjectId+'?teamId='+destination.teamId,'--raw'],signal);
+ const project=await read(['api','/v9/projects/'+destination.operatorProjectId+'?teamId='+destination.teamId,'--raw'],signal);
  if(project.id!==destination.operatorProjectId||project.name!==destination.operatorProject||project.accountId!==destination.teamId||project.link)throw Error('Exact separate unlinked operator project required');
- const inspected=await platform(['integration-resource','inspect',destination.resourceName,'--json','--scope',team.slug],signal),resource=inspected.resource;
- if(resource?.id!==destination.resourceId||resource.ownership!=='owned'||resource.status!=='available'||resource.billingPlan?.id!=='free_v3'||resource.projects?.length!==1||resource.projects[0].id!==project.id)throw Error('Exact separate work Free Neon resource required');
- const envs=await platform(['api','/v9/projects/'+project.id+'/env?teamId='+destination.teamId,'--raw'],signal);
+ const inspected=await read(['integration-resource','inspect',destination.resourceName,'--json','--scope',team.slug],signal),resource=inspected.resource;
+ if(resource?.id!==destination.resourceId||resource.ownership!=='owned'||resource.status!=='available'||resource.billingPlan?.id!==expectedPlan||resource.projects?.length!==1||resource.projects[0].id!==project.id)throw Error('Exact separate work Neon resource and billing plan required');
+ const envs=await read(['api','/v9/projects/'+project.id+'/env?teamId='+destination.teamId,'--raw'],signal);
  const idVariable=envs.envs?.find((row:any)=>row.key==='TURAS_ARCHIVE_NEON_PROJECT_ID'&&row.contentHint?.storeId===destination.resourceId);
  const connectionVariable=envs.envs?.find((row:any)=>row.key==='TURAS_ARCHIVE_DATABASE_URL_UNPOOLED'&&row.contentHint?.storeId===destination.resourceId);
  if(!idVariable?.id||!connectionVariable?.id)throw Error('Exact resource credential bindings unavailable');
  for(const [variable,expected] of [[idVariable,destination.neonProjectId],[connectionVariable,destination.databaseUrl]] as const){
-  const value=await platform(['api','/v1/projects/'+project.id+'/env/'+variable.id+'?teamId='+destination.teamId,'--raw'],signal);
+  const value=await read(['api','/v1/projects/'+project.id+'/env/'+variable.id+'?teamId='+destination.teamId,'--raw'],signal);
   if(value.decrypted!==true||typeof value.value!=='string')throw Error('Current resource binding unavailable');
   if(variable===connectionVariable){const current=new URL(value.value);current.searchParams.set('sslmode','verify-full');if(current.href!==expected)throw Error('Current archive connection differs');}
   else if(value.value!==expected)throw Error('Current Neon project differs');
  }
- return {teamId:destination.teamId,operatorProjectId:project.id,resourceId:resource.id,neonProjectId:destination.neonProjectId,plan:'free_v3',primaryApplicationConnected:false};
+ return {teamId:destination.teamId,operatorProjectId:project.id,resourceId:resource.id,neonProjectId:destination.neonProjectId,plan:expectedPlan,primaryApplicationConnected:false};
 }
 /** Authenticate an explicitly selected candidate before copying ciphertext.
  * Copy verification establishes neither Production capture nor recovery readiness. */

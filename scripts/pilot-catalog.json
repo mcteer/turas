@@ -602,7 +602,13 @@
         "unit.suite-deadlines.002",
         "unit.suite-deadlines.003",
         "integration.released-safety-restore.002",
-        "integration.released-safety-restore.003"
+        "integration.released-safety-restore.003",
+        "unit.neon-destination.001",
+        "unit.neon-destination.002",
+        "unit.neon-destination.003",
+        "unit.neon-destination.004",
+        "unit.neon-destination.005",
+        "unit.neon-destination.006"
       ]
     },
     {
