@@ -1183,8 +1183,8 @@ unlock command. It currently creates no persistent sessions or HTTP admissions.
 Probe reservation durably records exact session/admission identities before effects.
 The target privately owns reconnection and retirement on callback failure or
 cancellation, closing its original writer before cleanup. Success also requires
-registered sessions to be retired even when no admission was inserted. Session
-and HTTP issuers are not yet integrated; complete service measurements remain required.
+registered sessions to be retired even when no admission was inserted. Work session and HTTP issuers use this verified target and registered original
+credentials; complete service measurements remain required.
 
 
 Probe reservation now writes original nonce credentials only to a separate private
@@ -1203,3 +1203,15 @@ Reservations share a synchronous bounded registry before asynchronous persistenc
 Parallel reservations cannot overwrite cleanup obligations or exceed32probes per
 callback. Restart reconciliation validates every credential before mutations and
 appends to the same registry. These mechanisms do not certify full service.
+
+
+The work session constructor shares configured-credential and current administrator
+validation with the owned constructor, while each entrypoint independently proves
+its target. The owned Docker guard remains intact. Work HTTP admissions bind the
+verified target deployment/origin/source/database and the durably reserved original
+IDs/secrets, rather than local operator deployment variables. Session creation
+rechecks its finite deadline after persistence. Canonical work reads revalidate
+the actual session and short expiry after their callback, then retire the session;
+ordinary ingress remains locked. The caller owns explicit issuance/commit and
+retirement transactions. These issuers do not certify all required service roles
+or produce an unlock verification.

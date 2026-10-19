@@ -1,8 +1,16 @@
+import {z} from 'zod';
+import {sessionCookie} from '../../../lib/server/auth/sessions';
 import {it,expect,vi} from 'vitest';
 import {createHash,randomUUID,randomBytes} from 'node:crypto';
 import {mkdtemp,writeFile,readFile,rm} from 'node:fs/promises';
 import {join,resolve,dirname} from 'node:path';
-import {Client} from 'pg';
+import {Client,type PoolClient} from 'pg';
+import {pilotPublishedKnowledgeFixture} from '../../fixtures/pilot/knowledge';
+import {withAuthenticatedWorkRecoveryRead,createAuthenticatedWorkRecoverySession} from '../../../lib/server/operations/authenticated-recovery-read';
+import {issueWorkRecoveryHttpRead,retireOwnedRecoveryHttpRead} from '../../../lib/server/operations/recovery-http-read-issuer';
+import {readProfile} from '../../../lib/server/profiles/read';
+import {GET as maintenanceProfile} from '../../../app/api/operations/recovery-read/[admissionId]/profile/route';
+import {GET as ordinaryProfile} from '../../../app/api/customers/[customerId]/profile/route';
 import {withAuthorityEnvironment,lockAuthorityTarget} from '../../fixtures/pilot/recovery-authority';
 import {closeRuntimePool} from '../../../lib/server/db/client';
 import {retireOwnedLegacyRuntime} from '../../../lib/server/operations/runtime-retirement';
@@ -12,12 +20,14 @@ const state=vi.hoisted(()=>({connections:new Map<string,string>(),platformChange
 // Actual owned PostgreSQL; only cloud transport/DNS and source attribution are
 // controlled. These checks do not establish hosted platform acceptance.
 vi.mock('pg',async original=>{const actual=await original<typeof import('pg')>();return {...actual,Client:class extends actual.Client{constructor(config?:import('pg').ClientConfig){if(state.cleanupUnavailable&&config?.connectionString?.includes('fixture.neon.tech'))throw Error('Controlled cleanup connection unavailable');super(config?.connectionString&&state.connections.has(config.connectionString)?{...config,connectionString:state.connections.get(config.connectionString)}:config);}}};});
+vi.mock('../../../lib/server/operations/database-binding',async original=>{const actual=await original<typeof import('../../../lib/server/operations/database-binding')>();return {...actual,databaseTargetDigest:(connection:string,environmentId:string,name?:string)=>actual.databaseTargetDigest(state.connections.get(connection)??connection,environmentId,name)};});
 vi.mock('../../../scripts/pilot-source',()=>({pilotSource:async()=>({sourceCommit:state.sourceChanged?'d'.repeat(40):state.commit,sourceDigest:state.digest,catalogDigest:state.catalog})}));
 vi.mock('../../../scripts/pilot-database-safety-copy',async original=>{const actual=await original<typeof import('../../../scripts/pilot-database-safety-copy')>();return {...actual,verifyDatabaseSafetySourceBinding:async()=>({platformConnectionBindingVerified:true})};});
 vi.mock('node:child_process',async original=>{const actual=await original<typeof import('node:child_process')>(),{promisify}=await import('node:util');const execute=((...args:unknown[])=>Reflect.apply(actual.execFile,actual,args)) as typeof actual.execFile;Object.defineProperty(execute,promisify.custom,{value:async(command:string,args:string[],options:unknown)=>{if(command==='git'&&args[0]==='status')return {stdout:state.dirty?' M authored-source.ts':'',stderr:''};if(command!=='vercel')return (promisify(actual.execFile) as Function)(command,args,options);return {stdout:JSON.stringify({id:state.platformChanged?'dpl_changed':'dpl_recovery',projectId:'prj_recovery',ownerId:'team_recovery',readyState:'READY',target:null,meta:{githubCommitSha:state.commit}}),stderr:''};}});return {...actual,execFile:execute};});
-async function fixture(run:(input:Parameters<typeof withLockedWorkRecoveryTarget>[0])=>Promise<void>){
+async function fixture(run:(input:Parameters<typeof withLockedWorkRecoveryTarget>[0])=>Promise<void>,beforeLock?:(owner:Client)=>Promise<void>){
  state.connections.clear();state.platformChanged=false;state.sourceChanged=false;state.dirty=false;state.cleanupUnavailable=false;
  await withAuthorityEnvironment(async(owner,runtime,environmentId)=>{
+  if(beforeLock)await beforeLock(owner);
   const locked=await lockAuthorityTarget(owner,environmentId),scope={environmentId,recoveryId:locked.recoveryId,controlRevision:locked.controlRevision},password=randomBytes(32).toString('base64url');await closeRuntimePool();await runtime.end();await retireOwnedLegacyRuntime(owner,{...scope,password});
   const selected=requireOwnedPilotDatabase(process.env,true),actualRuntime=new URL(selected);actualRuntime.username='turas_runtime_016';actualRuntime.password=password;
   const ownerUrl=new URL(selected);ownerUrl.hostname='fixture.neon.tech';ownerUrl.port='';ownerUrl.search='?sslmode=verify-full';
@@ -112,4 +122,45 @@ it('retains every concurrent reservation for cleanup and enforces the shared thi
   })).rejects.toThrow('Controlled concurrent probe interruption');
   for(const sessionId of sessions)await requireRetiredIntent(input,sessionId);
  }
+}),210000);
+
+it('issues registered work sessions and canonical HTTP reads from the verified target while ordinary ingress stays locked',async()=>{
+ let customerId='',workspaceId='';
+ await fixture(async input=>{
+  const keys=['DATABASE_URL','TURAS_APP_ORIGIN','VERCEL_DEPLOYMENT_ID','VERCEL_GIT_COMMIT_SHA','TURAS_CODE_VERSION'] as const,prior=Object.fromEntries(keys.map(key=>[key,process.env[key]]));
+  try{
+   await withLockedWorkRecoveryTarget(input,async(db,target)=>{
+    const scope={...input.scope,workspaceId,password:process.env.TURAS_DEMO_PASSWORD!,deadline:Date.now()+59000};
+    await db.query('BEGIN');try{const profile=await withAuthenticatedWorkRecoveryRead(db,target,scope,dirname(input.sourceFile),actor=>readProfile(actor,customerId,db as unknown as PoolClient,undefined,undefined,false,true));const parsed=z.object({customer:z.object({id:z.uuid()}),acceptedFacts:z.array(z.unknown())}).parse(profile);expect(parsed.customer.id).toBe(customerId);expect(parsed.acceptedFacts.length).toBeGreaterThan(0);await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}
+    await db.query('BEGIN');let admission:Awaited<ReturnType<typeof issueWorkRecoveryHttpRead>>;
+    try{admission=await issueWorkRecoveryHttpRead(db,target,{...scope,deadline:Date.now()+59000,customerId,maximumRequests:2,deploymentId:target.deploymentId},dirname(input.sourceFile));await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}
+    await closeRuntimePool();process.env.DATABASE_URL=state.connections.get(input.runtimeConnection)!;process.env.TURAS_APP_ORIGIN=target.origin;process.env.VERCEL_DEPLOYMENT_ID=target.deploymentId;process.env.VERCEL_GIT_COMMIT_SHA=target.sourceCommit;process.env.TURAS_CODE_VERSION=target.sourceCommit;
+    const request=()=>new Request(target.origin+'/api/operations/recovery-read/'+admission.id+'/profile',{headers:{host:new URL(target.origin).host,cookie:sessionCookie(admission.actor.token,admission.actor.expiresAt).split(';')[0],'x-turas-recovery-read':admission.secret}});
+    const positive=await maintenanceProfile(request(),{params:Promise.resolve({admissionId:admission.id})});expect(positive.status).toBe(200);expect(await positive.json()).toMatchObject({data:{customer:{id:customerId}}});
+    expect((await ordinaryProfile(new Request(target.origin+'/api/customers/'+customerId+'/profile',{headers:request().headers}),{params:Promise.resolve({customerId})})).status).toBe(401);
+    await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,admission.id);expect((await maintenanceProfile(request(),{params:Promise.resolve({admissionId:admission.id})})).status).toBe(403);
+    await closeRuntimePool();
+   });
+  }finally{await closeRuntimePool();for(const key of keys){if(prior[key]===undefined)delete process.env[key];else process.env[key]=prior[key];}}
+ },async owner=>{const f=await pilotPublishedKnowledgeFixture(owner as unknown as PoolClient,'primary');customerId=f.customerId;workspaceId=f.actor.workspaceId;});
+},210000);
+it('rejects forged work target credentials changed deployment and wrong operator password before issuing sessions',async()=>fixture(async input=>{
+ await withLockedWorkRecoveryTarget(input,async(db,target)=>{
+  const workspaceId=(await db.query("SELECT id FROM workspaces WHERE classification='primary'")).rows[0].id,scope={...input.scope,workspaceId,password:process.env.TURAS_DEMO_PASSWORD!,deadline:Date.now()+59000};
+  const before=Number((await db.query('SELECT count(*) AS count FROM login_sessions')).rows[0].count);
+  await db.query('BEGIN');try{await expect(createAuthenticatedWorkRecoverySession(db,{...target},scope,dirname(input.sourceFile))).rejects.toThrow('Actual active');await db.query('ROLLBACK');}catch(error){await db.query('ROLLBACK');throw error;}
+  await db.query('BEGIN');try{await expect(createAuthenticatedWorkRecoverySession(db,target,{...scope,password:'Controlled wrong password'},dirname(input.sourceFile))).rejects.toThrow('Recovery authentication unavailable');await db.query('ROLLBACK');}catch(error){await db.query('ROLLBACK');throw error;}
+  await db.query('BEGIN');try{await expect(issueWorkRecoveryHttpRead(db,target,{...scope,customerId:randomUUID(),maximumRequests:1,deploymentId:'dpl_wrong'},dirname(input.sourceFile))).rejects.toThrow('Exact short-lived work recovery deployment');await db.query('ROLLBACK');}catch(error){await db.query('ROLLBACK');throw error;}
+  expect(Number((await db.query('SELECT count(*) AS count FROM login_sessions')).rows[0].count)).toBe(before);
+ });
+}),210000);
+
+it('rechecks canonical work session expiry and revocation after the read while the target remains active',async()=>fixture(async input=>{
+ for(const change of ['expiry','revocation'])await withLockedWorkRecoveryTarget(input,async(db,target)=>{
+  const workspaceId=(await db.query("SELECT id FROM workspaces WHERE classification='primary'")).rows[0].id,scope={...input.scope,workspaceId,password:process.env.TURAS_DEMO_PASSWORD!,deadline:Date.now()+(change==='expiry'?3000:59000)};let callbackRan=false;
+  await db.query('BEGIN');try{
+   await expect(withAuthenticatedWorkRecoveryRead(db,target,scope,dirname(input.sourceFile),async actor=>{callbackRan=true;if(change==='expiry')await db.query('SELECT pg_sleep(GREATEST(0,extract(epoch FROM ($1::timestamptz-clock_timestamp())))+0.05)',[actor.expiresAt]);else await db.query('UPDATE login_sessions SET revoked_at=clock_timestamp() WHERE id=$1',[actor.sessionId]);return {acceptedContent:true};})).rejects.toThrow(/Recovery read probe unavailable|Exact owner recovery read probe required/);
+   expect(callbackRan).toBe(true);await db.query('COMMIT');
+  }catch(error){await db.query('ROLLBACK');throw error;}
+ });
 }),210000);

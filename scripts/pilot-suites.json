@@ -1747,7 +1747,7 @@
     },
     {
       "file": "tests/integration/pilot/locked-work-recovery-target.test.ts",
-      "expectedCases": 9,
+      "expectedCases": 13,
       "cases": [
         "binds an actual locked owner and authenticated runtime for one work recovery lifetime",
         "rejects serialized capabilities foreign clients and nontransactional use",
@@ -1757,7 +1757,11 @@
         "retires registered credentials after cancellation using an independent uncancelled owner connection",
         "reconciles genuine retained session preimages after restart and refuses forged journals or wrong operator credentials",
         "reconciles original admission credentials idempotently after a lost commit acknowledgement without renewing authority",
-        "retains every concurrent reservation for cleanup and enforces the shared thirty-two probe bound"
+        "retains every concurrent reservation for cleanup and enforces the shared thirty-two probe bound",
+        "issues registered work sessions and canonical HTTP reads from the verified target while ordinary ingress stays locked",
+        ";",
+        "rejects forged work target credentials changed deployment and wrong operator password before issuing sessions",
+        "rechecks canonical work session expiry and revocation after the read while the target remains active"
       ]
     }
   ],

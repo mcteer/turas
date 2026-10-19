@@ -4185,3 +4185,29 @@ boolean. It captures neither fixture prose nor raw error text. All seven existin
 runner/privacy cases pass and root types pass. Actions, assertions, retries and
 deadlines remain unchanged. Independent review found no concrete blocker. This
 improves diagnosis; it does not establish a fix for the retained WebKit failures.
+
+
+### Exact work-target session and HTTP issuers
+
+The shared session core preserves the original owned Docker guard; the new work
+constructor independently requires its genuine target and configured administrator
+credential, reserves original identities/preimages before INSERT, and rechecks
+creation time after persistence. The work HTTP issuer binds verified deployment,
+origin, source and database metadata. Its existing fixed handlers and ordinary
+ingress guards are unchanged. Canonical work reads now revalidate their actual
+short-lived session after the callback; review caught and corrected that expiry
+gap before acceptance.
+
+Combined19/19 actual-owned-PG cases pass:12work target/issuer, four accepted-plan
+HTTP and three original owned recovery-read cases. These include actual canonical
+accepted profile content, runtime route-handler200, ordinary401, retired403,
+forged target/wrong credential/deployment rejection, actual DB-clock expiry and
+callback revocation while the target remains active. The first18-case attempt
+passed16; its HTTPS test used a local cookie name and its old report fixture lacked
+the explicit prepared renderer. Both failures are retained; the corrected run uses
+the canonical secure cookie and prepared actual renderer. Root/pilot types and docs
+pass. Independent review reports no remaining blocker in this auth increment.
+Cloud transport remains controlled; this is not hosted service acceptance.
+Current inventory844cases/153suites still needs complete current-source proof.
+T096/T097 remain open for remaining service/role/SDK/Workflow/effect coverage and
+the final genuine fenced verification producer. No real target was locked.
