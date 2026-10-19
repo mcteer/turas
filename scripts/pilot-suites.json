@@ -1763,6 +1763,18 @@
         "rejects forged work target credentials changed deployment and wrong operator password before issuing sessions",
         "rechecks canonical work session expiry and revocation after the read while the target remains active"
       ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-execution-http.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        ";",
+        "reads every accepted execution record and baseline without substituting an administrator-visible pending revision",
+        "rejects foreign cookies and a different fixed maintenance read kind",
+        "rejects changed execution generations and retired probe credentials",
+        "fails missing accepted payload coverage and retains the committed finite allowance after reader failure",
+        "inventories accepted older-baseline records instead of omitting them when current delivery needs reconciliation"
+      ]
     }
   ],
   "ui": {

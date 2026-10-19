@@ -1215,3 +1215,22 @@ the actual session and short expiry after their callback, then retire the sessio
 ordinary ingress remains locked. The caller owns explicit issuance/commit and
 retirement transactions. These issuers do not certify all required service roles
 or produce an unlock verification.
+
+
+### Accepted delivery maintenance reads
+
+The fixed execution maintenance route binds the active accepted baseline, plan
+version, execution head/generation/state, every accepted record head/version/digest
+and current milestone heads. It derives all accepted records, including internal
+and older-baseline records, before projection. Mutable heads remain locked; the
+immutable baseline header does not require an unnecessary runtime write grant.
+
+The same governed execution readers select explicit accepted heads by record ID,
+never the administrator's default working head. The baseline payload must match
+its canonical accepted plan; record content must match the stored schema and digest.
+Current milestones require complete ID/key/baseline/version/state coverage and no
+unresolved review flags. Missing or withheld required content fails the read.
+Readable historical records keep their historical review warning; they do not
+become current accepted facts. This checks exact record coverage, not list-page
+pagination. The route shares committed finite allowances and final authentication
+with other maintenance reads. It creates no execution summary receipt.

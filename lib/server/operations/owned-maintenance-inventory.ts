@@ -1,3 +1,4 @@
+import {readExecutionRecoveryBinding} from './recovery-execution-read';
 import {withOwnedRestoreTarget,requireOwnedRestoreConnection,verifyOwnedRestoredRequiredObjects,type OwnedRestoreTarget} from './owned-restore-target';
 import {requiredRecoveryObjects} from './required-objects';
 import {recoveryDigest} from '../../contracts/pilot-recovery';
@@ -6,7 +7,7 @@ import {DEMO_IDS} from '../bootstrap-ids';
 import {z} from 'zod';
 
 type Scope={environmentId:string;recoveryId:string;controlRevision:number};
-export type OwnedMaintenanceRecord=Readonly<{kind:'profile'|'artifact'|'report'|'workforce'|'gap'|'plan';recordId:string;workspaceId:string;customerId:string|null;membershipId:string;generation:string;parentId:string|null;object:Readonly<ObjectDescriptor>|null}>;
+export type OwnedMaintenanceRecord=Readonly<{kind:'profile'|'artifact'|'report'|'workforce'|'gap'|'plan'|'execution';recordId:string;workspaceId:string;customerId:string|null;membershipId:string;generation:string;parentId:string|null;object:Readonly<ObjectDescriptor>|null;bindingDigest?:string}>;
 type Row=Record<string,unknown>;
 const id=(value:unknown)=>z.uuid().parse(value);
 const generation=(value:unknown)=>z.string().regex(/^\d+$/).parse(String(value));
@@ -49,7 +50,7 @@ export async function deriveOwnedMaintenanceInventoryInTransaction(db:import('pg
    }
    function record(kind:OwnedMaintenanceRecord['kind'],row:Row,object:ObjectDescriptor|null,customerId:string|null,parentId:string|null=null){
     const workspaceId=id(row.workspace_id),membershipId=memberships.get(workspaceId);if(!membershipId)throw Error('Active maintenance workspace lacks authenticated owner scope');
-    const value=Object.freeze({kind,recordId:id(row.record_id),workspaceId,customerId,membershipId,generation:generation(row.generation),parentId,object:object?Object.freeze({...object}):null});
+    const value=Object.freeze({kind,recordId:id(row.record_id),workspaceId,customerId,membershipId,generation:generation(row.generation),parentId,object:object?Object.freeze({...object}):null,...(kind==='execution'?{bindingDigest:z.string().regex(/^[a-f0-9]{64}$/).parse(row.binding_digest)}:{})});
     if(records.some(prior=>prior.kind===value.kind&&prior.recordId===value.recordId))throw Error('Ambiguous maintenance record');
     records.push(value);if(records.length>256)throw Error('Maintenance service inventory exceeds bound');if(object)classified.set(object.key,'maintenance-candidate');
    }
@@ -61,6 +62,8 @@ export async function deriveOwnedMaintenanceInventoryInTransaction(db:import('pg
     FROM delivery_plans p JOIN workspaces w ON w.id=p.workspace_id
     WHERE p.environment_id=$1 AND w.active AND p.accepted_revision_id IS NOT NULL`);
    for(const row of plans)record('plan',row,null,id(row.customer_id),id(row.revision_id));
+   const engagements=await rows(`SELECT e.id AS record_id,e.workspace_id,e.customer_id FROM engagements e JOIN workspaces w ON w.id=e.workspace_id WHERE e.environment_id=$1 AND w.active AND e.active_baseline_id IS NOT NULL`);
+   for(const row of engagements){const binding=await readExecutionRecoveryBinding(db as unknown as import('pg').PoolClient,{environmentId:scope.environmentId,workspaceId:id(row.workspace_id),customerId:id(row.customer_id),engagementId:id(row.record_id)});record('execution',{...row,generation:String(binding.generation),binding_digest:binding.bindingDigest},null,id(row.customer_id),binding.baseline.active_baseline_id);}
    const artifacts=await rows(`SELECT v.id AS record_id,v.workspace_id,v.customer_id,v.object_key::text AS object_id,v.sha256_digest AS digest,v.actual_size_bytes AS size_bytes,
     v.lifecycle_generation AS generation,v.state,v.owner_principal_id,v.submitted_at IS NOT NULL AS submitted,w.active,
     EXISTS(SELECT 1 FROM artifact_extraction_runs r WHERE r.version_id=v.id AND r.state='published') AS published

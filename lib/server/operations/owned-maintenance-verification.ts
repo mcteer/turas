@@ -7,6 +7,7 @@ import {prepareOwnedRecoveryApplication,warmOwnedRecoveryApplication,withOwnedRe
 import {pilotSource} from '../../../scripts/pilot-source';
 import {issueOwnedRecoveryHttpRead,retireOwnedRecoveryHttpRead} from './recovery-http-read-issuer';
 import {withAuthenticatedOwnerRecoveryRead} from './authenticated-recovery-read';
+import {readExecutionRecoveryBinding,readRecoveryExecution} from './recovery-execution-read';
 import {readPlan} from '../plans/read';
 import {acceptedPlanRecoveryDigest} from './recovery-plan-projection';
 import {readProfile} from '../profiles/read';
@@ -26,6 +27,7 @@ function planProjection(value:unknown,record:OwnedMaintenanceRecord){
 }
 function ordinaryPath(record:OwnedMaintenanceRecord){
  if(record.kind==='profile')return '/api/customers/'+record.customerId+'/profile';
+ if(record.kind==='execution')return '/api/execution/engagements/'+record.recordId;
  if(record.kind==='plan')return '/api/plans/'+record.recordId;
  if(record.kind==='artifact')return '/api/artifacts/'+record.recordId+'/original';
  if(record.kind==='report')return '/api/reports/artifacts/'+record.recordId;
@@ -70,6 +72,12 @@ async function readRecord(application:OwnedRecoveryApplication,record:OwnedMaint
     const digest=profileProjection(profile,record);await db.query('COMMIT');return digest;
    }catch(error){await db.query('ROLLBACK');throw error;}
   });
+  if(record.kind==='execution')canonical=await withOwnedRecoveryApplicationConfiguration(application,signal,async db=>{
+   await db.query('BEGIN');try{
+    const execution=await withAuthenticatedOwnerRecoveryRead(db as unknown as PoolClient,{...input.scope,workspaceId:record.workspaceId,deadline,password:input.password},async actor=>{const binding=await readExecutionRecoveryBinding(db as unknown as PoolClient,{environmentId:input.scope.environmentId,workspaceId:record.workspaceId,customerId:record.customerId!,engagementId:record.recordId});if(binding.bindingDigest!==record.bindingDigest)throw Error('Maintenance execution inventory changed');return readRecoveryExecution(db as unknown as PoolClient,actor,binding);});
+    const digest=recoveryDigest(execution);await db.query('COMMIT');return digest;
+   }catch(error){await db.query('ROLLBACK');throw error;}
+  });
   if(record.kind==='plan')canonical=await withOwnedRecoveryApplicationConfiguration(application,signal,async db=>{
    await db.query('BEGIN');try{
     const plan=await withAuthenticatedOwnerRecoveryRead(db as unknown as PoolClient,{...input.scope,workspaceId:record.workspaceId,deadline,password:input.password},actor=>readPlan(actor,record.recordId,record.parentId!,db as unknown as PoolClient));
@@ -86,6 +94,9 @@ async function readRecord(application:OwnedRecoveryApplication,record:OwnedMaint
   if(record.kind==='profile'){
    if(!/^application\/json(?:;|$)/i.test(response.headers.get('content-type')??''))throw Error('Maintenance profile response type differs');
    const parsed=JSON.parse(bytes.toString()) as {data?:unknown};if(profileProjection(parsed.data,record)!==canonical)throw Error('Maintenance HTTP and canonical profile projections differ');
+  }else if(record.kind==='execution'){
+   if(!/^application\/json(?:;|$)/i.test(response.headers.get('content-type')??''))throw Error('Maintenance execution response type differs');
+   const parsed=JSON.parse(bytes.toString()) as {data?:unknown};if(recoveryDigest(parsed.data)!==canonical)throw Error('Maintenance HTTP and canonical execution projections differ');
   }else if(record.kind==='plan'){
    if(!/^application\/json(?:;|$)/i.test(response.headers.get('content-type')??''))throw Error('Maintenance plan response type differs');
    const parsed=JSON.parse(bytes.toString()) as {data?:unknown};if(planProjection(parsed.data,record)!==canonical)throw Error('Maintenance HTTP and canonical accepted plan projections differ');

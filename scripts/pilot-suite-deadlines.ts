@@ -21,6 +21,7 @@ const longSuiteSeconds:Readonly<Record<string,number>>={
  'recovery-quarantine':2400,'recovery-credential-denials':3420,
  'work-denial-reconciliation':900,
  'recovery-plan-http':900,
+ 'recovery-execution-http':1140,
  'locked-work-recovery-target':2580,
 };
 for(const name of Object.keys(longSuiteSeconds)){

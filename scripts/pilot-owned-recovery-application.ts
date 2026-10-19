@@ -92,7 +92,7 @@ export async function warmOwnedRecoveryApplication(application:OwnedRecoveryAppl
  const runtime=new URL(process.env.DATABASE_URL!);runtime.username='turas_runtime_016';runtime.password=randomBytes(32).toString('base64url');
  const stores=join(state.root,'warm-stores');await mkdir(stores,{recursive:true,mode:0o700});
  await serve(application,{DATABASE_URL:runtime.toString(),DATABASE_URL_UNPOOLED:runtime.toString(),TURAS_ENVIRONMENT_ID:state.scope.environmentId,TURAS_PRIVATE_OBJECT_BACKEND:'local',TURAS_ARTIFACT_STORE_ROOT:stores,TURAS_WORKFORCE_STORE_ROOT:stores,TURAS_REPORT_STORE_ROOT:stores},signal,async()=>{
-  for(const kind of ['profile','artifact','report','workforce','gap']){
+  for(const kind of ['profile','artifact','report','workforce','gap','plan','execution']){
    const response=await fetch(application.origin+'/api/operations/recovery-read/'+randomUUID()+'/'+kind,{redirect:'manual',signal});await response.body?.cancel();
    if(![401,403,503].includes(response.status)||response.headers.get('x-turas-code-version')!==application.sourceCommit)throw Error('Recovery preparation admitted a protected read or release differs');
   }

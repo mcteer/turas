@@ -4211,3 +4211,39 @@ Cloud transport remains controlled; this is not hosted service acceptance.
 Current inventory844cases/153suites still needs complete current-source proof.
 T096/T097 remain open for remaining service/role/SDK/Workflow/effect coverage and
 the final genuine fenced verification producer. No real target was locked.
+
+
+### Accepted execution recovery coverage
+
+All five corrected actual-owned-PG execution route cases pass. The fixed reader
+compares the accepted baseline against its canonical plan, inventories all accepted
+execution heads before projection (including internal/older-baseline records),
+selects explicit accepted revisions despite pending corrections, validates content
+schema/digests and current milestone identity/version/state/eligibility, and retains
+committed finite allowance after a missing-payload failure. Ordinary ingress stays
+locked; changed generations and retired/foreign credentials are rejected. A normally
+reviewed replacement baseline leaves historical accepted IDs in the inventory and
+fails readiness while delivery needs reconciliation.
+
+Review identified and corrected milestone-level review flags that top-level overview
+flags did not cover. The first test-file parse failure and first five-case failures
+are retained: an unnecessary immutable-baseline row lock lacked runtime write
+privilege, and the replacement-plan fixture used an invalid command. The correction
+keeps runtime grants unchanged, locks mutable heads, and uses the normal save/review
+contract. Five focused cases now pass; root/pilot types and docs pass. The composed
+owned restore check with seven record kinds remains pending. Current catalog is
+849cases/154suites. No new hosted proof, work-target lock or unlock is inferred;
+T096/T097 remain open for remaining role/SDK/Workflow/effect coverage and composition.
+The earlier actual Neon079 rehearsal predates these unreleased079 metadata changes
+and must be repeated before release.
+
+
+The first seven-kind composed restore attempt correctly refused the execution
+lookup: its legacy customer selector read the process environment rather than the
+authenticated recovery configuration scope. It returned not-found across markers.
+The selector now uses the existing governed configuration accessor, preserving
+ordinary configured behavior and the selected process state. Both plan/execution
+maintenance routes are warmed while runtime LOGIN remains closed before leases.
+The corrected five focused execution cases pass, and the composed artifact
+restore case passes with all seven kinds; four other restore cases were deliberately
+unselected in this narrow follow-up. The original not-found failure remains retained.
