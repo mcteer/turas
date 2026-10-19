@@ -979,12 +979,15 @@
     },
     {
       "file": "tests/unit/pilot/legacy-safety-context.test.ts",
-      "expectedCases": 4,
+      "expectedCases": 7,
       "cases": [
         "accepts only the explicitly incomplete authenticated legacy database context",
         "rejects old missing content proof unsupported schemas and readiness claims",
         "rejects unsafe database names and oversized legacy dumps",
-        "binds independent key references to generated work key names without key bytes"
+        "binds independent key references to generated work key names without key bytes",
+        "binds current safety context to exact snapshot observations without claiming a service checkpoint",
+        "rejects supplied fencing byte integrity readiness and unbounded observation claims",
+        "stops snapshot boundary enumeration before another query after cancellation"
       ]
     },
     {
@@ -1577,11 +1580,12 @@
     },
     {
       "file": "tests/integration/pilot/released-safety-restore.test.ts",
-      "expectedCases": 3,
+      "expectedCases": 4,
       "cases": [
         "cold restores the released 077 ledger through 079 and reapplies newer denials behind both runtime perimeters",
         "rejects tampered 077 archive bytes before changing the target perimeter",
-        "keeps both runtime roles closed when 077 accepted content verification fails"
+        "keeps both runtime roles closed when 077 accepted content verification fails",
+        "rejects altered snapshot object and lease observations while retaining the restored runtime fence"
       ]
     },
     {

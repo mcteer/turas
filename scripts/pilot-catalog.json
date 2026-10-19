@@ -608,7 +608,15 @@
         "unit.neon-destination.003",
         "unit.neon-destination.004",
         "unit.neon-destination.005",
-        "unit.neon-destination.006"
+        "unit.neon-destination.006",
+        "integration.released-safety-restore.004",
+        "unit.legacy-safety-context.005",
+        "unit.legacy-safety-context.006",
+        "unit.legacy-safety-context.007",
+        "unit.legacy-safety-context.001",
+        "unit.legacy-safety-context.002",
+        "unit.legacy-safety-context.003",
+        "unit.legacy-safety-context.004"
       ]
     },
     {

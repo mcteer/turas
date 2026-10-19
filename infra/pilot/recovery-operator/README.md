@@ -3,14 +3,20 @@
 The undeployed `turas-recovery-operator` project was retired on 2026-10-14 at the
 user's direction. Its recovery keys were preserved separately and its existing
 Neon archive remains. This package is retained source/reference; the preparation,
-linking and deployment examples below do not authorize recreation. No scheduled
-operator is currently deployed.
+linking and deployment examples below do not authorize recreation. The recreated operator is deployed with backup execution disabled; no actual
+scheduled backup is verified.
 
 On2026-10-18 the user authorized proceeding with task spending below$100 in
 response to the concrete$2/48-hour operator recreation proposal. That instruction
 now permits its bounded recreation; retain the original retirement and previous
 archive/key history. Current preparation and actual hosted schedule execution are
 separate evidence. Do not infer a running schedule from a locally built package.
+
+The280343b package has been deployed separately from Turas with execution disabled.
+Actual hosted requests verify unauthorized401, authenticated disabled503, POST405
+and unknown-path404. No source credentials or enabled capture were provisioned.
+The source is locally prepared; these boundary checks do not inspect hosted
+Function bytes or prove the complete hosted backup path.
 
 The deterministic Function in this package is published separately from Turas.
 It takes no customer request body and exposes no conversation or model transport.

@@ -16,6 +16,7 @@ import {encryptRecoveryFile,decryptRecoveryFile} from '../lib/server/operations/
 import {putNeonEncryptedArchive,downloadNeonEncryptedArchive,type NeonArchiveScope} from '../lib/server/operations/neon-archive';
 import {withRecoveryCancellation} from '../lib/server/operations/recovery-cancellation';
 import {readOnlyDatabaseSafetyDigest} from '../lib/server/operations/recovery-content';
+import {readDatabaseSafetyBoundary} from '../lib/server/operations/database-safety-boundary';
 const execute=promisify(execFile);
 export const databaseSafetySourceSchema=z.strictObject({
  contract:z.literal('pilot-database-safety-source-v1'),projectId:z.string().regex(/^prj_[A-Za-z0-9]+$/),
@@ -53,6 +54,7 @@ export async function pilotDatabaseSafetyCopy(args:string[]){
    const {platformConnectionBindingVerified}=await verifyDatabaseSafetySourceBinding(scope,destination.teamId,signal);
    const db=new Client({connectionString:scope.databaseUrl,connectionTimeoutMillis:10000,statement_timeout:10000});
    stage='source_database_binding';
+   let databaseBoundary:Awaited<ReturnType<typeof readDatabaseSafetyBoundary>>|undefined;
    let snapshot:{environmentId:string;schemaVersion:number;capturedAt:string;ledgerDigest:string;applicationContentDigest:string;sourceDatabaseName:string;serverMajor:17|18},dump:{digest:string;sizeBytes:number;serverMajor:17|18;clientMajor:17|18};
    try{
     await db.connect();await db.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
@@ -64,12 +66,13 @@ export async function pilotDatabaseSafetyCopy(args:string[]){
     const ledger=(await db.query('SELECT name FROM turas_migrations ORDER BY name')).rows;
     if(JSON.stringify(ledger)!==JSON.stringify(installed))throw Error('Exact source ledger differs');
     stage='snapshot_content';const applicationContentDigest=await readOnlyDatabaseSafetyDigest(db);
+    if(scope.schemaVersion===77||scope.schemaVersion===79){stage='snapshot_boundary';databaseBoundary=await readDatabaseSafetyBoundary(db,scope.environmentId,marker[0].captured_at,signal);}
     const boundary=(await db.query('SELECT pg_export_snapshot() AS snapshot,current_database() AS database_name')).rows[0],serverMajor=recoveryPostgresMajor(Number(marker[0].version));
     snapshot={environmentId:scope.environmentId,schemaVersion:scope.schemaVersion,capturedAt:marker[0].captured_at.toISOString(),ledgerDigest:recoveryDigest(ledger),applicationContentDigest,sourceDatabaseName:boundary.database_name,serverMajor};
     stage='snapshot_dump';dump=await runNeonSafetyPgDump({environmentId:scope.environmentId,serverMajor,snapshot:boundary.snapshot,output:join(staging,'database.dump'),signal,connectionString:scope.databaseUrl});
     signal.throwIfAborted();await db.query('COMMIT');
    }catch(error){await db.query('ROLLBACK').catch(()=>undefined);throw error;}finally{await db.end();}
-   const context={contract:'pilot-database-safety-copy-v3',id,sourceProjectId:scope.projectId,sourceTarget:scope.target,...snapshot,dumpDigest:dump.digest,dumpBytes:dump.sizeBytes,matchedServiceCheckpoint:false},headerDigest=recoveryDigest(context);
+   const context={contract:databaseBoundary?'pilot-database-safety-copy-v4':'pilot-database-safety-copy-v3',id,sourceProjectId:scope.projectId,sourceTarget:scope.target,...snapshot,...(databaseBoundary?{databaseBoundary}:{}),dumpDigest:dump.digest,dumpBytes:dump.sizeBytes,matchedServiceCheckpoint:false},headerDigest=recoveryDigest(context);
    stage='encryption';const encrypted=await encryptRecoveryFile(join(staging,'database.dump'),join(staging,'database.encrypted'),localKey,headerDigest,signal);
    if(encrypted.sizeBytes>67108864)throw Error('Encrypted safety copy exceeds bounded archive capacity');
    // A unique work-project key is created before copying bytes. No upsert, existing

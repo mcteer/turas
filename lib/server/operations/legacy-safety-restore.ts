@@ -13,8 +13,10 @@ import {recoveryPostgresImage,recoveryPostgresMajor,matchesRecoveryClient} from 
 import {recoveryContentDigest} from './recovery-content';
 import {recoveryDigest} from '../../contracts/pilot-recovery';
 import {quarantineRestoredAuthority} from './recovery-quarantine';
+import {databaseSafetyBoundarySchema,readDatabaseSafetyBoundary} from './database-safety-boundary';
 const digest=z.string().regex(/^[a-f0-9]{64}$/);
-const scopeSchema=z.strictObject({dump:z.string().min(1),digest,sizeBytes:z.number().int().positive().max(67108864),sourceEnvironmentId:z.string().min(1).max(256).regex(/^[A-Za-z0-9_.:-]+$/),sourceDatabaseName:z.string().regex(/^[A-Za-z_][A-Za-z0-9_]{0,62}$/),sourceSchema:z.union([z.literal(38),z.literal(55),z.literal(57),z.literal(77),z.literal(79)]),sourceTarget:z.enum(['preview','production']).default('production'),serverMajor:z.union([z.literal(17),z.literal(18)]),applicationContentDigest:digest,ledgerDigest:digest}).superRefine((value,ctx)=>{
+const scopeSchema=z.strictObject({dump:z.string().min(1),digest,sizeBytes:z.number().int().positive().max(67108864),sourceEnvironmentId:z.string().min(1).max(256).regex(/^[A-Za-z0-9_.:-]+$/),sourceDatabaseName:z.string().regex(/^[A-Za-z_][A-Za-z0-9_]{0,62}$/),sourceSchema:z.union([z.literal(38),z.literal(55),z.literal(57),z.literal(77),z.literal(79)]),sourceTarget:z.enum(['preview','production']).default('production'),serverMajor:z.union([z.literal(17),z.literal(18)]),applicationContentDigest:digest,ledgerDigest:digest,databaseBoundary:databaseSafetyBoundarySchema.optional()}).superRefine((value,ctx)=>{
+ if(value.databaseBoundary&&![77,79].includes(value.sourceSchema))ctx.addIssue({code:'custom',message:'Current source required for safety boundary'});
  if(value.sourceSchema===38&&value.sourceTarget!=='preview')ctx.addIssue({code:'custom',message:'Schema 38 rehearsal requires explicit Preview source'});
 });
 const quote=(name:string)=>'"'+name.replaceAll('"','""')+'"';
@@ -67,6 +69,14 @@ export async function restoreOwnedLegacySafetyCopy(raw:z.input<typeof scopeSchem
   if(JSON.stringify(ledger)!==JSON.stringify(expected)||recoveryDigest(ledger)!==input.ledgerDigest)throw Error('Restored legacy ledger differs');
   await owner.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
   try{if(await recoveryContentDigest(owner)!==input.applicationContentDigest)throw Error('Restored legacy application content differs');await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}
+  if(input.databaseBoundary){
+   await owner.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+   try{
+    const actual=await readDatabaseSafetyBoundary(owner,input.sourceEnvironmentId,new Date(input.databaseBoundary.capturedAt),signal);
+    if(recoveryDigest(actual)!==recoveryDigest(input.databaseBoundary))throw Error('Restored safety boundary differs');
+    await owner.query('COMMIT');
+   }catch(error){await owner.query('ROLLBACK');throw error;}
+  }
   // Verify every checked-in migration before explicit forward rehearsal. This is
   // confined to the owned target; source URLs/credentials never reach this client.
   if(manifest.version!==79||manifest.migrations.length!==79)throw Error('Exact forward migration catalog required');
@@ -80,7 +90,7 @@ export async function restoreOwnedLegacySafetyCopy(raw:z.input<typeof scopeSchem
   await quarantineRestoredAuthority(owner,{environmentId:input.sourceEnvironmentId,recoveryId,controlRevision:Number(control[0].revision)});
   const current=(await owner.query('SELECT e.schema_version,c.mode FROM turas_environment e JOIN operations_control c USING(environment_id)')).rows;
   if(current.length!==1||current[0].schema_version!==79||current[0].mode!=='locked'||(await owner.query('SELECT count(*)::int AS n FROM turas_migrations')).rows[0].n!==79)throw Error('Forward rehearsal lock/ledger differs');
-  return {contract:denials?'pilot-owned-legacy-restore-v2' as const:'pilot-owned-legacy-restore-v1' as const,targetDatabaseName:target,sourceEnvironmentId:input.sourceEnvironmentId,sourceTarget:input.sourceTarget,sourceSchema:input.sourceSchema,targetSchema:79,applicationContentVerified:true,sourceLedgerVerified:true,forwardMigrationsVerified:true,mode:'locked' as const,runtimeConnectionDenied:true,credentialDenialsReapplied:denials!==undefined,credentialReconciliation,currentAuthorityVerified:false,workflowResumed:false,restorationReady:false};
+  return {contract:denials?'pilot-owned-legacy-restore-v2' as const:'pilot-owned-legacy-restore-v1' as const,targetDatabaseName:target,sourceEnvironmentId:input.sourceEnvironmentId,sourceTarget:input.sourceTarget,sourceSchema:input.sourceSchema,targetSchema:79,applicationContentVerified:true,sourceLedgerVerified:true,...(input.databaseBoundary?{snapshotBoundaryVerified:true}:{}),forwardMigrationsVerified:true,mode:'locked' as const,runtimeConnectionDenied:true,credentialDenialsReapplied:denials!==undefined,credentialReconciliation,currentAuthorityVerified:false,workflowResumed:false,restorationReady:false};
  }finally{
   // Stop the exact owned restore client before maintaining the final perimeter.
   try{

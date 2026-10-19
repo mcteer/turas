@@ -3217,3 +3217,57 @@ the generated project configuration and Build Output API both declared the same
 cron. The generator now leaves cron ownership with the built output alone; the
 actual package build test asserts one exact12-hour route across both files.
 No scheduled execution or successful deployment is inferred from that failure.
+
+
+### Disabled dedicated operator deployed and HTTP boundaries verified
+
+The corrected280343b package deployed successfully through Eve to the independent
+operator project. Fresh platform reads bind the ready Production deployment and
+its alias to that operator, with no Git connection. Protected Production-only
+configuration retains an independent random cron secret and execution flag0;
+source credentials and enabled capture configuration were not installed.
+Four actual HTTP checks pass: anonymous backup401, authenticated disabled503 with
+`backup_disabled`, POST405 and unknown-path404. These are hosted boundary checks,
+not hosted Function-byte inspection, a successful capture or scheduled cadence.
+The private receipt is`resume-20261018/operator-280343b-disabled-http-private.json`.
+
+An intervening deployment command was started from the wrong checkout and stopped
+immediately. Subsequent platform reads show the application Production commit
+still f8d196fad60a96698656188074d0abe668bc7991 and its newest deployment predating
+that command. No application deployment resulted. The successful operator command
+ran from the dedicated prepared package. Its default post-deploy development
+environment pull wrote only inside that private package.
+
+
+### Snapshot-bound current-release preservation
+
+Separate readonly observations found Production's private backend still defaults
+to local storage, with no Production Blob token/store binding and zero required
+private-object references. This was not retroactively attached to the earlier
+backup or treated as physical-byte or worker-drain proof.
+
+Current077/079 safety captures now use an authenticated v4 context. It binds the
+required-object digest/count/bytes, complete actual lease-column inventory and
+active lease/upload/dispatch counts to the same read-only repeatable-read
+transaction exported to pg_dump. Cold restoration recomputes the observations
+at the authenticated capture time before migration. Historical v2/v3 contexts
+remain unchanged. External admission, private-byte integrity and full-service
+checkpoint claims remain explicitly false.
+
+The first six-case integration pass covers077 snapshot stability despite a later
+lease insertion, writable/isolation rejection,079 forward restore and altered
+boundary rejection behind the runtime fence. Independent review found a missing
+mid-scan cancellation check; the existing operator signal is now checked before
+each query, and a deterministic regression proves no subsequent query is issued
+after abort. Sixteen focused contract/deadline/cancellation cases pass. Final integration after that correction passes all seven cases across the
+three files, including the existing missing-required-original denial. Both
+TypeScript projects, documentation and diff checks pass. An actual v4 Production
+capture remains pending. The current777-case/142-suite catalog requires fresh complete proof.
+The released-restore whole-file ceiling covers setup plus four210-second cases
+and cleanup; per-case, SQL and domain limits are unchanged.
+
+T074 now states the implementable compatibility order: preserve the current077
+release under an external maintenance perimeter, install078/079 before dependent
+code, then prove the079 matched-service backup/recovery/cadence mechanisms before
+pilot readiness. This corrects the previous pre-installation scheduling cycle;
+no readiness, recovery, current-authority or participant gate was removed.
