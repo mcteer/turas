@@ -5025,3 +5025,20 @@ omitted-provider rejection. An initial fixture attempted an immutable associatio
 update and was correctly rejected; the corrected loss fixture deletes its owned
 synthetic row. All provider transport is controlled in this test; it makes no
 hosted acceptance claim or provider writes.
+
+### Canonical private conversation recovery reads — 2026-10-19
+
+The normal owned-conversation reader now accepts its caller's actual transaction
+and applies the canonical read-only actor gate before/after retrieval. Annotation,
+artifact/retrieval eligibility and consumed-customer checks use that transaction;
+normal callers still own their transaction. Shared customer/general authorization
+SQL remains intact, and other callers retain their original operational SQL gate.
+A genuine in-process authenticated recovery actor can read its own references
+while locked without temporarily opening service or using a boolean exception.
+
+The owned PostgreSQL case passes for mcteer, panel and partner reading their own
+general/customer conversations, all cross-owner404s including admins, copied
+actor503s, post-retirement503s and actual session revocation. Ordinary open reads
+also pass in that fixture. Independent review found no concrete blocker. This is
+a canonical read prerequisite, not full HTTP/hosted required-service acceptance.
+No provider calls occurred. Inventory:920cases across167suites.

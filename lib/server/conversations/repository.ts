@@ -46,8 +46,8 @@ type ConversationRow = {
   planning_audience?:"internal"|"delivery"|null;
 };
 
-const scopedCustomer = `
-  EXISTS(SELECT 1 FROM operations_control oc WHERE oc.environment_id=(SELECT environment_id FROM turas_environment LIMIT 1) AND oc.mode='open') AND EXISTS (
+const scopedCustomerAuthorization = `
+  EXISTS (
     SELECT 1 FROM login_sessions ls
     JOIN principals p ON p.id = ls.principal_id
     JOIN memberships m ON m.id = $1 AND m.principal_id = p.id AND ls.membership_id=m.id AND ls.workspace_id=m.workspace_id
@@ -62,7 +62,9 @@ const scopedCustomer = `
       )))
   )`;
 
-const scopedGeneral = `EXISTS(SELECT 1 FROM operations_control oc WHERE oc.environment_id=c.environment_id AND oc.mode='open') AND c.customer_id IS NULL AND c.context_snapshot_schema='general-context-v1' AND EXISTS (
+const scopedCustomer = `EXISTS(SELECT 1 FROM operations_control oc WHERE oc.environment_id=(SELECT environment_id FROM turas_environment LIMIT 1) AND oc.mode='open') AND ${scopedCustomerAuthorization}`;
+
+const scopedGeneralAuthorization = `c.customer_id IS NULL AND c.context_snapshot_schema='general-context-v1' AND EXISTS (
   SELECT 1 FROM login_sessions ls JOIN principals p ON p.id=ls.principal_id
   JOIN memberships m ON m.id=$1 AND m.principal_id=p.id AND ls.membership_id=m.id AND ls.workspace_id=m.workspace_id
   JOIN workspaces w ON w.id=m.workspace_id
@@ -71,6 +73,8 @@ const scopedGeneral = `EXISTS(SELECT 1 FROM operations_control oc WHERE oc.envir
     AND p.id=$3 AND p.active AND m.active AND w.active AND m.workspace_id=c.workspace_id
     AND (m.kind='internal' OR o.active)
 )`;
+
+const scopedGeneral = `EXISTS(SELECT 1 FROM operations_control oc WHERE oc.environment_id=c.environment_id AND oc.mode='open') AND ${scopedGeneralAuthorization}`;
 
 function contextStatus(row: ConversationRow, session: CurrentSession): "current" | "changed" | "historical" {
   if (row.customer_id === null && row.context_snapshot_schema === "general-context-v1") return "current";
@@ -88,22 +92,23 @@ function contextStatus(row: ConversationRow, session: CurrentSession): "current"
   return "current";
 }
 
-async function annotatePlanning(rows:ConversationRow[]):Promise<void> {
+async function annotatePlanning(rows:ConversationRow[], client?:PoolClient):Promise<void> {
+  const read=client?client.query.bind(client) as typeof query:query;
   if (!rows.length) return;
-  const marker=await query<{schema_version:number}>(
+  const marker=await read<{schema_version:number}>(
     "SELECT schema_version FROM turas_environment WHERE environment_id=$1",
     [getServerConfig().TURAS_ENVIRONMENT_ID]);
   if ((marker.rows[0]?.schema_version ?? 0)<31) return;
-  const bindings=await query<{conversation_id:string;audience:"internal"|"delivery"}>(
+  const bindings=await read<{conversation_id:string;audience:"internal"|"delivery"}>(
     "SELECT conversation_id,audience FROM planning_conversation_bindings WHERE conversation_id=ANY($1::uuid[])",
     [rows.map((row)=>row.id)]);
   const byId=new Map(bindings.rows.map((row)=>[row.conversation_id,row.audience]));
   if ((marker.rows[0]?.schema_version ?? 0)>=34) {
-    const staffing=await query<{conversation_id:string}>("SELECT conversation_id FROM staffing_conversation_bindings WHERE conversation_id=ANY($1::uuid[])", [rows.map(row=>row.id)]);
+    const staffing=await read<{conversation_id:string}>("SELECT conversation_id FROM staffing_conversation_bindings WHERE conversation_id=ANY($1::uuid[])", [rows.map(row=>row.id)]);
     for (const row of staffing.rows) byId.set(row.conversation_id,"delivery");
   }
   if((marker.rows[0]?.schema_version??0)>=64){
-    const governed=await query<{conversation_id:string}>(`SELECT conversation_id FROM execution_advice_bindings WHERE conversation_id=ANY($1::uuid[])
+    const governed=await read<{conversation_id:string}>(`SELECT conversation_id FROM execution_advice_bindings WHERE conversation_id=ANY($1::uuid[])
       UNION SELECT conversation_id FROM support_advice_bindings WHERE conversation_id=ANY($1::uuid[])
       UNION SELECT conversation_id FROM expansion_advice_bindings WHERE conversation_id=ANY($1::uuid[])
       UNION SELECT conversation_id FROM learning_bindings WHERE conversation_id=ANY($1::uuid[])`,[rows.map(row=>row.id)]);
@@ -133,13 +138,14 @@ function values(session: CurrentSession): string[] {
   return [session.membershipId, session.sessionId, session.principalId];
 }
 
-async function staleArtifactConversations(ids: readonly string[]): Promise<Set<string>> {
+async function staleArtifactConversations(ids: readonly string[], client?:PoolClient): Promise<Set<string>> {
+  const read=client?client.query.bind(client) as typeof query:query;
   if (!ids.length) return new Set();
-  const marker = await query<{ schema_version: number }>(
+  const marker = await read<{ schema_version: number }>(
     "SELECT schema_version FROM turas_environment WHERE environment_id=$1",
     [getServerConfig().TURAS_ENVIRONMENT_ID]);
   if ((marker.rows[0]?.schema_version ?? 0) < 18) return new Set();
-  const stale = await query<{ conversation_id: string }>(`
+  const stale = await read<{ conversation_id: string }>(`
     SELECT DISTINCT d.conversation_id FROM conversation_artifact_dependencies d
     LEFT JOIN artifact_versions v ON v.id=d.version_id
     LEFT JOIN artifact_extraction_runs r ON r.id=d.run_id AND r.version_id=d.version_id
@@ -150,22 +156,24 @@ async function staleArtifactConversations(ids: readonly string[]): Promise<Set<s
   return new Set(stale.rows.map((row) => row.conversation_id));
 }
 
-async function staleRetrievalConversations(ids: readonly string[]): Promise<Set<string>> {
+async function staleRetrievalConversations(ids: readonly string[], client?:PoolClient): Promise<Set<string>> {
+  const read=client?client.query.bind(client) as typeof query:query;
   if (!ids.length) return new Set();
-  const marker = await query<{ schema_version: number }>(
+  const marker = await read<{ schema_version: number }>(
     "SELECT schema_version FROM turas_environment WHERE environment_id=$1",
     [getServerConfig().TURAS_ENVIRONMENT_ID]);
   if ((marker.rows[0]?.schema_version ?? 0) < 22) return new Set();
-  const used = await query<{ conversation_id: string }>(`
+  const used = await read<{ conversation_id: string }>(`
     SELECT DISTINCT d.conversation_id FROM session_evidence_dependencies d JOIN conversations c ON c.id=d.conversation_id
     WHERE d.conversation_id=ANY($1::uuid[])`,[ids]);
   const stale = new Set<string>();
   for (const row of used.rows) {
     try {
-      await withTransaction(async client => {
+      const validate=async(client:PoolClient)=>{
         if((await conversationFeature(client,row.conversation_id)).kind!=='normal')
           await assertRetrievalDependenciesCurrent(client,row.conversation_id);
-      });
+      };
+      if(client)await validate(client);else await withTransaction(validate);
     } catch (error) {
       if (error instanceof HttpFailure && error.status === 409) stale.add(row.conversation_id);
       else throw error;
@@ -238,24 +246,32 @@ export async function createOwnedConversation(
   return existingClient ? create(existingClient) : withTransaction(create);
 }
 
+/** The caller may reuse its actual authenticated recovery transaction. The
+ * canonical actor gate, ownership and consumed-customer/source checks still run;
+ * no serialized actor or supplied boolean can bypass operational admission. */
 export async function getOwnedConversation(
-  session: CurrentSession, id: string,
+  session: CurrentSession, id: string, existingClient?:PoolClient,
 ): Promise<ConversationReference> {
-  const result = await query<ConversationRow>(`
+ const read=async(client:PoolClient)=>{
+  await lockWorkspaceActor(client,session,undefined,true);
+  const result = await client.query<ConversationRow>(`
     SELECT c.*,state.internal_generation,state.delivery_generation FROM conversations c
     LEFT JOIN customer_references customer ON customer.id = c.customer_id
     LEFT JOIN customer_profile_state state ON state.customer_id=c.customer_id
     WHERE c.id = $4 AND c.owner_principal_id = $3 AND c.environment_id = $5
-      AND (${scopedCustomer} OR (${scopedGeneral}))
+      AND (${scopedCustomerAuthorization} OR (${scopedGeneralAuthorization}))
     LIMIT 1
   `, [...values(session), id, getServerConfig().TURAS_ENVIRONMENT_ID]);
   if (!result.rows[0]) throw hiddenRecord();
-  await annotatePlanning(result.rows);
+  await annotatePlanning(result.rows,client);
   if(result.rows[0].normal_live_context || result.rows[0].customer_id===null)
-    await withTransaction(db=>assertCustomerQuestionReads(db,session,id,undefined,false));
-  result.rows[0].artifact_context_stale = (await staleArtifactConversations([id])).has(id);
-  result.rows[0].retrieval_context_stale = (await staleRetrievalConversations([id])).has(id);
+    await assertCustomerQuestionReads(client,session,id,undefined,false);
+  result.rows[0].artifact_context_stale = (await staleArtifactConversations([id],client)).has(id);
+  result.rows[0].retrieval_context_stale = (await staleRetrievalConversations([id],client)).has(id);
+  await lockWorkspaceActor(client,session,undefined,true);
   return toReference(result.rows[0], session);
+ };
+ return existingClient?read(existingClient):withTransaction(read);
 }
 
 async function nativeRetirementConfirmed(id: string, nativeId: string | null, schemaVersion: number) {

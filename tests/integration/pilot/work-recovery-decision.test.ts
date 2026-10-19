@@ -497,3 +497,45 @@ it('rejects unaccounted current root model steps before provider selection while
   finally{await owner.query('UPDATE turas_environment SET schema_version=79');}
  });
 },210000);
+
+it('reads private conversations through genuine recovery actors while denying cross-owner and copied capabilities',async()=>{
+ const conversations=new Map<string,string[]>();
+ const {getOwnedConversation}=await import('../../../lib/server/conversations/repository');
+ const {withAuthenticatedWorkRecoveryRead,withAuthenticatedWorkParticipantRead}=await import('../../../lib/server/operations/authenticated-recovery-read');
+ await fixture(async input=>{
+  await withLockedWorkRecoveryDecision(input,async(db,target)=>{
+   const client=db as unknown as PoolClient;
+   for(const username of ['mcteer','panel','partner'] as const){
+    const request={...input.scope,workspaceId:DEMO_IDS.workspace,deadline:Math.min(target.deadline,Date.now()+59000),password:process.env[username==='mcteer'?'TURAS_DEMO_PASSWORD':username==='panel'?'PANEL_PASSWORD':'PARTNER_PASSWORD']!};
+    let retired:import('../../../lib/server/auth/sessions').CurrentSession|undefined;
+    const read=async(actor:import('../../../lib/server/auth/sessions').CurrentSession)=>{
+     retired=actor;
+     for(const id of conversations.get(username)!){
+      expect((await getOwnedConversation(actor,id,client)).id).toBe(id);
+      await expect(getOwnedConversation({...actor},id,client)).rejects.toMatchObject({code:'recovery_locked'});
+     }
+     for(const [other,ids] of conversations)if(other!==username)for(const id of ids)await expect(getOwnedConversation(actor,id,client)).rejects.toMatchObject({status:404});
+    };
+    if(username==='mcteer')await withAuthenticatedWorkRecoveryRead(db,target,request,dirname(input.sourceFile),read);
+    else await withAuthenticatedWorkParticipantRead(db,target,{...request,username},dirname(input.sourceFile),read);
+    await expect(getOwnedConversation(retired!,conversations.get(username)![0],client)).rejects.toMatchObject({code:'recovery_locked'});
+    expect((await db.query('SELECT revoked_at IS NOT NULL AS retired FROM login_sessions WHERE id=$1',[retired!.sessionId])).rows[0].retired).toBe(true);
+   }
+   expect((await db.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');
+  });
+ },async owner=>{
+  const {issueSession,getCurrentSession,sessionCookieName}=await import('../../../lib/server/auth/sessions');
+  for(const username of ['mcteer','panel','partner'] as const){
+   const membershipId=DEMO_IDS[username==='mcteer'?'mcteerMembership':username==='panel'?'panelMembership':'partnerMembership'];
+   const member=(await owner.query('SELECT kind,role FROM memberships WHERE id=$1',[membershipId])).rows[0];
+   const session=await issueSession({principalId:DEMO_IDS[username],loginName:username,displayName:username,membershipId,workspaceId:DEMO_IDS.workspace,kind:member.kind,role:member.role});
+   const actor=(await getCurrentSession(new Request(process.env.TURAS_APP_ORIGIN!,{headers:{cookie:sessionCookieName()+'='+session.token}})))!;
+   const ids=[];
+   for(const customerId of [null,DEMO_IDS.sharedCustomer]){
+    const created=await createOwnedConversation(actor,{customerId,requestKey:randomUUID()},owner as unknown as PoolClient);ids.push(created.conversation.id);
+    expect((await getOwnedConversation(actor,created.conversation.id)).id).toBe(created.conversation.id);
+   }
+   conversations.set(username,ids);
+  }
+ });
+},210000);
