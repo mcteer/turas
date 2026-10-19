@@ -4703,3 +4703,27 @@ Independent review found no blocker; its raw hostname delimiter comment was
 addressed and checked. The registered inventory is872cases/159suites. Fresh full
 source verification, composed current-host/old-host proof and hosted acceptance
 remain pending.
+
+
+### Complete host union and fixed policy reads — 2026-10-19
+
+The genuine terminal metadata component now measures all project aliases and
+the complete union of live alias and immutable deployment hosts. Missing listed
+deployments cannot remove live alias hosts; conflicting ID-to-immutable-host
+bindings and redirects fail closed. Final consumption rederives alias/host
+digests and host count. The focused owned PostgreSQL18 integration passes,
+including changed-alias rejection. Four host-union unit checks pass. Review found
+and corrected an alias-only conflicting immutable-host binding; its regression
+now passes.
+
+A fixed GET-only Vercel policy adapter binds the actual project/team, reads the
+active sole-deny policy and retains exact unsupported-conditional-feature and
+empty-system-bypass observations. It rejects arbitrary authorization errors,
+newly enabled unsupported feature states and nonempty/paginated exceptions.
+All four adapter unit checks pass. The actual adapter read the current hosted
+version1 policy without mutations; its private receipt explicitly reports HTTP
+closure and restoration readiness false. Independent review found no remaining
+blocker in these scoped components. Current root/pilot types pass. The registered
+inventory is880cases/161suites. Actual approved-host bindings, valid bypass
+controls, complete bounded HTTP traversal and final current-policy equality
+remain required before an HTTP admission closure proof can be issued.

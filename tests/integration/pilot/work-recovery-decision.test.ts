@@ -156,7 +156,7 @@ it('authenticates real work integrity bytes and rejects forged changed-object ar
 
 it('rechecks exhaustive native provider and deployment inventories without claiming old-host or effect closure',async()=>fixture(async input=>{
  const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
- let mode:'normal'|'active'|'omitted'|'deployment'|'project'='normal',writes=0;
+ let mode:'normal'|'active'|'omitted'|'deployment'|'project'|'alias'='normal',writes=0;
  try{
   await owner.query("INSERT INTO conversations(id,environment_id,workspace_id,customer_id,owner_principal_id,creation_operation_id,binding_state,title,eve_session_id) VALUES($1,$2,$3,$4,$5,$6,'bound','Controlled native inventory','wrun_original')",[randomUUID(),input.scope.environmentId,DEMO_IDS.workspace,DEMO_IDS.sharedCustomer,DEMO_IDS.mcteer,randomUUID()]);
   const runs=[{runId:'wrun_original',deploymentId:'dpl_old',workflowName:'workflow//eve//workflowEntry',status:'completed'},{runId:'wrun_provider_only',deploymentId:'dpl_old',workflowName:'workflow//eve//turnWorkflow',status:'cancelled'}];
@@ -166,6 +166,7 @@ it('rechecks exhaustive native provider and deployment inventories without claim
    if(request.method!=='GET'){writes++;throw Error('Managed measurement must remain read only');}
    if(url.pathname==='/v9/projects/prj_recovery')return Response.json({id:mode==='project'?'prj_foreign':'prj_recovery',accountId:'team_recovery'});
    if(url.pathname==='/v6/deployments'){expect(headers.has('x-vercel-environment')).toBe(false);expect(url.searchParams.has('target')).toBe(false);return Response.json({deployments:['dpl_recovery','dpl_old'].map((id,index)=>({uid:id,projectId:'prj_recovery',created:1000+index,url:mode==='deployment'&&index===1?'changed.vercel.app':id.replace('_','-')+'.vercel.app',target:index===0?null:'production',readyState:'READY',meta:{githubCommitSha:'a'.repeat(40)}})),pagination:{next:null}});}
+   if(url.pathname==='/v4/aliases'){expect(headers.has('x-vercel-environment')).toBe(false);return Response.json({aliases:[{uid:'alias_original',alias:mode==='alias'?'changed.example.com':'current.example.com',created:'2026-10-19',createdAt:1000,updatedAt:1000,creator:{},deletedAt:null,deploymentId:'dpl_recovery',deployment:{id:'dpl_recovery',url:'dpl-recovery.vercel.app'},projectId:'prj_recovery',redirect:null,redirectStatusCode:null}],pagination:{count:1,next:null,prev:null}});}
    expect(headers.get('x-vercel-environment')).toBe('preview');
    const rows=runs.filter(row=>mode!=='omitted'||row.runId!=='wrun_original').map(row=>({...row,status:mode==='active'&&row.runId==='wrun_original'?'running':row.status}));
    if(url.pathname==='/v1/workflow/v2/runs'){expect(url.searchParams.get('remoteRefBehavior')).toBe('lazy');return Response.json({data:rows,cursor:null,hasMore:false});}
@@ -174,7 +175,7 @@ it('rechecks exhaustive native provider and deployment inventories without claim
   try{
    const proof=await measureWorkManagedTerminalInventory({target:input,token:'controlled-provider-token'});expect(proof).toMatchObject({enumeratedRuns:2,providerOnlyRuns:1,deployments:2,enumeratedInventoryTerminalVerified:true,oldDeploymentsClosed:false,paidEffectsReconciled:false,restorationReady:false});
    await withLockedWorkRecoveryDecision(input,async(db,target)=>{expect(await requireMeasuredWorkManagedTerminalInventory(db,target,proof,input.signal)).toBe(proof);await expect(requireMeasuredWorkManagedTerminalInventory(db,target,{...proof},input.signal)).rejects.toThrow('Genuine fresh');});
-   for(const change of ['active','omitted','deployment','project'] as const){mode=change;await expect(withLockedWorkRecoveryDecision(input,(db,target)=>requireMeasuredWorkManagedTerminalInventory(db,target,proof,input.signal))).rejects.toThrow();}mode='normal';
+   for(const change of ['active','omitted','deployment','project','alias'] as const){mode=change;await expect(withLockedWorkRecoveryDecision(input,(db,target)=>requireMeasuredWorkManagedTerminalInventory(db,target,proof,input.signal))).rejects.toThrow();}mode='normal';
    expect(writes).toBe(0);expect((await owner.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');expect((await owner.query('SELECT count(*)::int AS count FROM operations_recovery_verifications')).rows[0].count).toBe(0);
   }finally{transport.mockRestore();}
  }finally{await owner.end();}

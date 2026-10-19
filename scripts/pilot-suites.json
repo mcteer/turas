@@ -1826,6 +1826,26 @@
         "rejects skip paths extra conditions and unknown effective configuration",
         "rejects wildcard duplicate noncanonical and inverted host predicates"
       ]
+    },
+    {
+      "file": "tests/unit/pilot/work-host-inventory.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "includes immutable URLs and live aliases without granting HTTP closure",
+        "preserves live aliases and immutable hosts for deployments missing from the deployment list",
+        "rejects ambiguous routing conflicting bindings and duplicate identities",
+        "enforces the complete host bound and ignores only explicitly deleted aliases"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-host-policy-provider.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "reads exact current project policy and explicit unavailable diagnostics without granting HTTP closure",
+        "rejects foreign project and ineffective active policy before bypass observations",
+        "does not interpret arbitrary denial or a newly enabled conditional feature as an empty inventory",
+        "rejects nonempty or paginated system exceptions and honors original cancellation"
+      ]
     }
   ],
   "ui": {
