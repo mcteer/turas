@@ -1,4 +1,5 @@
 import {recallPublicLearningForAccounts} from "../research/specialists/research-cache/public-learning-read";
+import {qualityInputSchema} from "../../contracts/profiles";
 import {getServerConfig} from "../config";
 import {createHash,randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';
@@ -102,7 +103,7 @@ export async function readPublicCustomerInventory(db:PoolClient,actor:CurrentSes
  if(result.rows.length>1000)throw new HttpFailure(503,'inventory_incomplete','Narrow the customer inventory');
  const needsResearchProducts=Boolean(input.query)&&couldMatchResearchProductLabel(input.query);
  if(needsResearchProducts){
- const research=(await db.query<{id:string;customer_id:string;location:string;information_type:string|null}>(`SELECT v.id,v.customer_id,v.location,v.quality_input->>'informationType' AS information_type
+ const research=(await db.query<{id:string;customer_id:string;location:string;supported_claim:string;quality_input:unknown;information_type:string|null}>(`SELECT v.id,v.customer_id,v.location,v.supported_claim,v.quality_input,v.quality_input->>'informationType' AS information_type
   FROM evidence_source_revisions v JOIN evidence_sources s ON s.id=v.source_id AND s.origin='independent_research'
   JOIN research_checks checks ON checks.source_revision_id=v.id AND checks.identity_result AND checks.scope_result AND checks.integrity_result AND checks.content_result
   WHERE v.customer_id=ANY($1::uuid[]) AND v.workspace_id=$2 AND ($3='internal' OR v.audience='delivery')
@@ -116,7 +117,10 @@ export async function readPublicCustomerInventory(db:PoolClient,actor:CurrentSes
   if(!research.some(source=>source.customer_id===account.id))continue;
   for(const source of research.filter(source=>source.customer_id===account.id)){
    if(source.information_type==='product_capability'||communityAttributionWarning({url:source.location}))continue;
-   const products=productsFromResearch(retained.filter(passage=>passage.accountId===account.id&&passage.url===source.location));
+   const products=productsFromResearch([
+    ...retained.filter(passage=>passage.accountId===account.id&&passage.url===source.location),
+    ...(retained.some(passage=>passage.accountId===account.id&&passage.url===source.location)&&qualityInputSchema.safeParse(source.quality_input).success?[{title:'',quote:source.supported_claim}]:[]),
+   ]);
    if(products.length){account.products=[...new Set([...(account.products??[]),...products])];(account.productSourceIds??=[]).push(source.id);}
   }
  }

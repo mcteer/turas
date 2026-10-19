@@ -1,3 +1,4 @@
+import {selectCustomer} from '../fixtures/customer-picker';
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { mkdirSync } from "node:fs";
@@ -39,7 +40,7 @@ test("source management keeps replacement and withdrawal distinct", async ({ pag
       data: { versionId,state,lifecycleGeneration: 2 } }) });
   });
   await page.goto("/s");
-  await page.getByLabel("Customer (optional)").selectOption({ label: "Cedar (synthetic)" });
+  await selectCustomer(page,"Cedar (synthetic)");
   await page.getByRole("button", { name: "Customer sources" }).click();
   await page.getByRole("button", { name: "Attach to this chat" }).click();
   await page.getByRole("button", { name: "Inspect source" }).click();

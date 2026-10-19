@@ -1,3 +1,4 @@
+import {selectCustomer} from '../fixtures/customer-picker';
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { signIn, sanitizedScreenshot } from "../fixtures/ui";
@@ -27,7 +28,7 @@ test("exact source selection prepares a file-only chat draft", async ({ page }, 
       ordinal: 1,text: "Synthetic unverified passage",locator: { kind: "txt",lineStart: 1,lineEnd: 1 },
       origin: "native",ocrConfidence: null,hidden: false,formula: null }],nextCursor: null } }) }));
   await page.goto("/s");
-  await page.getByLabel("Customer (optional)").selectOption({ label: "Cedar (synthetic)" });
+  await selectCustomer(page,"Cedar (synthetic)");
   await page.getByRole("button", { name: "Customer sources" }).click();
   await page.getByRole("button", { name: "Attach to this chat" }).click();
   await page.getByRole("button", { name: "Inspect source" }).click();

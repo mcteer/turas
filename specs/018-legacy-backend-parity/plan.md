@@ -67,3 +67,57 @@ Later-send recovery is separately proven by actual-Eve synthetic-provider and
 empty-native UI checks, not an additional hosted paid turn. No new schema or
 grant migration is needed for T033; the prior verified77 backup/rehearsal remains
 preserved. Original failures, unknown holds and evidence limits are retained.
+
+
+## Session and composed-read follow-up — 2026-10-18
+
+T034–T037 correct the hydrated login mechanism: use the same native HTML POST
+and server cookie/303 redirect as legacy, with the current form styling. Failed
+session storage redirects native forms to a safe unavailable page while JSON
+clients retain HTTP503. Controlled diagnostics exclude raw errors and credentials.
+Stop live history/attempt polling after terminal access/context loss, retaining
+transient failure recovery and saved scrolling. Delivery-assignment reads lock
+plans before engagements, matching execution; verify with actual concurrent
+transactions and an old-order negative check. No schema/grant migration or root
+model change is required; current released schema 077 remains compatible.
+
+A focused branch from released main carries these fixes independently of draft
+016. CI's general UI uses the already-built application under a loopback-only,
+unpaid test supervisor; default development supervision remains unchanged. Keep
+original native approval, intervening turn and knowledge assertions; close each
+completed fixture page and isolate fixture tool results by actual attempt.
+Retain existing Eve 0.67.1 while pinning Next 16.3.8, source-map-js 1.2.2 and the exact
+Undici 8.9.0 override to 8.10.2. Preserve unrelated Undici 7 dependencies.
+Final current-source CI, real authenticated Preview, independent review and
+post-merge Production/schema 077 checks remain required; local prototype evidence
+from 016 does not establish this focused branch's release acceptance.
+
+
+The test supervisor loads Next's production dotenv configuration before checking
+loopback databases, scope and disabled provider credentials. `@next/env` is an
+explicit test dependency pinned to the installed Next patch version. A file-loaded
+cloud database or provider key fails before any service starts, with controlled
+errors that exclude credential values; explicit safe shell configuration retains
+Next's normal precedence. This also supports CI's synthetic dotenv configuration.
+
+
+Preview acceptance reuses the existing isolated schema-077 real-data database
+previously prepared and restored for the released 019 checks. Verify its actual
+restricted runtime login, exact ledger/grants and retained encrypted backup before
+adding branch-only database/environment settings. Preserve the general Preview's
+newer retained research and all original holds; do not synchronize or overwrite
+either store to satisfy a comparison. Keep provider credentials disabled and the
+existing unfunded budget guard in this acceptance scope. No new model allowance,
+database, schema migration or Production configuration change is required.
+Verify the unchanged strict real-data profile check against the new deployment,
+then remove only this fix branch's five owned environment records after release.
+
+## Selected-claim product correction — 2026-10-18
+
+Keep the original eight-source selection and 1,600-character learning excerpts.
+For a selected URL with a valid evidence-quality contract, include its complete
+checked supported claim in product projection. Do not scan the full document or
+add unselected sources. Profile and inventory discovery use the same rule;
+product-capability and community sources retain their exclusions. This narrowly
+extends the earlier excerpt-only projection to retain checked product findings
+beyond its display boundary. No schema or provider change is required.

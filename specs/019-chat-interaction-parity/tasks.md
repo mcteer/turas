@@ -24,3 +24,11 @@ Independent test: existing look, privacy/source fences, interrupted recovery, ex
 
 ## Dependencies and implementation strategy
 T001–T002 precede code. T003–T005 cover US1; T006–T008 cover US2. Both are required before T009–T011 release. Viewport and attachment modules may be developed independently, but integrate agent-chat sequentially to avoid edit conflicts. Validate each mechanism before broad release gates; all three stories are required, no partial MVP release.
+
+## Profile and conversation follow-up — 2026-10-18
+
+- [X] T012 Restore searchable customer selection with keyboard/focus handling and draft preservation; migrate existing customer-selection UI fixtures.
+- [X] T013 Refresh the authorized recent-conversation list on creation, native messages and route changes, with content-free invalidation events.
+- [X] T014 Include complete checked claims from selected eligible research sources in profile and inventory products; preserve excerpt/source bounds, capability/community exclusions and legacy source precedence.
+- [X] T015 Verify final focused domains, built four-project WebKit, typecheck and documentation; record results and hosted limits.
+- [X] T016 Complete reviewed PR, exact authenticated Preview/Production acceptance and merged-branch cleanup before claiming release.

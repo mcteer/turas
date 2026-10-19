@@ -231,7 +231,11 @@ export async function projectNativeEventInTransaction(
     if (event.type === 'message.received' && feature.kind === 'normal') {
       const scope = await customerQuestionActor(client, {principalId: owned.owner_principal_id,
         attributes: {turasAttemptId: attemptId}});
-      await assertCustomerQuestionReads(client, scope.actor, owned.conversation_id, attemptId);
+      // A received control/user message carries no new factual output. The
+      // ordinary model wrapper injects current knowledge before its next call;
+      // checking old citations here kills its own research handoff first.
+      // Keep cumulative customer/grant checks and strict assistant-output gates.
+      await assertCustomerQuestionReads(client, scope.actor, owned.conversation_id, attemptId,false);
       // Provider reservations take this same lock before touching the attempt.
       // A retry cannot observe zero operations while an admission is committing.
       await client.query('SELECT id FROM conversations WHERE id=$1 FOR UPDATE', [owned.conversation_id]);

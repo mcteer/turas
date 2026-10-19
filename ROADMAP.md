@@ -15,6 +15,11 @@ It restores original mechanisms and consumers within existing governed domains.
 The 337-file source audit maps the restored implementation to original mechanisms.
 Acceptance and release evidence is tracked in the feature validation record and
 tasks. This does not complete unrelated feature-016 pilot work.
+The018 session/read-lock follow-up released in [PR #43](https://github.com/mcteer/turas/pull/43)
+with actual Production login/chat/schema checks and branch/Preview-setting cleanup.
+The first-send/background-work/research-handoff fix released in
+[PR #44](https://github.com/mcteer/turas/pull/44) as `716ad77`, with actual
+Production login/display/read checks; live research was not rerun.
 
 [PR 34](https://github.com/mcteer/turas/pull/34) merged the legacy backend and chat
 parity repair. Its [audit](docs/legacy-backend-parity-audit.md) retains earlier
@@ -323,3 +328,15 @@ PR36–39 restore the337-path/101-reference audited backend scope. Final source
 Production on schema77, including original retained history and actual failed-turn
 file-card reload recovery. See the [release record](docs/production-parity-release-2026-10-16.md).
 Historical failed checks remain recorded; this does not complete feature016.
+
+
+### Profile and chat follow-up — 2026-10-18
+
+[PR #45](https://github.com/mcteer/turas/pull/45) released searchable customer
+selection across directory pages, recent-conversation refresh and complete checked
+product claims from selected eligible sources as `60f7a4c`. All50 final-source CI
+jobs pass with one retained cleanup retry. Actual authenticated Production
+HTTP/WebKit verifies the original missing product, discovery, four picker layouts
+and12 login cases on schema077. The merged branch and five temporary Preview
+settings are removed. See [feature019 validation](specs/019-chat-interaction-parity/validation.md)
+for Preview proof, historical failures and hosted limits.
