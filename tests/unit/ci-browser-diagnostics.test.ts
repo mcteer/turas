@@ -10,6 +10,8 @@ describe('private browser failure diagnostics',()=>{
   expect(JSON.stringify(results)).not.toContain('PRIVATE_');expect(JSON.stringify(results)).not.toContain('/private/customer');
   const transport=browserFailureMetadata({suites:[{specs:[{file:'mcp-accessibility.spec.ts',tests:[{projectName:'webkit-desktop-dark',results:[{status:'failed',error:{message:'page.reload: PRIVATE_PAGE WebKit encountered an internal error'},steps:[{title:'Reload retained failed history',error:{message:'PRIVATE_PROSE'}},{title:'PRIVATE_PHASE',error:{}}]}]}]}]}]},allowed);
   expect(transport[0]).toMatchObject({signatures:['page.reload','WebKit encountered an internal error'],phases:['Reload retained failed history']});expect(JSON.stringify(transport)).not.toContain('PRIVATE_');
+  const learning=browserFailureMetadata({suites:[{specs:[{file:'learning-draft.spec.ts',tests:[{projectName:'webkit-mobile-dark',results:[{status:'timedOut',errors:[{message:'Test timeout PRIVATE_PROSE'}],steps:[{title:'Prepare learning draft',error:{message:'PRIVATE_FORM'}},{title:'PRIVATE_PHASE',error:{}}]}]}]}]}]},new Set(['learning-draft.spec.ts']));
+  expect(learning[0]).toMatchObject({category:'test_timeout',phases:['Prepare learning draft']});expect(JSON.stringify(learning)).not.toContain('PRIVATE_');
   expect(results[0].mentionedAccessibilityRules).toEqual(['color-contrast']);expect(JSON.stringify(results)).not.toContain('private-customer-rule');
  });
  it('ignores unapproved files and bounds records, projects and numeric metadata',()=>{

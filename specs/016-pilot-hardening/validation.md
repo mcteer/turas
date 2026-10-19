@@ -4284,3 +4284,16 @@ and hosted proof false (`work-mcp-public-consumer-v1-private.log`). Root/pilot t
 Eve bundle validation and documentation checks pass. The suite deadline inventory
 accounts for all fourteen declared210-second cases. Current catalog is851cases in154
 suites; a fresh complete current-source catalog remains required.
+
+### Learning draft timeout phase diagnostics — 2026-10-19
+
+The c6334b0 pilot predecessor CI failed its30-second learning-draft case without
+an action location; the cause remains unproven. Fixed test-step names now identify
+open/prepare/verify/audit/cancel/partner-denial phases. The bounded shared browser
+parser reads both single errors and error arrays, strips private prose and admits
+only fixed phase names through both predecessor aggregators. Assertions, actions,
+retries, accessibility rules and deadlines are unchanged. Existing diagnostic
+privacy tests pass3/3. The affected journey passes4/4 across desktop/mobile WebKit
+light/dark in its owned production runtime (`learning-draft-phases-webkit-v1-private.log`);
+this development subset does not establish the complete predecessor gate or CI.
+Root types and documentation checks pass.

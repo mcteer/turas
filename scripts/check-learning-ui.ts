@@ -1,3 +1,4 @@
+import {browserFailureMetadata} from './ci-browser-diagnostics';
 import { readFile,readdir,mkdir,mkdtemp,writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -28,8 +29,8 @@ export async function checkLearningUi(){
    const run=await gapNodeProcess([...args,"--output="+resolve(directory,project)],600000,environment.signal);await writeFile(resolve(directory,project+".json"),run.stdout,{mode:0o600});await writeFile(resolve(directory,project+".log"),run.stderr,{mode:0o600});
    if(run.status!==0||run.error){
     // Never echo assertion messages, DOM snapshots, request bodies or prose.
-    const locations:Array<{file:string;line:number;column:number;status:string;signatures:string[]}>=[];
-    try{const report=JSON.parse(run.stdout);const visit=(suite:{suites?:unknown[];specs?:Array<{file?:string;line?:number;column?:number;tests?:Array<{results?:Array<{status:string;error?:{message?:string;stack?:string}}>}>}>})=>{for(const spec of suite.specs??[])for(const test of spec.tests??[])for(const result of test.results??[])if(!["passed","skipped"].includes(result.status)){const error=result.error,match=error?.stack?.match(/tests\/ui\/(learning-[a-z-]+\.spec\.ts):(\d+):(\d+)/),message=error?.message??"";locations.push({file:match?.[1]??spec.file?.match(/(?:^|\/)(learning-[a-z-]+\.spec\.ts)$/)?.[1]??"unknown",line:Number(match?.[2]??spec.line??0),column:Number(match?.[3]??spec.column??0),status:["failed","timedOut","interrupted"].includes(result.status)?result.status:"unknown",signatures:["Timeout","toBeFocused","toBeVisible","toEqual","toHaveCount","ECONNREFUSED","Execution context was destroyed","Fast Refresh","503","429"].filter(signature=>message.toLowerCase().includes(signature.toLowerCase()))});}for(const child of suite.suites??[])visit(child as Parameters<typeof visit>[0]);};for(const suite of report.suites??[])visit(suite);}catch{}
+    let locations:ReturnType<typeof browserFailureMetadata>=[];
+    try{locations=browserFailureMetadata(JSON.parse(run.stdout),new Set(manifest.map(file=>file.split('/').at(-1)!)));}catch{}
     const stage=run.stdout.match(/LEARNING_WITHDRAWAL_STAGE (fixture|open-current-head|withdraw|accessibility|reload-withdrawn|reactivate|rollback-review|rollback-picker|rollback-originals|rollback-rationale|rollback-submit|rollback-refresh)/)?.[1];console.error(JSON.stringify({project,failedLocations:locations.slice(0,20),...(stage?{withdrawalStage:stage}:{}),processFailure:Boolean(run.error)}));throw Error("Learning UI failed: "+project);
    }passed+=verifyExecutionUiReport(JSON.parse(run.stdout),cases).expected;console.log(JSON.stringify({project,passed:cases.length,skipped:0}));}
  },{deadlineMs:2580000});
