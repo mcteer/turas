@@ -1,3 +1,4 @@
+import {measureWorkTargetIntegrity,requireMeasuredWorkTargetIntegrity} from '../../../lib/server/operations/work-target-integrity';
 import {measureWorkMcpCategoryBatch,measureWorkMcpCategory,requireMeasuredWorkMcpCategory,deriveWorkMcpScopeInTransaction,requireMeasuredWorkMcpCoverage} from '../../../lib/server/operations/work-mcp-verification';
 import {withRetainedDenialFixture} from '../../fixtures/pilot/retained-denials';
 import {quarantineRestoredAuthority} from '../../../lib/server/operations/recovery-quarantine';
@@ -5,8 +6,8 @@ import {POST as maintenanceMcp} from '../../../app/api/operations/recovery-read/
 import {handleMcpRequest} from '../../../lib/server/mcp/transport';
 import {DEMO_IDS} from '../../../lib/server/bootstrap-ids';
 import {it,expect,vi} from 'vitest';
-import {randomUUID,randomBytes} from 'node:crypto';
-import {mkdtemp,writeFile,rm} from 'node:fs/promises';
+import {randomUUID,randomBytes,createHash} from 'node:crypto';
+import {mkdtemp,mkdir,readFile,writeFile,rm} from 'node:fs/promises';
 import {join,resolve,dirname} from 'node:path';
 import {Client,type PoolClient} from 'pg';
 import {pilotPublishedKnowledgeFixture} from '../../fixtures/pilot/knowledge';
@@ -15,7 +16,7 @@ import {closeRuntimePool} from '../../../lib/server/db/client';
 import {retireOwnedLegacyRuntime} from '../../../lib/server/operations/runtime-retirement';
 import {requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
 import {withWorkRecoveryReadDeadline,withLockedWorkRecoveryDecision,withLockedWorkRecoveryTarget,requireLockedWorkRecoveryConnection} from '../../../lib/server/operations/locked-work-recovery-target';
-const state=vi.hoisted(()=>({connections:new Map<string,string>(),retainedKey:null as Uint8Array|null,platformChanged:false,sourceChanged:false,dirty:false,cleanupUnavailable:false,commit:'a'.repeat(40),digest:'b'.repeat(64),catalog:'c'.repeat(64)}));
+const state=vi.hoisted(()=>({connections:new Map<string,string>(),blobObjects:new Map<string,Uint8Array>(),retainedKey:null as Uint8Array|null,platformChanged:false,sourceChanged:false,dirty:false,cleanupUnavailable:false,commit:'a'.repeat(40),digest:'b'.repeat(64),catalog:'c'.repeat(64)}));
 // Actual owned PostgreSQL; only cloud transport/DNS and source attribution are
 // controlled. These checks do not establish hosted platform acceptance.
 vi.mock('pg',async original=>{const actual=await original<typeof import('pg')>();return {...actual,Client:class extends actual.Client{constructor(config?:import('pg').ClientConfig){if(state.cleanupUnavailable&&config?.connectionString?.includes('fixture.neon.tech'))throw Error('Controlled cleanup connection unavailable');super(config?.connectionString&&state.connections.has(config.connectionString)?{...config,connectionString:state.connections.get(config.connectionString)}:config);}}};});
@@ -24,8 +25,12 @@ vi.mock('../../../scripts/pilot-source',()=>({pilotSource:async()=>({sourceCommi
 vi.mock('../../../scripts/pilot-database-safety-copy',async original=>{const actual=await original<typeof import('../../../scripts/pilot-database-safety-copy')>();return {...actual,verifyDatabaseSafetySourceBinding:async()=>({platformConnectionBindingVerified:true}),readWorkRecoveryKey:async()=>{if(!state.retainedKey)throw Error('Controlled archive key absent');return Buffer.from(state.retainedKey);}};});
 vi.mock('../../../scripts/pilot-neon-archive',async original=>{const actual=await original<typeof import('../../../scripts/pilot-neon-archive')>();return {...actual,verifyWorkNeonDestination:async()=>({controlledProviderIdentity:true})};});
 vi.mock('node:child_process',async original=>{const actual=await original<typeof import('node:child_process')>(),{promisify}=await import('node:util');const execute=((...args:unknown[])=>Reflect.apply(actual.execFile,actual,args)) as typeof actual.execFile;Object.defineProperty(execute,promisify.custom,{value:async(command:string,args:string[],options:unknown)=>{if(command==='git'&&args[0]==='status')return {stdout:state.dirty?' M authored-source.ts':'',stderr:''};if(command!=='vercel')return (promisify(actual.execFile) as Function)(command,args,options);return {stdout:JSON.stringify({id:state.platformChanged?'dpl_changed':'dpl_recovery',projectId:'prj_recovery',ownerId:'team_recovery',readyState:'READY',target:null,meta:{githubCommitSha:state.commit}}),stderr:''};}});return {...actual,execFile:execute};});
+vi.mock('@vercel/blob',async original=>({...await original<typeof import('@vercel/blob')>(),
+ get:async(key:string,options:Record<string,unknown>)=>{if(options.storeId!=='syntheticStore'||options.oidcToken!=='synthetic.oidc.identity'||'token' in options)throw Error('Exact controlled OIDC store binding required');const bytes=state.blobObjects.get(key);return bytes?{statusCode:200,blob:{pathname:key,size:bytes.length},stream:new ReadableStream({start(controller){controller.enqueue(Uint8Array.from(bytes));controller.close();}})}:null;},
+ list:async(options:Record<string,unknown>)=>{if(options.storeId!=='syntheticStore'||options.oidcToken!=='synthetic.oidc.identity'||'token' in options)throw Error('Exact controlled OIDC store binding required');const rows=[...state.blobObjects].filter(([key])=>key.startsWith(String(options.prefix))).map(([pathname,bytes])=>({pathname,size:bytes.length,uploadedAt:new Date('2026-01-01T00:00:00Z')}));if(rows.length>Number(options.limit))throw Error('Controlled fixture page overflow');return {blobs:rows,hasMore:false};},
+}));
 async function fixture(run:(input:Parameters<typeof withLockedWorkRecoveryTarget>[0])=>Promise<void>,beforeLock?:(owner:Client)=>Promise<void>){
- state.connections.clear();state.platformChanged=false;state.sourceChanged=false;state.dirty=false;state.cleanupUnavailable=false;
+ state.blobObjects.clear();state.connections.clear();state.platformChanged=false;state.sourceChanged=false;state.dirty=false;state.cleanupUnavailable=false;
  await withAuthorityEnvironment(async(owner,runtime,environmentId)=>{
   if(beforeLock)await beforeLock(owner);
   const locked=await lockAuthorityTarget(owner,environmentId),scope={environmentId,recoveryId:locked.recoveryId,controlRevision:locked.controlRevision},password=randomBytes(32).toString('base64url');await closeRuntimePool();await runtime.end();await retireOwnedLegacyRuntime(owner,{...scope,password});
@@ -109,4 +114,41 @@ it('cancels a pending owner transaction when a single read deadline ends and pre
   const start=Date.now();await expect(withLockedWorkRecoveryDecision(input,async(db,target)=>{await db.query('UPDATE customer_references SET display_name=$2 WHERE id=$1',[row.id,'Must roll back timed-out read']);await withWorkRecoveryReadDeadline(db,target,AbortSignal.timeout(50),()=>db.query('SELECT pg_sleep(3)'));})).rejects.toThrow();
   expect(Date.now()-start).toBeLessThan(2500);expect((await owner.query('SELECT display_name FROM customer_references WHERE id=$1',[row.id])).rows[0].display_name).toBe(row.display_name);
  }finally{await owner.end();}
+}),210000);
+
+it('authenticates real work integrity bytes and rejects forged changed-object archive and grant proofs',async()=>fixture(async input=>{
+ const {captureOwnedRecoveryCandidate}=await import('../../../lib/server/operations/capture-candidate');
+ const {verifyNativePostgresClient}=await import('../../../lib/server/operations/native-postgres');
+ const {LocalPrivateObjects}=await import('../../../lib/server/storage/local-objects');
+ const {activeObjectNamespaces}=await import('../../../lib/server/storage/inventory');
+ const {objectKey,environmentObjectId}=await import('../../../lib/server/storage/private-objects');
+ const {decryptRecoveryFile,encryptRecoveryFile}=await import('../../../lib/server/operations/backup-crypto');
+ const {packBackupArchive,unpackBackupArchive}=await import('../../../lib/server/operations/backup-archive');
+ const {workCaptureCandidateSchema}=await import('../../../lib/contracts/pilot-capture');
+ const {recoveryDigest}=await import('../../../lib/contracts/pilot-recovery');
+ const root=dirname(input.sourceFile),sourceRoot=join(root,'originals'),workflowRoot=join(root,'empty-workflow'),keys=join(root,'keys'),rebound=join(root,'rebound'),key=randomBytes(32),signal=input.signal;
+ for(const directory of [sourceRoot,workflowRoot,keys,rebound])await mkdir(directory,{mode:0o700});const keyFile=join(keys,'key');await writeFile(keyFile,key,{mode:0o600});
+ const store=new LocalPrivateObjects(sourceRoot,input.scope.environmentId,10485760);
+ for(const namespace of activeObjectNamespaces){await mkdir(join(sourceRoot,'e_'+environmentObjectId(input.scope.environmentId),namespace),{recursive:true,mode:0o700});const bytes=Buffer.from('Controlled integrity original '+namespace),digest=createHash('sha256').update(bytes).digest('hex'),id=namespace.startsWith('artifact')?digest:randomUUID(),name=objectKey(input.scope.environmentId,namespace,id);await store.put(name,(async function*(){yield bytes;})(),{sizeBytes:bytes.length,digest});state.blobObjects.set(name,bytes);}
+ try{
+  const owned=await captureOwnedRecoveryCandidate({...input.scope,sourceRoot,workflowRoot,keyFile,keyReference:'synthetic-work-key',keyVersion:'1',output:join(root,'capture')},signal);
+  const archive=join(root,'original.archive');await decryptRecoveryFile(join(root,'capture/candidate.encrypted'),archive,key,owned.encryptedBundle.headerDigest,signal);
+  const unpacked=join(root,'unpacked'),header=await unpackBackupArchive({archive,target:unpacked,expectedHeaderDigest:owned.encryptedBundle.headerDigest,environmentId:input.scope.environmentId,checkpointId:owned.id,signal});
+  const assetRoot=resolve('infra/pilot/native-postgres/linux-amd64'),native=await verifyNativePostgresClient(assetRoot),configurationDigest=recoveryDigest({environmentId:input.scope.environmentId,databaseName:owned.sourceDatabaseName,sourceProjectId:input.hostedScope.projectId,storeId:'syntheticStore',backend:'private-blob',workflow:'managed-workflow',clientManifestDigest:native.manifestDigest});
+  // Repack the actual owned SQL/object bytes with authenticated controlled work
+  // provenance. Cloud SDK transport alone is controlled; no hosted claim.
+  const nextArchive=join(rebound,'candidate.archive'),packed=await packBackupArchive({header:{...header,provenance:{...header.provenance,configurationDigest}},files:new Map(header.entries.map(entry=>[entry.name,join(unpacked,entry.name)])),output:nextArchive,signal}),bundle=join(rebound,'candidate.encrypted'),encrypted=await encryptRecoveryFile(nextArchive,bundle,key,packed.headerDigest,signal);
+  const {providerCalls:ignored,...common}=owned;
+  const candidate=workCaptureCandidateSchema.parse({...common,configurationDigest,contract:'pilot-work-capture-candidate-v1',workflow:{inventoryDigest:recoveryDigest([]),fileCount:0,entries:[],backend:'managed-workflow',capability:'interrupted-reconciliation',runtimeStoppedVerified:false,resumptionVerified:false,reconciliationVerified:false},encryptedBundle:{headerDigest:packed.headerDigest,...encrypted},modelCalls:0,mailCalls:0});
+  process.env.VERCEL_BLOB_RETRIES='0';const args={target:input,candidate,bundle,keyFile,assetRoot,storeId:'syntheticStore',oidcToken:'synthetic.oidc.identity'};
+  await expect(measureWorkTargetIntegrity({...args,candidate:{...candidate,encryptedBundle:{...candidate.encryptedBundle,sizeBytes:67108865}}})).rejects.toThrow('capture allowance');
+  await expect(measureWorkTargetIntegrity({...args,oidcToken:''})).rejects.toThrow();
+  const proof=await measureWorkTargetIntegrity(args);expect(proof).toMatchObject({objectCount:activeObjectNamespaces.length,acceptedContentDigest:candidate.acceptedContentDigest,restorationReady:false});
+  await withLockedWorkRecoveryDecision(input,async(db,target)=>{expect(await requireMeasuredWorkTargetIntegrity(db,target,proof,signal)).toBe(proof);await expect(requireMeasuredWorkTargetIntegrity(db,target,{...proof},signal)).rejects.toThrow('Genuine current');});
+  await expect(measureWorkTargetIntegrity({...args,storeId:'differentStore'})).rejects.toThrow('binding differs');
+  const first=[...state.blobObjects][0];state.blobObjects.set(first[0],Buffer.from('Changed original'));await expect(withLockedWorkRecoveryDecision(input,(db,target)=>requireMeasuredWorkTargetIntegrity(db,target,proof,signal))).rejects.toThrow();state.blobObjects.set(...first);
+  const original=await readFile(bundle),changed=Buffer.from(original);changed[changed.length-1]^=1;await writeFile(bundle,changed,{mode:0o600});await expect(withLockedWorkRecoveryDecision(input,(db,target)=>requireMeasuredWorkTargetIntegrity(db,target,proof,signal))).rejects.toThrow('digest differs');await writeFile(bundle,original,{mode:0o600});
+  await writeFile(keyFile,randomBytes(32),{mode:0o600});await expect(withLockedWorkRecoveryDecision(input,(db,target)=>requireMeasuredWorkTargetIntegrity(db,target,proof,signal))).rejects.toThrow();await writeFile(keyFile,key,{mode:0o600});
+  const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();try{expect((await owner.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');expect((await owner.query('SELECT count(*)::int AS count FROM operations_recovery_verifications')).rows[0].count).toBe(0);await owner.query('ALTER ROLE turas_runtime_016 CONNECTION LIMIT 9');await expect(withLockedWorkRecoveryDecision(input,(db,target)=>requireMeasuredWorkTargetIntegrity(db,target,proof,signal))).rejects.toThrow('grant binding changed');}finally{await owner.end();}
+ }finally{key.fill(0);state.blobObjects.clear();}
 }),210000);

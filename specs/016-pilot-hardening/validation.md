@@ -4633,3 +4633,27 @@ file/configuration shapes. All five focused setup unit checks and all three
 actual evaluation-source integration cases pass. These checks do not turn the
 failed historical full run into a pass. A fresh complete862-case/157-suite run
 remains required. Independent review found no concrete blockers in both fixes.
+
+
+### Real-target physical integrity component — 2026-10-19
+
+The new real-target component authenticates actual encrypted bundle bytes and
+native client manifests, binds the candidate configuration to the actual work
+project/private store, and compares the complete installed ledger, portable
+restored database content, six-namespace original bytes and runtime grants.
+Measurements exist only after the genuine target controller's final checks.
+The final decision consumer rejects serialized copies and rechecks archive/key,
+native/store/project identity, ledger, grants and current required originals.
+It preserves the pre-quarantine physical content checkpoint separately from
+current denial/probe changes; current service/Workflow/effect verification still
+must compose before an authoritative verification can be written.
+
+All four recovery-decision integration cases pass. The new case uses actual
+owned PostgreSQL18, real licensed native asset hashes and actual authenticated
+encryption/archive bytes; only cloud/platform and Blob SDK transport are
+controlled. It rejects forged capabilities, altered original bytes, tampered
+archives, wrong keys, changed runtime grants, unsupported OIDC input and capture
+bound overflow. It confirms control remains locked and no recovery verification
+is created. This is local component proof, not actual hosted recovery readiness.
+The registered inventory is863cases/157suites; complete current-source verification
+and actual hosted acceptance remain outstanding.

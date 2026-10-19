@@ -1798,11 +1798,12 @@
     },
     {
       "file": "tests/integration/pilot/work-recovery-decision.test.ts",
-      "expectedCases": 3,
+      "expectedCases": 4,
       "cases": [
         "commits a pending recovery decision only after live checks and rolls back drift cancellation and callback commit attempts",
         "measures exhaustive fresh work MCP category pages through SDK and rejects changed projections or forged measurements",
-        "cancels a pending owner transaction when a single read deadline ends and preserves independent cleanup"
+        "cancels a pending owner transaction when a single read deadline ends and preserves independent cleanup",
+        "authenticates real work integrity bytes and rejects forged changed-object archive and grant proofs"
       ]
     }
   ],

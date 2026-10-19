@@ -1290,3 +1290,13 @@ hosted capacity. JSON receipts cannot recreate the in-process measurement.
 These components keep full-health/restoration flags false. Required authorization,
 Workflow/effect, integrity and authoritative decision composition remain separate;
 no real target may be locked on their partial proof alone.
+
+
+The real-target physical integrity component runs before quarantine/probe writes
+and retains genuine in-process proof through exact target validation. It uses
+OIDC-only private Blob reads with retries disabled and the original capture bounds:
+64MiB archive,256objects and24MiB private bytes. During final decision it rechecks
+actual archive/key/native/configuration, installed ledger, runtime grants and
+required original bytes. Its descriptive receipt cannot be rehydrated as authority.
+It never writes a healthy verification or unlocks service; complete current-denial,
+replay, Workflow/external-effect and required-service composition remains pending.

@@ -670,7 +670,8 @@
         "unit.recovery-decision-sql.002",
         "unit.recovery-decision-sql.003",
         "integration.work-recovery-decision.002",
-        "integration.work-recovery-decision.003"
+        "integration.work-recovery-decision.003",
+        "integration.work-recovery-decision.004"
       ]
     },
     {
