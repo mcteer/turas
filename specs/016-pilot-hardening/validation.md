@@ -4178,3 +4178,10 @@ evidence remains retained. Current catalog841cases/153suites needs complete proo
 CI39301788519 at c6334b0 reports a retained pilot-regression predecessor failure in
 014WebKit learning-draft line7 (30-second case timeout). Domain/native predecessor
 phases pass. The CI gate remains unresolved; no assertion or deadline is relaxed.
+
+The next product-gap failure diagnostic retains only bounded JavaScript error and
+failed-request categories, API expected-title equality and a DOM heading-presence
+boolean. It captures neither fixture prose nor raw error text. All seven existing
+runner/privacy cases pass and root types pass. Actions, assertions, retries and
+deadlines remain unchanged. Independent review found no concrete blocker. This
+improves diagnosis; it does not establish a fix for the retained WebKit failures.
