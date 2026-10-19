@@ -345,5 +345,5 @@ Pilot recovery now includes a bounded command-level maintenance verifier with da
 
 Feature016's authorized operator/internal/partner acceptance now uses actual
 hosted automated role exercises, labeled automated and independently reviewed.
-The local catalog is880cases/161suites; complete current-source proof, composed
+The local catalog is884cases/162suites; complete current-source proof, composed
 real-work recovery verification, hosted exercises and release remain open.

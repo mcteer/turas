@@ -4727,3 +4727,29 @@ blocker in these scoped components. Current root/pilot types pass. The registere
 inventory is880cases/161suites. Actual approved-host bindings, valid bypass
 controls, complete bounded HTTP traversal and final current-policy equality
 remain required before an HTTP admission closure proof can be issued.
+
+The complete five-case owned PostgreSQL18 recovery-decision suite also passes
+after host-union integration, with no filtered or pending cases (private
+`work-managed-host-union-v3-full-private.json`). The earlier v1 harness setup
+failed before tests because it requested an upgrade of an already-current owned
+fixture; its log is retained. Focused v2 and complete v3 use the current fixture
+directly. This remains local component evidence.
+
+
+### Actual approved-host bindings — 2026-10-19
+
+The fixed read-only host binding adapter now resolves every exact allowlisted
+host through Vercel's deployment API. Only the selected source/target deployment
+or the actual project's current Production baseline is eligible. It checks
+READY/source/project/team consistency, matching per-host deployment metadata,
+selected-host coverage and a final current-Production project readback. Four
+focused cases pass, including old/foreign/source/Production drift, malformed or
+duplicate hosts, missing selected-host and cancellation rejection. Root/pilot
+types and docs pass; independent review found no blocker.
+
+The actual adapter resolved all four current allowed hosts to the real current
+Production baseline, without application requests or mutations. Its private
+receipt reports protection-credential verification, HTTP closure and readiness
+false. This diagnostic does not prove the unreleased candidate and must be
+repeated in final composition. The current registered inventory is884cases
+across162suites; full current catalog and hosted acceptance remain outstanding.

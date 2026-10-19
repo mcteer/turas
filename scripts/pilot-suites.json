@@ -1846,6 +1846,17 @@
         "does not interpret arbitrary denial or a newly enabled conditional feature as an empty inventory",
         "rejects nonempty or paginated system exceptions and honors original cancellation"
       ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-approved-host-bindings.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "/",
+        "binds each allowed host to the selected Preview or current Production baseline",
+        "rejects old foreign mismatched-source and changing Production bindings",
+        "requires an approved selected host and exact canonical unique hostnames",
+        "requires the selected Production deployment to be the actual current baseline and honors cancellation"
+      ]
     }
   ],
   "ui": {
