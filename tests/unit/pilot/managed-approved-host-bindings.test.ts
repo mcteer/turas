@@ -8,7 +8,7 @@ function transport(mode='normal'){
   if(url.pathname==='/v9/projects/prj_original'){projectReads++;return Response.json({id:mode==='foreign'?'prj_foreign':scope.projectId,accountId:scope.teamId,targets:{production:{id:mode==='project-drift'&&projectReads>1?'dpl_other':'dpl_production'}}});}
   const identity=decodeURIComponent(url.pathname.split('/').at(-1)!);let id=identity.includes('.')?(identity==='preview.vercel.app'?'dpl_preview':'dpl_production'):identity;
   if(mode==='old'&&identity==='app.example.com')id='dpl_old';
-  return Response.json({id,projectId:scope.projectId,ownerId:scope.teamId,readyState:'READY',target:id==='dpl_production'?'production':null,meta:{githubCommitSha:(mode==='wrong-source'&&id==='dpl_preview'||mode==='host-source-drift'&&identity==='app.example.com')?'b'.repeat(40):sha}});
+  return Response.json({id,url:id==='dpl_preview'?'preview.vercel.app':'production.vercel.app',projectId:scope.projectId,ownerId:scope.teamId,readyState:'READY',target:id==='dpl_production'?'production':null,meta:{githubCommitSha:(mode==='wrong-source'&&id==='dpl_preview'||mode==='host-source-drift'&&identity==='app.example.com')?'b'.repeat(40):sha}});
  });
 }
 afterEach(()=>vi.restoreAllMocks());

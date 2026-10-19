@@ -6,7 +6,7 @@ const scopeSchema=z.strictObject({projectId:z.string().regex(/^prj_[A-Za-z0-9]+$
 /** Fixed, read-only control-plane transport. This is policy metadata, not proof
  * of valid protection bypass credentials or closure of any HTTP hostname. */
 export async function readManagedHostPolicy(raw:z.infer<typeof scopeSchema>,signal:AbortSignal){
- const startedAt=Date.now(),scope=scopeSchema.parse(raw),headers=new Headers({authorization:'Bearer '+scope.token,'x-vercel-project-id':scope.projectId,'x-vercel-team-id':scope.teamId});
+ const startedAt=Date.now(),processObservationStart=performance.now(),scope=scopeSchema.parse(raw),headers=new Headers({authorization:'Bearer '+scope.token,'x-vercel-project-id':scope.projectId,'x-vercel-team-id':scope.teamId});
  const query=new URLSearchParams({projectId:scope.projectId,teamId:scope.teamId});
  async function read(path:string){
   signal.throwIfAborted();const response=await fetch('https://api.vercel.com'+path,{method:'GET',headers,redirect:'error',cache:'no-store',signal:AbortSignal.any([signal,AbortSignal.timeout(10000)])});
@@ -29,7 +29,7 @@ export async function readManagedHostPolicy(raw:z.infer<typeof scopeSchema>,sign
  // supported state is the actual empty result, never a truncated nonempty page.
  const system=await read('/v1/security/firewall/bypass?'+query+'&limit=100');
  if(system.status!==200||!z.strictObject({result:z.array(z.unknown()).length(0)}).safeParse(system.body).success)throw Error('System bypass inventory requires supported explicit review');
- signal.throwIfAborted();const registry=(project.body as {protectionBypass?:unknown}).protectionBypass;const proof=Object.freeze({...policy,contract:'pilot-managed-host-policy-read-v1' as const,providerReadVerified:true as const,conditionalBypassFeatureUnavailable:true as const,conditionalDiagnosticDigest:recoveryDigest(conditional),systemBypassInventoryEmpty:true as const,systemBypassDigest:recoveryDigest(system),automationRegistryDigest:recoveryDigest(registry??null),httpAdmissionClosed:false as const,restorationReady:false as const});
+ signal.throwIfAborted();const registry=(project.body as {protectionBypass?:unknown}).protectionBypass;const proof=Object.freeze({...policy,contract:'pilot-managed-host-policy-read-v1' as const,asOf:new Date(startedAt).toISOString(),processObservationStart,providerReadVerified:true as const,conditionalBypassFeatureUnavailable:true as const,conditionalDiagnosticDigest:recoveryDigest(conditional),systemBypassInventoryEmpty:true as const,systemBypassDigest:recoveryDigest(system),automationRegistryDigest:recoveryDigest(registry??null),httpAdmissionClosed:false as const,restorationReady:false as const});
  automationRegistries.set(proof,{registry,measuredAt:startedAt});return proof;
 }
 /** Secret material stays outside serialized metadata. Only the actual fresh

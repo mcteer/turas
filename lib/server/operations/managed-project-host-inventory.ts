@@ -8,7 +8,7 @@ const actualInventories=new WeakMap<object,{startedAt:number;projectId:string;te
 /** Fixed actual complete metadata reads. Secret-bearing HTTP probes may consume
  * only hostnames from this privately registered project-wide inventory. */
 export async function readManagedProjectHostInventory(raw:z.infer<typeof scopeSchema>,parentSignal:AbortSignal){
- const scope=scopeSchema.parse(raw),startedAt=Date.now(),signal=AbortSignal.any([parentSignal,AbortSignal.timeout(300000)]);
+ const scope=scopeSchema.parse(raw),startedAt=Date.now(),processObservationStart=performance.now(),signal=AbortSignal.any([parentSignal,AbortSignal.timeout(300000)]);
  const provider=await bindManagedRunProvider(scope,signal);
  const deployments=await inventoryManagedDeployments({projectId:scope.projectId,teamId:scope.teamId,cutoff:startedAt,maximumDeployments:10000,maximumPages:100,referencedDeploymentIds:[],list:provider.listProjectDeployments,signal});
  const aliases=await inventoryManagedAliases({projectId:scope.projectId,teamId:scope.teamId,cutoff:startedAt,list:provider.listProjectAliases,signal});
@@ -16,7 +16,7 @@ export async function readManagedProjectHostInventory(raw:z.infer<typeof scopeSc
  // Revalidate actual ownership after the complete bounded traversal. Host and
  // policy drift across services still need the final compound repeat.
  await bindManagedRunProvider(scope,signal);signal.throwIfAborted();if(Date.now()<startedAt||Date.now()-startedAt>300000)throw Error('Original host inventory measurement deadline ended');
- const proof=Object.freeze({...inventory,projectId:scope.projectId,teamId:scope.teamId,deploymentInventoryDigest:deployments.inventoryDigest,aliasInventoryDigest:aliases.inventoryDigest,asOf:new Date(startedAt).toISOString(),providerReadVerified:true as const,rows:Object.freeze(inventory.rows.map(row=>Object.freeze({...row,sources:Object.freeze(row.sources)})))});
+ const proof=Object.freeze({...inventory,projectId:scope.projectId,teamId:scope.teamId,deploymentInventoryDigest:deployments.inventoryDigest,aliasInventoryDigest:aliases.inventoryDigest,asOf:new Date(startedAt).toISOString(),processObservationStart,providerReadVerified:true as const,rows:Object.freeze(inventory.rows.map(row=>Object.freeze({...row,sources:Object.freeze(row.sources)})))});
  actualInventories.set(proof,{startedAt,projectId:scope.projectId,teamId:scope.teamId});return proof;
 }
 export function requireManagedProjectHostInventory(proof:Awaited<ReturnType<typeof readManagedProjectHostInventory>>,scope:{projectId:string;teamId:string}){

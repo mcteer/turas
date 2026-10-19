@@ -4798,3 +4798,44 @@ identified a requirement for upcoming custom-domain probes: alias membership
 alone does not authenticate the DNS transport destination. No automation secret
 was sent to a custom domain. Safe provider-edge transport and actual complete
 HTTP closure remain pending. The registered inventory is893cases/164suites.
+
+
+### Bounded post-protection HTTP census components — 2026-10-19
+
+The native HTTPS transport withholds credential-bearing headers until normal
+certificate/hostname authorization and connected-peer checks succeed. Only a
+genuine exact-release immutable provider-host response can mint a five-minute
+edge pin. Custom-domain requests retain their own Host/SNI/certificate checks
+but connect exclusively to that measured edge address, without custom DNS,
+proxy, redirect, socket reuse or address fallback. Query/header/body/time bounds
+fail closed. Five transport cases pass, including moved DNS, wrong peer or
+certificate, pin forgery/expiry and cancellation before header flush. An actual
+TLS diagnostic reached the existing pre-pilot Production401 boundary but
+correctly refused a pin without its missing version header. It consumed the
+fourth of the original five control requests, retaining the failed attempt and
+unknown cost hold; no custom-domain credential request occurred.
+
+The census components cover every excluded immutable/alias host and every
+current automation key's header, query and newly provider-issued scoped-cookie
+forms. Ordinary authentication challenges remain distinct; post-protection forms
+require explicit edge403 with no application version or redirect. Workers abort
+and settle completely on failure. A private sequential repeat and actual fresh
+policy/alias/deployment reads started after its final response are required at
+consumption; monotonic process order prevents cached receipts passing on a wall
+clock tie. Six compound controlled-transport cases pass, including full coverage,
+forged/incomplete inputs, boundary failures, stopped admission and current drift.
+These are component checks, not actual full hosted HTTP closure.
+
+The new cumulative private request journal spans controls and both censuses;
+exclusive chained intents are file- and directory-synced before admission. Root,
+parent, plan and observations also receive directory persistence. Review found
+and corrected the missing directory-sync issue. Five real-filesystem cases pass,
+including restart with consumed pending requests, concurrency, exact immutable
+observations, stale instances, tampering and injected directory persistence
+failure. A compound case records all25 controlled requests through one journal
+and verifies25/25 observations, zero remaining capacity and identical reopened
+state. No cost authority, settlement or release approval is granted by the
+journal. Full scope/spending binding belongs to the pending genuine target
+controller. Independent reviews found no remaining blocker in these scoped
+components. The registered inventory is909cases/167suites; full current catalog,
+actual candidate controls, real-work composition and hosted release remain open.

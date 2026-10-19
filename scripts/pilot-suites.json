@@ -1850,9 +1850,8 @@
     },
     {
       "file": "tests/unit/pilot/managed-approved-host-bindings.test.ts",
-      "expectedCases": 5,
+      "expectedCases": 4,
       "cases": [
-        "/",
         "binds each allowed host to the selected Preview or current Production baseline",
         "rejects old foreign mismatched-source and changing Production bindings",
         "requires an approved selected host and exact canonical unique hostnames",
@@ -1877,6 +1876,40 @@
         "rejects copied foreign-scope and stale inventories before credential-bearing probes",
         "rejects foreign project changed alias inventories and unsupported redirects",
         "honors original cancellation without issuing metadata requests"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-edge-transport.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "mints an edge pin only from genuine version-bound authenticated provider transport",
+        "pins custom-domain connections without consulting moved DNS and retains exact host SNI and certificate checks",
+        "never flushes secrets when the TLS certificate authorization or actual pinned peer fails",
+        "rejects copied or expired pins cancellation during connection and oversized bodies",
+        "refuses unpinned custom hosts caller routing headers and nonfixed paths before creating a connection"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-old-host-census.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "covers every immutable and custom excluded host and each current bypass form without reclassifying challenges",
+        "rejects forged inventories policies controls incomplete key coverage and insufficient original allowance before probes",
+        "refuses redirected header query cookie or foreign cookie-bootstrap outcomes instead of issuing partial proof",
+        "awaits all aborted workers and preserves finite request admission when a persistent journal refuses dispatch",
+        "requires distinct sequential genuine repeats and actual metadata rereads after the last HTTP response",
+        "uses one durable cumulative journal for actual controls and both complete census phases"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/host-http-journal.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "keeps one aggregate original cap across controls both censuses and restart with pending requests consumed",
+        "serializes concurrent reservations durably before returning distinct intent IDs and never exceeds the aggregate cap",
+        "binds immutable observations to exact phase host kind and intent with idempotent identical receipt writes",
+        "fails closed on concurrent stale instances missing chain entries tampered plans and unsafe evidence permissions",
+        "withholds the intent UUID and closes further dispatch when directory persistence fails"
       ]
     }
   ],

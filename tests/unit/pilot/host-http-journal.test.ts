@@ -1,0 +1,35 @@
+import {it,expect,afterEach,vi} from 'vitest';
+import {mkdtemp,rm,readdir,readFile,writeFile,unlink,chmod,realpath} from 'node:fs/promises';
+import {tmpdir} from 'node:os';import {join} from 'node:path';import {randomUUID} from 'node:crypto';
+import {PilotHostHttpJournal} from '../../../scripts/pilot-host-http-journal';
+const durability=vi.hoisted(()=>({failPath:null as string|null,directorySyncs:0}));
+vi.mock('node:fs/promises',async original=>{const actual=await original<typeof import('node:fs/promises')>(),{constants}=await import('node:fs');return {...actual,open:async(...args:Parameters<typeof actual.open>)=>{const handle=await actual.open(...args);if(typeof args[1]==='number'&&(args[1]&constants.O_DIRECTORY)){const sync=handle.sync.bind(handle);Object.defineProperty(handle,'sync',{value:async()=>{durability.directorySyncs++;if(String(args[0])===durability.failPath)throw Error('Controlled directory persistence failure');await sync();}});}return handle;}};});
+const roots:string[]=[];
+async function fixture(maximumRequests=4){const parent=await realpath(await mkdtemp(join(tmpdir(),'turas-host-journal-')));await chmod(parent,0o700);roots.push(parent);const root=join(parent,'journal'),plan={contract:'pilot-host-http-journal-plan-v1',id:randomUUID(),projectId:'prj_original',teamId:'team_original',sourceCommit:'a'.repeat(40),maximumRequests,maximumCostMicroUsd:2000000,expiresAt:new Date(Date.now()+3600000).toISOString(),authorityReference:'Existing finite user authority with original holds retained',previousJournalDigests:['b'.repeat(64)],historicalStrictFailureRetained:true,unknownCostHoldsRetained:true,automaticRetries:false};return {root,plan,journal:await PilotHostHttpJournal.create(root,plan)};}
+const capture=(intentId:string,host='old.vercel.app')=>({intentId,host,status:403,codeVersion:null,bodyDigest:'c'.repeat(64),bodyBytes:20,redirectObserved:false,edgeDenied:true});
+afterEach(async()=>{durability.failPath=null;durability.directorySyncs=0;for(const root of roots.splice(0))await rm(root,{recursive:true,force:true});});
+it('keeps one aggregate original cap across controls both censuses and restart with pending requests consumed',async()=>{
+ const {root,journal}=await fixture(3);await journal.hooks('controls').admit('protection-negative','current.vercel.app');
+ const resumed=await PilotHostHttpJournal.open(root);expect(resumed.status()).toMatchObject({reserved:1,pending:1,remaining:2,maximumCostMicroUsd:2000000,unknownCostHoldsRetained:true,authorityGranted:false,releaseApproved:false});
+ const first=await resumed.hooks('first-census').admit('old-host-header','old.vercel.app');await resumed.hooks('first-census').observe('old-host-header',capture(first));await resumed.hooks('final-census').admit('old-host-query','old.vercel.app');
+ await expect(resumed.hooks('controls').admit('protection-header','current.vercel.app')).rejects.toThrow('aggregate');expect((await PilotHostHttpJournal.open(root)).status()).toMatchObject({reserved:3,observed:1,pending:2,remaining:0});
+});
+it('serializes concurrent reservations durably before returning distinct intent IDs and never exceeds the aggregate cap',async()=>{
+ const {root,journal}=await fixture(5),hooks=journal.hooks('first-census');const ids=await Promise.all(Array.from({length:5},()=>hooks.admit('old-host-header','old.vercel.app')));expect(new Set(ids).size).toBe(5);const files=(await readdir(root)).filter(name=>name.endsWith('-intent.json'));expect(files).toHaveLength(5);expect((await Promise.all(files.map(file=>readFile(join(root,file),'utf8')))).map(text=>JSON.parse(text).id).sort()).toEqual([...ids].sort());await expect(hooks.admit('old-host-header','old.vercel.app')).rejects.toThrow('aggregate');
+});
+it('binds immutable observations to exact phase host kind and intent with idempotent identical receipt writes',async()=>{
+ const {root,journal}=await fixture(),hooks=journal.hooks('first-census'),id=await hooks.admit('old-host-header','old.vercel.app');
+ await expect(hooks.observe('old-host-query',capture(id))).rejects.toThrow('Exact');await expect(hooks.observe('old-host-header',capture(id,'foreign.example.com'))).rejects.toThrow('Exact');await expect(journal.hooks('final-census').observe('old-host-header',capture(id))).rejects.toThrow('Exact');
+ await hooks.observe('old-host-header',capture(id));const original=await readFile(join(root,'request-00001-response.json'));await hooks.observe('old-host-header',capture(id));expect(await readFile(join(root,'request-00001-response.json'))).toEqual(original);await expect(hooks.observe('old-host-header',{...capture(id),status:200})).rejects.toThrow('Immutable');expect((await PilotHostHttpJournal.open(root)).status().observed).toBe(1);
+});
+it('fails closed on concurrent stale instances missing chain entries tampered plans and unsafe evidence permissions',async()=>{
+ const first=await fixture(),other=await PilotHostHttpJournal.open(first.root);await first.journal.hooks('controls').admit('protection-negative','current.vercel.app');await expect(other.hooks('controls').admit('protection-header','current.vercel.app')).rejects.toThrow('uncertain');await expect(other.hooks('controls').admit('protection-header','current.vercel.app')).rejects.toThrow('closed');expect((await PilotHostHttpJournal.open(first.root)).status().reserved).toBe(1);
+ const second=await fixture();await second.journal.hooks('first-census').admit('old-host-header','old.vercel.app');await second.journal.hooks('first-census').admit('old-host-query','old.vercel.app');await unlink(join(second.root,'request-00001-intent.json'));await expect(PilotHostHttpJournal.open(second.root)).rejects.toThrow('chain');
+ const third=await fixture();await third.journal.hooks('controls').admit('protection-negative','current.vercel.app');await writeFile(join(third.root,'plan.json'),JSON.stringify({...third.plan,maximumRequests:10}),{mode:0o600});await expect(PilotHostHttpJournal.open(third.root)).rejects.toThrow('chain');await chmod(join(first.root,'plan.json'),0o644);await expect(PilotHostHttpJournal.open(first.root)).rejects.toThrow('Unsafe');
+});
+
+it('withholds the intent UUID and closes further dispatch when directory persistence fails',async()=>{
+ const {root,journal}=await fixture();durability.directorySyncs=0;durability.failPath=root;
+ await expect(journal.hooks('controls').admit('protection-negative','current.vercel.app')).rejects.toThrow('uncertain');expect(durability.directorySyncs).toBe(1);expect(journal.status()).toMatchObject({reserved:1,pending:1,admissionClosed:true});expect((await readdir(root)).filter(file=>file.endsWith('-intent.json'))).toHaveLength(1);
+ await expect(journal.hooks('controls').admit('protection-header','current.vercel.app')).rejects.toThrow('closed');durability.failPath=null;const reopened=await PilotHostHttpJournal.open(root);expect(reopened.status()).toMatchObject({reserved:1,pending:1,remaining:3});const before=durability.directorySyncs;await reopened.hooks('controls').admit('protection-header','current.vercel.app');expect(durability.directorySyncs).toBe(before+1);
+});
