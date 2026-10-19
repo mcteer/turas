@@ -3013,3 +3013,28 @@ Workflow inspection schema support now match the implementations. The reviewer
 performed no hosted write, model/provider call or source edit. This is attributable
 independent technical review, not human participant feedback, actual backup cadence,
 full recovery, incident RPO/RTO, or release approval. Those tasks remain pending.
+
+
+### Complete long-suite controller audit (2026-10-18)
+
+The delegated reviewer found additional concrete whole-file bounds below their
+already-declared setup/case phases. For example, schema055 restore fell through
+120s despite a210s setup plus five210s cases; work/Preview restore each allowed
+420s inside120s; owned database restore allowed720s+420s inside720s. The controller
+now has explicit finite overrides for the audited long suites, using their
+existing declared totals plus startup/cleanup margin. Unregistered override names
+fail at import; short suites retain120s. Domain, SQL, hook and per-case deadlines
+are unchanged, as is the complete catalog's independent one-hour environment
+limit. Controller tests pass3/3 and root typecheck passes. This removes contradictory
+parent timers; it does not suppress failures, retry suites, establish performance,
+or guarantee cleanup after a hard kill. The fresh full catalog is still required.
+
+Native unpaid quality preparation at committeda2b6475 passed the actual installed
+native pre-provider budget admission check with nine applicability catalogs,
+zero paid dispatches and no real provider credential. Private receipt:
+`local-artifacts/016/quality-preparation-a2b6475/preparation.json`. Later controller
+source changes require fresh preparation before paid evaluation. Independently
+reading the original shared journal showed131 historical dispatches,1806543
+micro-USD charged, zero held/unknown, no Context dispatch or consumed credit,
+and admission held under the expired original authorization. No allowance,
+expiry, event, historical failure or provider settlement was reset.

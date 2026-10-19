@@ -1,13 +1,31 @@
 import catalog from './pilot-suites.json';
-/** Whole-file controller bounds include fixture setup and all test cases.
- * Domain, hook, statement and per-case deadlines remain independently enforced. */
+/** Whole-file bounds cover the explicitly declared setup/case phases plus
+ * startup and cleanup. Domain, hook, statement and per-case limits stay fixed.
+ * The complete catalog retains its independent one-hour environment deadline. */
+const longSuiteSeconds:Readonly<Record<string,number>>={
+ 'managed-workflow-batch':180,
+ 'maintenance-worker':240,'hosted-runtime-database':240,'evaluation-visible-identifiers':240,
+ 'native-postgres':300,'required-objects':300,'hosted-training-admission':300,
+ 'linked-http-reports':360,'linked-http-training':360,'linked-http-workforce':360,'hosted-browser':360,
+ 'lifecycle':420,
+ 'database-safety-content':480,'work-isolated-restore':480,'preview-safety-restore':480,'profile-projection-review':480,'recovery-current-grants':480,
+ 'hosted-sdk':600,'recovery-logout':660,
+ 'hosted-paid-admission':720,'recovery-model-holds':720,'recovery-token-allowance':720,'recovery-read-probe':720,
+ 'evaluation-source':780,
+ 'provisioning':840,'runtime-retirement':840,'image-health':840,'backup-health':840,
+ 'load-fixture':840,'load-delivery':840,'load-training':840,'load-internal':840,'load-learning':840,
+ 'isolated-restore':900,'released-safety-restore':900,'capture-candidate':900,'recovery-denial-snapshot':900,'owned-denial-command':900,
+ 'load-mcp':960,'owned-database-restore':1200,'store-observations':1260,
+ 'legacy-safety-restore':1320,'recovery-resolution':1320,'health':1440,'storage-cutover':1560,
+ 'recovery-authority':1740,'recovery':1980,'hosted-role-reads':2160,'neon-archive':2160,
+ 'recovery-quarantine':2400,'recovery-credential-denials':3420,
+};
+for(const name of Object.keys(longSuiteSeconds)){
+ if(!catalog.suites.some(suite=>suite.file==='tests/integration/pilot/'+name+'.test.ts'))throw Error('Unregistered pilot deadline override');
+}
 export function pilotSuiteDeadlineMs(file:string){
  if(!catalog.suites.some(suite=>suite.file===file))throw Error('Registered pilot suite required');
- if(['tests/integration/pilot/isolated-restore.test.ts','tests/integration/pilot/released-safety-restore.test.ts'].includes(file))return 900000;
- if(['tests/integration/pilot/load-fixture.test.ts','tests/integration/pilot/load-delivery.test.ts','tests/integration/pilot/load-training.test.ts','tests/integration/pilot/load-mcp.test.ts','tests/integration/pilot/load-internal.test.ts','tests/integration/pilot/load-learning.test.ts'].includes(file))return 660000;
- if(file==='tests/integration/pilot/owned-database-restore.test.ts')return 720000;
- if(file==='tests/integration/pilot/evaluation-source.test.ts')return 780000;
- if(file==='tests/integration/pilot/recovery-credential-denials.test.ts')return 240000;
- if(['tests/integration/pilot/recovery-read-probe.test.ts','tests/integration/pilot/recovery.test.ts','tests/integration/pilot/hosted-sdk.test.ts','tests/integration/pilot/linked-http-reports.test.ts','tests/integration/pilot/linked-http-training.test.ts','tests/integration/pilot/hosted-browser.test.ts'].includes(file))return 300000;
- return 120000;
+ if(file==='tests/unit/pilot/quality.test.ts')return 180000;
+ const name=/^tests\/integration\/pilot\/([a-z0-9-]+)\.test\.ts$/.exec(file)?.[1];
+ return (name?longSuiteSeconds[name]??120:120)*1000;
 }
