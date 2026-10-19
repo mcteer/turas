@@ -1248,3 +1248,45 @@ cloud/deployment/source/database binding, measures actual fixed HTTP routes, and
 retains original private probe preimages for interruption cleanup. It neither
 locks a target nor opens service. `measured.json` is descriptive partial evidence;
 loading it cannot recreate the in-process authority required for final composition.
+
+
+### Work recovery SDK measurement composition
+
+`work-mcp-verification.ts` is an internal controller component, not an unlock
+command. Each password-authenticated current participant receives a newly
+registered scoped MCP credential after independently retained current denials.
+The original credential expires within59seconds. Actual fixed-origin HTTP/SDK
+reads are compared with the same governed reader through another SDK client,
+before and after each observed response. The walk exhausts every category page,
+returned record and citation. Unsupported/incomplete scope fails explicitly.
+Ordinary MCP ingress remains locked; wrong secrets and retired admissions must
+be denied by the same deployed commit.
+
+A batch contains at most4 unique categories/customer selections for one
+participant/workspace. Each category admits at most64 tool calls and7 distinct
+additional10-request admissions, all within the original credential expiry.
+Additional admissions authenticate again, retain independent journaled session
+identities and retire their predecessors; existing counters and lifetimes are
+never renewed. Every temporary admission/session/connection must retire.
+The target's32-intent and five-minute bounds remain unchanged.
+
+The final transaction derives current active mcteer/panel/assigned-partner
+workspace/category/customer scope independently. Missing, duplicate and forged
+measurements fail. Current canonical credentials group up to100 customers with
+at most32 final identities; their complete real SDK customer census is checked.
+Only credential-ceiling identity/customer-list DTOs are narrowed to the original
+measured scope. Domain projections remain unchanged. Every canonical category
+is read again under ordered16020→16017 fences and state-table SHARE locks;
+old and new probes must all retire before the final state digest.
+
+Network observations may be at most30minutes old, and every participant/customer
+chunk requires an actual transport observation within five minutes. The longer
+network window relies on current locked canonical replay and a recent transport
+canary; it does not claim every category's HTTP read happened in the last five
+minutes. All credential/transaction/target deadlines still apply. Actual work
+inventory must finish inside those limits; local fixtures do not establish
+hosted capacity. JSON receipts cannot recreate the in-process measurement.
+
+These components keep full-health/restoration flags false. Required authorization,
+Workflow/effect, integrity and authoritative decision composition remain separate;
+no real target may be locked on their partial proof alone.

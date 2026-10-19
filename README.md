@@ -785,4 +785,11 @@ The maintenance MCP endpoint additionally binds its finite recovery admission an
 
 Work maintenance HTTP measurements now derive the full ledger and measure finite actual HTTP batches, with canonical projections/original bytes, denial and credential-retirement checks. Final record coverage requires a genuine exact union; complete required service, authoritative reopen and hosted acceptance remain pending. The current853-case/155-suite catalog requires fresh complete proof.
 The restricted-runtime SDK network check now covers all five read categories, normally reviewed/published fixtures and immediate citation withholding after source withdrawal. Actual hosted acceptance and post-quarantine probe issuance remain pending.
-Fresh work MCP probes now require genuine retained current denials, current participant authentication and canonical customer ceilings. Newly generated bearer/session/admission identities remain bounded and retire independently through failure and restart; captured credentials stay revoked. Focused local integration passes; complete verification is pending. Catalog is858cases/156suites. The recovery decision transport now owns its transaction through final live checks; its guarded callback cannot commit directly. This is infrastructure for the pending authoritative producer, not release completion.
+Fresh work MCP probes now require genuine retained current denials, current participant authentication and canonical customer ceilings. Newly generated bearer/session/admission identities remain bounded and retire independently through failure and restart; captured credentials stay revoked. Focused local integration passes; complete verification is pending. Catalog is859cases/157suites. The recovery decision transport now owns its transaction through final live checks; its guarded callback cannot commit directly. This is infrastructure for the pending authoritative producer, not release completion.
+
+
+The work recovery controller now measures complete MCP categories with actual
+SDK/canonical comparisons and rechecks the exact current role/customer union
+under final decision locks. Local three-role coverage passes; real-work capacity,
+Workflow/effect composition and the authoritative recovery producer remain
+pending. Full pilot readiness and cleanup remain incomplete.

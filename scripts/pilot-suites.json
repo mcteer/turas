@@ -1747,7 +1747,7 @@
     },
     {
       "file": "tests/integration/pilot/locked-work-recovery-target.test.ts",
-      "expectedCases": 17,
+      "expectedCases": 16,
       "cases": [
         "binds an actual locked owner and authenticated runtime for one work recovery lifetime",
         "rejects serialized capabilities foreign clients and nontransactional use",
@@ -1764,8 +1764,7 @@
         "authenticates real participant credentials and preserves customer grants across locked canonical reads",
         "uses the actual SDK and persisted bearer scope for locked recovery with customer pagination and revocation",
         "measures actual selected work HTTP reads without granting full service and rejects forged or changed batch proofs",
-        "issues a fresh bounded MCP probe after genuine cold denial reconciliation and retires original identities through interruption and restart",
-        "commits a pending recovery decision only after live checks and rolls back drift cancellation and callback commit attempts"
+        "issues a fresh bounded MCP probe after genuine cold denial reconciliation and retires original identities through interruption and restart"
       ]
     },
     {
@@ -1793,6 +1792,14 @@
         "keeps commit rollback and implicit transaction control out of decision callbacks",
         "accepts canonical queries local deadlines and savepoint rollback without interpreting quoted payloads",
         "rejects ambiguous parsing or attempts to change parser settings"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/work-recovery-decision.test.ts",
+      "expectedCases": 2,
+      "cases": [
+        "commits a pending recovery decision only after live checks and rolls back drift cancellation and callback commit attempts",
+        "measures exhaustive fresh work MCP category pages through SDK and rejects changed projections or forged measurements"
       ]
     }
   ],

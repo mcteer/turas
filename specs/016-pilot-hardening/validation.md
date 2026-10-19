@@ -4516,3 +4516,48 @@ T096/T097 remain incomplete. This transport does not produce a healthy
 verification, resolve quarantines, open service or establish cross-platform
 atomicity. The external maintenance perimeter and explicit release checks remain
 required. Actual-target lock/release and cleanup have not occurred.
+
+
+### Current work SDK category and scope measurements — 2026-10-19
+
+Added actual fixed-origin SDK category walks compared before/after with the
+canonical governed reader through the actual SDK. Category pages, records and
+citations are exhausted; opaque capabilities are exercised, not trusted as
+content. New distinct authenticated admissions keep original MCP expiry and
+existing quotas fixed. Every original/additional session/admission/MCP identity
+is journaled, retired and rechecked. Full service remains false.
+
+Final consumption derives current role/workspace/customer category scope first,
+rejects missing/duplicate/forged proofs, reauthenticates current credentials and
+replays all canonical projections under ordered fences and table SHARE locks.
+Credentials group up to100 current customers, allowing more than32 category
+measurements without increasing the32 final-identity limit. Exact census and
+credential-ceiling projection equivalence are checked. Current content/grant
+changes and reactivated probes invalidate prior proof. The bounded30-minute
+network observation window additionally requires a five-minute actual transport
+canary per participant/customer chunk; it is not fresh HTTP for every category.
+Actual hosted capacity remains unverified.
+
+Protected authoring `work-mcp-category-target-v13-private.json` passes the final
+focused local case in75.9seconds, with17 unselected cases at that checkpoint:
+all3 roles (mcteer, panel and assigned partner),47 category scopes,5 published
+knowledge records,12-call category admission rotation, exact union inside the
+pending decision transaction, and drift/forgery/denial/retirement boundaries.
+Earlier v1/v2 exposed hand-authored protocol-envelope failures; v3/v4 passed
+canonical SDK and drift checks; v5/v6 had a controlled test-route mismatch; v7
+passed; v8/v9 exposed the initial eight-call category bound; v10 passed distinct
+admissions/grouped union; v11/v12 passed bounded fixture/rotation expansion.
+Failed receipts remain retained. None is hosted participant proof.
+
+The2 new recovery decision cases now live in their own480-second suite;
+existing16 target cases keep their3540-second suite bound. The original strict
+sub-hour suite contract, per-case/domain limits and90-minute catalog remain.
+Current inventory859cases/157suites. Final full source catalog, managed
+Workflow/effects, the authoritative producer and actual release remain pending;
+T096/T097 stay open. Cleanup has not occurred.
+
+The split suite now passes2/2 with no skips in
+`work-recovery-decision-split-v1-private.json` (90.8seconds total case time).
+`work-recovery-metadata-v1-private.json` passes6/6 deadline/SQL cases. Root and
+pilot types and documentation hygiene pass. The earlier unsplit18-case receipt
+remains a separate checkpoint; final catalog execution is still pending.

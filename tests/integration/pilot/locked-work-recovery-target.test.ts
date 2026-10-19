@@ -29,7 +29,7 @@ import {withAuthorityEnvironment,lockAuthorityTarget} from '../../fixtures/pilot
 import {closeRuntimePool} from '../../../lib/server/db/client';
 import {retireOwnedLegacyRuntime} from '../../../lib/server/operations/runtime-retirement';
 import {requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
-import {withLockedWorkRecoveryDecision,withLockedWorkRecoveryTarget,requireLockedWorkRecoveryConnection,reserveWorkRecoveryProbe,reconcileWorkRecoveryProbeJournal,retireRegisteredWorkMcpProbe} from '../../../lib/server/operations/locked-work-recovery-target';
+import {withLockedWorkRecoveryTarget,requireLockedWorkRecoveryConnection,reserveWorkRecoveryProbe,reconcileWorkRecoveryProbeJournal,retireRegisteredWorkMcpProbe} from '../../../lib/server/operations/locked-work-recovery-target';
 const state=vi.hoisted(()=>({connections:new Map<string,string>(),retainedKey:null as Uint8Array|null,platformChanged:false,sourceChanged:false,dirty:false,cleanupUnavailable:false,commit:'a'.repeat(40),digest:'b'.repeat(64),catalog:'c'.repeat(64)}));
 // Actual owned PostgreSQL; only cloud transport/DNS and source attribution are
 // controlled. These checks do not establish hosted platform acceptance.
@@ -350,23 +350,3 @@ it('issues a fresh bounded MCP probe after genuine cold denial reconciliation an
  },async owner=>{const f=await pilotPublishedKnowledgeFixture(owner as unknown as PoolClient,'primary');workspaceId=f.actor.workspaceId;customerId=f.customerId;
  const org=randomUUID();partnerMembershipId=randomUUID();foreignCustomerId=randomUUID();await owner.query("INSERT INTO partner_organizations(id,workspace_id,name) VALUES($1,$2,'Synthetic fresh MCP partner')",[org,workspaceId]);await owner.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role,partner_org_id) VALUES($1,$2,$3,'partner','member',$4)",[partnerMembershipId,DEMO_IDS.partner,workspaceId,org]);await owner.query("INSERT INTO customer_grants(id,membership_id,workspace_id,customer_id,state,revision,granted_by) VALUES($1,$2,$3,$4,'active',1,$5)",[randomUUID(),partnerMembershipId,workspaceId,customerId,DEMO_IDS.mcteer]);await owner.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,'Synthetic unassigned fresh MCP customer',true)",[foreignCustomerId,workspaceId]);await owner.query('INSERT INTO customer_profile_state(customer_id,workspace_id) VALUES($1,$2) ON CONFLICT DO NOTHING',[foreignCustomerId,workspaceId]);const created=await createMcpConnection(f.actor,{requestKey:randomUUID(),name:'Synthetic captured credential',categories:['profiles'],customerIds:[customerId],lifetimeDays:1});capturedConnectionId=created.connection.id;});
 },210000);
-
-it('commits a pending recovery decision only after live checks and rolls back drift cancellation and callback commit attempts',async()=>fixture(async input=>{
- const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
- try{
-  const row=(await owner.query('SELECT id,display_name FROM customer_references ORDER BY id LIMIT 1')).rows[0];expect(row).toBeTruthy();
-  const read=async()=>(await owner.query('SELECT display_name FROM customer_references WHERE id=$1',[row.id])).rows[0].display_name;
-  await expect(withLockedWorkRecoveryDecision(input,async(db,target)=>{expect(Object.keys(db)).toEqual(['query']);await requireLockedWorkRecoveryConnection(db,target,input.scope);await db.query('UPDATE customer_references SET display_name=$2 WHERE id=$1',[row.id,'Committed measured decision']);expect(await read()).toBe(row.display_name);return 'committed';})).resolves.toBe('committed');expect(await read()).toBe('Committed measured decision');
-  for(const drift of ['source','platform'] as const){
-   await expect(withLockedWorkRecoveryDecision(input,async db=>{await db.query('UPDATE customer_references SET display_name=$2 WHERE id=$1',[row.id,'Must roll back']);if(drift==='source')state.sourceChanged=true;else state.platformChanged=true;})).rejects.toThrow();state.sourceChanged=false;state.platformChanged=false;expect(await read()).toBe('Committed measured decision');
-  }
-  for(const sql of ['COMMIT',"SELECT E''\n'\\''; COMMIT; SELECT E''\n'\\''","SELECT $é$'$é$; COMMIT; SELECT $é$'$é$",'SELECT 1; -- hidden\rCOMMIT',"UPDATE customer_references SET display_name='Must roll back'; COMMIT"]){
-   await expect(withLockedWorkRecoveryDecision(input,async db=>{await db.query('UPDATE customer_references SET display_name=$2 WHERE id=$1',[row.id,'Must roll back']);await db.query(sql);})).rejects.toThrow('transaction control');expect(await read()).toBe('Committed measured decision');
-  }
-  let getterRead=false,submitted=false;
-  for(const config of [{get text(){getterRead=true;return 'COMMIT';}},{text:'SELECT 1',submit(connection:{query:(sql:string)=>void}){submitted=true;connection.query('COMMIT');}}]){
-   await expect(withLockedWorkRecoveryDecision(input,async db=>{await db.query('UPDATE customer_references SET display_name=$2 WHERE id=$1',[row.id,'Must roll back']);await db.query(config);})).rejects.toThrow('SQL string and parameters');expect(await read()).toBe('Committed measured decision');
-  }expect(getterRead).toBe(false);expect(submitted).toBe(false);
-  const cancelled=new AbortController();await expect(withLockedWorkRecoveryDecision({...input,signal:cancelled.signal},async db=>{await db.query('UPDATE customer_references SET display_name=$2 WHERE id=$1',[row.id,'Must roll back']);cancelled.abort(Error('Controlled decision cancellation'));})).rejects.toThrow('Controlled decision cancellation');expect(await read()).toBe('Committed measured decision');
- }finally{await owner.end();}
-}),210000);
