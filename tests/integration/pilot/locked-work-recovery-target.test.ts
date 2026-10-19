@@ -260,8 +260,8 @@ it('uses the actual SDK and persisted bearer scope for locked recovery with cust
 it('measures actual selected work HTTP reads without granting full service and rejects forged or changed batch proofs',async()=>{
  let customerId='',workspaceId='';
  await fixture(async input=>{
-  const targets:Parameters<typeof requireLockedWorkRecoveryConnection>[1][]=[];
-  await withLockedWorkRecoveryTarget(input,async(db,target)=>{targets.push(target);});const target=targets[0];
+  const targets:Parameters<typeof requireLockedWorkRecoveryConnection>[1][]=[];let allRecords:Parameters<typeof measureWorkMaintenanceHttpBatch>[0]['records']=[];
+  await withLockedWorkRecoveryTarget(input,async(db,target)=>{targets.push(target);await db.query('BEGIN');try{allRecords=(await deriveWorkMaintenanceInventoryInTransaction(db,target,input.signal)).records.map(({kind,recordId})=>({kind,recordId}));await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}});const target=targets[0];
   const originalFetch=globalThis.fetch;let corrupt=false;
   const transport=vi.spyOn(globalThis,'fetch').mockImplementation(async(url,options)=>{
    const incoming=new Request(url,options),address=new URL(incoming.url),headers=new Headers(incoming.headers);headers.set('host',address.host);const request=new Request(incoming,{headers});if(address.origin!==target.origin)throw Error('Controlled work HTTP transport left target');
@@ -289,6 +289,9 @@ it('measures actual selected work HTTP reads without granting full service and r
      await db.query('SAVEPOINT changed_batch');await db.query('UPDATE customer_profile_state SET internal_generation=internal_generation+1 WHERE customer_id=$1',[customerId]);await expect(requireMeasuredWorkMaintenanceHttpBatch(db,current,batch,input.signal)).rejects.toThrow('coverage changed');await db.query('ROLLBACK TO SAVEPOINT changed_batch');await db.query('RELEASE SAVEPOINT changed_batch');await db.query('COMMIT');
     }catch(error){await db.query('ROLLBACK');throw error;}
    });
+   const batches=[batch],missing=allRecords.filter(record=>!records.some(selected=>selected.kind===record.kind&&selected.recordId===record.recordId));
+   for(let offset=0;offset<missing.length;offset+=8)batches.push(await measureWorkMaintenanceHttpBatch({target:input,records:missing.slice(offset,offset+8),password:process.env.TURAS_DEMO_PASSWORD!,journalDirectory:dirname(input.sourceFile)}));
+   await withLockedWorkRecoveryTarget(input,async(db,current)=>{await db.query('BEGIN');try{expect(await requireMeasuredWorkMaintenanceHttpCoverage(db,current,batches,input.signal)).toMatchObject({verifiedRecords:allRecords.length,maintenanceRecordCoverageVerified:true,probeRetirementVerified:true,requiredScopeHealthy:false,restorationReady:false});await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}});
    corrupt=true;await expect(measureWorkMaintenanceHttpBatch({target:input,records,password:process.env.TURAS_DEMO_PASSWORD!,journalDirectory:dirname(input.sourceFile)})).rejects.toThrow();
    const retirement=vi.spyOn(await import('../../../lib/server/operations/recovery-http-read-issuer'),'retireOwnedRecoveryHttpRead').mockRejectedValue(Error('Controlled record retirement failure'));
    try{const error=await measureWorkMaintenanceHttpBatch({target:input,records,password:process.env.TURAS_DEMO_PASSWORD!,journalDirectory:dirname(input.sourceFile)}).then(()=>null,error=>error);expect(error).toBeInstanceOf(AggregateError);expect(error.errors).toHaveLength(2);expect(error.errors[1].message).toBe('Controlled record retirement failure');}finally{retirement.mockRestore();}

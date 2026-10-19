@@ -8,10 +8,11 @@ import { requireOwnedPilotDatabase } from "../../../scripts/pilot-environment";
 
 /** An unactivated legacy-workspace fixture exercises shared-origin eligibility;
  * it cannot establish evaluated publication or hosted readiness. */
-export async function pilotPublishedKnowledgeFixture(db:PoolClient,classification:"primary"|"synthetic_pilot"){
+export async function pilotPublishedKnowledgeFixture(db:PoolClient,classification:"primary"|"synthetic_pilot",existingWorkspaceId?:string){
  requireOwnedPilotDatabase(process.env,true);
- let workspaceId:string|undefined;
- if(classification==="synthetic_pilot")workspaceId=(await db.query("SELECT id FROM workspaces WHERE classification='synthetic_pilot' AND active")).rows[0]?.id;
+ let workspaceId:string|undefined=existingWorkspaceId;
+ if(existingWorkspaceId){const rows=(await db.query("SELECT id FROM workspaces WHERE id=$1 AND classification=$2 AND active AND (classification='primary' OR pilot_environment_id=$3)",[existingWorkspaceId,classification,process.env.TURAS_ENVIRONMENT_ID])).rows;if(rows.length!==1)throw Error('Exact active owned knowledge workspace required');}
+ if(!workspaceId&&classification==="synthetic_pilot")workspaceId=(await db.query("SELECT id FROM workspaces WHERE classification='synthetic_pilot' AND active")).rows[0]?.id;
  if(!workspaceId){workspaceId=randomUUID();await db.query("INSERT INTO workspaces(id,name,classification,pilot_environment_id,pilot_provisioning_id) VALUES($1,'Synthetic shared-origin fixture',$2,$3,$4)",[workspaceId,classification,classification==="synthetic_pilot"?process.env.TURAS_ENVIRONMENT_ID:null,classification==="synthetic_pilot"?randomUUID():null]);}
  await db.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role) VALUES($1,$2,$3,'internal','admin') ON CONFLICT(principal_id,workspace_id) DO NOTHING",[randomUUID(),DEMO_IDS.mcteer,workspaceId]);
  const membershipId=(await db.query("SELECT id FROM memberships WHERE principal_id=$1 AND workspace_id=$2",[DEMO_IDS.mcteer,workspaceId])).rows[0].id as string;

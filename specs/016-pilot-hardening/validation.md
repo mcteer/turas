@@ -4409,3 +4409,26 @@ regression passes15/15 again in `work-http-batch-target-v4-private.json`. Exact-
 coverage, protected CLI, root/pilot types, documentation and suite-deadline checks
 pass. Independent review found no concrete blocker. Earlier interruptions remain
 retained as failures. This is local proof and does not complete hosted service.
+
+### Five-category restricted-runtime SDK network coverage — 2026-10-19
+
+The actual HTTP/SDK check now exercises all five read categories: accepted profile,
+current original evidence passage and credential-bound citation, published shared
+knowledge, accepted delivery plan and normally rendered/published weekly report.
+The existing knowledge fixture optionally binds a validated active owned workspace;
+its normal reviewed acceptance/publication flow is unchanged. Plan, execution,
+report rendering, brand review and publication use the governing domain commands.
+A separate finite admission/client follows retirement of the original probe; both
+retain ten-request and59-second bounds. Synthetic deny-only source withdrawal
+with the worker stopped withholds the earlier citation. Existing foreign credential,
+Origin, ordinary locked MCP, revocation and retired-probe checks remain.
+
+`mcp-http-network-v7-private.json` passes1/1 with actual local HTTP and production
+builds. The v6 attempt failed before HTTP because the owned environment cleared the
+explicit renderer setting; that original failure remains retained. This establishes
+local restricted-runtime behavior, not actual hosted acceptance or real participant
+observations. `work-http-batch-target-v5-private.json` separately passes1/1 with14
+unselected cases, now measuring the remaining current profile records and consuming
+the exact union successfully as well as rejecting partial/duplicate/forged coverage.
+Catalog remains853cases/155suites. Post-quarantine fresh SDK credentials, complete
+service/Workflow/effect composition and T097 remain pending.
