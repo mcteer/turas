@@ -4092,3 +4092,20 @@ packages, while the shared owned app setup requires both directories. The
 reporting matrix now installs the pinned extractor lockfile as well. No runtime,
 assertion, renderer binding or timeout changes are required for this setup fix.
 Actual new CI results remain pending.
+
+### Exact work-target denial entry point
+
+T095's shared deny-only core and explicit work controller are implemented. The
+original owned entry point retains Docker ownership checks. The work path checks
+independently selected actual platform/owner/locked079 bindings, direct bounded
+transport, retired legacy LOGIN/no backends and the existing authenticated cold
+reader capability. It retains committed denials before a separate replay audit,
+rechecks target/source/protected checkout and never opens service or clears holds.
+The independent review found no concrete blocker. Combined9/9 tests pass:
+four new actual-owned-PostgreSQL work-path cases with controlled reader authority,
+four original owned command cases and one forged-reader rejection case. The first
+positive attempt correctly rejected a remaining fixture runtime pool; the fixture
+now closes that pool before declaring legacy retirement. Its failure is retained.
+Root/pilot types pass. These results do not establish actual hosted reconciliation,
+full required-service coverage or an authoritative unlock producer; T096/T097 and
+the governing full recovery tasks remain open. Inventory is824cases/150suites.

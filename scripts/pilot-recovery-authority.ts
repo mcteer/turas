@@ -19,6 +19,7 @@ import {mkdtemp,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {z} from 'zod';
 import {pilotOwnedDenialReconciliation} from './pilot-owned-denial-reconciliation';
+import {pilotWorkDenialReconciliation} from './pilot-work-denial-reconciliation';
 export async function pilotRecoveryAuthority(args=process.argv.slice(2)){
  if(args[0]==='--probe-owned-service'){
   const result=await pilotOwnedRecoveryRead(args);console.info(JSON.stringify({profilesRead:1,plansRead:result.plans.length,reportsRead:result.contract==='pilot-owned-recovery-read-v2'?result.reports.length:0,temporarySessionRevoked:result.temporarySessionRevoked,serviceOpened:false,restorationReady:false}));return result;
@@ -27,6 +28,7 @@ export async function pilotRecoveryAuthority(args=process.argv.slice(2)){
   const receipt=await pilotOwnedDenialReconciliation(args);
   console.info(JSON.stringify({denialsApplied:true,permanentRequestFencesVerified:receipt.audit.permanentRequestFencesVerified,serviceOpened:false,restorationReady:false}));return receipt;
  }
+ if(args[0]==='--reconcile-work-denials')return pilotWorkDenialReconciliation(args);
  if(args[0]==='--capture-work-denials')return pilotDenialSnapshot(args);
  if(args[0]==='--retire-owned-runtime')return pilotRuntimeRetirement(args);
  if(args[0]==='--retire-work-runtime')return pilotWorkRuntimeRetirement(args);

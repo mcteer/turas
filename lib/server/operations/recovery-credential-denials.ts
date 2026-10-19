@@ -5,6 +5,7 @@ import {requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
 import type {Client,PoolClient} from 'pg';
 import {z} from 'zod';
 import {recoveryDenialSnapshotSchema,verifyRecoveryDenialSnapshot} from './recovery-denial-snapshot';
+import {requireAuthenticatedRetainedDenials,type RetainedWorkDenials} from '../../../scripts/pilot-denial-reader';
 const command=z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive(),snapshotDigest:z.string().regex(/^[a-f0-9]{64}$/),backupCapturedAt:z.iso.datetime({offset:true})});
 const uuid=z.uuid();
 /** Reapply credential/grant and current-projection denials into an actually marked disposable
@@ -28,6 +29,37 @@ export async function reconcileOwnedCredentialDenialsInTransaction(db:Client|Poo
   const token=identity.name.slice('turas_test_016_eval_'.length);
   const owned=await promisify(execFile)('docker',['inspect','--format','{{index .Config.Labels \"turas.016.owner\"}}','turas-016-check-'+token],{timeout:5000,maxBuffer:8192});
   if(owned.stdout.trim()!==token)throw Error('Actual owned isolated credential target required');
+  return reconcileCredentialDenialsInTransaction(db,snapshot,scope);
+}
+
+/** Independently selected work owner only. The controller verifies the actual
+ * platform binding before/after this operation. Serialized denial receipts do
+ * not substitute for the authenticated independent cold-reader capability. */
+export async function reconcileLockedWorkCredentialDenials(db:Client,retained:RetainedWorkDenials,input:z.infer<typeof command>,expected:{databaseName:string;ownerRole:string}){
+ const scope=command.parse(input);
+ requireAuthenticatedRetainedDenials(retained,scope.environmentId);
+ if(retained.contextDigest!==scope.snapshotDigest||retained.backupCapturedAt!==scope.backupCapturedAt||!expected.databaseName||!expected.ownerRole)throw Error('Exact independently retained work denial scope required');
+ await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');
+ try{
+  await db.query("SET LOCAL lock_timeout='3000ms'; SET LOCAL statement_timeout='10000ms'; SET LOCAL transaction_timeout='60s'");
+  const identity=(await db.query(`SELECT current_database() AS name,current_user AS role,
+   current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='operations_control'::regclass)) AS owner`)).rows[0];
+  if(identity?.owner!==true||identity.name!==expected.databaseName||identity.role!==expected.ownerRole)throw Error('Exact work denial database owner required');
+  await requireRetiredLegacyWorkRuntime(db);
+  const result=await reconcileCredentialDenialsInTransaction(db,retained.snapshot,scope);
+  requireAuthenticatedRetainedDenials(retained,scope.environmentId);
+  await db.query('COMMIT');return {...result,contract:'pilot-work-credential-denials-v1' as const,independentColdBytesVerified:true as const};
+ }catch(error){await db.query('ROLLBACK');throw error;}
+}
+
+export async function requireRetiredLegacyWorkRuntime(db:Client){
+ const legacy=(await db.query("SELECT rolcanlogin FROM pg_roles WHERE rolname='turas_runtime'")).rows;
+ if(legacy.length!==1||legacy[0].rolcanlogin!==false||(await db.query("SELECT 1 FROM pg_stat_activity WHERE usename='turas_runtime'")).rowCount)throw Error('Legacy work runtime must be retired before denial reconciliation');
+}
+
+/** Shared deny-only logic. Both entry points independently establish their owner
+ * target before entering the same exact-schema/control/snapshot decision fence. */
+async function reconcileCredentialDenialsInTransaction(db:Client|PoolClient,snapshot:z.infer<typeof recoveryDenialSnapshotSchema>,scope:z.infer<typeof command>){
   const marker=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;
   if(marker.length!==1||marker[0].environment_id!==scope.environmentId||Number(marker[0].schema_version)!==79)throw Error('Exact credential recovery target differs');
   await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16020))',[scope.environmentId]);await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[scope.environmentId]);

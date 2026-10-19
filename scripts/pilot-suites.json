@@ -1714,6 +1714,16 @@
         "retains original bind intent and readback after lost acknowledgement without creating another session or sending a model request",
         "retains completed accounting and runs original evaluation cleanup after cancellation between arms"
       ]
+    },
+    {
+      "file": "tests/integration/pilot/work-denial-reconciliation.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "reconciles current work denials with the actual locked owner and retains idempotent permanent fences",
+        "rejects serialized reader claims and mismatched retained scope before mutation",
+        "requires the selected owner and retired legacy login without terminating caller connections",
+        "rolls back current denials when the selected recovery revision or authenticated bytes change"
+      ]
     }
   ],
   "ui": {

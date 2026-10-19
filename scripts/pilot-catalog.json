@@ -630,7 +630,11 @@
         "unit.owned-process.002",
         "unit.owned-process.003",
         "unit.owned-process.004",
-        "unit.owned-process.005"
+        "unit.owned-process.005",
+        "integration.work-denial-reconciliation.001",
+        "integration.work-denial-reconciliation.002",
+        "integration.work-denial-reconciliation.003",
+        "integration.work-denial-reconciliation.004"
       ]
     },
     {
