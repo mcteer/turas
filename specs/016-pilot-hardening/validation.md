@@ -3508,3 +3508,42 @@ Independent code review found no blocker. This does not prove hosted processing,
 participant approval, skills certification, gap-export HTTP coverage or composed
 recovery readiness. Production remains077 and the operator remains disabled.
 The amended079 still requires a final-manifest cold restore rehearsal before release.
+
+### Approved gap-export maintenance bytes and consistent lease observations
+
+The fixed workspace-scoped gap maintenance GET binds an existing reviewer-owned
+export receipt to the exact current approved report/revision/version and original
+size/digest. Explicit internal transaction injection preserves canonical reviewer,
+disclosure, current-source and per-chunk checks and normal provenance headers.
+No new export or paid work is admitted. The complete bounded file is consumed and
+hash-checked before final authentication. Canonical rate/export lease/completion
+accounting commits on success; failed reads roll it back while retaining the
+separately committed maintenance reservation. A final composed state digest must
+be measured after that accounting and probe retirement.
+
+The encrypted-capture/cold-restore case now includes normally authored, prepared,
+reviewed and export-admitted Markdown plus its prepared JSON peer. Final actual
+restricted HTTP1/1 passes in105.69seconds: exact bytes and settled receipt, wrong
+session/kind/revision/withdrawn approval denial, invalidated canonical source409,
+corrupt copied original503, unchanged export bookkeeping after failures and
+exhausted allowance429. All13 captured objects restore and temporary canonical
+copies are removed. Existing canonical export regressions7/7 pass, including
+session/source withholding and cancellation. These are owned local observations,
+not actual hosted processing or human participant feedback.
+
+The first gap capture correctly exposed another lease-classification defect: a
+finished prepared gap job retained a future lease timestamp and blocked capture.
+Capture and snapshot observations now share one predicate with table-specific
+terminal exceptions for local succeeded and gap prepared jobs. Unknown states
+remain conservative. All6 checkpoint cases pass, including actual running1 and
+prepared0 snapshot counts and corresponding capture refusal/acceptance. Current
+pilot unit336/336 plus database-safety2/2 pass across62files; migrations6/6, both
+TypeScript projects, docs and web/Eve builds pass. Independent review found no
+blocker in scope, canonical accounting or the shared predicate. Production remains
+schema077. The final amended079 still needs its committed-manifest cold rehearsal.
+
+At7a31144 all7 Legacy backend parity CI jobs pass, including WebKit/native
+operations. The main product-gaps deterministic job failed before tests while
+`retrieval:prepare --offline` hit its existing Docker120second setup timeout;
+no test report was produced. Other main jobs were still running at observation.
+No case deadline, assertion or retry policy was relaxed.

@@ -328,15 +328,15 @@ refuses drift or uncertain cancellation retries; its hosted execution is pending
 An owned recovery command now authenticates temporary mcteer probes, reads actual
 accepted profiles/plans/reports and retires its session even after SQL failure; this is a
 partial locked diagnostic and cannot grant recovery readiness.
-The fixed maintenance profile, artifact, report and workforce endpoints now use an owner-issued session and a
+The fixed maintenance profile, artifact, report, workforce and gap-export endpoints now use an owner-issued session and a
 short-lived, database/deployment-bound secret through a direct restricted runtime
 login. Finite request reservations, current-scope rechecks and atomic teardown
 leave ordinary routes locked. The owned runtime now materializes and cold-verifies
 canonical local copies of all six restored file namespaces, then removes those
 copies after its probe; restored originals remain. The artifact path uses the
 canonical source reader with an exact version/digest/generation and a bounded
-fully checked buffer. Workspace-scoped workforce reads retain manager and original-owner authorization. Gap HTTP bytes and complete recovery
-verification remain unfinished.
+fully checked buffer. Workspace-scoped workforce reads retain manager and original-owner authorization. Gap exports retain reviewer, current approval and audience checks, with bounded
+canonical export accounting. Complete recovery verification remains unfinished.
 Recovery authority, hosted services, scheduled backups and actual participant
 acceptance remain pending; local checks do not establish pilot readiness. See the
 [handoff](specs/016-pilot-hardening/handoff.md) for scope and execution gates.

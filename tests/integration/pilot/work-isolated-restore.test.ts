@@ -1,3 +1,9 @@
+import {reviewedSyntheticGap,gapEnvelope} from '../../fixtures/gaps/authoring';
+import {prepareGapReport,readGapReport} from '../../../lib/server/gaps/reports';
+import {claimGapReportJobs,runGapReportJob} from '../../../lib/server/gaps/report-jobs';
+import {previewGapReportReview,commitGapReportReview} from '../../../lib/server/gaps/report-review';
+import {admitGapExport} from '../../../lib/server/gaps/report-release';
+import {readGapObject} from '../../../lib/server/gaps/store';
 import {createImportIntent,uploadImportOriginal,completeImport,readImportOriginal} from '../../../lib/server/staffing/imports';
 import {claimWorkforceImport} from '../../../lib/server/staffing/jobs';
 import {runWorkforceImport} from '../../../lib/server/staffing/runner';
@@ -37,6 +43,7 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
  const preparation=process.env.TURAS_PILOT_UI_PREPARATION_FILE,renderer=process.env.TURAS_PILOT_RENDERER_IMAGE??(preparation?parsePilotImagePreparation(await readFile(preparation)).images.find(image=>image.kind==='renderer')?.localImageId:undefined);
  if(!renderer||!/^sha256:[a-f0-9]{64}$/.test(renderer))throw Error('Explicit prepared recovery report renderer required');
  await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});const root=await mkdtemp(resolve('local-artifacts/016/work-rehearsal-')),key=randomBytes(32);
+ let sourceGap:{exportId:string;reportId:string;revisionId:string;workspaceId:string;digest:string;sizeBytes:number;objectKey:string}|undefined;
  let sourceWorkforce:{importId:string;sourceId:string;versionId:string;workspaceId:string;digest:string;bytes:Buffer}|undefined;
  let sourceReport:{artifactId:string;reportId:string;revisionId:string;customerId:string;workspaceId:string;digest:string;sizeBytes:number;objectKey:string}|undefined;
  let candidate:WorkCaptureCandidate|undefined,sourceEnvironmentId='',sourceProfile:{workspaceId:string;customerId:string;revisionId:string;artifactVersionId:string}|undefined;
@@ -68,12 +75,21 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
     if(!claim||claim.sourceVersionId!==completed.sourceVersionId)throw Error('Exact owned workforce recovery job required');
     await runWorkforceImport(claim,environment.signal);expect((await readImportOriginal(profile.actor,intent.importId!)).bytes).toEqual(personnel);
     sourceWorkforce={importId:intent.importId!,sourceId:intent.sourceId!,versionId:completed.sourceVersionId!,workspaceId:profile.actor.workspaceId,digest:personnelDigest,bytes:personnel};
+    const gap=await reviewedSyntheticGap(baseline.author,baseline.reviewer),gapReceipt=await prepareGapReport(baseline.author,{...gapEnvelope(),kind:'detail',gapIds:[gap.id],asOf:new Date().toISOString(),comparisonAt:null,audience:{team:'Synthetic engineering',recipients:['Synthetic reviewer'],purpose:'Verify controlled restored engineering export'}}),[gapJob]=await claimGapReportJobs();
+    if(!gapJob||gapJob.id!==gapReceipt.resultId)throw Error('Exact normal recovery gap job required');await runGapReportJob(gapJob);
+    let gapReport=await readGapReport(baseline.reviewer,gapReceipt.recordId!);if(!gapReport.revision||!gapReport.document)throw Error('Prepared recovery gap report missing');
+    const gapPreview=await previewGapReportReview(baseline.reviewer,gapReport.id,{...gapEnvelope(gapReport.version),action:'approve',revisionId:gapReport.revision.id,customerDisclosures:gapReport.document.customers.map(row=>row.id),audienceDigest:gapReport.revision.audienceDigest,rationale:'Exact controlled synthetic recovery export review',selfReview:false});
+    await commitGapReportReview(baseline.reviewer,gapReport.id,{...gapEnvelope(gapReport.version),previewId:gapPreview.resultId,bindingDigest:gapPreview.bindingDigest});gapReport=await readGapReport(baseline.reviewer,gapReport.id);
+    const exported=await admitGapExport(baseline.reviewer,gapReport.id,{...gapEnvelope(gapReport.version),format:'markdown',reviewId:gapReport.review!.id});
+    const gapArtifacts=(await db.query('SELECT * FROM gap_export_artifacts WHERE revision_id=$1 ORDER BY id',[gapReport.revision!.id])).rows;expect(gapArtifacts).toHaveLength(2);const markdown=gapArtifacts.find(row=>row.format==='markdown');if(!markdown)throw Error('Normal markdown export missing');
+    sourceGap={exportId:exported.resultId!,reportId:gapReport.id,revisionId:gapReport.revision!.id,workspaceId:baseline.reviewer.workspaceId,digest:markdown.content_digest,sizeBytes:Number(markdown.size_bytes),objectKey:markdown.object_key};
     const recoveryId=randomUUID(),revision=Number((await db.query("UPDATE operations_control SET mode='locked',revision=revision+1,recovery_id=$2 WHERE environment_id=$1 RETURNING revision",[environment.environmentId,recoveryId])).rows[0].revision);
     const objects=join(root,'source-objects'),workflow=join(root,'empty-workflow');await mkdir(objects,{mode:0o700});await mkdir(workflow,{mode:0o700});
     const store=new LocalPrivateObjects(objects,environment.environmentId,10485760);
     for(const namespace of activeObjectNamespaces){await mkdir(join(objects,'e_'+environmentObjectId(environment.environmentId),namespace),{recursive:true,mode:0o700});const bytes=Buffer.from('Synthetic work restore '+namespace),digest=createHash('sha256').update(bytes).digest('hex');await store.put(objectKey(environment.environmentId,namespace,namespace.startsWith('artifact')?digest:randomUUID()),(async function*(){yield bytes;})(),{sizeBytes:bytes.length,digest});}
     for(const artifact of reportArtifacts){const bytes=await readReportObject(artifact.object_key,artifact.content_digest,Number(artifact.size_bytes));await store.put(objectKey(environment.environmentId,'report',artifact.object_key),(async function*(){yield bytes;})(),{sizeBytes:bytes.length,digest:artifact.content_digest});}
     await store.put(objectKey(environment.environmentId,'workforce',sourceWorkforce.importId),(async function*(){yield await new WorkforceStore().read(sourceWorkforce!.importId);})(),{sizeBytes:personnel.length,digest:personnelDigest});
+    for(const artifact of gapArtifacts){const bytes=await readGapObject(artifact.object_key,artifact.content_digest,Number(artifact.size_bytes));await store.put(objectKey(environment.environmentId,'gap-report',artifact.object_key),(async function*(){yield bytes;})(),{sizeBytes:bytes.length,digest:artifact.content_digest});}
     const owned=await captureOwnedRecoveryCandidate({environmentId:environment.environmentId,recoveryId,controlRevision:revision,sourceRoot:objects,workflowRoot:workflow,keyFile:join(root,'keys','key'),keyReference:'synthetic-work-key',keyVersion:'1',output:join(root,'capture')},environment.signal);
     // This synthetic fixture supplies an empty managed-execution inventory;
     // it makes no claim to checkpoint or resume any provider workflow.
@@ -84,7 +100,7 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
    }finally{await db.end();}
   },{postgresMajor:18,deadlineMs:180000});
   await rm(join(root,'capture'),{recursive:true,force:true});await rm(join(root,'source-objects'),{recursive:true,force:true});await rm(join(root,'empty-workflow'),{recursive:true,force:true});
-  if(!candidate||!sourceProfile||!sourceReport||!sourceWorkforce)throw Error('Synthetic work candidate unavailable');const captured=candidate,expectedProfile=sourceProfile,expectedReport=sourceReport,expectedWorkforce=sourceWorkforce;
+  if(!candidate||!sourceProfile||!sourceReport||!sourceWorkforce||!sourceGap)throw Error('Synthetic work candidate unavailable');const captured=candidate,expectedProfile=sourceProfile,expectedReport=sourceReport,expectedWorkforce=sourceWorkforce,expectedGap=sourceGap;
   await writeFile(join(root,'cold','candidate.json'),JSON.stringify(captured),{mode:0o600});
   await withPilotEnvironment(async environment=>{
    process.env.TURAS_PILOT_RENDERER_IMAGE=renderer;
@@ -96,10 +112,10 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
     await expect(mintOwnedRestoreTarget({container:environment.databaseContainer,ownerLabel:'0'.repeat(12),environmentId:environment.environmentId},environment.signal)).rejects.toThrow('Original owned');
     await db.query("UPDATE operations_control SET mode='locked'");
     const result=await pilotRecovery(['--restore-work-isolated','--environment',captured.environmentId,'--candidate',join(root,'cold','candidate.json'),'--bundle',join(root,'cold','candidate.encrypted'),'--key-file',join(root,'keys','key'),'--output',join(root,'restore')]);
-    expect(result).toMatchObject({acceptedContentVerified:true,ledgerVerified:true,objectsVerified:true,objectCount:11,requiredScopeQuarantined:true,currentAuthorityVerified:false,permanentReplayVerified:false,workflowReconciled:false,restorationReady:false,mode:'locked'});
+    expect(result).toMatchObject({acceptedContentVerified:true,ledgerVerified:true,objectsVerified:true,objectCount:13,requiredScopeQuarantined:true,currentAuthorityVerified:false,permanentReplayVerified:false,workflowReconciled:false,restorationReady:false,mode:'locked'});
     if(!('physicalIntegrity' in result))throw Error('Measured physical checkpoint missing');
     const proof=result.physicalIntegrity,scope={environmentId:sourceEnvironmentId,recoveryId:proof.recoveryId,controlRevision:proof.controlRevision},storeRoot=join(root,'restore','objects');
-    expect(Object.isFrozen(proof)).toBe(true);expect(proof.restorationReady).toBe(false);expect(proof.acceptedContentDigest).toBe(captured.acceptedContentDigest);expect(proof.objectCount).toBe(11);
+    expect(Object.isFrozen(proof)).toBe(true);expect(proof.restorationReady).toBe(false);expect(proof.acceptedContentDigest).toBe(captured.acceptedContentDigest);expect(proof.objectCount).toBe(13);
     await db.query('BEGIN');
     expect(await requireMeasuredWorkIntegrity(db,proof,scope,storeRoot,environment.signal)).toBe(proof);
     await expect(requireMeasuredWorkIntegrity(db,JSON.parse(JSON.stringify(proof)),scope,storeRoot,environment.signal)).rejects.toThrow('Actual measured');
@@ -164,7 +180,7 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
     const warmSaved={DATABASE_URL:process.env.DATABASE_URL,DATABASE_URL_UNPOOLED:process.env.DATABASE_URL_UNPOOLED};
     try{
      Object.assign(process.env,{DATABASE_URL:warmUrl.toString(),DATABASE_URL_UNPOOLED:warmUrl.toString()});await environment.start();
-     for(const path of ['/api/operations/recovery-read/'+randomUUID()+'/profile','/api/customers/'+expectedProfile.customerId+'/profile','/api/operations/recovery-read/'+randomUUID()+'/artifact','/api/operations/recovery-read/'+randomUUID()+'/report','/api/operations/recovery-read/'+randomUUID()+'/workforce']){const response=await fetch(environment.origin+path,{redirect:'manual',signal:environment.signal});expect([401,403,503]).toContain(response.status);await response.body?.cancel();}
+     for(const path of ['/api/operations/recovery-read/'+randomUUID()+'/profile','/api/customers/'+expectedProfile.customerId+'/profile','/api/operations/recovery-read/'+randomUUID()+'/artifact','/api/operations/recovery-read/'+randomUUID()+'/report','/api/operations/recovery-read/'+randomUUID()+'/workforce','/api/operations/recovery-read/'+randomUUID()+'/gap']){const response=await fetch(environment.origin+path,{redirect:'manual',signal:environment.signal});expect([401,403,503]).toContain(response.status);await response.body?.cancel();}
     }finally{await environment.stop();Object.assign(process.env,warmSaved);}
     await interruptedPreparation(false);
     await withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async(runtime,_signal,applicationEnvironment)=>{
@@ -256,6 +272,30 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
        try{const corrupt=await fetch(workforcePath,{headers:workforceHeaders,redirect:'manual'});expect(corrupt.status).toBe(503);await corrupt.body?.cancel();}finally{await writeFile(copied,expectedWorkforce.bytes,{mode:0o600});}
        const exhausted=await fetch(workforcePath,{headers:workforceHeaders,redirect:'manual'});expect(exhausted.status).toBe(429);await exhausted.body?.cancel();
       }finally{await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,workforceProof.id);}
+      let gapAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
+      await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{await owner.query('BEGIN');try{gapAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedGap.workspaceId,customerId:null,deadline:Date.now()+20000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:3,deploymentId:null,readKind:'gap',recordId:expectedGap.exportId});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}});
+      if(!gapAdmission)throw Error('Actual gap admission missing');
+      const gapProof=gapAdmission,gapPath=environment.origin+'/api/operations/recovery-read/'+gapProof.id+'/gap',gapHeaders={cookie:sessionCookie(gapProof.actor.token,gapProof.actor.expiresAt).split(';')[0],'x-turas-recovery-read':gapProof.secret};
+      try{
+       const wrongType=await fetch(gapPath.replace('/gap','/report'),{headers:gapHeaders,redirect:'manual'});expect(wrongType.status).toBe(403);await wrongType.body?.cancel();
+       const wrongSession=await fetch(gapPath,{headers:{...gapHeaders,cookie},redirect:'manual'});expect(wrongSession.status).toBe(403);await wrongSession.body?.cancel();
+       await db.query('UPDATE operations_recovery_http_reads SET record_revision_id=$2 WHERE id=$1',[gapProof.id,randomUUID()]);
+       try{const drift=await fetch(gapPath,{headers:gapHeaders,redirect:'manual'});expect(drift.status).toBe(403);await drift.body?.cancel();}finally{await db.query('UPDATE operations_recovery_http_reads SET record_revision_id=$2 WHERE id=$1',[gapProof.id,expectedGap.revisionId]);}
+       const approved=(await db.query('SELECT approved_review_id FROM gap_reports WHERE id=$1',[expectedGap.reportId])).rows[0].approved_review_id;
+       await db.query('UPDATE gap_reports SET approved_review_id=NULL WHERE id=$1',[expectedGap.reportId]);
+       try{const denied=await fetch(gapPath,{headers:gapHeaders,redirect:'manual'});expect(denied.status).toBe(403);await denied.body?.cancel();}finally{await db.query('UPDATE gap_reports SET approved_review_id=$2 WHERE id=$1',[expectedGap.reportId,approved]);}
+       const exported=await fetch(gapPath,{headers:gapHeaders,redirect:'manual'});if(exported.status!==200){const failed=await exported.json() as {error:{code:string}};throw Error('Recovery gap HTTP denied: '+exported.status+' '+failed.error.code);}const bytes=Buffer.from(await exported.arrayBuffer());expect(bytes.length).toBe(expectedGap.sizeBytes);expect(createHash('sha256').update(bytes).digest('hex')).toBe(expectedGap.digest);expect(exported.headers.get('x-turas-content-digest')).toBe(expectedGap.digest);
+       expect((await db.query('SELECT state FROM gap_export_receipts WHERE id=$1',[expectedGap.exportId])).rows[0].state).toBe('completed');
+       const settled=(await db.query('SELECT state,version,lease_token,lease_until,completed_at FROM gap_export_receipts WHERE id=$1',[expectedGap.exportId])).rows[0];expect(settled.lease_until).toBeNull();
+       await db.query('UPDATE gap_report_revision_states SET invalidated_at=clock_timestamp() WHERE revision_id=$1',[expectedGap.revisionId]);
+       try{const withheld=await fetch(gapPath,{headers:gapHeaders,redirect:'manual'});expect(withheld.status).toBe(409);await withheld.body?.cancel();}finally{await db.query('UPDATE gap_report_revision_states SET invalidated_at=NULL WHERE revision_id=$1',[expectedGap.revisionId]);}
+       expect((await db.query('SELECT state,version,lease_token,lease_until,completed_at FROM gap_export_receipts WHERE id=$1',[expectedGap.exportId])).rows[0]).toEqual(settled);
+       const ordinary=await fetch(environment.origin+'/api/product-gaps/reports/'+expectedGap.reportId+'/exports/'+expectedGap.exportId,{headers:gapHeaders,redirect:'manual'});expect([401,403,503]).toContain(ordinary.status);await ordinary.body?.cancel();
+       const copied=join(applicationEnvironment.TURAS_REPORT_STORE_ROOT,'objects',expectedGap.objectKey);await writeFile(copied,Buffer.alloc(bytes.length),{mode:0o600});
+       try{const corrupt=await fetch(gapPath,{headers:gapHeaders,redirect:'manual'});expect(corrupt.status).toBe(503);await corrupt.body?.cancel();}finally{await writeFile(copied,bytes,{mode:0o600});}
+       expect((await db.query('SELECT state,version,lease_token,lease_until,completed_at FROM gap_export_receipts WHERE id=$1',[expectedGap.exportId])).rows[0]).toEqual(settled);
+       const exhausted=await fetch(gapPath,{headers:gapHeaders,redirect:'manual'});expect(exhausted.status).toBe(429);await exhausted.body?.cancel();
+      }finally{await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,gapProof.id);}
       expect(body.data.customer.id).toBe(expectedProfile.customerId);expect(body.data.acceptedFacts.some(fact=>fact.id===expectedProfile.revisionId)).toBe(true);
       // A correctly ordered owner transition waits on the shared recovery
       // fence, then proceeds when the actual runtime read transaction closes.

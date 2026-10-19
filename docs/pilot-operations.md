@@ -804,8 +804,18 @@ authorization and rechecks source and session after IO on the explicitly injecte
 transaction. The complete bounded bytes are hash-checked before final authentication;
 ordinary workforce routes and every write path remain closed.
 
-Gap-export HTTP read coverage, current authority/effect reconciliation and composed
-verification are still required.
+Gap GET `/api/operations/recovery-read/<admission-id>/gap` is workspace-scoped
+and binds an existing reviewer-owned export receipt to its exact currently approved
+report, revision, version, digest and size. The canonical reader keeps current-source,
+reviewer, approval and customer-disclosure checks. It retains normal response
+provenance headers and consumes/hash-checks the full file before final authentication.
+This GET performs bounded canonical rate accounting and export lease/completion
+updates. Success commits that accounting; failed reads roll it back while retaining
+the separately committed maintenance reservation. No new export is admitted.
+Final composed-state digests must be measured after accounting and probe retirement;
+the post-probe database is not byte-for-byte identical to its initial snapshot.
+
+Current authority/effect reconciliation and composed verification are still required.
 
 ### Finite complete managed-run inventory closure
 

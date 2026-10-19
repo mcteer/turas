@@ -1,3 +1,4 @@
+import {activeRecoveryLeaseStateSql} from './recovery-drain';
 import type {Client,PoolClient} from 'pg';
 import {z} from 'zod';
 import {requiredRecoveryObjects} from './required-objects';
@@ -32,7 +33,7 @@ export async function readDatabaseSafetyBoundary(db:Client|PoolClient,environmen
  const leases=[];
  for(const c of columns){
   signal.throwIfAborted();
-  const row=(await db.query(`SELECT count(*)::text AS count FROM public."${c.table_name}" WHERE "${c.column_name}">$1::timestamptz${c.has_state?" AND state::text NOT IN('done','failed','cancelled','expired','stale','completed','released','deleted')":''}`,[capturedAt])).rows[0];
+  const row=(await db.query(`SELECT count(*)::text AS count FROM public."${c.table_name}" WHERE "${c.column_name}">$1::timestamptz${activeRecoveryLeaseStateSql(c.table_name,c.has_state)}`,[capturedAt])).rows[0];
   leases.push({table:c.table_name,column:c.column_name,count:Number(row.count)});
  }
  signal.throwIfAborted();
