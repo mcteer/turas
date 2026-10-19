@@ -102,6 +102,12 @@ authorization can now be verified without promoting the original Preview envelop
 The composed workspace/upload WebKit matrix passes40cases; the updated782-case
 catalog requires fresh complete verification. Expired infrastructure/model approvals,
 original charges and holds remain unchanged; no hosted pilot readiness is claimed.
+Current Production remains released `f8d196f` on schema077. Its host firewall
+allows four exact current hosts; direct current-bypass probes against653 older
+hosts are denied, while protection redirects leave strict old-host closure
+unverified. Retain this fence and explicitly bind any future deployment host.
+Gap command errors now survive same-scope refreshes and are discarded after a
+newer denied refresh, scope change or route change.
 Expired evaluation authority can be continued only by an explicitly approved,
 source-bound record against the exact original journal. This extends time only:
 original dollar/credit caps, charges and unknown holds remain unchanged. No real

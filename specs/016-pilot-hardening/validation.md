@@ -3681,3 +3681,53 @@ repair, with4 exact current Production hosts and653 other hosts. Read-only firew
 preflight confirms an empty preimage, current-host controls and effective worker-origin
 coverage. The firewall is unchanged. This inventory/preflight is not old-host closure,
 Workflow/effect reconciliation or a completed recovery verification.
+
+
+### Applied old-host firewall and incomplete strict census
+
+After the read-only preflight above, one project firewall rule was applied under
+its finite $1 allocation. The active rule denies hosts outside the four exact
+current Production hosts. Actual platform readback confirms version1, no draft,
+and an unskippable custom stage; current Production HTTP controls remain healthy.
+No schema migration or Workflow cancellation was performed.
+
+The bounded census completed3,260 observations across653 noncurrent hosts:
+all653 current-bypass header paths, all653 query paths and all652 available fresh
+cookie paths returned403 with `x-vercel-mitigated: deny`. The remaining1,301
+ordinary or retained historical-cookie requests returned deployment-protection
+redirects. These are distinct from direct firewall denials or redirects to a
+current application host. The strict receipt remains `complete:false` and
+`httpOldHostClosureVerified:false`; policy configuration supports only an inference
+about requests after those protection flows. Final platform binding and all eight
+current-host controls pass. Total host requests were4,593 of the5,000 cap, with
+original costs and unknown holds retained. No automatic provider mutation retry
+occurred. Failed pre-admission binding checks are preserved separately.
+
+This establishes measured denial for current bypass capabilities, not complete
+old-host/execution closure, retired database roles, Workflow reconciliation or
+recovery readiness. The active firewall must be retained during subsequent work;
+future admitted deployment hosts require an explicit bound allowlist update.
+
+
+### Gap command errors across refresh and scope changes
+
+An actual owned missing-originals mutation returns409 with the expected domain
+rejection. A deterministic CLI WebKit regression then dispatches focus and awaits
+the real successful detail refresh: the previous client erased the rejection, and
+the corrected client retains it while keeping zero impact observations. Command
+errors are bound to namespace, scope generation and route, cleared on a new command
+or reconciliation, and invalidated by a newer denied/error refresh or scope change.
+
+A second regression holds the actual mutation response's JSON continuation,
+performs a real partner login and denied refresh, then releases that old response.
+Before the epoch fence it replaces the unavailable message; after the fix the
+unavailable state remains and no private narrative returns. Immediate projection
+clearing is retained. Both negative reproductions are preserved separately.
+
+All44 authoring/revocation cases pass across four CLI WebKit projects with zero
+retries/skips. Fixed-category diagnostic/unit checks pass7/7; root types and docs
+pass. Independent review found no remaining blocker. Diagnostics admit only known
+409 categories through an own-property lookup and public formatter allowlist.
+The original CI gap failure still lacks its exact response category; this proves
+the two reproduced races, not the historical failure's complete cause. Current
+legacy CI on cccf85e passes; main CI still includes unresolved expansion/gap failures.

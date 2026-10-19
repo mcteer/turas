@@ -994,3 +994,21 @@ the single-run reconciler also refuses its cancellation intent. Unknown workflow
 names remain rejected. This compatibility does not install or restart legacy tools,
 create settlement, release charges, prove old-host admission closure or grant full
 recovery readiness.
+
+
+### Active host fence checkpoint
+
+The current Production project has an active version1 custom rule denying request
+hosts outside its four exact current Production hosts. The private activation plan
+and readback bind the project, team, deployment, credential inventory and policy
+digest. Preserve the rule during recovery and cleanup. A newly admitted Preview or
+Production host requires an explicit reviewed allowlist update bound to its actual
+platform identity before hosted checks; a successful build does not grant access.
+
+The completed653-host census directly verifies current bypass header/query paths
+and652 issued-cookie paths:1,959 responses carry the explicit edge-denial header.
+The1,301 ordinary/historical-cookie protection redirects are separate unresolved
+observations. Do not treat them as current-host redirects, direct firewall denial,
+managed Workflow closure or old database-role retirement. Current Production
+controls remain healthy. The strict census and full recovery readiness stay false;
+retain its4,593-request accounting and unknown cost hold under the5,000-request cap.

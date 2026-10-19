@@ -20,3 +20,35 @@ test('clears hidden-tab prose and refreshes withdrawn originals before showing i
 test('cancels an in-flight export without creating a browser download',async({page})=>{const fixture=await approvedGapReport(true);await login(page,'mcteer');await page.goto('/product-gaps/reports/'+fixture.report.id);const ready=Promise.withResolvers<void>(),release=Promise.withResolvers<void>();let downloads=0;page.on('download',()=>downloads++);await page.evaluate(()=>{const original=window.fetch.bind(window);window.fetch=(input,init)=>{const path=new URL(input instanceof Request?input.url:String(input),location.href).pathname;if(!/\/api\/product-gaps\/reports\/[a-f0-9-]+\/exports\/[a-f0-9-]+$/.test(path))return original(input,init);const release=new Promise<void>(resolve=>window.addEventListener('synthetic-export-abort-release',()=>resolve(),{once:true}));return original(input,init).catch(async error=>{if(error.name==='AbortError')await release;throw error;});};});await page.route('**/api/product-gaps/reports/'+fixture.report.id+'/exports/*',async route=>{ready.resolve();await release.promise;await route.abort().catch(()=>{});});await page.getByRole('button',{name:'Download JSON',exact:true}).click();await ready.promise;const cancelled=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/product-gaps/reports/'+fixture.report.id+'/cancel'&&response.request().method()==='POST',{timeout:30000});await page.getByRole('button',{name:'Cancel Export',exact:true}).click();expect((await cancelled).status()).toBe(200);await expect(page.getByRole('status').filter({hasText:'Export cancelled; this identity cannot be reused.'})).toBeVisible();await page.evaluate(()=>window.dispatchEvent(new Event('synthetic-export-abort-release')));await expect(page.getByRole('button',{name:'Cancel Export',exact:true})).toHaveCount(0);await expect(page.getByRole('status').filter({hasText:'Export cancelled; this identity cannot be reused.'})).toBeVisible();release.resolve();await page.unrouteAll({behavior:'wait'});expect(downloads).toBe(0);expect((await withGapDatabase(db=>db.query('SELECT state FROM gap_export_receipts WHERE report_id=$1',[fixture.report.id]))).rows).toEqual([{state:'cancelled'}]);});
 
 test('does not restore a pending private response after the tab becomes hidden',async({page})=>{const actors=await gapActors(),gap=await reviewedSyntheticGap(actors.panel,actors.mcteer,{title:'Synthetic hidden pending response'});await login(page);await page.goto('/product-gaps/'+gap.id);await expect(page.getByRole('heading',{name:'Synthetic hidden pending response',exact:true})).toBeVisible();const ready=Promise.withResolvers<void>(),release=Promise.withResolvers<void>();await page.route('**/api/product-gaps/'+gap.id+'**',async route=>{const response=await route.fetch();ready.resolve();await release.promise;await route.fulfill({response}).catch(()=>{});});await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await ready.promise;await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));});release.resolve();await page.unrouteAll({behavior:'wait'});await expect(page.getByRole('heading',{name:'Synthetic hidden pending response',exact:true})).toHaveCount(0);});
+
+test('discards a delayed command error after a newer denied refresh',async({page})=>{
+ const actors=await gapActors(),gap=await reviewedSyntheticGap(actors.panel,actors.mcteer,{title:'Synthetic delayed command error'});
+ await login(page,'mcteer');await page.goto('/product-gaps/'+gap.id);
+ await page.getByRole('button',{name:'Propose Customer Impact',exact:true}).click();
+ await page.getByRole('combobox',{name:'Impact Customer',exact:true}).selectOption({index:1});
+ await page.getByRole('combobox',{name:'Impact Classification',exact:true}).selectOption('confirmed');
+ await page.getByLabel('Observed At (UTC; Leave Blank if Unknown)',{exact:true}).fill(new Date(Date.now()-7200000).toISOString().slice(0,16));
+ await page.getByLabel('Consequences',{exact:true}).fill('Synthetic unverified impact.');
+ await page.getByLabel('Workaround Burden',{exact:true}).fill('Synthetic unverified burden.');
+ await page.getByLabel('Impact Severity Rationale',{exact:true}).fill('Unknown pending original evidence.');
+ await page.evaluate(()=>{
+  const original=window.fetch.bind(window);
+  window.fetch=async(input,init)=>{
+   const response=await original(input,init);
+   if(init?.method==='POST'&&new URL(input instanceof Request?input.url:String(input),location.href).pathname.endsWith('/impacts')){
+    const json=response.json.bind(response);
+    response.json=async()=>{const body=await json();window.dispatchEvent(new Event('synthetic-command-body-ready'));await new Promise<void>(resolve=>window.addEventListener('synthetic-command-body-release',()=>resolve(),{once:true}));return body;};
+   }
+   return response;
+  };
+  window.addEventListener('synthetic-command-body-ready',()=>document.documentElement.dataset.commandBodyReady='true',{once:true});
+ });
+ await page.getByRole('button',{name:'Save Impact as Proposed',exact:true}).click();
+ await expect(page.locator('html')).toHaveAttribute('data-command-body-ready','true');
+ await login(page,'partner');await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+ await expect(page.getByRole('status').filter({hasText:'Product gaps are unavailable'})).toBeVisible();
+ await page.evaluate(async()=>{window.dispatchEvent(new Event('synthetic-command-body-release'));await new Promise(resolve=>setTimeout(resolve,0));});
+ await expect(page.getByRole('status').filter({hasText:'Product gaps are unavailable'})).toBeVisible();
+ await expect(page.getByText('Critical original evidence required',{exact:true})).toHaveCount(0);
+ await expect(page.getByRole('heading',{name:'Synthetic delayed command error',exact:true})).toHaveCount(0);
+});
