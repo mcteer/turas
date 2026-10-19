@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { lstatSync, readFileSync, realpathSync } from "node:fs";
 import { isAbsolute, relative, resolve, sep } from "node:path";
-import {currentRecoveryServerConfig} from './operations/recovery-configuration.ts';
+import {currentRecoveryServerConfig} from './operations/recovery-configuration-context.ts';
 
 const credential = z.string().min(1);
 const databaseUrl = z.string().url().refine((value) => {

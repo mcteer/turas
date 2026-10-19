@@ -3310,3 +3310,12 @@ pass, including canonical accepted-profile reads, forged capability denial,
 configuration isolation and revision drift. This is a recovery foundation; it
 does not establish restricted HTTP service, effect reconciliation, complete
 verification or permission to unlock the restored target.
+
+
+CI at3983853 exposed an eve authored-module build regression: normal server
+configuration imported the recovery operator module, whose dynamic imports made
+the authored bundle contain multiple chunks. The standalone web build had passed.
+The lightweight AsyncLocalStorage accessor now lives separately from the owned
+operator constructor, leaving normal configuration free of restoration imports
+and authored bundle splitting. The exact-source eve build passes after this
+correction; the earlier CI failures remain recorded and require fresh CI.
