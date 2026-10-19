@@ -1,3 +1,4 @@
+import {z} from 'zod';
 import {withOwnedProcess,OwnedProcessRetirementError} from './pilot-owned-process';
 import {mkdir,mkdtemp,rm,symlink,writeFile} from 'node:fs/promises';
 import {resolve,join,dirname,basename} from 'node:path';
@@ -10,7 +11,7 @@ import {withRecoveryServerConfiguration} from '../lib/server/operations/recovery
 import {withOwnedRestoreTarget,requireOwnedRestoreConfigurationTarget,requireOwnedRestoredRuntimeEnvironment,registerOwnedRestoredRuntimeProcess,type OwnedRestoreTarget} from '../lib/server/operations/owned-restore-target';
 
 type Scope={environmentId:string;recoveryId:string;controlRevision:number};
-export type OwnedRecoveryApplication=Readonly<{contract:'pilot-owned-recovery-application-v1';origin:string;sourceCommit:string;sourceDigest:string}>;
+export type OwnedRecoveryApplication=Readonly<{contract:'pilot-owned-recovery-application-v1';origin:string;sourceCommit:string;sourceDigest:string;catalogDigest:string}>;
 type Binding={target:OwnedRestoreTarget;scope:Scope;root:string;deadline:number;environment:NodeJS.ProcessEnv;port:Awaited<ReturnType<typeof reserveOwnedEvalPort>>;active:boolean};
 const applications=new WeakMap<object,Binding>();
 function binding(application:OwnedRecoveryApplication){const value=applications.get(application);if(!value)throw Error('Actual owned recovery application required');return value;}
@@ -18,7 +19,7 @@ const runtimeKeys=['DATABASE_URL','DATABASE_URL_UNPOOLED','TURAS_ENVIRONMENT_ID'
 
 /** Clone authored application files only. No selected env, workflow data,
  * customer store, credential file, provider key or owner URL enters the child. */
-export async function prepareOwnedRecoveryApplication(input:{target:OwnedRestoreTarget;scope:Scope;signal:AbortSignal;deadline:number}){
+export async function prepareOwnedRecoveryApplication(input:{target:OwnedRestoreTarget;scope:Scope;signal:AbortSignal;deadline:number;rendererImage?:string}){
  input.signal.throwIfAborted();
  if(!Number.isSafeInteger(input.deadline)||input.deadline<=Date.now()||input.deadline>Date.now()+900000)throw Error('Bounded original recovery deadline required');
  await withOwnedRestoreTarget(input.target,input.scope,input.signal,async()=>{});
@@ -34,15 +35,16 @@ export async function prepareOwnedRecoveryApplication(input:{target:OwnedRestore
   await symlink(resolve('packages/artifact-extractor/node_modules'),join(root,'packages/artifact-extractor/node_modules'));
   if(JSON.stringify(await pilotSource())!==JSON.stringify(source))throw Error('Recovery application source changed');
   const origin='http://127.0.0.1:'+port.port;
-  const renderer=process.env.TURAS_PILOT_RENDERER_IMAGE;if(!renderer||!/^sha256:[a-f0-9]{64}$/.test(renderer))throw Error('Exact prepared recovery renderer required');
-  const application:OwnedRecoveryApplication=Object.freeze({contract:'pilot-owned-recovery-application-v1',origin,sourceCommit:source.sourceCommit,sourceDigest:source.sourceDigest});
+  const receiptKeys=z.array(z.string().refine(value=>Buffer.byteLength(value)>=32&&Buffer.byteLength(value)<=4096)).min(1).max(32).parse(process.env.TURAS_012_RECEIPT_HASH_KEYS?JSON.parse(process.env.TURAS_012_RECEIPT_HASH_KEYS):[config.TURAS_MAINTENANCE_SECRET]);
+  const renderer=input.rendererImage??process.env.TURAS_PILOT_RENDERER_IMAGE;if(!renderer||!/^sha256:[a-f0-9]{64}$/.test(renderer))throw Error('Exact prepared recovery renderer required');
+  const application:OwnedRecoveryApplication=Object.freeze({contract:'pilot-owned-recovery-application-v1',origin,sourceCommit:source.sourceCommit,sourceDigest:source.sourceDigest,catalogDigest:source.catalogDigest});
   const environment:NodeJS.ProcessEnv={...Object.fromEntries(['PATH','HOME','TMPDIR','LANG','LC_ALL'].flatMap(key=>process.env[key]===undefined?[]:[[key,process.env[key]]])),
    // This launcher serves maintenance HTTP only. The installed Eve Next
    // integration honors EVE_BASE_URL before automatic dev-server startup.
    // Port zero is deliberately unavailable; native/Workflow proof stays separate.
    NODE_ENV:'development',EVE_BASE_URL:'http://127.0.0.1:0',TURAS_PILOT_RENDERER_IMAGE:renderer,NEXT_TELEMETRY_DISABLED:'1',TURAS_CODE_VERSION:source.sourceCommit,TURAS_APP_ORIGIN:origin,TURAS_EVE_INTERNAL_ORIGIN:origin+'/',
    TURAS_DEMO_USERNAME:'mcteer',TURAS_DEMO_PASSWORD:config.TURAS_DEMO_PASSWORD,PANEL_USERNAME:'panel',PANEL_PASSWORD:config.PANEL_PASSWORD,PARTNER_USERNAME:'partner',PARTNER_PASSWORD:config.PARTNER_PASSWORD,
-   TURAS_MAINTENANCE_SECRET:randomBytes(32).toString('hex'),TURAS_012_RECEIPT_HASH_KEYS:JSON.stringify([randomBytes(32).toString('hex')]),
+   TURAS_MAINTENANCE_SECRET:config.TURAS_MAINTENANCE_SECRET,TURAS_012_RECEIPT_HASH_KEYS:JSON.stringify(receiptKeys),
    TURAS_PILOT_LOGIN_ENABLED:'0',TURAS_PRIVATE_OBJECT_BACKEND:'local',TURAS_JOB_EXECUTOR:'local',TURAS_REPORTS_ENABLED:'true',TURAS_REPORT_DELIVERY_ENABLED:'0',TURAS_TEST_MODEL_MODE:'deterministic'};
   applications.set(application,{target:input.target,scope:Object.freeze({...input.scope}),root,deadline:input.deadline,environment,port,active:false});return application;
  }catch(error){await port?.release();await rm(root,{recursive:true,force:true});throw error;}
@@ -59,7 +61,8 @@ async function serve<T>(application:OwnedRecoveryApplication,runtime:Readonly<Re
  const deadline=AbortSignal.any([signal,runtimeSignal,AbortSignal.timeout(Math.max(1,state.deadline-Date.now()))]);
  try{
   await state.port.release();deadline.throwIfAborted();
-  return await withOwnedProcess({command:process.execPath,args:['node_modules/next/dist/bin/next','dev','--webpack','--hostname','127.0.0.1','--port',new URL(application.origin).port],cwd:state.root,environment:{...state.environment,...runtime},signal:deadline,deadline:state.deadline,onProcess:warming?undefined:process=>registerOwnedRestoredRuntimeProcess(state.target,state.scope,runtime,process)},async child=>{
+  return await withOwnedProcess({command:process.execPath,args:['scripts/pilot-owned-recovery-server.mjs'],cwd:state.root,environment:{...state.environment,...runtime},signal:deadline,deadline:state.deadline,onProcess:warming?undefined:process=>registerOwnedRestoredRuntimeProcess(state.target,state.scope,runtime,process)},async child=>{
+  tail+='\nowned-child-pid='+child.pid+'\n';
   let failure=false;child.on('error',()=>{failure=true;});
   for(const stream of [child.stdout,child.stderr])stream?.on('data',bytes=>{tail=(tail+bytes.toString()).slice(-65536);});
   for(;;){
@@ -73,7 +76,7 @@ async function serve<T>(application:OwnedRecoveryApplication,runtime:Readonly<Re
    await new Promise<void>(done=>setTimeout(done,50));
   }
   const result=await run();deadline.throwIfAborted();if(failure||child.exitCode!==null||child.signalCode!==null)throw Error('Owned recovery application lost');return result;
-  }).then(value=>{retired=true;return value;},error=>{if(error instanceof OwnedProcessRetirementError)throw error;retired=true;throw error;});
+  }).then(value=>{retired=true;return value;},error=>{if(error instanceof OwnedProcessRetirementError){tail+='\n'+error.message+'; '+(error.cause instanceof Error?error.cause.message:'unknown retirement cause')+'\n';throw error;}retired=true;throw error;});
  }finally{
   state.active=!retired;await writeFile(join(dirname(state.root),basename(state.root)+'-child-private.log'),tail,{mode:0o600});
  }

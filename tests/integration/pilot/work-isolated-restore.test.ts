@@ -1,3 +1,6 @@
+import {verifyOwnedMaintenanceRecovery,requireOwnedMaintenanceVerification} from '../../../lib/server/operations/owned-maintenance-verification';
+import {deriveOwnedMaintenanceInventory} from '../../../lib/server/operations/owned-maintenance-inventory';
+import {DEMO_IDS} from '../../../lib/server/bootstrap-ids';
 import {withOwnedProcess} from '../../../scripts/pilot-owned-process';
 import {prepareOwnedRecoveryApplication,warmOwnedRecoveryApplication,withOwnedRecoveryApplication,withOwnedRecoveryApplicationConfiguration,retireOwnedRecoveryApplication,type OwnedRecoveryApplication} from '../../../scripts/pilot-owned-recovery-application';
 import {reviewedSyntheticGap,gapEnvelope} from '../../fixtures/gaps/authoring';
@@ -35,19 +38,20 @@ import {randomUUID,randomBytes,createHash} from 'node:crypto';
 import {withPilotEnvironment,requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
 import {captureOwnedRecoveryCandidate} from '../../../lib/server/operations/capture-candidate';
 import {pilotRecovery} from '../../../scripts/pilot-recovery';
+import {pilotSource} from '../../../scripts/pilot-source';
 import {workCaptureCandidateSchema,type WorkCaptureCandidate} from '../../../lib/contracts/pilot-capture';
 import {LocalPrivateObjects} from '../../../lib/server/storage/local-objects';
 import {objectKey,environmentObjectId} from '../../../lib/server/storage/private-objects';
 import {activeObjectNamespaces} from '../../../lib/server/storage/inventory';
 import {pilotPublishedKnowledgeFixture} from '../../fixtures/pilot/knowledge';
 
-it.each(['artifact','report','workforce','gap'] as const)('%s authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority',async surface=>{
- if(!['artifact','report','workforce','gap'].includes(surface))throw Error('Exact recovery surface required');
+it.each(['artifact','report','workforce','gap','command'] as const)('%s authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority',async surface=>{
+ if(!['artifact','report','workforce','gap','command'].includes(surface))throw Error('Exact recovery surface required');
  const preparation=process.env.TURAS_PILOT_UI_PREPARATION_FILE,renderer=process.env.TURAS_PILOT_RENDERER_IMAGE??(preparation?parsePilotImagePreparation(await readFile(preparation)).images.find(image=>image.kind==='renderer')?.localImageId:undefined);
  if(!renderer||!/^sha256:[a-f0-9]{64}$/.test(renderer))throw Error('Explicit prepared recovery report renderer required');
  await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});const root=await mkdtemp(resolve('local-artifacts/016/work-rehearsal-')),key=randomBytes(32);
  let application:OwnedRecoveryApplication|undefined;
- let sourceGap:{exportId:string;reportId:string;revisionId:string;workspaceId:string;digest:string;sizeBytes:number;objectKey:string}|undefined;
+ let sourceGap:{jsonExportId:string;exportId:string;reportId:string;revisionId:string;workspaceId:string;digest:string;sizeBytes:number;objectKey:string}|undefined;
  let sourceWorkforce:{importId:string;sourceId:string;versionId:string;workspaceId:string;digest:string;bytes:Buffer}|undefined;
  let sourceReport:{artifactId:string;reportId:string;revisionId:string;customerId:string;workspaceId:string;digest:string;sizeBytes:number;objectKey:string}|undefined;
  let candidate:WorkCaptureCandidate|undefined,sourceEnvironmentId='',sourceProfile:{workspaceId:string;customerId:string;revisionId:string;artifactVersionId:string}|undefined;
@@ -85,8 +89,9 @@ it.each(['artifact','report','workforce','gap'] as const)('%s authenticates sepa
     const gapPreview=await previewGapReportReview(baseline.reviewer,gapReport.id,{...gapEnvelope(gapReport.version),action:'approve',revisionId:gapReport.revision.id,customerDisclosures:gapReport.document.customers.map(row=>row.id),audienceDigest:gapReport.revision.audienceDigest,rationale:'Exact controlled synthetic recovery export review',selfReview:false});
     await commitGapReportReview(baseline.reviewer,gapReport.id,{...gapEnvelope(gapReport.version),previewId:gapPreview.resultId,bindingDigest:gapPreview.bindingDigest});gapReport=await readGapReport(baseline.reviewer,gapReport.id);
     const exported=await admitGapExport(baseline.reviewer,gapReport.id,{...gapEnvelope(gapReport.version),format:'markdown',reviewId:gapReport.review!.id});
+    gapReport=await readGapReport(baseline.reviewer,gapReport.id);const jsonExport=await admitGapExport(baseline.reviewer,gapReport.id,{...gapEnvelope(gapReport.version),format:'json',reviewId:gapReport.review!.id});
     const gapArtifacts=(await db.query('SELECT * FROM gap_export_artifacts WHERE revision_id=$1 ORDER BY id',[gapReport.revision!.id])).rows;expect(gapArtifacts).toHaveLength(2);const markdown=gapArtifacts.find(row=>row.format==='markdown');if(!markdown)throw Error('Normal markdown export missing');
-    sourceGap={exportId:exported.resultId!,reportId:gapReport.id,revisionId:gapReport.revision!.id,workspaceId:baseline.reviewer.workspaceId,digest:markdown.content_digest,sizeBytes:Number(markdown.size_bytes),objectKey:markdown.object_key};
+    sourceGap={jsonExportId:jsonExport.resultId!,exportId:exported.resultId!,reportId:gapReport.id,revisionId:gapReport.revision!.id,workspaceId:baseline.reviewer.workspaceId,digest:markdown.content_digest,sizeBytes:Number(markdown.size_bytes),objectKey:markdown.object_key};
     const recoveryId=randomUUID(),revision=Number((await db.query("UPDATE operations_control SET mode='locked',revision=revision+1,recovery_id=$2 WHERE environment_id=$1 RETURNING revision",[environment.environmentId,recoveryId])).rows[0].revision);
     const objects=join(root,'source-objects'),workflow=join(root,'empty-workflow');await mkdir(objects,{mode:0o700});await mkdir(workflow,{mode:0o700});
     const store=new LocalPrivateObjects(objects,environment.environmentId,10485760);
@@ -115,8 +120,16 @@ it.each(['artifact','report','workforce','gap'] as const)('%s authenticates sepa
     expect(Object.isFrozen(ownedTarget)).toBe(true);
     await expect(mintOwnedRestoreTarget({container:environment.databaseContainer,ownerLabel:'0'.repeat(12),environmentId:environment.environmentId},environment.signal)).rejects.toThrow('Original owned');
     await db.query("UPDATE operations_control SET mode='locked'");
-    const result=await pilotRecovery(['--restore-work-isolated','--environment',captured.environmentId,'--candidate',join(root,'cold','candidate.json'),'--bundle',join(root,'cold','candidate.encrypted'),'--key-file',join(root,'keys','key'),'--output',join(root,'restore')]);
+    const maintenanceConfiguration=join(root,'maintenance-configuration-private.json');
+    await writeFile(maintenanceConfiguration,JSON.stringify({contract:'pilot-owned-maintenance-configuration-v1',environmentId:captured.environmentId,...await pilotSource(),password:process.env.TURAS_DEMO_PASSWORD,rendererImage:renderer}),{mode:0o600});
+    const result=await pilotRecovery(['--restore-work-isolated','--environment',captured.environmentId,'--candidate',join(root,'cold','candidate.json'),'--bundle',join(root,'cold','candidate.encrypted'),'--key-file',join(root,'keys','key'),'--output',join(root,'restore'),...(surface==='command'?['--maintenance-configuration',maintenanceConfiguration]:[])]);
     expect(result).toMatchObject({acceptedContentVerified:true,ledgerVerified:true,objectsVerified:true,objectCount:13,requiredOriginals:{requiredObjectCount:8,requiredOriginalsVerified:true,serviceVerified:false,restorationReady:false},requiredScopeQuarantined:true,currentAuthorityVerified:false,permanentReplayVerified:false,workflowReconciled:false,restorationReady:false,mode:'locked'});
+    if(surface==='command'){
+    if(!('maintenance' in result)||!result.maintenance)throw Error('Actual command maintenance verification missing');
+    expect(result.maintenance).toMatchObject({maintenanceHttpVerified:true,probeRetirementVerified:true,verifiedKinds:['artifact','gap','profile','report','workforce'],currentAuthorityVerified:false,ordinaryServiceVerified:false,workflowReconciled:false,requiredScopeHealthy:false,restorationReady:false});
+    expect(result.maintenance.verifiedRecords).toBeGreaterThan(0);expect(result.maintenance.verifiedOriginalBytes).toBeGreaterThan(0);
+    return;
+    }
     if(!('physicalIntegrity' in result))throw Error('Measured physical checkpoint missing');
     const proof=result.physicalIntegrity,scope={environmentId:sourceEnvironmentId,recoveryId:proof.recoveryId,controlRevision:proof.controlRevision},storeRoot=join(root,'restore','objects');
     expect(Object.isFrozen(proof)).toBe(true);expect(proof.restorationReady).toBe(false);expect(proof.acceptedContentDigest).toBe(captured.acceptedContentDigest);expect(proof.objectCount).toBe(13);
@@ -129,6 +142,32 @@ it.each(['artifact','report','workforce','gap'] as const)('%s authenticates sepa
     await expect(bindOwnedRestoredSource(ownedTarget,JSON.parse(JSON.stringify(proof)),storeRoot,environment.signal)).rejects.toThrow('Actual measured');
     await bindOwnedRestoredSource(ownedTarget,proof,storeRoot,environment.signal);
     await bindOwnedRestoredSource(otherOwnedTarget,proof,storeRoot,environment.signal);
+    const maintenance=await deriveOwnedMaintenanceInventory(ownedTarget,scope,environment.signal);
+    expect(maintenance.requiredOriginals.requiredObjectCount).toBe(8);
+    expect([...new Set(maintenance.records.map(record=>record.kind))].sort()).toEqual(['artifact','gap','profile','report','workforce']);
+    expect(maintenance.requiredScopeHealthy).toBe(false);expect(maintenance.restorationReady).toBe(false);
+    const foreignOwner=randomUUID(),workforceOwner=(await db.query('SELECT owner_membership_id FROM workforce_import_intents WHERE id=$1',[expectedWorkforce.importId])).rows[0].owner_membership_id;
+    await db.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role) VALUES($1,$2,$3,'internal','member')",[foreignOwner,DEMO_IDS.panel,expectedWorkforce.workspaceId]);
+    await db.query('ALTER TABLE workforce_import_intents DISABLE TRIGGER USER');
+    try{
+     await db.query('UPDATE workforce_import_intents SET owner_membership_id=$2 WHERE id=$1',[expectedWorkforce.importId,foreignOwner]);
+     await expect(deriveOwnedMaintenanceInventory(ownedTarget,scope,environment.signal)).rejects.toThrow('Workforce owner maintenance unsupported');
+    }finally{await db.query('UPDATE workforce_import_intents SET owner_membership_id=$2 WHERE id=$1',[expectedWorkforce.importId,workforceOwner]);await db.query('ALTER TABLE workforce_import_intents ENABLE TRIGGER USER');await db.query('DELETE FROM memberships WHERE id=$1',[foreignOwner]);}
+    const jsonReceipt=(await db.query('SELECT state FROM gap_export_receipts WHERE id=$1',[expectedGap.jsonExportId])).rows[0];
+    await db.query('ALTER TABLE gap_export_receipts DISABLE TRIGGER USER');
+    try{
+     await db.query("UPDATE gap_export_receipts SET state='cancelled' WHERE id=$1",[expectedGap.jsonExportId]);
+     await expect(deriveOwnedMaintenanceInventory(ownedTarget,scope,environment.signal)).rejects.toThrow('Current gap original lacks owner export authority');
+    }finally{await db.query('UPDATE gap_export_receipts SET state=$2 WHERE id=$1',[expectedGap.jsonExportId,jsonReceipt.state]);await db.query('ALTER TABLE gap_export_receipts ENABLE TRIGGER USER');}
+    const gapObjects=await new LocalPrivateObjects(storeRoot,scope.environmentId,10485760).list('gap-report'),gapKeys=new Set((await db.query('SELECT object_key::text AS key FROM gap_report_store_objects')).rows.map(row=>row.key));
+    const orphan=gapObjects.objects.find(object=>!gapKeys.has(object.key.split('/').at(-1)));if(!orphan)throw Error('Captured unattached gap original absent');
+    const orphanId=orphan.key.split('/').at(-1)!,jobId=(await db.query('SELECT job_id FROM gap_report_revisions WHERE id=$1',[expectedGap.revisionId])).rows[0].job_id;
+    await db.query('ALTER TABLE gap_report_store_objects DISABLE TRIGGER USER');
+    try{
+     await db.query("INSERT INTO gap_report_store_objects(object_key,environment_id,workspace_id,job_id,revision_id,format,content_digest,size_bytes,state) VALUES($1,$2,$3,$4,$5,'markdown',$6,$7,'attached')",[orphanId,scope.environmentId,expectedGap.workspaceId,jobId,expectedGap.revisionId,orphan.digest,orphan.sizeBytes]);
+     await expect(deriveOwnedMaintenanceInventory(ownedTarget,scope,environment.signal)).rejects.toThrow('Current approved gap original lacks artifact authority');
+    }finally{await db.query('DELETE FROM gap_report_store_objects WHERE object_key=$1',[orphanId]);await db.query('ALTER TABLE gap_report_store_objects ENABLE TRIGGER USER');}
+    expect((await deriveOwnedMaintenanceInventory(ownedTarget,scope,environment.signal)).inventoryDigest).toBe(maintenance.inventoryDigest);
     await expect(withOwnedRestoreTarget(JSON.parse(JSON.stringify(ownedTarget)),scope,environment.signal,async()=>{})).rejects.toThrow('Actual owned restore target');
     await expect(withOwnedRestoreTarget(ownedTarget,{...scope,recoveryId:randomUUID()},environment.signal,async()=>{})).rejects.toThrow('Actual bound');
     await withOwnedRestoreTarget(ownedTarget,scope,environment.signal,async owner=>{
@@ -399,6 +438,27 @@ it.each(['artifact','report','workforce','gap'] as const)('%s authenticates sepa
     expect((await db.query("SELECT 1 FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') AND rolcanlogin")).rowCount).toBe(0);
     expect((await db.query("SELECT 1 FROM pg_stat_activity WHERE usename IN('turas_runtime','turas_runtime_016')")).rowCount).toBe(0);
     expect((await readdir(join(root,'restore'))).filter(name=>name.startsWith('canonical-runtime-'))).toEqual([]);
+    if(surface==='artifact'){
+     const verified=await verifyOwnedMaintenanceRecovery({target:ownedTarget,scope,password:process.env.TURAS_DEMO_PASSWORD!,rendererImage:renderer,signal:environment.signal,deadline:Date.now()+150000});
+     await withOwnedRecoveryApplicationConfiguration(application!,environment.signal,async decision=>{
+      await decision.query('BEGIN');
+      try{
+       expect(await requireOwnedMaintenanceVerification(decision,ownedTarget,scope,verified,environment.signal)).toBe(verified);
+       await expect(requireOwnedMaintenanceVerification(decision,ownedTarget,scope,JSON.parse(JSON.stringify(verified)),environment.signal)).rejects.toThrow('Actual fresh owned');
+       await decision.query('SAVEPOINT maintenance_probe');
+       await issueOwnedRecoveryHttpRead(decision as unknown as PoolClient,{...scope,workspaceId:expectedProfile.workspaceId,customerId:expectedProfile.customerId,deadline:Date.now()+59000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:1,deploymentId:null});
+       await expect(requireOwnedMaintenanceVerification(decision,ownedTarget,scope,verified,environment.signal)).rejects.toThrow('Maintenance HTTP retirement incomplete');
+       await decision.query('ROLLBACK TO SAVEPOINT maintenance_probe');
+       await decision.query('RELEASE SAVEPOINT maintenance_probe');
+       expect(await requireOwnedMaintenanceVerification(decision,ownedTarget,scope,verified,environment.signal)).toBe(verified);
+       await decision.query('ALTER ROLE turas_runtime_016 LOGIN');
+       await expect(requireOwnedMaintenanceVerification(decision,ownedTarget,scope,verified,environment.signal)).rejects.toThrow('Maintenance runtime retirement incomplete');
+       await decision.query('ALTER ROLE turas_runtime_016 NOLOGIN');
+       await decision.query('UPDATE customer_profile_state SET internal_generation=internal_generation+1 WHERE customer_id=$1',[expectedProfile.customerId]);
+       await expect(requireOwnedMaintenanceVerification(decision,ownedTarget,scope,verified,environment.signal)).rejects.toThrow('Maintenance verification inventory changed');
+      }finally{await decision.query('ROLLBACK');}
+     });
+    }
     // A genuine process whose retirement fails must keep its canonical stores
     // and block future leases, even after database authority is safely closed.
     let failedChild=0,retainedRoot='';const originalKill=process.kill;

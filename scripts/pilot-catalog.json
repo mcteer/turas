@@ -472,6 +472,7 @@
         "integration.work-isolated-restore.002",
         "integration.work-isolated-restore.003",
         "integration.work-isolated-restore.004",
+        "integration.work-isolated-restore.005",
         "integration.recovery-credential-denials.011",
         "integration.native-postgres.008",
         "integration.native-postgres.009",
@@ -627,7 +628,9 @@
         "unit.legacy-safety-context.004",
         "unit.owned-process.001",
         "unit.owned-process.002",
-        "unit.owned-process.003"
+        "unit.owned-process.003",
+        "unit.owned-process.004",
+        "unit.owned-process.005"
       ]
     },
     {

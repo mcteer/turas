@@ -1,4 +1,4 @@
-import {spawn,type ChildProcess} from 'node:child_process';
+import {spawn,execFileSync,type ChildProcess} from 'node:child_process';
 export type OwnedProcessRetirement=Readonly<{contract:'pilot-owned-process-retirement-v1'}>;
 const retirements=new WeakMap<object,()=>Promise<void>>();
 export function requireOwnedProcessRetirement(value:OwnedProcessRetirement){if(!retirements.has(value))throw Error('Actual owned process retirement required');}
@@ -16,19 +16,21 @@ export async function withOwnedProcess<T>(input:{command:string;args:string[];cw
  // Drain both streams even if a caller only observes a bounded diagnostic tail.
  child.stdout?.on('data',()=>{});child.stderr?.on('data',()=>{});
  const group=child.pid;
- function alive(){if(!group)return false;try{process.kill(-group,0);return true;}catch(error){if((error as NodeJS.ErrnoException).code==='ESRCH')return false;throw error;}}
- function signal(value:NodeJS.Signals){if(!group)return;try{process.kill(-group,value);}catch(error){if((error as NodeJS.ErrnoException).code!=='ESRCH')throw error;}}
+ // macOS may temporarily deny a probe while a child is exiting. Treat that
+ // as still alive; only ESRCH plus child close can verify retirement.
+ function alive(){if(!group)return false;try{process.kill(-group,0);return true;}catch(error){if((error as NodeJS.ErrnoException).code==='ESRCH')return false;if((error as NodeJS.ErrnoException).code==='EPERM')return true;throw new Error('Owned group probe failed: '+(error as NodeJS.ErrnoException).code,{cause:error});}}
+ function signal(value:NodeJS.Signals){if(!group)return;try{process.kill(-group,value);}catch(error){if((error as NodeJS.ErrnoException).code!=='ESRCH')throw new Error('Owned group signal '+value+' failed: '+(error as NodeJS.ErrnoException).code,{cause:error});}}
  async function closeGroup(){
   signal('SIGTERM');const start=Date.now();let forced=false;
   while(alive()||!closed){
    const elapsed=Date.now()-start;if(elapsed>=5000&&!forced){signal('SIGKILL');forced=true;}
-   if(elapsed>=10000)throw Error('Owned process group retirement unverified');
+   if(elapsed>=10000)throw Error('Owned process group retirement unverified: group='+group+', childClosed='+closed+', groupAlive='+alive());
    await new Promise<void>(done=>setTimeout(done,20));
   }
  }
  let retirement:Promise<void>|undefined;
  const resource:OwnedProcessRetirement=Object.freeze({contract:'pilot-owned-process-retirement-v1'});
- const retire=()=>retirement??=(async()=>{try{await closeGroup();}catch(error){throw new OwnedProcessRetirementError(error);}})();
+ const retire=()=>retirement??=(async()=>{try{await closeGroup();}catch(error){let snapshot='unavailable';if(group)try{snapshot=execFileSync('ps',['-g',String(group),'-o','pid=,ppid=,pgid=,uid=,stat=,comm='],{encoding:'utf8',timeout:1000,maxBuffer:8192}).trim();}catch{}throw new OwnedProcessRetirementError(new Error((error instanceof Error?error.message:'unknown')+'; group='+group+'; childClosed='+closed+'; ownedGroup='+snapshot));}})();
  retirements.set(resource,retire);
  let interrupted!:()=>void;
  const cancelled=new Promise<never>((_,reject)=>{interrupted=()=>reject(deadline.reason??Error('Owned process interrupted'));deadline.addEventListener('abort',interrupted,{once:true});if(deadline.aborted)interrupted();});

@@ -99,7 +99,7 @@ Completion work now includes released main `f8d196f`. New pilot logins default
 off through `TURAS_PILOT_LOGIN_ENABLED`; explicit enablement still requires a
 current assigned membership. A separate exact-source Production infrastructure
 authorization can now be verified without promoting the original Preview envelope.
-The composed workspace/upload WebKit matrix passes40cases; the updated788-case
+The composed workspace/upload WebKit matrix passes40cases; the updated791-case
 catalog requires fresh complete verification. Expired infrastructure/model approvals,
 original charges and holds remain unchanged; no hosted pilot readiness is claimed.
 Current Production remains released `f8d196f` on schema077. Its host firewall
@@ -743,4 +743,4 @@ The isolated work restore command verifies required ledger originals against res
 
 Mobile navigation remains disabled until its click handler is ready. Pilot research UI fixtures use ordinary live customer context and verify generation changes without relaxing historical-chat restrictions. The785-case local pass at23e8b2c predates these follow-up checks; fresh final-source CI remains required.
 
-Owned recovery now uses an authored maintenance-only application launcher with restricted runtime credentials. Actual child groups retire before canonical stores are removed; unverified retirement retains stores and blocks another lease. All four focused recovery surfaces pass. The current788-case/144-suite catalog requires fresh complete proof; the earlier785-case pass remains bound to23e8b2c. Command-level exhaustive maintenance verification is still being completed.
+Owned recovery now supports optional command-level maintenance HTTP verification against its restored target. It derives the record inventory, verifies profiles and eligible artifact/report/workforce/gap originals, and retires probe sessions and supervised application processes. A consuming transaction rechecks inventory and runtime/probe closure; serialized receipts cannot authorize recovery. The current791-case/144-suite catalog requires fresh complete proof. Ordinary service, current-denial/Workflow reconciliation and full readiness remain incomplete.

@@ -1144,12 +1144,13 @@
     },
     {
       "file": "tests/integration/pilot/work-isolated-restore.test.ts",
-      "expectedCases": 4,
+      "expectedCases": 5,
       "cases": [
         "artifact authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority",
         "report authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority",
         "workforce authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority",
-        "gap authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority"
+        "gap authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority",
+        "command authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority"
       ]
     },
     {
@@ -1646,11 +1647,13 @@
     },
     {
       "file": "tests/unit/pilot/owned-process.test.ts",
-      "expectedCases": 3,
+      "expectedCases": 5,
       "cases": [
         "retires the actual owned process group and its live descendant after success",
         "retires descendants after their direct parent has already exited",
-        "cancels a pending callback and verifies complete group retirement"
+        "cancels a pending callback and verifies complete group retirement",
+        "waits through transient denied probes before verifying real group closure",
+        "refuses retirement when owned group probes remain denied"
       ]
     }
   ],

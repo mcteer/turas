@@ -340,3 +340,5 @@ HTTP/WebKit verifies the original missing product, discovery, four picker layout
 and12 login cases on schema077. The merged branch and five temporary Preview
 settings are removed. See [feature019 validation](specs/019-chat-interaction-parity/validation.md)
 for Preview proof, historical failures and hosted limits.
+
+Pilot recovery now includes a bounded command-level maintenance verifier with database-derived record coverage and transaction-bound inventory/retirement rechecks. Its partial proof cannot unlock service. The791-case/144-suite inventory still needs final-source local/CI proof; ordinary hosted recovery, current denials, Workflow reconciliation and pilot acceptance remain pending.
