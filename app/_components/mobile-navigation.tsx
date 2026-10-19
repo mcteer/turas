@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 
 export function MobileNavigation({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [interactive, setInteractive] = useState(false);
+  useEffect(() => { setInteractive(true); }, []);
   const trigger = useRef<HTMLButtonElement>(null);
   const dialog = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -22,7 +24,7 @@ export function MobileNavigation({ children }: { children: React.ReactNode }) {
   }, [open]);
   return <>
     <button className="mobile-trigger" ref={trigger} type="button" aria-label="Open navigation"
-      aria-expanded={open} onClick={() => setOpen(true)}>☰</button>
+      disabled={!interactive} aria-expanded={open} onClick={() => setOpen(true)}>☰</button>
     {open && <div className="mobile-backdrop" onMouseDown={(event) => {
       if (event.target === event.currentTarget) setOpen(false);
     }}><div className="mobile-panel" ref={dialog} role="dialog" aria-modal="true" aria-label="Navigation"

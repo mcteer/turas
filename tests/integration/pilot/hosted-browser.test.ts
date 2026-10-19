@@ -1,4 +1,5 @@
 import {it,expect} from 'vitest';
+import {webkit,expect as browserExpect} from '@playwright/test';
 import {Client,type PoolClient} from 'pg';
 import {randomUUID} from 'node:crypto';
 import {withPilotEnvironment,requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
@@ -30,6 +31,24 @@ it('uses actual served role sessions and four CLI WebKit configurations for park
     const body=await login.json();headers.set('x-csrf-token',body.data.csrfToken);
     try{
      const conversation=await runHostedConversationBoundary({scope,db:runtime,headers,customerId:customerIds[0],signal:environment.signal,foreignConversationIds:conversations});
+     if(username==='mcteer'){
+      // Hold actual script delivery so the server HTML is observable before
+      // React attaches handlers. No document or API response is substituted.
+      const browser=await webkit.launch({headless:true});
+      let releaseScripts!:()=>void;const scripts=new Promise<void>(resolve=>{releaseScripts=resolve;});
+      try{
+       const context=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'});
+       const token=cookie!.slice(cookie!.indexOf('=')+1);
+       await context.addCookies([{name:'turas_session',value:token,url:environment.origin,httpOnly:true,sameSite:'Lax'}]);
+       const page=await context.newPage();
+       await page.route('**/*',async route=>{if(route.request().resourceType()==='script')await scripts;await route.continue();});
+       await page.goto(environment.origin+'/s/'+conversation.conversationId,{waitUntil:'commit'});
+       const trigger=page.getByRole('button',{name:'Open navigation',exact:true});
+       await browserExpect(trigger).toBeVisible();await browserExpect(trigger).toBeDisabled();
+       releaseScripts();await browserExpect(trigger).toBeEnabled({timeout:15000});await trigger.click();
+       await browserExpect(page.getByRole('dialog',{name:'Navigation',exact:true})).toBeVisible();
+      }finally{releaseScripts();await browser.close();}
+     }
      const browser=await runHostedConversationBrowser({scope,headers,conversationId:conversation.conversationId,foreignConversationIds:conversations,signal:environment.signal});
      proofs.push(browser);conversations.push(conversation.conversationId);
     }finally{

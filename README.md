@@ -740,3 +740,5 @@ permanent request-fence audit in one transaction; incomplete decisions roll back
 together. This does not establish hosted recovery readiness.
 
 The isolated work restore command verifies required ledger originals against restored bytes before emitting success. This physical coverage check does not establish service recovery or pilot readiness.
+
+Mobile navigation remains disabled until its click handler is ready. Pilot research UI fixtures use ordinary live customer context and verify generation changes without relaxing historical-chat restrictions. The785-case local pass at23e8b2c predates these follow-up checks; fresh final-source CI remains required.

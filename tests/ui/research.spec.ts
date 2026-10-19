@@ -39,9 +39,9 @@ test("public research preview stays explicit in an owned synthetic chat",async (
       (id,environment_id,workspace_id,customer_id,owner_principal_id,
        eve_session_id,creation_operation_id,binding_state,title,
        context_snapshot_schema,context_login_session_id,context_membership_id,
-       context_audience,context_generation,context_valid_until)
+       context_audience,context_generation,context_valid_until,live_customer_context)
       VALUES($1,$2,$3,$4,$5,$6,$7,'bound','Synthetic research preview',
-        'customer-context-v1',$8,$9,'internal',$10,now()+interval '1 hour')`,
+        'customer-context-v1',$8,$9,'internal',$10,now()+interval '1 hour',true)`,
     [id,process.env.TURAS_TEST_ENVIRONMENT_ID,DEMO_IDS.workspace,
       DEMO_IDS.sharedCustomer,DEMO_IDS.mcteer,`synthetic_${randomUUID().replaceAll("-","")}`,
       randomUUID(),session.rows[0].id,DEMO_IDS.mcteerMembership,
@@ -153,9 +153,9 @@ test("keyboard cancellation retains only checked public findings",async ({ page 
       (id,environment_id,workspace_id,customer_id,owner_principal_id,
        eve_session_id,creation_operation_id,binding_state,title,
        context_snapshot_schema,context_login_session_id,context_membership_id,
-       context_audience,context_generation,context_valid_until)
+       context_audience,context_generation,context_valid_until,live_customer_context)
       VALUES($1,$2,$3,$4,$5,$6,$7,'bound','Synthetic cancelled research',
-        'customer-context-v1',$8,$9,'internal',$10,now()+interval '1 hour')`,
+        'customer-context-v1',$8,$9,'internal',$10,now()+interval '1 hour',true)`,
     [conversationId,process.env.TURAS_TEST_ENVIRONMENT_ID,DEMO_IDS.workspace,
       DEMO_IDS.sharedCustomer,DEMO_IDS.mcteer,
       `synthetic_${randomUUID().replaceAll("-","")}`,randomUUID(),
@@ -193,6 +193,12 @@ test("keyboard cancellation retains only checked public findings",async ({ page 
       route.fulfill({ status: 200,contentType: "application/json",
         body: JSON.stringify({ data: { dispatchState: "dispatched",
           responseState: cancelled ? "cancelled" : "running",watchdogState: null } }) }));
+    // Ordinary schema064+ chats keep live context after accepted customer
+    // knowledge changes. This fixture must not become a frozen legacy chat.
+    await db.query('UPDATE customer_profile_state SET internal_generation=internal_generation+1 WHERE customer_id=$1 AND workspace_id=$2',[DEMO_IDS.sharedCustomer,DEMO_IDS.workspace]);
+    const current = await page.request.get(`/api/conversations/${conversationId}`);
+    expect(current.status()).toBe(200);
+    expect((await current.json()).data.contextStatus).toBe('current');
     await visitAfterSignIn(page,`/s/${conversationId}`);
     await page.getByRole("button",{ name: "Customer context",exact: true }).click();
     await page.getByRole("button",{ name: "Start public research" }).click();
