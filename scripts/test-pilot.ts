@@ -1,3 +1,4 @@
+import {pilotSuiteDeadlineMs} from './pilot-suite-deadlines';
 import {preparePilotAssetPermissions} from './pilot-asset-permissions';
 import {parsePilotImagePreparation} from "../lib/contracts/pilot-images";
 import { access,readFile,writeFile,cp } from "node:fs/promises";
@@ -54,7 +55,7 @@ async function main(){
    let stdout='',stderr='',deadlineExpired=false;
    child.stdout.on('data',bytes=>{stdout=(stdout+bytes.toString()).slice(-131072);});
    child.stderr.on('data',bytes=>{stderr=(stderr+bytes.toString()).slice(-131072);});
-   const timeout=setTimeout(()=>{deadlineExpired=true;child.kill("SIGKILL");},["tests/integration/pilot/load-fixture.test.ts","tests/integration/pilot/load-delivery.test.ts","tests/integration/pilot/load-training.test.ts","tests/integration/pilot/load-mcp.test.ts","tests/integration/pilot/load-internal.test.ts","tests/integration/pilot/load-learning.test.ts"].includes(suite.file)?660000:suite.file==="tests/integration/pilot/owned-database-restore.test.ts"?720000:suite.file==="tests/integration/pilot/evaluation-source.test.ts"?780000:suite.file==="tests/integration/pilot/recovery-credential-denials.test.ts"?240000:["tests/integration/pilot/recovery-read-probe.test.ts","tests/integration/pilot/recovery.test.ts","tests/integration/pilot/hosted-sdk.test.ts","tests/integration/pilot/linked-http-reports.test.ts","tests/integration/pilot/linked-http-training.test.ts","tests/integration/pilot/hosted-browser.test.ts"].includes(suite.file)?300000:120000);
+   const timeout=setTimeout(()=>{deadlineExpired=true;child.kill("SIGKILL");},pilotSuiteDeadlineMs(suite.file));
    let exit:{code:number|null;signal:string|null};
    try{exit=await new Promise((resolve,reject)=>{child.once("close",(code,signal)=>resolve({code,signal}));child.once("error",reject);});}finally{clearTimeout(timeout);}
    const safe=(value:string)=>value.replace(/(?:postgres(?:ql)?|https?):\/\/[^\s'"<>]+/g,'[redacted-url]');

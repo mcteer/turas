@@ -52,7 +52,7 @@ export async function pilotHosted(args=process.argv.slice(2)){
  const configurationPath=resolve(args[5]);
  const configuration=hostedConfigurationSchema.parse(await readEvidence(dirname(configurationPath),basename(configurationPath)));
  if(configuration.environmentMarker!==scope.environmentMarker||configuration.projectId!==scope.projectId||configuration.teamId!==scope.teamId||!configuration.dispatcherEnabled)throw Error('Hosted configuration target or enabled dispatcher differs');
- const authorizationPath=resolve(args[7]),rawAuthorization=await readEvidence(dirname(authorizationPath),basename(authorizationPath)),authorization=verifyHostedInfrastructureAuthorization(rawAuthorization,scope),authorizationDigest=evidenceDigest(JSON.stringify(rawAuthorization));
+ const authorizationPath=resolve(args[7]),rawAuthorization=await readEvidence(dirname(authorizationPath),basename(authorizationPath)),authorization=verifyHostedInfrastructureAuthorization(rawAuthorization,scope),authorizationDigest=authorization.authorizationDigest;
  if(authorization.environmentMarker!==scope.environmentMarker||authorization.projectId!==scope.projectId||authorization.teamId!==scope.teamId||authorization.maximumSandboxJobs!==configuration.maximumSandboxDispatches||Date.parse(authorization.approvedAt)>Date.now()||Date.parse(authorization.expiresAt)<=Date.now())throw Error('Fresh applicable exact-target infrastructure authority required');
  const source=await pilotSource();
  if(run.id!==scope.runId||run.environmentMarker!==scope.environmentMarker||run.scopeDigest!==evidenceDigest(JSON.stringify(scope)))throw Error('Hosted run and scope differ');

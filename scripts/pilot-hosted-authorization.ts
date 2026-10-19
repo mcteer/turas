@@ -1,5 +1,5 @@
 import {z} from 'zod';
-import {recoveryDigest} from '../lib/contracts/pilot-recovery';
+import {evidenceDigest} from './pilot-evidence';
 import type {PilotHostedScope} from '../lib/contracts/pilot-hosted';
 
 // Preserve the originally approved Preview envelope and its exact digest bytes.
@@ -42,5 +42,5 @@ export function verifyHostedInfrastructureAuthorization(raw:unknown,scope:PilotH
   throw Error('Fresh exact-target infrastructure authorization required');
  if(value.contract==='pilot-infrastructure-user-authorization-v2'&&
   (value.sourceCommit!==scope.sourceCommit||value.sourceDigest!==scope.sourceDigest||value.catalogDigest!==scope.catalogDigest))throw Error('Infrastructure authorization source differs');
- return {...value,authorizationDigest:recoveryDigest(raw),maximumDeployments:value.contract==='pilot-infrastructure-user-authorization-v2'?value.maximumDeployments:value.maximumPreviewDeployments};
+ return {...value,authorizationDigest:evidenceDigest(JSON.stringify(raw)),maximumDeployments:value.contract==='pilot-infrastructure-user-authorization-v2'?value.maximumDeployments:value.maximumPreviewDeployments};
 }

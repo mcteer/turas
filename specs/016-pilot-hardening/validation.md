@@ -2961,3 +2961,29 @@ Production-target authorization whose digest matches a separately provisioned
 synthetic database budget. Missing authority, changed source and mismatched bytes
 are rejected; the suite reserves/dispatches no paid work. This is local admission
 proof, not an actual Production run or budget approval.
+
+
+### Independent review correction and aggregate restore controller
+
+Independent technical review found that the new authorization verifier used the
+canonical recovery digest while the existing hosted runner/budget used
+SHA256(JSON.stringify(raw)). The verifier and runner now share the original
+insertion-order JSON convention. The regression independently calculates that
+SHA256 and distinguishes it from the canonical recovery digest. All6authorization
+unit and3actual owned admission cases pass; a second independent review finds no
+remaining blocker. Existing version1 budget identities remain intact.
+
+The complete composed273ad0b catalog fails at isolated-restore: its default120s
+whole-file controller sends SIGKILL before the fixture's independently allowed
+210s setup and three210s cases can finish. Original diagnostics are retained.
+The same unchanged restore suite passes3/3 directly in61.84s under its existing
+step/domain timeouts. The controller now has a registered finite900s whole-file
+allowance covering those declared phases, without extending a hook, test, database
+or restoration deadline. Three controller-bound/unknown-suite tests pass. The
+registered catalog is now765cases/142suites and still needs a complete fresh run.
+
+The killed child left one owned synthetic database container. Its exact ownership
+label/database name and zero client backends were verified before removing only
+that container and its anonymous volumes. Cleanup evidence is retained; selected
+local state and sibling project directories are unchanged. Directory cleanup is
+explicitly deferred until pilot hardening is finished, per the user's instruction.

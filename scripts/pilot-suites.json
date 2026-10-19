@@ -1608,6 +1608,15 @@
         "rejects expired future or extended authorization windows",
         "cannot promote legacy Preview authority into Production"
       ]
+    },
+    {
+      "file": "tests/unit/pilot/suite-deadlines.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "allows the declared restore setup and cases inside a finite whole-file bound",
+        "keeps every registered suite within a finite controller deadline",
+        "rejects unregistered suite names before process execution"
+      ]
     }
   ],
   "ui": {

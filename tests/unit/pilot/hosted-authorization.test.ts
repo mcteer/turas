@@ -1,6 +1,7 @@
 import {it,expect} from 'vitest';
 import {randomUUID} from 'node:crypto';
 import {verifyHostedInfrastructureAuthorization} from '../../../scripts/pilot-hosted-authorization';
+import {createHash} from 'node:crypto';
 import {recoveryDigest} from '../../../lib/contracts/pilot-recovery';
 import type {PilotHostedScope} from '../../../lib/contracts/pilot-hosted';
 const now=Date.parse('2026-10-19T00:00:00Z');
@@ -9,11 +10,11 @@ function authority(){return {contract:'pilot-infrastructure-user-authorization-v
 function legacy(){const {sourceCommit,sourceDigest,catalogDigest,userInstructionReference,maximumDeployments,...rest}=authority();return {...rest,contract:'pilot-preview-infrastructure-user-authorization-v1',target:'preview',productionChangesAuthorized:false,maximumPreviewDeployments:2};}
 it('preserves the original Preview authorization bytes and bounds',()=>{
  const raw=legacy(),result=verifyHostedInfrastructureAuthorization(raw,{...scope,target:'preview'},now);
- expect(result.authorizationDigest).toBe(recoveryDigest(raw));expect(result.maximumDeployments).toBe(2);expect(result.maximumSandboxJobs).toBe(32);
+ expect(result.authorizationDigest).toBe(createHash('sha256').update(JSON.stringify(raw)).digest('hex'));expect(result.authorizationDigest).not.toBe(recoveryDigest(raw));expect(result.maximumDeployments).toBe(2);expect(result.maximumSandboxJobs).toBe(32);
 });
 it('binds separate Production authority to the exact source and target',()=>{
  const raw=authority(),result=verifyHostedInfrastructureAuthorization(raw,scope,now);
- expect(result.authorizationDigest).toBe(recoveryDigest(raw));expect(result.target).toBe('production');
+ expect(result.authorizationDigest).toBe(createHash('sha256').update(JSON.stringify(raw)).digest('hex'));expect(result.target).toBe('production');
 });
 it('rejects changed project environment target or source identities',()=>{
  for(const patch of [{projectId:'prj_other'},{teamId:'team_other'},{environmentMarker:'other'},{target:'preview' as const},{sourceCommit:'f'.repeat(40)},{sourceDigest:'f'.repeat(64)},{catalogDigest:'f'.repeat(64)}])expect(()=>verifyHostedInfrastructureAuthorization(authority(),{...scope,...patch},now)).toThrow();

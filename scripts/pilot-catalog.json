@@ -597,7 +597,10 @@
         "unit.managed-deployment-inventory.004",
         "unit.managed-deployment-inventory.005",
         "unit.managed-deployment-inventory.006",
-        "unit.managed-deployment-inventory.007"
+        "unit.managed-deployment-inventory.007",
+        "unit.suite-deadlines.001",
+        "unit.suite-deadlines.002",
+        "unit.suite-deadlines.003"
       ]
     },
     {
