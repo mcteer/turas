@@ -3921,3 +3921,90 @@ execution is retained and cannot count as795-case acceptance. The complete16-cas
 forward rehearsal passes4/4 against the corrected SQL. Private reports:
 `root-provider-replay-audit-private.json` and
 `root-replay-trigger-077-forward-private.json`.
+
+
+### Fresh private images and store permissions — 2026-10-19
+
+The previously published three private image/platform/configuration digests were
+authenticated and reverified. An unauthenticated initial registry read returned403;
+this did not establish missing images. Temporary registry credentials were then
+removed. Fresh prepared Linux/amd64 images were published with scanner signatures
+28156, and all three prepared OCI index/platform/configuration digests and actual
+private project bindings were verified. `infra/pilot/images.json` now records those
+actual immutable references and signature metadata.
+
+Actual synthetic Sandbox scan, parse, PDF/PPTX render and Office edit/save/reopen
+checks pass4/4 sequentially under the governed fixed programs, denied network, no
+ports/persistence and original five-minute bounds. Office text/table checks pass;
+chart checking is not applicable to this controlled document. The copied parser
+preflight initially expected old signature28149 and failed before dispatch; its
+zero-provider failure remains retained, and the corrected first provider attempt
+requires28156. All four exact owned Sandbox names subsequently return actual404
+with resume disabled; no creation/shutdown uncertainty is recorded.
+
+Existing original registry/smoke holds remain$2. The new registry ceiling is$1
+and four execution ceilings total$0.80; all$3.80 remain conservatively held within
+the$5 partition. These are upper bounds, not invoice costs. No model call or
+automatic paid retry occurred. Evidence: authoring-worktree
+`local-artifacts/016/image-refresh-28156-98478fd/{publication,registry-verification,smoke-summary,provider-retirement-verification}.json`.
+
+The existing work-project Blob store is private and connected to Turas. Actual
+Preview project OIDC authenticated immutable writes, fresh-adapter cold reads and
+verified exact-key deletion in all six active namespaces. Only controlled probe
+bytes were used; no original was altered. A$0.01 ceiling remains held. Evidence:
+`local-artifacts/016/blob-permission-98478fd/receipt.json`. The first probe refused
+its preflight because Preview has no configured environment marker; no provider
+dispatch occurred. The corrected isolated permission probe uses a distinct owned
+probe marker, explicit Preview OIDC and the existing store. This proves store
+permission only: application configuration, domain health, storage cutover, hosted
+schemas and deployment remain unchanged and unverified for016.
+
+The807-case run at98478fd remains separate source-bound local evidence. This new
+image-manifest change requires its own final-source acceptance; no hosted pilot
+readiness follows from these infrastructure checks.
+
+### Hosted learning original-budget admission and accounting continuation
+
+The original append-only quality journal now supports an exact hosted arm binding.
+An owner admission can only consume an existing unresolved reservation from that
+journal; immutable database tickets bind the original budget, authorization and
+cap to the actual evaluation, case, native request/session, price, source and
+deployment. Runtime consumption and the domain provider claim commit together.
+Runtime cannot mint or alter owner admissions. Missing or removed configuration
+continues to deny an already protected workspace; unrelated ordinary learning
+remains outside the pilot guard. Early Gateway generation identities remain
+separate from upstream response IDs, including SDK errors and streaming finish.
+
+Read-only reconciliation uses the fixed Gateway lookup and requires agreement
+with actual domain accounting before settling the original journal. Expired
+spending authority does not prevent historical accounting or authorize another
+call. Known overruns retain their observed exposure and cap; mismatched receipts
+retain their original hold. Separate actual panel author/mcteer reviewer sessions
+now author and review the pre-activation baseline through ordinary APIs.
+
+Focused admission regression v3 passes6/6 and original quality-budget/catalog
+checks pass24/24. The owned learning development runner passes6/6 native draft
+checks, source849c66a21530f0c1e14830d4211c3c2c809e9b6d65a23d751feca7f2bf8ffc47.
+A direct invocation of those six database tests without their owning runner
+failed its expected ownership precondition; the failed report is retained.
+The complete807-case run at98478fd stops at the historical denial fixture: its
+synthetic downgrade incorrectly carried the enlarged current inventory into an
+older bounded format. The fixture now explicitly models schema077 and the older
+required table subset without widening historical verification. Its focused
+rerun passes4/4. Current inventory is813cases/147suites and still requires fresh
+complete source-bound local/CI acceptance. Later accounting and forward-restore
+checks are recorded separately after completion.
+
+No real quality-journal event, hosted learning model call, hosted migration,
+Production release or selected local-state change occurred in this work. Hosted
+J014 orchestration, its actual paired captures/review and the other mandatory
+pilot gates remain incomplete.
+
+Final focused accounting report `hosted-learning-accounting-v3-private.json`
+passes6/6, including expired spending authority, fractional micro-dollar cost,
+known provider overrun with mismatched domain settlement, rollback and replay.
+`learning-bridge-077-forward-private.json` passes4/4 released077 cold restores
+through079 with runtime perimeters. Root/pilot typechecks, authored documentation
+and tracked-file hygiene pass. The delegated independent reviewer found no
+remaining concrete bridge blocker after the fixes; this is implementation review,
+not hosted execution or release acceptance.

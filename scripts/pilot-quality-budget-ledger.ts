@@ -3,6 +3,7 @@ import {lstat,mkdir,open,readdir,realpath,rmdir} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
+import {hostedLearningDispatchSchema} from '../lib/contracts/pilot-hosted-learning';
 import {createEvidenceDirectory,readEvidence,writeEvidence,evidenceDigest} from './pilot-evidence';
 
 const digest=z.string().regex(/^[a-f0-9]{64}$/),micro=z.number().int().nonnegative().safe();
@@ -19,7 +20,7 @@ export const qualityContinuationSchema=z.strictObject({
 const event=z.discriminatedUnion('kind',[
  z.strictObject({kind:z.literal('continuation'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,approval:qualityContinuationSchema,observedAt:z.iso.datetime({offset:true})}),
  z.strictObject({kind:z.literal('attempt'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,sourceCommit:z.string().regex(/^[a-f0-9]{40}$/),sourceDigest:digest,catalogDigest:digest,observedAt:z.iso.datetime({offset:true})}),
- z.strictObject({kind:z.literal('dispatch'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,modelId:z.enum(['spacexai/grok-4.7','openai/text-embedding-3-small']),ceilingMicroUsd:micro.positive(),pricingDigest:digest,observedAt:z.iso.datetime({offset:true})}),
+ z.strictObject({kind:z.literal('dispatch'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,modelId:z.enum(['spacexai/grok-4.7','openai/text-embedding-3-small']),ceilingMicroUsd:micro.positive(),pricingDigest:digest,hostedLearning:hostedLearningDispatchSchema.optional(),observedAt:z.iso.datetime({offset:true})}),
  z.strictObject({kind:z.literal('settlement'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,chargedMicroUsd:micro,inputTokens:micro,outputTokens:micro,generationId:z.string().min(1).max(256),observedAt:z.iso.datetime({offset:true})}),
  z.strictObject({kind:z.literal('unknown'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,reason:z.enum(['provider_error','incomplete_stream','invalid_accounting','overrun','aborted']),observedChargeMicroUsd:micro.optional(),observedAt:z.iso.datetime({offset:true})}),
  z.strictObject({kind:z.literal('credit-dispatch'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,ceilingCredits:z.literal(1),accountProofDigest:digest,observedAt:z.iso.datetime({offset:true})}),
@@ -94,15 +95,29 @@ export class QualityBudgetLedger{
   * allowance. Prior charges and unknown holds never disappear or reset. */
  async beginAttempt(source:{sourceCommit:string;sourceDigest:string;catalogDigest:string}){return this.lock(async()=>{const s=await this.read();if(Date.parse(s.authority.expiresAt)<=Date.now()||[...s.dispatches.keys()].some(id=>!s.settled.has(id))||[...s.creditDispatches].some(id=>!s.creditSettled.has(id)))throw Error('Unresolved provider prevents a fresh attempt');if(s.continuation&&(['sourceCommit','sourceDigest','catalogDigest'] as const).some(key=>source[key]!==s.continuation![key]))throw Error('Continuation source differs');const id=randomUUID();await this.append({kind:'attempt',id,...source,ordinal:s.ordinal,previousDigest:s.previousDigest,observedAt:new Date().toISOString()});return id;});}
  async currentSource(){return this.lock(async()=>(await this.read()).currentSource);}
- async dispatch(raw:{modelId:'spacexai/grok-4.7'|'openai/text-embedding-3-small';ceilingMicroUsd:number;pricingDigest:string},attemptId?:string){
+ async dispatch(raw:{modelId:'spacexai/grok-4.7'|'openai/text-embedding-3-small';ceilingMicroUsd:number;pricingDigest:string;hostedLearning?:z.infer<typeof hostedLearningDispatchSchema>},attemptId?:string){
   return this.lock(async()=>{const state=await this.read();
    if(state.currentSource.attemptId!==attemptId||state.continuation&&!attemptId)throw Error('Prior quality attempt cannot dispatch');
    if(Date.parse(state.authority.expiresAt)<=Date.now()||state.unknown.size||[...state.dispatches.keys()].some(id=>!state.settled.has(id))||[...state.creditDispatches].some(id=>!state.creditSettled.has(id)))throw Error('Unknown or active evaluation charge holds admission');
+   if(raw.hostedLearning&&(raw.modelId!=='spacexai/grok-4.7'||raw.hostedLearning.scope.sourceCommit!==state.currentSource.sourceCommit||raw.hostedLearning.scope.sourceDigest!==state.currentSource.sourceDigest||raw.hostedLearning.scope.catalogDigest!==state.currentSource.catalogDigest||raw.hostedLearning.priceDigest!==raw.pricingDigest))throw Error('Hosted dispatch differs from original source-pinned authority');
    const id=randomUUID(),value=event.parse({kind:'dispatch',id,...raw,ordinal:state.ordinal,previousDigest:state.previousDigest,observedAt:new Date().toISOString()});
    if(value.kind!=='dispatch'||state.chargedMicroUsd+value.ceilingMicroUsd>state.authority.capMicroUsd)throw Error('Evaluation budget prevents dispatch');
    await this.append(value);return id;
   });
  }
+ /** Read an actual unresolved, pre-reserved hosted arm from this original journal.
+  * No caller-provided receipt can replace its append-only dispatch event. */
+ async hostedDispatch(id:string){return this.readHostedDispatch(id,true);}
+ /** Historical accounting never grants fresh provider admission. */
+ async hostedAccountingDispatch(id:string){return this.readHostedDispatch(id,false);}
+ private async readHostedDispatch(id:string,requireFresh:boolean){return this.lock(async()=>{
+  const state=await this.read(),dispatch=state.dispatches.get(z.uuid().parse(id));
+  if(!dispatch?.hostedLearning||state.settled.has(id)||state.unknown.has(id)||(requireFresh&&Date.parse(state.authority.expiresAt)<=Date.now()))throw Error('Original unresolved hosted dispatch required');
+  return {dispatch,dispatchDigest:evidenceDigest(JSON.stringify(dispatch)),journalHeadDigest:state.previousDigest,
+   originalBudgetId:state.originalAuthority.id,originalAuthorizationDigest:state.originalAuthority.authorizationDigest,
+   capMicroUsd:state.originalAuthority.capMicroUsd,authorityDigest:state.authority.authorizationDigest,expiresAt:state.authority.expiresAt,
+   source:state.currentSource};
+ });}
  async settle(id:string,raw:{chargedMicroUsd:number;inputTokens:number;outputTokens:number;generationId:string}){
   return this.lock(async()=>{const state=await this.read(),d=state.dispatches.get(id);
    if(!d||state.settled.has(id)||state.unknown.has(id))throw Error('Evaluation dispatch cannot settle');

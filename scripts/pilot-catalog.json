@@ -842,7 +842,13 @@
         "integration.hosted-root-reconcile.007",
         "integration.hosted-root-reconcile.008",
         "integration.hosted-root-reconcile.009",
-        "integration.hosted-root-reconcile.010"
+        "integration.hosted-root-reconcile.010",
+        "integration.hosted-learning-admission.001",
+        "integration.hosted-learning-admission.002",
+        "integration.hosted-learning-admission.003",
+        "integration.hosted-learning-admission.004",
+        "integration.hosted-learning-admission.005",
+        "integration.hosted-learning-admission.006"
       ]
     },
     {

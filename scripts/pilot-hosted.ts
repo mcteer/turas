@@ -153,7 +153,11 @@ export async function pilotHosted(args=process.argv.slice(2)){
      paidDispatchPossible=true;
      const owner=(await readDb.query("SELECT m.id FROM memberships m JOIN principals p ON p.id=m.principal_id WHERE m.workspace_id=$1 AND m.active AND m.kind='internal' AND m.role='admin' AND p.active AND p.login_name='mcteer'",[scope.workspaceId])).rows;
      if(owner.length!==1)throw Error('Exact active linked reviewer required');
-     linkedJourneys.push(await runHostedLinkedJourney({scope,db:readDb,headers:context.headers,customerId:context.partnerCustomerIds[0],ownerMembershipId:owner[0].id,configuration,authorizationDigest,authorizationExpiresAt:authorization.expiresAt,authorization:rawAuthorization,signal}));
+     let linkedJourney:Awaited<ReturnType<typeof runHostedLinkedJourney>>|undefined;
+     await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async author=>{
+      if(author.role==='internal-member')linkedJourney=await runHostedLinkedJourney({scope,db:readDb,headers:context.headers,customerId:context.partnerCustomerIds[0],ownerMembershipId:owner[0].id,configuration,authorizationDigest,authorizationExpiresAt:authorization.expiresAt,authorization:rawAuthorization,signal,authorRequest:pilotHostedRequest({scope,headers:author.headers,signal})});
+     },configuration);
+     if(!linkedJourney)throw Error('Separate actual baseline author unavailable');linkedJourneys.push(linkedJourney);
      await writeEvidence(root,'linked-internal-admin.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...linkedJourneys.at(-1)});
      const linked=linkedJourneys.at(-1)!;stage='training_chain';
      trainingJourneys.push(await runHostedTrainingJourney({scope,db:readDb,headers:context.headers,configuration,customerId:linked.customerId,engagementId:linked.plan.engagementId,baselineId:linked.plan.baselineId,acceptedRevisionId:linked.plan.revisionId,sourceRevisionId:linked.source.profileRevisionId,signal}));

@@ -21,7 +21,7 @@ async function pause(signal:AbortSignal){
 }
 /** Runs the ordinary linked chain; acceptance and file processing are never
  * written by owner SQL or replaced with local executor/renderer callbacks. */
-export async function runHostedLinkedJourney(input:{scope:PilotHostedScope;db:Client;headers:Headers;customerId:string;ownerMembershipId:string;configuration:HostedConfiguration;authorizationDigest:string;authorizationExpiresAt:string;authorization?:unknown;signal:AbortSignal;transport?:typeof fetch}){
+export async function runHostedLinkedJourney(input:{scope:PilotHostedScope;db:Client;headers:Headers;customerId:string;ownerMembershipId:string;configuration:HostedConfiguration;authorizationDigest:string;authorizationExpiresAt:string;authorization?:unknown;signal:AbortSignal;transport?:typeof fetch;authorRequest?:ReturnType<typeof pilotHostedRequest>}){
  const {scope,db,signal}=input,transport=input.transport??fetch;
  if(input.configuration.embeddingProviderConfigured)throw Error('Paid embedding traffic has no authority in this infrastructure journey');
  const request=pilotHostedRequest({scope,headers:input.headers,signal,transport});

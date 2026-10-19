@@ -1683,6 +1683,18 @@
         "commits authoritative charge discrepancies before refusing any further dispatch or replay refund",
         "serializes concurrent provider completion and owner reconciliation without losing or repeating refunds"
       ]
+    },
+    {
+      "file": "tests/integration/pilot/hosted-learning-admission.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "consumes one actual original-journal arm with immutable owner admission and separate early provider identities",
+        "refuses missing foreign expired or disabled hosted authority before any domain provider claim",
+        "serializes concurrent native release and rejects runtime minting and repeated consumption",
+        "rejects claimed journal reservations and replacement original budgets without changing either cap",
+        "retains both original holds and the genuine Gateway identity after an actual wrapped SDK failure",
+        "rolls back hosted consumption with a failed domain claim and never releases its original reservation"
+      ]
     }
   ],
   "ui": {

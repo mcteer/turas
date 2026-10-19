@@ -1102,3 +1102,25 @@ commit together; closed/recovered budgets keep their full hold. An authoritative
 conflicting charge is recorded, preserves the first charge, blocks dispatch and
 returns unsuccessful reconciliation. Neither path changes caps or expiry. Keep
 the original private receipt and journal even when an exercise fails.
+
+### Hosted learning original journal binding
+
+`TURAS_PILOT_HOSTED_LEARNING_LEDGER_JSON` defaults empty. Its versioned binding
+uses the original quality journal ID, authorization digest and unchanged cap,
+plus the exact synthetic workspace, mcteer principal, environment, project,
+source/catalog digests and finite expiry. It does not authorize model work by
+itself. Before each paired arm, reserve its full published-price ceiling in the
+original journal and use the owner admission helper to bind the actual native
+request/session and evaluation case. The runtime consumes that immutable ticket
+in the same transaction as its existing single provider-dispatch claim. Do not
+replace the journal, enlarge its cap or remove configuration to bypass a hold.
+
+The authenticated operations diagnostic exposes the deployed learning binding
+for exact readback. Platform, serving source and owner/runtime database target
+checks must precede owner admission and model traffic. Gateway and upstream
+response identities are distinct. Reconciliation performs only a fixed Gateway
+generation lookup; it requires matching actual domain cost and usage before
+settling the original journal. Historical accounting can proceed after spending
+expiry without renewing authority. Unknown/mismatched charges and known overruns
+retain their exposure; no accounting action retries a model or repairs output.
+The hosted J014 batch and independent actual capture review remain required.

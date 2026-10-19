@@ -32,7 +32,7 @@
     "engine": "ClamAV 1.5.4",
     "policy": "004-scan-v1",
     "signatureMaxAgeDays": 7,
-    "signatureVersion": "28149",
+    "signatureVersion": "28156",
     "signatures": [
       {
         "name": "bytecode.cvd",
@@ -41,8 +41,8 @@
       },
       {
         "name": "daily.cvd",
-        "sizeBytes": 23442295,
-        "digest": "d4117485e03b333d4b40d77b9280750a14555ae84978f43de676cf5ff0810fd8"
+        "sizeBytes": 23442604,
+        "digest": "f9cb69a8e39dd86a25b828c1177cbd2935ee03250b4a79324c46bc8a44a2a2d5"
       },
       {
         "name": "main.cvd",
@@ -77,27 +77,27 @@
   "preparedImages": [
     {
       "kind": "scanner",
-      "oci": "vcr.vercel.com/turas-6e414af3/turas/turas-016-scanner@sha256:6620aa9b998376e8c26e8a625ef1628846482ad875bef571e02c00285e5523a7",
-      "platformOci": "vcr.vercel.com/turas-6e414af3/turas/turas-016-scanner@sha256:1f08ba3e4045132135be3cf9b8c932d997647ba37d76a52235044b41d473bb9f",
-      "configDigest": "sha256:7e57299fa7ca2256eabcba6c76d5420d9b19f0a1f45674ec46e80f9c889824aa",
+      "oci": "vcr.vercel.com/turas-6e414af3/turas/turas-016-scanner@sha256:129960af30d598cb9102d55a8ac49157e0e0e4051e57f0feadf06a0dac6ef892",
+      "platformOci": "vcr.vercel.com/turas-6e414af3/turas/turas-016-scanner@sha256:7a81518f15d93706ae8dd27501f480f1b7ce1ee37aa90d281470ce34e032db6f",
+      "configDigest": "sha256:4595adfd792c50763adb95419a4491fbbccf73a58192532fb713e5c8dba3987a",
       "recipeDigest": "cc8a92023de92e2ec0135b38af18c42d786e0ea72c0f7dfb07c56e0534c8ec66",
       "baseRecipeDigest": "37ccf043778958437b355af30577e61b188bfd49048ab1cfff00731a2d93822a"
     },
     {
       "kind": "parser",
-      "oci": "vcr.vercel.com/turas-6e414af3/turas/turas-016-parser@sha256:ba763d6a914d5472e0c4c9901d1fded78098fbc86ea64b28b5d771c42a44e3bb",
-      "platformOci": "vcr.vercel.com/turas-6e414af3/turas/turas-016-parser@sha256:76a1d098fcd3ebe090fe0b7a350c5ace84800a7d039840c46079b702e9a56802",
-      "configDigest": "sha256:c816f651d6aaa8a86546eb1e60a8de971c4530d1063acb0b0b82a7eb07829929",
+      "oci": "vcr.vercel.com/turas-6e414af3/turas/turas-016-parser@sha256:29f65d8eadf207e0ac765d75de852fa4ac13421f942693ad169553297c9df22d",
+      "platformOci": "vcr.vercel.com/turas-6e414af3/turas/turas-016-parser@sha256:d040a5b9efbf3591c060dee1d031ae05a297b79e6de801f0054cef26cf650f4e",
+      "configDigest": "sha256:afee8e42be76be81d3f5a04ffd11e9b9488ee407fb4efd722a7c9f3f554a443f",
       "recipeDigest": "a24cb887fcea670419e22e819472b8aaca9df20348d33d93e587bcd27605d26f",
       "baseRecipeDigest": "7b84a446f89c465461ee340bea245a222a73047a607bf6ea6180e2daf94b6728"
     },
     {
       "kind": "renderer",
-      "oci": "vcr.vercel.com/turas-6e414af3/turas/turas-016-renderer@sha256:a00038b0252fca8e357ec6f0ff4657d3c34c99733acbac62156400d0f2f7dc11",
-      "platformOci": "vcr.vercel.com/turas-6e414af3/turas/turas-016-renderer@sha256:b4dd8a29a7e7ae61b3e7629ed9392a77152fa161e0add7cc6d686345694052e9",
-      "configDigest": "sha256:963ea53a007570bec35ac77afecc0c7509c71f6888c10cfc5f604712af835cbd",
+      "oci": "vcr.vercel.com/turas-6e414af3/turas/turas-016-renderer@sha256:76de343da4e19ae4f7be769d02503b5b98e569ed37e7908e5305fcf9a211aa13",
+      "platformOci": "vcr.vercel.com/turas-6e414af3/turas/turas-016-renderer@sha256:4d968e4fc3144d9ee08b6460ce1735543ed894913603e947ac338358eeb031fd",
+      "configDigest": "sha256:6b68f229d8cb57bcba68303e67fa229e8c4a7e4124fad0e7f800890b286f8a81",
       "recipeDigest": "b84d14a196b770e373e4d07987dcb2a222948e81a53c1e88c6e3409fa86dfeb0",
-      "baseRecipeDigest": "652f81ce111e6a76917a1de9774aa6a5e30d6b252b7060842bbb26d7a1266b30"
+      "baseRecipeDigest": "2cedc79866f4e776a07770a0c3f3b93e40f9b56c87bb3a21174b639c8b319b5d"
     }
   ]
 }

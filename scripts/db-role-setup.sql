@@ -333,6 +333,9 @@ DO $$ BEGIN
   GRANT SELECT ON operations_hosted_root_admissions TO turas_runtime;
   GRANT SELECT,INSERT ON operations_hosted_root_provider_identities TO turas_runtime;
   GRANT SELECT ON operations_hosted_root_generation_receipts TO turas_runtime;
+  REVOKE ALL ON operations_hosted_learning_admissions,operations_hosted_learning_consumptions,operations_hosted_learning_provider_identities FROM turas_runtime;
+  GRANT SELECT ON operations_hosted_learning_admissions TO turas_runtime;
+  GRANT SELECT,INSERT ON operations_hosted_learning_consumptions,operations_hosted_learning_provider_identities TO turas_runtime;
   REVOKE ALL ON operations_recovery_model_holds,operations_recovery_model_observations FROM turas_runtime;
   GRANT SELECT ON operations_recovery_model_holds,operations_recovery_model_observations TO turas_runtime;
   GRANT EXECUTE ON FUNCTION turas_ordinary_output_used(uuid) TO turas_runtime;

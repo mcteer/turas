@@ -648,4 +648,61 @@ exports.up = (pgm) => pgm.sql(`
  GRANT SELECT ON operations_hosted_root_admissions TO turas_runtime;
  GRANT SELECT,INSERT ON operations_hosted_root_provider_identities TO turas_runtime;
  GRANT SELECT ON operations_hosted_root_generation_receipts TO turas_runtime;
+
+ -- Each hosted learning arm consumes a subset already held in the original
+ -- external quality journal. Runtime cannot mint or reuse owner admissions.
+ CREATE TABLE operations_hosted_learning_admissions(
+  journal_dispatch_id uuid PRIMARY KEY,journal_budget_id uuid NOT NULL,journal_attempt_id uuid NOT NULL,
+  journal_dispatch_digest text NOT NULL CHECK(journal_dispatch_digest ~ '^[a-f0-9]{64}$'),
+  journal_head_digest text NOT NULL CHECK(journal_head_digest ~ '^[a-f0-9]{64}$'),
+  original_authorization_digest text NOT NULL CHECK(original_authorization_digest ~ '^[a-f0-9]{64}$'),
+  authority_digest text NOT NULL CHECK(authority_digest ~ '^[a-f0-9]{64}$'),
+  cap_micro_usd bigint NOT NULL CHECK(cap_micro_usd BETWEEN 1 AND 25000000),
+  environment_id text NOT NULL,workspace_id uuid NOT NULL REFERENCES workspaces(id),
+  owner_principal_id uuid NOT NULL REFERENCES principals(id),actor_membership_id uuid NOT NULL REFERENCES memberships(id),
+  learning_attempt_id uuid UNIQUE NOT NULL REFERENCES learning_attempts(id),evaluation_id uuid NOT NULL REFERENCES learning_evaluations(id),
+  case_id text NOT NULL CHECK(case_id ~ '^E0[1-8]$'),purpose text NOT NULL CHECK(purpose IN('evaluation_baseline','evaluation_candidate')),
+  native_session_id text NOT NULL CHECK(length(native_session_id) BETWEEN 1 AND 256),native_request_id uuid NOT NULL,
+  source_commit text NOT NULL CHECK(source_commit ~ '^[a-f0-9]{40}$'),
+  source_digest text NOT NULL CHECK(source_digest ~ '^[a-f0-9]{64}$'),catalog_digest text NOT NULL CHECK(catalog_digest ~ '^[a-f0-9]{64}$'),
+  deployment_id text NOT NULL CHECK(deployment_id ~ '^dpl_[A-Za-z0-9]+$'),project_id text NOT NULL CHECK(project_id ~ '^prj_[A-Za-z0-9]+$'),
+  target text NOT NULL CHECK(target IN('preview','production')),price_digest text NOT NULL CHECK(price_digest ~ '^[a-f0-9]{64}$'),
+  ceiling_micro_usd bigint NOT NULL CHECK(ceiling_micro_usd>0 AND ceiling_micro_usd<=cap_micro_usd),
+  expires_at timestamptz NOT NULL,recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),CHECK(expires_at>recorded_at));
+ CREATE FUNCTION turas_hosted_learning_original_journal() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
+ BEGIN
+  PERFORM pg_advisory_xact_lock(hashtextextended(NEW.environment_id,16023));
+  IF EXISTS(SELECT 1 FROM public.operations_hosted_learning_admissions a WHERE a.environment_id=NEW.environment_id
+   AND (a.journal_budget_id<>NEW.journal_budget_id OR a.original_authorization_digest<>NEW.original_authorization_digest OR a.cap_micro_usd<>NEW.cap_micro_usd)) THEN
+   RAISE EXCEPTION 'Original hosted learning journal cannot be replaced' USING ERRCODE='23514'; END IF;
+  RETURN NEW;
+ END $$;
+ REVOKE ALL ON FUNCTION turas_hosted_learning_original_journal() FROM PUBLIC;
+ CREATE TRIGGER hosted_learning_original_journal BEFORE INSERT ON operations_hosted_learning_admissions
+  FOR EACH ROW EXECUTE FUNCTION turas_hosted_learning_original_journal();
+ CREATE TRIGGER hosted_learning_admission_immutable BEFORE UPDATE OR DELETE ON operations_hosted_learning_admissions
+  FOR EACH ROW EXECUTE FUNCTION turas_pilot_immutable_recovery_receipt();
+ CREATE TRIGGER recovered_request_replay BEFORE INSERT OR UPDATE ON operations_hosted_learning_admissions
+  FOR EACH ROW EXECUTE FUNCTION turas_recovery_replay_guard();
+ CREATE TABLE operations_hosted_learning_consumptions(
+  journal_dispatch_id uuid PRIMARY KEY REFERENCES operations_hosted_learning_admissions(journal_dispatch_id),
+  reservation_id uuid UNIQUE NOT NULL REFERENCES learning_budget_reservations(id),
+  response_attempt_id uuid NOT NULL REFERENCES response_attempts(id),native_turn_id text NOT NULL CHECK(length(native_turn_id) BETWEEN 1 AND 256),
+  recorded_at timestamptz NOT NULL DEFAULT clock_timestamp());
+ CREATE TRIGGER hosted_learning_consumption_immutable BEFORE UPDATE OR DELETE ON operations_hosted_learning_consumptions
+  FOR EACH ROW EXECUTE FUNCTION turas_pilot_immutable_recovery_receipt();
+ CREATE TRIGGER recovered_request_replay BEFORE INSERT OR UPDATE ON operations_hosted_learning_consumptions
+  FOR EACH ROW EXECUTE FUNCTION turas_recovery_replay_guard();
+ CREATE TABLE operations_hosted_learning_provider_identities(
+  reservation_id uuid NOT NULL REFERENCES operations_hosted_learning_consumptions(reservation_id),
+  identity_kind text NOT NULL CHECK(identity_kind IN('provider_response','gateway_generation')),
+  provider_key text NOT NULL CHECK(length(provider_key) BETWEEN 1 AND 256),recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  PRIMARY KEY(reservation_id,identity_kind),UNIQUE(identity_kind,provider_key));
+ CREATE TRIGGER hosted_learning_provider_identity_immutable BEFORE UPDATE OR DELETE ON operations_hosted_learning_provider_identities
+  FOR EACH ROW EXECUTE FUNCTION turas_pilot_immutable_recovery_receipt();
+ CREATE TRIGGER recovered_request_replay BEFORE INSERT OR UPDATE ON operations_hosted_learning_provider_identities
+  FOR EACH ROW EXECUTE FUNCTION turas_recovery_replay_guard();
+ GRANT SELECT ON operations_hosted_learning_admissions TO turas_runtime;
+ GRANT SELECT,INSERT ON operations_hosted_learning_consumptions,operations_hosted_learning_provider_identities TO turas_runtime;
+
 `);

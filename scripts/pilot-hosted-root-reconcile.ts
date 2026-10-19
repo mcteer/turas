@@ -24,7 +24,7 @@ const digest=(value:unknown)=>createHash('sha256').update(JSON.stringify(value))
 
 /** Fixed read-only provider transport. No model, retry, alternate origin or
  * caller-supplied capture can manufacture accounting provenance. */
-async function lookup(id:string,signal:AbortSignal){
+export async function lookupPilotGatewayGeneration(id:string,signal:AbortSignal){
  const key=process.env.AI_GATEWAY_API_KEY;if(!key)throw Error('Explicit Gateway lookup credential required');
  const gateway=createGateway({apiKey:key,baseURL:'https://ai-gateway.vercel.sh/v1/ai',fetch:async(input,init)=>{
   const request=new Request(input,init),url=new URL(request.url);
@@ -64,7 +64,7 @@ export async function reconcileHostedRootGeneration(input:{db:Client;scope:Pilot
  const {db,signal}=input,scope=pilotHostedScopeSchema.parse(input.scope),id=z.uuid().parse(input.operationId);
  signal.throwIfAborted();const original=await readOperation(db,scope,id);
  const existing=(await db.query('SELECT * FROM operations_hosted_root_generation_receipts WHERE operation_id=$1',[id])).rows[0];
- const generation=existing?null:await lookup(original.row.provider_key,signal);
+ const generation=existing?null:await lookupPilotGatewayGeneration(original.row.provider_key,signal);
  if(generation&&(generation.id!==original.row.provider_key||generation.streamed!==(original.dispatch.providerPath==='stream')
   ||generation.usage!==generation.totalCost||Date.parse(generation.createdAt)<original.row.created_at.getTime()-30000
   ||Date.parse(generation.createdAt)>original.row.created_at.getTime()+300000||Date.parse(generation.createdAt)>Date.now()+30000))throw Error('Exact terminal Gateway accounting unavailable');
