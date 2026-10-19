@@ -1,3 +1,4 @@
+import {workRuntimeRetirementBinding} from '../../../scripts/pilot-work-runtime-retirement';
 import {it,expect} from 'vitest';
 import {databaseSafetySourceSchema,databaseSafetyCaptureSourceSchema} from '../../../scripts/pilot-database-safety-copy';
 import {legacySafetyContextSchema,targetedSafetyContextSchema} from '../../../scripts/pilot-legacy-safety-rehearsal';
@@ -10,6 +11,10 @@ it('refuses unsafe external dump transport before opening a connection or proces
 it('admits explicit Preview capture without broadening Production or mutation source scopes',()=>{
  const preview={...fixture(),target:'preview',schemaVersion:38};expect(databaseSafetyCaptureSourceSchema.parse(preview)).toMatchObject({target:'preview',schemaVersion:38});
  expect(()=>databaseSafetySourceSchema.parse(preview)).toThrow();expect(()=>databaseSafetyCaptureSourceSchema.parse({...preview,target:'production'})).toThrow();
+ const input={contract:'pilot-work-runtime-retirement-v1',projectId:'prj_synthetic',teamId:'team_synthetic',environmentId:'production-synthetic',recoveryId:'00000000-0000-4000-8000-000000000001',controlRevision:1,password:'s'.repeat(43)};
+ expect(workRuntimeRetirementBinding({...fixture(),schemaVersion:79},input).scope.target).toBe('production');
+ expect(workRuntimeRetirementBinding({...preview,schemaVersion:79},{...input,target:'preview'}).target.target).toBe('preview');
+ for(const [source,scope] of [[preview,{...input,target:'preview'}],[{...preview,schemaVersion:77},{...input,target:'preview'}],[{...preview,schemaVersion:79},input],[{...fixture(),schemaVersion:79},{...input,target:'preview'}],[{...preview,schemaVersion:79},{...input,target:'preview',environmentId:'another-synthetic'}]])expect(()=>workRuntimeRetirementBinding(source,scope)).toThrow();
  expect(()=>databaseSafetyCaptureSourceSchema.parse({...preview,schemaVersion:56})).toThrow();expect(()=>databaseSafetyCaptureSourceSchema.parse({...preview,databaseUrl:'postgresql://synthetic@localhost/neondb?sslmode=verify-full'})).toThrow();
 });
 it('requires target-bound v3 context while retaining exact v2 Production context support',()=>{

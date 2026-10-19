@@ -3781,3 +3781,21 @@ that the previous CI timeout's complete cause is known.
 
 The registered inventory is now785cases across143suites. The running782-case
 execution remains bound to30daadb and will not be relabeled as current acceptance.
+
+
+### Explicit Preview runtime-retirement source binding
+
+The protected work-runtime command previously accepted only the Production source
+contract, preventing its use on the independently inspected Preview target. It now
+accepts explicit matching Preview or Production sources only at schema079. The
+protected input defaults to Production for backward compatibility; Preview requires
+an explicit matching target. Project/environment/target/schema validation precedes
+platform or database work. Receipts retain the source target. Existing exact owner,
+locked recovery, role/password binding, once-only retirement and replacement
+connection checks remain unchanged.
+
+The existing six source-contract cases pass with added Preview079, legacy
+Production default, cross-target, wrong-marker and older-schema checks. Pilot types
+pass after correcting the private review checkout's dependency links; the initial
+missing-package type failure is retained as setup evidence. Independent review found
+no blocker. This is command support, not actual hosted role retirement or unlock.

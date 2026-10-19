@@ -308,6 +308,8 @@ For a disposable owned schema-079 target already locked at an exact recovery UUI
 
 The command disables LOGIN on the legacy permission role, terminates its backends, and creates a separately bound replacement login inheriting the existing restricted grants. Exact repeats preserve the same credential; conflicts never rotate or adopt an existing role. It does not edit hosted environments, unlock recovery, or authorize a Production cutover. The actual owned command and five-case catalog passed. Hosted credential retirement and old-deployment HTTP denial must still be proven before pilot memberships are enabled.
 
+For an explicitly selected work target, use `npm run pilot:recovery:authority -- --retire-work-runtime --source <private-source.json> --input <private-input.json> --output <new-private-directory>`. Both source and protected input must bind the same project, environment and target. The source must be schema079 and the actual owner control must already be locked at the specified recovery UUID/revision. Legacy inputs without `target` remain Production-only; Preview requires explicit `target: "preview"` in both documents. Platform binding is checked before database retirement. The separate replacement password stays in protected input and database protocol. This command neither updates hosted settings nor opens service or certifies managed Workflow closure.
+
 ### Read-only managed Workflow identity inspection
 
 ```sh
