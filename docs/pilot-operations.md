@@ -1234,3 +1234,17 @@ Readable historical records keep their historical review warning; they do not
 become current accepted facts. This checks exact record coverage, not list-page
 pagination. The route shares committed finite allowances and final authentication
 with other maintenance reads. It creates no execution summary receipt.
+
+The finite work HTTP diagnostic is `npm run pilot:recovery:check --
+--measure-work-http --configuration /private/configuration.json --output
+/private/new-evidence-directory`. The configuration must be an owned0600 file in
+an owned0700 directory with contract
+`pilot-work-maintenance-http-configuration-v1`, the protected079 `sourceFile`, exact
+`hostedScope`, locked `scope`, actual `runtimeConnection`, original `expiresAt`
+(at most five minutes away), one to eight unique `{kind,recordId}` records, the
+configured owner `password` and optional private `protectionBypass`. Keep these
+values out of shell arguments and commits. The command independently verifies
+cloud/deployment/source/database binding, measures actual fixed HTTP routes, and
+retains original private probe preimages for interruption cleanup. It neither
+locks a target nor opens service. `measured.json` is descriptive partial evidence;
+loading it cannot recreate the in-process authority required for final composition.

@@ -1,3 +1,4 @@
+import {pilotWorkMaintenanceHttp} from './pilot-work-maintenance-http';
 import {z} from 'zod';
 import {verifyOwnedMaintenanceRecovery} from '../lib/server/operations/owned-maintenance-verification';
 import {verifyConfiguredCredentials} from '../lib/server/auth/credentials';
@@ -20,6 +21,7 @@ import {pilotLegacySafetyRehearsal} from './pilot-legacy-safety-rehearsal';
 import {restoreIsolatedWorkCapture} from '../lib/server/operations/work-isolated-restore';
 
 export async function pilotRecovery(args=process.argv.slice(2)){
+ if(args[0]==='--measure-work-http')return pilotWorkMaintenanceHttp(args);
  if(args[0]==='--restore-work-isolated')return pilotWorkRecovery(args);
  if(args[0]==='--restore-database-safety-copy')return pilotLegacySafetyRehearsal(args);
  if(args[0]!=='--restore-isolated'||args.length!==15)throw Error('Explicit isolated recovery inputs required');

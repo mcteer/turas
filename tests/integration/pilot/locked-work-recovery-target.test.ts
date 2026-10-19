@@ -1,3 +1,5 @@
+import {measureWorkMaintenanceHttpBatch,requireMeasuredWorkMaintenanceHttpBatch,requireMeasuredWorkMaintenanceHttpCoverage} from '../../../lib/server/operations/work-maintenance-verification';
+import {GET as maintenanceArtifact} from '../../../app/api/operations/recovery-read/[admissionId]/artifact/route';
 import {POST as maintenanceMcp} from '../../../app/api/operations/recovery-read/[admissionId]/mcp/route';
 import {handleMcpRequest} from '../../../lib/server/mcp/transport';
 import {deriveWorkMaintenanceInventoryInTransaction} from '../../../lib/server/operations/owned-maintenance-inventory';
@@ -253,4 +255,45 @@ it('uses the actual SDK and persisted bearer scope for locked recovery with cust
   await owner.query("INSERT INTO mcp_connections(id,environment_id,workspace_id,principal_id,membership_id,name,categories,scope_digest,credential_hash,expires_at) VALUES($1,$2,$3,$4,$5,'Synthetic recovery SDK',ARRAY['profiles'], $6,$7,clock_timestamp()+interval '10 minutes')",[connectionId,process.env.TURAS_ENVIRONMENT_ID,workspaceId,f.actor.principalId,f.actor.membershipId,createHash('sha256').update(connectionId).digest('hex'),issued.hash]);
   for(const id of [customerId,otherCustomerId])await owner.query('INSERT INTO mcp_connection_customers(connection_id,workspace_id,customer_id) VALUES($1,$2,$3)',[connectionId,workspaceId,id]);await owner.query('COMMIT');
  });
+},210000);
+
+it('measures actual selected work HTTP reads without granting full service and rejects forged or changed batch proofs',async()=>{
+ let customerId='',workspaceId='';
+ await fixture(async input=>{
+  const targets:Parameters<typeof requireLockedWorkRecoveryConnection>[1][]=[];
+  await withLockedWorkRecoveryTarget(input,async(db,target)=>{targets.push(target);});const target=targets[0];
+  const originalFetch=globalThis.fetch;let corrupt=false;
+  const transport=vi.spyOn(globalThis,'fetch').mockImplementation(async(url,options)=>{
+   const incoming=new Request(url,options),address=new URL(incoming.url),headers=new Headers(incoming.headers);headers.set('host',address.host);const request=new Request(incoming,{headers});if(address.origin!==target.origin)throw Error('Controlled work HTTP transport left target');
+   return withTargetRuntime(input,target,async()=>{
+    if(address.pathname.startsWith('/api/customers/'))return ordinaryProfile(request,{params:Promise.resolve({customerId:address.pathname.split('/')[3]})});
+    const id=address.pathname.split('/')[4];
+    if(address.pathname.endsWith('/artifact'))return maintenanceArtifact(request,{params:Promise.resolve({admissionId:id})});
+    if(!address.pathname.endsWith('/profile'))throw Error('Controlled work HTTP route unavailable');
+    const response=await maintenanceProfile(request,{params:Promise.resolve({admissionId:id})});
+    if(corrupt&&response.status===200)return Response.json({data:{customer:{id:randomUUID()},contextVersion:0,acceptedFacts:[],workloads:[]}},{headers:{'x-turas-code-version':target.sourceCommit}});return response;
+   });
+  });
+  try{
+   const records=[{kind:'profile' as const,recordId:customerId}],batch=await measureWorkMaintenanceHttpBatch({target:input,records,password:process.env.TURAS_DEMO_PASSWORD!,journalDirectory:dirname(input.sourceFile)});
+   expect(batch).toMatchObject({verifiedRecords:1,maintenanceHttpVerified:true,probeRetirementVerified:true,requiredScopeHealthy:false,restorationReady:false});
+   await withLockedWorkRecoveryTarget(input,async(db,current)=>{
+    await db.query('BEGIN');try{
+     await expect(requireMeasuredWorkMaintenanceHttpBatch(db,current,{...batch},input.signal)).rejects.toThrow('Actual fresh');
+     expect(await requireMeasuredWorkMaintenanceHttpBatch(db,current,batch,input.signal)).toBe(batch);
+     await expect(requireMeasuredWorkMaintenanceHttpCoverage(db,current,[batch,batch],input.signal)).rejects.toThrow('Duplicate');
+     await expect(requireMeasuredWorkMaintenanceHttpCoverage(db,current,[{...batch}],input.signal)).rejects.toThrow('Actual fresh');
+     const inventory=await deriveWorkMaintenanceInventoryInTransaction(db,current,input.signal);
+     if(inventory.records.length===batch.verifiedRecords)expect(await requireMeasuredWorkMaintenanceHttpCoverage(db,current,[batch],input.signal)).toMatchObject({maintenanceRecordCoverageVerified:true,requiredScopeHealthy:false,restorationReady:false});
+     else await expect(requireMeasuredWorkMaintenanceHttpCoverage(db,current,[batch],input.signal)).rejects.toThrow('Complete work maintenance record coverage');
+     await db.query('SAVEPOINT changed_batch');await db.query('UPDATE customer_profile_state SET internal_generation=internal_generation+1 WHERE customer_id=$1',[customerId]);await expect(requireMeasuredWorkMaintenanceHttpBatch(db,current,batch,input.signal)).rejects.toThrow('coverage changed');await db.query('ROLLBACK TO SAVEPOINT changed_batch');await db.query('RELEASE SAVEPOINT changed_batch');await db.query('COMMIT');
+    }catch(error){await db.query('ROLLBACK');throw error;}
+   });
+   corrupt=true;await expect(measureWorkMaintenanceHttpBatch({target:input,records,password:process.env.TURAS_DEMO_PASSWORD!,journalDirectory:dirname(input.sourceFile)})).rejects.toThrow();
+   const retirement=vi.spyOn(await import('../../../lib/server/operations/recovery-http-read-issuer'),'retireOwnedRecoveryHttpRead').mockRejectedValue(Error('Controlled record retirement failure'));
+   try{const error=await measureWorkMaintenanceHttpBatch({target:input,records,password:process.env.TURAS_DEMO_PASSWORD!,journalDirectory:dirname(input.sourceFile)}).then(()=>null,error=>error);expect(error).toBeInstanceOf(AggregateError);expect(error.errors).toHaveLength(2);expect(error.errors[1].message).toBe('Controlled record retirement failure');}finally{retirement.mockRestore();}
+
+   const db=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});try{await db.connect();expect((await db.query('SELECT 1 FROM operations_recovery_http_reads a JOIN login_sessions s ON s.id=a.session_id WHERE a.workspace_id=$1 AND (a.revoked_at IS NULL OR s.revoked_at IS NULL)',[workspaceId])).rowCount).toBe(0);}finally{await db.end();}
+  }finally{transport.mockRestore();expect(globalThis.fetch).toBe(originalFetch);}
+ },async owner=>{const f=await pilotPublishedKnowledgeFixture(owner as unknown as PoolClient,'primary');customerId=f.customerId;workspaceId=f.actor.workspaceId;});
 },210000);

@@ -489,7 +489,9 @@ it.each(['artifact','report','workforce','gap','command'] as const)('%s authenti
     expect(Number((await db.query("SELECT count(*) FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') AND rolcanlogin")).rows[0].count)).toBe(0);
     expect((await readFile(join(root,'cold','candidate.encrypted'))).length).toBe(captured.encryptedBundle.sizeBytes);
    }finally{await db.end();}
-  },{postgresMajor:18,deadlineMs:180000});
+  // The artifact and command cases compose the separate150s maintenance
+  // measurement after the120s boundary runner. Each runtime lease stays60s.
+  },{postgresMajor:18,deadlineMs:['artifact','command'].includes(surface)?300000:180000});
   // Real barrier regression: a waited-for fence must not leave measurement on
   // a repeatable-read snapshot established before the competing commit.
   await withPilotEnvironment(async environment=>{

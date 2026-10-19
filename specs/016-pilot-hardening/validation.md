@@ -4369,3 +4369,43 @@ and retiring both fixture connections. Root/pilot types, catalog/deadline tests,
 production builds and documentation checks pass; independent review found no
 remaining authorization blocker. Full required-service, Workflow/effect composition,
 actual hosted acceptance and the authoritative reopen producer remain pending.
+
+### Actual work maintenance HTTP batches — 2026-10-19
+
+The work controller now owns finite one-to-eight-record measurements against its
+independently verified exact platform/deployment/source/database target. Every
+batch derives the whole seven-kind ledger before selecting records, compares
+canonical accepted profile/plan/execution projections or exact original digest,
+bytes and attachment headers, checks foreign-secret/wrong-kind/ordinary-route
+and retired-probe denials, and requires the serving commit on every response.
+It retires and independently rechecks all canonical and HTTP sessions; original
+read and retirement failures are retained together. A capability is branded only
+after the target constructor completes its final verification and cleanup.
+Composition rejects JSON copies, stale or changed-target/current-inventory proof,
+and live probes. Batches deliberately retain false full-service/readiness flags.
+
+The complete target check passes15/15 (`work-http-batch-target-v3-private.json`),
+including corrupt HTTP payload, changed inventory, forged proof and interrupted
+record retirement with independent cleanup. Root and pilot types pass. Independent
+review found no remaining blocker. The controlled target fixture runs actual route
+and restricted-runtime domain code, not actual hosted HTTP. Current catalog is853
+cases in155suites. The shared projection extraction preserves the owned verifier.
+Two broad owned attempts retain their existing180-second environment interruption
+failures; they do not count as passes. A further targeted run removes unnecessary
+MCP precompilation from the seven-kind owned verifier; the independent actual MCP
+network check remains separate. Full T096/T097, final current-source catalog,
+hosted release/participant observations and cleanup remain pending.
+
+The third attempt still exhausted the180s outer environment. This case composes
+a120s boundary runner and separate150s all-record measurement inside that outer
+bound. Artifact/command environments now have300s; the unchanged420s case and2160s
+suite bounds,60s runtime leases,150s measurement and every assertion remain fixed.
+The new in-transaction exact-union consumer rejects duplicate/missing records and
+original bytes while retaining false full required-service/readiness.
+
+The corrected composed owned regression passes1/1 (four intentionally unselected
+independent surfaces) in `work-http-projections-owned-v4-private.json`; target
+regression passes15/15 again in `work-http-batch-target-v4-private.json`. Exact-union
+coverage, protected CLI, root/pilot types, documentation and suite-deadline checks
+pass. Independent review found no concrete blocker. Earlier interruptions remain
+retained as failures. This is local proof and does not complete hosted service.

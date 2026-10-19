@@ -1,3 +1,4 @@
+import {profileProjection,planProjection,ordinaryPath} from './maintenance-read-projections';
 import {createHash,randomBytes} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import {z} from 'zod';
@@ -9,31 +10,12 @@ import {issueOwnedRecoveryHttpRead,retireOwnedRecoveryHttpRead} from './recovery
 import {withAuthenticatedOwnerRecoveryRead} from './authenticated-recovery-read';
 import {readExecutionRecoveryBinding,readRecoveryExecution} from './recovery-execution-read';
 import {readPlan} from '../plans/read';
-import {acceptedPlanRecoveryDigest} from './recovery-plan-projection';
 import {readProfile} from '../profiles/read';
 import {recoveryDigest} from '../../contracts/pilot-recovery';
 
 type Scope={environmentId:string;recoveryId:string;controlRevision:number};
 export type OwnedMaintenanceVerification=Readonly<{contract:'pilot-owned-maintenance-verification-v1';environmentId:string;recoveryId:string;controlRevision:number;sourceCommit:string;sourceDigest:string;catalogDigest:string;inventoryDigest:string;verifiedRecords:number;verifiedOriginalBytes:number;physicalOnlyObjects:number;verifiedKinds:readonly string[];completedAt:string;maintenanceHttpVerified:true;probeRetirementVerified:true;currentAuthorityVerified:false;ordinaryServiceVerified:false;workflowReconciled:false;requiredScopeHealthy:false;restorationReady:false}>;
 const proofs=new WeakMap<object,{target:OwnedRestoreTarget;scope:Scope}>();
-const profileSchema=z.object({customer:z.object({id:z.uuid()}),contextVersion:z.union([z.string().regex(/^\d+$/),z.number().int().nonnegative()]),acceptedFacts:z.array(z.record(z.string(),z.unknown())).max(500),workloads:z.array(z.object({id:z.uuid(),lifecycle:z.string()})).max(500)});
-function profileProjection(value:unknown,record:OwnedMaintenanceRecord){
- const profile=profileSchema.parse(value);if(profile.customer.id!==record.customerId||String(profile.contextVersion)!==record.generation)throw Error('Maintenance profile identity or generation differs');
- const facts=profile.acceptedFacts.map((fact):Record<string,unknown>=>{z.uuid().parse(fact.id);const {quality,...rest}=fact;const stable=quality&&typeof quality==='object'&&!Array.isArray(quality)?Object.fromEntries(Object.entries(quality).filter(([key])=>!['asOf','validUntil'].includes(key))):quality;return {...rest,quality:stable};}).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
- return recoveryDigest({customerId:profile.customer.id,contextVersion:String(profile.contextVersion),facts,workloads:profile.workloads.sort((a,b)=>a.id.localeCompare(b.id))});
-}
-function planProjection(value:unknown,record:OwnedMaintenanceRecord){
- return acceptedPlanRecoveryDigest(value,{planId:record.recordId,customerId:record.customerId!,revisionId:record.parentId!,generation:record.generation!});
-}
-function ordinaryPath(record:OwnedMaintenanceRecord){
- if(record.kind==='profile')return '/api/customers/'+record.customerId+'/profile';
- if(record.kind==='execution')return '/api/execution/engagements/'+record.recordId;
- if(record.kind==='plan')return '/api/plans/'+record.recordId;
- if(record.kind==='artifact')return '/api/artifacts/'+record.recordId+'/original';
- if(record.kind==='report')return '/api/reports/artifacts/'+record.recordId;
- if(record.kind==='workforce')return '/api/staffing/imports/'+record.recordId+'/content';
- return '/api/product-gaps/reports/'+record.parentId+'/exports/'+record.recordId;
-}
 async function body(response:Response,maximum:number,signal:AbortSignal){
  const reader=response.body?.getReader();if(!reader)throw Error('Maintenance response body absent');const chunks:Uint8Array[]=[];let size=0;
  try{for(;;){signal.throwIfAborted();const next=await reader.read();if(next.done)break;size+=next.value.byteLength;if(size>maximum)throw Error('Maintenance response exceeds bound');chunks.push(next.value);}}

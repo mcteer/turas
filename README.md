@@ -782,3 +782,5 @@ the shared disposable application setup.
 
 Work-recovery authentication now includes independently authenticated internal/partner reads and an actual-bearer MCP SDK reader. These are local implementation checkpoints; complete service measurement, authoritative reopen verification and hosted acceptance remain pending in [Feature 016](specs/016-pilot-hardening/tasks.md).
 The maintenance MCP endpoint additionally binds its finite recovery admission and browser session to the same actual MCP bearer connection. Local restricted-runtime HTTP/SDK checks pass; hosted acceptance and the complete reopen verifier remain pending.
+
+Work maintenance HTTP measurements now derive the full ledger and measure finite actual HTTP batches, with canonical projections/original bytes, denial and credential-retirement checks. Final record coverage requires a genuine exact union; complete required service, authoritative reopen and hosted acceptance remain pending. The current853-case/155-suite catalog requires fresh complete proof.
