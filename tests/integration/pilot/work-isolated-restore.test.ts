@@ -126,7 +126,7 @@ it.each(['artifact','report','workforce','gap','command'] as const)('%s authenti
     expect(result).toMatchObject({acceptedContentVerified:true,ledgerVerified:true,objectsVerified:true,objectCount:13,requiredOriginals:{requiredObjectCount:8,requiredOriginalsVerified:true,serviceVerified:false,restorationReady:false},requiredScopeQuarantined:true,currentAuthorityVerified:false,permanentReplayVerified:false,workflowReconciled:false,restorationReady:false,mode:'locked'});
     if(surface==='command'){
     if(!('maintenance' in result)||!result.maintenance)throw Error('Actual command maintenance verification missing');
-    expect(result.maintenance).toMatchObject({maintenanceHttpVerified:true,probeRetirementVerified:true,verifiedKinds:['artifact','gap','profile','report','workforce'],currentAuthorityVerified:false,ordinaryServiceVerified:false,workflowReconciled:false,requiredScopeHealthy:false,restorationReady:false});
+    expect(result.maintenance).toMatchObject({maintenanceHttpVerified:true,probeRetirementVerified:true,verifiedKinds:['artifact','gap','plan','profile','report','workforce'],currentAuthorityVerified:false,ordinaryServiceVerified:false,workflowReconciled:false,requiredScopeHealthy:false,restorationReady:false});
     expect(result.maintenance.verifiedRecords).toBeGreaterThan(0);expect(result.maintenance.verifiedOriginalBytes).toBeGreaterThan(0);
     return;
     }
@@ -144,7 +144,7 @@ it.each(['artifact','report','workforce','gap','command'] as const)('%s authenti
     await bindOwnedRestoredSource(otherOwnedTarget,proof,storeRoot,environment.signal);
     const maintenance=await deriveOwnedMaintenanceInventory(ownedTarget,scope,environment.signal);
     expect(maintenance.requiredOriginals.requiredObjectCount).toBe(8);
-    expect([...new Set(maintenance.records.map(record=>record.kind))].sort()).toEqual(['artifact','gap','profile','report','workforce']);
+    expect([...new Set(maintenance.records.map(record=>record.kind))].sort()).toEqual(['artifact','gap','plan','profile','report','workforce']);
     expect(maintenance.requiredScopeHealthy).toBe(false);expect(maintenance.restorationReady).toBe(false);
     const foreignOwner=randomUUID(),workforceOwner=(await db.query('SELECT owner_membership_id FROM workforce_import_intents WHERE id=$1',[expectedWorkforce.importId])).rows[0].owner_membership_id;
     await db.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role) VALUES($1,$2,$3,'internal','member')",[foreignOwner,DEMO_IDS.panel,expectedWorkforce.workspaceId]);

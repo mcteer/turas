@@ -6,7 +6,7 @@ import {DEMO_IDS} from '../bootstrap-ids';
 import {z} from 'zod';
 
 type Scope={environmentId:string;recoveryId:string;controlRevision:number};
-export type OwnedMaintenanceRecord=Readonly<{kind:'profile'|'artifact'|'report'|'workforce'|'gap';recordId:string;workspaceId:string;customerId:string|null;membershipId:string;generation:string;parentId:string|null;object:Readonly<ObjectDescriptor>|null}>;
+export type OwnedMaintenanceRecord=Readonly<{kind:'profile'|'artifact'|'report'|'workforce'|'gap'|'plan';recordId:string;workspaceId:string;customerId:string|null;membershipId:string;generation:string;parentId:string|null;object:Readonly<ObjectDescriptor>|null}>;
 type Row=Record<string,unknown>;
 const id=(value:unknown)=>z.uuid().parse(value);
 const generation=(value:unknown)=>z.string().regex(/^\d+$/).parse(String(value));
@@ -57,6 +57,10 @@ export async function deriveOwnedMaintenanceInventoryInTransaction(db:import('pg
     JOIN customer_references c ON c.id=p.customer_id AND c.workspace_id=p.workspace_id JOIN workspaces w ON w.id=c.workspace_id
     WHERE w.active AND EXISTS(SELECT 1 FROM turas_environment WHERE environment_id=$1)`);
    for(const row of profiles)record('profile',row,null,id(row.record_id));
+   const plans=await rows(`SELECT p.id AS record_id,p.workspace_id,p.customer_id,p.aggregate_version AS generation,p.accepted_revision_id AS revision_id
+    FROM delivery_plans p JOIN workspaces w ON w.id=p.workspace_id
+    WHERE p.environment_id=$1 AND w.active AND p.accepted_revision_id IS NOT NULL`);
+   for(const row of plans)record('plan',row,null,id(row.customer_id),id(row.revision_id));
    const artifacts=await rows(`SELECT v.id AS record_id,v.workspace_id,v.customer_id,v.object_key::text AS object_id,v.sha256_digest AS digest,v.actual_size_bytes AS size_bytes,
     v.lifecycle_generation AS generation,v.state,v.owner_principal_id,v.submitted_at IS NOT NULL AS submitted,w.active,
     EXISTS(SELECT 1 FROM artifact_extraction_runs r WHERE r.version_id=v.id AND r.state='published') AS published

@@ -634,7 +634,15 @@
         "integration.work-denial-reconciliation.001",
         "integration.work-denial-reconciliation.002",
         "integration.work-denial-reconciliation.003",
-        "integration.work-denial-reconciliation.004"
+        "integration.work-denial-reconciliation.004",
+        "integration.recovery-plan-http.001",
+        "integration.recovery-plan-http.002",
+        "integration.recovery-plan-http.003",
+        "integration.recovery-plan-http.004",
+        "unit.recovery-plan-projection.001",
+        "unit.recovery-plan-projection.002",
+        "unit.recovery-plan-projection.003",
+        "unit.recovery-plan-projection.004"
       ]
     },
     {

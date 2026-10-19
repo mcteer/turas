@@ -7,6 +7,8 @@ import {prepareOwnedRecoveryApplication,warmOwnedRecoveryApplication,withOwnedRe
 import {pilotSource} from '../../../scripts/pilot-source';
 import {issueOwnedRecoveryHttpRead,retireOwnedRecoveryHttpRead} from './recovery-http-read-issuer';
 import {withAuthenticatedOwnerRecoveryRead} from './authenticated-recovery-read';
+import {readPlan} from '../plans/read';
+import {acceptedPlanRecoveryDigest} from './recovery-plan-projection';
 import {readProfile} from '../profiles/read';
 import {recoveryDigest} from '../../contracts/pilot-recovery';
 
@@ -19,8 +21,12 @@ function profileProjection(value:unknown,record:OwnedMaintenanceRecord){
  const facts=profile.acceptedFacts.map((fact):Record<string,unknown>=>{z.uuid().parse(fact.id);const {quality,...rest}=fact;const stable=quality&&typeof quality==='object'&&!Array.isArray(quality)?Object.fromEntries(Object.entries(quality).filter(([key])=>!['asOf','validUntil'].includes(key))):quality;return {...rest,quality:stable};}).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
  return recoveryDigest({customerId:profile.customer.id,contextVersion:String(profile.contextVersion),facts,workloads:profile.workloads.sort((a,b)=>a.id.localeCompare(b.id))});
 }
+function planProjection(value:unknown,record:OwnedMaintenanceRecord){
+ return acceptedPlanRecoveryDigest(value,{planId:record.recordId,customerId:record.customerId!,revisionId:record.parentId!,generation:record.generation!});
+}
 function ordinaryPath(record:OwnedMaintenanceRecord){
  if(record.kind==='profile')return '/api/customers/'+record.customerId+'/profile';
+ if(record.kind==='plan')return '/api/plans/'+record.recordId;
  if(record.kind==='artifact')return '/api/artifacts/'+record.recordId+'/original';
  if(record.kind==='report')return '/api/reports/artifacts/'+record.recordId;
  if(record.kind==='workforce')return '/api/staffing/imports/'+record.recordId+'/content';
@@ -64,6 +70,12 @@ async function readRecord(application:OwnedRecoveryApplication,record:OwnedMaint
     const digest=profileProjection(profile,record);await db.query('COMMIT');return digest;
    }catch(error){await db.query('ROLLBACK');throw error;}
   });
+  if(record.kind==='plan')canonical=await withOwnedRecoveryApplicationConfiguration(application,signal,async db=>{
+   await db.query('BEGIN');try{
+    const plan=await withAuthenticatedOwnerRecoveryRead(db as unknown as PoolClient,{...input.scope,workspaceId:record.workspaceId,deadline,password:input.password},actor=>readPlan(actor,record.recordId,record.parentId!,db as unknown as PoolClient));
+    const digest=planProjection(plan,record);await db.query('COMMIT');return digest;
+   }catch(error){await db.query('ROLLBACK');throw error;}
+  });
   const foreign=new Headers(headers);foreign.set('cookie','turas_session='+randomBytes(32).toString('base64url'));
   await denied(application,path,foreign,[403],signal);
   await denied(application,'/api/operations/recovery-read/'+owned.id+'/'+(record.kind==='profile'?'artifact':'profile'),headers,[403],signal);
@@ -74,6 +86,9 @@ async function readRecord(application:OwnedRecoveryApplication,record:OwnedMaint
   if(record.kind==='profile'){
    if(!/^application\/json(?:;|$)/i.test(response.headers.get('content-type')??''))throw Error('Maintenance profile response type differs');
    const parsed=JSON.parse(bytes.toString()) as {data?:unknown};if(profileProjection(parsed.data,record)!==canonical)throw Error('Maintenance HTTP and canonical profile projections differ');
+  }else if(record.kind==='plan'){
+   if(!/^application\/json(?:;|$)/i.test(response.headers.get('content-type')??''))throw Error('Maintenance plan response type differs');
+   const parsed=JSON.parse(bytes.toString()) as {data?:unknown};if(planProjection(parsed.data,record)!==canonical)throw Error('Maintenance HTTP and canonical accepted plan projections differ');
   }else{
    if(!record.object||bytes.length!==record.object.sizeBytes||createHash('sha256').update(bytes).digest('hex')!==record.object.digest)throw Error('Maintenance original bytes differ');
    if(!/^attachment(?:;|$)/i.test(response.headers.get('content-disposition')??'')||response.headers.get('x-content-type-options')!=='nosniff')throw Error('Maintenance original response headers differ');

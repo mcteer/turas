@@ -20,6 +20,7 @@ const longSuiteSeconds:Readonly<Record<string,number>>={
  'recovery-authority':1740,'recovery':1980,'hosted-role-reads':2160,'neon-archive':2160,
  'recovery-quarantine':2400,'recovery-credential-denials':3420,
  'work-denial-reconciliation':900,
+ 'recovery-plan-http':900,
 };
 for(const name of Object.keys(longSuiteSeconds)){
  if(!catalog.suites.some(suite=>suite.file==='tests/integration/pilot/'+name+'.test.ts'))throw Error('Unregistered pilot deadline override');

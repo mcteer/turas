@@ -1724,6 +1724,26 @@
         "requires the selected owner and retired legacy login without terminating caller connections",
         "rolls back current denials when the selected recovery revision or authenticated bytes change"
       ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-plan-http.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "reads the canonical accepted plan through exact locked maintenance authority while ordinary ingress stays closed",
+        "rejects foreign credentials and wrong recovery read kinds without releasing plan content",
+        "withholds changed accepted bindings and retired maintenance credentials",
+        "retains the finite reservation after a successful canonical read"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/recovery-plan-projection.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "measures canonical readable accepted plan bytes with exact identity and generation",
+        "rejects withheld missing or unreviewed plan content as positive recovery coverage",
+        "rejects changed bytes invalid schema and forged derived sections even with matching hashes",
+        "rejects foreign plan customer revision accepted head and changed aggregate generation"
+      ]
     }
   ],
   "ui": {

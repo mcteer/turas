@@ -1149,3 +1149,20 @@ observations.
 `npm run pilot:recovery:authority -- --reconcile-work-denials --source <private-source.json> --team <team-id> --environment <marker> --recovery-id <uuid> --expected-revision <revision> --denials <current-retained-receipt.json> --destination <private-archive-destination.json> --backup-captured-at <ISO-time> --output <new-private-directory>` applies the shared deny-only reconciliation to an independently selected work database. The source must explicitly bind Preview or Production, current schema079, the exact project/marker and a direct Neon owner URL with `sslmode=verify-full`; connection timeout overrides are refused. Platform/source bindings are checked before and after execution. The actual owner, exact locked control and retired legacy LOGIN/backends are required before independent archive access and rechecked at application.
 
 The existing cold reader authenticates the independently encrypted current v7 metadata and separate key. A serialized snapshot, receipt or healthy label cannot recreate its in-process capability. The command retains a committed `denials-applied.json` checkpoint before its separate permanent request audit. Interruption or an audit failure preserves those denials for idempotent continuation; it never grants authority, releases unknown charges, resolves quarantines or opens service. The existing owned command retains its Docker ownership requirements. Actual work-target execution remains a hosted acceptance step; the controlled reader used in owned tests does not prove provider behavior.
+
+
+### Accepted plan maintenance reads
+
+The fixed `/api/operations/recovery-read/<admission>/plan` route uses a short-lived
+owner-issued session, exact cookie/secret/deployment/database scope and a committed
+finite request allowance. It invokes the canonical plan reader on the admitted
+runtime connection and rechecks authority after the read. Ordinary plan ingress
+stays closed while recovery is locked. The owner-derived inventory includes every
+active accepted plan before owner filtering, so unsupported coverage fails.
+
+A positive maintenance projection requires readable accepted content, the exact
+accepted revision and aggregate version, and both stored and rebuilt canonical
+content hashes matching its recorded digest. Matching withheld/null responses
+do not establish recovery. Probes and sessions must be retired before final state
+measurement. This adds one service surface; it does not certify all required roles,
+SDK scopes, managed Workflow/effects, or authorize service reopening.

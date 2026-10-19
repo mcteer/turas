@@ -4109,3 +4109,32 @@ now closes that pool before declaring legacy retirement. Its failure is retained
 Root/pilot types pass. These results do not establish actual hosted reconciliation,
 full required-service coverage or an authoritative unlock producer; T096/T097 and
 the governing full recovery tasks remain open. Inventory is824cases/150suites.
+
+
+### Accepted-plan recovery coverage — 2026-10-19
+
+The historical frozen10cab32 full catalog passes820/820 cases in149 suites with
+owned cleanup complete (run95ad9347-e09f-479f-ae05-294d34808179). Its source digest
+is `ec8ace1713d2d47635b3b410163aac0040cfb077c0901fb100d8caa76e5f7ae3`; it does
+not prove subsequent source.
+
+The accepted-plan extension adds an exact fixed maintenance route using the same
+canonical plan reader and actual runtime connection. Inventory derives accepted
+plans before filtering; ordinary ingress remains locked and finite reservations
+are committed before content reads. The existing five-case owned restore suite
+passes with all six maintenance record kinds, including plan content. That pass
+precedes two review corrections: an explicit nonnull plan metadata digest and
+strict readable/accepted canonical byte/schema validation. Four new projection
+unit cases and all four corrected HTTP/database cases pass, including the actual
+SQL nonnull constraint. The corrected composed artifact restore case also passes
+with all six maintenance kinds; the other four cases were deliberately not selected
+for this narrow follow-up. Root/pilot types and docs pass. Independent review
+finds no remaining concrete blocker in these corrections.
+The current catalog contains832 cases in152 suites. No full-service or hosted
+acceptance is inferred; T096/T097 remain open.
+
+At c871108, reporting deterministic and regression CI jobs pass with the extractor
+dependency fix. Reporting WebKit remains pending. Product-gap WebKit has two
+retained failures: a loading page with no captured browser API responses, and a
+created eligible record whose expected title heading is absent. Current diagnostics
+do not establish their causes; no timeout or assertion is relaxed.
