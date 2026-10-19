@@ -1014,3 +1014,5 @@ observations. Do not treat them as current-host redirects, direct firewall denia
 managed Workflow closure or old database-role retirement. Current Production
 controls remain healthy. The strict census and full recovery readiness stay false;
 retain its4,593-request accounting and unknown cost hold under the5,000-request cap.
+
+The isolated work recovery command now authenticates the disposable container and owner before restoring, then binds the measured restore and checks every required ledger original against restored bytes in a repeatable-read transaction. Its `requiredOriginals` receipt is physical coverage only: service, current authority, Workflow reconciliation, and readiness remain false. A missing original prevents a successful restore receipt.

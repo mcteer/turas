@@ -3799,3 +3799,11 @@ Production default, cross-target, wrong-marker and older-schema checks. Pilot ty
 pass after correcting the private review checkout's dependency links; the initial
 missing-package type failure is retained as setup evidence. Independent review found
 no blocker. This is command support, not actual hosted role retirement or unlock.
+
+### Complete frozen 30daadb catalog (2026-10-19)
+
+The complete local catalog passed782 cases across143 suites at commit `30daadba78edb7c46781cb09180615a78c609d45`, source digest `5fd2f3148b05147ef23237f6f07c655dadef196716f085058b2234934f43f8eb`, catalog digest `bb8759247041b18bc749787988021d9c1d7759fbf9028000406de4c25f3afef2`. Private execution receipt: `local-artifacts/016/run-1a4fa02d-1014-4307-8af8-0eb3515987dc/execution.json` in the frozen catalog worktree. This result does not cover the subsequent785-case inventory or establish hosted pilot readiness. Legacy acceptance CI39214469814 passed on `ca3d47c`; its main CI39214469812 remains in progress.
+
+### Restore command required-original coverage (2026-10-19)
+
+The command now mints actual disposable-container/owner authority before replacing the runner marker, binds the opaque measured restore, and verifies the database-derived required originals in a repeatable-read transaction. Success adds a physical-only `requiredOriginals` receipt; no runtime access, unlock, service or current-authority proof is granted. All four independent artifact/report/workforce/gap recovery cases pass, each with eight required originals. Whole-case times were107764ms,102993ms,106931ms and96907ms, respectively. The existing missing-required-original corruption test remains exercised. Private report: `restore-cli-coverage-four-report-private.json` under the resume evidence directory. Pilot types and documentation checks pass; independent read-only review found no blocker. T088 remains incomplete pending required service/current-authority/managed-execution verification.

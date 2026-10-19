@@ -738,3 +738,5 @@ recovery/operator/pilot acceptance. See the [release record](docs/production-par
 The isolated recovery owner can compose current-denial reconciliation and the
 permanent request-fence audit in one transaction; incomplete decisions roll back
 together. This does not establish hosted recovery readiness.
+
+The isolated work restore command verifies required ledger originals against restored bytes before emitting success. This physical coverage check does not establish service recovery or pilot readiness.

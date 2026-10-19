@@ -1,3 +1,4 @@
+import {mintOwnedRestoreTarget,bindOwnedRestoredSource,withOwnedRestoreTarget,verifyOwnedRestoredRequiredObjects} from '../lib/server/operations/owned-restore-target';
 import {readRetainedWorkDenialSnapshot} from './pilot-denial-reader';
 import {mkdtemp,rm} from 'node:fs/promises';
 import {physicalRecoveryTiming} from '../lib/server/operations/recovery-timing';
@@ -46,7 +47,19 @@ export async function pilotWorkRecovery(args:string[]){
    const staging=values.denials?await mkdtemp(join(root,'current-denials-')):undefined;
    try{
     const currentDenials=staging?await readRetainedWorkDenialSnapshot({receipt:values.denials,destination:values.destination,staging,environmentId:candidate.environmentId,after:candidate.capturedAt},signal):undefined;
-    return await restoreIsolatedWorkCapture({candidate,bundle:resolve(values.bundle),keyFile:resolve(values['key-file']),output:root,signal,currentDenials});
+    // Authenticate ownership before replacing the runner marker with the source.
+    // The serialized restore receipt cannot mint this capability afterward.
+    const runnerEnvironment=process.env.TURAS_ENVIRONMENT_ID??'',ownerLabel=runnerEnvironment.replace(/^test-pilot-/,'');
+    const target=await mintOwnedRestoreTarget({container:'turas-016-check-'+ownerLabel,ownerLabel,environmentId:runnerEnvironment},signal);
+    const restored=await restoreIsolatedWorkCapture({candidate,bundle:resolve(values.bundle),keyFile:resolve(values['key-file']),output:root,signal,currentDenials});
+    const scope={environmentId:restored.environmentId,recoveryId:restored.physicalIntegrity.recoveryId,controlRevision:restored.physicalIntegrity.controlRevision};
+    await bindOwnedRestoredSource(target,restored.physicalIntegrity,join(root,'objects'),signal);
+    const requiredOriginals=await withOwnedRestoreTarget(target,scope,signal,async db=>{
+     await db.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
+     try{const proof=await verifyOwnedRestoredRequiredObjects(db,target,scope,signal);signal.throwIfAborted();await db.query('COMMIT');return proof;}
+     catch(error){await db.query('ROLLBACK');throw error;}
+    });
+    return {...restored,requiredOriginals};
    }finally{if(staging)await rm(staging,{recursive:true,force:true});}
   });
   if(JSON.stringify(await pilotSource())!==JSON.stringify(source))throw Error('Work recovery source changed');
