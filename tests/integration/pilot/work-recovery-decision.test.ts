@@ -1,3 +1,4 @@
+import {auditRecoveredRequestFencesInTransaction} from '../../../lib/server/operations/recovery-replay-audit';
 import {auditRecoveryLearningCosts} from '../../../lib/server/operations/recovery-learning-cost-audit';
 import {auditRecoveryServiceCosts} from '../../../lib/server/operations/recovery-service-cost-audit';
 import {auditRecoveryDispatchState} from '../../../lib/server/operations/recovery-dispatch-audit';
@@ -347,5 +348,66 @@ it('retains genuine original learning reservations and rejects missing unknown c
   const {learningNativeFixture}=await import('../../fixtures/learning/native'),{admitGovernedStaffingModelStep}=await import('../../../lib/server/staffing/native-admission');
   const f=await learningNativeFixture(owner as unknown as PoolClient);await admitGovernedStaffingModelStep(f.principal,f.identity);
   reservation=(await owner.query('SELECT id FROM learning_budget_reservations WHERE attempt_id=$1',[f.meta.id])).rows[0].id;
+ });
+},210000);
+
+
+it('fences original native business identities after missing rows while allowing distinct messages and owner cleanup',async()=>{
+ let conversationId='',message='',attempt='';
+ await fixture(async input=>{
+  const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)}),runtime=new Client({connectionString:input.runtimeConnection});await owner.connect();await runtime.connect();
+  try{await withRetainedDenialFixture(owner,input.scope.environmentId,dirname(input.sourceFile),{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async retained=>{
+   await quarantineRestoredAuthority(owner,input.scope,retained);
+   await owner.query('GRANT TRUNCATE ON operations_replay_fences TO turas_runtime_016');
+   try{await expect(withLockedWorkRecoveryDecision(input,(db,target)=>auditRecoveredRequestFencesInTransaction(db,retained.snapshot,{...input.scope,snapshotDigest:retained.contextDigest,backupCapturedAt:retained.backupCapturedAt}))).rejects.toThrow('Runtime permanent request fence authority differs');}finally{await owner.query('REVOKE TRUNCATE ON operations_replay_fences FROM turas_runtime_016');}
+   const legacy=structuredClone(retained.snapshot),entry=legacy.tables.find(table=>table.name==='response_attempts')!;entry.replayKeyColumns=[['id']];for(const row of entry.rows)row.replayKeys=row.replayKeys!.filter(key=>JSON.stringify(key.columns)===JSON.stringify(['id']));
+   const {recoveryDigest}=await import('../../../lib/contracts/pilot-recovery'),{snapshotDigest:_digest,currentAuthorityVerified:_authority,replayReconciled:_replay,restorationReady:_ready,...content}=legacy;legacy.snapshotDigest=recoveryDigest(content);
+   await expect(withLockedWorkRecoveryDecision(input,(db,target)=>auditRecoveredRequestFencesInTransaction(db,legacy,{...input.scope,snapshotDigest:legacy.snapshotDigest,backupCapturedAt:retained.backupCapturedAt}))).rejects.toThrow('Complete actual business replay indexes required');
+   await owner.query("UPDATE watchdog_jobs SET state='needs_attention',lease_owner=NULL,lease_expires_at=NULL WHERE attempt_id=$1",[attempt]);
+   await expect(runtime.query("UPDATE watchdog_jobs SET state='leased',lease_owner='stale-worker',lease_expires_at=clock_timestamp()+interval '10 seconds' WHERE attempt_id=$1",[attempt])).rejects.toThrow('Recovered permanent request cannot be repeated');
+   await owner.query('DELETE FROM watchdog_jobs WHERE attempt_id=$1',[attempt]);await owner.query('DELETE FROM response_attempts WHERE id=$1',[attempt]);
+   await expect(owner.query("INSERT INTO response_attempts(id,conversation_id,message_id,input_digest,dispatch_state,response_state,deadline_at) VALUES($1,$2,$3,repeat('a',64),'prepared','pending',clock_timestamp()+interval '1 minute')",[randomUUID(),conversationId,message])).rejects.toThrow('Recovered permanent request cannot be repeated');
+   const freshMessage=randomUUID();await owner.query("INSERT INTO submitted_messages(id,conversation_id,request_key,body_digest,text) VALUES($1,$2,$3,repeat('b',64),'Distinct authorized synthetic message')",[freshMessage,conversationId,randomUUID()]);
+   await owner.query("INSERT INTO response_attempts(id,conversation_id,message_id,input_digest,dispatch_state,response_state,deadline_at) VALUES($1,$2,$3,repeat('b',64),'rejected','failed',clock_timestamp()+interval '1 minute')",[randomUUID(),conversationId,freshMessage]);
+   const proof=await withLockedWorkRecoveryDecision(input,(db,target)=>auditRecoveredRequestFencesInTransaction(db,retained.snapshot,{...input.scope,snapshotDigest:retained.contextDigest,backupCapturedAt:retained.backupCapturedAt}));
+   expect(proof).toMatchObject({permanentRequestFencesVerified:true,providerCalls:0,restorationReady:false});
+   expect(Number((await owner.query('SELECT count(*) FROM response_attempts WHERE message_id=$1',[message])).rows[0].count)).toBe(0);
+  });}finally{await runtime.end();await owner.end();}
+ },async owner=>{
+  const f=await pilotPublishedKnowledgeFixture(owner as unknown as PoolClient,'primary');conversationId=(await createOwnedConversation(f.actor,{requestKey:randomUUID(),title:'Controlled original native identity'})).conversation.id;message=randomUUID();attempt=randomUUID();
+  await owner.query("INSERT INTO submitted_messages(id,conversation_id,request_key,body_digest,text) VALUES($1,$2,$3,repeat('a',64),'Original synthetic message')",[message,conversationId,randomUUID()]);
+  await owner.query("INSERT INTO response_attempts(id,conversation_id,message_id,input_digest,dispatch_state,response_state,deadline_at) VALUES($1,$2,$3,repeat('a',64),'admitted','running',clock_timestamp()+interval '1 minute')",[attempt,conversationId,message]);
+  await owner.query("INSERT INTO watchdog_jobs(attempt_id,deadline_at,state,next_attempt_at) SELECT id,deadline_at,'pending',clock_timestamp() FROM response_attempts WHERE id=$1",[attempt]);
+ });
+},210000);
+
+
+it('fences an original publication recipient after outbox loss despite fresh delivery and provider keys',async()=>{
+ let delivery='';
+ await fixture(async input=>{
+  const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
+  try{await withRetainedDenialFixture(owner,input.scope.environmentId,dirname(input.sourceFile),{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async retained=>{
+   await quarantineRestoredAuthority(owner,input.scope,retained);
+   const original=(await owner.query('SELECT to_jsonb(d) AS value FROM report_deliveries d WHERE id=$1',[delivery])).rows[0].value;
+   expect(original.state).toBe('uncertain');await owner.query('DELETE FROM report_delivery_payloads WHERE delivery_id=$1',[delivery]);
+   await owner.query('ALTER TABLE report_deliveries DISABLE TRIGGER report_delivery_identity');await owner.query('DELETE FROM report_deliveries WHERE id=$1',[delivery]);await owner.query('ALTER TABLE report_deliveries ENABLE TRIGGER report_delivery_identity');
+   const replacement={...original,id:randomUUID(),provider_key:randomUUID()};
+   await expect(owner.query('INSERT INTO report_deliveries SELECT * FROM jsonb_populate_record(NULL::report_deliveries,$1::jsonb)',[JSON.stringify(replacement)])).rejects.toThrow('Recovered permanent request cannot be repeated');
+   const proof=await withLockedWorkRecoveryDecision(input,(db,target)=>auditRecoveredRequestFencesInTransaction(db,retained.snapshot,{...input.scope,snapshotDigest:retained.contextDigest,backupCapturedAt:retained.backupCapturedAt}));
+   expect(proof).toMatchObject({permanentRequestFencesVerified:true,providerCalls:0,restorationReady:false});
+   expect(Number((await owner.query('SELECT count(*) FROM report_deliveries WHERE publication_id=$1 AND recipient_identity=$2',[original.publication_id,original.recipient_identity])).rows[0].count)).toBe(0);
+  });}finally{await owner.end();}
+ },async owner=>{
+  const {publishedReportFixture}=await import('../../fixtures/reports/published'),{reportTransaction}=await import('../../../lib/server/reports/commands');
+  const {verifyConfiguredReportSender,registerVerifiedReportSender}=await import('../../../lib/server/reports/senders'),{createReportRecipientPolicy,createReportPolicyPreview,decideReportPolicy}=await import('../../../lib/server/reports/recipient-policy');
+  const {previewReportSend,submitReportSendDecision}=await import('../../../lib/server/reports/service');
+  Object.assign(process.env,{TURAS_REPORT_SENDER_ADDRESS:'recovery@example.invalid',TURAS_REPORT_SENDER_ID:randomUUID(),TURAS_REPORT_SENDER_DOMAIN_ID:randomUUID(),RESEND_API_KEY:'synthetic-provider-test-only',TURAS_REPORT_RECIPIENT_HMAC_KEY_ID:'synthetic',TURAS_REPORT_RECIPIENT_HMAC_KEYS:JSON.stringify({synthetic:Buffer.alloc(32,7).toString('base64')})});
+  const f=await publishedReportFixture(),sender=await verifyConfiguredReportSender(async()=>new Response(JSON.stringify({id:process.env.TURAS_REPORT_SENDER_DOMAIN_ID,name:'example.invalid',status:'verified',capabilities:{sending:'enabled'},open_tracking:false,click_tracking:false})));
+  await reportTransaction(db=>registerVerifiedReportSender(db,f.reviewer.workspaceId,sender));
+  const policy=await reportTransaction(db=>createReportRecipientPolicy(db,f.reviewer,f.customerId,{selection:{kind:'weekly',audience:'delivery',timezone:'UTC',engagementIds:[f.engagementId],workloadIds:[],includeCustomerLevel:true},senderId:sender.id,recipients:[{address:'original@example.invalid',entitlementRationale:'Explicit synthetic recovery recipient'}]}));
+  const review=await reportTransaction(db=>createReportPolicyPreview(db,f.reviewer,policy.policyId,'approve',1));await reportTransaction(db=>decideReportPolicy(db,f.reviewer,policy.policyId,{action:'approve',expectedVersion:1,requestKey:randomUUID(),rationale:'Approve synthetic original recipient',previewId:review.previewId,previewDigest:review.previewDigest}));
+  const command={action:'send' as const,policyId:policy.policyId,expectedVersion:f.published.version,expectedPolicyVersion:2},preview=await previewReportSend(f.reviewer,f.published.publicationId,command);
+  await submitReportSendDecision(f.reviewer,f.published.publicationId,{...command,requestKey:randomUUID(),rationale:'Authorize synthetic outbox only without sending',previewId:preview.previewId,previewDigest:preview.previewDigest});
+  delivery=(await owner.query('SELECT id FROM report_deliveries WHERE publication_id=$1',[f.published.publicationId])).rows[0].id;
  });
 },210000);

@@ -4931,3 +4931,35 @@ or release rows are created. Independent review found no blocker in this scoped
 accounting audit. Root/pilot types pass. Inventory:914cases/167suites. No actual
 model/provider work was dispatched. Native/send identity, execution/ingress,
 full service composition and hosted acceptance remain pending.
+
+
+### Original native and delivery business-key fences — 2026-10-19
+
+The explicit replay contract and unreleased079 migration now include response
+attempts, watchdogs, research runs/operations and report deliveries. Their full
+unconditional ordinary unique keys are captured and fenced, including original
+message IDs and publication/recipient pairs. A fresh row or provider key cannot
+recreate the same original effect after a missing post-backup row. Partial and
+expression indexes remain excluded; no conversation/actor-wide fence is added.
+The manifest binds the revised079 bytes;001–077 remain unchanged. Both runtime
+roles must lack table and column write authority over replay fences, including
+TRUNCATE; a direct replacement-role grant is refused without executing it.
+
+The current v7 verifier rejects explicit tables missing primary replay metadata,
+and actual owner audits require their complete installed eligible index set.
+Historical captures omitting new business keys cannot establish current proof.
+The focused actual PostgreSQL18 native case passes: restored runtime watchdog
+lease UPDATE and a fresh attempt ID for a missing original message receive the
+specific replay denial; owner deny-only cleanup and a distinct new message
+remain possible. Incomplete business-key metadata is refused. The real-domain
+synthetic publication/recipient-policy/outbox case also passes: after removing
+the original queued delivery, a fresh delivery/provider key for the same
+publication/recipient receives the specific replay denial. No email was sent.
+
+The initial outbox test used a stale local renderer tag and failed actual output
+binding validation; it remains retained. The rerun uses the prepared immutable
+76de renderer and normal reviewed/rendered records, without weakening validation.
+The prior full nine-case decision suite at2dc774d passes9/9. Latest native and
+outbox cases pass individually; full current916case/167suite and hosted proof
+remain pending. This closes scoped replay omissions, not provider execution,
+all effect reconciliation, required service or release acceptance.

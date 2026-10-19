@@ -20,6 +20,11 @@
   "ordinary_steering_deliveries",
   "parity_evaluation_budgets",
   "parity_evaluation_operations",
+  "report_deliveries",
+  "research_operations",
+  "research_runs",
+  "response_attempts",
+  "retrieval_embedding_operations",
   "session_evidence_dependencies",
-  "retrieval_embedding_operations"
+  "watchdog_jobs"
 ]

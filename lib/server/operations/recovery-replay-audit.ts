@@ -1,3 +1,4 @@
+import currentReplayTables from '../../contracts/recovery-replay-tables.json' with {type:'json'};
 import type {Client,PoolClient} from 'pg';
 import {isWorkRecoveryDecisionClient} from './locked-work-recovery-target';
 import {z} from 'zod';
@@ -67,7 +68,9 @@ export async function auditRecoveredRequestFencesInTransaction(db:Client|PoolCli
    FROM pg_trigger t JOIN pg_proc p ON p.oid=t.tgfoid JOIN pg_language l ON l.oid=p.prolang
    WHERE t.tgrelid='public.operations_replay_fences'::regclass AND t.tgname='replay_fence_immutable' AND t.tgfoid='public.turas_pilot_immutable_recovery_receipt()'::regprocedure`)).rows;
   if(immutable.length!==1||immutable[0].enabled!==true||immutable[0].prosrc.trim()!==expectedFunction.immutable||immutable[0].prosecdef!==false||immutable[0].proconfig!==null||immutable[0].lanname!=='plpgsql'||immutable[0].owner!==true)throw Error('Actual permanent request fence immutability unavailable');
-  if((await db.query("SELECT has_table_privilege('turas_runtime','public.operations_replay_fences','INSERT,UPDATE,DELETE,TRUNCATE') AS write")).rows[0].write!==false)throw Error('Runtime permanent request fence authority differs');
+  const runtimeRoles=(await db.query("SELECT rolname FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') ORDER BY rolname")).rows.map(row=>String(row.rolname));
+  if(!runtimeRoles.includes('turas_runtime')||isWorkRecoveryDecisionClient(db)&&!runtimeRoles.includes('turas_runtime_016'))throw Error('Actual recovery runtime roles unavailable');
+  for(const role of runtimeRoles)if((await db.query("SELECT has_table_privilege($1,'public.operations_replay_fences','INSERT,UPDATE,DELETE,TRUNCATE') OR has_any_column_privilege($1,'public.operations_replay_fences','INSERT,UPDATE') AS write",[role])).rows[0]?.write!==false)throw Error('Runtime permanent request fence authority differs');
   const tables=[];
   for(const [name,entry] of entries){
    // Names/columns are already constrained by the versioned snapshot schema.
@@ -79,6 +82,10 @@ export async function auditRecoveredRequestFencesInTransaction(db:Client|PoolCli
     CROSS JOIN LATERAL unnest(i.indkey) WITH ORDINALITY k(attnum,ordinal) JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum=k.attnum
     WHERE n.nspname='public' AND c.relname=$1 AND i.indisunique AND i.indisvalid AND i.indisready AND i.indpred IS NULL AND i.indexprs IS NULL AND k.ordinal<=i.indnkeyatts GROUP BY i.indexrelid`,[name])).rows;
    const available=new Set(indexes.map(row=>JSON.stringify(row.columns)));
+   if(currentReplayTables.includes(name)){
+    const declared=new Set((snapshot.tables.find(table=>table.name===name)?.replayKeyColumns??[]).map(columns=>JSON.stringify(columns)));
+    if(declared.size!==available.size||[...available].some(columns=>!declared.has(columns)))throw Error('Complete actual business replay indexes required');
+   }
    if([...entry.columns.keys()].some(columns=>!available.has(columns)))throw Error('Actual permanent request index differs');
    const keys=[...entry.keys.values()];
    const missing=(await db.query(`SELECT count(*)::int AS missing FROM jsonb_to_recordset($1::jsonb) expected(columns jsonb,digest text)
