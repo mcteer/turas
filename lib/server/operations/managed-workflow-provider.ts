@@ -1,3 +1,4 @@
+import {managedAliasPageSchema} from './managed-alias-inventory';
 import {z} from 'zod';
 import {managedRunMetadataSchema,managedRunPageSchema} from './managed-workflow-inventory';
 import {managedDeploymentPageSchema} from './managed-deployment-inventory';
@@ -19,6 +20,10 @@ export async function bindManagedRunProvider(raw:z.infer<typeof scopeSchema>,sig
  const runId=(id:string)=>z.string().regex(/^wrun_[A-Za-z0-9_-]{1,240}$/).parse(id);
  const metadata=managedRunMetadataSchema;
  return {
+  listProjectAliases:async(until:number)=>{
+   const query=new URLSearchParams({projectId:scope.projectId,teamId:scope.teamId,limit:'100',until:String(z.number().int().nonnegative().safe().parse(until))});
+   return managedAliasPageSchema.parse(await call('/v4/aliases?'+query.toString(),'GET',true));
+  },
   listProjectDeployments:async(until:number)=>{
    const query=new URLSearchParams({projectId:scope.projectId,teamId:scope.teamId,limit:'100',until:String(z.number().int().nonnegative().safe().parse(until))});
    return managedDeploymentPageSchema.parse(await call('/v6/deployments?'+query.toString(),'GET',true));

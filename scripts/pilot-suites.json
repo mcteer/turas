@@ -1806,6 +1806,26 @@
         "authenticates real work integrity bytes and rejects forged changed-object archive and grant proofs",
         "rechecks exhaustive native provider and deployment inventories without claiming old-host or effect closure"
       ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-alias-inventory.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "normalizes DNS spelling and default ports while rejecting ambiguous or credential-bearing hosts",
+        "exhausts both alias traversals including custom and branch hosts without granting closure",
+        "rejects foreign routing mismatched identities duplicate DNS and incomplete page counts",
+        "rejects cursor cycles overflow changed inventories and undocumented routing fields"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/work-host-deny-policy.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "validates only the exact first unconditional host deny without claiming provider or HTTP proof",
+        "rejects disabled draft foreign or unapproved policies",
+        "rejects skip paths extra conditions and unknown effective configuration",
+        "rejects wildcard duplicate noncanonical and inverted host predicates"
+      ]
     }
   ],
   "ui": {

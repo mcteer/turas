@@ -4679,3 +4679,27 @@ independent closure journals, effects and the final authoritative producer remai
 separate requirements. Its old-host/effect/readiness flags remain false.
 The registered inventory is864cases across157suites; no full current-source or
 hosted completion is claimed.
+
+
+### Alias census and effective host-policy parser — 2026-10-19
+
+The project-wide alias adapter traverses all aliases twice without branch or
+target filtering, rejecting routing ambiguity, foreign bindings, duplicate
+identities, cursor errors and inventory drift. The exact DNS parser rejects
+URLs, paths, whitespace, credentials, wildcards and unsupported ports. The
+effective-policy parser accepts only the first and sole enabled, valid,
+unconditional host-not-in deny rule with an exact canonical allowlist; unknown
+policy fields, bypass rules and IP overrides fail closed. Neither helper grants
+HTTP closure or recovery readiness.
+
+All18 focused alias, policy, deployment and deadline checks and pilot types pass.
+A read-only actual project alias census returned80 entries in each complete
+traversal, with identical digests. Active firewall version1 remains unchanged.
+The conditional-bypass endpoint explicitly reports the feature unavailable for
+this team; that diagnostic is retained rather than represented as an empty
+inventory. The actual system-bypass endpoint returns an empty result. These
+control-plane observations do not establish current HTTP admission closure.
+Independent review found no blocker; its raw hostname delimiter comment was
+addressed and checked. The registered inventory is872cases/159suites. Fresh full
+source verification, composed current-host/old-host proof and hosted acceptance
+remain pending.

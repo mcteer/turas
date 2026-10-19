@@ -31,10 +31,10 @@ it('binds project and team but removes workflow target filtering for the deploym
   expect(parsed.searchParams.get('projectId')).toBe(scope.projectId);expect(parsed.searchParams.get('teamId')).toBe(scope.teamId);
   expect(parsed.searchParams.get('until')).toBe('1000');expect(parsed.searchParams.get('limit')).toBe('100');
   for(const key of ['target','state','status','branch','workflowName'])expect(parsed.searchParams.has(key)).toBe(false);
-  expect(options?.redirect).toBe('error');return Response.json(page([row()]));
+  expect(options?.redirect).toBe('error');return Response.json(parsed.pathname==='/v4/aliases'?{aliases:[],pagination:{count:0,next:null,prev:null}}:page([row()]));
  });
- await provider.listProjectDeployments(1000);expect(calls.map(c=>c.method)).toEqual(['GET','GET']);
- expect(calls[1].url.pathname).toBe('/v6/deployments');
+ await provider.listProjectDeployments(1000);await provider.listProjectAliases(1000);expect(calls.map(c=>c.method)).toEqual(['GET','GET','GET']);
+ expect(calls[1].url.pathname).toBe('/v6/deployments');expect(calls[2].url.pathname).toBe('/v4/aliases');
 });
 
 it('rejects changed metadata between complete traversals',async()=>{
