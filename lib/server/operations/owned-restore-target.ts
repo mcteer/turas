@@ -145,7 +145,7 @@ export async function withOwnedRestoredRuntime<T>(target:OwnedRestoreTarget,raw:
    if(identity.length!==1||identity[0].current_user!=='turas_runtime_016'||identity[0].session_user!=='turas_runtime_016'||identity[0].database!==decodeURIComponent(url.pathname.slice(1))||identity[0].environment_id!==scope.environmentId||Number(identity[0].schema_version)!==79)throw Error('Actual direct restored runtime required');
    let interrupted!:()=>void;
    const cancelled=new Promise<never>((_,reject)=>{interrupted=()=>reject(Error('Owned restored runtime interrupted'));deadline.addEventListener('abort',interrupted,{once:true});if(deadline.aborted)interrupted();});
-   try{return await Promise.race([run(runtime,deadline),cancelled]);}
+   try{deadline.throwIfAborted();return await Promise.race([run(runtime,deadline),cancelled]);}
    finally{deadline.removeEventListener('abort',interrupted);}
   }finally{
    // Cleanup uses a fresh bounded signal: cancellation must never skip closing
