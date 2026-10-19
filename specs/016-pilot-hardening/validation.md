@@ -3333,3 +3333,28 @@ work-restore integration case. Root/pilot TypeScript, web/eve builds, documentat
 and diff checks pass. Independent review found no remaining blocker. No URL or
 owner credential is exposed to the callback. Both runtime logins remain closed
 afterward. This does not prove restricted HTTP service or complete T088 recovery.
+
+
+The3983853 complete catalog failed owned production-build setup in load-mcp
+after64successful suites/402passing cases. Its MCP case was not exercised and no
+passing execution receipt exists. This source predates the65b0d98 authored-bundle
+correction. A new final-source complete777-case catalog remains mandatory.
+
+The fixed maintenance profile path now has actual HTTP proof through the direct
+restricted runtime of an authenticated owned restore. Ten final integration/config
+cases pass, including ordinary-route denial, missing session/secret, exact accepted
+profile, concurrent reservations/finite ceiling, owner-transition ordering, atomic
+concurrent retirement, expiry and wrong database binding. Twelve operational
+admission cases, six properly provisioned055-to079/repeat-migration cases and
+three rendered-report/owner-recovery cases also pass. An initial broader invocation
+failed because it lacked the outer owned migration fixture and prepared renderer;
+those exact checks were rerun with their real prerequisites, without skips.
+
+Root/pilot TypeScript, web/eve builds, documentation and diff checks pass. Independent
+review found and corrected lock-upgrade/fence-order issues and required explicit
+admission-before-session locking. Runtime retains SELECT-only control access.
+The unshipped079 migration/manifest adds owner-controlled HTTP admissions;001–078
+are unchanged and Production remains077. Earlier079 receipts retain their original
+source/manifest identity; a fresh exact-manifest cold rehearsal is required before
+release. The issuer currently supports owned drills and profiles only. No private-
+byte service, complete T085/T088 recovery, hosted acceptance or unlock is claimed.

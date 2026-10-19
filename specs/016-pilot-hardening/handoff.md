@@ -12,6 +12,19 @@ Git branch. Read spec, plan, tasks, data model, contracts and quickstart before 
 The final read-only cross-artifact analysis is reported in the planning completion
 message; it does not create an implementation or hosted acceptance record.
 
+## Current execution checkpoint
+
+Execution incorporates released main f8d196f; Production remains schema077.
+Unreleased078/079 are exercised only in owned targets. The079 manifest now also
+contains owner-controlled maintenance profile admissions; older rehearsal receipts
+retain their original manifest/source identities. Fixed HTTP profile access and
+restricted-runtime teardown have focused positive/denial/concurrency proof. Full
+private-byte/recovery verification, hosted journeys/configuration, actual cadence,
+participant observations and the owner decision remain unfinished. The777-case
+catalog needs fresh complete proof after implementation; the3983853 run failed
+owned production-build setup after64successful suites/402passing cases. No
+Production migration, feature merge or directory cleanup is implied.
+
 ## User decisions
 
 1. Controlled internal and explicitly assigned-partner pilot. Full customer

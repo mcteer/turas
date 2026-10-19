@@ -57,6 +57,16 @@ schema/grants, integrity, denial and replay verification. Cleanup/reconciliation
 runs under its own bounded authority while locked; ordinary UI/native/MCP reads and
 writes remain denied. The backup command never promotes a target or changes DNS.
 
+A fixed maintenance profile endpoint may perform canonical reads while locked
+only with an actual owner-issued admission and its separately bound live mcteer
+session. It binds the exact database endpoint, release/deployment, workspace,
+customer, recovery UUID/revision, expiry and finite request ceiling. Runtime may
+reserve requests but cannot create or alter admission identity. Every phase takes
+the recovery fence before admission/session row locks. Whole-read deadlines and
+post-read authorization apply; teardown revokes both admission and session.
+Ordinary login/routes and all domain writes remain closed. The current issuer is
+owned-drill-only and covers profiles; it is not complete hosted service recovery.
+
 ## Required recovery cases
 
 - Empty initialization and 055→078→079 with exact migration manifest/runtime grants.

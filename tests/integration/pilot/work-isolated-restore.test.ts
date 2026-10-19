@@ -1,3 +1,6 @@
+import {authenticateRecoveryHttpRead} from '../../../lib/server/operations/recovery-http-read';
+import {issueOwnedRecoveryHttpRead,retireOwnedRecoveryHttpRead} from '../../../lib/server/operations/recovery-http-read-issuer';
+import {sessionCookie} from '../../../lib/server/auth/sessions';
 import {withOwnedRecoveryConfiguration} from '../../../lib/server/operations/recovery-configuration';
 import {getServerConfig} from '../../../lib/server/config';
 import {withAuthenticatedOwnerRecoveryRead} from '../../../lib/server/operations/authenticated-recovery-read';
@@ -97,6 +100,14 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
     finally{process.env.DATABASE_URL=priorRuntime;}
     await expect(withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async()=>{throw Error('Controlled scoped read failure');})).rejects.toThrow('Controlled scoped read failure');
     expect(getServerConfig().TURAS_ENVIRONMENT_ID).toBe(environment.environmentId);
+    let httpAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
+    await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{
+     await owner.query('BEGIN');
+     try{httpAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedProfile.workspaceId,customerId:expectedProfile.customerId,deadline:Date.now()+59000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:3,deploymentId:null});await owner.query('COMMIT');}
+     catch(error){await owner.query('ROLLBACK');throw error;}
+    });
+    if(!httpAdmission)throw Error('Actual owner-issued HTTP admission missing');
+    const admission=httpAdmission;
     // Real SQL rollback and ambiguous COMMIT acknowledgments must both close
     // the role and leave an explicitly repeatable owned operation.
     const originalQuery=Client.prototype.query;
@@ -117,13 +128,74 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
      expect((await db.query("SELECT 1 FROM pg_auth_members WHERE member='turas_runtime_016'::regrole")).rowCount).toBe(0);
     }
     await interruptedPreparation(false);
-    await withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async runtime=>{
+    await withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async(runtime,_signal,applicationEnvironment)=>{
      expect((await runtime.query('SELECT current_user,session_user')).rows[0]).toEqual({current_user:'turas_runtime_016',session_user:'turas_runtime_016'});
      expect((await runtime.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');
      await expect(runtime.query("UPDATE operations_control SET mode='open'")).rejects.toMatchObject({code:'42501'});
      await expect(runtime.query('CREATE TABLE runtime_escalation(id int)')).rejects.toMatchObject({code:'42501'});
      await expect(withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async()=>{})).rejects.toThrow('already active');
      await expect(withOwnedRestoredRuntime(otherOwnedTarget,scope,environment.signal,async()=>{})).rejects.toThrow('database lease active');
+     const saved=Object.fromEntries(Object.keys(applicationEnvironment).map(key=>[key,process.env[key]]));
+     try{Object.assign(process.env,applicationEnvironment);await environment.start();}
+     finally{for(const [key,value] of Object.entries(saved)){if(value===undefined)delete process.env[key];else process.env[key]=value;}}
+     try{
+      const path=environment.origin+'/api/operations/recovery-read/'+admission.id+'/profile';
+      const cookie=sessionCookie(admission.actor.token,admission.actor.expiresAt).split(';')[0];
+      const headers={cookie,'x-turas-recovery-read':admission.secret,host:new URL(environment.origin).host};
+      await runtime.query('BEGIN');
+      try{await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,()=>authenticateRecoveryHttpRead(runtime as unknown as PoolClient,new Request(path,{headers}),admission.id,false));await runtime.query('COMMIT');}
+      catch(error){await runtime.query('ROLLBACK');throw error;}
+      const noSecret=await fetch(path,{headers:{cookie},redirect:'manual'});expect(noSecret.status).toBe(403);await noSecret.body?.cancel();
+      const noSession=await fetch(path,{headers:{'x-turas-recovery-read':admission.secret},redirect:'manual'});expect(noSession.status).toBe(403);await noSession.body?.cancel();
+      const normal=await fetch(environment.origin+'/api/customers/'+expectedProfile.customerId+'/profile',{headers,redirect:'manual'});expect([401,503]).toContain(normal.status);await normal.body?.cancel();
+      const response=await fetch(path,{headers,redirect:'manual'});if(response.status!==200){const failure=await response.json() as {error:{code:string}};throw Error('Recovery HTTP denied: '+response.status+' '+failure.error.code);}expect(response.status).toBe(200);
+      const body=await response.json() as {data:{customer:{id:string};acceptedFacts:{id:string}[]}};
+      expect(body.data.customer.id).toBe(expectedProfile.customerId);expect(body.data.acceptedFacts.some(fact=>fact.id===expectedProfile.revisionId)).toBe(true);
+      // A correctly ordered owner transition waits on the shared recovery
+      // fence, then proceeds when the actual runtime read transaction closes.
+      const transitioning=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await transitioning.connect();
+      let waiting:Promise<unknown>|undefined;
+      try{
+       await runtime.query('BEGIN');await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,()=>authenticateRecoveryHttpRead(runtime as unknown as PoolClient,new Request(path,{headers}),admission.id,false));
+       const pid=Number((await transitioning.query('SELECT pg_backend_pid() AS pid')).rows[0].pid);
+       await transitioning.query('BEGIN');waiting=transitioning.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[scope.environmentId]);
+       const until=Date.now()+3000;
+       while(!(await db.query("SELECT 1 FROM pg_stat_activity WHERE pid=$1 AND wait_event='advisory'",[pid])).rowCount){if(Date.now()>until)throw Error('Owner transition did not reach recovery fence');await new Promise(done=>setTimeout(done,10));}
+       await runtime.query('COMMIT');await waiting;waiting=undefined;
+       await transitioning.query('SELECT mode FROM operations_control WHERE environment_id=$1 FOR UPDATE',[scope.environmentId]);await transitioning.query('ROLLBACK');
+      }finally{await runtime.query('ROLLBACK');if(waiting)await waiting.catch(()=>{});await transitioning.query('ROLLBACK');await transitioning.end();}
+      const concurrent=await Promise.all([fetch(path,{headers,redirect:'manual'}),fetch(path,{headers,redirect:'manual'})]);
+      for(const result of concurrent){expect(result.status).toBe(200);await result.body?.cancel();}
+      const exhausted=await fetch(path,{headers,redirect:'manual'});expect(exhausted.status).toBe(429);await exhausted.body?.cancel();
+      await expect(runtime.query("UPDATE operations_recovery_http_reads SET secret_hash=repeat('0',64) WHERE id=$1",[admission.id])).rejects.toMatchObject({code:'42501'});
+      const wrong=await fetch(path+'?customerId='+randomUUID(),{headers,redirect:'manual'});expect(wrong.status).toBe(403);await wrong.body?.cancel();
+      const binding=(await db.query('SELECT database_binding_digest FROM operations_recovery_http_reads WHERE id=$1',[admission.id])).rows[0].database_binding_digest;
+      await db.query("UPDATE operations_recovery_http_reads SET database_binding_digest=repeat('0',64) WHERE id=$1",[admission.id]);
+      const wrongDatabase=await fetch(path,{headers,redirect:'manual'});expect(wrongDatabase.status).toBe(403);await wrongDatabase.body?.cancel();
+      await db.query('UPDATE operations_recovery_http_reads SET database_binding_digest=$2 WHERE id=$1',[admission.id,binding]);
+      await db.query("UPDATE operations_recovery_http_reads SET expires_at=created_at+interval '1 millisecond' WHERE id=$1",[admission.id]);
+      const expired=await fetch(path,{headers,redirect:'manual'});expect(expired.status).toBe(403);await expired.body?.cancel();
+      let retirementAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
+      await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{
+       await owner.query('BEGIN');try{retirementAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedProfile.workspaceId,customerId:expectedProfile.customerId,deadline:Date.now()+59000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:1,deploymentId:null});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}
+      });
+      if(!retirementAdmission)throw Error('Actual retirement admission missing');
+      const retiring=retirementAdmission,retirementOwner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await retirementOwner.connect();
+      let closing:Promise<{error:unknown}>|undefined;
+      const retirementPath=environment.origin+'/api/operations/recovery-read/'+retiring.id+'/profile',retirementHeaders={...headers,cookie:sessionCookie(retiring.actor.token,retiring.actor.expiresAt).split(';')[0],'x-turas-recovery-read':retiring.secret};
+      try{
+       await runtime.query('BEGIN');await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,()=>authenticateRecoveryHttpRead(runtime as unknown as PoolClient,new Request(retirementPath,{headers:retirementHeaders}),retiring.id,false));
+       const pid=Number((await retirementOwner.query('SELECT pg_backend_pid() AS pid')).rows[0].pid);
+       closing=retireOwnedRecoveryHttpRead(retirementOwner as unknown as PoolClient,retiring.id).then(()=>({error:null}),error=>({error}));
+       const until=Date.now()+2000;
+       while(!(await db.query("SELECT 1 FROM pg_stat_activity WHERE pid=$1 AND wait_event_type='Lock'",[pid])).rowCount){if(Date.now()>until)throw Error('Retirement did not wait for its active read');await new Promise(done=>setTimeout(done,10));}
+       await runtime.query('COMMIT');const result=await closing;closing=undefined;if(result.error)throw result.error;
+       const revoked=await fetch(retirementPath,{headers:retirementHeaders,redirect:'manual'});expect(revoked.status).toBe(403);await revoked.body?.cancel();
+       expect((await db.query('SELECT revoked_at IS NOT NULL AS revoked FROM login_sessions WHERE id=$1',[retiring.actor.sessionId])).rows[0].revoked).toBe(true);
+      }finally{await runtime.query('ROLLBACK');if(closing)await closing;await retirementOwner.end();await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,retiring.id);}
+
+     }finally{await environment.stop();await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,admission.id);}
+
     });
     expect((await db.query("SELECT 1 FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') AND rolcanlogin")).rowCount).toBe(0);
     await interruptedPreparation(true);

@@ -95,10 +95,10 @@ export async function withOwnedRestoreTarget<T>(target:OwnedRestoreTarget,scope:
 }
 
 /** Temporary direct restricted connection for an owned restored target. Authored
- * runtime grants are explicit here, never a request-handler migration. No URL or
- * owner credential leaves this helper. This is not HTTP admission or recovery
+ * runtime grants are explicit here, never a request-handler migration. Child
+ * application configuration contains only the restricted runtime credential. This is not HTTP admission or recovery
  * verification. Both logins are closed and temporary backends drained on exit. */
-export async function withOwnedRestoredRuntime<T>(target:OwnedRestoreTarget,raw:Scope,signal:AbortSignal,run:(runtime:Client,signal:AbortSignal)=>Promise<T>){
+export async function withOwnedRestoredRuntime<T>(target:OwnedRestoreTarget,raw:Scope,signal:AbortSignal,run:(runtime:Client,signal:AbortSignal,applicationEnvironment:Readonly<Record<string,string>>)=>Promise<T>){
  const b=binding(target),scope=Object.freeze(scopeSchema.parse(raw));
  if(runtimeActive.has(target))throw Error('Owned restored runtime already active');
  runtimeActive.add(target);
@@ -145,7 +145,7 @@ export async function withOwnedRestoredRuntime<T>(target:OwnedRestoreTarget,raw:
    if(identity.length!==1||identity[0].current_user!=='turas_runtime_016'||identity[0].session_user!=='turas_runtime_016'||identity[0].database!==decodeURIComponent(url.pathname.slice(1))||identity[0].environment_id!==scope.environmentId||Number(identity[0].schema_version)!==79)throw Error('Actual direct restored runtime required');
    let interrupted!:()=>void;
    const cancelled=new Promise<never>((_,reject)=>{interrupted=()=>reject(Error('Owned restored runtime interrupted'));deadline.addEventListener('abort',interrupted,{once:true});if(deadline.aborted)interrupted();});
-   try{deadline.throwIfAborted();return await Promise.race([run(runtime,deadline),cancelled]);}
+   try{deadline.throwIfAborted();return await Promise.race([run(runtime,deadline,Object.freeze({DATABASE_URL:url.toString(),DATABASE_URL_UNPOOLED:url.toString(),TURAS_ENVIRONMENT_ID:scope.environmentId})),cancelled]);}
    finally{deadline.removeEventListener('abort',interrupted);}
   }finally{
    // Cleanup uses a fresh bounded signal: cancellation must never skip closing

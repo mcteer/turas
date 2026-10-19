@@ -10,10 +10,9 @@ import {requireOwnedLockedRecoveryTarget} from './restored-work-integrity';
 import {withOwnerRecoveryReadCapability} from './admission';
 
 const inputSchema=z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive(),workspaceId:z.uuid(),deadline:z.number().int().positive(),password:z.string().min(1).max(4096)});
-/** Protected owned recovery only. Authenticate the configured mcteer credential,
- * create a transaction-local short-lived session and retire it before returning.
- * Ordinary login remains closed. This neither certifies health nor unlocks. */
-export async function withAuthenticatedOwnerRecoveryRead<T>(db:PoolClient,raw:z.infer<typeof inputSchema>,read:(actor:CurrentSession)=>Promise<T>):Promise<T>{
+/** Operator-only constructor. Requires the caller's owner transaction and exact
+ * owned locked target. The caller must retire this new session on every exit. */
+export async function createAuthenticatedOwnerRecoverySession(db:PoolClient,raw:z.infer<typeof inputSchema>):Promise<CurrentSession>{
  const input=inputSchema.parse(raw),config=getServerConfig();
  if(input.environmentId!==config.TURAS_ENVIRONMENT_ID||input.deadline<=Date.now()||input.deadline>Date.now()+300000)throw new HttpFailure(403,'forbidden','Recovery authentication unavailable');
  // Refuse autocommit before credentials or session creation. The caller owns
@@ -34,6 +33,13 @@ export async function withAuthenticatedOwnerRecoveryRead<T>(db:PoolClient,raw:z.
  const row=rows[0],sessionId=randomUUID(),token=createSessionToken(),expiresAt=new Date(input.deadline);
  await db.query('INSERT INTO login_sessions(id,principal_id,token_hash,created_at,expires_at,membership_id,workspace_id) VALUES($1,$2,$3,$4,$5,$6,$7)',[sessionId,row.principal_id,hashSessionToken(token),now,expiresAt,row.membership_id,row.workspace_id]);
  const actor:CurrentSession=Object.freeze({principalId:row.principal_id,loginName:row.login_name,displayName:row.display_name,membershipId:row.membership_id,workspaceId:row.workspace_id,workspaceClassification:row.classification,kind:'internal',role:'admin',sessionId,token,expiresAt});
+ return actor;
+}
+/** Protected owned recovery only. Authenticate the configured mcteer credential,
+ * create a transaction-local short-lived session and retire it before returning.
+ * Ordinary login remains closed. This neither certifies health nor unlocks. */
+export async function withAuthenticatedOwnerRecoveryRead<T>(db:PoolClient,raw:z.infer<typeof inputSchema>,read:(actor:CurrentSession)=>Promise<T>):Promise<T>{
+ const input=inputSchema.parse(raw),actor=await createAuthenticatedOwnerRecoverySession(db,input),sessionId=actor.sessionId;
  await db.query('SAVEPOINT authenticated_recovery_read');
  try{
   const result=await withOwnerRecoveryReadCapability(db,actor,{environmentId:input.environmentId,recoveryId:input.recoveryId,controlRevision:input.controlRevision,deadline:input.deadline},()=>read(actor));

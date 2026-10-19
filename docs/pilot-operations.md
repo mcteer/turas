@@ -739,9 +739,34 @@ The legacy role stays retired; the replacement receives a temporary credential
 and direct connection for at most60seconds. Success, callback failure, rollback,
 ambiguous commit acknowledgment and cancellation all close the login, clear its
 credential, drain its backends and revoke CONNECT and inheritance. An unrelated
-role binding or changed closed grant boundary is rejected. The callback receives
-no connection URL or owner credential. This helper does not start HTTP service,
+role binding or changed closed grant boundary is rejected. The callback receives restricted runtime-only child configuration; it contains
+credentials and must remain private. No owner credential is supplied. This helper does not start HTTP service,
 permit ordinary locked routes or create a recovery verification receipt.
+
+### Fixed maintenance profile reads
+
+The unreleased079 migration includes owner-controlled, short-lived recovery HTTP
+admissions. Existing001–078 migrations are unchanged. This amendment requires a
+fresh exact-manifest restore rehearsal before release; prior079 results retain
+their original source identity.
+
+`issueOwnedRecoveryHttpRead` authenticates the real configured mcteer credential
+against the actual owned locked restore, then creates a new bound session and an
+exact customer/workspace/recovery/revision/release/origin/deployment admission.
+The caller owns its transaction and must retain the returned secret and session
+only in private memory. Only the capability-secret hash is stored. The initial
+issuer supports owned recovery drills; it does not provision hosted admission.
+
+The fixed GET `/api/operations/recovery-read/<admission-id>/profile` requires both
+that session cookie and `x-turas-recovery-read`. It validates the live owner-issued
+admission through a direct restricted runtime login, commits a finite request
+reservation, then runs the canonical profile reader with its normal authorization,
+source eligibility, rate accounting and final reauthentication. Requests are
+limited to at most10 within60seconds. Ordinary login/routes remain locked. There
+is no arbitrary URL, SQL, customer selector or write dispatcher. HEAD and query
+expansion are denied. No response is cached. Teardown atomically revokes the
+admission and its session, retaining the minimal observations. This profile-only
+path proves neither private-byte service nor complete recovery/unlock eligibility.
 
 ### Finite complete managed-run inventory closure
 

@@ -37,6 +37,34 @@ exports.up = (pgm) => pgm.sql(`
   operation_digest text NOT NULL CHECK(operation_digest ~ '^[a-f0-9]{64}$'),
   bundle_digest text CHECK(bundle_digest ~ '^[a-f0-9]{64}$'),created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   UNIQUE(environment_id,revision));
+ -- Owner-issued maintenance reads never reopen ordinary admission. Only a
+ -- secret hash is retained, with exact session/record/release/scope and limits.
+ CREATE TABLE operations_recovery_http_reads(
+  id uuid PRIMARY KEY,environment_id text NOT NULL REFERENCES operations_control(environment_id),
+  recovery_id uuid NOT NULL,control_revision bigint NOT NULL CHECK(control_revision>0),
+  session_id uuid NOT NULL REFERENCES login_sessions(id),workspace_id uuid NOT NULL REFERENCES workspaces(id),
+  customer_id uuid NOT NULL REFERENCES customer_references(id),
+  source_commit text NOT NULL CHECK(source_commit ~ '^[a-f0-9]{40}$'),
+  origin text NOT NULL,deployment_id text,
+  secret_hash text NOT NULL CHECK(secret_hash ~ '^[a-f0-9]{64}$'),
+  database_binding_digest text NOT NULL CHECK(database_binding_digest ~ '^[a-f0-9]{64}$'),
+  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),expires_at timestamptz NOT NULL,
+  revoked_at timestamptz,maximum_requests integer NOT NULL CHECK(maximum_requests BETWEEN 1 AND 10),
+  used_requests integer NOT NULL DEFAULT 0 CHECK(used_requests>=0 AND used_requests<=maximum_requests),
+  CHECK(expires_at>created_at AND expires_at<=created_at+interval '60 seconds'));
+ CREATE FUNCTION turas_recovery_http_read_guard() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+  IF current_user<>pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='operations_control'::regclass)) THEN
+   IF TG_OP<>'UPDATE' THEN RAISE EXCEPTION 'Recovery read requires owner' USING ERRCODE='42501'; END IF;
+   IF (to_jsonb(NEW)-'used_requests') IS DISTINCT FROM (to_jsonb(OLD)-'used_requests') OR NEW.used_requests<>OLD.used_requests+1 THEN
+    RAISE EXCEPTION 'Recovery read permits only bounded reservation' USING ERRCODE='42501'; END IF;
+  END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+  PERFORM pg_advisory_xact_lock_shared(hashtextextended(NEW.environment_id,16017));
+  IF TG_OP='INSERT' AND NOT EXISTS(SELECT 1 FROM operations_control WHERE environment_id=NEW.environment_id AND mode='locked' AND revision=NEW.control_revision AND recovery_id=NEW.recovery_id) THEN
+   RAISE EXCEPTION 'Exact locked recovery read scope required' USING ERRCODE='23514'; END IF;
+  RETURN NEW;
+ END $$;
+ CREATE TRIGGER recovery_http_read_guard BEFORE INSERT OR UPDATE OR DELETE ON operations_recovery_http_reads FOR EACH ROW EXECUTE FUNCTION turas_recovery_http_read_guard();
  CREATE TABLE operations_recovery_verifications(
   id uuid PRIMARY KEY,environment_id text NOT NULL REFERENCES operations_control(environment_id),
   recovery_id uuid NOT NULL,control_revision bigint NOT NULL CHECK(control_revision>=1),

@@ -1,3 +1,4 @@
+import {authenticateRecoveryHttpRead} from './recovery-http-read';
 import type {PoolClient} from 'pg';
 import {createHash} from 'node:crypto';
 import {getServerConfig} from '../config';
@@ -30,6 +31,15 @@ export async function withOwnerRecoveryReadCapability<T>(client:PoolClient,actor
  if(rows.length!==1)throw new HttpFailure(403,'forbidden','Exact owner recovery read probe required');
  recoveryReadActors.set(actor,{client,environmentId:scope.environmentId,recoveryId:scope.recoveryId,revision:scope.controlRevision,deadline:scope.deadline});
  try{return await read();}finally{recoveryReadActors.delete(actor);}
+}
+/** The fixed maintenance handler authenticates an actual owner-issued database
+ * admission on this direct runtime transaction, never a caller-supplied actor. */
+export async function withRecoveryHttpReadCapability<T>(db:PoolClient,request:Request,id:string,read:(actor:CurrentSession,customerId:string)=>Promise<T>){
+ const proof=await authenticateRecoveryHttpRead(db,request,id,false);
+ await db.query('SELECT pg_advisory_xact_lock_shared(hashtextextended($1,16017))',[proof.environmentId]);
+ recoveryReadActors.set(proof.actor,{client:db,environmentId:proof.environmentId,recoveryId:proof.recoveryId,revision:proof.controlRevision,deadline:proof.deadline});
+ try{const result=await read(proof.actor,proof.customerId);await authenticateRecoveryHttpRead(db,request,id,false);return result;}
+ finally{recoveryReadActors.delete(proof.actor);}
 }
 const cancelledPaths=/^(?:\/api\/artifacts\/intents\/[a-f0-9-]{36}\/cancel|\/eve\/v1\/session\/wrun_[A-Za-z0-9_-]+\/cancel)$/;
 /** The exception is an in-process capability attached only to a verified session on a fixed cancellation handler. */

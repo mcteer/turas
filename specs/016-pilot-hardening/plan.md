@@ -2,7 +2,7 @@
 
 **Branch**: `016-pilot-hardening` | **Date**: 2026-10-10 | **Spec**: [spec.md](spec.md)
 
-**Input**: `specs/016-pilot-hardening/spec.md`. Implementation is in progress. Baseline is released 015 on schema 055;
+**Input**: `specs/016-pilot-hardening/spec.md`. Implementation is in progress. Execution incorporates released main f8d196f on schema077; the original planning baseline was015 on schema055.
 016 migrations have been exercised only in owned disposable local environments.
 No 016 hosted release has run.
 
@@ -22,7 +22,7 @@ authentication, onboarding, new business capability or automatic external send.
 
 **Language/Version**: Node 24, TypeScript 7.0.2; explicit SQL migrations.
 
-**Primary Dependencies**: Existing Next 16.3.4, React 19.2.6, eve 0.67.1, pg 8.23.0,
+**Primary Dependencies**: Existing Next 16.3.8, React 19.2.6, eve 0.67.1, pg 8.23.1,
 Zod 4.5.4 and MCP SDK 2.3.1. Add reviewed/pinned public `@vercel/blob` and
 `@vercel/sandbox` SDKs only for verified 016 adapters. Read installed Next auth,
 route-handler and upload guides and installed eve deployment/sandbox/auth pages

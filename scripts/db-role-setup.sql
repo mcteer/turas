@@ -318,6 +318,9 @@ DO $$ BEGIN
  IF to_regclass('public.operations_control') IS NOT NULL THEN
   REVOKE ALL ON operations_control,operations_control_transitions,operations_recovery_verifications FROM turas_runtime;
   GRANT SELECT ON operations_control,operations_control_transitions,operations_recovery_verifications TO turas_runtime;
+  REVOKE ALL ON operations_recovery_http_reads FROM turas_runtime;
+  GRANT SELECT ON operations_recovery_http_reads TO turas_runtime;
+  GRANT UPDATE(used_requests) ON operations_recovery_http_reads TO turas_runtime;
   REVOKE ALL ON operations_source_denials FROM turas_runtime;
   GRANT SELECT ON operations_source_denials TO turas_runtime;
   REVOKE ALL ON operations_replay_fences FROM turas_runtime;
