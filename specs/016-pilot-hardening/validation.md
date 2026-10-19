@@ -4561,3 +4561,29 @@ The split suite now passes2/2 with no skips in
 `work-recovery-metadata-v1-private.json` passes6/6 deadline/SQL cases. Root and
 pilot types and documentation hygiene pass. The earlier unsplit18-case receipt
 remains a separate checkpoint; final catalog execution is still pending.
+
+### MCP CI discovery import repair — 2026-10-19
+
+The7955427 MCP WebKit failure was reproduced locally. Retained discovery output
+identifies Node24 rejecting the recovery replay JSON import without a JSON import
+attribute. Ordinary MCP management had eagerly loaded owner-only recovery
+platform/CLI dependencies. Its recovery target import is now type-only, with the
+genuine registry check loaded only when the private recovery issuer executes.
+The replay JSON import also carries the required attribute. No authorization,
+model, role, quota or ordinary MCP admission changes.
+
+`mcp-ui-discovery-fix-full-v1-private.log` records32/32 WebKit cases across all4
+configurations, zero skips. `mcp-discovery-fix-acceptance-private.log` records54/54
+cases in19 suites, including3 actual SDK consumer suites against the production
+runtime. Both bind source digest
+`817b5496d2f1ad9d8590a4f99cac672d074d676f042705229939bf8f28cbead2`.
+`recovery-mcp-import-fix-private.json` passes2/2 recovery decision/SDK cases after
+the lazy import repair. The first discovery-only invocation selected nonexistent
+filenames and reported no tests; the corrected manifest filenames discover with
+zero errors. Discovery stdout/stderr/process metadata are now retained privately,
+with fixed safe failure fields printed, so future import failures remain diagnosable.
+
+The earlier unsplit target checkpoint `work-mcp-category-target-v14-private.json`
+also passes18/18 with no skips. Its filename/case inventory predates the suite
+split and is not the current catalog. Hosted checks, final source CI/catalog,
+remaining Workflow/effect/authoritative producer and release remain pending.

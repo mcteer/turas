@@ -1,4 +1,4 @@
-import currentReplayTables from '../../contracts/recovery-replay-tables.json';
+import currentReplayTables from '../../contracts/recovery-replay-tables.json' with {type:'json'};
 import type {Client,PoolClient} from 'pg';
 import {z} from 'zod';
 import {randomUUID,createHash} from 'node:crypto';

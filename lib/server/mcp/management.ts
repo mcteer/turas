@@ -1,4 +1,4 @@
-import {requireRegisteredWorkMcpProbe,type LockedWorkRecoveryTarget,reserveWorkRecoveryProbe} from '../operations/locked-work-recovery-target';
+import type {LockedWorkRecoveryTarget,reserveWorkRecoveryProbe} from '../operations/locked-work-recovery-target';
 import { createHash,randomBytes } from "node:crypto";
 import type { Client,PoolClient } from "pg";
 import { mcpCreateConnectionSchema,mcpRevokeConnectionSchema,mcpConnectionMetadataSchema,mcpManagementPageSchema,mcpIdSchema,type McpCreateConnection } from "../../contracts/mcp";
@@ -65,6 +65,8 @@ async function insertScopedMcpConnection(db:PoolClient,actor:CurrentSession,inpu
 /** Internal finite recovery issuer. JSON actors/reservations cannot manufacture
  * the target, registered preimages or active canonical participant capability. */
 export async function insertWorkRecoveryMcpConnection(db:Client,target:LockedWorkRecoveryTarget,actor:CurrentSession,intent:Awaited<ReturnType<typeof reserveWorkRecoveryProbe>>){
+ // Keep owner-only CLI/platform dependencies outside ordinary MCP startup.
+ const {requireRegisteredWorkMcpProbe}=await import('../operations/locked-work-recovery-target');
  const probe=await requireRegisteredWorkMcpProbe(db,target,intent),client=db as unknown as PoolClient;
  if(isMcpReadActor(actor)||actor.principalId!==intent.principalId||actor.membershipId!==intent.membershipId||actor.workspaceId!==intent.workspaceId||actor.sessionId!==intent.sessionId||actor.token!==intent.sessionToken||actor.expiresAt.getTime()<Date.parse(probe.expiresAt))throw new HttpFailure(403,'forbidden','Actual authenticated recovery MCP issuer required');
  await assertMcpReady(client,true);await lockWorkspaceActor(client,actor,undefined,true,2000);
