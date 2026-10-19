@@ -57,7 +57,7 @@ Actual native question continuation exposed an unknown-turn rejection before inp
 
 The separate origin repair PR35 passed all43 exact-head CI gates and merged as20f1445c9f3b738e06dd06282292eafa4671bb97. Its Production deployment/hosted verification is separate from018 completion.
 
-The attempted schema-free question fix was rejected by real execution: the public dynamic-model callback has sequence/turn/step but no native event ID or timestamp. Migration077 now stores an explicit immutable application continuation receipt from the actual owner-posted question window to that actual callback turn; it does not fabricate framework events. Runtime grants are SELECT/INSERT only. Exact submitting-login revocation remains enforced on later admission. Focused checks pass; actual native recheck remains in progress. Release schema is077, including explicit073–077 migrations and runtime grants.
+The attempted schema-free question fix was rejected by real execution: the public dynamic-model callback has sequence/turn/step but no native event ID or timestamp. Migration 077 now stores an explicit immutable application continuation receipt from the actual owner-posted question window to that actual callback turn; it does not fabricate framework events. Runtime grants are SELECT/INSERT only. Exact submitting-login revocation remains enforced on later admission. Focused checks pass; actual native recheck remains in progress. Release schema is077, including explicit073–077 migrations and runtime grants.
 
 The schema077 source now passes the full configured130-file/562-test unit suite and complete Eve+Next production build, including TypeScript. Read-only independent review confirms exact posted-login binding, original deadlines, immutable receipts and schema-version compatibility guards. Actual basic question continuation now passes fresh-login/reload/Desktop reply, original workflow final answer and retained reload. Dismissal/older questions and final approval regression are still running; these are not marked passed prematurely.
 
@@ -496,3 +496,128 @@ with zero unclassified paths or actionable gaps in the authorized backend scope.
 Canonical environment, all40,615 original workflow files and selected root model
 remain unchanged. Documentation consolidation changes only release records; it does not create
 new backend execution evidence.
+
+
+## Session/read-lock follow-up — 2026-10-18 (in progress)
+
+Branch `018-legacy-session-fixes` starts from released main34eb05c. It ports the
+native legacy form/cookie/303 mechanism, terminal live-chat polling guard and
+plan-before-engagement assignment read lock, retaining current styling and all
+server authorization/decision boundaries. JSON unavailable remains 503; native
+storage failure returns a private safe error page without a session cookie.
+No 016 workspace sessions, infrastructure, schema 078/079, model changes or provider
+calls are included. The development supervisor remains unchanged.
+
+Earlier016-owned checks provide implementation evidence only:16 built WebKit
+login checks,4 history/scroll/denied-poll cases, the actual native operations and
+knowledge gate, and a real concurrent domain regression with an old-order negative
+check. They do not establish final-source acceptance for this branch. Its fresh
+local, CI, Preview, independent and Production checks remain pending.
+
+The fresh released-main dependency audit reports 1 critical,2 high,1 moderate and8 low
+findings. This fix pins Next 16.3.8 and narrowly overrides source-map-js 1.2.2 and
+Undici 8.9.0→8.10.2, preserving Eve 0.67.1 and unrelated Undici 7. The advisory sources
+are [Next image response](https://github.com/advisories/GHSA-vcvr-r3jv-pc5j),
+[Next image optimization](https://github.com/advisories/GHSA-cjq9-62q9-8jv4),
+[source-map-js](https://github.com/advisories/GHSA-68fv-2mgg-jv7q) and
+[Undici](https://github.com/advisories/GHSA-w293-vg96-wgc3). Dependency findings do
+not by themselves establish exploitability of the application's configured paths.
+The patched fresh-install audit reports 0 critical/high/moderate and8 low findings;
+it is not a zero-vulnerability claim. Eve remains0.67.1. Nine auth/privacy unit
+cases and root/execution types pass. Current-source browser, native and release
+validation remain pending.
+
+
+Focused branch local checkpoint: a fresh patched Next/Eve production build and
+**28/28 headless WebKit cases pass in 49.1 seconds** across all four projects. These
+include all three roles' login/logout, one actual native credential POST/cookie/303,
+JavaScript-disabled invalid/valid login and safe return, the real unavailable page,
+and history/scroll recovery followed by terminal denial with no later polling.
+Desktop-dark and mobile-light login captures were visually inspected. There is no
+intercepted successful login or modeled provider execution. The first attempt
+retains 24 passes/4 fixture failures: WebKit rejects `route.fulfill` with 303. The failure
+page check now performs a real GET; actual native/JSON storage failures and cookie
+privacy remain independently asserted in server contracts. No assertion is treated
+as proof of hosted behavior.
+
+The actual native operations/knowledge rerun is pending. Its owned Postgres logs
+are retained privately before cleanup; this gate now also rejects any actual
+deadlock or statement timeout instead of accepting a superficially passing UI.
+The existing cold-thread/upload route compilation setup is performed before
+unchanged interaction assertions. The long partner review journey uses its adjacent
+review case's 60-second bound; individual 5-second assertions and domain limits remain.
+
+
+The final owned local checkpoint explicitly forward-migrates the historical 012
+fixture through the released 077 manifest and reapplies runtime grants before
+building. **28/28 built UI cases pass in 46.6 seconds on that owned 077 target**.
+The earlier 28-case run used the helper's historical 049 fixture and is retained as
+that narrower evidence. The first lock-regression attempts on 049 fail on the
+missing 064 conversation column and do not establish a regression result. After
+explicit owned 077 migration/grants, the actual concurrency regression passes in
+3.49 seconds and the old-order negative check fails as intended. The full actual
+native operations/knowledge gate also passes on 077 with zero Postgres deadlocks
+and zero statement timeouts. No Production/Preview database was migrated.
+
+
+The broader focused-branch unit command passes **653/653 cases across 147 files**
+with synthetic configuration and disconnected loopback database URLs. Its first
+attempt retained 651 passes/2 configuration failures because the shell lacked the
+required synthetic cursor-signing configuration; no application change was made
+for that setup issue. Root/execution types, documentation and diff checks pass.
+T034/T035 implementation and local verification are complete. T036 full CI and
+T037 authenticated hosted/review/merge/release acceptance remain open.
+
+
+Final supervisor review found that checking only the parent shell would miss
+production dotenv values loaded by Next itself, including CI's synthetic setup.
+The supervisor now loads the same production configuration before its gates.
+Three actual child-process unit cases pass: production dotenv precedence rejects
+a nonlocal/malformed database without leaking values, file-loaded provider keys
+are rejected, and explicit safe shell values reach the build prerequisite. Root
+types pass. These are startup-guard checks; the prior 653-unit and 28-browser
+receipts remain their recorded source checkpoints, with fresh final CI required.
+
+The hosted customer-profile verifier now accepts the restored native 303 login on
+Preview and obtains identity/CSRF from the authenticated session endpoint. The
+unchanged Production comparison may use its existing 200 login until release.
+Preview protection uses the existing automation cookie instead of intercepting
+browser requests, preserving ordinary navigation and browser caching. The verifier
+tracks sessions before receipt checks so failure cleanup can recover the logout
+token. Root typecheck and diff checks pass; actual hosted acceptance remains open.
+
+
+Hosted checkpoint ca9a728 passes twelve actual headless WebKit login/session/
+composer/logout cases for all three roles, desktop/mobile and light/dark. Actual
+303 redirects, secure server cookies, authenticated identities, foreign-origin
+403 and logout revocation pass; desktop dark/mobile light captures retain the
+current look. All seven legacy acceptance CI jobs pass on that commit. Its broader
+CI is still running at this checkpoint; no full final-source claim is made.
+
+The strict profile check passes the real 184-customer directory and 1Password,
+then fails Notion equality: the general Preview contains23 researched records
+versus Production's10, including later revisions at two shared URLs. A separately
+labelled visual diagnostic passes both actual customers' navigation, product/
+source display and evidence search, but explicitly records acceptance:false.
+Do not reinterpret that diagnostic as a passing strict check or overwrite newer
+research. A historical immutable Preview built from the exact Production Git tree
+reads the Production-matching dataset from the existing isolated schema077 target.
+
+Fresh read-only checks of that isolated target verify actual turas_runtime login
+without owner authority, all34 permission assertions, all77 ledger entries through
+the owner, denied runtime ledger reads, no private execution/budget rows and no
+active sessions. Its retained AES-GCM backup authenticates and matches the prior
+actual restore proof; this does not claim a fresh restore was performed. The first
+probe wrongly attempted owner-only ledger reads as runtime and received42501; the
+corrected probe preserves that denial and inspects the ledger through the owner.
+The fix branch will use this existing target with five scoped configuration values
+and no provider allowance. The original strict checker remains unchanged apart
+from its native-login/session compatibility; fresh deployment acceptance is pending.
+
+The additional source-header probe expected a header implemented only in draft016;
+released main and this focused018 branch have no such header. Its failed assertion
+is retained, and no serving-header proof is claimed. Actual deployment identity is
+bound through immutable READY platform metadata and the exact canonical Production
+identity, which was rechecked around the successful read-only schema077/34-grant
+baseline. No Production migration, model turn, billing change or unknown-hold
+reconciliation was performed.

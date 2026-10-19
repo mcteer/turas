@@ -19,7 +19,7 @@ test("a cross-site return URL cannot redirect after sign-in", async ({ page }) =
   expect(new URL(page.url()).origin).toBe("http://127.0.0.1:3000");
 });
 
-test("sign-in uses one native credential POST and a server cookie redirect", async ({ page }) => {
+test("sign-in uses one native credential POST and a server cookie redirect", async ({ page }, info) => {
   test.setTimeout(60_000);
   let credentialPosts = 0, nonFormPosts = 0, credentialUrls = 0;
   page.on("request", request => {
@@ -30,6 +30,8 @@ test("sign-in uses one native credential POST and a server cookie redirect", asy
       if (!request.headers()["content-type"]?.startsWith("application/x-www-form-urlencoded")) nonFormPosts++;
     }
   });
+  await page.goto("/login");
+  await page.screenshot({ path: info.outputPath("native-login-form.png"), fullPage: true });
   const [response] = await Promise.all([
     page.waitForResponse(response => new URL(response.url()).pathname === "/api/auth/login" && response.request().method() === "POST", { timeout: 60_000 }),
     signIn(page, "panel"),

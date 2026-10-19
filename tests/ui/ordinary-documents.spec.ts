@@ -1,3 +1,4 @@
+import {selectCustomer} from '../fixtures/customer-picker';
 import {expect,test} from '@playwright/test';
 import {resolve} from 'node:path';
 import {signIn} from '../fixtures/ui';
@@ -33,7 +34,7 @@ test('ordinary documents keep their prompt and unverified content without a cust
 
 test('opening customer sources preserves attached context and does not dispatch the draft',async({page})=>{
  await signIn(page,'panel');await page.goto('/s');
- await page.getByLabel('Customer (optional)').selectOption({label:'Cedar (synthetic)'});
+ await selectCustomer(page,'Cedar (synthetic)');
  await page.getByLabel('Message Turi').fill('Review these selected sources before sending.');
  const picker=page.locator('input[type="file"][aria-label="Chat document files"]');
  await expect(picker).toBeEnabled();

@@ -315,3 +315,12 @@ Turas authority or reconcile an original operation. The read-only Gateway key
 inventory currently reports one selected-team key without a project binding or
 finite expiry. Other consumers and historical/OIDC credentials remain unverified.
 Do not rotate it, clear holds or mark old deployments closed from that metadata.
+
+### Completion resumption — 2026-10-18
+
+Reconcile with actual released main `f8d196f` before final checks, preserving the
+completed PR43–46 fixes and their historical proof. Existing pilot migrations
+078/079 remain additive after the immutable released001–077 ledger. Final-source
+validation and target-bound hosted recovery/storage acceptance remain required;
+expired budget envelopes are not renewed by a source merge. Genuine participant
+observations and two scheduled backups at least12hours apart remain required.

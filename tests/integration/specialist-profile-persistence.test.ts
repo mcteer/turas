@@ -1,3 +1,5 @@
+import {readPublicCustomerInventory} from '../../lib/server/profiles/public-inventory';
+import {projectNativeEvent} from '../../lib/server/conversations/projection';
 import {readOrdinaryPracticeEvidence,ordinaryPracticeAccount} from '../../lib/server/conversations/practice-evidence';
 import {searchNamedCustomerEvidence} from '../../lib/server/conversations/named-evidence-search';
 import {isolatedChatActor} from '../fixtures/isolated-chat-actor';
@@ -207,6 +209,13 @@ it('retains new public research for an assigned partner, preserves curated claim
   expect(profile.publicResearchCoverage?.description).toBe('Original checked business description.');
   const passages=await db.query(`SELECT p.passage_text AS text FROM retrieval_passages p JOIN retrieval_sources s ON s.id=p.source_id WHERE s.customer_id=$1 AND p.passage_text LIKE '%Sandboxes%'`,[customerId]);
   expect(passages.rows.some(row=>row.text.includes(late))).toBe(true);
+  // Product projection must consume the complete checked selected claim,
+  // independently of the 1,600-character public-learning display excerpt.
+  const selectedLong=`${name} architecture: `+'Verified customer architecture detail. '.repeat(52)+`${name} uses Next.js and Vercel Blob.`;
+  await retain(selectedLong,`${name} uses Next.js and Vercel Blob.`,0);
+  const longProfile=z.object({attributedResearch:z.array(z.object({productNames:z.array(z.string())}))}).parse(await readProfile(actor,customerId));
+  expect(longProfile.attributedResearch[0].productNames).toEqual(expect.arrayContaining(['Next.js','Blob']));
+  expect((await withTransaction(client=>readPublicCustomerInventory(client,actor,{query:'Blob'}))).accounts.map(account=>account.id)).toContain(customerId);
   // Actual changed content must replace active facts in this same thread.
   const changed=`${name} now uses Vercel Sandboxes for its isolated execution service.`;
   await db.query(`INSERT INTO evidence_sources(id,workspace_id,customer_id,origin,canonical_location) VALUES($1,$2,$3,'manual',$4)`,[randomUUID(),actor.workspaceId,customerId,url]);
@@ -273,5 +282,54 @@ it('retains new public research for an assigned partner, preserves curated claim
   await expect(ordinaryPracticeAccount(searchPrincipal)).rejects.toMatchObject({status:404});
   await expect(searchNamedCustomerEvidence(searchPrincipal,customerId,
     {query:'Sandboxes',scope:'customer',use:'accepted_fact',limit:5})).rejects.toMatchObject({status:404});
+ }finally{try{await settleSyntheticConversationAttempts(db,ownedConversationIds);}finally{await db.end();}}
+});
+
+
+it('admits an owned research handoff after its public refresh, then fences output until current knowledge is injected',async()=>{
+ const db=new Client({connectionString:isolatedTestUrl});await db.connect();
+ try{
+  const actor=await isolatedChatActor(db,'partner','member');const customerId=randomUUID(),name=`Handoff Fixture ${customerId}`,url=`https://example.com/handoff/${customerId}`;
+  await db.query('INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,$3,false)',[customerId,actor.workspaceId,name]);
+  await db.query(`INSERT INTO customer_grants(id,workspace_id,customer_id,membership_id,state,revision,granted_by) VALUES($1,$2,$3,$4,'active',1,$5)`,[randomUUID(),actor.workspaceId,customerId,actor.membershipId,actor.principalId]);
+  async function retain(text:string,quote:string,age:number,independentlyDiscovered=false){
+   const page=signCheckedPublicPage({url,title:`${name} architecture`,text,bodyDigest:publicDigest(text),normalizedDigest:publicDigest(text),retrievedAt:new Date(Date.now()-age).toISOString(),publishedAt:null,discoveryPurpose:'specialist_public_source',...(independentlyDiscovered?{independentDiscovery:{accountId:customerId,searchId:'server-discovery-fixture',provider:'context' as const,checkedAt:new Date().toISOString()}}:{})});
+   const snapshot=publicDigest(text+page.retrievedAt);
+   await db.query(`INSERT INTO turas_evidence_snapshots(environment_id,workspace_id,id,fetch_key,url,content_hash,source,truncated,checked_at,refresh_after,check_receipt) VALUES($1,$2,$3,$3,$4,$3,'{}',false,now(),now()+interval '6 hours',$5)`,[process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,snapshot,url,JSON.stringify(page)]);
+   await db.query(`INSERT INTO turas_evidence_accounts(environment_id,workspace_id,owner_user_id,account_id,workload,snapshot_id,visibility) VALUES($1,$2,$3,$4,'',$5,'public')`,[process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,actor.principalId,customerId,snapshot]);
+   const input={requestKey:randomUUID(),batchDigest:publicDigest(text),customer:{name,industries:[],directoryListed:false,stories:[{url,title:name}]},dossier:{description:age?'Original checked business description.':'',findings:[{area:'architecture_outcomes',statement:quote,quote,sourceIndex:0,attribution:'Public source',caveats:[]}],coverage:dossierAreas.map(area=>({area,state:area==='architecture_outcomes'?'supported':'incomplete',explanation:'Only the cited public document was checked.'})),unknowns:[]},usage:{searches:0,fetches:0,inputTokens:0,outputTokens:0,costUsd:null,model:'fixture',modelCalls:0}};
+   const saved=await persistSpecialistCustomerResearch(actor,input,[page],customerId);
+   expect((await persistSpecialistCustomerResearch(actor,input,[page],customerId)).replayed).toBe(true);
+   return {saved,page,snapshot};
+  }
+
+  const before=`${name} documents its public website.`,after=`${name} uses Next.js for its public website.`;
+  await retain(before,before,10000);
+  const key=randomUUID(),{conversation}=await createOwnedConversation(actor,{requestKey:key});ownedConversationIds.push(conversation.id);
+  const binding=await claimBinding(actor,conversation.id,key);if(binding.state!=='claimed')throw Error('Fixture binding unavailable');
+  const native=`wrun_${randomUUID()}`;await bindNativeSession(actor,conversation.id,binding.claimToken,native);
+  await db.query("INSERT INTO maintenance_workers(environment_id,worker_id,last_seen_at) VALUES($1,'handoff-fixture',now()) ON CONFLICT(environment_id,worker_id) DO UPDATE SET last_seen_at=now()",[process.env.TURAS_ENVIRONMENT_ID]);
+  const attempt=await prepareAttempt(actor,conversation.id,native,randomUUID(),'Which products does this customer use?');await claimDispatch(actor,conversation.id,attempt.attemptId,0);
+  const principal={principalId:actor.principalId,attributes:{turasAttemptId:attempt.attemptId}};
+  const context=await withRuntime(client=>readCustomerAccountEvidence(client,principal,customerId)),oldCitation=context.entries[0].citationId;
+  const event=(type:string,data:Record<string,unknown>)=>({type,data,meta:{id:`evt_${randomUUID()}`,at:new Date().toISOString()}}),turn=`turn_${randomUUID()}`,background=`turn_${randomUUID()}`;
+  await projectNativeEvent(native,attempt.attemptId,event('message.received',{turnId:turn,message:'Which products does this customer use?'}));
+  await projectNativeEvent(native,attempt.attemptId,event('turn.completed',{turnId:turn}));
+  await db.query(`INSERT INTO turas_research_requests(environment_id,workspace_id,owner_user_id,key,account_id,scope,context_hash,lease_id,lease_until,refresh,parent_session_id)
+    VALUES($1,$2,$3,$4,$5,$8::jsonb,'fixture',$6,now()+interval '10 minutes',false,$7)`,[process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,actor.principalId,randomUUID(),customerId,randomUUID(),native,JSON.stringify({accountId:customerId,kind:'customer-update'})]);
+  await retain(before+'\n\n'+after,after,0);
+  await expect(withRuntime(client=>assertCustomerQuestionReads(client,actor,conversation.id,attempt.attemptId))).rejects.toMatchObject({status:404});
+  const handoff=event('message.received',{kind:'execution.background_task',turnId:background,message:'Server-authored research completion'});
+  await projectNativeEvent(native,attempt.attemptId,handoff);
+  expect((await db.query('SELECT native_turn_id,response_state FROM response_attempts WHERE id=$1',[attempt.attemptId])).rows[0]).toMatchObject({native_turn_id:turn,response_state:'running'});
+  await expect(projectNativeEvent(native,attempt.attemptId,event('message.completed',{turnId:background,message:'Unrefreshed response'}))).rejects.toMatchObject({status:404});
+  const refreshed=await withRuntime(client=>refreshOrdinaryKnowledge(client,actor,principal,conversation.id,attempt.attemptId));
+  expect(JSON.stringify(refreshed)).toContain(after);expect(refreshed?.retiredNamedCitations).toContain('attributed_research:'+oldCitation);
+  await projectNativeEvent(native,attempt.attemptId,event('message.completed',{turnId:background,message:'The current checked source documents Next.js.'}));
+  // Handoff remains owner/attempt/grant-bound; access-only admission cannot
+  // allow an unassociated continuation or revive a revoked customer grant.
+  await expect(projectNativeEvent(native,attempt.attemptId,event('message.completed',{turnId:'unknown-turn',message:'Unassociated output'}))).rejects.toThrow('Native turn does not match');
+  await db.query("UPDATE customer_grants SET state='revoked' WHERE customer_id=$1 AND membership_id=$2",[customerId,actor.membershipId]);
+  await expect(projectNativeEvent(native,attempt.attemptId,event('message.received',{kind:'execution.background_task',turnId:'revoked-turn',message:'Server-authored research completion'}))).rejects.toMatchObject({status:404});
  }finally{try{await settleSyntheticConversationAttempts(db,ownedConversationIds);}finally{await db.end();}}
 });

@@ -1,3 +1,20 @@
+The profile/chat fixes released in [PR #45](https://github.com/mcteer/turas/pull/45)
+as `60f7a4c`. Customer selection is searchable across directory pages, Recent
+Conversations refreshes after creation/messages/navigation, and product projection
+includes complete checked claims from selected eligible research sources.
+All50 final-source CI jobs pass, with one isolated cleanup retry retained.
+Authenticated Production HTTP/WebKit checks verify the original missing product,
+product search, four picker layouts and12 login cases. Schema077 and34 permission
+metadata checks pass; the feature branch and five temporary Preview settings are
+removed. See [feature019 validation](specs/019-chat-interaction-parity/validation.md)
+for evidence and limits.
+
+The native-login/chat-read follow-up released in [PR #43](https://github.com/mcteer/turas/pull/43)
+as `2f83dca`. The first-send/Thinking/research-handoff fix subsequently released in
+[PR #44](https://github.com/mcteer/turas/pull/44) as `716ad77`, with actual
+Production login/display/read checks. Those read-only release checks made no
+paid model calls and did not rerun live research.
+
 # Turas
 
 The complete legacy backend audit and restoration is tracked in

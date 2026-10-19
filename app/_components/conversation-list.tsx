@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import {usePathname} from 'next/navigation';
+import {conversationUpdatedEvent} from './conversation-updates';
 import { useEffect, useId, useState, type ReactNode } from "react";
 
 type Conversation = { id: string; title: string; customerId: string | null;version?:number };
 
 export function ConversationList({ customerId, navigation, csrfToken }: { customerId?: string; navigation?: ReactNode; csrfToken: string }) {
+  const pathname=usePathname();
   const [archived, setArchived] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -15,6 +18,11 @@ export function ConversationList({ customerId, navigation, csrfToken }: { custom
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<Conversation[]>([]);
   const [state, setState] = useState<"loading" | "ready" | "unavailable">("loading");
+  useEffect(()=>{
+    const refresh=()=>setRevision(value=>value+1);
+    window.addEventListener(conversationUpdatedEvent,refresh);
+    return ()=>window.removeEventListener(conversationUpdatedEvent,refresh);
+  },[]);
   useEffect(() => {
     let active = true;
     const timer = setTimeout(async () => {
@@ -29,7 +37,7 @@ export function ConversationList({ customerId, navigation, csrfToken }: { custom
       } catch { if (active) setState("unavailable"); }
     }, 200);
     return () => { active = false; clearTimeout(timer); };
-  }, [query, customerId, archived, revision]);
+  }, [query, customerId, archived, revision, pathname, csrfToken]);
   async function toggleArchive(id: string) {
     setBusy(id); setError("");
     try {

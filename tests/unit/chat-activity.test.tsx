@@ -11,10 +11,11 @@ it('never labels an unsettled approval as a completed tool, even without request
   expect(html).toContain(label);expect(html).not.toContain('Completed');expect(html).not.toContain('Approve');
  }
 });
-it('keeps completed tools collapsed and hides reasoning once canonical answer prose is available',()=>{
+it('keeps ordinary completed tools and reasoning in the background',()=>{
  const parts=[{...tool,state:'output-available',output:{recorded:true}},{type:'reasoning',text:'Internal planning',state:'done',stepIndex:0}] as EveMessage['parts'];
  const html=renderToStaticMarkup(<ChatAssistantParts parts={parts} activityOnly streaming={false} requests={[]} disabled={false} onResponse={respond}/>);
- expect(html).toContain('Completed');expect(html).toContain('Unaccepted');expect(html).not.toContain('Internal planning');expect(html).not.toContain(' open');
+ expect(html).toBe('');
+ const reasoningOnly=renderToStaticMarkup(<ChatAssistantParts parts={parts.slice(1)} streaming requests={[]} disabled={false} onResponse={respond}/>);expect(reasoningOnly).toBe('');
 });
 
 it('suppresses empty reasoning and expired request shells while preserving real native file output',()=>{

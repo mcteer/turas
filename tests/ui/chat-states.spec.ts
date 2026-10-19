@@ -1,3 +1,4 @@
+import {selectCustomer} from '../fixtures/customer-picker';
 import { expect, test } from "@playwright/test";
 import { signIn } from "../fixtures/ui";
 import { randomUUID } from "node:crypto";
@@ -43,8 +44,10 @@ test("new chat explains scope and shows only assigned customer choices", async (
   await page.goto("/s");
   await expect(page.getByRole("heading", { name: "Turi" })).toBeVisible();
   await expect(page.getByText("Synthetic customer data and public research only")).toHaveCount(0);
-  await expect(page.getByLabel("Customer (optional)")).toContainText("Cedar");
-  await expect(page.getByLabel("Customer (optional)")).not.toContainText("Harbor");
+  await page.getByLabel("Customer (optional)").click();
+  await expect(page.getByRole("option", {name:"Cedar (synthetic)",exact:true})).toBeVisible();
+  await expect(page.getByRole("option", {name:/Harbor/})).toHaveCount(0);
+  await page.getByRole("combobox", {name:"Search customers"}).press("Escape");
   await expect(page.getByRole("button", { name: "Attach documents" })).toBeVisible();
   await expect(page.getByRole("link", { name: /operations|planning|feedback/i })).toHaveCount(0);
 });
@@ -52,7 +55,7 @@ test("new chat explains scope and shows only assigned customer choices", async (
 test("bound chat retains visible customer and scope notice", async ({ page }) => {
   await signIn(page, "panel");
   await page.goto("/s");
-  await page.getByLabel("Customer (optional)").selectOption({ label: "Cedar (synthetic)" });
+  await selectCustomer(page,"Cedar (synthetic)");
   await page.getByRole("button", { name: "Customer sources" }).click();
   await expect(page).toHaveURL(/\/s\/[0-9a-f-]+(?:\?attachments=1)?$/);
   await expect(page.getByRole("main", { name: "Chat with Turi: Cedar (synthetic)" })).toBeVisible();
@@ -100,14 +103,14 @@ test("customer loading and empty assignment remain distinct", async ({ page }) =
   await expect(page.getByRole("button", { name: "Send message" })).toBeEnabled();
   release?.();
   await expect(page.getByLabel("Customer (optional)")).toBeEnabled();
-  await expect(page.getByLabel("Customer (optional)")).toHaveValue("");
+  await expect(page.getByLabel("Customer (optional)")).toHaveText("Customer (optional)");
   await expect(page.getByRole("button", { name: "Send message" })).toBeEnabled();
 });
 
 test("a revoked conversation clears the protected chat view", async ({ page }) => {
   await signIn(page, "partner");
   await page.goto("/s");
-  await page.getByLabel("Customer (optional)").selectOption({ label: "Cedar (synthetic)" });
+  await selectCustomer(page,"Cedar (synthetic)");
   await page.getByRole("button", { name: "Customer sources" }).click();
   await expect(page.getByLabel("Message Turi")).toBeVisible();
   await page.route(/\/api\/conversations\/[0-9a-f-]+$/, async (route) => {
@@ -122,7 +125,7 @@ test("a reload shows an uncertain send without dispatching it again", async ({ p
   test.skip(testInfo.project.name !== "webkit-desktop-light", "Single local synthetic fixture");
   await signIn(page, "panel");
   await page.goto("/s");
-  await page.getByLabel("Customer (optional)").selectOption({ label: "Cedar (synthetic)" });
+  await selectCustomer(page,"Cedar (synthetic)");
   await page.getByRole("button", { name: "Customer sources" }).click();
   await expect(page).toHaveURL(/\/s\/[0-9a-f-]+(?:\?attachments=1)?$/);
   await expect(page.getByLabel("Message Turi")).toBeVisible();
@@ -146,7 +149,7 @@ test("a cancelled response stays visibly interrupted after reload", async ({ pag
   test.skip(testInfo.project.name !== "webkit-desktop-light", "Single local synthetic fixture");
   await signIn(page, "panel");
   await page.goto("/s");
-  await page.getByLabel("Customer (optional)").selectOption({ label: "Cedar (synthetic)" });
+  await selectCustomer(page,"Cedar (synthetic)");
   await page.getByRole("button", { name: "Customer sources" }).click();
   await expect(page).toHaveURL(/\/s\/[0-9a-f-]+(?:\?attachments=1)?$/);
   const conversationId = new URL(page.url()).pathname.split("/").at(-1)!;
@@ -173,7 +176,7 @@ test("an unconfirmed deadline remains blocked and visible after reload", async (
   test.skip(testInfo.project.name !== "webkit-desktop-light", "Single local synthetic fixture");
   await signIn(page, "panel");
   await page.goto("/s");
-  await page.getByLabel("Customer (optional)").selectOption({ label: "Cedar (synthetic)" });
+  await selectCustomer(page,"Cedar (synthetic)");
   await page.getByRole("button", { name: "Customer sources" }).click();
   await expect(page).toHaveURL(/\/s\/[0-9a-f-]+(?:\?attachments=1)?$/);
   const conversationId = new URL(page.url()).pathname.split("/").at(-1)!;

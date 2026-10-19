@@ -2899,3 +2899,18 @@ unverified, so this observation grants no rotation/retirement authority and
 reconciles no unknown hold. The documented
 [Gateway authentication methods](https://vercel.com/docs/ai-gateway/authentication-and-byok)
 also include OIDC, which must be accounted for separately. T087/T091 remain open.
+
+### Completion resumption against released main — 2026-10-18
+
+The user requested completion of the remaining pilot work. Preserve the unpushed
+project-deployment inventory commit and merge released main `f8d196f`, including
+PR43 native login/read-lock fixes, PR44 first-send/display/handoff fixes and PR45
+customer pagination/recent-history/checked-product fixes plus their release record.
+Login conflict resolution retains the pilot workspace selector and server-bound
+membership, failure redirects preserving the selected workspace, released native
+form/cookie behavior and the released screenshot regression. Pilot fixture
+ownership and its pinned accessibility dependency are retained. No selected model,
+local environment, durable workflow data, schema or hosted configuration is changed
+by this integration. Root typecheck and documentation hygiene pass; five focused
+login failure-contract cases pass. Fresh full pilot, predecessor, browser and CI
+proof remains required for this newly composed source.

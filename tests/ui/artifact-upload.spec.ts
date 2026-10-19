@@ -1,3 +1,4 @@
+import {selectCustomer} from '../fixtures/customer-picker';
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { mkdirSync } from "node:fs";
@@ -6,7 +7,7 @@ import { signIn, sanitizedScreenshot } from "../fixtures/ui";
 test("attachment composer keeps customer binding and draft layout usable", async ({ page }, info) => {
   await signIn(page, "panel");
   await page.goto("/s");
-  await page.getByLabel("Customer (optional)").selectOption({ label: "Cedar (synthetic)" });
+  await selectCustomer(page,"Cedar (synthetic)");
   await page.getByRole("button", { name: "Customer sources" }).click();
   await expect(page.getByLabel("Attach documents")).toBeVisible();
   await expect(page.getByText("Documents for Cedar (synthetic) stay private")).toBeVisible();

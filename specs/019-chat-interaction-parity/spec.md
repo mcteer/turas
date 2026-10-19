@@ -80,3 +80,15 @@ Slow history; images/fonts changing height; manual scroll during streaming; mobi
 - This is interaction parity, not a redesign or a runtime/model migration. Current owner/source fences and explicit decision rights take precedence over old demo shortcuts.
 - Existing continuous native streaming replaces legacy polling; no redundant resume loop or private browser message cache is required.
 - No new database schema, external integration or automatic model-budget increase is needed.
+
+## Customer selection and recent-history follow-up — 2026-10-18
+
+Customer selection is searchable and keyboard accessible, preserves unsent drafts,
+supports returning to general chat and exposes only authorized choices. Recent
+Conversations refreshes after creation, received messages and navigation without a
+page reload. Invalidation events carry no conversation content; every refresh reads
+the authorized server projection. Existing theme and source/owner controls remain.
+
+Customer search includes every page of authorized directory choices. Loading must
+fail visibly on repeated cursors or an exceeded page bound rather than silently
+exposing an incomplete list as complete; abandoned loads are cancelled.

@@ -1,3 +1,4 @@
+import {selectCustomer} from '../fixtures/customer-picker';
 import { expect, test } from "@playwright/test";
 import { signIn, signOut } from "../fixtures/ui";
 
@@ -5,7 +6,7 @@ test.describe("owned conversation shell", () => {
   test("internal member starts a parked customer conversation without model work", async ({ page }) => {
     await signIn(page, "panel");
     await page.goto("/s");
-    await page.getByLabel("Customer (optional)").selectOption({ label: "Cedar (synthetic)" });
+    await selectCustomer(page,"Cedar (synthetic)");
     await page.getByRole("button", { name: "Customer sources" }).click();
     await expect(page).toHaveURL(/\/s\/[0-9a-f-]+\?attachments=1$/);
     await expect(page.getByRole("main", { name: "Chat with Turi: Cedar (synthetic)" })).toBeVisible();
