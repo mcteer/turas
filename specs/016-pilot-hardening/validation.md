@@ -3187,3 +3187,33 @@ while preserving independent project, ownership, resource attachment, credential
 and 400 MiB capacity boundaries. Six focused destination cases pass, including
 plan drift and foreign attachments. Plan identity grants no spending authority.
 The current catalog contains773cases; the separate ac31bb1 run remains historical.
+
+
+### Actual current Production077 safety copy and owned079 rehearsal
+
+At fbab7fe, the live v2 destination verification passed after the recreated
+operator's unexpected Git connection was removed and its absence independently
+read back. The archive contract installation and400MiB capacity matched.
+The first noninteractive disconnect returned without changing the connection;
+only subsequent readback after the explicit confirmed CLI operation established
+absence. Neither exit status nor the initial configuration was treated as proof.
+
+A fresh read-only Production077 snapshot produced26,065,109encrypted bytes. The
+command retained a new independent encrypted key in the dedicated operator,
+copied the ciphertext, cold-downloaded it and authenticated its plaintext digest.
+The separately invoked owned PostgreSQL18 rehearsal authenticated that retained
+archive and key, verified all77source ledger entries and application content,
+rehearsed078/079, quarantined authority and verified locked control/runtime
+connection denial. It destroyed only its disposable target. Production was not
+migrated, fenced or otherwise changed. Private receipts are
+`resume-20261018/production-077-safety-fbab7fe/database-safety-copy.json` and
+`resume-20261018/production-077-rehearsal-fbab7fe/rehearsal.json` in the core
+checkout's ignored artifacts. T094 is complete. This remains a database safety
+copy, not a matched service backup, current-denial reconciliation or full recovery.
+
+
+The first disabled operator deployment attempt failed before deployment because
+the generated project configuration and Build Output API both declared the same
+cron. The generator now leaves cron ownership with the built output alone; the
+actual package build test asserts one exact12-hour route across both files.
+No scheduled execution or successful deployment is inferred from that failure.
