@@ -1,3 +1,4 @@
+import {auditRecoveryServiceCosts} from '../../../lib/server/operations/recovery-service-cost-audit';
 import {auditRecoveryDispatchState} from '../../../lib/server/operations/recovery-dispatch-audit';
 import {auditRecoveryModelHolds} from '../../../lib/server/operations/recovery-model-hold-audit';
 import {createOwnedConversation} from '../../../lib/server/conversations/repository';
@@ -292,5 +293,36 @@ it('audits genuine retained and current typed model holds without settling unkno
   await owner.query('INSERT INTO ordinary_model_operations(id,conversation_id,attempt_id,ceiling_tokens) VALUES($1,$2,$3,8192)',[randomUUID(),conversationId,attempt]);
   await owner.query("INSERT INTO parity_evaluation_budgets(id,environment_id,workspace_id,owner_principal_id,cap_micro_usd,reserved_micro_usd,pricing,expires_at) VALUES($1,$2,$3,$4,1000000,500000,'{}',clock_timestamp()+interval '1 hour')",[budget,(await owner.query('SELECT environment_id FROM turas_environment')).rows[0].environment_id,f.actor.workspaceId,f.actor.principalId]);
   await owner.query("INSERT INTO parity_evaluation_operations(id,budget_id,provider,ceiling_micro_usd) VALUES($1,$2,'synthetic-no-provider',200000)",[operation,budget]);
+ });
+},210000);
+
+
+it('retains original operational service cost ceilings unknown holds and provider job identities',async()=>{
+ let budget='',reservation='';
+ await fixture(async input=>{
+  const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
+  try{await withRetainedDenialFixture(owner,input.scope.environmentId,dirname(input.sourceFile),{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async retained=>{
+   await quarantineRestoredAuthority(owner,input.scope,retained);const inspect=()=>withLockedWorkRecoveryDecision(input,(db,target)=>auditRecoveryServiceCosts(db,target,retained));
+   expect(await inspect()).toMatchObject({budgets:1,reservations:2,receipts:1,originalServiceCostAccountingVerified:true,providerExecutionClosed:false,allPaidEffectsVerified:false,restorationReady:false});
+   await owner.query('ALTER TABLE operations_cost_reservations DISABLE TRIGGER cost_reservation_fence');
+   await owner.query('UPDATE operations_cost_reservations SET upper_bound_micro_usd=1 WHERE id=$1',[reservation]);
+   await owner.query('ALTER TABLE operations_cost_reservations ENABLE TRIGGER cost_reservation_fence');
+   try{await expect(inspect()).rejects.toThrow('Original service reservation exposure or provider identity differs');}finally{await owner.query('ALTER TABLE operations_cost_reservations DISABLE TRIGGER cost_reservation_fence');await owner.query('UPDATE operations_cost_reservations SET upper_bound_micro_usd=200000 WHERE id=$1',[reservation]);await owner.query('ALTER TABLE operations_cost_reservations ENABLE TRIGGER cost_reservation_fence');}
+   expect(await inspect()).toMatchObject({originalServiceCostAccountingVerified:true});
+   expect((await owner.query('SELECT state,upper_bound_micro_usd,charged_micro_usd FROM operations_cost_reservations WHERE id=$1',[reservation])).rows[0]).toEqual({state:'unknown',upper_bound_micro_usd:'200000',charged_micro_usd:null});
+   expect((await owner.query('SELECT state FROM operations_cost_budgets WHERE id=$1',[budget])).rows[0].state).toBe('revoked');
+  });}finally{await owner.end();}
+ },async owner=>{
+  budget=randomUUID();reservation=randomUUID();const environmentId=(await owner.query('SELECT environment_id FROM turas_environment')).rows[0].environment_id;
+  await owner.query("INSERT INTO operations_cost_budgets(id,environment_id,category,authorization_digest,scope_digest,pricing_digest,cap_micro_usd,expires_at) VALUES($1,$2,'sandbox',repeat('a',64),repeat('b',64),repeat('c',64),1000000,clock_timestamp()+interval '1 hour')",[budget,environmentId]);
+  await owner.query("INSERT INTO operations_cost_reservations(id,budget_id,operation_digest,upper_bound_micro_usd) VALUES($1,$2,repeat('d',64),200000)",[reservation,budget]);
+  await owner.query("UPDATE operations_cost_reservations SET state='dispatched',job_id=$2,dispatched_at=clock_timestamp() WHERE id=$1",[reservation,randomUUID()]);
+
+  const settled=randomUUID();await owner.query("INSERT INTO operations_cost_reservations(id,budget_id,operation_digest,upper_bound_micro_usd) VALUES($1,$2,repeat('e',64),200000)",[settled,budget]);
+  await owner.query("UPDATE operations_cost_reservations SET state='dispatched',job_id=$2,dispatched_at=clock_timestamp() WHERE id=$1",[settled,randomUUID()]);
+  await owner.query("INSERT INTO operations_cost_reconciliations(reservation_id,request_digest,charge_evidence_digest,operator_review_digest,charged_micro_usd,charge_kind) VALUES($1,repeat('a',64),repeat('b',64),repeat('c',64),150000,'actual')",[settled]);
+  await owner.query("UPDATE operations_cost_reservations SET state='settled',charged_micro_usd=150000,charge_kind='actual' WHERE id=$1",[settled]);
+  await owner.query("UPDATE operations_cost_reservations SET state='unknown' WHERE id=$1",[reservation]);
+
  });
 },210000);

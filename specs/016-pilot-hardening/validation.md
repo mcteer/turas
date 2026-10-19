@@ -4885,7 +4885,29 @@ parity reservation floor, baseline-only quota resets and omitted hosted/worker
 leases. It found no remaining blocker in these scoped components. The owned
 eight-case decision suite passes before the final hosted-dispatch negative;
 the latest focused case passes that negative and all typed-model boundary checks.
-Final complete rerun remains pending. Root/pilot types and documentation checks
+The final complete rerun atc2dd664 passes8/8 with zero pending cases. Root/pilot types and documentation checks
 pass. The catalog is912cases/167suites. These audits do not establish all paid
 effect accounting, provider/cron closure, required service, hosted acceptance
 or unlock authority; T096/T097 remain open.
+
+
+### Original operational service-cost accounting — 2026-10-19
+
+The scoped service-cost audit consumes genuine fresh independently retained
+metadata under the genuine owner decision. Exact original budget authority,
+pricing, ceiling and expiry remain bound; every original reservation retains its
+operation, provider job, dispatch identity and full unknown ceiling. Original
+settlements require the same immutable receipt digest and matching charge/kind.
+All original service budgets remain revoked; cardinality changes, substituted
+identities or refunds fail closed. This never settles a charge or stops compute.
+
+The retained v7 metadata capture now includes missing nonsecret budget/pricing
+digests, operation/job IDs and typed learning ceiling fields. Old captures
+missing required metadata cannot establish the new audit. Independent review
+found no blocker in this scoped service accounting proof. The owned PostgreSQL18
+case passes with one unknown reservation and one actually inserted controlled
+settlement receipt; reducing an original ceiling with guards restored is refused.
+No provider/model calls or real cost settlement occurred. Types pass; the new
+inventory is913cases/167suites. Full current catalog and hosted acceptance remain
+open, alongside original learning accounting, native/send effect identity,
+execution/ingress closure and the authoritative producer.
