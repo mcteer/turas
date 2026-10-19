@@ -4963,3 +4963,42 @@ The prior full nine-case decision suite at2dc774d passes9/9. Latest native and
 outbox cases pass individually; full current916case/167suite and hosted proof
 remain pending. This closes scoped replay omissions, not provider execution,
 all effect reconciliation, required service or release acceptance.
+
+
+### Sandbox terminal metadata and final-decision timeout composition — 2026-10-19
+
+The work-target Sandbox component consumes actual fixed SDK metadata reads under
+genuine owner fences, including both current and independently retained original
+job/provider/creation-tag bindings. Two complete unfiltered project traversals
+and individual non-resuming terminal readbacks must agree. A retained known
+provider reference absent from the database/list requires an actual exact404
+not-found read. Private proof provenance is registered only after outer platform,
+source and cleanup checks; final consumption repeats actual measurements.
+The fixed SDK transport permits only exact project/team metadata GETs, prevents
+network retries, bounds bytes/pages/time and refuses unexpected resumption.
+
+Owned PostgreSQL18 plus actual SDK protocol over controlled transport passes
+pagination, provider-only resources, retained missing references, proof forgery,
+active compute, cycles and failed-read one-wire-attempt checks. The latest
+unexpected-resumption negative awaits the complete rerun. A read-only live
+diagnostic exposed the provider's50-item page cap; initial400 diagnostics remain
+retained and the reader now uses50. A subsequent actual project diagnostic
+observes11stopped resources and zero active compute. Two real complete SDK
+traversals plus individual non-resuming readbacks agree across24 metadata GETs.
+This diagnostic has no locked-target proof or hosted-acceptance claim.
+
+The component explicitly measures the whole project and applies no other-
+environment exclusions. It cannot authorize pausing unrelated Production work;
+if another environment has active resources, authenticated scope classification
+would be needed before target-only composition. Resumption admission, paid
+effects and restoration readiness remain false. No provider writes or model
+calls occurred.
+
+Maintenance inventory derivation now preserves the genuine controller's original
+aggregate transaction timeout while retaining standalone60-second and local
+lock/statement bounds. An owned integration case derives the actual inventory
+and verifies the SQL timeout remains unchanged. Initial test instrumentation
+used unsupported SHOW syntax; its corrected SELECT current_setting check passes.
+Independent review found no blocker in these scoped components. Root/pilot types
+pass. Inventory:917cases/167suites; full current catalog and hosted release remain
+open.

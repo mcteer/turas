@@ -1,4 +1,4 @@
-import {requireLockedWorkRecoveryConnection,type LockedWorkRecoveryTarget} from './locked-work-recovery-target';
+import {requireLockedWorkRecoveryConnection,isWorkRecoveryDecisionClient,type LockedWorkRecoveryTarget} from './locked-work-recovery-target';
 import type {Client} from 'pg';
 import {readExecutionRecoveryBinding} from './recovery-execution-read';
 import {withOwnedRestoreTarget,requireOwnedRestoreConnection,verifyOwnedRestoredRequiredObjects,type OwnedRestoreTarget} from './owned-restore-target';
@@ -47,7 +47,8 @@ async function deriveMaintenanceInventory<C extends 'pilot-owned-maintenance-inv
  await db.query('SELECT pg_current_xact_id()');
  const transaction=(await db.query("SELECT pg_current_xact_id_if_assigned() IS NOT NULL AS active,current_setting('transaction_isolation') AS isolation")).rows[0];
  if(!transaction?.active||transaction.isolation!=='read committed')throw Error('Maintenance inventory requires an active read committed decision transaction');
-   await db.query("SET LOCAL lock_timeout='3000ms'; SET LOCAL statement_timeout='10000ms'; SET LOCAL transaction_timeout='60s'");
+   await db.query("SET LOCAL lock_timeout='3000ms'; SET LOCAL statement_timeout='10000ms'");
+   if(!isWorkRecoveryDecisionClient(db))await db.query("SET LOCAL transaction_timeout='60s'");
    await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16020))',[scope.environmentId]);
    await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[scope.environmentId]);
    const originals=await verifyOriginals(),required=await requiredRecoveryObjects(db,scope.environmentId);

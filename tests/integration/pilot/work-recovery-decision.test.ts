@@ -1,3 +1,5 @@
+import {measureWorkSandboxTerminalInventory,requireMeasuredWorkSandboxTerminalInventory} from '../../../lib/server/operations/work-sandbox-terminal-inventory';
+import {deriveWorkMaintenanceInventoryInTransaction} from '../../../lib/server/operations/owned-maintenance-inventory';
 import {auditRecoveredRequestFencesInTransaction} from '../../../lib/server/operations/recovery-replay-audit';
 import {auditRecoveryLearningCosts} from '../../../lib/server/operations/recovery-learning-cost-audit';
 import {auditRecoveryServiceCosts} from '../../../lib/server/operations/recovery-service-cost-audit';
@@ -66,7 +68,7 @@ it('commits a pending recovery decision only after live checks and rolls back dr
  try{
   const row=(await owner.query('SELECT id,display_name FROM customer_references ORDER BY id LIMIT 1')).rows[0];expect(row).toBeTruthy();
   const read=async()=>(await owner.query('SELECT display_name FROM customer_references WHERE id=$1',[row.id])).rows[0].display_name;
-  await expect(withLockedWorkRecoveryDecision(input,async(db,target)=>{expect(Object.keys(db)).toEqual(['query']);await requireLockedWorkRecoveryConnection(db,target,input.scope);await db.query('UPDATE customer_references SET display_name=$2 WHERE id=$1',[row.id,'Committed measured decision']);expect(await read()).toBe(row.display_name);return 'committed';})).resolves.toBe('committed');expect(await read()).toBe('Committed measured decision');
+  await expect(withLockedWorkRecoveryDecision(input,async(db,target)=>{expect(Object.keys(db)).toEqual(['query']);await requireLockedWorkRecoveryConnection(db,target,input.scope);const before=(await db.query("SELECT current_setting('transaction_timeout') AS transaction_timeout")).rows[0].transaction_timeout;await deriveWorkMaintenanceInventoryInTransaction(db,target,input.signal);expect((await db.query("SELECT current_setting('transaction_timeout') AS transaction_timeout")).rows[0].transaction_timeout).toBe(before);await db.query('UPDATE customer_references SET display_name=$2 WHERE id=$1',[row.id,'Committed measured decision']);expect(await read()).toBe(row.display_name);return 'committed';})).resolves.toBe('committed');expect(await read()).toBe('Committed measured decision');
   for(const drift of ['source','platform'] as const){
    await expect(withLockedWorkRecoveryDecision(input,async db=>{await db.query('UPDATE customer_references SET display_name=$2 WHERE id=$1',[row.id,'Must roll back']);if(drift==='source')state.sourceChanged=true;else state.platformChanged=true;})).rejects.toThrow();state.sourceChanged=false;state.platformChanged=false;expect(await read()).toBe('Committed measured decision');
   }
@@ -409,5 +411,46 @@ it('fences an original publication recipient after outbox loss despite fresh del
   const command={action:'send' as const,policyId:policy.policyId,expectedVersion:f.published.version,expectedPolicyVersion:2},preview=await previewReportSend(f.reviewer,f.published.publicationId,command);
   await submitReportSendDecision(f.reviewer,f.published.publicationId,{...command,requestKey:randomUUID(),rationale:'Authorize synthetic outbox only without sending',previewId:preview.previewId,previewDigest:preview.previewDigest});
   delivery=(await owner.query('SELECT id FROM report_deliveries WHERE publication_id=$1',[f.published.publicationId])).rows[0].id;
+ });
+},210000);
+
+
+it('repeats actual Sandbox SDK metadata without resume and includes retained missing provider references',async()=>{
+ let job='',retiredJob='',creation='',environment='';
+ await fixture(async input=>{
+  const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();let mode='terminal',sandboxCalls=0;const methods:string[]=[];
+  try{await withRetainedDenialFixture(owner,input.scope.environmentId,dirname(input.sourceFile),{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async retained=>{
+   await owner.query('DELETE FROM operations_hosted_jobs WHERE id=$1',[retiredJob]);
+   const at=Date.now()-10000,tags={turas_job:job,turas_creation:creation,turas_environment:createHash('sha256').update(environment).digest('hex')};
+   const rows=[{name:'provider_a',persistent:false,createdAt:at,updatedAt:at,currentSessionId:'session_a',status:'stopped',tags},{name:'provider_only',persistent:false,createdAt:at,updatedAt:at,currentSessionId:'session_only',status:'stopped',tags:{}}];
+   const transport=vi.spyOn(globalThis,'fetch').mockImplementation(async(raw,options)=>{
+    const url=new URL(typeof raw==='string'?raw:raw instanceof URL?raw.href:raw.url);methods.push(options?.method??'GET');
+    if(url.hostname==='api.vercel.com'&&url.pathname==='/v9/projects/prj_recovery')return Response.json({id:'prj_recovery',accountId:'team_recovery'});
+    if(url.origin!=='https://vercel.com'||options?.method!=='GET'||new Headers(options.headers).get('authorization')!=='Bearer synthetic-control-token')throw Error('Controlled SDK left fixed read scope');sandboxCalls++;
+    if(url.pathname==='/api/v2/sandboxes'){
+     if(mode==='failure')return Response.json({error:{code:'unavailable'}},{status:503});
+     const cursor=url.searchParams.get('cursor'),selected=cursor?[rows[1]]:[rows[0]];return Response.json({sandboxes:selected.map(row=>({...row,status:mode==='active'?'running':row.status})),pagination:{count:1,next:cursor?(mode==='cycle'?'next':null):'next'}});
+    }
+    expect(url.searchParams.get('resume')).toBe('false');if(url.pathname.endsWith('/provider_retired'))return Response.json({error:{code:'not_found'}},{status:404});
+    const row=rows.find(item=>url.pathname.endsWith('/'+item.name));if(!row)throw Error('Controlled unknown resource');
+    return Response.json({resumed:mode==='resumed',sandbox:row,session:{id:row.currentSessionId,memory:1024,vcpus:1,region:'iad1',timeout:300000,status:row.status,requestedAt:at,createdAt:at,cwd:'/',updatedAt:at},routes:[]});
+   });
+   try{
+    const proof=await measureWorkSandboxTerminalInventory({target:input,token:'synthetic-control-token',retained});expect(proof).toMatchObject({resources:2,retiredReferences:1,wholeProjectSandboxTerminalVerified:true,sandboxResumptionAdmissionClosed:false,paidEffectsReconciled:false,restorationReady:false});
+    await withLockedWorkRecoveryDecision(input,async(db,target)=>{expect(await requireMeasuredWorkSandboxTerminalInventory(db,target,proof,input.signal)).toBe(proof);await expect(requireMeasuredWorkSandboxTerminalInventory(db,target,{...proof},input.signal)).rejects.toThrow('Genuine fresh exact');});
+    mode='active';await expect(measureWorkSandboxTerminalInventory({target:input,token:'synthetic-control-token',retained})).rejects.toThrow('active execution');
+    mode='cycle';await expect(measureWorkSandboxTerminalInventory({target:input,token:'synthetic-control-token',retained})).rejects.toThrow('Complete bounded Sandbox page');
+    mode='resumed';await expect(measureWorkSandboxTerminalInventory({target:input,token:'synthetic-control-token',retained})).rejects.toThrow('Sandbox metadata read failed');
+    mode='failure';const before=sandboxCalls;await expect(measureWorkSandboxTerminalInventory({target:input,token:'synthetic-control-token',retained})).rejects.toThrow('Sandbox metadata read failed');expect(sandboxCalls-before).toBe(1);
+    expect(methods.every(method=>method==='GET')).toBe(true);
+   }finally{transport.mockRestore();}
+  });}finally{await owner.end();}
+ },async owner=>{
+  environment=(await owner.query('SELECT environment_id FROM turas_environment')).rows[0].environment_id;job=randomUUID();retiredJob=randomUUID();creation=randomUUID();
+  for(const [id,tag,provider] of [[job,creation,'provider_a'],[retiredJob,randomUUID(),'provider_retired']]){
+   await owner.query(`INSERT INTO operations_hosted_jobs(id,environment_id,domain_kind,domain_job_id,source_generation,source_digest,code_version,lease_id,lease_expires_at,creation_tag,image_digest,state,deadline_at,input_digest,input_bytes,budget_reservation_id)
+    VALUES($1,$2,'artifact',$3,1,repeat('a',64),repeat('a',40),$4,clock_timestamp()+interval '20 seconds',$5,repeat('a',64),'admitted',clock_timestamp()+interval '1 minute',repeat('a',64),16,$6)`,[id,environment,randomUUID(),randomUUID(),tag,randomUUID()]);
+   await owner.query("UPDATE operations_hosted_jobs SET state='starting',started_at=clock_timestamp() WHERE id=$1",[id]);await owner.query("UPDATE operations_hosted_jobs SET state='running',provider_id=$2 WHERE id=$1",[id,provider]);
+  }
  });
 },210000);
