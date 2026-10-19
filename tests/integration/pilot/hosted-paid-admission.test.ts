@@ -30,3 +30,15 @@ it('denies changed target budget expiry scope count workspace and admission befo
  await db.query('UPDATE workspaces SET active=true WHERE id=$1',[input.scope.workspaceId]);await db.query("UPDATE operations_control SET mode='locked',revision=revision+1 WHERE environment_id=$1",[input.scope.environmentMarker]);await expect(assertHostedPaidAdmission(input)).rejects.toThrow('authority unavailable');
  expect((await db.query('SELECT count(*)::int AS n FROM operations_hosted_jobs')).rows[0].n).toBe(0);
 }),210000);
+it('requires distinct exact-source Production authority and its admitted budget digest',async()=>fixture(async(input,db)=>{
+ const scope={...input.scope,target:'production' as const},approvedAt=new Date(Date.now()-1000),expiresAt=new Date(approvedAt.getTime()+172800000).toISOString();
+ const authorization={contract:'pilot-infrastructure-user-authorization-v2',id:randomUUID(),userInstructionReference:'Synthetic explicitly approved Production scope',approvedAt:approvedAt.toISOString(),expiresAt,planDigest:'a'.repeat(64),projectId:scope.projectId,teamId:scope.teamId,environmentMarker:scope.environmentMarker,target:scope.target,sourceCommit:scope.sourceCommit,sourceDigest:scope.sourceDigest,catalogDigest:scope.catalogDigest,capMicroUsd:10000000,partitionsMicroUsd:{sandbox:3000000,blobAndTransfer:2000000,functionsAndWorkflow:3000000,builds:2000000},maximumSandboxJobs:32,maximumConcurrentJobs:2,maximumJobDeadlineMs:300000,maximumDeployments:2,maximumPrivateStores:1,automaticTopUp:false,automaticBillingChanges:false,productionChangesAuthorized:true,additionalModelAllowanceAuthorized:false};
+ const {recoveryDigest}=await import('../../../lib/contracts/pilot-recovery');const authorizationDigest=recoveryDigest(authorization),budgetId=randomUUID();
+ await db.query("INSERT INTO operations_cost_budgets(id,environment_id,category,authorization_digest,scope_digest,pricing_digest,cap_micro_usd,expires_at) VALUES($1,$2,'sandbox',$3,$4,$4,3000000,clock_timestamp()+interval '1 hour')",[budgetId,scope.environmentMarker,authorizationDigest,input.configuration.costScopeDigest]);
+ const candidate={...input,scope,configuration:{...input.configuration,costBudgetId:budgetId},authorizationDigest,authorizationExpiresAt:expiresAt,authorization};
+ await expect(assertHostedPaidAdmission({...candidate,authorization:undefined})).rejects.toThrow();
+ expect(await assertHostedPaidAdmission(candidate)).toMatchObject({budgetId,heldOrCompletedJobs:0});
+ await expect(assertHostedPaidAdmission({...candidate,authorization:{...authorization,sourceDigest:'f'.repeat(64)}})).rejects.toThrow();
+ await expect(assertHostedPaidAdmission({...candidate,authorizationDigest:'f'.repeat(64)})).rejects.toThrow();
+ expect((await db.query('SELECT count(*)::int AS n FROM operations_cost_reservations')).rows[0].n).toBe(0);
+}),210000);

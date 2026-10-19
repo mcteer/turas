@@ -1,7 +1,7 @@
 import {runSyntheticReportRecipe} from './pilot-report-recipe';
 import {assertHostedPaidAdmission,verifyHostedPaidJobs} from './pilot-hosted-paid';
 import type {HostedConfiguration} from '../lib/server/operations/hosted-configuration';
-export async function runHostedReportJourney(input:Parameters<typeof runSyntheticReportRecipe>[0]&{configuration:HostedConfiguration;authorizationDigest:string;authorizationExpiresAt:string}){
+export async function runHostedReportJourney(input:Parameters<typeof runSyntheticReportRecipe>[0]&{configuration:HostedConfiguration;authorizationDigest:string;authorizationExpiresAt:string;authorization?:unknown}){
  await assertHostedPaidAdmission({...input,requiredJobs:2});
  const revisions:string[]=[];
  const result=await runSyntheticReportRecipe({...input,runQueuedRender:async id=>{revisions.push(id);await input.runQueuedRender(id);}});

@@ -21,3 +21,16 @@ it("keeps a session stable after a second membership",async()=>{const identity=a
 it("rejects an unresolved legacy session",async()=>{const token=createSessionToken();await owner.query("INSERT INTO login_sessions(id,principal_id,token_hash,expires_at) VALUES($1,$2,$3,now()+interval '1 hour')",[randomUUID(),DEMO_IDS.mcteer,hashSessionToken(token)]);expect(await getCurrentSession(request(token))).toBeNull();});
 it("logout revokes only the exact session",async()=>{const primary=await login(),synthetic=await login("pilot");await revokeSession(synthetic.sessionId);expect(await getCurrentSession(request(synthetic.token))).toBeNull();expect((await getCurrentSession(request(primary.token)))?.workspaceId).toBe(DEMO_IDS.workspace);const audit=(await owner.query("SELECT workspace_id FROM access_audit WHERE actor_session_id=$1 AND action='logout'",[synthetic.sessionId])).rows;expect(audit).toHaveLength(1);expect(audit[0].workspace_id).toBe(pilot.workspace);});
 it("does not transfer conversation ownership across workspaces",async()=>{const primary=await login(),synthetic=await login("pilot");const created=await createOwnedConversation(primary,{requestKey:randomUUID(),title:"Synthetic primary private conversation"});await expect(getOwnedConversation(synthetic,created.conversation.id)).rejects.toThrow();expect((await getOwnedConversation(primary,created.conversation.id)).id).toBe(created.conversation.id);});
+
+it("requires explicit pilot login enablement without changing primary login",async()=>{
+ const previous=process.env.TURAS_PILOT_LOGIN_ENABLED;
+ try{
+  for(const enabled of [undefined,"0"]){
+   if(enabled===undefined)delete process.env.TURAS_PILOT_LOGIN_ENABLED;else process.env.TURAS_PILOT_LOGIN_ENABLED=enabled;
+   expect(await authenticateDemoPrincipal("mcteer",process.env.TURAS_DEMO_PASSWORD!,"pilot")).toBeNull();
+   expect((await authenticateDemoPrincipal("mcteer",process.env.TURAS_DEMO_PASSWORD!))?.workspaceId).toBe(DEMO_IDS.workspace);
+  }
+  process.env.TURAS_PILOT_LOGIN_ENABLED="1";
+  expect((await authenticateDemoPrincipal("mcteer",process.env.TURAS_DEMO_PASSWORD!,"pilot"))?.membershipId).toBe(pilot.membership);
+ }finally{if(previous===undefined)delete process.env.TURAS_PILOT_LOGIN_ENABLED;else process.env.TURAS_PILOT_LOGIN_ENABLED=previous;}
+});

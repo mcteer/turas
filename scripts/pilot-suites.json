@@ -80,7 +80,7 @@
     },
     {
       "file": "tests/integration/pilot/sessions.test.ts",
-      "expectedCases": 8,
+      "expectedCases": 9,
       "cases": [
         "defaults to the primary membership",
         "binds an explicitly selected pilot membership",
@@ -89,7 +89,8 @@
         "keeps a session stable after a second membership",
         "rejects an unresolved legacy session",
         "logout revokes only the exact session",
-        "does not transfer conversation ownership across workspaces"
+        "does not transfer conversation ownership across workspaces",
+        "requires explicit pilot login enablement without changing primary login"
       ]
     },
     {
@@ -1460,10 +1461,11 @@
     },
     {
       "file": "tests/integration/pilot/hosted-paid-admission.test.ts",
-      "expectedCases": 2,
+      "expectedCases": 3,
       "cases": [
         "checks actual current scoped authority without reserving or dispatching paid work",
-        "denies changed target budget expiry scope count workspace and admission before paid callbacks"
+        "denies changed target budget expiry scope count workspace and admission before paid callbacks",
+        "requires distinct exact-source Production authority and its admitted budget digest"
       ]
     },
     {
@@ -1585,6 +1587,26 @@
         "bounds deployment counts pages and retained metadata bytes",
         "rejects foreign malformed or future metadata and invalid input before further reads",
         "honors cancellation before requests and after a metadata response"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/pilot-login-selection.test.ts",
+      "expectedCases": 2,
+      "cases": [
+        "keeps primary native login available without exposing disabled pilot selection",
+        "offers explicit primary and pilot choices only when enabled"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/hosted-authorization.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "preserves the original Preview authorization bytes and bounds",
+        "binds separate Production authority to the exact source and target",
+        "rejects changed project environment target or source identities",
+        "rejects widened jobs deadlines billing or unpartitioned caps",
+        "rejects expired future or extended authorization windows",
+        "cannot promote legacy Preview authority into Production"
       ]
     }
   ],

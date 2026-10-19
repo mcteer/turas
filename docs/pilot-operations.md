@@ -791,3 +791,36 @@ is not an atomic provider snapshot or proof that an old deployment cannot admit
 work. `oldDeploymentsClosed`, `deploymentProtectionVerified`, `retirementAuthorized`
 and `restorationReady` remain false. Preserve current active deployments and all
 original evidence until the separately verified retirement procedure is complete.
+
+
+### Disabled-first pilot login
+
+`TURAS_PILOT_LOGIN_ENABLED` defaults to disabled. Missing/`0` keeps the primary
+native login form and rejects direct pilot-login requests on the server. After
+schema078/079, historical-deployment admission protection and target-bound
+workspace/membership verification, explicitly set it to`1` for the admitted target.
+The selector creates no membership or grant. Disabling new pilot login does not
+revoke an existing bound session: revoke the session/membership through the normal
+access path when that is required. Primary login remains independent. Owned pilot
+runners enable this flag only inside their isolated generated environment.
+
+
+### Exact-target hosted execution authority
+
+The original `pilot-preview-infrastructure-user-authorization-v1` remains
+Preview-only with its original48-hour/$10/32-job envelope and digest. It cannot
+be promoted into Production or have its expiry reset. For a separately approved
+execution, `pilot-infrastructure-user-authorization-v2` binds the actual instruction
+reference, exact project/team/environment/target and source/catalog identities,
+48-hour window, partitioned finite cap, at most32Sandbox jobs, two concurrent jobs,
+300-second job deadline, two deployments and one private store. Production requires
+its own explicit Production target and permission. Model allowance, billing changes
+and automatic top-ups remain excluded.
+
+A proposed private JSON file is not user approval. The operator records an actual
+attributable instruction before provisioning the corresponding immutable budget.
+The hosted runner rechecks the exact authorization bytes/expiry, active synthetic
+workspace and open target, and matching database budget authorization/scope/pricing
+identities. It rejects unknown charges, exhausted budgets and dispatch counts before
+calling paid adapters. Each job still uses normal serialized reservation admission.
+The new contract never modifies or settles old budgets, charges or unknown holds.

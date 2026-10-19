@@ -21,7 +21,7 @@ import {runHostedExpansionBoundary} from './pilot-hosted-expansion';
 import {runHostedGapBoundary} from './pilot-hosted-gaps';
 import {runHostedPrimaryExclusion} from './pilot-hosted-primary';
 import {hostedConfigurationSchema} from '../lib/server/operations/hosted-configuration';
-import {previewInfrastructureAuthorizationSchema} from './pilot-hosted-paid';
+import {verifyHostedInfrastructureAuthorization} from './pilot-hosted-authorization';
 import {runHostedLinkedJourney} from './pilot-hosted-linked';
 import {runHostedTrainingJourney} from './pilot-hosted-training';
 import {runHostedSourceWithdrawal} from './pilot-hosted-withdrawal';
@@ -52,8 +52,8 @@ export async function pilotHosted(args=process.argv.slice(2)){
  const configurationPath=resolve(args[5]);
  const configuration=hostedConfigurationSchema.parse(await readEvidence(dirname(configurationPath),basename(configurationPath)));
  if(configuration.environmentMarker!==scope.environmentMarker||configuration.projectId!==scope.projectId||configuration.teamId!==scope.teamId||!configuration.dispatcherEnabled)throw Error('Hosted configuration target or enabled dispatcher differs');
- const authorizationPath=resolve(args[7]),rawAuthorization=await readEvidence(dirname(authorizationPath),basename(authorizationPath)),authorization=previewInfrastructureAuthorizationSchema.parse(rawAuthorization),authorizationDigest=evidenceDigest(JSON.stringify(rawAuthorization));
- if(scope.target!=='preview'||authorization.environmentMarker!==scope.environmentMarker||authorization.projectId!==scope.projectId||authorization.teamId!==scope.teamId||authorization.maximumSandboxJobs!==configuration.maximumSandboxDispatches||Date.parse(authorization.approvedAt)>Date.now()||Date.parse(authorization.expiresAt)<=Date.now())throw Error('Fresh applicable Preview infrastructure authority required');
+ const authorizationPath=resolve(args[7]),rawAuthorization=await readEvidence(dirname(authorizationPath),basename(authorizationPath)),authorization=verifyHostedInfrastructureAuthorization(rawAuthorization,scope),authorizationDigest=evidenceDigest(JSON.stringify(rawAuthorization));
+ if(authorization.environmentMarker!==scope.environmentMarker||authorization.projectId!==scope.projectId||authorization.teamId!==scope.teamId||authorization.maximumSandboxJobs!==configuration.maximumSandboxDispatches||Date.parse(authorization.approvedAt)>Date.now()||Date.parse(authorization.expiresAt)<=Date.now())throw Error('Fresh applicable exact-target infrastructure authority required');
  const source=await pilotSource();
  if(run.id!==scope.runId||run.environmentMarker!==scope.environmentMarker||run.scopeDigest!==evidenceDigest(JSON.stringify(scope)))throw Error('Hosted run and scope differ');
  for(const key of ['sourceCommit','sourceDigest','catalogDigest'] as const)if(run[key]!==scope[key]||scope[key]!==source[key])throw Error('Hosted source or catalog differs');
@@ -123,7 +123,7 @@ export async function pilotHosted(args=process.argv.slice(2)){
      paidDispatchPossible=true;
      const owner=(await readDb.query("SELECT m.id FROM memberships m JOIN principals p ON p.id=m.principal_id WHERE m.workspace_id=$1 AND m.active AND m.kind='internal' AND m.role='admin' AND p.active AND p.login_name='mcteer'",[scope.workspaceId])).rows;
      if(owner.length!==1)throw Error('Exact active linked reviewer required');
-     linkedJourneys.push(await runHostedLinkedJourney({scope,db:readDb,headers:context.headers,customerId:context.partnerCustomerIds[0],ownerMembershipId:owner[0].id,configuration,authorizationDigest,authorizationExpiresAt:authorization.expiresAt,signal}));
+     linkedJourneys.push(await runHostedLinkedJourney({scope,db:readDb,headers:context.headers,customerId:context.partnerCustomerIds[0],ownerMembershipId:owner[0].id,configuration,authorizationDigest,authorizationExpiresAt:authorization.expiresAt,authorization:rawAuthorization,signal}));
      await writeEvidence(root,'linked-internal-admin.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...linkedJourneys.at(-1)});
      const linked=linkedJourneys.at(-1)!;stage='training_chain';
      trainingJourneys.push(await runHostedTrainingJourney({scope,db:readDb,headers:context.headers,configuration,customerId:linked.customerId,engagementId:linked.plan.engagementId,baselineId:linked.plan.baselineId,acceptedRevisionId:linked.plan.revisionId,sourceRevisionId:linked.source.profileRevisionId,signal}));

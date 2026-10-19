@@ -95,6 +95,14 @@ Composed engagement reads now follow execution’s plan-before-engagement lock
 order, verified with actual concurrent transactions and an old-order negative
 check. Terminal denied live chats stop polling; full current CI remains pending.
 
+Completion work now includes released main `f8d196f`. New pilot logins default
+off through `TURAS_PILOT_LOGIN_ENABLED`; explicit enablement still requires a
+current assigned membership. A separate exact-source Production infrastructure
+authorization can now be verified without promoting the original Preview envelope.
+The composed workspace/upload WebKit matrix passes40cases; the updated762-case
+catalog requires fresh complete verification. Expired infrastructure/model approvals,
+original charges and holds remain unchanged; no hosted pilot readiness is claimed.
+
 Recent Conversations provides owner-private Archive and Restore controls. Archived
 chats remain available in Archived Conversations and retain their history.
 Archive/restore requires migration 044. Apply the current migration manifest and

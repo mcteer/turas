@@ -38,6 +38,7 @@ export function verifyConfiguredCredentials(
 export async function authenticateDemoPrincipal(username: string, password: string, workspaceSelection: "primary" | "pilot" = "primary"): Promise<DemoIdentity | null> {
   if (!["primary", "pilot"].includes(workspaceSelection)) return null;
   const config = getServerConfig();
+  if (workspaceSelection === "pilot" && config.TURAS_PILOT_LOGIN_ENABLED !== "1") return null;
   const principalId = verifyConfiguredCredentials(username, password, config);
   if (!principalId) return null;
   const result = await query<{

@@ -128,7 +128,10 @@
         "unit.hosted-configuration.003",
         "unit.hosted-configuration.004",
         "integration.hosted-role-reads.010",
-        "integration.isolation.009"
+        "integration.isolation.009",
+        "integration.sessions.009",
+        "unit.pilot-login-selection.001",
+        "unit.pilot-login-selection.002"
       ]
     },
     {
@@ -779,7 +782,14 @@
         "integration.cost-authority.006",
         "integration.cost-authority.007",
         "integration.hosted-paid-admission.001",
-        "integration.hosted-paid-admission.002"
+        "integration.hosted-paid-admission.002",
+        "integration.hosted-paid-admission.003",
+        "unit.hosted-authorization.001",
+        "unit.hosted-authorization.002",
+        "unit.hosted-authorization.003",
+        "unit.hosted-authorization.004",
+        "unit.hosted-authorization.005",
+        "unit.hosted-authorization.006"
       ]
     },
     {

@@ -2914,3 +2914,50 @@ local environment, durable workflow data, schema or hosted configuration is chan
 by this integration. Root typecheck and documentation hygiene pass; five focused
 login failure-contract cases pass. Fresh full pilot, predecessor, browser and CI
 proof remains required for this newly composed source.
+
+
+### Default-off pilot login and current picker fixtures
+
+Completion review found that the pilot selector was always rendered and direct
+pilot login had no disabled-first admission switch. `TURAS_PILOT_LOGIN_ENABLED`
+now defaults off, hides the selector and rejects pilot authentication server-side
+before membership lookup. Explicit enablement still requires current assigned
+membership; primary login is unchanged. Existing session revocation remains a
+separate current-membership/session operation. Owned runners opt in only in their
+isolated generated environment. Nine actual owned session integration cases and
+two form-rendering cases pass, plus root typecheck and documentation checks.
+These three additional cases are registered in G02 (755cases/140suites total).
+
+The first composed four-project browser attempt passes five workspace cases but
+fails the five upload cases in the first project: a pilot-only fixture still used
+`selectOption` on the released searchable customer button. Its failures are
+retained. That fixture now uses the same accessible picker helper as the released
+UI tests. A fresh complete browser matrix remains required; neither these focused
+checks nor historical catalog passes establish hosted readiness.
+
+
+The corrected browser matrix passes all40cases across desktop/mobile light/dark
+with no failures, skips or retries. Captures were inspected. Its receipt binds
+working-tree digest `1a6e630c78fc5f181a3a05f6fb97c358f1143927aaf124e6d048a2b84fde9ca0`
+and base commit5083ee2, before the subsequent hosted-authorization edits. It is not
+final-source hosted acceptance or a managed scanner proof.
+
+### Separately bounded Production hosted admission
+
+The hosted driver no longer requires every execution to use the historical
+Preview-only envelope. A version2 authorization binds an actual attributable
+instruction, exact target/source/catalog and separate partitioned finite cap,
+retaining32jobs/two-concurrent/300-second bounds and no model allowance/top-up or
+billing change. Production cannot reuse the version1 Preview grant. Paid admission
+requires the actual matching database budget digest/expiry/scope/pricing and rejects
+unknown/exhausted accounting before dispatch. No approval is inferred from JSON.
+Six contract cases pass, including source/target drift, expired/future/widened
+windows and caps, and attempted legacy promotion. The new cases are registered
+under G11; combined catalog is762cases/141suites. Actual hosted execution and its
+concrete user-authorized envelope remain separate pending requirements.
+
+The actual owned hosted-admission integration suite passes3/3, including a
+Production-target authorization whose digest matches a separately provisioned
+synthetic database budget. Missing authority, changed source and mismatched bytes
+are rejected; the suite reserves/dispatches no paid work. This is local admission
+proof, not an actual Production run or budget approval.

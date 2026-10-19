@@ -6,7 +6,7 @@ import {runSyntheticWorkforceRecipe} from './pilot-workforce-recipe';
 import {assertHostedPaidAdmission,verifyHostedPaidJobs} from './pilot-hosted-paid';
 import {uploadPilotOriginal} from './pilot-original-upload';
 import {pilotHostedRequest} from './pilot-hosted-request';
-export async function runHostedWorkforceJourney(input:{scope:PilotHostedScope;db:Client;headers:Headers;configuration:HostedConfiguration;authorizationDigest:string;authorizationExpiresAt:string;signal:AbortSignal;transport?:typeof fetch}){
+export async function runHostedWorkforceJourney(input:{scope:PilotHostedScope;db:Client;headers:Headers;configuration:HostedConfiguration;authorizationDigest:string;authorizationExpiresAt:string;authorization?:unknown;signal:AbortSignal;transport?:typeof fetch}){
  const {scope,signal}=input,transport=input.transport??fetch,request=pilotHostedRequest({...input,transport});
  await assertHostedPaidAdmission({...input,requiredJobs:2});
  const recipe=await runSyntheticWorkforceRecipe({...input,request,
