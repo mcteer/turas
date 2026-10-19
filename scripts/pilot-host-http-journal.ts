@@ -18,15 +18,16 @@ async function syncJournalDirectory(raw:string,privateRoot:boolean){
  const path=resolve(raw),directory=await open(path,constants.O_RDONLY|constants.O_DIRECTORY|constants.O_NOFOLLOW);
  try{const stat=await directory.stat();if(!stat.isDirectory()||stat.uid!==process.getuid?.()||await realpath(path)!==path||(privateRoot?(stat.mode&0o777)!==0o700:(stat.mode&0o022)!==0))throw Error('Owned durable journal directory required');await directory.sync();}finally{await directory.close();}
 }
+const genuineJournals=new WeakMap<object,{root:string;plan:Readonly<Plan>;planDigest:string}>();
 /** Owner supplies already-authorized finite spending scope. This journal never
  * grants authority, settles unknown charges, renews a cap or dispatches HTTP.
  * One instance supplies all control/first/final phase hooks cumulatively. */
 export class PilotHostHttpJournal{
  private queue:Promise<unknown>=Promise.resolve();private closed=false;private intents=new Map<string,Intent>();private observations=new Map<string,Observation>();private previousIntentDigest:string|null=null;
- private constructor(private root:string,readonly plan:Readonly<Plan>,private planDigest:string){}
+ private constructor(private root:string,readonly plan:Readonly<Plan>,private planDigest:string){Object.defineProperty(this,'plan',{value:plan,writable:false,configurable:false,enumerable:true});Object.defineProperty(this,'root',{value:root,writable:false,configurable:false});}
  static async create(root:string,raw:unknown){
   const plan=pilotHostHttpPlanSchema.parse(raw),expires=Date.parse(plan.expiresAt);if(expires<=Date.now()||expires>Date.now()+172800000||new Set(plan.previousJournalDigests).size!==plan.previousJournalDigests.length)throw Error('Original finite authorized host journal plan required');
-  await createEvidenceDirectory(root);await syncJournalDirectory(root,true);await syncJournalDirectory(dirname(resolve(root)),false);await writeEvidence(root,'plan.json',plan);await syncJournalDirectory(root,true);return new PilotHostHttpJournal(root,Object.freeze({...plan,previousJournalDigests:Object.freeze(plan.previousJournalDigests)}) as Readonly<Plan>,recoveryDigest(plan));
+  await createEvidenceDirectory(root);await syncJournalDirectory(root,true);await syncJournalDirectory(dirname(resolve(root)),false);await writeEvidence(root,'plan.json',plan);await syncJournalDirectory(root,true);const journal=new PilotHostHttpJournal(root,Object.freeze({...plan,previousJournalDigests:Object.freeze(plan.previousJournalDigests)}) as Readonly<Plan>,recoveryDigest(plan));genuineJournals.set(journal,{root,plan:journal.plan,planDigest:recoveryDigest(plan)});return journal;
  }
  static async open(root:string){
   const plan=pilotHostHttpPlanSchema.parse(await readEvidence(root,'plan.json'));if(Date.parse(plan.expiresAt)>Date.now()+172800000||new Set(plan.previousJournalDigests).size!==plan.previousJournalDigests.length)throw Error('Original finite host journal plan required');const journal=new PilotHostHttpJournal(root,Object.freeze({...plan,previousJournalDigests:Object.freeze(plan.previousJournalDigests)}) as Readonly<Plan>,recoveryDigest(plan));
@@ -41,7 +42,7 @@ export class PilotHostHttpJournal{
    const observation=observationSchema.parse(await readEvidence(root,file)),intent=journal.intents.get(observation.intentId);
    if(!intent||file!==name(intent.ordinal,'response')||observation.ordinal!==intent.ordinal||observation.intentDigest!==recoveryDigest(intent)||observation.phase!==intent.phase||observation.kind!==intent.kind||observation.host!==intent.host||journal.observations.has(intent.id))throw Error('Host journal observation binding differs');journal.observations.set(intent.id,observation);
   }
-  return journal;
+  genuineJournals.set(journal,{root,plan:journal.plan,planDigest:recoveryDigest(plan)});return journal;
  }
  private serialize<T>(run:()=>Promise<T>){const next=this.queue.then(run,run);this.queue=next.catch(()=>undefined);return next;}
  hooks(rawPhase:z.infer<typeof phase>){
@@ -64,4 +65,11 @@ export class PilotHostHttpJournal{
   };
  }
  status(){return Object.freeze({admissionClosed:this.closed||Date.parse(this.plan.expiresAt)<=Date.now()||this.intents.size>=this.plan.maximumRequests,reserved:this.intents.size,observed:this.observations.size,pending:this.intents.size-this.observations.size,remaining:this.plan.maximumRequests-this.intents.size,maximumRequests:this.plan.maximumRequests,maximumCostMicroUsd:this.plan.maximumCostMicroUsd,unknownCostHoldsRetained:true as const,authorityGranted:false as const,releaseApproved:false as const});}
+}
+
+/** Reauthenticate the original private on-disk plan and exact target scope.
+ * This validates budget provenance only; caller still owns spending authority. */
+export async function requirePilotHostHttpJournal(journal:PilotHostHttpJournal,scope:{projectId:string;teamId:string;sourceCommit:string}){
+ const actual=genuineJournals.get(journal);if(!actual||journal.plan!==actual.plan||actual.plan.projectId!==scope.projectId||actual.plan.teamId!==scope.teamId||actual.plan.sourceCommit!==scope.sourceCommit||Date.parse(actual.plan.expiresAt)<=Date.now())throw Error('Genuine unexpired exact-scope cumulative host journal required');
+ if(recoveryDigest(pilotHostHttpPlanSchema.parse(await readEvidence(actual.root,'plan.json')))!==actual.planDigest)throw Error('Original cumulative host plan changed');return journal;
 }

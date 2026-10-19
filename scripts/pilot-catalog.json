@@ -723,7 +723,8 @@
         "unit.host-http-journal.002",
         "unit.host-http-journal.003",
         "unit.host-http-journal.004",
-        "unit.host-http-journal.005"
+        "unit.host-http-journal.005",
+        "integration.work-recovery-decision.006"
       ]
     },
     {

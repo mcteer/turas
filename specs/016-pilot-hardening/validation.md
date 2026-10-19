@@ -4839,3 +4839,24 @@ journal. Full scope/spending binding belongs to the pending genuine target
 controller. Independent reviews found no remaining blocker in these scoped
 components. The registered inventory is909cases/167suites; full current catalog,
 actual candidate controls, real-work composition and hosted release remain open.
+
+
+### Genuine work-target repeated HTTP admission — 2026-10-19
+
+The work-target component now performs actual fixed-provider metadata reads and
+protected controls under the genuine owner decision fences, then consumes a
+distinct complete repeated census inside the final decision. Both phases share
+one original factory-authenticated exact-project/team/source journal; its plan
+is immutable and its protected on-disk digest is checked again at consumption.
+Initial admission reserves enough remaining capacity for both measured phases.
+Copied proofs, foreign journals, changed metadata and exhausted budgets fail
+without granting unlock or verification authority.
+
+All six owned PostgreSQL18 decision integration cases pass, including the new
+controlled-provider/edge case: a29-request cap is rejected before HTTP, the
+30-request original journal records15 initial plus15 final observations, copied
+proofs fail, and exhausted admission sends no further requests. The database
+remains locked with zero verification rows. Root/pilot types, documentation and
+eight journal/deadline checks pass. These are owned integration results; actual
+candidate hosted controls, cron/native admission, held-effect safety and full
+service composition remain required. Inventory:910cases across167suites.

@@ -1,3 +1,5 @@
+import {measureWorkOldHttpAdmission,requireMeasuredWorkOldHttpAdmission} from '../../../lib/server/operations/work-old-http-admission';
+import {PilotHostHttpJournal} from '../../../scripts/pilot-host-http-journal';
 import {measureWorkManagedTerminalInventory,requireMeasuredWorkManagedTerminalInventory} from '../../../lib/server/operations/work-managed-terminal-inventory';
 import {measureWorkTargetIntegrity,requireMeasuredWorkTargetIntegrity} from '../../../lib/server/operations/work-target-integrity';
 import {measureWorkMcpCategoryBatch,measureWorkMcpCategory,requireMeasuredWorkMcpCategory,deriveWorkMcpScopeInTransaction,requireMeasuredWorkMcpCoverage} from '../../../lib/server/operations/work-mcp-verification';
@@ -30,6 +32,7 @@ vi.mock('@vercel/blob',async original=>({...await original<typeof import('@verce
  get:async(key:string,options:Record<string,unknown>)=>{if(options.storeId!=='syntheticStore'||options.oidcToken!=='synthetic.oidc.identity'||'token' in options)throw Error('Exact controlled OIDC store binding required');const bytes=state.blobObjects.get(key);return bytes?{statusCode:200,blob:{pathname:key,size:bytes.length},stream:new ReadableStream({start(controller){controller.enqueue(Uint8Array.from(bytes));controller.close();}})}:null;},
  list:async(options:Record<string,unknown>)=>{if(options.storeId!=='syntheticStore'||options.oidcToken!=='synthetic.oidc.identity'||'token' in options)throw Error('Exact controlled OIDC store binding required');const rows=[...state.blobObjects].filter(([key])=>key.startsWith(String(options.prefix))).map(([pathname,bytes])=>({pathname,size:bytes.length,uploadedAt:new Date('2026-01-01T00:00:00Z')}));if(rows.length>Number(options.limit))throw Error('Controlled fixture page overflow');return {blobs:rows,hasMore:false};},
 }));
+vi.mock('../../../lib/server/operations/managed-edge-transport',()=>({managedEdgeRead:async(input:{host:string;headers:Record<string,string>;query?:string;signal:AbortSignal})=>{input.signal.throwIfAborted();const response=await fetch('https://'+input.host+'/api/auth/session'+(input.query??''),{method:'GET',headers:input.headers,redirect:'manual',signal:input.signal});return {status:response.status,headers:response.headers,body:Buffer.from(await response.arrayBuffer())};},pinManagedControlEdge:()=>Object.freeze({contract:'controlled-edge-pin'})}));
 async function fixture(run:(input:Parameters<typeof withLockedWorkRecoveryTarget>[0])=>Promise<void>,beforeLock?:(owner:Client)=>Promise<void>){
  state.blobObjects.clear();state.connections.clear();state.platformChanged=false;state.sourceChanged=false;state.dirty=false;state.cleanupUnavailable=false;
  await withAuthorityEnvironment(async(owner,runtime,environmentId)=>{
@@ -179,4 +182,35 @@ it('rechecks exhaustive native provider and deployment inventories without claim
    expect(writes).toBe(0);expect((await owner.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');expect((await owner.query('SELECT count(*)::int AS count FROM operations_recovery_verifications')).rows[0].count).toBe(0);
   }finally{transport.mockRestore();}
  }finally{await owner.end();}
+}),210000);
+
+it('repeats real-target old HTTP admission under owner fences and one exact cumulative journal without unlocking',async()=>fixture(async input=>{
+ const key='controlled_current_automation_key',host='recovery.vercel.app',root=dirname(input.sourceFile),approvedHosts=[host,'production.vercel.app'];let hostRequests=0,writes=0;
+ const transport=vi.spyOn(globalThis,'fetch').mockImplementation(async(raw,options)=>{
+  const request=new Request(raw,options),url=new URL(request.url);if(request.method!=='GET'){writes++;throw Error('Read-only HTTP component required');}
+  if(url.origin==='https://api.vercel.com'){
+   expect(request.headers.get('authorization')).toBe('Bearer controlled-provider-token');
+   if(url.pathname.startsWith('/v9/projects/'))return Response.json({id:'prj_recovery',accountId:'team_recovery',targets:{production:{id:'dpl_production'}},protectionBypass:{[key]:{scope:'automation-bypass',isEnvVar:false,note:'Controlled current key',createdAt:1000,createdBy:'operator'}}});
+   if(url.pathname.startsWith('/v13/deployments/')){const identity=decodeURIComponent(url.pathname.split('/').at(-1)!),production=identity==='dpl_production'||identity==='production.vercel.app';return Response.json({id:production?'dpl_production':'dpl_recovery',url:production?'production.vercel.app':host,projectId:'prj_recovery',ownerId:'team_recovery',readyState:'READY',target:production?'production':null,meta:{githubCommitSha:state.commit}});}
+   if(url.pathname==='/v6/deployments')return Response.json({deployments:[['dpl_recovery',host],['dpl_production','production.vercel.app'],['dpl_old','old.vercel.app']].map(([uid,url])=>({uid,url,projectId:'prj_recovery',created:1000,target:uid==='dpl_recovery'?null:'production',readyState:'READY'})),pagination:{next:null}});
+   if(url.pathname==='/v4/aliases')return Response.json({aliases:[{uid:'alias_old',alias:'old.example.com',created:'2026-10-19',createdAt:1000,updatedAt:1000,creator:{},deletedAt:null,deploymentId:'dpl_old',deployment:{id:'dpl_old',url:'old.vercel.app'},projectId:'prj_recovery',redirect:null,redirectStatusCode:null}],pagination:{count:1,next:null,prev:null}});
+   if(url.pathname==='/v1/security/firewall/config/active')return Response.json({firewallEnabled:true,crs:{general:{active:false,action:'log'}},updatedAt:'2026-10-19T00:00:00Z',projectKey:'prj_recovery#active',id:'config_original',ips:[],changes:[],version:1,ownerId:'team_recovery',rules:[{id:'rule_original',name:'Current hosts',description:'Exact controlled fence',active:true,valid:true,validationErrors:null,conditionGroup:[{conditions:[{type:'host',op:'ninc',value:approvedHosts}]}],action:{mitigate:{action:'deny'}}}]});
+   if(url.pathname==='/v1/security/firewall/bypass/rules')return Response.json({error:{code:'forbidden',message:'Conditional bypass is unavailable for this team.'}},{status:403});
+   if(url.pathname==='/v1/security/firewall/bypass')return Response.json({result:[]});throw Error('Unexpected controlled provider route');
+  }
+  hostRequests++;const original=url.origin+'/api/auth/session',header=request.headers.has('x-vercel-protection-bypass'),query=url.searchParams.has('x-vercel-protection-bypass'),cookie=request.headers.has('cookie');
+  if(!header&&!query&&!cookie)return new Response(null,{status:302,headers:{location:'https://vercel.com/sso-api?url='+encodeURIComponent(original)}});
+  if(request.headers.has('x-vercel-set-bypass-cookie'))return new Response(null,{status:307,headers:{location:original,'set-cookie':'_vercel_jwt=controlled_provider_issued_cookie; Path=/; Secure; HttpOnly; SameSite=Lax'}});
+  if(url.hostname===host)return Response.json({error:{code:'authentication_required'}},{status:401,headers:{'x-turas-code-version':state.commit}});
+  return new Response('Controlled edge deny',{status:403,headers:{'x-vercel-mitigated':'deny'}});
+ });
+ try{
+  const plan={contract:'pilot-host-http-journal-plan-v1',id:randomUUID(),projectId:'prj_recovery',teamId:'team_recovery',sourceCommit:state.commit,maximumRequests:30,maximumCostMicroUsd:2000000,expiresAt:new Date(Date.now()+3600000).toISOString(),authorityReference:'Controlled owned finite authority',previousJournalDigests:['b'.repeat(64)],historicalStrictFailureRetained:true,unknownCostHoldsRetained:true,automaticRetries:false};
+  const wrong=await PilotHostHttpJournal.create(join(root,'wrong-http-journal'),{...plan,projectId:'prj_foreign'});await expect(measureWorkOldHttpAdmission({target:input,token:'controlled-provider-token',approvedHosts,journal:wrong})).rejects.toThrow('exact-scope');expect(hostRequests).toBe(0);
+  const insufficient=await PilotHostHttpJournal.create(join(root,'insufficient-http-journal'),{...plan,maximumRequests:29});await expect(measureWorkOldHttpAdmission({target:input,token:'controlled-provider-token',approvedHosts,journal:insufficient})).rejects.toThrow('cumulative journal');expect(hostRequests).toBe(0);
+  const journal=await PilotHostHttpJournal.create(join(root,'http-journal'),plan),proof=await measureWorkOldHttpAdmission({target:input,token:'controlled-provider-token',approvedHosts,journal});expect(proof).toMatchObject({oldHosts:2,phaseRequests:15,cumulativeRequests:15,initialCurrentHttpCensusMeasured:true,repeatedCurrentHttpAdmissionVerified:false,restorationReady:false});
+  await withLockedWorkRecoveryDecision(input,async(db,target)=>{await expect(requireMeasuredWorkOldHttpAdmission(db,target,{...proof},input.signal)).rejects.toThrow('Genuine fresh');const current=await requireMeasuredWorkOldHttpAdmission(db,target,proof,input.signal);expect(current).toMatchObject({oldHosts:2,cumulativeRequests:30,repeatedCurrentHttpAdmissionVerified:true,cronAdmissionClosed:false,workflowClosureVerified:false,requiredScopeHealthy:false,restorationReady:false});});
+  expect(hostRequests).toBe(30);expect(writes).toBe(0);expect(journal.status()).toMatchObject({reserved:30,observed:30,pending:0,remaining:0});await expect(withLockedWorkRecoveryDecision(input,(db,target)=>requireMeasuredWorkOldHttpAdmission(db,target,proof,input.signal))).rejects.toThrow('cumulative journal');expect(hostRequests).toBe(30);
+  const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();try{expect((await owner.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');expect((await owner.query('SELECT count(*)::int AS count FROM operations_recovery_verifications')).rows[0].count).toBe(0);}finally{await owner.end();}
+ }finally{transport.mockRestore();}
 }),210000);
