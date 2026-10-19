@@ -4318,3 +4318,20 @@ covering the actual seven-kind maintenance application; four unselected surfaces
 are not counted. Root/pilot types and documentation checks pass, and independent
 review found no blocker. The work inventory continues to make no physical-byte or
 service-health claim.
+
+### Participant maintenance HTTP — implementation in progress
+
+The work-only HTTP issuer now authenticates configured panel/partner credentials
+and registers exact cleanup preimages through the shared session constructor.
+Runtime admission reconstructs the current role from fixed principal IDs and live
+membership/organization rows; canonical customer and audience policies remain the
+retrieval authority. The original owned and mcteer-only issuers retain their guards.
+Root types pass; the complete target suite is running with internal/partner HTTP
+positives and grant-loss withholding. No hosted acceptance is claimed.
+
+The complete participant HTTP target suite passes14/14 with no skips
+(`participant-http-v1-private.json`): real restricted-runtime handlers return200 for
+panel and an assigned partner, then404 after grant revocation, with every probe
+retired. Root/pilot types, authored Eve bundle and independent review pass. This
+handler/database execution is local controlled-cloud coverage, not hosted HTTP
+acceptance or complete required-service/reopen proof.

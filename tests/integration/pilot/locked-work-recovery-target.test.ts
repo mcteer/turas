@@ -13,7 +13,7 @@ import {join,resolve,dirname} from 'node:path';
 import {Client,type PoolClient} from 'pg';
 import {pilotPublishedKnowledgeFixture} from '../../fixtures/pilot/knowledge';
 import {withAuthenticatedWorkMcpRead,withAuthenticatedWorkParticipantRead,withAuthenticatedWorkRecoveryRead,createAuthenticatedWorkRecoverySession} from '../../../lib/server/operations/authenticated-recovery-read';
-import {issueWorkRecoveryHttpRead,retireOwnedRecoveryHttpRead} from '../../../lib/server/operations/recovery-http-read-issuer';
+import {issueWorkParticipantRecoveryHttpRead,issueWorkRecoveryHttpRead,retireOwnedRecoveryHttpRead} from '../../../lib/server/operations/recovery-http-read-issuer';
 import {readProfile} from '../../../lib/server/profiles/read';
 import {GET as maintenanceProfile} from '../../../app/api/operations/recovery-read/[admissionId]/profile/route';
 import {GET as ordinaryProfile} from '../../../app/api/customers/[customerId]/profile/route';
@@ -174,6 +174,11 @@ it('rechecks canonical work session expiry and revocation after the read while t
  });
 }),210000);
 
+async function withTargetRuntime<T>(input:Parameters<typeof withLockedWorkRecoveryTarget>[0],target:Parameters<typeof requireLockedWorkRecoveryConnection>[1],run:()=>Promise<T>){
+ const keys=['DATABASE_URL','TURAS_APP_ORIGIN','VERCEL_DEPLOYMENT_ID','VERCEL_GIT_COMMIT_SHA','TURAS_CODE_VERSION'] as const,prior=Object.fromEntries(keys.map(key=>[key,process.env[key]]));
+ await closeRuntimePool();try{process.env.DATABASE_URL=state.connections.get(input.runtimeConnection)!;process.env.TURAS_APP_ORIGIN=target.origin;process.env.VERCEL_DEPLOYMENT_ID=target.deploymentId;process.env.VERCEL_GIT_COMMIT_SHA=target.sourceCommit;process.env.TURAS_CODE_VERSION=target.sourceCommit;return await run();}
+ finally{await closeRuntimePool();for(const key of keys){if(prior[key]===undefined)delete process.env[key];else process.env[key]=prior[key];}}
+}
 it('authenticates real participant credentials and preserves customer grants across locked canonical reads',async()=>{
  let workspaceId='',customerId='',partnerMembershipId='';
  await fixture(async input=>{
@@ -182,13 +187,22 @@ it('authenticates real participant credentials and preserves customer grants acr
     await db.query('BEGIN');try{const result=await withAuthenticatedWorkParticipantRead(db,target,{...input.scope,workspaceId,username,password,deadline:Date.now()+59000},dirname(input.sourceFile),read);await db.query('COMMIT');return result;}catch(error){await db.query('ROLLBACK');throw error;}
    };
    const read=(actor:Parameters<typeof readProfile>[0])=>readProfile(actor,customerId,db as unknown as PoolClient,undefined,undefined,false,true);
+   const issue=async(username:'panel'|'partner',password:string)=>{
+    await db.query('BEGIN');try{const admission=await issueWorkParticipantRecoveryHttpRead(db,target,{...input.scope,workspaceId,customerId,username,password,deadline:Date.now()+59000,maximumRequests:2,deploymentId:target.deploymentId},dirname(input.sourceFile));await db.query('COMMIT');return admission;}catch(error){await db.query('ROLLBACK');throw error;}
+   };
+   const http=async(admission:Awaited<ReturnType<typeof issue>>)=>withTargetRuntime(input,target,()=>maintenanceProfile(new Request(target.origin+'/api/operations/recovery-read/'+admission.id+'/profile',{headers:{host:new URL(target.origin).host,cookie:sessionCookie(admission.actor.token,admission.actor.expiresAt).split(';')[0],'x-turas-recovery-read':admission.secret}}),{params:Promise.resolve({admissionId:admission.id})}));
+
    for(const username of ['panel','partner'] as const){
     const password=process.env[username==='panel'?'PANEL_PASSWORD':'PARTNER_PASSWORD']!;
     await expect(run(username,'Controlled wrong participant password',read)).rejects.toThrow('Recovery authentication unavailable');
     const value=z.object({customer:z.object({id:z.uuid()}),acceptedFacts:z.array(z.unknown())}).parse(await run(username,password,read));expect(value.customer.id).toBe(customerId);expect(value.acceptedFacts.length).toBeGreaterThan(0);
     await expect(run(username,password,actor=>readProfile(actor,randomUUID(),db as unknown as PoolClient,undefined,undefined,false,true))).rejects.toThrow();
+    const admission=await issue(username,password);try{const response=await http(admission);expect(response.status).toBe(200);expect(await response.json()).toMatchObject({data:{customer:{id:customerId}}});}finally{await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,admission.id);}
+
    }
+   const grantProbe=await issue('partner',process.env.PARTNER_PASSWORD!);
    await db.query("UPDATE customer_grants SET state='revoked',revision=revision+1 WHERE membership_id=$1 AND customer_id=$2",[partnerMembershipId,customerId]);
+   try{expect((await http(grantProbe)).status).toBe(404);}finally{await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,grantProbe.id);}
    await expect(run('partner',process.env.PARTNER_PASSWORD!,read)).rejects.toThrow();
    expect(z.object({customer:z.object({id:z.uuid()})}).parse(await run('panel',process.env.PANEL_PASSWORD!,read)).customer.id).toBe(customerId);
    await expect(run('partner',process.env.PARTNER_PASSWORD!,async actor=>{await db.query('UPDATE memberships SET active=false WHERE id=$1',[actor.membershipId]);})).rejects.toThrow('Exact owner recovery read probe required');

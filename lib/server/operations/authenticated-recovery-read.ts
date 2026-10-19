@@ -65,9 +65,15 @@ export async function withAuthenticatedOwnerRecoveryRead<T>(db:PoolClient,raw:z.
 /** Work counterpart: authority comes from the genuine platform-bound target;
  * the original owned constructor retains its Docker and selected-cluster guard. */
 export async function createAuthenticatedWorkRecoverySession(db:Client,target:LockedWorkRecoveryTarget,raw:z.infer<typeof inputSchema>,journalDirectory:string){
+ return createWorkRecoverySession(db,target,raw,journalDirectory,'mcteer');
+}
+export async function createAuthenticatedWorkParticipantSession(db:Client,target:LockedWorkRecoveryTarget,raw:z.infer<typeof inputSchema>&{username:'panel'|'partner'},journalDirectory:string){
+ const {username,...scope}=raw;return createWorkRecoverySession(db,target,inputSchema.parse(scope),journalDirectory,z.enum(['panel','partner']).parse(username));
+}
+async function createWorkRecoverySession(db:Client,target:LockedWorkRecoveryTarget,raw:z.infer<typeof inputSchema>,journalDirectory:string,username:'mcteer'|'panel'|'partner'){
  const input=inputSchema.parse(raw);if(input.deadline>target.deadline||input.deadline>Date.now()+60000)throw new HttpFailure(403,'forbidden','Short-lived work recovery authentication required');
  let probe:Awaited<ReturnType<typeof reserveWorkRecoveryProbe>>|undefined;
- const actor=await createRecoverySession(db as unknown as PoolClient,input,async scope=>{await requireLockedWorkRecoveryConnection(db,target,{environmentId:scope.environmentId,recoveryId:scope.recoveryId,controlRevision:scope.controlRevision});},async owner=>{probe=await reserveWorkRecoveryProbe(db,target,{...owner,journalDirectory});return {sessionId:probe.sessionId,token:probe.sessionToken};});
+ const actor=await createRecoverySession(db as unknown as PoolClient,input,async scope=>{await requireLockedWorkRecoveryConnection(db,target,{environmentId:scope.environmentId,recoveryId:scope.recoveryId,controlRevision:scope.controlRevision});},async owner=>{probe=await reserveWorkRecoveryProbe(db,target,{...owner,journalDirectory});return {sessionId:probe.sessionId,token:probe.sessionToken};},username);
  if(!probe)throw Error('Registered work recovery credential required');
  return Object.freeze({actor,probe});
 }
@@ -88,7 +94,7 @@ export async function withAuthenticatedWorkParticipantRead<T>(db:Client,target:L
  const username=z.enum(['panel','partner']).parse(raw.username),{username:_,...scope}=raw,input=inputSchema.parse(scope);
  if(input.deadline>target.deadline||input.deadline>Date.now()+60000)throw new HttpFailure(403,'forbidden','Short-lived work recovery authentication required');
  const targetScope={environmentId:input.environmentId,recoveryId:input.recoveryId,controlRevision:input.controlRevision},readScope={...targetScope,deadline:input.deadline};
- const actor=await createRecoverySession(db as unknown as PoolClient,input,async()=>{await requireLockedWorkRecoveryConnection(db,target,targetScope);},async owner=>{const probe=await reserveWorkRecoveryProbe(db,target,{...owner,journalDirectory});return {sessionId:probe.sessionId,token:probe.sessionToken};},username);
+ const {actor}=await createAuthenticatedWorkParticipantSession(db,target,{...input,username},journalDirectory);
  const client=db as unknown as PoolClient;
  await db.query('SAVEPOINT authenticated_participant_recovery_read');
  try{

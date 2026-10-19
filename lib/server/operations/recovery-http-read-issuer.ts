@@ -7,7 +7,7 @@ import {getServerConfig} from '../config';
 import {operationalCodeVersion} from './code-version';
 import type {CurrentSession} from '../auth/sessions';
 import {requireLockedWorkRecoveryConnection,type LockedWorkRecoveryTarget} from './locked-work-recovery-target';
-import {createAuthenticatedWorkRecoverySession,createAuthenticatedOwnerRecoverySession} from './authenticated-recovery-read';
+import {createAuthenticatedWorkParticipantSession,createAuthenticatedWorkRecoverySession,createAuthenticatedOwnerRecoverySession} from './authenticated-recovery-read';
 
 const issueSchema=z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive(),workspaceId:z.uuid(),customerId:z.uuid().nullable(),deadline:z.number().int().positive(),password:z.string().min(1).max(4096),maximumRequests:z.number().int().min(1).max(10),deploymentId:z.string().regex(/^dpl_[A-Za-z0-9]+$/).nullable(),readKind:z.enum(['profile','artifact','report','workforce','gap','plan','execution']).default('profile'),recordId:z.uuid().optional()});
 const hash=(secret:string)=>createHash('sha256').update(secret).digest('hex');
@@ -59,4 +59,13 @@ export async function issueWorkRecoveryHttpRead(db:Client,target:LockedWorkRecov
  if(input.deadline>target.deadline||input.deadline>Date.now()+60000||input.deploymentId!==target.deploymentId)throw Error('Exact short-lived work recovery deployment required');
  await requireLockedWorkRecoveryConnection(db,target,{environmentId:input.environmentId,recoveryId:input.recoveryId,controlRevision:input.controlRevision});
  return issueRecoveryHttpRead(db as unknown as PoolClient,input,()=>createAuthenticatedWorkRecoverySession(db,target,{environmentId:input.environmentId,recoveryId:input.recoveryId,controlRevision:input.controlRevision,workspaceId:input.workspaceId,deadline:input.deadline,password:input.password},journalDirectory),{sourceCommit:target.sourceCommit,origin:target.origin,deploymentId:target.deploymentId,databaseBindingDigest:target.databaseBindingDigest});
+}
+
+/** Same finite HTTP protocol, authenticated as the actual participant. Ordinary
+ * ingress and the owned mcteer-only constructor retain their existing guards. */
+export async function issueWorkParticipantRecoveryHttpRead(db:Client,target:LockedWorkRecoveryTarget,raw:z.input<typeof issueSchema>&{username:'panel'|'partner'},journalDirectory:string){
+ const {username:provided,...scope}=raw,username=z.enum(['panel','partner']).parse(provided),input=issueSchema.parse(scope);
+ if(input.deadline>target.deadline||input.deadline>Date.now()+60000||input.deploymentId!==target.deploymentId)throw Error('Exact short-lived work recovery deployment required');
+ await requireLockedWorkRecoveryConnection(db,target,{environmentId:input.environmentId,recoveryId:input.recoveryId,controlRevision:input.controlRevision});
+ return issueRecoveryHttpRead(db as unknown as PoolClient,input,()=>createAuthenticatedWorkParticipantSession(db,target,{environmentId:input.environmentId,recoveryId:input.recoveryId,controlRevision:input.controlRevision,workspaceId:input.workspaceId,deadline:input.deadline,password:input.password,username},journalDirectory),{sourceCommit:target.sourceCommit,origin:target.origin,deploymentId:target.deploymentId,databaseBindingDigest:target.databaseBindingDigest});
 }
