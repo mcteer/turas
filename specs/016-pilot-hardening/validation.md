@@ -3731,3 +3731,30 @@ pass. Independent review found no remaining blocker. Diagnostics admit only know
 The original CI gap failure still lacks its exact response category; this proves
 the two reproduced races, not the historical failure's complete cause. Current
 legacy CI on cccf85e passes; main CI still includes unresolved expansion/gap failures.
+
+
+### Current Preview077 preservation and bounded expansion preparation
+
+A fresh read-only inspection confirms Preview077 with all77 migrations. The first
+safety-copy admission stopped at source-platform binding before source export or
+independent key creation: the actual owner setting is sensitive, so it cannot be
+read as an encrypted platform value. A separately journaled continuation uses the
+existing protected-operator-connection contract and retains the original cost hold.
+
+The actual encrypted Preview safety capture is31,394,367bytes. Independent key
+retrieval, fresh-connection cold download/decryption and the snapshot-bound current
+ledger/content/required-object/lease observations pass. A cold PostgreSQL18 restore
+and explicit migration rehearsal through079 pass; its target remains locked and is
+removed afterward. Preview and Production schemas/roles/configuration are unchanged.
+This is current-release preservation and rehearsal, not matched service recovery.
+
+The expansion harness previously readied only authentication/session and eve health
+routes. It now prepares six fixed entry routes using unauthenticated asynchronous
+GETs, manual redirects, expected per-route statuses and same-origin login redirects.
+Requests carry no cookies/body and do not retry. Preparation has a60-second total,
+15-second request bound inside the existing360-second fixture deadline; timings are
+retained separately. Browser30seconds and child240seconds remain unchanged.
+Actual authoring passes20/20 across four CLI WebKit projects with zero retries/skips;
+preparation took at most5.205seconds per fixture. Root/expansion types pass and
+independent review found no blocker. Cold compilation was a confirmed setup gap,
+not a proven complete cause of the historical CI timeout.

@@ -1,3 +1,4 @@
+import {prepareOwnedExpansionUi} from './expansion-ui-preparation';
 import { installExpansionNativeFixture } from "../tests/fixtures/expansion/native-install";
 import { spawnSync } from "node:child_process";
 import {captureUiChild} from './capture-ui-child';
@@ -49,13 +50,17 @@ async function main() {
     const cases = executionUiDiscovery(discoveryReport, specs, project);
     if (!smoke && cases.length < 7) throw new Error("Expansion UI full gate requires at least seven journeys per project");
     if(focused&&cases.filter(isRecovery).length!==(partner?1:2))throw new Error("Expansion recovery journeys are missing");
-    for (const [index, current] of cases.filter(item => (!advice || item.file.endsWith("expansion-advice.spec.ts")) && (!focused || isRecovery(item)) && (!authoring || item.file.endsWith("expansion-authoring.spec.ts")) && (!decisions || item.file.endsWith("expansion-decisions.spec.ts")) && (!queue || item.file.endsWith("expansion-review-queue.spec.ts"))).entries()) await withExpansionEvalEnvironment(async environment => {
+    for (const [index, current] of cases.filter(item => (!advice || item.file.endsWith("expansion-advice.spec.ts")) && (!focused || isRecovery(item)) && (!authoring || item.file.endsWith("expansion-authoring.spec.ts")) && (!decisions || item.file.endsWith("expansion-decisions.spec.ts")) && (!queue || item.file.endsWith("expansion-review-queue.spec.ts"))).entries()) {
+     const fixtureDeadline=Date.now()+360000;
+     await withExpansionEvalEnvironment(async environment => {
       await createExpansionActors(environment.appRoot);
       const nativeCase = current.file.endsWith("expansion-advice.spec.ts");
       const previousNative = process.env.TURAS_EXPANSION_NATIVE_FIXTURE_READY;
       if (nativeCase) {await installExpansionNativeFixture(environment);process.env.TURAS_EXPANSION_NATIVE_FIXTURE_READY="1";}
       try {
         await environment.start();
+        const preparation=await prepareOwnedExpansionUi(environment.origin,fixtureDeadline);
+        await writeFile(resolve(directory, `${project}-${index}-preparation.json`),JSON.stringify(preparation),{mode:0o600});
         const output = resolve(directory, `${project}-${index}`);
         const run = await captureUiChild(["node_modules/@playwright/test/cli.js", "test", `${current.file}:${current.line}`, `--project=${project}`,
           "--reporter=json", "--forbid-only", "--retries=0", "--trace=retain-on-failure", `--output=${output}`], {
@@ -79,7 +84,8 @@ async function main() {
         if (previousNative === undefined) delete process.env.TURAS_EXPANSION_NATIVE_FIXTURE_READY;
         else process.env.TURAS_EXPANSION_NATIVE_FIXTURE_READY = previousNative;
       }
-    }, { empty: true, deadlineAt: Date.now() + 360000 });
+    }, { empty: true, deadlineAt: fixtureDeadline });
+    }
   }
   if (await featureSourceDigest("011") !== sourceDigest) throw new Error("Expansion UI source changed");
   console.log(JSON.stringify({ gate: advice ? "expansion-ui-advice" : queue ? "expansion-ui-queue" : partner ? "expansion-ui-partner" : recovery ? "expansion-ui-recovery" : decisions ? "expansion-ui-decisions" : authoring ? "expansion-ui-authoring" : smoke ? "expansion-ui-smoke" : "expansion-ui-acceptance", sourceDigest, projects: 4, passed, fullAcceptance: !advice && !smoke && !authoring && !decisions && !queue && !focused }));
