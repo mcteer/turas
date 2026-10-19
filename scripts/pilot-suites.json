@@ -1144,9 +1144,12 @@
     },
     {
       "file": "tests/integration/pilot/work-isolated-restore.test.ts",
-      "expectedCases": 1,
+      "expectedCases": 4,
       "cases": [
-        "authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority"
+        "artifact authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority",
+        "report authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority",
+        "workforce authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority",
+        "gap authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority"
       ]
     },
     {

@@ -39,7 +39,8 @@ import {objectKey,environmentObjectId} from '../../../lib/server/storage/private
 import {activeObjectNamespaces} from '../../../lib/server/storage/inventory';
 import {pilotPublishedKnowledgeFixture} from '../../fixtures/pilot/knowledge';
 
-it('authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority',async()=>{
+it.each(['artifact','report','workforce','gap'] as const)('%s authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority',async surface=>{
+ if(!['artifact','report','workforce','gap'].includes(surface))throw Error('Exact recovery surface required');
  const preparation=process.env.TURAS_PILOT_UI_PREPARATION_FILE,renderer=process.env.TURAS_PILOT_RENDERER_IMAGE??(preparation?parsePilotImagePreparation(await readFile(preparation)).images.find(image=>image.kind==='renderer')?.localImageId:undefined);
  if(!renderer||!/^sha256:[a-f0-9]{64}$/.test(renderer))throw Error('Explicit prepared recovery report renderer required');
  await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});const root=await mkdtemp(resolve('local-artifacts/016/work-rehearsal-')),key=randomBytes(32);
@@ -195,21 +196,23 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
     }finally{await environment.stop();Object.assign(process.env,warmSaved);}
     await interruptedPreparation(false);
     async function verifyRuntimePhase(kinds:readonly ('artifact'|'report'|'workforce'|'gap')[]){
-    await withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async(runtime,_signal,applicationEnvironment)=>{
+    let phase='runtime-admission';const started=Date.now();
+    try{await withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async(runtime,_signal,applicationEnvironment)=>{
+     phase='shared-profile-controls';
      expect((await runtime.query('SELECT current_user,session_user')).rows[0]).toEqual({current_user:'turas_runtime_016',session_user:'turas_runtime_016'});
      expect((await runtime.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');
      await expect(runtime.query("UPDATE operations_control SET mode='open'")).rejects.toMatchObject({code:'42501'});
      await expect(runtime.query('CREATE TABLE runtime_escalation(id int)')).rejects.toMatchObject({code:'42501'});
-     await expect(withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async()=>{})).rejects.toThrow('already active');
-     await expect(withOwnedRestoredRuntime(otherOwnedTarget,scope,environment.signal,async()=>{})).rejects.toThrow('database lease active');
+     await expect(withOwnedRestoredRuntime(ownedTarget,scope,_signal,async()=>{})).rejects.toThrow('already active');
+     await expect(withOwnedRestoredRuntime(otherOwnedTarget,scope,_signal,async()=>{})).rejects.toThrow('database lease active');
      expect(applicationEnvironment.TURAS_PRIVATE_OBJECT_BACKEND).toBe('local');
      const artifactNames=await readdir(join(applicationEnvironment.TURAS_ARTIFACT_STORE_ROOT,'objects'));expect(artifactNames).toHaveLength(1);expect(await readFile(join(applicationEnvironment.TURAS_ARTIFACT_STORE_ROOT,'objects',artifactNames[0]),'utf8')).toBe('Synthetic work restore artifact');
      let httpAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
      try{
      const saved=Object.fromEntries(Object.keys(applicationEnvironment).map(key=>[key,process.env[key]]));
-     try{Object.assign(process.env,applicationEnvironment);await environment.start();}
+     try{phase='application-start';Object.assign(process.env,applicationEnvironment);await environment.start();}
      finally{for(const [key,value] of Object.entries(saved)){if(value===undefined)delete process.env[key];else process.env[key]=value;}}
-    await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{
+    await withOwnedRecoveryConfiguration(ownedTarget,scope,_signal,async owner=>{
      await owner.query('BEGIN');
      try{httpAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedProfile.workspaceId,customerId:expectedProfile.customerId,deadline:Date.now()+59000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:3,deploymentId:null});await owner.query('COMMIT');}
      catch(error){await owner.query('ROLLBACK');throw error;}
@@ -217,6 +220,7 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
     if(!httpAdmission)throw Error('Actual owner-issued HTTP admission missing');
     const admission=httpAdmission;
 
+      phase='shared-profile-controls';
       const path=environment.origin+'/api/operations/recovery-read/'+admission.id+'/profile';
       const cookie=sessionCookie(admission.actor.token,admission.actor.expiresAt).split(';')[0];
       const headers={cookie,'x-turas-recovery-read':admission.secret,host:new URL(environment.origin).host};
@@ -229,6 +233,7 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
       const response=await fetch(path,{headers,redirect:'manual'});if(response.status!==200){const failure=await response.json() as {error:{code:string}};throw Error('Recovery HTTP denied: '+response.status+' '+failure.error.code);}expect(response.status).toBe(200);
       const body=await response.json() as {data:{customer:{id:string};acceptedFacts:{id:string}[]}};
       if(kinds.includes('artifact')){
+      phase='artifact-controls';
       let artifactAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
       await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{await owner.query('BEGIN');try{artifactAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedProfile.workspaceId,customerId:expectedProfile.customerId,deadline:Date.now()+20000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:2,deploymentId:null,readKind:'artifact',recordId:expectedProfile.artifactVersionId});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}});
       if(!artifactAdmission)throw Error('Actual artifact admission missing');
@@ -251,6 +256,7 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
       }
 
       if(kinds.includes('report')){
+      phase='report-controls';
       let reportAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
       await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{await owner.query('BEGIN');try{reportAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedReport.workspaceId,customerId:expectedReport.customerId,deadline:Date.now()+20000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:2,deploymentId:null,readKind:'report',recordId:expectedReport.artifactId});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}});
       if(!reportAdmission)throw Error('Actual report admission missing');
@@ -269,6 +275,7 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
       }finally{await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,reportProof.id);}
       }
       if(kinds.includes('workforce')){
+      phase='workforce-controls';
       let workforceAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
       await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{await owner.query('BEGIN');try{workforceAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedWorkforce.workspaceId,customerId:null,deadline:Date.now()+20000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:2,deploymentId:null,readKind:'workforce',recordId:expectedWorkforce.importId});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}});
       if(!workforceAdmission)throw Error('Actual workforce admission missing');
@@ -291,6 +298,7 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
       }finally{await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,workforceProof.id);}
       }
       if(kinds.includes('gap')){
+      phase='gap-controls';
       let gapAdmission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
       await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{await owner.query('BEGIN');try{gapAdmission=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedGap.workspaceId,customerId:null,deadline:Date.now()+20000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:3,deploymentId:null,readKind:'gap',recordId:expectedGap.exportId});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}});
       if(!gapAdmission)throw Error('Actual gap admission missing');
@@ -316,6 +324,7 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
        const exhausted=await fetch(gapPath,{headers:gapHeaders,redirect:'manual'});expect(exhausted.status).toBe(429);await exhausted.body?.cancel();
       }finally{await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,gapProof.id);}
       }
+      phase='shared-concurrency-controls';
       expect(body.data.customer.id).toBe(expectedProfile.customerId);expect(body.data.acceptedFacts.some(fact=>fact.id===expectedProfile.revisionId)).toBe(true);
       // A correctly ordered owner transition waits on the shared recovery
       // fence, then proceeds when the actual runtime read transaction closes.
@@ -335,6 +344,7 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
       const exhausted=await fetch(path,{headers,redirect:'manual'});expect(exhausted.status).toBe(429);await exhausted.body?.cancel();
       await expect(runtime.query("UPDATE operations_recovery_http_reads SET secret_hash=repeat('0',64) WHERE id=$1",[admission.id])).rejects.toMatchObject({code:'42501'});
       const wrong=await fetch(path+'?customerId='+randomUUID(),{headers,redirect:'manual'});expect(wrong.status).toBe(403);await wrong.body?.cancel();
+      phase='shared-binding-and-retirement-controls';
       const binding=(await db.query('SELECT database_binding_digest FROM operations_recovery_http_reads WHERE id=$1',[admission.id])).rows[0].database_binding_digest;
       await db.query("UPDATE operations_recovery_http_reads SET database_binding_digest=repeat('0',64) WHERE id=$1",[admission.id]);
       const wrongDatabase=await fetch(path,{headers,redirect:'manual'});expect(wrongDatabase.status).toBe(403);await wrongDatabase.body?.cancel();
@@ -362,17 +372,17 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
 
      }finally{await environment.stop();if(httpAdmission)await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,httpAdmission.id);}
 
-    });
+    });}catch(error){throw new Error(`Owned recovery ${surface} incomplete at ${phase}`,{cause:error});}finally{
     expect((await db.query("SELECT 1 FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') AND rolcanlogin")).rowCount).toBe(0);
     expect((await db.query("SELECT 1 FROM pg_stat_activity WHERE usename IN('turas_runtime','turas_runtime_016')")).rowCount).toBe(0);
     expect((await db.query('SELECT 1 FROM operations_recovery_http_reads a JOIN login_sessions s ON s.id=a.session_id WHERE a.environment_id=$1 AND (a.revoked_at IS NULL OR s.revoked_at IS NULL)',[sourceEnvironmentId])).rowCount).toBe(0);
     expect((await readdir(join(root,'restore'))).filter(name=>name.startsWith('canonical-runtime-'))).toEqual([]);
     }
-    // Exercise separate bounded maintenance batches rather than spending one
-    // 60-second restricted lease on the entire multi-surface fault catalog.
-    // Both retain the exact restored target, locked revision and all assertions.
-    await verifyRuntimePhase(['artifact','report']);
-    await verifyRuntimePhase(['workforce','gap']);
+    console.info(JSON.stringify({kind:'owned-recovery-surface-complete',surface,elapsedMs:Date.now()-started}));
+    }
+    // Each independent capture/restore case exercises one surface plus every
+    // shared control inside the unchanged 60-second restricted runtime lease.
+    await verifyRuntimePhase([surface]);
     await interruptedPreparation(true);
     await expect(withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async()=>{throw Error('Controlled runtime failure');})).rejects.toThrow('Controlled runtime failure');
     const interrupted=new AbortController();

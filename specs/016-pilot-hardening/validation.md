@@ -3758,3 +3758,26 @@ Actual authoring passes20/20 across four CLI WebKit projects with zero retries/s
 preparation took at most5.205seconds per fixture. Root/expansion types pass and
 independent review found no blocker. Cold compilation was a confirmed setup gap,
 not a proven complete cause of the historical CI timeout.
+
+
+### Independent single-surface recovery fault cases
+
+Main CI on cccf85e still expires the temporary60-second runtime in the two-batch
+restore test. Its original failed attempt is retained. The fault catalog now has
+four independently captured/restored cases: artifact, report, workforce and gap.
+Each repeats every shared physical/ownership/integrity/profile/concurrency control
+and exercises exactly one original surface fault catalog. No assertion was removed.
+Post-lease role/backend/admission/session/canonical-root checks now run in `finally`;
+fixed surface/phase context is retained on failure.
+
+All four actual encrypted-capture/restore cases pass: artifact106.65seconds,
+report114.27seconds, workforce104.95seconds and gap111.42seconds. These are whole-case
+timings, not runtime lease durations. Runtime60seconds, fixture180seconds and
+case420seconds remain unchanged. The whole-file controller is1740seconds for four
+420-second cases plus60seconds overhead; the full catalog deadline is unchanged.
+All32 catalog/result/deadline/readiness contract checks and pilot types pass.
+Independent review found no blocker. This is bounded test orchestration, not a claim
+that the previous CI timeout's complete cause is known.
+
+The registered inventory is now785cases across143suites. The running782-case
+execution remains bound to30daadb and will not be relabeled as current acceptance.

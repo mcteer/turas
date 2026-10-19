@@ -8,7 +8,7 @@ const longSuiteSeconds:Readonly<Record<string,number>>={
  'native-postgres':300,'required-objects':300,'hosted-training-admission':300,
  'linked-http-reports':360,'linked-http-training':360,'linked-http-workforce':360,'hosted-browser':360,
  'lifecycle':420,
- 'database-safety-content':480,'work-isolated-restore':480,'preview-safety-restore':480,'profile-projection-review':480,'recovery-current-grants':480,
+ 'database-safety-content':480,'work-isolated-restore':1740,'preview-safety-restore':480,'profile-projection-review':480,'recovery-current-grants':480,
  'hosted-sdk':600,'recovery-logout':660,
  'hosted-paid-admission':720,'recovery-model-holds':720,'recovery-token-allowance':720,'recovery-read-probe':720,
  'evaluation-source':780,

@@ -22,7 +22,7 @@ restricted-runtime teardown have focused positive/denial/concurrency proof. Full
 private-byte/recovery verification, hosted journeys/configuration, actual cadence,
 participant observations and the owner decision remain unfinished. The779-case/142-suite
 local catalog passes at e9d2c21; its source-bound receipt is retained. The updated
-782-case/143-suite catalog includes the asynchronous UI-child regression cases
+785-case/143-suite catalog includes the asynchronous UI-child regression cases
 and requires fresh complete acceptance after implementation. Production remains
 released f8d196f/schema077 after verified bypass credential repair. No016
 Production migration, feature merge or directory cleanup is implied.
