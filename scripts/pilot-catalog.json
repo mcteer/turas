@@ -655,12 +655,13 @@
         "integration.locked-work-recovery-target.010",
         "integration.locked-work-recovery-target.011",
         "integration.locked-work-recovery-target.012",
+        "integration.locked-work-recovery-target.013",
+        "integration.locked-work-recovery-target.014",
         "integration.recovery-execution-http.001",
         "integration.recovery-execution-http.002",
         "integration.recovery-execution-http.003",
         "integration.recovery-execution-http.004",
-        "integration.recovery-execution-http.005",
-        "integration.recovery-execution-http.006"
+        "integration.recovery-execution-http.005"
       ]
     },
     {

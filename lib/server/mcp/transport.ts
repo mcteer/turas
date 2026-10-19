@@ -1,3 +1,4 @@
+import type {PoolClient} from 'pg';
 import { createMcpHandler } from '@modelcontextprotocol/server';
 import { randomUUID } from 'node:crypto';
 import { getServerConfig } from '../config';
@@ -57,20 +58,7 @@ async function dispatchMcpRequest(request:Request):Promise<Response>{
     return await withTransaction(async db=>{
       await db.query("SELECT set_config('transaction_timeout',$1,true)",[`${Math.max(1,deadline-Date.now())}ms`]);
       await lockWorkspaceActor(db,authenticated,undefined,true,2000);
-      const handler=createMcpHandler(()=>createMcpServer(db,authenticated,signal),{legacy:'reject',responseMode:'json',maxRequestBodySize:mcpLimits.requestBytes});
-      try{
-        const response=await handler.fetch(request,{parsedBody:body});
-        let text=await response.text();signal.throwIfAborted();
-        const reply=JSON.parse(text);
-        if(reply.error){reply.error={code:reply.error.code,message:'Request unavailable'};result='invalid_input';text=JSON.stringify(reply);}
-        else if(reply.result?.isError){reply.result={resultType:'complete',isError:true,content:[{type:'text',text:'Request unavailable'}]};result='invalid_input';text=JSON.stringify(reply);}
-        else{const status=reply.result?.structuredContent?.status;result=['available','empty','unavailable'].includes(status)?status:response.ok?'available':'failed';}
-        await lockWorkspaceActor(db,authenticated,undefined,true,2000);signal.throwIfAborted();
-        if(new TextEncoder().encode(text).byteLength>mcpLimits.responseBytes)return denied(503,-32603,'Response unavailable',id);
-        const responseHeaders=new Headers(response.headers);for(const [key,value] of Object.entries(headers))responseHeaders.set(key,value);
-        responseHeaders.delete('Access-Control-Allow-Credentials');responseHeaders.delete('Access-Control-Allow-Origin');
-        return new Response(text,{status:response.status,headers:responseHeaders});
-      }finally{await handler.close();}
+      return dispatchAuthenticatedMcpRead(db,authenticated,request,body,signal,value=>{result=value;});
     });
   }catch(error){
     if(error instanceof HttpFailure){result=error.status===429?'limited':error.status===422?'invalid_input':error.status===401||error.status===403||error.status===404?'forbidden':'unavailable';return denied(error.status,error.status===429?-32000:-32600,'Request unavailable',null,error.retryAfterSeconds);}
@@ -79,6 +67,26 @@ async function dispatchMcpRequest(request:Request):Promise<Response>{
     if(lease)try{await releaseMcpLease(lease);}catch{/* Expiry fences uncertain release; never retry dispatch. */}
     if(actor)try{await recordMcpAccess(actor,{requestId,operation,result,durationMs:Math.min(10000,Date.now()-started)});}catch{/* Usage may be incomplete during an outage; never repeat the read. */}
   }
+}
+
+
+/** Shared actual SDK transport after canonical authentication/admission. */
+export async function dispatchAuthenticatedMcpRead(db:PoolClient,authenticated:McpReadActor,request:Request,body:unknown,signal:AbortSignal,observe:(result:McpAuditInput['result'])=>void=()=>{}):Promise<Response>{
+ const object=body as {id?:unknown},id=typeof object?.id==='string'||typeof object?.id==='number'?object.id:null;
+      const handler=createMcpHandler(()=>createMcpServer(db,authenticated,signal),{legacy:'reject',responseMode:'json',maxRequestBodySize:mcpLimits.requestBytes});
+      try{
+        const response=await handler.fetch(request,{parsedBody:body});
+        let text=await response.text();signal.throwIfAborted();
+        const reply=JSON.parse(text);
+        if(reply.error){reply.error={code:reply.error.code,message:'Request unavailable'};observe('invalid_input');text=JSON.stringify(reply);}
+        else if(reply.result?.isError){reply.result={resultType:'complete',isError:true,content:[{type:'text',text:'Request unavailable'}]};observe('invalid_input');text=JSON.stringify(reply);}
+        else{const status=reply.result?.structuredContent?.status;observe((['available','empty','unavailable'].includes(status)?status:response.ok?'available':'failed') as McpAuditInput['result']);}
+        await lockWorkspaceActor(db,authenticated,undefined,true,2000);signal.throwIfAborted();
+        if(new TextEncoder().encode(text).byteLength>mcpLimits.responseBytes)return denied(503,-32603,'Response unavailable',id);
+        const responseHeaders=new Headers(response.headers);for(const [key,value] of Object.entries(headers))responseHeaders.set(key,value);
+        responseHeaders.delete('Access-Control-Allow-Credentials');responseHeaders.delete('Access-Control-Allow-Origin');
+        return new Response(text,{status:response.status,headers:responseHeaders});
+      }finally{await handler.close();}
 }
 
 /** Bound the HTTP response even when pool acquisition or post-read cleanup stalls.

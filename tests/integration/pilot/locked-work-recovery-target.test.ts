@@ -1,4 +1,9 @@
+import {Client as McpClient,StreamableHTTPClientTransport} from '@modelcontextprotocol/client';
+import {mcpProtocolVersion,mcpToolOutputs} from '../../../lib/contracts/mcp';
+import {newMcpCredential} from '../../../lib/server/mcp/credentials';
+import {readWorkRecoveryMcpRequest} from '../../../lib/server/operations/recovery-mcp-read';
 import {z} from 'zod';
+import {DEMO_IDS} from '../../../lib/server/bootstrap-ids';
 import {sessionCookie} from '../../../lib/server/auth/sessions';
 import {it,expect,vi} from 'vitest';
 import {createHash,randomUUID,randomBytes} from 'node:crypto';
@@ -6,7 +11,7 @@ import {mkdtemp,writeFile,readFile,rm} from 'node:fs/promises';
 import {join,resolve,dirname} from 'node:path';
 import {Client,type PoolClient} from 'pg';
 import {pilotPublishedKnowledgeFixture} from '../../fixtures/pilot/knowledge';
-import {withAuthenticatedWorkRecoveryRead,createAuthenticatedWorkRecoverySession} from '../../../lib/server/operations/authenticated-recovery-read';
+import {withAuthenticatedWorkMcpRead,withAuthenticatedWorkParticipantRead,withAuthenticatedWorkRecoveryRead,createAuthenticatedWorkRecoverySession} from '../../../lib/server/operations/authenticated-recovery-read';
 import {issueWorkRecoveryHttpRead,retireOwnedRecoveryHttpRead} from '../../../lib/server/operations/recovery-http-read-issuer';
 import {readProfile} from '../../../lib/server/profiles/read';
 import {GET as maintenanceProfile} from '../../../app/api/operations/recovery-read/[admissionId]/profile/route';
@@ -164,3 +169,65 @@ it('rechecks canonical work session expiry and revocation after the read while t
   }catch(error){await db.query('ROLLBACK');throw error;}
  });
 }),210000);
+
+it('authenticates real participant credentials and preserves customer grants across locked canonical reads',async()=>{
+ let workspaceId='',customerId='',partnerMembershipId='';
+ await fixture(async input=>{
+  await withLockedWorkRecoveryTarget(input,async(db,target)=>{
+   const run=async(username:'panel'|'partner',password:string,read:Parameters<typeof withAuthenticatedWorkParticipantRead>[4])=>{
+    await db.query('BEGIN');try{const result=await withAuthenticatedWorkParticipantRead(db,target,{...input.scope,workspaceId,username,password,deadline:Date.now()+59000},dirname(input.sourceFile),read);await db.query('COMMIT');return result;}catch(error){await db.query('ROLLBACK');throw error;}
+   };
+   const read=(actor:Parameters<typeof readProfile>[0])=>readProfile(actor,customerId,db as unknown as PoolClient,undefined,undefined,false,true);
+   for(const username of ['panel','partner'] as const){
+    const password=process.env[username==='panel'?'PANEL_PASSWORD':'PARTNER_PASSWORD']!;
+    await expect(run(username,'Controlled wrong participant password',read)).rejects.toThrow('Recovery authentication unavailable');
+    const value=z.object({customer:z.object({id:z.uuid()}),acceptedFacts:z.array(z.unknown())}).parse(await run(username,password,read));expect(value.customer.id).toBe(customerId);expect(value.acceptedFacts.length).toBeGreaterThan(0);
+    await expect(run(username,password,actor=>readProfile(actor,randomUUID(),db as unknown as PoolClient,undefined,undefined,false,true))).rejects.toThrow();
+   }
+   await db.query("UPDATE customer_grants SET state='revoked',revision=revision+1 WHERE membership_id=$1 AND customer_id=$2",[partnerMembershipId,customerId]);
+   await expect(run('partner',process.env.PARTNER_PASSWORD!,read)).rejects.toThrow();
+   expect(z.object({customer:z.object({id:z.uuid()})}).parse(await run('panel',process.env.PANEL_PASSWORD!,read)).customer.id).toBe(customerId);
+   await expect(run('partner',process.env.PARTNER_PASSWORD!,async actor=>{await db.query('UPDATE memberships SET active=false WHERE id=$1',[actor.membershipId]);})).rejects.toThrow('Exact owner recovery read probe required');
+   expect((await db.query('SELECT 1 FROM login_sessions WHERE workspace_id=$1 AND principal_id=ANY($2::uuid[]) AND revoked_at IS NULL',[workspaceId,[DEMO_IDS.panel,DEMO_IDS.partner]])).rowCount).toBe(0);
+  });
+ },async owner=>{
+  const f=await pilotPublishedKnowledgeFixture(owner as unknown as PoolClient,'primary');workspaceId=f.actor.workspaceId;customerId=f.customerId;partnerMembershipId=randomUUID();const org=randomUUID();
+  await owner.query("INSERT INTO partner_organizations(id,workspace_id,name) VALUES($1,$2,'Synthetic recovery partner')",[org,workspaceId]);
+  await owner.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role,partner_org_id) VALUES($1,$2,$3,'internal','member',NULL),($4,$5,$3,'partner','member',$6)",[randomUUID(),DEMO_IDS.panel,workspaceId,partnerMembershipId,DEMO_IDS.partner,org]);
+  await owner.query("INSERT INTO customer_grants(id,membership_id,workspace_id,customer_id,state,revision,granted_by) VALUES($1,$2,$3,$4,'active',1,$5)",[randomUUID(),partnerMembershipId,workspaceId,customerId,DEMO_IDS.mcteer]);
+ });
+},210000);
+
+it('uses the actual SDK and persisted bearer scope for locked recovery with customer pagination and revocation',async()=>{
+ let workspaceId='',customerId='',otherCustomerId='',credential='',connectionId='';
+ await fixture(async input=>{
+  await withLockedWorkRecoveryTarget(input,async(db,target)=>{
+   const client=new McpClient({name:'synthetic-locked-recovery',version:'1.0.0'},{versionNegotiation:{mode:{pin:mcpProtocolVersion},probe:{maxRetries:0,timeoutMs:10000}}});
+   const sdkFetch:typeof fetch=async(url,options)=>{
+    const request=new Request(url,options),headers=new Headers(request.headers);headers.set('host',new URL(request.url).host);
+    await db.query('BEGIN');try{const response=await readWorkRecoveryMcpRequest(db,target,new Request(request,{headers}));await db.query('COMMIT');return response;}catch(error){await db.query('ROLLBACK');throw error;}
+   };
+   try{
+    await expect(sdkFetch(target.origin+'/api/mcp/v1',{method:'POST',headers:{authorization:'Bearer tmcp.'+connectionId+'.'+randomBytes(32).toString('base64url'),'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list'})})).rejects.toThrow('Authentication required');
+    await expect(readWorkRecoveryMcpRequest(db,target,new Request(target.origin+'/api/mcp/v1?unexpected=1',{method:'POST',headers:{host:new URL(target.origin).host,'content-type':'application/json'},body:'{}'}))).rejects.toThrow('Recovery MCP request unavailable');
+    await client.connect(new StreamableHTTPClientTransport(new URL('/api/mcp/v1',target.origin),{fetch:sdkFetch,requestInit:{headers:{authorization:'Bearer '+credential}},reconnectionOptions:{maxRetries:0,maxReconnectionDelay:0,initialReconnectionDelay:0,reconnectionDelayGrowFactor:1}}),{timeout:10000});
+    const identity=mcpToolOutputs.turas_identity_v1.parse((await client.callTool({name:'turas_identity_v1',arguments:{}})).structuredContent);expect(identity.status).toBe('available');if(identity.status==='available')expect(identity.data.workspaceId).toBe(workspaceId);
+    const customers=mcpToolOutputs.turas_customers_list_v1.parse((await client.callTool({name:'turas_customers_list_v1',arguments:{limit:1}})).structuredContent);expect(customers.status).toBe('available');expect(customers.nextCursor).toBeTruthy();
+    const next=mcpToolOutputs.turas_customers_list_v1.parse((await client.callTool({name:'turas_customers_list_v1',arguments:{limit:1,cursor:customers.nextCursor}})).structuredContent);expect(next.status).toBe('available');expect(next.nextCursor).toBeNull();if(customers.status==='available'&&next.status==='available')expect(new Set([...customers.data.items,...next.data.items].map(row=>row.customerId))).toEqual(new Set([customerId,otherCustomerId]));
+    const profile=mcpToolOutputs.turas_profile_read_v1.parse((await client.callTool({name:'turas_profile_read_v1',arguments:{customerId,section:'facts',limit:20}})).structuredContent);expect(profile.status).toBe('available');if(profile.status==='available')expect(profile.data.items.length).toBeGreaterThan(0);
+    const denied=await client.callTool({name:'turas_profile_read_v1',arguments:{customerId:randomUUID(),section:'facts',limit:20}});expect(denied.isError||mcpToolOutputs.turas_profile_read_v1.parse(denied.structuredContent).status==='unavailable').toBeTruthy();
+    await db.query('BEGIN');
+    await expect(withAuthenticatedWorkMcpRead(db,target,'Bearer '+credential,Date.now()+9000,async()=>{
+     await db.query('UPDATE mcp_connections SET revoked_at=clock_timestamp(),revoker_membership_id=membership_id,credential_hash=NULL WHERE id=$1',[connectionId]);return {mustNotEscape:true};
+    })).rejects.toThrow('Authentication required');await db.query('COMMIT');
+    await expect(client.callTool({name:'turas_identity_v1',arguments:{}})).rejects.toThrow();
+   }finally{await client.close();}
+  });
+ },async owner=>{
+  const f=await pilotPublishedKnowledgeFixture(owner as unknown as PoolClient,'primary');workspaceId=f.actor.workspaceId;customerId=f.customerId;otherCustomerId=randomUUID();
+  await owner.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,'Synthetic second MCP customer',true)",[otherCustomerId,workspaceId]);await owner.query('INSERT INTO customer_profile_state(customer_id,workspace_id) VALUES($1,$2) ON CONFLICT DO NOTHING',[otherCustomerId,workspaceId]);
+  const issued=newMcpCredential();credential=issued.credential;connectionId=issued.id;await owner.query('BEGIN');
+  await owner.query("INSERT INTO mcp_connections(id,environment_id,workspace_id,principal_id,membership_id,name,categories,scope_digest,credential_hash,expires_at) VALUES($1,$2,$3,$4,$5,'Synthetic recovery SDK',ARRAY['profiles'], $6,$7,clock_timestamp()+interval '10 minutes')",[connectionId,process.env.TURAS_ENVIRONMENT_ID,workspaceId,f.actor.principalId,f.actor.membershipId,createHash('sha256').update(connectionId).digest('hex'),issued.hash]);
+  for(const id of [customerId,otherCustomerId])await owner.query('INSERT INTO mcp_connection_customers(connection_id,workspace_id,customer_id) VALUES($1,$2,$3)',[connectionId,workspaceId,id]);await owner.query('COMMIT');
+ });
+},210000);

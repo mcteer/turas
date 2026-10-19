@@ -91,7 +91,7 @@ export async function withLockedWorkRecoveryTarget<T>(input:{sourceFile:string;h
  }
 }
 
-type Intent=Readonly<{sessionId:string;admissionId:string;workspaceId:string;membershipId:string;journalDirectory:string;sessionToken:string;admissionSecret:string;sourceCommit:string;origin:string;deploymentId:string;databaseBindingDigest:string}>;
+type Intent=Readonly<{principalId:string;sessionId:string;admissionId:string;workspaceId:string;membershipId:string;journalDirectory:string;sessionToken:string;admissionSecret:string;sourceCommit:string;origin:string;deploymentId:string;databaseBindingDigest:string}>;
 const pending=new WeakMap<object,Intent[]>();
 const secretHash=(value:string)=>createHash('sha256').update(value).digest('hex');
 /** Persist exact identities before either session/admission INSERT. Secrets stay
@@ -99,15 +99,15 @@ const secretHash=(value:string)=>createHash('sha256').update(value).digest('hex'
 export async function reserveWorkRecoveryProbe(db:Client,target:LockedWorkRecoveryTarget,input:{workspaceId:string;membershipId:string;journalDirectory:string}){
  const workspaceId=z.uuid().parse(input.workspaceId),membershipId=z.uuid().parse(input.membershipId);
  await requireLockedWorkRecoveryConnection(db,target,{environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision});
- const rows=(await db.query(`SELECT m.id FROM memberships m JOIN principals p ON p.id=m.principal_id JOIN workspaces w ON w.id=m.workspace_id
- WHERE m.id=$1 AND m.workspace_id=$2 AND m.principal_id=$3 AND m.active AND m.kind='internal' AND m.role='admin' AND p.active AND p.login_name='mcteer' AND w.active
- AND (w.classification='primary' OR (w.classification='synthetic_pilot' AND w.pilot_environment_id=$4)) FOR SHARE OF m,p,w`,[membershipId,workspaceId,DEMO_IDS.mcteer,target.environmentId])).rows;
+ const rows=(await db.query(`SELECT m.id,m.principal_id FROM memberships m JOIN principals p ON p.id=m.principal_id JOIN workspaces w ON w.id=m.workspace_id
+ WHERE m.id=$1 AND m.workspace_id=$2 AND m.active AND p.active AND w.active AND ((p.id=$3 AND p.login_name='mcteer' AND m.kind='internal' AND m.role='admin') OR (p.id=$5 AND p.login_name='panel' AND m.kind='internal') OR (p.id=$6 AND p.login_name='partner' AND m.kind='partner' AND EXISTS(SELECT 1 FROM partner_organizations o WHERE o.id=m.partner_org_id AND o.workspace_id=m.workspace_id AND o.active)))
+ AND (w.classification='primary' OR (w.classification='synthetic_pilot' AND w.pilot_environment_id=$4)) FOR SHARE OF m,p,w`,[membershipId,workspaceId,DEMO_IDS.mcteer,target.environmentId,DEMO_IDS.panel,DEMO_IDS.partner])).rows;
  if(rows.length!==1)throw Error('Exact configured work recovery probe owner required');
  let intents=pending.get(target);if(!intents){intents=[];pending.set(target,intents);}if(intents.length>=32)throw Error('Work recovery probe inventory exceeds bound');
- const intent=Object.freeze({sessionId:randomUUID(),admissionId:randomUUID(),workspaceId,membershipId,journalDirectory:input.journalDirectory,sessionToken:randomBytes(32).toString('base64url'),admissionSecret:randomBytes(32).toString('base64url'),sourceCommit:target.sourceCommit,origin:target.origin,deploymentId:target.deploymentId,databaseBindingDigest:target.databaseBindingDigest});
+ const intent=Object.freeze({principalId:rows[0].principal_id as string,sessionId:randomUUID(),admissionId:randomUUID(),workspaceId,membershipId,journalDirectory:input.journalDirectory,sessionToken:randomBytes(32).toString('base64url'),admissionSecret:randomBytes(32).toString('base64url'),sourceCommit:target.sourceCommit,origin:target.origin,deploymentId:target.deploymentId,databaseBindingDigest:target.databaseBindingDigest});
  intents.push(intent);
  try{const credentialDigest=await writeEvidence(input.journalDirectory,'private-probe-'+intent.sessionId+'-credentials.json',{contract:'pilot-work-recovery-probe-credentials-v1',sessionId:intent.sessionId,admissionId:intent.admissionId,sessionToken:intent.sessionToken,admissionSecret:intent.admissionSecret});
- await writeEvidence(input.journalDirectory,'probe-'+intent.sessionId+'-intent.json',{...target,contract:'pilot-work-recovery-probe-intent-v2',credentialDigest,sessionId:intent.sessionId,admissionId:intent.admissionId,workspaceId,membershipId,recordedAt:new Date().toISOString(),serviceOpened:false});
+ await writeEvidence(input.journalDirectory,'probe-'+intent.sessionId+'-intent.json',{...target,contract:'pilot-work-recovery-probe-intent-v2',credentialDigest,sessionId:intent.sessionId,admissionId:intent.admissionId,principalId:intent.principalId,workspaceId,membershipId,recordedAt:new Date().toISOString(),serviceOpened:false});
  await requireLockedWorkRecoveryConnection(db,target,{environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision});return intent;
  }catch(error){const index=intents.indexOf(intent);if(index>=0)intents.splice(index,1);throw error;}
 }
@@ -135,7 +135,7 @@ async function retireWorkRecoveryProbes(target:LockedWorkRecoveryTarget,connect:
 async function revokeWorkRecoveryProbeIdentities(db:Client,target:LockedWorkRecoveryTarget,intents:readonly Intent[],apply=true){
  for(const intent of intents){
   const sessions=(await db.query('SELECT principal_id,membership_id,workspace_id,token_hash FROM login_sessions WHERE id=$1 FOR UPDATE',[intent.sessionId])).rows;
-  if(sessions.length>1||sessions.some(row=>row.principal_id!==DEMO_IDS.mcteer||row.membership_id!==intent.membershipId||row.workspace_id!==intent.workspaceId||row.token_hash!==secretHash(intent.sessionToken)))throw Error('Work recovery session cleanup identity differs');
+  if(sessions.length>1||sessions.some(row=>row.principal_id!==intent.principalId||row.membership_id!==intent.membershipId||row.workspace_id!==intent.workspaceId||row.token_hash!==secretHash(intent.sessionToken)))throw Error('Work recovery session cleanup identity differs');
   const admissions=(await db.query('SELECT environment_id,recovery_id,control_revision,session_id,workspace_id,secret_hash,source_commit,origin,deployment_id,database_binding_digest FROM operations_recovery_http_reads WHERE id=$1 FOR UPDATE',[intent.admissionId])).rows;
   if(admissions.length>1||admissions.some(row=>row.environment_id!==target.environmentId||row.recovery_id!==target.recoveryId||Number(row.control_revision)!==target.controlRevision||row.session_id!==intent.sessionId||row.workspace_id!==intent.workspaceId||row.secret_hash!==secretHash(intent.admissionSecret)||row.source_commit!==intent.sourceCommit||row.origin!==intent.origin||row.deployment_id!==intent.deploymentId||row.database_binding_digest!==intent.databaseBindingDigest))throw Error('Work recovery admission cleanup identity differs');
   if(!apply)continue;
@@ -149,7 +149,7 @@ async function recordWorkRecoveryProbeRetirement(target:LockedWorkRecoveryTarget
  try{await writeEvidence(intent.journalDirectory,name,{...target,contract:'pilot-work-recovery-probe-retirement-v1',sessionId:intent.sessionId,admissionId:intent.admissionId,completedAt:new Date().toISOString(),credentialsAbsentOrRevoked:true,serviceOpened:false});}
  catch(error){if((error as NodeJS.ErrnoException).code!=='EEXIST')throw error;const retained=z.object({contract:z.literal('pilot-work-recovery-probe-retirement-v1'),sessionId:z.literal(intent.sessionId),admissionId:z.literal(intent.admissionId),environmentId:z.literal(target.environmentId),recoveryId:z.literal(target.recoveryId),controlRevision:z.literal(target.controlRevision),databaseBindingDigest:z.literal(target.databaseBindingDigest),credentialsAbsentOrRevoked:z.literal(true)}).parse(await readEvidence(intent.journalDirectory,name));if(!retained)throw error;}
 }
-const probeJournalSchema=z.object({contract:z.literal('pilot-work-recovery-probe-intent-v2'),projectId:z.string(),teamId:z.string(),environmentId:z.string(),recoveryId:z.uuid(),controlRevision:z.number().int().positive(),databaseBindingDigest:z.string().regex(/^[a-f0-9]{64}$/),sourceCommit:z.string().regex(/^[a-f0-9]{40}$/),origin:z.url(),deploymentId:z.string().regex(/^dpl_[A-Za-z0-9]+$/),sessionId:z.uuid(),admissionId:z.uuid(),workspaceId:z.uuid(),membershipId:z.uuid(),credentialDigest:z.string().regex(/^[a-f0-9]{64}$/)});
+const probeJournalSchema=z.object({contract:z.literal('pilot-work-recovery-probe-intent-v2'),principalId:z.uuid().default(DEMO_IDS.mcteer),projectId:z.string(),teamId:z.string(),environmentId:z.string(),recoveryId:z.uuid(),controlRevision:z.number().int().positive(),databaseBindingDigest:z.string().regex(/^[a-f0-9]{64}$/),sourceCommit:z.string().regex(/^[a-f0-9]{40}$/),origin:z.url(),deploymentId:z.string().regex(/^dpl_[A-Za-z0-9]+$/),sessionId:z.uuid(),admissionId:z.uuid(),workspaceId:z.uuid(),membershipId:z.uuid(),credentialDigest:z.string().regex(/^[a-f0-9]{64}$/)});
 /** Deny-only restart reconciliation. Actual original secret preimages bind the
  * private journal to stored credentials; no session or admission is created or
  * renewed. The caller must commit its owner transaction before returning. */
@@ -164,7 +164,7 @@ export async function reconcileWorkRecoveryProbeJournal(db:Client,target:LockedW
   const row=probeJournalSchema.parse(await readEvidence(input.journalDirectory,name));
   if(name!=='probe-'+row.sessionId+'-intent.json'||row.environmentId!==target.environmentId||row.recoveryId!==target.recoveryId||row.controlRevision!==target.controlRevision||row.projectId!==target.projectId||row.teamId!==target.teamId||row.databaseBindingDigest!==target.databaseBindingDigest)throw Error('Work recovery probe journal target differs');
   const credentials=z.strictObject({contract:z.literal('pilot-work-recovery-probe-credentials-v1'),sessionId:z.literal(row.sessionId),admissionId:z.literal(row.admissionId),sessionToken:z.string().regex(/^[A-Za-z0-9_-]{43}$/),admissionSecret:z.string().regex(/^[A-Za-z0-9_-]{43}$/)}).parse(await readEvidence(input.journalDirectory,'private-probe-'+row.sessionId+'-credentials.json',row.credentialDigest));
-  intents.push(Object.freeze({sessionId:row.sessionId,admissionId:row.admissionId,workspaceId:row.workspaceId,membershipId:row.membershipId,journalDirectory:input.journalDirectory,sessionToken:credentials.sessionToken,admissionSecret:credentials.admissionSecret,sourceCommit:row.sourceCommit,origin:row.origin,deploymentId:row.deploymentId,databaseBindingDigest:row.databaseBindingDigest}));
+  intents.push(Object.freeze({principalId:row.principalId,sessionId:row.sessionId,admissionId:row.admissionId,workspaceId:row.workspaceId,membershipId:row.membershipId,journalDirectory:input.journalDirectory,sessionToken:credentials.sessionToken,admissionSecret:credentials.admissionSecret,sourceCommit:row.sourceCommit,origin:row.origin,deploymentId:row.deploymentId,databaseBindingDigest:row.databaseBindingDigest}));
  }
  // Validate every original credential first. Re-read the shared registry only
  // after all awaits, then append synchronously so concurrent calls cannot lose

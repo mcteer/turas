@@ -4247,3 +4247,40 @@ maintenance routes are warmed while runtime LOGIN remains closed before leases.
 The corrected five focused execution cases pass, and the composed artifact
 restore case passes with all seven kinds; four other restore cases were deliberately
 unselected in this narrow follow-up. The original not-found failure remains retained.
+
+### Participant and MCP work-recovery authentication — 2026-10-19
+
+The actual platform-bound work target now supports independently authenticated
+panel/partner canonical reads. Configured credentials select the fixed principal;
+active membership, role, partner organization and short-lived session are read
+from the database. Customer grants remain domain decisions. Probe cleanup and
+restart reconciliation retain the actual principal plus original secret preimages;
+legacy mcteer journals remain readable without granting authority. The thirteen-case
+owned PostgreSQL target suite passes in `work-participants-v2-private.json`, including
+wrong passwords, foreign customers, revoked grants and membership loss. The initial
+run retained one strict-scope argument failure; narrowed scopes correct it without
+relaxing validators.
+
+A work-target MCP reader authenticates the actual persisted bearer and invokes the
+same modern SDK handler as ordinary MCP. Its fixed origin/path, bounded body,
+transaction deadline, category/customer policy and post-read credential validation
+remain mandatory. Public MCP admission, quota leases and audit remain unchanged;
+this private owner reader does not prove their hosted operation. The focused actual
+SDK check passes in `work-mcp-v4-private.json` with accepted facts, two-page customer
+scope and credential revocation. Earlier failed fixtures retained duplicate-profile,
+deferred-scope and paired-revocation constraint errors. Eve bundle validation first
+rejected dynamic imports; static imports pass `build:eve:check`. Additional same-read
+revocation and wrong-bearer assertions and the complete target suite are pending.
+The catalog also removes two accidental semicolon entries that were never tests;
+no execution is inferred from catalog metadata. T096/T097 remain incomplete; no
+actual work target has been locked, migrated or reopened by these checks.
+
+The complete expanded work-target suite now passes **14/14**, with no skipped cases
+(`work-participants-mcp-v5-private.json`). This includes wrong bearer, fixed-path
+rejection and revocation inside the read before result release. The unchanged
+ordinary MCP acceptance runner also passes **54/54 in19 suites**, including all three
+actual SDK consumer suites and a local production runtime, with zero paid calls
+and hosted proof false (`work-mcp-public-consumer-v1-private.log`). Root/pilot types,
+Eve bundle validation and documentation checks pass. The suite deadline inventory
+accounts for all fourteen declared210-second cases. Current catalog is851cases in154
+suites; a fresh complete current-source catalog remains required.

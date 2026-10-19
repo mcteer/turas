@@ -1,3 +1,5 @@
+import {authenticateMcpCredential} from '../mcp/credentials';
+import {lockWorkspaceActor} from '../profiles/policy';
 import {authenticateRecoveryHttpRead,type RecoveryHttpRead} from './recovery-http-read';
 import type {PoolClient} from 'pg';
 import {createHash} from 'node:crypto';
@@ -6,6 +8,7 @@ import {query} from '../db/client';
 import {HttpFailure} from '../../contracts/http';
 import {z} from 'zod';
 import type {CurrentSession} from '../auth/sessions';
+import type {McpReadActor} from '../auth/read-actor';
 const cancellationActors=new WeakSet<object>();
 const recoveryReadActors=new WeakMap<object,{client:PoolClient;environmentId:string;recoveryId:string;revision:number;deadline:number}>();
 const readProbeScope=z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive(),deadline:z.number().int().positive()});
@@ -13,8 +16,16 @@ const readProbeScope=z.strictObject({environmentId:z.string().min(1).max(256),re
  * cannot recreate it. Requires a caller-owned transaction; its locks remain
  * held until that transaction ends. Normal writes and public login remain closed. */
 export async function withOwnerRecoveryReadCapability<T>(client:PoolClient,actor:CurrentSession,raw:z.infer<typeof readProbeScope>,read:()=>Promise<T>){
+ return withRecoveryParticipantCapability(client,actor,raw,read,true);
+}
+/** Canonical session and live role checks for a bounded owner-run participant read.
+ * This does not grant any customer entitlement; each domain read rechecks it. */
+export async function withParticipantRecoveryReadCapability<T>(client:PoolClient,actor:CurrentSession,raw:z.infer<typeof readProbeScope>,read:()=>Promise<T>){
+ return withRecoveryParticipantCapability(client,actor,raw,read,false);
+}
+async function withRecoveryParticipantCapability<T>(client:PoolClient,actor:CurrentSession,raw:z.infer<typeof readProbeScope>,read:()=>Promise<T>,ownerOnly:boolean){
  const scope=readProbeScope.parse(raw),now=Date.now();
- if(scope.environmentId!==getServerConfig().TURAS_ENVIRONMENT_ID||scope.deadline<=now||scope.deadline>now+300000||actor.kind!=='internal'||actor.role!=='admin'||actor.loginName!=='mcteer'||!/^[A-Za-z0-9_-]{43}$/.test(actor.token)||recoveryReadActors.has(actor))throw new HttpFailure(403,'forbidden','Recovery read probe unavailable');
+ if(scope.environmentId!==getServerConfig().TURAS_ENVIRONMENT_ID||scope.deadline<=now||scope.deadline>now+300000||(ownerOnly&&(actor.kind!=='internal'||actor.role!=='admin'||actor.loginName!=='mcteer'))||!['mcteer','panel','partner'].includes(actor.loginName)||!/^[A-Za-z0-9_-]{43}$/.test(actor.token)||recoveryReadActors.has(actor))throw new HttpFailure(403,'forbidden','Recovery read probe unavailable');
  if((await client.query("SELECT current_user=pg_get_userbyid(relowner) AS owner FROM pg_class WHERE oid='operations_control'::regclass")).rows[0]?.owner!==true)throw new HttpFailure(403,'forbidden','Exact owner recovery read probe required');
  try{await client.query('SAVEPOINT turas_recovery_read_probe');await client.query('RELEASE SAVEPOINT turas_recovery_read_probe');}
  catch{throw new HttpFailure(403,'forbidden','Recovery read probe requires an active transaction');}
@@ -25,12 +36,34 @@ export async function withOwnerRecoveryReadCapability<T>(client:PoolClient,actor
   JOIN principals p ON p.id=m.principal_id JOIN workspaces w ON w.id=m.workspace_id
   WHERE c.environment_id=$1 AND c.mode='locked' AND c.recovery_id=$2 AND c.revision=$3 AND e.schema_version=79
    AND s.token_hash=$8 AND s.revoked_at IS NULL AND s.expires_at>clock_timestamp() AND m.active AND p.active AND w.active
-   AND m.kind='internal' AND m.role='admin' AND p.login_name='mcteer'
+   AND m.kind=$9 AND m.role=$10 AND p.login_name=$11
+   AND (m.kind='internal' OR (m.kind='partner' AND EXISTS(SELECT 1 FROM partner_organizations o WHERE o.id=m.partner_org_id AND o.workspace_id=m.workspace_id AND o.active)))
    AND (w.classification='primary' OR w.pilot_environment_id=$1)
-   AND current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='operations_control'::regclass)) FOR SHARE OF c,s,m,p,w`,[scope.environmentId,scope.recoveryId,scope.controlRevision,actor.sessionId,actor.principalId,actor.membershipId,actor.workspaceId,createHash('sha256').update(actor.token).digest('hex')])).rows;
+   AND current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='operations_control'::regclass)) FOR SHARE OF c,s,m,p,w`,[scope.environmentId,scope.recoveryId,scope.controlRevision,actor.sessionId,actor.principalId,actor.membershipId,actor.workspaceId,createHash('sha256').update(actor.token).digest('hex'),actor.kind,actor.role,actor.loginName])).rows;
  if(rows.length!==1)throw new HttpFailure(403,'forbidden','Exact owner recovery read probe required');
  recoveryReadActors.set(actor,{client,environmentId:scope.environmentId,recoveryId:scope.recoveryId,revision:scope.controlRevision,deadline:scope.deadline});
  try{return await read();}finally{recoveryReadActors.delete(actor);}
+}
+/** Real bearer authentication on the owner-run recovery transaction. The normal
+ * MCP endpoint retains its ordinary operational gate. No supplied actor is accepted. */
+export async function withAuthenticatedMcpRecoveryReadCapability<T>(client:PoolClient,authorization:string|null,raw:z.infer<typeof readProbeScope>,read:(actor:McpReadActor)=>Promise<T>){
+ const scope=readProbeScope.parse(raw),now=Date.now();
+ if(scope.environmentId!==getServerConfig().TURAS_ENVIRONMENT_ID||scope.deadline<=now||scope.deadline>now+60000)throw new HttpFailure(403,'forbidden','Short-lived MCP recovery read required');
+ await client.query('SAVEPOINT authenticated_mcp_recovery_probe');await client.query('RELEASE SAVEPOINT authenticated_mcp_recovery_probe');
+ await client.query('SELECT pg_advisory_xact_lock_shared(hashtextextended($1,16017))',[scope.environmentId]);
+ const control=(await client.query(`SELECT c.environment_id FROM operations_control c JOIN turas_environment e ON e.environment_id=c.environment_id
+ WHERE c.environment_id=$1 AND c.mode='locked' AND c.recovery_id=$2 AND c.revision=$3 AND e.schema_version=79
+ AND current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='operations_control'::regclass)) FOR SHARE OF c`,[scope.environmentId,scope.recoveryId,scope.controlRevision])).rows;
+ if(control.length!==1)throw new HttpFailure(403,'forbidden','Exact locked MCP recovery owner required');
+ const actor=await authenticateMcpCredential(client,authorization);
+ recoveryReadActors.set(actor,{client,environmentId:scope.environmentId,recoveryId:scope.recoveryId,revision:scope.controlRevision,deadline:scope.deadline});
+ try{
+  await lockWorkspaceActor(client,actor,undefined,true,2000);
+  const result=await read(actor);
+  const current=await authenticateMcpCredential(client,authorization);
+  if(scope.deadline<=Date.now()||JSON.stringify(current)!==JSON.stringify(actor))throw new HttpFailure(403,'forbidden','MCP recovery authentication changed');
+  await lockWorkspaceActor(client,actor,undefined,true,2000);return result;
+ }finally{recoveryReadActors.delete(actor);}
 }
 /** The fixed maintenance handler authenticates an actual owner-issued database
  * admission on this direct runtime transaction, never a caller-supplied actor. */

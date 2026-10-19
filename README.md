@@ -779,3 +779,5 @@ Full exception text and child output remain private. These diagnostics preserve
 all existing reporting assertions, rendering bindings and deadlines.
 Reporting CI installs both root and artifact-extractor lockfiles, as required by
 the shared disposable application setup.
+
+Work-recovery authentication now includes independently authenticated internal/partner reads and an actual-bearer MCP SDK reader. These are local implementation checkpoints; complete service measurement, authoritative reopen verification and hosted acceptance remain pending in [Feature 016](specs/016-pilot-hardening/tasks.md).
