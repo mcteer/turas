@@ -4084,3 +4084,11 @@ The backup operator remains disabled; this local permission exercise does not
 prove a Production Function invocation, a matched backup or scheduled cadence.
 No quality-journal charge/hold is reset. The original journal remains at
 1,806,543microUSD spent, zero held/unknown and four unused Context credits.
+
+The subsequent c31bf63 CI reporting diagnostics identify the common setup
+location `scripts/plan-eval-environment.ts:242`: resolution of the root and
+artifact-extractor dependency directories. Reporting jobs install only root
+packages, while the shared owned app setup requires both directories. The
+reporting matrix now installs the pinned extractor lockfile as well. No runtime,
+assertion, renderer binding or timeout changes are required for this setup fix.
+Actual new CI results remain pending.

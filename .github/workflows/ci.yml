@@ -354,7 +354,7 @@ jobs:
         with:
           node-version-file: .node-version
           cache: npm
-      - run: npm ci
+      - run: npm ci && npm ci --prefix packages/artifact-extractor
       - name: Create private disposable reporting credentials
         run: |
           for key in TURAS_DEMO_PASSWORD PANEL_PASSWORD PARTNER_PASSWORD TURAS_MAINTENANCE_SECRET; do

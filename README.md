@@ -769,3 +769,5 @@ Reporting CI failures now expose fixed setup stages, approved script identities
 and bounded failure signatures when a controller stops before a test report exists.
 Full exception text and child output remain private. These diagnostics preserve
 all existing reporting assertions, rendering bindings and deadlines.
+Reporting CI installs both root and artifact-extractor lockfiles, as required by
+the shared disposable application setup.
