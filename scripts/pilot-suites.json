@@ -1839,12 +1839,13 @@
     },
     {
       "file": "tests/unit/pilot/managed-host-policy-provider.test.ts",
-      "expectedCases": 4,
+      "expectedCases": 5,
       "cases": [
         "reads exact current project policy and explicit unavailable diagnostics without granting HTTP closure",
         "rejects foreign project and ineffective active policy before bypass observations",
         "does not interpret arbitrary denial or a newly enabled conditional feature as an empty inventory",
-        "rejects nonempty or paginated system exceptions and honors original cancellation"
+        "rejects nonempty or paginated system exceptions and honors original cancellation",
+        "binds secret enumeration to genuine fresh complete supported project registries"
       ]
     },
     {
@@ -1866,6 +1867,16 @@
         "rejects unprotected hosts revoked tokens wrong releases and foreign bootstrap redirects",
         "rejects cloned bindings and never dispatches after admission denial or cancellation",
         "recognizes only fixed-provider challenges returning to the exact requested host and path"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-project-host-inventory.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "privately registers the complete repeated all-target deployment and alias host union",
+        "rejects copied foreign-scope and stale inventories before credential-bearing probes",
+        "rejects foreign project changed alias inventories and unsupported redirects",
+        "honors original cancellation without issuing metadata requests"
       ]
     }
   ],

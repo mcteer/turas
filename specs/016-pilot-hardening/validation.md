@@ -4778,3 +4778,23 @@ The initial local runner import error occurred before any request and is retaine
 separately. Actual candidate controls remain required after deployment.
 The inventory is888cases across163suites; full current-source and hosted
 acceptance remain incomplete.
+
+
+### Private complete host and automation registries — 2026-10-19
+
+The fixed project-host reader now privately registers actual complete repeated
+deployment/alias host inventories, revalidates ownership, deep freezes host rows
+and enforces an original-start five-minute freshness bound. A copied, foreign or
+stale inventory cannot authorize credential-bearing probes. Active-policy reads
+also retain the actual project's automation registry privately: only a fresh
+genuine read can enumerate1–4 strictly supported current keys. Receipts contain
+a registry digest rather than keys; empty, unknown-scope and unknown-field
+registries fail closed.
+
+Seventeen focused host-inventory, policy, binding and protection-control checks
+pass, including forged/stale metadata and unknown-registry failures. Pilot types
+pass. Independent review found no blocker in the metadata components and
+identified a requirement for upcoming custom-domain probes: alias membership
+alone does not authenticate the DNS transport destination. No automation secret
+was sent to a custom domain. Safe provider-edge transport and actual complete
+HTTP closure remain pending. The registered inventory is893cases/164suites.
