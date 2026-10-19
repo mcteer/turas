@@ -93,6 +93,6 @@ async function main(){
    await (await import('./pilot-ci-evidence')).aggregatePilotCiEvidence(root,artifacts,binding,'ci-completed.json');
   }
   process.stdout.write(JSON.stringify({state:"pass",passedCases:total,fullPilotReady:false})+"\n");
- },{priorSchema:55,queryStatistics:true,deadlineMs:3600000});}finally{process.umask(previousUmask);}
+ },{priorSchema:55,queryStatistics:true,deadlineMs:5400000});}finally{process.umask(previousUmask);}
 }
 main().catch(async()=>{if(failureRecord){const {root,...binding}=failureRecord;await writeEvidence(root,`failure-${randomUUID()}.json`,{version:"pilot-execution-v1",...binding,method:"local",state:"fail",safeFailure:"incomplete_execution",stage:failureStage,suiteFile:activeSuite}).catch(()=>undefined);}process.stderr.write(JSON.stringify({kind:"pilot_catalog_failure",stage:failureStage,suiteFile:activeSuite})+"\n");process.stderr.write("Pilot catalog failed; no readiness established.\n");process.exitCode=1;});

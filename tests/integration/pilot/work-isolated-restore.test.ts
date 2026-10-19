@@ -1,3 +1,9 @@
+import {withOwnedRecoveryConfiguration} from '../../../lib/server/operations/recovery-configuration';
+import {getServerConfig} from '../../../lib/server/config';
+import {withAuthenticatedOwnerRecoveryRead} from '../../../lib/server/operations/authenticated-recovery-read';
+import {readProfile} from '../../../lib/server/profiles/read';
+import type {PoolClient} from 'pg';
+import {mintOwnedRestoreTarget,bindOwnedRestoredSource,withOwnedRestoreTarget,requireOwnedRestoreConnection} from '../../../lib/server/operations/owned-restore-target';
 import {restoreOwnedWorkDump} from '../../../lib/server/operations/pg-restore';
 import {measureRestoredWorkIntegrity,requireMeasuredWorkIntegrity} from '../../../lib/server/operations/restored-work-integrity';
 import {it,expect} from 'vitest';
@@ -16,13 +22,13 @@ import {pilotPublishedKnowledgeFixture} from '../../fixtures/pilot/knowledge';
 
 it('authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority',async()=>{
  await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});const root=await mkdtemp(resolve('local-artifacts/016/work-rehearsal-')),key=randomBytes(32);
- let candidate:WorkCaptureCandidate|undefined,sourceEnvironmentId='';
+ let candidate:WorkCaptureCandidate|undefined,sourceEnvironmentId='',sourceProfile:{workspaceId:string;customerId:string;revisionId:string}|undefined;
  try{
   await mkdir(join(root,'keys'),{mode:0o700});await writeFile(join(root,'keys','key'),key,{mode:0o600});await mkdir(join(root,'cold'),{mode:0o700});
   await withPilotEnvironment(async environment=>{
    const db=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await db.connect();
    try{
-    sourceEnvironmentId=environment.environmentId;await pilotPublishedKnowledgeFixture(db as any,'primary');
+    sourceEnvironmentId=environment.environmentId;const profile=await pilotPublishedKnowledgeFixture(db as any,'primary');sourceProfile={workspaceId:profile.actor.workspaceId,customerId:profile.customerId,revisionId:profile.originalRevisionId};
     const recoveryId=randomUUID(),revision=Number((await db.query("UPDATE operations_control SET mode='locked',revision=revision+1,recovery_id=$2 WHERE environment_id=$1 RETURNING revision",[environment.environmentId,recoveryId])).rows[0].revision);
     const objects=join(root,'source-objects'),workflow=join(root,'empty-workflow');await mkdir(objects,{mode:0o700});await mkdir(workflow,{mode:0o700});
     const store=new LocalPrivateObjects(objects,environment.environmentId,10485760);
@@ -37,11 +43,14 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
    }finally{await db.end();}
   },{postgresMajor:18,deadlineMs:180000});
   await rm(join(root,'capture'),{recursive:true,force:true});await rm(join(root,'source-objects'),{recursive:true,force:true});await rm(join(root,'empty-workflow'),{recursive:true,force:true});
-  if(!candidate)throw Error('Synthetic work candidate unavailable');const captured=candidate;
+  if(!candidate||!sourceProfile)throw Error('Synthetic work candidate unavailable');const captured=candidate,expectedProfile=sourceProfile;
   await writeFile(join(root,'cold','candidate.json'),JSON.stringify(captured),{mode:0o600});
   await withPilotEnvironment(async environment=>{
    const db=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await db.connect();
    try{
+    const ownedTarget=await mintOwnedRestoreTarget({container:environment.databaseContainer,ownerLabel:environment.databaseOwnerLabel,environmentId:environment.environmentId},environment.signal);
+    expect(Object.isFrozen(ownedTarget)).toBe(true);
+    await expect(mintOwnedRestoreTarget({container:environment.databaseContainer,ownerLabel:'0'.repeat(12),environmentId:environment.environmentId},environment.signal)).rejects.toThrow('Original owned');
     await db.query("UPDATE operations_control SET mode='locked'");
     const result=await pilotRecovery(['--restore-work-isolated','--environment',captured.environmentId,'--candidate',join(root,'cold','candidate.json'),'--bundle',join(root,'cold','candidate.encrypted'),'--key-file',join(root,'keys','key'),'--output',join(root,'restore')]);
     expect(result).toMatchObject({acceptedContentVerified:true,ledgerVerified:true,objectsVerified:true,objectCount:6,requiredScopeQuarantined:true,currentAuthorityVerified:false,permanentReplayVerified:false,workflowReconciled:false,restorationReady:false,mode:'locked'});
@@ -54,6 +63,39 @@ it('authenticates separate encrypted work bytes, restores accepted content and s
     const foreign=join(root,'foreign-objects');await mkdir(foreign,{mode:0o700});
     await expect(requireMeasuredWorkIntegrity(db,proof,scope,foreign,environment.signal)).rejects.toThrow('target changed');
     await db.query('COMMIT');
+    await expect(bindOwnedRestoredSource(ownedTarget,JSON.parse(JSON.stringify(proof)),storeRoot,environment.signal)).rejects.toThrow('Actual measured');
+    await bindOwnedRestoredSource(ownedTarget,proof,storeRoot,environment.signal);
+    await expect(withOwnedRestoreTarget(JSON.parse(JSON.stringify(ownedTarget)),scope,environment.signal,async()=>{})).rejects.toThrow('Actual owned restore target');
+    await expect(withOwnedRestoreTarget(ownedTarget,{...scope,recoveryId:randomUUID()},environment.signal,async()=>{})).rejects.toThrow('Actual bound');
+    await withOwnedRestoreTarget(ownedTarget,scope,environment.signal,async owner=>{
+     expect(await requireOwnedRestoreConnection(owner,ownedTarget,scope,environment.signal)).toBe(proof);
+     await expect(requireOwnedRestoreConnection(db,ownedTarget,scope,environment.signal)).rejects.toThrow('Actual bound');
+     const previous=process.env.TURAS_ENVIRONMENT_ID;process.env.TURAS_ENVIRONMENT_ID=sourceEnvironmentId;
+     try{expect(()=>requireOwnedPilotDatabase(process.env,true)).toThrow('owning runner');expect(await requireOwnedRestoreConnection(owner,ownedTarget,scope,environment.signal)).toBe(proof);}
+     finally{process.env.TURAS_ENVIRONMENT_ID=previous;}
+    });
+    let releaseDetached!:()=>void,detached:Promise<unknown>|undefined;
+    const afterScope=new Promise<void>(done=>{releaseDetached=done;});
+    await withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async owner=>{
+     detached=afterScope.then(()=>getServerConfig());
+     expect(getServerConfig().TURAS_ENVIRONMENT_ID).toBe(sourceEnvironmentId);
+     expect(process.env.TURAS_ENVIRONMENT_ID).toBe(environment.environmentId);
+     await owner.query('BEGIN');
+     try{
+      await withAuthenticatedOwnerRecoveryRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedProfile.workspaceId,password:process.env.TURAS_DEMO_PASSWORD!,deadline:Date.now()+60000},async actor=>{
+       const profile=await readProfile(actor,expectedProfile.customerId,owner as unknown as PoolClient,undefined,undefined,false,true) as {customer:{id:string};acceptedFacts:{id:string}[]};
+       expect(profile.customer.id).toBe(expectedProfile.customerId);expect(profile.acceptedFacts.some(fact=>fact.id===expectedProfile.revisionId)).toBe(true);
+      });await owner.query('COMMIT');
+     }catch(error){await owner.query('ROLLBACK');throw error;}
+    });
+    releaseDetached();await expect(detached).rejects.toThrow('Recovery configuration scope ended');
+    expect(getServerConfig().TURAS_ENVIRONMENT_ID).toBe(environment.environmentId);
+    const priorRuntime=process.env.DATABASE_URL;process.env.DATABASE_URL='postgresql://synthetic:synthetic@127.0.0.1:1/turas_test_016_eval_aaaaaaaaaaaa';
+    try{await expect(withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async()=>{})).rejects.toThrow('configuration database differs');}
+    finally{process.env.DATABASE_URL=priorRuntime;}
+    await expect(withOwnedRecoveryConfiguration(ownedTarget,scope,environment.signal,async()=>{throw Error('Controlled scoped read failure');})).rejects.toThrow('Controlled scoped read failure');
+    expect(getServerConfig().TURAS_ENVIRONMENT_ID).toBe(environment.environmentId);
+    await expect(withOwnedRestoreTarget(ownedTarget,scope,environment.signal,async owner=>{await owner.query('UPDATE operations_control SET revision=revision+1');})).rejects.toThrow('Exact bound locked');
     expect((await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows[0]).toEqual({environment_id:sourceEnvironmentId,schema_version:79});
     expect(Number((await db.query('SELECT count(*) FROM operations_recovery_quarantines')).rows[0].count)).toBe(7);
     expect(Number((await db.query("SELECT count(*) FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') AND rolcanlogin")).rows[0].count)).toBe(0);

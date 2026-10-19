@@ -722,6 +722,16 @@ Current report verification uses the normal authenticated browser read and
 requires published/current state and the exact latest publication revision.
 MCP's separate narrower projection is not used to judge internal service health.
 
+The in-process restored-target path separately pins the actual owned loopback
+container and PostgreSQL cluster before restoration. It binds the measured
+restore capability afterward, so a restored source marker does not weaken the
+ordinary selected-database guard. `withOwnedRecoveryConfiguration` scopes normal
+server configuration to that bound source during canonical authenticated reads;
+it leaves `process.env` unchanged and rejects detached reads after the scope ends.
+This foundation neither launches restricted HTTP service nor creates complete
+recovery verification. Callers retain transaction responsibility; a final drift
+check cannot undo writes already committed by the callback.
+
 ### Finite complete managed-run inventory closure
 
 After the exact source is schema 079 and locked, the read-only managed inspection

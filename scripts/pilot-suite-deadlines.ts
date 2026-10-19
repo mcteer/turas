@@ -1,7 +1,7 @@
 import catalog from './pilot-suites.json';
 /** Whole-file bounds cover the explicitly declared setup/case phases plus
  * startup and cleanup. Domain, hook, statement and per-case limits stay fixed.
- * The complete catalog retains its independent one-hour environment deadline. */
+ * The complete catalog retains its independent ninety-minute batch orchestration deadline. */
 const longSuiteSeconds:Readonly<Record<string,number>>={
  'managed-workflow-batch':180,
  'maintenance-worker':240,'hosted-runtime-database':240,'evaluation-visible-identifiers':240,

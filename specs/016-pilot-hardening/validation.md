@@ -3271,3 +3271,42 @@ release under an external maintenance perimeter, install078/079 before dependent
 code, then prove the079 matched-service backup/recovery/cadence mechanisms before
 pilot readiness. This corrects the previous pre-installation scheduling cycle;
 no readiness, recovery, current-authority or participant gate was removed.
+
+
+At d95c72e the actual Production077 v4 capture passed cold download/decryption.
+Its authenticated snapshot reports zero required objects/bytes, zero active
+leases, zero pending uploads and zero dispatching deliveries. A separate owned
+PostgreSQL18 cold rehearsal recomputed that boundary successfully before078/079,
+verified copied content/ledger, retained runtime CONNECT denial and locked
+control, and removed the disposable target. Private receipts are
+`resume-20261018/production-077-safety-d95c72e-v4/database-safety-copy.json` and
+`resume-20261018/production-077-rehearsal-d95c72e-v4/rehearsal.json`. Production
+remains077. No external-admission, managed Workflow, private-byte or complete
+service recovery proof is inferred from these observations.
+
+Fresh repeated metadata inventory finds576deployments and79aliases; five allowed
+hosts independently resolve to current Production f8d196f. Preparation acquired
+bypass cookies for649of650old hosts, with one redirecting host lacking a cookie.
+No firewall configuration was applied. Fresh managed metadata retains507runs,
+including171running; the21application conversations contain18attempts, ten bound
+runs still running and one conversation unbound. No run was cancelled, initial
+delivery retried, charge released or workflow closure claimed. The HTTP fence
+proposal remains separate from effect reconciliation and full recovery.
+
+
+The frozen ac31bb1 complete catalog stopped at its independent one-hour
+environment watchdog:130 suites and722of771cases passed before the next suite
+could start. No complete execution receipt was produced; this remains failed
+partial evidence. The complete-catalog orchestration ceiling is now90minutes.
+Individual suite, test, SQL, recovery and60-minute benchmark limits are unchanged.
+A fresh complete run of the current777-case catalog is required.
+
+The owned restored-target capability pins the actual loopback container, owner
+connection and cluster identity, then binds the actual measured restore proof.
+Scoped recovery configuration supports canonical authenticated reads of the
+restored source without changing the selected process environment. Detached
+configuration scopes fail closed. Ten focused integration/configuration cases
+pass, including canonical accepted-profile reads, forged capability denial,
+configuration isolation and revision drift. This is a recovery foundation; it
+does not establish restricted HTTP service, effect reconciliation, complete
+verification or permission to unlock the restored target.
