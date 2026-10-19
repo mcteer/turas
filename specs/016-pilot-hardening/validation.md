@@ -4297,3 +4297,24 @@ privacy tests pass3/3. The affected journey passes4/4 across desktop/mobile WebK
 light/dark in its owned production runtime (`learning-draft-phases-webkit-v1-private.log`);
 this development subset does not establish the complete predecessor gate or CI.
 Root types and documentation checks pass.
+
+### Real-target required-service ledger inventory — 2026-10-19
+
+The real-work inventory now shares the bounded record/classification implementation
+with owned restore verification, while retaining separate target constructors.
+Owned callers still require the original exact restore and physical-byte proof.
+Work callers require the genuine platform-bound client and ordered READ COMMITTED
+fences, derive required descriptors and every record before owner filtering, and
+explicitly return required-original verification, service health and readiness
+false. Unsupported/missing owner scopes remain failures rather than reduced coverage.
+The focused real-database work case passes1/1 (`work-inventory-v1-private.json`),
+including removal of the owner scope; thirteen unselected cases are not counted.
+Root types pass. The first composed owned attempt omitted its explicit preparation
+input and failed before verification; its report remains retained. A corrected
+seven-kind regression is running. T096/T097 remain open.
+
+The corrected composed owned regression passes1/1 (`owned-inventory-shared-v2-private.json`),
+covering the actual seven-kind maintenance application; four unselected surfaces
+are not counted. Root/pilot types and documentation checks pass, and independent
+review found no blocker. The work inventory continues to make no physical-byte or
+service-health claim.

@@ -1,3 +1,4 @@
+import {deriveWorkMaintenanceInventoryInTransaction} from '../../../lib/server/operations/owned-maintenance-inventory';
 import {Client as McpClient,StreamableHTTPClientTransport} from '@modelcontextprotocol/client';
 import {mcpProtocolVersion,mcpToolOutputs} from '../../../lib/contracts/mcp';
 import {newMcpCredential} from '../../../lib/server/mcp/credentials';
@@ -47,7 +48,10 @@ async function fixture(run:(input:Parameters<typeof withLockedWorkRecoveryTarget
 }
 it('binds an actual locked owner and authenticated runtime for one work recovery lifetime',async()=>fixture(async input=>{
  let retained:unknown;
- const result=await withLockedWorkRecoveryTarget(input,async(db,target)=>{retained={db,target};await db.query('BEGIN');try{expect(await requireLockedWorkRecoveryConnection(db,target,input.scope)).toBe(target);await db.query('COMMIT');return 'measured';}catch(error){await db.query('ROLLBACK');throw error;}});
+ const result=await withLockedWorkRecoveryTarget(input,async(db,target)=>{retained={db,target};await db.query('BEGIN');try{expect(await requireLockedWorkRecoveryConnection(db,target,input.scope)).toBe(target);
+ const inventory=await deriveWorkMaintenanceInventoryInTransaction(db,target,input.signal);expect(inventory.contract).toBe('pilot-work-maintenance-inventory-v1');expect(inventory.records.length).toBeGreaterThan(0);expect(inventory.requiredOriginals.requiredOriginalsVerified).toBe(false);expect(inventory.requiredScopeHealthy).toBe(false);
+ await db.query('SAVEPOINT missing_inventory_owner');await db.query('UPDATE memberships SET active=false WHERE principal_id=$1',[DEMO_IDS.mcteer]);await expect(deriveWorkMaintenanceInventoryInTransaction(db,target,input.signal)).rejects.toThrow('lacks authenticated owner scope');await db.query('ROLLBACK TO SAVEPOINT missing_inventory_owner');await db.query('RELEASE SAVEPOINT missing_inventory_owner');
+ await db.query('COMMIT');return 'measured';}catch(error){await db.query('ROLLBACK');throw error;}});
  expect(result).toBe('measured');const expired=retained as {db:Client;target:Parameters<typeof requireLockedWorkRecoveryConnection>[1]};await expect(requireLockedWorkRecoveryConnection(expired.db,expired.target,input.scope)).rejects.toThrow('Actual active');
 }),210000);
 it('rejects serialized capabilities foreign clients and nontransactional use',async()=>fixture(async input=>{

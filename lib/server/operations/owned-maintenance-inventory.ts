@@ -1,3 +1,5 @@
+import {requireLockedWorkRecoveryConnection,type LockedWorkRecoveryTarget} from './locked-work-recovery-target';
+import type {Client} from 'pg';
 import {readExecutionRecoveryBinding} from './recovery-execution-read';
 import {withOwnedRestoreTarget,requireOwnedRestoreConnection,verifyOwnedRestoredRequiredObjects,type OwnedRestoreTarget} from './owned-restore-target';
 import {requiredRecoveryObjects} from './required-objects';
@@ -26,13 +28,29 @@ export function deriveOwnedMaintenanceInventory(target:OwnedRestoreTarget,scope:
  * fences until the consuming recovery decision commits. */
 export async function deriveOwnedMaintenanceInventoryInTransaction(db:import('pg').Client,target:OwnedRestoreTarget,scope:Scope,signal:AbortSignal){
  await requireOwnedRestoreConnection(db,target,scope,signal);
+ return deriveMaintenanceInventory(db,scope,signal,'pilot-owned-maintenance-inventory-v1',()=>verifyOwnedRestoredRequiredObjects(db,target,scope,signal));
+}
+/** Real-work counterpart derives every record before owner filtering. This
+ * measures ledger scope only: actual original HTTP/bytes verification must still
+ * consume every required descriptor before any service-health decision. */
+export async function deriveWorkMaintenanceInventoryInTransaction(db:Client,target:LockedWorkRecoveryTarget,signal:AbortSignal){
+ const scope={environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision};
+ await requireLockedWorkRecoveryConnection(db,target,scope);
+ const inventory=await deriveMaintenanceInventory(db,scope,signal,'pilot-work-maintenance-inventory-v1',async()=>{
+  const required=await requiredRecoveryObjects(db,scope.environmentId);
+  if(required.length>256)throw Error('Work maintenance required-original inventory exceeds bound');
+  return Object.freeze({contract:'pilot-work-required-original-ledger-v1' as const,...scope,requiredObjectCount:required.length,requiredObjectBytes:required.reduce((sum,row)=>sum+row.sizeBytes,0),requiredObjectsDigest:recoveryDigest(required),requiredOriginalsVerified:false as const,serviceVerified:false as const,restorationReady:false as const});
+ });
+ await requireLockedWorkRecoveryConnection(db,target,scope);signal.throwIfAborted();return inventory;
+}
+async function deriveMaintenanceInventory<C extends 'pilot-owned-maintenance-inventory-v1'|'pilot-work-maintenance-inventory-v1',P extends {requiredObjectsDigest:string}>(db:Client,scope:Scope,signal:AbortSignal,contract:C,verifyOriginals:()=>Promise<P>){
  await db.query('SELECT pg_current_xact_id()');
  const transaction=(await db.query("SELECT pg_current_xact_id_if_assigned() IS NOT NULL AS active,current_setting('transaction_isolation') AS isolation")).rows[0];
  if(!transaction?.active||transaction.isolation!=='read committed')throw Error('Maintenance inventory requires an active read committed decision transaction');
    await db.query("SET LOCAL lock_timeout='3000ms'; SET LOCAL statement_timeout='10000ms'; SET LOCAL transaction_timeout='60s'");
    await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16020))',[scope.environmentId]);
    await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[scope.environmentId]);
-   const originals=await verifyOwnedRestoredRequiredObjects(db,target,scope,signal),required=await requiredRecoveryObjects(db,scope.environmentId);
+   const originals=await verifyOriginals(),required=await requiredRecoveryObjects(db,scope.environmentId);
    if(recoveryDigest(required)!==originals.requiredObjectsDigest)throw Error('Required maintenance original inventory changed');
    const objects=new Map(required.map(object=>[object.key,object])),classified=new Map<string,string>(),records:OwnedMaintenanceRecord[]=[];
    for(const object of required)if(/\/(artifact-staging|workforce-staging)\//.test(object.key))classified.set(object.key,'staging');
@@ -113,5 +131,5 @@ export async function deriveOwnedMaintenanceInventoryInTransaction(db:import('pg
    const physicalClassifications=required.map(object=>({key:object.key,classification:classified.get(object.key)!}));
    const inventoryDigest=recoveryDigest({scope,records,physicalClassifications,requiredObjectsDigest:originals.requiredObjectsDigest});
    signal.throwIfAborted();
-   return Object.freeze({contract:'pilot-owned-maintenance-inventory-v1' as const,...scope,inventoryDigest,records:Object.freeze(records),physicalClassifications:Object.freeze(physicalClassifications),requiredOriginals:originals,requiredScopeHealthy:false as const,restorationReady:false as const});
+   return Object.freeze({contract,...scope,inventoryDigest,records:Object.freeze(records),physicalClassifications:Object.freeze(physicalClassifications),requiredOriginals:originals,requiredScopeHealthy:false as const,restorationReady:false as const});
 }
