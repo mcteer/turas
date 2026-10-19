@@ -8,7 +8,7 @@ import {pathToFileURL} from 'node:url';
 import {withPilotEnvironment} from './pilot-environment';
 import {pilotSource} from './pilot-source';
 import {createEvidenceDirectory,readEvidence,writeEvidence,evidenceDigest} from './pilot-evidence';
-import {QualityBudgetLedger} from './pilot-quality-budget-ledger';
+import {QualityBudgetLedger,qualityContinuationSchema} from './pilot-quality-budget-ledger';
 import {qualityChildEnvironment} from './pilot-quality-runtime';
 import {parsePilotImagePreparation} from '../lib/contracts/pilot-images';
 import {verifyArtifactImage,assertFreshArtifactSignatures} from '../lib/server/artifacts/scan';
@@ -43,9 +43,10 @@ export function qualitySeedCommand(stage:Stage){return ['scripts/seed-profile-de
 
 function parse(args:string[]){
  const mode=args[0];if(!['--prepare','--live'].includes(mode))throw Error('Explicit quality mode required');
- const allowed=new Set(mode==='--prepare'?['images','output']:['images','output','authorization','deterministic-proof','preparation','budget-usd','step-authorization']),values:Record<string,string>={};
+ const allowed=new Set(mode==='--prepare'?['images','output']:['images','output','authorization','deterministic-proof','preparation','budget-usd','step-authorization','continuation','budget-ledger']),values:Record<string,string>={};
  for(let i=1;i<args.length;i+=2){const key=args[i].replace(/^--/,'');if(!args[i].startsWith('--')||!allowed.has(key)||values[key]||!args[i+1]||args[i+1].startsWith('--'))throw Error('Invalid quality inputs');values[key]=args[i+1];}
- if(Object.keys(values).length!==allowed.size-(mode==='--live'&&!values['step-authorization']?1:0))throw Error('Complete explicit quality inputs required');
+ const required=mode==='--prepare'?['images','output']:['images','output','authorization','deterministic-proof','preparation','budget-usd'];
+ if(required.some(key=>!values[key])||!!values.continuation!==!!values['budget-ledger'])throw Error('Complete explicit quality inputs required');
  return {mode,values};
 }
 async function privateReceipt(file:string){const absolute=resolve(file);return readEvidence(dirname(absolute),basename(absolute));}
@@ -108,30 +109,39 @@ export async function pilotQualityLive(args=process.argv.slice(2)){
   await writeEvidence(root,'preparation.json',receipt);console.info(JSON.stringify({gate:'pilot-quality-preparation',state:'pass',paidDispatches:0,catalogs:qualityCatalog.length,actualModelQualityVerified:false}));return receipt;
  }
  const approval=authorization.parse(await privateReceipt(values.authorization)),approvedAt=Date.parse(approval.recordedAt),expiresAt=Date.parse(approval.expiresAt);
- if(approvedAt>Date.now()||expiresAt<=Date.now()||expiresAt-approvedAt>86400000||String(approval.capMicroUsd/1000000)!==values['budget-usd'])throw Error('Fresh applicable operator budget required');
+ if(approvedAt>Date.now()||expiresAt<=approvedAt||(!values.continuation&&expiresAt<=Date.now())||expiresAt-approvedAt>86400000||String(approval.capMicroUsd/1000000)!==values['budget-usd'])throw Error('Fresh applicable operator budget required');
  await verifyCompleteDeterministic(values['deterministic-proof'],source);
  const prepared=await privateReceipt(values.preparation) as Record<string,unknown>;
  if(prepared.contract!=='pilot-quality-preparation-v1'||prepared.sourceDigest!==source.sourceDigest||prepared.catalogDigest!==source.catalogDigest||prepared.sourceCommit!==source.sourceCommit||prepared.nativeAdmissionVerified!==true||prepared.paidDispatches!==0||prepared.imagesDigest!==evidenceDigest(await readFile(images)))throw Error('Current native admission preparation required');
  const key=process.env.AI_GATEWAY_API_KEY,contextKey=process.env.CONTEXT_API_KEY;if(!key||!contextKey)throw Error('Configured providers required');
  const authorizationDigest=evidenceDigest(JSON.stringify(approval)),registry=join(sourceRoot,'local-artifacts/016/quality-budgets');
  await mkdir(registry,{recursive:true,mode:0o700});
- const ledgerRoot=join(registry,approval.id);
+ const ledgerRoot=values['budget-ledger']?resolve(values['budget-ledger']):join(registry,approval.id);
  let budget:QualityBudgetLedger;
  try{
   const saved=await readEvidence(ledgerRoot,'authorization.json') as Record<string,unknown>;
   for(const [field,value] of Object.entries({id:approval.id,capMicroUsd:approval.capMicroUsd,contextCreditCap:approval.contextCreditCap,authorizationDigest,modelId:approval.modelId,expiresAt:approval.expiresAt}))if(saved[field]!==value)throw Error('Existing approval cannot reset or expand its allowance');
   budget=new QualityBudgetLedger(ledgerRoot);
  }catch(error){
-  if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;
+  if(values.continuation||(error as NodeJS.ErrnoException).code!=='ENOENT')throw error;
   // Exclusive creation makes concurrent controllers fail closed. Every attempt
   // using this approval retains the same original dollar and credit journal.
   budget=await QualityBudgetLedger.create(ledgerRoot,{contract:'pilot-quality-budget-v1',id:approval.id,capMicroUsd:approval.capMicroUsd,contextCreditCap:approval.contextCreditCap,authorizationDigest,sourceDigest:source.sourceDigest,catalogDigest:source.catalogDigest,modelId:approval.modelId,expiresAt:approval.expiresAt});
  }
- const stepAuthorization=values['step-authorization']?verifyQualityStepAuthorization(await privateReceipt(values['step-authorization']),{id:approval.id,authorizationDigest,expiresAt:approval.expiresAt}):undefined;
  await command(['scripts/check-docs.mjs'],sourceRoot,root,'original-source-hygiene',Date.now()+120000,false);
+ let continuation:ReturnType<typeof qualityContinuationSchema.parse>|undefined;
+ if(values.continuation){
+  continuation=qualityContinuationSchema.parse(await privateReceipt(values.continuation));
+  if(continuation.budgetId!==approval.id||continuation.originalAuthorizationDigest!==authorizationDigest||continuation.ledgerRoot!==ledgerRoot||(['sourceCommit','sourceDigest','catalogDigest'] as const).some(key=>continuation![key]!==source[key]))throw Error('Exact original journal and current-source continuation required');
+  const current=await budget.currentAuthority(),continuationDigest=evidenceDigest(JSON.stringify(continuation));
+  if(current.continuationId!==continuation.id||current.authorizationDigest!==continuationDigest)await budget.continueAuthorization(continuation);
+ }
+ const effectiveAuthority=await budget.currentAuthority();
+ const stepAuthorization=values['step-authorization']?verifyQualityStepAuthorization(await privateReceipt(values['step-authorization']),effectiveAuthority):undefined;
  const attemptId=await budget.beginAttempt(source);
- await writeEvidence(root,'runtime.json',{contract:'pilot-quality-runtime-v1',id:approval.id,attemptId,...(stepAuthorization?{stepAuthorization}:{}),sourceRoot,ledgerRoot:budget.root,...source,authorizationDigest,capMicroUsd:approval.capMicroUsd,contextCreditCap:approval.contextCreditCap,expiresAt:approval.expiresAt});
+ await writeEvidence(root,'runtime.json',{contract:'pilot-quality-runtime-v1',id:approval.id,attemptId,...(stepAuthorization?{stepAuthorization}:{}),sourceRoot,ledgerRoot:budget.root,...source,authorizationDigest:effectiveAuthority.authorizationDigest,capMicroUsd:approval.capMicroUsd,contextCreditCap:approval.contextCreditCap,expiresAt:effectiveAuthority.expiresAt});
  await writeEvidence(root,'operator-authorization.json',approval);
+ if(continuation)await writeEvidence(root,'continuation-authorization.json',continuation);
  if(stepAuthorization)await writeEvidence(root,'step-authorization.json',stepAuthorization);
  const completed:string[]=[];
  try{

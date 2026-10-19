@@ -7,7 +7,17 @@ import {createEvidenceDirectory,readEvidence,writeEvidence,evidenceDigest} from 
 
 const digest=z.string().regex(/^[a-f0-9]{64}$/),micro=z.number().int().nonnegative().safe();
 const authorization=z.strictObject({contract:z.literal('pilot-quality-budget-v1'),id:z.uuid(),capMicroUsd:micro.positive(),contextCreditCap:z.number().int().min(0).max(4).optional(),authorizationDigest:digest,sourceDigest:digest,catalogDigest:digest,modelId:z.literal('spacexai/grok-4.7'),expiresAt:z.iso.datetime({offset:true})});
+/** A separately approved continuation extends time only. No cap, charge,
+ * reservation, model or original authorization can be replaced by this input. */
+export const qualityContinuationSchema=z.strictObject({
+ contract:z.literal('pilot-quality-continuation-v1'),id:z.uuid(),budgetId:z.uuid(),ledgerRoot:z.string().min(1).max(4096),
+ originalAuthorizationDigest:digest,previousAuthorityDigest:digest,journalHeadDigest:digest,
+ sourceCommit:z.string().regex(/^[a-f0-9]{40}$/),sourceDigest:digest,catalogDigest:digest,
+ userInstructionReference:z.string().trim().min(1).max(512),
+ recordedAt:z.iso.datetime({offset:true}),expiresAt:z.iso.datetime({offset:true}),
+}).superRefine((value,ctx)=>{const duration=Date.parse(value.expiresAt)-Date.parse(value.recordedAt);if(duration<=0||duration>86400000)ctx.addIssue({code:'custom',message:'Finite continuation of at most 24 hours required'});});
 const event=z.discriminatedUnion('kind',[
+ z.strictObject({kind:z.literal('continuation'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,approval:qualityContinuationSchema,observedAt:z.iso.datetime({offset:true})}),
  z.strictObject({kind:z.literal('attempt'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,sourceCommit:z.string().regex(/^[a-f0-9]{40}$/),sourceDigest:digest,catalogDigest:digest,observedAt:z.iso.datetime({offset:true})}),
  z.strictObject({kind:z.literal('dispatch'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,modelId:z.enum(['spacexai/grok-4.7','openai/text-embedding-3-small']),ceilingMicroUsd:micro.positive(),pricingDigest:digest,observedAt:z.iso.datetime({offset:true})}),
  z.strictObject({kind:z.literal('settlement'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,chargedMicroUsd:micro,inputTokens:micro,outputTokens:micro,generationId:z.string().min(1).max(256),observedAt:z.iso.datetime({offset:true})}),
@@ -38,13 +48,19 @@ export class QualityBudgetLedger{
   const names=(await readdir(this.root)).filter(n=>n!=='authorization.json'&&n!=='lock').sort();
   if(names.length>10000||names.some(n=>!/^event-[0-9]{6}\.json$/.test(n)))throw Error('Unexpected shared evaluation ledger content');
   let previousDigest=evidenceDigest(JSON.stringify(authority)),chargedMicroUsd=0,contextCreditsConsumed=0;
+  let effectiveAuthority=authority,continuation:z.infer<typeof qualityContinuationSchema>|undefined;
   let currentSource:{sourceCommit?:string;sourceDigest:string;catalogDigest:string;attemptId?:string}={sourceDigest:authority.sourceDigest,catalogDigest:authority.catalogDigest};
   const dispatches=new Map<string,Extract<Event,{kind:'dispatch'}>>(),observedUnknownCharges=new Map<string,number>(),observedUnknownCredits=new Map<string,number>(),creditDispatches=new Set<string>(),creditSettled=new Set<string>(),creditUnknown=new Set<string>(),settled=new Set<string>(),unknown=new Set<string>(),generationIds=new Set<string>();
   for(const [index,name] of names.entries()){
    if(name!==`event-${String(index+1).padStart(6,'0')}.json`)throw Error('Incomplete shared evaluation journal');
    const entry=event.parse(await readEvidence(this.root,name));if(entry.ordinal!==index+1||entry.previousDigest!==previousDigest)throw Error('Shared evaluation journal identity differs');
-   previousDigest=evidenceDigest(JSON.stringify(entry));
-   if(entry.kind==='attempt'){if([...dispatches.keys()].some(id=>!settled.has(id))||[...creditDispatches].some(id=>!creditSettled.has(id)))throw Error('An unresolved provider prevents a fresh attempt');currentSource={sourceCommit:entry.sourceCommit,sourceDigest:entry.sourceDigest,catalogDigest:entry.catalogDigest,attemptId:entry.id};}
+   if(entry.kind==='continuation'){
+    const approval=entry.approval,recorded=Date.parse(approval.recordedAt),observed=Date.parse(entry.observedAt);
+    if(approval.id!==entry.id||approval.ledgerRoot!==resolve(this.root)||approval.budgetId!==authority.id||approval.originalAuthorizationDigest!==authority.authorizationDigest||approval.previousAuthorityDigest!==effectiveAuthority.authorizationDigest||approval.journalHeadDigest!==previousDigest||recorded<Date.parse(effectiveAuthority.expiresAt)||recorded>observed||observed>=Date.parse(approval.expiresAt)||[...dispatches.keys()].some(id=>!settled.has(id))||[...creditDispatches].some(id=>!creditSettled.has(id)))throw Error('Exact unencumbered original-budget continuation required');
+    continuation=approval;effectiveAuthority={...authority,authorizationDigest:evidenceDigest(JSON.stringify(approval)),expiresAt:approval.expiresAt};
+    currentSource={sourceCommit:approval.sourceCommit,sourceDigest:approval.sourceDigest,catalogDigest:approval.catalogDigest};
+   }
+   else if(entry.kind==='attempt'){if([...dispatches.keys()].some(id=>!settled.has(id))||[...creditDispatches].some(id=>!creditSettled.has(id)))throw Error('An unresolved provider prevents a fresh attempt');if(continuation&&['sourceCommit','sourceDigest','catalogDigest'].some(key=>entry[key as 'sourceCommit'|'sourceDigest'|'catalogDigest']!==continuation![key as 'sourceCommit'|'sourceDigest'|'catalogDigest']))throw Error('Continuation source differs');currentSource={sourceCommit:entry.sourceCommit,sourceDigest:entry.sourceDigest,catalogDigest:entry.catalogDigest,attemptId:entry.id};}
    else if(entry.kind.startsWith('credit-')){
     if(entry.kind==='credit-dispatch'){if(creditDispatches.has(entry.id)||[...dispatches.keys()].some(id=>!settled.has(id))||[...creditDispatches].some(id=>!creditSettled.has(id)))throw Error('Concurrent shared provider dispatch');creditDispatches.add(entry.id);}
     else if(entry.kind==='credit-settlement'){if(!creditDispatches.has(entry.id)||creditSettled.has(entry.id)||creditUnknown.has(entry.id)||generationIds.has('context:'+entry.requestId))throw Error('Credit accounting identity differs');creditSettled.add(entry.id);generationIds.add('context:'+entry.requestId);contextCreditsConsumed+=entry.creditsConsumed;}
@@ -55,22 +71,32 @@ export class QualityBudgetLedger{
     if(entry.kind==='unknown'){unknown.add(entry.id);if(entry.observedChargeMicroUsd!==undefined)observedUnknownCharges.set(entry.id,entry.observedChargeMicroUsd);}
     else{if(entry.chargedMicroUsd>d.ceilingMicroUsd||generationIds.has(entry.generationId))throw Error('Shared evaluation charge violates its reservation');generationIds.add(entry.generationId);settled.add(entry.id);chargedMicroUsd+=entry.chargedMicroUsd;}
    }
+   previousDigest=evidenceDigest(JSON.stringify(entry));
   }
   if(!Number.isSafeInteger(chargedMicroUsd)||chargedMicroUsd>authority.capMicroUsd)throw Error('Shared evaluation budget exhausted');
   if(contextCreditsConsumed>(authority.contextCreditCap??0)||creditDispatches.size>(authority.contextCreditCap??0))throw Error('Shared credit budget exhausted');
-  return {authority,currentSource,previousDigest,ordinal:names.length+1,chargedMicroUsd,contextCreditsConsumed,observedUnknownCharges,observedUnknownCredits,creditDispatches,creditSettled,creditUnknown,dispatches,settled,unknown,generationIds};
+  return {authority:effectiveAuthority,originalAuthority:authority,continuation,currentSource,previousDigest,ordinal:names.length+1,chargedMicroUsd,contextCreditsConsumed,observedUnknownCharges,observedUnknownCredits,creditDispatches,creditSettled,creditUnknown,dispatches,settled,unknown,generationIds};
  }
  private async append(value:Event){
   await writeEvidence(this.root,`event-${String(value.ordinal).padStart(6,'0')}.json`,event.parse(value));
   const directory=await open(this.root,constants.O_RDONLY|constants.O_DIRECTORY|constants.O_NOFOLLOW);try{await directory.sync();}finally{await directory.close();}
  }
+ /** Call only after obtaining the attributable approval described by the exact
+  * input. JSON is an operator record, not an automatic grant of user approval. */
+ async continueAuthorization(raw:unknown){return this.lock(async()=>{
+  const approval=qualityContinuationSchema.parse(raw),s=await this.read(),now=Date.now();
+  if(approval.ledgerRoot!==resolve(this.root)||approval.budgetId!==s.originalAuthority.id||approval.originalAuthorizationDigest!==s.originalAuthority.authorizationDigest||approval.previousAuthorityDigest!==s.authority.authorizationDigest||approval.journalHeadDigest!==s.previousDigest||Date.parse(approval.recordedAt)<Date.parse(s.authority.expiresAt)||Date.parse(approval.recordedAt)>now||Date.parse(approval.expiresAt)<=now||[...s.dispatches.keys()].some(id=>!s.settled.has(id))||[...s.creditDispatches].some(id=>!s.creditSettled.has(id)))throw Error('Exact unencumbered original-budget continuation required');
+  await this.append({kind:'continuation',id:approval.id,ordinal:s.ordinal,previousDigest:s.previousDigest,approval,observedAt:new Date().toISOString()});
+  return {authorizationDigest:evidenceDigest(JSON.stringify(approval)),expiresAt:approval.expiresAt,budgetId:s.originalAuthority.id,originalAuthorizationUnchanged:true,capMicroUsd:s.originalAuthority.capMicroUsd,chargedMicroUsd:s.chargedMicroUsd,contextDispatches:s.creditDispatches.size};
+ });}
+ async currentAuthority(){return this.lock(async()=>{const s=await this.read();return {...s.authority,originalAuthorizationDigest:s.originalAuthority.authorizationDigest,originalExpiresAt:s.originalAuthority.expiresAt,journalHeadDigest:s.previousDigest,continuationId:s.continuation?.id};});}
  /** A corrected run starts the full catalog again, using the same remaining
   * allowance. Prior charges and unknown holds never disappear or reset. */
- async beginAttempt(source:{sourceCommit:string;sourceDigest:string;catalogDigest:string}){return this.lock(async()=>{const s=await this.read();if(Date.parse(s.authority.expiresAt)<=Date.now()||[...s.dispatches.keys()].some(id=>!s.settled.has(id))||[...s.creditDispatches].some(id=>!s.creditSettled.has(id)))throw Error('Unresolved provider prevents a fresh attempt');const id=randomUUID();await this.append({kind:'attempt',id,...source,ordinal:s.ordinal,previousDigest:s.previousDigest,observedAt:new Date().toISOString()});return id;});}
+ async beginAttempt(source:{sourceCommit:string;sourceDigest:string;catalogDigest:string}){return this.lock(async()=>{const s=await this.read();if(Date.parse(s.authority.expiresAt)<=Date.now()||[...s.dispatches.keys()].some(id=>!s.settled.has(id))||[...s.creditDispatches].some(id=>!s.creditSettled.has(id)))throw Error('Unresolved provider prevents a fresh attempt');if(s.continuation&&(['sourceCommit','sourceDigest','catalogDigest'] as const).some(key=>source[key]!==s.continuation![key]))throw Error('Continuation source differs');const id=randomUUID();await this.append({kind:'attempt',id,...source,ordinal:s.ordinal,previousDigest:s.previousDigest,observedAt:new Date().toISOString()});return id;});}
  async currentSource(){return this.lock(async()=>(await this.read()).currentSource);}
  async dispatch(raw:{modelId:'spacexai/grok-4.7'|'openai/text-embedding-3-small';ceilingMicroUsd:number;pricingDigest:string},attemptId?:string){
   return this.lock(async()=>{const state=await this.read();
-   if(state.currentSource.attemptId!==attemptId)throw Error('Prior quality attempt cannot dispatch');
+   if(state.currentSource.attemptId!==attemptId||state.continuation&&!attemptId)throw Error('Prior quality attempt cannot dispatch');
    if(Date.parse(state.authority.expiresAt)<=Date.now()||state.unknown.size||[...state.dispatches.keys()].some(id=>!state.settled.has(id))||[...state.creditDispatches].some(id=>!state.creditSettled.has(id)))throw Error('Unknown or active evaluation charge holds admission');
    const id=randomUUID(),value=event.parse({kind:'dispatch',id,...raw,ordinal:state.ordinal,previousDigest:state.previousDigest,observedAt:new Date().toISOString()});
    if(value.kind!=='dispatch'||state.chargedMicroUsd+value.ceilingMicroUsd>state.authority.capMicroUsd)throw Error('Evaluation budget prevents dispatch');
@@ -88,7 +114,7 @@ export class QualityBudgetLedger{
  async hold(id:string,reason:Extract<Event,{kind:'unknown'}>['reason']){
   return this.lock(async()=>{const state=await this.read();if(state.settled.has(id)||state.unknown.has(id))return;if(!state.dispatches.has(id))throw Error('Unknown evaluation dispatch');await this.append({kind:'unknown',id,reason,ordinal:state.ordinal,previousDigest:state.previousDigest,observedAt:new Date().toISOString()});});
  }
- async reserveCredit(accountProofDigest:string,attemptId?:string){return this.lock(async()=>{const s=await this.read();if(s.currentSource.attemptId!==attemptId)throw Error('Prior quality attempt cannot dispatch');if(Date.parse(s.authority.expiresAt)<=Date.now()||s.unknown.size||[...s.dispatches.keys()].some(id=>!s.settled.has(id))||[...s.creditDispatches].some(id=>!s.creditSettled.has(id)))throw Error('Provider accounting holds admission');if(s.creditDispatches.size>=(s.authority.contextCreditCap??0))throw Error('Explicit research credit budget required');const id=randomUUID();await this.append({kind:'credit-dispatch',id,ordinal:s.ordinal,previousDigest:s.previousDigest,ceilingCredits:1,accountProofDigest,observedAt:new Date().toISOString()});return id;});}
+ async reserveCredit(accountProofDigest:string,attemptId?:string){return this.lock(async()=>{const s=await this.read();if(s.currentSource.attemptId!==attemptId||s.continuation&&!attemptId)throw Error('Prior quality attempt cannot dispatch');if(Date.parse(s.authority.expiresAt)<=Date.now()||s.unknown.size||[...s.dispatches.keys()].some(id=>!s.settled.has(id))||[...s.creditDispatches].some(id=>!s.creditSettled.has(id)))throw Error('Provider accounting holds admission');if(s.creditDispatches.size>=(s.authority.contextCreditCap??0))throw Error('Explicit research credit budget required');const id=randomUUID();await this.append({kind:'credit-dispatch',id,ordinal:s.ordinal,previousDigest:s.previousDigest,ceilingCredits:1,accountProofDigest,observedAt:new Date().toISOString()});return id;});}
  async settleCredit(id:string,creditsConsumed:number,requestId:string,accountProofDigest:string){return this.lock(async()=>{const s=await this.read();if(!s.creditDispatches.has(id)||s.creditSettled.has(id)||s.creditUnknown.has(id))throw Error('Credit operation cannot settle');const parsed=event.safeParse({kind:'credit-settlement',id,ordinal:s.ordinal,previousDigest:s.previousDigest,creditsConsumed,requestId,accountProofDigest,observedAt:new Date().toISOString()});if(!parsed.success||s.generationIds.has('context:'+requestId)){await this.append({kind:'credit-unknown',id,observedCreditsConsumed:micro.safeParse(creditsConsumed).success?creditsConsumed:undefined,ordinal:s.ordinal,previousDigest:s.previousDigest,observedAt:new Date().toISOString()});throw Error('Credit charge requires operator review');}await this.append(parsed.data);});}
  async holdCredit(id:string){return this.lock(async()=>{const s=await this.read();if(s.creditSettled.has(id)||s.creditUnknown.has(id))return;if(!s.creditDispatches.has(id))throw Error('Unknown credit operation');await this.append({kind:'credit-unknown',id,ordinal:s.ordinal,previousDigest:s.previousDigest,observedAt:new Date().toISOString()});});}
  async status(){return this.lock(async()=>{const s=await this.read();return {chargedMicroUsd:s.chargedMicroUsd,heldMicroUsd:[...s.dispatches.values()].filter(d=>!s.settled.has(d.id)).reduce((sum,d)=>sum+Math.max(d.ceilingMicroUsd,s.observedUnknownCharges.get(d.id)??0),0),capMicroUsd:s.authority.capMicroUsd,contextCreditsConsumed:s.contextCreditsConsumed,contextCreditsHeld:[...s.creditDispatches].filter(id=>!s.creditSettled.has(id)).reduce((sum,id)=>sum+Math.max(1,s.observedUnknownCredits.get(id)??0),0),contextCreditCap:s.authority.contextCreditCap??0,contextDispatches:s.creditDispatches.size,dispatches:s.dispatches.size,unknown:s.unknown.size+s.creditUnknown.size,admissionHeld:s.unknown.size>0||[...s.dispatches.keys()].some(id=>!s.settled.has(id))||[...s.creditDispatches].some(id=>!s.creditSettled.has(id))||Date.parse(s.authority.expiresAt)<=Date.now()};});}

@@ -99,9 +99,13 @@ Completion work now includes released main `f8d196f`. New pilot logins default
 off through `TURAS_PILOT_LOGIN_ENABLED`; explicit enablement still requires a
 current assigned membership. A separate exact-source Production infrastructure
 authorization can now be verified without promoting the original Preview envelope.
-The composed workspace/upload WebKit matrix passes40cases; the updated767-case
+The composed workspace/upload WebKit matrix passes40cases; the updated771-case
 catalog requires fresh complete verification. Expired infrastructure/model approvals,
 original charges and holds remain unchanged; no hosted pilot readiness is claimed.
+Expired evaluation authority can be continued only by an explicitly approved,
+source-bound record against the exact original journal. This extends time only:
+original dollar/credit caps, charges and unknown holds remain unchanged. No real
+evaluation authority has been renewed by implementing this path.
 
 Recent Conversations provides owner-private Archive and Restore controls. Archived
 chats remain available in Archived Conversations and retain their history.

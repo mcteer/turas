@@ -824,3 +824,37 @@ workspace and open target, and matching database budget authorization/scope/pric
 identities. It rejects unknown charges, exhausted budgets and dispatch counts before
 calling paid adapters. Each job still uses normal serialized reservation admission.
 The new contract never modifies or settles old budgets, charges or unknown holds.
+
+### Continuing an expired evaluation authorization
+
+The quality controller never edits an original approval or starts a replacement
+allowance to avoid an expired journal. If the owner explicitly approves a new
+time window for its remaining allowance, retain that attributable instruction in
+a private `pilot-quality-continuation-v1` record. Bind its UUID, original budget
+UUID, exact canonical `ledgerRoot`, `originalAuthorizationDigest`, current
+`previousAuthorityDigest` and `journalHeadDigest` from the original ledger's
+`currentAuthority()` result. Bind the final `sourceCommit`, `sourceDigest` and
+`catalogDigest`, `userInstructionReference`, `recordedAt` and `expiresAt`.
+The prior authority must have expired; the new window is at most24 hours.
+Proposed JSON is not approval. Never populate an approval reference from an
+assumption that permission persists beyond an explicitly bounded expiry.
+
+Run the ordinary complete `pilot:quality:live -- --live` command with its original
+`--authorization` and original `--budget-usd` cap, adding both
+`--continuation /absolute/private/approved-continuation.json` and
+`--budget-ledger /absolute/path/to/the/original/journal`. All existing images,
+current complete deterministic proof and current native preparation inputs remain
+required. A continuation cannot create a missing journal. A003 step authorization,
+when needed, must bind the effective continuation digest and its exact expiry.
+
+Under the existing accounting lock, the controller appends a chained continuation
+event; it does not rewrite authorization or earlier events. It rejects stale
+heads, copied roots, changed original identities, unapproved fields, future or
+expired windows, and any pending or unknown dollar/credit dispatch. Caps,
+historical charges, provider generation identities and credit dispatch counts
+remain cumulative. The new authority invalidates the old attempt/runtime and
+requires a fresh complete source-bound attempt. Reusing the identical current
+continuation does not append it twice or extend its expiry. Source corrections
+outside its exact scope require separately applicable authority. No continuation
+settles an unknown charge, releases a reservation, tops up a cap, changes billing,
+changes the selected model or authorizes hosted infrastructure.

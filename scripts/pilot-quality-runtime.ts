@@ -20,7 +20,7 @@ async function configuration(){
  if(file!==resolve(file)||await realpath(file)!==file)throw Error('Exact private evaluation runtime file required');
  const config=runtimeSchema.parse(await readEvidence(dirname(file),basename(file)));
  if(config.sourceRoot!==resolve(config.sourceRoot)||await realpath(config.sourceRoot)!==config.sourceRoot||config.ledgerRoot!==resolve(config.ledgerRoot)||Date.parse(config.expiresAt)<=Date.now())throw Error('Evaluation runtime scope unavailable');
- const authority=await readEvidence(config.ledgerRoot,'authorization.json') as Record<string,unknown>;
+ const authority=await new QualityBudgetLedger(config.ledgerRoot).currentAuthority();
  const scope=await new QualityBudgetLedger(config.ledgerRoot).currentSource();
  if(authority.id!==config.id||scope.sourceDigest!==config.sourceDigest||scope.catalogDigest!==config.catalogDigest||scope.attemptId!==config.attemptId||scope.sourceCommit!==undefined&&scope.sourceCommit!==config.sourceCommit||authority.authorizationDigest!==config.authorizationDigest||authority.capMicroUsd!==config.capMicroUsd||(authority.contextCreditCap??0)!==(config.contextCreditCap??0)||authority.expiresAt!==config.expiresAt||authority.modelId!=='spacexai/grok-4.7')throw Error('Evaluation runtime budget differs');
  if(config.stepAuthorization)verifyQualityStepAuthorization(config.stepAuthorization,{id:config.id,authorizationDigest:config.authorizationDigest,expiresAt:config.expiresAt});

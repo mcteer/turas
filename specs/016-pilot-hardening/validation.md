@@ -3110,3 +3110,38 @@ and before Axe. This adds a bounded metadata-readiness assertion without sleeps,
 retries or rule exclusions. Static root metadata remains unchanged. The available
 evidence does not establish the cause of the original missing-title observation.
 Fresh validation of this assertion and current-source CI remain required.
+
+The frozen38c72fa learning UI gate subsequently passed all32 cases in all five
+journey files across all four WebKit configurations, zero failures/skips and
+`acceptance:true`. The014 source digest is
+179e9a045e4de65d7703e5890cf17ae65f4f8767858d1cf9e1f3d46ed42f5bb1.
+Private recovery-checkout log:
+`local-artifacts/016/learning-metadata-38c72fa-private.log`.
+The earlier exploratory32-pass run was rejected by its source-change guard after
+a comment edit and is not an acceptance receipt. Both observations are retained.
+
+### Original evaluation journal continuation implementation (2026-10-18)
+
+An explicit continuation path now binds an independently attributable approval
+to the original budget, canonical journal root/head, prior authority digest and
+exact current source. Only an already expired time window can be continued, for
+at most24 hours. No money/credit cap field is accepted. A chained event retains
+all original authorization/event bytes, charges, provider identities, consumed
+credit dispatches and unknown holds. Pending or unknown effects prevent
+continuation; a changed source, copied root or stale approval cannot dispatch.
+Old runtimes/attempts are invalidated. The live controller requires the existing
+original journal explicitly and retains all current full-catalog/native-admission
+prerequisites; the runtime independently rereads derived current authority.
+
+This implements an operator mechanism, not an approval. No real continuation
+record was applied, original journal changed, allowance renewed or provider
+called. The actual expired allowance and its historical charges remain unchanged.
+Four added named accounting cases bring the registered catalog to771 cases in
+142 suites. Fresh full-source validation and actual applicable approval are still
+required before paid evaluation; T069 remains pending.
+
+The complete pilot unit/contract set passes378/378 across65 files, including all
+14 budget cases and28 budget/Gateway/Context accounting cases. Root and pilot
+typechecks, authored documentation checks and diff checks pass. The delegated
+reviewer found no implementation blocker. These are unpaid local checks; they
+do not renew authority, prove semantic model quality or complete hosted recovery.

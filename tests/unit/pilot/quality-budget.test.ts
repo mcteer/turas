@@ -1,13 +1,15 @@
-import {beforeEach,afterEach,it,expect} from 'vitest';
-import {mkdtemp,rm,mkdir,writeFile} from 'node:fs/promises';
+import {beforeEach,afterEach,it,expect,vi} from 'vitest';
+import {mkdtemp,rm,mkdir,writeFile,readFile,readdir,cp} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {randomUUID} from 'node:crypto';
-import {QualityBudgetLedger} from '../../../scripts/pilot-quality-budget-ledger';
+import {QualityBudgetLedger,qualityContinuationSchema} from '../../../scripts/pilot-quality-budget-ledger';
+import {qualityChildEnvironment} from '../../../scripts/pilot-quality-runtime';
+import {writeEvidence} from '../../../scripts/pilot-evidence';
 let root:string;
 const call={modelId:'spacexai/grok-4.7' as const,ceilingMicroUsd:16000000,pricingDigest:'d'.repeat(64)};
 const authorization=()=>({contract:'pilot-quality-budget-v1' as const,id:randomUUID(),capMicroUsd:25000000,authorizationDigest:'a'.repeat(64),sourceDigest:'b'.repeat(64),catalogDigest:'c'.repeat(64),modelId:'spacexai/grok-4.7' as const,expiresAt:new Date(Date.now()+60000).toISOString()});
 beforeEach(async()=>{await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});root=await mkdtemp(resolve('local-artifacts/016/quality-budget-test-'));});
-afterEach(()=>rm(root,{recursive:true,force:true}));
+afterEach(()=>{vi.useRealTimers();return rm(root,{recursive:true,force:true});});
 it('admits at most one concurrent provider dispatch across independent ledger clients',async()=>{
  const ledger=await QualityBudgetLedger.create(join(root,'budget'),authorization());
  const results=await Promise.allSettled([ledger.dispatch(call),new QualityBudgetLedger(ledger.root).dispatch(call)]);
@@ -79,4 +81,74 @@ it('rejects reused provider generation identities before admitting further work'
  await ledger.settle(first,charge);const second=await ledger.dispatch(call);
  await expect(ledger.settle(second,charge)).rejects.toThrow('operator review');
  expect(await ledger.status()).toMatchObject({chargedMicroUsd:1000,unknown:1,admissionHeld:true});
+});
+
+const continuedSource={sourceCommit:'1'.repeat(40),sourceDigest:'2'.repeat(64),catalogDigest:'3'.repeat(64)};
+async function continuation(ledger:QualityBudgetLedger){
+ const authority=await ledger.currentAuthority();
+ return qualityContinuationSchema.parse({contract:'pilot-quality-continuation-v1',id:randomUUID(),budgetId:authority.id,ledgerRoot:ledger.root,originalAuthorizationDigest:authority.originalAuthorizationDigest,previousAuthorityDigest:authority.authorizationDigest,journalHeadDigest:authority.journalHeadDigest,...continuedSource,userInstructionReference:'Synthetic explicit continuation approval, no provider use',recordedAt:new Date().toISOString(),expiresAt:new Date(Date.now()+3600000).toISOString()});
+}
+function expire(){vi.useFakeTimers();vi.setSystemTime(Date.now()+120000);}
+
+it('continues the exact expired journal without replacing original charges credits or authorization',async()=>{
+ const ledger=await QualityBudgetLedger.create(join(root,'budget'),{...authorization(),contextCreditCap:4}),id=await ledger.dispatch(call);
+ await ledger.settle(id,{chargedMicroUsd:10000000,inputTokens:1,outputTokens:1,generationId:'synthetic-prior-charge'});
+ const credit=await ledger.reserveCredit('d'.repeat(64));await ledger.settleCredit(credit,1,'synthetic-prior-credit','e'.repeat(64));
+ const originals=new Map(await Promise.all((await readdir(ledger.root)).map(async name=>[name,await readFile(join(ledger.root,name),'utf8')] as const)));
+ expire();expect((await ledger.status()).admissionHeld).toBe(true);
+ const approved=await continuation(ledger),receipt=await ledger.continueAuthorization(approved);
+ expect(receipt).toMatchObject({originalAuthorizationUnchanged:true,capMicroUsd:25000000,chargedMicroUsd:10000000,contextDispatches:1});
+ for(const [name,bytes] of originals)expect(await readFile(join(ledger.root,name),'utf8')).toBe(bytes);
+ const restored=new QualityBudgetLedger(ledger.root);
+ await expect(restored.dispatch(call)).rejects.toThrow('Prior quality attempt');
+ await expect(restored.beginAttempt({...continuedSource,sourceDigest:'f'.repeat(64)})).rejects.toThrow('Continuation source');
+ const attempt=await restored.beginAttempt(continuedSource);
+ await expect(restored.dispatch(call,attempt)).rejects.toThrow('prevents dispatch');
+ expect(await restored.status()).toMatchObject({chargedMicroUsd:10000000,dispatches:1,contextCreditsConsumed:1,contextDispatches:1,capMicroUsd:25000000,admissionHeld:false});
+});
+
+it('rejects mismatched stale overlong or cap-expanding continuation records without appending them',async()=>{
+ const ledger=await QualityBudgetLedger.create(join(root,'budget'),authorization());expire();const approved=await continuation(ledger),head=(await ledger.currentAuthority()).journalHeadDigest;
+ for(const change of [{budgetId:randomUUID()},{ledgerRoot:join(root,'other')},{originalAuthorizationDigest:'f'.repeat(64)},{previousAuthorityDigest:'f'.repeat(64)},{journalHeadDigest:'f'.repeat(64)},{recordedAt:new Date(Date.now()+1000).toISOString()},{expiresAt:new Date(Date.now()-1000).toISOString()},{expiresAt:new Date(Date.now()+86400001).toISOString()},{capMicroUsd:50000000},{contextCreditCap:5}]){
+  await expect(ledger.continueAuthorization({...approved,...change})).rejects.toThrow();
+  expect((await ledger.currentAuthority()).journalHeadDigest).toBe(head);
+ }
+ await ledger.continueAuthorization(approved);
+ await expect(ledger.continueAuthorization(approved)).rejects.toThrow('Exact unencumbered');
+ const copied=join(root,'copied');await cp(ledger.root,copied,{recursive:true});
+ await expect(new QualityBudgetLedger(copied).currentAuthority()).rejects.toThrow('Exact unencumbered');
+});
+
+it('keeps pending and unknown dollar or credit holds closed under a fresh continuation proposal',async()=>{
+ for(const kind of ['dollar-pending','dollar-unknown','credit-pending','credit-unknown']){
+  const ledger=await QualityBudgetLedger.create(join(root,kind),{...authorization(),contextCreditCap:4});
+  if(kind.startsWith('dollar')){const id=await ledger.dispatch(call);if(kind.endsWith('unknown'))await ledger.hold(id,'provider_error');}
+  else{const id=await ledger.reserveCredit('d'.repeat(64));if(kind.endsWith('unknown'))await ledger.holdCredit(id);}
+  expire();const head=(await ledger.currentAuthority()).journalHeadDigest;
+  await expect(ledger.continueAuthorization(await continuation(ledger))).rejects.toThrow('Exact unencumbered');
+  expect((await ledger.currentAuthority()).journalHeadDigest).toBe(head);expect((await ledger.status()).admissionHeld).toBe(true);vi.useRealTimers();
+ }
+});
+
+it('invalidates old attempts and runtimes when a separately approved continuation becomes current',async()=>{
+ const ledger=await QualityBudgetLedger.create(join(root,'budget'),authorization()),oldAttempt=await ledger.beginAttempt(continuedSource),original=await ledger.currentAuthority();
+ const runtimeFile=join(root,'runtime.json'),previous=process.env.TURAS_016_QUALITY_RUNTIME_FILE;
+ try{
+  const runtime={contract:'pilot-quality-runtime-v1',id:original.id,attemptId:oldAttempt,sourceRoot:process.cwd(),ledgerRoot:ledger.root,...continuedSource,authorizationDigest:original.authorizationDigest,capMicroUsd:original.capMicroUsd,expiresAt:original.expiresAt};
+  await writeEvidence(root,'runtime.json',runtime);process.env.TURAS_016_QUALITY_RUNTIME_FILE=runtimeFile;
+  expect((await qualityChildEnvironment()).TURAS_ALLOW_LIVE_MODEL_TESTS).toBe('1');
+  expire();await ledger.continueAuthorization(await continuation(ledger));
+  await expect(ledger.dispatch(call,oldAttempt)).rejects.toThrow('Prior quality attempt');
+  await expect(ledger.reserveCredit('d'.repeat(64),oldAttempt)).rejects.toThrow('Prior quality attempt');
+  await expect(qualityChildEnvironment()).rejects.toThrow('runtime scope');
+  const attemptId=await ledger.beginAttempt(continuedSource),current=await ledger.currentAuthority();
+  await writeEvidence(root,'current-runtime.json',{...runtime,attemptId,authorizationDigest:current.authorizationDigest,expiresAt:current.expiresAt});process.env.TURAS_016_QUALITY_RUNTIME_FILE=join(root,'current-runtime.json');
+  expect((await qualityChildEnvironment()).TURAS_ALLOW_LIVE_MODEL_TESTS).toBe('1');
+  const dispatch=await ledger.dispatch({...call,ceilingMicroUsd:1000},attemptId);await ledger.settle(dispatch,{chargedMicroUsd:1,inputTokens:1,outputTokens:1,generationId:'synthetic-continued-generation'});
+  expect(await ledger.status()).toMatchObject({dispatches:1,chargedMicroUsd:1,unknown:0});
+  vi.setSystemTime(Date.now()+3600001);
+  await expect(ledger.dispatch(call,attemptId)).rejects.toThrow('holds admission');
+  await expect(ledger.beginAttempt(continuedSource)).rejects.toThrow('Unresolved provider');
+  await expect(qualityChildEnvironment()).rejects.toThrow('runtime scope');
+ }finally{if(previous===undefined)delete process.env.TURAS_016_QUALITY_RUNTIME_FILE;else process.env.TURAS_016_QUALITY_RUNTIME_FILE=previous;}
 });

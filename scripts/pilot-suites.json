@@ -1042,7 +1042,7 @@
     },
     {
       "file": "tests/unit/pilot/quality-budget.test.ts",
-      "expectedCases": 10,
+      "expectedCases": 14,
       "cases": [
         "admits at most one concurrent provider dispatch across independent ledger clients",
         "refuses insufficient budget before recording a dispatch",
@@ -1053,7 +1053,11 @@
         "serializes credit and dollar admissions while retaining their separate units",
         "holds every provider after an unknown or invalid credit charge",
         "requires explicit credit authority and never reuses the four-call allowance",
-        "retains prior charges and credits across corrected source attempts and blocks unresolved retries"
+        "retains prior charges and credits across corrected source attempts and blocks unresolved retries",
+        "continues the exact expired journal without replacing original charges credits or authorization",
+        "rejects mismatched stale overlong or cap-expanding continuation records without appending them",
+        "keeps pending and unknown dollar or credit holds closed under a fresh continuation proposal",
+        "invalidates old attempts and runtimes when a separately approved continuation becomes current"
       ]
     },
     {
