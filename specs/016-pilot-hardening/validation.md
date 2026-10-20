@@ -5682,3 +5682,13 @@ G19 role receipts now retain each actual SDK execution's separately captured
 start/completion interval, bounded by the original preflight and enclosing capture;
 they do not use the broader whole-run interval. The fifteen scoped SDK/bundle
 regressions and pilot typecheck pass after this tightening.
+
+Native boundary diagnostics now retain a fixed owner/authority/worker/context/
+forward stage and bounded total boundary elapsed time. CI summaries allowlist
+those fields and discard arbitrary stage names, prose and payloads. Forwarded
+approval promise errors remain inside the existing failure catch without a new
+or retried dispatch. Three privacy diagnostic cases and the actual disposable
+native-operations command pass with zero deadlocks/statement timeouts or paid
+calls. Independent read-only review found no privacy/flow blocker. This improves
+future diagnosis and does not establish the cause or resolution of the earlier
+CI57014 failure; no original timeout or approval limit was increased.

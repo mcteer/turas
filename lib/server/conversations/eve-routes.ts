@@ -33,13 +33,14 @@ const sendSchema = z.object({ message: z.union([z.string(),ordinaryNativeMessage
   turnPolicy:z.enum(['queue','steer']).optional() }).strict();
 const nativeSessionSchema = z.object({ ok: z.literal(true), sessionId: z.string().min(1) }).passthrough();
 
-function nativeFailure(error: unknown): Response {
+type NativeBoundaryOperation='native-route'|'input-owner'|'input-authority'|'input-worker'|'input-context'|'input-forward';
+function nativeFailure(error: unknown,operation:NativeBoundaryOperation='native-route',elapsedMs?:number): Response {
   const known = error instanceof HttpFailure;
   if (!known) {
     const code = typeof error === "object" && error !== null && "code" in error &&
       typeof error.code === "string" && /^[A-Z0-9_]+$/.test(error.code) ? error.code : undefined;
     console.info(JSON.stringify({ kind: "turas_native_boundary_error",
-      name: error instanceof Error ? error.name : "unknown", code }));
+      name: error instanceof Error ? error.name : "unknown", code,operation,...(elapsedMs===undefined?{}:{elapsedMs:Math.min(1200000,Math.max(0,Math.trunc(elapsedMs)))}) }));
   }
   return Response.json({ ok: false, code: known ? error.code : "unavailable",
     error: known ? error.message : "Service unavailable" }, {
@@ -139,6 +140,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
           let attemptId: string | undefined;
           let dispatchClaimed = false;
           let steeringId:string|undefined;
+          let nativeOperation:NativeBoundaryOperation='native-route';const boundaryStartedAt=Date.now();
           try {
             session = await getCurrentSession(request);
             if (!session) throw new HttpFailure(401, "authentication_required", "Sign in required");
@@ -159,17 +161,17 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             let responses=inputResponsesSchema.safeParse(decoded);
             if(!responses.success){const ordinary=sendSchema.safeParse(decoded);if(ordinary.success&&ordinary.data.turnPolicy!=='steer'){const implicit=await implicitOwnedQuestionResponse(session,args.params.sessionId,ordinary.data.message);if(implicit){if(ordinary.data.artifactSelections!==undefined||request.headers.has('x-turas-artifact-selections'))throw new HttpFailure(422,'question_answer_with_artifacts','Answer the pending question separately before sending selected evidence');responses=inputResponsesSchema.safeParse(implicit);}}}
             if(responses.success) {
-              const conversation=await getOwnedConversationByNativeSession(session,args.params.sessionId);
+              nativeOperation='input-owner';const conversation=await getOwnedConversationByNativeSession(session,args.params.sessionId);
               if(conversation.id!==conversationId)throw hiddenRecord();
               assertNativeFileEvaluationOpen(conversation.id);
-              await authorizeOwnedInputResponse(session,args.params.sessionId,responses.data);
-              await startPreviewChatWorker(args.attachSession,args.waitUntil);
-              await assertNativeContextCurrent(session,args.params.sessionId,false);
+              nativeOperation='input-authority';await authorizeOwnedInputResponse(session,args.params.sessionId,responses.data);
+              nativeOperation='input-worker';await startPreviewChatWorker(args.attachSession,args.waitUntil);
+              nativeOperation='input-context';await assertNativeContextCurrent(session,args.params.sessionId,false);
               const headers=new Headers(request.headers);headers.delete("content-length");
               // The native runtime validates request IDs/options against its own
               // pending batch. This is an owner/CSRF-checked continuation, never
               // a new chat dispatch or a model-authored approval.
-              return native(new Request(request.url,{method:"POST",headers,
+              nativeOperation='input-forward';return await native(new Request(request.url,{method:"POST",headers,
                 body:JSON.stringify(responses.data)}),args);
             }
             if(!z.uuid().safeParse(requestKey).success)throw new HttpFailure(422,"invalid_input","Invalid request");
@@ -275,7 +277,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
               try { await markDispatchUncertain(session, conversationId, attemptId); }
               catch { /* durable claim remains blocked */ }
             }
-            return nativeFailure(error);
+            return nativeFailure(error,nativeOperation,Date.now()-boundaryStartedAt);
           }
         } };
       }
