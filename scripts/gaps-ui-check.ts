@@ -24,7 +24,8 @@ export function gapUiClientDiagnostic(value:unknown){
  const errors=Array.isArray(row.errors)?row.errors.filter((item):item is string=>typeof item==='string'&&['chunk_load','hydration','type','reference','syntax','other'].includes(item)).slice(-10):[];
  const routes=/^(?:session|login|canonicalization|report-(?:handoffs|previews|decisions|cancel|exports|detail|registry)|request-status|customer-workloads|evidence|gap-(?:impacts|revisions|previews|decisions|registry|detail))$/;
  const failedRequests=Array.isArray(row.failedRequests)?row.failedRequests.filter((item):item is string=>typeof item==='string'&&routes.test(item)).slice(-30):[];
- return {errors,failedRequests,...Object.fromEntries(['mutationRequests','mainNavigations'].filter(key=>Number.isSafeInteger(row[key])&&Number(row[key])>=0&&Number(row[key])<=1000000).map(key=>[key,row[key]]))};
+ const commandPhases=row.commandPhases&&typeof row.commandPhases==='object'?Object.fromEntries(['fetchEntered','responseReturned','jsonEntered','jsonFailed','jsonCompleted','bodyHeld','transportFinished'].filter(key=>typeof (row.commandPhases as Record<string,unknown>)[key]==='boolean').map(key=>[key,(row.commandPhases as Record<string,unknown>)[key]])):undefined;
+ return {errors,failedRequests,...(commandPhases?{commandPhases}:{}),...(typeof row.commandDocumentChanged==='boolean'?{commandDocumentChanged:row.commandDocumentChanged}:{}),...Object.fromEntries(['mutationRequests','mainNavigations'].filter(key=>Number.isSafeInteger(row[key])&&Number(row[key])>=0&&Number(row[key])<=1000000).map(key=>[key,row[key]]))};
 }
 /** Fixed shape only: form values, labels and validation prose never leave private reports. */
 export function gapUiInteractionDiagnostic(value:unknown){

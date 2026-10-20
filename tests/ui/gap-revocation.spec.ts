@@ -33,17 +33,27 @@ test('discards a delayed command error after a newer denied refresh',async({page
  await page.getByLabel('Impact Severity Rationale',{exact:true}).fill('Unknown pending original evidence.');
  await page.evaluate(()=>{
   const original=window.fetch.bind(window);
+  const released=new Promise<void>(resolve=>window.addEventListener('synthetic-command-body-release',()=>resolve(),{once:true}));
   window.fetch=async(input,init)=>{
+   const impact=init?.method==='POST'&&new URL(input instanceof Request?input.url:String(input),location.href).pathname.endsWith('/impacts');
+   if(impact)console.log('GAP_COMMAND_PHASE:fetchEntered');
    const response=await original(input,init);
-   if(init?.method==='POST'&&new URL(input instanceof Request?input.url:String(input),location.href).pathname.endsWith('/impacts')){
+   if(impact){
+    console.log('GAP_COMMAND_PHASE:responseReturned');
     const json=response.json.bind(response);
-    response.json=async()=>{const body=await json();window.dispatchEvent(new Event('synthetic-command-body-ready'));await new Promise<void>(resolve=>window.addEventListener('synthetic-command-body-release',()=>resolve(),{once:true}));return body;};
+    response.json=async()=>{console.log('GAP_COMMAND_PHASE:jsonEntered');let body:unknown;try{body=await json();}catch(error){console.log('GAP_COMMAND_PHASE:jsonFailed');throw error;}console.log('GAP_COMMAND_PHASE:jsonCompleted');console.log('GAP_COMMAND_PHASE:bodyHeld');window.dispatchEvent(new Event('synthetic-command-body-ready'));await released;return body;};
    }
    return response;
   };
   window.addEventListener('synthetic-command-body-ready',()=>document.documentElement.dataset.commandBodyReady='true',{once:true});
  });
+ const responseReady=page.waitForResponse(response=>new URL(response.url()).origin===new URL(process.env.TURAS_UI_BASE_URL!).origin&&new URL(response.url()).pathname==='/api/product-gaps/'+gap.id+'/impacts'&&response.request().method()==='POST');
+ void responseReady.catch(()=>{});
+ try{
  await page.getByRole('button',{name:'Save Impact as Proposed',exact:true}).click();
+ const response=await responseReady;expect(response.status()).toBe(409);
+ expect(await response.finished()).toBeNull();
+ await page.evaluate(()=>console.log('GAP_COMMAND_PHASE:transportFinished'));
  await expect(page.locator('html')).toHaveAttribute('data-command-body-ready','true');
  await login(page,'partner');await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
  await expect(page.getByRole('status').filter({hasText:'Product gaps are unavailable'})).toBeVisible();
@@ -51,4 +61,5 @@ test('discards a delayed command error after a newer denied refresh',async({page
  await expect(page.getByRole('status').filter({hasText:'Product gaps are unavailable'})).toBeVisible();
  await expect(page.getByText('Critical original evidence required',{exact:true})).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Synthetic delayed command error',exact:true})).toHaveCount(0);
+ }finally{await page.evaluate(()=>window.dispatchEvent(new Event('synthetic-command-body-release'))).catch(()=>{});await page.unrouteAll({behavior:'wait'});}
 });

@@ -9,6 +9,10 @@ import {recoveryDenialSnapshotSchema,verifyRecoveryDenialSnapshot} from './recov
 import {requireAuthenticatedRetainedDenials,type RetainedWorkDenials} from '../../../scripts/pilot-denial-reader';
 const command=z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive(),snapshotDigest:z.string().regex(/^[a-f0-9]{64}$/),backupCapturedAt:z.iso.datetime({offset:true})});
 const uuid=z.uuid();
+/** Keep every authenticated row while bounding each database round trip. */
+function* recoveryRowChunks<T>(rows:readonly T[]){
+ for(let offset=0;offset<rows.length;offset+=256){const chunk=rows.slice(offset,offset+256),json=JSON.stringify(chunk);if(Buffer.byteLength(json)>1048576)throw Error('Recovery reconciliation batch exceeds bound');yield {rows:chunk,json};}
+}
 /** Reapply credential/grant and current-projection denials into an actually marked disposable
  * owner target. Never grant/revive authority, dispatch work, clear quarantine,
  * or represent full source/publication/provider/replay verification as complete. */
@@ -182,27 +186,37 @@ async function reconcileCredentialDenialsInTransaction(db:Client|PoolClient,snap
      }
     }
    }
-   for(const hold of holds)typedModelHoldsAdded+=(await db.query(`INSERT INTO operations_recovery_model_holds(environment_id,operation_kind,operation_id,scope_id,ceiling_tokens,ceiling_micro_usd,evidence_digest,source_captured_at,recovery_id,control_revision,actual_tokens,actual_micro_usd,settled_at,evidence_digest_kind,baseline_output_tokens)
-    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'snapshot',$14) ON CONFLICT(environment_id,operation_kind,operation_id) DO NOTHING`,[scope.environmentId,hold.kind,hold.id,hold.scopeId,hold.kind==='ordinary_tokens'?hold.ceiling:null,hold.kind==='parity_dollars'?hold.ceiling:null,scope.snapshotDigest,snapshot.capturedAt,scope.recoveryId,scope.controlRevision,hold.kind==='ordinary_tokens'?hold.actual:null,hold.kind==='parity_dollars'?hold.actual:null,hold.settledAt,hold.baseline])).rowCount??0;
-   for(const hold of holds){
-    const retained=(await db.query('SELECT scope_id,ceiling_tokens,ceiling_micro_usd,baseline_output_tokens FROM operations_recovery_model_holds WHERE environment_id=$1 AND operation_kind=$2 AND operation_id=$3',[scope.environmentId,hold.kind,hold.id])).rows[0];
-    if(!retained||retained.scope_id!==hold.scopeId||retained.baseline_output_tokens!==hold.baseline||Number(hold.kind==='ordinary_tokens'?retained.ceiling_tokens:retained.ceiling_micro_usd)!==hold.ceiling)throw Error('Recovered model hold identity differs');
+   const holdRows=holds.map(hold=>({environment_id:scope.environmentId,operation_kind:hold.kind,operation_id:hold.id,scope_id:hold.scopeId,ceiling_tokens:hold.kind==='ordinary_tokens'?hold.ceiling:null,ceiling_micro_usd:hold.kind==='parity_dollars'?hold.ceiling:null,evidence_digest:scope.snapshotDigest,source_captured_at:snapshot.capturedAt,recovery_id:scope.recoveryId,control_revision:scope.controlRevision,actual_tokens:hold.kind==='ordinary_tokens'?hold.actual:null,actual_micro_usd:hold.kind==='parity_dollars'?hold.actual:null,settled_at:hold.settledAt,evidence_digest_kind:'snapshot',baseline_output_tokens:hold.baseline}));
+   for(const chunk of recoveryRowChunks(holdRows))typedModelHoldsAdded+=(await db.query(`INSERT INTO operations_recovery_model_holds(environment_id,operation_kind,operation_id,scope_id,ceiling_tokens,ceiling_micro_usd,evidence_digest,source_captured_at,recovery_id,control_revision,actual_tokens,actual_micro_usd,settled_at,evidence_digest_kind,baseline_output_tokens)
+    SELECT * FROM jsonb_to_recordset($1::jsonb) AS h(environment_id text,operation_kind text,operation_id uuid,scope_id uuid,ceiling_tokens bigint,ceiling_micro_usd bigint,evidence_digest text,source_captured_at timestamptz,recovery_id uuid,control_revision bigint,actual_tokens bigint,actual_micro_usd bigint,settled_at timestamptz,evidence_digest_kind text,baseline_output_tokens integer)
+    ON CONFLICT(environment_id,operation_kind,operation_id) DO NOTHING`,[chunk.json])).rowCount??0;
+   for(const chunk of recoveryRowChunks(holds.map((hold,ordinal)=>({ordinal,kind:hold.kind,id:hold.id})))){
+    const retained=(await db.query(`SELECT i.ordinal,h.scope_id,h.ceiling_tokens,h.ceiling_micro_usd,h.baseline_output_tokens
+     FROM jsonb_to_recordset($1::jsonb) AS i(ordinal integer,kind text,id uuid)
+     LEFT JOIN operations_recovery_model_holds h ON h.environment_id=$2 AND h.operation_kind=i.kind AND h.operation_id=i.id ORDER BY i.ordinal`,[chunk.json,scope.environmentId])).rows;
+    if(retained.length!==chunk.rows.length)throw Error('Recovered model hold identity differs');
+    for(const row of retained){const hold=holds[row.ordinal];if(!hold||row.scope_id!==hold.scopeId||row.baseline_output_tokens!==hold.baseline||Number(hold.kind==='ordinary_tokens'?row.ceiling_tokens:row.ceiling_micro_usd)!==hold.ceiling)throw Error('Recovered model hold identity differs');}
    }
-   for(const hold of holds){
-    const ordinary=hold.kind==='ordinary_tokens',table=ordinary?'ordinary_model_operations':'parity_evaluation_operations';
-    const local=(await db.query(ordinary?`SELECT conversation_id AS scope,ceiling_tokens AS ceiling,actual_tokens AS actual FROM ${table} WHERE id=$1`:`SELECT budget_id AS scope,ceiling_micro_usd AS ceiling,actual_micro_usd AS actual FROM ${table} WHERE id=$1`,[hold.id])).rows[0];
-    if(local&&(local.scope!==hold.scopeId||Number(local.ceiling)!==hold.ceiling||local.actual!==null&&hold.actual!==null&&Number(local.actual)!==hold.actual))throw Error('Recovered immutable model operation differs');
-    if(ordinary){
-     const prior=baselines.get(hold.scopeId);if(prior!==undefined&&prior!==hold.baseline)throw Error('Recovered immutable conversation baseline differs');
-     baselines.set(hold.scopeId,hold.baseline!);
+   for(const kind of ['ordinary_tokens','parity_dollars'] as const){const ordinary=kind==='ordinary_tokens';
+    for(const chunk of recoveryRowChunks(holds.flatMap((hold,ordinal)=>hold.kind===kind?[{ordinal,id:hold.id}]:[]))){
+     const local=(await db.query(`SELECT i.ordinal,o.id AS local_id,${ordinary?'o.conversation_id':'o.budget_id'} AS scope,${ordinary?'o.ceiling_tokens':'o.ceiling_micro_usd'} AS ceiling,${ordinary?'o.actual_tokens':'o.actual_micro_usd'} AS actual
+      FROM jsonb_to_recordset($1::jsonb) AS i(ordinal integer,id uuid)
+      LEFT JOIN ${ordinary?'ordinary_model_operations':'parity_evaluation_operations'} o ON o.id=i.id ORDER BY i.ordinal`,[chunk.json])).rows;
+     if(local.length!==chunk.rows.length)throw Error('Recovered immutable model operation differs');
+     for(const row of local){const hold=holds[row.ordinal];if(!hold||row.local_id!==null&&(row.scope!==hold.scopeId||Number(row.ceiling)!==hold.ceiling||row.actual!==null&&hold.actual!==null&&Number(row.actual)!==hold.actual))throw Error('Recovered immutable model operation differs');}
     }
    }
-   for(const [conversationId,baseline] of baselines){
-    if(!holds.some(hold=>hold.kind==='ordinary_tokens'&&hold.scopeId===conversationId))continue;
+   for(const hold of holds)if(hold.kind==='ordinary_tokens'){
+    const prior=baselines.get(hold.scopeId);if(prior!==undefined&&prior!==hold.baseline)throw Error('Recovered immutable conversation baseline differs');baselines.set(hold.scopeId,hold.baseline!);
+   }
+   const ordinaryScopes=new Set(holds.filter(hold=>hold.kind==='ordinary_tokens').map(hold=>hold.scopeId));
+   for(const chunk of recoveryRowChunks([...baselines].filter(([id])=>ordinaryScopes.has(id)).map(([id,baseline])=>({id,baseline})))){
     await db.query(`INSERT INTO ordinary_conversation_allowances(conversation_id,baseline_output_tokens)
-     SELECT id,$2 FROM conversations WHERE id=$1 AND environment_id=$3 AND NOT EXISTS(SELECT 1 FROM ordinary_conversation_allowances WHERE conversation_id=$1)`,[conversationId,baseline,scope.environmentId]);
-    const local=(await db.query('SELECT baseline_output_tokens FROM ordinary_conversation_allowances WHERE conversation_id=$1',[conversationId])).rows[0];
-    if(local&&Number(local.baseline_output_tokens)!==baseline)throw Error('Recovered immutable conversation baseline differs');
+     SELECT c.id,i.baseline FROM jsonb_to_recordset($1::jsonb) AS i(id uuid,baseline integer) JOIN conversations c ON c.id=i.id
+     WHERE c.environment_id=$2 AND NOT EXISTS(SELECT 1 FROM ordinary_conversation_allowances a WHERE a.conversation_id=i.id)`,[chunk.json,scope.environmentId]);
+    const local=(await db.query(`SELECT i.id,i.baseline,a.conversation_id AS local_id,a.baseline_output_tokens FROM jsonb_to_recordset($1::jsonb) AS i(id uuid,baseline integer)
+     LEFT JOIN ordinary_conversation_allowances a ON a.conversation_id=i.id`,[chunk.json])).rows;
+    if(local.length!==chunk.rows.length||local.some(row=>row.local_id!==null&&Number(row.baseline_output_tokens)!==row.baseline))throw Error('Recovered immutable conversation baseline differs');
    }
    const observations=holds.map(hold=>({kind:hold.kind,id:hold.id,ceiling:hold.ceiling,actual:hold.actual,settledAt:hold.settledAt,evidenceKind:hold.evidenceKind,observedDigest:hold.observedDigest,observedAt:hold.observedAt,observedDigestKind:hold.observedDigestKind}));
    for(const row of snapshot.tables.find(entry=>entry.name==='operations_recovery_model_observations')?.rows??[]){
@@ -212,8 +226,10 @@ async function reconcileCredentialDenialsInTransaction(db:Client|PoolClient,snap
      settledAt:row.status.settled_at==null?null:z.iso.datetime({offset:true}).parse(row.status.settled_at),evidenceKind:z.enum(['operation','inherited_hold']).parse(row.identity.evidence_kind),
      observedDigestKind:z.enum(['operation_row','snapshot']).parse(row.status.observed_digest_kind),observedDigest:z.string().regex(/^[a-f0-9]{64}$/).parse(row.identity.observed_evidence_digest),observedAt:z.iso.datetime({offset:true}).parse(row.status.observed_captured_at)});
    }
-   for(const observation of observations)await db.query(`INSERT INTO operations_recovery_model_observations(environment_id,operation_kind,operation_id,observed_evidence_digest,observed_captured_at,evidence_kind,ceiling_tokens,ceiling_micro_usd,actual_tokens,actual_micro_usd,settled_at,snapshot_digest,source_captured_at,recovery_id,control_revision,observed_digest_kind)
-    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) ON CONFLICT(environment_id,operation_kind,operation_id,observed_evidence_digest,evidence_kind) DO NOTHING`,[scope.environmentId,observation.kind,observation.id,observation.observedDigest,observation.observedAt,observation.evidenceKind,observation.kind==='ordinary_tokens'?observation.ceiling:null,observation.kind==='parity_dollars'?observation.ceiling:null,observation.kind==='ordinary_tokens'?observation.actual:null,observation.kind==='parity_dollars'?observation.actual:null,observation.settledAt,scope.snapshotDigest,snapshot.capturedAt,scope.recoveryId,scope.controlRevision,observation.observedDigestKind]);
+   const observationRows=observations.map(observation=>({environment_id:scope.environmentId,operation_kind:observation.kind,operation_id:observation.id,observed_evidence_digest:observation.observedDigest,observed_captured_at:observation.observedAt,evidence_kind:observation.evidenceKind,ceiling_tokens:observation.kind==='ordinary_tokens'?observation.ceiling:null,ceiling_micro_usd:observation.kind==='parity_dollars'?observation.ceiling:null,actual_tokens:observation.kind==='ordinary_tokens'?observation.actual:null,actual_micro_usd:observation.kind==='parity_dollars'?observation.actual:null,settled_at:observation.settledAt,snapshot_digest:scope.snapshotDigest,source_captured_at:snapshot.capturedAt,recovery_id:scope.recoveryId,control_revision:scope.controlRevision,observed_digest_kind:observation.observedDigestKind}));
+   for(const chunk of recoveryRowChunks(observationRows))await db.query(`INSERT INTO operations_recovery_model_observations(environment_id,operation_kind,operation_id,observed_evidence_digest,observed_captured_at,evidence_kind,ceiling_tokens,ceiling_micro_usd,actual_tokens,actual_micro_usd,settled_at,snapshot_digest,source_captured_at,recovery_id,control_revision,observed_digest_kind)
+    SELECT * FROM jsonb_to_recordset($1::jsonb) AS o(environment_id text,operation_kind text,operation_id uuid,observed_evidence_digest text,observed_captured_at timestamptz,evidence_kind text,ceiling_tokens bigint,ceiling_micro_usd bigint,actual_tokens bigint,actual_micro_usd bigint,settled_at timestamptz,snapshot_digest text,source_captured_at timestamptz,recovery_id uuid,control_revision bigint,observed_digest_kind text)
+    ON CONFLICT(environment_id,operation_kind,operation_id,observed_evidence_digest,evidence_kind) DO NOTHING`,[chunk.json]);
    await db.query("UPDATE parity_evaluation_budgets SET state='closed' WHERE environment_id=$1 AND state='open' AND id IN(SELECT scope_id FROM operations_recovery_model_holds WHERE environment_id=$1 AND operation_kind='parity_dollars')",[scope.environmentId]);
   }
   // Restore authenticated immutable allowance metadata before fencing its old
@@ -231,7 +247,9 @@ async function reconcileCredentialDenialsInTransaction(db:Client|PoolClient,snap
     const inherited=inheritedFence.parse(row.identity);if(inherited.environment_id!==scope.environmentId)throw Error('Inherited permanent replay scope differs');
     replayEntries.push({name:inherited.table_name,replayKeyColumns:[inherited.key_columns],keys:[{columns:inherited.key_columns,digest:inherited.key_digest}]});
    }
-   for(const entry of replayEntries){
+   const grouped=new Map<string,typeof replayEntries[number]>();
+   for(const entry of replayEntries){const prior=grouped.get(entry.name);if(prior){prior.replayKeyColumns.push(...entry.replayKeyColumns);prior.keys.push(...entry.keys);}else grouped.set(entry.name,{name:entry.name,replayKeyColumns:[...entry.replayKeyColumns],keys:[...entry.keys]});}
+   for(const entry of grouped.values()){
     if(!entry.replayKeyColumns.length)continue;
     const protectedTable=(await db.query("SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname=$1 AND t.tgname='recovered_request_replay' AND t.tgenabled='O' AND t.tgfoid='turas_recovery_replay_guard'::regproc",[entry.name])).rowCount===1;
     if(!protectedTable)throw Error('Actual permanent replay guard unavailable');
@@ -241,9 +259,10 @@ async function reconcileCredentialDenialsInTransaction(db:Client|PoolClient,snap
      WHERE n.nspname='public' AND c.relname=$1 AND i.indisunique AND i.indpred IS NULL AND i.indexprs IS NULL AND k.ordinal<=i.indnkeyatts GROUP BY i.indexrelid`,[entry.name])).rows.map(row=>JSON.stringify(row.columns));
     targetKeys.push(...(await requireRecoveryJobReplayColumns(db,entry.name)).map(columns=>JSON.stringify(columns)));
     if(entry.replayKeyColumns.some(columns=>!targetKeys.includes(JSON.stringify(columns))))throw Error('Actual permanent replay index differs');
-    for(const key of entry.keys){
+    for(const chunk of recoveryRowChunks(entry.keys.map(key=>({key_columns:key.columns,key_digest:key.digest})))){
      permanentReplayFencesAdded+=(await db.query(`INSERT INTO operations_replay_fences(environment_id,table_name,key_columns,key_digest,snapshot_digest,source_captured_at,recovery_id,control_revision)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(environment_id,table_name,key_columns,key_digest) DO NOTHING`,[scope.environmentId,entry.name,key.columns,key.digest,scope.snapshotDigest,snapshot.capturedAt,scope.recoveryId,scope.controlRevision])).rowCount??0;
+      SELECT $1,$2,k.key_columns,k.key_digest,$4,$5,$6,$7 FROM jsonb_to_recordset($3::jsonb) AS k(key_columns text[],key_digest text)
+      ON CONFLICT(environment_id,table_name,key_columns,key_digest) DO NOTHING`,[scope.environmentId,entry.name,chunk.json,scope.snapshotDigest,snapshot.capturedAt,scope.recoveryId,scope.controlRevision])).rowCount??0;
     }
    }
   }

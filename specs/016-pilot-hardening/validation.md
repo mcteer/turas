@@ -6107,3 +6107,36 @@ All seven existing quarantine/current-grant regressions passed, as did root
 type checking and documentation checks. The independent transaction review
 found no blocker. Fresh exact-source full catalog and hosted verification
 results remain required.
+
+The actual `78dcf63` hosted continuation authenticated a fresh independent denial
+snapshot, then exceeded the existing 290-second quarantine owner deadline and
+rolled back. A fresh owner read confirmed zero quarantine rows and no probe
+credentials were issued. `pg_stat_statements` was unavailable; no per-attempt SQL
+profile is claimed. Cold-reading the retained snapshot for aggregate diagnosis
+found 8,936 rows, 8,929 replay keys and 1,239 parity operations. The original
+per-row queries were a likely network-round-trip bottleneck. The correction
+batches immutable holds, readbacks, observations and replay writes at 256 rows
+and 1 MiB, without changing the deadline or any denial/index/identity check.
+The focused 258-hold regression passed across a batch boundary, and all 16
+credential-denial regressions passed, including 300 additional replay rows.
+Fresh exact-source full catalog and hosted completion remain required.
+
+The `78dcf63` CI Product Gaps WebKit failure occurred while establishing the
+held-command-body fixture, before the revocation exercise. A local instrumented
+dark-WebKit case passed and observed JSON entry, transport completion, JSON
+completion and then the held body. This does not establish the prior CI cause.
+The test now waits for the exact impact POST's 409 and completed transport body
+before its unchanged held-body assertion and revocation assertions. Its release
+promise is registered before submission and released in cleanup; fixed phase
+booleans survive document changes in diagnostics. Root type checking and all
+eight diagnostic-privacy unit cases passed. No product timeout or authorization
+guard changed; fresh browser and CI outcomes remain required.
+
+The first full local WebKit rerun stopped in the confirmed-impact authoring
+case while its POST remained pending: the fixed diagnostic showed the request,
+a busy form, no impact response and no error message. This does not establish a
+missing-message product defect or a database/network root cause. That test now
+waits for the exact impact POST's 409 and finished body before its unchanged
+rejection-message and focus-refresh assertions, within the existing 30-second
+case budget. The failed run remains retained; a new complete browser run is
+required.

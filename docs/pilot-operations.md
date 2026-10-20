@@ -365,6 +365,10 @@ platform-bound locked-target owner transport. That transport owns the original
 transaction, deadline, runtime and deployment checks; a failure rolls back the
 whole quarantine. It does not require disposable local-runner flags. The separate
 owned-test reconciliation entry point retains its loopback and Docker guards.
+Authenticated model holds, observations and replay keys use batches of at most
+256 rows and 1 MiB. Every hold still receives its immutable identity readback;
+replay guards and indexes remain checked for every table. Repetition preserves
+existing provenance and uncertainty. Batching does not extend owner deadlines.
 
 After the owner verifier has recorded a fresh complete verification for the exact locked restored target, run `npm run pilot:recovery:authority -- --resolve-quarantines --environment <exact-marker> --recovery-id <recovery-uuid> --expected-revision <locked-revision> --verification-id <existing-verification-uuid> --output <new-private-directory>` using the separately supplied protected owner connection. The command accepts an existing verification identity; it cannot manufacture missing provider, integrity, denial, replay, or health proof from operator labels.
 

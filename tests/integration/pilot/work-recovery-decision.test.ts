@@ -453,7 +453,7 @@ it('audits genuine retained and current typed model holds without settling unkno
     VALUES($1,$2,'artifact',$3,1,repeat('a',64),repeat('a',40),$4,clock_timestamp()+interval '20 seconds',$5,repeat('a',64),'admitted',clock_timestamp()+interval '1 minute',repeat('a',64),16,$6)`,[hostedJob,input.scope.environmentId,randomUUID(),randomUUID(),randomUUID(),randomUUID()]);}finally{await owner.query('ALTER TABLE operations_hosted_jobs ENABLE TRIGGER hosted_job_admission');}
    try{await expect(inspectDispatch()).rejects.toThrow('Recovery database effect remains dispatchable: hosted-jobs');}finally{await owner.query('DELETE FROM operations_hosted_jobs WHERE id=$1',[hostedJob]);}
    const inspect=()=>withLockedWorkRecoveryDecision(input,(db,target)=>auditRecoveryModelHolds(db,target,retained));
-   expect(await inspect()).toMatchObject({operations:2,holds:2,typedModelAccountingVerified:true,allPaidEffectsVerified:false,providerExecutionClosed:false,restorationReady:false});
+   expect(await inspect()).toMatchObject({operations:258,holds:258,typedModelAccountingVerified:true,allPaidEffectsVerified:false,providerExecutionClosed:false,restorationReady:false});
    await withLockedWorkRecoveryDecision(input,async(db,target)=>{await expect(auditRecoveryModelHolds(db,target,{...retained})).rejects.toThrow('Actual independently retained');});
    await owner.query('ALTER TABLE operations_recovery_model_holds DISABLE TRIGGER recovery_model_hold_immutable');
    await owner.query('UPDATE operations_recovery_model_holds SET ceiling_micro_usd=1 WHERE operation_id=$1',[operation]);
@@ -485,6 +485,7 @@ it('audits genuine retained and current typed model holds without settling unkno
   await owner.query('INSERT INTO ordinary_model_operations(id,conversation_id,attempt_id,ceiling_tokens) VALUES($1,$2,$3,8192)',[randomUUID(),conversationId,attempt]);
   await owner.query("INSERT INTO parity_evaluation_budgets(id,environment_id,workspace_id,owner_principal_id,cap_micro_usd,reserved_micro_usd,pricing,expires_at) VALUES($1,$2,$3,$4,1000000,500000,'{}',clock_timestamp()+interval '1 hour')",[budget,(await owner.query('SELECT environment_id FROM turas_environment')).rows[0].environment_id,f.actor.workspaceId,f.actor.principalId]);
   await owner.query("INSERT INTO parity_evaluation_operations(id,budget_id,provider,ceiling_micro_usd) VALUES($1,$2,'synthetic-no-provider',200000)",[operation,budget]);
+  await owner.query("INSERT INTO parity_evaluation_operations(id,budget_id,provider,ceiling_micro_usd) SELECT gen_random_uuid(),$1,'synthetic-no-provider',1 FROM generate_series(1,256)",[budget]);
  });
 },210000);
 

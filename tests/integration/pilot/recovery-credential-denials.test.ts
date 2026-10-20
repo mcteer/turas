@@ -19,6 +19,7 @@ it('preserves ordinary nullable unique identities while fencing concrete recover
  await owner.query('GRANT SELECT,INSERT,UPDATE ON pilot_nullable_replay_attempts TO turas_runtime');
  const concrete=randomUUID(),oldId=randomUUID(),backup=await authorityCheckpointTime(owner);
  await owner.query('INSERT INTO pilot_nullable_replay_attempts(id,environment_id,request_key) VALUES($1,$2,NULL),($3,$2,$4)',[randomUUID(),environmentId,oldId,concrete]);
+ await owner.query('INSERT INTO pilot_nullable_replay_attempts(id,environment_id,request_key) SELECT gen_random_uuid(),$1,gen_random_uuid() FROM generate_series(1,300)',[environmentId]);
  const snapshot=await captureRecoveryDenialSnapshot(owner,environmentId,AbortSignal.timeout(60000)),scope=await lock(owner,environmentId,snapshot,backup);
  await expect(auditRecoveredRequestFences(owner,snapshot,scope)).rejects.toThrow('request fence missing');
  await expect(auditRecoveredRequestFencesInTransaction(owner,snapshot,scope)).rejects.toThrow('transaction');
