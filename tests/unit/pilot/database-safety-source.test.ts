@@ -1,3 +1,7 @@
+import {pilotDenialSnapshot} from '../../../scripts/pilot-denial-snapshot';
+import {mkdtemp,writeFile,rm,realpath} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {workRuntimeRetirementBinding} from '../../../scripts/pilot-work-runtime-retirement';
 import {it,expect} from 'vitest';
 import {databaseSafetySourceSchema,databaseSafetyCaptureSourceSchema} from '../../../scripts/pilot-database-safety-copy';
@@ -8,13 +12,23 @@ it('binds a database safety source to an explicit supported Production schema',(
 it('rejects pooled insecure foreign and implicit database safety sources',()=>{for(const databaseUrl of ['postgresql://synthetic@ep-synthetic-pooler.us-east-1.aws.neon.tech/neondb?sslmode=verify-full','postgresql://synthetic@ep-synthetic.us-east-1.aws.neon.tech/neondb?sslmode=require','postgresql://synthetic@localhost/neondb?sslmode=verify-full','postgresql://synthetic@ep-synthetic.us-east-1.aws.neon.tech/neondb'])expect(()=>databaseSafetySourceSchema.parse({...fixture(),databaseUrl})).toThrow();});
 it('rejects unknown safety flags alternate targets and unsupported schema claims',()=>{for(const extra of [{target:'preview'},{schemaVersion:56},{schemaVersion:100},{unlock:true},{currentAuthorityVerified:true}])expect(()=>databaseSafetySourceSchema.parse({...fixture(),...extra})).toThrow();});
 it('refuses unsafe external dump transport before opening a connection or process',async()=>{for(const connectionString of ['postgresql://synthetic@localhost/neondb?sslmode=verify-full','postgresql://synthetic@ep-synthetic.us-east-1.aws.neon.tech/neondb?sslmode=require','https://synthetic.neon.tech/'])await expect(runNeonSafetyPgDump({environmentId:'synthetic',serverMajor:18,snapshot:'00000001-00000001-1',output:'/not-created/database.dump',connectionString,signal:AbortSignal.timeout(1000)})).rejects.toThrow('verified Neon');});
-it('admits explicit Preview capture without broadening Production or mutation source scopes',()=>{
+it('admits explicit Preview capture without broadening Production or mutation source scopes',async()=>{
  const preview={...fixture(),target:'preview',schemaVersion:38};expect(databaseSafetyCaptureSourceSchema.parse(preview)).toMatchObject({target:'preview',schemaVersion:38});
  expect(()=>databaseSafetySourceSchema.parse(preview)).toThrow();expect(()=>databaseSafetyCaptureSourceSchema.parse({...preview,target:'production'})).toThrow();
  const input={contract:'pilot-work-runtime-retirement-v1',projectId:'prj_synthetic',teamId:'team_synthetic',environmentId:'production-synthetic',recoveryId:'00000000-0000-4000-8000-000000000001',controlRevision:1,password:'s'.repeat(43)};
  expect(workRuntimeRetirementBinding({...fixture(),schemaVersion:79},input).scope.target).toBe('production');
  expect(workRuntimeRetirementBinding({...preview,schemaVersion:79},{...input,target:'preview'}).target.target).toBe('preview');
  for(const [source,scope] of [[preview,{...input,target:'preview'}],[{...preview,schemaVersion:77},{...input,target:'preview'}],[{...preview,schemaVersion:79},input],[{...fixture(),schemaVersion:79},{...input,target:'preview'}],[{...preview,schemaVersion:79},{...input,target:'preview',environmentId:'another-synthetic'}]])expect(()=>workRuntimeRetirementBinding(source,scope)).toThrow();
+ const root=await mkdtemp(join(await realpath(tmpdir()),'turas-denial-target-'));
+ try{
+  const sourceFile=join(root,'source.json'),destinationFile=join(root,'destination.json');
+  await writeFile(destinationFile,JSON.stringify({contract:'pilot-neon-operator-config-v1',teamId:'team_synthetic',operatorProject:'synthetic-operator',operatorProjectId:'prj_operator',sourceProjectId:'prj_different',resourceId:'synthetic',resourceName:'synthetic',neonProjectId:'synthetic',installationId:input.recoveryId,maximumBytes:1048576,databaseUrl:'postgresql://synthetic:synthetic@ep-archive.us-east-1.aws.neon.tech/neondb?sslmode=verify-full'}));
+  // Reach the producer's exact target check for both targets, before any IO.
+  for(const target of ['preview','production']){
+   await writeFile(sourceFile,JSON.stringify({...fixture(),target,schemaVersion:79}));
+   await expect(pilotDenialSnapshot(['--capture-work-denials','--source',sourceFile,'--destination',destinationFile,'--output',join(root,'not-created')])).rejects.toThrow('Exact separate current denial snapshot scope required');
+  }
+ }finally{await rm(root,{recursive:true,force:true});}
  expect(()=>databaseSafetyCaptureSourceSchema.parse({...preview,schemaVersion:56})).toThrow();expect(()=>databaseSafetyCaptureSourceSchema.parse({...preview,databaseUrl:'postgresql://synthetic@localhost/neondb?sslmode=verify-full'})).toThrow();
 });
 it('requires target-bound v3 context while retaining exact v2 Production context support',()=>{

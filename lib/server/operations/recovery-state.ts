@@ -10,7 +10,16 @@ export async function currentRecoveryStateDigest(db:Client|PoolClient){
  if(!tables.length)throw Error('Recovery database inventory missing');
  await db.query('LOCK TABLE '+tables.map(name=>'public.'+identifier(name)).join(',')+' IN SHARE MODE');
  const statements=tables.map((name,index)=>`SELECT ${index} AS ordinal, count(*)::text AS count, encode(sha256(convert_to(COALESCE(string_agg(row_digest,'' ORDER BY row_digest),''),'UTF8')),'hex') AS digest FROM (SELECT encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex') AS row_digest FROM public.${identifier(name)} t) rows`);
- const content=(await db.query(statements.join(' UNION ALL ')+' ORDER BY ordinal')).rows;
+ const content=[];
+ // Keep the released ordinal/hash serialization, with bounded planner input.
+ for(let offset=0;offset<statements.length;offset+=16){
+  const batch=statements.slice(offset,offset+16),rows=(await db.query(batch.join(' UNION ALL ')+' ORDER BY ordinal')).rows;
+  if(rows.length!==batch.length)throw Error('Recovery state proof unavailable');
+  for(const [index,row] of rows.entries()){
+   if(row.ordinal!==offset+index||!/^\d+$/.test(row.count)||!/^[a-f0-9]{64}$/.test(row.digest))throw Error('Recovery state proof unavailable');
+   content.push(row);
+  }
+ }
  const schema=(await db.query(`SELECT jsonb_build_object(
  'columns',(SELECT jsonb_agg(to_jsonb(c) ORDER BY table_name,ordinal_position) FROM information_schema.columns c WHERE table_schema='public'),
  'grants',(SELECT jsonb_agg(to_jsonb(g) ORDER BY table_name,grantee,privilege_type,grantor) FROM information_schema.role_table_grants g WHERE table_schema='public'),

@@ -1,3 +1,5 @@
+import {currentRecoveryStateDigest} from '../../../lib/server/operations/recovery-state';
+import {currentRecoveryStateDigest as originalStateDigest} from '../../fixtures/pilot/recovery-state-before-batching';
 import {createHash} from 'node:crypto';
 import {it,expect} from 'vitest';
 import {readDatabaseSafetyBoundary} from '../../../lib/server/operations/database-safety-boundary';
@@ -33,7 +35,7 @@ it('keeps application content proof at the exported snapshot while later rows ch
    await writer.query("UPDATE principals SET display_name=display_name || ' synthetic later change' WHERE id=(SELECT id FROM principals ORDER BY id LIMIT 1)");
    expect(await readOnlyDatabaseSafetyDigest(snapshot)).toBe(before);await snapshot.query('COMMIT');
    await snapshot.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');const after=await readOnlyDatabaseSafetyDigest(snapshot);expect(after).not.toBe(before);expect((await readDatabaseSafetyBoundary(snapshot,process.env.TURAS_ENVIRONMENT_ID!)).activeLeaseCount).toBe(1);await snapshot.query('COMMIT');
-   await writer.query('BEGIN ISOLATION LEVEL REPEATABLE READ');expect(await recoveryContentDigest(writer)).toBe(after);await writer.query('COMMIT');
+   await writer.query('BEGIN ISOLATION LEVEL REPEATABLE READ');expect(await recoveryContentDigest(writer)).toBe(after);const state=await currentRecoveryStateDigest(writer);expect(state).toBe(await originalStateDigest(writer));await writer.query("UPDATE principals SET display_name=display_name || ' synthetic authority mutation' WHERE id=(SELECT id FROM principals ORDER BY id LIMIT 1)");expect(await currentRecoveryStateDigest(writer)).not.toBe(state);await writer.query('ROLLBACK');
   }finally{await snapshot.query('ROLLBACK').catch(()=>undefined);await writer.query('ROLLBACK').catch(()=>undefined);await snapshot.end();await writer.end();}
  },{priorSchema:77,postgresMajor:18,deadlineMs:180000});
 },210000);

@@ -6,7 +6,7 @@ import {randomBytes,randomUUID,createHash} from 'node:crypto';
 import {readEvidence,createEvidenceDirectory,writeEvidence} from './pilot-evidence';
 import {pilotSource} from './pilot-source';
 import {pilotProtectedSnapshot} from './pilot-preservation';
-import {databaseSafetySourceSchema,verifyDatabaseSafetySourceBinding,createWorkRecoveryKey,readWorkRecoveryKey} from './pilot-database-safety-copy';
+import {databaseSafetyCaptureSourceSchema,verifyDatabaseSafetySourceBinding,createWorkRecoveryKey,readWorkRecoveryKey} from './pilot-database-safety-copy';
 import {neonArchiveDestinationSchema,verifyWorkNeonDestination} from './pilot-neon-archive';
 import {captureRecoveryDenialSnapshot,verifyRecoveryDenialSnapshot} from '../lib/server/operations/recovery-denial-snapshot';
 import {putNeonEncryptedArchive,downloadNeonEncryptedArchive,retainNeonAuthoritySnapshot,type NeonArchiveScope} from '../lib/server/operations/neon-archive';
@@ -37,7 +37,7 @@ export async function pilotDenialSnapshot(args:string[],parentSignal?:AbortSigna
  parentSignal?.throwIfAborted();
  if(args.length!==7||args[0]!=='--capture-work-denials'||args[1]!=='--source'||args[3]!=='--destination'||args[5]!=='--output'||args.slice(1).some((value,index)=>index%2===1&&(!value||value.startsWith('--'))))throw Error('Explicit current denial source destination and output required');
  const sourceFile=resolve(args[2]),destinationFile=resolve(args[4]),root=resolve(args[6]);
- const scope=databaseSafetySourceSchema.parse(await readEvidence(dirname(sourceFile),basename(sourceFile))),destination=neonArchiveDestinationSchema.parse(await readEvidence(dirname(destinationFile),basename(destinationFile)));
+ const scope=databaseSafetyCaptureSourceSchema.parse(await readEvidence(dirname(sourceFile),basename(sourceFile))),destination=neonArchiveDestinationSchema.parse(await readEvidence(dirname(destinationFile),basename(destinationFile)));
  if(scope.projectId!==destination.sourceProjectId||new URL(scope.databaseUrl).hostname===new URL(destination.databaseUrl).hostname)throw Error('Exact separate current denial snapshot scope required');
  const source=await pilotSource(),before=await pilotProtectedSnapshot(),id=randomUUID();await createEvidenceDirectory(root);
  return withRecoveryCancellation(180000,async signal=>{

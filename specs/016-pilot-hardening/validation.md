@@ -6021,3 +6021,36 @@ lists all seven empty namespaces, writes64 random owned bytes, cold-reads their
 exact digest, observes an unauthenticated denial and verifies deletion of the
 owned canary. It uses no customer bytes and does not establish application
 configuration cutover, byte migration, hosted job execution or recovery readiness.
+
+
+### Preview state-query correction — 2026-10-20
+
+The exact bb0b440 Preview deployment is READY and authenticates to the locked
+schema079/revision3 restricted runtime. The sole firewall policy now retains the
+four Production hosts and replaces the prior immutable Preview host with this
+one. Actual old-host403 includes `x-vercel-mitigated: deny` with no redirect.
+All13 branch backend settings have exact scoped metadata checks; known encrypted
+values, immutable image and cost/signature bindings were read back privately.
+The provider token has sensitive metadata confirmation only. Jobs and pilot
+login remain disabled; no Sandbox budget has been provisioned or job dispatched.
+
+The bb managed reconciliation stops at its first database checkpoint with actual
+SQL57014 in `currentRecoveryStateDigest`, before cancellation:35 GETs,0 PUTs,
+probe retired and both clients closed. Its original error and fixed subphase
+are retained. The released monolithic state query also exceeds the unchanged
+five-second limit in a separate read-only diagnostic. The earlier94 failure
+remains unexplained. State content queries now use at most16 UNION arms, retaining
+all locks, table order, row serialization, schema authority and final hash format.
+The exact prior implementation is retained as a test oracle: both existing
+integration cases pass, including same-snapshot digest equality and a negative
+mutation check. An actual locked Preview full checkpoint then passes in10.962s
+across85 queries; its maximum individual query is2.568s. Actual old/new Preview
+state parity was not produced because the old statement timed out. Root and
+pilot typechecks pass. This does not establish managed closure or recovery.
+
+The denial capture command now accepts the existing explicit Preview/Production
+source union, preserving exact target/platform/owner checks. Regression checks
+exercise both target parsers through the producer's pre-network mismatch guard.
+No denial capture, restored authority, service unlock or Production mutation is
+inferred from that parser correction. Current-source full catalog, exact-source
+hosted verification and all remaining release gates are still pending.

@@ -884,3 +884,11 @@ times. It aggregates exact role/method coverage without relabeling executions,
 requires actual typed workload/UI captures, and emits technical eligibility only.
 Current hosted release, complete current checks and the release decision remain
 pending; these tools do not grant runtime or spending authority.
+
+
+Recovery state checkpoints use bounded16-table queries while preserving the
+released complete state digest, locks and authority metadata. The actual locked
+Preview checkpoint passes in10.962s after the prior monolithic query exceeded its
+five-second statement limit. Preview denial capture accepts an explicitly bound
+Preview source as well as Production. Pilot service remains closed pending full
+hosted recovery and release acceptance; these checks do not establish readiness.
