@@ -26,5 +26,10 @@ export function assertRecoveryDecisionSql(sql:string){
  // Keep the parser's quoted-string rules fixed; canonical helpers use static
  // setting names and LOCAL timeouts, never parameterized parser configuration.
  if(/\b(?:standard_conforming_strings|backslash_quote)\b/i.test(clean))fail();
- for(const call of clean.matchAll(/\bset_config\s*\(\s*([^,]*)/gi)){const literal=/^__recovery_literal_(\d+)__\s*$/.exec(call[1]);if(!literal||!['statement_timeout','lock_timeout'].includes(literals[Number(literal[1])]))fail();}
+ for(const call of clean.matchAll(/\bset_config\s*\(\s*([^,]*)/gi)){const literal=/^__recovery_literal_(\d+)__\s*$/.exec(call[1]);if(!literal)fail();const name=literals[Number(literal![1])];
+  if(name==='turas.actor_lock_mode'){
+   // Scheduling metadata only; permit exactly the two canonical LOCAL writes.
+   // Parameters, expressions and adjacent statements remain controller-denied.
+   if(!/^SELECT set_config\('turas\.actor_lock_mode','(?:read|write)',true\)$/.test(sql))fail();
+  }else if(!['statement_timeout','lock_timeout'].includes(name))fail();}
 }

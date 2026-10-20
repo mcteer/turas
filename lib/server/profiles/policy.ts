@@ -18,14 +18,44 @@ export async function lockWorkspaceActor(client: PoolClient, actor: CurrentReadA
   await client.query("SELECT set_config('lock_timeout',CASE WHEN current_setting('turas.partner_operation',true)='013' OR current_setting('turas.learning_operation',true)='014' THEN '2000ms' ELSE $1 END,true)",[`${lockTimeoutMs}ms`]);
   await client.query("SET LOCAL statement_timeout = '5000ms'");
   await requireOperationalOpen(client,actor,readOnly);
-  const lock = readOnly ? "FOR SHARE" : "FOR UPDATE";
+  // Authority reads must coexist with append-only commands. Writers retain the
+  // principal/workspace serialization previously supplied by UPDATE row locks.
+  // A nested read→write transition must never wait while holding SHARE locks:
+  // that could cycle with a concurrent authority revocation.
+  const priorMode = (await client.query<{mode:string | null}>(
+    "SELECT current_setting('turas.actor_lock_mode',true) AS mode")).rows[0]?.mode;
   const memberIds = [...new Set([actor.membershipId, ...(typeof affectedMembershipId === "string" ? [affectedMembershipId] : affectedMembershipId ?? [])].filter((id): id is string => Boolean(id)))].sort();
+  const identities = !readOnly ? (await client.query<{id:string;principal_id:string}>(
+    "SELECT id,principal_id FROM memberships WHERE id=ANY($1::uuid[]) AND workspace_id=$2",
+    [memberIds,actor.workspaceId])).rows : [];
+  if (!readOnly) {
+    const keys = [...new Set([`workspace:${actor.workspaceId}`,
+      ...[actor.principalId,...identities.map(row=>row.principal_id)].map(id=>`principal:${id}`)])].sort();
+    for (const key of keys) {
+      const name=`turas:actor-writer:${key}`;
+      if (priorMode) {
+        const acquired=await client.query<{acquired:boolean}>(
+          "SELECT pg_try_advisory_xact_lock(hashtextextended($1,0)) AS acquired",[name]);
+        if (!acquired.rows[0]?.acquired) {
+          // Abort in PostgreSQL too: a caller catching the error cannot continue
+          // issuing writes under only part of the required writer mutex set.
+          await client.query("DO $$ BEGIN RAISE EXCEPTION 'Authority writer lock is busy' USING ERRCODE='55P03'; END $$");
+        }
+      } else await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))",[name]);
+    }
+  }
+  await client.query(readOnly && priorMode !== 'write'
+    ? "SELECT set_config('turas.actor_lock_mode','read',true)"
+    : "SELECT set_config('turas.actor_lock_mode','write',true)");
+  const lock = "FOR SHARE";
   const locked = new Map<string, { principal_id: string; workspace_id: string; kind: string; role: string; active: boolean; partner_org_id: string | null }>();
   for (const id of memberIds) {
     const found = await client.query<{ principal_id: string; workspace_id: string; kind: string; role: string; active: boolean; partner_org_id: string | null }>(
       `SELECT principal_id,workspace_id,kind,role,active,partner_org_id FROM memberships WHERE id=$1 AND workspace_id=$2 ${lock}`, [id,actor.workspaceId]);
     if (found.rows[0]) locked.set(id, found.rows[0]);
   }
+  if (!readOnly && (identities.length!==locked.size || identities.some(row=>locked.get(row.id)?.principal_id!==row.principal_id)))
+    throw new HttpFailure(409,"authority_changed","Authority changed; try the request again");
   const m = locked.get(actor.membershipId);
   if (!m || !m.active || m.principal_id !== actor.principalId || m.workspace_id !== actor.workspaceId ||
       m.kind !== actor.kind || m.role !== actor.role) throw new HttpFailure(401, "unauthorized", "Sign in again");

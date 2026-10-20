@@ -6165,3 +6165,35 @@ the repeated CI failure is unresolved pending actual blocker observations.
 Narrow validation for the blocker observer: root typecheck, three existing privacy
 unit cases, documentation hygiene and diff checks pass. Independent read-only
 review found no blocker. No new hosted behavior or full-catalog pass is claimed.
+
+
+## Authority readers and writer serialization
+
+The bounded blocker observer reproduced the actual CI failure: input-authority
+failed with55P03 while the blocking login-session transaction was idle in
+transaction, with no downstream blocker. Its longest observed transaction age
+was2859ms. The evidence supports reader/writer authority-lock contention; it does
+not establish slow SQL, compilation or provider behavior as the cause.
+
+Workspace actor validation now holds SHARE authority locks for both reads and
+writes. Write admission remains operational write admission. Ordered principal
+and workspace advisory transaction locks preserve writer serialization, including
+principal quotas across workspaces. Actual authority mutations still need UPDATE
+locks and cannot race the validating SHARE transaction. A nested read-to-write
+transition uses nonblocking writer-lock acquisition; contention aborts PostgreSQL's
+transaction, preventing a caught error from permitting partially serialized work.
+The transaction-local scheduling marker resets on rollback. Prelookup and locked
+membership/principal identity sets must match exactly. The recovery SQL guard
+allows only the two literal canonical local scheduling-marker statements; its
+transaction-control restrictions remain intact.
+
+All16 support-policy and grant-concurrency integration cases pass in owned local
+disposable databases, including coexistence with a held authority reader, blocked
+session revocation, denial after revocation, aborted nested contention, quota races,
+conflicting grant decisions and final-administrator preservation. Existing recovery
+SQL guard cases pass with narrowly scoped scheduling-marker acceptance and denial
+vectors. Root typecheck passes. Independent read-only review found no remaining
+blocker. The actual unpaid native-operations/runtime/CLI WebKit fixture also passes with
+zero observed deadlocks or statement timeouts; its260-sample observer records no
+contended query. Current-source CI, complete catalog and hosted recovery remain
+required; these local checks do not establish release completion.
