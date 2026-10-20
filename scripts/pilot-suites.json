@@ -1997,7 +1997,7 @@
     },
     {
       "file": "tests/unit/pilot/release-bundle.test.ts",
-      "expectedCases": 11,
+      "expectedCases": 12,
       "cases": [
         "composes complete original local CI quality Preview and Production scopes without relabeling their executions or approving release",
         "does not substitute Preview role checks for missing Production coverage",
@@ -2008,8 +2008,9 @@
         "does not let an older success conceal the latest failed complete scoped attempt",
         "requires the actual final release record to complete after the other original checks",
         "retains an independently identified original Preview run without forcing its run ID into another scope",
-        "rejects forged auxiliary summaries even when their cases and digest strings match",
-        "rejects duplicate reference identities and non-bijective input inventories"
+        "rejects forged auxiliary and CI summaries even when their cases and digest strings match",
+        "rejects duplicate reference identities and non-bijective input inventories",
+        "rejects retained CI archive tampering despite previously authenticated metadata"
       ]
     },
     {
@@ -2061,6 +2062,16 @@
         "refuses a missing hosted root transport rather than substituting parked conversation checks",
         "refuses changed original bytes and altered scoped receipt attribution after verification",
         "refuses substituted retention byte identities despite positive restart flags"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/ci-import.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "requires the actual successful main workflow and complete uploaded catalog step for its exact attempt",
+        "refuses pull request merge checks or a different source as final main evidence",
+        "refuses a successful label with a skipped catalog or missing artifact step",
+        "refuses an expired or foreign-attempt artifact and incomplete job inventory"
       ]
     }
   ],

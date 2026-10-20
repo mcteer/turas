@@ -837,6 +837,15 @@ jobs:
           npm run check:docs
           npm run test:pilot
           npm run mcp:build:check
+      - name: Retain complete source-bound pilot CI catalog evidence
+        if: matrix.gate == 'deterministic' && success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pilot-catalog-${{ github.run_id }}-${{ github.run_attempt }}
+          path: local-artifacts/016/run-*/ci-*.json
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 6
       - name: Complete four-project pilot browser journeys
         if: matrix.gate == 'webkit'
         run: npm run pilot:ui:check

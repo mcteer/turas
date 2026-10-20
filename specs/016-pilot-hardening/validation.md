@@ -5757,3 +5757,21 @@ pass. Independent scoped review cleared the recipes and the stricter file-proof
 verification. The current inventory is988 cases across179 suites. No new paid
 dispatch, target schema change or directory cleanup occurred in this batch, and
 actual current-source hosted acceptance remains pending.
+
+Successful deterministic CI now retains only its source-bound `ci-*.json` catalog
+records through a pinned upload action. The G14 importer requires an actual
+successful main push workflow, exact current source/attempt, authenticated
+repository run/job/artifact metadata, retained original ZIP hash and size, bounded
+fixed archive inventory, every registered original suite digest and complete
+result, and the actual types/docs/catalog/build/upload steps. It preserves the
+original workflow interval; CLI gate and bundle verification reauthenticate the
+metadata and archive binding. Forged or cloned summaries cannot substitute for
+verified provenance. It performs no provider/model dispatch or billing change.
+
+Sixteen focused CI metadata/archive/bundle cases pass, including tampered archive
+rejection; root/pilot types and docs pass. Independent scoped review found no
+concrete blocker. No actual completed current main artifact has been imported
+yet. The frozen23d9b75 catalog separately passed969/969 cases across175 suites;
+this is historical source evidence. The frozen dd02b97 988-case run is active.
+The current inventory after CI checks is993 cases across180 suites; current-source
+complete acceptance, hosted release and cleanup remain pending.

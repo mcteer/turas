@@ -1528,3 +1528,19 @@ retirement. Preserve the original grant intent/revision and leave the grant
 revoked. Neither failure nor uncertain mutation authorizes an automatic retry.
 The index retains original private capture/preflight hashes, scope and execution
 intervals. All other mandatory release gates remain separately required.
+
+CI catalog evidence is retained by the successful deterministic job as the
+source-bound `pilot-catalog-<run-id>-<attempt>` artifact. After the actual main
+push workflow completes successfully, import it into a new private directory:
+
+```sh
+node --import tsx scripts/pilot-ci-import.ts --run <main-ci-run-id> --output <new-private-directory>
+```
+
+The importer reads authenticated GitHub run/job/artifact metadata and retains the
+original archive. It verifies the exact main commit, workflow and attempt, the
+archive SHA-256/size, complete registered result inventory and original suite
+digests. Gate evaluation rechecks authenticated metadata and retained archive
+bytes. PR merge-check results cannot stand in for the final main execution; an
+incomplete workflow, expired artifact or missing catalog/build step blocks G14.
+No hosted readiness or release approval follows from the CI result alone.

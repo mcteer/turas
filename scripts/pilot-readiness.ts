@@ -68,6 +68,7 @@ async function main() {
     const required=catalog.gates.find(g=>g.id===receipt.gateId)?.localCaseIds??[];
     if(receipt.method==="local" && required.length>0 && (required.length!==proof.cases.length || required.some(id=>!proof.cases.some(c=>c.id===id))))throw new Error("Proof does not cover frozen local inventory");
   }
+  if(run.receipts.some(row=>row.gateId==='G14'&&row.method==='ci')){const {verifyPilotCiEvidence}=await import('./pilot-ci-import');await verifyPilotCiEvidence(path.dirname(target),run);}
   if(run.receipts.some(row=>row.gateId==='G17'&&row.method==='hosted')){const {verifyHostedCoreEvidence}=await import('./pilot-hosted-core-evidence');await verifyHostedCoreEvidence(path.dirname(target),run);}
   if(run.receipts.some(row=>row.gateId==='G18'&&row.method==='hosted')){const {verifyHostedPartnerEvidence}=await import('./pilot-hosted-partner-evidence');await verifyHostedPartnerEvidence(path.dirname(target),run);}
   if(run.receipts.some(row=>row.gateId==='G19'&&row.method==='hosted')){const {verifyHostedSdkEvidence}=await import('./pilot-hosted-journey-evidence');await verifyHostedSdkEvidence(path.dirname(target),run);}

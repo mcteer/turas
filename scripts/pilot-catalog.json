@@ -106,7 +106,12 @@
         "unit.core-evidence.002",
         "unit.core-evidence.003",
         "unit.core-evidence.004",
-        "unit.core-evidence.005"
+        "unit.core-evidence.005",
+        "unit.ci-import.001",
+        "unit.ci-import.002",
+        "unit.ci-import.003",
+        "unit.ci-import.004",
+        "unit.release-bundle.012"
       ]
     },
     {

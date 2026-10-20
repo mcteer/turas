@@ -1,14 +1,19 @@
+import {ciEvidenceFixture} from '../../fixtures/pilot/ci-evidence';
 import {coreEvidenceFixture} from '../../fixtures/pilot/core-evidence';
 import {writeHostedCoreEvidence,verifyHostedCoreEvidence} from '../../../scripts/pilot-hosted-core-evidence';
 import {addPartnerEvidenceFixture} from '../../fixtures/pilot/partner-evidence';
 import {writeHostedPartnerEvidence,verifyHostedPartnerEvidence} from '../../../scripts/pilot-hosted-partner-evidence';
 import {sdkEvidenceFixture} from '../../fixtures/pilot/sdk-evidence';
-import {rm} from 'node:fs/promises';
+import {rm,readFile,writeFile} from 'node:fs/promises';
+import {join} from 'node:path';
+import {verifyPilotCiEvidence} from '../../../scripts/pilot-ci-import';
 import {auxiliaryFixture} from '../../fixtures/pilot/auxiliary';
 import {verifyPilotAuxiliaryEvidence} from '../../../scripts/pilot-auxiliary-evidence';
 import {readEvidence} from '../../../scripts/pilot-evidence';
 const roots:string[]=[];afterEach(async()=>{for(const root of roots.splice(0))await rm(root,{recursive:true,force:true});});
-import {afterEach,expect,it} from 'vitest';import {randomUUID} from 'node:crypto';
+import {afterEach,expect,it,vi} from 'vitest';
+const githubResponses=vi.hoisted(()=>new Map<string,string>());
+vi.mock('node:child_process',async importOriginal=>{const actual=await importOriginal<typeof import('node:child_process')>();return {...actual,execFileSync:(file:string,args:readonly string[],options:unknown)=>{if(file==='gh'){const value=githubResponses.get(args[1]);if(value===undefined)throw Error('Unregistered controlled GitHub response');return Buffer.from(value);}return (actual.execFileSync as (...args:any[])=>unknown)(file,args,options);}};});import {randomUUID} from 'node:crypto';
 import {pilotCatalog} from '../../../scripts/pilot-catalog';
 import {evaluatePilotReleaseBundle,type ReleaseScopedRun} from '../../../scripts/pilot-release-bundle';
 import {pilotReleaseBundleSchema,type PilotReleaseBundle} from '../../../lib/contracts/pilot-release-bundle';
@@ -22,11 +27,12 @@ async function fixture(){
  for(const slot of ['local','load','ui','ci','quality','preview','production'] as const){
   const kind=slot==='local'||slot==='load'||slot==='ui'?'owned-local':slot,targetScope=kind==='preview'?bundle.preview:bundle.production,id=['preview','production'].includes(kind)?targetScope.runId:randomUUID(),environmentMarker=kind==='owned-local'?'test-pilot-'+randomUUID().replaceAll('-','').slice(0,12):kind==='ci'?'ci-unit':kind==='quality'?'quality-unit':targetScope.environmentMarker,scopeDigest=['preview','production'].includes(kind)?evidenceDigest(JSON.stringify(targetScope)):'d'.repeat(64),workspaceId=['preview','production'].includes(kind)?targetScope.workspaceId:randomUUID();
   const run=pilotRunSchema.parse({version:'pilot-readiness-v1',id,createdAt:new Date(now-4000).toISOString(),...current,environmentMarker,scopeDigest,attempts:[],selectedAttempts:[],receipts:[]}),input:ReleaseScopedRun={kind,digest:'0'.repeat(64),run,proofs:new Map(),auxiliary:new Map()};
+  if(slot==='ci'){const actual=await ciEvidenceFixture(current,githubResponses);roots.push(actual.directory);input.run=actual.run;input.ci=actual.verified;input.proofs.set(actual.run.receipts[0].id,verifyPilotProof(actual.run.receipts[0],actual.proof));input.digest=evidenceDigest(JSON.stringify(input.run)+'\n');inputs.push(input);bundle.runs.push({kind,directory:actual.directory,manifest:'ci-run.json',digest:input.digest});continue;}
   if(slot==='load'||slot==='ui'){
    const actual=await auxiliaryFixture({ui:slot==='ui',completeUi:slot==='ui'});roots.push(actual.directory);input.run=actual.run;for(const receipt of actual.run.receipts)input.proofs.set(receipt.id,verifyPilotProof(receipt,await readEvidence(actual.directory,receipt.id+'.json',receipt.proofDigest)));const verified=await verifyPilotAuxiliaryEvidence(actual.directory,actual.run);input.auxiliary!.set(verified.gateId,verified);input.digest=evidenceDigest(JSON.stringify(input.run)+'\n');inputs.push(input);bundle.runs.push({kind,directory:actual.directory,manifest:'run.json',digest:input.digest});continue;
   }
   for(const gate of pilotCatalog.gates){
-   const methods=gate.methods.filter(method=>slot==='local'?method==='local'&&!['G10','G12'].includes(gate.id):slot==='ci'?method==='ci':slot==='quality'?method==='actual-model-reviewed':slot==='preview'?method==='hosted'&&['G02','G15'].includes(gate.id):['hosted','automated-role-exercise'].includes(method)&&gate.id!=='G15');if(!methods.length)continue;
+   const methods=gate.methods.filter(method=>slot==='local'?method==='local'&&!['G10','G12'].includes(gate.id):slot==='quality'?method==='actual-model-reviewed':slot==='preview'?method==='hosted'&&['G02','G15'].includes(gate.id):['hosted','automated-role-exercise'].includes(method)&&gate.id!=='G15');if(!methods.length)continue;
    const attemptId=randomUUID(),receiptIds:string[]=[];
    for(const method of methods)for(const role of gate.requiredRoles){
     const caseIds=method==='local'&&gate.localCaseIds.length?gate.localCaseIds:Array.from({length:gate.id==='G12'?40:gate.id==='G10'?18:1},(_,i)=>gate.id+'.unit.'+i),receipt=pilotReceiptSchema.parse({version:'pilot-readiness-v1',id:randomUUID(),runId:id,attemptId,gateId:gate.id,method,role,workspaceId,...current,environmentMarker,scopeDigest,startedAt:new Date(now-4000).toISOString(),completedAt:new Date(now-(gate.id==='G22'?1000:2000)).toISOString(),state:'pass',expectedCases:caseIds.length,passedCases:caseIds.length,failedCases:0,skippedCases:0,flakyCases:0,proofDigest:'e'.repeat(64),...(['hosted','automated-role-exercise'].includes(method)?{hosted:{deploymentId:targetScope.deploymentId,commit:current.sourceCommit,origin:targetScope.origin,environmentMarker,runtimeGrantsVerified:true,schemaLedgerDigest:'f'.repeat(64)}}:{})});
@@ -69,5 +75,7 @@ it('retains an independently identified original Preview run without forcing its
  const f=await fixture(),production=f.inputs.find(row=>row.kind==='preview')!,index=f.inputs.indexOf(production),scope={...f.bundle.preview,runId:randomUUID()};production.run.id=scope.runId;production.run.scopeDigest=evidenceDigest(JSON.stringify(scope));for(const receipt of production.run.receipts){receipt.runId=scope.runId;receipt.scopeDigest=production.run.scopeDigest;}f.bundle.runs[index].scope=scope;refresh(f,production);expect(evaluatePilotReleaseBundle(f.bundle,f.inputs,f.now).technicalEligibility).toBe('eligible');
 });
 
-it('rejects forged auxiliary summaries even when their cases and digest strings match',async()=>{const f=await fixture();for(const input of f.inputs)for(const [gate,value] of input.auxiliary??[])input.auxiliary!.set(gate,{...value});const result=evaluatePilotReleaseBundle(f.bundle,f.inputs,f.now);expect(result.technicalEligibility).toBe('ineligible');expect(result.gates.find(row=>row.id==='G10')!.state).toBe('unverified');});
+it('rejects forged auxiliary and CI summaries even when their cases and digest strings match',async()=>{const f=await fixture();for(const input of f.inputs){for(const [gate,value] of input.auxiliary??[])input.auxiliary!.set(gate,{...value});if(input.ci)input.ci={...input.ci};}const result=evaluatePilotReleaseBundle(f.bundle,f.inputs,f.now);expect(result.technicalEligibility).toBe('ineligible');expect(result.gates.find(row=>row.id==='G10')!.state).toBe('unverified');});
 it('rejects duplicate reference identities and non-bijective input inventories',async()=>{const f=await fixture();const duplicate={...f.inputs[0],run:{...f.inputs[0].run,id:randomUUID()}};expect(()=>evaluatePilotReleaseBundle(f.bundle,[f.inputs[0],duplicate,...f.inputs.slice(2)],f.now)).toThrow();f.bundle.runs[1]={...f.bundle.runs[0],directory:'/another/private/path'};expect(()=>pilotReleaseBundleSchema.parse(f.bundle)).toThrow();});
+
+it('rejects retained CI archive tampering despite previously authenticated metadata',async()=>{const f=await fixture(),ci=f.inputs.find(row=>row.kind==='ci')!,reference=f.bundle.runs.find(row=>row.kind==='ci')!,archive=join(reference.directory,'github-artifact.zip'),bytes=await readFile(archive);await writeFile(archive,Buffer.concat([bytes,Buffer.from('changed')]),{mode:0o600});await expect(verifyPilotCiEvidence(reference.directory,ci.run)).rejects.toThrow('archive binding');});
