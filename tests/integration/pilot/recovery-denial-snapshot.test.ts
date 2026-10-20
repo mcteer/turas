@@ -1,3 +1,4 @@
+import {observeRecoveryConnection} from '../../../lib/server/operations/recovery-connection';
 import {it,expect} from 'vitest';
 import {Client} from 'pg';
 import {randomUUID} from 'node:crypto';
@@ -36,6 +37,18 @@ it('captures minimized actual denial and replay metadata without source text or 
  expect(verifyRecoveryDenialSnapshot({...legacyContent,snapshotDigest:legacyDigest,currentAuthorityVerified:false,replayReconciled:false,restorationReady:false},{environmentId,contextDigest:legacyDigest,after:snapshot.capturedAt,now:Date.now()}).currentAuthorityVerified).toBe(false);
  const incomplete={...content,tables:content.tables.filter(t=>t.name!=='conversations')},incompleteDigest=recoveryDigest(incomplete);
  expect(()=>verifyRecoveryDenialSnapshot({...incomplete,snapshotDigest:incompleteDigest,currentAuthorityVerified:false,replayReconciled:false,restorationReady:false},{environmentId,contextDigest:incompleteDigest,after:snapshot.capturedAt,now:Date.now()})).toThrow('Complete exact current denial inventory');
+ // A real idle backend termination must abort proof generation rather than
+ // escaping as an unhandled Client error. The caller still reaches end().
+ const lost=new AbortController(),idle=observeRecoveryConnection(new Client({connectionString:requireOwnedPilotDatabase(process.env,true)}),lost);
+ let cleaned=false;
+ try{
+  await idle.connect();const pid=(await idle.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
+  const failed=new Promise<void>((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Idle connection failure not observed')),5000);lost.signal.addEventListener('abort',()=>{clearTimeout(timer);resolve();},{once:true});});
+  await owner.query('SELECT pg_terminate_backend($1)',[pid]);await failed;
+  expect(()=>lost.signal.throwIfAborted()).toThrow();
+ }finally{await idle.end();cleaned=true;}
+ expect(cleaned).toBe(true);
+
 }),210000);
 it('captures later MCP denial and permanent management receipt at a distinct current watermark',async()=>fixture(async(owner,_runtime,environmentId)=>{
  const f=await pilotPublishedKnowledgeFixture(owner as any,'primary'),connection=await createMcpConnection(f.actor,{requestKey:randomUUID(),name:'Synthetic later denial',categories:['profiles'],customerIds:[f.customerId],lifetimeDays:1});

@@ -819,7 +819,7 @@ original-source captures preserve prior identities and financial/provider rows;
 historical evidence never authorizes a new credential. Original deadlines,
 credential/call limits and unknown cost holds remain enforced. Full owned
 composition and separate-source capture/restart checks pass; regional scale and
-hosted release acceptance remain pending.
+hosted release acceptance remain pending. Recovery-owned denial archive and Production peer clients now cancel their step on idle connection errors; a disconnected client cannot publish successful proof.
 
 The local deterministic inventory is 1,006 cases across 181 suites. The preceding
 6266f31 source passed all 997 cases and 181 suites; complete verification of the

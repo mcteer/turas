@@ -325,3 +325,10 @@ No hosted target may be locked for release before its measured reopen path exist
   deadline plus transfer-phase expiry in the existing case. Preserve the original
   CI failure. All 14 executor cases, typecheck, documentation checks and independent
   review pass; fresh committed complete checks remain required.
+
+- [X] T110 Own idle database transport errors in the actual denial capture/read
+  and Production peer recovery paths. Abort the affected step, check cancellation
+  before publishing proof, preserve independent cleanup, and verify a real idle
+  backend termination. The focused owned case, pilot typecheck, documentation
+  checks and independent source review pass. Retain the failed regional guard
+  observation and require fresh complete committed and hosted verification.

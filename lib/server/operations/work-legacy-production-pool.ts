@@ -1,3 +1,4 @@
+import {observeRecoveryConnection} from './recovery-connection';
 import {constants} from 'node:fs';
 import {Client} from 'pg';
 import {randomBytes,randomUUID,createHash} from 'node:crypto';
@@ -51,20 +52,20 @@ async function peerIdentity(db:Client,selected:Source,cleanup=false){
  const row=rows[0],url=new URL(selected.databaseUrl);
  if(rows.length!==1||row.environment_id!==selected.environmentId||(!cleanup?Number(row.schema_version)!==77:![77,78,79].includes(Number(row.schema_version)))||row.name!==decodeURIComponent(url.pathname.slice(1))||row.role!==decodeURIComponent(url.username)||row.owner!==true||Math.abs(row.now.getTime()-Date.now())>5000)throw Error('Exact current077 peer owner and clock required');return row;
 }
-function connection(selected:Source){return new Client({connectionString:selected.databaseUrl,connectionTimeoutMillis:5000,statement_timeout:5000,query_timeout:6000,options:'-c lock_timeout=3000'});}
+function connection(selected:Source,connectionLost:AbortController){const client=new Client({connectionString:selected.databaseUrl,connectionTimeoutMillis:5000,statement_timeout:5000,query_timeout:6000,options:'-c lock_timeout=3000'});observeRecoveryConnection(client,connectionLost);return client;}
 async function retire(selected:Source,id:string,hash:string){
- const cleanup=connection(selected);try{await cleanup.connect();await peerIdentity(cleanup,selected,true);
+ const connectionLost=new AbortController(),cleanup=connection(selected,connectionLost);try{await cleanup.connect();await peerIdentity(cleanup,selected,true);
  const rows=(await cleanup.query('SELECT id,principal_id,token_hash,revoked_at FROM login_sessions WHERE id=$1',[id])).rows;
  if(rows.length>1||rows.length===1&&(rows[0].principal_id!==DEMO_IDS.mcteer||rows[0].token_hash!==hash))throw Error('Original peer nonce identity changed');
  await cleanup.query('UPDATE login_sessions SET revoked_at=COALESCE(revoked_at,clock_timestamp()) WHERE id=$1 AND token_hash=$2 AND principal_id=$3',[id,hash,DEMO_IDS.mcteer]);
  const after=(await cleanup.query('SELECT revoked_at IS NOT NULL AS retired FROM login_sessions WHERE id=$1 AND token_hash=$2 AND principal_id=$3',[id,hash,DEMO_IDS.mcteer])).rows;
- if(after.length&&after[0].retired!==true)throw Error('Independent original peer nonce retirement unavailable');return {rowPresent:after.length===1,retired:after.length===1};
+ if(after.length&&after[0].retired!==true)throw Error('Independent original peer nonce retirement unavailable');connectionLost.signal.throwIfAborted();return {rowPresent:after.length===1,retired:after.length===1};
  }finally{await cleanup.end();}
 }
 async function inspect(db:Client,target:LockedWorkRecoveryTarget,selected:Source,token:string,journalDirectory:string,phase:'initial'|'final',parent:AbortSignal){
  if(!isWorkRecoveryDecisionClient(db)||selected.projectId!==target.projectId||selected.environmentId===target.environmentId||databaseTargetDigest(selected.databaseUrl,target.environmentId)===target.databaseBindingDigest||target.deadline<=Date.now())throw Error('Genuine distinct current Production pool probe required');
  await requireLockedWorkRecoveryConnection(db,target,scope(target));await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16020))',[target.environmentId]);await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[target.environmentId]);await currentRecoveryStateDigest(db);
- const signal=AbortSignal.any([parent,AbortSignal.timeout(target.deadline-Date.now())]);let apiCalls=0,httpCalls=0;
+ const connectionLost=new AbortController(),signal=AbortSignal.any([parent,connectionLost.signal,AbortSignal.timeout(target.deadline-Date.now())]);let apiCalls=0,httpCalls=0;
  async function api(path:string){if(++apiCalls>4)throw Error('Peer metadata request envelope exhausted');const bounded=AbortSignal.any([signal,AbortSignal.timeout(10000)]),response=await fetch('https://api.vercel.com'+path,{method:'GET',headers:{authorization:'Bearer '+token},redirect:'error',cache:'no-store',signal:bounded});if(!response.ok)throw Error('Peer platform metadata unavailable');return JSON.parse(await bytes(response,2097152,bounded));}
  async function platform(){
   const project=await api('/v9/projects/'+target.projectId+'?teamId='+target.teamId),id=project.targets?.production?.id;
@@ -82,7 +83,7 @@ async function inspect(db:Client,target:LockedWorkRecoveryTarget,selected:Source
  await durable(root,phase+'-admission-private.json',{...plan,phase,maximumAppRequests:3,maximumMetadataRequests:4,admittedAt:new Date().toISOString()});
  const before=await platform();
  if(phase==='initial')await durable(root,'initial-platform-private.json',{digest:before.digest});else if((await readEvidence(root,'initial-platform-private.json') as {digest?:unknown}).digest!==before.digest)throw Error('Original peer platform binding changed');
- const nonce=randomBytes(32).toString('base64url'),id=randomUUID(),hash=hashSessionToken(nonce),peer=connection(selected);let failure:unknown,expected:unknown,identityDigest='',expiresAt=0,insertAcknowledged=false,retired=false;
+ const nonce=randomBytes(32).toString('base64url'),id=randomUUID(),hash=hashSessionToken(nonce),peer=connection(selected,connectionLost);let failure:unknown,expected:unknown,identityDigest='',expiresAt=0,insertAcknowledged=false,retired=false;
  const record={...plan,contract:'pilot-owner-issued-peer-pool-nonce-v1',phase,id,principalId:DEMO_IDS.mcteer,tokenHash:hash,createdAt:new Date().toISOString(),passwordAuthenticationVerified:false};
  // Both files and the directory are durable before any INSERT. A lost commit
  // acknowledgement still leaves the exact original identity for cleanup.

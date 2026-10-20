@@ -6366,3 +6366,24 @@ case also verifies transfer-phase expiry refuses command admission and still
 stops/deletes compute. All 14 executor unit cases pass. Runtime code, cleanup,
 deadlines and the named case inventory are unchanged; original CI failure is
 retained and fresh committed complete checks remain required.
+
+### Regional guard failure and idle recovery clients (2026-10-20)
+
+The actual `e6c04d0` regional verifier failed its conservative proposed-wire
+reservation guard. Provider-reported egress was approximately 88.9 MB; this is
+not evidence of actual transfer-cap exhaustion. The private guard charged both
+TLS layers, local socket writes and 1 KiB per JavaScript write. Its synchronous
+rejection escaped the awaited verifier cleanup. All original failure evidence
+is retained. A separately reviewed cleanup recovered 689 original journal files,
+verified zero live owned sessions/MCP/read admissions, and confirmed the executor
+and all five snapshots deleted or absent. No verifier or model retry occurred.
+
+Independent review also found reachable recovery-owned pg Clients without idle
+error ownership in denial capture/read and Production peer measurement. Those
+clients now abort a local controller combined with the existing cancellation
+signal, and the caller checks cancellation before returning proof. Existing query
+bounds and independent finally cleanup remain. The existing minimized-snapshot
+case additionally terminates a real idle backend and checks cancellation and
+cleanup. The focused owned case passes in 10.37 seconds; pilot typecheck,
+documentation checks and independent source review pass. These changes
+and local guard fixtures do not establish hosted recovery or release completion.
