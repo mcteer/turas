@@ -223,13 +223,16 @@ export async function pilotHosted(args=process.argv.slice(2)){
       ORDER BY p.id LIMIT 1`,[scope.workspaceId,positive])).rows[0];
      if(!linked)throw Error('Fresh ordinarily accepted support baseline required');
      const request=pilotHostedRequest({scope,headers:context.headers,signal});
-     supportJourneys.push(await runHostedSupportBoundary({scope,db:readDb,customerId:String(positive),workloadId:linked.workload_id,planId:linked.plan_id,revisionId:linked.accepted_revision_id,engagementId:linked.engagement_id,ownerMembershipId:linked.owner_id,authorRequest:request,reviewerRequest:request,signal}));
+     await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async author=>{
+      if(author.role!=='internal-member')return;
+      const authorRequest=pilotHostedRequest({scope,headers:author.headers,signal});
+     supportJourneys.push(await runHostedSupportBoundary({scope,db:readDb,customerId:String(positive),workloadId:linked.workload_id,planId:linked.plan_id,revisionId:linked.accepted_revision_id,engagementId:linked.engagement_id,ownerMembershipId:linked.owner_id,authorRequest,reviewerRequest:request,signal}));
      await writeEvidence(root,'support-internal-admin.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...supportJourneys.at(-1)});
      stage='expansion_boundary';
-     expansionJourneys.push(await runHostedExpansionBoundary({scope,db:readDb,customerId:String(positive),workloadId:linked.workload_id,planId:linked.plan_id,revisionId:linked.accepted_revision_id,engagementId:linked.engagement_id,ownerMembershipId:linked.owner_id,authorRequest:request,reviewerRequest:request,signal}));
+     expansionJourneys.push(await runHostedExpansionBoundary({scope,db:readDb,customerId:String(positive),workloadId:linked.workload_id,planId:linked.plan_id,revisionId:linked.accepted_revision_id,engagementId:linked.engagement_id,ownerMembershipId:linked.owner_id,authorRequest,reviewerRequest:request,signal}));
      await writeEvidence(root,'expansion-internal-admin.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...expansionJourneys.at(-1)});
      stage='gap_boundary';
-     gapJourneys.push(await runHostedGapBoundary({scope,db:readDb,customerId:String(positive),workloadId:linked.workload_id,planId:linked.plan_id,revisionId:linked.accepted_revision_id,engagementId:linked.engagement_id,ownerMembershipId:linked.owner_id,authorRequest:request,reviewerRequest:request,signal,waitForReport:async reportId=>{
+     gapJourneys.push(await runHostedGapBoundary({scope,db:readDb,customerId:String(positive),workloadId:linked.workload_id,planId:linked.plan_id,revisionId:linked.accepted_revision_id,engagementId:linked.engagement_id,ownerMembershipId:linked.owner_id,authorRequest,reviewerRequest:request,signal,waitForReport:async reportId=>{
       const until=Date.now()+300000;
       for(;;){signal.throwIfAborted();const result=await request('/api/product-gaps/reports/'+reportId,'GET') as {data?:{job?:{state?:unknown};availability?:unknown}};if(result.data?.job?.state==='prepared'&&result.data.availability==='eligible')return;if(['failed','cancelled'].includes(String(result.data?.job?.state))||Date.now()>=until)throw Error('Actual normally scheduled gap report unavailable');await new Promise<void>((done,reject)=>{const timer=setTimeout(()=>{signal.removeEventListener('abort',abort);done();},2000);const abort=()=>{clearTimeout(timer);reject(signal.reason);};signal.addEventListener('abort',abort,{once:true});});}
      },verifyPrimaryIsolation:async(gapIds,reportId,query)=>{
@@ -241,6 +244,7 @@ export async function pilotHosted(args=process.argv.slice(2)){
       try{for(;;){const next=await reader.read();if(next.done)break;size+=next.value.byteLength;if(size>artifact.sizeBytes||size>5242880)throw Error('Private gap export exceeds bound');parts.push(next.value);}}finally{await reader.cancel().catch(()=>undefined);reader.releaseLock();}return Buffer.concat(parts);
      }}));
      await writeEvidence(root,'gaps-internal-admin.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...gapJourneys.at(-1)});
+     },configuration);
     }
    },configuration);}finally{await readDb.end();}
   if(JSON.stringify(await platformDeployment(scope,true,signal))!==JSON.stringify(deployment)||JSON.stringify(await pilotSource())!==JSON.stringify(source)||JSON.stringify(await pilotProtectedSnapshot())!==JSON.stringify(protectedBefore))throw Error('Hosted identity or protected checkout changed');

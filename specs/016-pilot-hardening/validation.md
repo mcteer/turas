@@ -5643,3 +5643,12 @@ no local or hosted timeout acceptance is inferred from that attempt. Independent
 read-only scoped review found no remaining concrete blocker. Current inventory:
 974 cases across 176 suites; complete current-source and cloud execution remain
 pending.
+
+The hosted chain now preserves its separately authenticated member author for
+reports and requires that author callback explicitly. Support, expansion and gap
+proposals now use a nested normal member session while retaining the original
+administrator reviewer session and normal logout. Learning capture is correctly
+identified as J014. Six generated-file adapter cases and the actual owned HTTP
+linked report/support/expansion/gap/withdrawal case pass; pilot typecheck passes.
+Independent read-only review found no concrete caller or identity regression.
+Actual hosted behavior remains pending.

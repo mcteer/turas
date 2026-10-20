@@ -21,7 +21,7 @@ async function pause(signal:AbortSignal){
 }
 /** Runs the ordinary linked chain; acceptance and file processing are never
  * written by owner SQL or replaced with local executor/renderer callbacks. */
-export async function runHostedLinkedJourney(input:{scope:PilotHostedScope;db:Client;headers:Headers;customerId:string;ownerMembershipId:string;configuration:HostedConfiguration;authorizationDigest:string;authorizationExpiresAt:string;authorization?:unknown;signal:AbortSignal;maximumReportLayout?:boolean;transport?:typeof fetch;authorRequest?:ReturnType<typeof pilotHostedRequest>}){
+export async function runHostedLinkedJourney(input:{scope:PilotHostedScope;db:Client;headers:Headers;customerId:string;ownerMembershipId:string;configuration:HostedConfiguration;authorizationDigest:string;authorizationExpiresAt:string;authorization?:unknown;signal:AbortSignal;maximumReportLayout?:boolean;transport?:typeof fetch;authorRequest:ReturnType<typeof pilotHostedRequest>}){
  const {scope,db,signal}=input,transport=input.transport??fetch;
  if(input.configuration.embeddingProviderConfigured)throw Error('Paid embedding traffic has no authority in this infrastructure journey');
  const request=pilotHostedRequest({scope,headers:input.headers,signal,transport});
@@ -53,7 +53,7 @@ export async function runHostedLinkedJourney(input:{scope:PilotHostedScope;db:Cl
  const delivery=await runHostedDeliveryReview({...input,engagementId:plan.engagementId,baselineId:plan.baselineId,request});
  const milestone=await runHostedMilestoneReview({...input,engagementId:plan.engagementId,baselineId:plan.baselineId,activityRevisionId:delivery.revisionId,request});
  const artifactIds:string[]=[];
- const reports=await runHostedReportJourney({...input,maximumReportLayout:input.maximumReportLayout,engagementId:plan.engagementId,workloadId:foundation.workloadId,request,authorRequest:request,
+ const reports=await runHostedReportJourney({...input,maximumReportLayout:input.maximumReportLayout,engagementId:plan.engagementId,workloadId:foundation.workloadId,request,authorRequest:input.authorRequest,
   runQueuedRender:async revisionId=>{
    const job=(await db.query("SELECT id,deadline_at FROM report_jobs WHERE environment_id=$1 AND revision_id=$2 AND kind='render'",[scope.environmentMarker,revisionId])).rows;
    if(job.length!==1)throw Error('Exact normally queued hosted report required');const deadline=Date.now()+300000;
