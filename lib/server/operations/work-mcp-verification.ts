@@ -1,4 +1,5 @@
 import {randomUUID} from 'node:crypto';
+import {publishRecoveryMeasurement} from './recovery-measurement-group';
 import type {Client,PoolClient} from 'pg';
 import {issueWorkRecoveryHttpRead,issueWorkParticipantRecoveryHttpRead,retireOwnedRecoveryHttpRead} from './recovery-http-read-issuer';
 import {currentRecoveryStateDigest} from './recovery-state';
@@ -130,7 +131,7 @@ async function measureCategorySet(input:Omit<Input,'selection'>&{selections:read
   results.push(await measureCategory(db,target,{...input,selection:selected}));
  }return results;});
  // A failed category or outer source/platform/cleanup check mints no proofs.
- for(const result of results)measured.set(result.proof,{transcript:result.transcript,boundaries:result.boundaries,issued:result.issued,additional:result.additional,password:input.password,retained:input.retained,journalDirectory:input.journalDirectory});return Object.freeze(results.map(result=>result.proof));
+ publishRecoveryMeasurement(()=>{for(const result of results)measured.set(result.proof,{transcript:result.transcript,boundaries:result.boundaries,issued:result.issued,additional:result.additional,password:input.password,retained:input.retained,journalDirectory:input.journalDirectory});});return Object.freeze(results.map(result=>result.proof));
 }
 export async function measureWorkMcpCategoryBatch(input:Omit<Input,'selection'>&{selections:readonly Selection[]}){return measureCategorySet(input,4,false);}
 /** Amortize owner binding without increasing any probe, call or time ceiling.

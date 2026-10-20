@@ -84,6 +84,11 @@ are implemented with private credential evidence; work session/HTTP issuers now 
 and the final unlock producer remain pending. Accepted delivery recovery now
 inventories every accepted execution record and current milestone; it does not
 substitute pending corrections or omit older-baseline records.
+The `56ed2e6` regional recovery run reached its 15-minute limit. Its complete
+original journals were salvaged, all 228 temporary probe identities were verified
+closed, and the stopped executor and both snapshots were deleted. Bounded
+parallel measurement passes focused owned SQL/HTTP/MCP and cancellation checks;
+fresh committed full checks and hosted recovery remain incomplete.
 
 The historical complete local checkpoint passed 703 cases across 129 suites at
 `d3e8f8b`. Further staffing/runtime and hosted-chain implementation requires

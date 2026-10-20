@@ -336,6 +336,35 @@ and reject the restored target as the capture source. Every capture observes the
 original parent cancellation signal. Cold-read its encrypted independent archive
 and separate key; a JSON receipt alone cannot refresh authority.
 
+To reduce repeated platform and inventory latency, independent measurement groups
+may run at most four genuine owner transports. Enforce eight lifetime probe
+reservations per lane and32 across the group at issuance; retirement never frees
+a slot. Every lane uses the same exact source, target and shared deadline. Before
+any callback starts in a group containing MCP, one genuine owner transaction must
+apply the exact authenticated retained denial capability. All constructors await
+that transaction. Only duplicate reconciliation within that exact prepared group
+may be skipped; repeating it after issuance would revoke neighboring new probes.
+Per-probe authorization and current denial freshness remain mandatory.
+
+Each callback must retire its own sessions, admissions and MCP credentials before
+the group barrier. Only then may constructors perform their existing global
+retirement and final platform checks. Publish no measurement brands or results
+until every constructor and independent cleanup succeeds. Abort all lanes on any
+failure, drain within40seconds for existing cleanup, and permanently quarantine
+that process's recovery writers if a lane does not drain. This drain cannot
+extend a work/credential deadline or count as verified service.
+
+At entry to the final fenced owner transaction, consume the original maintenance
+and conversation HTTP freshness. Derive its complete maintenance inventory once
+and check every original batch and retired credential against it. Conversation
+consumption is an opaque capability bound to the exact client, target, transaction
+and immutable batch identities, retaining all original timestamps. After MCP
+replay, require unchanged conversation inventory and current canonical participant
+authorization in that same transaction. A later transaction cannot reuse that
+capability. Recent genuine MCP observations may satisfy existing canary predicates
+without an unconditional duplicate read; all current consumers still enforce
+their participant/chunk/category freshness and complete coverage requirements.
+
 Keep an opaque historical-denial capability alongside the latest genuine cold
 read. Every accepted continuation must retain every prior table/identity/replay
 key, including newly observed identities from earlier continuations. Require

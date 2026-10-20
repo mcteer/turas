@@ -10,12 +10,13 @@ import {readEvidence,writeEvidence,createEvidenceDirectory} from './pilot-eviden
 import {readRetainedWorkDenialSnapshot,readHistoricalWorkDenialSnapshot} from './pilot-denial-reader';
 import {PilotHostHttpJournal} from './pilot-host-http-journal';
 import {withRecoveryCancellation} from '../lib/server/operations/recovery-cancellation';
+import {withWorkRecoveryMeasurementGroup} from '../lib/server/operations/recovery-measurement-group';
 import {withLockedWorkRecoveryDecision,type LockedWorkRecoveryInput} from '../lib/server/operations/locked-work-recovery-target';
 import {measureWorkTargetIntegrity} from '../lib/server/operations/work-target-integrity';
 import {produceWorkRecoveryVerification,resumeCommittedWorkRecoveryVerification} from '../lib/server/operations/work-recovery-verification';
 import {quarantineLockedWorkAuthority} from '../lib/server/operations/recovery-quarantine';
 import {databaseSafetyCaptureSourceSchema} from './pilot-database-safety-copy';
-import {measureWorkMcpCategoryWindow,refreshMeasuredWorkMcpDenials,type WorkMcpCategoryMeasurement} from '../lib/server/operations/work-mcp-verification';
+import {measureWorkMcpCategory,refreshMeasuredWorkMcpDenials,type WorkMcpCategoryMeasurement} from '../lib/server/operations/work-mcp-verification';
 import {deriveWorkMaintenanceInventoryInTransaction} from '../lib/server/operations/owned-maintenance-inventory';
 import {measureWorkMaintenanceHttpBatch,type WorkMaintenanceHttpBatch} from '../lib/server/operations/work-maintenance-verification';
 import {deriveWorkConversationInventory,measureWorkConversationHttpBatch,type WorkConversationHttpBatch} from '../lib/server/operations/work-conversation-http';
@@ -39,11 +40,12 @@ export async function pilotWorkRecoveryVerify(args:string[]){
  return withRecoveryCancellation(900000,async signal=>{
   const target=():LockedWorkRecoveryInput=>({sourceFile:resolve(config.sourceFile),hostedScope:config.hostedScope,scope:config.scope,runtimeConnection:runtime.connection,signal,deadline:Math.min(Date.now()+290000,commandDeadline)});
   const material=()=>({target:target(),candidate,bundle:resolve(config.bundle),keyFile:resolve(config.keyFile),assetRoot:resolve(config.assetRoot),storeId:config.storeId,...(credentials.blobToken?{blobToken:credentials.blobToken}:{oidcToken:credentials.oidcToken!})});
-  let staging:string|undefined;
+  let staging:string|undefined,stage='resume',progressOrdinal=0;
+  const progress=async(next:string,counts:Record<string,number>={})=>{stage=next;await writeEvidence(root,'progress-'+String(++progressOrdinal).padStart(4,'0')+'.json',{contract:'pilot-work-recovery-progress-v1',stage,at:new Date().toISOString(),remainingCommandMs:Math.max(0,commandDeadline-Date.now()),...counts,serviceOpened:false,restorationReady:false});};
   try{
    // This must precede physical baseline measurement, quarantine and all probes.
    const resumed=await resumeCommittedWorkRecoveryVerification(target(),material());if(resumed){await writeEvidence(root,'verification.json',resumed);console.info(JSON.stringify(resumed));return resumed;}
-   const integrity=await measureWorkTargetIntegrity(material());
+   await progress('integrity');const integrity=await measureWorkTargetIntegrity(material());
    staging=await mkdtemp(join(root,'private-denials-'));
    const baseline=await readHistoricalWorkDenialSnapshot({receipt:resolve(config.denialReceipt),destination:resolve(config.denialDestination),staging,environmentId:config.scope.environmentId,after:config.backupCapturedAt},signal);
    const source=databaseSafetyCaptureSourceSchema.parse(await privateJson(config.sourceFile)),original=databaseSafetyCaptureSourceSchema.parse(await privateJson(config.denialSourceFile));
@@ -57,8 +59,9 @@ export async function pilotWorkRecoveryVerify(args:string[]){
     try{const current=await readRetainedWorkDenialSnapshot({receipt:join(output,'snapshot.json'),destination:resolve(config.denialDestination),staging:cold,environmentId:config.scope.environmentId,after:config.backupCapturedAt},signal);requireOriginalWorkDenialCapture(receipt,original,source,current);return current;}
     finally{await rm(cold,{recursive:true,force:true});}
    };
-   let retained=await capture(),denialHistory=beginRetainedWorkDenialHistory(baseline,retained);
+   await progress('denials');let retained=await capture(),denialHistory=beginRetainedWorkDenialHistory(baseline,retained);
    await quarantineLockedWorkAuthority(target(),retained);
+   await progress('canonical-mcp');
    const canonicalMcp=await measureWorkMcpCanonicalScope({target:target(),passwords:credentials.passwords,retained,journalDirectory:root}),mcpScope={required:canonicalMcp.representatives},mcp:WorkMcpCategoryMeasurement[]=[];
    const identity=(value:typeof mcpScope.required[number])=>JSON.stringify([value.workspaceId,value.username,value.category,value.customerId]);
    const refresh=async(force=false)=>{
@@ -67,31 +70,36 @@ export async function pilotWorkRecoveryVerify(args:string[]){
     if(mcp.length)refreshMeasuredWorkMcpDenials(mcp,current);retained=current;
    };
    const mcpTarget=()=>{const current=target();return {...current,deadline:Math.min(current.deadline,Date.parse(retained.snapshot.capturedAt)+299000)};};
-   const pending=[...mcpScope.required];while(pending.length){signal.throwIfAborted();await refresh();const first=pending[0],selections=pending.filter(value=>value.workspaceId===first.workspaceId&&value.username===first.username).slice(0,32),requested=new Set(selections.map(identity));
-    const completed=await measureWorkMcpCategoryWindow({target:mcpTarget(),selections,password:credentials.passwords[first.username],retained,journalDirectory:root,protectionBypass:credentials.protectionBypass});
-    if(!completed.length)throw Error('Work MCP window made no progress');const seen=new Set<string>();
-    for(const proof of completed){const key=identity(proof.selection);if(!requested.has(key)||seen.has(key))throw Error('Work MCP window returned a foreign or duplicate selection');seen.add(key);const index=pending.findIndex(value=>identity(value)===key);if(index<0)throw Error('Work MCP window selection is no longer pending');pending.splice(index,1);}
-    mcp.push(...completed);await refresh();
-   }
+   await refresh();await progress('service-inventory');
    const inventory=await withLockedWorkRecoveryDecision(target(),async(db,current)=>({maintenance:(await deriveWorkMaintenanceInventoryInTransaction(db,current,signal)).records.map(({kind,recordId})=>({kind,recordId})),conversations:(await deriveWorkConversationInventory(db,current)).records.map(row=>row.id)})),maintenance:WorkMaintenanceHttpBatch[]=[],conversations:WorkConversationHttpBatch[]=[];
-   for(let offset=0;offset<inventory.maintenance.length;offset+=8)maintenance.push(await measureWorkMaintenanceHttpBatch({target:target(),records:inventory.maintenance.slice(offset,offset+8),password:credentials.passwords.mcteer,journalDirectory:root,protectionBypass:credentials.protectionBypass}));
-   for(let offset=0;offset<inventory.conversations.length;offset+=8)conversations.push(await measureWorkConversationHttpBatch({target:target(),recordIds:inventory.conversations.slice(offset,offset+8),passwords:credentials.passwords,journalDirectory:root,protectionBypass:credentials.protectionBypass}));
+   type Measurement={kind:'maintenance';proof:WorkMaintenanceHttpBatch}|{kind:'conversation';proof:WorkConversationHttpBatch}|{kind:'mcp';proof:WorkMcpCategoryMeasurement};
+   const jobs:((lane:LockedWorkRecoveryInput)=>Promise<Measurement>)[]=[],mcpJobs=new Set<typeof jobs[number]>();
+   // Each independent constructor receives eight lifetime probe slots: four
+   // maintenance records (canonical+HTTP), eight conversations, or one MCP walk
+   // including its original plus at most seven extra ingress admissions.
+   for(let offset=0;offset<inventory.maintenance.length;offset+=4){const records=inventory.maintenance.slice(offset,offset+4);jobs.push(async lane=>({kind:'maintenance',proof:await measureWorkMaintenanceHttpBatch({target:lane,records,password:credentials.passwords.mcteer,journalDirectory:root,protectionBypass:credentials.protectionBypass})}));}
+   for(let offset=0;offset<inventory.conversations.length;offset+=8){const recordIds=inventory.conversations.slice(offset,offset+8);jobs.push(async lane=>({kind:'conversation',proof:await measureWorkConversationHttpBatch({target:lane,recordIds,passwords:credentials.passwords,journalDirectory:root,protectionBypass:credentials.protectionBypass})}));}
+   for(const selected of mcpScope.required){const job:typeof jobs[number]=async lane=>({kind:'mcp',proof:await measureWorkMcpCategory({target:lane,selection:selected,password:credentials.passwords[selected.username],retained,journalDirectory:root,protectionBypass:credentials.protectionBypass})});jobs.push(job);mcpJobs.add(job);}
+   const pending=new Set(mcpScope.required.map(identity));
+   for(let offset=0;offset<jobs.length;offset+=4){
+    signal.throwIfAborted();await refresh();const group=jobs.slice(offset,offset+4),lane=mcpTarget(),completed=group.length===1?[await group[0](lane)]:await withWorkRecoveryMeasurementGroup(lane,group,group.some(job=>mcpJobs.has(job))?retained:undefined);
+    for(const result of completed){if(result.kind==='maintenance')maintenance.push(result.proof);else if(result.kind==='conversation')conversations.push(result.proof);else{if(!pending.delete(identity(result.proof.selection)))throw Error('Work MCP group returned a foreign or duplicate selection');mcp.push(result.proof);}}
+    await progress('service-http',{completedJobs:Math.min(offset+4,jobs.length),totalJobs:jobs.length,maintenanceBatches:maintenance.length,conversationBatches:conversations.length,mcpBranches:mcp.length});
+   }
+   if(pending.size)throw Error('Complete work MCP branch coverage required');
    // Every participant/category gets a recent actual hosted canary. These are
    // explicit finite reads, not retries of an unknown or paid side effect.
    const canaries=new Map<string,typeof mcpScope.required[number]>();
    for(const selected of mcpScope.required)canaries.set(JSON.stringify([selected.workspaceId,selected.username,selected.category]),selected);
-   const pendingCanaries=[...canaries.values()];
-   while(pendingCanaries.length){
-    await refresh();const first=pendingCanaries[0],selections=pendingCanaries.filter(s=>s.workspaceId===first.workspaceId&&s.username===first.username).slice(0,32);
-    const completed=await measureWorkMcpCategoryWindow({target:mcpTarget(),selections,password:credentials.passwords[first.username],retained,journalDirectory:root,protectionBypass:credentials.protectionBypass});
-    if(!completed.length)throw Error('Recent hosted canary window made no progress');
-    const requested=new Set(selections.map(identity)),seen=new Set<string>();
-    for(const proof of completed){const key=identity(proof.selection),index=mcp.findIndex(old=>identity(old.selection)===key),pending=pendingCanaries.findIndex(s=>identity(s)===key);if(!requested.has(key)||seen.has(key)||index<0||pending<0)throw Error('Foreign or duplicate hosted canary');seen.add(key);mcp[index]=proof;pendingCanaries.splice(pending,1);}
+   const pendingCanaries=[...canaries.values()].filter(selected=>!mcp.some(proof=>proof.selection.workspaceId===selected.workspaceId&&proof.selection.username===selected.username&&proof.selection.category===selected.category&&Date.parse(proof.completedAt)>=Date.now()-240000));
+   for(let offset=0;offset<pendingCanaries.length;offset+=4){
+    await refresh();const selections=pendingCanaries.slice(offset,offset+4),jobs=selections.map(selected=>async(lane:LockedWorkRecoveryInput)=>measureWorkMcpCategory({target:lane,selection:selected,password:credentials.passwords[selected.username],retained,journalDirectory:root,protectionBypass:credentials.protectionBypass})),lane=mcpTarget(),completed=jobs.length===1?[await jobs[0](lane)]:await withWorkRecoveryMeasurementGroup(lane,jobs,retained);
+    for(const proof of completed){const index=mcp.findIndex(old=>identity(old.selection)===identity(proof.selection));if(index<0||!selections.some(selected=>identity(selected)===identity(proof.selection)))throw Error('Foreign hosted canary');mcp[index]=proof;}
    }
-   await refresh(true);
-   const journal=await PilotHostHttpJournal.open(resolve(config.hostJournalDirectory)),common={target:target(),token:credentials.token},effects={cron:await measureWorkCronAdmission({...common,cronSecret:credentials.cronSecret,protectionBypass:credentials.protectionBypass}),oldHttp:await measureWorkOldHttpAdmission({...common,approvedHosts:config.approvedHosts,journal}),native:await measureWorkManagedTerminalInventory({...common,retained}),sandbox:await measureWorkSandboxTerminalInventory({...common,retained}),...(config.hostedScope.target==='preview'?{legacyProductionPeer:await measureWorkLegacyProductionPool({...common,productionSourceFile:resolve(config.productionSourceFile??''),journalDirectory:root})}:{})};
-   const result=await produceWorkRecoveryVerification({target:target(),integrity,integrityMaterial:material(),retained,denialHistory,service:{maintenance,mcp,canonicalMcp,conversations},effects,passwords:credentials.passwords,journalDirectory:root});await writeEvidence(root,'verification.json',result);console.info(JSON.stringify(result));return result;
-  }catch(error){await writeEvidence(root,'failure.json',{contract:'pilot-work-recovery-verification-failure-v1',...config.scope,safeFailure:'verification_incomplete',serviceOpened:false,restorationReady:false});throw error;}
+   await refresh(true);await progress('effects');
+   const journal=await PilotHostHttpJournal.open(resolve(config.hostJournalDirectory)),common={target:mcpTarget(),token:credentials.token},effects={cron:await measureWorkCronAdmission({...common,cronSecret:credentials.cronSecret,protectionBypass:credentials.protectionBypass}),oldHttp:await measureWorkOldHttpAdmission({...common,approvedHosts:config.approvedHosts,journal}),native:await measureWorkManagedTerminalInventory({...common,retained}),sandbox:await measureWorkSandboxTerminalInventory({...common,retained}),...(config.hostedScope.target==='preview'?{legacyProductionPeer:await measureWorkLegacyProductionPool({...common,productionSourceFile:resolve(config.productionSourceFile??''),journalDirectory:root})}:{})};
+   await progress('final-decision');const result=await produceWorkRecoveryVerification({target:mcpTarget(),integrity,integrityMaterial:material(),retained,denialHistory,service:{maintenance,mcp,canonicalMcp,conversations},effects,passwords:credentials.passwords,journalDirectory:root});await writeEvidence(root,'verification.json',result);console.info(JSON.stringify(result));return result;
+  }catch(error){await writeEvidence(root,'failure.json',{contract:'pilot-work-recovery-verification-failure-v1',...config.scope,safeFailure:'verification_incomplete',stage,serviceOpened:false,restorationReady:false});throw error;}
   finally{if(staging)await rm(staging,{recursive:true,force:true});}
  });
 }

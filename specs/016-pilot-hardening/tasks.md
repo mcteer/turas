@@ -332,3 +332,18 @@ No hosted target may be locked for release before its measured reopen path exist
   backend termination. The focused owned case, pilot typecheck, documentation
   checks and independent source review pass. Retain the failed regional guard
   observation and require fresh complete committed and hosted verification.
+
+- [X] T111 Reduce exhaustive recovery measurement latency with at most four
+  independently owned lanes and one enforced32-slot lifetime registry. Reconcile
+  authenticated denials before any group probe exists, retain all per-read,
+  credential, owner, command and freshness bounds, withhold measurement brands
+  until every final check/cleanup passes, and quarantine undrained writers.
+  Bind conversation HTTP freshness to the original fenced final transaction and
+  avoid repeated whole-maintenance inventory scans there. Verify actual mixed
+  SQL/HTTP/MCP composition, neighbor credential survival, cancellation, permanent
+  slot consumption and rejected copied/reused proof capabilities before fresh
+  committed catalog/CI/hosted checks (FR-006–FR-008, FR-019; T096). Four cancellation
+  cases and the extended genuine32-probe, mixed full recovery command and
+  conversation transaction-binding cases pass. Pilot typecheck, documentation
+  checks and independent source review pass; fresh committed/hosted checks remain
+  required and original failures are retained.

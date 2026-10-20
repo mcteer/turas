@@ -6387,3 +6387,39 @@ case additionally terminates a real idle backend and checks cancellation and
 cleanup. The focused owned case passes in 10.37 seconds; pilot typecheck,
 documentation checks and independent source review pass. These changes
 and local guard fixtures do not establish hosted recovery or release completion.
+
+### Exhaustive recovery timing and bounded measurement groups (2026-10-20)
+
+The actual `56ed2e6` run failed its900-second command bound. Salvage durably
+retained15,398,462 original export bytes covering1,414 files before parsing. It
+recorded36 MCP probes across approximately501seconds, followed by192 canonical
+and HTTP session intents for96 profile records across approximately220seconds.
+It did not establish full maintenance, conversation or service coverage.
+
+Restart cleanup initially exceeded a shared290-second configuration scope while
+reopening a constructor for each four-probe group. A separately reviewed
+deny-only owner census verified the exact228 original identities already closed;
+no additional revocation writes or role enabling occurred. The expiry guard
+disabled both runtime roles and CONNECT. A deletion-only continuation verified
+the stopped executor404 and both actual snapshots deleted/absent. The complete
+failure and raw journals remain retained; this cleanup does not rehabilitate the
+failed recovery verification or establish provider compute suspension.
+
+Bounded measurement groups and transaction-bound conversation freshness are
+undergoing focused verification. The first mixed composition test caught a
+neighbor-credential failure: per-MCP denial reconciliation revoked other lanes'
+new probes. The corrected design completes one genuine reconciliation before any
+group callback can issue credentials. The original failed test remains retained.
+Focused checks now pass: all four cancellation cases, the existing real-owner
+case extended with32 issued/retired probes and rejection of a ninth lane slot,
+peer failure with a pending writer, the mixed full recovery command, and the
+conversation transaction-binding case. The latter retains original timestamps,
+rejects copied capabilities, mutated batch arrays and reuse on another target,
+and checks current canonical authorization after consuming freshness in the
+original transaction. The mixed case verifies exactly one reconciliation for
+four16-call MCP neighbors, revocation of an uncaptured old session, survival and
+retirement of new probes, no callbacks on forged preparation, and no new sessions
+for substituted genuine denial authority. The unchanged1006-case/181-suite
+catalog at `56ed2e6` also completed successfully; it predates this fix. Whole
+committed catalog, CI, actual timing/freshness and hosted recovery proof remain
+required; passing concurrency fixtures cannot substitute for them.

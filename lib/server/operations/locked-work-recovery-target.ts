@@ -1,4 +1,5 @@
 import {assertRecoveryDecisionSql} from './recovery-decision-sql';
+import {claimRecoveryMeasurementLane,withRecoveryMeasurementTransport,remainingRecoveryMeasurementSlots,reserveRecoveryMeasurementSlot,retireRecoveryMeasurementLane,failRecoveryMeasurementLane,prepareRecoveryMeasurementLane,preparedRecoveryMeasurementDenials} from './recovery-measurement-group';
 import {Client} from 'pg';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
@@ -14,14 +15,14 @@ import {databaseSafetyCaptureSourceSchema,verifyDatabaseSafetySourceBinding} fro
 import {pilotHostedScopeSchema,verifyHostedDeployment,hostedDeploymentLookupPath,type PilotHostedScope} from '../../contracts/pilot-hosted';
 import {databaseTargetDigest} from './database-binding';
 import {requireRetiredLegacyWorkRuntime,reconcileAuthenticatedWorkCredentialDenialsInTransaction} from './recovery-credential-denials';
-import type {RetainedWorkDenials} from '../../../scripts/pilot-denial-reader';
+import {requireAuthenticatedRetainedDenials,type RetainedWorkDenials} from '../../../scripts/pilot-denial-reader';
 import {newMcpCredential,mcpCredentialScopeDigest} from '../mcp/credentials';
 import {mcpBearerSchema,mcpCreateConnectionSchema,mcpConnectionScopeAllowed} from '../../contracts/mcp';
 
 const scopeSchema=z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive()});
 type Scope=z.infer<typeof scopeSchema>;
 export type LockedWorkRecoveryTarget=Readonly<{contract:'pilot-locked-work-recovery-target-v1';environmentId:string;recoveryId:string;controlRevision:number;projectId:string;teamId:string;sourceCommit:string;sourceDigest:string;catalogDigest:string;origin:string;deploymentId:string;databaseBindingDigest:string;deadline:number}>;
-type Binding={db:Client;scope:Scope;databaseName:string;ownerRole:string;runtimeConnection:string;signal:AbortSignal;decision:boolean;parallelReads:boolean;drains:Set<Promise<unknown>>;abort:(reason:unknown)=>void};
+type Binding={db:Client;scope:Scope;databaseName:string;ownerRole:string;runtimeConnection:string;signal:AbortSignal;decision:boolean;parallelReads:boolean;drains:Set<Promise<unknown>>;abort:(reason:unknown)=>void;lane:ReturnType<typeof claimRecoveryMeasurementLane>};
 const bindings=new WeakMap<object,Binding>();
 const decisionClients=new WeakMap<object,Binding>();
 /** Only a privately registered decision transport owns its aggregate timer. */
@@ -30,7 +31,7 @@ export function isWorkRecoveryDecisionClient(db:Client|import('pg').PoolClient){
  * reserveWorkRecoveryProbe remains the authoritative admission check. */
 export function remainingRegisteredWorkRecoveryProbes(db:Client,target:LockedWorkRecoveryTarget){
  const binding=bindings.get(target);if(!binding||binding.db!==db||target.deadline<=Date.now())throw Error('Actual active work recovery target required');
- binding.signal.throwIfAborted();return Math.max(0,32-(pending.get(target)?.length??0));
+ binding.signal.throwIfAborted();return Math.max(0,Math.min(32-(pending.get(target)?.length??0),remainingRecoveryMeasurementSlots(binding.lane)));
 }
 /** Pure canonical reads only: one existing transaction, at most eight live
  * walks, no per-worker transaction control or credential issuance. A failure
@@ -100,7 +101,10 @@ export function withLockedWorkRecoveryTarget<T>(input:LockedWorkRecoveryInput,ru
  * owner IO. Complete pending verification commits only after final live checks.
  * This constructor alone never establishes service health or opens admission. */
 export function withLockedWorkRecoveryDecision<T>(input:LockedWorkRecoveryInput,run:(db:Client,target:LockedWorkRecoveryTarget)=>Promise<T>){return withWorkRecoveryTransport(input,run,true);}
-async function withWorkRecoveryTransport<T>(input:LockedWorkRecoveryInput,run:(db:Client,target:LockedWorkRecoveryTarget)=>Promise<T>,decision:boolean){
+function withWorkRecoveryTransport<T>(input:LockedWorkRecoveryInput,run:(db:Client,target:LockedWorkRecoveryTarget)=>Promise<T>,decision:boolean){
+ return withRecoveryMeasurementTransport(input,decision,lane=>runWorkRecoveryTransport(input,run,decision,lane));
+}
+async function runWorkRecoveryTransport<T>(input:LockedWorkRecoveryInput,run:(db:Client,target:LockedWorkRecoveryTarget)=>Promise<T>,decision:boolean,lane:ReturnType<typeof claimRecoveryMeasurementLane>){
  const hosted=pilotHostedScopeSchema.parse(input.hostedScope),scope=scopeSchema.parse(input.scope),file=resolve(input.sourceFile);
  if(!Number.isSafeInteger(input.deadline)||input.deadline<=Date.now()||input.deadline>Date.now()+300000||hosted.environmentMarker!==scope.environmentId)throw Error('Finite exact work recovery scope required');
  const connectionLost=new AbortController(),signal=AbortSignal.any([input.signal,AbortSignal.timeout(input.deadline-Date.now()),connectionLost.signal]);signal.throwIfAborted();
@@ -109,7 +113,7 @@ async function withWorkRecoveryTransport<T>(input:LockedWorkRecoveryInput,run:(d
  await requireSource(hosted);const platform=await verifyDatabaseSafetySourceBinding(source,hosted.teamId,signal),deployed=await deployment(hosted,signal,false);
  if(JSON.stringify(await deployment(hosted,signal,true))!==JSON.stringify(deployed))throw Error('Work recovery serving deployment differs');
  const db=new Client({connectionString:owner.href,connectionTimeoutMillis:5000,statement_timeout:10000,query_timeout:11000,pipeline:true});
- db.on('error',error=>connectionLost.abort(error));
+ db.on('error',error=>{connectionLost.abort(error);failRecoveryMeasurementLane(lane,error);});
  const exposed=decision?Object.freeze({query:(...args:unknown[])=>{
   // Never hand pg a caller-owned query config: submit hooks and text getters
   // can bypass SQL validation or receive the raw transaction connection.
@@ -119,25 +123,29 @@ async function withWorkRecoveryTransport<T>(input:LockedWorkRecoveryInput,run:(d
  const target:LockedWorkRecoveryTarget=Object.freeze({contract:'pilot-locked-work-recovery-target-v1',...scope,projectId:hosted.projectId,teamId:hosted.teamId,sourceCommit:hosted.sourceCommit,sourceDigest:hosted.sourceDigest,catalogDigest:hosted.catalogDigest,origin:hosted.origin,deploymentId:hosted.deploymentId,databaseBindingDigest:databaseTargetDigest(runtime.href,scope.environmentId),deadline:input.deadline});
  let failure:unknown;
  try{
-  await db.connect();if(decision)await db.query('SET standard_conforming_strings=on');const binding:Binding={db:exposed,scope,databaseName:decodeURIComponent(owner.pathname.slice(1)),ownerRole:decodeURIComponent(owner.username),runtimeConnection:runtime.href,signal,decision,parallelReads:false,drains:new Set(),abort:reason=>connectionLost.abort(reason)};bindings.set(target,binding);if(decision)decisionClients.set(exposed,binding);
+  await db.connect();if(decision)await db.query('SET standard_conforming_strings=on');const binding:Binding={db:exposed,scope,databaseName:decodeURIComponent(owner.pathname.slice(1)),ownerRole:decodeURIComponent(owner.username),runtimeConnection:runtime.href,signal,decision,parallelReads:false,drains:new Set(),abort:reason=>{connectionLost.abort(reason);failRecoveryMeasurementLane(lane,reason);},lane};bindings.set(target,binding);if(decision)decisionClients.set(exposed,binding);
   await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');try{await requireLockedWorkRecoveryConnection(exposed,target,scope);await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}
   // Authenticate the exact runtime credential without invoking domain work.
   const probe=new Client({connectionString:runtime.href,connectionTimeoutMillis:5000,statement_timeout:5000,query_timeout:6000});
-  probe.on('error',error=>connectionLost.abort(error));
+  probe.on('error',error=>{connectionLost.abort(error);failRecoveryMeasurementLane(lane,error);});
   try{await probe.connect();const rows=(await probe.query('SELECT current_database() AS name,current_user AS role,session_user AS session_role,environment_id,schema_version FROM turas_environment')).rows;if(rows.length!==1||rows[0].name!==decodeURIComponent(owner.pathname.slice(1))||rows[0].role!=='turas_runtime_016'||rows[0].session_role!=='turas_runtime_016'||rows[0].environment_id!==scope.environmentId||Number(rows[0].schema_version)!==79)throw Error('Actual work recovery runtime differs');}finally{await probe.end();}
+  await prepareRecoveryMeasurementLane(lane,exposed,target);
   let decisionTransaction:string|undefined;if(decision){await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');await db.query("SELECT set_config('transaction_timeout',$1,true)",[Math.max(1,input.deadline-Date.now())+'ms']);await requireLockedWorkRecoveryConnection(exposed,target,scope);decisionTransaction=String((await db.query('SELECT pg_current_xact_id()::text AS id')).rows[0].id);}
   let abort:()=>void=()=>{};
   const cancellation=new Promise<never>((_,reject)=>{abort=()=>reject(signal.reason??Error('Work recovery cancelled'));signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort();});
-  let result:T;try{result=await Promise.race([Promise.resolve().then(()=>run(exposed,target)),cancellation]);}finally{signal.removeEventListener('abort',abort);}
+  const callback=Promise.resolve().then(()=>run(exposed,target)),drain=callback.then(()=>undefined,()=>undefined);binding.drains.add(drain);void drain.then(()=>binding.drains.delete(drain));
+  let result:T;try{result=await Promise.race([callback,cancellation]);}finally{signal.removeEventListener('abort',abort);}
   signal.throwIfAborted();if(decision){await db.query('SAVEPOINT recovery_decision_control');await db.query('RELEASE SAVEPOINT recovery_decision_control');if(String((await db.query('SELECT pg_current_xact_id()::text AS id')).rows[0].id)!==decisionTransaction)throw Error('Original recovery decision transaction required');}else await db.query('ROLLBACK');
   const registered=pending.get(target)??[];if(registered.length&&(await db.query('SELECT 1 FROM login_sessions WHERE id=ANY($1::uuid[]) AND revoked_at IS NULL LIMIT 1',[registered.map(intent=>intent.sessionId)])).rowCount)throw Error('Work recovery session retirement incomplete');
+  if(registered.length&&(await db.query('SELECT 1 FROM operations_recovery_http_reads WHERE id=ANY($1::uuid[]) AND revoked_at IS NULL LIMIT 1',[registered.map(intent=>intent.admissionId)])).rowCount)throw Error('Work recovery admission retirement incomplete');
   if(registered.some(intent=>intent.mcp)&&(await db.query('SELECT 1 FROM mcp_connections WHERE id=ANY($1::uuid[]) AND (revoked_at IS NULL OR credential_hash IS NOT NULL) LIMIT 1',[registered.flatMap(intent=>intent.mcp?[intent.mcp.connectionId]:[])])).rowCount)throw Error('Work recovery MCP probe retirement incomplete');
+  await retireRecoveryMeasurementLane(lane);signal.throwIfAborted();
   if(!decision)await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');try{await requireLockedWorkRecoveryConnection(exposed,target,scope);if((await db.query('SELECT 1 FROM operations_recovery_http_reads a JOIN login_sessions s ON s.id=a.session_id WHERE a.environment_id=$1 AND a.recovery_id=$2 AND a.control_revision=$3 AND (a.revoked_at IS NULL OR s.revoked_at IS NULL) LIMIT 1',[scope.environmentId,scope.recoveryId,scope.controlRevision])).rowCount)throw Error('Work recovery probe retirement incomplete');if(!decision)await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}
   if((await db.query('SELECT 1 FROM operations_recovery_http_reads a JOIN mcp_connections mc ON mc.id=a.record_id WHERE a.environment_id=$1 AND a.recovery_id=$2 AND a.control_revision=$3 AND a.mcp_probe_connection AND (mc.revoked_at IS NULL OR mc.credential_hash IS NOT NULL) LIMIT 1',[scope.environmentId,scope.recoveryId,scope.controlRevision])).rowCount)throw Error('Work recovery durable MCP probe retirement incomplete');
   await requireSource(hosted);if(JSON.stringify(await verifyDatabaseSafetySourceBinding(source,hosted.teamId,signal))!==JSON.stringify(platform)||JSON.stringify(await deployment(hosted,signal,false))!==JSON.stringify(deployed)||JSON.stringify(await deployment(hosted,signal,true))!==JSON.stringify(deployed))throw Error('Work recovery platform changed');
   signal.throwIfAborted();if(decision)await db.query('COMMIT');
   return result;
- }catch(error){failure=error;throw error;}finally{
+ }catch(error){failure=error;failRecoveryMeasurementLane(lane,error);throw error;}finally{
   const finalBinding=bindings.get(target);bindings.delete(target);decisionClients.delete(exposed);const retirementErrors:unknown[]=[];
   // Close the original writer before reconciling ambiguous effects. A callback
   // that outlives cancellation cannot enqueue later writes on this connection.
@@ -156,6 +164,19 @@ async function withWorkRecoveryTransport<T>(input:LockedWorkRecoveryInput,run:(d
  }
 }
 
+/** Internal group preparation accepts only this module's still-active genuine
+ * client/target/lane binding. An arbitrary callback or caller-created pg Client
+ * cannot mark retained denials reconciled. No probe callback has run yet. */
+export async function prepareBoundRecoveryMeasurementDenials(db:Client,target:LockedWorkRecoveryTarget,lane:ReturnType<typeof claimRecoveryMeasurementLane>,retained:RetainedWorkDenials){
+ const binding=bindings.get(target);
+ if(!lane||!binding||binding.db!==db||binding.lane!==lane||binding.decision)throw Error('Actual recovery measurement preparation owner required');
+ await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');try{
+  await requireLockedWorkRecoveryConnection(db,target,binding.scope);
+  await reconcileAuthenticatedWorkCredentialDenialsInTransaction(db,retained,{...binding.scope,snapshotDigest:retained.contextDigest,backupCapturedAt:retained.backupCapturedAt});
+  binding.signal.throwIfAborted();await db.query('COMMIT');
+ }catch(error){await db.query('ROLLBACK');throw error;}
+}
+
 const mcpProbeScopeSchema=z.strictObject({categories:mcpCreateConnectionSchema.shape.categories,customerIds:mcpCreateConnectionSchema.shape.customerIds,expiresAt:z.iso.datetime({offset:true})}).refine(mcpConnectionScopeAllowed,'Customer categories require selected customers');
 const mcpProbeIdentitySchema=z.strictObject({...mcpProbeScopeSchema.shape,connectionId:z.uuid(),scopeDigest:z.string().regex(/^[a-f0-9]{64}$/),createdAt:z.iso.datetime({offset:true}),denialDigest:z.string().regex(/^[a-f0-9]{64}$/)}).refine(mcpConnectionScopeAllowed,'Customer categories require selected customers');
 type McpProbeScope=z.infer<typeof mcpProbeScopeSchema>;
@@ -172,7 +193,13 @@ export async function reserveWorkRecoveryProbe(db:Client,target:LockedWorkRecove
  let mcp:McpProbe|undefined;
  if(input.mcp){
   const {retained,...raw}=input.mcp,scope=mcpProbeScopeSchema.parse(raw);
-  await reconcileAuthenticatedWorkCredentialDenialsInTransaction(db,retained,{environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision,snapshotDigest:retained.contextDigest,backupCapturedAt:retained.backupCapturedAt});
+  const lane=bindings.get(target)!.lane;
+  if(lane){
+   // The full deny-only transaction completed before ANY group probe existed.
+   // Repeating it here would revoke neighboring newly issued probe credentials.
+   if(preparedRecoveryMeasurementDenials(lane)!==retained)throw Error('Exact pre-reconciled group denial authority required');
+   requireAuthenticatedRetainedDenials(retained,target.environmentId);
+  }else await reconcileAuthenticatedWorkCredentialDenialsInTransaction(db,retained,{environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision,snapshotDigest:retained.contextDigest,backupCapturedAt:retained.backupCapturedAt});
   const now=(await db.query('SELECT clock_timestamp() AS now')).rows[0].now as Date,expiry=Date.parse(scope.expiresAt);
   if(expiry<=now.getTime()||expiry>now.getTime()+59000||expiry>target.deadline)throw Error('Finite fresh work MCP probe lifetime required');
   Object.freeze(scope.categories);Object.freeze(scope.customerIds);const credential=newMcpCredential();mcp=Object.freeze({...scope,expiresAt:new Date(expiry).toISOString(),connectionId:credential.id,credential:credential.credential,scopeDigest:mcpCredentialScopeDigest(scope.categories,scope.customerIds),createdAt:now.toISOString(),denialDigest:retained.contextDigest});
@@ -182,6 +209,7 @@ export async function reserveWorkRecoveryProbe(db:Client,target:LockedWorkRecove
  AND (w.classification='primary' OR (w.classification='synthetic_pilot' AND w.pilot_environment_id=$4)) FOR SHARE OF m,p,w`,[membershipId,workspaceId,DEMO_IDS.mcteer,target.environmentId,DEMO_IDS.panel,DEMO_IDS.partner])).rows;
  if(rows.length!==1)throw Error('Exact configured work recovery probe owner required');
  let intents=pending.get(target);if(!intents){intents=[];pending.set(target,intents);}if(intents.length>=32)throw Error('Work recovery probe inventory exceeds bound');
+ reserveRecoveryMeasurementSlot(bindings.get(target)!.lane);
  const intent=Object.freeze({principalId:rows[0].principal_id as string,sessionId:randomUUID(),admissionId:randomUUID(),workspaceId,membershipId,journalDirectory:input.journalDirectory,sessionToken:randomBytes(32).toString('base64url'),admissionSecret:randomBytes(32).toString('base64url'),sourceCommit:target.sourceCommit,origin:target.origin,deploymentId:target.deploymentId,databaseBindingDigest:target.databaseBindingDigest,...(mcp?{mcp}:{})});
  intents.push(intent);
  try{const credentialDigest=await writeEvidence(input.journalDirectory,'private-probe-'+intent.sessionId+'-credentials.json',{contract:mcp?'pilot-work-recovery-probe-credentials-v2':'pilot-work-recovery-probe-credentials-v1',sessionId:intent.sessionId,admissionId:intent.admissionId,sessionToken:intent.sessionToken,admissionSecret:intent.admissionSecret,...(mcp?{mcpCredential:mcp.credential}:{})});

@@ -6,7 +6,7 @@ import {isWorkRecoveryDecisionClient,requireLockedWorkRecoveryConnection,type Lo
 import {requireMeasuredWorkMaintenanceHttpCoverage,type WorkMaintenanceHttpBatch} from './work-maintenance-verification';
 import {requireMeasuredWorkMcpCoverage,type WorkMcpCategoryMeasurement} from './work-mcp-verification';
 import {auditRecoveryConversationReads,requireAuditedRecoveryConversationReads} from './recovery-conversation-reads';
-import {requireCurrentWorkConversationHttpCoverage,type WorkConversationHttpBatch} from './work-conversation-http';
+import {bindWorkConversationHttpCoverage,requireCurrentWorkConversationHttpCoverage,type WorkConversationHttpBatch} from './work-conversation-http';
 import {currentRecoveryStateDigest} from './recovery-state';
 export type WorkRecoveryServiceMeasurements={maintenance:readonly WorkMaintenanceHttpBatch[];mcp:readonly WorkMcpCategoryMeasurement[];canonicalMcp?:WorkMcpCanonicalScope;conversations:readonly WorkConversationHttpBatch[]};
 const verified=new WeakMap<object,{db:Client;target:LockedWorkRecoveryTarget;state:string}>();
@@ -16,10 +16,11 @@ const verified=new WeakMap<object,{db:Client;target:LockedWorkRecoveryTarget;sta
 export async function verifyWorkRecoveryService(db:Client,target:LockedWorkRecoveryTarget,input:WorkRecoveryServiceMeasurements,passwords:Parameters<typeof auditRecoveryConversationReads>[2],journalDirectory:string,signal:AbortSignal,retained?:RetainedWorkDenials){
  if(!isWorkRecoveryDecisionClient(db))throw Error('Genuine final required-service owner required');
  await requireLockedWorkRecoveryConnection(db,target,{environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision});signal.throwIfAborted();
+ const conversationBinding=await bindWorkConversationHttpCoverage(db,target,input.conversations);
  const maintenance=await requireMeasuredWorkMaintenanceHttpCoverage(db,target,input.maintenance,signal);
  const mcp=input.canonicalMcp?await requireWorkMcpBranchCoverage(db,target,input.canonicalMcp,input.mcp,passwords,requireCurrentDenials(retained),journalDirectory):await requireMeasuredWorkMcpCoverage(db,target,input.mcp);
  const canonical=await auditRecoveryConversationReads(db,target,passwords,journalDirectory);
- const conversations=await requireCurrentWorkConversationHttpCoverage(db,target,input.conversations,canonical);
+ const conversations=await requireCurrentWorkConversationHttpCoverage(db,target,input.conversations,canonical,conversationBinding);
  await requireAuditedRecoveryConversationReads(db,target,canonical);signal.throwIfAborted();
  const state=await currentRecoveryStateDigest(db),serviceDigest=recoveryDigest({maintenance,mcp,conversations,canonical});
  const proof=Object.freeze({contract:'pilot-work-recovery-service-v2' as const,environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision,currentStateDigest:state,serviceDigest,maintenanceRecordCoverageVerified:true as const,exhaustiveCanonicalScopeCoverageVerified:true as const,actualHostedSdkBranchCoverageVerified:true as const,privateConversationAuthorizationVerified:true as const,probeRetirementVerified:true as const,requiredScopeHealthy:true as const,restorationReady:false as const});

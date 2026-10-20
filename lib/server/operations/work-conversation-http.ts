@@ -1,5 +1,6 @@
 import {requireAuditedRecoveryConversationReads,type auditRecoveryConversationReads} from './recovery-conversation-reads';
 import {getServerConfig} from '../config';
+import {publishRecoveryMeasurement} from './recovery-measurement-group';
 import type {Client,PoolClient} from 'pg';
 import {z} from 'zod';
 import {recoveryDigest} from '../../contracts/pilot-recovery';
@@ -69,7 +70,7 @@ export async function measureWorkConversationHttpBatch(input:{target:LockedWorkR
   await retired(db,probes);const after=await transaction(db,()=>deriveWorkConversationInventory(db,target));if(after.inventoryDigest!==inventory.inventoryDigest)throw Error('Conversation HTTP inventory changed');
   return {proof:Object.freeze({contract:'pilot-work-conversation-http-batch-v1' as const,...scope(target),targetDigest:targetDigest(target),inventoryDigest:inventory.inventoryDigest,recordIds:Object.freeze(records.map(row=>row.id)),observations:Object.freeze(observations.map(row=>Object.freeze(row))),completedAt:new Date().toISOString(),privateConversationHttpVerified:true as const,probeRetirementVerified:true as const,requiredScopeHealthy:false as const,restorationReady:false as const}),probes,records};
  });
- measured.set(result.proof,{probes:result.probes,records:result.records});return result.proof;
+ publishRecoveryMeasurement(()=>measured.set(result.proof,{probes:result.probes,records:result.records}));return result.proof;
 }
 export type WorkConversationHttpBatch=Awaited<ReturnType<typeof measureWorkConversationHttpBatch>>;
 /** Exact union and retired-probe verification. Final canonical authorization
@@ -88,10 +89,34 @@ export async function requireMeasuredWorkConversationHttpCoverage(db:Client,targ
  return {inventoryDigest:inventory.inventoryDigest,observations:batches.flatMap(batch=>batch.observations),conversations:seen.size,privateConversationHttpVerified:true as const,requiredScopeHealthy:false as const,restorationReady:false as const};
 }
 
+const freezeConversationCoverage=(coverage:Awaited<ReturnType<typeof requireMeasuredWorkConversationHttpCoverage>>)=>Object.freeze({...coverage,observations:Object.freeze(coverage.observations)});
+const consumed=new WeakMap<object,{db:Client;target:LockedWorkRecoveryTarget;transaction:string;inputBatches:readonly WorkConversationHttpBatch[];batches:readonly WorkConversationHttpBatch[];coverage:ReturnType<typeof freezeConversationCoverage>}>();
+/** Consume real HTTP freshness once, at entry to the final fenced transaction.
+ * Original timestamps remain unchanged. The capability cannot cross a client,
+ * target or transaction, and current inventory/authorization are still mandatory
+ * after the exhaustive MCP replay. No serialized artifact is accepted. */
+export async function bindWorkConversationHttpCoverage(db:Client,target:LockedWorkRecoveryTarget,batches:readonly WorkConversationHttpBatch[]){
+ if(!isWorkRecoveryDecisionClient(db))throw Error('Genuine conversation HTTP decision required');
+ await requireLockedWorkRecoveryConnection(db,target,scope(target));
+ const coverage=freezeConversationCoverage(await requireMeasuredWorkConversationHttpCoverage(db,target,batches)),transaction=String((await db.query('SELECT pg_current_xact_id()::text AS id')).rows[0].id);
+ const proof=Object.freeze({contract:'pilot-work-conversation-http-transaction-v1' as const,originalCompletedAt:Object.freeze(batches.map(batch=>batch.completedAt)),inventoryDigest:coverage.inventoryDigest});
+ consumed.set(proof,{db,target,transaction,inputBatches:batches,batches:Object.freeze([...batches]),coverage});return proof;
+}
+async function requireBoundConversationHttpCoverage(db:Client,target:LockedWorkRecoveryTarget,batches:readonly WorkConversationHttpBatch[],proof:Awaited<ReturnType<typeof bindWorkConversationHttpCoverage>>){
+ const actual=consumed.get(proof);
+ if(!actual||actual.db!==db||actual.target!==target||actual.inputBatches!==batches||actual.batches.length!==batches.length||actual.batches.some((batch,index)=>batch!==batches[index])||!isWorkRecoveryDecisionClient(db))throw Error('Original fenced conversation HTTP binding required');
+ await requireLockedWorkRecoveryConnection(db,target,scope(target));
+ if(String((await db.query('SELECT pg_current_xact_id()::text AS id')).rows[0].id)!==actual.transaction)throw Error('Original conversation HTTP transaction required');
+ const inventory=await deriveWorkConversationInventory(db,target);
+ if(inventory.inventoryDigest!==actual.coverage.inventoryDigest)throw Error('Bound conversation HTTP inventory changed');
+ for(const batch of actual.batches){const measuredBatch=measured.get(batch);if(!measuredBatch)throw Error('Original measured conversation HTTP batch required');await retired(db,measuredBatch.probes);}
+ return actual.coverage;
+}
+
 /** Match every HTTP result against the current canonical participant policy,
  * including legitimate own-record denials after revoked customer authority. */
-export async function requireCurrentWorkConversationHttpCoverage(db:Client,target:LockedWorkRecoveryTarget,batches:readonly WorkConversationHttpBatch[],canonical:Awaited<ReturnType<typeof auditRecoveryConversationReads>>){
- const coverage=await requireMeasuredWorkConversationHttpCoverage(db,target,batches),actual=await requireAuditedRecoveryConversationReads(db,target,canonical),inventory=await deriveWorkConversationInventory(db,target);
+export async function requireCurrentWorkConversationHttpCoverage(db:Client,target:LockedWorkRecoveryTarget,batches:readonly WorkConversationHttpBatch[],canonical:Awaited<ReturnType<typeof auditRecoveryConversationReads>>,binding?:Awaited<ReturnType<typeof bindWorkConversationHttpCoverage>>){
+ const coverage=binding?await requireBoundConversationHttpCoverage(db,target,batches,binding):await requireMeasuredWorkConversationHttpCoverage(db,target,batches),actual=await requireAuditedRecoveryConversationReads(db,target,canonical),inventory=await deriveWorkConversationInventory(db,target);
  if(canonical.unavailableOwners!==0)throw Error('Required private conversation owner remains unavailable');
  for(const observed of coverage.observations){
   const owner=inventory.records.find(row=>row.id===observed.id)?.username,current=actual.find(row=>row.id===observed.id&&row.username===owner&&(row.projection!==undefined||row.ownerDenied===404));

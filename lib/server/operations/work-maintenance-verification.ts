@@ -1,4 +1,5 @@
 import {createHash} from 'node:crypto';
+import {publishRecoveryMeasurement} from './recovery-measurement-group';
 import type {Client,PoolClient} from 'pg';
 import {z} from 'zod';
 import {withLockedWorkRecoveryTarget,requireLockedWorkRecoveryConnection,type LockedWorkRecoveryTarget} from './locked-work-recovery-target';
@@ -78,14 +79,18 @@ export async function measureWorkMaintenanceHttpBatch(input:{target:TargetInput;
   await requireRetired(db,probes);const final=await transaction(db,()=>deriveWorkMaintenanceInventoryInTransaction(db,target,signal));if(final.inventoryDigest!==inventory.inventoryDigest)throw Error('Work maintenance inventory changed');
   const proof:WorkMaintenanceHttpBatch=Object.freeze({contract:'pilot-work-maintenance-http-batch-v1',...scope(target),targetDigest:targetDigest(target),inventoryDigest:inventory.inventoryDigest,selectedRecords:Object.freeze(selected.map(key)),verifiedRecords:selected.length,verifiedOriginalBytes:originalBytes,completedAt:new Date().toISOString(),maintenanceHttpVerified:true,probeRetirementVerified:true,requiredScopeHealthy:false,restorationReady:false});return {proof,probes};
  });
- measured.set(result.proof,{targetDigest:result.proof.targetDigest,probes:Object.freeze(result.probes)});return result.proof;
+ publishRecoveryMeasurement(()=>measured.set(result.proof,{targetDigest:result.proof.targetDigest,probes:Object.freeze(result.probes)}));return result.proof;
 }
 /** Final composition rebinds genuine in-process measurements to a newly verified
  * exact target, current whole inventory and still-retired credentials. JSON is not authority. */
 export async function requireMeasuredWorkMaintenanceHttpBatch(db:Client,target:LockedWorkRecoveryTarget,proof:WorkMaintenanceHttpBatch,signal:AbortSignal){
- const actual=measured.get(proof);if(!actual)throw Error('Actual fresh work maintenance HTTP measurement required');const age=Date.now()-Date.parse(proof.completedAt);if(actual.targetDigest!==targetDigest(target)||!Number.isFinite(age)||age<0||age>300000)throw Error('Actual fresh work maintenance HTTP measurement required');
  await requireLockedWorkRecoveryConnection(db,target,scope(target));signal.throwIfAborted();
- const inventory=await deriveWorkMaintenanceInventoryInTransaction(db,target,signal);if(inventory.inventoryDigest!==proof.inventoryDigest||proof.verifiedRecords!==proof.selectedRecords.length||proof.selectedRecords.some(value=>!inventory.records.some(record=>key(record)===value)))throw Error('Measured work maintenance coverage changed');
+ const inventory=await deriveWorkMaintenanceInventoryInTransaction(db,target,signal);
+ return requireBatchAgainstInventory(db,target,proof,signal,inventory);
+}
+async function requireBatchAgainstInventory(db:Client,target:LockedWorkRecoveryTarget,proof:WorkMaintenanceHttpBatch,signal:AbortSignal,inventory:Awaited<ReturnType<typeof deriveWorkMaintenanceInventoryInTransaction>>){
+ const actual=measured.get(proof);if(!actual)throw Error('Actual fresh work maintenance HTTP measurement required');const age=Date.now()-Date.parse(proof.completedAt);if(actual.targetDigest!==targetDigest(target)||!Number.isFinite(age)||age<0||age>300000)throw Error('Actual fresh work maintenance HTTP measurement required');
+ if(inventory.inventoryDigest!==proof.inventoryDigest||proof.verifiedRecords!==proof.selectedRecords.length||proof.selectedRecords.some(value=>!inventory.records.some(record=>key(record)===value)))throw Error('Measured work maintenance coverage changed');
  await requireRetired(db,actual.probes);signal.throwIfAborted();return proof;
 }
 
@@ -97,7 +102,9 @@ export async function requireMeasuredWorkMaintenanceHttpCoverage(db:Client,targe
  const inventory=await deriveWorkMaintenanceInventoryInTransaction(db,target,signal),observed=new Set<string>();let originalBytes=0;
  if(!inventory.records.length)throw Error('Required work maintenance record inventory empty');
  for(const batch of batches){
-  await requireMeasuredWorkMaintenanceHttpBatch(db,target,batch,signal);
+  // This decision retains the original ordered fences. Derive its complete
+  // inventory once, then bind every original batch to that same current ledger.
+  await requireBatchAgainstInventory(db,target,batch,signal,inventory);
   for(const record of batch.selectedRecords){if(observed.has(record))throw Error('Duplicate work maintenance record measurement');observed.add(record);}
   originalBytes+=batch.verifiedOriginalBytes;
  }

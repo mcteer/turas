@@ -70,10 +70,16 @@ async function fixture(run:(input:Parameters<typeof withLockedWorkRecoveryTarget
   }finally{await rm(root,{recursive:true,force:true});state.connections.clear();state.platformChanged=false;state.sourceChanged=false;state.dirty=false;state.cleanupUnavailable=false;}
  },{deadlineMs:ownedDeadlineMs});
 }
+let targetRuntimeTail=Promise.resolve();
 async function withTargetRuntime<T>(input:Parameters<typeof withLockedWorkRecoveryTarget>[0],target:Parameters<typeof requireLockedWorkRecoveryConnection>[1],run:()=>Promise<T>){
+ // The controlled in-process HTTP fixture shares process.env/runtimePool. Keep
+ // its request scopes separate while genuine operator clients run concurrently.
+ const previous=targetRuntimeTail;let release!:()=>void;targetRuntimeTail=new Promise<void>(done=>{release=done;});await previous;
+ try{
  const keys=['DATABASE_URL','TURAS_APP_ORIGIN','VERCEL_DEPLOYMENT_ID','VERCEL_GIT_COMMIT_SHA','TURAS_CODE_VERSION'] as const,prior=Object.fromEntries(keys.map(key=>[key,process.env[key]]));
  await closeRuntimePool();try{process.env.DATABASE_URL=state.connections.get(input.runtimeConnection)!;process.env.TURAS_APP_ORIGIN=target.origin;process.env.VERCEL_DEPLOYMENT_ID=target.deploymentId;process.env.VERCEL_GIT_COMMIT_SHA=target.sourceCommit;process.env.TURAS_CODE_VERSION=target.sourceCommit;return await run();}
  finally{await closeRuntimePool();for(const key of keys){if(prior[key]===undefined)delete process.env[key];else process.env[key]=prior[key];}}
+ }finally{release();}
 }
 function controlledEffectsPlatform(request:Request){const url=new URL(request.url),key='controlled_effects_automation_key',host='recovery.vercel.app';
   if(url.origin==='https://api.vercel.com'){
@@ -133,6 +139,37 @@ it('commits a pending recovery decision only after live checks and rolls back dr
     await withWorkRecoveryReadGroup(db,target,[async()=>{if(mode==='sql-error')return db.query('SELECT 1/0');return withWorkRecoveryReadDeadline(db,target,AbortSignal.timeout(25),()=>db.query('SELECT pg_sleep(1)'));},async()=>db.query('SELECT pg_sleep(1)')]);
    })).rejects.toThrow();expect(await read()).toBe('Committed measured decision');
   }
+
+  const {withWorkRecoveryMeasurementGroup,publishRecoveryMeasurement}=await import('../../../lib/server/operations/recovery-measurement-group');
+  const {withAuthenticatedWorkRecoveryRead,createAuthenticatedWorkRecoverySession}=await import('../../../lib/server/operations/authenticated-recovery-read');
+  const sessionIds:string[]=[],published:number[]=[];
+  const transaction=async<T>(db:Client,run:()=>Promise<T>)=>{await db.query('BEGIN');try{const value=await run();await db.query('COMMIT');return value;}catch(error){await db.query('ROLLBACK');throw error;}};
+  const sessionInput={...input.scope,workspaceId:DEMO_IDS.workspace,password:process.env.TURAS_DEMO_PASSWORD!,deadline:Math.min(input.deadline,Date.now()+59000)};
+  expect(await withWorkRecoveryMeasurementGroup(input,Array.from({length:4},(_,index)=>async lane=>{
+   const result=await withLockedWorkRecoveryTarget(lane,async(db,target)=>{
+    for(let slot=0;slot<8;slot++)sessionIds.push(await transaction(db,()=>withAuthenticatedWorkRecoveryRead(db,target,sessionInput,dirname(input.sourceFile),async actor=>actor.sessionId)));
+    // Retired reservations still occupy all eight original lane slots.
+    await expect(transaction(db,()=>withAuthenticatedWorkRecoveryRead(db,target,sessionInput,dirname(input.sourceFile),async actor=>actor.sessionId))).rejects.toThrow('allowance exhausted');
+    expect(published).toEqual([]);return index;
+   });
+   publishRecoveryMeasurement(()=>published.push(index));expect(published).toEqual([]);return result;
+  }))).toEqual([0,1,2,3]);
+  expect(published.sort()).toEqual([0,1,2,3]);expect(new Set(sessionIds).size).toBe(32);
+  expect((await owner.query('SELECT 1 FROM login_sessions WHERE id=ANY($1::uuid[]) AND revoked_at IS NULL',[sessionIds])).rowCount).toBe(0);
+
+  let created=0,release!:()=>void;const bothCreated=new Promise<void>(done=>{release=done;}),failedIds:string[]=[],failedPublications:number[]=[];
+  await expect(withWorkRecoveryMeasurementGroup(input,[0,1].map(index=>async lane=>{
+   await withLockedWorkRecoveryTarget(lane,async(db,target)=>{
+    const issued=await transaction(db,()=>createAuthenticatedWorkRecoverySession(db,target,{...sessionInput,deadline:Math.min(input.deadline,Date.now()+59000)},dirname(input.sourceFile)));failedIds.push(issued.actor.sessionId);
+    if(++created===2)release();await bothCreated;
+    if(index===1)throw Error('Controlled independent measurement failure');
+    // This writer must be destroyed and its committed credential independently
+    // retired when the other lane fails, rather than waiting for this query.
+    await db.query('SELECT pg_sleep(10)');return index;
+   });publishRecoveryMeasurement(()=>failedPublications.push(index));return index;
+  }))).rejects.toThrow();
+  expect(failedIds).toHaveLength(2);expect(failedPublications).toEqual([]);
+  expect((await owner.query('SELECT 1 FROM login_sessions WHERE id=ANY($1::uuid[]) AND revoked_at IS NULL',[failedIds])).rowCount).toBe(0);
 
  }finally{await owner.end();}
 }),210000);
@@ -243,8 +280,30 @@ it('measures exhaustive fresh work MCP category pages through SDK and rejects ch
 
     phase='service-http';const {measureWorkMaintenanceHttpBatch}=await import('../../../lib/server/operations/work-maintenance-verification'),{measureWorkConversationHttpBatch}=await import('../../../lib/server/operations/work-conversation-http'),{verifyWorkRecoveryService,requireVerifiedWorkRecoveryService}=await import('../../../lib/server/operations/work-recovery-service');
     const records=await withLockedWorkRecoveryDecision(input,async(db,current)=>(await deriveWorkMaintenanceInventoryInTransaction(db,current,input.signal)).records.map(({kind,recordId})=>({kind,recordId}))),maintenance:Awaited<ReturnType<typeof measureWorkMaintenanceHttpBatch>>[]=[];
-    for(let offset=0;offset<records.length;offset+=8)maintenance.push(await measureWorkMaintenanceHttpBatch({target:input,records:records.slice(offset,offset+8),password:args.password,journalDirectory:args.journalDirectory}));
-    const passwords={mcteer:process.env.TURAS_DEMO_PASSWORD!,panel:process.env.PANEL_PASSWORD!,partner:process.env.PARTNER_PASSWORD!},conversations=[await measureWorkConversationHttpBatch({target:input,recordIds:conversationIds,passwords,journalDirectory:args.journalDirectory})];
+    const passwords={mcteer:process.env.TURAS_DEMO_PASSWORD!,panel:process.env.PANEL_PASSWORD!,partner:process.env.PARTNER_PASSWORD!},conversations:Awaited<ReturnType<typeof measureWorkConversationHttpBatch>>[]=[],groupedMcp:typeof knowledge[]=[];
+    const {withWorkRecoveryMeasurementGroup}=await import('../../../lib/server/operations/recovery-measurement-group');
+    await withWorkRecoveryMeasurementGroup(input,[
+     async lane=>{maintenance.push(await measureWorkMaintenanceHttpBatch({target:lane,records:records.slice(0,4),password:args.password,journalDirectory:args.journalDirectory}));},
+     async lane=>{conversations.push(await measureWorkConversationHttpBatch({target:lane,recordIds:conversationIds,passwords,journalDirectory:args.journalDirectory}));},
+     async lane=>{groupedMcp.push(await measureWorkMcpCategory({...args,target:lane,selection:knowledge.selection}));},
+    ],retained);
+    expect(groupedMcp[0].calls).toBe(16);await withLockedWorkRecoveryDecision(input,async(db,current)=>{expect(await requireMeasuredWorkMcpCategory(db,current,groupedMcp[0])).toBe(groupedMcp[0]);});
+    const beforePreparation=(await owner.query('SELECT count(*)::int AS n FROM login_sessions')).rows[0].n;
+    let failedPreparationCallbacks=0;
+    await expect(withWorkRecoveryMeasurementGroup(input,[0,1].map(()=>async lane=>withLockedWorkRecoveryTarget(lane,async()=>{failedPreparationCallbacks++;})),{...retained})).rejects.toThrow();
+    expect(failedPreparationCallbacks).toBe(0);expect((await owner.query('SELECT count(*)::int AS n FROM login_sessions')).rows[0].n).toBe(beforePreparation);
+    expect(freshDenials).not.toBe(retained);
+    await expect(withWorkRecoveryMeasurementGroup(input,[0,1].map(()=>async lane=>measureWorkMcpCategory({...args,target:lane,selection:knowledge.selection,retained:freshDenials})),retained)).rejects.toThrow();
+    expect((await owner.query('SELECT count(*)::int AS n FROM login_sessions')).rows[0].n).toBe(beforePreparation);
+    const uncaptured=randomUUID(),membership=(await owner.query('SELECT id FROM memberships WHERE workspace_id=$1 AND principal_id=$2',[workspaceId,DEMO_IDS.mcteer])).rows[0].id;
+    await owner.query("INSERT INTO login_sessions(id,principal_id,token_hash,created_at,expires_at,membership_id,workspace_id) VALUES($1,$2,$3,clock_timestamp(),clock_timestamp()+interval '1 hour',$4,$5)",[uncaptured,DEMO_IDS.mcteer,createHash('sha256').update(randomBytes(32)).digest('hex'),membership,workspaceId]);
+    const denialModule=await import('../../../lib/server/operations/recovery-credential-denials'),reconciliation=vi.spyOn(denialModule,'reconcileAuthenticatedWorkCredentialDenialsInTransaction');
+    try{
+     const neighbors=await withWorkRecoveryMeasurementGroup(input,[0,1,2,3].map(()=>async lane=>measureWorkMcpCategory({...args,target:lane,selection:knowledge.selection})),retained);
+     expect(reconciliation).toHaveBeenCalledTimes(1);expect(neighbors.map(value=>value.calls)).toEqual([16,16,16,16]);
+     expect((await owner.query('SELECT revoked_at IS NOT NULL AS retired FROM login_sessions WHERE id=$1',[uncaptured])).rows[0].retired).toBe(true);
+    }finally{reconciliation.mockRestore();}
+    for(let offset=4;offset<records.length;offset+=4)maintenance.push(await measureWorkMaintenanceHttpBatch({target:input,records:records.slice(offset,offset+4),password:args.password,journalDirectory:args.journalDirectory}));
     phase='parallel-final-drift';const originalGeneration=(await owner.query('SELECT internal_generation FROM customer_profile_state WHERE customer_id=$1',[customerId])).rows[0].internal_generation;let concurrentFailure:unknown;
     try{await withLockedWorkRecoveryDecision(input,async(db,current)=>{await db.query('UPDATE customer_profile_state SET internal_generation=internal_generation+1 WHERE customer_id=$1',[customerId]);await requireMeasuredWorkMcpCoverage(db,current,proofs);});}catch(error){concurrentFailure=error;}
     const failureMessages=(error:unknown):string[]=>error instanceof AggregateError?[error.message,...error.errors.flatMap(failureMessages)]:error instanceof Error?[error.message]:[];
@@ -783,7 +842,7 @@ it('serves exact private conversation recovery HTTP for each real role and refus
    const foreign=records.get('panel')!;await db.query('BEGIN');
    try{await expect(issueWorkRecoveryHttpRead(db,target,{...input.scope,workspaceId:DEMO_IDS.workspace,customerId:foreign.customerId,deadline:Math.min(target.deadline,Date.now()+59000),password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:1,deploymentId:target.deploymentId,readKind:'conversation',recordId:foreign.id},dirname(input.sourceFile))).rejects.toThrow('private recovery conversation binding');}
    finally{await db.query('ROLLBACK');}
-   const {measureWorkConversationHttpBatch,requireMeasuredWorkConversationHttpCoverage,requireCurrentWorkConversationHttpCoverage}=await import('../../../lib/server/operations/work-conversation-http');
+   const {measureWorkConversationHttpBatch,requireMeasuredWorkConversationHttpCoverage,requireCurrentWorkConversationHttpCoverage,bindWorkConversationHttpCoverage}=await import('../../../lib/server/operations/work-conversation-http');
    const {GET:ordinaryRead}=await import('../../../app/api/conversations/[id]/route');
    let corrupt=false;
    const transport=vi.spyOn(globalThis,'fetch').mockImplementation(async(raw,options)=>{
@@ -812,6 +871,28 @@ it('serves exact private conversation recovery HTTP for each real role and refus
      await expect(requireMeasuredWorkConversationHttpCoverage(owner,current,[{...proof}])).rejects.toThrow('Genuine fresh');
      await expect(requireMeasuredWorkConversationHttpCoverage(owner,current,[proof,proof])).rejects.toThrow('Complete unique');
      await expect(requireMeasuredWorkConversationHttpCoverage(owner,current,[])).rejects.toThrow('Complete private');
+    });
+    const batches=[proof],actualNow=Date.now.bind(Date),originalCompletedAt=proof.completedAt;
+    let retainedBinding:Awaited<ReturnType<typeof bindWorkConversationHttpCoverage>>|undefined;
+    const clock=vi.spyOn(Date,'now').mockImplementation(()=>actualNow()+200000);
+    try{await withLockedWorkRecoveryDecision({...input,deadline:Date.now()+290000},async(owner,current)=>{
+     retainedBinding=await bindWorkConversationHttpCoverage(owner,current,batches);
+     clock.mockImplementation(actualNow);
+     const {auditRecoveryConversationReads}=await import('../../../lib/server/operations/recovery-conversation-reads'),canonical=await auditRecoveryConversationReads(owner,current,args.passwords,args.journalDirectory);
+     // Simulate an old HTTP observation becoming >300s old while this original
+     // transaction retains its fences. Neither its timestamp nor current owner
+     // deadline is renewed by the transaction-bound consumption rule.
+     clock.mockImplementation(()=>actualNow()+310000);
+     await expect(requireMeasuredWorkConversationHttpCoverage(owner,current,batches)).rejects.toThrow('Genuine fresh');
+     expect(await requireCurrentWorkConversationHttpCoverage(owner,current,batches,canonical,retainedBinding)).toMatchObject({conversations:3,currentCanonicalAuthorizationVerified:true});
+     await expect(requireCurrentWorkConversationHttpCoverage(owner,current,batches,canonical,{...retainedBinding!})).rejects.toThrow('Original fenced');
+     batches.pop();await expect(requireCurrentWorkConversationHttpCoverage(owner,current,batches,canonical,retainedBinding)).rejects.toThrow('Original fenced');batches.push(proof);
+     expect(proof.completedAt).toBe(originalCompletedAt);
+     clock.mockImplementation(actualNow);
+    });}finally{clock.mockRestore();}
+    await withLockedWorkRecoveryDecision(input,async(owner,current)=>{
+     const {auditRecoveryConversationReads}=await import('../../../lib/server/operations/recovery-conversation-reads'),canonical=await auditRecoveryConversationReads(owner,current,args.passwords,args.journalDirectory);
+     await expect(requireCurrentWorkConversationHttpCoverage(owner,current,batches,canonical,retainedBinding)).rejects.toThrow('Original fenced');
     });
     corrupt=true;await expect(measureWorkConversationHttpBatch(args)).rejects.toThrow('canonical projection differs');corrupt=false;
    }finally{transport.mockRestore();}
