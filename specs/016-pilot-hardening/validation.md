@@ -6140,3 +6140,28 @@ waits for the exact impact POST's 409 and finished body before its unchanged
 rejection-message and focus-refresh assertions, within the existing 30-second
 case budget. The failed run remains retained; a new complete browser run is
 required.
+
+
+## Native CI blocker transaction diagnosis
+
+Exact e360516 hosted verification passed physical integrity and committed the
+seven denial quarantine scopes, then stopped because MCP was disabled. No service
+was opened. The independent fresh successor preserves that quarantined database;
+its first public-schema restore found the missing vector extension prerequisite.
+All 86 partial tables were independently verified empty before applying the
+explicit migration019 extension prerequisite. Complete restored parity remains
+pending; no successful full recovery or release is inferred from these steps.
+
+The same-source native-operations fixture passed locally with the actual runtime
+and CLI WebKit. Legacy CI attempt1 failed at input-authority with55P03; attempt2
+failed at prepare-owner with57014. Both observed membership lock contention, but
+the prior fixed query labels did not identify blocker transaction state or age.
+The owned read-only CI observer now adds bounded fixed blocker state, query and
+transaction ages, and one-hop operation classes. Raw SQL, identities, application
+names, timestamps and customer content remain excluded. This diagnostic change
+does not alter authorization, quotas, transaction clocks or test expectations;
+the repeated CI failure is unresolved pending actual blocker observations.
+
+Narrow validation for the blocker observer: root typecheck, three existing privacy
+unit cases, documentation hygiene and diff checks pass. Independent read-only
+review found no blocker. No new hosted behavior or full-catalog pass is claimed.

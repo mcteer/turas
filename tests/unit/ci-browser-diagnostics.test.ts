@@ -1,7 +1,7 @@
 import {processFailureMetadata,setupFailureMetadata} from '../../scripts/ci-process-diagnostics';
 import {describe,expect,it} from 'vitest';
 import {browserFailureMetadata} from '../../scripts/ci-browser-diagnostics';
-import {nativeQueryOperation,nativeQueryObservationSchema} from '../../scripts/ci-native-query-observer';
+import {nativeQueryOperation,nativeQueryObservationSchema,nativeBlockerMetadata} from '../../scripts/ci-native-query-observer';
 const allowed=new Set(['mcp-accessibility.spec.ts']);
 describe('private browser failure diagnostics',()=>{
  it('reports the failed source location and timeout class without private error or page content',()=>{
@@ -28,6 +28,10 @@ it('reports setup and child process failure classes without exposing private out
  const classified=nativeQueryOperation("SELECT DISTINCT c.id AS conversation_id,request, PRIVATE_SQL 'postgresql://PRIVATE_PASSWORD'");expect(classified).toBe('input-binding');expect(nativeQueryOperation('PRIVATE_SQL')).toBe('other');
  const observation={contract:'owned-native-query-observation-v1',instrumented:true,state:'observed',samples:10,rowsTruncated:false,observations:[{operation:classified,wait:'Lock',samples:2,maximumElapsedMs:5001,blockedSamples:2,blockerOperations:['commit']}]};
  expect(nativeQueryObservationSchema.parse(observation)).toEqual(observation);
+ const blocker=nativeBlockerMetadata({pid:777,query:"SELECT active FROM principals WHERE private='PRIVATE_PASSWORD'",state:'idle in transaction',wait_event_type:'Client',elapsed_ms:'4501.8',transaction_elapsed_ms:'8000.1',database:'PRIVATE_CUSTOMER'},['SELECT mode FROM operations_control','PRIVATE_SQL']);
+ expect(blocker).toEqual({operation:'principal',state:'idle in transaction',wait:'Client',queryElapsedMs:4502,transactionElapsedMs:8000,blockerOperations:['operations-control','other']});expect(JSON.stringify(blocker)).not.toContain('PRIVATE_');expect(JSON.stringify(blocker)).not.toContain('777');
+ const bounded=nativeBlockerMetadata({state:'PRIVATE_STATE',wait_event_type:'PRIVATE_WAIT',elapsed_ms:Infinity,transaction_elapsed_ms:-1});expect(bounded).toMatchObject({state:'other',wait:'other',queryElapsedMs:600000,transactionElapsedMs:0});
+ const detailed={...observation,observations:[{...observation.observations[0],blockerDetails:[{operation:blocker.operation,state:blocker.state,wait:blocker.wait,samples:1,maximumQueryElapsedMs:blocker.queryElapsedMs,maximumTransactionElapsedMs:blocker.transactionElapsedMs,blockerOperations:blocker.blockerOperations}],blockerDetailsTruncated:false}]};expect(nativeQueryObservationSchema.parse(detailed)).toEqual(detailed);expect(()=>nativeQueryObservationSchema.parse({...detailed,observations:[{...detailed.observations[0],blockerDetails:[{...detailed.observations[0].blockerDetails[0],query:'PRIVATE_SQL'}]}]})).toThrow();
  for(const extra of [{query:'PRIVATE_SQL'},{database:'PRIVATE_CUSTOMER'},{parameters:['PRIVATE_PASSWORD']},{pid:123}])expect(()=>nativeQueryObservationSchema.parse({...observation,...extra})).toThrow();
  expect(()=>nativeQueryObservationSchema.parse({...observation,observations:[{...observation.observations[0],operation:'PRIVATE_SQL'}]})).toThrow();
  expect(()=>nativeQueryObservationSchema.parse({...observation,observations:[{...observation.observations[0],wait:'PRIVATE_WAIT'}]})).toThrow();expect(JSON.stringify(observation)).not.toContain('PRIVATE_');
