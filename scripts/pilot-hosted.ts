@@ -1,3 +1,4 @@
+import {writeHostedSdkEvidence} from './pilot-hosted-journey-evidence';
 import {composeHostedByteBoundary} from './pilot-hosted-byte-composition';
 import {hostedGeneratedFilesManifestSchema,hostedLinkedReferenceSchema,verifyHostedGeneratedFiles,type HostedLinkedReference} from './pilot-hosted-generated-files';
 import {verifyHostedMaximumFileDenials} from './pilot-hosted-file-access';
@@ -54,6 +55,7 @@ export async function pilotHosted(args=process.argv.slice(2)){
  const scopePath=resolve(args[1]),runPath=resolve(args[3]);
  const scope=pilotHostedScopeSchema.parse(await readEvidence(dirname(scopePath),basename(scopePath)));
  const run=pilotRunSchema.parse(await readEvidence(dirname(runPath),basename(runPath)));
+ if(run.attempts.length||run.receipts.length||run.selectedAttempts.length||run.gateVerifications?.length)throw Error('Fresh original hosted run required before any dispatch');
  const configurationPath=resolve(args[5]);
  const configuration=hostedConfigurationSchema.parse(await readEvidence(dirname(configurationPath),basename(configurationPath)));
  if(configuration.environmentMarker!==scope.environmentMarker||configuration.projectId!==scope.projectId||configuration.teamId!==scope.teamId||!configuration.dispatcherEnabled)throw Error('Hosted configuration target or enabled dispatcher differs');
@@ -211,6 +213,11 @@ export async function pilotHosted(args=process.argv.slice(2)){
      const changed=z.object({data:z.object({availability:z.literal('source_unavailable'),progress:z.null(),checkpoints:z.array(z.object({attempts:z.array(z.object({attemptId:z.uuid(),currentCredit:z.boolean()}))}))})}).parse(await request('/api/partners/assignments/'+training.assignmentId,'GET')).data;
      if(!changed.checkpoints.some(row=>row.attempts.some(attempt=>attempt.attemptId===training.attemptId&&!attempt.currentCredit)))throw Error('Withdrawn source retained partner learning credit');
      await writeEvidence(root,'current-source-withdrawal.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),withdrawal,roles,partnerCreditWithheld:true,fullHostedCatalogVerified:false});
+    }:undefined,grantBoundary:context.role==='assigned-partner'?async()=>{
+     stage='current_grant_boundary';const current=(await readDb.query(`SELECT g.membership_id,g.revision FROM customer_grants g JOIN memberships m ON m.id=g.membership_id AND m.workspace_id=g.workspace_id AND m.active JOIN principals p ON p.id=m.principal_id AND p.active WHERE g.workspace_id=$1 AND g.customer_id=$2 AND g.state='active' AND m.kind='partner' AND p.login_name='partner'`,[scope.workspaceId,positive])).rows;if(current.length!==1)throw Error('Exact current synthetic partner grant required');
+     const body={state:'revoked',expectedRevision:Number(current[0].revision),requestKey:randomUUID()};await writeEvidence(root,'sdk-grant-revocation-intent.json',{scope,customerId:positive,membershipId:current[0].membership_id,body});
+     const roles=await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async reviewer=>{const response=z.object({data:z.object({revision:z.number().int(),state:z.literal('revoked')})}).parse(await pilotHostedRequest({scope,headers:reviewer.headers,signal})('/api/admin/grants/'+current[0].membership_id+'/'+positive,'PUT',body));if(response.data.revision!==body.expectedRevision+1)throw Error('Normal grant revision differs');},configuration,['internal-admin']);
+     const revoked=(await readDb.query('SELECT state,revision FROM customer_grants WHERE workspace_id=$1 AND membership_id=$2 AND customer_id=$3',[scope.workspaceId,current[0].membership_id,positive])).rows;if(revoked.length!==1||revoked[0].state!=='revoked'||Number(revoked[0].revision)!==body.expectedRevision+1)throw Error('Actual normal partner grant revocation unverified');await writeEvidence(root,'sdk-grant-revoked.json',{scope,customerId:positive,membershipId:current[0].membership_id,revision:body.expectedRevision+1,requestKey:body.requestKey,roles,completedAt:new Date().toISOString(),automaticRetries:0});
     }:undefined}),role:context.role});
     if(context.role==='internal-admin'){
      stage='support_boundary';
@@ -249,7 +256,8 @@ export async function pilotHosted(args=process.argv.slice(2)){
    },configuration);}finally{await readDb.end();}
   if(JSON.stringify(await platformDeployment(scope,true,signal))!==JSON.stringify(deployment)||JSON.stringify(await pilotSource())!==JSON.stringify(source)||JSON.stringify(await pilotProtectedSnapshot())!==JSON.stringify(protectedBefore))throw Error('Hosted identity or protected checkout changed');
   await writeEvidence(root,'reads.json',{contract:'pilot-hosted-role-boundaries-v1',id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,startedAt,completedAt:new Date().toISOString(),roleReads:reads,sdkJourneys,profileJourneys,conversationJourneys,browserJourneys,supportJourneys,expansionJourneys,gapJourneys,linkedJourneys,trainingJourneys,learningJourneys,maximumFiles,maximumFileDenials,normalProfileCommands:profileJourneys.reduce((sum,row)=>sum+row.normalProfileCommands,0),normalConversationCommands:conversationJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalSupportCommands:supportJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalExpansionCommands:expansionJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalGapCommands:gapJourneys.reduce((sum,row)=>sum+row.normalCommands,0),fullHostedCatalogVerified:false});
-  // Required journeys are not yet dispatched: do not return acceptance success.
+  await writeHostedSdkEvidence({directory:root,scope,run,schemaLedgerDigest});
+  // Remaining gate producers are separate: do not return full acceptance success.
   await writeEvidence(root,'blocked.json',{id,runId:run.id,...source,state:'blocked',safeFailure:'hosted_core_journey_catalog_not_complete',hostedCatalogVerified:false});
   console.info(JSON.stringify({preflight:'pass',roleReads:reads.passedCases,sdkCases:sdkJourneys.reduce((sum,row)=>sum+row.passedCases,0),hostedCatalog:'blocked',paidCalls:linkedJourneys.reduce((sum,row)=>sum+row.source.providerCalls+row.workforce.providerCalls+row.reports.providerCalls,0)}));process.exitCode=1;return receipt;
  }catch{

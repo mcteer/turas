@@ -1518,3 +1518,13 @@ records shared implementation digests and actual sizes, and explicitly leaves
 `actualReportAt10MiB:false`. A local controlled-provider component alone cannot
 establish hosted acceptance; both real post-deployment application paths remain
 required. This adds no upload, render, model or provider-execution attempt.
+
+The core hosted runner writes `sdk-run.json` and `sdk-evidence-index.json` only
+when the original normal SDK journeys complete. These are partial G19 evidence,
+not full hosted catalog acceptance. The assigned partner's current customer grant
+is revoked through the normal administrator API after source-withdrawal checks;
+its existing SDK connection must lose customer visibility before credential
+retirement. Preserve the original grant intent/revision and leave the grant
+revoked. Neither failure nor uncertain mutation authorizes an automatic retry.
+The index retains original private capture/preflight hashes, scope and execution
+intervals. All other mandatory release gates remain separately required.

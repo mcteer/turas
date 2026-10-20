@@ -18,7 +18,9 @@ export async function boundedHostedJson(response:Response){
  * fixed journey hook may use normally scoped management requests; the exact
  * role session is always revoked. Transport follows verified platform binding. */
 export type HostedRoleProofHook=(context:{role:typeof roles[number]['name'];headers:Headers;customerIds:string[];allCustomerIds:string[];partnerCustomerIds:string[]})=>Promise<void>;
-export async function runHostedReadChecks(scope:PilotHostedScope,db:Client,signal:AbortSignal,transport:typeof fetch=fetch,env:NodeJS.ProcessEnv=process.env,proveRole?:HostedRoleProofHook,expectedConfiguration?:HostedConfiguration){
+export async function runHostedReadChecks(scope:PilotHostedScope,db:Client,signal:AbortSignal,transport:typeof fetch=fetch,env:NodeJS.ProcessEnv=process.env,proveRole?:HostedRoleProofHook,expectedConfiguration?:HostedConfiguration,selectedRoles:readonly typeof roles[number]['name'][]=roles.map(row=>row.name)){
+ if(!selectedRoles.length||new Set(selectedRoles).size!==selectedRoles.length||selectedRoles.some(name=>!roles.some(row=>row.name===name)))throw Error('Exact unique trusted role selection required');
+ const checkedRoles=roles.filter(row=>selectedRoles.includes(row.name));
  if(roles.some(role=>!env[role.password]))throw Error('All explicit hosted role credentials required');
  await assertPilotDatabaseOnConnection(scope.environmentMarker,<Row extends QueryResultRow=QueryResultRow>(sql:string,values:readonly unknown[]=[])=>db.query<Row>(sql,[...values]));
  const workspace=(await db.query("SELECT classification,pilot_environment_id,active FROM workspaces WHERE id=$1",[scope.workspaceId])).rows[0];
@@ -40,7 +42,7 @@ export async function runHostedReadChecks(scope:PilotHostedScope,db:Client,signa
   if(!cleanup&&path!=='/api/auth/login'&&response.headers.get('x-turas-code-version')!==scope.sourceCommit){await response.body?.cancel();throw Error('Hosted response release version differs');}
   return response;
  }
- for(const role of roles){
+ for(const role of checkedRoles){
   signal.throwIfAborted();const expected=members.find(row=>row.login_name===role.login)!;
   const headers=new Headers({origin,'content-type':'application/json'});
   if(env.TURAS_PILOT_HOSTED_BYPASS_SECRET)headers.set('x-vercel-protection-bypass',env.TURAS_PILOT_HOSTED_BYPASS_SECRET);
@@ -100,5 +102,5 @@ export async function runHostedReadChecks(scope:PilotHostedScope,db:Client,signa
   }
   if(!revoked)throw Error('Hosted role cleanup incomplete');cases.push({id:'exact-session-revoked',role:role.name,state:'pass',status:200});
  }
- return {contract:'pilot-hosted-read-checks-v1' as const,cases,passedCases:cases.length,sessionsRevoked:roles.length,customerReferencesVerified:allIds.length,providerCalls:0,domainWritesPerformed:0,acceptedJourneysVerified:false,fullHostedCatalogVerified:false};
+ return {contract:'pilot-hosted-read-checks-v1' as const,cases,passedCases:cases.length,sessionsRevoked:checkedRoles.length,customerReferencesVerified:allIds.length,providerCalls:0,domainWritesPerformed:0,acceptedJourneysVerified:false,fullHostedCatalogVerified:false};
 }

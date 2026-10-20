@@ -1,3 +1,4 @@
+import {sdkEvidenceFixture} from '../../fixtures/pilot/sdk-evidence';
 import {rm} from 'node:fs/promises';
 import {auxiliaryFixture} from '../../fixtures/pilot/auxiliary';
 import {verifyPilotAuxiliaryEvidence} from '../../../scripts/pilot-auxiliary-evidence';
@@ -30,7 +31,7 @@ async function fixture(){
    }
    run.attempts.push({id:attemptId,gateId:gate.id,complete:true,receiptIds});run.selectedAttempts.push({gateId:gate.id,attemptId});
   }
-  input.run=pilotRunSchema.parse(run);input.digest=evidenceDigest(JSON.stringify(input.run)+'\n');inputs.push(input);bundle.runs.push({kind,directory:'/private/unit/'+slot,manifest:'run.json',digest:input.digest,...(['preview','production'].includes(kind)?{scope:targetScope}:{})});
+  if(slot==='production'){const fixture=await sdkEvidenceFixture(targetScope);roots.push(fixture.directory);const actual=await fixture.complete();const priorIds=run.attempts.filter(row=>row.gateId==='G19').flatMap(row=>row.receiptIds);run.receipts=run.receipts.filter(row=>!priorIds.includes(row.id));run.attempts=run.attempts.filter(row=>row.gateId!=='G19');run.selectedAttempts=run.selectedAttempts.filter(row=>row.gateId!=='G19');run.receipts.push(...actual.run.receipts);run.attempts.push(...actual.run.attempts);run.selectedAttempts.push(...actual.run.selectedAttempts);for(const [id,proof] of actual.proofs)input.proofs.set(id,verifyPilotProof(actual.run.receipts.find(row=>row.id===id)!,proof));input.hostedSdk=actual.verified;}input.run=pilotRunSchema.parse(run);input.digest=evidenceDigest(JSON.stringify(input.run)+'\n');inputs.push(input);bundle.runs.push({kind,directory:'/private/unit/'+slot,manifest:'run.json',digest:input.digest,...(['preview','production'].includes(kind)?{scope:targetScope}:{})});
  }
  const observed=Date.now();for(const input of inputs)for(const receipt of input.run.receipts.filter(row=>row.gateId==='G22')){receipt.completedAt=new Date(observed).toISOString();const value=proof(receipt,input.proofs.get(receipt.id)!.cases.map(row=>row.id));receipt.proofDigest=evidenceDigest(JSON.stringify(value)+'\n');input.proofs.set(receipt.id,verifyPilotProof(receipt,value));}for(let i=0;i<inputs.length;i++){inputs[i].digest=evidenceDigest(JSON.stringify(inputs[i].run)+'\n');bundle.runs[i].digest=inputs[i].digest;}return {bundle:pilotReleaseBundleSchema.parse(bundle),inputs,now:observed};
 }
@@ -60,8 +61,8 @@ it('requires the actual final release record to complete after the other origina
  const f=await fixture(),production=f.inputs.find(row=>row.kind==='production')!;for(const receipt of production.run.receipts.filter(row=>row.gateId==='G22'))receipt.completedAt=new Date(f.now-3000).toISOString();refresh(f,production);expect(evaluatePilotReleaseBundle(f.bundle,f.inputs,f.now).gates.find(row=>row.id==='G22')!.state).toBe('blocked');
 });
 
-it('retains an independently identified original Production run without forcing its run ID into another scope',async()=>{
- const f=await fixture(),production=f.inputs.find(row=>row.kind==='production')!,index=f.inputs.indexOf(production),scope={...f.bundle.production,runId:randomUUID()};production.run.id=scope.runId;production.run.scopeDigest=evidenceDigest(JSON.stringify(scope));for(const receipt of production.run.receipts){receipt.runId=scope.runId;receipt.scopeDigest=production.run.scopeDigest;}f.bundle.runs[index].scope=scope;refresh(f,production);expect(evaluatePilotReleaseBundle(f.bundle,f.inputs,f.now).technicalEligibility).toBe('eligible');
+it('retains an independently identified original Preview run without forcing its run ID into another scope',async()=>{
+ const f=await fixture(),production=f.inputs.find(row=>row.kind==='preview')!,index=f.inputs.indexOf(production),scope={...f.bundle.preview,runId:randomUUID()};production.run.id=scope.runId;production.run.scopeDigest=evidenceDigest(JSON.stringify(scope));for(const receipt of production.run.receipts){receipt.runId=scope.runId;receipt.scopeDigest=production.run.scopeDigest;}f.bundle.runs[index].scope=scope;refresh(f,production);expect(evaluatePilotReleaseBundle(f.bundle,f.inputs,f.now).technicalEligibility).toBe('eligible');
 });
 
 it('rejects forged auxiliary summaries even when their cases and digest strings match',async()=>{const f=await fixture();for(const input of f.inputs)for(const [gate,value] of input.auxiliary??[])input.auxiliary!.set(gate,{...value});const result=evaluatePilotReleaseBundle(f.bundle,f.inputs,f.now);expect(result.technicalEligibility).toBe('ineligible');expect(result.gates.find(row=>row.id==='G10')!.state).toBe('unverified');});

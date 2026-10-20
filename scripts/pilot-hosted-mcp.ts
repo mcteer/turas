@@ -7,7 +7,7 @@ import type {PilotHostedScope} from '../lib/contracts/pilot-hosted';
 /** Trusted role callback after actual cookie/membership/database binding.
  * Fixed normal management writes only; no model, mail, accepted-state writes,
  * paid retries, customer content captures or credential persistence. */
-export async function runHostedMcpJourney(input:{scope:PilotHostedScope;db:Database;headers:Headers;customerId:string;deniedCustomerId:string;signal:AbortSignal;transport?:typeof fetch;expectedEvidenceRevisionId?:string;expectedPublicationId?:string;expectedPlanId?:string;sourceBoundary?:()=>Promise<void>}){
+export async function runHostedMcpJourney(input:{scope:PilotHostedScope;db:Database;headers:Headers;customerId:string;deniedCustomerId:string;signal:AbortSignal;transport?:typeof fetch;expectedEvidenceRevisionId?:string;expectedPublicationId?:string;expectedPlanId?:string;sourceBoundary?:()=>Promise<void>;grantBoundary?:()=>Promise<void>}){
  const {scope,db,headers,customerId,deniedCustomerId,signal}=input,transport=input.transport??fetch,origin=new URL(scope.origin).origin;
  const rows=(await db.query('SELECT id,synthetic FROM customer_references WHERE workspace_id=$1 AND id=ANY($2::uuid[])',[scope.workspaceId,[customerId,deniedCustomerId]])).rows;
  if(rows.length!==2||rows.some(row=>!row.synthetic))throw Error('Exact positive and denied synthetic MCP customer scope required');
@@ -75,6 +75,12 @@ export async function runHostedMcpJourney(input:{scope:PilotHostedScope;db:Datab
    await withheld('turas_plan_read_v1',{customerId,planId:selectedPlan.planId});
    await withheld('turas_report_read_v1',{customerId,reportId:reports.data.items[0].reportId});
   }
+  if(input.grantBoundary){
+   await input.grantBoundary();
+   const identity=mcpToolOutputs.turas_identity_v1.parse(await call('turas_identity_v1',{}));if(identity.status!=='available'||identity.data.workspaceId!==scope.workspaceId)throw Error('Still-authorized SDK identity after customer revocation required');cases.push('identity-after-grant-revocation');
+   const customers=mcpToolOutputs.turas_customers_list_v1.parse(await call('turas_customers_list_v1',{limit:20}));if(customers.status!=='empty'||customers.data.items.length||customers.nextCursor!==null)throw Error('Revoked customer retained in SDK listing');cases.push('customer-list-after-grant-revocation');
+   const profile=mcpToolOutputs.turas_profile_read_v1.parse(await call('turas_profile_read_v1',{customerId,section:'facts',limit:20}));if(profile.status!=='unavailable'||profile.reason!=='not_found'||profile.data!==null||profile.nextCursor!==null)throw Error('Revoked customer profile was disclosed');cases.push('profile-denied-after-grant-revocation');
+  }
   await management('/api/mcp/connections/'+connectionId+'/revoke','POST',{requestKey:randomUUID(),expectedConnectionId:connectionId});revoked=true;
   lastStatus=undefined;let deniedAfterRevoke=false;try{await client.callTool({name:'turas_identity_v1',arguments:{}},{signal,timeout:10000});}catch{deniedAfterRevoke=lastStatus===401;}if(!deniedAfterRevoke)throw Error('SDK revocation denial unverified');cases.push('revoked-credential');
  }finally{
@@ -84,5 +90,5 @@ export async function runHostedMcpJourney(input:{scope:PilotHostedScope;db:Datab
    if(connectionId){const row=(await db.query('SELECT workspace_id,revoked_at FROM mcp_connections WHERE id=$1',[connectionId])).rows[0];if(row?.workspace_id!==scope.workspaceId||!row.revoked_at)throw Error('Exact SDK credential cleanup unverified');}
   }finally{credential=undefined;await client?.close();}
  }
- return {contract:'pilot-hosted-sdk-journey-v1',journey:'J015',cases:cases.map(id=>({id,state:'pass' as const})),passedCases:cases.length,credentialRevoked:true,providerCalls:0,domainAcceptedStateWrites:0};
+ return {contract:'pilot-hosted-sdk-journey-v1',journey:'J015',customerId,deniedCustomerId,connectionId,sourceBoundaryVerified:Boolean(input.sourceBoundary),grantBoundaryVerified:Boolean(input.grantBoundary),cases:cases.map(id=>({id,state:'pass' as const})),passedCases:cases.length,credentialRevoked:true,providerCalls:0,domainAcceptedStateWrites:0};
 }

@@ -93,7 +93,11 @@
         "unit.auxiliary-evidence.002",
         "unit.auxiliary-evidence.003",
         "unit.auxiliary-evidence.004",
-        "unit.auxiliary-evidence.005"
+        "unit.auxiliary-evidence.005",
+        "unit.sdk-evidence.001",
+        "unit.sdk-evidence.002",
+        "unit.sdk-evidence.003",
+        "unit.sdk-evidence.004"
       ]
     },
     {
@@ -157,7 +161,8 @@
         "integration.sessions.009",
         "unit.pilot-login-selection.001",
         "unit.pilot-login-selection.002",
-        "unit.hosted-configuration.005"
+        "unit.hosted-configuration.005",
+        "integration.hosted-sdk.007"
       ]
     },
     {

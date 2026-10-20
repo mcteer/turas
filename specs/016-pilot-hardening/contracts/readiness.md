@@ -126,3 +126,15 @@ samples/population/timings/query counters, and replays every named four-project 
 discovery/result validator. Original source/environment/manifest/proof/raw-artifact
 hashes must agree. Existing single-scope checks also require this typed auxiliary
 verification. An individual component run need not pretend to cover all 22 gates.
+
+`pilot-hosted-sdk-evidence-v1` binds the original hosted `reads.json` and
+schema/grant `preflight.json` bytes to a partial G19 run. The exact member
+inventory has twelve cases; the assigned-partner inventory additionally includes
+seven current-source cases and three current-grant cases. Case IDs retain both
+capture digests, original times and exact role. Distinct original connection IDs,
+customer scope, deployment and actual credential retirement are required. The
+normal admin grant mutation is revision-bound and retains its original intent;
+there are no automatic retries or restoration of the revoked customer grant.
+The release-bundle evaluator accepts only privately validated immutable SDK
+results bound to the selected original receipts. This partial run supplies G19
+only; other gates and full hosted readiness remain independently required.

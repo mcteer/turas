@@ -273,3 +273,11 @@ No hosted target may be locked for release before its measured reopen path exist
   executor/observer cases pass and independent review found no scoped blocker.
   Actual cloud suspension/timeout/cleanup remains required by T090; the local
   emulated-image attempt is retained as unverified.
+
+- [X] T103 Produce and verify separately scoped canonical G19 receipts from actual
+  SDK role captures; exercise normal assigned-partner grant revocation, preserve
+  original capture/preflight digests and times, require exact named inventories,
+  distinct connection identities and verified retirement, and reject forged
+  validation provenance. Seven owned SDK cases and fifteen producer/bundle cases
+  pass. Actual hosted G19 execution and remaining core/partner/release receipts
+  remain within T089/T092; full readiness is not established.

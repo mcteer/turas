@@ -1229,14 +1229,15 @@
     },
     {
       "file": "tests/integration/pilot/hosted-sdk.test.ts",
-      "expectedCases": 6,
+      "expectedCases": 7,
       "cases": [
         "executes every category and citation through the actual pinned SDK and revokes its credential",
         "fails on withdrawn current evidence and still cleans its exact credential",
         "reconciles and revokes a created credential when its creation body is damaged",
         "reviews, corrects and retracts a synthetic profile through ordinary HTTP commands",
         "uses the original command receipt after an uncertain mutation response without repeating the mutation",
-        "rejects a customer outside the fixed synthetic workspace before any HTTP dispatch"
+        "rejects a customer outside the fixed synthetic workspace before any HTTP dispatch",
+        "withholds a normally revoked partner customer from an existing actual SDK connection and retires its credential"
       ]
     },
     {
@@ -2006,7 +2007,7 @@
         "rejects missing original scoped references and different source bundles",
         "does not let an older success conceal the latest failed complete scoped attempt",
         "requires the actual final release record to complete after the other original checks",
-        "retains an independently identified original Production run without forcing its run ID into another scope",
+        "retains an independently identified original Preview run without forcing its run ID into another scope",
         "rejects forged auxiliary summaries even when their cases and digest strings match",
         "rejects duplicate reference identities and non-bijective input inventories"
       ]
@@ -2029,6 +2030,16 @@
         "executes the emitted observer against exact NUL-delimited proc identities without emitting the scan receipt",
         "refuses ambiguous or changed process identities before issuing a signal",
         "refuses self and differently pinned parser processes without a replacement execution"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/sdk-evidence.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "binds complete SDK role receipts to the original execution scope time and capture bytes while leaving other gates absent",
+        "refuses partial SDK case inventories even when a claimed positive count is unchanged",
+        "refuses a different actual serving deployment before producing role receipts",
+        "refuses changed original capture bytes and changed scoped receipt attribution"
       ]
     }
   ],

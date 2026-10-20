@@ -5652,3 +5652,28 @@ identified as J014. Six generated-file adapter cases and the actual owned HTTP
 linked report/support/expansion/gap/withdrawal case pass; pilot typecheck passes.
 Independent read-only review found no concrete caller or identity regression.
 Actual hosted behavior remains pending.
+
+The actual owned pinned SDK driver now exercises a current assigned-partner grant
+revocation through the normal admin PUT API: the existing connection retains its
+workspace identity, lists no revoked customer, withholds its profile, and then
+retires its exact credential. Seven owned HTTP/SDK cases pass. The first new
+fixture attempt exposed a stale synthetic report after changing its grant
+inventory; its controlled report read-state was rebuilt against that inventory
+and the complete seven-case suite passed. This fixture is not hosted publication
+proof. No normal hosted authorization rule was relaxed.
+
+A partial G19 producer now binds the complete twelve-case member and twenty-two-
+case assigned-partner SDK inventories to original capture/preflight byte digests,
+actual scope/deployment/schema/grants, distinct connections, current source/grant
+boundaries and original execution intervals. Four producer/integrity regressions
+and eleven release-bundle regressions pass. Readiness and ordered verification
+reopen typed original evidence; the exported bundle evaluator requires frozen
+private validation provenance. Independent scoped review found no concrete
+blocker. Main still records full hosted acceptance as blocked; G17/G18 and all
+other mandatory gates remain separately required. Inventory:979 cases/177 suites.
+
+CI on23d9b75 recorded a native-operations knowledge approval failure with SQLSTATE
+57014 and subsequent UI timeout. The exact local disposable native-operations
+command passed, with zero deadlocks/statement timeouts and zero paid calls. The
+original CI failure is retained; its cause remains unresolved and the local pass
+does not establish that it is fixed.
