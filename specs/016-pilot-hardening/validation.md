@@ -5859,3 +5859,11 @@ Provider calls:0. Root typecheck and docs pass. Independent read-only review fou
 no scoped blocker. This is local actual-runtime evidence; current final-source CI
 and hosted release remain required. Private log:
 `local-artifacts/016/native-hydration-owned-knowledge-private.log`.
+
+The139ad1a actual CI diagnostic narrows SQL57014 to `ordinary-prepare`
+(5268ms), before the intervening attempt is created. The independently passing
+owned full `--knowledge` run does not resolve this CI-only failure. Fixed inner
+prepare boundaries now distinguish feature/environment/owner/admission/planning/
+context/source/replay/quota/write steps without SQL text or values. Root typecheck
+and three diagnostic privacy cases pass. Original timeouts, locks, quotas and
+dispatch behavior remain unchanged.

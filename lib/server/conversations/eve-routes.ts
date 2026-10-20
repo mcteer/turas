@@ -1,3 +1,4 @@
+import type {PrepareAttemptBoundary} from './dispatch';
 import {assertNativeFileEvaluationOpen} from './native-file-policy';
 import {inputResponsesSchema,authorizeOwnedInputResponse,implicitOwnedQuestionResponse} from "./input-responses";
 import {prepareOrdinarySteering,recordSteeringReceipt,markSteeringUncertain} from './steering';
@@ -33,7 +34,7 @@ const sendSchema = z.object({ message: z.union([z.string(),ordinaryNativeMessage
   turnPolicy:z.enum(['queue','steer']).optional() }).strict();
 const nativeSessionSchema = z.object({ ok: z.literal(true), sessionId: z.string().min(1) }).passthrough();
 
-type NativeBoundaryOperation='native-route'|'session'|'implicit-question'|'ordinary-owner'|'ordinary-worker'|'ordinary-prepare'|'ordinary-tail'|'ordinary-dispatch'|'ordinary-forward'|'input-owner'|'input-authority'|'input-worker'|'input-context'|'input-forward';
+type NativeBoundaryOperation=PrepareAttemptBoundary|'native-route'|'session'|'implicit-question'|'ordinary-owner'|'ordinary-worker'|'ordinary-prepare'|'ordinary-tail'|'ordinary-dispatch'|'ordinary-forward'|'input-owner'|'input-authority'|'input-worker'|'input-context'|'input-forward';
 function nativeFailure(error: unknown,operation:NativeBoundaryOperation='native-route',elapsedMs?:number): Response {
   const known = error instanceof HttpFailure;
   if (!known) {
@@ -211,7 +212,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
               }
             }
             nativeOperation='ordinary-prepare';const prepared = await prepareAttempt(session, conversationId!, args.params.sessionId,
-              requestKey!, message, selections);
+              requestKey!, message, selections,undefined,stage=>{nativeOperation=stage;});
             attemptId = prepared.attemptId;
             if (!prepared.created && prepared.dispatchState !== "prepared") {
               const receipt = await getAttemptReceipt(session, conversationId!, attemptId);
