@@ -24,12 +24,12 @@ export function gapUiClientDiagnostic(value:unknown){
  const errors=Array.isArray(row.errors)?row.errors.filter((item):item is string=>typeof item==='string'&&['chunk_load','hydration','type','reference','syntax','other'].includes(item)).slice(-10):[];
  const routes=/^(?:session|login|canonicalization|report-(?:handoffs|previews|decisions|cancel|exports|detail|registry)|request-status|customer-workloads|evidence|gap-(?:impacts|revisions|previews|decisions|registry|detail))$/;
  const failedRequests=Array.isArray(row.failedRequests)?row.failedRequests.filter((item):item is string=>typeof item==='string'&&routes.test(item)).slice(-30):[];
- return {errors,failedRequests};
+ return {errors,failedRequests,...Object.fromEntries(['mutationRequests','mainNavigations'].filter(key=>Number.isSafeInteger(row[key])&&Number(row[key])>=0&&Number(row[key])<=1000000).map(key=>[key,row[key]]))};
 }
 /** Fixed shape only: form values, labels and validation prose never leave private reports. */
 export function gapUiInteractionDiagnostic(value:unknown){
  if(!value||typeof value!=='object')return undefined;const row=value as Record<string,unknown>,counts:Record<string,number>={};
- if(row.counts&&typeof row.counts==='object')for(const key of ['focus','blur','hidden','visible','submits','invalidEvents']){const n=(row.counts as Record<string,unknown>)[key];if(typeof n==='number'&&Number.isSafeInteger(n)&&n>=0&&n<=1000000)counts[key]=n;}
+ if(row.counts&&typeof row.counts==='object')for(const key of ['focus','blur','hidden','visible','submits','invalidEvents','gapSubmits','gapBubble','gapPreventedBubble','gapPreventedMicrotask','gapDisconnectedMicrotask','gapReactHandlerPresent']){const n=(row.counts as Record<string,unknown>)[key];if(typeof n==='number'&&Number.isSafeInteger(n)&&n>=0&&n<=1000000)counts[key]=n;}
  const names=['observedAt','resolvedAt','consequences','workaroundBurden','severityRationale','title','problem','workflow','desiredOutcome'];
  const controls=Array.isArray(row.controls)?row.controls.slice(0,30).flatMap(item=>{if(!item||typeof item!=='object'||!names.includes(item.name))return [];return [{name:item.name,...Object.fromEntries(['valuePresent','valid','valueMissing','badInput','typeMismatch','stepMismatch'].filter(key=>typeof item[key]==='boolean').map(key=>[key,item[key]]))}];}):[];
  return {counts,controls,...Object.fromEntries(['impactFormPresent','submitDisabled'].filter(key=>typeof row[key]==='boolean').map(key=>[key,row[key]])),alerts:Array.isArray(row.alerts)?row.alerts.filter(item=>['schema_validation','known_domain_denial','other'].includes(item)).slice(0,5):[]};
