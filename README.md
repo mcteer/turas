@@ -115,6 +115,10 @@ concurrency checks and the actual unpaid native-operations/WebKit fixture pass
 locally. The partner guide journey now waits for completed command acknowledgments
 and exact review states before switching roles; its full48-case WebKit matrix passes
 locally. Current-source CI and hosted recovery remain pending.
+The forecast handoff journey waits for the rendered reporting period and verifies
+the actual utilization request's dates, resource and HTTP response. Its twelve
+handoff cases pass across four WebKit projects. CI diagnostics expose only fixed
+scope-match flags and allowlisted states; private response text stays private.
 Current Production remains released `f8d196f` on schema077. Its host firewall
 allows four exact current hosts; direct current-bypass probes against653 older
 hosts are denied, while protection redirects leave strict old-host closure
@@ -305,11 +309,11 @@ disabled. See [learning operations](docs/learning-operations.md), the
 
 Feature 016 has a [specification](specs/016-pilot-hardening/spec.md),
 [implementation plan](specs/016-pilot-hardening/plan.md) and
-[97 tasks](specs/016-pilot-hardening/tasks.md) for a controlled internal and
+[tracked tasks](specs/016-pilot-hardening/tasks.md) for a controlled internal and
 assigned-partner pilot. The plan covers a synthetic Production pilot workspace,
 workspace-bound sessions, durable private files and hosted processing, recovery,
 retention, access, operating limits and attributable user feedback. Implementation
-is in progress, with 64 of 94 tasks complete. The complete local catalog passed
+and operating acceptance remain in progress. The historical local catalog passed
 640/640 named cases and all 43 required CI jobs passed at `08ef152`; full
 predecessor composition, WebKit, recovery/lifecycle and build gates are green.
 Owned load, dependency-fault and encrypted capture checks are recorded in the

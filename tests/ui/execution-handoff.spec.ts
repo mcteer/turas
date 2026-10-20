@@ -34,7 +34,18 @@ test("forecast shows exact lifetime and period quantities, reviewed estimate inp
   await page.getByRole("button",{name:"Confirm reviewed decision",exact:true}).focus();await page.keyboard.press("Enter");await expect(record.getByText("accepted",{exact:true})).toBeVisible();
   await expect(forecast.locator(".execution-metric").filter({has:page.getByText("Forecast Total",{exact:true})})).toContainText("75 min");
   await page.getByLabel("Period start",{exact:true}).fill(f.date);await page.getByLabel("Period end",{exact:true}).fill(f.date);await page.getByRole("button",{name:"Apply period",exact:true}).click();
-  const utilization=page.getByRole("region",{name:"Actual Utilization",exact:true});await utilization.getByRole("checkbox").first().check();await utilization.getByRole("button",{name:"Calculate actual utilization",exact:true}).click();
+  await expect(forecast.getByText(`${f.date} through ${f.date}, using each approved time entry’s captured service date.`,{exact:true})).toBeVisible();
+  await expect(forecast.locator(".execution-metric").filter({has:page.getByText("Period Actual",{exact:true})})).toContainText("60 min");
+  const utilization=page.getByRole("region",{name:"Actual Utilization",exact:true});await utilization.getByRole("checkbox").first().check();
+  const [usageResponse]=await Promise.all([
+    page.waitForResponse(response=>new URL(response.url()).pathname==="/api/execution/utilization"&&response.request().method()==="GET"),
+    utilization.getByRole("button",{name:"Calculate actual utilization",exact:true}).click(),
+  ]);
+  const usageQuery=new URL(usageResponse.url()).searchParams,usage=await usageResponse.json();
+  const percentage=usage.data?.total?.percentage,state=usage.data?.total?.state,errorCode=usage.error?.code;
+  const code=(value:unknown)=>typeof value==="string"&&/^[a-z_]{1,64}$/.test(value)?value:null;
+  await testInfo.attach("utilization-scope",{body:JSON.stringify({status:usageResponse.status(),fromMatches:usageQuery.get("from")===f.date,toMatches:usageQuery.get("to")===f.date,resourceMatches:usageQuery.get("resourceIds")===f.resourceId,percentage:typeof percentage==="string"&&/^\d{1,12}\.\d{2}$/.test(percentage)?percentage:null,state:code(state),errorCode:code(errorCode)}),contentType:"application/json"});
+  expect(usageQuery.get("from")).toBe(f.date);expect(usageQuery.get("to")).toBe(f.date);expect(usageQuery.get("resourceIds")).toBe(f.resourceId);expect(usageResponse.status()).toBe(200);
   await expect(utilization.getByText("12.50%",{exact:true})).toBeVisible();
   expect((await page.request.get(`/api/execution/utilization?from=${f.date}&to=${f.date}&resourceIds=${f.resourceId},${f.resourceId}`)).status()).toBe(400);
   expect((await page.request.get(`/api/execution/engagements/${f.engagementId}/summary?from=${f.date}&to=${f.date}&extra=1`)).status()).toBe(400);

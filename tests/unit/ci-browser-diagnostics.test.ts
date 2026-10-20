@@ -1,6 +1,6 @@
 import {processFailureMetadata,setupFailureMetadata} from '../../scripts/ci-process-diagnostics';
 import {describe,expect,it} from 'vitest';
-import {browserFailureMetadata} from '../../scripts/ci-browser-diagnostics';
+import {browserFailureMetadata,fixedUtilizationMetadata} from '../../scripts/ci-browser-diagnostics';
 import {nativeQueryOperation,nativeQueryObservationSchema,nativeBlockerMetadata} from '../../scripts/ci-native-query-observer';
 const allowed=new Set(['mcp-accessibility.spec.ts']);
 describe('private browser failure diagnostics',()=>{
@@ -21,6 +21,25 @@ describe('private browser failure diagnostics',()=>{
   const results=browserFailureMetadata(raw,allowed);expect(results).toHaveLength(30);
   expect(results.every(row=>row.file==='mcp-accessibility.spec.ts'&&row.line===0&&row.column===0&&row.project==='unknown'&&row.durationMs===null&&row.category==='test_timeout')).toBe(true);
   expect(JSON.stringify(results)).not.toContain('PRIVATE_');
+  const scope={status:200,fromMatches:true,toMatches:true,resourceMatches:false,percentage:'0.00',state:'incomplete',errorCode:null};
+  const attachment=(body:unknown)=>({name:'utilization-scope',contentType:'application/json',body:Buffer.from(JSON.stringify(body)).toString('base64')});
+  const report=(attachments:unknown[],file='execution-handoff.spec.ts')=>({suites:[{specs:[{file,tests:[{projectName:'webkit-mobile-light',results:[{status:'failed',attachments}]}]}]}]});
+  const files=new Set(['execution-handoff.spec.ts','mcp-accessibility.spec.ts']);
+  const usage=browserFailureMetadata(report([attachment(scope)]),files)[0].utilization;
+  expect(usage).toEqual({status:200,fromMatches:true,toMatches:true,resourceMatches:false,percentageIsExpected:false,state:'incomplete',errorCode:null});
+  expect(fixedUtilizationMetadata(usage)).toEqual(usage);
+  const privateCodes=browserFailureMetadata(report([attachment({...scope,percentage:'12.50',state:'PRIVATE_STATE',errorCode:'private_customer_token'})]),files);
+  expect(privateCodes[0].utilization).toMatchObject({percentageIsExpected:true,state:'other',errorCode:'other'});expect(JSON.stringify(privateCodes)).not.toContain('private_customer_token');expect(JSON.stringify(privateCodes)).not.toContain('PRIVATE_');
+  for(const rejected of [
+    {name:'utilization-scope',contentType:'application/json',path:'/PRIVATE_PATH'},
+    {name:'PRIVATE_NAME',contentType:'application/json',body:attachment(scope).body},
+    {name:'utilization-scope',contentType:'text/plain',body:attachment(scope).body},
+    {name:'utilization-scope',contentType:'application/json',body:Buffer.from('PRIVATE_MALFORMED').toString('base64')},
+    attachment({...scope,extra:'PRIVATE_TOKEN'}),attachment({...scope,percentage:'PRIVATE_PERCENTAGE'}),attachment({...scope,fromMatches:'PRIVATE_BOOL'}),attachment({...scope,status:999}),attachment({...scope,state:'x'.repeat(4096)}),
+  ])expect(browserFailureMetadata(report([rejected]),files)[0].utilization).toBeUndefined();
+  expect(browserFailureMetadata(report([attachment(scope)],'mcp-accessibility.spec.ts'),files)[0].utilization).toBeUndefined();
+  expect(fixedUtilizationMetadata({...usage,state:{toString:()=> 'complete'}})).toBeUndefined();
+  expect(fixedUtilizationMetadata({...usage,extra:'PRIVATE_TOKEN'})).toBeUndefined();
  });
 });
 

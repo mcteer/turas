@@ -6236,3 +6236,29 @@ pass. The initial failed CI/local runs remain retained. One initial correction r
 was explicitly interrupted after the matcher source changed; it is not a pass.
 A new exact-source full catalog and CI are still required before release; no
 hosted recovery or Production behavior is inferred from these local checks.
+
+
+### Forecast utilization response boundary (2026-10-20)
+
+The df10dfb execution WebKit CI job failed its mobile-light forecast journey at
+the visible 12.50% utilization assertion after 59,002 ms. This is an actual failed
+case, not evidence of a calculation defect. An initial local attempt stopped in
+setup because the recovery checkout has no .env.local; it never ran the case.
+The unchanged journey then passed all three mobile-light handoff cases on an
+owned PostgreSQL 18 source with no retries. The prior CI cause is not established.
+
+The fixture now waits for the exact selected dates and period actual of 60 minutes
+after applying the period, registers a utilization GET response before clicking,
+and verifies the actual date/resource scope and HTTP 200 before the existing
+12.50% visible-result assertion. The case limit of 240 seconds, assertions of 30 seconds
+and zero retries remain unchanged. The complete handoff matrix passes 12/12 across
+four WebKit projects with no failures or skips. Product calculations, resource
+selection and calendar setup remain unchanged; no unobserved cause is asserted.
+
+A narrowly scoped CI diagnostic decodes only the fixed inline utilization
+attachment, bounded to 2 KiB. It publishes status, whether dates and resource match the fixture, whether
+the result equals the expected percentage and allowlisted states/error codes. Attachment paths,
+raw response text, percentages, labels and identifiers are excluded. Malformed,
+oversized, path-only and private-token vectors and repeated sanitization pass
+inside the existing three-test diagnostic unit suite. Root typecheck passes.
+Full CI and catalog checks for the new commit and actual hosted acceptance remain required.
