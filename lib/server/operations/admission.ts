@@ -147,6 +147,8 @@ export async function withOperationalProviderIo<T>(run:()=>Promise<T>,signal?:Ab
  if(rows.length!==1||rows[0].environment_id!==environmentId||!Number.isSafeInteger(Number(rows[0].schema_version))||Number(rows[0].schema_version)<1)throw new HttpFailure(503,'recovery_locked','Service temporarily unavailable');
  const version=Number(rows[0].schema_version);
  if(version<=77){signal?.throwIfAborted();return run();}
- if(version!==79)throw new HttpFailure(503,'recovery_locked','Service temporarily unavailable');
+ if(version!==79||!await operationalAdmissionOpen())throw new HttpFailure(503,'recovery_locked','Service temporarily unavailable');
+ // Refuse closed service before waiting on an owner's exclusive decision lock.
+ // The canonical IO fence still rechecks admission after acquiring its lock.
  return withOperationalIo(()=>{signal?.throwIfAborted();return run();});
 }

@@ -28,7 +28,7 @@ import {closeRuntimePool} from '../../../lib/server/db/client';
 import {retireOwnedLegacyRuntime} from '../../../lib/server/operations/runtime-retirement';
 import {requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
 import {withWorkRecoveryReadDeadline,withLockedWorkRecoveryDecision,withLockedWorkRecoveryTarget,requireLockedWorkRecoveryConnection} from '../../../lib/server/operations/locked-work-recovery-target';
-const state=vi.hoisted(()=>({connections:new Map<string,string>(),blobObjects:new Map<string,Uint8Array>(),retainedKey:null as Uint8Array|null,platformChanged:false,sourceChanged:false,dirty:false,cleanupUnavailable:false,directorySyncFailurePath:null as string|null,commit:'a'.repeat(40),digest:'b'.repeat(64),catalog:'c'.repeat(64)}));
+const state=vi.hoisted(()=>({connections:new Map<string,string>(),blobObjects:new Map<string,Uint8Array>(),retainedKey:null as Uint8Array|null,platformChanged:false,sourceChanged:false,dirty:false,cleanupUnavailable:false,directorySyncFailurePath:null as string|null,hostedTarget:'preview' as 'preview'|'production',commit:'a'.repeat(40),digest:'b'.repeat(64),catalog:'c'.repeat(64)}));
 // Actual owned PostgreSQL; only cloud transport/DNS and source attribution are
 // controlled. These checks do not establish hosted platform acceptance.
 vi.mock('node:fs/promises',async original=>{
@@ -43,14 +43,14 @@ vi.mock('../../../lib/server/operations/database-binding',async original=>{const
 vi.mock('../../../scripts/pilot-source',()=>({pilotSource:async()=>({sourceCommit:state.sourceChanged?'d'.repeat(40):state.commit,sourceDigest:state.digest,catalogDigest:state.catalog})}));
 vi.mock('../../../scripts/pilot-database-safety-copy',async original=>{const actual=await original<typeof import('../../../scripts/pilot-database-safety-copy')>();return {...actual,verifyDatabaseSafetySourceBinding:async()=>({platformConnectionBindingVerified:true}),readWorkRecoveryKey:async()=>{if(!state.retainedKey)throw Error('Controlled archive key absent');return Buffer.from(state.retainedKey);}};});
 vi.mock('../../../scripts/pilot-neon-archive',async original=>{const actual=await original<typeof import('../../../scripts/pilot-neon-archive')>();return {...actual,verifyWorkNeonDestination:async()=>({controlledProviderIdentity:true})};});
-vi.mock('node:child_process',async original=>{const actual=await original<typeof import('node:child_process')>(),{promisify}=await import('node:util');const execute=((...args:unknown[])=>Reflect.apply(actual.execFile,actual,args)) as typeof actual.execFile;Object.defineProperty(execute,promisify.custom,{value:async(command:string,args:string[],options:unknown)=>{if(command==='git'&&args[0]==='status')return {stdout:state.dirty?' M authored-source.ts':'',stderr:''};if(command!=='vercel')return (promisify(actual.execFile) as Function)(command,args,options);return {stdout:JSON.stringify({id:state.platformChanged?'dpl_changed':'dpl_recovery',projectId:'prj_recovery',ownerId:'team_recovery',readyState:'READY',target:null,meta:{githubCommitSha:state.commit}}),stderr:''};}});return {...actual,execFile:execute};});
+vi.mock('node:child_process',async original=>{const actual=await original<typeof import('node:child_process')>(),{promisify}=await import('node:util');const execute=((...args:unknown[])=>Reflect.apply(actual.execFile,actual,args)) as typeof actual.execFile;Object.defineProperty(execute,promisify.custom,{value:async(command:string,args:string[],options:unknown)=>{if(command==='git'&&args[0]==='status')return {stdout:state.dirty?' M authored-source.ts':'',stderr:''};if(command!=='vercel')return (promisify(actual.execFile) as Function)(command,args,options);return {stdout:JSON.stringify({id:state.platformChanged?'dpl_changed':'dpl_recovery',projectId:'prj_recovery',ownerId:'team_recovery',readyState:'READY',target:state.hostedTarget==='production'?'production':null,meta:{githubCommitSha:state.commit}}),stderr:''};}});return {...actual,execFile:execute};});
 vi.mock('@vercel/blob',async original=>({...await original<typeof import('@vercel/blob')>(),
  get:async(key:string,options:Record<string,unknown>)=>{if(options.storeId!=='syntheticStore'||options.oidcToken!=='synthetic.oidc.identity'||'token' in options)throw Error('Exact controlled OIDC store binding required');const bytes=state.blobObjects.get(key);return bytes?{statusCode:200,blob:{pathname:key,size:bytes.length},stream:new ReadableStream({start(controller){controller.enqueue(Uint8Array.from(bytes));controller.close();}})}:null;},
  list:async(options:Record<string,unknown>)=>{if(options.storeId!=='syntheticStore'||options.oidcToken!=='synthetic.oidc.identity'||'token' in options)throw Error('Exact controlled OIDC store binding required');const rows=[...state.blobObjects].filter(([key])=>key.startsWith(String(options.prefix))).map(([pathname,bytes])=>({pathname,size:bytes.length,uploadedAt:new Date('2026-01-01T00:00:00Z')}));if(rows.length>Number(options.limit))throw Error('Controlled fixture page overflow');return {blobs:rows,hasMore:false};},
 }));
 vi.mock('../../../lib/server/operations/managed-edge-transport',()=>({managedEdgeRead:async(input:{host:string;headers:Record<string,string>;query?:string;signal:AbortSignal})=>{input.signal.throwIfAborted();const response=await fetch('https://'+input.host+'/api/auth/session'+(input.query??''),{method:'GET',headers:input.headers,redirect:'manual',signal:input.signal});return {status:response.status,headers:response.headers,body:Buffer.from(await response.arrayBuffer())};},pinManagedControlEdge:()=>Object.freeze({contract:'controlled-edge-pin'})}));
-async function fixture(run:(input:Parameters<typeof withLockedWorkRecoveryTarget>[0])=>Promise<void>,beforeLock?:(owner:Client)=>Promise<void>){
- state.blobObjects.clear();state.connections.clear();state.platformChanged=false;state.sourceChanged=false;state.dirty=false;state.cleanupUnavailable=false;
+async function fixture(run:(input:Parameters<typeof withLockedWorkRecoveryTarget>[0])=>Promise<void>,beforeLock?:(owner:Client)=>Promise<void>,hostedTarget:'preview'|'production'='preview'){
+ state.hostedTarget=hostedTarget;state.blobObjects.clear();state.connections.clear();state.platformChanged=false;state.sourceChanged=false;state.dirty=false;state.cleanupUnavailable=false;
  await withAuthorityEnvironment(async(owner,runtime,environmentId)=>{
   if(beforeLock)await beforeLock(owner);
   const locked=await lockAuthorityTarget(owner,environmentId),scope={environmentId,recoveryId:locked.recoveryId,controlRevision:locked.controlRevision},password=randomBytes(32).toString('base64url');await closeRuntimePool();await runtime.end();await retireOwnedLegacyRuntime(owner,{...scope,password});
@@ -60,8 +60,8 @@ async function fixture(run:(input:Parameters<typeof withLockedWorkRecoveryTarget
   state.connections.set(ownerUrl.href,selected);state.connections.set(runtimeUrl.href,actualRuntime.href);
   const root=await mkdtemp(resolve('local-artifacts/016/locked-work-target-'));
   try{
-   const sourceFile=join(root,'source.json');await writeFile(sourceFile,JSON.stringify({contract:'pilot-database-safety-source-v1',projectId:'prj_recovery',environmentId,target:'preview',schemaVersion:79,connectionBinding:'platform-readable',databaseUrl:ownerUrl.href}),{mode:0o600});
-   await run({sourceFile,scope,runtimeConnection:runtimeUrl.href,signal:AbortSignal.timeout(150000),deadline:Date.now()+140000,hostedScope:{contract:'pilot-hosted-scope-v1',runId:randomUUID(),projectId:'prj_recovery',teamId:'team_recovery',deploymentId:'dpl_recovery',origin:'https://recovery.vercel.app',environmentMarker:environmentId,workspaceId:randomUUID(),target:'preview',sourceCommit:state.commit,sourceDigest:state.digest,catalogDigest:state.catalog}});
+   const sourceFile=join(root,'source.json');await writeFile(sourceFile,JSON.stringify({contract:'pilot-database-safety-source-v1',projectId:'prj_recovery',environmentId,target:hostedTarget,schemaVersion:79,connectionBinding:'platform-readable',databaseUrl:ownerUrl.href}),{mode:0o600});
+   await run({sourceFile,scope,runtimeConnection:runtimeUrl.href,signal:AbortSignal.timeout(150000),deadline:Date.now()+140000,hostedScope:{contract:'pilot-hosted-scope-v1',runId:randomUUID(),projectId:'prj_recovery',teamId:'team_recovery',deploymentId:'dpl_recovery',origin:'https://recovery.vercel.app',environmentMarker:environmentId,workspaceId:randomUUID(),target:hostedTarget,sourceCommit:state.commit,sourceDigest:state.digest,catalogDigest:state.catalog}});
   }finally{await rm(root,{recursive:true,force:true});state.connections.clear();state.platformChanged=false;state.sourceChanged=false;state.dirty=false;state.cleanupUnavailable=false;}
  });
 }
@@ -697,3 +697,33 @@ it('binds an unrelated released Production pool with durable owner nonces and re
   });}finally{await peer.end();}
  },{postgresMajor:18,priorSchema:77,deadlineMs:240000});
 },270000);
+
+
+it('measures authenticated positive cron refusal under the real owner decision and rejects copied reused and false response proofs',async()=>{for(const environment of ['preview','production'] as const)await fixture(async input=>{
+ const {measureWorkCronAdmission,requireMeasuredWorkCronAdmission}=await import('../../../lib/server/operations/work-cron-admission');
+ const {GET:researchMaintenance}=await import('../../../app/api/internal/research-maintenance/route');
+ const {authorizeHeavyDispatch,assertHostedDispatchReady}=await import('../../../lib/server/operations/dispatch');
+ const {failure,success}=await import('../../../lib/contracts/http');
+ const secret=randomBytes(32).toString('base64url'),prior=process.env.CRON_SECRET;process.env.CRON_SECRET=secret;
+ let calls=0,metadataCalls=0,corrupt=false,changedCron=false;
+ const transport=vi.spyOn(globalThis,'fetch').mockImplementation(async(url,options)=>{
+  const request=new Request(url,options),address=new URL(request.url);
+  if(address.origin==='https://api.vercel.com'){
+   metadataCalls++;if(address.pathname==='/v9/projects/prj_recovery')return Response.json({id:'prj_recovery',accountId:'team_recovery',targets:{production:{id:'dpl_recovery'}},crons:{deploymentId:'dpl_recovery',definitions:[['/eve/v1/turas/watchdog','* * * * *'],['/api/internal/research-maintenance',changedCron?'* * * * *':'17 3 * * *'],['/eve/v1/turas/jobs','* * * * *']].map(([path,schedule])=>({path,schedule,host:'recovery.vercel.app'}))}});
+   if(address.pathname==='/v13/deployments/dpl_recovery')return Response.json({id:'dpl_recovery',projectId:'prj_recovery',ownerId:'team_recovery',readyState:'READY',target:'production',url:'recovery.vercel.app',meta:{githubCommitSha:state.commit}});throw Error('Unexpected cron metadata path');
+  }
+  if(address.origin!==input.hostedScope.origin||!['/api/internal/research-maintenance','/eve/v1/turas/jobs'].includes(address.pathname))throw Error('Controlled cron transport left target');calls++;
+  const response=await withTargetRuntime(input,{origin:input.hostedScope.origin,deploymentId:input.hostedScope.deploymentId,sourceCommit:input.hostedScope.sourceCommit} as Parameters<typeof withTargetRuntime>[1],async()=>{
+   if(address.pathname==='/api/internal/research-maintenance')return researchMaintenance(request);
+   try{authorizeHeavyDispatch(request);await assertHostedDispatchReady();return success({status:'accepted'});}catch(error){return failure(error);}
+  });
+  if(corrupt&&response.status===503)return Response.json({error:{code:'fabricated'}},{status:503,headers:response.headers});return response;
+ });
+ try{
+  const args={target:input,token:'controlled-platform-token',cronSecret:secret,protectionBypass:'controlled-current-bypass-key'},proof=await measureWorkCronAdmission(args);expect(calls).toBe(4);expect(proof).toMatchObject({currentPositiveCronAdmissionClosed:true,legacyProductionPeerProofRequired:environment==='preview',watchdogCleanupStopped:false,restorationReady:false});
+  await withLockedWorkRecoveryDecision(input,async(db,target)=>{await expect(requireMeasuredWorkCronAdmission(db,target,{...proof},input.signal)).rejects.toThrow('Genuine fresh unused');expect(calls).toBe(4);expect(await requireMeasuredWorkCronAdmission(db,target,proof,input.signal)).toBe(proof);expect(calls).toBe(8);await expect(requireMeasuredWorkCronAdmission(db,target,proof,input.signal)).rejects.toThrow('Genuine fresh unused');expect(calls).toBe(8);});
+  expect(metadataCalls).toBe(environment==='production'?8:0);
+  if(environment==='production'){changedCron=true;await expect(measureWorkCronAdmission(args)).rejects.toThrow('Exact current Production cron deployment required');changedCron=false;expect(calls).toBe(8);}
+  corrupt=true;await expect(measureWorkCronAdmission(args)).rejects.toThrow('Actual authenticated locked cron admission unverified');
+ }finally{transport.mockRestore();if(prior===undefined)delete process.env.CRON_SECRET;else process.env.CRON_SECRET=prior;}
+},undefined,environment);},210000);

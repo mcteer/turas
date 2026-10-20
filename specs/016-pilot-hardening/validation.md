@@ -5144,3 +5144,27 @@ lock, provider call, migration, release, readiness decision or cleanup occurred.
 
 The current079 predecessor run passes all7 research maintenance/cache lifecycle
 cases: `local-artifacts/016/research-io-current079-regression-private.json`.
+
+### Authenticated cron admission under the owner fence — 2026-10-19
+
+The finite current cron measurement now tests fixed research-maintenance and
+heavy-job routes with both incorrect and actual scheduler secrets, exact serving
+source and bounded no-store JSON. It repeats those observations inside the final
+genuine owner decision, accepts no copied or reused proof, and requires unchanged
+locked business state. Production additionally rechecks the exact current three
+cron definitions and deployment source before/after each phase. Preview explicitly
+requires the independent legacy Production pool proof; watchdog cleanup remains
+permitted. Jobs503/unavailable proves observed positive admission unavailable,
+which may also reflect disabled processing/configuration, rather than uniquely
+identifying the recovery lock as its cause.
+
+The positive-IO helper first refuses closed mode before waiting for an exclusive
+owner decision; the canonical shared fence still rechecks mode after acquisition.
+The owned test passes for both Preview and Production, including altered schedule,
+response and copied/reused proof failures (`cron-admission-owned-v2-private.json`).
+The current IO/controller composition passes4cases; independent review found no
+concrete scoped blocker. These controlled-cloud tests are not hosted observations.
+Inventory:924cases across168suites. The decision suite's explicit whole-file bound
+is now4110seconds (18×210+270+60); other per-suite and complete-catalog limits stay
+unchanged. Frozen c8e8ae1 Eve and Next builds pass; its complete923-case catalog is
+running separately. Full recovery/hosted acceptance and cleanup remain open.
