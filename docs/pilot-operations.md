@@ -1471,3 +1471,38 @@ Blob absence and purged extraction payloads. Every mutation has an original
 private intent. Uncertain acknowledgments stop after original readback; rerunning
 this command cannot recreate uploads or silently repeat a mutation. Broader
 namespace cleanup, maximum generated output and deadline evidence remain required.
+
+
+### Generated files across a new deployment
+
+Before the same-code redeployment used for maximum-original retention, run:
+
+```sh
+node --import tsx scripts/pilot-hosted-file-preparation.ts \
+  --prepare-generated-files --scope <private-scope.json> \
+  --configuration <private-configuration.json> \
+  --authorization <private-authorization.json> --output <fresh-private-directory>
+```
+
+The explicitly admitted normal linked chain uses six scanner/parser/renderer jobs,
+separate author/reviewer identities, ordinary accepted/published records and four
+actual report files. It first uses legal synthetic reviewer annotations through
+the original author to reach exactly 40 slides, checks the actual revised payload
+before render admission, and verifies normal renderer validations afterward. No
+accepted fact or generated PDF/ZIP bytes are padded. It records the original full journey proof digest, immutable
+file rows and full uncached bytes. It uses no model calls. Preparation is not full
+hosted acceptance; on uncertainty preserve original identities and do not repeat it.
+
+Supply `--generated-files <original-directory/generated-files.json>` to the hosted
+catalog after a separately created actual deployment of the identical code and
+configuration. Keep `linked-execution.json` beside that manifest with its original
+private ownership/mode/digest. The verifier checks actual new deployment metadata,
+original normal worker/image/cost identities, current source/plan/knowledge/workforce
+eligibility and every original report byte. It resumes the original linked chain
+instead of creating new uploads, reviews or renders. The ordinary profile exercise
+uses a different synthetic customer so it cannot invalidate the retained reports.
+
+This proves retention of the actual generated sizes, not a maximum-byte render.
+`maximumGeneratedByteBoundaryVerified` and full hosted-catalog status remain false;
+maximum generated input/output boundaries and other required file faults still
+need their own recorded evidence.

@@ -5544,3 +5544,28 @@ allocated Docker loopback port atomically and requires exactly one valid
 three-case owned isolated-restore rerun passes, with independent review finding
 no blocker. Selected database/configuration and root workflow state remain
 protected. This focused rerun does not convert the earlier full catalog to a pass.
+
+
+Generated-file preparation/resume is now authored as a separate first-deployment
+normal linked chain and second-deployment read-only verification. It binds the
+original journey proof, four actual normally published report rows, current domain
+eligibility and six original worker/image/cost receipts; no paid job is repeated.
+All actual bytes must match after a new actual same-code deployment. Six adapter
+regressions pass for intact reuse, changed proof/rows/configuration/bytes/code,
+duplicate identities, missing worker receipts, source withdrawal and changed row
+times. These tests use controlled adapters and are not cloud/restart proof. The
+947-case/171-suite inventory includes them. Actual generated maximum-byte boundary,
+actual cloud preparation/restart and full file catalog remain pending.
+
+
+The generated preparation now reaches the normal 40-slide renderer boundary using
+legal synthetic annotations through original-author revision commands; separate
+administrator review/publication remains ordinary. It validates the actual revised
+payload before paid rendering, and checks the real stored artifact validations.
+Two layout regressions and six generated-file adapter cases pass. The complete
+owned HTTP source/planning/delivery/report journey passes with two real normal
+40-slide renderings, publication, four full byte reads, MCP checks and withdrawal
+withholding. An earlier run reached the final assertion but retained the old
+10-command expectation; the updated two-revision journey has 12 commands and its
+complete rerun passes. The inventory is 949 cases across 172 suites. These are
+local results, not cloud restart or exact 10 MiB generated-byte proof.

@@ -245,3 +245,9 @@ No hosted target may be locked for release before its measured reopen path exist
   contract/checker and six regression cases; retain immutable original execution
   intervals/digests, original hosted freshness, complete attempt selection and
   operation-specific ordering. Actual hosted readiness remains unverified.
+
+- [X] T099 Author the normal generated-file preparation/restart resume path and
+  40-slide content-boundary exercise, preserving original job/image/cost identities,
+  original-author revisions and separate normal review/publication. Verify eight
+  adapter/layout regressions and the actual owned HTTP/render/read/withdrawal
+  journey. Actual cloud/restart and exact-byte boundary remain in T090.

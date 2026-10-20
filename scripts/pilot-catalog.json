@@ -180,7 +180,13 @@
         "unit.storage-config.001",
         "unit.storage-config.002",
         "unit.storage-config.003",
-        "unit.storage-config.004"
+        "unit.storage-config.004",
+        "unit.generated-files.001",
+        "unit.generated-files.002",
+        "unit.generated-files.003",
+        "unit.generated-files.004",
+        "unit.generated-files.005",
+        "unit.generated-files.006"
       ]
     },
     {
@@ -245,7 +251,9 @@
         "unit.local-reconciliation.002",
         "unit.local-reconciliation.003",
         "unit.local-reconciliation.004",
-        "unit.execution-config.001"
+        "unit.execution-config.001",
+        "unit.report-boundary.001",
+        "unit.report-boundary.002"
       ]
     },
     {

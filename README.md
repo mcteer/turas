@@ -798,7 +798,7 @@ credential/call limits and unknown cost holds remain enforced. Full owned
 composition and separate-source capture/restart checks pass; regional scale and
 hosted release acceptance remain pending.
 
-The local deterministic inventory is941cases across170suites. A historical frozen
+The local deterministic inventory is949cases across172suites. A historical frozen
 928-case catalog has passed; complete verification of the current source remains
 required. The actual47-category regional capacity run completed final canonical
 replay; all53 original probe journals were independently reconciled and its
@@ -831,3 +831,15 @@ The readiness verifier can observe immutable execution receipts in dependency
 order with `scripts/pilot-gate-verification.ts`. These observations retain the
 original test times, proof digests and hosted freshness; reading an old result
 does not make it current or replace required live checks.
+
+A generated-file preparation phase runs the normal reviewed linked chain once.
+After a separately created deployment of the identical code, `--generated-files`
+reuses the original chain and verifies all four PDF/PPTX streams and original
+worker receipts without repeating processing. Actual file sizes are recorded;
+this phase does not establish the maximum generated-byte boundary.
+
+The generated preparation uses normal author revisions to reach the renderer's
+40-slide limit before its two paid render admissions. The actual local HTTP
+journey passes with both 40-slide pairs, ordinary publication, complete reads and
+source-withdrawal denials. This verifies normal layout limits; exact generated
+byte-cap storage and hosted restart evidence remain separate requirements.

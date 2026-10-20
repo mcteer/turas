@@ -1,3 +1,4 @@
+import {hostedGeneratedFilesManifestSchema,hostedLinkedReferenceSchema,verifyHostedGeneratedFiles,type HostedLinkedReference} from './pilot-hosted-generated-files';
 import {verifyHostedMaximumFileDenials} from './pilot-hosted-file-access';
 import {hostedRuntimeConnection} from './pilot-hosted-connection';
 import {hostedMaximumFilesManifestSchema,verifyHostedMaximumFiles} from './pilot-hosted-maximum-files';
@@ -46,7 +47,7 @@ function explicitRuntimeUrl(env:NodeJS.ProcessEnv){return hostedRuntimeConnectio
 /** Read-only admission before any authenticated hosted journey. Completion here
  * is not the hosted catalog, file processing, participant proof or readiness. */
 export async function pilotHosted(args=process.argv.slice(2)){
- if(![8,10,12,14].includes(args.length)||args[0]!=='--scope'||args[2]!=='--run'||args[4]!=='--configuration'||args[6]!=='--authorization')throw Error('Explicit private hosted scope, run, configuration and infrastructure authorization required');
+ if(![8,10,12,14,16].includes(args.length)||args[0]!=='--scope'||args[2]!=='--run'||args[4]!=='--configuration'||args[6]!=='--authorization')throw Error('Explicit private hosted scope, run, configuration and infrastructure authorization required');
  process.umask(0o077);
  process.env.VERCEL_BLOB_RETRIES='0';
  const scopePath=resolve(args[1]),runPath=resolve(args[3]);
@@ -57,9 +58,10 @@ export async function pilotHosted(args=process.argv.slice(2)){
  if(configuration.environmentMarker!==scope.environmentMarker||configuration.projectId!==scope.projectId||configuration.teamId!==scope.teamId||!configuration.dispatcherEnabled)throw Error('Hosted configuration target or enabled dispatcher differs');
  const authorizationPath=resolve(args[7]),rawAuthorization=await readEvidence(dirname(authorizationPath),basename(authorizationPath)),authorization=verifyHostedInfrastructureAuthorization(rawAuthorization,scope),authorizationDigest=authorization.authorizationDigest;
  if(authorization.environmentMarker!==scope.environmentMarker||authorization.projectId!==scope.projectId||authorization.teamId!==scope.teamId||authorization.maximumSandboxJobs!==configuration.maximumSandboxDispatches||Date.parse(authorization.approvedAt)>Date.now()||Date.parse(authorization.expiresAt)<=Date.now())throw Error('Fresh applicable exact-target infrastructure authority required');
- const extras=new Map<string,string>();for(let i=8;i<args.length;i+=2){if(!['--root-binding','--learning','--maximum-files'].includes(args[i])||extras.has(args[i])||!args[i+1])throw Error('Exact unique hosted extra configuration required');extras.set(args[i],resolve(args[i+1]));}
+ const extras=new Map<string,string>();for(let i=8;i<args.length;i+=2){if(!['--root-binding','--learning','--maximum-files','--generated-files'].includes(args[i])||extras.has(args[i])||!args[i+1])throw Error('Exact unique hosted extra configuration required');extras.set(args[i],resolve(args[i+1]));}
  const learningPath=extras.get('--learning'),learningConfiguration=learningPath?hostedLearningJourneyConfigurationSchema.parse(await readEvidence(dirname(learningPath),basename(learningPath))):null;
  const maximumPath=extras.get('--maximum-files'),maximumManifest=maximumPath?hostedMaximumFilesManifestSchema.parse(await readEvidence(dirname(maximumPath),basename(maximumPath))):null;
+ const generatedPath=extras.get('--generated-files'),generatedManifest=generatedPath?hostedGeneratedFilesManifestSchema.parse(await readEvidence(dirname(generatedPath),basename(generatedPath))):null;
  const rootBindingPath=extras.get('--root-binding')??null;
  const rootBinding=rootBindingPath?hostedRootBudgetSchema.parse(await readEvidence(dirname(rootBindingPath),basename(rootBindingPath))):null;
  if(rootBinding&&rootBinding.conversationIds.length!==2)throw Error('Two original root conversations required for desktop and mobile');
@@ -115,7 +117,7 @@ export async function pilotHosted(args=process.argv.slice(2)){
   const expansionJourneys:Awaited<ReturnType<typeof runHostedExpansionBoundary>>[]=[];
   const gapJourneys:Awaited<ReturnType<typeof runHostedGapBoundary>>[]=[];
   const trainingJourneys:Awaited<ReturnType<typeof runHostedTrainingJourney>>[]=[];
-  const linkedJourneys:Awaited<ReturnType<typeof runHostedLinkedJourney>>[]=[];
+  const linkedJourneys:HostedLinkedReference[]=[];
   const learningJourneys:Awaited<ReturnType<typeof runHostedLearningJourney>>[]=[];
   const maximumFileDenials:Awaited<ReturnType<typeof verifyHostedMaximumFileDenials>>[]=[];
   const maximumFiles:Awaited<ReturnType<typeof verifyHostedMaximumFiles>>[]=[];
@@ -159,16 +161,24 @@ export async function pilotHosted(args=process.argv.slice(2)){
     browserJourneys.push({...await runHostedConversationBrowser({scope,headers:context.headers,conversationId:conversationJourneys.at(-1)!.conversationId,foreignConversationIds:conversationJourneys.slice(0,-1).map(row=>row.conversationId),signal}),role:context.role});
     await writeEvidence(root,'browser-'+context.role+'.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...browserJourneys.at(-1)});
     stage='profile_boundary';
-    if(context.role==='internal-admin')profileJourneys.push(await runHostedProfileReviewJourney({scope,db:readDb,headers:context.headers,customerId:context.customerIds[0],signal}));
+    if(context.role==='internal-admin'){
+     const profileCustomer=generatedManifest?context.customerIds.find(id=>id!==generatedManifest.reference.customerId):context.customerIds[0];if(!profileCustomer)throw Error('Separate synthetic profile exercise customer required before reusing original reports');
+     profileJourneys.push(await runHostedProfileReviewJourney({scope,db:readDb,headers:context.headers,customerId:profileCustomer,signal}));
+    }
     if(context.role==='internal-admin'){
      stage='linked_chain';
      paidDispatchPossible=true;
      const owner=(await readDb.query("SELECT m.id FROM memberships m JOIN principals p ON p.id=m.principal_id WHERE m.workspace_id=$1 AND m.active AND m.kind='internal' AND m.role='admin' AND p.active AND p.login_name='mcteer'",[scope.workspaceId])).rows;
      if(owner.length!==1)throw Error('Exact active linked reviewer required');
-     let linkedJourney:Awaited<ReturnType<typeof runHostedLinkedJourney>>|undefined;
+     let linkedJourney:HostedLinkedReference|undefined;
+     if(generatedManifest&&generatedPath){
+      if(!context.partnerCustomerIds.includes(generatedManifest.reference.customerId))throw Error('Original linked customer assignment changed');
+      linkedJourney=await verifyHostedGeneratedFiles({scope,db:readDb,headers:context.headers,configuration,evidenceDirectory:root,signal,manifest:generatedManifest,originalEvidenceDirectory:dirname(generatedPath)});
+     }else{
      await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async author=>{
-      if(author.role==='internal-member')linkedJourney=await runHostedLinkedJourney({scope,db:readDb,headers:context.headers,customerId:context.partnerCustomerIds[0],ownerMembershipId:owner[0].id,configuration,authorizationDigest,authorizationExpiresAt:authorization.expiresAt,authorization:rawAuthorization,signal,authorRequest:pilotHostedRequest({scope,headers:author.headers,signal})});
+      if(author.role==='internal-member')linkedJourney=hostedLinkedReferenceSchema.parse(await runHostedLinkedJourney({scope,db:readDb,headers:context.headers,customerId:context.partnerCustomerIds[0],ownerMembershipId:owner[0].id,configuration,authorizationDigest,authorizationExpiresAt:authorization.expiresAt,authorization:rawAuthorization,signal,authorRequest:pilotHostedRequest({scope,headers:author.headers,signal})}));
      },configuration);
+     }
      if(!linkedJourney)throw Error('Separate actual baseline author unavailable');linkedJourneys.push(linkedJourney);
      await writeEvidence(root,'linked-internal-admin.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...linkedJourneys.at(-1)});
      const linked=linkedJourneys.at(-1)!;stage='training_chain';

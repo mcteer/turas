@@ -12,6 +12,7 @@ import {pilotHostedRequest} from '../../../scripts/pilot-hosted-request';
 import {it,expect} from 'vitest';
 import {Client} from 'pg';
 import {createHash} from 'node:crypto';
+import {preparePilotAssetPermissions} from '../../../scripts/pilot-asset-permissions';
 import {runOwnedReportJourney} from '../../../scripts/pilot-owned-report';
 import {reportTransaction} from '../../../lib/server/reports/commands';
 import {claimReportJobs} from '../../../lib/server/reports/jobs';
@@ -44,6 +45,7 @@ await withPilotEnvironment(async environment=>{
  if(createHash('sha256').update(await readFile(join(preparedStore,'assets/eng.traineddata'))).digest('hex')!==preparation.ocr.digest)throw Error('Exact prepared OCR asset required');
  await cp(join(preparedStore,'signatures'),join(process.env.TURAS_ARTIFACT_STORE_ROOT!,'signatures'),{recursive:true});
  await cp(join(preparedStore,'assets'),join(process.env.TURAS_ARTIFACT_STORE_ROOT!,'assets'),{recursive:true});
+ await preparePilotAssetPermissions(process.env.TURAS_ARTIFACT_STORE_ROOT!);
  await writeFile(join(process.env.TURAS_ARTIFACT_STORE_ROOT!,'runtime-images.json'),JSON.stringify({contract:'artifact-intake-v1',parserImage:parser.localImageId,parserDigest:parser.localImageId.slice(7),scannerImage:scanner.localImageId,scannerDigest:scanner.localImageId.slice(7)}),{mode:0o600});
  const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
  try{
@@ -106,7 +108,9 @@ await withPilotEnvironment(async environment=>{
   }});
   expect(gaps).toMatchObject({actualExportReads:2,pilotCustomerCountsVerified:true,primaryCountsIsolationVerified:true,providerCalls:0,externalMessagesSent:0,syntheticOnly:true,humanFeedbackRecorded:false,fullHostedCatalogVerified:false});
   const publishedArtifactIds:string[]=[];
-  const reports=await runOwnedReportJourney({scope,db:owner,customerId,engagementId:plan.engagementId,workloadId:foundation.workloadId,signal:environment.signal,request,authorRequest,runQueuedRender:async revisionId=>{const [job]=await reportTransaction(db=>claimReportJobs(db,'render'));if(!job||job.revision_id!==revisionId)throw Error('Exact normal queued render required');await runReportRenderJob(job,environment.signal);},readArtifact:async artifact=>{publishedArtifactIds.push(artifact.id);const response=await fetch(environment.origin+'/api/reports/artifacts/'+artifact.id,{headers,redirect:'manual',cache:'no-store',signal:AbortSignal.any([environment.signal,AbortSignal.timeout(30000)])});if(!response.ok||response.headers.get('x-turas-code-version')!==scope.sourceCommit){await response.body?.cancel();throw Error('Exact published file read unavailable');}const reader=response.body?.getReader();if(!reader)throw Error('Actual file body required');const parts:Uint8Array[]=[];let size=0;try{for(;;){const part=await reader.read();if(part.done)break;size+=part.value.length;if(size>10485760)throw Error('Published artifact exceeds bound');parts.push(part.value);}}finally{await reader.cancel().catch(()=>undefined);reader.releaseLock();}const bytes=Buffer.concat(parts);if(size!==artifact.sizeBytes||createHash('sha256').update(bytes).digest('hex')!==artifact.contentDigest||bytes.subarray(0,artifact.format==='pdf'?5:2).toString()!==(artifact.format==='pdf'?'%PDF-':'PK'))throw Error('Actual published file bytes differ');}});
+  const reports=await runOwnedReportJourney({maximumReportLayout:true,scope,db:owner,customerId,engagementId:plan.engagementId,workloadId:foundation.workloadId,signal:environment.signal,request,authorRequest,runQueuedRender:async revisionId=>{const [job]=await reportTransaction(db=>claimReportJobs(db,'render'));if(!job||job.revision_id!==revisionId)throw Error('Exact normal queued render required');await runReportRenderJob(job,environment.signal);},readArtifact:async artifact=>{publishedArtifactIds.push(artifact.id);const response=await fetch(environment.origin+'/api/reports/artifacts/'+artifact.id,{headers,redirect:'manual',cache:'no-store',signal:AbortSignal.any([environment.signal,AbortSignal.timeout(30000)])});if(!response.ok||response.headers.get('x-turas-code-version')!==scope.sourceCommit){await response.body?.cancel();throw Error('Exact published file read unavailable');}const reader=response.body?.getReader();if(!reader)throw Error('Actual file body required');const parts:Uint8Array[]=[];let size=0;try{for(;;){const part=await reader.read();if(part.done)break;size+=part.value.length;if(size>10485760)throw Error('Published artifact exceeds bound');parts.push(part.value);}}finally{await reader.cancel().catch(()=>undefined);reader.releaseLock();}const bytes=Buffer.concat(parts);if(size!==artifact.sizeBytes||createHash('sha256').update(bytes).digest('hex')!==artifact.contentDigest||bytes.subarray(0,artifact.format==='pdf'?5:2).toString()!==(artifact.format==='pdf'?'%PDF-':'PK'))throw Error('Actual published file bytes differ');}});
+  expect(reports.normalFortySlideRevisions).toBe(2);
+  expect((await owner.query('SELECT checks FROM report_validations WHERE revision_id=ANY(SELECT revision_id FROM report_artifacts WHERE id=ANY($1::uuid[]))',[publishedArtifactIds])).rows.every(row=>row.checks.slides===40)).toBe(true);
   z.object({data:z.object({effectiveReadiness:z.literal('unknown'),assessment:z.object({revisionId:z.literal(support.assessmentRevisionId),contentUnavailable:z.literal(false)})})}).parse(await request('/api/support/customers/'+customerId+'?workloadId='+foundation.workloadId+'&audience=delivery&limit=20','GET'));
   const expansionPath='/api/expansion/customers/'+customerId+'?workloadId='+foundation.workloadId+'&recordId='+expansion.recordId+'&limit=20';
   const beforeWithdrawal=expansionWorkspaceProjectionSchema.parse(z.object({data:z.unknown()}).parse(await request(expansionPath,'GET')).data);
@@ -124,7 +128,7 @@ await withPilotEnvironment(async environment=>{
    const denied=await fetch(environment.origin+path,{headers,redirect:'manual',cache:'no-store',signal:environment.signal});expect([404,409]).toContain(denied.status);expect(denied.headers.get('x-turas-code-version')).toBe(scope.sourceCommit);await denied.body?.cancel();
   }
   expect(uploaded).toMatchObject({actualOriginalVerified:true,normalCommands:5,providerCalls:0,hostedProof:false});
-  expect({profileCommands:foundation.normalCommands,planCommands:plan.normalCommands,deliveryCommands:delivery.normalCommands,reportCommands:reports.normalReportCommands,renderedJobs:reports.actualRenderedJobs,fileReads:reports.actualArtifactReads}).toEqual({profileCommands:5,planCommands:4,deliveryCommands:4,reportCommands:10,renderedJobs:2,fileReads:4});
+  expect({profileCommands:foundation.normalCommands,planCommands:plan.normalCommands,deliveryCommands:delivery.normalCommands,reportCommands:reports.normalReportCommands,renderedJobs:reports.actualRenderedJobs,fileReads:reports.actualArtifactReads}).toEqual({profileCommands:5,planCommands:4,deliveryCommands:4,reportCommands:12,renderedJobs:2,fileReads:4});
   expect(delivery.activityIsNotCompletionVerified).toBe(true);
  }finally{await owner.end();await closeRuntimePool();}
 },{postgresMajor:18,deadlineMs:300000});
