@@ -815,3 +815,9 @@ passages and4/10MiB staged files. Fresh CI passes native operations and pilot
 WebKit; hosted verification remains pending. Actual local Production-mode SDK
 consumers also verify typed non-disclosing foreign-customer refusals, current
 content/citations and credential revocation.
+
+Pilot hardening also has explicit one-original hosted file boundary commands for
+antivirus, malformed input, running cancellation and controlled lease expiry.
+These retain original mutation/provider/accounting identities and require actual
+provider absence; they do not establish complete file acceptance or clear unknown
+cost holds. See `docs/pilot-operations.md` for the bounded invocation and limits.

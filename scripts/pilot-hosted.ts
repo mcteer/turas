@@ -1,3 +1,4 @@
+import {verifyHostedMaximumFileDenials} from './pilot-hosted-file-access';
 import {hostedRuntimeConnection} from './pilot-hosted-connection';
 import {hostedMaximumFilesManifestSchema,verifyHostedMaximumFiles} from './pilot-hosted-maximum-files';
 import {runHostedLearningJourney,hostedLearningJourneyConfigurationSchema} from './pilot-hosted-learning-journey';
@@ -116,8 +117,10 @@ export async function pilotHosted(args=process.argv.slice(2)){
   const trainingJourneys:Awaited<ReturnType<typeof runHostedTrainingJourney>>[]=[];
   const linkedJourneys:Awaited<ReturnType<typeof runHostedLinkedJourney>>[]=[];
   const learningJourneys:Awaited<ReturnType<typeof runHostedLearningJourney>>[]=[];
+  const maximumFileDenials:Awaited<ReturnType<typeof verifyHostedMaximumFileDenials>>[]=[];
   const maximumFiles:Awaited<ReturnType<typeof verifyHostedMaximumFiles>>[]=[];
   try{await readDb.connect();reads=await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async context=>{
+    if(maximumManifest)maximumFileDenials.push(await verifyHostedMaximumFileDenials({scope,headers:context.headers,role:context.role,manifest:maximumManifest,signal,evidenceDirectory:root}));
     if(context.role==='internal-admin'){
      // The reader verified the actual version-bound diagnostic before this hook.
      stage='configuration_boundary';
@@ -229,7 +232,7 @@ export async function pilotHosted(args=process.argv.slice(2)){
     }
    },configuration);}finally{await readDb.end();}
   if(JSON.stringify(await platformDeployment(scope,true,signal))!==JSON.stringify(deployment)||JSON.stringify(await pilotSource())!==JSON.stringify(source)||JSON.stringify(await pilotProtectedSnapshot())!==JSON.stringify(protectedBefore))throw Error('Hosted identity or protected checkout changed');
-  await writeEvidence(root,'reads.json',{contract:'pilot-hosted-role-boundaries-v1',id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,startedAt,completedAt:new Date().toISOString(),roleReads:reads,sdkJourneys,profileJourneys,conversationJourneys,browserJourneys,supportJourneys,expansionJourneys,gapJourneys,linkedJourneys,trainingJourneys,learningJourneys,maximumFiles,normalProfileCommands:profileJourneys.reduce((sum,row)=>sum+row.normalProfileCommands,0),normalConversationCommands:conversationJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalSupportCommands:supportJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalExpansionCommands:expansionJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalGapCommands:gapJourneys.reduce((sum,row)=>sum+row.normalCommands,0),fullHostedCatalogVerified:false});
+  await writeEvidence(root,'reads.json',{contract:'pilot-hosted-role-boundaries-v1',id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,startedAt,completedAt:new Date().toISOString(),roleReads:reads,sdkJourneys,profileJourneys,conversationJourneys,browserJourneys,supportJourneys,expansionJourneys,gapJourneys,linkedJourneys,trainingJourneys,learningJourneys,maximumFiles,maximumFileDenials,normalProfileCommands:profileJourneys.reduce((sum,row)=>sum+row.normalProfileCommands,0),normalConversationCommands:conversationJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalSupportCommands:supportJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalExpansionCommands:expansionJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalGapCommands:gapJourneys.reduce((sum,row)=>sum+row.normalCommands,0),fullHostedCatalogVerified:false});
   // Required journeys are not yet dispatched: do not return acceptance success.
   await writeEvidence(root,'blocked.json',{id,runId:run.id,...source,state:'blocked',safeFailure:'hosted_core_journey_catalog_not_complete',hostedCatalogVerified:false});
   console.info(JSON.stringify({preflight:'pass',roleReads:reads.passedCases,sdkCases:sdkJourneys.reduce((sum,row)=>sum+row.passedCases,0),hostedCatalog:'blocked',paidCalls:linkedJourneys.reduce((sum,row)=>sum+row.source.providerCalls+row.workforce.providerCalls+row.reports.providerCalls,0)}));process.exitCode=1;return receipt;

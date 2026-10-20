@@ -1421,3 +1421,31 @@ replacement runtime role, unique `sslmode=verify-full` and optional unique
 `channel_binding=require`; URL options cannot override the fixed connection,
 server statement or client query bounds. The broader fault, cancellation,
 generated-output, access and cleanup catalog remains independently required.
+
+### Observe one admitted file failure
+
+The same preparation entrypoint accepts `--exercise-file-fault` in place of
+`--prepare-maximum-files`, followed by the same four file arguments and
+`--case antivirus|malformed|cancel|lost-lease --provider <private-provider.json>`.
+The provider file contains only the explicit token/projectId/teamId credential
+binding and must satisfy the private evidence-file protections. Each invocation
+creates one new controlled synthetic original with recorded original mutation
+keys; it never resumes by repeating an uncertain mutation. Antivirus uses the
+standard harmless EICAR fixture, malformed uses a truncated PDF, and cancellation
+waits for an actual running owned Sandbox before issuing the normal lifecycle
+command. Specific domain failure, no published extraction, exact configured
+images/source/code/budget and original provider identities are required. Cleanup
+requires a complete empty creation-tag inventory and an actual non-resuming404
+lookup of each original provider ID. A provider absence observation never settles
+financial uncertainty: receipts retain original reservation/cap/charge/state,
+report cost preservation as unverified and expose incomplete job reconciliation.
+The next paid exercise still requires the original admission check and cannot
+bypass unknown holds. Deadline, lost-lease, network and the remaining file/access
+catalog require their own actual observations before acceptance.
+
+The lease-expiry case records and expires only its exact newly created synthetic
+scanner job lease, preserving its original deadline, source and provider. It
+requires actual expired-lease/reconciliation state and absent published output,
+then issues the normal cancellation command. This narrow observation explicitly
+does not claim a late output was attempted and rejected. A completed fixture
+before the controlled injection fails the exercise without another paid attempt.

@@ -5489,3 +5489,15 @@ Five runtime-descriptor unit checks pass, including URL timeout overrides,
 duplicate transport options, fragments, wrong role and missing credentials.
 Pilot type checking passes. Actual hosted file preparation/restart, remaining
 fault/catalog phases and the fresh complete933-case source run remain pending.
+
+The frozenba7 complete-source run stopped at its actual hosted-SDK consumer
+suite: the consumer expected an obsolete generic scope error instead of the
+server's typednot_found refusal. The consumer now requires the exact current
+contract and rejects generic errors/outages for foreign or withdrawn sources.
+The earlier run remains a failure. The fresh focused owned Production HTTP/SDK suite passes all six cases. Two earlier focused attempts stopped at a Production-only CLI environment type error; that error is fixed. Repository and pilot type checking pass.
+A one-original fault runner is authored for antivirus, malformed input and actual
+running cancellation, with independent actual provider-absence reads and raw
+original accounting identities. It explicitly does not certify financial hold
+preservation, complete reconciliation or the broader hosted file catalog.
+Independent read-only review cleared the image/accounting and typed-denial fixes;
+actual cloud execution and the remaining file failure cases remain pending.

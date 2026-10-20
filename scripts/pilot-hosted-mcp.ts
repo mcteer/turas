@@ -57,15 +57,15 @@ export async function runHostedMcpJourney(input:{scope:PilotHostedScope;db:Datab
   const plan=mcpToolOutputs.turas_plan_read_v1.parse(await call('turas_plan_read_v1',{customerId,planId:selectedPlan.planId}));if(plan.status!=='available'||plan.data.customerId!==customerId||plan.data.planId!==selectedPlan.planId)throw Error('Plan identity differs');cases.push('plan');
   const reports=mcpToolOutputs.turas_reports_list_v1.parse(await call('turas_reports_list_v1',{customerId,limit:20}));if(reports.status!=='available'||!reports.data.items.length)throw Error('Published report required');
   const report=mcpToolOutputs.turas_report_read_v1.parse(await call('turas_report_read_v1',{customerId,reportId:reports.data.items[0].reportId}));if(report.status!=='available'||report.data.customerId!==customerId||report.data.publicationId!==reports.data.items[0].publicationId)throw Error('Report identity differs');cases.push('report');
-  const denied=await client.callTool({name:'turas_profile_read_v1',arguments:{customerId:deniedCustomerId,section:'facts'}},{signal,timeout:10000});if(!denied.isError||denied.structuredContent!==undefined)throw Error('Foreign SDK scope was disclosed');cases.push('denied-customer');
+  const denied=await client.callTool({name:'turas_profile_read_v1',arguments:{customerId:deniedCustomerId,section:'facts'}},{signal,timeout:10000});const refusal=mcpToolOutputs.turas_profile_read_v1.parse(denied.structuredContent);if(denied.isError||refusal.status!=='unavailable'||refusal.reason!=='not_found'||refusal.data!==null||refusal.nextCursor!==null)throw Error('Foreign SDK scope was disclosed');cases.push('denied-customer');
   if(input.sourceBoundary){
    if(!input.expectedEvidenceRevisionId||!input.expectedPublicationId||!input.expectedPlanId)throw Error('Exact linked identities required for current-source SDK boundary');
    await input.sourceBoundary();
    const stillBound=mcpToolOutputs.turas_identity_v1.parse(await call('turas_identity_v1',{}));if(stillBound.status!=='available'||stillBound.data.workspaceId!==scope.workspaceId)throw Error('Source denial requires a still-authorized SDK connection');cases.push('identity-after-source-withdrawal');
    async function withheld(name:keyof typeof mcpToolOutputs,args:Record<string,unknown>,caseId:string=name){
     const result=await client!.callTool({name,arguments:args},{signal,timeout:10000});
-    if(result.isError){if(result.structuredContent!==undefined)throw Error('Denied SDK content was disclosed');}
-    else z.object({status:z.literal('unavailable'),data:z.null()}).parse(result.structuredContent);
+    const refused=mcpToolOutputs[name].parse(result.structuredContent);
+    if(result.isError||refused.status!=='unavailable'||!['not_found','source_changed'].includes(refused.reason)||refused.data!==null||refused.nextCursor!==null)throw Error('Current source denial unavailable');
     cases.push('current-source-denied-'+caseId);
    }
    await withheld('turas_evidence_read_v1',{customerId,revisionId:selected.revisionId,passageId:selected.passageId});
