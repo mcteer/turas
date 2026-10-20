@@ -6262,3 +6262,33 @@ raw response text, percentages, labels and identifiers are excluded. Malformed,
 oversized, path-only and private-token vectors and repeated sanitization pass
 inside the existing three-test diagnostic unit suite. Root typecheck passes.
 Full CI and catalog checks for the new commit and actual hosted acceptance remain required.
+
+### 2026-10-20 complete catalog and maximum-byte assertion
+
+The frozen `b134d69` local execution `11f86d3c-1d91-4101-8482-a1a2ae684d01`
+passes all 1,006 cases across 181 suites without failures. Its Turas CI run
+`39469060834` finishes with 45 passing jobs and one failure: the first exact
+ten-MiB report roundtrip exceeds its unchanged 15-second test timeout. Legacy CI
+`39469060845` passes. These outcomes remain separate.
+
+An independent, credential-free Node 24/Vitest measurement of two equal copied
+ten-MiB Buffers takes 12,076 ms for the deep-equality assertion and 0.346 ms for
+native Buffer comparison. A changed final byte is rejected by the latter. This
+establishes assertion overhead; it does not establish every contributor to the
+CI timeout. The roundtrip now compares the complete returned bytes with
+`Buffer.compare`, retaining all four cases, byte limits, integrity checks and the
+15-second timeout. Fresh complete local and CI results are required for this
+change.
+
+The latest isolated native restore verifies the original candidate's complete
+content and schema ledger, separate physical target, restricted verify-full TLS
+read and actual executor removal. Full hosted recovery remains unverified. A
+subsequent verifier failed before its producer started because its output
+directory had been precreated; complete journals and actual filesystem snapshots
+were retained. Its finite deadline expired before a reviewed continuation ran,
+and the target's timeout guard disabled both runtime logins and CONNECT access.
+These failures do not establish restored service or pilot readiness.
+
+The changed report-wrapper suite passes all four cases on an owned PostgreSQL18
+environment with no provider calls. Root typecheck and documentation checks pass.
+Independent review finds no coverage, deadline or byte-integrity regression.

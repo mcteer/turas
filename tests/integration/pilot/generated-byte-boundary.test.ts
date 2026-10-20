@@ -16,7 +16,7 @@ it('roundtrips the exact ten MiB boundary through the actual private report wrap
  // Synthetic storage fixture, never represented as normal renderer output or publication.
  const bytes=maximumPilotPdf(),key=randomUUID(),written=await writeReportObject(bytes,key),path=objectKey(process.env.TURAS_ENVIRONMENT_ID!,'report',key);
  expect(written).toEqual({objectKey:key,contentDigest:createHash('sha256').update(bytes).digest('hex'),sizeBytes:10485760});expect([...blobMock.objects.keys()]).toEqual([path]);
- expect(await readReportObject(key,written.contentDigest,written.sizeBytes)).toEqual(bytes);
+ expect(Buffer.compare(await readReportObject(key,written.contentDigest,written.sizeBytes),bytes)).toBe(0);
  await deleteExactReportObject(key,written.contentDigest,written.sizeBytes);expect(blobMock.objects.has(path)).toBe(false);await expect(readReportObject(key,written.contentDigest,written.sizeBytes)).rejects.toThrow();
 });
 it('refuses empty oversized changed and wrong-digest report bytes without accepting metadata as proof',async()=>{

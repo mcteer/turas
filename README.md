@@ -57,10 +57,12 @@ checks do not establish full Production workflow readiness. See the
 [roadmap](ROADMAP.md) and feature validation records under [`specs/`](specs/).
 Feature 016 pilot hardening is in progress; its local checkpoints do not establish
 full hosted pilot readiness. [Draft PR 47](https://github.com/mcteer/turas/pull/47)
-is the implementation checkpoint. All 43 required CI jobs passed at `94d3dc3`
-(run `38326648341`); the subsequent storage/recovery checkpoint has a
-657-case local pass, not new CI proof. Current recovery, hosted processing and
-participant acceptance remain release blockers.
+is the implementation checkpoint. The complete local catalog passes all 1,006
+cases across 181 suites at `b134d69`. That commit's CI has 45 passing jobs and
+one timeout in the ten-MiB report test; the exact-byte assertion now uses native
+Buffer comparison to avoid deep-equality overhead. Fresh checks remain required.
+Current recovery, hosted processing and automated participant acceptance remain
+release blockers.
 The owned recovery command now applies independently retained current denials and
 audits actual permanent request fences, preserving committed denials across failed
 audits. It remains an isolated recovery step; service recovery and hosted acceptance
