@@ -5389,3 +5389,32 @@ Existing nested OS termination handlers already observed SIGTERM; the fix concer
 parent timer/AbortController propagation. The private driver must pass its
 original signal. The superseded7c local catalog was explicitly interrupted; its
 partial results are retained and do not establish current-source completion.
+
+The exact38 regional capacity run completed47categories,214tool calls, the
+independent canonical replay and probe retirement in644,688ms. Its local
+controller then crashed during journal reconciliation. Cleanup recovered all53
+original probe intents, reconciled their exact private preimages in smaller
+transactions, independently verified no live login/MCP/HTTP probes and deleted
+the executor with actual provider404. The original7Mmicro-USD Preview maximum
+hold remains retained. This is capacity-only evidence; no full recovery, pilot
+acceptance, schema cutover or scheduled cadence is established.
+
+Independent code review identified a native ordinary-send race: projection could
+mark the exact accepted input admitted before HTTP receipt persistence, which
+then rejected the acknowledgement with409. Receipt persistence now verifies the
+original projected delivery/session/input/turn and exact text, selected-source
+or native-file envelope before adopting that already-admitted result. Immutable
+receipt equality rejects altered acknowledgements without resending or renewing
+admission. Four focused actual owned PostgreSQL cases pass, including4/10MiB
+staged files and selected passages. Earlier fixture setup failures are retained
+separately and are not counted as product failures or passes.
+
+Three focused history/effect composition cases pass with the historical-only
+cold reader. Historical bytes constrain retained identity/replay/financial data
+and cannot authorize a credential. Fresh current authority still has its original
+five-minute limit. CLI original-source capture/refresh wiring and auxiliary
+PostgreSQL connection-error handling have type verification; broader current
+source verification remains pending. The complete pilot inventory now includes
+an additional original-source forgery boundary case (929cases/168suites), whose
+focused unit check passes. This is distinct from complete frozen earlier-source
+catalog results.

@@ -324,3 +324,42 @@ completed PR43–46 fixes and their historical proof. Existing pilot migrations
 validation and target-bound hosted recovery/storage acceptance remain required;
 expired budget envelopes are not renewed by a source merge. Actual hosted automated role
 observations and two scheduled backups at least12hours apart remain required.
+
+## Recovery measurement composition and refreshed denial authority
+
+Long verification must retain the original15-minute command bound,59-second
+credential bound,290-second owner bound,32 owned probe slots,64 tools per category
+and five-minute freshness of current denial authority. Refresh current authority
+only between fully retired measurement windows, through a finite governed capture
+from the explicit original source. Verify that source against its platform binding
+and reject the restored target as the capture source. Every capture observes the
+original parent cancellation signal. Cold-read its encrypted independent archive
+and separate key; a JSON receipt alone cannot refresh authority.
+
+Keep an opaque historical-denial capability alongside the latest genuine cold
+read. Every accepted continuation must retain every prior table/identity/replay
+key, including newly observed identities from earlier continuations. Require
+unchanged full minimized rows and original row hashes for effect, provider,
+financial and permanent-receipt inventories. Only the explicitly classified
+current-authority tables may change their status/row hash. This conservative
+rule may block legitimate history mutation; it must never discard an earlier
+hold, ceiling, unknown exposure, native/send binding or request fence. Validate
+the whole continuation before updating its private capability. Final verification
+consumes both preserved history and fresh current authority, reruns all existing
+financial/provider/replay audits, reconciles current denials and retires probes
+before computing the final state. Do not cache an earlier transaction's audit as
+final proof or relabel a new snapshot as original accounting evidence.
+
+The existing Cartesian customer/category remote measurement is an implementation
+choice, not a requirement to mint a separate network credential for each customer.
+A future composed implementation may combine exhaustive actual canonical content
+and authorization walks for the complete current ledger inventory with actual
+hosted SDK coverage of every distinct role, workspace, category and policy branch.
+It must bind transport records to the exhaustive inventory, exercise real eligible
+records/pages/citations, empty/withheld and current-denied/foreign branches, and
+recheck complete current scope, source, runtime, platform and expiry under final
+fences. Customer-specific policy requires its own measured class or an explicit
+unsupported failure. Contracts must distinguish exhaustive canonical coverage from
+actual hosted SDK branch coverage; subset transport proofs must not satisfy the
+existing exact-union contract silently. This design does not waive original byte,
+Workflow, financial, replay, old-deployment or quarantine gates.

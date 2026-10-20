@@ -1,3 +1,4 @@
+import {requireRetainedWorkDenialHistory,type RetainedWorkDenialHistory} from '../../../scripts/pilot-retained-denial-history';
 import {fenceCurrentRecoveryJobs} from './recovery-current-job-fences';
 import {workCaptureCandidateSchema} from '../../contracts/pilot-capture';
 import {randomUUID} from 'node:crypto';
@@ -17,7 +18,7 @@ async function scopeDigest(db:Client,target:LockedWorkRecoveryTarget,signal:Abor
  const maintenance=await deriveWorkMaintenanceInventoryInTransaction(db,target,signal),mcp=await deriveWorkMcpScopeInTransaction(db,target),conversations=await deriveWorkConversationInventory(db,target),{deadline,contract,...identity}=target;
  return recoveryDigest({identity,maintenance:maintenance.inventoryDigest,mcp:mcp.scopeDigest,conversations:conversations.inventoryDigest});
 }
-type Input={target:LockedWorkRecoveryInput;integrity:WorkTargetIntegrity;integrityMaterial:WorkTargetIntegrityInput;retained:RetainedWorkDenials;service:WorkRecoveryServiceMeasurements;effects:WorkRecoveryEffectMeasurements;passwords:Parameters<typeof verifyWorkRecoveryService>[3];journalDirectory:string};
+type Input={target:LockedWorkRecoveryInput;integrity:WorkTargetIntegrity;integrityMaterial:WorkTargetIntegrityInput;retained:RetainedWorkDenials;denialHistory:RetainedWorkDenialHistory;service:WorkRecoveryServiceMeasurements;effects:WorkRecoveryEffectMeasurements;passwords:Parameters<typeof verifyWorkRecoveryService>[3];journalDirectory:string};
 /** The only complete work verification producer. An INSERT remains pending until
  * the transport's independent retirement/platform/source checks and COMMIT.
  * Resolution and opening continue through their existing separate guarded APIs. */
@@ -27,17 +28,17 @@ export async function produceWorkRecoveryVerification(input:Input){
   // Inspect before deny application or credential probes: a lost COMMIT reply
   // must never mutate the state against which its immutable row was committed.
   const existing=await committedVerification(db,target,input.integrityMaterial,input.integrity.encryptedBundleDigest,signal);if(existing)return existing;
-  const source=requireAuthenticatedRetainedDenials(input.retained,target.environmentId);
+  const historical=requireRetainedWorkDenialHistory(input.denialHistory,input.retained,target.environmentId),source=requireAuthenticatedRetainedDenials(input.retained,target.environmentId);
   await requireMeasuredWorkTargetIntegrity(db,target,input.integrity,signal);
   await reconcileAuthenticatedWorkCredentialDenialsInTransaction(db,input.retained,{environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision,snapshotDigest:source.contextDigest,backupCapturedAt:source.backupCapturedAt});
   await fenceCurrentRecoveryJobs(db,target,input.retained);
   const service=await verifyWorkRecoveryService(db,target,input.service,input.passwords,input.journalDirectory,signal);
-  const effects=await verifyWorkRecoveryEffects(db,target,input.retained,input.effects,signal);
+  const effects=await verifyWorkRecoveryEffects(db,target,input.retained,input.effects,signal,input.denialHistory);
   await requireMeasuredWorkTargetIntegrity(db,target,input.integrity,signal);
   await requireVerifiedWorkRecoveryService(db,target,service);await requireVerifiedWorkRecoveryEffects(db,target,effects);
-  const state=await currentRecoveryStateDigest(db),scope=await scopeDigest(db,target,signal),workflow=recoveryDigest({effects:effects.workflowDigest,service:service.serviceDigest});
+  const state=await currentRecoveryStateDigest(db),scope=await scopeDigest(db,target,signal),workflow=recoveryDigest({history:historical.historyDigest,effects:effects.workflowDigest,service:service.serviceDigest});
   if(state!==service.currentStateDigest||state!==effects.currentStateDigest||!effects.applicationResumptionAdmissionVerified||!effects.originalNativeSendIdentitiesVerified)throw Error('Complete unchanged recovery service and effects required');
-  requireAuthenticatedRetainedDenials(input.retained,target.environmentId);signal.throwIfAborted();const id=randomUUID();
+  requireRetainedWorkDenialHistory(input.denialHistory,input.retained,target.environmentId);requireAuthenticatedRetainedDenials(input.retained,target.environmentId);signal.throwIfAborted();const id=randomUUID();
   await db.query(`INSERT INTO operations_recovery_verifications(id,environment_id,recovery_id,control_revision,bundle_digest,ledger_digest,objects_digest,current_state_digest,denial_digest,replay_digest,workflow_digest,scope_digest,required_scope_healthy,integrity_verified,denial_verified,replay_verified,workflow_verified) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,true,true,true,true,true)`,[id,target.environmentId,target.recoveryId,target.controlRevision,input.integrity.encryptedBundleDigest,input.integrity.ledgerDigest,input.integrity.objectsDigest,state,source.contextDigest,effects.replayDigest,workflow,scope]);
   if(await currentRecoveryStateDigest(db)!==state)throw Error('Recovery verification changed its verified state');signal.throwIfAborted();
   return Object.freeze({verificationId:id,bundleDigest:input.integrity.encryptedBundleDigest,currentStateDigest:state,resumed:false,serviceOpened:false,restorationReady:false});

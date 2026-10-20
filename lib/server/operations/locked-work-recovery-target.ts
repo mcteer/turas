@@ -123,6 +123,7 @@ async function withWorkRecoveryTransport<T>(input:LockedWorkRecoveryInput,run:(d
   await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');try{await requireLockedWorkRecoveryConnection(exposed,target,scope);await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}
   // Authenticate the exact runtime credential without invoking domain work.
   const probe=new Client({connectionString:runtime.href,connectionTimeoutMillis:5000,statement_timeout:5000,query_timeout:6000});
+  probe.on('error',error=>connectionLost.abort(error));
   try{await probe.connect();const rows=(await probe.query('SELECT current_database() AS name,current_user AS role,session_user AS session_role,environment_id,schema_version FROM turas_environment')).rows;if(rows.length!==1||rows[0].name!==decodeURIComponent(owner.pathname.slice(1))||rows[0].role!=='turas_runtime_016'||rows[0].session_role!=='turas_runtime_016'||rows[0].environment_id!==scope.environmentId||Number(rows[0].schema_version)!==79)throw Error('Actual work recovery runtime differs');}finally{await probe.end();}
   let decisionTransaction:string|undefined;if(decision){await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');await db.query("SELECT set_config('transaction_timeout',$1,true)",[Math.max(1,input.deadline-Date.now())+'ms']);await requireLockedWorkRecoveryConnection(exposed,target,scope);decisionTransaction=String((await db.query('SELECT pg_current_xact_id()::text AS id')).rows[0].id);}
   let abort:()=>void=()=>{};
@@ -149,7 +150,7 @@ async function withWorkRecoveryTransport<T>(input:LockedWorkRecoveryInput,run:(d
    const drained=await Promise.race([Promise.allSettled([...finalBinding.drains]).then(()=>true),new Promise<false>(done=>{timer=setTimeout(()=>done(false),10000);})]);
    if(!drained)retirementErrors.push(Error('Recovery canonical read group did not drain within its read bound'));
   }finally{if(timer)clearTimeout(timer);}}
-  try{await retireWorkRecoveryProbes(target,async()=>{const cleanup=new Client({connectionString:owner.href,connectionTimeoutMillis:5000,statement_timeout:5000,query_timeout:6000});try{await cleanup.connect();const identity=(await cleanup.query('SELECT current_database() AS name,current_user AS role')).rows[0];if(identity?.name!==decodeURIComponent(owner.pathname.slice(1))||identity.role!==decodeURIComponent(owner.username))throw Error('Exact work recovery cleanup connection required');return cleanup;}catch(error){await cleanup.end();throw error;}});}
+  try{await retireWorkRecoveryProbes(target,async()=>{const cleanup=new Client({connectionString:owner.href,connectionTimeoutMillis:5000,statement_timeout:5000,query_timeout:6000});cleanup.on('error',error=>retirementErrors.push(error));try{await cleanup.connect();const identity=(await cleanup.query('SELECT current_database() AS name,current_user AS role')).rows[0];if(identity?.name!==decodeURIComponent(owner.pathname.slice(1))||identity.role!==decodeURIComponent(owner.username))throw Error('Exact work recovery cleanup connection required');return cleanup;}catch(error){await cleanup.end();throw error;}});}
   catch(error){retirementErrors.push(error);}
   if(retirementErrors.length)throw new AggregateError([...(failure?[failure]:[]),...retirementErrors],'Work recovery and independent probe cleanup incomplete');
  }

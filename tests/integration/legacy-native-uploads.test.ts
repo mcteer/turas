@@ -100,9 +100,9 @@ it.each([4, 10])("stages actual %i MiB bytes through bounded HTTP handlers and h
     expect(await deriveNativeAttempt(f.actor, f.native, key, forwarded, { trustedHydrated: true })).toBe(attempt.attemptId);
     await expect(deriveNativeAttempt(f.actor,f.native,key,String(forwarded)+' changed')).rejects.toMatchObject({status:404});
     const turn='turn_'+randomUUID(),delivery=randomUUID(),canonicalId='evt_'+randomUUID();
-    await recordNativeReceipt(f.actor,f.conversation.id,attempt.attemptId,Response.json({deliveryId:delivery,status:'accepted'},{status:202}));
     const nativeEvent={type:'message.received',data:{message:summarizeNativeMessage(parts),turnId:turn,sequence:0},meta:{id:canonicalId,at:new Date().toISOString(),deliveryIds:[delivery]}};
     await projectNativeEvent(f.native,attempt.attemptId,nativeEvent);
+    await recordNativeReceipt(f.actor,f.conversation.id,attempt.attemptId,Response.json({deliveryId:delivery,status:'accepted'},{status:202}));
     const aliasId='evt_'+randomUUID();await projectNativeEvent(f.native,attempt.attemptId,{...nativeEvent,meta:{...nativeEvent.meta,id:aliasId}});
     const displayed=(await db.query("SELECT native_event_id,visible_payload FROM event_projections WHERE conversation_id=$1 AND event_type='message.received'",[f.conversation.id])).rows;
     expect(displayed).toHaveLength(2);for(const row of displayed){expect(row.visible_payload.parts).toBeUndefined();expect(row.visible_payload.applicationInputParts).toEqual([{type:'text',text:'Read this file.'},{type:'file',filename:'supplied.bin',mediaType:'application/octet-stream',size:bytes.length}]);}

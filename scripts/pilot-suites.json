@@ -1563,9 +1563,10 @@
     },
     {
       "file": "tests/unit/pilot/retained-denial-proof.test.ts",
-      "expectedCases": 1,
+      "expectedCases": 2,
       "cases": [
-        "rejects serialized current snapshots and healthy labels without an actual retained-reader result"
+        "rejects serialized current snapshots and healthy labels without an actual retained-reader result",
+        "refuses caller-authored original-source capture receipts and current authority labels"
       ]
     },
     {

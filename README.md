@@ -815,3 +815,9 @@ and a fixed regional read-only latency measurement. Bounded canonical replay and
 browser teardown fixes have focused local proof; complete current-source CI,
 hosted recovery/release, scheduled backup cadence and automated role acceptance
 remain pending. See the feature016 validation record for exact limits.
+
+Ordinary native receipt persistence now handles a projected-input-before-HTTP-ACK
+race by matching the original delivery, conversation/session, input and turn.
+It preserves the existing receipt, deadline and allowance and never resends an
+accepted message. Focused owned PostgreSQL checks cover text, selected passages
+and staged native files; current hosted verification remains pending.

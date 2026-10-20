@@ -295,16 +295,32 @@ export async function recordNativeReceipt(
   await withTransaction(async (client) => {
     if (prepared) await assertGovernedNativeRelease(client, prepared, session);
     else await lockOwnedBinding(client, session, conversationId);
-    if (prepared) {
-      const prior = (await client.query(`SELECT native_receipt,native_response_status,native_response_headers FROM response_attempts
-        WHERE id=$1 AND conversation_id=$2`, [attemptId, conversationId])).rows[0];
-      if (prior?.native_receipt !== null && prior?.native_receipt !== undefined) {
-        if (staffingSha256(prior.native_receipt) !== staffingSha256(receipt) || prior.native_response_status !== nativeResponse.status ||
-          staffingSha256(prior.native_response_headers) !== staffingSha256(headers)) {
-          throw new HttpFailure(409, "native_receipt_changed", "Native receipt differs from the saved result");
-        }
-        return;
+    const prior = (await client.query(`SELECT a.*,c.eve_session_id,sm.text AS original_text,sm.body_digest AS original_body_digest,to_jsonb(sm)->'ordinary_native_parts' AS original_parts,
+      e.native_session_id AS projected_session,e.turn_id AS projected_turn,e.visible_payload
+      FROM response_attempts a JOIN conversations c ON c.id=a.conversation_id
+      JOIN submitted_messages sm ON sm.id=a.message_id AND sm.conversation_id=a.conversation_id
+      LEFT JOIN event_projections e ON e.native_event_id=a.input_event_id AND e.conversation_id=a.conversation_id AND e.event_type='message.received'
+      WHERE a.id=$1 AND a.conversation_id=$2 FOR UPDATE OF a`,[attemptId,conversationId])).rows[0];
+    if (prior?.native_receipt !== null && prior?.native_receipt !== undefined) {
+      if (staffingSha256(prior.native_receipt) !== staffingSha256(receipt) || prior.native_response_status !== nativeResponse.status ||
+        staffingSha256(prior.native_response_headers) !== staffingSha256(headers)) {
+        throw new HttpFailure(409, "native_receipt_changed", "Native receipt differs from the saved result");
       }
+      return;
+    }
+    if(prior?.native_delivery_id && prior.native_delivery_id!==deliveryId)
+      throw new HttpFailure(409,'native_receipt_changed','Native delivery differs from the accepted input');
+    let projectedOrdinary=false;
+    if(!prepared && prior?.dispatch_state==='admitted' && (await conversationFeature(client,conversationId)).kind==='normal'){
+      const artifact=await artifactContextSchemaReady(client)?(await client.query('SELECT native_text_digest,canonical_request_digest FROM artifact_context_receipts WHERE attempt_id=$1',[attemptId])).rows[0]:undefined;
+      const originalBound=Array.isArray(prior.original_parts)
+        ? nativeMessageDigest(parseOrdinaryNativeMessage(prior.original_parts))===prior.original_body_digest &&
+          summarizeNativeMessage(prior.original_parts)===prior.original_text && messageDigest(prior.original_text)===prior.input_digest
+        : artifact ? artifact.canonical_request_digest===prior.original_body_digest && prior.original_body_digest===prior.input_digest
+        : typeof prior.original_text==='string' && messageDigest(prior.original_text)===prior.input_digest && prior.original_body_digest===prior.input_digest;
+      projectedOrdinary=originalBound && !!deliveryId && prior.native_delivery_id===deliveryId && !!prior.input_event_id && !!prior.native_turn_id &&
+        prior.projected_session===prior.eve_session_id && prior.projected_turn===prior.native_turn_id &&
+        typeof prior.visible_payload?.message==='string' && messageDigest(prior.visible_payload.message)===(artifact?.native_text_digest??prior.input_digest);
     }
     const result = await client.query(`UPDATE response_attempts SET
       dispatch_state = 'admitted', native_delivery_id = $2,
@@ -313,7 +329,7 @@ export async function recordNativeReceipt(
       WHERE id = $1 AND conversation_id = $6 AND (dispatch_state = 'dispatching' OR ($7 AND dispatch_state='admitted'))
         AND native_receipt IS NULL`,
     [attemptId, deliveryId, JSON.stringify(receipt), nativeResponse.status,
-      JSON.stringify(headers), conversationId, Boolean(prepared)]);
+      JSON.stringify(headers), conversationId, Boolean(prepared)||projectedOrdinary]);
     if (!result.rowCount) throw new HttpFailure(409, "dispatch_claimed", "Dispatch state changed");
   });
 }

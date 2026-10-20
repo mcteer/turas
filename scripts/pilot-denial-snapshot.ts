@@ -1,7 +1,8 @@
+import {requireAuthenticatedRetainedDenials} from './pilot-denial-reader';
 import {Client} from 'pg';
 import {resolve,dirname,basename,join} from 'node:path';
 import {mkdtemp,writeFile,readFile,rm} from 'node:fs/promises';
-import {randomBytes,randomUUID} from 'node:crypto';
+import {randomBytes,randomUUID,createHash} from 'node:crypto';
 import {readEvidence,createEvidenceDirectory,writeEvidence} from './pilot-evidence';
 import {pilotSource} from './pilot-source';
 import {pilotProtectedSnapshot} from './pilot-preservation';
@@ -11,6 +12,19 @@ import {captureRecoveryDenialSnapshot,verifyRecoveryDenialSnapshot} from '../lib
 import {putNeonEncryptedArchive,downloadNeonEncryptedArchive,retainNeonAuthoritySnapshot,type NeonArchiveScope} from '../lib/server/operations/neon-archive';
 import {encryptRecoveryFile,decryptRecoveryFile} from '../lib/server/operations/backup-crypto';
 import {withRecoveryCancellation} from '../lib/server/operations/recovery-cancellation';
+const captureSources=new WeakMap<object,{sourceDigest:string;environmentId:string;snapshotDigest:string}>();
+function sourceIdentity(source:{databaseUrl:string;projectId:string;target:string;environmentId:string;schemaVersion:number}){
+ const url=new URL(source.databaseUrl);url.hostname=url.hostname.replace('-pooler.','.');
+ return createHash('sha256').update(JSON.stringify({host:url.hostname,port:url.port||'5432',database:decodeURIComponent(url.pathname),projectId:source.projectId,target:source.target,environmentId:source.environmentId,schemaVersion:source.schemaVersion})).digest('hex');
+}
+/** Only an actual in-process independently retained capture can bind refreshed
+ * authority to the explicitly selected original source. JSON receipts cannot. */
+export function requireOriginalWorkDenialCapture(receipt:object,original:Parameters<typeof sourceIdentity>[0],restored:Parameters<typeof sourceIdentity>[0],retained:import('./pilot-denial-reader').RetainedWorkDenials){
+ requireAuthenticatedRetainedDenials(retained,original.environmentId);
+ const actual=captureSources.get(receipt),a=new URL(original.databaseUrl),b=new URL(restored.databaseUrl);
+ if(a.hostname.replace('-pooler.','.')===b.hostname.replace('-pooler.','.') && decodeURIComponent(a.pathname)===decodeURIComponent(b.pathname))throw Error('Original denial source must differ from restored target');
+ if(!actual||actual.sourceDigest!==sourceIdentity(original)||actual.environmentId!==original.environmentId||actual.snapshotDigest!==retained.contextDigest||retained.snapshot.environmentId!==original.environmentId)throw Error('Genuine original-source current denial capture required');
+}
 /** Actual read-only minimized current-state capture into the separate work
  * archive. No database dump/customer payload retention or restored-target write.
  * This retains proof; reconciliation and any release decision remain separate. */
@@ -41,7 +55,7 @@ export async function pilotDenialSnapshot(args:string[],parentSignal?:AbortSigna
    stage='independent_retention';const retain=new Client({connectionString:destination.databaseUrl,connectionTimeoutMillis:10000,statement_timeout:10000});let retained;try{await retain.connect();retained=await retainNeonAuthoritySnapshot(retain,archive,archive.headerDigest,signal);}finally{await retain.end();}
    stage='final_binding';if(JSON.stringify(await verifyWorkNeonDestination(destination,signal))!==JSON.stringify(cloud)||JSON.stringify(await pilotSource())!==JSON.stringify(source)||JSON.stringify(await pilotProtectedSnapshot())!==JSON.stringify(before))throw Error('Denial snapshot source destination or protected checkout changed');
    const receipt={contract:'pilot-work-denial-snapshot-v1',id,...source,cloud,archive,keyReference:reference,snapshotId:snapshot.id,snapshotDigest:snapshot.snapshotDigest,capturedAt:snapshot.capturedAt,recordedAt:new Date().toISOString(),sourceEnvironmentId:scope.environmentId,sourceSchema:scope.schemaVersion,sourceConnectionBinding:scope.connectionBinding,...binding,minimizedBytes:bytes.length,tableCount:verified.tableCount,coldDecryptionVerified:true,independentRetentionVerified:retained.independentRetentionVerified,primaryDatabaseChanged:false,currentAuthorityVerified:false,replayReconciled:false,restorationReady:false};
-   await writeEvidence(root,'snapshot.json',receipt);console.info(JSON.stringify({independentRetentionVerified:true,coldDecryptionVerified:true,minimizedBytes:bytes.length,tableCount:verified.tableCount,currentAuthorityVerified:false,replayReconciled:false,restorationReady:false}));return receipt;
+   await writeEvidence(root,'snapshot.json',receipt);console.info(JSON.stringify({independentRetentionVerified:true,coldDecryptionVerified:true,minimizedBytes:bytes.length,tableCount:verified.tableCount,currentAuthorityVerified:false,replayReconciled:false,restorationReady:false}));Object.freeze(receipt);captureSources.set(receipt,{sourceDigest:sourceIdentity(scope),environmentId:scope.environmentId,snapshotDigest:snapshot.snapshotDigest});return receipt;
   }catch(error){await writeEvidence(root,'failure.json',{id,...source,state:'fail',stage,safeFailure:'incomplete_work_denial_snapshot',primaryDatabaseChanged:false,restorationReady:false});throw error;}
   finally{key.fill(0);coldKey?.fill(0);await rm(staging,{recursive:true,force:true});}
  },parentSignal);

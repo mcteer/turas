@@ -1,3 +1,5 @@
+import {requireAuthenticatedRetainedDenials} from '../../../scripts/pilot-denial-reader';
+import {beginRetainedWorkDenialHistory,advanceRetainedWorkDenialHistory,requireRetainedWorkDenialHistory} from '../../../scripts/pilot-retained-denial-history';
 import {measureWorkSandboxTerminalInventory,requireMeasuredWorkSandboxTerminalInventory} from '../../../lib/server/operations/work-sandbox-terminal-inventory';
 import {deriveWorkMaintenanceInventoryInTransaction} from '../../../lib/server/operations/owned-maintenance-inventory';
 import {auditRecoveredRequestFencesInTransaction} from '../../../lib/server/operations/recovery-replay-audit';
@@ -138,7 +140,7 @@ it('measures exhaustive fresh work MCP category pages through SDK and rejects ch
  input={...input,signal:AbortSignal.timeout(380000),deadline:Date.now()+290000};
  const token='controlled-effects-token',key='controlled_effects_automation_key',secret=randomBytes(32).toString('base64url'),previousCron=process.env.CRON_SECRET;process.env.CRON_SECRET=secret;
   const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
-  try{const physical=await controlledPhysicalIntegrity(input);await withRetainedDenialFixture(owner,input.scope.environmentId,dirname(input.sourceFile),{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async (retained,refreshDenials)=>{
+  try{const physical=await controlledPhysicalIntegrity(input);await withRetainedDenialFixture(owner,input.scope.environmentId,dirname(input.sourceFile),{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async (retained,refreshDenials,readHistoricalDenials)=>{
    await quarantineRestoredAuthority(owner,input.scope,retained);let selectedTarget:Parameters<typeof requireLockedWorkRecoveryConnection>[1]|undefined;
    await withLockedWorkRecoveryTarget(input,async(_db,target)=>{selectedTarget=target;});const target=selectedTarget!;let corrupt=false,uncorruptedIdentities=0;
    const transport=vi.spyOn(globalThis,'fetch').mockImplementation(async(url,options)=>{
@@ -184,7 +186,12 @@ it('measures exhaustive fresh work MCP category pages through SDK and rejects ch
     const newerDenials=await refreshDenials();expect(()=>refreshMeasuredWorkMcpDenials([proof,{...proof}],newerDenials)).toThrow('Actual fresh');
     expect(()=>refreshMeasuredWorkMcpDenials([proof],freshDenials)).not.toThrow();
     expect(()=>refreshMeasuredWorkMcpDenials([proof],newerDenials)).not.toThrow();
-    const clock=vi.spyOn(Date,'now').mockReturnValue(Date.parse(newerDenials.snapshot.capturedAt)+300001);try{expect(()=>refreshMeasuredWorkMcpDenials([proof],newerDenials)).toThrow('Fresh independent');}finally{clock.mockRestore();}
+    const originalHistory=beginRetainedWorkDenialHistory(freshDenials);expect(()=>requireRetainedWorkDenialHistory({...originalHistory},freshDenials,input.scope.environmentId)).toThrow('Genuine current');
+    const denialHistory=advanceRetainedWorkDenialHistory(originalHistory,newerDenials);expect(()=>advanceRetainedWorkDenialHistory(originalHistory,newerDenials)).toThrow('Genuine finite');expect(requireRetainedWorkDenialHistory(denialHistory,newerDenials,input.scope.environmentId).baseline).toBe(freshDenials);expect(()=>requireRetainedWorkDenialHistory(denialHistory,{...newerDenials},input.scope.environmentId)).toThrow('Genuine current');
+    let historical:Awaited<ReturnType<typeof readHistoricalDenials>>|undefined;
+    const clock=vi.spyOn(Date,'now').mockReturnValue(Date.parse(newerDenials.snapshot.capturedAt)+300001);try{expect(()=>refreshMeasuredWorkMcpDenials([proof],newerDenials)).toThrow('Fresh independent');historical=await readHistoricalDenials();expect(()=>requireAuthenticatedRetainedDenials(historical!,input.scope.environmentId)).toThrow('Actual independently retained');expect(()=>beginRetainedWorkDenialHistory(historical!)).toThrow('Actual independently retained');}finally{clock.mockRestore();}
+    expect(requireRetainedWorkDenialHistory(beginRetainedWorkDenialHistory(historical!,newerDenials),newerDenials,input.scope.environmentId).baseline).toBe(historical);
+
     // The independent current replay still consumes every original transcript.
     await withLockedWorkRecoveryDecision(input,(db,current)=>requireMeasuredWorkMcpCategory(db,current,proof));
     // Later windows use this exact refreshed capability; no fresh JSON authority.
@@ -228,7 +235,7 @@ it('measures exhaustive fresh work MCP category pages through SDK and rejects ch
     expect((await owner.query('SELECT 1 FROM operations_recovery_http_reads WHERE revoked_at IS NULL')).rowCount).toBe(0);
     phase='producer';const {measureWorkCronAdmission}=await import('../../../lib/server/operations/work-cron-admission'),{produceWorkRecoveryVerification,resumeCommittedWorkRecoveryVerification}=await import('../../../lib/server/operations/work-recovery-verification');
     const journal=await PilotHostHttpJournal.create(join(dirname(input.sourceFile),'producer-http-journal'),{contract:'pilot-host-http-journal-plan-v1',id:randomUUID(),projectId:'prj_recovery',teamId:'team_recovery',sourceCommit:state.commit,maximumRequests:20,maximumCostMicroUsd:100000,expiresAt:new Date(Date.now()+3600000).toISOString(),authorityReference:'Controlled owned producer authority',previousJournalDigests:['b'.repeat(64)],historicalStrictFailureRetained:true,unknownCostHoldsRetained:true,automaticRetries:false}),effects={cron:await measureWorkCronAdmission({target:input,token,cronSecret:secret,protectionBypass:key}),oldHttp:await measureWorkOldHttpAdmission({target:input,token,approvedHosts:['recovery.vercel.app'],journal}),native:await measureWorkManagedTerminalInventory({target:input,token,retained}),sandbox:await measureWorkSandboxTerminalInventory({target:input,token,retained})};
-    const produced=await produceWorkRecoveryVerification({target:input,integrity:physical.proof,integrityMaterial:physical.material,retained,service:{maintenance,mcp:proofs,conversations},effects,passwords,journalDirectory:args.journalDirectory});expect(produced).toMatchObject({resumed:false,serviceOpened:false,restorationReady:false});expect((await owner.query('SELECT count(*)::int AS n FROM operations_recovery_verifications')).rows[0].n).toBe(1);
+    const produced=await produceWorkRecoveryVerification({target:input,integrity:physical.proof,integrityMaterial:physical.material,retained,denialHistory,service:{maintenance,mcp:proofs,conversations},effects,passwords,journalDirectory:args.journalDirectory});expect(produced).toMatchObject({resumed:false,serviceOpened:false,restorationReady:false});expect((await owner.query('SELECT count(*)::int AS n FROM operations_recovery_verifications')).rows[0].n).toBe(1);
     const probesBefore=(await owner.query('SELECT count(*)::int AS n FROM operations_recovery_http_reads')).rows[0].n;expect(await resumeCommittedWorkRecoveryVerification(input,physical.material)).toMatchObject({verificationId:produced.verificationId,resumed:true});expect((await owner.query('SELECT count(*)::int AS n FROM operations_recovery_http_reads')).rows[0].n).toBe(probesBefore);
     await expect(measureWorkMcpCategory(args)).rejects.toThrow('Committed recovery verification requires read-only');expect((await owner.query('SELECT count(*)::int AS n FROM operations_recovery_http_reads')).rows[0].n).toBe(probesBefore);
     await owner.query('BEGIN');await owner.query('UPDATE customer_profile_state SET internal_generation=internal_generation+1 WHERE customer_id=$1',[customerId]);await owner.query('COMMIT');await expect(resumeCommittedWorkRecoveryVerification(input,physical.material)).rejects.toThrow('Existing recovery verification is stale or changed');
@@ -873,8 +880,8 @@ it('preserves original provider journals including unknown embedding quota and r
  const {auditRecoveryProviderJournals}=await import('../../../lib/server/operations/recovery-provider-journal-audit');
  const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
  try{
-  const id=randomUUID();await owner.query("INSERT INTO retrieval_embedding_operations(id,environment_id,operation_kind,operation_key,state,embedding_contract,model_id,dimensions,input_characters,dispatched_at) VALUES($1::uuid,$2,'query',$1::text,'dispatched','embedding-v1','openai/text-embedding-3-small',1536,100,clock_timestamp())",[id,input.scope.environmentId]);
-  await withRetainedDenialFixture(owner,input.scope.environmentId,dirname(input.sourceFile),{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async retained=>{
+  let historyMutation:'none'|'missing'|'changed'='none';const id=randomUUID();await owner.query("INSERT INTO retrieval_embedding_operations(id,environment_id,operation_kind,operation_key,state,embedding_contract,model_id,dimensions,input_characters,dispatched_at) VALUES($1::uuid,$2,'query',$1::text,'dispatched','embedding-v1','openai/text-embedding-3-small',1536,100,clock_timestamp())",[id,input.scope.environmentId]);
+  await withRetainedDenialFixture(owner,input.scope.environmentId,dirname(input.sourceFile),{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async (retained,refreshHistory)=>{
    await quarantineRestoredAuthority(owner,input.scope,retained);
    await withLockedWorkRecoveryDecision(input,async(db,target)=>{
     const proof=await auditRecoveryProviderJournals(db,target,retained);expect(proof).toMatchObject({originalProviderJournalsPreserved:true,unknownOutcomesSettled:false,providerExecutionClosed:false,restorationReady:false});expect(proof.rows).toBeGreaterThanOrEqual(1);expect(retained.snapshot.tables.some(table=>table.name==='staffing_model_step_usage_receipts')).toBe(true);
@@ -885,12 +892,15 @@ it('preserves original provider journals including unknown embedding quota and r
     expect((await db.query('SELECT state,input_characters FROM retrieval_embedding_operations WHERE id=$1',[id])).rows).toEqual([{state:'dispatched',input_characters:100}]);
     expect((await db.query('SELECT count(*)::int AS n FROM plan_model_step_receipts')).rows[0].n).toBeGreaterThanOrEqual(1);
    });
+   const historyBaseline=await refreshHistory(),history=beginRetainedWorkDenialHistory(historyBaseline),historyCurrent=await refreshHistory(),advanced=advanceRetainedWorkDenialHistory(history,historyCurrent);
+   historyMutation='missing';const missingHistory=await refreshHistory();expect(()=>advanceRetainedWorkDenialHistory(advanced,missingHistory)).toThrow('Original retained history identity');expect(requireRetainedWorkDenialHistory(advanced,historyCurrent,input.scope.environmentId).current).toBe(historyCurrent);
+   historyMutation='changed';const changedHistory=await refreshHistory();expect(()=>advanceRetainedWorkDenialHistory(advanced,changedHistory)).toThrow('Original retained effect or accounting row changed');historyMutation='none';
    for(const table of ['plan_model_step_receipts','staffing_model_step_usage_receipts']){
     await owner.query('ALTER TABLE '+table+' RENAME TO '+table+'_missing');
     try{await expect(withLockedWorkRecoveryDecision(input,(db,target)=>auditRecoveryProviderJournals(db,target,retained))).rejects.toThrow('Complete original provider journal table inventory differs');}
     finally{await owner.query('ALTER TABLE '+table+'_missing RENAME TO '+table);}
    }
-  });
+  },snapshot=>{if(historyMutation==='none')return;const table=snapshot.tables.find(table=>table.name==='retrieval_embedding_operations')!;if(historyMutation==='missing')table.rows=table.rows.filter(row=>row.identity.id!==id);else{const row=table.rows.find(row=>row.identity.id===id)!;row.rowDigest='0'.repeat(64);}});
  }finally{await owner.end();}
 },async owner=>{
  const {submitPlanCommand}=await import('../../../lib/server/plans/commands'),{startPlanDraft}=await import('../../../lib/server/plans/drafting'),{syntheticPlanContent}=await import('../../fixtures/plans/seed');
@@ -938,8 +948,8 @@ it('composes genuine current ingress terminal providers and original held effect
   const oldHttp=await measureWorkOldHttpAdmission({target:input,token,approvedHosts:[host],journal}),native=await measureWorkManagedTerminalInventory({target:input,token,retained}),sandbox=await measureWorkSandboxTerminalInventory({target:input,token,retained});
   let retainedProof:Awaited<ReturnType<typeof verifyWorkRecoveryEffects>>|undefined;
   await withLockedWorkRecoveryDecision(input,async(db,target)=>{
-   await expect(verifyWorkRecoveryEffects(db,target,retained,{cron:{...cron},oldHttp,native,sandbox},input.signal)).rejects.toThrow('Genuine fresh unused');
-   const proof=await verifyWorkRecoveryEffects(db,target,retained,{cron,oldHttp,native,sandbox},input.signal);retainedProof=proof;expect(proof).toMatchObject({terminalProviderInventoriesVerified:true,originalFinancialAccountingPreserved:true,permanentRequestFencesVerified:true,unknownEffectsSettled:false,requiredScopeHealthy:false,restorationReady:false});
+   await expect(verifyWorkRecoveryEffects(db,target,retained,{cron:{...cron},oldHttp,native,sandbox},input.signal,beginRetainedWorkDenialHistory(retained))).rejects.toThrow('Genuine fresh unused');
+   const proof=await verifyWorkRecoveryEffects(db,target,retained,{cron,oldHttp,native,sandbox},input.signal,beginRetainedWorkDenialHistory(retained));retainedProof=proof;expect(proof).toMatchObject({terminalProviderInventoriesVerified:true,originalFinancialAccountingPreserved:true,permanentRequestFencesVerified:true,unknownEffectsSettled:false,requiredScopeHealthy:false,restorationReady:false});
    expect(await requireVerifiedWorkRecoveryEffects(db,target,proof)).toBe(proof);await expect(requireVerifiedWorkRecoveryEffects(db,target,{...proof})).rejects.toThrow('Actual unchanged');
    await db.query('SAVEPOINT effects_state');await db.query("UPDATE customer_references SET display_name='Changed effects state' WHERE id=$1",[DEMO_IDS.sharedCustomer]);await expect(requireVerifiedWorkRecoveryEffects(db,target,proof)).rejects.toThrow('Actual unchanged');await db.query('ROLLBACK TO SAVEPOINT effects_state');await db.query('RELEASE SAVEPOINT effects_state');expect(await requireVerifiedWorkRecoveryEffects(db,target,proof)).toBe(proof);
   });

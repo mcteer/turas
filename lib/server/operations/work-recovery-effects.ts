@@ -1,3 +1,4 @@
+import {requireRetainedWorkDenialHistory,type RetainedWorkDenialHistory} from '../../../scripts/pilot-retained-denial-history';
 import {auditRecoveryResumptionAdmission} from './recovery-resumption-admission';
 import {auditRecoveryNativeSendIdentities} from './recovery-native-send-identities';
 import type {Client} from 'pg';
@@ -28,9 +29,9 @@ const composed=new WeakMap<object,{db:Client;target:LockedWorkRecoveryTarget;sta
 /** Consume actual repeated ingress/provider observations and original accounting
  * under the same final owner transaction. Unknown effects stay held and cannot
  * be replayed; this never claims they settled, delivered, or had zero cost. */
-export async function verifyWorkRecoveryEffects(db:Client,target:LockedWorkRecoveryTarget,retained:RetainedWorkDenials,input:WorkRecoveryEffectMeasurements,signal:AbortSignal){
+export async function verifyWorkRecoveryEffects(db:Client,target:LockedWorkRecoveryTarget,retained:RetainedWorkDenials,input:WorkRecoveryEffectMeasurements,signal:AbortSignal,history:RetainedWorkDenialHistory){
  if(!isWorkRecoveryDecisionClient(db))throw Error('Genuine final effects owner required');
- const source=requireAuthenticatedRetainedDenials(retained,target.environmentId);
+ const preserved=requireRetainedWorkDenialHistory(history,retained,target.environmentId),source=requireAuthenticatedRetainedDenials(preserved.current,target.environmentId);
  await requireLockedWorkRecoveryConnection(db,target,{environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision});
  const cron=await requireMeasuredWorkCronAdmission(db,target,input.cron,signal);
  let peer:Awaited<ReturnType<typeof requireMeasuredWorkLegacyProductionPool>>|null=null;
@@ -42,10 +43,10 @@ export async function verifyWorkRecoveryEffects(db:Client,target:LockedWorkRecov
  const native=await requireMeasuredWorkManagedTerminalInventory(db,target,input.native,signal),sandbox=await requireMeasuredWorkSandboxTerminalInventory(db,target,input.sandbox,signal);
  const dispatch=await auditRecoveryDispatchState(db,target),model=await auditRecoveryModelHolds(db,target,retained),learning=await auditRecoveryLearningCosts(db,target,retained),service=await auditRecoveryServiceCosts(db,target,retained),journals=await auditRecoveryProviderJournals(db,target,retained),nativeSend=await auditRecoveryNativeSendIdentities(db,target,retained);
  const replay=await auditRecoveredRequestFencesInTransaction(db,source.snapshot,{environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision,snapshotDigest:source.contextDigest,backupCapturedAt:source.backupCapturedAt});
- signal.throwIfAborted();requireAuthenticatedRetainedDenials(retained,target.environmentId);
+ signal.throwIfAborted();requireRetainedWorkDenialHistory(history,retained,target.environmentId);requireAuthenticatedRetainedDenials(retained,target.environmentId);
  const resumption=await auditRecoveryResumptionAdmission(db,target,retained);
- const state=await currentRecoveryStateDigest(db),workflowDigest=recoveryDigest({cron,peer,oldHttp,native,sandbox,dispatch,model,learning,service,journals,nativeSend,resumption,replay:replay.proofDigest});
- const proof=Object.freeze({contract:'pilot-work-recovery-effects-v1' as const,environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision,denialDigest:source.contextDigest,currentStateDigest:state,workflowDigest,replayDigest:replay.proofDigest,terminalProviderInventoriesVerified:true as const,originalFinancialAccountingPreserved:true as const,permanentRequestFencesVerified:true as const,applicationResumptionAdmissionVerified:true as const,originalNativeSendIdentitiesVerified:true as const,unknownEffectsSettled:false as const,requiredScopeHealthy:false as const,restorationReady:false as const});
+ const state=await currentRecoveryStateDigest(db),workflowDigest=recoveryDigest({historicalEvidenceDigest:preserved.historyDigest,cron,peer,oldHttp,native,sandbox,dispatch,model,learning,service,journals,nativeSend,resumption,replay:replay.proofDigest});
+ const proof=Object.freeze({contract:'pilot-work-recovery-effects-v1' as const,environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision,denialDigest:source.contextDigest,historicalEvidenceDigest:preserved.historyDigest,currentStateDigest:state,workflowDigest,replayDigest:replay.proofDigest,terminalProviderInventoriesVerified:true as const,originalFinancialAccountingPreserved:true as const,permanentRequestFencesVerified:true as const,applicationResumptionAdmissionVerified:true as const,originalNativeSendIdentitiesVerified:true as const,unknownEffectsSettled:false as const,requiredScopeHealthy:false as const,restorationReady:false as const});
  composed.set(proof,{db,target,state});return proof;
 }
 /** In-process provenance lasts only for this same active final owner and exact

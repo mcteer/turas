@@ -593,6 +593,7 @@
         "unit.managed-workflow-inventory.007",
         "unit.managed-workflow-inventory.008",
         "unit.retained-denial-proof.001",
+        "unit.retained-denial-proof.002",
         "integration.recovery-current-grants.001",
         "integration.recovery-current-grants.002",
         "unit.managed-runtime-binding.001",
