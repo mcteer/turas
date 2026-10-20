@@ -244,6 +244,8 @@
         "unit.executors.010",
         "unit.executors.011",
         "unit.executors.012",
+        "unit.executors.013",
+        "unit.executors.014",
         "unit.sandbox-provider.001",
         "unit.sandbox-provider.002",
         "unit.sandbox-provider.003",
@@ -273,7 +275,10 @@
         "unit.local-reconciliation.004",
         "unit.execution-config.001",
         "unit.report-boundary.001",
-        "unit.report-boundary.002"
+        "unit.report-boundary.002",
+        "unit.parser-suspension.001",
+        "unit.parser-suspension.002",
+        "unit.parser-suspension.003"
       ]
     },
     {

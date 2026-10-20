@@ -265,3 +265,11 @@ No hosted target may be locked for release before its measured reopen path exist
   identity checks. Sixteen focused regressions, pilot typecheck and docs pass;
   independent scoped review found no remaining blocker. Actual complete current
   runs, hosted release and final eligibility remain required by T089–T092/T096.
+
+- [X] T102 Preserve actual per-program deadline classification in the hosted
+  executor while keeping output retrieval under the original domain deadline;
+  add the fail-closed normal-parser SIGSTOP operator exercise without changing
+  source bytes, programs, original deadlines or cost holds. Seventeen focused
+  executor/observer cases pass and independent review found no scoped blocker.
+  Actual cloud suspension/timeout/cleanup remains required by T090; the local
+  emulated-image attempt is retained as unverified.

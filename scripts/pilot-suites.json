@@ -280,7 +280,7 @@
     },
     {
       "file": "tests/unit/pilot/executors.test.ts",
-      "expectedCases": 12,
+      "expectedCases": 14,
       "cases": [
         "uses fixed programs and verifies bytes before provider admission",
         "denies network ports persistence and credentials inside execution",
@@ -293,7 +293,9 @@
         "stops and deletes compute when the original deadline expires",
         "attempts deletion even when the stop request fails",
         "retains only an exact known diagnostic code without private text",
-        "filters provider diagnostics while retaining known parser failure classification"
+        "filters provider diagnostics while retaining known parser failure classification",
+        "enforces the parser program deadline before its longer original domain deadline and verifies cleanup",
+        "keeps completed-command output retrieval under the original domain deadline"
       ]
     },
     {
@@ -2018,6 +2020,15 @@
         "refuses differently attributed original metrics even when their counts pass",
         "refuses changed original artifacts after their byte digests were bound",
         "refuses a forty-case UI success summary without all four discovered and executed project captures"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/parser-suspension.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "executes the emitted observer against exact NUL-delimited proc identities without emitting the scan receipt",
+        "refuses ambiguous or changed process identities before issuing a signal",
+        "refuses self and differently pinned parser processes without a replacement execution"
       ]
     }
   ],

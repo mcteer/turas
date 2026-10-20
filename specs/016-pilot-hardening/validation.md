@@ -5626,3 +5626,20 @@ bijection. Sixteen focused cases pass, including forged-summary and duplicate
 inventory rejection, with pilot typecheck and documentation checks passing.
 Independent read-only review found no remaining blocker in this scoped change.
 These are local implementation checks, not actual hosted release acceptance.
+
+The hosted executor now enforces the same clipped program timeout passed to its
+SDK command, preserving explicit deadline classification rather than reducing
+an interrupted parser to a generic failure. The program timer ends when command
+wait/log capture completes; subsequent output retrieval retains its original
+domain deadline. Cleanup uncertainty continues to override timeout success.
+Fourteen executor cases and three emitted-observer process-identity cases pass.
+The actual hosted deadline fault suspends only an exactly identified normal
+parser, retaining PID/start ticks/UID/executable/argv identity and original job,
+source, pinned image and deadline; provider absence remains mandatory. It does
+not assert per-program timer attribution from a generic timeout result.
+An owned actual-image suspension attempt remains failed/unverified because local
+Rosetta injects an extra Node argument. The hosted exact-argv rule was preserved;
+no local or hosted timeout acceptance is inferred from that attempt. Independent
+read-only scoped review found no remaining concrete blocker. Current inventory:
+974 cases across 176 suites; complete current-source and cloud execution remain
+pending.
