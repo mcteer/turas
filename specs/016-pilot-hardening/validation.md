@@ -5333,3 +5333,49 @@ The original failed complete attempt remains retained; a fresh full-source
 catalog is still required. A proposed parallel initial-probe optimization was
 withdrawn because normal denial reconciliation correctly retires peer probes.
 No denial exception was introduced. Initial actual SDK measurements remain serial.
+
+## 2026-10-20 browser command synchronization and regional denial freshness
+
+The native-operations disposable acceptance command, including its knowledge
+journey, passes with zero paid provider calls at the `49061b6` diagnostic
+checkpoint. Fixed CI diagnostics contain phases, bounded counts and booleans;
+private messages, identifiers and form contents remain in protected evidence.
+
+The complete Product Gaps runner passes **88/88** across the four WebKit projects
+after the keyboard-authoring helper waits for the exact-origin creation POST and
+asserts HTTP201 before checking the saved heading. The existing test deadline,
+keyboard action, lost-acknowledgment case and authorization assertions remain
+unchanged. The original failure showed a pending mutation at the five-second
+heading assertion; it did not prove native navigation or a product submit-handler
+defect. Bounded private application output is retained on future runner failures.
+Private records are `ci-3915636/native-phase-actual-private.log` and
+`ci-3915636/gaps-command-completion-actual-private.log` under the recovery
+worktree's ignored `local-artifacts/016/`.
+
+A separate synthetic capacity project runs exact source `1a3183f` on schema079;
+existing Turas Production and Preview remain schema077. This is capacity work,
+not pilot workflow acceptance. The regionally placed immutable verifier uses a
+verified base391 image plus an authenticated exact1a source bundle. The prepared
+directory failure issued no probes; independent zero-probe closure and provider404
+were verified. Its corrected finite execution issued25 probes before the
+independently retained denial snapshot reached the enforced five-minute freshness
+limit. All25 original private probe journals were reconciled, independent session,
+MCP and HTTP-admission retirement was checked, and provider404 confirmed executor
+deletion. Neither failed attempt establishes full service verification. Their
+original cost holds remain retained; no allowance was reset or replenished.
+
+Current work adds a genuine same-lineage cold-denial continuation for MCP replay,
+with unchanged five-minute authority freshness, thirty-minute transcript age,
+per-probe limits and owner deadlines. Its exhaustive focused PostgreSQL regression passes (one selected case;22
+unselected). The fresh full23-case run passes22cases, including stale-capability and
+foreign-archive negatives. Its publication fixture failed before replay-fence
+assertions because the standalone runner fell back to an older mutable renderer
+tag. A focused rerun uses the existing prepared immutable renderer; its outcome
+and a fresh complete-source catalog remain pending. A new actual
+regional run also remains pending. No schema cutover, operator cadence,
+Production pilot readiness or completed directory cleanup is claimed here.
+
+The subsequent native-send assertion checkpoint also passes the full disposable
+native-operations/knowledge command locally, with zero database deadlocks, zero
+statement timeouts and zero paid provider calls. The earlier CI503 remains a
+separate unresolved result until new CI captures its exact fixed boundary code.

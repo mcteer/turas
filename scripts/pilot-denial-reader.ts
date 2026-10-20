@@ -1,4 +1,5 @@
 import {Client} from 'pg';
+import {recoveryDigest} from '../lib/contracts/pilot-recovery';
 import {resolve,dirname,basename,join} from 'node:path';
 import {readFile,stat} from 'node:fs/promises';
 import {z} from 'zod';
@@ -9,7 +10,7 @@ import {neonArchiveScopeSchema,downloadNeonEncryptedArchive} from '../lib/server
 import {decryptRecoveryFile} from '../lib/server/operations/backup-crypto';
 import {verifyRecoveryDenialSnapshot,recoveryDenialSnapshotSchema} from '../lib/server/operations/recovery-denial-snapshot';
 const receiptSchema=z.strictObject({contract:z.literal('pilot-work-denial-snapshot-v1'),archive:neonArchiveScopeSchema,keyReference:workRecoveryKeyReferenceSchema,snapshotId:z.uuid(),snapshotDigest:z.string().regex(/^[a-f0-9]{64}$/),capturedAt:z.iso.datetime({offset:true}),sourceEnvironmentId:z.string().min(1).max(256),sourceSchema:z.union([z.literal(55),z.literal(57),z.literal(77),z.literal(79)]),minimizedBytes:z.number().int().positive().max(8388608)});
-const authenticated=new WeakMap<object,{environmentId:string;contextDigest:string;backupCapturedAt:string}>();
+const authenticated=new WeakMap<object,{environmentId:string;contextDigest:string;backupCapturedAt:string;lineageDigest:string}>();
 export type RetainedWorkDenials={snapshot:z.infer<typeof recoveryDenialSnapshotSchema>;contextDigest:string;backupCapturedAt:string};
 /** A serialized receipt cannot replace the actual cold-reader result. Recheck
  * the authenticated digest and freshness at each later recovery boundary. */
@@ -19,6 +20,15 @@ export function requireAuthenticatedRetainedDenials(value:RetainedWorkDenials,en
  verifyRecoveryDenialSnapshot(value.snapshot,{environmentId,contextDigest:actual.contextDigest,after:actual.backupCapturedAt,now});
  if(value.snapshot.contract!=='pilot-denial-replay-snapshot-v7'||value.snapshot.schemaVersion!==79)throw Error('Complete current authority inventory required');
  return value;
+}
+/** A later genuine cold read may supply current authority for replay. The
+ * original source/archive lineage and backup boundary cannot be substituted. */
+export function requireRetainedWorkDenialContinuation(previous:RetainedWorkDenials,current:RetainedWorkDenials,environmentId:string){
+ const old=authenticated.get(previous),next=authenticated.get(current);
+ if(!old||!next||old.lineageDigest!==next.lineageDigest||old.environmentId!==environmentId||old.contextDigest!==previous.contextDigest||old.backupCapturedAt!==previous.backupCapturedAt||previous.backupCapturedAt!==current.backupCapturedAt)throw Error('Same genuine independent denial lineage required');
+ verifyRecoveryDenialSnapshot(previous.snapshot,{environmentId,contextDigest:old.contextDigest,after:old.backupCapturedAt,now:Date.parse(previous.snapshot.capturedAt)});
+ requireAuthenticatedRetainedDenials(current,environmentId);
+ if(Date.parse(current.snapshot.capturedAt)<Date.parse(previous.snapshot.capturedAt))throw Error('Monotonic independent denial capture required');
 }
 /** Actual fresh encrypted independent proof, never a snapshot-side healthy label.
  * Caller owns/removes the new private staging directory on every exit. */
@@ -36,6 +46,6 @@ export async function readRetainedWorkDenialSnapshot(input:{receipt:string;desti
   verifyRecoveryDenialSnapshot(snapshot,{environmentId:input.environmentId,contextDigest:receipt.archive.headerDigest,after:input.after,now:Date.now()});
   if(JSON.stringify(await verifyWorkNeonDestination(destination,signal))!==JSON.stringify(cloud))throw Error('Independent current denial destination changed');
   const result=Object.freeze({snapshot,contextDigest:receipt.archive.headerDigest,backupCapturedAt:input.after});
-  authenticated.set(result,{environmentId:input.environmentId,contextDigest:receipt.archive.headerDigest,backupCapturedAt:input.after});return result;
+  authenticated.set(result,{environmentId:input.environmentId,contextDigest:receipt.archive.headerDigest,backupCapturedAt:input.after,lineageDigest:recoveryDigest({sourceProjectId:destination.sourceProjectId,operatorProjectId:destination.operatorProjectId,teamId:destination.teamId,resourceId:destination.resourceId,neonProjectId:destination.neonProjectId,installationId:destination.installationId,archiveHost:new URL(destination.databaseUrl).hostname,archiveDatabase:new URL(destination.databaseUrl).pathname})});return result;
  }finally{key.fill(0);}
 }

@@ -11,7 +11,7 @@ import {measureWorkOldHttpAdmission,requireMeasuredWorkOldHttpAdmission} from '.
 import {PilotHostHttpJournal} from '../../../scripts/pilot-host-http-journal';
 import {measureWorkManagedTerminalInventory,requireMeasuredWorkManagedTerminalInventory} from '../../../lib/server/operations/work-managed-terminal-inventory';
 import {measureWorkTargetIntegrity,requireMeasuredWorkTargetIntegrity} from '../../../lib/server/operations/work-target-integrity';
-import {measureWorkMcpCategoryBatch,measureWorkMcpCategoryWindow,measureWorkMcpCategory,requireMeasuredWorkMcpCategory,deriveWorkMcpScopeInTransaction,requireMeasuredWorkMcpCoverage} from '../../../lib/server/operations/work-mcp-verification';
+import {refreshMeasuredWorkMcpDenials,measureWorkMcpCategoryBatch,measureWorkMcpCategoryWindow,measureWorkMcpCategory,requireMeasuredWorkMcpCategory,deriveWorkMcpScopeInTransaction,requireMeasuredWorkMcpCoverage} from '../../../lib/server/operations/work-mcp-verification';
 import {withRetainedDenialFixture} from '../../fixtures/pilot/retained-denials';
 import {quarantineRestoredAuthority} from '../../../lib/server/operations/recovery-quarantine';
 import {POST as maintenanceMcp} from '../../../app/api/operations/recovery-read/[admissionId]/mcp/route';
@@ -138,7 +138,7 @@ it('measures exhaustive fresh work MCP category pages through SDK and rejects ch
  input={...input,signal:AbortSignal.timeout(380000),deadline:Date.now()+290000};
  const token='controlled-effects-token',key='controlled_effects_automation_key',secret=randomBytes(32).toString('base64url'),previousCron=process.env.CRON_SECRET;process.env.CRON_SECRET=secret;
   const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
-  try{const physical=await controlledPhysicalIntegrity(input);await withRetainedDenialFixture(owner,input.scope.environmentId,dirname(input.sourceFile),{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async retained=>{
+  try{const physical=await controlledPhysicalIntegrity(input);await withRetainedDenialFixture(owner,input.scope.environmentId,dirname(input.sourceFile),{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async (retained,refreshDenials)=>{
    await quarantineRestoredAuthority(owner,input.scope,retained);let selectedTarget:Parameters<typeof requireLockedWorkRecoveryConnection>[1]|undefined;
    await withLockedWorkRecoveryTarget(input,async(_db,target)=>{selectedTarget=target;});const target=selectedTarget!;let corrupt=false,uncorruptedIdentities=0;
    const transport=vi.spyOn(globalThis,'fetch').mockImplementation(async(url,options)=>{
@@ -170,6 +170,25 @@ it('measures exhaustive fresh work MCP category pages through SDK and rejects ch
     const args={target:input,selection:{workspaceId,username:'mcteer' as const,category:'profiles' as const,customerId},password:process.env.TURAS_DEMO_PASSWORD!,retained,journalDirectory:dirname(input.sourceFile)};
     phase='initial-category';const proof=await measureWorkMcpCategory(args);expect(proof).toMatchObject({calls:5,actualSdkVerified:true,categoryCoverageVerified:true,probeRetirementVerified:true,requiredScopeHealthy:false,restorationReady:false});
     await withLockedWorkRecoveryTarget(input,async(db,current)=>{await db.query('BEGIN');try{expect(await requireMeasuredWorkMcpCategory(db,current,proof)).toBe(proof);await expect(requireMeasuredWorkMcpCategory(db,current,{...proof})).rejects.toThrow('Actual fresh');const inventory=await deriveWorkMcpScopeInTransaction(db,current);expect(inventory.required).toContainEqual(proof.selection);await expect(requireMeasuredWorkMcpCoverage(db,current,[proof])).rejects.toThrow('Complete unique');await expect(requireMeasuredWorkMcpCoverage(db,current,[proof,proof])).rejects.toThrow('Complete unique');await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}});
+    phase='current-denial-refresh';
+    expect(()=>refreshMeasuredWorkMcpDenials([{...proof}],retained)).toThrow('Actual fresh');
+    expect(()=>refreshMeasuredWorkMcpDenials([proof],{...retained})).toThrow('genuine independent');
+    expect(()=>refreshMeasuredWorkMcpDenials([proof,proof],retained)).toThrow('unique');
+    const foreignRoot=join(dirname(input.sourceFile),'foreign-denial-lineage');await mkdir(foreignRoot,{mode:0o700});const originalRetainedKey=state.retainedKey;
+    try{await withRetainedDenialFixture(owner,input.scope.environmentId,foreignRoot,{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async foreign=>{expect(foreign.backupCapturedAt).toBe(retained.backupCapturedAt);expect(()=>refreshMeasuredWorkMcpDenials([proof],foreign)).toThrow('Same genuine independent denial lineage');},undefined,retained.backupCapturedAt);}finally{state.retainedKey=originalRetainedKey;}
+    const originalCompleted=proof.completedAt,originalTranscript=proof.transcriptDigest,freshDenials=await refreshDenials();
+    expect(()=>refreshMeasuredWorkMcpDenials([proof],freshDenials)).not.toThrow();
+    expect(()=>refreshMeasuredWorkMcpDenials([proof],retained)).toThrow('Monotonic');
+    expect(proof.completedAt).toBe(originalCompleted);expect(proof.transcriptDigest).toBe(originalTranscript);
+    // All-or-nothing validation: a forged later entry must not rebind the first.
+    const newerDenials=await refreshDenials();expect(()=>refreshMeasuredWorkMcpDenials([proof,{...proof}],newerDenials)).toThrow('Actual fresh');
+    expect(()=>refreshMeasuredWorkMcpDenials([proof],freshDenials)).not.toThrow();
+    expect(()=>refreshMeasuredWorkMcpDenials([proof],newerDenials)).not.toThrow();
+    const clock=vi.spyOn(Date,'now').mockReturnValue(Date.parse(newerDenials.snapshot.capturedAt)+300001);try{expect(()=>refreshMeasuredWorkMcpDenials([proof],newerDenials)).toThrow('Fresh independent');}finally{clock.mockRestore();}
+    // The independent current replay still consumes every original transcript.
+    await withLockedWorkRecoveryDecision(input,(db,current)=>requireMeasuredWorkMcpCategory(db,current,proof));
+    // Later windows use this exact refreshed capability; no fresh JSON authority.
+    retained=newerDenials;args.retained=retained;
     phase='negative-drift';const originalAdmission=(await owner.query('SELECT id FROM operations_recovery_http_reads WHERE workspace_id=$1 AND mcp_probe_connection ORDER BY created_at,id LIMIT 1',[workspaceId])).rows[0].id;
     for(const drift of ['content','membership','probe'] as const)await withLockedWorkRecoveryTarget(input,async(db,current)=>{await db.query('BEGIN');try{
      if(drift==='content')await db.query('UPDATE customer_profile_state SET internal_generation=internal_generation+1 WHERE customer_id=$1',[customerId]);

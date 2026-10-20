@@ -10,7 +10,7 @@ import {getServerConfig} from '../config';
 import {withLockedWorkRecoveryTarget,requireLockedWorkRecoveryConnection,retireRegisteredWorkMcpProbe,remainingRegisteredWorkRecoveryProbes,withWorkRecoveryReadGroup,type LockedWorkRecoveryTarget,type LockedWorkRecoveryInput} from './locked-work-recovery-target';
 import {issueWorkRecoveryMcpProbe} from './recovery-mcp-probe-issuer';
 import {readWorkRecoveryMcpRequest} from './recovery-mcp-read';
-import type {RetainedWorkDenials} from '../../../scripts/pilot-denial-reader';
+import {requireRetainedWorkDenialContinuation,type RetainedWorkDenials} from '../../../scripts/pilot-denial-reader';
 const selection=z.strictObject({workspaceId:z.uuid(),username:z.enum(['mcteer','panel','partner']),category:mcpCategorySchema,customerId:z.uuid().nullable()}).refine(v=>v.category==='knowledge'?v.customerId===null:v.customerId!==null,'Exact category customer scope required');
 type Selection=z.infer<typeof selection>;
 type Input={target:LockedWorkRecoveryInput;selection:Selection;password:string;retained:RetainedWorkDenials;journalDirectory:string;protectionBypass?:string};
@@ -119,6 +119,14 @@ export async function measureWorkMcpCategoryBatch(input:Omit<Input,'selection'>&
  * Return only completed selections after independent final cleanup succeeds. */
 export async function measureWorkMcpCategoryWindow(input:Omit<Input,'selection'>&{selections:readonly Selection[]}){return measureCategorySet(input,32,true);}
 export async function measureWorkMcpCategory(input:Input){return (await measureWorkMcpCategoryBatch({...input,selections:[input.selection]}))[0];}
+/** Rebind only current replay authority after independently retaining new
+ * denials between completed windows. Historical transport and probe evidence
+ * stay unchanged; every final canonical read and retirement check still runs. */
+export function refreshMeasuredWorkMcpDenials(proofs:readonly WorkMcpCategoryMeasurement[],current:RetainedWorkDenials){
+ if(!Array.isArray(proofs)||!proofs.length||proofs.length>4096||new Set(proofs).size!==proofs.length)throw Error('Finite genuine unique work MCP measurements required');
+ const contexts=proofs.map(proof=>{const actual=measured.get(proof),age=Date.now()-Date.parse(proof.completedAt);if(!actual||proof.targetDigest!==proofs[0].targetDigest||!Number.isFinite(age)||age<0||age>1800000||recoveryDigest(actual.transcript)!==proof.transcriptDigest)throw Error('Actual fresh coherent work MCP category measurements required');requireRetainedWorkDenialContinuation(actual.retained,current,current.snapshot.environmentId);return actual;});
+ for(let index=0;index<proofs.length;index++)measured.set(proofs[index],{...contexts[index],retained:current});
+}
 async function requireAdditionalRetirement(db:Client,admissions:readonly Additional[]){for(const admission of admissions)if((await db.query('SELECT 1 FROM operations_recovery_http_reads a JOIN login_sessions s ON s.id=a.session_id WHERE a.id=$1 AND s.id=$2 AND a.revoked_at IS NOT NULL AND s.revoked_at IS NOT NULL',[admission.id,admission.actor.sessionId])).rowCount!==1)throw Error('Measured work MCP additional admission retirement changed');}
 /** Final in-transaction consumption repeats every canonical page/read/citation
  * with a new current authenticated probe, under ordered fences and table locks.

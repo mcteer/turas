@@ -107,7 +107,7 @@ Completion work now includes released main `f8d196f`. New pilot logins default
 off through `TURAS_PILOT_LOGIN_ENABLED`; explicit enablement still requires a
 current assigned membership. A separate exact-source Production infrastructure
 authorization can now be verified without promoting the original Preview envelope.
-The composed workspace/upload WebKit matrix passes40cases; the updated820-case
+The composed workspace/upload WebKit matrix passes40cases; the current928-case/168-suite
 catalog requires fresh complete verification. Expired infrastructure/model approvals,
 original charges and holds remain unchanged; no hosted pilot readiness is claimed.
 Current Production remains released `f8d196f` on schema077. Its host firewall
