@@ -13,7 +13,7 @@ import {produceWorkRecoveryVerification,resumeCommittedWorkRecoveryVerification}
 import {quarantineRestoredAuthority} from '../lib/server/operations/recovery-quarantine';
 import {Client} from 'pg';
 import {databaseSafetyCaptureSourceSchema} from './pilot-database-safety-copy';
-import {deriveWorkMcpScopeInTransaction,measureWorkMcpCategoryBatch,type WorkMcpCategoryMeasurement} from '../lib/server/operations/work-mcp-verification';
+import {deriveWorkMcpScopeInTransaction,measureWorkMcpCategoryWindow,type WorkMcpCategoryMeasurement} from '../lib/server/operations/work-mcp-verification';
 import {deriveWorkMaintenanceInventoryInTransaction} from '../lib/server/operations/owned-maintenance-inventory';
 import {measureWorkMaintenanceHttpBatch,type WorkMaintenanceHttpBatch} from '../lib/server/operations/work-maintenance-verification';
 import {deriveWorkConversationInventory,measureWorkConversationHttpBatch,type WorkConversationHttpBatch} from '../lib/server/operations/work-conversation-http';
@@ -47,7 +47,13 @@ export async function pilotWorkRecoveryVerify(args:string[]){
    // quarantine entry point independently rechecks owner, marker and revision.
    try{await owner.connect();await quarantineRestoredAuthority(owner,config.scope,retained);}finally{await owner.end();}
    const mcpScope=await withLockedWorkRecoveryDecision(target(),(db,current)=>deriveWorkMcpScopeInTransaction(db,current)),mcp:WorkMcpCategoryMeasurement[]=[];
-   const pending=[...mcpScope.required];while(pending.length){signal.throwIfAborted();const first=pending[0],selections=pending.filter(value=>value.workspaceId===first.workspaceId&&value.username===first.username).slice(0,4);mcp.push(...await measureWorkMcpCategoryBatch({target:target(),selections,password:credentials.passwords[first.username],retained,journalDirectory:root,protectionBypass:credentials.protectionBypass}));for(const selection of selections)pending.splice(pending.indexOf(selection),1);}
+   const identity=(value:typeof mcpScope.required[number])=>JSON.stringify([value.workspaceId,value.username,value.category,value.customerId]);
+   const pending=[...mcpScope.required];while(pending.length){signal.throwIfAborted();const first=pending[0],selections=pending.filter(value=>value.workspaceId===first.workspaceId&&value.username===first.username).slice(0,32),requested=new Set(selections.map(identity));
+    const completed=await measureWorkMcpCategoryWindow({target:target(),selections,password:credentials.passwords[first.username],retained,journalDirectory:root,protectionBypass:credentials.protectionBypass});
+    if(!completed.length)throw Error('Work MCP window made no progress');const seen=new Set<string>();
+    for(const proof of completed){const key=identity(proof.selection);if(!requested.has(key)||seen.has(key))throw Error('Work MCP window returned a foreign or duplicate selection');seen.add(key);const index=pending.findIndex(value=>identity(value)===key);if(index<0)throw Error('Work MCP window selection is no longer pending');pending.splice(index,1);}
+    mcp.push(...completed);
+   }
    const inventory=await withLockedWorkRecoveryDecision(target(),async(db,current)=>({maintenance:(await deriveWorkMaintenanceInventoryInTransaction(db,current,signal)).records.map(({kind,recordId})=>({kind,recordId})),conversations:(await deriveWorkConversationInventory(db,current)).records.map(row=>row.id)})),maintenance:WorkMaintenanceHttpBatch[]=[],conversations:WorkConversationHttpBatch[]=[];
    for(let offset=0;offset<inventory.maintenance.length;offset+=8)maintenance.push(await measureWorkMaintenanceHttpBatch({target:target(),records:inventory.maintenance.slice(offset,offset+8),password:credentials.passwords.mcteer,journalDirectory:root,protectionBypass:credentials.protectionBypass}));
    for(let offset=0;offset<inventory.conversations.length;offset+=8)conversations.push(await measureWorkConversationHttpBatch({target:target(),recordIds:inventory.conversations.slice(offset,offset+8),passwords:credentials.passwords,journalDirectory:root,protectionBypass:credentials.protectionBypass}));

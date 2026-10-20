@@ -5288,3 +5288,36 @@ Root/pilot type checks, documentation checks, migration079 manifest checksum and
 catalog/deadline/result contracts (32/32) passed. The complete new-source catalog,
 CI and actual Preview/Production release remain pending. The earlier c8e8ae1
 frozen923-case run is historical source evidence, even if it completes afterward.
+
+
+#### Recovery scale and browser teardown checkpoint
+
+The actual Production077 inventory projects1,475 required MCP category selections
+after the explicit078/079 migration. A separate, fixed read-only regional owner
+probe measured20 SELECT1 samples (mean2.3115ms, p952.8737ms); its owned Sandbox
+was stopped/deleted and provider404 verified. No existing hosted target was locked,
+migrated or released. This latency measurement does not prove full recovery capacity.
+
+Initial category verification now compares actual HTTP/SDK output once against the
+canonical governed read, retaining exhaustive final replay. A finite owner window
+returns only completed categories and preserves the original32 registered-probe
+slots,64 tool calls,59-second credential, five-minute target and15-minute command
+limits. Final canonical replay uses groups of at most eight walks in the original
+owner transaction, actual per-tool authorization and unchanged cancellation. Group
+admission claims its slot synchronously; SQL failure or read cancellation aborts
+the owner, closes its writer, drains readers and independently retires probes.
+Independent review found and verified the overlapping-group admission correction.
+
+Before the final pipelined replay change, the complete recovery-decision suite
+passed23/23. Pipelined locked-target tests pass16/16; two focused decision/SDK
+cases pass, and the overlapping-group regression passes1/1 selected. Pilot types
+pass. The complete final-source recovery suite and catalog remain pending.
+Legacy055/077 denial replay retains its original index-key fences without requiring
+unavailable079 job-business-key metadata; the full legacy restore suite passes5/5.
+
+The original CI WebKit failures remain retained. The reproduced native-file route
+response-disposal failure now has explicit after-test route draining; the full
+legacy WebKit catalog passes96/96 locally. The gaps runner adds fixed, minimized
+validity/event diagnostics with a negative privacy check (8/8 unit cases); its
+fresh local WebKit catalog passes88/88. No browser result establishes hosted pilot
+acceptance or conclusively attributes every earlier CI failure.

@@ -4,6 +4,10 @@ import {test,expect,type Page} from '@playwright/test';
 import type {MessageStreamEvent} from 'eve/client';
 import {signIn,requireUiFixtureDatabaseUrl} from '../fixtures/ui';
 
+// Controlled fetch/fulfill handlers can outlive the last UI assertion. Settle
+// them before Playwright disposes the page's request context; surface errors.
+test.afterEach(async({page})=>{await page.unrouteAll({behavior:'wait'});});
+
 // Real authenticated application/owned database, explicitly substituted native
 // wire events. These assertions prove UI interaction, not provider execution.
 type EventData<T extends MessageStreamEvent['type']>=Extract<MessageStreamEvent,{type:T}> extends {data:infer D}?D:Record<string,never>;

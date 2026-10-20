@@ -49,7 +49,7 @@ async function withRecoveryParticipantCapability<T>(client:PoolClient,actor:Curr
 export async function withAuthenticatedMcpRecoveryReadCapability<T>(client:PoolClient,authorization:string|null,raw:z.infer<typeof readProbeScope>,read:(actor:McpReadActor)=>Promise<T>){
  const scope=readProbeScope.parse(raw),now=Date.now();
  if(scope.environmentId!==getServerConfig().TURAS_ENVIRONMENT_ID||scope.deadline<=now||scope.deadline>now+60000)throw new HttpFailure(403,'forbidden','Short-lived MCP recovery read required');
- await client.query('SAVEPOINT authenticated_mcp_recovery_probe');await client.query('RELEASE SAVEPOINT authenticated_mcp_recovery_probe');
+ await client.query('SAVEPOINT authenticated_mcp_recovery_probe; RELEASE SAVEPOINT authenticated_mcp_recovery_probe');
  await client.query('SELECT pg_advisory_xact_lock_shared(hashtextextended($1,16017))',[scope.environmentId]);
  const control=(await client.query(`SELECT c.environment_id FROM operations_control c JOIN turas_environment e ON e.environment_id=c.environment_id
  WHERE c.environment_id=$1 AND c.mode='locked' AND c.recovery_id=$2 AND c.revision=$3 AND e.schema_version=79

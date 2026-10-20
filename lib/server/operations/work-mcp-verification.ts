@@ -7,7 +7,7 @@ import {mcpCategorySchema,mcpToolOutputs,mcpToolInputs,mcpProtocolVersion,mcpLim
 import {recoveryDigest} from '../../contracts/pilot-recovery';
 import {sessionCookie} from '../auth/sessions';
 import {getServerConfig} from '../config';
-import {withLockedWorkRecoveryTarget,requireLockedWorkRecoveryConnection,retireRegisteredWorkMcpProbe,type LockedWorkRecoveryTarget,type LockedWorkRecoveryInput} from './locked-work-recovery-target';
+import {withLockedWorkRecoveryTarget,requireLockedWorkRecoveryConnection,retireRegisteredWorkMcpProbe,remainingRegisteredWorkRecoveryProbes,withWorkRecoveryReadGroup,type LockedWorkRecoveryTarget,type LockedWorkRecoveryInput} from './locked-work-recovery-target';
 import {issueWorkRecoveryMcpProbe} from './recovery-mcp-probe-issuer';
 import {readWorkRecoveryMcpRequest} from './recovery-mcp-read';
 import type {RetainedWorkDenials} from '../../../scripts/pilot-denial-reader';
@@ -72,7 +72,8 @@ async function openCanonicalSdk(db:Client,target:LockedWorkRecoveryTarget,creden
 }
 async function canonicalTool(sdk:McpClient,name:McpToolName,args:Record<string,unknown>){return parse(name,(await sdk.callTool({name,arguments:mcpToolInputs[name].parse(args)})).structuredContent);}
 async function boundedResponse(response:Response,signal:AbortSignal){const reader=response.body?.getReader();if(!reader)throw Error('Work MCP response missing');let size=0;const chunks:Uint8Array[]=[];try{for(;;){signal.throwIfAborted();const next=await reader.read();if(next.done)break;size+=next.value.length;if(size>mcpLimits.responseBytes)throw Error('Work MCP response exceeds contract');chunks.push(next.value);}}finally{await reader.cancel();reader.releaseLock();}return new Response(Buffer.concat(chunks),{status:response.status,headers:response.headers});}
-/** Real fixed-origin HTTP/SDK and canonical governed projection comparison. No
+/** Real fixed-origin HTTP/SDK followed by a canonical governed comparison. The
+ * exhaustive final replay independently binds every transcript to current state. No
  * injectable fetch/client, caller records, healthy flags or captured bearer. */
 async function measureCategory(db:Client,target:LockedWorkRecoveryTarget,input:Input){
  const selected=selection.parse(input.selection);
@@ -93,21 +94,30 @@ async function measureCategory(db:Client,target:LockedWorkRecoveryTarget,input:I
    canonicalSdk=await openCanonicalSdk(db,target,issued.credential,true);
    await walkCategory(selected,async(name,args,canonicalArgs=args)=>{
     if(++calls>64)throw Error('Work MCP complete category exceeds finite probe admission');signal.throwIfAborted();
-    const canonical=await canonicalTool(canonicalSdk!,name,canonicalArgs);
     const remote=parse(name,(await sdk.callTool({name,arguments:mcpToolInputs[name].parse(args)})).structuredContent);
     const after=await canonicalTool(canonicalSdk!,name,canonicalArgs);
-    const digest=recoveryDigest(projection(name,remote));if(digest!==recoveryDigest(projection(name,canonical))||digest!==recoveryDigest(projection(name,after)))throw Error('Work MCP HTTP and canonical projections differ');
-    transcript.push(transcriptEntry(name,args,remote));return {remote,canonical};
+    const digest=recoveryDigest(projection(name,remote));if(digest!==recoveryDigest(projection(name,after)))throw Error('Work MCP HTTP and canonical projections differ');
+    transcript.push(transcriptEntry(name,args,remote));return {remote,canonical:after};
    });
   }catch(error){failure=error;throw error;}finally{const errors:unknown[]=[];for(const client of [sdk,canonicalSdk])try{await client?.close();}catch(error){errors.push(error);}for(const admission of additional)try{await transaction(db,()=>retireOwnedRecoveryHttpRead(db as unknown as PoolClient,admission.id));}catch(error){errors.push(error);}try{await transaction(db,()=>retireRegisteredWorkMcpProbe(db,target,issued.probe));await denied(admissionPath,issued.admission.secret,[403]);}catch(error){errors.push(error);}if(errors.length)throw new AggregateError([...(failure?[failure]:[]),...errors],'Work MCP read and retirement incomplete');}
   return {proof:Object.freeze({contract:'pilot-work-mcp-category-v1' as const,selection:Object.freeze(selected),targetDigest:targetDigest(target),transcriptDigest:recoveryDigest(transcript),calls,completedAt:new Date().toISOString(),actualSdkVerified:true as const,categoryCoverageVerified:true as const,probeRetirementVerified:true as const,requiredScopeHealthy:false as const,restorationReady:false as const}),transcript:Object.freeze(transcript),issued,additional:Object.freeze(additional)};
 }
-export async function measureWorkMcpCategoryBatch(input:Omit<Input,'selection'>&{selections:readonly Selection[]}){
- const selections=z.array(selection).min(1).max(4).parse(input.selections);z.string().min(1).max(4096).parse(input.password);if(input.protectionBypass!==undefined)z.string().min(1).max(8192).parse(input.protectionBypass);
+async function measureCategorySet(input:Omit<Input,'selection'>&{selections:readonly Selection[]},maximum:number,window:boolean){
+ const selections=z.array(selection).min(1).max(maximum).parse(input.selections);z.string().min(1).max(4096).parse(input.password);if(input.protectionBypass!==undefined)z.string().min(1).max(8192).parse(input.protectionBypass);
  if(new Set(selections.map(value=>recoveryDigest(value))).size!==selections.length||selections.some(value=>value.username!==selections[0].username||value.workspaceId!==selections[0].workspaceId))throw Error('Unique same-participant work MCP batch required');
- const results=await withLockedWorkRecoveryTarget(input.target,async(db,target)=>{const results:Awaited<ReturnType<typeof measureCategory>>[]=[];for(const selected of selections)results.push(await measureCategory(db,target,{...input,selection:selected}));return results;});
+ const results=await withLockedWorkRecoveryTarget(input.target,async(db,target)=>{const results:Awaited<ReturnType<typeof measureCategory>>[]=[];for(const selected of selections){
+  // One original plus seven additional admissions covers the unchanged64-call
+  // category ceiling. Never reclaim retired intents or renew the shared target.
+  if(window&&remainingRegisteredWorkRecoveryProbes(db,target)<8)break;
+  results.push(await measureCategory(db,target,{...input,selection:selected}));
+ }return results;});
+ // A failed category or outer source/platform/cleanup check mints no proofs.
  for(const result of results)measured.set(result.proof,{transcript:result.transcript,issued:result.issued,additional:result.additional,password:input.password,retained:input.retained,journalDirectory:input.journalDirectory});return Object.freeze(results.map(result=>result.proof));
 }
+export async function measureWorkMcpCategoryBatch(input:Omit<Input,'selection'>&{selections:readonly Selection[]}){return measureCategorySet(input,4,false);}
+/** Amortize owner binding without increasing any probe, call or time ceiling.
+ * Return only completed selections after independent final cleanup succeeds. */
+export async function measureWorkMcpCategoryWindow(input:Omit<Input,'selection'>&{selections:readonly Selection[]}){return measureCategorySet(input,32,true);}
 export async function measureWorkMcpCategory(input:Input){return (await measureWorkMcpCategoryBatch({...input,selections:[input.selection]}))[0];}
 async function requireAdditionalRetirement(db:Client,admissions:readonly Additional[]){for(const admission of admissions)if((await db.query('SELECT 1 FROM operations_recovery_http_reads a JOIN login_sessions s ON s.id=a.session_id WHERE a.id=$1 AND s.id=$2 AND a.revoked_at IS NOT NULL AND s.revoked_at IS NOT NULL',[admission.id,admission.actor.sessionId])).rowCount!==1)throw Error('Measured work MCP additional admission retirement changed');}
 /** Final in-transaction consumption repeats every canonical page/read/citation
@@ -185,13 +195,16 @@ export async function requireMeasuredWorkMcpCoverage(db:Client,target:LockedWork
    const customers:Record<string,unknown>[]=[];let cursor:unknown,firstPage:Record<string,unknown>|undefined;const cursors=new Set<string>();
    if(chunk.customers.length)do{const page=await canonicalTool(sdk,'turas_customers_list_v1',{limit:20,...(cursor?{cursor}:{})});firstPage??=page;if(page.status==='available')customers.push(...z.array(z.unknown()).parse(object(page.data).items).map(object));cursor=page.nextCursor;if(cursor){const value=z.string().parse(cursor);if(cursors.has(value))throw Error('Current work MCP customer cursor did not advance');cursors.add(value);}if(customers.length>100||cursors.size>5)throw Error('Current work MCP customer census exceeds bound');}while(cursor);
    if(JSON.stringify(customers.map(customer=>z.uuid().parse(customer.customerId)).sort())!==JSON.stringify(chunk.customers))throw Error('Current work MCP customer census differs');
-   for(const proof of chunk.proofs){const transcript:string[]=[];
+   const currentIdentity=await canonicalTool(sdk,'turas_identity_v1',{});const identityData=object(currentIdentity.data);
+   if(identityData.kind!==(selected.username==='partner'?'partner':'internal')||identityData.workspaceId!==selected.workspaceId||JSON.stringify(identityData.categories)!==JSON.stringify(categories))throw Error('Current work MCP identity differs');
+   for(let offset=0;offset<chunk.proofs.length;offset+=8)await withWorkRecoveryReadGroup(db,target,chunk.proofs.slice(offset,offset+8).map(proof=>async()=>{const transcript:string[]=[];
     await walkCategory(proof.selection,async(name,args,canonicalArgs=args)=>{if(transcript.length>=64)throw Error('Current work MCP category exceeds measured admission');let value:Record<string,unknown>;
      if(name==='turas_customers_list_v1'){const customer=customers.find(row=>row.customerId===proof.selection.customerId);if(!customer||!firstPage)throw Error('Current work MCP customer ceiling differs');value=parse(name,{...firstPage,status:'available',data:{items:[customer]},nextCursor:null});}
-     else{value=await canonicalTool(sdk!,name,canonicalArgs);if(name==='turas_identity_v1'){const identity=object(value.data);if(JSON.stringify(identity.categories)!==JSON.stringify(categories))throw Error('Current work MCP categories differ');value=parse(name,{...value,data:{...identity,categories:[proof.selection.category]}});}}
+     else if(name==='turas_identity_v1')value=parse(name,{...currentIdentity,data:{...identityData,categories:[proof.selection.category]}});
+     else value=await canonicalTool(sdk!,name,canonicalArgs);
      transcript.push(transcriptEntry(name,args,value));return {remote:value,canonical:value};
     });if(transcript.length!==proof.calls||recoveryDigest(transcript)!==proof.transcriptDigest)throw Error('Measured work MCP category changed');
-   }
+   }));
   }catch(error){failure=error;throw error;}finally{const errors:unknown[]=[];try{await sdk?.close();}catch(error){errors.push(error);}try{await retireRegisteredWorkMcpProbe(db,target,issued.probe);}catch(error){errors.push(error);}if(errors.length)throw new AggregateError([...(failure?[failure]:[]),...errors],'Current work MCP scope and retirement incomplete');}
  }
  return Object.freeze({contract:'pilot-work-mcp-coverage-v1' as const,...scope(target),targetDigest:targetDigest(target),scopeDigest:inventory.scopeDigest,categoryMeasurements:proofs.length,currentCredentialChunks:chunks.length,actualSdkScopeCoverageVerified:true as const,probeRetirementVerified:true as const,requiredScopeHealthy:false as const,restorationReady:false as const});

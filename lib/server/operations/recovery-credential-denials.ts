@@ -221,7 +221,10 @@ async function reconcileCredentialDenialsInTransaction(db:Client|PoolClient,snap
   // recreate any dispatched operation or weaken an existing replay guard.
   let permanentReplayFencesAdded=0;
   if(['pilot-denial-replay-snapshot-v4','pilot-denial-replay-snapshot-v5','pilot-denial-replay-snapshot-v6','pilot-denial-replay-snapshot-v7'].includes(snapshot.contract)){
-   for(const entry of snapshot.tables)await requireRecoveryJobSemanticRows(db,entry,scope.environmentId);
+   // Older source schemas did not declare079's authored semantic identities.
+   // Their authenticated index keys remain enforceable after forward migration;
+   // this deny-only legacy path still keeps every required workflow quarantined.
+   if(snapshot.schemaVersion===79)for(const entry of snapshot.tables)await requireRecoveryJobSemanticRows(db,entry,scope.environmentId);
    const replayEntries=snapshot.tables.map(entry=>({name:entry.name,replayKeyColumns:entry.replayKeyColumns??[],keys:entry.rows.flatMap(row=>row.replayKeys??[])}));
    const inheritedFence=z.strictObject({environment_id:z.string(),table_name:z.string().regex(/^[a-z_][a-z0-9_]*$/),key_columns:z.array(z.string().regex(/^[a-z_][a-z0-9_]*$/)).min(1).max(16),key_digest:z.string().regex(/^[a-f0-9]{64}$/)});
    for(const row of snapshot.tables.find(entry=>entry.name==='operations_replay_fences')?.rows??[]){

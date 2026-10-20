@@ -21,11 +21,32 @@ import {mcpBearerSchema,mcpCreateConnectionSchema,mcpConnectionScopeAllowed} fro
 const scopeSchema=z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive()});
 type Scope=z.infer<typeof scopeSchema>;
 export type LockedWorkRecoveryTarget=Readonly<{contract:'pilot-locked-work-recovery-target-v1';environmentId:string;recoveryId:string;controlRevision:number;projectId:string;teamId:string;sourceCommit:string;sourceDigest:string;catalogDigest:string;origin:string;deploymentId:string;databaseBindingDigest:string;deadline:number}>;
-type Binding={db:Client;scope:Scope;databaseName:string;ownerRole:string;runtimeConnection:string;signal:AbortSignal;decision:boolean;abort:(reason:unknown)=>void};
+type Binding={db:Client;scope:Scope;databaseName:string;ownerRole:string;runtimeConnection:string;signal:AbortSignal;decision:boolean;parallelReads:boolean;drains:Set<Promise<unknown>>;abort:(reason:unknown)=>void};
 const bindings=new WeakMap<object,Binding>();
 const decisionClients=new WeakMap<object,Binding>();
 /** Only a privately registered decision transport owns its aggregate timer. */
 export function isWorkRecoveryDecisionClient(db:Client|import('pg').PoolClient){return decisionClients.get(db)?.decision===true;}
+/** Scheduling hint only. Retired intents still occupy their original slots;
+ * reserveWorkRecoveryProbe remains the authoritative admission check. */
+export function remainingRegisteredWorkRecoveryProbes(db:Client,target:LockedWorkRecoveryTarget){
+ const binding=bindings.get(target);if(!binding||binding.db!==db||target.deadline<=Date.now())throw Error('Actual active work recovery target required');
+ binding.signal.throwIfAborted();return Math.max(0,32-(pending.get(target)?.length??0));
+}
+/** Pure canonical reads only: one existing transaction, at most eight live
+ * walks, no per-worker transaction control or credential issuance. A failure
+ * aborts the whole owner; the transport drains workers after closing its writer. */
+export async function withWorkRecoveryReadGroup<T>(db:Client,target:LockedWorkRecoveryTarget,reads:readonly (()=>Promise<T>)[]){
+ const binding=bindings.get(target);if(!binding||binding.db!==db||binding.parallelReads||!reads.length||reads.length>8||reads.some(read=>typeof read!=='function'))throw Error('Bounded genuine recovery read group required');
+ const work=[...reads];binding.parallelReads=true;
+ let drained:Promise<PromiseSettledResult<T>[]>|undefined;
+ try{
+  await requireLockedWorkRecoveryConnection(db,target,binding.scope);
+  await db.query("SET LOCAL lock_timeout='2000ms'; SET LOCAL statement_timeout='5000ms'");
+  const workers=work.map(read=>Promise.resolve().then(()=>{binding.signal.throwIfAborted();return read();}).catch(error=>{binding.abort(error);throw error;}));
+  drained=Promise.allSettled(workers);binding.drains.add(drained);
+  const results=await drained;const failure=results.find(result=>result.status==='rejected');if(failure?.status==='rejected')throw failure.reason;return Object.freeze(results.map(result=>(result as PromiseFulfilledResult<T>).value));
+ }finally{if(drained)binding.drains.delete(drained);binding.parallelReads=false;}
+}
 /** An individual owner read cannot outlive its original deadline. Timeout aborts
  * the whole genuine writer; the transport rolls back and cleans independently. */
 export async function withWorkRecoveryReadDeadline<T>(db:Client,target:LockedWorkRecoveryTarget,readSignal:AbortSignal,run:(signal:AbortSignal)=>Promise<T>){
@@ -55,11 +76,14 @@ export async function requireLockedWorkRecoveryConnection(db:Client,target:Locke
  const scope=scopeSchema.parse(raw),binding=bindings.get(target);
  if(!binding||binding.db!==db||JSON.stringify(binding.scope)!==JSON.stringify(scope)||target.deadline<=Date.now())throw Error('Actual active locked work recovery target required');
  binding.signal.throwIfAborted();
- await db.query('SAVEPOINT locked_work_recovery_target');await db.query('RELEASE SAVEPOINT locked_work_recovery_target');
- if((await db.query("SELECT current_setting('transaction_isolation') AS isolation")).rows[0]?.isolation!=='read committed')throw Error('Work recovery requires read committed decision isolation');
- await db.query("SET LOCAL lock_timeout='3000ms'; SET LOCAL statement_timeout='10000ms'"+(!binding.decision?"; SET LOCAL transaction_timeout='60s'":""));
- await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16020))',[scope.environmentId]);
- await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[scope.environmentId]);
+ // One static simple-query batch preserves the transaction probe and limits.
+ // SAVEPOINT fails first outside a transaction; any statement error propagates.
+ const timeouts=binding.parallelReads?"SET LOCAL lock_timeout='2000ms'; SET LOCAL statement_timeout='5000ms'":"SET LOCAL lock_timeout='3000ms'; SET LOCAL statement_timeout='10000ms'";
+ const configuration=await db.query("SAVEPOINT locked_work_recovery_target; RELEASE SAVEPOINT locked_work_recovery_target; "+timeouts+(!binding.decision?"; SET LOCAL transaction_timeout='60s'":"")+"; SELECT current_setting('transaction_isolation') AS isolation") as unknown as import('pg').QueryResult[];
+ if(!Array.isArray(configuration)||configuration.length!==(binding.decision?5:6)||configuration.at(-1)?.command!=='SELECT'||configuration.at(-1)?.rows.length!==1||configuration.at(-1)?.rows[0]?.isolation!=='read committed')throw Error('Work recovery requires read committed decision isolation');
+ await db.query(`WITH control_fence AS MATERIALIZED(SELECT pg_advisory_xact_lock(hashtextextended($1,16020))),
+ io_fence AS MATERIALIZED(SELECT pg_advisory_xact_lock(hashtextextended($1,16017)) FROM control_fence) SELECT * FROM io_fence`,[scope.environmentId]);
+ // A separate statement takes its READ COMMITTED snapshot after both fences.
  const rows=(await db.query(`SELECT current_database() AS name,current_user AS role,e.environment_id,e.schema_version,c.mode,c.recovery_id,c.revision,
  current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='operations_control'::regclass)) AS owner
  FROM turas_environment e JOIN operations_control c USING(environment_id) FOR SHARE OF e,c`)).rows,row=rows[0];
@@ -84,7 +108,7 @@ async function withWorkRecoveryTransport<T>(input:LockedWorkRecoveryInput,run:(d
  if(source.schemaVersion!==79||source.projectId!==hosted.projectId||source.target!==hosted.target||source.environmentId!==scope.environmentId||databaseTargetDigest(owner.href,scope.environmentId)!==databaseTargetDigest(runtime.href,scope.environmentId))throw Error('Work recovery platform and runtime target differ');
  await requireSource(hosted);const platform=await verifyDatabaseSafetySourceBinding(source,hosted.teamId,signal),deployed=await deployment(hosted,signal,false);
  if(JSON.stringify(await deployment(hosted,signal,true))!==JSON.stringify(deployed))throw Error('Work recovery serving deployment differs');
- const db=new Client({connectionString:owner.href,connectionTimeoutMillis:5000,statement_timeout:10000,query_timeout:11000});
+ const db=new Client({connectionString:owner.href,connectionTimeoutMillis:5000,statement_timeout:10000,query_timeout:11000,pipeline:true});
  db.on('error',error=>connectionLost.abort(error));
  const exposed=decision?Object.freeze({query:(...args:unknown[])=>{
   // Never hand pg a caller-owned query config: submit hooks and text getters
@@ -95,7 +119,7 @@ async function withWorkRecoveryTransport<T>(input:LockedWorkRecoveryInput,run:(d
  const target:LockedWorkRecoveryTarget=Object.freeze({contract:'pilot-locked-work-recovery-target-v1',...scope,projectId:hosted.projectId,teamId:hosted.teamId,sourceCommit:hosted.sourceCommit,sourceDigest:hosted.sourceDigest,catalogDigest:hosted.catalogDigest,origin:hosted.origin,deploymentId:hosted.deploymentId,databaseBindingDigest:databaseTargetDigest(runtime.href,scope.environmentId),deadline:input.deadline});
  let failure:unknown;
  try{
-  await db.connect();if(decision)await db.query('SET standard_conforming_strings=on');const binding:Binding={db:exposed,scope,databaseName:decodeURIComponent(owner.pathname.slice(1)),ownerRole:decodeURIComponent(owner.username),runtimeConnection:runtime.href,signal,decision,abort:reason=>connectionLost.abort(reason)};bindings.set(target,binding);if(decision)decisionClients.set(exposed,binding);
+  await db.connect();if(decision)await db.query('SET standard_conforming_strings=on');const binding:Binding={db:exposed,scope,databaseName:decodeURIComponent(owner.pathname.slice(1)),ownerRole:decodeURIComponent(owner.username),runtimeConnection:runtime.href,signal,decision,parallelReads:false,drains:new Set(),abort:reason=>connectionLost.abort(reason)};bindings.set(target,binding);if(decision)decisionClients.set(exposed,binding);
   await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');try{await requireLockedWorkRecoveryConnection(exposed,target,scope);await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}
   // Authenticate the exact runtime credential without invoking domain work.
   const probe=new Client({connectionString:runtime.href,connectionTimeoutMillis:5000,statement_timeout:5000,query_timeout:6000});
@@ -113,10 +137,14 @@ async function withWorkRecoveryTransport<T>(input:LockedWorkRecoveryInput,run:(d
   signal.throwIfAborted();if(decision)await db.query('COMMIT');
   return result;
  }catch(error){failure=error;throw error;}finally{
-  bindings.delete(target);decisionClients.delete(exposed);const retirementErrors:unknown[]=[];
+  const finalBinding=bindings.get(target);bindings.delete(target);decisionClients.delete(exposed);const retirementErrors:unknown[]=[];
   // Close the original writer before reconciling ambiguous effects. A callback
   // that outlives cancellation cannot enqueue later writes on this connection.
   try{await db.end();}catch(error){retirementErrors.push(error);}
+  if(finalBinding?.drains.size){let timer:ReturnType<typeof setTimeout>|undefined;try{
+   const drained=await Promise.race([Promise.allSettled([...finalBinding.drains]).then(()=>true),new Promise<false>(done=>{timer=setTimeout(()=>done(false),10000);})]);
+   if(!drained)retirementErrors.push(Error('Recovery canonical read group did not drain within its read bound'));
+  }finally{if(timer)clearTimeout(timer);}}
   try{await retireWorkRecoveryProbes(target,async()=>{const cleanup=new Client({connectionString:owner.href,connectionTimeoutMillis:5000,statement_timeout:5000,query_timeout:6000});try{await cleanup.connect();const identity=(await cleanup.query('SELECT current_database() AS name,current_user AS role')).rows[0];if(identity?.name!==decodeURIComponent(owner.pathname.slice(1))||identity.role!==decodeURIComponent(owner.username))throw Error('Exact work recovery cleanup connection required');return cleanup;}catch(error){await cleanup.end();throw error;}});}
   catch(error){retirementErrors.push(error);}
   if(retirementErrors.length)throw new AggregateError([...(failure?[failure]:[]),...retirementErrors],'Work recovery and independent probe cleanup incomplete');

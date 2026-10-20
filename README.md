@@ -809,3 +809,9 @@ complete-source verification and hosted acceptance remain pending.
 The current local deterministic inventory is928cases across168suites. Fresh
 complete current-source verification remains required; focused contract checks
 and historical catalog passes do not establish that result.
+
+Recovery scale verification now retains the actual1,475-category target inventory
+and a fixed regional read-only latency measurement. Bounded canonical replay and
+browser teardown fixes have focused local proof; complete current-source CI,
+hosted recovery/release, scheduled backup cadence and automated role acceptance
+remain pending. See the feature016 validation record for exact limits.
