@@ -138,3 +138,16 @@ there are no automatic retries or restoration of the revoked customer grant.
 The release-bundle evaluator accepts only privately validated immutable SDK
 results bound to the selected original receipts. This partial run supplies G19
 only; other gates and full hosted readiness remain independently required.
+
+`pilot-hosted-partner-evidence-v1` supplies G18 only, retaining the original normal
+assigned-guide/demonstration role captures, all sixteen paired outputs and their
+settled original budget/provider identities, the retained independent eight-case
+review, eight original scored command/receipt pairs, server-derived verdict and
+publication generation, and exact retirement of all sixteen native sessions.
+Correct no-benefit rejection remains valid; a positive flag cannot replace scored
+benefit. The partner must lose credit after source withdrawal and be denied the
+internal evaluation view. The index hashes every required original file; both
+role proofs bind that complete artifact root and their original intervals. Typed
+verification and private immutable provenance are required by the release bundle.
+The combined `hosted-run.json` may contain G18/G19 while all other gates remain
+absent. It neither establishes complete hosted readiness nor records approval.

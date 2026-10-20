@@ -281,3 +281,11 @@ No hosted target may be locked for release before its measured reopen path exist
   validation provenance. Seven owned SDK cases and fifteen producer/bundle cases
   pass. Actual hosted G19 execution and remaining core/partner/release receipts
   remain within T089/T092; full readiness is not established.
+
+- [X] T104 Produce and verify canonical partial G18 evidence from original normal
+  partner exercises, complete scored paired captures, original settled budget/
+  provider identities, server-derived publication/rejection, native retirement
+  and current role denials. Preserve capture bytes, actual intervals and automated
+  attribution; require typed immutable provenance in composed release checks.
+  Nineteen focused partner/SDK/bundle cases and the actual owned normal HTTP
+  training case pass. Actual hosted/model G18 execution remains part of T089.

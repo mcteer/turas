@@ -2041,6 +2041,16 @@
         "refuses a different actual serving deployment before producing role receipts",
         "refuses changed original capture bytes and changed scoped receipt attribution"
       ]
+    },
+    {
+      "file": "tests/unit/pilot/partner-evidence.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "retains complete original paired captures scored no-benefit rejection normal reviews retirement and role intervals in a partial partner gate",
+        "refuses a claimed publication success when the complete independent scores derive no benefit",
+        "refuses a completed arm whose original settled budget binding differs",
+        "refuses changed retained review bytes after binding the original evidence index"
+      ]
     }
   ],
   "ui": {

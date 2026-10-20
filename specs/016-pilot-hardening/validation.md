@@ -5692,3 +5692,26 @@ native-operations command pass with zero deadlocks/statement timeouts or paid
 calls. Independent read-only review found no privacy/flow blocker. This improves
 future diagnosis and does not establish the cause or resolution of the earlier
 CI57014 failure; no original timeout or approval limit was increased.
+
+The frozen complete cbfc04c catalog passed941/941 cases across170 suites with no
+skips or retries, source digest52982b02e279843627c71fadef932ba511f155168929281dccb999eba72f22ff
+and catalog digest145b8c2072669bfca54907049144cc2b9e52b0e2e6c2cc059ddd78e905b3f71f.
+Its private original run is76d83270-7bdf-42b1-8128-c29ee90ff834 in the frozen
+cbfc04c worktree. This establishes that exact historical source, not later edits
+or hosted readiness.
+
+Canonical partial G18 evidence now requires original assigned guide/demonstration
+role captures, all sixteen actual model outputs and their distinct settled
+original budget/provider identities, retained independent scored review bytes,
+eight original normal review commands/receipts, a recomputed verdict matching the
+server-derived publication/rejection and generation, and exact native retirement.
+No-benefit rejection is valid; it cannot be changed to publication success by a
+flag. Partner source-credit withholding and internal-evaluation denial are also
+required. Both role receipts retain original execution intervals and bind every
+required original file through the artifact root. The combined hosted run retains
+G18/G19 while other gates remain absent and full hosted acceptance stays blocked.
+Four controlled partner integrity cases, four SDK integrity cases and eleven
+release-bundle cases pass. The actual owned normal HTTP training case passes;
+root/pilot types pass. Independent scoped review found no concrete blocker.
+No actual hosted/model G18 exercise has run in this iteration. Inventory:983 cases
+across178 suites; complete current-source acceptance remains required.

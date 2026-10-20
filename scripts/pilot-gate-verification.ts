@@ -21,6 +21,7 @@ export async function observePilotGates(root:string,raw:unknown){
    const proof=verifyPilotProof(receipt,await readEvidence(root,`${receipt.id}.json`,receipt.proofDigest));
    if(receipt.method==='local'&&gate.localCaseIds.length>0&&(proof.cases.length!==gate.localCaseIds.length||gate.localCaseIds.some(id=>!proof.cases.some(row=>row.id===id))))throw Error('Original gate inventory differs');
   }
+  if(gate.id==='G18'&&receipts.some(row=>row.method==='hosted')){const {verifyHostedPartnerEvidence}=await import('./pilot-hosted-partner-evidence');await verifyHostedPartnerEvidence(root,run);}
   if(gate.id==='G19'&&receipts.some(row=>row.method==='hosted')){const {verifyHostedSdkEvidence}=await import('./pilot-hosted-journey-evidence');await verifyHostedSdkEvidence(root,run);}
   if(['G10','G12'].includes(gate.id)&&receipts.some(row=>row.method==='local')){const {verifyPilotAuxiliaryEvidence}=await import('./pilot-auxiliary-evidence');if((await verifyPilotAuxiliaryEvidence(root,run)).gateId!==gate.id)throw Error('Typed auxiliary gate evidence differs');}
   await current();

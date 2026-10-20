@@ -68,6 +68,7 @@ async function main() {
     const required=catalog.gates.find(g=>g.id===receipt.gateId)?.localCaseIds??[];
     if(receipt.method==="local" && required.length>0 && (required.length!==proof.cases.length || required.some(id=>!proof.cases.some(c=>c.id===id))))throw new Error("Proof does not cover frozen local inventory");
   }
+  if(run.receipts.some(row=>row.gateId==='G18'&&row.method==='hosted')){const {verifyHostedPartnerEvidence}=await import('./pilot-hosted-partner-evidence');await verifyHostedPartnerEvidence(path.dirname(target),run);}
   if(run.receipts.some(row=>row.gateId==='G19'&&row.method==='hosted')){const {verifyHostedSdkEvidence}=await import('./pilot-hosted-journey-evidence');await verifyHostedSdkEvidence(path.dirname(target),run);}
   for(const gateId of ['G10','G12'])if(run.receipts.some(row=>row.gateId===gateId&&row.method==='local')){const {verifyPilotAuxiliaryEvidence}=await import('./pilot-auxiliary-evidence');if((await verifyPilotAuxiliaryEvidence(path.dirname(target),run)).gateId!==gateId)throw Error('Typed auxiliary gate evidence differs');}
   const observations:PilotGateVerification[]=[];
