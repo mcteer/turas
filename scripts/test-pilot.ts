@@ -42,7 +42,7 @@ async function main(){
   await cp(path.join(preparedStore,'signatures'),path.join(process.env.TURAS_ARTIFACT_STORE_ROOT!,'signatures'),{recursive:true});
   await cp(path.join(preparedStore,'assets'),path.join(process.env.TURAS_ARTIFACT_STORE_ROOT!,'assets'),{recursive:true});
   await preparePilotAssetPermissions(process.env.TURAS_ARTIFACT_STORE_ROOT!);
-  let total=0;const passedCaseIds=new Set<string>();const caseTimes=new Map<string,{start:string;end:string}>();
+  let total=0;const suiteEvidence:{file:string;resultFile:string;resultDigest:string;processFile:string;processDigest:string}[]=[];const passedCaseIds=new Set<string>();const caseTimes=new Map<string,{start:string;end:string}>();
   for(const [index,suite] of suites.suites.entries()){
    activeSuite=suite.file;failureStage='suite-preparation';
    // Queue-only upload fixtures author a shape-only attestation. Restore the
@@ -63,7 +63,7 @@ async function main(){
    const code=exit.code;
    if(code!==0)throw new Error("Registered pilot suite failed");
    failureStage='suite-catalog-verification';
-   const result=verifyPilotSuiteResult(suite.file,await readEvidence(root,name));total+=result.passedCases;const prefix=suite.file.split("/")[1]+"."+path.basename(suite.file,".test.ts");for(let i=0;i<suite.expectedCases;i++){const id=`${prefix}.${String(i+1).padStart(3,"0")}`;passedCaseIds.add(id);caseTimes.set(id,{start:startedAt,end:new Date().toISOString()});}
+   const result=verifyPilotSuiteResult(suite.file,await readEvidence(root,name));suiteEvidence.push({file:suite.file,resultFile:name,resultDigest:createHash('sha256').update(await readFile(path.join(root,name))).digest('hex'),processFile:`suite-${index}-process.json`,processDigest:createHash('sha256').update(await readFile(path.join(root,`suite-${index}-process.json`))).digest('hex')});total+=result.passedCases;const prefix=suite.file.split("/")[1]+"."+path.basename(suite.file,".test.ts");for(let i=0;i<suite.expectedCases;i++){const id=`${prefix}.${String(i+1).padStart(3,"0")}`;passedCaseIds.add(id);caseTimes.set(id,{start:startedAt,end:new Date().toISOString()});}
   }
   activeSuite=null;failureStage='source-and-receipt-verification';
   const current=await pilotSource();if(current.sourceDigest!==source.sourceDigest||current.sourceCommit!==source.sourceCommit)throw new Error("Source changed during pilot execution");
@@ -81,7 +81,7 @@ async function main(){
    attempts.push({id:attemptId,gateId:gate.id,complete:true,receiptIds});selectedAttempts.push({gateId:gate.id,attemptId});
   }
   await writeEvidence(root,"run.json",pilotRunSchema.parse({version:"pilot-readiness-v1",id:runId,createdAt:now,...source,environmentMarker:environment.environmentId,scopeDigest,attempts,selectedAttempts,receipts}));
-  await writeEvidence(root,"execution.json",{version:"pilot-execution-v1",runId,...source,environmentMarker:environment.environmentId,method:"local",state:"pass",expectedCases:total,passedCases:total});
+  await writeEvidence(root,"execution.json",{version:"pilot-execution-v1",runId,...source,environmentMarker:environment.environmentId,method:"local",state:"pass",expectedCases:total,passedCases:total,suiteEvidenceContract:"pilot-catalog-evidence-index-v1",suiteEvidence});
   if(process.env.GITHUB_ACTIONS==='true'){
    const ciRunId=process.env.GITHUB_RUN_ID,commit=process.env.GITHUB_SHA;
    if(!ciRunId||!/^\d{1,32}$/.test(ciRunId)||commit!==source.sourceCommit)throw Error('Exact actual CI run and checkout required');

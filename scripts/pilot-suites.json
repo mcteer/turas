@@ -1981,6 +1981,16 @@
         "reaches the normal forty-slide content boundary using legal review annotations without changing accepted facts",
         "refuses weekly and already excessive normal layouts before any paid render"
       ]
+    },
+    {
+      "file": "tests/integration/pilot/generated-byte-boundary.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "roundtrips the exact ten MiB boundary through the actual private report wrapper and common Blob adapter",
+        "refuses empty oversized changed and wrong-digest report bytes without accepting metadata as proof",
+        "keeps report writes immutable and refuses changed cleanup identities",
+        "preserves the separate ten MiB file and fifteen MiB pair serialization limits without sending mail"
+      ]
     }
   ],
   "ui": {

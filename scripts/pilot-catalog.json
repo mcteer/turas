@@ -186,7 +186,11 @@
         "unit.generated-files.003",
         "unit.generated-files.004",
         "unit.generated-files.005",
-        "unit.generated-files.006"
+        "unit.generated-files.006",
+        "integration.generated-byte-boundary.001",
+        "integration.generated-byte-boundary.002",
+        "integration.generated-byte-boundary.003",
+        "integration.generated-byte-boundary.004"
       ]
     },
     {

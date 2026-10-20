@@ -1,3 +1,4 @@
+import {composeHostedByteBoundary} from './pilot-hosted-byte-composition';
 import {hostedGeneratedFilesManifestSchema,hostedLinkedReferenceSchema,verifyHostedGeneratedFiles,type HostedLinkedReference} from './pilot-hosted-generated-files';
 import {verifyHostedMaximumFileDenials} from './pilot-hosted-file-access';
 import {hostedRuntimeConnection} from './pilot-hosted-connection';
@@ -174,6 +175,7 @@ export async function pilotHosted(args=process.argv.slice(2)){
      if(generatedManifest&&generatedPath){
       if(!context.partnerCustomerIds.includes(generatedManifest.reference.customerId))throw Error('Original linked customer assignment changed');
       linkedJourney=await verifyHostedGeneratedFiles({scope,db:readDb,headers:context.headers,configuration,evidenceDirectory:root,signal,manifest:generatedManifest,originalEvidenceDirectory:dirname(generatedPath)});
+      if(maximumManifest)await composeHostedByteBoundary({scope,configuration,maximumManifest,generatedManifest,componentDirectory:dirname(runPath),evidenceDirectory:root,signal});
      }else{
      await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async author=>{
       if(author.role==='internal-member')linkedJourney=hostedLinkedReferenceSchema.parse(await runHostedLinkedJourney({scope,db:readDb,headers:context.headers,customerId:context.partnerCustomerIds[0],ownerMembershipId:owner[0].id,configuration,authorizationDigest,authorizationExpiresAt:authorization.expiresAt,authorization:rawAuthorization,signal,authorRequest:pilotHostedRequest({scope,headers:author.headers,signal})}));

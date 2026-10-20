@@ -5569,3 +5569,32 @@ withholding. An earlier run reached the final assertion but retained the old
 10-command expectation; the updated two-revision journey has 12 commands and its
 complete rerun passes. The inventory is 949 cases across 172 suites. These are
 local results, not cloud restart or exact 10 MiB generated-byte proof.
+
+
+Four report-byte component cases pass on owned PostgreSQL using actual report
+write/read/delete wrappers, the actual shared Blob adapter and only a controlled
+provider SDK transport. They cover exact 10 MiB report-namespace bytes/full hash,
+private uncached SDK access, overflow/empty/changed-size/hash rejection, immutable
+writes, changed-identity cleanup refusal and exact removal, plus separate per-file
+10 MiB / pair 15 MiB serialization caps without sending mail. These synthetic
+storage bytes are never published or described as normal renderer output.
+
+The spec/plan now define the reviewed compositional measurement method: real
+40-slide normal report retention and real exact-10-MiB original retention must
+both occur after the same actual new deployment using the identical deployed
+shared Blob byte implementation, physical store and configuration. The composer
+also requires the complete current-source catalog and exact registered wrapper
+suite, records implementation digests/actual sizes, and explicitly labels the
+inference with `actualReportAt10MiB:false`. Independent read-only review found the
+method defensible; the actual hosted composition and unrelated file faults are
+still unverified. Inventory: 953 cases in 173 suites.
+
+The full catalog producer now records a versioned ordered evidence index with
+SHA-256 of every successful suite's actual result and process files. The byte
+composer requires the complete current index, exact original owned run/source/
+local-scope binding, selected latest complete G03 role proofs and full named case
+coverage, plus the component's original result/process digests and clean exit.
+Both actual retention receipts must match their manifests' exact IDs, formats,
+kinds, sizes, digests and original/shared new deployments. Read-only independent
+review cleared the corrected bindings. No prior catalog without this index is
+silently promoted to current component evidence.

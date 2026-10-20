@@ -296,6 +296,16 @@ production data in traces; pilot feedback containing private customer material.
   retrievable after hosted restart and across instances; unauthorized reads disclose
   zero bytes, and all required processing/cleanup classes demonstrate completion.
 
+  Generated-byte retention may be established compositionally: actual normal
+  reviewed 40-slide rendering/publication and full report reads, actual exact
+  10 MiB original reads through the same deployed `BlobPrivateObjects` byte
+  implementation and physical store, both after the same actual new deployment,
+  plus current-source exact-boundary report-wrapper/common-adapter contract tests.
+  Record the shared implementation/configuration identities and all actual sizes.
+  Label the result as a shared-adapter inference, with `actualReportAt10MiB:false`;
+  this does not assert maximum renderer byte output. Current authorization,
+  withholding and all required processing/cleanup checks remain mandatory.
+
 - **SC-010**: All session, direct-ID, retrieval, publication, metrics, job and MCP
   cross-workspace probes preserve the selected membership; zero synthetic pilot
   outputs enter primary customer results or outcome statistics.
