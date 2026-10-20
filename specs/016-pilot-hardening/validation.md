@@ -6320,3 +6320,20 @@ from 39 to 40 cases to include this regression. Complete fresh committed catalog
 CI and hosted recovery checks remain required. The `1b728f3` CI failures in mobile
 WebKit visibility and expansion restart status remain retained, not erased by
 these narrow local checks.
+
+### Root reservation/request output limit (2026-10-20)
+
+Review found a concrete request/admission mismatch: when maxOutputTokens was
+absent, root admission calculated its reservation using 8,192 tokens but forwarded
+an absent limit. The governed root wrapper now forwards the same effective limit
+used in that calculation. An explicit limit remains unchanged; an unrelated
+attempt retains its original parameters and creates no root budget operation.
+The selected model, tools refusal, unknown holds, provider identity capture and
+post-dispatch reconciliation remain unchanged.
+
+All six owned PostgreSQL18 root-budget cases pass. The existing generate/stream
+case captures actual synthetic provider parameters and verifies fallback 8,192,
+explicit 700, and unrelated undefined values. Typecheck passes. These fixture
+calls make no real provider requests; this does not prove provider adherence,
+reduce the shared worst-case reservation, or establish hosted readiness. Fresh
+committed complete checks remain required.

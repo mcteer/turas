@@ -68,6 +68,10 @@ credentials, but stopped at an evidence-list eligibility scan. An isolated clone
 of the exact matched dump reproduced the `incomplete` result after 100 withheld
 candidates. A bounded cursor continuation fix is undergoing fresh checks;
 eligibility and the per-request scan limit remain unchanged.
+Root transport admission now forwards the same effective output-token limit it
+uses for its reservation, including the existing 8,192-token default. Explicit
+limits and unrelated model dispatch remain unchanged. Six owned root-budget
+cases pass; this does not establish actual provider cost or hosted readiness.
 The owned recovery command now applies independently retained current denials and
 audits actual permanent request fences, preserving committed denials across failed
 audits. It remains an isolated recovery step; service recovery and hosted acceptance

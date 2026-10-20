@@ -125,9 +125,10 @@ export function wrapHostedRootBudget(model:Parameters<typeof wrapLanguageModel>[
  return wrapLanguageModel({model,middleware:{
   async transformParams({params,type}){
    if(called)throw denied();called=true;
+   const maxOutputTokens=params.maxOutputTokens??8192;
    operation=await reserveHostedRoot(principal,nativeSessionId,turnId,
-    Buffer.byteLength(JSON.stringify({prompt:params.prompt,tools:[]}))+8192+128*params.prompt.length,params.maxOutputTokens??8192,type);
-   return operation?{...params,tools:[],toolChoice:{type:'none' as const}}:params;
+    Buffer.byteLength(JSON.stringify({prompt:params.prompt,tools:[]}))+8192+128*params.prompt.length,maxOutputTokens,type);
+   return operation?{...params,maxOutputTokens,tools:[],toolChoice:{type:'none' as const}}:params;
   },
   async wrapGenerate({doGenerate}){
    let result;try{result=await doGenerate();}catch(error){await rememberError(error);throw error;}if(operation){

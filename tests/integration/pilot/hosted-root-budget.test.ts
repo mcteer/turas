@@ -25,13 +25,14 @@ it('binds actual synthetic attempts and retains unknown concurrent reservations 
 }),210000);
 
 it('settles successful Production-bound root generate and stream calls with immutable original provider identities',async()=>fixture(async({db,principal,native,binding})=>{
- let calls=0;const generated='synthetic-generated-'+randomUUID(),streamed='synthetic-streamed-'+randomUUID(),generatedGateway='gen_'+randomUUID(),streamedGateway='gen_'+randomUUID();
+ let calls=0;const forwardedLimits:(number|undefined)[]=[];const generated='synthetic-generated-'+randomUUID(),streamed='synthetic-streamed-'+randomUUID(),generatedGateway='gen_'+randomUUID(),streamedGateway='gen_'+randomUUID();
  const model={specificationVersion:'v4',provider:'synthetic-no-provider',modelId:'spacexai/grok-4.7',supportedUrls:{},
-  async doGenerate(){calls++;return {content:[{type:'text',text:'Synthetic root response'}],response:{id:generated},providerMetadata:{gateway:{cost:'0.0001',generationId:generatedGateway}}};},
-  async doStream(){calls++;return {stream:new ReadableStream({start(controller){controller.enqueue({type:'response-metadata',id:streamed});controller.enqueue({type:'text-start',id:'synthetic-text',providerMetadata:{gateway:{generationId:streamedGateway}}});controller.enqueue({type:'finish',providerMetadata:{gateway:{cost:'0.0001'}}});controller.close();}})};}} as unknown as Parameters<typeof wrapHostedRootBudget>[0];
- expect((await wrapHostedRootBudget(model,principal,native,'original-turn').doGenerate({prompt:[],maxOutputTokens:700})).content).toHaveLength(1);
+  async doGenerate(params:{maxOutputTokens?:number}){calls++;forwardedLimits.push(params.maxOutputTokens);return {content:[{type:'text',text:'Synthetic root response'}],response:{id:generated},providerMetadata:{gateway:{cost:'0.0001',generationId:generatedGateway}}};},
+  async doStream(params:{maxOutputTokens?:number}){calls++;forwardedLimits.push(params.maxOutputTokens);return {stream:new ReadableStream({start(controller){controller.enqueue({type:'response-metadata',id:streamed});controller.enqueue({type:'text-start',id:'synthetic-text',providerMetadata:{gateway:{generationId:streamedGateway}}});controller.enqueue({type:'finish',providerMetadata:{gateway:{cost:'0.0001'}}});controller.close();}})};}} as unknown as Parameters<typeof wrapHostedRootBudget>[0];
+ expect((await wrapHostedRootBudget(model,principal,native,'original-turn').doGenerate({prompt:[]})).content).toHaveLength(1);
  const stream=await wrapHostedRootBudget(model,principal,native,'resumed-turn').doStream({prompt:[],maxOutputTokens:700}),reader=stream.stream.getReader();let frames=0;
  for(;;){const next=await reader.read();if(next.done)break;frames++;}expect(frames).toBe(3);expect(calls).toBe(2);
+ expect(forwardedLimits).toEqual([8192,700]);
  const identities=(await db.query('SELECT i.operation_id,i.provider_key FROM operations_hosted_root_provider_identities i JOIN parity_evaluation_operations o ON o.id=i.operation_id WHERE o.budget_id=$1 ORDER BY o.created_at',[binding.budgetId])).rows;
  expect(identities.map(row=>row.provider_key).sort()).toEqual([generated,generatedGateway,streamed,streamedGateway].sort());
  expect((await db.query('SELECT reserved_micro_usd FROM parity_evaluation_budgets WHERE id=$1',[binding.budgetId])).rows[0].reserved_micro_usd).toBe('200');
@@ -48,6 +49,10 @@ it('settles successful Production-bound root generate and stream calls with immu
  const replacement=randomUUID();
  await db.query('INSERT INTO parity_evaluation_budgets(id,environment_id,workspace_id,owner_principal_id,cap_micro_usd,pricing,expires_at) VALUES($1,$2,$3,$4,10000,$5,$6)',[replacement,binding.environmentMarker,binding.workspaceId,binding.ownerPrincipalId,'{}',binding.expiresAt]);
  await expect(db.query('INSERT INTO operations_hosted_root_admissions(budget_id,deployment_id,binding_digest) VALUES($1,$2,$3)',[replacement,'dpl_replacement','a'.repeat(64)])).rejects.toThrow('Original hosted root budget cannot be replaced');
+ const beforeUnrelated=(await db.query('SELECT count(*)::int AS n FROM parity_evaluation_operations')).rows[0].n;
+ await wrapHostedRootBudget(model,{...principal,attributes:{turasAttemptId:randomUUID()}},native,'unrelated-turn').doGenerate({prompt:[]});
+ expect(forwardedLimits).toEqual([8192,700,undefined]);
+ expect((await db.query('SELECT count(*)::int AS n FROM parity_evaluation_operations')).rows[0].n).toBe(beforeUnrelated);
 },'production'),210000);
 
 it('withholds adversarial generated tool calls and preserves their complete paid reservation',async()=>fixture(async({db,principal,native,binding})=>{

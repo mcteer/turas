@@ -304,3 +304,10 @@ No hosted target may be locked for release before its measured reopen path exist
   cases and exact matched-dump local diagnosis pass; root typecheck passes.
   Fresh committed full catalog/CI and genuine hosted recovery remain T089/T090
   release requirements.
+
+- [X] T107 Forward the effective root output-token limit used by admission to
+  the provider request, including the existing 8,192-token fallback. Extend the
+  existing synthetic generate/stream case to check fallback, explicit limit and
+  unrelated dispatch without changing the selected model or case inventory.
+  Six owned root-budget cases and root typecheck pass. Provider accounting and
+  the shared worst-case reservation remain independently required.
