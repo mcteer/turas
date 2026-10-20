@@ -780,44 +780,38 @@ all existing reporting assertions, rendering bindings and deadlines.
 Reporting CI installs both root and artifact-extractor lockfiles, as required by
 the shared disposable application setup.
 
-Work-recovery authentication now includes independently authenticated internal/partner reads and an actual-bearer MCP SDK reader. These are local implementation checkpoints; complete service measurement, authoritative reopen verification and hosted acceptance remain pending in [Feature 016](specs/016-pilot-hardening/tasks.md).
-The maintenance MCP endpoint additionally binds its finite recovery admission and browser session to the same actual MCP bearer connection. Local restricted-runtime HTTP/SDK checks pass; hosted acceptance and the complete reopen verifier remain pending.
+Work recovery now authenticates internal and assigned-partner reads, actual MCP
+SDK probes and finite maintenance HTTP batches. The owner-only producer composes
+physical target integrity, required-service coverage, current denials, terminal
+provider inventories and original financial/replay evidence before recording a
+locked verification. Commit acknowledgements are read-only; an explicit fresh
+verification retains original evidence and holds. Automated hosted observations
+have versioned provenance and cannot impersonate human participants.
 
-Work maintenance HTTP measurements now derive the full ledger and measure finite actual HTTP batches, with canonical projections/original bytes, denial and credential-retirement checks. Final record coverage requires a genuine exact union; complete required service, authoritative reopen and hosted acceptance remain pending. The current853-case/155-suite catalog requires fresh complete proof.
-The restricted-runtime SDK network check now covers all five read categories, normally reviewed/published fixtures and immediate citation withholding after source withdrawal. Actual hosted acceptance and post-quarantine probe issuance remain pending.
-Fresh work MCP probes now require genuine retained current denials, current participant authentication and canonical customer ceilings. Newly generated bearer/session/admission identities remain bounded and retire independently through failure and restart; captured credentials stay revoked. Focused local integration passes; complete verification is pending. Catalog is859cases/157suites. The recovery decision transport now owns its transaction through final live checks; its guarded callback cannot commit directly. This is infrastructure for the pending authoritative producer, not release completion.
+The scalable MCP path distinguishes exhaustive canonical customer/category reads
+from actual hosted SDK policy-branch observations. It replays all canonical
+pages, records and citations, requires every observed hosted branch plus recent
+role/category canaries, and retires every probe. Fresh independently retained
+original-source captures preserve prior identities and financial/provider rows;
+historical evidence never authorizes a new credential. Original deadlines,
+credential/call limits and unknown cost holds remain enforced. Full owned
+composition and separate-source capture/restart checks pass; regional scale and
+hosted release acceptance remain pending.
 
+The local deterministic inventory is929cases across168suites. A historical frozen
+928-case catalog has passed; complete verification of the current source remains
+required. The actual47-category regional capacity run completed final canonical
+replay; all53 original probe journals were independently reconciled and its
+executor deletion confirmed. That capacity evidence does not establish restored
+service, scheduled cadence or pilot readiness. Existing app schema cutover,
+actual scheduled backups and hosted automated role exercises remain pending in
+[Feature 016](specs/016-pilot-hardening/tasks.md).
 
-The work recovery controller now measures complete MCP categories with actual
-SDK/canonical comparisons and rechecks the exact current role/customer union
-under final decision locks. Local three-role coverage passes; real-work capacity,
-Workflow/effect composition and the authoritative recovery producer remain
-pending. Full pilot readiness and cleanup remain incomplete.
-
-The user-authorized operator/internal/partner exercises can run automatically
-against the actual hosted deployment. Versioned observation records distinguish
-automated captures from human reports and preserve immutable capture provenance;
-G20/G21 require hosted attribution and freshness. These contracts do not establish
-completed hosted exercises or grant release approval.
-
-The recovery verification command now composes actual target, service and effect
-measurements and supports read-only commit acknowledgement recovery. Explicit
-owner re-verification keeps the service locked and retains prior evidence and
-holds. Owned producer and full CLI restart/resolution/open checks have passed; fresh
-complete-source verification and hosted acceptance remain pending.
-
-The current local deterministic inventory is928cases across168suites. Fresh
-complete current-source verification remains required; focused contract checks
-and historical catalog passes do not establish that result.
-
-Recovery scale verification now retains the actual1,475-category target inventory
-and a fixed regional read-only latency measurement. Bounded canonical replay and
-browser teardown fixes have focused local proof; complete current-source CI,
-hosted recovery/release, scheduled backup cadence and automated role acceptance
-remain pending. See the feature016 validation record for exact limits.
-
-Ordinary native receipt persistence now handles a projected-input-before-HTTP-ACK
+Ordinary native receipt persistence handles a projected-input-before-HTTP-ACK
 race by matching the original delivery, conversation/session, input and turn.
-It preserves the existing receipt, deadline and allowance and never resends an
-accepted message. Focused owned PostgreSQL checks cover text, selected passages
-and staged native files; current hosted verification remains pending.
+It preserves the saved receipt, deadline and allowance and never resends an
+accepted message. Four focused owned PostgreSQL checks cover text, selected
+passages and4/10MiB staged files. Fresh CI passes native operations and pilot
+WebKit; hosted verification remains pending. Actual local Production-mode SDK
+consumers also verify typed non-disclosing foreign-customer refusals, current
+content/citations and credential revocation.

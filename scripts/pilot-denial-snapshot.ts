@@ -17,12 +17,17 @@ function sourceIdentity(source:{databaseUrl:string;projectId:string;target:strin
  const url=new URL(source.databaseUrl);url.hostname=url.hostname.replace('-pooler.','.');
  return createHash('sha256').update(JSON.stringify({host:url.hostname,port:url.port||'5432',database:decodeURIComponent(url.pathname),projectId:source.projectId,target:source.target,environmentId:source.environmentId,schemaVersion:source.schemaVersion})).digest('hex');
 }
+export function requireOriginalWorkDenialSource(original:Parameters<typeof sourceIdentity>[0],restored:Parameters<typeof sourceIdentity>[0]){
+ const a=new URL(original.databaseUrl),b=new URL(restored.databaseUrl);
+ if(original.environmentId!==restored.environmentId||original.schemaVersion!==79||restored.schemaVersion!==79)throw Error('Exact original denial source environment and schema required');
+ if(a.hostname.replace('-pooler.','.')===b.hostname.replace('-pooler.','.') && decodeURIComponent(a.pathname)===decodeURIComponent(b.pathname))throw Error('Original denial source must differ from restored target');
+}
 /** Only an actual in-process independently retained capture can bind refreshed
  * authority to the explicitly selected original source. JSON receipts cannot. */
 export function requireOriginalWorkDenialCapture(receipt:object,original:Parameters<typeof sourceIdentity>[0],restored:Parameters<typeof sourceIdentity>[0],retained:import('./pilot-denial-reader').RetainedWorkDenials){
  requireAuthenticatedRetainedDenials(retained,original.environmentId);
- const actual=captureSources.get(receipt),a=new URL(original.databaseUrl),b=new URL(restored.databaseUrl);
- if(a.hostname.replace('-pooler.','.')===b.hostname.replace('-pooler.','.') && decodeURIComponent(a.pathname)===decodeURIComponent(b.pathname))throw Error('Original denial source must differ from restored target');
+ requireOriginalWorkDenialSource(original,restored);
+ const actual=captureSources.get(receipt);
  if(!actual||actual.sourceDigest!==sourceIdentity(original)||actual.environmentId!==original.environmentId||actual.snapshotDigest!==retained.contextDigest||retained.snapshot.environmentId!==original.environmentId)throw Error('Genuine original-source current denial capture required');
 }
 /** Actual read-only minimized current-state capture into the separate work

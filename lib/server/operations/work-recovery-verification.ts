@@ -32,7 +32,7 @@ export async function produceWorkRecoveryVerification(input:Input){
   await requireMeasuredWorkTargetIntegrity(db,target,input.integrity,signal);
   await reconcileAuthenticatedWorkCredentialDenialsInTransaction(db,input.retained,{environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision,snapshotDigest:source.contextDigest,backupCapturedAt:source.backupCapturedAt});
   await fenceCurrentRecoveryJobs(db,target,input.retained);
-  const service=await verifyWorkRecoveryService(db,target,input.service,input.passwords,input.journalDirectory,signal);
+  const service=await verifyWorkRecoveryService(db,target,input.service,input.passwords,input.journalDirectory,signal,input.retained);
   const effects=await verifyWorkRecoveryEffects(db,target,input.retained,input.effects,signal,input.denialHistory);
   await requireMeasuredWorkTargetIntegrity(db,target,input.integrity,signal);
   await requireVerifiedWorkRecoveryService(db,target,service);await requireVerifiedWorkRecoveryEffects(db,target,effects);

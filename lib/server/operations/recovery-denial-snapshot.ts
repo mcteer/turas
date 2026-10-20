@@ -52,7 +52,7 @@ export async function captureRecoveryDenialSnapshot(db:Client|PoolClient,expecte
     CROSS JOIN LATERAL unnest(i.indkey) WITH ORDINALITY k(attnum,ordinal) JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum=k.attnum
     WHERE n.nspname='public' AND c.relname=$1 AND i.indisunique AND i.indpred IS NULL AND i.indexprs IS NULL AND k.ordinal<=i.indnkeyatts
     GROUP BY i.indexrelid`,[name])).rows.map(r=>r.columns as string[]).filter(keys=>['operations_hosted_learning_admissions','operations_hosted_learning_consumptions','operations_hosted_learning_provider_identities'].includes(name)||currentReplayTables.includes(name)||jobReplay||keys.some(key=>['request_key','idempotency_key','native_request_id','provider_key','binding_id'].includes(key)));
-   const replayKeyColumns=[...new Map([...uniqueKeys,...semanticKeys].map(keys=>[JSON.stringify(keys),keys])).values()];
+   const replayKeyColumns=[...new Map([...uniqueKeys,...semanticKeys].map(keys=>[JSON.stringify(keys),keys])).values()].sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)));
    if(replayKeyColumns.length>8||replayKeyColumns.some(keys=>keys.length>16))throw Error('Permanent replay identity exceeds bound');
    const positiveFilter=jobReplay&&name==='report_jobs'?" WHERE t.kind='render'":jobReplay&&name==='retrieval_jobs'?" WHERE t.kind='index'":'';
    const selected=statusColumns.filter(column=>columns.some(c=>c.column_name===column));

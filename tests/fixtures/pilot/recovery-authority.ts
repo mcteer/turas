@@ -2,17 +2,17 @@ import {Client} from 'pg';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {mkdtemp,writeFile,readFile,rm} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
-import {withPilotEnvironment,requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
+import {withPilotEnvironment,requireOwnedPilotDatabase,type PilotEnvironment} from '../../../scripts/pilot-environment';
 import {captureRecoveryDenialSnapshot,recoveryDenialSnapshotSchema,verifyRecoveryDenialSnapshot} from '../../../lib/server/operations/recovery-denial-snapshot';
 import {encryptRecoveryFile,decryptRecoveryFile} from '../../../lib/server/operations/backup-crypto';
 /** A modeled backup and its later source snapshot share the source clock. */
 export async function authorityCheckpointTime(owner:Client){return (await owner.query('SELECT clock_timestamp() AS captured_at')).rows[0].captured_at.toISOString() as string;}
 /** Synthetic owner tests only. Cold encrypted metadata and its separate key are
  * outside the disposable database, not a hosted backup or a full restore claim. */
-export async function withAuthorityEnvironment(run:(owner:Client,runtime:Client,environmentId:string)=>Promise<void>,options:{deadlineMs?:450000}={}){
+export async function withAuthorityEnvironment(run:(owner:Client,runtime:Client,environmentId:string,owned:PilotEnvironment)=>Promise<void>,options:{deadlineMs?:450000}={}){
  const renderer=process.env.TURAS_PILOT_RENDERER_IMAGE;
  if(renderer&&!/^sha256:[a-f0-9]{64}$/.test(renderer))throw Error('Owned immutable renderer required');
- await withPilotEnvironment(async env=>{if(renderer)process.env.TURAS_PILOT_RENDERER_IMAGE=renderer;const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)}),runtime=new Client({connectionString:requireOwnedPilotDatabase()});runtime.on('error',()=>{});await owner.connect();await runtime.connect();try{await run(owner,runtime,env.environmentId);}finally{await runtime.end().catch(()=>{});await owner.end();}},{postgresMajor:18,deadlineMs:options.deadlineMs??180000});
+ await withPilotEnvironment(async env=>{if(renderer)process.env.TURAS_PILOT_RENDERER_IMAGE=renderer;const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)}),runtime=new Client({connectionString:requireOwnedPilotDatabase()});runtime.on('error',()=>{});await owner.connect();await runtime.connect();try{await run(owner,runtime,env.environmentId,env);}finally{await runtime.end().catch(()=>{});await owner.end();}},{postgresMajor:18,deadlineMs:options.deadlineMs??180000});
 }
 export async function coldAuthorityProof(owner:Client,environmentId:string){
  const snapshot=await captureRecoveryDenialSnapshot(owner,environmentId,AbortSignal.timeout(60000)),root=await mkdtemp(resolve('local-artifacts/016/authority-test-')),keyRoot=await mkdtemp(resolve('local-artifacts/016/authority-key-')),key=randomBytes(32);

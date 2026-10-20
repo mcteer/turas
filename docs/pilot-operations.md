@@ -1308,3 +1308,46 @@ readback. Final consumption repeats the live census and rejects drift. It perfor
 no provider mutation, cancellation, settlement or service unlock. Repeated metadata
 is not an atomic cloud snapshot, and terminal runs alone do not prove old HTTP/cron
 admission or external-effect closure. These remain required by the final producer.
+
+Work verification configuration uses
+`pilot-work-recovery-verification-input-v2`. In addition to the restored target's
+`sourceFile`, explicitly supply `denialSourceFile` for the original source and
+`denialDestination` for the independently retained archive. Original and restored
+database endpoints must differ. A saved receipt supplies historical constraints;
+only an actual new independently retained capture from that original source can
+supply current authority. The controller preserves every original identity,
+replay key and immutable financial/provider row across at most eight new
+captures, retains unknown holds, and keeps the original fifteen-minute command
+bound. A committed acknowledgement remains read-only and does not recapture or
+rerun a completed decision.
+
+The scalable MCP path records two distinct forms of evidence. It exhausts the
+current canonical participant/customer/category inventory, including every page,
+record and citation, and separately measures actual hosted SDK branches. Branch
+representatives share the exact verified dispatcher, authorization code and
+environment-wide backend at the same build; their observed tool sequence,
+cardinality, role/workspace/category and categorical policy statuses distinguish
+branches. Response shape alone does not establish semantic equivalence. Any
+future customer-specific transport or backend requires an explicit additional
+branch discriminator or refusal of this method. No unmeasured canonical read is
+labelled a hosted read.
+
+Final verification requires every genuine hosted branch, recent actual
+participant/category canaries, independently retired original probes and an
+unchanged exhaustive canonical replay under current authorization. The service
+and mixed coverage contracts are v2 and explicitly report
+`exhaustiveCanonicalScopeCoverageVerified` and
+`actualHostedSdkBranchCoverageVerified`. Existing full hosted-scope measurements
+can still establish both forms of coverage. Credentials retain their original
+59-second ceiling, each category its64-call ceiling, and owners their original
+finite deadlines. Windows stop before another complete probe cannot fit; they
+never renew an old credential or extend current authority beyond five minutes.
+
+Category observations use `pilot-work-mcp-category-v2`: `calls` counts the positive
+category transcript and `boundaryCalls` counts actual denied tool calls. Their
+sum remains capped at64. The actual scoped tool catalog must match exactly, an
+excluded tool must receive a known unsupported-tool RPC refusal after an actual
+SDK dispatch, and an existing foreign customer must yield typed non-disclosing
+`unavailable/not_found` data. With no other customer, evidence records that
+limited applicability explicitly and final verification rejects it if another
+customer now exists. Generic tool/SQL/outage errors cannot establish denial.

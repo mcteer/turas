@@ -150,3 +150,10 @@ export const mcpToolOutputs=Object.freeze({
 export function mcpResponseFits(value:unknown):boolean {
   return new TextEncoder().encode(JSON.stringify(value)).byteLength <= mcpLimits.responseBytes;
 }
+
+export const mcpToolCategoryScopes:Readonly<Record<McpToolName,readonly McpCategory[]>>=Object.freeze({
+  turas_identity_v1:[],turas_customers_list_v1:['profiles','evidence','plans','reports'],turas_profile_read_v1:['profiles'],
+  turas_evidence_list_v1:['evidence'],turas_evidence_read_v1:['evidence'],turas_citation_resolve_v1:['evidence','knowledge'],
+  turas_knowledge_list_v1:['knowledge'],turas_knowledge_read_v1:['knowledge'],turas_plans_list_v1:['plans'],turas_plan_read_v1:['plans'],
+  turas_reports_list_v1:['reports'],turas_report_read_v1:['reports'],
+});

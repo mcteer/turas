@@ -5418,3 +5418,29 @@ source verification remains pending. The complete pilot inventory now includes
 an additional original-source forgery boundary case (929cases/168suites), whose
 focused unit check passes. This is distinct from complete frozen earlier-source
 catalog results.
+
+The mixed coverage path passes two focused owned PostgreSQL cases (21unselected),
+including actual separately dumped/restored original-source capture, encryption,
+independent archive retention, cold authentication, complete CLI verification,
+read-only acknowledgement and explicit resolution/open. Missing hosted branches,
+forged DTOs, changed accepted content and authorization drift are rejected. This
+is controlled-cloud/DNS/key transport with real owned SQL/archive bytes, not a
+hosted restoration claim. Three actual SDK consumer suites pass against an owned
+Production-mode Next.js server; foreign existing-customer refusal is typed and
+non-disclosing, while invalid input and other failures remain errors. Nine
+focused privacy/current-denial/cancellation unit cases pass.
+
+The separate-source check exposed nondeterministic unique-index collection order
+after pg_dump/restore. Source capture now orders logical replay-key column sets,
+and history comparison normalizes only that collection order while preserving
+every key/digest, exact schema/primary key, row identity and full original SQL-row
+digest. A genuine cold reordered-key continuation passes; changed replay digest,
+missing original rows and altered immutable row hashes remain blocked. Earlier
+failed fixture/configuration attempts are retained separately.
+
+Current CI at3680470 passes native operations,4/10MiB native staging, Product Gaps
+WebKit and pilot WebKit; other long suites were still running at this checkpoint.
+The five mobile workspace cases also pass locally without retries. An independent
+local wider UI attempt hit an upload-case timeout and is not a complete UI pass.
+The fresh mixed regional scale run,079 existing-target cutover, actual backup
+cadence, hosted automated observations and user-directory cleanup remain pending.
