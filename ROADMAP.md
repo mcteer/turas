@@ -353,6 +353,7 @@ The016 recovery producer now composes genuine current service, admission,
 identity, accounting and terminal-provider measurements under the owner decision
 fences. Owned tests cover complete service/verification commit and read-only
 commit acknowledgement. Explicit re-verification advances a locked decision
-revision while retaining prior evidence and holds. Full CLI lifecycle, fresh
-complete-source validation and hosted release acceptance remain pending; this
+revision while retaining prior evidence and holds. The full CLI restart/quarantine/verification/resolution/open lifecycle passed on
+an owned target. Fresh complete-source validation and hosted release acceptance
+remain pending; this
 does not complete016 or activate the backup operator.

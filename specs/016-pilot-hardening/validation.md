@@ -5258,3 +5258,33 @@ startup/cleanup allowance (5160seconds). Focused tests do not establish the full
 current-source catalog. Actual Preview/Production remain at077; no real lock,
 migration, deployment, release, backup-operator activation or directory cleanup
 has been performed by this checkpoint.
+
+
+#### Complete CLI fresh-attempt lifecycle passed
+
+`producer-cli-reverification-owned-v4-private.json` passed1/1 selected, with22
+unselected cases (231.9seconds case time). It executes the actual private
+configuration entry point after a genuine first verification and changed-state
+refusal: explicit owner locked-to-locked revision advance, fresh encrypted
+candidate/current independently retained denials, original-quarantine chain,
+complete HTTP/SDK/private-conversation measurement, new immutable verification,
+read-only CLI acknowledgement, existing quarantine resolution and guarded open.
+Both verification rows remain; the original cumulative request journal was
+predeclared for20requests and covered both ten-request attempts without reset.
+Earlier v2/v3 failures hit the original180s owned-fixture watchdog; those receipts
+remain. Only this lifecycle fixture now explicitly receives450s owned preparation
+allowance, with420s test and5160s file controller bounds; hosted/domain limits are
+unchanged. Independent review found no remaining source blocker.
+
+The fresh cold rehearsal used the actual encrypted Preview077 safety archive
+captured2026-10-19T17:08:20.741Z. Current079 forward migration, restored application
+content, locked/runtime denial and owned target removal passed in
+`recovery-producer-31dd36f-preflight/cold-077-to-079/rehearsal.json`. The original
+spending instruction retains a separate50000microUSD unknown-cost hold for this
+one attempt. This is cloud-archive authentication plus an owned restore/migration
+rehearsal; it does not establish an in-place hosted release or reopen.
+
+Root/pilot type checks, documentation checks, migration079 manifest checksum and
+catalog/deadline/result contracts (32/32) passed. The complete new-source catalog,
+CI and actual Preview/Production release remain pending. The earlier c8e8ae1
+frozen923-case run is historical source evidence, even if it completes afterward.
