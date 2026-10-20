@@ -6184,7 +6184,7 @@ transition uses nonblocking writer-lock acquisition; contention aborts PostgreSQ
 transaction, preventing a caught error from permitting partially serialized work.
 The transaction-local scheduling marker resets on rollback. Prelookup and locked
 membership/principal identity sets must match exactly. The recovery SQL guard
-allows only the two literal canonical local scheduling-marker statements; its
+allows only the exact canonical local scheduling-marker statement; its
 transaction-control restrictions remain intact.
 
 All16 support-policy and grant-concurrency integration cases pass in owned local
@@ -6197,3 +6197,16 @@ blocker. The actual unpaid native-operations/runtime/CLI WebKit fixture also pas
 zero observed deadlocks or statement timeouts; its260-sample observer records no
 contended query. Current-source CI, complete catalog and hosted recovery remain
 required; these local checks do not establish release completion.
+
+
+The first broader local domain run retained233 passing cases and one failure:
+batched public-learning recall used29 queries against its unchanged26-query limit.
+The correction combines timeout configuration, prior transaction-mode capture and
+the constrained read/write marker into one fixed statement. A MATERIALIZED CTE
+captures the prior mode before updating it. The recovery SQL guard accepts only
+that exact shared statement; modified values or adjacent SQL remain denied.
+All16 support/grant cases, the existing SQL guard cases and root typecheck pass
+after this correction. Independent review found no blocker. The repeated complete
+domain run passes with no paid provider calls. The corrected actual native/runtime/CLI WebKit fixture also passes with no paid
+provider calls, deadlocks or statement timeouts. The initial failed query-budget
+run is retained and its threshold is unchanged.

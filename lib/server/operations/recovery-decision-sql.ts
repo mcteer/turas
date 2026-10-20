@@ -1,3 +1,4 @@
+import {actorLockSettingsSql} from "../profiles/authority-lock-sql";
 /** Restricted internal SQL only. Keep transaction control in the exact-target
  * controller; unsupported escape/Unicode/dollar payload syntax fails closed. */
 export function assertRecoveryDecisionSql(sql:string){
@@ -28,8 +29,8 @@ export function assertRecoveryDecisionSql(sql:string){
  if(/\b(?:standard_conforming_strings|backslash_quote)\b/i.test(clean))fail();
  for(const call of clean.matchAll(/\bset_config\s*\(\s*([^,]*)/gi)){const literal=/^__recovery_literal_(\d+)__\s*$/.exec(call[1]);if(!literal)fail();const name=literals[Number(literal![1])];
   if(name==='turas.actor_lock_mode'){
-   // Scheduling metadata only; permit exactly the two canonical LOCAL writes.
-   // Parameters, expressions and adjacent statements remain controller-denied.
-   if(!/^SELECT set_config\('turas\.actor_lock_mode','(?:read|write)',true\)$/.test(sql))fail();
+   // Only the canonical statement can select the constrained read/write marker.
+   // Arbitrary settings, expressions and adjacent statements remain denied.
+   if(sql!==actorLockSettingsSql)fail();
   }else if(!['statement_timeout','lock_timeout'].includes(name))fail();}
 }

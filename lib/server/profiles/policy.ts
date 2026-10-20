@@ -1,3 +1,4 @@
+import {actorLockSettingsSql} from "./authority-lock-sql";
 import {requireOperationalOpen} from '../operations/admission';
 import type { PoolClient } from "pg";
 import type { CurrentSession } from "../auth/sessions";
@@ -15,15 +16,14 @@ export async function lockWorkspaceActor(client: PoolClient, actor: CurrentReadA
     lockTimeoutMs=2000;
     await assertMcpReady(client,true);
   }
-  await client.query("SELECT set_config('lock_timeout',CASE WHEN current_setting('turas.partner_operation',true)='013' OR current_setting('turas.learning_operation',true)='014' THEN '2000ms' ELSE $1 END,true)",[`${lockTimeoutMs}ms`]);
+  const priorMode = (await client.query<{mode:string | null}>(
+    actorLockSettingsSql,[`${lockTimeoutMs}ms`,!readOnly])).rows[0]?.mode;
   await client.query("SET LOCAL statement_timeout = '5000ms'");
   await requireOperationalOpen(client,actor,readOnly);
   // Authority reads must coexist with append-only commands. Writers retain the
   // principal/workspace serialization previously supplied by UPDATE row locks.
   // A nested read→write transition must never wait while holding SHARE locks:
   // that could cycle with a concurrent authority revocation.
-  const priorMode = (await client.query<{mode:string | null}>(
-    "SELECT current_setting('turas.actor_lock_mode',true) AS mode")).rows[0]?.mode;
   const memberIds = [...new Set([actor.membershipId, ...(typeof affectedMembershipId === "string" ? [affectedMembershipId] : affectedMembershipId ?? [])].filter((id): id is string => Boolean(id)))].sort();
   const identities = !readOnly ? (await client.query<{id:string;principal_id:string}>(
     "SELECT id,principal_id FROM memberships WHERE id=ANY($1::uuid[]) AND workspace_id=$2",
@@ -44,9 +44,6 @@ export async function lockWorkspaceActor(client: PoolClient, actor: CurrentReadA
       } else await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))",[name]);
     }
   }
-  await client.query(readOnly && priorMode !== 'write'
-    ? "SELECT set_config('turas.actor_lock_mode','read',true)"
-    : "SELECT set_config('turas.actor_lock_mode','write',true)");
   const lock = "FOR SHARE";
   const locked = new Map<string, { principal_id: string; workspace_id: string; kind: string; role: string; active: boolean; partner_org_id: string | null }>();
   for (const id of memberIds) {
