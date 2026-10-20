@@ -10,7 +10,15 @@ it('allows the declared restore setup and cases inside a finite whole-file bound
  for(const [name,total] of Object.entries(phases))expect(pilotSuiteDeadlineMs('tests/integration/pilot/'+name+'.test.ts')).toBeGreaterThanOrEqual(total+15000);
 });
 it('keeps every registered suite within a finite controller deadline',()=>{
- for(const suite of catalog.suites){const ms=pilotSuiteDeadlineMs(suite.file);expect(Number.isSafeInteger(ms)).toBe(true);expect(ms).toBeGreaterThan(0);expect(ms).toBeLessThan(3600000);}
+ for(const suite of catalog.suites){
+  const ms=pilotSuiteDeadlineMs(suite.file);expect(Number.isSafeInteger(ms)).toBe(true);expect(ms).toBeGreaterThan(0);
+  // The decision suite declares seventeen210s cases and one270s peer phase,
+  // plus60s process startup/cleanup. All other suites retain their60m ceiling.
+  if(suite.file==='tests/integration/pilot/work-recovery-decision.test.ts'){
+   expect(ms).toBeGreaterThanOrEqual(17*210000+270000+15000);
+   expect(ms).toBeLessThanOrEqual(17*210000+270000+60000);
+  }else expect(ms).toBeLessThan(3600000);
+ }
 });
 it('rejects unregistered suite names before process execution',()=>{
  for(const file of ['tests/integration/pilot/unknown.test.ts','../isolated-restore.test.ts',''])expect(()=>pilotSuiteDeadlineMs(file)).toThrow('Registered pilot suite required');

@@ -136,3 +136,17 @@ async function releaseIo(environmentId:string){
  catch{destroy=true;}finally{client.release(destroy);}
  if(destroy)throw Error('Private IO capture fence could not be verified');
 }
+
+/** Positive provider/cache work shares the capture fence for its entire lifetime.
+ * Released schemas retain their original behavior; transitional/unknown schemas
+ * cannot accidentally opt out of the schema079 operational contract. */
+export async function withOperationalProviderIo<T>(run:()=>Promise<T>,signal?:AbortSignal):Promise<T>{
+ signal?.throwIfAborted();
+ const environmentId=getServerConfig().TURAS_ENVIRONMENT_ID;
+ const rows=(await query('SELECT environment_id,schema_version FROM turas_environment')).rows;
+ if(rows.length!==1||rows[0].environment_id!==environmentId||!Number.isSafeInteger(Number(rows[0].schema_version))||Number(rows[0].schema_version)<1)throw new HttpFailure(503,'recovery_locked','Service temporarily unavailable');
+ const version=Number(rows[0].schema_version);
+ if(version<=77){signal?.throwIfAborted();return run();}
+ if(version!==79)throw new HttpFailure(503,'recovery_locked','Service temporarily unavailable');
+ return withOperationalIo(()=>{signal?.throwIfAborted();return run();});
+}

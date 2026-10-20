@@ -1,10 +1,11 @@
+import {withOperationalProviderIo} from '../../../operations/admission';
 import {getServerConfig} from "../../../config";
 import { z } from "zod";
 import { evidenceDatabase } from "./database";
 import { refreshPublicLearning } from "./public-learning";
 import { indexSnapshot } from "./sources";
 
-export async function maintainResearchEvidence(environmentId:string,signal:AbortSignal) {
+async function maintainResearchEvidenceWithinFence(environmentId:string,signal:AbortSignal) {
   if(environmentId!==getServerConfig().TURAS_ENVIRONMENT_ID)throw new Error("Research maintenance environment mismatch");
   signal.throwIfAborted();
   const sql = await evidenceDatabase();
@@ -36,4 +37,8 @@ export async function maintainResearchEvidence(environmentId:string,signal:Abort
     indexingAttempted: pending.length };
   console.info(JSON.stringify({ event: "research_cache.maintenance", environmentId, ...result }));
   return result;
+}
+
+export async function maintainResearchEvidence(environmentId:string,signal:AbortSignal) {
+ return withOperationalProviderIo(()=>maintainResearchEvidenceWithinFence(environmentId,signal),signal);
 }

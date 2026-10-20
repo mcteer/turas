@@ -3,7 +3,7 @@ import catalog from './pilot-suites.json';
  * startup and cleanup. Domain, hook, statement and per-case limits stay fixed.
  * The complete catalog retains its independent ninety-minute batch orchestration deadline. */
 const longSuiteSeconds:Readonly<Record<string,number>>={
- 'managed-workflow-batch':180,
+ 'managed-workflow-batch':180,'research-io-fence':240,
  'maintenance-worker':240,'hosted-runtime-database':240,'evaluation-visible-identifiers':240,
  'native-postgres':300,'required-objects':300,'hosted-training-admission':300,
  'linked-http-reports':360,'linked-http-training':360,'linked-http-workforce':360,'hosted-browser':360,

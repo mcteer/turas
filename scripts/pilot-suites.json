@@ -1924,6 +1924,13 @@
         "fails closed on concurrent stale instances missing chain entries tampered plans and unsafe evidence permissions",
         "withholds the intent UUID and closes further dispatch when directory persistence fails"
       ]
+    },
+    {
+      "file": "tests/integration/pilot/research-io-fence.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "drains admitted provider publication before recovery and rejects new cron cache and embedding work while locked"
+      ]
     }
   ],
   "ui": {

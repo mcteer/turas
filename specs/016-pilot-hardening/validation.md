@@ -5106,3 +5106,41 @@ The current inventory is922cases across167suites. The whole-file recovery suite
 bound is3900seconds: seventeen210-second cases, one270-second case and60seconds
 for startup/cleanup. Individual domain and case deadlines are unchanged.
 T096/T097, hosted acceptance and directory cleanup remain incomplete.
+
+### Research worker recovery fence — 2026-10-19
+
+Independent source review found that the research-maintenance cron could refresh
+retained public pages or index embeddings while operational admission was locked.
+The canonical positive-IO fence now encloses complete maintenance, refresh, cache
+fetch, source-read, indexing and embedding operations before their first claim or
+reservation through publication and terminal accounting. The actual configured
+DB marker selects the schema079 fence; released schemas through077 retain their
+behavior, while transitional/unknown schemas fail closed. Existing deny-only IO
+keeps its separate cleanup authority. Caller cancellation reaches the embedding
+provider with the original timeout, quota, model and zero-retry bounds preserved.
+
+The new real PostgreSQL077→079 case passes: recovery cannot acquire its exclusive
+fence during an admitted delayed embedding, publication completes before drain,
+an aborted original operation becomes unconfirmed without retry, and locked cron,
+cache, index and embedding calls create zero new work. Explicit deny-only IO still
+runs. Evidence: `local-artifacts/016/research-io-fence-v1-private.json`. Root/pilot
+typechecks and docs pass; independent review found no concrete scoped blocker.
+
+The frozen74add5e recovery-decision run passes all18 cases with zero pending:
+`local-artifacts/016/recovery-decision-74add5e-full18-private.json`. A separate
+controller regression exposed its old universal60-minute assertion, inconsistent
+with the eighteen declared case phases. The test now enforces this suite's exact
+17×210s+270s+60s maximum and preserves60minutes for every other suite; all3 controller
+cases pass. The complete-catalog90-minute deadline is unchanged. New case
+registration brings the inventory to923cases across168suites; fresh full-source
+catalog/build/CI remains required.
+
+An initial predecessor launcher was rejected by the test/database separation
+check. A corrected077 launcher passes retained-public maintenance but its six
+session-dependent lifecycle cases require the current079 session schema and fail
+on missing operations_control before their bodies. These failures are retained;
+the current079 predecessor run is recorded separately when complete. No hosted
+lock, provider call, migration, release, readiness decision or cleanup occurred.
+
+The current079 predecessor run passes all7 research maintenance/cache lifecycle
+cases: `local-artifacts/016/research-io-current079-regression-private.json`.
