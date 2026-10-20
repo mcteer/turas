@@ -1085,9 +1085,9 @@ it('walks all1479 canonical selections with paginated bounded customer credentia
    const proof=await measureWorkMcpCanonicalScope({target:input,passwords:{mcteer:process.env.TURAS_DEMO_PASSWORD!,panel:process.env.PANEL_PASSWORD!,partner:process.env.PARTNER_PASSWORD!},retained,journalDirectory:dirname(input.sourceFile)});
    expect(proof.requiredSelections).toBe(1479);expect(proof.hostedSdkVerified).toBe(false);expect(proof.representatives.length).toBeGreaterThan(0);
    const {readdir}=await import('node:fs/promises'),names=await readdir(dirname(input.sourceFile)),intents=names.filter(name=>/^probe-.*-intent\.json$/.test(name)),retirements=names.filter(name=>/^probe-.*-retired\.json$/.test(name));
-   expect(intents).toHaveLength(9);expect(retirements).toHaveLength(9);
+   expect(intents).toHaveLength(21);expect(retirements).toHaveLength(21);
    const scopes=await Promise.all(intents.map(async name=>JSON.parse(await readFile(join(dirname(input.sourceFile),name),'utf8'))));
-   expect(Math.max(...scopes.map(row=>row.mcp.customerIds.length))).toBe(60);
+   expect(Math.max(...scopes.map(row=>row.mcp.customerIds.length))).toBe(20);
    for(const row of scopes)expect(Date.parse(row.mcp.expiresAt)-Date.parse(row.recordedAt)).toBeLessThanOrEqual(59000);
    expect((await owner.query('SELECT 1 FROM login_sessions WHERE revoked_at IS NULL LIMIT 1')).rowCount).toBe(0);
    expect((await owner.query('SELECT 1 FROM mcp_connections WHERE revoked_at IS NULL OR credential_hash IS NOT NULL LIMIT 1')).rowCount).toBe(0);

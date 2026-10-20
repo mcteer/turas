@@ -311,3 +311,10 @@ No hosted target may be locked for release before its measured reopen path exist
   unrelated dispatch without changing the selected model or case inventory.
   Six owned root-budget cases and root typecheck pass. Provider accounting and
   the shared worst-case reservation remain independently required.
+
+- [X] T108 Keep exhaustive canonical MCP batches within the original short-lived
+  credential by reducing each batch to 20 customers. Preserve the 59-second
+  lifetime, complete scope and original 32-probe bound; verify all 1,479 owned
+  selections and retirement. The focused owned case, typecheck, documentation and
+  independent review pass. Retain the failed actual
+  60-customer regional run and require fresh committed/hosted verification.

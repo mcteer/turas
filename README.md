@@ -812,7 +812,9 @@ have versioned provenance and cannot impersonate human participants.
 The scalable MCP path distinguishes exhaustive canonical customer/category reads
 from actual hosted SDK policy-branch observations. It replays all canonical
 pages, records and citations, requires every observed hosted branch plus recent
-role/category canaries, and retires every probe. Fresh independently retained
+role/category canaries, and retires every probe. Canonical batches contain at most
+20 customers within the unchanged 59-second credential lifetime and aggregate
+32-probe limit; a larger inventory fails closed. Fresh independently retained
 original-source captures preserve prior identities and financial/provider rows;
 historical evidence never authorizes a new credential. Original deadlines,
 credential/call limits and unknown cost holds remain enforced. Full owned

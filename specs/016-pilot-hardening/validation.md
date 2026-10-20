@@ -6337,3 +6337,20 @@ explicit 700, and unrelated undefined values. Typecheck passes. These fixture
 calls make no real provider requests; this does not prove provider adherence,
 reduce the shared worst-case reservation, or establish hosted readiness. Fresh
 committed complete checks remain required.
+
+### Canonical MCP credential batch expiry (2026-10-20)
+
+The actual `8f85a89` regional run passed persistence/source checks and transferred
+its scoped inputs. Its first canonical 60-customer batch outlived the original
+short-lived MCP credential; it failed authentication and left service locked.
+Independent cleanup verified zero live owned sessions, MCP credentials and
+admissions, historical credentials unchanged, and executor/snapshot deletion.
+This is a failed recovery observation, not a successful negative test.
+
+Canonical batches now contain at most 20 customers, with the same 59-second
+credential lifetime, exhaustive selection/record/citation traversal, and original
+32-probe aggregate limit. The existing 1,479-selection fixture requires 21 probes
+instead of nine and verifies their retirement. That focused owned case passes
+in 56.6 seconds; typecheck, documentation checks and independent review pass.
+Hosted recovery remains required;
+no deadline extension or incomplete-scope acceptance is introduced.
