@@ -5980,3 +5980,44 @@ Actual native-operations CI passes on89fd94d. Its observer records385 samples,
 one membershipLock sample497ms and one commitIO sample163ms. These observations
 do not explain the earlier intermittent timeout. All seven legacy acceptance jobs
 pass; the broader46-job run and exact-source997-case local catalog are in progress.
+
+
+The actual94c9e31 immutable Preview is READY with the five encrypted branch
+settings verified by protected CLI readback. Its governed short-lived mcteer
+probe measures the actual deployed restricted runtime against locked schema079
+revision3. Release-bound typed401 canaries confirm ordinary session and anonymous
+status admission are denied; the exact probe is retired. The active host policy
+is version2 and preserves all four current Production hosts while adding only
+this immutable Preview host. Earlier serialization-order and numeric-version
+activation failures are retained; the installed CLI transport uses the draft
+resource with JSON{}. No provider cancellation or full recovery follows from
+this bootstrap observation.
+
+The first managed closure attempt stops in batch0 before provider PUT dispatch;
+its35 provider reads, original plan and verified probe/client retirement remain.
+Its original error was not retained at sufficient detail to attribute a cause.
+A later one-completed-run diagnostic records genuine terminal metadata and an
+independent receipt with0 PUTs, but fails final source verification after a local
+source edit; it is partial evidence, not completed closure. No cancellation retry
+or full-service assertion is admitted from either attempt.
+
+An exact full checkpoint succeeds in40.529s across492 queries. A separate actual
+locked Preview repeatable-read comparison runs the earlier portable-content
+implementation and the bounded16-table implementation in the same snapshot:
+both produce the identical digest. Earlier content verification takes36.423s /
+469 queries; batching takes3.328s /34 queries. SQL/transaction deadlines, complete
+table contents, locks, sequence state and final digest format remain unchanged.
+The existing two-case integration suite now also compares the original per-table
+format across batch boundaries, quoted identifiers, Unicode, null values, large
+numerics, binary bytes and sequences; both cases pass. Pilot typecheck passes.
+This measured optimization does not explain the first managed-batch failure or
+the earlier intermittent native CI timeout. Complete current-source catalog and
+hosted recovery acceptance remain required.
+
+All six focused owned released-schema/owned restore cases also pass with the
+batched portable digest. The new private store is connected only to Preview,
+verified from actual project environment metadata. A bounded adapter exercise
+lists all seven empty namespaces, writes64 random owned bytes, cold-reads their
+exact digest, observes an unauthenticated denial and verifies deletion of the
+owned canary. It uses no customer bytes and does not establish application
+configuration cutover, byte migration, hosted job execution or recovery readiness.

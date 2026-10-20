@@ -22,10 +22,18 @@ async function databaseContentDigest(db:Client|PoolClient,lock:boolean){
  if(!tables.length||tables.length>1000)throw Error('Recovery content inventory unavailable');
  if(lock)await db.query('LOCK TABLE '+tables.map(name=>'public.'+quote(name)).join(',')+' IN SHARE MODE');
  const content=[];
- for(const table of tables){
-  const row=(await db.query(`SELECT count(*)::text AS count,encode(sha256(convert_to(COALESCE(string_agg(digest,'' ORDER BY digest),''),'UTF8')),'hex') AS digest FROM (SELECT encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex') AS digest FROM public.${quote(table)} t) hashed`)).rows[0];
-  if(!row||!/^\d+$/.test(row.count)||!/^[a-f0-9]{64}$/.test(row.digest))throw Error('Recovery content proof unavailable');
-  content.push({table,count:row.count,digest:row.digest});
+ // Bound each statement while avoiding one network round trip per table.
+ // Keep the original table order, row serialization and final digest format.
+ for(let offset=0;offset<tables.length;offset+=16){
+  const batch=tables.slice(offset,offset+16);
+  const statements=batch.map((table,index)=>`SELECT ${offset+index} AS ordinal,count(*)::text AS count,encode(sha256(convert_to(COALESCE(string_agg(digest,'' ORDER BY digest),''),'UTF8')),'hex') AS digest FROM (SELECT encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex') AS digest FROM public.${quote(table)} t) hashed`);
+  const rows=(await db.query(statements.join(' UNION ALL ')+' ORDER BY ordinal')).rows;
+  if(rows.length!==batch.length)throw Error('Recovery content proof unavailable');
+  for(const [index,table] of batch.entries()){
+   const row=rows[index];
+   if(row.ordinal!==offset+index||!/^\d+$/.test(row.count)||!/^[a-f0-9]{64}$/.test(row.digest))throw Error('Recovery content proof unavailable');
+   content.push({table,count:row.count,digest:row.digest});
+  }
  }
  const sequences=(await db.query("SELECT sequencename FROM pg_sequences WHERE schemaname='public' ORDER BY sequencename")).rows;
  if(sequences.length>1000)throw Error('Recovery sequence inventory exceeds bound');

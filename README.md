@@ -816,6 +816,11 @@ runtime credential. Provider-managed administrative roles remain untouched.
 The actual target observations and remaining release checks are recorded in the
 [validation record](specs/016-pilot-hardening/validation.md).
 
+Portable recovery-content verification batches at most16 table hashes per SQL
+statement while preserving the original digest format, table locks and deadlines.
+Actual locked Preview measurement produces the same digest with34 queries in3.3s,
+compared with469 queries in36.4s for the earlier per-table implementation.
+
 The separate backup operator package now explicitly allowlists deployment source
 files and excludes arbitrary environment, credential and private evidence files.
 An affected disabled operator deployment was removed after independent review
