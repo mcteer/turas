@@ -613,12 +613,14 @@
     },
     {
       "file": "tests/unit/pilot/storage-config.test.ts",
-      "expectedCases": 4,
+      "expectedCases": 6,
       "cases": [
         "requires the exact store identity carried by the pinned SDK token",
         "never selects an ephemeral local store for a hosted deployment",
         "uses explicit project OIDC with the exact selected store and no read-write token",
-        "lets the pinned SDK obtain fresh hosted request identity without a static secret"
+        "lets the pinned SDK obtain fresh hosted request identity without a static secret",
+        "accepts only an explicit store-bound operator Blob credential",
+        "refuses ambiguous or implicit operator Blob authorization"
       ]
     },
     {
@@ -1052,27 +1054,30 @@
     },
     {
       "file": "tests/unit/pilot/quality-budget.test.ts",
-      "expectedCases": 14,
+      "expectedCases": 17,
       "cases": [
         "admits at most one concurrent provider dispatch across independent ledger clients",
         "refuses insufficient budget before recording a dispatch",
+        "retains prior charges and credits across corrected source attempts and blocks unresolved retries",
+        "serializes credit and dollar admissions while retaining their separate units",
+        "holds every provider after an unknown or invalid credit charge",
+        "requires explicit credit authority and never reuses the four-call allowance",
         "retains uncertain dispatch holds across clients without permitting retries",
         "holds overruns and invalid accounting instead of releasing their reservations",
         "never steals an interrupted accounting lock or accepts a damaged journal",
         "rejects reused provider generation identities before admitting further work",
-        "serializes credit and dollar admissions while retaining their separate units",
-        "holds every provider after an unknown or invalid credit charge",
-        "requires explicit credit authority and never reuses the four-call allowance",
-        "retains prior charges and credits across corrected source attempts and blocks unresolved retries",
         "continues the exact expired journal without replacing original charges credits or authorization",
         "rejects mismatched stale overlong or cap-expanding continuation records without appending them",
         "keeps pending and unknown dollar or credit holds closed under a fresh continuation proposal",
-        "invalidates old attempts and runtimes when a separately approved continuation becomes current"
+        "invalidates old attempts and runtimes when a separately approved continuation becomes current",
+        "preserves original bytes and full unknown exposure while admitting only reviewed new-source work",
+        "rejects stale authority, incomplete unknown sets, reduced holds and active unrelated calls",
+        "a higher genuine exposure blocks admission again without reducing the permanent reservation"
       ]
     },
     {
       "file": "tests/unit/pilot/quality-fetch.test.ts",
-      "expectedCases": 9,
+      "expectedCases": 13,
       "cases": [
         "settles known Gateway charges while preserving the provider response",
         "denies a paid request below its full published bound without calling the provider",
@@ -1082,7 +1087,11 @@
         "rejects unapproved models endpoints and provider tools before dispatch",
         "does not claim a provider dispatch for an already aborted request",
         "enforces admission on the installed SDK request without contacting the provider",
-        "reads both public catalogs without sending a model credential"
+        "reads both public catalogs without sending a model credential",
+        "retains bounded safe provider failure metadata and the full unknown reservation",
+        "bounds failure-body retention without accepting an incomplete body as complete",
+        "retains an actual streamed generation identity when final accounting is lost",
+        "keeps Gateway generation authority distinct from an upstream gen-shaped response ID"
       ]
     },
     {

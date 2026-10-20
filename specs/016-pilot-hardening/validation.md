@@ -6054,3 +6054,43 @@ exercise both target parsers through the producer's pre-network mismatch guard.
 No denial capture, restored authority, service unlock or Production mutation is
 inferred from that parser correction. Current-source full catalog, exact-source
 hosted verification and all remaining release gates are still pending.
+
+
+### 2026-10-20 recovery continuation and operator corrections
+
+The exact6266f31 source completed its full deterministic catalog:997/997 cases,
+181/181 suites, all processes successful and owned cleanup complete. The original
+360-workflow Preview inventory was reconciled to actual terminal states in four
+partitions. Two pre-wire failures were independently audited against complete
+ordinal/hash manifests; exclusive durable first-wire markers admitted one actual
+cancellation for each affected run. No uncertain dispatched cancellation was
+retried. Complete current-provider, old-host and external-effect verification remains
+separate and pending.
+
+An independently retained matched encrypted capture was cold-restored to a distinct
+hosted cluster. Actual ledger/content equality and a fresh restricted-runtime login
+passed; the service remains locked. The fixed regional native restore completed in
+23.510s and forwarded93,392,213 application bytes. Its application byte cap was
+enforced; on-wire retransmission cost remained conservatively reserved. The owned
+Sandbox was stopped/deleted and provider absence verified. This is physical restore
+proof, not complete service recovery or pilot readiness.
+
+Two Product Gaps WebKit cases that failed CI passed a fixed-event narrow diagnostic.
+The complete unchanged local WebKit gate then passed88/88 across four projects,
+without skips or retries. The original CI failure remains retained; exact-source
+checks still gate release.
+
+The first new live quality batch stopped in002 after an actual provider error. Its
+original unknown dispatch, charges and full worst-case hold remain in the original
+journal; no actual-model quality acceptance is claimed. The reviewed-resumption
+change adds explicit, independently reviewed additive authority and conservative
+uncertainty encumbrance without resetting original history or retrying that request.
+Failure diagnostics distinguish actual Gateway metadata from upstream response IDs.
+
+The local operator's CLI-issued OIDC token identified development and Blob denied
+its access to the Preview-only store. Two separately bounded ephemeral Preview
+identity attempts returned no credential and were actually canceled. No hosted
+OIDC claim is made. Version3 verification now accepts the same explicit store-bound
+credential used for the actual matched capture; v2 retains its OIDC-only contract.
+Candidate/target/source binding and actual inventory/content checks are unchanged.
+Fresh full-catalog and hosted results for these corrections remain pending.

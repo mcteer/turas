@@ -1,6 +1,8 @@
+import{createHash}from'node:crypto';
 import {z} from 'zod';
 import {QualityBudgetLedger} from './pilot-quality-budget-ledger';
 
+export type QualityFailureEvidence={dispatchId:string;phase:'transport'|'http'|'accounting'|'stream';status?:number;responseBodyDigest?:string;responseBodyBytes?:number;responseBodyComplete?:boolean;gatewayGenerationId?:string;upstreamResponseId?:string;providerCode?:string};
 type Model='spacexai/grok-4.7'|'openai/text-embedding-3-small';
 type Ceiling={modelId:Model;ceilingMicroUsd:number;pricingDigest:string};
 type Accounting={chargedMicroUsd:number;inputTokens:number;outputTokens:number;generationId:string};
@@ -11,13 +13,15 @@ function accounting(value:unknown,responseId?:string):Accounting{
  if(!(typeof cost==='number'||typeof cost==='string'&&/^\d+(?:\.\d+)?$/.test(cost))||!Number.isFinite(Number(cost))||Number(cost)<0)throw Error('Gateway charge unavailable');
  const inputTokens=raw?.usage?.inputTokens?.total??raw?.usage?.tokens,outputTokens=raw?.usage?.outputTokens?.total??(raw?.usage?.tokens!==undefined?0:undefined),generationId=gateway?.generationId??gateway?.responseId??responseId;
  if(typeof inputTokens!=='number'||!Number.isSafeInteger(inputTokens)||inputTokens<0||typeof outputTokens!=='number'||!Number.isSafeInteger(outputTokens)||outputTokens<0||typeof generationId!=='string'||!generationId||generationId.length>256)throw Error('Gateway accounting identity unavailable');
+ // generationId is the historical deduplication receipt ID. A response-ID
+ // fallback is not a Gateway generation-lookup identity.
  return {chargedMicroUsd:Math.ceil(Number(cost)*1000000),inputTokens,outputTokens,generationId};
 }
 
 /** Install only in the explicitly owned evaluation process. This does not
  * authorize live work, select a model, change requests or infer missing charges.
  * The trusted operator supplies a fresh published ceiling, not the model. */
-export function budgetedGatewayFetch(input:{ledger:QualityBudgetLedger;attemptId?:string;fetch:typeof fetch;ceiling:(model:Model)=>Promise<Ceiling>;denied?:(ceiling:Ceiling)=>Promise<void>;observed?:(operation:{kind:'language'|'embedding'|'metadata'|'other';approvedModel:boolean})=>Promise<void>}):typeof fetch{
+export function budgetedGatewayFetch(input:{ledger:QualityBudgetLedger;attemptId?:string;fetch:typeof fetch;ceiling:(model:Model)=>Promise<Ceiling>;denied?:(ceiling:Ceiling)=>Promise<void>;failed?:(failure:QualityFailureEvidence)=>Promise<void>;observed?:(operation:{kind:'language'|'embedding'|'metadata'|'other';approvedModel:boolean})=>Promise<void>}):typeof fetch{
  return async(resource,init)=>{
   const url=new URL(resource instanceof Request?resource.url:String(resource));
   if(url.hostname!=='ai-gateway.vercel.sh')return input.fetch(resource,init);
@@ -44,24 +48,31 @@ export function budgetedGatewayFetch(input:{ledger:QualityBudgetLedger;attemptId
   const signal=AbortSignal.any([request.signal,AbortSignal.timeout(120000)]);
   const aborted=()=>{void input.ledger.hold(id,'aborted').catch(()=>undefined);};signal.addEventListener('abort',aborted,{once:true});
   const held=async(reason:'provider_error'|'incomplete_stream'|'invalid_accounting')=>{await input.ledger.hold(id,reason);signal.removeEventListener('abort',aborted);};
+  let phase:QualityFailureEvidence['phase']='transport',status:number|undefined,metadataId:string|undefined,gatewayGenerationId:string|undefined,failureCaptured=false;const failed=async(extra:Partial<QualityFailureEvidence>={})=>{if(failureCaptured)return;failureCaptured=true;await input.failed?.({dispatchId:id,phase,...(status!==undefined?{status}:{}),...(gatewayGenerationId?{gatewayGenerationId}:{}),...(metadataId&&/^[A-Za-z0-9_:-]{1,256}$/.test(metadataId)?{upstreamResponseId:metadataId}:{}),...extra});};
   try{
    signal.throwIfAborted();const response=await input.fetch(resource,{...init,signal});
-   if(!response.ok||!response.body){await held('provider_error');throw Error('Gateway dispatch requires cost review');}
+   status=response.status;phase='http';
+   if(!response.ok||!response.body){await held('provider_error');const chunks:Uint8Array[]=[];let bytes=0,complete=false,timedOut=false,providerCode:string|undefined,generation:string|undefined;const reader=response.body?.getReader(),timer=setTimeout(()=>{timedOut=true;void reader?.cancel().catch(()=>undefined);},5000);try{if(reader)for(;;){const item=await reader.read();if(item.done){complete=!timedOut;break;}if(bytes+item.value.length>16384)break;bytes+=item.value.length;chunks.push(item.value);}}catch{/* Status and digest remain observable without inventing a body. */}finally{clearTimeout(timer);await reader?.cancel().catch(()=>undefined);}const body=Buffer.concat(chunks);if(complete)try{const raw=JSON.parse(body.toString()),code=raw.error?.code??raw.code,known=['rate_limit_exceeded','rate_limited','insufficient_quota','insufficient_funds','invalid_request','invalid_request_error','model_not_found','provider_error','authentication_error','invalid_api_key','gateway_error','timeout','budget_exceeded'];providerCode=typeof code==='string'?(known.includes(code)?code:'other'):undefined;const candidate=raw.providerMetadata?.gateway?.generationId??raw.error?.providerMetadata?.gateway?.generationId;if(typeof candidate==='string'&&/^[A-Za-z0-9_:-]{1,256}$/.test(candidate))generation=candidate;}catch{}await failed({responseBodyDigest:createHash('sha256').update(body).digest('hex'),responseBodyBytes:bytes,responseBodyComplete:complete,...(providerCode?{providerCode}:{}),...(generation?{gatewayGenerationId:generation}:{})});throw Error('Gateway dispatch requires cost review');}
+   phase='accounting';
    if(response.headers.get('content-type')?.includes('application/json')){
     const reader=response.body.getReader(),chunks:Uint8Array[]=[];let size=0;
     try{for(;;){const part=await reader.read();if(part.done)break;size+=part.value.byteLength;if(size>20*1024*1024)throw Error('Evaluation response exceeds bound');chunks.push(part.value);}}
     finally{await reader.cancel();}
-    const bytes=Buffer.concat(chunks),raw=JSON.parse(bytes.toString('utf8'));await input.ledger.settle(id,accounting(raw,raw.response?.id));signal.removeEventListener('abort',aborted);
+    const bytes=Buffer.concat(chunks),raw=JSON.parse(bytes.toString('utf8'));
+    const observedGatewayId=raw.providerMetadata?.gateway?.generationId;
+    if(typeof observedGatewayId==='string'&&/^[A-Za-z0-9_:-]{1,256}$/.test(observedGatewayId))gatewayGenerationId=observedGatewayId;
+    if(typeof raw.response?.id==='string')metadataId=raw.response.id;
+    await input.ledger.settle(id,accounting(raw,raw.response?.id));signal.removeEventListener('abort',aborted);
     return new Response(bytes,{status:response.status,statusText:response.statusText,headers:response.headers});
    }
    if(!response.headers.get('content-type')?.includes('text/event-stream')){await held('invalid_accounting');throw Error('Gateway response accounting unsupported');}
-   const reader=response.body.getReader(),decoder=new TextDecoder();let pending='',size=0,finish:unknown,metadataId:string|undefined,finished=false;
-   const observe=(text:string)=>{pending+=text;if(pending.length>4*1024*1024)throw Error('Evaluation stream frame exceeds bound');const lines=pending.split('\n');pending=lines.pop()!;for(const line of lines){if(!line.startsWith('data:'))continue;const data=line.slice(5).trim();if(!data||data==='[DONE]')continue;const part=JSON.parse(data);if(part.type==='response-metadata')metadataId=part.id;if(part.type==='finish'){if(finish)throw Error('Repeated Gateway accounting');finish=part;}if(part.type==='error')throw Error('Gateway stream failed');}};
+   const reader=response.body.getReader(),decoder=new TextDecoder();let pending='',size=0,finish:unknown,finished=false;phase='stream';
+   const observe=(text:string)=>{pending+=text;if(pending.length>4*1024*1024)throw Error('Evaluation stream frame exceeds bound');const lines=pending.split('\n');pending=lines.pop()!;for(const line of lines){if(!line.startsWith('data:'))continue;const data=line.slice(5).trim();if(!data||data==='[DONE]')continue;const part=JSON.parse(data);const observedGatewayId=part.providerMetadata?.gateway?.generationId??part.error?.providerMetadata?.gateway?.generationId;if(typeof observedGatewayId==='string'&&/^[A-Za-z0-9_:-]{1,256}$/.test(observedGatewayId))gatewayGenerationId=observedGatewayId;if(part.type==='response-metadata')metadataId=part.id;if(part.type==='finish'){if(finish)throw Error('Repeated Gateway accounting');finish=part;}if(part.type==='error')throw Error('Gateway stream failed');}};
    const stream=new ReadableStream<Uint8Array>({
-    async pull(controller){try{const part=await reader.read();if(part.done){observe(decoder.decode()+'\n');if(!finish)throw Error('Gateway stream lacks final accounting');await input.ledger.settle(id,accounting(finish,metadataId));finished=true;signal.removeEventListener('abort',aborted);controller.close();return;}size+=part.value.byteLength;if(size>20*1024*1024)throw Error('Evaluation response exceeds bound');observe(decoder.decode(part.value,{stream:true}));controller.enqueue(part.value);}catch(error){await held('incomplete_stream');await reader.cancel().catch(()=>undefined);controller.error(error);}},
-    async cancel(){if(!finished)await held('incomplete_stream');await reader.cancel();},
+    async pull(controller){try{const part=await reader.read();if(part.done){observe(decoder.decode()+'\n');if(!finish)throw Error('Gateway stream lacks final accounting');await input.ledger.settle(id,accounting(finish,metadataId));finished=true;signal.removeEventListener('abort',aborted);controller.close();return;}size+=part.value.byteLength;if(size>20*1024*1024)throw Error('Evaluation response exceeds bound');observe(decoder.decode(part.value,{stream:true}));controller.enqueue(part.value);}catch(error){await held('incomplete_stream');await failed();await reader.cancel().catch(()=>undefined);controller.error(error);}},
+    async cancel(){if(!finished){await held('incomplete_stream');await failed();}await reader.cancel();},
    });
    return new Response(stream,{status:response.status,statusText:response.statusText,headers:response.headers});
-  }catch(error){await held('provider_error');throw error;}
+  }catch(error){await held('provider_error');await failed();throw error;}
  };
 }

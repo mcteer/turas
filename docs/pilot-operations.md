@@ -1294,7 +1294,13 @@ no real target may be locked on their partial proof alone.
 
 The real-target physical integrity component runs before quarantine/probe writes
 and retains genuine in-process proof through exact target validation. It uses
-OIDC-only private Blob reads with retries disabled and the original capture bounds:
+explicit private Blob reads with retries disabled and the original capture bounds.
+Input v2 remains OIDC-only. Input v3 accepts exactly one explicit `oidcToken` or
+`blobToken` in the protected credentials file. Store tokens must match the selected
+store through the existing credential validator; the authenticated candidate still
+binds store, project and native assets, and actual SDK reads establish byte access.
+No ambient credential fallback is allowed. This operator path does not establish
+hosted OIDC behavior. The original bounds remain:
 64MiB archive,256objects and24MiB private bytes. During final decision it rechecks
 actual archive/key/native/configuration, installed ledger, runtime grants and
 required original bytes. Its descriptive receipt cannot be rehydrated as authority.
@@ -1544,3 +1550,24 @@ digests. Gate evaluation rechecks authenticated metadata and retained archive
 bytes. PR merge-check results cannot stand in for the final main execution; an
 incomplete workflow, expired artifact or missing catalog/build step blocks G14.
 No hosted readiness or release approval follows from the CI result alone.
+
+
+### Reviewed quality resumption
+
+`pilot-quality-live.ts --live` accepts `--resumption <private-file>` with
+`--budget-ledger <original-directory>` as an alternative to time-only
+`--continuation`. Keep the original operator authorization and `--budget-usd` value.
+The explicit `pilot-quality-reviewed-resumption-v1` approval binds the original
+authorization, current authority, exact journal head, each unknown dispatch and
+unknown-event digest, its complete maximum exposure, the current source, an
+independent review digest and the separately admitted additive allowance. It cannot
+raise research credits, extend time, settle unknown cost or retry the uncertain
+request. Original authorization/event bytes remain unchanged.
+
+The operator must obtain applicable authority and independent review before calling
+this path. The command never creates an automatic allowance. New work consumes
+known charges plus permanent uncertainty reservations plus its complete published
+request ceiling. Further unknown usage or a higher observed exposure closes
+admission until another attributable review. Provider errors retain only bounded
+HTTP status, known code, body digest/size and separately typed Gateway/upstream
+identities; error bodies and credentials are not retained in these receipts.

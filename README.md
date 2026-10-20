@@ -56,7 +56,7 @@ TAM/support guidance (010), product expansion (011), product gaps (012) and part
 checks do not establish full Production workflow readiness. See the
 [roadmap](ROADMAP.md) and feature validation records under [`specs/`](specs/).
 Feature 016 pilot hardening is in progress; its local checkpoints do not establish
-full hosted pilot readiness. [Draft PR 32](https://github.com/mcteer/turas/pull/32)
+full hosted pilot readiness. [Draft PR 47](https://github.com/mcteer/turas/pull/47)
 is the implementation checkpoint. All 43 required CI jobs passed at `94d3dc3`
 (run `38326648341`); the subsequent storage/recovery checkpoint has a
 657-case local pass, not new CI proof. Current recovery, hosted processing and
@@ -674,14 +674,13 @@ The 016 full 003 evaluation may use its separately authorized 32-step allowance;
 ordinary 003 evaluation retains 14 steps. This supplement preserves the original
 shared model/research budget and requires fresh committed deterministic proof.
 Capture and independent review both validate this allowance through the explicit
-private operator runtime; the current deterministic inventory is 697 cases in
-125 suites. The complete 683-case checkpoint passes at ef4ea5b; fresh complete
-proof is required for the linked journeys, streamed headers, configuration readback
-and finite dispatch-count changes.
+private operator runtime. The current deterministic inventory is 1,006 cases in
+181 suites; fresh committed proof is required before further paid evaluation.
 
 Independent semantic evaluation may use the separately requested LLM judge with
-actual captures and governing rubrics. Human operator and pilot observations remain
-required. Quality setup verifies actual 016 container ownership, native clone startup,
+actual captures and governing rubrics. Actual automated operator/internal/partner
+exercises require independently reviewed captures and must be labeled automated;
+they cannot be recorded as human observations. Quality setup verifies actual 016 container ownership, native clone startup,
 fixture scope and worker budget-guard inheritance before further paid execution.
 Quality stages retain private source-bound workspaces and native captures until
 independent review, including retrieval query, citation and partner-scope evidence.
@@ -800,9 +799,9 @@ credential/call limits and unknown cost holds remain enforced. Full owned
 composition and separate-source capture/restart checks pass; regional scale and
 hosted release acceptance remain pending.
 
-The local deterministic inventory is 997 cases across 181 suites. A historical frozen
-941-case catalog has passed; complete verification of the current source remains
-required. The actual47-category regional capacity run completed final canonical
+The local deterministic inventory is 1,006 cases across 181 suites. The preceding
+6266f31 source passed all 997 cases and 181 suites; complete verification of the
+current source remains required. The actual47-category regional capacity run completed final canonical
 replay; all53 original probe journals were independently reconciled and its
 executor deletion confirmed. That capacity evidence does not establish restored
 service, scheduled cadence or pilot readiness. Existing app schema cutover,
@@ -892,3 +891,15 @@ Preview checkpoint passes in10.962s after the prior monolithic query exceeded it
 five-second statement limit. Preview denial capture accepts an explicitly bound
 Preview source as well as Production. Pilot service remains closed pending full
 hosted recovery and release acceptance; these checks do not establish readiness.
+
+Operator quality recovery uses an explicit reviewed resumption in the original
+append-only budget journal. It preserves every uncertain request and its full
+worst-case reservation; a separately authorized additive allowance never replaces
+the original authorization or permits retrying an uncertain request. Provider
+failure evidence distinguishes Gateway generation IDs from upstream response IDs
+and retains bounded status/code/digest metadata without response bodies.
+
+The v3 work-recovery verifier accepts one explicit project OIDC or store-bound
+Blob credential. V2 remains OIDC-only. Candidate store/project/native binding,
+actual private byte checks, disabled SDK retries and locked-target checks remain
+required. A store-token check does not establish hosted OIDC behavior.
