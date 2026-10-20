@@ -6210,3 +6210,29 @@ after this correction. Independent review found no blocker. The repeated complet
 domain run passes with no paid provider calls. The corrected actual native/runtime/CLI WebKit fixture also passes with no paid
 provider calls, deadlocks or statement timeouts. The initial failed query-budget
 run is retained and its threshold is unchanged.
+
+
+## Partner guide command settlement
+
+On eff7f03, all seven Legacy backend parity CI jobs pass. The main CI partner
+WebKit job118735902352 timed out after90034ms in the first guide journey on
+mobile-dark. A complete local reproduction independently failed on desktop-light
+at partner-guides.spec.ts:14:406: the browser was signed in as partner, but its
+protected guide body was unavailable and the published lesson was absent.
+No database error code was recorded in that owned runtime log.
+
+The journey's broad published-text assertion was already satisfiable before the
+publish command completed: Original Evidence Dates renders the literal word
+published even for a submitted guide. The fixture now registers the exact guide
+and action-specific command response before each click, requires HTTP200 and the
+finished response body, and checks the direct review-state paragraph for published,
+submitted and rejected. Revise and submit acknowledgments also complete before
+changing the browser's authenticated role. Existing role/privacy assertions and the
+90-second case deadline remain unchanged; retries remain zero.
+
+The complete corrected five-file/four-project CLI WebKit matrix passes48/48,
+with zero failed or skipped cases. Root typecheck and independent read-only review
+pass. The initial failed CI/local runs remain retained. One initial correction run
+was explicitly interrupted after the matcher source changed; it is not a pass.
+A new exact-source full catalog and CI are still required before release; no
+hosted recovery or Production behavior is inferred from these local checks.

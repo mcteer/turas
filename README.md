@@ -112,6 +112,8 @@ catalog requires fresh complete verification. Expired infrastructure/model appro
 original charges and holds remain unchanged; no hosted pilot readiness is claimed.
 Authority readers now coexist with serialized writers; all16 support/grant
 concurrency checks and the actual unpaid native-operations/WebKit fixture pass
+locally. The partner guide journey now waits for completed command acknowledgments
+and exact review states before switching roles; its full48-case WebKit matrix passes
 locally. Current-source CI and hosted recovery remain pending.
 Current Production remains released `f8d196f` on schema077. Its host firewall
 allows four exact current hosts; direct current-bypass probes against653 older
