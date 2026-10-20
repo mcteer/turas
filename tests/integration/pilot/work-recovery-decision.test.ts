@@ -727,3 +727,83 @@ it('measures authenticated positive cron refusal under the real owner decision a
   corrupt=true;await expect(measureWorkCronAdmission(args)).rejects.toThrow('Actual authenticated locked cron admission unverified');
  }finally{transport.mockRestore();if(prior===undefined)delete process.env.CRON_SECRET;else process.env.CRON_SECRET=prior;}
 },undefined,environment);},210000);
+
+
+it('preserves original provider journals including unknown embedding quota and rejects altered usage missing rows and copied retained authority',async()=>fixture(async input=>{
+ const {auditRecoveryProviderJournals}=await import('../../../lib/server/operations/recovery-provider-journal-audit');
+ const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
+ try{
+  const id=randomUUID();await owner.query("INSERT INTO retrieval_embedding_operations(id,environment_id,operation_kind,operation_key,state,embedding_contract,model_id,dimensions,input_characters,dispatched_at) VALUES($1::uuid,$2,'query',$1::text,'dispatched','embedding-v1','openai/text-embedding-3-small',1536,100,clock_timestamp())",[id,input.scope.environmentId]);
+  await withRetainedDenialFixture(owner,input.scope.environmentId,dirname(input.sourceFile),{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async retained=>{
+   await quarantineRestoredAuthority(owner,input.scope,retained);
+   await withLockedWorkRecoveryDecision(input,async(db,target)=>{
+    const proof=await auditRecoveryProviderJournals(db,target,retained);expect(proof).toMatchObject({originalProviderJournalsPreserved:true,unknownOutcomesSettled:false,providerExecutionClosed:false,restorationReady:false});expect(proof.rows).toBeGreaterThanOrEqual(1);expect(retained.snapshot.tables.some(table=>table.name==='staffing_model_step_usage_receipts')).toBe(true);
+    await expect(auditRecoveryProviderJournals(db,target,{...retained})).rejects.toThrow();
+    for(const sql of ["UPDATE retrieval_embedding_operations SET input_characters=1 WHERE id=$1","UPDATE retrieval_embedding_operations SET state='succeeded',completed_at=clock_timestamp() WHERE id=$1","DELETE FROM retrieval_embedding_operations WHERE id=$1"]){
+     await db.query('SAVEPOINT original_provider_journal');await db.query(sql,[id]);await expect(auditRecoveryProviderJournals(db,target,retained)).rejects.toThrow(/original provider|Original provider/);await db.query('ROLLBACK TO SAVEPOINT original_provider_journal');await db.query('RELEASE SAVEPOINT original_provider_journal');
+    }
+    expect((await db.query('SELECT state,input_characters FROM retrieval_embedding_operations WHERE id=$1',[id])).rows).toEqual([{state:'dispatched',input_characters:100}]);
+    expect((await db.query('SELECT count(*)::int AS n FROM plan_model_step_receipts')).rows[0].n).toBeGreaterThanOrEqual(1);
+   });
+   for(const table of ['plan_model_step_receipts','staffing_model_step_usage_receipts']){
+    await owner.query('ALTER TABLE '+table+' RENAME TO '+table+'_missing');
+    try{await expect(withLockedWorkRecoveryDecision(input,(db,target)=>auditRecoveryProviderJournals(db,target,retained))).rejects.toThrow('Complete original provider journal table inventory differs');}
+    finally{await owner.query('ALTER TABLE '+table+'_missing RENAME TO '+table);}
+   }
+  });
+ }finally{await owner.end();}
+},async owner=>{
+ const {submitPlanCommand}=await import('../../../lib/server/plans/commands'),{startPlanDraft}=await import('../../../lib/server/plans/drafting'),{syntheticPlanContent}=await import('../../fixtures/plans/seed');
+ const f=await pilotPublishedKnowledgeFixture(owner as unknown as PoolClient,'primary'),content=syntheticPlanContent();content.assertions=[];content.sourceDependencies=[];
+ await owner.query('BEGIN');try{const created=await submitPlanCommand(f.actor,{action:'create',requestKey:'plan_'+randomUUID(),workspaceId:f.actor.workspaceId,customerId:f.customerId,workloadId:null,audience:'delivery',ownerMembershipId:f.actor.membershipId,content},owner as unknown as PoolClient);
+ const attempt=(await startPlanDraft(f.actor,{requestKey:randomUUID(),planId:created.planId,baseRevisionId:created.revisionId,expectedAggregateVersion:created.aggregateVersion,instructions:'Synthetic journal preservation without dispatch'},owner as unknown as PoolClient)).attemptId;
+ await owner.query("INSERT INTO plan_model_step_receipts(attempt_id,turn_id,step_index,operation_id,provider_state) VALUES($1,'synthetic-retained-turn',0,$2,'admitted')",[attempt,randomUUID()]);await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}
+}),210000);
+
+it('composes genuine current ingress terminal providers and original held effects on one unchanged owner transaction',async()=>fixture(async input=>{
+ const {measureWorkCronAdmission}=await import('../../../lib/server/operations/work-cron-admission');
+ const {verifyWorkRecoveryEffects,requireVerifiedWorkRecoveryEffects}=await import('../../../lib/server/operations/work-recovery-effects');
+ const {GET:researchMaintenance}=await import('../../../app/api/internal/research-maintenance/route');
+ const {authorizeHeavyDispatch,assertHostedDispatchReady}=await import('../../../lib/server/operations/dispatch');
+ const {failure,success}=await import('../../../lib/contracts/http');
+ const key='controlled_effects_automation_key',host='recovery.vercel.app',token='controlled-effects-token',secret=randomBytes(32).toString('base64url'),previous=process.env.CRON_SECRET;process.env.CRON_SECRET=secret;
+ const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();let writes=0;
+ const transport=vi.spyOn(globalThis,'fetch').mockImplementation(async(raw,options)=>{
+  const request=new Request(raw,options),url=new URL(request.url);if(request.method!=='GET'){writes++;throw Error('Effects measurement attempted provider mutation');}
+  if(url.origin==='https://api.vercel.com'){
+   if(url.pathname==='/v9/projects/prj_recovery')return Response.json({id:'prj_recovery',accountId:'team_recovery',targets:{production:{id:'dpl_recovery'}},protectionBypass:{[key]:{scope:'automation-bypass',isEnvVar:false,note:'Controlled current key',createdAt:1000,createdBy:'operator'}},crons:{deploymentId:'dpl_recovery',definitions:[['/eve/v1/turas/watchdog','* * * * *'],['/api/internal/research-maintenance','17 3 * * *'],['/eve/v1/turas/jobs','* * * * *']].map(([path,schedule])=>({path,schedule,host}))}});
+   if(url.pathname.startsWith('/v13/deployments/'))return Response.json({id:'dpl_recovery',url:host,projectId:'prj_recovery',ownerId:'team_recovery',readyState:'READY',target:'production',meta:{githubCommitSha:state.commit}});
+   if(url.pathname==='/v6/deployments')return Response.json({deployments:[{uid:'dpl_recovery',url:host,projectId:'prj_recovery',created:1000,target:'production',readyState:'READY'}],pagination:{next:null}});
+   if(url.pathname==='/v4/aliases')return Response.json({aliases:[],pagination:{count:0,next:null,prev:null}});
+   if(url.pathname==='/v1/workflow/v2/runs')return Response.json({data:[],cursor:null,hasMore:false});
+   if(url.pathname==='/v1/security/firewall/config/active')return Response.json({firewallEnabled:true,crs:{general:{active:false,action:'log'}},updatedAt:'2026-10-19T00:00:00Z',projectKey:'prj_recovery#active',id:'config_effects',ips:[],changes:[],version:1,ownerId:'team_recovery',rules:[{id:'rule_effects',name:'Current host',description:'Controlled fence',active:true,valid:true,validationErrors:null,conditionGroup:[{conditions:[{type:'host',op:'ninc',value:[host]}]}],action:{mitigate:{action:'deny'}}}]});
+   if(url.pathname==='/v1/security/firewall/bypass/rules')return Response.json({error:{code:'forbidden',message:'Conditional bypass is unavailable for this team.'}},{status:403});
+   if(url.pathname==='/v1/security/firewall/bypass')return Response.json({result:[]});throw Error('Unexpected effects platform route');
+  }
+  if(url.origin==='https://vercel.com'&&url.pathname==='/api/v2/sandboxes')return Response.json({sandboxes:[],pagination:{count:0,next:null}});
+  if(url.hostname!==host)throw Error('Effects app request left exact host');
+  if(['/api/internal/research-maintenance','/eve/v1/turas/jobs'].includes(url.pathname))return withTargetRuntime(input,{origin:input.hostedScope.origin,deploymentId:input.hostedScope.deploymentId,sourceCommit:input.hostedScope.sourceCommit} as Parameters<typeof withTargetRuntime>[1],async()=>{
+   if(url.pathname==='/api/internal/research-maintenance')return researchMaintenance(request);try{authorizeHeavyDispatch(request);await assertHostedDispatchReady();return success({status:'accepted'});}catch(error){return failure(error);}
+  });
+  if(url.pathname!=='/api/auth/session')throw Error('Effects app requested normal work');
+  const original=url.origin+'/api/auth/session',header=request.headers.has('x-vercel-protection-bypass'),query=url.searchParams.has('x-vercel-protection-bypass'),cookie=request.headers.has('cookie');
+  if(!header&&!query&&!cookie)return new Response(null,{status:302,headers:{location:'https://vercel.com/sso-api?url='+encodeURIComponent(original)}});
+  if(request.headers.has('x-vercel-set-bypass-cookie'))return new Response(null,{status:307,headers:{location:original,'set-cookie':'_vercel_jwt=controlled_effects_cookie; Path=/; Secure; HttpOnly; SameSite=Lax'}});
+  return Response.json({error:{code:'authentication_required'}},{status:401,headers:{'x-turas-code-version':state.commit}});
+ });
+ try{await withRetainedDenialFixture(owner,input.scope.environmentId,dirname(input.sourceFile),{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async retained=>{
+  await quarantineRestoredAuthority(owner,input.scope,retained);
+  const cron=await measureWorkCronAdmission({target:input,token,cronSecret:secret,protectionBypass:key});
+  const journal=await PilotHostHttpJournal.create(join(dirname(input.sourceFile),'effects-http-journal'),{contract:'pilot-host-http-journal-plan-v1',id:randomUUID(),projectId:'prj_recovery',teamId:'team_recovery',sourceCommit:state.commit,maximumRequests:10,maximumCostMicroUsd:100000,expiresAt:new Date(Date.now()+3600000).toISOString(),authorityReference:'Controlled owned effects authority',previousJournalDigests:['b'.repeat(64)],historicalStrictFailureRetained:true,unknownCostHoldsRetained:true,automaticRetries:false});
+  const oldHttp=await measureWorkOldHttpAdmission({target:input,token,approvedHosts:[host],journal}),native=await measureWorkManagedTerminalInventory({target:input,token,retained}),sandbox=await measureWorkSandboxTerminalInventory({target:input,token,retained});
+  let retainedProof:Awaited<ReturnType<typeof verifyWorkRecoveryEffects>>|undefined;
+  await withLockedWorkRecoveryDecision(input,async(db,target)=>{
+   await expect(verifyWorkRecoveryEffects(db,target,retained,{cron:{...cron},oldHttp,native,sandbox},input.signal)).rejects.toThrow('Genuine fresh unused');
+   const proof=await verifyWorkRecoveryEffects(db,target,retained,{cron,oldHttp,native,sandbox},input.signal);retainedProof=proof;expect(proof).toMatchObject({terminalProviderInventoriesVerified:true,originalFinancialAccountingPreserved:true,permanentRequestFencesVerified:true,unknownEffectsSettled:false,requiredScopeHealthy:false,restorationReady:false});
+   expect(await requireVerifiedWorkRecoveryEffects(db,target,proof)).toBe(proof);await expect(requireVerifiedWorkRecoveryEffects(db,target,{...proof})).rejects.toThrow('Actual unchanged');
+   await db.query('SAVEPOINT effects_state');await db.query("UPDATE customer_references SET display_name='Changed effects state' WHERE id=$1",[DEMO_IDS.sharedCustomer]);await expect(requireVerifiedWorkRecoveryEffects(db,target,proof)).rejects.toThrow('Actual unchanged');await db.query('ROLLBACK TO SAVEPOINT effects_state');await db.query('RELEASE SAVEPOINT effects_state');expect(await requireVerifiedWorkRecoveryEffects(db,target,proof)).toBe(proof);
+  });
+  await withLockedWorkRecoveryDecision(input,async(db,target)=>{await expect(requireVerifiedWorkRecoveryEffects(db,target,retainedProof!)).rejects.toThrow('Actual unchanged');});
+  expect(writes).toBe(0);expect(journal.status()).toMatchObject({reserved:10,observed:10,pending:0,remaining:0});expect((await owner.query('SELECT count(*)::int AS n FROM operations_recovery_verifications')).rows[0].n).toBe(0);
+ });}finally{transport.mockRestore();if(previous===undefined)delete process.env.CRON_SECRET;else process.env.CRON_SECRET=previous;await owner.end();}
+},undefined,'production'),210000);

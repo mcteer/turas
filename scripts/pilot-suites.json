@@ -1798,7 +1798,7 @@
     },
     {
       "file": "tests/integration/pilot/work-recovery-decision.test.ts",
-      "expectedCases": 19,
+      "expectedCases": 21,
       "cases": [
         "commits a pending recovery decision only after live checks and rolls back drift cancellation and callback commit attempts",
         "measures exhaustive fresh work MCP category pages through SDK and rejects changed projections or forged measurements",
@@ -1818,7 +1818,9 @@
         "reads private conversations through genuine recovery actors while denying cross-owner and copied capabilities",
         "serves exact private conversation recovery HTTP for each real role and refuses changed ownership grants and exhausted credentials",
         "binds an unrelated released Production pool with durable owner nonces and refuses override URLs replayed phases and false routing",
-        "measures authenticated positive cron refusal under the real owner decision and rejects copied reused and false response proofs"
+        "measures authenticated positive cron refusal under the real owner decision and rejects copied reused and false response proofs",
+        "preserves original provider journals including unknown embedding quota and rejects altered usage missing rows and copied retained authority",
+        "composes genuine current ingress terminal providers and original held effects on one unchanged owner transaction"
       ]
     },
     {

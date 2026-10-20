@@ -12,11 +12,11 @@ it('allows the declared restore setup and cases inside a finite whole-file bound
 it('keeps every registered suite within a finite controller deadline',()=>{
  for(const suite of catalog.suites){
   const ms=pilotSuiteDeadlineMs(suite.file);expect(Number.isSafeInteger(ms)).toBe(true);expect(ms).toBeGreaterThan(0);
-  // The decision suite declares eighteen210s cases and one270s peer phase,
+  // The decision suite declares twenty210s cases and one270s peer phase,
   // plus60s process startup/cleanup. All other suites retain their60m ceiling.
   if(suite.file==='tests/integration/pilot/work-recovery-decision.test.ts'){
-   expect(ms).toBeGreaterThanOrEqual(18*210000+270000+15000);
-   expect(ms).toBeLessThanOrEqual(18*210000+270000+60000);
+   expect(ms).toBeGreaterThanOrEqual(20*210000+270000+15000);
+   expect(ms).toBeLessThanOrEqual(20*210000+270000+60000);
   }else expect(ms).toBeLessThan(3600000);
  }
 });

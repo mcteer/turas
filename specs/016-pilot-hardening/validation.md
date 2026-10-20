@@ -5168,3 +5168,33 @@ Inventory:924cases across168suites. The decision suite's explicit whole-file bou
 is now4110seconds (18×210+270+60); other per-suite and complete-catalog limits stay
 unchanged. Frozen c8e8ae1 Eve and Next builds pass; its complete923-case catalog is
 running separately. Full recovery/hosted acceptance and cleanup remain open.
+
+### Original provider journals and effect composition — 2026-10-20
+
+The provider-journal audit compares both actual and retained table-name sets,
+then every original identity and raw PostgreSQL row digest for research/embedding
+and plan/staffing/execution/support/expansion dispatch/usage journals. It preserves
+unknown outcomes and original quota fields that are intentionally absent from
+minimized status metadata. Staffing model-step usage receipts are now explicitly
+included in fresh captures; an older capture missing that table cannot satisfy
+this audit. Original ciphertext and historical captures remain unchanged.
+
+The focused audit passes with altered embedding quota/outcome, missing row,
+copied authority, renamed nonempty plan journal and renamed empty staffing journal
+negatives (`provider-journal-owned-v2-private.json`). The initial fixture's UUID/text
+parameter inference failure is retained. Independent review identified and then
+confirmed the fix for omitted current tables; none can disappear from the audit.
+
+The final-owner effect component now consumes genuine repeated cron/peer/old-HTTP,
+native and Sandbox measurements plus original model/learning/service/provider
+journals and permanent replay audits. A real-PG, controlled-cloud Production
+composition passes with copied proof, changed state and different owner-connection
+negatives (`effects-composition-owned-v1-private.json`). It records terminal
+provider inventories and financial accounting preservation. Application resumption
+admission and original native/send identity preservation remain explicitly false;
+terminal Sandbox state alone does not prove a later resume path is closed. No
+verification INSERT, quarantine resolution, unlock or hosted readiness is inferred.
+
+Inventory:926cases across168suites. The decision suite's explicit declared phase
+bound is4530seconds; the complete-catalog90-minute bound and other suite ceilings
+are unchanged. T096/T097 and hosted automated exercises remain incomplete.
