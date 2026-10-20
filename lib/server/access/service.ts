@@ -1,3 +1,4 @@
+import {DEMO_IDS} from '../bootstrap-ids';
 import {requireOperationalOpen} from '../operations/admission';
 import { createHash, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
@@ -18,6 +19,7 @@ export type GrantDecision = CommandIdentity & {
 };
 
 export type MembershipDecision = CommandIdentity & {
+  expectedLiveSessionIds?: string[];
   membershipId: string;
   expectedRevision: number;
   active: boolean;
@@ -195,9 +197,20 @@ export async function setMembershipActive(input: MembershipDecision): Promise<{ 
     const target = lockedTarget.rows[0];
     if (!target) throw hiddenRecord();
     const bodyDigest = digest({ membershipId: input.membershipId,
-      expectedRevision: input.expectedRevision, active: input.active });
+      expectedRevision: input.expectedRevision, active: input.active,...(input.expectedLiveSessionIds===undefined?{}:{expectedLiveSessionIds:input.expectedLiveSessionIds}) });
     const prior = await reserveCommand<{ revision: number; active: boolean }>(client, input, "membership_change", bodyDigest);
     if (prior) return prior;
+    if(input.expectedLiveSessionIds!==undefined){
+      // A synthetic exercise may not revoke unrelated principal sessions. New
+      // session issuance takes SHARE on this principal, so the check and normal
+      // membership revocation share one protected transaction.
+      if(input.active||input.actorPrincipalId!==DEMO_IDS.mcteer||target.principal_id!==DEMO_IDS.panel||target.role!=='member'||input.expectedLiveSessionIds.length!==1||new Set(input.expectedLiveSessionIds).size!==1)throw new HttpFailure(422,'invalid_session_fence','Exact synthetic member session fence required');
+      const workspace=(await client.query("SELECT 1 FROM workspaces WHERE id=$1 AND classification='synthetic_pilot' AND pilot_environment_id=$2 AND active",[target.workspace_id,getServerConfig().TURAS_ENVIRONMENT_ID])).rowCount;
+      if(!workspace)throw new HttpFailure(403,'forbidden','Synthetic membership exercise required');
+      await client.query('SELECT id FROM principals WHERE id=$1 FOR UPDATE',[target.principal_id]);
+      const sessions=(await client.query('SELECT id FROM login_sessions WHERE principal_id=$1 AND revoked_at IS NULL AND expires_at>clock_timestamp() ORDER BY id FOR UPDATE',[target.principal_id])).rows.map(row=>String(row.id));
+      if(JSON.stringify(sessions)!==JSON.stringify([...input.expectedLiveSessionIds].sort()))throw new HttpFailure(409,'session_fence_changed','Live sessions changed; membership was not disabled');
+    }
     if (Number(target.revision) !== input.expectedRevision) {
       throw new HttpFailure(409, "stale_revision", "Access changed; reload and retry");
     }

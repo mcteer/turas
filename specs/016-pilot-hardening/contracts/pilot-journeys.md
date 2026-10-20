@@ -79,3 +79,15 @@ No-benefit learning evaluation may correctly reject a candidate and pass J014;
 it cannot enable publication. Real-user feedback is supplied by actual participants,
 not manufactured by a test harness or a review agent. A review agent can independently
 assess runbooks/evaluation outputs where authorized, but cannot impersonate a user.
+
+The hosted inactive-membership exercise uses normal scoped administrator decisions
+and temporary internal member sessions. The optional membership-command field
+`expectedLiveSessionIds` is a one-session fence, restricted to canonical mcteer
+disabling panel's current synthetic-pilot member. The domain checks the exact
+live-session set while holding the principal lock used by normal session issuance;
+a changed set denies the command before membership or sessions change. Ordinary
+commands omit the field and retain their existing digest and behavior. The
+exercise restores only its proven original disable through a retained original
+request key, verifies that the old cookie remains denied and cleans up its exact
+created sessions. An uncertain restoration remains unsuccessful and recoverable
+from its retained intents; this is not a process-crash cleanup claim.

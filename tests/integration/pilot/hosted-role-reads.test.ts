@@ -1,3 +1,11 @@
+import {GET as customerProfile} from '../../../app/api/customers/[customerId]/profile/route';
+import {runHostedMembershipBoundary} from '../../../scripts/pilot-hosted-membership';
+import {PATCH as membershipPatch} from '../../../app/api/admin/memberships/[id]/route';
+import {issueSession,sessionCookieName} from '../../../lib/server/auth/sessions';
+import {csrfTokenForSession} from '../../../lib/server/auth/csrf';
+import {mkdtemp,realpath,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {it,expect} from 'vitest';
 import {Client,type PoolClient} from 'pg';
 import {randomUUID} from 'node:crypto';
@@ -25,6 +33,8 @@ const transport:typeof fetch=async(input,options)=>{
  if(path==='/api/operations/status'&&request.method==='GET')return status(request);
  if(path==='/api/product-gaps'&&request.method==='GET')return gaps(request);
  if(path==='/api/conversations'&&request.method==='POST')return createConversation(request);
+ const profile=/^\/api\/customers\/([a-f0-9-]+)\/profile$/.exec(path);if(profile&&request.method==='GET')return customerProfile(request,{params:Promise.resolve({customerId:profile[1]})});
+ const member=/^\/api\/admin\/memberships\/([a-f0-9-]+)$/.exec(path);if(member&&request.method==='PATCH')return membershipPatch(request,{params:Promise.resolve({id:member[1]})});
  const conversation=/^\/api\/conversations\/([a-f0-9-]+)$/.exec(path);
  if(conversation&&request.method==='GET')return readConversation(request,{params:Promise.resolve({id:conversation[1]})});
  if(conversation&&request.method==='PATCH')return archiveConversation(request,{params:Promise.resolve({id:conversation[1]})});
@@ -51,6 +61,7 @@ it('proves actual bound roles positive partner listing denied gaps and exact ses
  expect((await owner.query('SELECT count(*)::int AS n FROM login_sessions WHERE workspace_id=$1 AND revoked_at IS NULL',[scope.workspaceId])).rows[0].n).toBe(0);
  expect((await owner.query('SELECT count(*)::int AS n FROM profile_revisions WHERE workspace_id=$1',[scope.workspaceId])).rows[0].n).toBe(0);
  for(const key of ['TURAS_PILOT_HOSTED_ADMIN_PASSWORD','TURAS_PILOT_HOSTED_MEMBER_PASSWORD','TURAS_PILOT_HOSTED_PARTNER_PASSWORD'])expect(JSON.stringify(result)).not.toContain(process.env[key]);
+ const root=await realpath(await mkdtemp(join(tmpdir(),'turas-membership-owned-')));try{const boundary=await runHostedMembershipBoundary({scope,db:runtime,signal:AbortSignal.timeout(30000),transport,evidenceDirectory:root});expect(boundary).toMatchObject({inactiveCookieDenied:true,inactiveLoginDenied:true,originalCookieDeniedAfterRestore:true,freshLoginVerified:true,normalMembershipCommands:2,sessionsRevoked:3,providerCalls:0});expect((await owner.query('SELECT active FROM memberships WHERE id=$1',[boundary.membershipId])).rows[0].active).toBe(true);}finally{await rm(root,{recursive:true,force:true});}
 }),210000);
 it('refuses missing role credentials before creating sessions or making HTTP calls',async()=>fixture(async(scope,runtime,owner)=>{
  const env={...process.env};delete env.TURAS_PILOT_HOSTED_PARTNER_PASSWORD;let calls=0;
@@ -155,4 +166,10 @@ it('blocks journey writes on actual mismatched configuration and revokes the ori
   expect((await owner.query('SELECT count(*)::int AS n FROM login_sessions WHERE workspace_id=$1 AND revoked_at IS NULL',[scope.workspaceId])).rows[0].n).toBe(0);
   expect((await owner.query('SELECT count(*)::int AS n FROM conversations WHERE workspace_id=$1',[scope.workspaceId])).rows[0].n).toBe(0);
  }finally{for(const [key,value] of Object.entries(previous))if(value===undefined)delete process.env[key];else process.env[key]=value;}
+}),210000);
+
+it('refuses a raced unrelated session before scoped membership disable and preserves its access',async()=>fixture(async(scope,runtime,owner)=>{
+ const root=await realpath(await mkdtemp(join(tmpdir(),'turas-membership-race-')));let extra:Headers|undefined,inserted=false;
+ const racing:typeof fetch=async(input,options)=>{if(options?.method==='PATCH'&&JSON.parse(String(options.body)).active===false&&!inserted){inserted=true;const member=(await owner.query('SELECT id FROM memberships WHERE workspace_id=$1 AND principal_id=$2',[scope.workspaceId,DEMO_IDS.panel])).rows[0];const session=await issueSession({principalId:DEMO_IDS.panel,loginName:'panel',displayName:'panel',membershipId:member.id,workspaceId:scope.workspaceId,kind:'internal',role:'member'});extra=new Headers({origin:scope.origin,cookie:sessionCookieName()+'='+session.token,'content-type':'application/json','x-csrf-token':csrfTokenForSession(session.token)});}return transport(input,options);};
+ try{await expect(runHostedMembershipBoundary({scope,db:runtime,signal:AbortSignal.timeout(30000),transport:racing,evidenceDirectory:root})).rejects.toMatchObject({errorCode:'session_fence_changed'});expect(inserted).toBe(true);const target=(await owner.query('SELECT active,revision FROM memberships WHERE workspace_id=$1 AND principal_id=$2',[scope.workspaceId,DEMO_IDS.panel])).rows[0];expect(target.active).toBe(true);expect(Number(target.revision)).toBe(0);const current=await transport(scope.origin+'/api/auth/session',{headers:extra});expect(current.status).toBe(200);await current.body?.cancel();}finally{if(extra){const response=await transport(scope.origin+'/api/auth/logout',{method:'POST',headers:extra});expect(response.status).toBe(200);await response.body?.cancel();}await rm(root,{recursive:true,force:true});}
 }),210000);

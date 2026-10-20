@@ -28,6 +28,8 @@ export async function runHostedReadChecks(scope:PilotHostedScope,db:Client,signa
  const customers=(await db.query('SELECT id,synthetic FROM customer_references WHERE workspace_id=$1 ORDER BY id LIMIT 21',[scope.workspaceId])).rows;
  if(customers.length<2||customers.length>20||customers.some(row=>row.synthetic!==true))throw Error('Bounded positive and denied synthetic customers required');
  const allIds=customers.map(row=>String(row.id));
+ const foreign=(await db.query("SELECT c.id FROM customer_references c JOIN workspaces w ON w.id=c.workspace_id AND w.active AND w.classification='primary' WHERE c.workspace_id<>$1 ORDER BY c.id LIMIT 1",[scope.workspaceId])).rows;if(foreign.length!==1)throw Error('Existing foreign primary reference required for workspace denial');
+ const foreignCustomerId=String(foreign[0].id);
  const members=(await db.query(`SELECT m.id,m.principal_id,m.kind,m.role,p.login_name FROM memberships m JOIN principals p ON p.id=m.principal_id AND p.active
   LEFT JOIN partner_organizations o ON o.id=m.partner_org_id AND o.workspace_id=m.workspace_id WHERE m.workspace_id=$1 AND m.active AND p.login_name=ANY($2::text[]) AND (m.kind='internal' OR o.active)`,[scope.workspaceId,roles.map(role=>role.login)])).rows;
  if(members.length!==roles.length||roles.some(role=>!members.some(row=>row.login_name===role.login&&row.kind===role.kind&&row.role===role.role)))throw Error('All exact active pilot memberships required');
@@ -81,6 +83,7 @@ export async function runHostedReadChecks(scope:PilotHostedScope,db:Client,signa
    if(gaps.status!==expectedGaps)throw Error('Hosted Product Gaps read failed or disclosed partner content');
    if(role.kind==='internal'){const payload=z.object({data:z.object({contractVersion:z.literal('product-gaps-v1')})}).parse(await boundedHostedJson(gaps));void payload;}else await gaps.body?.cancel();
    cases.push({id:'product-gaps-read-boundary',role:role.name,state:'pass',status:expectedGaps});
+   const foreignProfile=await call('/api/customers/'+foreignCustomerId+'/profile','GET',headers);if(foreignProfile.status!==404){await foreignProfile.body?.cancel();throw Error('Foreign workspace profile was disclosed');}z.strictObject({error:z.strictObject({code:z.literal('not_found'),message:z.string().max(200)}),correlationId:z.uuid()}).parse(await boundedHostedJson(foreignProfile));
    if(proveRole)await proveRole({role:role.name,headers:new Headers(headers),customerIds:expectedIds,allCustomerIds:allIds,partnerCustomerIds:[...assigned]});
   }finally{
    // A successful login can create a session before its body is damaged. Recover
@@ -98,9 +101,10 @@ export async function runHostedReadChecks(scope:PilotHostedScope,db:Client,signa
     const row=(await db.query('SELECT revoked_at FROM login_sessions WHERE token_hash=$1',[createHash('sha256').update(token).digest('hex')])).rows[0];
     if(response.status!==200||!row?.revoked_at)throw Error('Exact hosted test session cleanup unverified');revoked=true;
     if(response.headers.get('x-turas-code-version')!==scope.sourceCommit)throw Error('Hosted cleanup response release version differs');
+    const denied=await call('/api/auth/session','GET',headers,undefined,true);await denied.body?.cancel();if(denied.status!==401||denied.headers.get('x-turas-code-version')!==scope.sourceCommit)throw Error('Revoked hosted cookie still grants access');
    }
   }
   if(!revoked)throw Error('Hosted role cleanup incomplete');cases.push({id:'exact-session-revoked',role:role.name,state:'pass',status:200});
  }
- return {contract:'pilot-hosted-read-checks-v1' as const,cases,passedCases:cases.length,sessionsRevoked:checkedRoles.length,customerReferencesVerified:allIds.length,providerCalls:0,domainWritesPerformed:0,acceptedJourneysVerified:false,fullHostedCatalogVerified:false};
+ return {contract:'pilot-hosted-read-checks-v1' as const,cases,passedCases:cases.length,sessionsRevoked:checkedRoles.length,revokedCookieDenials:checkedRoles.length,crossWorkspaceProfileDenials:checkedRoles.length,customerReferencesVerified:allIds.length,providerCalls:0,domainWritesPerformed:0,acceptedJourneysVerified:false,fullHostedCatalogVerified:false};
 }

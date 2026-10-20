@@ -899,7 +899,7 @@
     },
     {
       "file": "tests/integration/pilot/hosted-role-reads.test.ts",
-      "expectedCases": 10,
+      "expectedCases": 11,
       "cases": [
         "proves actual bound roles positive partner listing denied gaps and exact session cleanup",
         "refuses missing role credentials before creating sessions or making HTTP calls",
@@ -910,7 +910,8 @@
         "cleans its exact bound session when a trusted journey callback fails",
         "exercises actual parked conversation replay ownership archive and restore without native dispatch",
         "archives the original parked conversation after an uncertain creation response without replacement or native work",
-        "blocks journey writes on actual mismatched configuration and revokes the original session"
+        "blocks journey writes on actual mismatched configuration and revokes the original session",
+        "refuses a raced unrelated session before scoped membership disable and preserves its access"
       ]
     },
     {

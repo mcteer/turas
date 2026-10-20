@@ -5775,3 +5775,21 @@ yet. The frozen23d9b75 catalog separately passed969/969 cases across175 suites;
 this is historical source evidence. The frozen dd02b97 988-case run is active.
 The current inventory after CI checks is993 cases across180 suites; current-source
 complete acceptance, hosted release and cleanup remain pending.
+
+Hosted role cleanup now verifies an actual HTTP401 using the original logged-out
+cookie. Every role also requests an existing primary-workspace profile and must
+receive a version-bound non-disclosing JSON404. The separate normal membership
+exercise disables/restores only the synthetic panel membership, verifies inactive
+cookie/login denial, rejects the old cookie after restoration and confirms a
+fresh login. Its optional normal-command session fence is checked atomically by
+the governed domain under the principal lock shared with session issuance; it
+refuses any unrelated live session. Existing unfenced command digests are intact.
+Original mutation intents and keys are retained for acknowledgement reconciliation
+and cleanup, without new-key retries or a process-crash cleanup claim.
+
+Two focused owned PostgreSQL18/actual-route cases pass (nine other cases were
+unselected): the complete three-role read/foreign/logout/membership exercise and
+a raced additional session that remains authorized while membership disable is
+denied. Root/pilot types pass. Independent scoped review found no concrete
+blocker. No real hosted exercise, paid dispatch, schema change or cleanup was
+performed in this batch. Inventory:994 cases across180 suites.

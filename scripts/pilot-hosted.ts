@@ -1,3 +1,4 @@
+import {runHostedMembershipBoundary} from './pilot-hosted-membership';
 import {writeHostedCoreEvidence} from './pilot-hosted-core-evidence';
 import {prepareHostedPlanSourceBoundary,verifyHostedPlanSourceBoundary} from './pilot-hosted-plan-boundary';
 import {writeHostedPartnerEvidence} from './pilot-hosted-partner-evidence';
@@ -123,6 +124,7 @@ export async function pilotHosted(args=process.argv.slice(2)){
   const expansionJourneys:Awaited<ReturnType<typeof runHostedExpansionBoundary>>[]=[];
   const gapJourneys:Awaited<ReturnType<typeof runHostedGapBoundary>>[]=[];
   const trainingJourneys:Awaited<ReturnType<typeof runHostedTrainingJourney>>[]=[];
+  let membershipBoundary:Awaited<ReturnType<typeof runHostedMembershipBoundary>>|undefined;
   const roleIntervals:{role:string;startedAt:string;completedAt:string}[]=[];
   const linkedJourneys:HostedLinkedReference[]=[];
   const learningJourneys:Awaited<ReturnType<typeof runHostedLearningJourney>>[]=[];
@@ -268,9 +270,9 @@ export async function pilotHosted(args=process.argv.slice(2)){
      },configuration);
     }
     roleIntervals.push({role:context.role,startedAt:roleStartedAt,completedAt:new Date().toISOString()});
-   },configuration);}finally{await readDb.end();}
+   },configuration);stage='membership_boundary';membershipBoundary=await runHostedMembershipBoundary({scope,db:readDb,signal,evidenceDirectory:root});await writeEvidence(root,'membership-boundary.json',membershipBoundary);}finally{await readDb.end();}
   if(JSON.stringify(await platformDeployment(scope,true,signal))!==JSON.stringify(deployment)||JSON.stringify(await pilotSource())!==JSON.stringify(source)||JSON.stringify(await pilotProtectedSnapshot())!==JSON.stringify(protectedBefore))throw Error('Hosted identity or protected checkout changed');
-  await writeEvidence(root,'reads.json',{contract:'pilot-hosted-role-boundaries-v1',id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,startedAt,completedAt:new Date().toISOString(),roleReads:reads,roleIntervals,sdkJourneys,profileJourneys,conversationJourneys,browserJourneys,supportJourneys,expansionJourneys,gapJourneys,linkedJourneys,trainingJourneys,learningJourneys,maximumFiles,maximumFileDenials,normalProfileCommands:profileJourneys.reduce((sum,row)=>sum+row.normalProfileCommands,0),normalConversationCommands:conversationJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalSupportCommands:supportJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalExpansionCommands:expansionJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalGapCommands:gapJourneys.reduce((sum,row)=>sum+row.normalCommands,0),fullHostedCatalogVerified:false});
+  await writeEvidence(root,'reads.json',{contract:'pilot-hosted-role-boundaries-v1',id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,startedAt,completedAt:new Date().toISOString(),roleReads:reads,roleIntervals,membershipBoundary,sdkJourneys,profileJourneys,conversationJourneys,browserJourneys,supportJourneys,expansionJourneys,gapJourneys,linkedJourneys,trainingJourneys,learningJourneys,maximumFiles,maximumFileDenials,normalProfileCommands:profileJourneys.reduce((sum,row)=>sum+row.normalProfileCommands,0),normalConversationCommands:conversationJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalSupportCommands:supportJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalExpansionCommands:expansionJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalGapCommands:gapJourneys.reduce((sum,row)=>sum+row.normalCommands,0),fullHostedCatalogVerified:false});
   stage='sdk_evidence';const sdkRun=await writeHostedSdkEvidence({directory:root,scope,run,schemaLedgerDigest});
   let currentRun=sdkRun;
   if(learningJourneys.length===1){stage='partner_evidence';currentRun=await writeHostedPartnerEvidence({directory:root,scope,run:sdkRun});}else await writeEvidence(root,'hosted-run.json',sdkRun);

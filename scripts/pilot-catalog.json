@@ -176,7 +176,8 @@
         "unit.pilot-login-selection.001",
         "unit.pilot-login-selection.002",
         "unit.hosted-configuration.005",
-        "integration.hosted-sdk.007"
+        "integration.hosted-sdk.007",
+        "integration.hosted-role-reads.011"
       ]
     },
     {
