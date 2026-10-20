@@ -809,6 +809,13 @@ service, scheduled cadence or pilot readiness. Existing app schema cutover,
 actual scheduled backups and hosted automated role exercises remain pending in
 [Feature 016](specs/016-pilot-hardening/tasks.md).
 
+The Preview maintenance procedure verifies a distinct physical database cluster,
+retires the old runtime login before schema changes, applies explicit migrations
+and grants, then holds schema079 in locked mode while binding a separate restricted
+runtime credential. Provider-managed administrative roles remain untouched.
+The actual target observations and remaining release checks are recorded in the
+[validation record](specs/016-pilot-hardening/validation.md).
+
 The separate backup operator package now explicitly allowlists deployment source
 files and excludes arbitrary environment, credential and private evidence files.
 An affected disabled operator deployment was removed after independent review

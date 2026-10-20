@@ -5945,3 +5945,38 @@ backup Function and the authored twelve-hour cron metadata. Remote Function byte
 were not downloaded or independently hashed. Execution remains disabled, so this
 does not verify a scheduled capture. Other retained operator deployment inventories
 contain no matching protected files; their source commit attribution is unavailable.
+
+### Actual Preview maintenance — 2026-10-20
+
+On89fd94d, independent read-only platform review confirms the active firewall
+admits only the four verified current Production hosts; the Preview deployment
+remains excluded. Independent cold connections and an owner audit confirm distinct
+physical Preview/Production clusters and the exact schema077 Preview marker.
+The custom legacy009 role has no table writes, role memberships or schemaCREATE;
+its eight executable SECURITYDEFINER functions return trigger. Provider-managed
+administrative roles are excluded from the application-role fence and retained.
+
+The exact Preview owner journals the deny-only intent, commits old-runtime
+NOLOGIN, terminates only that role's Preview backends, and verifies an actual cold
+old-credential rejection. Production remains schema077 with its runtime LOGIN
+unchanged. Both targets have fresh independently encrypted database-only safety
+copies and successful owned077→079 restore rehearsals; these do not prove private
+bytes, managed Workflow or complete service recovery.
+
+The unchanged rehearsed migrations078/079 and explicit runtime grants complete
+on Preview. Normal control transitions reach locked revision3. The existing
+retirement command verifies a separate restricted replacement login by actual cold
+connection. Five encrypted settings are created only for016-recovery-completion:
+the two replacement runtime URLs, exact environment marker, pilot-login0 and
+hosted-jobs0. Global/Production settings are preserved. A new deployment binding,
+managed closure, matched service recovery and unlock remain unverified.
+
+The separate finite Preview completion allocation is5,000,000microUSD under the
+standing user authority. Aggregate allocated ceilings are70,193,457microUSD of
+the original99,000,000 task cap; historical charges and unknown holds remain.
+No new model authority or automatic retries/topups are created.
+
+Actual native-operations CI passes on89fd94d. Its observer records385 samples,
+one membershipLock sample497ms and one commitIO sample163ms. These observations
+do not explain the earlier intermittent timeout. All seven legacy acceptance jobs
+pass; the broader46-job run and exact-source997-case local catalog are in progress.
