@@ -5598,3 +5598,31 @@ Both actual retention receipts must match their manifests' exact IDs, formats,
 kinds, sizes, digests and original/shared new deployments. Read-only independent
 review cleared the corrected bindings. No prior catalog without this index is
 silently promoted to current component evidence.
+
+
+Scoped release aggregation is authored separately from strict one-environment
+runs. Eleven bundle regressions and five auxiliary-evidence regressions pass,
+together with 28 existing gate/readiness checks (42 total). They cover honest
+cross-scope composition, Preview/Production separation, original attribution,
+required typed workload/UI evidence, stale original times, missing/source-mismatched
+references, latest failed attempts, final-record execution ordering and independent
+original Production run IDs. Auxiliary checks recompute actual fixed workload
+metrics and reject healthy flags with a missing measured class, foreign capture
+source, changed original bytes and a UI summary lacking four project captures.
+
+The real workload and UI runners now emit original source/environment and raw
+artifact indexes plus canonical partial scoped runs after complete execution.
+Their newly indexed full current-source executions and actual final hosted bundle
+are still pending. Private artifact reads retain ownership/mode/no-symlink/no-link
+checks with an explicit 64 MiB sample/report bound; ordinary evidence remains
+limited to 1 MiB. Inventory: 969 cases across 175 suites.
+
+Scoped release-bundle review corrections: final Preview/Production platform and
+origin checks now repeat under the original 120-second deadline immediately
+before final evaluation. Typed auxiliary validation returns frozen, privately
+tracked results bound to the original run/source/scope/gate; caller-created or
+cloned summaries cannot qualify. Reference identities and inputs must form a
+bijection. Sixteen focused cases pass, including forged-summary and duplicate
+inventory rejection, with pilot typecheck and documentation checks passing.
+Independent read-only review found no remaining blocker in this scoped change.
+These are local implementation checks, not actual hosted release acceptance.

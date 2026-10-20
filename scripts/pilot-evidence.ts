@@ -28,15 +28,18 @@ export async function writeEvidence(root: string, name: string, value: unknown) 
   try { await file.writeFile(bytes); await file.sync(); } finally { await file.close(); }
   return evidenceDigest(bytes);
 }
-export async function readEvidence(root: string, name: string, digest?: string) {
+export async function readEvidence(root:string,name:string,digest?:string){return readBoundedEvidence(root,name,MAX_BYTES,digest);}
+/** Explicit bounded sample/report artifacts retain the same private-file checks. */
+export async function readBoundedEvidence(root: string, name: string, maximumBytes:number, digest?: string) {
+  if(!Number.isSafeInteger(maximumBytes)||maximumBytes<1||maximumBytes>67108864)throw Error('Invalid private artifact bound');
   if (digest !== undefined && !/^[a-f0-9]{64}$/.test(digest)) throw new Error("Invalid evidence digest");
   const target = filePath(await ownedDirectory(root), name);
   const file = await open(target, constants.O_RDONLY | constants.O_NOFOLLOW);
   try {
     const stat = await file.stat();
-    if (!stat.isFile() || (stat.mode & 0o777) !== 0o600 || stat.uid !== process.getuid?.() || stat.size > MAX_BYTES || stat.nlink !== 1) throw new Error("Unsafe evidence file");
+    if (!stat.isFile() || (stat.mode & 0o777) !== 0o600 || stat.uid !== process.getuid?.() || stat.size > maximumBytes || stat.nlink !== 1) throw new Error("Unsafe evidence file");
     const bytes = await file.readFile();
-    if (bytes.length > MAX_BYTES || digest !== undefined && evidenceDigest(bytes) !== digest) throw new Error("Evidence integrity failure");
+    if (bytes.length > maximumBytes || digest !== undefined && evidenceDigest(bytes) !== digest) throw new Error("Evidence integrity failure");
     return JSON.parse(bytes.toString("utf8")) as unknown;
   } finally { await file.close(); }
 }

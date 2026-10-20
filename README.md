@@ -798,7 +798,7 @@ credential/call limits and unknown cost holds remain enforced. Full owned
 composition and separate-source capture/restart checks pass; regional scale and
 hosted release acceptance remain pending.
 
-The local deterministic inventory is953cases across173suites. A historical frozen
+The local deterministic inventory is969cases across175suites. A historical frozen
 928-case catalog has passed; complete verification of the current source remains
 required. The actual47-category regional capacity run completed final canonical
 replay; all53 original probe journals were independently reconciled and its
@@ -850,3 +850,10 @@ and new deployment. Four exact report-wrapper boundary cases pass with controlle
 provider transport. The hosted composer requires those current full-catalog
 results and both actual hosted retention receipts; it records the inference and
 keeps `actualReportAt10MiB:false`. Hosted composition remains pending.
+
+The final release-bundle verifier retains separate owned-local, CI, quality,
+Preview and Production runs with their original scope, proofs and execution
+times. It aggregates exact role/method coverage without relabeling executions,
+requires actual typed workload/UI captures, and emits technical eligibility only.
+Current hosted release, complete current checks and the release decision remain
+pending; these tools do not grant runtime or spending authority.

@@ -66,8 +66,9 @@ async function main() {
   for (const receipt of run.receipts) {
     const proof=verifyPilotProof(receipt, await readEvidence(path.dirname(target), `${receipt.id}.json`, receipt.proofDigest));
     const required=catalog.gates.find(g=>g.id===receipt.gateId)?.localCaseIds??[];
-    if(receipt.method==="local" && (required.length!==proof.cases.length || required.some(id=>!proof.cases.some(c=>c.id===id))))throw new Error("Proof does not cover frozen local inventory");
+    if(receipt.method==="local" && required.length>0 && (required.length!==proof.cases.length || required.some(id=>!proof.cases.some(c=>c.id===id))))throw new Error("Proof does not cover frozen local inventory");
   }
+  for(const gateId of ['G10','G12'])if(run.receipts.some(row=>row.gateId===gateId&&row.method==='local')){const {verifyPilotAuxiliaryEvidence}=await import('./pilot-auxiliary-evidence');if((await verifyPilotAuxiliaryEvidence(path.dirname(target),run)).gateId!==gateId)throw Error('Typed auxiliary gate evidence differs');}
   const observations:PilotGateVerification[]=[];
   for(const reference of run.gateVerifications??[]){const value=pilotGateVerificationSchema.parse(await readEvidence(path.dirname(target),`${reference.id}.json`,reference.proofDigest));if(value.gateId!==reference.gateId||value.id!==reference.id)throw Error('Gate verification identity differs');observations.push(value);}
   const result = checkPilotReadiness(run,Date.now(),observations);

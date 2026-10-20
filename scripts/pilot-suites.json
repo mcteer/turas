@@ -1991,6 +1991,34 @@
         "keeps report writes immutable and refuses changed cleanup identities",
         "preserves the separate ten MiB file and fifteen MiB pair serialization limits without sending mail"
       ]
+    },
+    {
+      "file": "tests/unit/pilot/release-bundle.test.ts",
+      "expectedCases": 11,
+      "cases": [
+        "composes complete original local CI quality Preview and Production scopes without relabeling their executions or approving release",
+        "does not substitute Preview role checks for missing Production coverage",
+        "preserves the original one-scope receipt attribution guard",
+        "requires original typed workload and four-project UI evidence rather than arbitrary empty-inventory pass claims",
+        "retains stale original hosted times even if a new release bundle is created",
+        "rejects missing original scoped references and different source bundles",
+        "does not let an older success conceal the latest failed complete scoped attempt",
+        "requires the actual final release record to complete after the other original checks",
+        "retains an independently identified original Production run without forcing its run ID into another scope",
+        "rejects forged auxiliary summaries even when their cases and digest strings match",
+        "rejects duplicate reference identities and non-bijective input inventories"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/auxiliary-evidence.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "recomputes complete original workload metrics and binds the actual named class capture to its scoped proof",
+        "refuses a healthy metrics flag when an original measured class is missing",
+        "refuses differently attributed original metrics even when their counts pass",
+        "refuses changed original artifacts after their byte digests were bound",
+        "refuses a forty-case UI success summary without all four discovered and executed project captures"
+      ]
     }
   ],
   "ui": {

@@ -1,3 +1,4 @@
+import {writePilotAuxiliaryRun} from './pilot-auxiliary-evidence';
 import {mkdtemp,mkdir,readFile,writeFile} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -27,10 +28,11 @@ export async function benchmarkPilot(){
  if(JSON.stringify(process.argv.slice(2))!==JSON.stringify(['--disposable']))throw Error('Pilot benchmark requires exactly --disposable');
  process.umask(0o077);const prepFile=process.env.TURAS_PILOT_UI_PREPARATION_FILE;if(!prepFile)throw Error('Explicit immutable image preparation file required');
  const prep=parsePilotImagePreparation(await readFile(prepFile)),renderer=prep.images.find(row=>row.kind==='renderer');if(!renderer)throw Error('Prepared renderer required');
- const source=await pilotSource();await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});const directory=await mkdtemp(resolve('local-artifacts/016/load-'));
+ const source=await pilotSource(),startedAt=new Date().toISOString();let environmentMarker='';await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});const directory=await mkdtemp(resolve('local-artifacts/016/load-'));
  const samples:LoadSample[]=[],resources:unknown[]=[],queryCounts=Object.fromEntries(pilotLoadClasses.map(id=>[id,0]));
  await writeFile(join(directory,'source.json'),JSON.stringify(source));
  try{await withPilotEnvironment(async env=>{
+  environmentMarker=env.environmentId;
   process.env.TURAS_PILOT_RENDERER_IMAGE=renderer.localImageId;process.env.TURAS_REPORTS_ENABLED='true';
   const pool=new Pool({connectionString:requireOwnedPilotDatabase(process.env,true)}),db=await pool.connect(),clients:Client[]=[];
   try{
@@ -84,12 +86,12 @@ export async function benchmarkPilot(){
    // missing completed samples fail rather than being filled by unmeasured work.
    const finished=performance.now(),warmupElapsedMs=warmupBoundary===null?finished-start:profile.warmupMs,measurementElapsedMs=finished-start-profile.warmupMs;
    const assessment=assessPilotLoad(samples,{...evidence.population,warmupElapsedMs,measurementElapsedMs,totalElapsedMs:finished-start,quotaResets:0,providerCalls:0,queryCounts});
-   await writeFile(join(directory,'samples.json'),JSON.stringify(samples));await writeFile(join(directory,'resources.json'),JSON.stringify(resources));await writeFile(join(directory,'measurements.json'),JSON.stringify({...source,statistics,setupQuotaWaitMs:training.quotaWaitMs,maxObservedRetryAfterMs:maxQuotaWait,...assessment}));
+   await writeFile(join(directory,'samples.json'),JSON.stringify(samples));await writeFile(join(directory,'resources.json'),JSON.stringify(resources));await writeFile(join(directory,'measurements.json'),JSON.stringify({...source,environmentMarker,statistics,setupQuotaWaitMs:training.quotaWaitMs,maxObservedRetryAfterMs:maxQuotaWait,...assessment}));
    if(!assessment.pass)throw Error('Fixed pilot load thresholds failed; inspect private measurements');
   }finally{await Promise.allSettled(clients.map(client=>client.close()));db.release();await pool.end();await closeRuntimePool();}
  },{postgresMajor:18,queryStatistics:true,deadlineMs:4800000});
  if(JSON.stringify(await pilotSource())!==JSON.stringify(source))throw Error('Source changed during fixed load benchmark');
- await writeFile(join(directory,'completed.json'),JSON.stringify({...source,pass:true,scope:'owned local actual HTTP and pinned SDK workload',hostedProof:false}));console.info(JSON.stringify({directory,pass:true,hostedProof:false}));
+ await writeFile(join(directory,'completed.json'),JSON.stringify({...source,environmentMarker,pass:true,scope:'owned local actual HTTP and pinned SDK workload',hostedProof:false}));await writePilotAuxiliaryRun({directory,environmentMarker,source,startedAt,completedAt:new Date().toISOString(),gateId:'G10',caseIds:pilotLoadClasses.map(id=>'pilot.load.'+id),artifactNames:['samples.json','measurements.json','completed.json']});console.info(JSON.stringify({directory,pass:true,hostedProof:false}));
  }catch(error){await writeFile(join(directory,'samples.json'),JSON.stringify(samples));await writeFile(join(directory,'failed.json'),JSON.stringify({...source,pass:false,reason:error instanceof Error?error.message:'Load failed'}));throw error;}
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)benchmarkPilot().catch(error=>{console.error(error instanceof Error?error.message:'Pilot benchmark failed');process.exitCode=1;});

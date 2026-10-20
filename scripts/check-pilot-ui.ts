@@ -1,3 +1,4 @@
+import {writePilotAuxiliaryRun} from './pilot-auxiliary-evidence';
 import {preparePilotAssetPermissions} from './pilot-asset-permissions';
 import { readFile,mkdir,mkdtemp,writeFile,readdir,cp } from 'node:fs/promises';
 import { resolve,join,dirname } from 'node:path';
@@ -22,8 +23,9 @@ export async function checkPilotUi(){
  for(const signature of preparation.scanner.signatures){const bytes=await readFile(join(dirname(preparationFile),'store/signatures',signature.name));if(bytes.length!==signature.sizeBytes||createHash('sha256').update(bytes).digest('hex')!==signature.digest)throw Error('Scanner asset provenance differs');}
  const ocr=await readFile(join(dirname(preparationFile),'store/assets/eng.traineddata'));if(createHash('sha256').update(ocr).digest('hex')!==preparation.ocr.digest)throw Error('OCR asset provenance differs');
  await assertFreshArtifactSignatures(join(dirname(preparationFile),'store/signatures'));
- const source=await pilotSource();await mkdir('local-artifacts/016',{recursive:true,mode:0o700});const directory=await mkdtemp(resolve('local-artifacts/016/ui-'));let passed=0;
+ const source=await pilotSource(),startedAt=new Date().toISOString(),caseIds:string[]=[];let environmentMarker='';await mkdir('local-artifacts/016',{recursive:true,mode:0o700});const directory=await mkdtemp(resolve('local-artifacts/016/ui-'));let passed=0;
  await withPilotEnvironment(async environment=>{
+  environmentMarker=environment.environmentId;
   process.env.TURAS_PILOT_PARSER_IMAGE=image('parser').localImageId;process.env.TURAS_PILOT_SCANNER_IMAGE=image('scanner').localImageId;
   await cp(join(dirname(preparationFile),'store/signatures'),join(process.env.TURAS_ARTIFACT_STORE_ROOT!,'signatures'),{recursive:true});
   await cp(join(dirname(preparationFile),'store/assets'),join(process.env.TURAS_ARTIFACT_STORE_ROOT!,'assets'),{recursive:true});
@@ -34,11 +36,11 @@ export async function checkPilotUi(){
   for(const project of manifest.projects){
    const args=['node_modules/@playwright/test/cli.js','test',...manifest.files,'--project='+project,'--reporter=json','--forbid-only','--retries=0'];
    const discovery=await capturePartnerProcess([...args,'--list'],60000,environment.signal);if(discovery.status!==0||discovery.error)throw Error('Pilot UI discovery failed');
-   const discovered=JSON.parse(discovery.stdout);
+   const discovered=JSON.parse(discovery.stdout);await writeFile(resolve(directory,project+'-discovery.json'),discovery.stdout,{mode:0o600});
    const titles:Record<string,string[]>={};function visit(rows:{specs?:{file:string;title:string}[];suites?:typeof rows}[]){for(const row of rows){for(const spec of row.specs??[]){const file='tests/ui/'+spec.file.replace(/^.*\//,'');(titles[file]??=[]).push(spec.title);}visit(row.suites??[]);}}visit(discovered.suites);
    if(manifest.files.some(file=>JSON.stringify([...(titles[file]??[])].sort())!==JSON.stringify([...manifest.cases[file]].sort())))throw Error('Pilot UI discovery differs from the frozen journeys');
    const cases=executionUiDiscovery(discovered,manifest.files,project);
-   if(cases.length!==10)throw Error('Pilot UI catalog must discover ten cases per project');
+   if(cases.length!==10)throw Error('Pilot UI catalog must discover ten cases per project');caseIds.push(...cases.map(row=>'pilot.ui.'+project+'.'+row.id));
    const run=await capturePartnerProcess([...args,'--output='+resolve(directory,project)],300000,environment.signal);
    await writeFile(resolve(directory,project+'.json'),run.stdout,{mode:0o600});await writeFile(resolve(directory,project+'.log'),run.stderr,{mode:0o600});
    if(run.status!==0||run.error)throw Error('Pilot UI failed; inspect '+directory);
@@ -47,7 +49,7 @@ export async function checkPilotUi(){
  },{deadlineMs:1800000});
  if(JSON.stringify(await pilotSource())!==JSON.stringify(source))throw Error('Pilot source changed during UI verification');
  if(passed!==manifest.expectedCases)throw Error('Incomplete UI execution');
- const summary={...source,passed,failed:0,skipped:0,projects:4,acceptance:true,scope:'owned local workspace and upload transport; no hosted or scanner acceptance'};
- await writeFile(resolve(directory,'summary.json'),JSON.stringify(summary),{mode:0o600});console.info(JSON.stringify(summary));
+ const summary={...source,environmentMarker,passed,failed:0,skipped:0,projects:4,acceptance:true,scope:'owned local workspace and upload transport; no hosted or scanner acceptance'};
+ await writeFile(resolve(directory,'summary.json'),JSON.stringify(summary),{mode:0o600});await writePilotAuxiliaryRun({directory,environmentMarker,source,startedAt,completedAt:new Date().toISOString(),gateId:'G12',caseIds,artifactNames:['summary.json',...manifest.projects.flatMap(project=>[project+'-discovery.json',project+'.json'])]});console.info(JSON.stringify(summary));
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)checkPilotUi().catch(error=>{console.error(error instanceof Error?error.message:'Pilot UI failed');process.exitCode=1;});

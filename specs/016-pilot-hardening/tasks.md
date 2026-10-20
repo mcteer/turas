@@ -257,3 +257,11 @@ No hosted target may be locked for release before its measured reopen path exist
   retention identities, selected current component run/cases and hashed complete
   suite/result/process index. Four owned component cases pass; actual hosted
   composition and full current-catalog acceptance remain part of T090.
+
+- [X] T101 Author separately scoped release-bundle aggregation and typed original
+  workload/four-project UI verification. Retain original execution attribution,
+  freshness, selected attempts and final-operation ordering; require private
+  validation provenance, bijective input inventory and repeated final hosted
+  identity checks. Sixteen focused regressions, pilot typecheck and docs pass;
+  independent scoped review found no remaining blocker. Actual complete current
+  runs, hosted release and final eligibility remain required by T089–T092/T096.

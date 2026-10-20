@@ -267,3 +267,18 @@ verifier reopens every original proof before writing its observation. Dependency
 chronology applies to these verification operations; execution freshness and
 operation-specific ordering remain attached to the original evidence. A reread
 never renews an execution or grants runtime/paid-operation authority.
+
+
+### Scoped release aggregation
+
+`pilot-release-bundle-v1` references at most 32 immutable strict scoped runs, exact
+source/catalog, and distinct actual Preview/Production scopes. Each hosted run
+reference includes its own original scope and run ID while binding the same actual
+required target release. No per-scope attribution constraint is relaxed. Aggregate
+coverage is keyed by gate, required method, role and required environment.
+
+`pilot-release-gate-observation-v1` binds bundle UUID/canonical digest, original
+run/attempt/receipt/proof identities, environment/workspace/scope and execution
+intervals, plus dependency observation IDs/digests. Original execution freshness
+is retained. The final result computes technical eligibility and cannot approve
+release, grant context authority, admit paid work or alter runtime state.

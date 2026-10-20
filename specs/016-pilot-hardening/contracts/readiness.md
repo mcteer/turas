@@ -96,3 +96,33 @@ A private JSON string `actor: mcteer` cannot create authority. This CLI has no l
 grant, approve-fact, publish or send action. Domain operations remain authenticated
 through their existing server paths; owner-only recovery/provisioning uses explicit
 operator access. Reuse already-given authorization when it covers the exact action.
+
+
+## Final scoped release bundle
+
+`node --import tsx scripts/pilot-release-bundle.ts --input <private-bundle.json>
+--output <fresh-private-directory>` verifies `pilot-release-bundle-v1`. It references
+complete original selected attempts in strict per-scope `PilotRun` manifests and
+all original private proof digests; it does not rewrite their environment, workspace,
+source, scope or execution times. Independent executions on the same Production
+release retain their distinct run IDs and exact original hosted scopes. Preview
+G15 evidence cannot substitute for required Production hosted coverage.
+
+The verifier binds current source/catalog and actual Preview/Production deployment,
+origin, workspace and environment scopes. It rechecks both current platform/origin
+identities, rejects different source/method/role/scopes and superseded attempts,
+preserves failures, uses original execution freshness, and requires the actual
+final G22 record to complete after the other original checks. Ordered new
+`pilot-release-gate-observation-v1` files bind the canonical bundle digest,
+selected original manifest/proof digests, actual original execution identities and
+preceding dependency observations. They establish evidence verification, not new
+execution or retroactive admission. The result always has `releaseApproved:false`.
+
+G10/G12 have no frozen unit-case ID list, so skipping that equality comparison
+never accepts an arbitrary success count. Owned workload/UI runners now emit
+canonical partial scoped runs and `pilot-owned-auxiliary-v1` artifact indexes.
+The verifier recomputes the complete fixed workload thresholds from original
+samples/population/timings/query counters, and replays every named four-project UI
+discovery/result validator. Original source/environment/manifest/proof/raw-artifact
+hashes must agree. Existing single-scope checks also require this typed auxiliary
+verification. An individual component run need not pretend to cover all 22 gates.
