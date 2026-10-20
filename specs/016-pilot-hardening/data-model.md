@@ -256,3 +256,14 @@ scheduled invocation, provider invoice verification or recovery acceptance.
 ## Independent managed Workflow replay metadata
 
 The work-controlled Neon archive retains immutable `native_cancel_intents` keyed by project/run. An exact environment/recovery/control/deployment/Workflow binding digest admits at most one automatic cancellation attempt; a repeated claim authorizes reads only. Terminal `native_closure_observations` retain exact binding, current source commit/source/catalog digests and terminal metadata proof digest. They contain no conversation or model payloads and do not settle paid effects or grant readiness. Both collections have a 10,000-row bound and explicit owner migrations; runtime has no access. The trusted closure producer holds the exact primary recovery fence and requires retired legacy database admission before provider operations.
+
+### Gate verification observations
+
+A run may reference up to 22 private `pilot-gate-verification-v1` files. Each has a
+unique UUID, run/gate/selected-attempt identity, source/catalog/environment/scope
+binding, actual verification start/completion, exact original receipt IDs/digests
+and unchanged execution intervals, and dependency observation IDs/digests. The
+verifier reopens every original proof before writing its observation. Dependency
+chronology applies to these verification operations; execution freshness and
+operation-specific ordering remain attached to the original evidence. A reread
+never renews an execution or grants runtime/paid-operation authority.

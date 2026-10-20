@@ -48,8 +48,9 @@ function scope(row: Candidate): ArtifactScope & { submittedAt: Date | null } {
     submittedAt: row.submitted_at };
 }
 
-/** Claim one oldest eligible run. The DB unique index enforces one active local job. */
-export async function claimArtifactRun(existingClient?: PoolClient): Promise<ArtifactJobClaim | null> {
+/** Claim one oldest eligible run, optionally restricted to an exact internal
+ * worker identity. The same authorization, source and lease checks always apply. */
+export async function claimArtifactRun(existingClient?: PoolClient, exactRunId?: string): Promise<ArtifactJobClaim | null> {
   const environmentId = getServerConfig().TURAS_ENVIRONMENT_ID;
   const execute = async (client: PoolClient): Promise<ArtifactJobClaim | null> => {
     const candidates = await client.query<Candidate>(`
@@ -58,10 +59,10 @@ export async function claimArtifactRun(existingClient?: PoolClient): Promise<Art
         r.parser_policy_version,r.parser_image_digest,r.attempt_number,r.state,r.lease_expires_at,
         v.submitted_at,r.created_at
       FROM artifact_extraction_runs r JOIN artifact_versions v ON v.id=r.version_id
-      WHERE r.environment_id=$1 AND (r.state='queued' AND r.next_attempt_at <= now()
+      WHERE r.environment_id=$1 AND ($2::uuid IS NULL OR r.id=$2) AND (r.state='queued' AND r.next_attempt_at <= now()
         OR r.state='leased' AND r.lease_expires_at <= now())
       ORDER BY CASE WHEN r.state='leased' THEN 0 ELSE 1 END,r.created_at,r.id LIMIT 20
-    `, [environmentId]);
+    `, [environmentId, exactRunId ?? null]);
     for (const candidate of candidates.rows) {
       const authorized = await lockArtifactWorkerAuthority(client, scope(candidate), candidate.initiating_principal_id);
       const version = await client.query<{ lifecycle_generation: string; sha256_digest: string; state: string }>(`

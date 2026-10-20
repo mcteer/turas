@@ -9,12 +9,19 @@ import {assertFreshArtifactSignatures,verifyArtifactImage} from './scan';
 import {recordArtifactMetric} from './telemetry';
 import {runGovernedExecution,executionBackend} from '../jobs/governed';
 import {sha256} from '../jobs/executor';
+import {validateArtifactExtraction} from './extraction';
+import type {ExecutionOutput} from '../jobs/executor';
 import type {ArtifactScanReceipt} from '../../contracts/artifacts';
 
 type Original={object_key:string;filename:string;declared_type:string;sha256_digest:string;actual_size_bytes:string};
 const safeFailures=new Set(['unsupported_format','encrypted','malformed','unsafe_content','limit_exceeded','scan_unavailable','scan_stale','parser_timeout','parser_failed']);
+/** Trusted, in-process operator observation only. No request, environment variable
+ * or persisted value installs this callback. The ordinary publication fences run
+ * after it returns, even if the original deadline expired while observing. */
+export type ArtifactPublicationObservation={claim:Readonly<ArtifactJobClaim>;outputDigest:string;outputBytes:number;observedAt:string};
+export type ArtifactPublicationObserver=(observation:Readonly<ArtifactPublicationObservation>)=>Promise<void>;
 /** Verified bytes enter fixed programs; domain publication shares current source locks. */
-export async function runArtifactJob(claim:ArtifactJobClaim,parentSignal?:AbortSignal):Promise<void>{
+export async function runArtifactJob(claim:ArtifactJobClaim,parentSignal?:AbortSignal,beforeParserPublication?:ArtifactPublicationObserver):Promise<void>{
  const environmentId=getServerConfig().TURAS_ENVIRONMENT_ID,root=executionBackend()==='local'?parseArtifactStoreConfig(process.env).root:'';
  const controller=new AbortController();let busy=false,pending:Promise<void>|undefined;
  const abort=()=>controller.abort();parentSignal?.throwIfAborted();parentSignal?.addEventListener('abort',abort,{once:true});
@@ -43,7 +50,11 @@ export async function runArtifactJob(claim:ArtifactJobClaim,parentSignal?:AbortS
   recordArtifactMetric('scan_duration_ms',Date.now()-scanStarted);controller.signal.throwIfAborted();
   if(local)await verifyArtifactImage(images.parserImage,images.parserDigest);
   const parseStarted=Date.now();
-  await runGovernedExecution({domain,sourceCurrent,localAssets,request:{id:randomUUID(),kind:'artifact-parse',image:local?'sha256:'+images.parserDigest:images.parserImage,imageDigest:images.parserDigest,deadlineAt:claim.deadlineAt,inputs,parser:{filename:original.filename,mime:original.declared_type,scanReceiptDigest:createHash('sha256').update(JSON.stringify(receipt)).digest('hex')},signal:controller.signal},complete:async(db,output)=>{
+  const prepareOutput=beforeParserPublication?async(output:ExecutionOutput)=>{
+   validateArtifactExtraction(JSON.parse(output.stdout.toString('utf8')),{originalDigest:claim.originalDigest,imageDigest:claim.parserImageDigest,scanReceipt:receipt});
+   await beforeParserPublication(Object.freeze({claim:Object.freeze({...claim}),outputDigest:sha256(output.stdout),outputBytes:output.stdout.length,observedAt:new Date().toISOString()}));
+  }:undefined;
+  await runGovernedExecution({domain,sourceCurrent,localAssets,...(prepareOutput?{prepareOutput}:{}),request:{id:randomUUID(),kind:'artifact-parse',image:local?'sha256:'+images.parserDigest:images.parserImage,imageDigest:images.parserDigest,deadlineAt:claim.deadlineAt,inputs,parser:{filename:original.filename,mime:original.declared_type,scanReceiptDigest:createHash('sha256').update(JSON.stringify(receipt)).digest('hex')},signal:controller.signal},complete:async(db,output)=>{
    if(output.exitCode!==0)throw Error(output.safeFailure??'parser_failed');let manifest:unknown;try{manifest=JSON.parse(output.stdout.toString('utf8'));}catch{throw Error('parser_failed');}
    await publishArtifactRun(claim,manifest,receipt,db);
   }});

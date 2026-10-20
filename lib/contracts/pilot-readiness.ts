@@ -41,6 +41,19 @@ export const pilotAttemptSchema = z.strictObject({
   id: uuid, gateId: z.enum(pilotGateIds), complete: z.literal(true),
   receiptIds: z.array(uuid).min(1).max(512),
 }).refine(a => new Set(a.receiptIds).size === a.receiptIds.length, "Duplicate receipts");
+/** Verification times describe rereading immutable execution evidence, never a
+ * replacement for the original execution intervals or hosted freshness. */
+export const pilotGateVerificationSchema=z.strictObject({
+ version:z.literal('pilot-gate-verification-v1'),id:uuid,runId:uuid,gateId:z.enum(pilotGateIds),attemptId:uuid,
+ environmentMarker:identity,sourceCommit:pilotCommit,sourceDigest:pilotDigest,catalogDigest:pilotDigest,scopeDigest:pilotDigest,
+ startedAt:timestamp,completedAt:timestamp,
+ executions:z.array(z.strictObject({receiptId:uuid,proofDigest:pilotDigest,startedAt:timestamp,completedAt:timestamp})).min(1).max(512),
+ dependencies:z.array(z.strictObject({gateId:z.enum(pilotGateIds),verificationId:uuid,proofDigest:pilotDigest})).max(22),
+}).superRefine((value,ctx)=>{
+ if(Date.parse(value.completedAt)<Date.parse(value.startedAt)||value.executions.some(row=>Date.parse(row.completedAt)<Date.parse(row.startedAt)||Date.parse(row.completedAt)>Date.parse(value.startedAt)))ctx.addIssue({code:'custom',message:'Invalid gate observation interval'});
+ if(new Set(value.executions.map(row=>row.receiptId)).size!==value.executions.length||new Set(value.dependencies.map(row=>row.gateId)).size!==value.dependencies.length)ctx.addIssue({code:'custom',message:'Duplicate gate observation binding'});
+});
+export type PilotGateVerification=z.infer<typeof pilotGateVerificationSchema>;
 export const pilotRunSchema = z.strictObject({
   version: z.literal(PILOT_CONTRACT_VERSION), id: uuid, createdAt: timestamp,
   environmentMarker: identity, sourceCommit: pilotCommit, sourceDigest: pilotDigest,
@@ -48,9 +61,14 @@ export const pilotRunSchema = z.strictObject({
   attempts: z.array(pilotAttemptSchema).max(128),
   selectedAttempts: z.array(z.strictObject({ gateId: z.enum(pilotGateIds), attemptId: uuid })).max(128),
   receipts: z.array(pilotReceiptSchema).max(512),
+  gateVerifications:z.array(z.strictObject({gateId:z.enum(pilotGateIds),id:uuid,proofDigest:pilotDigest})).max(22).optional(),
 }).superRefine((run, ctx) => {
   for (const values of [run.attempts.map(a => a.id), run.receipts.map(r => r.id), run.selectedAttempts.map(s => s.gateId)]) {
     if (new Set(values).size !== values.length) ctx.addIssue({ code: "custom", message: "Duplicate run identity" });
+  }
+  if(run.gateVerifications){
+   if(new Set(run.gateVerifications.map(row=>row.gateId)).size!==run.gateVerifications.length||new Set(run.gateVerifications.map(row=>row.id)).size!==run.gateVerifications.length)ctx.addIssue({code:'custom',message:'Duplicate gate verification'});
+   if(run.gateVerifications.some(row=>!run.selectedAttempts.some(selected=>selected.gateId===row.gateId)))ctx.addIssue({code:'custom',message:'Unknown verified gate'});
   }
   for (const selected of run.selectedAttempts) {
     if (!run.attempts.some(a => a.id === selected.attemptId && a.gateId === selected.gateId)) ctx.addIssue({ code: "custom", message: "Unknown selected attempt" });

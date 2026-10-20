@@ -798,7 +798,7 @@ credential/call limits and unknown cost holds remain enforced. Full owned
 composition and separate-source capture/restart checks pass; regional scale and
 hosted release acceptance remain pending.
 
-The local deterministic inventory is934cases across169suites. A historical frozen
+The local deterministic inventory is941cases across170suites. A historical frozen
 928-case catalog has passed; complete verification of the current source remains
 required. The actual47-category regional capacity run completed final canonical
 replay; all53 original probe journals were independently reconciled and its
@@ -818,8 +818,16 @@ content/citations and credential revocation.
 
 Pilot hardening also has explicit one-original hosted file boundary commands for
 antivirus, malformed input, running cancellation, controlled lease expiry and
-a fixed network refusal. A separate explicit phase verifies normal withdrawal
+a fixed network refusal. An in-process normal-worker observation holds a real
+validated parser result through its original deadline; the ordinary publication
+continuation then refuses it. This is delayed-publication evidence, with no SQL
+publication attempt or late-generation claim. A separate explicit phase verifies normal withdrawal
 and owned cleanup of the two harmless maximum originals.
 These retain original mutation/provider/accounting identities and require actual
 provider absence; they do not establish complete file acceptance or clear unknown
 cost holds. See `docs/pilot-operations.md` for the bounded invocation and limits.
+
+The readiness verifier can observe immutable execution receipts in dependency
+order with `scripts/pilot-gate-verification.ts`. These observations retain the
+original test times, proof digests and hosted freshness; reading an old result
+does not make it current or replace required live checks.

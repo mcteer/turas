@@ -50,3 +50,20 @@ it('denies foreign workspace access',async()=>{const workspace=randomUUID(),cust
 it('denies another owners conversation',async()=>{const created=await createOwnedConversation(member,{requestKey:randomUUID(),title:'Synthetic private owner boundary'});await expect(getOwnedConversation(admin,created.conversation.id)).rejects.toMatchObject({status:404});expect((await getOwnedConversation(member,created.conversation.id)).id).toBe(created.conversation.id);});
 it('denies runtime owner operations',async()=>{for(const sql of ["UPDATE operations_control SET mode='locked' WHERE environment_id=$1","UPDATE turas_environment SET schema_version=79 WHERE environment_id=$1","DELETE FROM operations_cost_reconciliations WHERE false AND $1::text IS NOT NULL"])await expect(withTransaction(client=>client.query(sql,[process.env.TURAS_ENVIRONMENT_ID]))).rejects.toMatchObject({code:'42501'});});
 it('keeps credentials and payloads out of diagnostics',async()=>{const sentinel='SYNTHETIC_PRIVATE_CREDENTIAL_AND_CUSTOMER_PAYLOAD';const response=failure(Error(sentinel));expect(response.status).toBe(503);expect(await response.text()).not.toContain(sentinel);const now=Date.now(),code='a'.repeat(40),rows=maintenanceClasses.map(c=>({class_id:c.id,last_success_at:new Date(now),last_completed_at:new Date(now),safe_failure:sentinel,code_version:code,duration_ms:1,backlog_count:0,backlog_truncated:false}));expect(JSON.stringify(assessMaintenanceHealth(rows,now,code))).not.toContain(sentinel);});
+
+it('rejects normal parser output held past its original job deadline without publishing',async()=>{
+ const bytes=Buffer.from('Harmless synthetic delayed parser publication'),store=createArtifactStore(),staged=await store.stage(Readable.from([bytes]),bytes.length),key=await store.finalize(staged.key,staged.digest),images=preparedArtifactImages();
+ await db.query('BEGIN');let f:Awaited<ReturnType<typeof createArtifactDatabaseFixture>>;
+ try{f=await createArtifactDatabaseFixture(db,admin,DEMO_IDS.sharedCustomer,null,bytes,key);await db.query("UPDATE artifact_extraction_runs SET parser_image_digest=$2,parser_policy_version='004-parser-v2',scan_policy_version='004-scan-v1' WHERE id=$1",[f.runId,images.parserDigest]);await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}
+ expect(await claimArtifactRun(db,randomUUID())).toBeNull();
+ const claim=await claimArtifactRun(db,f.runId);expect(claim?.runId).toBe(f.runId);let observed=false;
+ await runArtifactJob(claim!,AbortSignal.timeout(145000),async observation=>{
+  expect(observation.claim).toEqual(claim);expect(observation.outputBytes).toBeGreaterThan(0);expect(observation.outputDigest).toMatch(/^[a-f0-9]{64}$/);expect(Date.parse(observation.observedAt)).toBeLessThan(Date.parse(claim!.deadlineAt));
+  expect((await db.query('SELECT state,deadline_at FROM artifact_extraction_runs WHERE id=$1',[f.runId])).rows[0]).toEqual({state:'leased',deadline_at:new Date(claim!.deadlineAt)});
+  await new Promise(resolve=>setTimeout(resolve,Math.max(1,Date.parse(claim!.deadlineAt)-Date.now()+100)));observed=true;
+ });
+ expect(observed).toBe(true);expect((await db.query('SELECT state,safe_error_code FROM artifact_versions WHERE id=$1',[f.versionId])).rows[0]).toEqual({state:'failed',safe_error_code:'parser_timeout'});
+ expect((await db.query('SELECT count(*)::int AS n FROM artifact_extraction_units WHERE version_id=$1',[f.versionId])).rows[0].n).toBe(0);
+ expect((await db.query('SELECT state,deadline_at,published_at FROM artifact_extraction_runs WHERE id=$1',[f.runId])).rows[0]).toEqual({state:'failed',deadline_at:new Date(claim!.deadlineAt),published_at:null});
+ expect(await claimArtifactRun(db,f.runId)).toBeNull();
+},150000);

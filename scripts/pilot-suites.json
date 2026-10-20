@@ -251,7 +251,7 @@
     },
     {
       "file": "tests/integration/pilot/access.test.ts",
-      "expectedCases": 8,
+      "expectedCases": 9,
       "cases": [
         "quarantines malicious originals",
         "keeps untrusted claims out of accepted facts",
@@ -260,7 +260,8 @@
         "denies foreign workspace access",
         "denies another owners conversation",
         "denies runtime owner operations",
-        "keeps credentials and payloads out of diagnostics"
+        "keeps credentials and payloads out of diagnostics",
+        "rejects normal parser output held past its original job deadline without publishing"
       ]
     },
     {
@@ -1947,6 +1948,18 @@
       "expectedCases": 1,
       "cases": [
         "accepts only fixed bounded application refusals without protected payloads or outage substitutions"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/gate-verification.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "observes shared execution intervals after dependencies without changing original proof times",
+        "rejects changed original proof bytes before observing a gate",
+        "rejects a changed dependency digest and observation before dependency completion",
+        "does not renew stale hosted execution by rereading its evidence",
+        "requires authenticated observation files and keeps latest failed attempts authoritative",
+        "rejects forged original execution intervals and source bindings in observations"
       ]
     }
   ],

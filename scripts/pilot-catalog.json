@@ -71,7 +71,13 @@
         "unit.ci-browser-diagnostics.003",
         "unit.ui-child.001",
         "unit.ui-child.002",
-        "unit.ui-child.003"
+        "unit.ui-child.003",
+        "unit.gate-verification.001",
+        "unit.gate-verification.002",
+        "unit.gate-verification.003",
+        "unit.gate-verification.004",
+        "unit.gate-verification.005",
+        "unit.gate-verification.006"
       ]
     },
     {
@@ -802,6 +808,7 @@
         "integration.access.006",
         "integration.access.007",
         "integration.access.008",
+        "integration.access.009",
         "integration.report-projection-sources.001",
         "integration.report-projection-sources.002",
         "integration.report-projection-sources.003",

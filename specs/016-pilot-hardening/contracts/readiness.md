@@ -1,7 +1,7 @@
 # Readiness and Operator Command Contract
 
 Version `pilot-readiness-v1`; strict schemas and limits are defined in
-[data-model.md](../data-model.md). These are planned commands, not current tooling.
+[data-model.md](../data-model.md). Implemented command coverage and remaining hosted acceptance are recorded in validation.md.
 
 ## Command surface
 
@@ -52,6 +52,25 @@ Current hosted proof is ≤24h old and has a ≤30min final deployment/schema/co
 role/worker check. A changed runtime, grant, storage configuration or source invalidates
 its affected evidence immediately. The checker has no `--ignore`, `--force-pass`,
 `--skip-required`, fake owner or alternate shell command escape.
+
+## Gate verification observations
+
+`node --import tsx scripts/pilot-gate-verification.ts --run <private-manifest>
+--output <fresh-name.json>` rereads exact original proof bytes in catalog dependency
+order and writes separately versioned `pilot-gate-verification-v1` observations.
+The run optionally references those private observations by ID and SHA-256 digest.
+Each binds the selected complete attempt, every original receipt/digest/execution
+interval and every dependency observation/digest. Observation start must follow
+all dependency observation completions. The original execution timestamps stay
+unchanged, including when a case or suite serves more than one gate.
+
+The checker still uses original execution completion for freshness and preserves
+failures, missing methods/roles, superseded attempts and changed source/scope.
+A changed proof or dependency binding invalidates the observation. Missing
+observation bytes do not pass. Legacy runs retain their original execution-order
+check. Observation is evidence verification only: it cannot retroactively admit
+paid work, replace a before-migration backup, establish a new deployment's behavior,
+or replace required current authenticated HTTP/configuration/role checks.
 
 ## Cost and quality admission
 

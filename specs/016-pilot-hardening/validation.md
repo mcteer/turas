@@ -5514,3 +5514,33 @@ Independent review found no SQL/policy blocker; actual hosted execution is pendi
 The fixed network case also passed independent review, but only local presence
 of the required scanner executable was checked. No cloud network, deadline,
 generated-output, full file-catalog or release acceptance is claimed.
+
+
+The normal parser worker now supports an optional trusted in-process observation
+of a validated output digest/length and copied claim. No request or environment
+value installs it, and it receives no output bytes. The hosted `late-output` case
+claims only its newly queued synthetic original, checks the current parser
+source/lease/deadline, holds the actual result past the unchanged deadline and
+requires normal publication continuation rejection, `parser_timeout`, no units
+and actual provider absence. The real local pinned scanner/parser regression
+passes through its original 120-second deadline; this is local execution evidence,
+not a cloud execution claim. The callback does not attempt SQL publication or
+claim the parser originally generated its output after expiry.
+
+Versioned gate-verification observations correct the previous producer/checker
+mismatch for overlapping suite intervals. Original execution proof bytes/times
+remain immutable; actual evidence rereads occur after dependency observations,
+with original hosted freshness and selected-attempt checks unchanged. Six new
+regressions cover shared intervals, changed bytes/dependency digest, stale hosted
+proof, missing observations/latest failures, and forged execution/source/time.
+All 28 new/existing focused readiness cases pass. The inventory is now 941 cases
+in 170 suites; a complete current-source pass and hosted release are still pending.
+
+
+A subsequent frozen 934-case catalog stopped at isolated-restore setup with a
+Docker port collision. Owned database startup now publishes an automatically
+allocated Docker loopback port atomically and requires exactly one valid
+`127.0.0.1` mapping on readback; app/native port leases are unchanged. The complete
+three-case owned isolated-restore rerun passes, with independent review finding
+no blocker. Selected database/configuration and root workflow state remain
+protected. This focused rerun does not convert the earlier full catalog to a pass.
