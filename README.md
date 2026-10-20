@@ -298,7 +298,7 @@ disabled. See [learning operations](docs/learning-operations.md), the
 
 Feature 016 has a [specification](specs/016-pilot-hardening/spec.md),
 [implementation plan](specs/016-pilot-hardening/plan.md) and
-[94 tasks](specs/016-pilot-hardening/tasks.md) for a controlled internal and
+[97 tasks](specs/016-pilot-hardening/tasks.md) for a controlled internal and
 assigned-partner pilot. The plan covers a synthetic Production pilot workspace,
 workspace-bound sessions, durable private files and hosted processing, recovery,
 retention, access, operating limits and attributable user feedback. Implementation
@@ -798,7 +798,7 @@ credential/call limits and unknown cost holds remain enforced. Full owned
 composition and separate-source capture/restart checks pass; regional scale and
 hosted release acceptance remain pending.
 
-The local deterministic inventory is933cases across168suites. A historical frozen
+The local deterministic inventory is934cases across169suites. A historical frozen
 928-case catalog has passed; complete verification of the current source remains
 required. The actual47-category regional capacity run completed final canonical
 replay; all53 original probe journals were independently reconciled and its
@@ -817,7 +817,9 @@ consumers also verify typed non-disclosing foreign-customer refusals, current
 content/citations and credential revocation.
 
 Pilot hardening also has explicit one-original hosted file boundary commands for
-antivirus, malformed input, running cancellation and controlled lease expiry.
+antivirus, malformed input, running cancellation, controlled lease expiry and
+a fixed network refusal. A separate explicit phase verifies normal withdrawal
+and owned cleanup of the two harmless maximum originals.
 These retain original mutation/provider/accounting identities and require actual
 provider absence; they do not establish complete file acceptance or clear unknown
 cost holds. See `docs/pilot-operations.md` for the bounded invocation and limits.

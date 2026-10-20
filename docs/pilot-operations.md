@@ -1449,3 +1449,25 @@ requires actual expired-lease/reconciliation state and absent published output,
 then issues the normal cancellation command. This narrow observation explicitly
 does not claim a late output was attempted and rejected. A completed fixture
 before the controlled injection fails the exercise without another paid attempt.
+
+`--case network` observes one fixed TLS connection attempt to `1.1.1.1:443`
+inside the actual running scanner. It first verifies the real provider identity,
+immutable configured image, ownership tags, nonpersistent/no-port state and
+`deny-all` policy. The installed scanner image contains `/usr/bin/openssl`.
+Only explicit network/permission refusal qualifies; timeout, missing executable,
+provider disappearance or a successful handshake fails. The normal original must
+still finish scan/parse successfully. The evidence covers this connection and
+actual configured policy; it does not claim empirical testing of every address.
+
+After the retention and role-denial checks, use the same entrypoint with
+`--retire-maximum-files` and the four common file arguments, followed by
+`--originals <private-maximum-originals.json>`. This explicit phase first repeats
+actual retained-byte verification and independently hashes the original Blob
+objects using the exact configured store. It withdraws only the two fixed
+harmless originals through ordinary commands, verifies current original and
+text/row withholding, then requests ordinary artifact deletion. It waits for the
+five artifact cleanup classes and one workforce cleanup job and checks actual
+Blob absence and purged extraction payloads. Every mutation has an original
+private intent. Uncertain acknowledgments stop after original readback; rerunning
+this command cannot recreate uploads or silently repeat a mutation. Broader
+namespace cleanup, maximum generated output and deadline evidence remain required.

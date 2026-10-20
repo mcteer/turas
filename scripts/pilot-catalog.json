@@ -810,7 +810,8 @@
         "integration.report-projection-sources.006",
         "integration.report-projection-sources.007",
         "integration.report-projection-sources.008",
-        "integration.linked-http-reports.001"
+        "integration.linked-http-reports.001",
+        "unit.hosted-file-refusal.001"
       ]
     },
     {

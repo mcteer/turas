@@ -5501,3 +5501,16 @@ original accounting identities. It explicitly does not certify financial hold
 preservation, complete reconciliation or the broader hosted file catalog.
 Independent read-only review cleared the image/accounting and typed-denial fixes;
 actual cloud execution and the remaining file failure cases remain pending.
+
+Maximum-file denial checks now cover anonymous, internal-member and partner
+original reads; the response parser requires bounded, exact fixed application
+failure messages and rejects outages, extra data and protected-content messages.
+Its new registered unit case passes, bringing the deterministic inventory to
+934 cases in 169 suites. Pilot and repository type checks pass.
+A separate normal-command retirement phase is authored for the two maximum
+originals, with actual store readback before withdrawal, current byte/text
+withholding, six normal cleanup jobs and independent Blob/payload absence checks.
+Independent review found no SQL/policy blocker; actual hosted execution is pending.
+The fixed network case also passed independent review, but only local presence
+of the required scanner executable was checked. No cloud network, deadline,
+generated-output, full file-catalog or release acceptance is claimed.

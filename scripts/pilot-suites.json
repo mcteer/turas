@@ -1941,6 +1941,13 @@
       "cases": [
         "drains admitted provider publication before recovery and rejects new cron cache and embedding work while locked"
       ]
+    },
+    {
+      "file": "tests/unit/pilot/hosted-file-refusal.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "accepts only fixed bounded application refusals without protected payloads or outage substitutions"
+      ]
     }
   ],
   "ui": {
