@@ -33,7 +33,7 @@ const sendSchema = z.object({ message: z.union([z.string(),ordinaryNativeMessage
   turnPolicy:z.enum(['queue','steer']).optional() }).strict();
 const nativeSessionSchema = z.object({ ok: z.literal(true), sessionId: z.string().min(1) }).passthrough();
 
-type NativeBoundaryOperation='native-route'|'input-owner'|'input-authority'|'input-worker'|'input-context'|'input-forward';
+type NativeBoundaryOperation='native-route'|'session'|'implicit-question'|'ordinary-owner'|'ordinary-worker'|'ordinary-prepare'|'ordinary-tail'|'ordinary-dispatch'|'ordinary-forward'|'input-owner'|'input-authority'|'input-worker'|'input-context'|'input-forward';
 function nativeFailure(error: unknown,operation:NativeBoundaryOperation='native-route',elapsedMs?:number): Response {
   const known = error instanceof HttpFailure;
   if (!known) {
@@ -142,7 +142,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
           let steeringId:string|undefined;
           let nativeOperation:NativeBoundaryOperation='native-route';const boundaryStartedAt=Date.now();
           try {
-            session = await getCurrentSession(request);
+            nativeOperation='session';session = await getCurrentSession(request);
             if (!session) throw new HttpFailure(401, "authentication_required", "Sign in required");
             checkSessionCsrf(request, session);
             conversationId = request.headers.get("x-turas-conversation-id") ?? undefined;
@@ -159,7 +159,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             try { decoded = JSON.parse(raw); }
             catch { throw new HttpFailure(422, "invalid_input", "Invalid request"); }
             let responses=inputResponsesSchema.safeParse(decoded);
-            if(!responses.success){const ordinary=sendSchema.safeParse(decoded);if(ordinary.success&&ordinary.data.turnPolicy!=='steer'){const implicit=await implicitOwnedQuestionResponse(session,args.params.sessionId,ordinary.data.message);if(implicit){if(ordinary.data.artifactSelections!==undefined||request.headers.has('x-turas-artifact-selections'))throw new HttpFailure(422,'question_answer_with_artifacts','Answer the pending question separately before sending selected evidence');responses=inputResponsesSchema.safeParse(implicit);}}}
+            if(!responses.success){const ordinary=sendSchema.safeParse(decoded);if(ordinary.success&&ordinary.data.turnPolicy!=='steer'){nativeOperation='implicit-question';const implicit=await implicitOwnedQuestionResponse(session,args.params.sessionId,ordinary.data.message);if(implicit){if(ordinary.data.artifactSelections!==undefined||request.headers.has('x-turas-artifact-selections'))throw new HttpFailure(422,'question_answer_with_artifacts','Answer the pending question separately before sending selected evidence');responses=inputResponsesSchema.safeParse(implicit);}}}
             if(responses.success) {
               nativeOperation='input-owner';const conversation=await getOwnedConversationByNativeSession(session,args.params.sessionId);
               if(conversation.id!==conversationId)throw hiddenRecord();
@@ -193,8 +193,8 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             const selections = checkedSelections.data;
             const message=typeof parsed.data.message==='string'?normalizeMessageText(parsed.data.message.trim()||(selections.length?"Please discuss the selected customer source passages.":"")):parseOrdinaryNativeMessage(parsed.data.message);
             const text=typeof message==='string'?message:summarizeNativeMessage(message);
-            await getOwnedConversationByNativeSession(session, args.params.sessionId);
-            await startPreviewChatWorker(args.attachSession, args.waitUntil);
+            nativeOperation='ordinary-owner';await getOwnedConversationByNativeSession(session, args.params.sessionId);
+            nativeOperation='ordinary-worker';await startPreviewChatWorker(args.attachSession, args.waitUntil);
             if(parsed.data.turnPolicy==='steer'){
               if(selections.length)throw new HttpFailure(422,'steering_sources','Send new source selections after the active response');
               const steering=await prepareOrdinarySteering(session,conversationId!,args.params.sessionId,requestKey!,message);
@@ -210,7 +210,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
                 return response;
               }
             }
-            const prepared = await prepareAttempt(session, conversationId!, args.params.sessionId,
+            nativeOperation='ordinary-prepare';const prepared = await prepareAttempt(session, conversationId!, args.params.sessionId,
               requestKey!, message, selections);
             attemptId = prepared.attemptId;
             if (!prepared.created && prepared.dispatchState !== "prepared") {
@@ -220,7 +220,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             }
             if(!prepared.governed && parseAttachmentMessage(typeof message==='string'?message:nativeMessageText(message)))
               await intakeOrdinaryAttachmentContext(session,conversationId!,attemptId);
-            let tailIndex: number;
+            nativeOperation='ordinary-tail';let tailIndex: number;
             try {
               tailIndex = await args.attachSession(args.params.sessionId).getStreamTailIndex();
             } catch {
@@ -229,7 +229,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             if (!Number.isSafeInteger(tailIndex) || tailIndex < -1) {
               throw new HttpFailure(503, "native_tail_unavailable", "Service unavailable");
             }
-            try { await claimDispatch(session, conversationId!, attemptId, tailIndex + 1); }
+            nativeOperation='ordinary-dispatch';try { await claimDispatch(session, conversationId!, attemptId, tailIndex + 1); }
             catch (error) {
               if (error instanceof HttpFailure) throw error;
               throw new HttpFailure(503, "dispatch_persist_failed", "Service unavailable");
@@ -239,7 +239,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             headers.delete("content-length");
             headers.delete("x-turas-artifact-selections");
             const forwarded=typeof message==='string'?message:await prepareNativeUploadMessage(session,conversationId!,requestKey!,message);
-            let nativeResponse: Response | undefined;
+            nativeOperation='ordinary-forward';let nativeResponse: Response | undefined;
             const started = Date.now();
             const dispatches = prepared.governed ? 1 : 5;
             for (let retry = 0; retry < dispatches && Date.now() - started < 20_000; retry++) {

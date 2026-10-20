@@ -5806,3 +5806,11 @@ Feedback appends also preserve all original source identifiers. Nine focused uni
 cases and pilot typecheck pass, including changed source, withdrawn assignment and
 mismatched training identity rejection. Independent read-only review found no
 scoped blocker. Actual hosted execution remains pending.
+
+The0500866 actual Legacy backend parity CI native-operations job reproduces
+SQL57014 at5185ms during the intervening send, before an intervening attempt
+exists. Native question, file and WebKit jobs pass. The broad native-route stage
+did not identify the exact database boundary. Additional fixed, payload-free
+session/implicit-question/ordinary-dispatch stages narrow the next observation;
+original statement deadlines and acceptance remain unchanged. Three diagnostic
+privacy tests pass. This is diagnostic authoring, not a resolved CI failure.
