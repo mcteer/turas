@@ -2,7 +2,9 @@ import {it,expect} from 'vitest';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {createServer} from 'node:http';
 import {createRequire} from 'node:module';
-import {rm,readFile} from 'node:fs/promises';
+import {rm,readFile,writeFile} from 'node:fs/promises';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
 import {resolve,join} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {workBackupConfigurationSchema,workBackupScopeDigest,deriveWorkBackupKey} from '../../../lib/server/operations/work-backup-run';
@@ -46,6 +48,14 @@ it('builds the actual operator transport and rejects unauthorized disabled and n
  const root=resolve('local-artifacts/016/operator-transport-'+randomUUID()),previous={...process.env};let server:ReturnType<typeof createServer>|undefined;
  try{
   await preparePilotRecoveryOperator(['--output',root]);
+  // Check upload matching with actual gitignore semantics, including arbitrary
+  // env-pull names and files injected under an otherwise admitted directory.
+  await writeFile(join(root,'.gitignore'),await readFile(join(root,'.vercelignore')));
+  await promisify(execFile)('git',['init','--quiet',root]);
+  const denied=['.env','.env.local','.env.operator-production.private','credentials.json','preparation.json','deployment-intent-private.json','src/.env.private','src/customer.json','src/native-client/.env.secret'];
+  const admitted=['.vercelignore','package.json','package-lock.json','vercel.json','build.mjs','agent/agent.ts','agent/instructions.md','agent/channels/eve.ts','src/runtime.cjs','src/source.json','src/native-client/manifest.json'];
+  const ignored=await promisify(execFile)('git',['check-ignore','--no-index',...denied,...admitted],{cwd:root});
+  expect(ignored.stdout.trim().split('\n')).toEqual(denied);
   // Exercise the installed CLI's real project detector without linking a cloud
   // project. A build alone accepted a package that eve link could not discover.
   const {isEveProjectRoot}=await import(pathToFileURL(resolve('node_modules/eve/dist/src/internal/eve-project-root.js')).href);

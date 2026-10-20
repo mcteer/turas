@@ -40,6 +40,12 @@ The prepared runtime and all native files are bound by SHA-256. The source
 provenance and migration ledger come from the exact canonical preparation source.
 Local build output is not hosted execution proof.
 
+Prepared packages use an explicit `.vercelignore` upload allowlist for authored
+runtime, build and native-client files. Keep protected environment pulls outside
+the package; arbitrary `.env*`, private evidence and credential files are excluded
+even inside admitted directories. Verify the actual deployment file inventory
+before recording source-exclusion acceptance.
+
 Protected operator variables:
 
 - `CRON_SECRET`: independent random bearer secret, at least 43 URL-safe characters.

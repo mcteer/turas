@@ -809,6 +809,12 @@ service, scheduled cadence or pilot readiness. Existing app schema cutover,
 actual scheduled backups and hosted automated role exercises remain pending in
 [Feature 016](specs/016-pilot-hardening/tasks.md).
 
+The separate backup operator package now explicitly allowlists deployment source
+files and excludes arbitrary environment, credential and private evidence files.
+An affected disabled operator deployment was removed after independent review
+found a protected environment file in its source upload. Replacement deployment
+and credential containment remain under verification; no scheduled backup is claimed.
+
 Ordinary native receipt persistence handles a projected-input-before-HTTP-ACK
 race by matching the original delivery, conversation/session, input and turn.
 It preserves the saved receipt, deadline and allowance and never resends an

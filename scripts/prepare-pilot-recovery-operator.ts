@@ -16,6 +16,14 @@ export async function preparePilotRecoveryOperator(args=process.argv.slice(2)){
  const root=resolve(args[1]);if(!root.startsWith(resolve('local-artifacts/016')+'/'))throw Error('Operator preparation remains inside the core artifact directory');
  const source=await pilotSource(),client=await verifyNativePostgresClient(resolve('infra/pilot/native-postgres/linux-amd64'));
  await createEvidenceDirectory(root);await mkdir(join(root,'src'),{mode:0o700});
+ // Deployment source is an allowlist, including after link/env-pull adds local
+ // operator credentials. Never rely on Vercel's limited default env exclusions.
+ await writeFile(join(root,'.vercelignore'),[
+  '*','!/.vercelignore','!/package.json','!/package-lock.json','!/vercel.json','!/build.mjs',
+  '!/agent/','!/agent/agent.ts','!/agent/instructions.md','!/agent/channels/','!/agent/channels/eve.ts',
+  '!/src/','!/src/runtime.cjs','!/src/source.json','!/src/native-client/','!/src/native-client/**',
+  '**/.env*','**/*private*','**/credentials*','',
+ ].join('\n'),{mode:0o600,flag:'wx'});
  await promisify(execFile)(resolve('node_modules/esbuild/bin/esbuild'),['infra/pilot/recovery-operator/handler.ts','--bundle','--platform=node','--format=cjs','--target=node24','--external:pg-native','--outfile='+join(root,'src/runtime.cjs')],{timeout:60000,maxBuffer:1048576});
  const runtimeDigest=createHash('sha256').update(await readFile(join(root,'src/runtime.cjs'))).digest('hex');
  const manifest=JSON.parse(await readFile('migrations/manifest.json','utf8'));

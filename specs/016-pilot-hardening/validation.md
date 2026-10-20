@@ -5867,3 +5867,22 @@ prepare boundaries now distinguish feature/environment/owner/admission/planning/
 context/source/replay/quota/write steps without SQL text or values. Root typecheck
 and three diagnostic privacy cases pass. Original timeouts, locks, quotas and
 dispatch behavior remain unchanged.
+
+### 2026-10-20 operator source-upload containment
+
+The4e2d4fa disabled operator deployment passed actual401/503/405/404 HTTP
+boundaries. Independent authenticated file-metadata review then found the
+protected Production environment pull in its deployment source inventory.
+These HTTP results never established source-file exclusion. The exact affected
+owned deployment was deleted successfully; its private metadata and original
+financial ceiling remain retained. The environment file was moved outside the
+deployable package. No scheduled backup or app schema change occurred.
+
+The package preparer now emits an explicit upload allowlist for the authored
+build/runtime/native files, with final environment/credential/private-file
+exclusions. The existing actual operator build/transport test also verifies
+gitignore matching for arbitrary environment-pull names and injected files under
+admitted directories. All8 operator cases, root/pilot typechecks and docs pass.
+Independent fix review, credential containment, fresh deployment and actual
+remote source-inventory verification remain required. Retained archive keys must
+remain recoverable; replacing a key cannot decrypt its original immutable archive.
