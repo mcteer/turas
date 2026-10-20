@@ -812,8 +812,15 @@ actual scheduled backups and hosted automated role exercises remain pending in
 The separate backup operator package now explicitly allowlists deployment source
 files and excludes arbitrary environment, credential and private evidence files.
 An affected disabled operator deployment was removed after independent review
-found a protected environment file in its source upload. Replacement deployment
-and credential containment remain under verification; no scheduled backup is claimed.
+found a protected environment file in its source upload. The operator CRON and
+archive access credentials were rotated while retaining historical recovery keys.
+The6b037e5 replacement passes actual source-inventory and four HTTP boundary
+checks with execution disabled; no scheduled backup is claimed.
+
+The disposable native CI check now samples its owned database with a bounded
+read-only observer. Fixed query/wait labels and timing counts help investigate
+intermittent timeouts without publishing SQL, parameters or customer content.
+This instrumentation does not establish a timeout fix or change application locks.
 
 Ordinary native receipt persistence handles a projected-input-before-HTTP-ACK
 race by matching the original delivery, conversation/session, input and turn.

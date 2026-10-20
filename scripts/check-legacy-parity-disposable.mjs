@@ -6,6 +6,8 @@ import { join } from "node:path";
 import { Client } from "pg";
 import { browserFailureMetadata } from "./ci-browser-diagnostics.ts";
 import { processFailureMetadata } from "./ci-process-diagnostics.ts";
+import { nativeQueryObservationSchema } from "./ci-native-query-observer.ts";
+import { readFileSync } from 'node:fs';
 
 if (Number(process.versions.node.split(".")[0]) !== 24) throw Error("Run this check with Node 24");
 // The same supervised withEve disposable application used by native acceptance.
@@ -137,6 +139,14 @@ let created = false;
 let output = "";
 function docker(args) { return spawnSync("docker",args,{encoding:"utf8"}); }
 let postgresDiagnostics;
+let nativeObserver;
+let nativeObserverClosed=false,nativeObserverFailed=false,nativeObserverCompletion;
+const nativeObservationFile=join(process.cwd(),'local-artifacts/018/ci-disposable',name+'-query-observation-private.json');
+async function waitNativeObserver(milliseconds){
+  let timer;
+  try{await Promise.race([nativeObserverCompletion,new Promise(done=>{timer=setTimeout(done,milliseconds);})]);}
+  finally{clearTimeout(timer);}
+}
 function captureOwnedPostgres() {
   if (!created || postgresDiagnostics) return postgresDiagnostics;
   const logs=docker(['logs',name]);
@@ -223,7 +233,15 @@ try {
   if(!acceptanceOnly&&!process.argv.includes("--native-only")&&!process.argv.includes("--native-files-only"))run(["node_modules/vitest/vitest.mjs","run","tests/contracts/general-chat.test.ts"],{...environment,DATABASE_URL:contractUrl.toString(),DATABASE_URL_UNPOOLED:contractUrl.toString()});
   if(process.argv.includes('--chat-interaction'))run(['--import','tsx','scripts/check-chat-interaction-ui.ts',...(process.argv.includes('--preparation-race')?['--preparation-race']:[])],integrationEnvironment);
   if(process.argv.includes('--webkit'))run(['--import','tsx','scripts/check-legacy-parity-disposable.mjs','--webkit-child'],integrationEnvironment);
-  if(process.argv.includes('--native-operations'))run(['--import','tsx','scripts/check-ordinary-operations-native.ts','--knowledge'],integrationEnvironment);
+  if(process.argv.includes('--native-operations')){
+    mkdirSync('local-artifacts/018/ci-disposable',{recursive:true,mode:0o700});
+    nativeObserver=spawn(process.execPath,['scripts/ci-native-query-observer.ts'],{env:{...environment,TURAS_NATIVE_OBSERVER_URL:url,TURAS_NATIVE_OBSERVER_FILE:nativeObservationFile,TURAS_NATIVE_OBSERVER_PARENT:String(process.pid)},stdio:'ignore'});
+    nativeObserverCompletion=new Promise(done=>{
+      nativeObserver.once('close',()=>{nativeObserverClosed=true;done();});
+      nativeObserver.on('error',()=>{nativeObserverFailed=true;if(!nativeObserver.pid)done();});
+    });
+    run(['--import','tsx','scripts/check-ordinary-operations-native.ts','--knowledge'],integrationEnvironment);
+  }
   if(process.argv.includes('--native-staged-4'))run(['--import','tsx','scripts/check-ordinary-native-files.ts','--composer','--steer','--staged-4'],integrationEnvironment);
   if(process.argv.includes('--native-staged-10'))run(['--import','tsx','scripts/check-ordinary-native-files.ts','--composer','--staged-10'],integrationEnvironment);
   if(process.argv.includes('--native-questions'))run(['--import','tsx','scripts/check-ordinary-questions-native.ts'],integrationEnvironment);
@@ -261,6 +279,13 @@ try {
   for(const line of output.split("\n"))if(line.startsWith('{"kind":"native_file_fixture_failure"')||line.startsWith('{"kind":"legacy_webkit_failure"')||line.startsWith('{"kind":"owned_app_readiness_failure"')||line.startsWith('{"kind":"native_question_fixture_failure"'))console.error(line);
   process.exitCode=1;
 } finally {
+  if(nativeObserver){
+    if(!nativeObserverClosed&&nativeObserver.pid){nativeObserver.kill('SIGTERM');await waitNativeObserver(2500);}
+    if(!nativeObserverClosed&&nativeObserver.pid){nativeObserver.kill('SIGKILL');await waitNativeObserver(2500);}
+    if(!nativeObserverClosed&&nativeObserver.pid)process.exitCode=1;
+    try{if(nativeObserverFailed||!nativeObserverClosed)throw Error('Observer unavailable');console.log(JSON.stringify({kind:'owned_native_query_observation',...nativeQueryObservationSchema.parse(JSON.parse(readFileSync(nativeObservationFile,'utf8')))}));}
+    catch{console.log(JSON.stringify({kind:'owned_native_query_observation',instrumented:true,state:'unavailable'}));}
+  }
   try { captureOwnedPostgres(); } catch { console.error("Owned database diagnostic capture failed");process.exitCode=1; }
   if(created && docker(["rm","-f","-v",name]).status!==0) {
     console.error(`Cleanup failed for owned container ${name}`); process.exitCode=1;

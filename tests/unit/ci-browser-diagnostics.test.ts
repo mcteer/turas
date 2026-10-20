@@ -1,6 +1,7 @@
 import {processFailureMetadata,setupFailureMetadata} from '../../scripts/ci-process-diagnostics';
 import {describe,expect,it} from 'vitest';
 import {browserFailureMetadata} from '../../scripts/ci-browser-diagnostics';
+import {nativeQueryOperation,nativeQueryObservationSchema} from '../../scripts/ci-native-query-observer';
 const allowed=new Set(['mcp-accessibility.spec.ts']);
 describe('private browser failure diagnostics',()=>{
  it('reports the failed source location and timeout class without private error or page content',()=>{
@@ -24,6 +25,12 @@ describe('private browser failure diagnostics',()=>{
 });
 
 it('reports setup and child process failure classes without exposing private output',()=>{
+ const classified=nativeQueryOperation("SELECT DISTINCT c.id AS conversation_id,request, PRIVATE_SQL 'postgresql://PRIVATE_PASSWORD'");expect(classified).toBe('input-binding');expect(nativeQueryOperation('PRIVATE_SQL')).toBe('other');
+ const observation={contract:'owned-native-query-observation-v1',instrumented:true,state:'observed',samples:10,rowsTruncated:false,observations:[{operation:classified,wait:'Lock',samples:2,maximumElapsedMs:5001,blockedSamples:2,blockerOperations:['commit']}]};
+ expect(nativeQueryObservationSchema.parse(observation)).toEqual(observation);
+ for(const extra of [{query:'PRIVATE_SQL'},{database:'PRIVATE_CUSTOMER'},{parameters:['PRIVATE_PASSWORD']},{pid:123}])expect(()=>nativeQueryObservationSchema.parse({...observation,...extra})).toThrow();
+ expect(()=>nativeQueryObservationSchema.parse({...observation,observations:[{...observation.observations[0],operation:'PRIVATE_SQL'}]})).toThrow();
+ expect(()=>nativeQueryObservationSchema.parse({...observation,observations:[{...observation.observations[0],wait:'PRIVATE_WAIT'}]})).toThrow();expect(JSON.stringify(observation)).not.toContain('PRIVATE_');
  const raw={code:1,signal:'SIGKILL',deadlineExpired:false,stdoutTail:'PRIVATE_TOKEN postgresql://private:password@private/db',stderrTail:'Hook timed out: PRIVATE_PROSE Cannot find module PRIVATE_PATH\n at scripts/pilot-environment.ts:115:7'};
  const result=processFailureMetadata(raw);expect(result).toMatchObject({code:1,signal:'SIGKILL',deadlineExpired:false,signatures:['Cannot find module','Hook timed out'],locations:[{file:'scripts/pilot-environment.ts',line:115,column:7}]});expect(JSON.stringify(result)).not.toContain('PRIVATE_');expect(JSON.stringify(result)).not.toContain('postgresql:');
  const native=processFailureMetadata({message:'PRIVATE_PROSE at tests/fixtures/ordinary-knowledge-native.ts:41:7 {"kind":"knowledge_native_failure","case":"include","phase":"fresh-proposal"} {"kind":"knowledge_native_failure","case":"PRIVATE_CASE","phase":"PRIVATE_PHASE"}'});

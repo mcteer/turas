@@ -5906,3 +5906,42 @@ keys compare unchanged. The old destination configuration is retained as history
 and the current protected configuration uses the replacement password. Automatic
 reconnect credential refresh at the integration provider remains unverified; the
 operator stays disabled. No application database or billing configuration changed.
+
+### 2026-10-20 native CI input-authority investigation
+
+The6b037e5 Legacy backend run39401299235 fails native-operations job118556386137:
+fresh approval reports SQL57014 at input-authority after5123ms. Its intervening
+attempt completed and the original attempt remained waiting_input. The failure
+is retained; it does not establish that the earlier prepare timeout is fixed.
+
+The full owned PostgreSQL17 AMD64/WebKit/native knowledge exercise passes without
+provider calls. A separate instrumented disposable copy measured the first exact
+input-binding query: cost51.39, planning51.452ms and execution11.535ms with JIT
+enabled, but no JIT compilation. The diagnostic copy later encountered duplicate
+output filenames; it supplies the retained plan only and is not acceptance proof.
+Those local results do not explain the CI timeout or justify changing locks,
+authorization, application statements or deadlines.
+
+The native-operations CI harness now starts a sequential read-only observer on
+its exact owned loopback source and strictly named derived test databases. It
+samples at most twice per second for ten minutes, retains at most64KiB, and
+reports only fixed query categories, bounded wait types/timings and blocker
+categories. SQL, parameters, names, process IDs and arbitrary errors are excluded.
+The parent handles observer errors and bounded termination/reaping in finally;
+monitoring cannot turn a failed native check into a pass. Three existing privacy
+cases and root/pilot typechecks pass. Actual instrumented CI remains required.
+
+The actual owned CI command with PostgreSQL17 AMD64 passes its full native
+knowledge exercise with0 paid calls,0 statement timeouts and0 deadlocks. Its
+observer records273 samples; six membership-lock samples reach1252ms, with fixed
+blocker labels only. This verifies the owned observer path, not the CI failure's
+cause. Independent review found and resolved observer spawn/reaping handling;
+no application behavior or timeout was changed.
+
+The corrected6b037e5 operator replacement is actually READY. Its four HTTP
+boundaries pass, and independent authenticated source/output metadata review
+confirms required source files, no environment/private/credential files, only the
+backup Function and the authored twelve-hour cron metadata. Remote Function bytes
+were not downloaded or independently hashed. Execution remains disabled, so this
+does not verify a scheduled capture. Other retained operator deployment inventories
+contain no matching protected files; their source commit attribution is unavailable.
