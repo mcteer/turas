@@ -1,3 +1,6 @@
+import {createElement} from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {ChatInputRequestCard} from '../../app/_components/chat-input-request';
 import {expect,it} from 'vitest';
 import {pendingChatInputs,chatInputAnswer,approvalReviewReady} from '../../lib/chat-inputs';
 it('keeps only unresolved native requests and never treats assistant prose as approval',()=>{
@@ -26,6 +29,9 @@ it('preserves the exact native approval action for human review, including neste
  const action={toolName:'review_solution_pattern',callId:'call-exact',input:{command:{expectedVersion:7,limitations:'A proposed limitation, not accepted evidence.',attestations:{redacted:true},source:{excerpt:'<script>untrusted proposal</script>'}}}};
  const [request]=pendingChatInputs([{type:'input.requested',data:{requests:[{requestId:'review-exact',kind:'tool-approval',prompt:'Review proposed publication',action,options:[{id:'approve',label:'Approve'}]}]}}]);
  expect(request.action).toEqual(action);expect(approvalReviewReady(request)).toBe(true);
+ const markup=renderToStaticMarkup(createElement(ChatInputRequestCard,{request,disabled:false,onResponse:async()=>{throw Error('Server rendering cannot approve');}}));
+ expect(markup).toMatch(/<button[^>]*disabled=""[^>]*>Approve<\/button>/);
+ expect(markup).toContain('&lt;script&gt;untrusted proposal&lt;/script&gt;');
  expect(chatInputAnswer([request],'Approve')).toEqual({requestId:'review-exact',optionId:'approve'});
 });
 it('does not offer a typed approval shortcut without inspectable native inputs',()=>{

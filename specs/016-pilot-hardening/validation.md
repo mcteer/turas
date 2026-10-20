@@ -5841,3 +5841,21 @@ The same private directory must contain the original observation manifest,
 `role-observations-review.json`, every referenced immutable disposition/recheck,
 and original G18 captures/proofs. Output is `role-observations-run.json`; CLI,
 gate observation and release bundle consumers revalidate its typed provenance.
+
+### Pending-response hydration boundary — 2026-10-20
+
+The e92dc82 Legacy backend CI intervening send passes, while the later fresh-login
+knowledge include approval times out without a native route database error. The
+request card previously rendered enabled before client event handlers were ready.
+Its controls now remain disabled until hydration, preserving all existing exact
+input and server authority checks. This closes a demonstrated UI initialization
+gap; the earlier SQL57014 cause remains unproven.
+
+Five unit cases pass, including disabled server-rendered approval and escaped exact
+inputs. The full actual owned CLI WebKit/eve exercise with `--knowledge` passes:
+include, publish, apply, revoke and withdraw; normal fresh-login approval, original
+request/reload, intervening turn, source change, member refusal and native retirement.
+Provider calls:0. Root typecheck and docs pass. Independent read-only review found
+no scoped blocker. This is local actual-runtime evidence; current final-source CI
+and hosted release remain required. Private log:
+`local-artifacts/016/native-hydration-owned-knowledge-private.log`.

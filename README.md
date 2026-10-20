@@ -123,6 +123,8 @@ evaluation authority has been renewed by implementing this path.
 
 Recent Conversations provides owner-private Archive and Restore controls. Archived
 chats remain available in Archived Conversations and retain their history.
+Pending questions and approval controls become available after the page initializes.
+
 Archive/restore requires migration 044. Apply the current migration manifest and
 runtime grants as part of each schema-dependent release.
 
