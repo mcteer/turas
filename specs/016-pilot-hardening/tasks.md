@@ -318,3 +318,10 @@ No hosted target may be locked for release before its measured reopen path exist
   selections and retirement. The focused owned case, typecheck, documentation and
   independent review pass. Retain the failed actual
   60-customer regional run and require fresh committed/hosted verification.
+
+- [X] T109 Remove the executor deadline fixture's real-clock scheduling race
+  without changing runtime deadlines or cleanup. Use a controlled clock, wait
+  for actual synthetic command admission, and check the same 30-millisecond
+  deadline plus transfer-phase expiry in the existing case. Preserve the original
+  CI failure. All 14 executor cases, typecheck, documentation checks and independent
+  review pass; fresh committed complete checks remain required.

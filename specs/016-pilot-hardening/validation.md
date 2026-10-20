@@ -6354,3 +6354,15 @@ instead of nine and verifies their retirement. That focused owned case passes
 in 56.6 seconds; typecheck, documentation checks and independent review pass.
 Hosted recovery remains required;
 no deadline extension or incomplete-scope acceptance is introduced.
+
+### Deterministic original-deadline fixture (2026-10-20)
+
+The retained `8f85a89` CI deterministic job failed the existing real-time
+30-millisecond deadline assertion. Transfer could consume that interval before
+the command began, producing an abort rather than the command-phase deadline
+message. The fixture now waits for actual synthetic command admission before
+advancing a controlled clock through the unchanged 30 milliseconds. The same
+case also verifies transfer-phase expiry refuses command admission and still
+stops/deletes compute. All 14 executor unit cases pass. Runtime code, cleanup,
+deadlines and the named case inventory are unchanged; original CI failure is
+retained and fresh committed complete checks remain required.
