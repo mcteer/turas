@@ -800,6 +800,12 @@ automated captures from human reports and preserve immutable capture provenance;
 G20/G21 require hosted attribution and freshness. These contracts do not establish
 completed hosted exercises or grant release approval.
 
-The current local deterministic inventory is926cases across168suites. Fresh
+The recovery verification command now composes actual target, service and effect
+measurements and supports read-only commit acknowledgement recovery. Explicit
+owner re-verification keeps the service locked and retains prior evidence and
+holds. Owned producer checks have passed; complete CLI lifecycle and hosted
+acceptance remain pending.
+
+The current local deterministic inventory is928cases across168suites. Fresh
 complete current-source verification remains required; focused contract checks
 and historical catalog passes do not establish that result.

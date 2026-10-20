@@ -1,3 +1,4 @@
+import {requireRecoveryJobReplayColumns,requireRecoveryJobSemanticRows} from './recovery-job-replay-keys';
 import {currentRecoveryStateDigest} from './recovery-state';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
@@ -220,6 +221,7 @@ async function reconcileCredentialDenialsInTransaction(db:Client|PoolClient,snap
   // recreate any dispatched operation or weaken an existing replay guard.
   let permanentReplayFencesAdded=0;
   if(['pilot-denial-replay-snapshot-v4','pilot-denial-replay-snapshot-v5','pilot-denial-replay-snapshot-v6','pilot-denial-replay-snapshot-v7'].includes(snapshot.contract)){
+   for(const entry of snapshot.tables)await requireRecoveryJobSemanticRows(db,entry,scope.environmentId);
    const replayEntries=snapshot.tables.map(entry=>({name:entry.name,replayKeyColumns:entry.replayKeyColumns??[],keys:entry.rows.flatMap(row=>row.replayKeys??[])}));
    const inheritedFence=z.strictObject({environment_id:z.string(),table_name:z.string().regex(/^[a-z_][a-z0-9_]*$/),key_columns:z.array(z.string().regex(/^[a-z_][a-z0-9_]*$/)).min(1).max(16),key_digest:z.string().regex(/^[a-f0-9]{64}$/)});
    for(const row of snapshot.tables.find(entry=>entry.name==='operations_replay_fences')?.rows??[]){
@@ -234,6 +236,7 @@ async function reconcileCredentialDenialsInTransaction(db:Client|PoolClient,snap
      JOIN pg_class c ON c.oid=i.indrelid JOIN pg_namespace n ON n.oid=c.relnamespace
      CROSS JOIN LATERAL unnest(i.indkey) WITH ORDINALITY k(attnum,ordinal) JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum=k.attnum
      WHERE n.nspname='public' AND c.relname=$1 AND i.indisunique AND i.indpred IS NULL AND i.indexprs IS NULL AND k.ordinal<=i.indnkeyatts GROUP BY i.indexrelid`,[entry.name])).rows.map(row=>JSON.stringify(row.columns));
+    targetKeys.push(...(await requireRecoveryJobReplayColumns(db,entry.name)).map(columns=>JSON.stringify(columns)));
     if(entry.replayKeyColumns.some(columns=>!targetKeys.includes(JSON.stringify(columns))))throw Error('Actual permanent replay index differs');
     for(const key of entry.keys){
      permanentReplayFencesAdded+=(await db.query(`INSERT INTO operations_replay_fences(environment_id,table_name,key_columns,key_digest,snapshot_digest,source_captured_at,recovery_id,control_revision)

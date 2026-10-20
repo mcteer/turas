@@ -1,3 +1,4 @@
+import {pilotWorkRecoveryVerify} from './pilot-work-recovery-verify';
 import {pilotOwnedRecoveryRead} from './pilot-owned-recovery-read';
 import {pilotDenialSnapshot} from './pilot-denial-snapshot';
 import {pilotRuntimeRetirement} from './pilot-runtime-retirement';
@@ -21,6 +22,7 @@ import {z} from 'zod';
 import {pilotOwnedDenialReconciliation} from './pilot-owned-denial-reconciliation';
 import {pilotWorkDenialReconciliation} from './pilot-work-denial-reconciliation';
 export async function pilotRecoveryAuthority(args=process.argv.slice(2)){
+ if(args[0]==='--verify-work-recovery')return pilotWorkRecoveryVerify(args);
  if(args[0]==='--probe-owned-service'){
   const result=await pilotOwnedRecoveryRead(args);console.info(JSON.stringify({profilesRead:1,plansRead:result.plans.length,reportsRead:result.contract==='pilot-owned-recovery-read-v2'?result.reports.length:0,temporarySessionRevoked:result.temporarySessionRevoked,serviceOpened:false,restorationReady:false}));return result;
  }

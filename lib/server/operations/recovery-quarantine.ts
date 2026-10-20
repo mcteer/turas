@@ -28,7 +28,13 @@ export async function quarantineRestoredAuthority(db:Client|PoolClient,raw:z.inf
   }
   for(const kind of requiredRecoveryQuarantineScopes){await db.query("INSERT INTO operations_recovery_quarantines(environment_id,recovery_id,control_revision,scope_kind,reason) VALUES($1,$2,$3,$4,'current_proof_unavailable') ON CONFLICT(environment_id,recovery_id,scope_kind) DO NOTHING",[scope.environmentId,scope.recoveryId,scope.controlRevision,kind]);}
   const quarantines=(await db.query('SELECT scope_kind,control_revision FROM operations_recovery_quarantines WHERE environment_id=$1 AND recovery_id=$2 ORDER BY scope_kind',[scope.environmentId,scope.recoveryId])).rows;
-  if(quarantines.length!==requiredRecoveryQuarantineScopes.length||quarantines.some(row=>Number(row.control_revision)!==scope.controlRevision||!requiredRecoveryQuarantineScopes.includes(row.scope_kind)))throw Error('Exact durable quarantine scope differs');
+  if(quarantines.length!==requiredRecoveryQuarantineScopes.length||quarantines.some(row=>!requiredRecoveryQuarantineScopes.includes(row.scope_kind)||Number(row.control_revision)>scope.controlRevision||scope.controlRevision-Number(row.control_revision)>1024))throw Error('Exact durable quarantine scope differs');
+  // Keep immutable original quarantines. A later revision may reuse their scope
+  // only through an unbroken explicit same-recovery locked→locked attempt chain.
+  for(const original of new Set(quarantines.map(row=>Number(row.control_revision))))if(original!==scope.controlRevision){
+   const missing=(await db.query(`SELECT count(*)::int AS n FROM generate_series($3::bigint+1,$4::bigint) AS attempt(revision) WHERE NOT EXISTS(SELECT 1 FROM operations_control_transitions t WHERE t.environment_id=$1 AND t.recovery_id=$2 AND t.revision=attempt.revision AND t.from_mode='locked' AND t.to_mode='locked')`,[scope.environmentId,scope.recoveryId,original,scope.controlRevision])).rows[0]?.n;
+   if(missing!==0)throw Error('Exact durable quarantine attempt chain differs');
+  }
   // A charge made after capture can be absent from a restored budget ledger.
   // Retire every captured service authority, including apparently unused caps.
   const serviceBudgets=await db.query("UPDATE operations_cost_budgets SET state='revoked' WHERE environment_id=$1 AND state='active'",[scope.environmentId]);
@@ -59,6 +65,14 @@ export async function quarantineRestoredAuthority(db:Client|PoolClient,raw:z.inf
   for(const table of ['staffing_advisory_attempts','execution_advice_attempts','support_advice_attempts','expansion_advice_attempts']){
    const changed=await db.query(`UPDATE ${table} SET state='unconfirmed',failure_code='recovery_current_proof_unavailable',updated_at=clock_timestamp() WHERE environment_id=$1 AND state IN('prepared','running')`,[scope.environmentId]);advisoryAttempts+=changed.rowCount??0;
   }
+  // Retire positive processing/index work without turning denial-only retention
+  // or reconciliation jobs into replay-fenced work. Original counters and source
+  // identities remain unchanged; no provider result or settlement is invented.
+  await db.query("UPDATE artifact_extraction_runs SET state='failed',safe_error_code='recovery_current_proof_unavailable',updated_at=clock_timestamp() WHERE environment_id=$1 AND state IN('queued','leased')",[scope.environmentId]);
+  await db.query("UPDATE workforce_import_jobs SET state='failed',error_code='recovery_current_proof_unavailable',updated_at=clock_timestamp() WHERE environment_id=$1 AND state IN('queued','running')",[scope.environmentId]);
+  await db.query("UPDATE report_jobs SET state='failed',failure_code='recovery_current_proof_unavailable' WHERE environment_id=$1 AND kind='render' AND state IN('queued','leased')",[scope.environmentId]);
+  await db.query("UPDATE gap_report_jobs SET state='failed',failure_code='recovery_current_proof_unavailable',finished_at=COALESCE(finished_at,clock_timestamp()) WHERE environment_id=$1 AND state IN('queued','running')",[scope.environmentId]);
+  await db.query("UPDATE retrieval_jobs SET state='unconfirmed',lease_token=NULL,lease_until=NULL,last_error_code='recovery_current_proof_unavailable',updated_at=clock_timestamp() WHERE environment_id=$1 AND kind='index' AND state IN('queued','leased')",[scope.environmentId]);
   const schedules=await db.query("UPDATE report_schedules SET state='paused',version=version+1 WHERE environment_id=$1 AND state='active'",[scope.environmentId]);
   const sessions=await db.query('UPDATE login_sessions SET revoked_at=clock_timestamp() WHERE revoked_at IS NULL');
   // Credential removal is permanent under the existing MCP identity trigger.

@@ -5198,3 +5198,63 @@ verification INSERT, quarantine resolution, unlock or hosted readiness is inferr
 Inventory:926cases across168suites. The decision suite's explicit declared phase
 bound is4530seconds; the complete-catalog90-minute bound and other suite ceilings
 are unchanged. T096/T097 and hosted automated exercises remain incomplete.
+
+
+### Current job union and complete verification producer (2026-10-20)
+
+Owned PostgreSQL18 tests establish original hosted/local business-intent fences
+under fresh row IDs and controlled reopen, plus artifact-version/lifecycle fences
+without fencing denial-only report cleanup. Current terminal jobs absent from the
+newer retained source must also have every actual/semantic key fenced. The
+current-only local-job negative, separate actual-SQL owner fencing and subsequent
+positive passed (`current-job-union-owned-v1-private.json`,2/2). Unknown costs and
+original journals are not settled by these actions.
+
+Native/send auditing now requires every applicable stable metadata field,
+including nulls, in genuine retained metadata. A genuinely encrypted/cold-read
+historical capture missing `input_digest` is refused by this stronger audit;
+general v7 reader compatibility is preserved. Native/send, aggregate-effects and
+artifact focused checks passed (three cases in
+`native-artifact-complete-v2-private.json`; artifact setup corrected and passed
+`artifact-business-replay-owned-v3-private.json`). Independent review approved the
+metadata and current-job union fixes.
+
+The service composer exhausts current maintenance records, actual SDK category /
+customer / participant scope, and private-conversation HTTP/canonical ownership.
+Final MCP probe retirement precedes canonical conversation state binding. The
+expanded three-role owned test passed (`service-composition-owned-v3-private.json`).
+
+The new producer consumes genuine same-target integrity, retained denial,
+service, resumption-admission, original native/send identity and external-effect
+measurements inside the final16020→16017 transaction. Verification insertion stays
+pending until the existing transport's final source/platform/cleanup checks and
+commit. Read-only lost-ack reconciliation authenticates original cold bytes,
+current physical objects and the immutable row's exact state/scope before any
+new probes. An existing scope with a different bundle, stale verification or
+changed state fails closed. The first complete owned producer test passed
+(`producer-e2e-owned-v1-private.json`): actual verification commit, no-probe
+acknowledgement recovery, postcommit probe refusal and changed-state refusal.
+
+An explicit owner `pilot:control -- --mode locked --restart-verification true`
+with the usual exact environment/recovery/revision/operation inputs advances a
+previously verified locked scope to a new decision revision. It preserves prior
+receipts, quarantines, holds and spending journals. Original quarantine revisions
+are reusable only through the complete same-recovery locked-to-locked transition
+chain; resolution rows remain append-only per verification. A fresh candidate,
+current independent denials and all measurements are required for the new
+revision. Control12/12 passed (`control-reverification-owned-v1-private.json`).
+The actual CLI fresh-attempt→quarantine→verification→resolution→open test is still
+pending; this source checkpoint does not establish hosted completion.
+
+`pilot:recovery:authority -- --verify-work-recovery --configuration <private.json>`
+produces its own measurements through fixed transports. It accepts paths and
+exact target identity, never caller healthy flags, uses the original cumulative
+HTTP journal and the existing15-minute cancellation limit, and performs the
+committed-result check before physical baseline measurement or mutation.
+
+Inventory:928cases across168suites. The decision suite has twenty-one210s cases,
+one420s producer/CLI lifecycle case and one270s peer case, with60s controller
+startup/cleanup allowance (5160seconds). Focused tests do not establish the full
+current-source catalog. Actual Preview/Production remain at077; no real lock,
+migration, deployment, release, backup-operator activation or directory cleanup
+has been performed by this checkpoint.

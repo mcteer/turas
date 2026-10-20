@@ -3,7 +3,7 @@ import {recoveryLeasesOutstanding} from './recovery-drain';
 import {createHash} from 'node:crypto';
 import type {Client,PoolClient} from 'pg';
 import {z} from 'zod';
-const commandSchema=z.strictObject({environmentId:z.string().min(1).max(256),expectedRevision:z.number().int().positive(),recoveryId:z.uuid(),operationId:z.uuid(),mode:z.enum(['quiescing','locked','open']),verifiedBundleDigest:z.string().regex(/^[a-f0-9]{64}$/).optional()});
+const commandSchema=z.strictObject({environmentId:z.string().min(1).max(256),expectedRevision:z.number().int().positive(),recoveryId:z.uuid(),operationId:z.uuid(),mode:z.enum(['quiescing','locked','open']),restartVerification:z.literal(true).optional(),verifiedBundleDigest:z.string().regex(/^[a-f0-9]{64}$/).optional()});
 export type RecoveryControlCommand=z.infer<typeof commandSchema>;
 /** This connection must be independently supplied owner authority. Actor labels and runtime DTOs confer no privilege. */
 export async function transitionRecoveryControl(db:Client|PoolClient,raw:RecoveryControlCommand){
@@ -21,7 +21,10 @@ export async function transitionRecoveryControl(db:Client|PoolClient,raw:Recover
   if(replay){if(replay.environment_id!==input.environmentId||replay.operation_digest!==operationDigest)throw Error('Recovery operation replay differs');await db.query('COMMIT');return {mode:replay.to_mode,revision:Number(replay.revision),recoveryId:replay.recovery_id,replayed:true};}
   const current=(await db.query('SELECT * FROM operations_control WHERE environment_id=$1 FOR UPDATE',[input.environmentId])).rows[0];
   if(!current||Number(current.revision)!==input.expectedRevision)throw Error('Recovery control revision changed');
-  if(!(current.mode==='open'&&input.mode==='quiescing'||current.mode==='quiescing'&&input.mode==='locked'||current.mode==='locked'&&input.mode==='open'))throw Error('Recovery transition denied');
+  const restarting=input.restartVerification===true;
+  if(restarting&&(current.mode!=='locked'||input.mode!=='locked'||input.verifiedBundleDigest))throw Error('Explicit locked deny-only verification restart required');
+  if(restarting&&!(await db.query('SELECT 1 FROM operations_recovery_verifications WHERE environment_id=$1 AND recovery_id=$2 AND control_revision=$3 LIMIT 1',[input.environmentId,input.recoveryId,input.expectedRevision])).rowCount)throw Error('Prior committed verification required for a new verification attempt');
+  if(!(restarting||current.mode==='open'&&input.mode==='quiescing'||current.mode==='quiescing'&&input.mode==='locked'||current.mode==='locked'&&input.mode==='open'))throw Error('Recovery transition denied');
   if(current.mode!=='open'&&current.recovery_id!==input.recoveryId)throw Error('Recovery identity differs');
   if(input.mode!=='quiescing'){
    const active=(await db.query(`SELECT EXISTS(SELECT 1 FROM operations_local_jobs WHERE environment_id=$1 AND state IN('running','reconciling'))

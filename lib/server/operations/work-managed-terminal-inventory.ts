@@ -34,7 +34,8 @@ async function inspect(db:Client,target:LockedWorkRecoveryTarget,token:string,en
   bindings.set(id,native);
  }
  if(bindings.size>10000)throw Error('Complete original native binding bound exceeded');
- const completeBindings=[...bindings].sort(([a],[b])=>a.localeCompare(b)),expectedRunIds=[...new Set(completeBindings.map(([,native])=>native))];
+ const completeBindings=[...bindings].sort(([a],[b])=>a.localeCompare(b)),originalRunIds=original.snapshot.tables.flatMap(table=>table.rows.flatMap(row=>row.status.native_session_id==null?[]:[z.string().regex(/^wrun_[A-Za-z0-9_-]{1,240}$/).parse(row.status.native_session_id)])),expectedRunIds=[...new Set([...completeBindings.map(([,native])=>native),...originalRunIds])].sort();
+ if(expectedRunIds.length>10000)throw Error('Complete original native run identity bound exceeded');
  // Bind the actual provider internally. No caller list/read implementation or
  // metadata receipt can manufacture a genuine terminal measurement.
  const provider=await bindManagedRunProvider({projectId:target.projectId,teamId:target.teamId,target:environment,token},bounded);
@@ -51,7 +52,7 @@ async function inspect(db:Client,target:LockedWorkRecoveryTarget,token:string,en
  const hosts=deriveWorkHostInventory({deployments:deployments.rows.map(row=>({id:row.id,url:row.url})),aliases:aliases.rows,maximumHosts:20000});
  const after=await inventoryManagedRuns({list:provider.list,signal:bounded,maxRuns:10000,maxPages:200,expectedRunIds});
  if(after.inventoryDigest!==inventory.inventoryDigest)throw Error('Managed inventory changed during deployment census');
- requireAuthenticatedRetainedDenials(retained,target.environmentId);bounded.throwIfAborted();return {applicationBindingsDigest:recoveryDigest(completeBindings),runInventoryDigest:after.inventoryDigest,deploymentInventoryDigest:deployments.inventoryDigest,aliasInventoryDigest:aliases.inventoryDigest,hostInventoryDigest:hosts.inventoryDigest,hosts:hosts.rows.length,enumeratedRuns:after.runs.length,providerOnlyRuns:after.providerOnlyRunIds.length,deployments:deployments.rows.length};
+ requireAuthenticatedRetainedDenials(retained,target.environmentId);bounded.throwIfAborted();return {applicationBindingsDigest:recoveryDigest({conversations:completeBindings,expectedRunIds}),runInventoryDigest:after.inventoryDigest,deploymentInventoryDigest:deployments.inventoryDigest,aliasInventoryDigest:aliases.inventoryDigest,hostInventoryDigest:hosts.inventoryDigest,hosts:hosts.rows.length,enumeratedRuns:after.runs.length,providerOnlyRuns:after.providerOnlyRunIds.length,deployments:deployments.rows.length};
 }
 /** Actual complete provider/application metadata and terminal reads. This is a
  * component only: old HTTP/cron admission and effects still need their proofs. */

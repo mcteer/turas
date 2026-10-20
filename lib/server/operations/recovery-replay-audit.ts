@@ -1,3 +1,4 @@
+import {recoveryJobReplayTables,requireRecoveryJobReplayColumns,requireRecoveryJobSemanticRows} from './recovery-job-replay-keys';
 import currentReplayTables from '../../contracts/recovery-replay-tables.json' with {type:'json'};
 import type {Client,PoolClient} from 'pg';
 import {isWorkRecoveryDecisionClient} from './locked-work-recovery-target';
@@ -53,6 +54,7 @@ export async function auditRecoveredRequestFencesInTransaction(db:Client|PoolCli
    FROM pg_proc p JOIN pg_language l ON l.oid=p.prolang WHERE p.oid='public.turas_recovery_replay_guard()'::regprocedure`)).rows;
   if(actualFunction.length!==1||actualFunction[0].prosrc.trim()!==expectedFunction.guard||actualFunction[0].prosecdef!==true||actualFunction[0].lanname!=='plpgsql'||actualFunction[0].owner!==true||JSON.stringify(actualFunction[0].proconfig)!==JSON.stringify(['search_path=pg_catalog, public']))throw Error('Actual permanent request function differs');
   const functionDigest=recoveryDigest(expectedFunction);
+  for(const entry of snapshot.tables)await requireRecoveryJobSemanticRows(db,entry,scope.environmentId);
   const entries=new Map<string,{columns:Map<string,string[]>;keys:Map<string,{columns:string[];digest:string}>}>();
   function include(name:string,columns:string[],digest?:string){
    let entry=entries.get(name);if(!entry){entry={columns:new Map(),keys:new Map()};entries.set(name,entry);}
@@ -81,8 +83,8 @@ export async function auditRecoveredRequestFencesInTransaction(db:Client|PoolCli
    const indexes=(await db.query(`SELECT array_agg(a.attname::text ORDER BY a.attname) AS columns FROM pg_index i JOIN pg_class c ON c.oid=i.indrelid JOIN pg_namespace n ON n.oid=c.relnamespace
     CROSS JOIN LATERAL unnest(i.indkey) WITH ORDINALITY k(attnum,ordinal) JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum=k.attnum
     WHERE n.nspname='public' AND c.relname=$1 AND i.indisunique AND i.indisvalid AND i.indisready AND i.indpred IS NULL AND i.indexprs IS NULL AND k.ordinal<=i.indnkeyatts GROUP BY i.indexrelid`,[name])).rows;
-   const available=new Set(indexes.map(row=>JSON.stringify(row.columns)));
-   if(currentReplayTables.includes(name)){
+   const available=new Set([...indexes.map(row=>JSON.stringify(row.columns)),...(await requireRecoveryJobReplayColumns(db,name)).map(columns=>JSON.stringify(columns))]);
+   if(currentReplayTables.includes(name)||recoveryJobReplayTables.includes(name)){
     const declared=new Set((snapshot.tables.find(table=>table.name===name)?.replayKeyColumns??[]).map(columns=>JSON.stringify(columns)));
     if(declared.size!==available.size||[...available].some(columns=>!declared.has(columns)))throw Error('Complete actual business replay indexes required');
    }

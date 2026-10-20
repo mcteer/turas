@@ -135,6 +135,7 @@ const secretHash=(value:string)=>createHash('sha256').update(value).digest('hex'
 export async function reserveWorkRecoveryProbe(db:Client,target:LockedWorkRecoveryTarget,input:{workspaceId:string;membershipId:string;journalDirectory:string;mcp?:McpProbeScope&{retained:RetainedWorkDenials}}){
  const workspaceId=z.uuid().parse(input.workspaceId),membershipId=z.uuid().parse(input.membershipId);
  await requireLockedWorkRecoveryConnection(db,target,{environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision});
+ if((await db.query('SELECT 1 FROM operations_recovery_verifications WHERE environment_id=$1 AND recovery_id=$2 AND control_revision=$3 LIMIT 1',[target.environmentId,target.recoveryId,target.controlRevision])).rowCount)throw Error('Committed recovery verification requires read-only acknowledgement reconciliation before new probes');
  let mcp:McpProbe|undefined;
  if(input.mcp){
   const {retained,...raw}=input.mcp,scope=mcpProbeScopeSchema.parse(raw);

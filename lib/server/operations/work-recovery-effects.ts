@@ -1,3 +1,5 @@
+import {auditRecoveryResumptionAdmission} from './recovery-resumption-admission';
+import {auditRecoveryNativeSendIdentities} from './recovery-native-send-identities';
 import type {Client} from 'pg';
 import {requireAuthenticatedRetainedDenials,type RetainedWorkDenials} from '../../../scripts/pilot-denial-reader';
 import {recoveryDigest} from '../../contracts/pilot-recovery';
@@ -38,11 +40,12 @@ export async function verifyWorkRecoveryEffects(db:Client,target:LockedWorkRecov
  // Read terminal providers after the final HTTP requests. Both components use
  // complete genuine inventories including original retained provider identities.
  const native=await requireMeasuredWorkManagedTerminalInventory(db,target,input.native,signal),sandbox=await requireMeasuredWorkSandboxTerminalInventory(db,target,input.sandbox,signal);
- const dispatch=await auditRecoveryDispatchState(db,target),model=await auditRecoveryModelHolds(db,target,retained),learning=await auditRecoveryLearningCosts(db,target,retained),service=await auditRecoveryServiceCosts(db,target,retained),journals=await auditRecoveryProviderJournals(db,target,retained);
+ const dispatch=await auditRecoveryDispatchState(db,target),model=await auditRecoveryModelHolds(db,target,retained),learning=await auditRecoveryLearningCosts(db,target,retained),service=await auditRecoveryServiceCosts(db,target,retained),journals=await auditRecoveryProviderJournals(db,target,retained),nativeSend=await auditRecoveryNativeSendIdentities(db,target,retained);
  const replay=await auditRecoveredRequestFencesInTransaction(db,source.snapshot,{environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision,snapshotDigest:source.contextDigest,backupCapturedAt:source.backupCapturedAt});
  signal.throwIfAborted();requireAuthenticatedRetainedDenials(retained,target.environmentId);
- const state=await currentRecoveryStateDigest(db),workflowDigest=recoveryDigest({cron,peer,oldHttp,native,sandbox,dispatch,model,learning,service,journals,replay:replay.proofDigest});
- const proof=Object.freeze({contract:'pilot-work-recovery-effects-v1' as const,environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision,denialDigest:source.contextDigest,currentStateDigest:state,workflowDigest,replayDigest:replay.proofDigest,terminalProviderInventoriesVerified:true as const,originalFinancialAccountingPreserved:true as const,permanentRequestFencesVerified:true as const,applicationResumptionAdmissionVerified:false as const,originalNativeSendIdentitiesVerified:false as const,unknownEffectsSettled:false as const,requiredScopeHealthy:false as const,restorationReady:false as const});
+ const resumption=await auditRecoveryResumptionAdmission(db,target,retained);
+ const state=await currentRecoveryStateDigest(db),workflowDigest=recoveryDigest({cron,peer,oldHttp,native,sandbox,dispatch,model,learning,service,journals,nativeSend,resumption,replay:replay.proofDigest});
+ const proof=Object.freeze({contract:'pilot-work-recovery-effects-v1' as const,environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision,denialDigest:source.contextDigest,currentStateDigest:state,workflowDigest,replayDigest:replay.proofDigest,terminalProviderInventoriesVerified:true as const,originalFinancialAccountingPreserved:true as const,permanentRequestFencesVerified:true as const,applicationResumptionAdmissionVerified:true as const,originalNativeSendIdentitiesVerified:true as const,unknownEffectsSettled:false as const,requiredScopeHealthy:false as const,restorationReady:false as const});
  composed.set(proof,{db,target,state});return proof;
 }
 /** In-process provenance lasts only for this same active final owner and exact
