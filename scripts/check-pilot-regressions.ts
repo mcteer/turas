@@ -46,7 +46,7 @@ export async function checkPilotRegressions(){
    const report=join(root,'schema-079-postgres18.json');
    await runPartnerProcess(['node_modules/vitest/vitest.mjs','run',...currentFiles,'--reporter=json','--outputFile='+report],{cwd:environment.appRoot,timeoutMs:300000,signal:environment.signal});
    const parsed=JSON.parse(await readFile(report,'utf8')),passed=verifyPartnerTestReport(parsed,currentFiles);
-   if(passed!==39||parsed.numTotalTests!==39||parsed.numPassedTests!==39||parsed.testResults.some((suite:any)=>suite.assertionResults.some((test:any)=>(test.retryReasons?.length??0)>0)))throw Error('Exact current-schema regressions incomplete or unstable');
+   if(passed!==40||parsed.numTotalTests!==40||parsed.numPassedTests!==40||parsed.testResults.some((suite:any)=>suite.assertionResults.some((test:any)=>(test.retryReasons?.length??0)>0)))throw Error('Exact current-schema regressions incomplete or unstable');
    results.push({gate:'current-079-postgres18',files:currentFiles,passed,failed:0,skipped:0,flaky:0});
   },{postgresMajor:18,deadlineMs:360000});
   const ui=await capturePartnerProcess(['--import','tsx','scripts/check-pilot-ui.ts'],2400000,signal);

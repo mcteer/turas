@@ -114,10 +114,13 @@ export async function listMcpEvidence(db:PoolClient,actor:McpReadActor,raw:unkno
     if(passage){if(items.length===input.limit){more=true;break;}const {text,locators,...summary}=passage;items.push(summary);}
     last=row.passage_id;
   }
-  if(candidates.length>100 && !more)return unavailableMcp('incomplete');
+  // Continue after the last scanned candidate, including when every scanned
+  // passage was withheld. The unscanned 101st candidate remains on the next
+  // page; eligibility and the original 100-candidate bound stay unchanged.
+  more ||= candidates.length>100;
   const nextCursor=more&&last?await createMcpHandle(db,actor,{kind:'cursor',category:'evidence',customerId:input.customerId,
     section:'evidence',filterDigest,positionId:last,generation,contentDigest:state.digest}):null;
-  return envelope({items},items.length?'available':'empty',nextCursor);
+  return envelope({items},items.length||nextCursor?'available':'empty',nextCursor);
 }
 export async function readMcpEvidence(db:PoolClient,actor:McpReadActor,raw:unknown,binding?:McpHandleBinding){
   const input=mcpToolInputs.turas_evidence_read_v1.parse(raw);

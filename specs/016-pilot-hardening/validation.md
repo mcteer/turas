@@ -6292,3 +6292,31 @@ These failures do not establish restored service or pilot readiness.
 The changed report-wrapper suite passes all four cases on an owned PostgreSQL18
 environment with no provider calls. Root typecheck and documentation checks pass.
 Independent review finds no coverage, deadline or byte-integrity regression.
+
+### Evidence scan continuation (2026-10-20)
+
+The `1b728f3` regional verifier exported all 217 original journal files, independently
+confirmed zero live owned sessions/MCP credentials/admissions with historical
+credentials unchanged, and verified removal of its executor and owned snapshots.
+It failed during canonical evidence-list traversal; service remained locked.
+A subsequent read-only census found profile state for all 184 customer references,
+and confirmed that quarantine had changed the candidate content. Fresh native
+restore/integrity evidence is required before another full recovery attempt.
+
+An isolated PostgreSQL18 clone restored the retained matched candidate dump and
+verified exact accepted-content parity before adding rollback-only local diagnostic
+credentials/control fixtures. The original domain evidence reader returned
+`unavailable/incomplete` for the reproduced 133-candidate groups. This was local
+diagnosis, with no model calls or hosted readiness claim. The repaired reader scans
+at most the same 100 candidates, returns an opaque bound continuation even when
+all scanned passages are withheld, and leaves the unscanned candidate for the next
+page. It returns `empty` only after genuine exhaustion. Both reproduced groups
+now complete through an available empty continuation and an exhausted empty page.
+
+All five evidence integration cases pass, including a first page of 100 withheld
+candidates followed by real eligible evidence, and later all-withheld exhaustion.
+Root typecheck passes. The exact current-schema regression composition increases
+from 39 to 40 cases to include this regression. Complete fresh committed catalog,
+CI and hosted recovery checks remain required. The `1b728f3` CI failures in mobile
+WebKit visibility and expansion restart status remain retained, not erased by
+these narrow local checks.

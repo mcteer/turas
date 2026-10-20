@@ -296,3 +296,11 @@ No hosted target may be locked for release before its measured reopen path exist
   preserve historical partner scope after deliberate revocation without restoring
   authority. Fifteen producer/bundle cases and five owned scope cases pass. Actual
   hosted G21 execution remains part of T078/T089.
+
+- [X] T106 Fix the reproduced bounded evidence eligibility-scan refusal without
+  weakening source checks or increasing the 100-candidate request limit. Continue
+  through an opaque actor/scope/snapshot-bound cursor, preserve the unscanned
+  candidate and reserve empty/no-cursor for exhaustion. Five evidence integration
+  cases and exact matched-dump local diagnosis pass; root typecheck passes.
+  Fresh committed full catalog/CI and genuine hosted recovery remain T089/T090
+  release requirements.

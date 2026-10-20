@@ -63,6 +63,11 @@ one timeout in the ten-MiB report test; the exact-byte assertion now uses native
 Buffer comparison to avoid deep-equality overhead. Fresh checks remain required.
 Current recovery, hosted processing and automated participant acceptance remain
 release blockers.
+The latest recovery attempt retained complete journals and retired its test
+credentials, but stopped at an evidence-list eligibility scan. An isolated clone
+of the exact matched dump reproduced the `incomplete` result after 100 withheld
+candidates. A bounded cursor continuation fix is undergoing fresh checks;
+eligibility and the per-request scan limit remain unchanged.
 The owned recovery command now applies independently retained current denials and
 audits actual permanent request fences, preserving committed denials across failed
 audits. It remains an isolated recovery step; service recovery and hosted acceptance
