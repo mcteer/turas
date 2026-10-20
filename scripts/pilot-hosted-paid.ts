@@ -16,7 +16,7 @@ export async function assertHostedPaidAdmission(input:{scope:PilotHostedScope;db
  if(new URL(scope.origin).protocol!=='https:'||(!admitted&&scope.target!=='preview')||cfg.environmentMarker!==scope.environmentMarker||cfg.projectId!==scope.projectId||cfg.teamId!==scope.teamId||!cfg.dispatcherEnabled||cfg.maximumSandboxDispatches>32)throw Error('Exact admitted target execution required');
  const rows=(await db.query(`SELECT e.environment_id,e.schema_version,c.mode,b.state,b.authorization_digest,b.scope_digest,b.pricing_digest,b.cap_micro_usd,b.expires_at,clock_timestamp() AS now,
   (SELECT count(*)::int FROM turas_environment) AS marker_count,
-  COALESCE(sum(CASE WHEN r.state='released' THEN 0 WHEN r.state='settled' THEN r.charged_micro_usd ELSE r.upper_bound_micro_usd END),0) AS committed,
+  COALESCE(sum(CASE WHEN r.state='released' THEN 0 WHEN r.state='settled' AND r.charge_kind='actual' THEN r.charged_micro_usd WHEN r.state='settled' THEN GREATEST(r.charged_micro_usd,r.upper_bound_micro_usd) ELSE r.upper_bound_micro_usd END),0) AS committed,
   count(*) FILTER(WHERE r.state<>'released') AS used_count,count(*) FILTER(WHERE r.state='unknown') AS unknown_count
   FROM turas_environment e JOIN operations_control c USING(environment_id)
   JOIN workspaces w ON w.id=$2 AND w.active AND w.classification='synthetic_pilot' AND w.pilot_environment_id=e.environment_id

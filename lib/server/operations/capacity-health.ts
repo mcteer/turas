@@ -6,7 +6,7 @@ export async function readCapacityHealth(db:PoolClient,environmentId:string){
  const quota=(await db.query(`SELECT (SELECT count(*) FROM operations_hosted_jobs WHERE environment_id=$1 AND state IN('admitted','starting','running','reconciling'))+
   (SELECT count(*) FROM operations_local_jobs WHERE environment_id=$1 AND state IN('running','reconciling')) AS active`,[environmentId])).rows[0];
  const rows=(await db.query(`SELECT b.id,b.category,b.state,b.cap_micro_usd,b.expires_at,b.expires_at>clock_timestamp() AS current,
-  COALESCE(sum(CASE WHEN r.state='released' THEN 0 WHEN r.state='settled' THEN r.charged_micro_usd ELSE r.upper_bound_micro_usd END),0) AS committed,
+  COALESCE(sum(CASE WHEN r.state='released' THEN 0 WHEN r.state='settled' AND r.charge_kind='actual' THEN r.charged_micro_usd WHEN r.state='settled' THEN GREATEST(r.charged_micro_usd,r.upper_bound_micro_usd) ELSE r.upper_bound_micro_usd END),0) AS committed,
   count(*) FILTER(WHERE r.state='unknown') AS unknown_count
   FROM operations_cost_budgets b LEFT JOIN operations_cost_reservations r ON r.budget_id=b.id
   WHERE b.environment_id=$1 AND ((b.state='active' AND b.expires_at>clock_timestamp()) OR EXISTS(SELECT 1 FROM operations_cost_reservations held WHERE held.budget_id=b.id AND held.state='unknown')) GROUP BY b.id ORDER BY b.created_at DESC,b.id LIMIT 21`,[environmentId])).rows;
@@ -20,7 +20,7 @@ export async function readHostedDispatchHealth(db:PoolClient,environmentId:strin
  let config:ReturnType<typeof hostedCostConfiguration>;
  try{hostedExecutionCredentials();config=hostedCostConfiguration();}catch{return 'unavailable' as const;}
  const required=Math.max(...Object.values(config.bounds));
- const row=(await db.query(`SELECT b.cap_micro_usd-COALESCE(sum(CASE WHEN r.state='released' THEN 0 WHEN r.state='settled' THEN r.charged_micro_usd ELSE r.upper_bound_micro_usd END),0) AS remaining,
+ const row=(await db.query(`SELECT b.cap_micro_usd-COALESCE(sum(CASE WHEN r.state='released' THEN 0 WHEN r.state='settled' AND r.charge_kind='actual' THEN r.charged_micro_usd WHEN r.state='settled' THEN GREATEST(r.charged_micro_usd,r.upper_bound_micro_usd) ELSE r.upper_bound_micro_usd END),0) AS remaining,
   count(*) FILTER(WHERE r.state='unknown') AS unknown_count,
   count(*) FILTER(WHERE r.state<>'released') AS used_count
   FROM operations_cost_budgets b LEFT JOIN operations_cost_reservations r ON r.budget_id=b.id

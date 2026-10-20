@@ -5715,3 +5715,10 @@ release-bundle cases pass. The actual owned normal HTTP training case passes;
 root/pilot types pass. Independent scoped review found no concrete blocker.
 No actual hosted/model G18 exercise has run in this iteration. Inventory:983 cases
 across178 suites; complete current-source acceptance remains required.
+
+Cost admission and operational capacity summaries now retain the original upper
+bound for a settled estimated charge; only a confirmed actual charge replaces
+that bound. Released and unresolved reservations retain their existing behavior.
+The existing owned PostgreSQL cost-command case passes with both estimated and
+confirmed-actual health projections, and root types pass. The database trigger
+already enforced this conservative rule; no cap, hold, ledger or migration changed.
