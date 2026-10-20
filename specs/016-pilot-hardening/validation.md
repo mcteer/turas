@@ -5677,3 +5677,8 @@ CI on23d9b75 recorded a native-operations knowledge approval failure with SQLSTA
 command passed, with zero deadlocks/statement timeouts and zero paid calls. The
 original CI failure is retained; its cause remains unresolved and the local pass
 does not establish that it is fixed.
+
+G19 role receipts now retain each actual SDK execution's separately captured
+start/completion interval, bounded by the original preflight and enclosing capture;
+they do not use the broader whole-run interval. The fifteen scoped SDK/bundle
+regressions and pilot typecheck pass after this tightening.

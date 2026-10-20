@@ -112,7 +112,7 @@ export async function pilotHosted(args=process.argv.slice(2)){
   const readDb=new Client({connectionString:explicitRuntimeUrl(process.env),connectionTimeoutMillis:5000,statement_timeout:5000,query_timeout:6000});
   readDb.on('error',error=>connectionLoss.abort(error));
   let reads:Awaited<ReturnType<typeof runHostedReadChecks>>;
-  const sdkJourneys:(Awaited<ReturnType<typeof runHostedMcpJourney>>&{role:string})[]=[];
+  const sdkJourneys:(Awaited<ReturnType<typeof runHostedMcpJourney>>&{role:string;startedAt:string;completedAt:string})[]=[];
   const profileJourneys:Awaited<ReturnType<typeof runHostedProfileReviewJourney>>[]=[];
   const conversationJourneys:(Awaited<ReturnType<typeof runHostedConversationBoundary>>&{role:string})[]=[];
   const browserJourneys:(Awaited<ReturnType<typeof runHostedConversationBrowser>>&{role:string})[]=[];
@@ -202,7 +202,7 @@ export async function pilotHosted(args=process.argv.slice(2)){
      ORDER BY c.id LIMIT 1`,[scope.workspaceId,context.customerIds,linkedJourneys[0]?.customerId??null])).rows[0]?.id;
     const denied=context.allCustomerIds.find(id=>id!==positive);
     if(!positive||!denied)throw Error('Ordinarily accepted hosted SDK chain required');
-    stage='sdk_boundary';
+    stage='sdk_boundary';const sdkStartedAt=new Date().toISOString();
     sdkJourneys.push({...await runHostedMcpJourney({scope,db:readDb,headers:context.headers,customerId:String(positive),deniedCustomerId:denied,signal,expectedEvidenceRevisionId:linkedJourneys[0].source.profileRevisionId,expectedPublicationId:linkedJourneys[0].knowledge.publicationId,expectedPlanId:linkedJourneys[0].plan.planId,sourceBoundary:context.role==='assigned-partner'?async()=>{
      stage='current_source_boundary';const linked=linkedJourneys[0];let withdrawal:Awaited<ReturnType<typeof runHostedSourceWithdrawal>>|undefined;
      const roles=await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async reviewer=>{
@@ -218,7 +218,7 @@ export async function pilotHosted(args=process.argv.slice(2)){
      const body={state:'revoked',expectedRevision:Number(current[0].revision),requestKey:randomUUID()};await writeEvidence(root,'sdk-grant-revocation-intent.json',{scope,customerId:positive,membershipId:current[0].membership_id,body});
      const roles=await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async reviewer=>{const response=z.object({data:z.object({revision:z.number().int(),state:z.literal('revoked')})}).parse(await pilotHostedRequest({scope,headers:reviewer.headers,signal})('/api/admin/grants/'+current[0].membership_id+'/'+positive,'PUT',body));if(response.data.revision!==body.expectedRevision+1)throw Error('Normal grant revision differs');},configuration,['internal-admin']);
      const revoked=(await readDb.query('SELECT state,revision FROM customer_grants WHERE workspace_id=$1 AND membership_id=$2 AND customer_id=$3',[scope.workspaceId,current[0].membership_id,positive])).rows;if(revoked.length!==1||revoked[0].state!=='revoked'||Number(revoked[0].revision)!==body.expectedRevision+1)throw Error('Actual normal partner grant revocation unverified');await writeEvidence(root,'sdk-grant-revoked.json',{scope,customerId:positive,membershipId:current[0].membership_id,revision:body.expectedRevision+1,requestKey:body.requestKey,roles,completedAt:new Date().toISOString(),automaticRetries:0});
-    }:undefined}),role:context.role});
+    }:undefined}),role:context.role,startedAt:sdkStartedAt,completedAt:new Date().toISOString()});
     if(context.role==='internal-admin'){
      stage='support_boundary';
      const linked=(await readDb.query(`SELECT p.id AS plan_id,p.accepted_revision_id,p.workload_id,p.engagement_id,m.id AS owner_id
