@@ -5886,3 +5886,23 @@ admitted directories. All8 operator cases, root/pilot typechecks and docs pass.
 Independent fix review, credential containment, fresh deployment and actual
 remote source-inventory verification remain required. Retained archive keys must
 remain recoverable; replacing a key cannot decrypt its original immutable archive.
+
+The first excluded-source replacement failed before serving: Vercel uploaded only
+five root files and could not find `src/source.json`. Its walker checks bare
+directory paths, so trailing-slash directory exceptions did not admit traversal.
+The corrected exceptions admit bare directories. All8 operator cases pass with
+an empty-root matching check that covers this distinction. A separate check using
+the actual installed Vercel CLI file-tree builder admits all20 required files and
+excludes synthetic environment/credential/private injections, without provider IO.
+The failed deployment and its original cost ceiling remain retained; hosted
+replacement verification is still pending.
+
+Authenticated API now confirms the original affected deployment is absent. The
+operator CRON secret and archive access password were replaced. The old archive
+password is rejected; the new cold connection verifies the exact installation and
+unchanged archive/chunk inventory. All8 store-bound connection/password settings
+were updated, and current destination binding passes. All13 historical decryption
+keys compare unchanged. The old destination configuration is retained as history,
+and the current protected configuration uses the replacement password. Automatic
+reconnect credential refresh at the integration provider remains unverified; the
+operator stays disabled. No application database or billing configuration changed.

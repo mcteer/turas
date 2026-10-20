@@ -2,7 +2,7 @@ import {it,expect} from 'vitest';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {createServer} from 'node:http';
 import {createRequire} from 'node:module';
-import {rm,readFile,writeFile} from 'node:fs/promises';
+import {rm,readFile,writeFile,mkdir} from 'node:fs/promises';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {resolve,join} from 'node:path';
@@ -50,11 +50,14 @@ it('builds the actual operator transport and rejects unauthorized disabled and n
   await preparePilotRecoveryOperator(['--output',root]);
   // Check upload matching with actual gitignore semantics, including arbitrary
   // env-pull names and files injected under an otherwise admitted directory.
-  await writeFile(join(root,'.gitignore'),await readFile(join(root,'.vercelignore')));
-  await promisify(execFile)('git',['init','--quiet',root]);
+  // Vercel's walker tests directories as bare paths before descending. Use an
+  // empty matching root so Git cannot infer a trailing slash from existing dirs.
+  const probe=join(root,'upload-policy-probe');await mkdir(probe);
+  await writeFile(join(probe,'.gitignore'),await readFile(join(root,'.vercelignore')));
+  await promisify(execFile)('git',['init','--quiet',probe]);
   const denied=['.env','.env.local','.env.operator-production.private','credentials.json','preparation.json','deployment-intent-private.json','src/.env.private','src/customer.json','src/native-client/.env.secret'];
-  const admitted=['.vercelignore','package.json','package-lock.json','vercel.json','build.mjs','agent/agent.ts','agent/instructions.md','agent/channels/eve.ts','src/runtime.cjs','src/source.json','src/native-client/manifest.json'];
-  const ignored=await promisify(execFile)('git',['check-ignore','--no-index',...denied,...admitted],{cwd:root});
+  const admitted=['.vercelignore','package.json','package-lock.json','vercel.json','build.mjs','agent','agent/channels','agent/agent.ts','agent/instructions.md','agent/channels/eve.ts','src','src/native-client','src/runtime.cjs','src/source.json','src/native-client/manifest.json'];
+  const ignored=await promisify(execFile)('git',['check-ignore','--no-index',...denied,...admitted],{cwd:probe});
   expect(ignored.stdout.trim().split('\n')).toEqual(denied);
   // Exercise the installed CLI's real project detector without linking a cloud
   // project. A build alone accepted a package that eve link could not discover.
