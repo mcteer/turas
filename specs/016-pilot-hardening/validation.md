@@ -5722,3 +5722,38 @@ that bound. Released and unresolved reservations retain their existing behavior.
 The existing owned PostgreSQL cost-command case passes with both estimated and
 confirmed-actual health projections, and root types pass. The database trigger
 already enforced this conservative rule; no cap, hold, ledger or migration changed.
+
+The core hosted recipes now exercise normal accepted plan revision and original
+acceptance replay; a separate exact plan preview is prepared before source
+withdrawal and its subsequent acceptance is denied without accepted-state changes.
+Normal staffing checks independently deny overload and stale competency, verify
+current matching output and preserve the existing commitment. Delivery adds
+member-authored/reviewer-accepted RAID, scope, handoff and explicitly not-measured
+outcome records, plus separately reviewed synthetic time with explicit exceptions
+and immutable replay. Expansion retains the original unknown-benefit denial,
+then qualifies a separate proposed qualitative discovery benefit using normal
+reviewed dated synthetic exercise observations. No actual customer benefit,
+adoption, receiving acknowledgement or measured outcome is inferred.
+
+Owned HTTP training, workforce/time and complete reports/expansion/source-withdrawal
+checks pass. Intermediate failures exposed an obsolete expected command count,
+missing fixed diagnostic codes, cross-session citation-token reuse and undated
+manual evidence; the recipes now retain separate author identity and use dated
+reviewed observations without transferring session-bound citation tokens.
+
+The partial G17 producer binds the original full normal chain and its manifest,
+actual desktop/mobile root transports, native/archive/browser cleanup, actual
+role intervals, current private-conversation/WebKit checks, source acceptance
+denial and SDK provenance. File restart evidence must match every original byte
+identity and the shared adapter composition is recomputed from the original owned
+execution/index/result/process/proofs and current implementation hashes. This is
+compositional byte-boundary evidence; it does not claim a normal renderer emitted
+a ten MiB report. Typed private verification is required by CLI gate evaluation
+and release-bundle composition. G17 writes core-run.json separately from G18's
+hosted-run.json and retains G18/G19 receipts.
+
+Twenty-four focused core/partner/SDK/bundle cases pass; root/pilot types and docs
+pass. Independent scoped review cleared the recipes and the stricter file-proof
+verification. The current inventory is988 cases across179 suites. No new paid
+dispatch, target schema change or directory cleanup occurred in this batch, and
+actual current-source hosted acceptance remains pending.

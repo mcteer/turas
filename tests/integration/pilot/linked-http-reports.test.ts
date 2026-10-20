@@ -1,3 +1,5 @@
+import {prepareHostedPlanSourceBoundary,verifyHostedPlanSourceBoundary} from '../../../scripts/pilot-hosted-plan-boundary';
+import {runHostedDeliveryRegisters} from '../../../scripts/pilot-hosted-delivery-registers';
 import {runHostedMcpJourney} from '../../../scripts/pilot-hosted-mcp';
 import {runHostedSourceWithdrawal} from '../../../scripts/pilot-hosted-withdrawal';
 import {runHostedKnowledgeBaseline} from '../../../scripts/pilot-hosted-knowledge';
@@ -92,10 +94,14 @@ await withPilotEnvironment(async environment=>{
   const delivery=await runHostedDeliveryReview({scope,db:owner,customerId,engagementId:plan.engagementId,baselineId:plan.baselineId,signal:environment.signal,request});
   const milestone=await runHostedMilestoneReview({scope,db:owner,customerId,engagementId:plan.engagementId,baselineId:plan.baselineId,activityRevisionId:delivery.revisionId,signal:environment.signal,request});
   expect(milestone).toMatchObject({normalCommands:3,explicitMilestoneAcceptanceVerified:true,customerOutcomeEstablished:false,providerCalls:0});
+  const registers=await runHostedDeliveryRegisters({customerId,engagementId:plan.engagementId,baselineId:plan.baselineId,activityId:delivery.recordId,activityRevisionId:delivery.revisionId,signal:environment.signal,authorRequest,reviewerRequest:request});
+  expect(registers).toMatchObject({normalCommands:12,replayedCommands:4,reviewPreviews:4,customerOutcomeEstablished:false,receivingAcknowledgementRecorded:false});
+  expect(registers.accepted.map(x=>x.kind)).toEqual(['raid','scope_change','handoff','outcome']);
   const support=await runHostedSupportBoundary({scope,db:owner,customerId,workloadId:foundation.workloadId,planId:plan.planId,revisionId:plan.revisionId,engagementId:plan.engagementId,ownerMembershipId:membershipId,authorRequest,reviewerRequest:request,signal:environment.signal});
   expect(support).toMatchObject({normalCommands:6,providerCalls:0,externalHandoffRecorded:false,externalActionsDispatched:0,readiness:'unknown',syntheticOnly:true,fullHostedCatalogVerified:false});
   const expansion=await runHostedExpansionBoundary({scope,db:owner,customerId,workloadId:foundation.workloadId,planId:plan.planId,revisionId:plan.revisionId,engagementId:plan.engagementId,ownerMembershipId:membershipId,authorRequest,reviewerRequest:request,signal:environment.signal});
   expect(expansion).toMatchObject({normalCommands:6,qualificationDenied:true,providerCalls:0,benefit:'unknown',currentUse:'unknown',externalActionsDispatched:0,syntheticOnly:true,fullHostedCatalogVerified:false});
+  expect(expansion.qualified).toMatchObject({normalProfileCommands:4,normalExpansionCommands:2,ownerQualificationVerified:true,syntheticOnly:true,realizedCustomerBenefitEstablished:false,currentUse:'unknown'});
   const gaps=await runHostedGapBoundary({scope,db:owner,customerId,workloadId:foundation.workloadId,planId:plan.planId,revisionId:plan.revisionId,engagementId:plan.engagementId,ownerMembershipId:membershipId,authorRequest,reviewerRequest:request,signal:environment.signal,waitForReport:async reportId=>{
    const [job]=await claimGapReportJobs();if(!job||job.report_id!==reportId)throw Error('Exact normally queued gap report required');await runGapReportJob(job);
   },verifyPrimaryIsolation:async(gapIds,reportId,query)=>{
@@ -115,7 +121,7 @@ await withPilotEnvironment(async environment=>{
   const expansionPath='/api/expansion/customers/'+customerId+'?workloadId='+foundation.workloadId+'&recordId='+expansion.recordId+'&limit=20';
   const beforeWithdrawal=expansionWorkspaceProjectionSchema.parse(z.object({data:z.unknown()}).parse(await request(expansionPath,'GET')).data);
   expect(beforeWithdrawal.records[0]?.working.availability).toBe('eligible');
-  const sdk=await runHostedMcpJourney({scope,db:owner,headers,customerId,deniedCustomerId,expectedEvidenceRevisionId:uploaded.profileRevisionId,expectedPublicationId:knowledge.publicationId,expectedPlanId:plan.planId,signal:environment.signal,sourceBoundary:async()=>{const withdrawal=await runHostedSourceWithdrawal({scope,db:owner,headers,customerId,versionId:uploaded.versionId,lifecycleGeneration:uploaded.lifecycleGeneration,citationId:source.citationId,publicationId:knowledge.publicationId,artifactIds:publishedArtifactIds,signal:environment.signal});expect(withdrawal).toMatchObject({normalCommands:1,authenticatedContentDenials:6,providerCalls:0,originalDeletionRequested:false});}});
+  const sdk=await runHostedMcpJourney({scope,db:owner,headers,customerId,deniedCustomerId,expectedEvidenceRevisionId:uploaded.profileRevisionId,expectedPublicationId:knowledge.publicationId,expectedPlanId:plan.planId,signal:environment.signal,sourceBoundary:async()=>{const intent=await prepareHostedPlanSourceBoundary({scope,customerId,workloadId:foundation.workloadId,ownerMembershipId:membershipId,citationId:source.citationId,sourceRevisionId:uploaded.profileRevisionId,request,signal:environment.signal});const withdrawal=await runHostedSourceWithdrawal({scope,db:owner,headers,customerId,versionId:uploaded.versionId,lifecycleGeneration:uploaded.lifecycleGeneration,citationId:source.citationId,publicationId:knowledge.publicationId,artifactIds:publishedArtifactIds,signal:environment.signal});expect(withdrawal).toMatchObject({normalCommands:1,authenticatedContentDenials:6,providerCalls:0,originalDeletionRequested:false});const boundary=await verifyHostedPlanSourceBoundary({intent,scope,db:owner,request,signal:environment.signal});expect(boundary).toMatchObject({sourceChangeAcceptanceDenied:true,acceptedStateUnchanged:true,normalPreparationCommands:3,deniedAcceptanceCommands:1});}});
   expect(sdk.credentialRevoked).toBe(true);expect(sdk.cases.map(row=>row.id)).toContain('identity-after-source-withdrawal');
   for(const name of ['turas_evidence_read_v1','turas_knowledge_read_v1','turas_plan_read_v1','turas_report_read_v1'])expect(sdk.cases.map(row=>row.id)).toContain('current-source-denied-'+name);
   for(const name of ['evidence-citation','knowledge-citation'])expect(sdk.cases.map(row=>row.id)).toContain('current-source-denied-'+name);
@@ -128,7 +134,7 @@ await withPilotEnvironment(async environment=>{
    const denied=await fetch(environment.origin+path,{headers,redirect:'manual',cache:'no-store',signal:environment.signal});expect([404,409]).toContain(denied.status);expect(denied.headers.get('x-turas-code-version')).toBe(scope.sourceCommit);await denied.body?.cancel();
   }
   expect(uploaded).toMatchObject({actualOriginalVerified:true,normalCommands:5,providerCalls:0,hostedProof:false});
-  expect({profileCommands:foundation.normalCommands,planCommands:plan.normalCommands,deliveryCommands:delivery.normalCommands,reportCommands:reports.normalReportCommands,renderedJobs:reports.actualRenderedJobs,fileReads:reports.actualArtifactReads}).toEqual({profileCommands:5,planCommands:4,deliveryCommands:4,reportCommands:12,renderedJobs:2,fileReads:4});
+  expect({profileCommands:foundation.normalCommands,planCommands:plan.normalCommands,deliveryCommands:delivery.normalCommands,reportCommands:reports.normalReportCommands,renderedJobs:reports.actualRenderedJobs,fileReads:reports.actualArtifactReads}).toEqual({profileCommands:5,planCommands:8,deliveryCommands:4,reportCommands:12,renderedJobs:2,fileReads:4});
   expect(delivery.activityIsNotCompletionVerified).toBe(true);
  }finally{await owner.end();await closeRuntimePool();}
 },{postgresMajor:18,deadlineMs:300000});

@@ -1,3 +1,4 @@
+import {runHostedQualifiedExpansion} from './pilot-hosted-expansion-qualified';
 import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
 import {readHostedBaseline,type HostedBaselineInput,type HostedJourneyRequest as Request} from './pilot-hosted-baseline';
@@ -51,5 +52,6 @@ export async function runHostedExpansionBoundary(input:HostedBaselineInput&{auth
  }
  const stored=(await db.query('SELECT disposition,working_revision_id FROM expansion_hypotheses WHERE id=$1 AND workspace_id=$2 AND customer_id=$3',[recordId,scope.workspaceId,customerId])).rows[0];
  if(stored?.disposition!=='proposed'||stored.working_revision_id!==proposedRevisionId)throw Error('Persisted expansion boundary differs');
- return {contract:'pilot-hosted-expansion-boundary-v1',journey:'J011',recordId,revisionId:proposedRevisionId,sourceRevisionId:source.sourceRevisionId,normalCommands:commands,qualificationDenied:true,providerCalls:0,benefit:'unknown',currentUse:'unknown',externalActionsDispatched:0,syntheticOnly:true,fullExpansionJourneyVerified:false,fullHostedCatalogVerified:false};
+ const qualified=await runHostedQualifiedExpansion({...input,originalRecordId:recordId});
+ return {qualified,contract:'pilot-hosted-expansion-boundary-v1',journey:'J011',recordId,revisionId:proposedRevisionId,sourceRevisionId:source.sourceRevisionId,normalCommands:commands,qualificationDenied:true,providerCalls:0,benefit:'unknown',currentUse:'unknown',externalActionsDispatched:0,syntheticOnly:true,fullExpansionJourneyVerified:false,fullHostedCatalogVerified:false};
 }

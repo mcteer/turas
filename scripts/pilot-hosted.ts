@@ -1,3 +1,5 @@
+import {writeHostedCoreEvidence} from './pilot-hosted-core-evidence';
+import {prepareHostedPlanSourceBoundary,verifyHostedPlanSourceBoundary} from './pilot-hosted-plan-boundary';
 import {writeHostedPartnerEvidence} from './pilot-hosted-partner-evidence';
 import {writeHostedSdkEvidence} from './pilot-hosted-journey-evidence';
 import {composeHostedByteBoundary} from './pilot-hosted-byte-composition';
@@ -121,11 +123,13 @@ export async function pilotHosted(args=process.argv.slice(2)){
   const expansionJourneys:Awaited<ReturnType<typeof runHostedExpansionBoundary>>[]=[];
   const gapJourneys:Awaited<ReturnType<typeof runHostedGapBoundary>>[]=[];
   const trainingJourneys:Awaited<ReturnType<typeof runHostedTrainingJourney>>[]=[];
+  const roleIntervals:{role:string;startedAt:string;completedAt:string}[]=[];
   const linkedJourneys:HostedLinkedReference[]=[];
   const learningJourneys:Awaited<ReturnType<typeof runHostedLearningJourney>>[]=[];
   const maximumFileDenials:Awaited<ReturnType<typeof verifyHostedMaximumFileDenials>>[]=[];
   const maximumFiles:Awaited<ReturnType<typeof verifyHostedMaximumFiles>>[]=[];
   try{await readDb.connect();reads=await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async context=>{
+    const roleStartedAt=new Date().toISOString();
     if(maximumManifest)maximumFileDenials.push(await verifyHostedMaximumFileDenials({scope,headers:context.headers,role:context.role,manifest:maximumManifest,signal,evidenceDirectory:root}));
     if(context.role==='internal-admin'){
      // The reader verified the actual version-bound diagnostic before this hook.
@@ -181,7 +185,7 @@ export async function pilotHosted(args=process.argv.slice(2)){
       if(maximumManifest)await composeHostedByteBoundary({scope,configuration,maximumManifest,generatedManifest,componentDirectory:dirname(runPath),evidenceDirectory:root,signal});
      }else{
      await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async author=>{
-      if(author.role==='internal-member')linkedJourney=hostedLinkedReferenceSchema.parse(await runHostedLinkedJourney({scope,db:readDb,headers:context.headers,customerId:context.partnerCustomerIds[0],ownerMembershipId:owner[0].id,configuration,authorizationDigest,authorizationExpiresAt:authorization.expiresAt,authorization:rawAuthorization,signal,authorRequest:pilotHostedRequest({scope,headers:author.headers,signal})}));
+      if(author.role==='internal-member'){const journey=await runHostedLinkedJourney({scope,db:readDb,headers:context.headers,customerId:context.partnerCustomerIds[0],ownerMembershipId:owner[0].id,configuration,authorizationDigest,authorizationExpiresAt:authorization.expiresAt,authorization:rawAuthorization,signal,authorRequest:pilotHostedRequest({scope,headers:author.headers,signal})});await writeEvidence(root,'linked-execution.json',{scope,journey});linkedJourney=hostedLinkedReferenceSchema.parse(journey);}
      },configuration);
      }
      if(!linkedJourney)throw Error('Separate actual baseline author unavailable');linkedJourneys.push(linkedJourney);
@@ -208,7 +212,15 @@ export async function pilotHosted(args=process.argv.slice(2)){
     sdkJourneys.push({...await runHostedMcpJourney({scope,db:readDb,headers:context.headers,customerId:String(positive),deniedCustomerId:denied,signal,expectedEvidenceRevisionId:linkedJourneys[0].source.profileRevisionId,expectedPublicationId:linkedJourneys[0].knowledge.publicationId,expectedPlanId:linkedJourneys[0].plan.planId,sourceBoundary:context.role==='assigned-partner'?async()=>{
      stage='current_source_boundary';const linked=linkedJourneys[0];let withdrawal:Awaited<ReturnType<typeof runHostedSourceWithdrawal>>|undefined;
      const roles=await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async reviewer=>{
-      if(reviewer.role==='internal-admin')withdrawal=await runHostedSourceWithdrawal({scope,db:readDb,headers:reviewer.headers,customerId:linked.customerId,versionId:linked.source.versionId,lifecycleGeneration:linked.source.lifecycleGeneration,citationId:linked.citationId,publicationId:linked.knowledge.publicationId,artifactIds:linked.artifactIds,signal});
+      if(reviewer.role==='internal-admin'){
+       const request=pilotHostedRequest({scope,headers:reviewer.headers,signal});
+       const planScope=z.object({workload_id:z.uuid(),owner_membership_id:z.uuid()}).parse((await readDb.query('SELECT workload_id,owner_membership_id FROM delivery_plans WHERE id=$1 AND workspace_id=$2 AND customer_id=$3',[linked.plan.planId,scope.workspaceId,linked.customerId])).rows[0]);
+       const intent=await prepareHostedPlanSourceBoundary({scope,customerId:linked.customerId,workloadId:planScope.workload_id,ownerMembershipId:planScope.owner_membership_id,citationId:linked.citationId,sourceRevisionId:linked.source.profileRevisionId,request,signal});
+       await writeEvidence(root,'plan-source-boundary-intent.json',intent);
+       withdrawal=await runHostedSourceWithdrawal({scope,db:readDb,headers:reviewer.headers,customerId:linked.customerId,versionId:linked.source.versionId,lifecycleGeneration:linked.source.lifecycleGeneration,citationId:linked.citationId,publicationId:linked.knowledge.publicationId,artifactIds:linked.artifactIds,signal});
+       const boundary=await verifyHostedPlanSourceBoundary({intent,scope,db:readDb,request,signal});
+       await writeEvidence(root,'plan-source-boundary.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,...boundary});
+      }
      },configuration);
      if(!withdrawal)throw Error('Ordinary current source withdrawal incomplete');
      const training=trainingJourneys[0].training,request=pilotHostedRequest({scope,headers:context.headers,signal});
@@ -255,11 +267,14 @@ export async function pilotHosted(args=process.argv.slice(2)){
      await writeEvidence(root,'gaps-internal-admin.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...gapJourneys.at(-1)});
      },configuration);
     }
+    roleIntervals.push({role:context.role,startedAt:roleStartedAt,completedAt:new Date().toISOString()});
    },configuration);}finally{await readDb.end();}
   if(JSON.stringify(await platformDeployment(scope,true,signal))!==JSON.stringify(deployment)||JSON.stringify(await pilotSource())!==JSON.stringify(source)||JSON.stringify(await pilotProtectedSnapshot())!==JSON.stringify(protectedBefore))throw Error('Hosted identity or protected checkout changed');
-  await writeEvidence(root,'reads.json',{contract:'pilot-hosted-role-boundaries-v1',id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,startedAt,completedAt:new Date().toISOString(),roleReads:reads,sdkJourneys,profileJourneys,conversationJourneys,browserJourneys,supportJourneys,expansionJourneys,gapJourneys,linkedJourneys,trainingJourneys,learningJourneys,maximumFiles,maximumFileDenials,normalProfileCommands:profileJourneys.reduce((sum,row)=>sum+row.normalProfileCommands,0),normalConversationCommands:conversationJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalSupportCommands:supportJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalExpansionCommands:expansionJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalGapCommands:gapJourneys.reduce((sum,row)=>sum+row.normalCommands,0),fullHostedCatalogVerified:false});
+  await writeEvidence(root,'reads.json',{contract:'pilot-hosted-role-boundaries-v1',id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,startedAt,completedAt:new Date().toISOString(),roleReads:reads,roleIntervals,sdkJourneys,profileJourneys,conversationJourneys,browserJourneys,supportJourneys,expansionJourneys,gapJourneys,linkedJourneys,trainingJourneys,learningJourneys,maximumFiles,maximumFileDenials,normalProfileCommands:profileJourneys.reduce((sum,row)=>sum+row.normalProfileCommands,0),normalConversationCommands:conversationJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalSupportCommands:supportJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalExpansionCommands:expansionJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalGapCommands:gapJourneys.reduce((sum,row)=>sum+row.normalCommands,0),fullHostedCatalogVerified:false});
   stage='sdk_evidence';const sdkRun=await writeHostedSdkEvidence({directory:root,scope,run,schemaLedgerDigest});
-  if(learningJourneys.length===1){stage='partner_evidence';await writeHostedPartnerEvidence({directory:root,scope,run:sdkRun});}else await writeEvidence(root,'hosted-run.json',sdkRun);
+  let currentRun=sdkRun;
+  if(learningJourneys.length===1){stage='partner_evidence';currentRun=await writeHostedPartnerEvidence({directory:root,scope,run:sdkRun});}else await writeEvidence(root,'hosted-run.json',sdkRun);
+  if(rootBinding&&maximumManifest&&generatedManifest){stage='core_evidence';await writeHostedCoreEvidence({directory:root,scope,run:currentRun});}
   // Remaining gate producers are separate: do not return full acceptance success.
   await writeEvidence(root,'blocked.json',{id,runId:run.id,...source,state:'blocked',safeFailure:'hosted_core_journey_catalog_not_complete',hostedCatalogVerified:false});
   console.info(JSON.stringify({preflight:'pass',roleReads:reads.passedCases,sdkCases:sdkJourneys.reduce((sum,row)=>sum+row.passedCases,0),hostedCatalog:'blocked',paidCalls:linkedJourneys.reduce((sum,row)=>sum+row.source.providerCalls+row.workforce.providerCalls+row.reports.providerCalls,0)}));process.exitCode=1;return receipt;

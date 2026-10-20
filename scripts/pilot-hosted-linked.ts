@@ -1,3 +1,6 @@
+import {runHostedStaffingBoundaries} from './pilot-hosted-staffing-boundaries';
+import {runHostedDeliveryTime} from './pilot-hosted-delivery-time';
+import {runHostedDeliveryRegisters} from './pilot-hosted-delivery-registers';
 import {createHash} from 'node:crypto';
 import type {Client} from 'pg';
 import {z} from 'zod';
@@ -50,8 +53,11 @@ export async function runHostedLinkedJourney(input:{scope:PilotHostedScope;db:Cl
  const cited=search.results.find(row=>row.sourceRevisionId===source.profileRevisionId);if(!cited)throw Error('Ordinary exact reviewed source is not searchable');
  const plan=await runHostedPlanJourney({...input,workloadId:foundation.workloadId,citationId:cited.citationId,expectedSourceRevisionId:source.profileRevisionId,request});
  const staffing=await runHostedStaffingCommitment({...input,workloadId:foundation.workloadId,engagementId:plan.engagementId,planId:plan.planId,baselineId:plan.baselineId,planRevisionId:plan.revisionId,resourceId:workforce.resourceId,skillId:workforce.skillId,request});
+ const staffingBoundaries=await runHostedStaffingBoundaries({...input,resourceId:workforce.resourceId,skillId:workforce.skillId,demandId:staffing.demandId,allocationId:staffing.allocationId,allocationRevisionId:staffing.allocationRevisionId,serviceDate:staffing.serviceDate,request});
  const delivery=await runHostedDeliveryReview({...input,engagementId:plan.engagementId,baselineId:plan.baselineId,request});
  const milestone=await runHostedMilestoneReview({...input,engagementId:plan.engagementId,baselineId:plan.baselineId,activityRevisionId:delivery.revisionId,request});
+ const registers=await runHostedDeliveryRegisters({...input,engagementId:plan.engagementId,baselineId:plan.baselineId,activityId:delivery.recordId,activityRevisionId:delivery.revisionId,authorRequest:input.authorRequest,reviewerRequest:request});
+ const time=await runHostedDeliveryTime({...input,engagementId:plan.engagementId,baselineId:plan.baselineId,resourceId:workforce.resourceId,activityRevisionId:delivery.revisionId,reviewerRequest:request});
  const artifactIds:string[]=[];
  const reports=await runHostedReportJourney({...input,maximumReportLayout:input.maximumReportLayout,engagementId:plan.engagementId,workloadId:foundation.workloadId,request,authorRequest:input.authorRequest,
   runQueuedRender:async revisionId=>{
@@ -62,5 +68,5 @@ export async function runHostedLinkedJourney(input:{scope:PilotHostedScope;db:Cl
    }
   },readArtifact:async artifact=>{artifactIds.push(artifact.id);const actual=await bytes('/api/reports/artifacts/'+artifact.id,artifact.sizeBytes);if(actual.length!==artifact.sizeBytes||createHash('sha256').update(actual).digest('hex')!==artifact.contentDigest||actual.subarray(0,artifact.format==='pdf'?5:2).toString()!==(artifact.format==='pdf'?'%PDF-':'PK'))throw Error('Actual hosted report artifact differs');},
  });
- return {contract:'pilot-hosted-linked-chain-v1',customerId:input.customerId,foundation,source,workforce,knowledge,plan,staffing,delivery,milestone,reports,artifactIds,citationId:cited.citationId,normalReviewOnly:true,modelCalls:0,outboundSendAttempts:0,humanFeedbackRecorded:false,fullHostedCatalogVerified:false};
+ return {contract:'pilot-hosted-linked-chain-v1',customerId:input.customerId,foundation,source,workforce,knowledge,plan,staffing,staffingBoundaries,delivery,milestone,registers,time,reports,artifactIds,citationId:cited.citationId,normalReviewOnly:true,modelCalls:0,outboundSendAttempts:0,humanFeedbackRecorded:false,fullHostedCatalogVerified:false};
 }

@@ -11,6 +11,7 @@ import {reconcileHostedRootGeneration} from './pilot-hosted-root-reconcile';
 /** Two actual root sends, never retried. Binding/admission and original058
  * authority must already exist. Browser observations cannot settle a charge. */
 export async function runHostedRootBrowser(input:{scope:PilotHostedScope;db:Client;ownerDb:Client;headers:Headers;binding:unknown;conversationId:string;signal:AbortSignal;mobile:boolean;evidenceDirectory:string}){
+ const startedAt=new Date().toISOString();
  const {scope,db,ownerDb,headers,signal}=input,binding=hostedRootBudgetSchema.parse(input.binding),id=z.uuid().parse(input.conversationId),origin=new URL(scope.origin).origin;
  if(!binding.conversationIds.includes(id)||binding.sourceCommit!==scope.sourceCommit||binding.target!==scope.target||binding.projectId!==scope.projectId||binding.workspaceId!==scope.workspaceId||binding.environmentMarker!==scope.environmentMarker)throw Error('Exact original root browser authority required');
  const cookie=/(?:^|;\s*)((?:__Host-)?turas_session)=([A-Za-z0-9_-]{43})(?:;|$)/.exec(headers.get('cookie')??'');
@@ -93,5 +94,5 @@ export async function runHostedRootBrowser(input:{scope:PilotHostedScope;db:Clie
   const errors=closed.flatMap(result=>result.status==='rejected'?[result.reason]:[]);
   if(errors.length)failure=new AggregateError([...(failure?[failure]:[]),...errors],'Root browser closure incomplete');
  }
- if(failure)throw failure;return receipt;
+ if(failure)throw failure;if(!native||!receipt||typeof receipt!=='object')throw Error('Exact root capture and retirement required');return {...receipt,startedAt,completedAt:new Date().toISOString(),nativeRetirementConfirmed:true,conversationArchived:true,browserClosed:true};
 }

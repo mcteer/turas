@@ -798,7 +798,7 @@ credential/call limits and unknown cost holds remain enforced. Full owned
 composition and separate-source capture/restart checks pass; regional scale and
 hosted release acceptance remain pending.
 
-The local deterministic inventory is 983 cases across 178 suites. A historical frozen
+The local deterministic inventory is 988 cases across 179 suites. A historical frozen
 941-case catalog has passed; complete verification of the current source remains
 required. The actual47-category regional capacity run completed final canonical
 replay; all53 original probe journals were independently reconciled and its

@@ -1,3 +1,6 @@
+import {runHostedStaffingBoundaries} from '../../../scripts/pilot-hosted-staffing-boundaries';
+import {runHostedDeliveryReview} from '../../../scripts/pilot-hosted-delivery';
+import {runHostedDeliveryTime} from '../../../scripts/pilot-hosted-delivery-time';
 import {runHostedStaffingCommitment} from '../../../scripts/pilot-hosted-staffing';
 import {runHostedProfileFoundation} from '../../../scripts/pilot-hosted-foundation';
 import {runHostedPlanJourney} from '../../../scripts/pilot-hosted-plan';
@@ -59,6 +62,11 @@ it('reviews six located personnel cells through ordinary HTTP and keeps the orig
    const plan=await runHostedPlanJourney({scope,db:owner,customerId,workloadId:foundation.workloadId,ownerMembershipId:membershipId,citationId:citation.citationId,expectedSourceRevisionId:foundation.profileRevisionId,signal:environment.signal,request});
    const committed=await runHostedStaffingCommitment({scope,db:owner,customerId,workloadId:foundation.workloadId,engagementId:plan.engagementId,planId:plan.planId,baselineId:plan.baselineId,planRevisionId:plan.revisionId,resourceId:result.resourceId,skillId:result.skillId,request,signal:environment.signal});
    expect(committed).toMatchObject({normalCommands:6,minutes:60,providerCalls:0,matchingIsNotConfirmationVerified:true,humanFeedbackRecorded:false});
+   const boundaries=await runHostedStaffingBoundaries({scope,db:owner,resourceId:result.resourceId,skillId:result.skillId,demandId:committed.demandId,allocationId:committed.allocationId,allocationRevisionId:committed.allocationRevisionId,serviceDate:committed.serviceDate,request,signal:environment.signal});
+   expect(boundaries).toMatchObject({overloadDenied:true,staleSkillsDenied:true,staleMatchWithheld:true,originalCommitmentPreserved:true,deniedPreviews:2});
+   const activity=await runHostedDeliveryReview({scope,db:owner,customerId,engagementId:plan.engagementId,baselineId:plan.baselineId,signal:environment.signal,request});
+   const time=await runHostedDeliveryTime({customerId,engagementId:plan.engagementId,baselineId:plan.baselineId,resourceId:result.resourceId,activityRevisionId:activity.revisionId,signal:environment.signal,reviewerRequest:request});
+   expect(time).toMatchObject({normalCommands:3,replayedCommands:1,approvedMinutes:30,customerCompletionEstablished:false,providerCalls:0});
   }finally{await owner.end();await closeRuntimePool();}
  },{postgresMajor:18,deadlineMs:300000});
 },300000);

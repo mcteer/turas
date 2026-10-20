@@ -2051,6 +2051,17 @@
         "refuses a completed arm whose original settled budget binding differs",
         "refuses changed retained review bytes after binding the original evidence index"
       ]
+    },
+    {
+      "file": "tests/unit/pilot/core-evidence.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "binds original core captures and current role intervals without promoting unmeasured outcomes or the composed byte boundary",
+        "refuses an original linked chain missing the separately reviewed time behavior",
+        "refuses a missing hosted root transport rather than substituting parked conversation checks",
+        "refuses changed original bytes and altered scoped receipt attribution after verification",
+        "refuses substituted retention byte identities despite positive restart flags"
+      ]
     }
   ],
   "ui": {
