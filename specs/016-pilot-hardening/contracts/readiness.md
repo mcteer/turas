@@ -16,7 +16,7 @@ Version `pilot-readiness-v1`; strict schemas and limits are defined in
 | `pilot:hosted:check` / `scripts/pilot-hosted.ts` | `--scope <private-scope> --run <manifest>` | Exact target/role checks; only pre-admitted synthetic workspace mutations; no external send/model dispatch by default |
 | `pilot:backup` / `scripts/pilot-backup.ts` | `--scope <operator-file> --output <private-root>`; explicit backup/restore/verify mode | Owner-only matched backup/inventory or isolated restore; never in-place target replacement or deployment |
 | `pilot:provision` / `scripts/provision-pilot-workspace.ts` | Exact target marker and private reviewed scope | Idempotent synthetic workspace/customer/member/grant provisioning; no factual approvals or overwrite of primary records |
-| `pilot:feedback` / `scripts/pilot-feedback.ts` | Explicit private participant record | Validate and bind supplied human feedback; no invented responses or automatic messages |
+| `pilot:feedback` / `scripts/pilot-feedback.ts` | Explicit private participant record | Validate and bind human feedback or source-bound automated observations; no invented responses or automatic messages |
 | `pilot:regressions` / `scripts/check-pilot-regressions.ts` | Owned run identity | Complete affected predecessor catalogs, exact expected case inventories |
 | `pilot:ci:evidence` / `scripts/pilot-ci-evidence.ts` | Explicit downloaded run artifacts and commit | Validate complete current CI evidence; never scan for unrelated successful runs |
 

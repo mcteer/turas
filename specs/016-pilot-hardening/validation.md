@@ -5793,3 +5793,16 @@ a raced additional session that remains authorized while membership disable is
 denied. Root/pilot types pass. Independent scoped review found no concrete
 blocker. No real hosted exercise, paid dispatch, schema change or cleanup was
 performed in this batch. Inventory:994 cases across180 suites.
+
+### Automated training observation recording — 2026-10-20
+
+The hosted runner now records separate internal-member and assigned-partner
+initial automated observations from the original completed normal training capture,
+before the subsequent SDK exercise revokes the partner grant. Recording rechecks
+current synthetic workspace, identities and explicit assignments, and binds the
+original capture bytes, source and deployment. Records remain pending independent
+capture review and disposition; this does not complete G21 or claim human feedback.
+Feedback appends also preserve all original source identifiers. Nine focused unit
+cases and pilot typecheck pass, including changed source, withdrawn assignment and
+mismatched training identity rejection. Independent read-only review found no
+scoped blocker. Actual hosted execution remains pending.

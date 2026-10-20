@@ -1,3 +1,4 @@
+import {recordHostedTrainingObservations} from './pilot-hosted-feedback';
 import {runHostedMembershipBoundary} from './pilot-hosted-membership';
 import {writeHostedCoreEvidence} from './pilot-hosted-core-evidence';
 import {prepareHostedPlanSourceBoundary,verifyHostedPlanSourceBoundary} from './pilot-hosted-plan-boundary';
@@ -195,6 +196,7 @@ export async function pilotHosted(args=process.argv.slice(2)){
      const linked=linkedJourneys.at(-1)!;stage='training_chain';
      trainingJourneys.push(await runHostedTrainingJourney({scope,db:readDb,headers:context.headers,configuration,customerId:linked.customerId,engagementId:linked.plan.engagementId,baselineId:linked.plan.baselineId,acceptedRevisionId:linked.plan.revisionId,sourceRevisionId:linked.source.profileRevisionId,signal}));
      await writeEvidence(root,'training-internal-admin.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...trainingJourneys.at(-1)});
+     await recordHostedTrainingObservations({directory:root,scope,db:readDb,signal});
      if(learningConfiguration){
       stage='learning_chain';const rawOwner=process.env.TURAS_PILOT_HOSTED_OWNER_DATABASE_URL;if(!rawOwner)throw Error('Explicit original hosted learning owner required');const ownerDb=createHostedLearningOwnerClient(rawOwner);ownerDb.on('error',error=>connectionLoss.abort(error));
       try{await ownerDb.connect();await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async author=>{if(author.role==='internal-member')learningJourneys.push(await runHostedLearningJourney({scope,db:readDb,ownerDb,headers:context.headers,authorRequest:pilotHostedRequest({scope,headers:author.headers,signal}),contributionId:linked.knowledge.contributionId,publicationId:linked.knowledge.publicationId,sourceRevisionId:linked.source.profileRevisionId,configuration:learningConfiguration,evidenceDirectory:root,signal}));},configuration);if(learningJourneys.length!==1)throw Error('Exact ordinary separately authored hosted learning exercise required');}finally{await ownerDb.end();}
