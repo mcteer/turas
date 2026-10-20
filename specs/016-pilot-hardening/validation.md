@@ -5370,8 +5370,9 @@ per-probe limits and owner deadlines. Its exhaustive focused PostgreSQL regressi
 unselected). The fresh full23-case run passes22cases, including stale-capability and
 foreign-archive negatives. Its publication fixture failed before replay-fence
 assertions because the standalone runner fell back to an older mutable renderer
-tag. A focused rerun uses the existing prepared immutable renderer; its outcome
-and a fresh complete-source catalog remain pending. A new actual
+tag. The focused rerun with the existing prepared immutable renderer passes
+(one selected case;22unselected); this is separate from a complete-suite pass.
+A fresh complete-source catalog remains pending. A new actual
 regional run also remains pending. No schema cutover, operator cadence,
 Production pilot readiness or completed directory cleanup is claimed here.
 
@@ -5379,3 +5380,12 @@ The subsequent native-send assertion checkpoint also passes the full disposable
 native-operations/knowledge command locally, with zero database deadlocks, zero
 statement timeouts and zero paid provider calls. The earlier CI503 remains a
 separate unresolved result until new CI captures its exact fixed boundary code.
+
+Independent regional-package review found that a parent AbortSignal deadline was
+not propagated into fresh denial capture. The capture now combines that signal
+with its unchanged180-second ceiling. Four cancellation cases pass, including
+parent abort, already-aborted input, cleanup and restored process listeners.
+Existing nested OS termination handlers already observed SIGTERM; the fix concerns
+parent timer/AbortController propagation. The private driver must pass its
+original signal. The superseded7c local catalog was explicitly interrupted; its
+partial results are retained and do not establish current-source completion.

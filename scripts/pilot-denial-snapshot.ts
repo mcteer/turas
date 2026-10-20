@@ -14,7 +14,8 @@ import {withRecoveryCancellation} from '../lib/server/operations/recovery-cancel
 /** Actual read-only minimized current-state capture into the separate work
  * archive. No database dump/customer payload retention or restored-target write.
  * This retains proof; reconciliation and any release decision remain separate. */
-export async function pilotDenialSnapshot(args:string[]){
+export async function pilotDenialSnapshot(args:string[],parentSignal?:AbortSignal){
+ parentSignal?.throwIfAborted();
  if(args.length!==7||args[0]!=='--capture-work-denials'||args[1]!=='--source'||args[3]!=='--destination'||args[5]!=='--output'||args.slice(1).some((value,index)=>index%2===1&&(!value||value.startsWith('--'))))throw Error('Explicit current denial source destination and output required');
  const sourceFile=resolve(args[2]),destinationFile=resolve(args[4]),root=resolve(args[6]);
  const scope=databaseSafetySourceSchema.parse(await readEvidence(dirname(sourceFile),basename(sourceFile))),destination=neonArchiveDestinationSchema.parse(await readEvidence(dirname(destinationFile),basename(destinationFile)));
@@ -43,5 +44,5 @@ export async function pilotDenialSnapshot(args:string[]){
    await writeEvidence(root,'snapshot.json',receipt);console.info(JSON.stringify({independentRetentionVerified:true,coldDecryptionVerified:true,minimizedBytes:bytes.length,tableCount:verified.tableCount,currentAuthorityVerified:false,replayReconciled:false,restorationReady:false}));return receipt;
   }catch(error){await writeEvidence(root,'failure.json',{id,...source,state:'fail',stage,safeFailure:'incomplete_work_denial_snapshot',primaryDatabaseChanged:false,restorationReady:false});throw error;}
   finally{key.fill(0);coldKey?.fill(0);await rm(staging,{recursive:true,force:true});}
- });
+ },parentSignal);
 }
