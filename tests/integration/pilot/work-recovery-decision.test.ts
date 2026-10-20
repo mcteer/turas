@@ -1070,3 +1070,26 @@ const {createArtifactDatabaseFixture}=await import('../../fixtures/artifact-data
   const {createArtifactDatabaseFixture}=await import('../../fixtures/artifact-database'),f=await pilotPublishedKnowledgeFixture(owner as unknown as PoolClient,'primary');await owner.query('BEGIN');runId=(await createArtifactDatabaseFixture(owner as unknown as PoolClient,f.actor,f.customerId)).runId;await owner.query('COMMIT');cleanupId=randomUUID();await owner.query("INSERT INTO report_jobs(id,environment_id,workspace_id,customer_id,kind,input,input_digest,owner_membership_id) VALUES($1,$2,$3,$4,'cleanup','{}',repeat('b',64),$5)",[cleanupId,process.env.TURAS_ENVIRONMENT_ID,f.actor.workspaceId,f.customerId,f.actor.membershipId]);
  });
 },210000);
+
+it('walks all1479 canonical selections with paginated bounded customer credentials and retires every original probe',async()=>{
+ await fixture(async input=>{
+  input={...input,signal:AbortSignal.timeout(280000),deadline:Date.now()+270000};
+  const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
+  try{await withRetainedDenialFixture(owner,input.scope.environmentId,dirname(input.sourceFile),{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async retained=>{
+   const {measureWorkMcpCanonicalScope}=await import('../../../lib/server/operations/work-mcp-branch-verification');
+   const proof=await measureWorkMcpCanonicalScope({target:input,passwords:{mcteer:process.env.TURAS_DEMO_PASSWORD!,panel:process.env.PANEL_PASSWORD!,partner:process.env.PARTNER_PASSWORD!},retained,journalDirectory:dirname(input.sourceFile)});
+   expect(proof.requiredSelections).toBe(1479);expect(proof.hostedSdkVerified).toBe(false);expect(proof.representatives.length).toBeGreaterThan(0);
+   const {readdir}=await import('node:fs/promises'),names=await readdir(dirname(input.sourceFile)),intents=names.filter(name=>/^probe-.*-intent\.json$/.test(name)),retirements=names.filter(name=>/^probe-.*-retired\.json$/.test(name));
+   expect(intents).toHaveLength(9);expect(retirements).toHaveLength(9);
+   const scopes=await Promise.all(intents.map(async name=>JSON.parse(await readFile(join(dirname(input.sourceFile),name),'utf8'))));
+   expect(Math.max(...scopes.map(row=>row.mcp.customerIds.length))).toBe(60);
+   for(const row of scopes)expect(Date.parse(row.mcp.expiresAt)-Date.parse(row.recordedAt)).toBeLessThanOrEqual(59000);
+   expect((await owner.query('SELECT 1 FROM login_sessions WHERE revoked_at IS NULL LIMIT 1')).rowCount).toBe(0);
+   expect((await owner.query('SELECT 1 FROM mcp_connections WHERE revoked_at IS NULL OR credential_hash IS NOT NULL LIMIT 1')).rowCount).toBe(0);
+  });}finally{await owner.end();}
+ },async owner=>{
+  const existing=(await owner.query('SELECT id,workspace_id,synthetic FROM customer_references')).rows;
+  if(existing.some(row=>row.workspace_id!==DEMO_IDS.workspace||!row.synthetic)||existing.length>184)throw Error('Exact owned synthetic cohort required');
+  const ids=Array.from({length:184-existing.length},()=>randomUUID());await owner.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) SELECT id,$2,'Synthetic bounded census',true FROM unnest($1::uuid[]) id",[ids,DEMO_IDS.workspace]);
+ });
+},300000);

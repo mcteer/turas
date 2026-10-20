@@ -1,3 +1,4 @@
+import {hostedRuntimeConnection} from '../../../scripts/pilot-hosted-connection';
 import {it,expect} from 'vitest';
 import {readHostedConfiguration,verifyHostedConfiguration} from '../../../lib/server/operations/hosted-configuration';
 const image=(kind:string)=>'vcr.vercel.com/synthetic/turas/'+kind+'@sha256:'+'a'.repeat(64);
@@ -18,3 +19,5 @@ it('verifies exact configured readback while refusing extra provider health clai
  const expected=readHostedConfiguration(env)!;expect(verifyHostedConfiguration(JSON.parse(JSON.stringify(expected)),expected)).toEqual(expected);
  expect(()=>verifyHostedConfiguration({...expected,providerHealthy:true},expected)).toThrow();
 });
+
+it('refuses runtime descriptor options that override finite hosted operation bounds',()=>{const raw='postgresql://turas_runtime_016:synthetic@target-pooler.neon.tech/neondb?sslmode=verify-full';expect(hostedRuntimeConnection(raw)).toBe(raw);expect(hostedRuntimeConnection(raw+'&channel_binding=require')).toContain('channel_binding=require');for(const changed of [raw+'&statement_timeout=0',raw+'&query_timeout=0',raw+'&connectionTimeoutMillis=0',raw+'&options=-c%20statement_timeout%3D0',raw+'&sslmode=disable',raw+'&channel_binding=require&channel_binding=require',raw+'#fragment',raw.replace('turas_runtime_016','neondb_owner'),raw.replace(':synthetic@','@'),raw.replace('/neondb?','/?')])expect(()=>hostedRuntimeConnection(changed)).toThrow('bounded');});

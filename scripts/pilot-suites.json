@@ -1454,12 +1454,13 @@
     },
     {
       "file": "tests/unit/pilot/hosted-configuration.test.ts",
-      "expectedCases": 4,
+      "expectedCases": 5,
       "cases": [
         "reports only explicit runtime identities and limits without credential material",
         "withholds configuration on missing identities, local fallback, tags or malformed enablement",
         "rejects cross-target, changed store, image, enablement and job limit readbacks",
-        "verifies exact configured readback while refusing extra provider health claims"
+        "verifies exact configured readback while refusing extra provider health claims",
+        "refuses runtime descriptor options that override finite hosted operation bounds"
       ]
     },
     {
@@ -1701,21 +1702,23 @@
     },
     {
       "file": "tests/integration/pilot/hosted-learning-preparation.test.ts",
-      "expectedCases": 1,
+      "expectedCases": 2,
       "cases": [
-        "prepares one actual HTTP feedback revision and independent review against the ordinarily published baseline without a model dispatch"
+        "prepares one actual HTTP feedback revision and independent review against the ordinarily published baseline without a model dispatch",
+        "submits exact reviewed paired captures over HTTP and preserves no-benefit rejection without another model call"
       ]
     },
     {
       "file": "tests/unit/pilot/hosted-learning-capture.test.ts",
-      "expectedCases": 6,
+      "expectedCases": 7,
       "cases": [
         "orchestrates all sixteen fixed arms with one original held dispatch at a time and retains independent review and retirement requirements",
         "stops on the first unresolved charge and preserves the original unknown hold without a paid retry",
         "rejects an unaffordable next full provider step before any native binding or provider reservation",
         "rejects a deployed database mismatch before preparing or sending any arm",
         "retains original bind intent and readback after lost acknowledgement without creating another session or sending a model request",
-        "retains completed accounting and runs original evaluation cleanup after cancellation between arms"
+        "retains completed accounting and runs original evaluation cleanup after cancellation between arms",
+        "rejects a changed owner descriptor with the same claimed database marker before any paid or domain preparation"
       ]
     },
     {
@@ -1799,7 +1802,7 @@
     },
     {
       "file": "tests/integration/pilot/work-recovery-decision.test.ts",
-      "expectedCases": 23,
+      "expectedCases": 24,
       "cases": [
         "commits a pending recovery decision only after live checks and rolls back drift cancellation and callback commit attempts",
         "measures exhaustive fresh work MCP category pages through SDK and rejects changed projections or forged measurements",
@@ -1823,7 +1826,8 @@
         "preserves original provider journals including unknown embedding quota and rejects altered usage missing rows and copied retained authority",
         "composes genuine current ingress terminal providers and original held effects on one unchanged owner transaction",
         "fences recovered processing business intents after row loss while permitting new jobs with actual finite cost admission",
-        "fences original artifact processing beneath replacement job IDs while leaving denial-only cleanup unfenced"
+        "fences original artifact processing beneath replacement job IDs while leaving denial-only cleanup unfenced",
+        "walks all1479 canonical selections with paginated bounded customer credentials and retires every original probe"
       ]
     },
     {

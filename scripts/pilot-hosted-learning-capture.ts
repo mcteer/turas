@@ -23,7 +23,7 @@ async function pause(signal:AbortSignal){signal.throwIfAborted();await new Promi
 /** Capture one fresh complete fixed 16-arm batch. No filters, paid retries,
  * synthetic output, fabricated score or automatic publication are accepted.
  * Durable cleanup and exact retirement receipts are required before return. */
-const boundedOwners=new WeakSet<Client>();
+const boundedOwners=new WeakMap<Client,{connection:string;failure:Error|null}>();
 /** Startup server timeout also bounds locks. Client timeout is longer than the
  * server's statement bound; no abandoned query is raced against later cleanup. */
 export function createHostedLearningOwnerClient(connectionString:string){
@@ -34,14 +34,14 @@ export function createHostedLearningOwnerClient(connectionString:string){
  if(url.hash||[...url.searchParams.keys()].some(key=>!['sslmode','channel_binding'].includes(key))
   ||url.searchParams.getAll('sslmode').length!==1||url.searchParams.getAll('channel_binding').length>1
   ||(url.searchParams.has('channel_binding')&&url.searchParams.get('channel_binding')!=='require'))throw Error('Learning owner URL cannot override bounded connection settings');
- const db=new Client({connectionString,connectionTimeoutMillis:5000,statement_timeout:5000,query_timeout:6000});boundedOwners.add(db);return db;
+ const db=new Client({connectionString,connectionTimeoutMillis:5000,statement_timeout:5000,query_timeout:6000}),descriptor={connection:url.href,failure:null as Error|null};db.on('error',error=>{descriptor.failure=error;});boundedOwners.set(db,descriptor);return db;
 }
 type AuthorityInput={scope:PilotHostedScope;db:Client;headers:Headers;binding:HostedLearningBinding;ledger:QualityBudgetLedger;signal:AbortSignal};
 /** Actual platform, serving source, target connection and original ledger checks
  * run before activation/revision writes as well as before capture. */
 export async function assertHostedLearningCaptureAuthority(input:AuthorityInput){
  const {scope,db,signal,ledger}=input,binding=hostedLearningBindingSchema.parse(input.binding);
- if(!boundedOwners.has(db))throw Error('Bounded hosted learning owner connection required');
+ const ownerDescriptor=boundedOwners.get(db);if(!ownerDescriptor||ownerDescriptor.failure)throw Error('Bounded live hosted learning owner connection required');
  if(execFileSync('git',['status','--porcelain','--untracked-files=all'],{encoding:'utf8',timeout:10000,maxBuffer:1048576}).trim())throw Error('Committed clean capture operator required');
  const source=await pilotSource();if(source.sourceCommit!==scope.sourceCommit||source.sourceDigest!==scope.sourceDigest||source.catalogDigest!==scope.catalogDigest)throw Error('Exact committed capture operator source required');
  const request=pilotHostedRequest({scope,headers:input.headers,signal});
@@ -52,7 +52,7 @@ export async function assertHostedLearningCaptureAuthority(input:AuthorityInput)
  if(JSON.stringify(diagnostic.learningAcceptanceConfiguration)!==JSON.stringify(binding))throw Error('Actual hosted original-journal binding differs');
  const rawOwner=process.env.TURAS_PILOT_HOSTED_OWNER_DATABASE_URL,rawRuntime=process.env.TURAS_PILOT_HOSTED_DATABASE_URL;
  if(!rawOwner||!rawRuntime||!process.env.AI_GATEWAY_API_KEY)throw Error('Explicit actual owner/runtime targets and Gateway lookup credential required');
- const ownerTarget=new URL(rawOwner),runtimeTarget=new URL(rawRuntime);
+ const ownerTarget=new URL(rawOwner),runtimeTarget=new URL(rawRuntime);if(ownerDescriptor.connection!==ownerTarget.href)throw Error('Pinned hosted learning owner descriptor differs');
  for(const target of [ownerTarget,runtimeTarget])if(!['postgres:','postgresql:'].includes(target.protocol)||!target.hostname.endsWith('.neon.tech')||target.searchParams.get('sslmode')!=='verify-full')throw Error('Explicit Neon verify-full learning targets required');
  if(ownerTarget.hostname.includes('-pooler.'))throw Error('Direct owner learning connection required');
  const owner=(await db.query("SELECT current_database() AS database_name,session_user AS login,current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='operations_hosted_learning_admissions'::regclass)) AS owner")).rows[0];
@@ -154,15 +154,15 @@ export async function captureHostedLearningEvaluation(input:AuthorityInput&{eval
  let retirement:Awaited<ReturnType<typeof retireHostedLearningCapture>>|undefined;
  try{retirement=await retireHostedLearningCapture({scope,db,evaluationId:id,evidenceDirectory:input.evidenceDirectory,minimumAttempts:prepareRequests});}catch(error){cleanupErrors.push(error);}
  if(operationFailure||cleanupErrors.length)throw new AggregateError([...(operationFailure?[operationFailure]:[]),...cleanupErrors],'Hosted learning stopped; original accounting and native cleanup obligations retained');
- if(!receipt||!retirement?.retirementVerified)throw Error('Hosted learning retirement remains unresolved');
- return {...receipt,arms,sessions,retirementVerified:true};
+ if(!receipt||!retirement?.retirementVerified||boundedOwners.get(db)?.failure)throw Error('Hosted learning retirement remains unresolved');
+ return {...receipt,complete:true as const,arms,sessions,retirementVerified:true as const};
 }
 
 /** Enqueue existing operational cleanup only; no accepted data, attempt state,
  * original paid hold, provider identity or retry counter is rewritten. */
 export async function retireHostedLearningCapture(input:{scope:PilotHostedScope;db:Client;evaluationId:string;evidenceDirectory:string;minimumAttempts:number}){
  const {scope,db}=input,id=z.uuid().parse(input.evaluationId),signal=AbortSignal.timeout(90000);
- if(!boundedOwners.has(db))throw Error('Bounded hosted learning owner connection required');
+ const ownerDescriptor=boundedOwners.get(db);if(!ownerDescriptor||ownerDescriptor.failure)throw Error('Bounded live hosted learning owner connection required');
  let rows:Record<string,unknown>[]=[];
  try{
  await writeEvidence(input.evidenceDirectory,'learning-retirement-intent.json',{scope,evaluationId:id,modelCalls:0,automaticPaidRetries:0});

@@ -134,7 +134,8 @@
         "integration.isolation.009",
         "integration.sessions.009",
         "unit.pilot-login-selection.001",
-        "unit.pilot-login-selection.002"
+        "unit.pilot-login-selection.002",
+        "unit.hosted-configuration.005"
       ]
     },
     {
@@ -743,7 +744,8 @@
         "integration.work-recovery-decision.020",
         "integration.work-recovery-decision.021",
         "integration.work-recovery-decision.022",
-        "integration.work-recovery-decision.023"
+        "integration.work-recovery-decision.023",
+        "integration.work-recovery-decision.024"
       ]
     },
     {
@@ -969,7 +971,9 @@
         "unit.hosted-learning-capture.003",
         "unit.hosted-learning-capture.004",
         "unit.hosted-learning-capture.005",
-        "unit.hosted-learning-capture.006"
+        "unit.hosted-learning-capture.006",
+        "integration.hosted-learning-preparation.002",
+        "unit.hosted-learning-capture.007"
       ]
     },
     {

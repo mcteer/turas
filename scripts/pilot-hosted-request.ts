@@ -1,5 +1,5 @@
 import type {PilotHostedScope} from '../lib/contracts/pilot-hosted';
-const safeFailureCodes=new Set(['qualification_incomplete','invalid_transition','source_changed','version_conflict','invalid_disposition','invalid_assessment','invalid_owner']);
+const safeFailureCodes=new Set(['qualification_incomplete','invalid_transition','source_changed','version_conflict','invalid_disposition','invalid_assessment','invalid_owner','evaluation_unavailable']);
 /** Fixed transport metadata only; error prose and response bodies are excluded. */
 export class PilotHostedResponseError extends Error{
  constructor(readonly status:number,readonly releaseMatches:boolean,readonly errorCode:string|null){super('Pilot API response unavailable or release differs (HTTP '+status+')');}

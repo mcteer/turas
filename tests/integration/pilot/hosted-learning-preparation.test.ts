@@ -36,3 +36,32 @@ it('prepares one actual HTTP feedback revision and independent review against th
   }finally{await db.end();}
  },{postgresMajor:18,deadlineMs:300000});
 },330000);
+
+it('submits exact reviewed paired captures over HTTP and preserves no-benefit rejection without another model call',async()=>{
+ await withPilotEnvironment(async environment=>{
+  const db=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await db.connect();
+  try{
+   installLearningSyntheticPrice();
+   const {learningCompletedEvaluation}=await import('../../fixtures/learning/completed-evaluation'),{readLearningEvaluationCapture}=await import('../../../lib/server/learning/evaluation-captures'),{submitHostedLearningIndependentReview}=await import('../../../scripts/pilot-hosted-learning-journey'),{mkdtemp,rm}=await import('node:fs/promises'),{resolve,join}=await import('node:path');
+   const f=await learningCompletedEvaluation(db as unknown as PoolClient),issued=await issueSession({principalId:f.actors.admin.principalId,loginName:'mcteer',displayName:'mcteer',membershipId:f.actors.admin.membershipId,workspaceId:f.workspaceId,kind:'internal',role:'admin'}),headers=new Headers({cookie:sessionCookieName()+'='+issued.token,origin:environment.origin,'content-type':'application/json','x-csrf-token':csrfTokenForSession(issued.token)});
+   const scope:PilotHostedScope={contract:'pilot-hosted-scope-v1',runId:randomUUID(),projectId:'prj_synthetic',teamId:'team_synthetic',deploymentId:'dpl_synthetic',origin:'https://owned-learning.vercel.app',environmentMarker:environment.environmentId,workspaceId:f.workspaceId,target:'preview',sourceCommit:process.env.TURAS_CODE_VERSION!,sourceDigest:'a'.repeat(64),catalogDigest:'b'.repeat(64)},cases=[];
+   for(let i=1;i<=8;i++){const caseId='E0'+i,baseline=await readLearningEvaluationCapture(f.actors.admin,f.evaluationId,caseId,'evaluation_baseline'),candidate=await readLearningEvaluationCapture(f.actors.admin,f.evaluationId,caseId,'evaluation_candidate');if(!('outputDigest'in baseline.arm)||!('outputDigest'in candidate.arm))throw Error('Actual owned synthetic output digests required');cases.push({caseId,baselineCaptureDigest:baseline.arm.outputDigest,candidateCaptureDigest:candidate.arm.outputDigest,baseline:{fidelity:2,applicability:2,unknownHandling:2,usefulness:1},candidate:{fidelity:2,applicability:2,unknownHandling:2,usefulness:1},safetyPassed:true,citationPassed:true,authorityPassed:true,rationale:'Owned synthetic composition scores only: identical fixed captures establish no measured improvement or hosted quality.'});}
+   const root=await mkdtemp(resolve('local-artifacts/016/learning-review-http-'));
+   try{
+    await closeRuntimePool();await environment.start();const transport:typeof fetch=async(url,options)=>{const incoming=new URL(String(url));if(incoming.origin!==scope.origin)throw Error('Controlled owned HTTP scope required');return fetch(environment.origin+incoming.pathname+incoming.search,options);};const request=pilotHostedRequest({scope,headers,signal:environment.signal,transport}),review={contract:'pilot-hosted-learning-independent-review-v1',scope,evaluationId:f.evaluationId,captureManifestDigest:'c'.repeat(64),reviewerReference:'Owned independent-review composition fixture; no actual model quality claim',method:'automated-independent-review',reviewedAt:new Date().toISOString(),cases},args={scope,evaluationId:f.evaluationId,captureManifestDigest:review.captureManifestDigest,review,request,evidenceDirectory:join(root,'accepted'),signal:environment.signal}, {mkdir}=await import('node:fs/promises');
+    await mkdir(args.evidenceDirectory,{mode:0o700});
+    await expect(submitHostedLearningIndependentReview({...args,review:{...review,captureManifestDigest:'d'.repeat(64)}})).rejects.toThrow('Exact complete');
+    await expect(submitHostedLearningIndependentReview({...args,review:{...review,cases:cases.slice(1)}})).rejects.toThrow();
+    expect((await db.query('SELECT count(*)::int AS n FROM learning_case_reviews WHERE evaluation_id=$1',[f.evaluationId])).rows[0].n).toBe(0);
+    const wrong=join(root,'wrong-capture');await mkdir(wrong,{mode:0o700});
+    await expect(submitHostedLearningIndependentReview({...args,evidenceDirectory:wrong,review:{...review,cases:cases.map((row,i)=>i?row:{...row,candidateCaptureDigest:'f'.repeat(64)})}})).rejects.toThrow();
+    expect((await db.query('SELECT count(*)::int AS n FROM learning_case_reviews WHERE evaluation_id=$1',[f.evaluationId])).rows[0].n).toBe(0);
+    const dispatches=Number((await db.query('SELECT count(*)::int AS n FROM learning_model_dispatches')).rows[0].n),result=await submitHostedLearningIndependentReview(args);
+    expect(result).toMatchObject({state:'failed',reviewedCases:8,reviewMethod:'automated-independent-review',actualHumanReviewVerified:false});
+    expect((await db.query('SELECT state FROM learning_evaluations WHERE id=$1',[f.evaluationId])).rows[0].state).toBe('failed');
+    expect(Number((await db.query('SELECT count(*)::int AS n FROM learning_model_dispatches')).rows[0].n)).toBe(dispatches);
+    expect((await db.query('SELECT count(*)::int AS n FROM learning_release_decisions WHERE evaluation_id=$1',[f.evaluationId])).rows[0].n).toBe(0);
+   }finally{await rm(root,{recursive:true,force:true});}
+  }finally{await db.end();}
+ },{postgresMajor:18,deadlineMs:300000});
+},330000);

@@ -34,7 +34,9 @@ async function inspect(db:Client,target:LockedWorkRecoveryTarget,passwords:Passw
  for(const group of groups.values()){
   const customers=[...new Set(group.flatMap(s=>s.customerId?[s.customerId]:[]))].sort();
   if(!customers.length)chunks.push({selected:group,customers:[]});
-  for(let offset=0;offset<customers.length;offset+=20){const ids=customers.slice(offset,offset+20);chunks.push({customers:ids,selected:group.filter(s=>s.customerId?ids.includes(s.customerId):offset===0)});}
+  // Amortize credential issuance without increasing its existing 59s lifetime
+  // or the public 100-customer ceiling. Every customer page still has limit20.
+  for(let offset=0;offset<customers.length;offset+=60){const ids=customers.slice(offset,offset+60);chunks.push({customers:ids,selected:group.filter(s=>s.customerId?ids.includes(s.customerId):offset===0)});}
  }
  if(chunks.length>32)throw Error('Canonical scope exceeds original finite probe allowance');
  for(const chunk of chunks){
@@ -45,7 +47,7 @@ async function inspect(db:Client,target:LockedWorkRecoveryTarget,passwords:Passw
   try{
    sdk=await openCanonicalSdk(db,target,issued.credential,false);
    const customers:Record<string,unknown>[]=[];let cursor:unknown,firstPage:Record<string,unknown>|undefined;const cursors=new Set<string>();
-   if(chunk.customers.length)do{const page=await canonicalTool(sdk,'turas_customers_list_v1',{limit:20,...(cursor?{cursor}:{})});firstPage??=page;if(page.status==='available'){const items=object(page.data).items;if(!Array.isArray(items))throw Error('Canonical customer page required');customers.push(...items.map(object));}cursor=page.nextCursor;if(cursor){if(typeof cursor!=='string'||cursors.has(cursor))throw Error('Canonical customer cursor differs');cursors.add(cursor);}if(customers.length>20||cursors.size>1)throw Error('Canonical customer census exceeds scope');}while(cursor);
+   if(chunk.customers.length)do{const page=await canonicalTool(sdk,'turas_customers_list_v1',{limit:20,...(cursor?{cursor}:{})});firstPage??=page;if(page.status==='available'){const items=object(page.data).items;if(!Array.isArray(items))throw Error('Canonical customer page required');customers.push(...items.map(object));}cursor=page.nextCursor;if(cursor){if(typeof cursor!=='string'||cursors.has(cursor))throw Error('Canonical customer cursor differs');cursors.add(cursor);}if(customers.length>60||cursors.size>2)throw Error('Canonical customer census exceeds scope');}while(cursor);
    if(JSON.stringify(customers.map(c=>c.customerId).sort())!==JSON.stringify(chunk.customers))throw Error('Exhaustive canonical customer census differs');
    const identity=await canonicalTool(sdk,'turas_identity_v1',{}),identityData=object(identity.data);
    if(identityData.kind!==(first.username==='partner'?'partner':'internal')||identityData.workspaceId!==first.workspaceId||JSON.stringify(identityData.categories)!==JSON.stringify(categories))throw Error('Canonical participant scope differs');

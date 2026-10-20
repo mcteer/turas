@@ -1,12 +1,11 @@
-import { Pool } from 'pg';
+import { Pool,type Client,type PoolClient } from 'pg';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {readFileSync} from 'node:fs';
 import { knowledgeLineageIsCurrent } from '../lib/server/profiles/eligibility';
 /** Operator-only transaction: snapshot eligible heads and activate once atomically. */
-export async function activateLearning(environmentId:string,workspaceId:string,enabled:boolean,url:string){
- const pool=new Pool({connectionString:url,max:1,connectionTimeoutMillis:5000});
- try{const db=await pool.connect();try{
+export async function activateLearningOnConnection(db:Client|PoolClient,environmentId:string,workspaceId:string,enabled:boolean){
+ try{
   await db.query('BEGIN');
   await db.query("SET LOCAL transaction_timeout='30s'");
   await db.query("SET LOCAL lock_timeout='2s'");
@@ -23,13 +22,17 @@ export async function activateLearning(environmentId:string,workspaceId:string,e
    const heads=await db.query<{id:string;revision_id:string;head_generation:string}>(`SELECT p.id,p.revision_id,p.head_generation FROM knowledge_publications p
      JOIN knowledge_contributions c ON c.id=p.contribution_id WHERE p.environment_id=$1 AND c.workspace_id=$2 AND p.state='published' ORDER BY p.id FOR UPDATE OF p`,[environmentId,workspaceId]);
    for(const head of heads.rows){
-    if(!await knowledgeLineageIsCurrent(db,head.revision_id))continue;
+    if(!await knowledgeLineageIsCurrent(db as PoolClient,head.revision_id))continue;
     await db.query(`INSERT INTO learning_legacy_heads(environment_id,workspace_id,publication_id,revision_id,publication_generation) VALUES($1,$2,$3,$4,$5)`,[environmentId,workspaceId,head.id,head.revision_id,head.head_generation]);
    }
   }
   await db.query(`UPDATE learning_workspace_state SET enabled=$3,gate_activated_at=coalesce(gate_activated_at,clock_timestamp()),version=version+1 WHERE environment_id=$1 AND workspace_id=$2`,[environmentId,workspaceId,enabled]);
   await db.query('COMMIT');
- }catch(error){await db.query('ROLLBACK');throw error;}finally{db.release();}}finally{await pool.end();}
+ }catch(error){await db.query('ROLLBACK');throw error;}
+}
+export async function activateLearning(environmentId:string,workspaceId:string,enabled:boolean,url:string){
+ const pool=new Pool({connectionString:url,max:1,connectionTimeoutMillis:5000});
+ try{const db=await pool.connect();try{await activateLearningOnConnection(db,environmentId,workspaceId,enabled);}finally{db.release();}}finally{await pool.end();}
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){
  const workspace=process.argv[process.argv.indexOf('--workspace')+1];

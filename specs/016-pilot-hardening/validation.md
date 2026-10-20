@@ -2148,7 +2148,7 @@ remains $1.474879, zero Context credits consumed, with the same expiry and cap.
 
 ### Fresh full checkpoint and independent review — 2026-10-13
 
-At 24cd0d9, owned full run e1df4931 passed all 672 cases across 118 suites, with cleanup exit zero and protected selected state preserved. Native preparation also passed. This is local evidence only; CI 38452989321 failed its composed learning publication navigation check and does not establish acceptance.
+At 24cd0d9, owned full run e1df4931 passed all 672 cases across 118 suites, with cleanup exit zero and protected selected state preserved. Native preparation also passed. This is local evidence only; CI 38452989331 failed its composed learning publication navigation check and does not establish acceptance.
 
 The next actual-model batch completed 002 but stopped in 003 on an unknown citation in accepted-source-fidelity run 2. Independent LLM review of the fresh 002 replies passed eleven of twelve: save-profile run 1 omitted the required explanation of unavailable chat profile saving. Neither catalog is accepted. The original journal now records $1.806543 charged, no held/unknown charges, and zero Context credits consumed; the original $25/four-credit cap and expiry remain unchanged. Raw captures and failed reviews are retained.
 
@@ -2260,7 +2260,7 @@ The hosted runner composes normal upload, exact source review, lexical retrieval
 
 Current fixed inventory is **701 cases / 127 suites**. Root/pilot types and documentation hygiene pass. Fresh complete committed proof is required. The hosted catalog still explicitly blocks completion pending remaining normal-record journeys, current-source SDK boundaries and hosted file faults. Managed recovery, finite non-job service envelopes, actual Preview execution, actual-model independent review, participant observations and release acceptance remain open. The original $25/four-credit model authorization and journal are unchanged; the separate authorized $10/48-hour Preview plan has not been executed.
 
-The owned normal HTTP partner-training chain also passes **1/1** after removing its owner-SQL projection step. It publishes a contributor-authored exact guide, assigns the current partner, records that partner's demonstration, requires separate mcteer preview/verification, and proves normal original-source withdrawal removes current credit. Hosted composition now obtains independently authenticated contributor/partner sessions through the existing exact role reader while the administrator reviewer session stays active; each nested session follows normal login/logout and database binding. This composition is implemented and typechecked, not executed against Preview. Training remains distinct from delivery acceptance, skills certification and actual participant observations. The full `4fde932` 701-case checkpoint is still running and cannot prove subsequent composition changes.
+The owned normal HTTP partner-training chain also passes **1/1** after removing its owner-SQL projection step. It publishes a contributor-authored exact guide, assigns the current partner, records that partner's demonstration, requires separate mcteer preview/verification, and proves normal original-source withdrawal removes current credit. Hosted composition now obtains independently authenticated contributor/partner sessions through the existing exact role reader while the administrator reviewer session stays active; each nested session follows normal login/logout and database binding. This composition is implemented and typechecked, not executed against Preview. Training remains distinct from delivery acceptance, skills certification and actual participant observations. The full `4fde933` 701-case checkpoint is still running and cannot prove subsequent composition changes.
 
 Training admission passes a separate actual PostgreSQL 18 scope check: an absent grant stops before any HTTP request; an active exact grant with no ordinary source stops before role callbacks; an inactive partner organization is denied. Two earlier fixture attempts omitted required grant identity/version/provenance fields and failed before admission completed; they are retained. The final check includes all required fields and passes 1/1. This is admission evidence, not hosted provider proof. The fixed inventory is now 702 cases / 128 suites.
 
@@ -2268,17 +2268,17 @@ The read-only managed Workflow inspector now accepts the distinct Preview safety
 
 ### Automatic Preview deployment correction (2026-10-13)
 
-A read-only provider inventory shows Git pushes created actual Preview deployments even though no explicit deploy CLI was invoked. The detailed timestamp audit identifies **three** feature-branch deployments after the separate Preview approval (`6b56aec`, `82790cc`, `4fde932`), exceeding its two-deployment count by one. They ran before the prepared implementation/recovery prerequisites were complete. Earlier statements that the plan had not been executed were incomplete: explicit store/job/migration provisioning has not run, but automatic Git deployment did. No full hosted readiness is inferred from READY deployment status.
+A read-only provider inventory shows Git pushes created actual Preview deployments even though no explicit deploy CLI was invoked. The detailed timestamp audit identifies **three** feature-branch deployments after the separate Preview approval (`6b56aec`, `82790cc`, `4fde933`), exceeding its two-deployment count by one. They ran before the prepared implementation/recovery prerequisites were complete. Earlier statements that the plan had not been executed were incomplete: explicit store/job/migration provisioning has not run, but automatic Git deployment did. No full hosted readiness is inferred from READY deployment status.
 
 The private retrospective observation retains their provider IDs, source commits and times, states that pre-dispatch admission was not verified, and keeps the full build envelope held without claiming an invoice or zero cost. The approval ID/cap/expiry/count is not reset and no additional deployment is authorized. `vercel.json` now disables automatic deployment for the exact `016-pilot-hardening` branch using Vercel's documented `git.deploymentEnabled` setting. Other branches keep their existing behavior; this is containment of feature-branch automation, not a Production rollout. Provider readback after the containment push remains required. Further exact-source Preview deployment requires a concrete additional authorization after implementation prerequisites pass.
 
-The `4fde932` complete local run stops after **396 passed / 1 failed** in 62 completed suites: the load fixture's unscoped physical passage count doubled after normal review began preparing both audience projections. CI 38498235524 also fails pilot deterministic validation. Neither is an accepted complete checkpoint. The correction retains both audiences and the full fixed reviewed evidence population; the initial affected linked knowledge/load subset passes 2/2. A stricter distinct/physical/visible census is being verified separately, with all load timing/concurrency/error thresholds unchanged. Protected selected model/configuration/workflow state is preserved.
+The `4fde933` complete local run stops after **396 passed / 1 failed** in 62 completed suites: the load fixture's unscoped physical passage count doubled after normal review began preparing both audience projections. CI 38498235524 also fails pilot deterministic validation. Neither is an accepted complete checkpoint. The correction retains both audiences and the full fixed reviewed evidence population; the initial affected linked knowledge/load subset passes 2/2. A stricter distinct/physical/visible census is being verified separately, with all load timing/concurrency/error thresholds unchanged. Protected selected model/configuration/workflow state is preserved.
 
 The stricter fixed load census passes **1/1**: 25 current issued sessions, 250 synthetic customers, 2,510 ordinary exact accepted heads, **10,000 distinct reviewed passages**, and exactly 10,000 current copies in each audience projection. There are 20,000 physical passage rows; internal retrieval may consider both copies, while partner/delivery retrieval sees 10,000. These counts are retained explicitly in the population metadata. No projection is deleted, threshold reduced or quota reset. The fixture now reads projections created by normal review instead of manually materializing them. The complete performance measurement remains separate; this preparation case is not fresh load acceptance.
 
 The normal HTTP knowledge baseline/source/plan/delivery/report subset passes **2/2** together with the audience census. It creates/submits/publishes a sanitized baseline through ordinary reviewed knowledge routes in a never-activated synthetic workspace, reads the actual publication, and proves ordinary source withdrawal denies that publication as well as citations/report files. It refuses an activated learning workspace instead of switching learning off or inventing evaluated benefit. A first fixture attempt redundantly inserted learning state and hit the automatic workspace-initialization uniqueness guard; the correction uses the existing default row and changes no provisioner behavior. Actual evaluated improvement/release remains open.
 
-The containment commit `2b8c385` was pushed; two subsequent provider inventories contain no deployment for it and retain the same latest feature heads (`4fde932`, `82790cc`, `6b56aec`). No further manual deployment, store, migration or hosted job was dispatched. The retrospective deployment overage and build envelope remain retained. Fresh complete source-bound validation is required for the corrected fixture and new knowledge composition.
+The containment commit `2b8c385` was pushed; two subsequent provider inventories contain no deployment for it and retain the same latest feature heads (`4fde933`, `82790cc`, `6b56aec`). No further manual deployment, store, migration or hosted job was dispatched. The retrospective deployment overage and build envelope remain retained. Fresh complete source-bound validation is required for the corrected fixture and new knowledge composition.
 
 ### Current-source SDK withholding and setup diagnostics (2026-10-13)
 
@@ -5444,3 +5444,48 @@ The five mobile workspace cases also pass locally without retries. An independen
 local wider UI attempt hit an upload-case timeout and is not a complete UI pass.
 The fresh mixed regional scale run,079 existing-target cutover, actual backup
 cadence, hosted automated observations and user-directory cleanup remain pending.
+
+### Continued regional capacity and hosted learning authoring (2026-10-20)
+
+The actual isolated ba7cb3a regional attempt reached all1,479 canonical selections
+using21 credential groups, then correctly failed its final five-minute independent
+snapshot freshness check. Its baseline capture preceded the first credential by
+approximately113seconds; this run establishes no regional capacity pass or service
+readiness. All21 original private intents were independently reconciled, live probe
+credentials were absent, and the provider returned404 after owned executor deletion.
+Original spending holds and failure bytes remain retained; no automatic paid retry
+was started. Existing Turas Production/Preview remain schema077.
+
+A subsequent owned PostgreSQL regression walks the same1,479 selections with nine
+credentials using sixty-customer groups and the original twenty-item page size.
+All nine actual retirement receipts and zero live session/MCP credentials are
+verified. The public customer ceiling, credential lifetime, concurrency, calls,
+intent allowance and owner deadline are unchanged. This is an owned capacity
+regression, not a fresh regional result. Its first attempt reached the full scope
+but failed a test assertion that used `retirement` instead of the actual `retired`
+receipt filename; the corrected complete focused case passes1/1.
+
+Hosted learning orchestration now uses the existing original journal, real paired
+capture/retirement producer and normal administrator review/publication commands.
+Activation runs on the exact verified bounded owner connection. A pinned descriptor
+rejects a same-marker clone URL before domain/native/paid preparation. Fourteen
+capture/request boundary unit checks and pilot type checking pass. Two owned HTTP
+composition cases pass, including all eight immutable capture reviews, rejection
+of wrong/incomplete capture inputs, a domain-derived equal-score/no-benefit failure,
+zero new model dispatches during review and no release decision. Their model outputs
+and scores are explicitly synthetic test inputs; they prove neither actual hosted
+model quality nor human feedback. Actual capture review files must be independently
+prepared from the full current batch and labeled automated. The hosted file catalog,
+fresh complete933-case source validation and actual release evidence remain pending.
+
+Maximum-file preparation/restart verification is now authored through normal
+capability uploads and existing governed worker/Blob paths. The fixed harmless
+PDF and workbook each parse successfully at exactly10,485,760bytes using the
+installed parser (one PDF text unit, four workbook cells). That narrow local
+check supplies neither antivirus nor hosted execution proof. Restart verification
+reads actual provider creation metadata, immutable original row timestamps,
+current scoped domain/job/image/cost records and complete uncached byte streams.
+Five runtime-descriptor unit checks pass, including URL timeout overrides,
+duplicate transport options, fragments, wrong role and missing credentials.
+Pilot type checking passes. Actual hosted file preparation/restart, remaining
+fault/catalog phases and the fresh complete933-case source run remain pending.

@@ -1351,3 +1351,73 @@ SDK dispatch, and an existing foreign customer must yield typed non-disclosing
 `unavailable/not_found` data. With no other customer, evidence records that
 limited applicability explicitly and final verification rejects it if another
 customer now exists. Generic tool/SQL/outage errors cannot establish denial.
+
+### Hosted learning capture and independent automated review
+
+The hosted journey accepts an additional `--learning <private-config.json>`.
+`pilot-hosted-learning-journey-input-v1` supplies the existing original ledger
+folder, its exact deployed `pilot-hosted-learning-ledger-v1` binding, and a private
+independent-review output path. It creates no budget, increases no allowance and
+retries no paid call. The selected operator environment must match the hosted
+scope. Actual platform/runtime/owner bindings are checked before the exact
+verified owner connection performs the existing one-time activation transaction.
+The baseline must have been normally authored by the separate internal member,
+reviewed and published before activation in the never-activated synthetic workspace.
+
+The existing capture producer runs the complete sixteen-arm batch, reconciles
+original Gateway accounting and verifies native retirement. It then writes
+`learning-independent-review-manifest.json`, including both exact captures for
+all eight cases. An independent review agent may inspect those bytes and the
+checked-in evaluation rubric. Its scores must be labeled
+`automated-independent-review`; these are review inputs, never human observations
+or healthy flags. The operator waits at most fifteen minutes, within the original
+binding expiry and parent command deadline, for the private review file. No file
+or incomplete review causes another model run.
+
+The strict `pilot-hosted-learning-independent-review-v1` file binds the complete
+hosted scope, evaluation UUID, exact capture-manifest digest, reviewer reference,
+review time and eight unique E01–E08 case reviews. Each supplies the original
+baseline/candidate capture digests, four scores per arm, safety/citation/authority
+judgments and rationale. The command submits normal authenticated administrator
+case reviews, retaining each original request identity before mutation. The server
+rechecks actual captures and derives the verdict. No-benefit or failed evaluations
+must deny publication and preserve the old published generation. A passing verdict
+may publish only its exact candidate, review and baseline generation through the
+normal knowledge decision endpoint. Uncertain acknowledgement retains the original
+publication intent and reads only its existing receipt; it does not repeat the
+publication, preparation or model batch. This flow alone does not complete the
+hosted file catalog or approve a release.
+
+The canonical recovery reader groups at most sixty current customers per temporary
+credential, within the existing public ceiling of one hundred. Its customer census
+still uses pages of twenty and requires the exact complete customer-ID union.
+The original fifty-nine-second credential lifetime, eight pure concurrent walks,
+sixty-four calls per selection, thirty-two intents and owner/command deadlines
+remain unchanged. A slow group fails; no credential renewal is inferred.
+
+### Prepare and re-read maximum private originals
+
+`node --import tsx scripts/pilot-hosted-file-preparation.ts
+--prepare-maximum-files --scope <private-scope.json> --configuration
+<private-configuration.json> --authorization <private-original-authority.json>
+--output <fresh-private-directory>` is an explicit first-deployment phase. It
+requires the existing enabled worker, original applicable Sandbox budget and
+three actual role credentials. It creates exactly one harmless synthetic PDF
+and one workbook at the existing10MiB original limit through normal upload
+capabilities. Both must complete actual scan/parse jobs and their original
+bytes must stream back with exact size/digest. The inert padding does not add
+extracted text or raise the500,000-codepoint extraction limit. No source is
+submitted as an accepted fact or personnel certification.
+
+An independently created deployment of the same exact code must follow this
+preparation. Supply the resulting `maximum-originals.json` to the main hosted
+command with `--maximum-files <private-manifest.json>`. Verification rechecks the
+actual provider deployment and serving origin, requires its creation after the
+originals' immutable database timestamps and preparation, validates current
+source/job/image/cost identities, and hashes both complete uncached authenticated
+streams. The expected manifest has no healthy flag. This read phase uploads
+nothing and creates no new provider job. Runtime descriptors allow only the
+replacement runtime role, unique `sslmode=verify-full` and optional unique
+`channel_binding=require`; URL options cannot override the fixed connection,
+server statement or client query bounds. The broader fault, cancellation,
+generated-output, access and cleanup catalog remains independently required.

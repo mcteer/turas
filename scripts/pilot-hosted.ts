@@ -1,3 +1,7 @@
+import {hostedRuntimeConnection} from './pilot-hosted-connection';
+import {hostedMaximumFilesManifestSchema,verifyHostedMaximumFiles} from './pilot-hosted-maximum-files';
+import {runHostedLearningJourney,hostedLearningJourneyConfigurationSchema} from './pilot-hosted-learning-journey';
+import {createHostedLearningOwnerClient} from './pilot-hosted-learning-capture';
 import {Client,type QueryResultRow} from 'pg';
 import {runHostedRootBrowser} from './pilot-hosted-root-browser';
 import {hostedRootBudgetSchema} from '../lib/server/conversations/hosted-root-budget';
@@ -36,16 +40,12 @@ export async function platformDeployment(scope:PilotHostedScope,origin=false,sig
  const result=await execute('vercel',['api',endpoint,'--raw'],{timeout:30000,signal,maxBuffer:1024*1024,env:Object.fromEntries(['PATH','HOME','TMPDIR','LANG','LC_ALL'].flatMap(key=>process.env[key]===undefined?[]:[[key,process.env[key]]])) as NodeJS.ProcessEnv});
  return verifyHostedDeployment(JSON.parse(result.stdout),scope);
 }
-function explicitRuntimeUrl(env:NodeJS.ProcessEnv){
- const raw=env.TURAS_PILOT_HOSTED_DATABASE_URL;if(!raw)throw Error('Explicit hosted runtime database required');
- const url=new URL(raw);
- if(!['postgres:','postgresql:'].includes(url.protocol)||!url.hostname.endsWith('.neon.tech')||url.searchParams.get('sslmode')!=='verify-full')throw Error('Hosted runtime requires explicit Neon verify-full transport');
- return raw;
-}
+function explicitRuntimeUrl(env:NodeJS.ProcessEnv){return hostedRuntimeConnection(env.TURAS_PILOT_HOSTED_DATABASE_URL);}
+
 /** Read-only admission before any authenticated hosted journey. Completion here
  * is not the hosted catalog, file processing, participant proof or readiness. */
 export async function pilotHosted(args=process.argv.slice(2)){
- if(![8,10].includes(args.length)||(args.length===10&&args[8]!=='--root-binding')||args[0]!=='--scope'||args[2]!=='--run'||args[4]!=='--configuration'||args[6]!=='--authorization')throw Error('Explicit private hosted scope, run, configuration and infrastructure authorization required');
+ if(![8,10,12,14].includes(args.length)||args[0]!=='--scope'||args[2]!=='--run'||args[4]!=='--configuration'||args[6]!=='--authorization')throw Error('Explicit private hosted scope, run, configuration and infrastructure authorization required');
  process.umask(0o077);
  process.env.VERCEL_BLOB_RETRIES='0';
  const scopePath=resolve(args[1]),runPath=resolve(args[3]);
@@ -56,7 +56,10 @@ export async function pilotHosted(args=process.argv.slice(2)){
  if(configuration.environmentMarker!==scope.environmentMarker||configuration.projectId!==scope.projectId||configuration.teamId!==scope.teamId||!configuration.dispatcherEnabled)throw Error('Hosted configuration target or enabled dispatcher differs');
  const authorizationPath=resolve(args[7]),rawAuthorization=await readEvidence(dirname(authorizationPath),basename(authorizationPath)),authorization=verifyHostedInfrastructureAuthorization(rawAuthorization,scope),authorizationDigest=authorization.authorizationDigest;
  if(authorization.environmentMarker!==scope.environmentMarker||authorization.projectId!==scope.projectId||authorization.teamId!==scope.teamId||authorization.maximumSandboxJobs!==configuration.maximumSandboxDispatches||Date.parse(authorization.approvedAt)>Date.now()||Date.parse(authorization.expiresAt)<=Date.now())throw Error('Fresh applicable exact-target infrastructure authority required');
- const rootBindingPath=args.length===10?resolve(args[9]):null;
+ const extras=new Map<string,string>();for(let i=8;i<args.length;i+=2){if(!['--root-binding','--learning','--maximum-files'].includes(args[i])||extras.has(args[i])||!args[i+1])throw Error('Exact unique hosted extra configuration required');extras.set(args[i],resolve(args[i+1]));}
+ const learningPath=extras.get('--learning'),learningConfiguration=learningPath?hostedLearningJourneyConfigurationSchema.parse(await readEvidence(dirname(learningPath),basename(learningPath))):null;
+ const maximumPath=extras.get('--maximum-files'),maximumManifest=maximumPath?hostedMaximumFilesManifestSchema.parse(await readEvidence(dirname(maximumPath),basename(maximumPath))):null;
+ const rootBindingPath=extras.get('--root-binding')??null;
  const rootBinding=rootBindingPath?hostedRootBudgetSchema.parse(await readEvidence(dirname(rootBindingPath),basename(rootBindingPath))):null;
  if(rootBinding&&rootBinding.conversationIds.length!==2)throw Error('Two original root conversations required for desktop and mobile');
  const source=await pilotSource();
@@ -68,7 +71,8 @@ export async function pilotHosted(args=process.argv.slice(2)){
  // This finite catalog may wait for multiple independently bounded 300s jobs.
  // Their original deadlines/concurrency remain unchanged; authority expiry also
  // cancels the whole operator run, rather than extending a job or approval.
- return withHostedCatalogCancellation(Math.max(1,Math.min(7200000,Date.parse(authorization.expiresAt)-Date.now())),async signal=>{
+ return withHostedCatalogCancellation(Math.max(1,Math.min(7200000,Date.parse(authorization.expiresAt)-Date.now())),async parentSignal=>{
+ const connectionLoss=new AbortController(),signal=AbortSignal.any([parentSignal,connectionLoss.signal]);
  let stage='preflight';
  let paidDispatchPossible=false;
  try{
@@ -76,7 +80,8 @@ export async function pilotHosted(args=process.argv.slice(2)){
   if(dirty.stdout.trim())throw Error('Hosted verification requires committed source');
   const deployment=await platformDeployment(scope,false,signal),resolvedOrigin=await platformDeployment(scope,true,signal);
   if(JSON.stringify(resolvedOrigin)!==JSON.stringify(deployment))throw Error('Hosted origin targets another deployment');
-  const db=new Client({connectionString:explicitRuntimeUrl(process.env),connectionTimeoutMillis:5000,statement_timeout:5000});
+  const db=new Client({connectionString:explicitRuntimeUrl(process.env),connectionTimeoutMillis:5000,statement_timeout:5000,query_timeout:6000});
+  db.on('error',error=>connectionLoss.abort(error));
   let schemaLedgerDigest:string;
   let connected=false;
   try{
@@ -98,7 +103,8 @@ export async function pilotHosted(args=process.argv.slice(2)){
    console.info(JSON.stringify({preflight:'pass',roleReads:'blocked',hostedCatalog:'blocked',paidCalls:0}));process.exitCode=1;return receipt;
   }
   stage='role_reads';
-  const readDb=new Client({connectionString:explicitRuntimeUrl(process.env),connectionTimeoutMillis:5000,statement_timeout:5000});
+  const readDb=new Client({connectionString:explicitRuntimeUrl(process.env),connectionTimeoutMillis:5000,statement_timeout:5000,query_timeout:6000});
+  readDb.on('error',error=>connectionLoss.abort(error));
   let reads:Awaited<ReturnType<typeof runHostedReadChecks>>;
   const sdkJourneys:(Awaited<ReturnType<typeof runHostedMcpJourney>>&{role:string})[]=[];
   const profileJourneys:Awaited<ReturnType<typeof runHostedProfileReviewJourney>>[]=[];
@@ -109,11 +115,14 @@ export async function pilotHosted(args=process.argv.slice(2)){
   const gapJourneys:Awaited<ReturnType<typeof runHostedGapBoundary>>[]=[];
   const trainingJourneys:Awaited<ReturnType<typeof runHostedTrainingJourney>>[]=[];
   const linkedJourneys:Awaited<ReturnType<typeof runHostedLinkedJourney>>[]=[];
+  const learningJourneys:Awaited<ReturnType<typeof runHostedLearningJourney>>[]=[];
+  const maximumFiles:Awaited<ReturnType<typeof verifyHostedMaximumFiles>>[]=[];
   try{await readDb.connect();reads=await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async context=>{
     if(context.role==='internal-admin'){
      // The reader verified the actual version-bound diagnostic before this hook.
      stage='configuration_boundary';
      await writeEvidence(root,'configuration.json',{contract:'pilot-hosted-configuration-readback-v1',runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),configuration,configurationDigest:evidenceDigest(JSON.stringify(configuration)),actualReadbackVerified:true,providerPermissionVerified:false,hostedCatalogVerified:false});
+     if(maximumManifest){stage='maximum_file_retention';maximumFiles.push(await verifyHostedMaximumFiles({scope,db:readDb,headers:context.headers,configuration,evidenceDirectory:root,manifest:maximumManifest,signal}));}
     }
     if(context.role==='internal-admin'&&rootBinding){
      stage='root_transport';
@@ -127,7 +136,7 @@ export async function pilotHosted(args=process.argv.slice(2)){
      const runtimeTarget=new URL(explicitRuntimeUrl(process.env));
      const endpoint=(value:URL)=>JSON.stringify([value.hostname.replace('-pooler.','.'),value.port||'5432',decodeURIComponent(value.pathname)]);
      if(endpoint(url)!==endpoint(runtimeTarget))throw Error('Owner accounting target differs from actual hosted runtime');
-     const ownerDb=new Client({connectionString:raw,connectionTimeoutMillis:5000,statement_timeout:5000});
+     const ownerDb=createHostedLearningOwnerClient(raw);ownerDb.on('error',error=>connectionLoss.abort(error));
      try{
       await ownerDb.connect();
       const owner=(await ownerDb.query("SELECT current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='parity_evaluation_budgets'::regclass)) AS owner")).rows[0];
@@ -162,6 +171,11 @@ export async function pilotHosted(args=process.argv.slice(2)){
      const linked=linkedJourneys.at(-1)!;stage='training_chain';
      trainingJourneys.push(await runHostedTrainingJourney({scope,db:readDb,headers:context.headers,configuration,customerId:linked.customerId,engagementId:linked.plan.engagementId,baselineId:linked.plan.baselineId,acceptedRevisionId:linked.plan.revisionId,sourceRevisionId:linked.source.profileRevisionId,signal}));
      await writeEvidence(root,'training-internal-admin.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...trainingJourneys.at(-1)});
+     if(learningConfiguration){
+      stage='learning_chain';const rawOwner=process.env.TURAS_PILOT_HOSTED_OWNER_DATABASE_URL;if(!rawOwner)throw Error('Explicit original hosted learning owner required');const ownerDb=createHostedLearningOwnerClient(rawOwner);ownerDb.on('error',error=>connectionLoss.abort(error));
+      try{await ownerDb.connect();await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async author=>{if(author.role==='internal-member')learningJourneys.push(await runHostedLearningJourney({scope,db:readDb,ownerDb,headers:context.headers,authorRequest:pilotHostedRequest({scope,headers:author.headers,signal}),contributionId:linked.knowledge.contributionId,publicationId:linked.knowledge.publicationId,sourceRevisionId:linked.source.profileRevisionId,configuration:learningConfiguration,evidenceDirectory:root,signal}));},configuration);if(learningJourneys.length!==1)throw Error('Exact ordinary separately authored hosted learning exercise required');}finally{await ownerDb.end();}
+     }
+
     }
     const positive=(await readDb.query(`SELECT c.id FROM customer_references c WHERE c.workspace_id=$1 AND c.synthetic AND c.id=ANY($2::uuid[])
      AND EXISTS(SELECT 1 FROM profile_records p WHERE p.customer_id=c.id AND p.current_accepted_revision_id IS NOT NULL)
@@ -215,7 +229,7 @@ export async function pilotHosted(args=process.argv.slice(2)){
     }
    },configuration);}finally{await readDb.end();}
   if(JSON.stringify(await platformDeployment(scope,true,signal))!==JSON.stringify(deployment)||JSON.stringify(await pilotSource())!==JSON.stringify(source)||JSON.stringify(await pilotProtectedSnapshot())!==JSON.stringify(protectedBefore))throw Error('Hosted identity or protected checkout changed');
-  await writeEvidence(root,'reads.json',{contract:'pilot-hosted-role-boundaries-v1',id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,startedAt,completedAt:new Date().toISOString(),roleReads:reads,sdkJourneys,profileJourneys,conversationJourneys,browserJourneys,supportJourneys,expansionJourneys,gapJourneys,linkedJourneys,trainingJourneys,normalProfileCommands:profileJourneys.reduce((sum,row)=>sum+row.normalProfileCommands,0),normalConversationCommands:conversationJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalSupportCommands:supportJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalExpansionCommands:expansionJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalGapCommands:gapJourneys.reduce((sum,row)=>sum+row.normalCommands,0),fullHostedCatalogVerified:false});
+  await writeEvidence(root,'reads.json',{contract:'pilot-hosted-role-boundaries-v1',id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,startedAt,completedAt:new Date().toISOString(),roleReads:reads,sdkJourneys,profileJourneys,conversationJourneys,browserJourneys,supportJourneys,expansionJourneys,gapJourneys,linkedJourneys,trainingJourneys,learningJourneys,maximumFiles,normalProfileCommands:profileJourneys.reduce((sum,row)=>sum+row.normalProfileCommands,0),normalConversationCommands:conversationJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalSupportCommands:supportJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalExpansionCommands:expansionJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalGapCommands:gapJourneys.reduce((sum,row)=>sum+row.normalCommands,0),fullHostedCatalogVerified:false});
   // Required journeys are not yet dispatched: do not return acceptance success.
   await writeEvidence(root,'blocked.json',{id,runId:run.id,...source,state:'blocked',safeFailure:'hosted_core_journey_catalog_not_complete',hostedCatalogVerified:false});
   console.info(JSON.stringify({preflight:'pass',roleReads:reads.passedCases,sdkCases:sdkJourneys.reduce((sum,row)=>sum+row.passedCases,0),hostedCatalog:'blocked',paidCalls:linkedJourneys.reduce((sum,row)=>sum+row.source.providerCalls+row.workforce.providerCalls+row.reports.providerCalls,0)}));process.exitCode=1;return receipt;
