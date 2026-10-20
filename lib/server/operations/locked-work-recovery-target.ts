@@ -140,6 +140,10 @@ async function withWorkRecoveryTransport<T>(input:LockedWorkRecoveryInput,run:(d
   const finalBinding=bindings.get(target);bindings.delete(target);decisionClients.delete(exposed);const retirementErrors:unknown[]=[];
   // Close the original writer before reconciling ambiguous effects. A callback
   // that outlives cancellation cannot enqueue later writes on this connection.
+  // pg pipeline end() intentionally drains submitted queries. Cancellation
+  // must instead terminate this writer immediately so pending SQL cannot run
+  // beyond the read deadline or delay rollback and independent retirement.
+  if(failure||signal.aborted)db.connection.stream.destroy();
   try{await db.end();}catch(error){retirementErrors.push(error);}
   if(finalBinding?.drains.size){let timer:ReturnType<typeof setTimeout>|undefined;try{
    const drained=await Promise.race([Promise.allSettled([...finalBinding.drains]).then(()=>true),new Promise<false>(done=>{timer=setTimeout(()=>done(false),10000);})]);

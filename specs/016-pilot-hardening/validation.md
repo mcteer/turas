@@ -5321,3 +5321,15 @@ legacy WebKit catalog passes96/96 locally. The gaps runner adds fixed, minimized
 validity/event diagnostics with a negative privacy check (8/8 unit cases); its
 fresh local WebKit catalog passes88/88. No browser result establishes hosted pilot
 acceptance or conclusively attributes every earlier CI failure.
+
+The complete pipelined recovery-decision attempt passed22/23; the existing
+individual-read cancellation case exposed graceful pipeline shutdown waiting for
+a pending three-second SQL call (3031ms against the original2500ms limit). The
+failure/abort path now terminates only the owned writer before pg end, then
+drains registered readers and performs independent exact-ID cleanup. Actual
+owner/rollback/group and individual-deadline regressions pass2/2 selected after
+this correction. Independent review found no remaining blocker in that change.
+The original failed complete attempt remains retained; a fresh full-source
+catalog is still required. A proposed parallel initial-probe optimization was
+withdrawn because normal denial reconciliation correctly retires peer probes.
+No denial exception was introduced. Initial actual SDK measurements remain serial.
