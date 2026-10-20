@@ -289,3 +289,10 @@ No hosted target may be locked for release before its measured reopen path exist
   attribution; require typed immutable provenance in composed release checks.
   Nineteen focused partner/SDK/bundle cases and the actual owned normal HTTP
   training case pass. Actual hosted/model G18 execution remains part of T089.
+
+- [X] T105 Author canonical G21 evidence from original automated role observations,
+  independent capture review, complete immutable feedback dispositions and typed
+  passing rechecks; enforce current deferral deadlines on final consumption and
+  preserve historical partner scope after deliberate revocation without restoring
+  authority. Fifteen producer/bundle cases and five owned scope cases pass. Actual
+  hosted G21 execution remains part of T078/T089.

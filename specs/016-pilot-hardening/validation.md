@@ -5814,3 +5814,30 @@ did not identify the exact database boundary. Additional fixed, payload-free
 session/implicit-question/ordinary-dispatch stages narrow the next observation;
 original statement deadlines and acceptance remain unchanged. Three diagnostic
 privacy tests pass. This is diagnostic authoring, not a resolved CI failure.
+
+### Governed automated observation evidence — 2026-10-20
+
+The G21 producer now requires the original hosted training capture and complete
+G18 validation, exact initial automated observations, three immutable history
+records per observation, and an independent capture review. Resolution consumes
+an actual selected passing G18 proof of the correct role with original source,
+scope, bytes and times; arbitrary JSON cannot serve as correction evidence.
+Deferrals must remain future-dated at every final branded consumption. Unknown
+histories, changed original capture fields and cloned validation brands fail.
+Fifteen producer/bundle cases, including three new registered cases, pass; a
+separate expiry-bound consumption check also passes. Independent read-only review
+found no remaining scoped blocker. Current inventory is997 cases across181 suites.
+
+The feedback CLI preserves strict current assignment checks for initial records.
+When appending a validated immutable prior record, it permits the original partner
+scope after deliberate revocation or deactivation while retaining active internal
+follow-up ownership and existing historical grant rows. It changes no authority.
+Five actual owned PostgreSQL18 scope cases pass. Actual hosted observations,
+independent review and dispositions remain pending; G21 is not yet accepted.
+
+The canonical producer command is
+`node --import tsx scripts/pilot-hosted-feedback-evidence.ts --run <private-core-run.json>`.
+The same private directory must contain the original observation manifest,
+`role-observations-review.json`, every referenced immutable disposition/recheck,
+and original G18 captures/proofs. Output is `role-observations-run.json`; CLI,
+gate observation and release bundle consumers revalidate its typed provenance.

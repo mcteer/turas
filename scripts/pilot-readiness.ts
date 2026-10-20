@@ -72,6 +72,7 @@ async function main() {
   if(run.receipts.some(row=>row.gateId==='G17'&&row.method==='hosted')){const {verifyHostedCoreEvidence}=await import('./pilot-hosted-core-evidence');await verifyHostedCoreEvidence(path.dirname(target),run);}
   if(run.receipts.some(row=>row.gateId==='G18'&&row.method==='hosted')){const {verifyHostedPartnerEvidence}=await import('./pilot-hosted-partner-evidence');await verifyHostedPartnerEvidence(path.dirname(target),run);}
   if(run.receipts.some(row=>row.gateId==='G19'&&row.method==='hosted')){const {verifyHostedSdkEvidence}=await import('./pilot-hosted-journey-evidence');await verifyHostedSdkEvidence(path.dirname(target),run);}
+  if(run.receipts.some(row=>row.gateId==='G21')){const {verifyHostedFeedbackEvidence}=await import('./pilot-hosted-feedback-evidence');await verifyHostedFeedbackEvidence(path.dirname(target),run);}
   for(const gateId of ['G10','G12'])if(run.receipts.some(row=>row.gateId===gateId&&row.method==='local')){const {verifyPilotAuxiliaryEvidence}=await import('./pilot-auxiliary-evidence');if((await verifyPilotAuxiliaryEvidence(path.dirname(target),run)).gateId!==gateId)throw Error('Typed auxiliary gate evidence differs');}
   const observations:PilotGateVerification[]=[];
   for(const reference of run.gateVerifications??[]){const value=pilotGateVerificationSchema.parse(await readEvidence(path.dirname(target),`${reference.id}.json`,reference.proofDigest));if(value.gateId!==reference.gateId||value.id!==reference.id)throw Error('Gate verification identity differs');observations.push(value);}

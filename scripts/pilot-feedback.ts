@@ -7,8 +7,11 @@ import {operatorRecoveryDatabase} from './pilot-control';
 import {createEvidenceDirectory,readEvidence,writeEvidence} from './pilot-evidence';
 import {pilotSource} from './pilot-source';
 /** Recheck current database identities and assignments. Supplied participant
- * names are private references, never authentication or assignment authority. */
-export async function validatePilotFeedbackScope(db:Client|PoolClient,raw:unknown){
+ * names are private references, never authentication or assignment authority.
+ * Append-only dispositions retain historical partner scope after deliberate
+ * revocation; they require an active internal follow-up owner and never restore
+ * a grant. Initial recording always requires current partner authority. */
+export async function validatePilotFeedbackScope(db:Client|PoolClient,raw:unknown,mode:'initial'|'disposition'='initial'){
  const scope=pilotFeedbackScopeSchema.parse(raw);await db.query('BEGIN');
  try{
   await db.query("SET LOCAL transaction_timeout='15s'");await db.query("SET LOCAL statement_timeout='5000ms'");await db.query("SET LOCAL lock_timeout='3000ms'");
@@ -19,10 +22,10 @@ export async function validatePilotFeedbackScope(db:Client|PoolClient,raw:unknow
   if(customers.rowCount!==scope.customerIds.length)throw Error('Synthetic feedback customer scope differs');
   for(const participant of scope.participants){
    const membership=await db.query(`SELECT m.id FROM memberships m JOIN principals p ON p.id=m.principal_id LEFT JOIN partner_organizations o ON o.id=m.partner_org_id AND o.workspace_id=m.workspace_id
-    WHERE m.id=$1 AND m.principal_id=$2 AND m.workspace_id=$3 AND m.kind=$4 AND m.active AND p.active AND (m.kind='internal' OR o.active) FOR SHARE OF m,p`,[participant.membershipId,participant.principalId,scope.workspaceId,participant.kind]);
+    WHERE m.id=$1 AND m.principal_id=$2 AND m.workspace_id=$3 AND m.kind=$4 AND (($5::boolean AND m.kind='partner') OR (m.active AND p.active AND (m.kind='internal' OR o.active))) FOR SHARE OF m,p`,[participant.membershipId,participant.principalId,scope.workspaceId,participant.kind,mode==='disposition']);
    if(membership.rowCount!==1)throw Error('Current distinct participant membership required');
    if(participant.kind==='partner'){
-    const grants=await db.query("SELECT customer_id FROM customer_grants WHERE membership_id=$1 AND workspace_id=$2 AND customer_id=ANY($3::uuid[]) AND state='active' FOR SHARE",[participant.membershipId,scope.workspaceId,scope.customerIds]);
+    const grants=await db.query("SELECT customer_id FROM customer_grants WHERE membership_id=$1 AND workspace_id=$2 AND customer_id=ANY($3::uuid[]) AND (state='active' OR $4::boolean) FOR SHARE",[participant.membershipId,scope.workspaceId,scope.customerIds,mode==='disposition']);
     if(grants.rowCount!==scope.customerIds.length)throw Error('Explicit partner assignments required');
    }
   }
@@ -39,7 +42,7 @@ export async function pilotFeedback(args=process.argv.slice(2)){
  const database=operatorRecoveryDatabase(args[1]),root=resolve(args[5]);await createEvidenceDirectory(root);
  const db=new Client({connectionString:database,connectionTimeoutMillis:5000});
  try{
-  await db.connect();await validatePilotFeedbackScope(db,record.scope);const current=await pilotSource();
+  await db.connect();await validatePilotFeedbackScope(db,record.scope,previous===undefined?'initial':'disposition');const current=await pilotSource();
   if(JSON.stringify(current)!==JSON.stringify(source))throw Error('Feedback source changed');
   const fileDigest=await writeEvidence(root,'feedback.json',record);
   console.info(JSON.stringify({recorded:true,state:record.transitions.at(-1)!.state,recordDigest:feedbackDigest(record),fileDigest,humanReported:record.humanReported,releaseApproved:false,messagesSent:0}));

@@ -2074,6 +2074,15 @@
         "refuses a successful label with a skipped catalog or missing artifact step",
         "refuses an expired or foreign-attempt artifact and incomplete job inventory"
       ]
+    },
+    {
+      "file": "tests/unit/pilot/feedback-evidence.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "binds complete original automated observation histories and typed current rechecks without approving release",
+        "rejects arbitrary correction bytes and unmanifested observation histories",
+        "rejects changed original source and late or overdue independent dispositions"
+      ]
     }
   ],
   "ui": {
