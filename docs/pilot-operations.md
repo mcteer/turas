@@ -360,6 +360,12 @@ Native SDK run pinning and explicit rerun boundaries are documented by [Vercel's
 
 ### Resolve quarantines after complete current verification
 
+The hosted work verifier applies current denials and quarantine through the
+platform-bound locked-target owner transport. That transport owns the original
+transaction, deadline, runtime and deployment checks; a failure rolls back the
+whole quarantine. It does not require disposable local-runner flags. The separate
+owned-test reconciliation entry point retains its loopback and Docker guards.
+
 After the owner verifier has recorded a fresh complete verification for the exact locked restored target, run `npm run pilot:recovery:authority -- --resolve-quarantines --environment <exact-marker> --recovery-id <recovery-uuid> --expected-revision <locked-revision> --verification-id <existing-verification-uuid> --output <new-private-directory>` using the separately supplied protected owner connection. The command accepts an existing verification identity; it cannot manufacture missing provider, integrity, denial, replay, or health proof from operator labels.
 
 Resolution appends immutable receipts and retains every original quarantine. It checks the current content and authorization state before writing; missing, partial, stale, foreign or changed-state proof leaves the holds unresolved. Exact repetition preserves receipts. This command never opens service. The separate explicit `pilot:control` open transition must name the verified bundle and recheck freshness, all scope resolutions, drain and unchanged current state. Current actual Production rehearsal receipts still have incomplete verification and cannot pass this command.

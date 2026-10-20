@@ -6094,3 +6094,16 @@ OIDC claim is made. Version3 verification now accepts the same explicit store-bo
 credential used for the actual matched capture; v2 retains its OIDC-only contract.
 Candidate/target/source binding and actual inventory/content checks are unchanged.
 Fresh full-catalog and hosted results for these corrections remain pending.
+The actual `17769b0` hosted work attempt authenticated the encrypted backup,
+captured database content and private Blob inventory, then retained and cold-read
+a fresh independent denial snapshot (5,292,963 minimized bytes, 112 tables).
+Quarantine failed because its composition selected the disposable-only denial
+helper. The owner transaction rolled back; no probes or unlock were issued.
+The correction composes quarantine through the platform-bound owner transport
+and authenticated retained-denial helper while preserving the owned-test guard.
+The focused platform-bound SDK/denial regression passed (one selected case;
+23 unselected cases), with the disposable-runner flag absent during quarantine.
+All seven existing quarantine/current-grant regressions passed, as did root
+type checking and documentation checks. The independent transaction review
+found no blocker. Fresh exact-source full catalog and hosted verification
+results remain required.

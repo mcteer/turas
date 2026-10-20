@@ -17,7 +17,7 @@ import {measureWorkManagedTerminalInventory,requireMeasuredWorkManagedTerminalIn
 import {measureWorkTargetIntegrity,requireMeasuredWorkTargetIntegrity} from '../../../lib/server/operations/work-target-integrity';
 import {refreshMeasuredWorkMcpDenials,measureWorkMcpCategoryBatch,measureWorkMcpCategoryWindow,measureWorkMcpCategory,requireMeasuredWorkMcpCategory,deriveWorkMcpScopeInTransaction,requireMeasuredWorkMcpCoverage} from '../../../lib/server/operations/work-mcp-verification';
 import {withRetainedDenialFixture} from '../../fixtures/pilot/retained-denials';
-import {quarantineRestoredAuthority} from '../../../lib/server/operations/recovery-quarantine';
+import {quarantineRestoredAuthority,quarantineLockedWorkAuthority} from '../../../lib/server/operations/recovery-quarantine';
 import {POST as maintenanceMcp} from '../../../app/api/operations/recovery-read/[admissionId]/mcp/route';
 import {handleMcpRequest} from '../../../lib/server/mcp/transport';
 import {DEMO_IDS} from '../../../lib/server/bootstrap-ids';
@@ -144,7 +144,10 @@ it('measures exhaustive fresh work MCP category pages through SDK and rejects ch
  const token='controlled-effects-token',key='controlled_effects_automation_key',secret=randomBytes(32).toString('base64url'),previousCron=process.env.CRON_SECRET;process.env.CRON_SECRET=secret;
   const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
   try{const physical=await controlledPhysicalIntegrity(input);await withRetainedDenialFixture(owner,input.scope.environmentId,dirname(input.sourceFile),{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async (retained,refreshDenials,readHistoricalDenials)=>{
-   await quarantineRestoredAuthority(owner,input.scope,retained);let selectedTarget:Parameters<typeof requireLockedWorkRecoveryConnection>[1]|undefined;
+   const ownedFlag=process.env.TURAS_PILOT_OWNED;delete process.env.TURAS_PILOT_OWNED;
+   try{expect(await quarantineLockedWorkAuthority(input,retained)).toMatchObject({independentDenialsApplied:true,mode:'locked',restorationReady:false});}
+   finally{if(ownedFlag===undefined)delete process.env.TURAS_PILOT_OWNED;else process.env.TURAS_PILOT_OWNED=ownedFlag;}
+   let selectedTarget:Parameters<typeof requireLockedWorkRecoveryConnection>[1]|undefined;
    await withLockedWorkRecoveryTarget(input,async(_db,target)=>{selectedTarget=target;});const target=selectedTarget!;let corrupt=false,uncorruptedIdentities=0;
    const transport=vi.spyOn(globalThis,'fetch').mockImplementation(async(url,options)=>{
     const incoming=new Request(url,options),address=new URL(incoming.url),headers=new Headers(incoming.headers);headers.set('host',address.host);

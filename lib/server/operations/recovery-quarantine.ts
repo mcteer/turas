@@ -1,5 +1,6 @@
 import {requireAuthenticatedRetainedDenials,type RetainedWorkDenials} from '../../../scripts/pilot-denial-reader';
-import {reconcileOwnedCredentialDenialsInTransaction} from './recovery-credential-denials';
+import {reconcileOwnedCredentialDenialsInTransaction,reconcileAuthenticatedWorkCredentialDenialsInTransaction} from './recovery-credential-denials';
+import {withLockedWorkRecoveryDecision,type LockedWorkRecoveryInput} from './locked-work-recovery-target';
 import type {Client,PoolClient} from 'pg';
 import {z} from 'zod';
 const scopeSchema=z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive()});
@@ -8,11 +9,19 @@ export const requiredRecoveryQuarantineScopes=Object.freeze(['sessions','mcp','g
  * histories, revoke restored credentials/partner grants, and retain a global
  * service fence. This is restricted recovery, never full readiness or unlock. */
 export async function quarantineRestoredAuthority(db:Client|PoolClient,raw:z.infer<typeof scopeSchema>,currentDenials?:RetainedWorkDenials){
+ return quarantineAuthority(db,raw,currentDenials,false);
+}
+/** Platform-bound work recovery uses its genuine owner transport and original
+ * transaction. The disposable-only entry point keeps its existing guards. */
+export async function quarantineLockedWorkAuthority(input:LockedWorkRecoveryInput,currentDenials:RetainedWorkDenials){
+ return withLockedWorkRecoveryDecision(input,(db,target)=>quarantineAuthority(db,{environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision},currentDenials,true));
+}
+async function quarantineAuthority(db:Client|PoolClient,raw:z.infer<typeof scopeSchema>,currentDenials:RetainedWorkDenials|undefined,work:boolean){
  const scope=scopeSchema.parse(raw);
  // Default unknown-proof recovery still revokes every grant. This alternate
  // path first applies genuine cold current denials; it never creates a grant.
  const current=currentDenials?requireAuthenticatedRetainedDenials(currentDenials,scope.environmentId):undefined;
- await db.query('BEGIN');
+ if(!work)await db.query('BEGIN');
  try{
   await db.query("SET LOCAL lock_timeout='3000ms'");await db.query("SET LOCAL statement_timeout='5000ms'");
   if((await db.query("SELECT current_user=pg_get_userbyid(relowner) AS owner FROM pg_class WHERE oid='operations_control'::regclass")).rows[0]?.owner!==true)throw Error('Authority quarantine requires actual owner');
@@ -90,10 +99,11 @@ export async function quarantineRestoredAuthority(db:Client|PoolClient,raw:z.inf
   const sends=await db.query("UPDATE report_deliveries SET state='uncertain',next_attempt_at=NULL,lease_token=NULL,lease_until=NULL,failure_code=CASE WHEN audit_expired_at IS NULL THEN 'recovery_current_proof_unavailable' ELSE NULL END,version=version+1 WHERE environment_id=$1 AND state IN('authorized','queued','retryable_failure','dispatching')",[scope.environmentId]);
   // Apply denials and permanent fences after retiring old effects, atomically
   // with this quarantine. No accepted grant is re-created or reactivated.
-  const applied=current?await reconcileOwnedCredentialDenialsInTransaction(db,current.snapshot,{...scope,snapshotDigest:current.contextDigest,backupCapturedAt:current.backupCapturedAt}):undefined;
-  await db.query('COMMIT');
+  const denialScope=current?{...scope,snapshotDigest:current.contextDigest,backupCapturedAt:current.backupCapturedAt}:undefined;
+  const applied=current?(work?await reconcileAuthenticatedWorkCredentialDenialsInTransaction(db as Client,current,denialScope!):await reconcileOwnedCredentialDenialsInTransaction(db,current.snapshot,denialScope!)):undefined;
+  if(!work)await db.query('COMMIT');
   return {version:'pilot-authority-quarantine-v1' as const,currentGrantsPreserved:!!current,independentDenialsApplied:!!applied,...scope,mode:'locked' as const,newlyRevokedSessions:sessions.rowCount??0,newlyRevokedMcpConnections:mcp.rowCount??0,newlyRevokedGrants:grants.rowCount??0,
    newlyCancelledResearchRequests:researchRequests.rowCount??0,newlyInterruptedResearchRuns:researchRuns.rowCount??0,newlyInterruptedAdvisoryAttempts:advisoryAttempts,newlyInterruptedPlanDrafts:plans.rowCount??0,newlyPausedReportSchedules:schedules.rowCount??0,
    newlyHeldOrdinaryOperations:ordinaryHolds.rowCount??0,newlyHeldParityOperations:parityHolds.rowCount??0,newlyHeldLearningReservations:learningHolds.rowCount??0,newlyRevokedServiceBudgets:serviceBudgets.rowCount??0,newlyHeldPaidReservations:paid.rowCount??0,newlyInterruptedNativeAttempts:native.rowCount??0,newlyHeldReportDeliveries:sends.rowCount??0,quarantinedScopes:quarantines.map(row=>row.scope_kind),capturedHistoriesRetained:true,allRequiredScopesQuarantined:true,currentAuthorityVerified:false,permanentReplayProofAvailable:false,restorationReady:false};
- }catch(error){await db.query('ROLLBACK');throw error;}
+ }catch(error){if(!work)await db.query('ROLLBACK');throw error;}
 }

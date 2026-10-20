@@ -13,8 +13,7 @@ import {withRecoveryCancellation} from '../lib/server/operations/recovery-cancel
 import {withLockedWorkRecoveryDecision,type LockedWorkRecoveryInput} from '../lib/server/operations/locked-work-recovery-target';
 import {measureWorkTargetIntegrity} from '../lib/server/operations/work-target-integrity';
 import {produceWorkRecoveryVerification,resumeCommittedWorkRecoveryVerification} from '../lib/server/operations/work-recovery-verification';
-import {quarantineRestoredAuthority} from '../lib/server/operations/recovery-quarantine';
-import {Client} from 'pg';
+import {quarantineLockedWorkAuthority} from '../lib/server/operations/recovery-quarantine';
 import {databaseSafetyCaptureSourceSchema} from './pilot-database-safety-copy';
 import {measureWorkMcpCategoryWindow,refreshMeasuredWorkMcpDenials,type WorkMcpCategoryMeasurement} from '../lib/server/operations/work-mcp-verification';
 import {deriveWorkMaintenanceInventoryInTransaction} from '../lib/server/operations/owned-maintenance-inventory';
@@ -59,10 +58,7 @@ export async function pilotWorkRecoveryVerify(args:string[]){
     finally{await rm(cold,{recursive:true,force:true});}
    };
    let retained=await capture(),denialHistory=beginRetainedWorkDenialHistory(baseline,retained);
-   const owner=new Client({connectionString:source.databaseUrl,connectionTimeoutMillis:5000});let ownerFailure:Error|undefined;owner.on('error',error=>{ownerFailure=error;});
-   // The genuine target has already verified exact owner/platform/runtime. The
-   // quarantine entry point independently rechecks owner, marker and revision.
-   try{await owner.connect();await quarantineRestoredAuthority(owner,config.scope,retained);if(ownerFailure)throw ownerFailure;}finally{await owner.end();}
+   await quarantineLockedWorkAuthority(target(),retained);
    const canonicalMcp=await measureWorkMcpCanonicalScope({target:target(),passwords:credentials.passwords,retained,journalDirectory:root}),mcpScope={required:canonicalMcp.representatives},mcp:WorkMcpCategoryMeasurement[]=[];
    const identity=(value:typeof mcpScope.required[number])=>JSON.stringify([value.workspaceId,value.username,value.category,value.customerId]);
    const refresh=async(force=false)=>{
