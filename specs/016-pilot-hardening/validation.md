@@ -6779,3 +6779,12 @@ original three owned-source integration cases. The test process exited0 and the
 artifact helper digest matched before and after this run. Pilot typechecking
 also exited0. T124 remains open until fresh committed-source catalog and CI
 evidence are available; these focused checks do not replace hosted acceptance.
+
+The1359341 CI attempt exposed a compile error in the extracted child environment:
+TypeScript widened NODE_ENV to string, whereas Next requires its declared
+development/production/test union. The pilot-specific typecheck had passed but
+did not establish root-project compilation. An explicit NodeJS.ProcessEnv
+annotation preserves the same runtime object and handoff order. The root
+`npm run typecheck` then exited0. The1359341 local catalog was deliberately
+interrupted with SIGTERM after this finding; no complete pass is claimed.
+Fresh exact-commit catalog and CI evidence are required for the correction.

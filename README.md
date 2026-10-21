@@ -1013,3 +1013,8 @@ unchanged. This corrects port ownership; it does not establish the cause of the
 CI startup timeout. The preceding c5a733e CI attempt ended with47 successful and
 3 failed jobs, and its local catalog remained incomplete after156 suites. Fresh
 committed checks and hosted release evidence remain required.
+
+The1359341 port-lease follow-up exposed a root-project environment type error in
+CI. The environment now has an explicit ProcessEnv annotation; full root
+typechecking passes locally. Its interrupted local catalog and failed CI remain
+retained, and fresh committed-source validation is still required.

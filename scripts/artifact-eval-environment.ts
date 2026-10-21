@@ -118,7 +118,7 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
     process.env.TURAS_APP_ORIGIN = origin;
     process.env.TURAS_ARTIFACT_STORE_ROOT = store;
     if(process.env.TURAS_016_BEHAVIOR_CAPTURE_ROOT)await installBehaviorReviewCapture(app,process.env.TURAS_016_BEHAVIOR_CAPTURE_ROOT);
-    const devEnvironment = { ...process.env,NODE_ENV:"development",PORT: String(port),...await qualityChildEnvironment() };
+    const devEnvironment: NodeJS.ProcessEnv = { ...process.env,NODE_ENV:"development",PORT: String(port),...await qualityChildEnvironment() };
     await portLease.release();
     dev = spawn(process.execPath,["scripts/dev.mjs"],{
       cwd: app,env: devEnvironment,stdio: ["ignore","pipe","pipe"] });
