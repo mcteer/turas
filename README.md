@@ -126,7 +126,7 @@ authorization can now be verified without promoting the original Preview envelop
 The composed workspace/upload WebKit matrix passes40cases. The ae9b908 local
 catalog passes1009 cases across182 suites; its hosted regional check failed at
 canonical MCP denial reconciliation and its owned credentials/executor were closed.
-The current1010-case/182-suite catalog includes a transaction-bound denial-preparation
+The current1013-case/183-suite catalog includes a transaction-bound denial-preparation
 regression and requires fresh complete verification. Expired infrastructure/model approvals,
 original charges and holds remain unchanged; no hosted pilot readiness is claimed.
 Authority readers now coexist with serialized writers; all16 support/grant
@@ -957,3 +957,11 @@ manual tick wins against the background maintenance worker. The correction check
 exact payload removal and retirement regardless of worker ownership. Independent
 review, the focused native case and pilot types pass. Fresh complete changed-source
 local and CI verification remain required.
+
+The older checkpoint's expansion WebKit job reached its120-minute CI limit.
+Its four complete projects now run in separate jobs with the original bounds.
+The required `expansion (webkit)` check independently discovers the complete case
+union and requires all four successful jobs with matching source/run/attempt
+evidence. No missing, skipped, flaky or retried case can pass the aggregate.
+Focused integrity checks, expansion types and workflow syntax pass; fresh
+committed full catalog and CI verification remain required.

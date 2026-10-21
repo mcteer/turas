@@ -10,6 +10,7 @@ import { verifyExecutionTestReport } from "./test-execution";
 import { featureSourceDigest } from "./execution-source-digest";
 
 export const EXPANSION_SUITES = [
+  "tests/unit/expansion-webkit-ci.test.ts",
   "tests/unit/expansion-published-pricing.test.ts",
   "tests/unit/expansion-review-verifier.test.ts",
   "tests/unit/expansion-model-budget.test.ts", "tests/unit/expansion-content.test.ts", "tests/unit/expansion-ranking.test.ts", "tests/unit/expansion-cursor.test.ts", "tests/contracts/expansion-http.test.ts", "tests/contracts/expansion-content.test.ts", "tests/contracts/expansion-projection.test.ts", "tests/contracts/expansion-advice.test.ts", "tests/integration/expansion-advice-lifecycle.test.ts", "tests/integration/expansion-suggestions.test.ts", "tests/integration/expansion-native.test.ts", "tests/integration/expansion-advice-preparation.test.ts", "tests/integration/expansion-advice-storage.test.ts", "tests/integration/expansion-foundation.test.ts", "tests/integration/expansion-authoring.test.ts", "tests/integration/expansion-owner-decisions.test.ts", "tests/integration/expansion-qualification.test.ts", "tests/integration/expansion-ranking.test.ts", "tests/integration/expansion-related.test.ts", "tests/integration/expansion-links.test.ts", "tests/integration/expansion-retention.test.ts", "tests/integration/expansion-decision-races.test.ts",

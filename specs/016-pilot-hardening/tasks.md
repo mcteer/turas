@@ -391,3 +391,15 @@ No hosted target may be locked for release before its measured reopen path exist
   Independent source review, the focused native case and pilot types pass;
   fresh committed complete catalog and CI checks remain required. Retain the
   original CI assertion failure.
+
+
+- [X] T117 Partition the actual120-minute expansion WebKit CI cancellation into
+  four full-project jobs without changing any case assertion, retry policy or
+  fixture/child/job bound. Preserve the required `expansion (webkit)` check as an
+  always-running aggregate that requires every dependency to succeed and binds
+  exact source/run/attempt, current independent discovery and each successful
+  case report. Upload only bounded safe fields for one day; reject incomplete,
+  changed, linked, skipped, flaky or retried evidence. Register the three integrity
+  regressions in both predecessor and pilot catalogs. Independent review, focused
+  integrity checks, types and actual84-case discovery pass; fresh committed full
+  catalog/CI remains required. Retain the original cancellation.

@@ -2102,6 +2102,15 @@
         "drains an interrupted published suite before close rejects",
         "cleans an interrupted initialization without publishing an owned handle"
       ]
+    },
+    {
+      "file": "tests/unit/expansion-webkit-ci.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "requires all four actual project jobs and all current discovered cases, with safe uploaded fields only",
+        "rejects missing projects, case omissions, changed digests and extra or linked artifacts",
+        "rejects forged successful counters, retry/skip/flaky results and discovery missing a checked-in case"
+      ]
     }
   ],
   "ui": {

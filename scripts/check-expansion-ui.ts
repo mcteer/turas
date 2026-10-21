@@ -1,3 +1,5 @@
+import {execFileSync} from 'node:child_process';
+import {expansionWebkitProjects,expansionWebkitSpecs,expansionCiBindingSchema,writeExpansionCiProject} from './expansion-webkit-ci';
 import {prepareOwnedExpansionUi} from './expansion-ui-preparation';
 import { installExpansionNativeFixture } from "../tests/fixtures/expansion/native-install";
 import { spawnSync } from "node:child_process";
@@ -18,7 +20,9 @@ async function privateCaptures(path: string): Promise<void> {
 }
 
 async function main() {
-  const projects = ["webkit-desktop-light", "webkit-desktop-dark", "webkit-mobile-light", "webkit-mobile-dark"];
+  const selectedProject=process.argv[2]==='--project'?process.argv[3]:undefined;
+  if(selectedProject&&!expansionWebkitProjects.includes(selectedProject as typeof expansionWebkitProjects[number]))throw Error('Exact WebKit project required');
+  const projects=selectedProject?[selectedProject]:[...expansionWebkitProjects];
   const advice = process.argv[2] === "--advice";
   const smoke = process.argv[2] === "--smoke";
   const authoring = process.argv[2] === "--authoring";
@@ -27,8 +31,8 @@ async function main() {
   const recovery = process.argv[2] === "--recovery";
   const partner = process.argv[2] === "--partner";
   const focused = recovery||partner;
-  if (process.argv.length !== (advice || smoke || authoring || decisions || queue || focused ? 3 : 2)) throw new Error("Expansion UI accepts optional --smoke, --authoring, --decisions, --queue, --recovery or --partner");
-  const specs = ["tests/ui/expansion-authoring.spec.ts", "tests/ui/expansion-decisions.spec.ts", "tests/ui/expansion-review-queue.spec.ts", "tests/ui/expansion-advice.spec.ts"];
+  if (process.argv.length !== (selectedProject ? 4 : advice || smoke || authoring || decisions || queue || focused ? 3 : 2)) throw new Error("Expansion UI accepts one existing mode or --project <exact WebKit project>");
+  const specs=[...expansionWebkitSpecs];
   const discoveredFiles = (await readdir(resolve("tests/ui"))).filter(file => /^expansion-.*\.spec\.ts$/.test(file)).map(file => `tests/ui/${file}`).sort();
   if (JSON.stringify(discoveredFiles) !== JSON.stringify([...specs].sort())) throw new Error("Expansion UI manifest differs from discovery");
   const recoveryLines=new Set((await readFile(resolve("tests/ui/expansion-authoring.spec.ts"),"utf8")).split('\n').flatMap((line,index)=>(partner?/test\('assigned partner/:/test\('(?:lost save acknowledgement|attributed public source inspection)/).test(line)?[index+1]:[]));
@@ -39,7 +43,7 @@ async function main() {
   const directory = await mkdtemp(resolve("local-artifacts/011/ui-"));
   let passed = 0;
   for (const project of projects) {
-    const args = ["node_modules/@playwright/test/cli.js", "test", ...specs, `--project=${project}`, "--reporter=json", "--forbid-only", "--retries=0"];
+    const args = ["node_modules/@playwright/test/cli.js", "test", ...specs, `--project=${project}`, "--reporter=json", "--forbid-only", "--retries=0", "--repeat-each=1"];
     const discovery = spawnSync(process.execPath, [...args, "--list"], { env: process.env, encoding: "utf8", timeout: 60000, maxBuffer: 10000000 });
     await writeFile(resolve(directory, `${project}-discovery.json`), discovery.stdout, { mode: 0o600 });
     await writeFile(resolve(directory, `${project}-discovery.log`), discovery.stderr, { mode: 0o600 });
@@ -47,7 +51,7 @@ async function main() {
     const discoveryReport = JSON.parse(discovery.stdout);
     const discoveryDiagnostic = expansionUiGlobalDiagnostic(discoveryReport);
     if (discoveryDiagnostic.globalErrors) console.error(JSON.stringify({ gate: "expansion-ui-runner", phase: "discovery", project, ...discoveryDiagnostic }));
-    const cases = executionUiDiscovery(discoveryReport, specs, project);
+    const cases = executionUiDiscovery(discoveryReport, specs, project),ciReports:unknown[]=[];
     if (!smoke && cases.length < 7) throw new Error("Expansion UI full gate requires at least seven journeys per project");
     if(focused&&cases.filter(isRecovery).length!==(partner?1:2))throw new Error("Expansion recovery journeys are missing");
     for (const [index, current] of cases.filter(item => (!advice || item.file.endsWith("expansion-advice.spec.ts")) && (!focused || isRecovery(item)) && (!authoring || item.file.endsWith("expansion-authoring.spec.ts")) && (!decisions || item.file.endsWith("expansion-decisions.spec.ts")) && (!queue || item.file.endsWith("expansion-review-queue.spec.ts"))).entries()) {
@@ -63,7 +67,7 @@ async function main() {
         await writeFile(resolve(directory, `${project}-${index}-preparation.json`),JSON.stringify(preparation),{mode:0o600});
         const output = resolve(directory, `${project}-${index}`);
         const run = await captureUiChild(["node_modules/@playwright/test/cli.js", "test", `${current.file}:${current.line}`, `--project=${project}`,
-          "--reporter=json", "--forbid-only", "--retries=0", "--trace=retain-on-failure", `--output=${output}`], {
+          "--reporter=json", "--forbid-only", "--retries=0", "--repeat-each=1", "--trace=retain-on-failure", `--output=${output}`], {
           env: { ...process.env, TURAS_UI_BASE_URL: environment.origin, TURAS_EXPANSION_UI_FIXTURE_READY: "1" },
           timeout: 240000, maximumBytes: 10000000,
         });
@@ -78,7 +82,7 @@ async function main() {
           file: current.file, line: current.line, ...caseDiagnostic }));
         const counts = verifyExecutionUiReport(report, [current]);
         if (run.error || run.status !== 0 || counts.unexpected || counts.skipped || counts.flaky || counts.expected !== 1) throw new Error("Expansion UI case failed");
-        passed++;
+        passed++;ciReports.push(report);
       } finally {
         await environment.stop();
         if (previousNative === undefined) delete process.env.TURAS_EXPANSION_NATIVE_FIXTURE_READY;
@@ -86,8 +90,13 @@ async function main() {
       }
     }, { empty: true, deadlineAt: fixtureDeadline });
     }
+    if(process.env.GITHUB_ACTIONS==='true'&&!advice&&!smoke&&!authoring&&!decisions&&!queue&&!focused){
+      const sourceCommit=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8',timeout:5000}).trim();if(sourceCommit!==process.env.GITHUB_SHA)throw Error('Exact actual CI source required');
+      const binding=expansionCiBindingSchema.parse({sourceCommit,sourceDigest,ciRunId:process.env.GITHUB_RUN_ID,ciRunAttempt:process.env.GITHUB_RUN_ATTEMPT});
+      await writeExpansionCiProject(resolve('local-artifacts/011/ci-webkit-'+project),binding,project,discoveryReport,ciReports);
+    }
   }
   if (await featureSourceDigest("011") !== sourceDigest) throw new Error("Expansion UI source changed");
-  console.log(JSON.stringify({ gate: advice ? "expansion-ui-advice" : queue ? "expansion-ui-queue" : partner ? "expansion-ui-partner" : recovery ? "expansion-ui-recovery" : decisions ? "expansion-ui-decisions" : authoring ? "expansion-ui-authoring" : smoke ? "expansion-ui-smoke" : "expansion-ui-acceptance", sourceDigest, projects: 4, passed, fullAcceptance: !advice && !smoke && !authoring && !decisions && !queue && !focused }));
+  console.log(JSON.stringify({ gate: advice ? "expansion-ui-advice" : queue ? "expansion-ui-queue" : partner ? "expansion-ui-partner" : recovery ? "expansion-ui-recovery" : decisions ? "expansion-ui-decisions" : authoring ? "expansion-ui-authoring" : smoke ? "expansion-ui-smoke" : "expansion-ui-acceptance", sourceDigest, projects: projects.length, passed, fullAcceptance: !selectedProject && !advice && !smoke && !authoring && !decisions && !queue && !focused }));
 }
 main().catch(error => { console.error(error instanceof Error ? error.message : "Expansion UI check failed"); process.exitCode = 1; });

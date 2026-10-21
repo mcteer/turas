@@ -6559,3 +6559,33 @@ blocker. The actual focused native case passes (one selected case, seven unselec
 parent exit0); pilot types pass. Initial local wrapper attempts failed setup
 guards and are retained separately. Fresh exact-source full catalog and CI remain
 pending; the active frozen ae1342e run cannot validate this later test correction.
+
+
+### Expansion WebKit CI partition (2026-10-21, focused verification)
+
+Remote ae9b908 CI finished52 jobs successfully, including the complete execution
+WebKit matrix. Its deterministic execution assertion and90-minute pilot catalog
+failures remain retained. Expansion WebKit job119008742108 was cancelled at the
+120-minute job limit (02:45:20 to04:45:43UTC); its log records no assertion failure.
+This cancellation is not a passing matrix.
+
+The expansion runner adds an exact allowlisted full-project selection; its default
+four-project command and existing focused modes remain available. CI runs all four
+full projects on separate runners with unchanged120-minute job,360-second fixture
+and240-second child bounds, unchanged assertions and no retries. The original
+required `expansion (webkit)` display name now belongs to an always-running
+aggregate. It fails unless every project job succeeds, retrieves only this run
+attempt's four artifacts, independently discovers every checked-in case and
+validates each successful report against that exact union and source digest.
+Missing, duplicate, changed, stale, skipped, flaky or retried evidence fails.
+
+Uploaded reports retain only evaluator fields, excluding titles, steps, output,
+attachments, unrelated configuration values and browser captures. Files and directories
+must be regular, bounded and complete; artifact retention is one day. Three
+integrity regressions pass, expansion types pass, the25-suite predecessor manifest
+is complete, and the workflow parses. The pilot catalog registers all1013 cases
+across183 suites. Independent code review passes. Real discovery in the aggregate
+job's minimal environment confirms all84 cases (21 per project), with no database
+or provider credentials and no browser launch. Fresh committed full catalog/CI
+verification remains pending. The frozen545c3dc run does not validate this later
+CI change; no new hosted build or model call has been performed for it.
