@@ -6788,3 +6788,41 @@ annotation preserves the same runtime object and handoff order. The root
 `npm run typecheck` then exited0. The1359341 local catalog was deliberately
 interrupted with SIGTERM after this finding; no complete pass is claimed.
 Fresh exact-commit catalog and CI evidence are required for the correction.
+
+### Repeated `49021e7` CI readiness failure
+
+The explicit environment type correction passed root typechecking. Its CI pilot
+catalog nevertheless failed again in evaluation-source suite 117: 25 probes over
+60,580 ms, correct printed Next port, both public transports timed out, Next ready
+and internal eve listening, no auth execution marker, independent database
+reachable/open, and a subsequent internal eve health 200. Process code 1 had no
+signal or suite deadline expiry. This demonstrates that leased port ownership
+did not resolve the repeated CI failure; no TCP collision or failing import is
+established. The same committed suite passed 3/3 without skips locally.
+
+The next diagnostic seeds one tiny static file only in the owned fixture copy.
+After the original readiness window has already failed, it compares global fetch
+with node:http using fresh sockets for that static path and public eve health.
+Each additional probe has a one-second clock and runs concurrently with the
+existing failure observations. They cannot satisfy readiness, warm a route
+before admission, or change the original 60-second/2-second checks. Fixed
+connected/header/status/timing/error metadata is allowed; bodies, headers, URLs,
+credentials and arbitrary messages remain private. Actual Linux failure observations remain pending.
+
+The frozen `49021e7` local catalog subsequently completed all 1,013 cases across
+183 suites with parent exit 0, no skips, failures or expired suite deadlines.
+Independent review verified every indexed result/process digest, exact source
+and catalog fingerprints, the clean frozen checkout, and removal of the exact
+owned container and directory. This remains local evidence for `49021e7`; its
+CI readiness failure is retained and prevents full quality/release acceptance.
+
+The new transport lifecycle and diagnostic privacy checks passed all six cases
+with zero skips or failures. Root project typechecking and documentation checks
+exited 0. The original three owned-source integration cases and an actual Linux
+failure observation are recorded separately; these diagnostics are not a
+behavioral resolution or evidence of a particular compiler/import phase.
+
+The diagnostic draft also passed all three original owned-source integration
+cases with process exit 0, no failures and no skips. These checks verify the
+sentinel preparation and ordinary successful fixture path; they do not
+reproduce the Linux failure or establish its cause.

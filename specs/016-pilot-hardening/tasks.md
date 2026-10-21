@@ -457,3 +457,12 @@ No hosted target may be locked for release before its measured reopen path exist
   and deadlines. Verify existing lease/privacy regressions and the original three
   owned-source cases. Retain c5a733e failures and require new committed catalog,
   CI and hosted evidence without claiming a demonstrated TCP collision.
+
+- [ ] T125 Diagnose the repeated committed-source artifact readiness failure
+  with failure-only static fetch and fresh-socket HTTP observations. Seed only
+  an owned static sentinel; retain the original 60-second admission predicate,
+  2-second readiness probes, cases, model limits and all outer clocks. Bound
+  additional probes to one second, run them alongside existing failure observations,
+  close connections on every exit, and publish only fixed transport metadata.
+  Verify lifecycle/privacy checks and record actual Linux CI observations before
+  claiming a failing phase or selecting a behavioral fix.

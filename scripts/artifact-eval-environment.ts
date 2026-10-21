@@ -1,3 +1,4 @@
+import {artifactStartupSentinel,probeArtifactStartupTransport} from './artifact-startup-probe';
 import {configureOwnedNextDependencyRoot} from './owned-next-config';
 import {stopOwnedAppProcesses} from './plan-eval-environment';
 import {installBehaviorReviewCapture} from './pilot-behavior-review-capture';
@@ -118,6 +119,7 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
     process.env.TURAS_APP_ORIGIN = origin;
     process.env.TURAS_ARTIFACT_STORE_ROOT = store;
     if(process.env.TURAS_016_BEHAVIOR_CAPTURE_ROOT)await installBehaviorReviewCapture(app,process.env.TURAS_016_BEHAVIOR_CAPTURE_ROOT);
+    await writeFile(join(app,'public',artifactStartupSentinel),'owned-evaluation-startup-probe-v1\n',{mode:0o600,flag:'wx'});
     const devEnvironment: NodeJS.ProcessEnv = { ...process.env,NODE_ENV:"development",PORT: String(port),...await qualityChildEnvironment() };
     await portLease.release();
     dev = spawn(process.execPath,["scripts/dev.mjs"],{
@@ -171,7 +173,7 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
         try {return await Promise.race([work,new Promise<typeof failed>(done=>{timer=setTimeout(()=>{closed=true;db.connection.stream.destroy();done(failed);},2_200);})]);}
         finally {closed=true;clearTimeout(timer);db.connection.stream.destroy();void db.end().catch(()=>undefined);}
       };
-      const [internal,db] = await Promise.all([internalHealth(),databaseHealth()]);
+      const [internal,db,transport] = await Promise.all([internalHealth(),databaseHealth(),probeArtifactStartupTransport(port).catch(()=>({transportDiagnosticUnavailable:true}))]);
       const signatures=['EADDRINUSE','ECONNREFUSED','Module not found','Cannot find module','Failed to compile','Error:','ENOSPC','EMFILE','ENOMEM','Turbopack panic'].filter(value=>plainOutput.includes(value));
       // This fixed record survives removal of the owned app. Arbitrary startup
       // output remains private; CI publishes only whitelisted phase metadata.
@@ -181,6 +183,7 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
         nextReady:/Ready in/i.test(plainOutput),compiling:/Compiling/i.test(plainOutput),eveListening:internalAddress!==null,
         nextAddressObserved:publicAddress!==null,nextPortMatches:publicAddress!==null&&Number(publicAddress[1])===port,
         ...artifactAuthStartupPhases(startupOutput),
+        ...transport,
         internalEveStatus:internal.status,internalEveTransport:internal.transport,databaseReachable:db.reachable,databaseAdmissionOpen:db.admissionOpen,signatures})+'\n');
       throw new Error('Isolated evaluation app did not become ready: '+JSON.stringify({lastAuthStatus,lastEveStatus,exitCode:dev.exitCode,signatures}));
     }

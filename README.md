@@ -1018,3 +1018,9 @@ The1359341 port-lease follow-up exposed a root-project environment type error in
 CI. The environment now has an explicit ProcessEnv annotation; full root
 typechecking passes locally. Its interrupted local catalog and failed CI remain
 retained, and fresh committed-source validation is still required.
+
+The `49021e7` CI attempt repeated the artifact readiness timeout, so the leased port
+is not presented as its cause or resolution. The fixture records failure-only static and fresh-socket
+HTTP observations while preserving the
+original admission checks and clocks. Current Linux diagnostic evidence and the
+behavioral resolution remain pending.
