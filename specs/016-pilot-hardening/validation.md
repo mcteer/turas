@@ -6921,3 +6921,12 @@ The diagnostic draft passed all12 focused privacy and suite-result cases without
 failures or skips. Root project typechecking and documentation checks exited0.
 The checks were repeated against the final prospective inventory; actual new CI
 phase evidence and a complete current-source run remain pending.
+
+The partner absent-request case now wraps its unchanged operations in eight fixed
+Playwright steps, covering assignment preparation, draft preparation/dispatch,
+unresolved state, reload, restored state, resolution and audit. Failure formatting
+accepts only those named steps; private or arbitrary titles remain excluded. The
+existing five-case privacy suite passes with the added partner-phase assertions,
+and root typechecking exits0. No cases, predicates, timeouts or retry settings
+change; inventory remains1,019/185. This is diagnostic instrumentation, with actual
+new browser-phase and complete current-source evidence still pending.

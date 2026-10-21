@@ -478,7 +478,8 @@ No hosted target may be locked for release before its measured reopen path exist
 
 - [ ] T127 Preserve actual `5124987` partner WebKit and pilot regression failures,
   and add fixed failure-only regression stage/process/current-schema-count and
-  approved browser-location observations. Retain every predecessor/current-schema/
+  approved browser-location observations, including eight fixed steps in the partner
+  absent-request journey. Retain every predecessor/current-schema/
   four-profile case, predicate, timeout and retry setting; rethrow the original
   error and keep arbitrary child/test/page content private. Verify focused privacy,
   types and inventory checks; record actual new CI phase before selecting a fix.

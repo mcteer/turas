@@ -127,7 +127,9 @@ The composed workspace/upload WebKit matrix passes40cases. The ae9b908 local
 catalog passes1009 cases across182 suites; its hosted regional check failed at
 canonical MCP denial reconciliation and its owned credentials/executor were closed.
 The current1019-case/185-suite catalog includes denial-preparation, startup transport,
-session import-boundary and fixed regression failure-phase checks. It requires fresh
+session import-boundary and fixed regression failure-phase checks. The partner absent-request
+journey also records eight approved browser steps on failure without changing its
+assertions or clocks. It requires fresh
 complete verification. Expired infrastructure/model approvals,
 original charges and holds remain unchanged; no hosted pilot readiness is claimed.
 Authority readers now coexist with serialized writers; all16 support/grant

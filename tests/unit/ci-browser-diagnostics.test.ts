@@ -1,7 +1,7 @@
 import {artifactAuthStartupPhases} from '../../scripts/artifact-eval-environment';
 import {processFailureMetadata,setupFailureMetadata,pilotRegressionFailureMetadata} from '../../scripts/ci-process-diagnostics';
 import {describe,expect,it} from 'vitest';
-import {browserFailureMetadata,fixedUtilizationMetadata,pilotUiChildFailures} from '../../scripts/ci-browser-diagnostics';
+import {browserFailureMetadata,fixedUtilizationMetadata,pilotUiChildFailures,partnerBrowserFailureMetadata} from '../../scripts/ci-browser-diagnostics';
 import {nativeQueryOperation,nativeQueryObservationSchema,nativeBlockerMetadata} from '../../scripts/ci-native-query-observer';
 const allowed=new Set(['mcp-accessibility.spec.ts']);
 describe('private browser failure diagnostics',()=>{
@@ -14,6 +14,8 @@ describe('private browser failure diagnostics',()=>{
   expect(transport[0]).toMatchObject({signatures:['page.reload','WebKit encountered an internal error'],phases:['Reload retained failed history']});expect(JSON.stringify(transport)).not.toContain('PRIVATE_');
   const learning=browserFailureMetadata({suites:[{specs:[{file:'learning-draft.spec.ts',tests:[{projectName:'webkit-mobile-dark',results:[{status:'timedOut',errors:[{message:'Test timeout PRIVATE_PROSE'}],steps:[{title:'Prepare learning draft',error:{message:'PRIVATE_FORM'}},{title:'PRIVATE_PHASE',error:{}}]}]}]}]}]},new Set(['learning-draft.spec.ts']));
   expect(learning[0]).toMatchObject({category:'test_timeout',phases:['Prepare learning draft']});expect(JSON.stringify(learning)).not.toContain('PRIVATE_');
+  const partner=partnerBrowserFailureMetadata({specs:[{file:'partner-learning.spec.ts',tests:[{projectName:'webkit-desktop-dark',results:[{status:'timedOut',error:{message:'Test timeout PRIVATE_PROSE'},steps:[{title:'Dispatch absent request draft',error:{message:'PRIVATE_REQUEST'}},{title:'PRIVATE_PHASE',error:{}}]}]}]}]});
+  expect(partner[0]).toMatchObject({category:'test_timeout',phases:['Dispatch absent request draft']});expect(JSON.stringify(partner)).not.toContain('PRIVATE_');
   expect(results[0].mentionedAccessibilityRules).toEqual(['color-contrast']);expect(JSON.stringify(results)).not.toContain('private-customer-rule');
  });
  it('ignores unapproved files and bounds records, projects and numeric metadata',()=>{

@@ -1,4 +1,4 @@
-export const knownBrowserPhases=new Set(['Reload retained failed history','Verify retained file after reload','Open learning draft','Prepare learning draft','Verify learning draft','Audit learning draft','Cancel learning draft','Verify learning partner denial']);
+export const knownBrowserPhases=new Set(['Reload retained failed history','Verify retained file after reload','Open learning draft','Prepare learning draft','Verify learning draft','Audit learning draft','Cancel learning draft','Verify learning partner denial','Prepare absent request assignment','Prepare absent request draft','Dispatch absent request draft','Verify unresolved absent request','Reload absent request assignment','Verify absent request after reload','Resolve absent request fence','Audit absent request outcome']);
 export function fixedBrowserPhases(raw:unknown){return Array.isArray(raw)?[...new Set(raw.filter((value):value is string=>typeof value==='string'&&knownBrowserPhases.has(value)))].slice(0,8):[];}
 import axe from 'axe-core';
 type UtilizationMetadata={status:number;fromMatches:boolean;toMatches:boolean;resourceMatches:boolean;percentageIsExpected:boolean;state:string|null;errorCode:string|null};
@@ -26,7 +26,7 @@ function utilizationAttachment(raw:unknown):UtilizationMetadata|undefined{
 type BrowserFailure={file:string;line:number;column:number;project:string;status:string;durationMs:number|null;category:string;signatures:string[];mentionedAccessibilityRules:string[];phases?:string[];utilization?:UtilizationMetadata};
 const accessibilityRules=new Set(axe.getRules().map(rule=>rule.ruleId));
 const projects=new Set(['webkit-desktop-light','webkit-desktop-dark','webkit-mobile-light','webkit-mobile-dark']);
-const signatures=['Test timeout','Timeout','toBeVisible','toBeFocused','toHaveCount','toEqual','strict mode violation','navigation interrupted','ERR_ABORTED','ECONNREFUSED','Execution context was destroyed','page.reload','page.goto','Target page, context or browser has been closed','WebKit encountered an internal error','Frame load interrupted','Load failed'] as const;
+const signatures=['Test timeout','Timeout','toBeVisible','toBeFocused','toHaveCount','toEqual','strict mode violation','navigation interrupted','ERR_ABORTED','ECONNREFUSED','Execution context was destroyed','page.reload','page.goto','Target page, context or browser has been closed','WebKit encountered an internal error','Frame load interrupted','Load failed','Fast Refresh','503','429'] as const;
 /** Fixed metadata only: never publish titles, error prose, DOM, raw attachments or stdout. */
 export function browserFailureMetadata(raw:unknown,allowedFiles:ReadonlySet<string>):BrowserFailure[]{
  const failures:BrowserFailure[]=[];let visited=0;
@@ -73,4 +73,9 @@ export function pilotUiChildFailures(raw:unknown){
   failures.push(...browserFailureMetadata(report,new Set(['pilot-workspace.spec.ts','pilot-uploads.spec.ts'])));
  }catch{/* An unavailable diagnostic cannot expose the child's private output. */}
  return failures.slice(0,10);
+}
+
+/** Same fixed formatter used by the actual partner CI runner. */
+export function partnerBrowserFailureMetadata(raw:unknown){
+ return browserFailureMetadata(raw,new Set(['partner-workspace.spec.ts','partner-guides.spec.ts','partner-learning.spec.ts','partner-revocation.spec.ts','partner-accessibility.spec.ts'])).slice(0,20);
 }
