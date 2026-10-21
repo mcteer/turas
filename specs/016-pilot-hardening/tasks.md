@@ -426,3 +426,10 @@ No hosted target may be locked for release before its measured reopen path exist
   Allow source-bound CI without an automatic Preview build. Keep separately
   funded exact-commit hosted acceptance mandatory before merge; confirm actual
   suppression after push and retain any unexpected deployment as unresolved.
+
+- [X] T121 Preserve the fixed startup diagnostic through the actual JSON-only
+  Vitest reporter using direct stderr, after the later CI readiness failure.
+  Verify actual reporter transport and privacy, retain both failures, and keep
+  the startup cause, full changed-source catalog and CI acceptance unresolved
+  until their actual source-bound checks complete. Preserve all readiness and
+  timeout assertions.

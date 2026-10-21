@@ -6649,3 +6649,21 @@ its exact-source Preview, with its own target/environment/build review. The
 existing exact-head authenticated hosted, quality and review gates remain
 mandatory. The earlier instruction-only source's complete1013/183 local pass is
 retained as historical; final changed-source verification remains required.
+
+The later0cc deterministic CI job119114291243 failed at suite117's first
+evaluation-source case, again at the original60-second artifact app readiness
+check. Actual process code1/signalnull/deadlineExpiredfalse and the complete
+private CI log are retained. No fixed startup record reached the CI summary;
+neither transport outcomes nor a startup cause can be inferred from the failure.
+A private actual JSON-only Vitest reporter reproduction emitted the same fixed
+record through console.error and direct process.stderr.write. The console record
+was absent from captured stdout/stderr; the direct record survived and the
+governing classifier parsed it. The implementation now uses direct stderr for
+that fixed record only. Raw startup logs remain private and every readiness,
+per-route and suite deadline is unchanged. This corrects diagnostic transport;
+it does not fix or establish the actual readiness cause. The unchanged0cc local
+full catalog and execution WebKit CI job were still running at this correction.
+Independent review, the existing three diagnostic privacy cases, pilot type
+checking, all243 authored-document checks and whitespace checks pass for this
+transport correction. No new-source complete catalog, CI or hosted pass is
+claimed by those focused checks.

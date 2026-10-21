@@ -980,6 +980,10 @@ within the original60-second allowance. Independent route-status diagnostics now
 preserve which health probe failed and fixed startup phases after owned-app
 cleanup. This diagnostic correction preserves the readiness assertions and all
 deadlines; the original startup cause and fresh complete CI remain unresolved.
+The later CI attempt failed at the same readiness check. A local reporter
+reproduction showed that JSON-only Vitest suppresses console diagnostics, so the
+fixed, whitelisted startup record now writes directly to stderr. Its transport
+is verified separately; the actual startup cause remains unproved.
 
 Automatic Vercel deployments are disabled for the recovery completion branch so
 its CI checks can run independently of a funded Preview build. Main remains

@@ -135,9 +135,10 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
       const signatures=['EADDRINUSE','ECONNREFUSED','Module not found','Cannot find module','Failed to compile','Error:'].filter(value=>startupOutput.includes(value));
       // This fixed record survives removal of the owned app. Arbitrary startup
       // output remains private; CI publishes only whitelisted phase metadata.
-      console.error(JSON.stringify({kind:'artifact_eval_startup_failure',lastAuthStatus,lastEveStatus,authTransport,eveTransport,probeCount,elapsedMs:Date.now()-started,
+      // Vitest's JSON-only reporter intercepts console output; write directly.
+      process.stderr.write(JSON.stringify({kind:'artifact_eval_startup_failure',lastAuthStatus,lastEveStatus,authTransport,eveTransport,probeCount,elapsedMs:Date.now()-started,
         supervisorExited:dev.exitCode!==null,supervisorSignalled:dev.signalCode!==null,
-        nextReady:/Ready in/i.test(startupOutput),compiling:/Compiling/i.test(startupOutput),eveListening:/server listening at http:\/\/127\.0\.0\.1:\d+\//.test(startupOutput),signatures}));
+        nextReady:/Ready in/i.test(startupOutput),compiling:/Compiling/i.test(startupOutput),eveListening:/server listening at http:\/\/127\.0\.0\.1:\d+\//.test(startupOutput),signatures})+'\n');
       throw new Error('Isolated evaluation app did not become ready: '+JSON.stringify({lastAuthStatus,lastEveStatus,exitCode:dev.exitCode,signatures}));
     }
     return await run();
