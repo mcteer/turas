@@ -1046,3 +1046,9 @@ The pending pilot shutdown correction passed eight focused process tests and
 pilot type checking. Three additional detached-process cases bring its catalog
 to 1022 cases; actual native cleanup and fresh complete CI evidence are pending.
 Production remains on the previously released build.
+
+The actual native cleanup recheck identified an additional Next.js usage-telemetry
+process during shutdown. The isolated pilot fixture opts out of optional telemetry transmission and waits
+up to five seconds for verified directory release;
+application tracing and strict cleanup verification remain enabled. Fresh native
+and complete catalog/CI verification are still pending.

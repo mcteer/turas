@@ -7033,3 +7033,16 @@ cached process identities before signals, bounds inventory and captured groups,
 and verifies temporary-root cwd/open-file absence before removal. Actual native
 preparation, a complete fresh catalog and exact-head CI remain required; these
 focused checks do not establish hosted or release readiness.
+
+### Actual native cleanup follow-up
+
+The `4f30807` native denial preparations dispatched no paid provider calls but
+failed the final root-cwd guard. A passive diagnostic retained the actual lsof
+result and immediately identified its matching process as Next.js's detached
+telemetry flush. The earlier detached Eve service correction remains in place.
+The isolated fixture opts out of optional Next usage telemetry transmission.
+This Next version can still fork a flush child on shutdown; the fixture polls
+actual cwd absence within one five-second window and still requires open-file
+absence before removal. Application tracing remains enabled. Fixed probe diagnostics
+retain status and booleans without arbitrary process or file content. Actual
+new-source native cleanup and complete catalog/CI remain pending.
