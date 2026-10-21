@@ -491,3 +491,23 @@ No hosted target may be locked for release before its measured reopen path exist
   cases, predicates, suite/outer deadlines and cleanup behavior. Verify privacy
   and types; require actual new source-bound full catalog/CI evidence. Timing
   alone is not proof of a watchdog or an MCP assertion failure.
+
+- [ ] T129 Preserve the actual `4964417` mobile-dark public-research preview
+  timeout at Prepare refresh. Add fixed failure-only phase timings, mocked refresh
+  request/fulfillment counts and passive panel-state booleans, with bounded
+  diagnostic waiting and unconditional original-error propagation. Preserve every
+  original operation, assertion, case, retry setting and30-second test deadline.
+  Keep arbitrary DOM, URLs, IDs and error prose private. Verify types and actual
+  new source-bound CI observations before selecting any behavioral fix; response
+  fulfillment and DOM presence alone do not prove consumption or visibility.
+
+- [ ] T130 Close the owned pilot fixture's direct-parent-exit cleanup gap after
+  the actual `4964417` unpaid native admission check left late trace files.
+  Reuse genuine process-group retirement capabilities for worker, app/supervisor,
+  native service and build; retain failed capabilities, attempt all retirements,
+  reject stale concurrent startup and refuse temporary-root removal until verified.
+  Preserve the helper's5-second escalation/10-second total verification policy
+  and every case/outer deadline. Verify descendant/error/cancellation behavior,
+  actual native denial preparation with zero dispatch and exact cleanup, then fresh
+  complete source-bound catalog/CI. Retain original traces and failure evidence;
+  do not identify an exact trace writer without proof.

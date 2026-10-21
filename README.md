@@ -130,9 +130,18 @@ The current1019-case/185-suite catalog includes denial-preparation, startup tran
 session import-boundary and fixed regression failure-phase checks. The partner absent-request
 journey also records eight approved browser steps on failure without changing its
 assertions or clocks. Catalog failures also retain fixed owned-cancellation and
-child-error classifications. It requires fresh
-complete verification. Expired infrastructure/model approvals,
+child-error classifications. The `4964417` local run passed all1019 cases across185
+suites, with independently verified source, indexed receipts and owned cleanup.
+Its partner WebKit48-case matrix and three pilot regression groups also passed in
+CI, while the mobile-dark public-research preview timed out waiting for Prepare
+refresh. The follow-up retains fixed failure-only phase, mocked-response and panel
+state observations; no specific cause or behavioral fix is established. The new
+draft requires fresh complete verification. Expired infrastructure/model approvals,
 original charges and holds remain unchanged; no hosted pilot readiness is claimed.
+The owned pilot fixture now uses the existing process-group retirement capability
+for its worker, app, native service and build. This closes the direct-parent-exit
+gap exposed by late trace files after an unpaid admission check; root removal
+requires verified group retirement. The exact trace writer was not identified.
 Authority readers now coexist with serialized writers; all16 support/grant
 concurrency checks and the actual unpaid native-operations/WebKit fixture pass
 locally. The partner guide journey now waits for completed command acknowledgments

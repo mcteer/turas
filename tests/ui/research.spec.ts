@@ -19,7 +19,13 @@ async function visitAfterSignIn(page: Page,path: string) {
 }
 
 test("public research preview stays explicit in an owned synthetic chat",async ({ page },testInfo) => {
+  const startedAt = Date.now();
+  let phase = "sign-in";
+  const phases: { phase: string; elapsedMs: number }[] = [];
+  const mark = (next: string) => { phase = next; phases.push({ phase: next,elapsedMs: Math.min(30000,Math.max(0,Date.now()-startedAt)) }); };
+  let refreshRequests = 0,refreshFulfilled = 0;
   await signIn(page,"mcteer");
+  mark("fixture-database");
   const db = new Client({ connectionString: requireUiFixtureDatabaseUrl() });
   await db.connect();
   const id = randomUUID();
@@ -47,6 +53,7 @@ test("public research preview stays explicit in an owned synthetic chat",async (
       randomUUID(),session.rows[0].id,DEMO_IDS.mcteerMembership,
       state.rows[0]?.internal_generation ?? 0]);
     await page.route("**/api/research/refresh?**",async (route) => {
+      refreshRequests = Math.min(256,refreshRequests+1);
       await route.fulfill({ status: 200,contentType: "application/json",body: JSON.stringify({
         data: [{ sourceRevisionId: randomUUID(),title: "Synthetic public identity",
           dueAt: "2026-09-28T00:00:00.000Z",state: "due",
@@ -54,12 +61,18 @@ test("public research preview stays explicit in an owned synthetic chat",async (
           mode: "recon",publicFields: { publicName: "Example Organization",
             publicDomain: "example.org",identityConfirmed: true } }],
       }) });
+      refreshFulfilled = Math.min(256,refreshFulfilled+1);
     });
+    mark("visit-chat");
     await visitAfterSignIn(page,`/s/${id}`);
+    mark("open-context");
     await page.getByRole("button",{ name: "Customer context",exact: true }).click();
+    mark("open-research");
     await page.getByRole("button",{ name: "Start public research" }).click();
     const panel = page.getByRole("region",{ name: "Public Research" });
+    mark("prepare-refresh");
     await panel.getByRole("button",{ name: "Prepare refresh" }).click();
+    mark("assert-prefill");
     await expect(panel.getByLabel("Mode")).toHaveValue("recon");
     await expect(panel.getByLabel("Public name")).toHaveValue("Example Organization");
     await expect(panel.getByLabel("Public domain")).toHaveValue("example.org");
@@ -80,15 +93,47 @@ test("public research preview stays explicit in an owned synthetic chat",async (
             wallSeconds: 120 } },
       }) });
     });
+    mark("preview-scope");
     await panel.getByRole("button",{ name: "Preview scope" }).click();
     await expect(panel.getByRole("region",{ name: "Research scope preview" }))
       .toContainText('"Vercel" "2026" "build cache" official documentation');
+    mark("accessibility");
     const axe = await new AxeBuilder({ page }).analyze();
     expect(axe.violations.filter((item) => ["critical","serious"].includes(item.impact ?? "")))
       .toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth+1)).toBe(true);
     mkdirSync("local-artifacts/005",{ recursive: true });
+    mark("capture");
     await sanitizedScreenshot(page,`local-artifacts/005/research-${testInfo.project.name}.png`);
+  } catch (error) {
+    // Failure-only, fixed booleans/counts. Never publish DOM, URLs, IDs or error prose.
+    let observation: Record<string,boolean> = { unavailable: true };
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      observation = await Promise.race([
+        page.evaluate(() => {
+          const research = document.querySelector('[aria-label="Public Research"]');
+          const due = research?.querySelector('[aria-label="Research review due"]');
+          const buttons = [...(research?.querySelectorAll('button') ?? [])];
+          return { unavailable: false,researchPanelPresent: Boolean(research),duePanelPresent: Boolean(due),
+            researchExpanded: buttons.some(button => button.getAttribute('aria-expanded') === 'true'),
+            refreshPresent: buttons.some(button => button.textContent?.trim() === 'Prepare refresh'),
+            refreshEnabled: buttons.some(button => button.textContent?.trim() === 'Prepare refresh' && !(button as HTMLButtonElement).disabled),
+            loading: due?.textContent?.includes('Checking review dates…') ?? false,
+            refreshUnavailable: due?.textContent?.includes('Review dates are unavailable.') ?? false,
+            noneDue: due?.textContent?.includes('No attributed research requires review.') ?? false,
+            chatUnavailable: [...document.querySelectorAll('h1')].some(heading => heading.textContent === 'Chat Unavailable') };
+        }),
+        new Promise<Record<string,boolean>>(resolve => { timer = setTimeout(() => resolve({ unavailable: true }),1000); }),
+      ]);
+    } catch { /* Keep the original test failure. */ }
+    finally { if (timer) clearTimeout(timer); }
+    try {
+      console.error(JSON.stringify({ kind: "research_refresh_ui_failure",phase,
+        elapsedMs: Math.min(120000,Math.max(0,Date.now()-startedAt)),phases,
+        refreshRequests,refreshFulfilled,observation }));
+    } catch { /* Diagnostics must not replace the original failure. */ }
+    throw error;
   } finally {
     await db.query("DELETE FROM conversations WHERE id=$1",[id]).catch(() => undefined);
     await db.end();

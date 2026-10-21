@@ -6944,3 +6944,55 @@ there is no separately retained actual CI117 artifact or full CI acceptance.
 The follow-up adds fixed first-cancellation-source and child-error classification
 without changing deadlines, cases, predicates or cleanup. Focused privacy checks
 pass; fresh complete source-bound and actual CI observations remain required.
+
+### Actual `4964417` local completion and CI observations
+
+The exact `4964417` local catalog completed all1,019 cases across185 suites with
+zero failures or skips and actual parent exit0. Independent verification checked
+every indexed result/process hash, registered order/title, original proof receipt,
+recomputed clean source and exact outer cleanup. A separate read-only Docker
+inventory check found only the two unchanged pre-existing labelled containers;
+no new labelled nested container remained. Original evaluation-source suite117
+passed3/3 and recovery MCP HTTP suite154 passed1/1, each with process exit0, no
+signal and no deadline expiry. These results establish local completion only.
+
+On the same commit, partner WebKit passed12 cases in each of four profiles
+(48 total, no failures or skips), and the pilot regression job passed all three
+governed groups with zero paid calls. Both actual results were independently
+reviewed. Main CI remains incomplete at this observation: its verify job failed
+the mobile-dark public-research preview at `research.spec.ts:62`, waiting for
+Prepare refresh within the unchanged30-second test deadline. The isolated005 UI
+command reported23 passed,4 skipped and1 failed. No retry was performed. The call
+log does not establish a fetch, visibility, unmount or overlay cause.
+
+The reviewed follow-up adds only fixed phase/time observations, intercepted
+refresh request/fulfilled counts and passive panel-state booleans on failure.
+Diagnostic evaluation waiting is bounded to1 second; logging errors are contained
+and the original error is rethrown unconditionally. No raw DOM, IDs, URLs or error
+prose is published. Fulfillment means the mock handler resolved, not browser
+consumption, and DOM presence does not prove visibility. Original assertions,
+operation order, retry settings and test deadlines remain unchanged. A private
+isolated copy passed typechecking; full current-source verification and actual
+new browser observations remain pending.
+
+The subsequent exact `4964417` synthetic native admission preparation exited0
+and produced an actual insufficient-budget denial before provider dispatch, with
+no real provider credential and zero paid/context/unknown dispatches. This proves
+the denial path, not model quality. Independent cleanup inspection found a
+remaining temporary app root containing trace/index files written just after the
+preparation receipt. No current matching cwd/open file/argv path or recorded
+guarded PID was found. Late trace publication is supported; its exact originating
+process is not identified. Final temporary-root cleanup remains unresolved at
+this observation, separate from the verified preceding full catalog cleanup.
+
+The follow-up uses the existing genuine process-group retirement helper for all
+fixture-spawned workers, apps/supervisors, native services and builds. Completed
+builds are retired before proceeding; stop attempts every retained capability and
+fails before root removal if any group cannot be verified retired. Startup epoch
+and cancellation checks prevent async environment preparation from spawning after
+a stop. Background interrupt rejection is contained while failed capabilities
+remain retained for the final awaited failure. The helper's5-second escalation
+and10-second total retirement verification bounds are unchanged; no case or outer
+deadline is extended. Existing descendant/cancellation/group-probe checks pass5/5,
+and root typechecking exits0. Actual new source-bound native cleanup, full catalog
+and CI remain pending.
