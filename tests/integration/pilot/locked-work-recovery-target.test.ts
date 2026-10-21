@@ -100,7 +100,12 @@ it('durably registers exact probe identities and independently retires committed
  await requireRetiredIntent(input,sessionId);
 }),210000);
 it('retires registered credentials after cancellation using an independent uncancelled owner connection',async()=>fixture(async input=>{
- const controller=new AbortController();let sessionId='';await expect(withLockedWorkRecoveryTarget({...input,signal:controller.signal},async(db,target)=>{sessionId=(await trackedSession(db,target,input)).sessionId;controller.abort(Error('Controlled work recovery cancellation'));await new Promise(()=>{});})).rejects.toThrow('Controlled work recovery cancellation');
+ const controller=new AbortController();let sessionId='';
+ // The callback deliberately never drains. Cancellation must retain that failure
+ // while independent owner IO still retires its committed credentials.
+ const cancelled=withLockedWorkRecoveryTarget({...input,signal:controller.signal},async(db,target)=>{sessionId=(await trackedSession(db,target,input)).sessionId;controller.abort(Error('Controlled work recovery cancellation'));await new Promise(()=>{});});
+ await expect(cancelled).rejects.toBeInstanceOf(AggregateError);
+ await expect(cancelled).rejects.toMatchObject({message:'Work recovery and independent probe cleanup incomplete',errors:[{message:'Controlled work recovery cancellation'},{message:'Recovery canonical read group did not drain within its read bound'}]});
  await requireRetiredIntent(input,sessionId);
 }),210000);
 

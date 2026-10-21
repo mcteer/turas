@@ -355,3 +355,10 @@ No hosted target may be locked for release before its measured reopen path exist
   assertions, all existing deadlines and the original CI failure. The corrected
   four-project WebKit matrix passes24 cases with four existing skips and no
   retries; refresh committed-source catalog, CI and hosted proof before release.
+
+- [X] T113 Preserve the deliberate never-draining cancellation callback in the
+  owned locked-target fixture and assert both its controlled cancellation and
+  bounded-drain failure, then independently verify actual credential retirement.
+  Retain the original full-catalog failure, preserve production drain guards and
+  all deadlines. All16 affected owned cases pass; require fresh committed
+  catalog, CI and hosted checks.

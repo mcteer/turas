@@ -6447,3 +6447,27 @@ zero provider calls; they neither explain the original Product-field CI failure
 nor establish hosted model, recovery or release acceptance. Independent review
 verified the exact fixture and retained capture. Complete committed-source
 catalog, CI and hosted evidence must be refreshed for this correction.
+
+### Undrained cancellation fixture and clone dependencies (2026-10-21)
+
+The complete599db93 catalog stopped after153 attempted suites:152 passed and the
+locked-target suite had15 passing cases and one failing cancellation assertion.
+The fixture intentionally awaited a promise that never settles. The bounded
+callback-drain behavior added in T111 therefore correctly returned an aggregate
+instead of the previously expected cancellation-only error. An independent owned
+Postgres18 reproduction captured exactly the controlled cancellation and the
+undrained-callback error, then verified actual independent credential retirement.
+There was no database-end or credential-retirement error. The original failed
+catalog and diagnostic remain retained; no runtime drain guard is being relaxed.
+The corrected assertion and all16 affected owned cases pass with unchanged
+deadlines. Complete committed-source and hosted checks remain required.
+
+The first7a1f478 frozen-clone catalog also failed during setup. Its clone lacked
+the extractor dependency directory required by owned Next dependency resolution.
+The existing dependency bytes were preserved in the main project's private
+artifact directory and linked into the clone without changing tracked source or
+deleting the original dependency tree. A fresh owned setup matching prior55 and
+query-statistics settings passed the legacy preparation and current079 migration
+sequence. An earlier diagnostic used an incompatible prior-schema setting and is
+retained separately. This setup check is not a passing full catalog. Paid model,
+hosted recovery and release gates remain pending.

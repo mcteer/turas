@@ -936,3 +936,8 @@ stream and denies native delivery, retaining the production busy guard. The loca
 four-project WebKit matrix passes24 cases with four existing skips and no retries;
 this is controlled fixture coverage. Fresh committed catalog, CI and hosted
 verification remain required, and the original CI failure remains retained.
+
+The locked-target cancellation fixture now requires the deliberate undrained
+callback error alongside cancellation and verifies independent credential
+retirement. The original partial catalog failure remains retained. Fresh complete
+committed catalog, CI and hosted acceptance remain required.
