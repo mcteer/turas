@@ -6930,3 +6930,17 @@ existing five-case privacy suite passes with the added partner-phase assertions,
 and root typechecking exits0. No cases, predicates, timeouts or retry settings
 change; inventory remains1,019/185. This is diagnostic instrumentation, with actual
 new browser-phase and complete current-source evidence still pending.
+
+The `5124987` local catalog completed1,017 cases across185 suites with no failures
+or skips and actual parent exit0. Independent verification checked every indexed
+result/process hash, original proof receipts, exact source and owned cleanup.
+This remains local-only evidence.
+
+The same source's deterministic CI job failed at recovery MCP HTTP suite154. Its
+command-to-failure interval was90m6.764s, consistent with the existing90-minute
+watchdog, but no captured abort reason proves that cause or an MCP assertion
+failure. Ordered progress implies earlier suite117 satisfied the runner verifier;
+there is no separately retained actual CI117 artifact or full CI acceptance.
+The follow-up adds fixed first-cancellation-source and child-error classification
+without changing deadlines, cases, predicates or cleanup. Focused privacy checks
+pass; fresh complete source-bound and actual CI observations remain required.

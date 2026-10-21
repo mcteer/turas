@@ -1,3 +1,8 @@
+/** Fixed owned cancellation source and native child error class; never error prose. */
+export function pilotCatalogAbortMetadata(cause:unknown,error:unknown){
+ const row=error&&typeof error==='object'?error as Record<string,unknown>:{};
+ return {cancellationCause:typeof cause==='string'&&['none','deadline','signal'].includes(cause)?cause:'unavailable',processErrorName:typeof row.name==='string'&&['AbortError','Error','TypeError','RangeError'].includes(row.name)?row.name:error?'other':null,processErrorCode:typeof row.code==='string'&&['ABORT_ERR','EAGAIN','ENOENT','EACCES','ENOMEM','EMFILE','ENFILE'].includes(row.code)?row.code:null};
+}
 /** Fixed signatures only. Child output can contain credentials and customer prose;
  * never copy messages, arbitrary paths or unmatched content into CI logs. */
 const pilotRegressionStages=new Set(['predecessor-process','predecessor-receipt','current-schema-setup','current-schema-process','current-schema-report','current-schema-cleanup','fresh-ui-process','fresh-ui-receipt','final-source','final-evidence']);

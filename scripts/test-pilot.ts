@@ -1,3 +1,4 @@
+import {pilotCatalogAbortMetadata} from "./ci-process-diagnostics";
 import {pilotSuiteDeadlineMs} from './pilot-suite-deadlines';
 import {preparePilotAssetPermissions} from './pilot-asset-permissions';
 import {parsePilotImagePreparation} from "../lib/contracts/pilot-images";
@@ -18,6 +19,7 @@ import { verifyPilotSuiteResult } from "./pilot-suite-results";
 
 let failureRecord:{root:string;runId:string;sourceCommit:string;sourceDigest:string;catalogDigest:string}|null=null;
 let failureStage='setup',activeSuite:string|null=null;
+let cancellationCause:()=>unknown=()=> 'unavailable',childProcessError:unknown=null;
 async function main(){
  if(process.argv.length!==2)throw new Error("Pilot catalog does not accept suite filters");
  if(suites.suites.some(suite=>suite.cases.length!==suite.expectedCases||new Set(suite.cases).size!==suite.cases.length))throw Error("Complete unique named pilot case inventory required");
@@ -36,6 +38,7 @@ async function main(){
  await writeEvidence(root,"image-preparation.json",preparation);
  const previousUmask=process.umask(0o077);
  try{await withPilotEnvironment(async environment=>{
+  cancellationCause=environment.cancellationCause;
   process.env.TURAS_PILOT_UI_PREPARATION_FILE=path.resolve(preparationFile);process.env.TURAS_PILOT_RENDERER_IMAGE=preparation.images.find(image=>image.kind==='renderer')!.localImageId;process.env.TURAS_REPORTS_ENABLED='true';
   await preparePilotLegacySessions();await environment.upgradeToCurrent();
   process.env.TURAS_PILOT_PARSER_IMAGE=image('parser').localImageId;process.env.TURAS_PILOT_SCANNER_IMAGE=image('scanner').localImageId;
@@ -57,7 +60,7 @@ async function main(){
    child.stderr.on('data',bytes=>{stderr=(stderr+bytes.toString()).slice(-131072);});
    const timeout=setTimeout(()=>{deadlineExpired=true;child.kill("SIGKILL");},pilotSuiteDeadlineMs(suite.file));
    let exit:{code:number|null;signal:string|null};
-   try{exit=await new Promise((resolve,reject)=>{child.once("close",(code,signal)=>resolve({code,signal}));child.once("error",reject);});}finally{clearTimeout(timeout);}
+   try{exit=await new Promise((resolve,reject)=>{child.once("close",(code,signal)=>resolve({code,signal}));child.once("error",reject);});}catch(error){childProcessError=error;throw error;}finally{clearTimeout(timeout);}
    const safe=(value:string)=>value.replace(/(?:postgres(?:ql)?|https?):\/\/[^\s'"<>]+/g,'[redacted-url]');
    await writeEvidence(root,`suite-${index}-process.json`,{file:suite.file,startedAt,completedAt:new Date().toISOString(),...exit,deadlineExpired,stdoutTail:safe(stdout),stderrTail:safe(stderr)});
    const code=exit.code;
@@ -95,4 +98,4 @@ async function main(){
   process.stdout.write(JSON.stringify({state:"pass",passedCases:total,fullPilotReady:false})+"\n");
  },{priorSchema:55,queryStatistics:true,deadlineMs:5400000});}finally{process.umask(previousUmask);}
 }
-main().catch(async()=>{if(failureRecord){const {root,...binding}=failureRecord;await writeEvidence(root,`failure-${randomUUID()}.json`,{version:"pilot-execution-v1",...binding,method:"local",state:"fail",safeFailure:"incomplete_execution",stage:failureStage,suiteFile:activeSuite}).catch(()=>undefined);}process.stderr.write(JSON.stringify({kind:"pilot_catalog_failure",stage:failureStage,suiteFile:activeSuite})+"\n");process.stderr.write("Pilot catalog failed; no readiness established.\n");process.exitCode=1;});
+main().catch(async()=>{if(failureRecord){const {root,...binding}=failureRecord;await writeEvidence(root,`failure-${randomUUID()}.json`,{version:"pilot-execution-v1",...binding,method:"local",state:"fail",safeFailure:"incomplete_execution",stage:failureStage,suiteFile:activeSuite,...pilotCatalogAbortMetadata(cancellationCause(),childProcessError)}).catch(()=>undefined);}process.stderr.write(JSON.stringify({kind:"pilot_catalog_failure",stage:failureStage,suiteFile:activeSuite,...pilotCatalogAbortMetadata(cancellationCause(),childProcessError)})+"\n");process.stderr.write("Pilot catalog failed; no readiness established.\n");process.exitCode=1;});

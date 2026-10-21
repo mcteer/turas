@@ -484,3 +484,10 @@ No hosted target may be locked for release before its measured reopen path exist
   error and keep arbitrary child/test/page content private. Verify focused privacy,
   types and inventory checks; record actual new CI phase before selecting a fix.
   The partner-only once executor must remain unexecuted while a second job fails.
+
+- [ ] T128 Retain the actual `5124987` deterministic CI failure at recovery MCP
+  HTTP suite154 and distinguish the owned watchdog, process signals and fixed
+  child spawn/abort classes in the full catalog failure receipt. Preserve all
+  cases, predicates, suite/outer deadlines and cleanup behavior. Verify privacy
+  and types; require actual new source-bound full catalog/CI evidence. Timing
+  alone is not proof of a watchdog or an MCP assertion failure.

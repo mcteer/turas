@@ -1,5 +1,5 @@
 import {artifactAuthStartupPhases} from '../../scripts/artifact-eval-environment';
-import {processFailureMetadata,setupFailureMetadata,pilotRegressionFailureMetadata} from '../../scripts/ci-process-diagnostics';
+import {processFailureMetadata,setupFailureMetadata,pilotRegressionFailureMetadata,pilotCatalogAbortMetadata} from '../../scripts/ci-process-diagnostics';
 import {describe,expect,it} from 'vitest';
 import {browserFailureMetadata,fixedUtilizationMetadata,pilotUiChildFailures,partnerBrowserFailureMetadata} from '../../scripts/ci-browser-diagnostics';
 import {nativeQueryOperation,nativeQueryObservationSchema,nativeBlockerMetadata} from '../../scripts/ci-native-query-observer';
@@ -81,6 +81,9 @@ it('reports setup and child process failure classes without exposing private out
 });
 
 it('reports fixed regression stages and current-schema counts without private process or test payloads',()=>{
+ expect(pilotCatalogAbortMetadata('deadline',{name:'AbortError',code:'ABORT_ERR',message:'PRIVATE_PROSE',stack:'PRIVATE_STACK'})).toEqual({cancellationCause:'deadline',processErrorName:'AbortError',processErrorCode:'ABORT_ERR'});
+ expect(pilotCatalogAbortMetadata('signal',{name:'Error',code:'EAGAIN'})).toEqual({cancellationCause:'signal',processErrorName:'Error',processErrorCode:'EAGAIN'});
+ const privateAbort=pilotCatalogAbortMetadata('PRIVATE_CAUSE',{name:'PRIVATE_NAME',code:'PRIVATE_CODE',message:'PRIVATE_PROSE'});expect(privateAbort).toEqual({cancellationCause:'unavailable',processErrorName:'other',processErrorCode:null});expect(JSON.stringify(privateAbort)).not.toContain('PRIVATE_');
  const files=['tests/integration/foundation.test.ts'];
  const report={success:false,numTotalTests:40,numPassedTests:39,numFailedTests:1,numPendingTests:0,PRIVATE_FIELD:'PRIVATE_PAYLOAD',testResults:[{name:'/private/customer/tests/integration/foundation.test.ts',status:'failed',assertionResults:[{status:'failed',title:'PRIVATE_TITLE',failureMessages:['PRIVATE_PROSE']}]}]};
  const result=pilotRegressionFailureMetadata('current-schema-process',{status:1,error:true,stdout:'PRIVATE_STDOUT',stderr:'PRIVATE_STDERR'},report,files);
