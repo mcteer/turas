@@ -6423,3 +6423,27 @@ for substituted genuine denial authority. The unchanged1006-case/181-suite
 catalog at `56ed2e6` also completed successfully; it predates this fix. Whole
 committed catalog, CI, actual timing/freshness and hosted recovery proof remain
 required; passing concurrency fixtures cannot substitute for them.
+
+### Synthetic research cancellation transport (2026-10-21)
+
+The original599db93 CI verify job failed at the Product field in the mobile-light
+research-cancellation test. Its original log is retained; the cause of that
+particular field failure remains unproven. A narrow unchanged owned Postgres18
+reproduction separately timed out at Confirm and start: setup reached the scope
+preview in2.874seconds, but the synthetic nonexistent native session left the
+SDK non-ready and the production start guard correctly disabled.
+
+The fixture now supplies only its exact synthetic native stream with valid empty
+v25 NDJSON and tail index−1, denies its exact native delivery with503, and checks
+that the idle stream was read and Confirm becomes enabled. It retains the real
+authenticated application and database context, research HTTP fixtures, keyboard
+cancellation, checked findings and accessibility assertions. Production guards,
+per-test deadlines and retry settings are unchanged.
+
+The exact correction passed the narrow mobile-light case in3.88seconds. Its full
+four-project WebKit matrix passed24 cases with four existing skips, zero failures
+and zero retries in72.02seconds. These are controlled local UI observations with
+zero provider calls; they neither explain the original Product-field CI failure
+nor establish hosted model, recovery or release acceptance. Independent review
+verified the exact fixture and retained capture. Complete committed-source
+catalog, CI and hosted evidence must be refreshed for this correction.

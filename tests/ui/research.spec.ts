@@ -134,6 +134,7 @@ test("keyboard cancellation retains only checked public findings",async ({ page 
   const db = new Client({ connectionString: requireUiFixtureDatabaseUrl() });
   await db.connect();
   const conversationId = randomUUID();
+  const nativeId = `synthetic_${randomUUID().replaceAll("-","")}`;
   const runId = randomUUID();
   const observationId = randomUUID();
   let cancelled = false;
@@ -158,7 +159,7 @@ test("keyboard cancellation retains only checked public findings",async ({ page 
         'customer-context-v1',$8,$9,'internal',$10,now()+interval '1 hour',true)`,
     [conversationId,process.env.TURAS_TEST_ENVIRONMENT_ID,DEMO_IDS.workspace,
       DEMO_IDS.sharedCustomer,DEMO_IDS.mcteer,
-      `synthetic_${randomUUID().replaceAll("-","")}`,randomUUID(),
+      nativeId,randomUUID(),
       session.rows[0].id,DEMO_IDS.mcteerMembership,
       state.rows[0]?.internal_generation ?? 0]);
     await page.route("**/api/research/requests",async (route) => route.fulfill({
@@ -199,6 +200,11 @@ test("keyboard cancellation retains only checked public findings",async ({ page 
     const current = await page.request.get(`/api/conversations/${conversationId}`);
     expect(current.status()).toBe(200);
     expect((await current.json()).data.contextStatus).toBe('current');
+    // This UI fixture owns no native provider session. Resume an idle synthetic
+    // transport explicitly so the real non-ready chat guard remains enforced.
+    let idleReads=0;
+    await page.route(`**/eve/v1/session/${nativeId}/stream**`,route=>{idleReads++;return route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'25','x-eve-stream-tail-index':'-1'},body:''});});
+    await page.route(`**/eve/v1/session/${nativeId}`,route=>route.fulfill({status:503,json:{code:'synthetic_research_delivery_unavailable'}}));
     await visitAfterSignIn(page,`/s/${conversationId}`);
     await page.getByRole("button",{ name: "Customer context",exact: true }).click();
     await page.getByRole("button",{ name: "Start public research" }).click();
@@ -207,6 +213,8 @@ test("keyboard cancellation retains only checked public findings",async ({ page 
     await panel.getByLabel("Version",{ exact: true }).fill("2026");
     await panel.getByLabel("Topic",{ exact: true }).fill("build cache");
     await panel.getByRole("button",{ name: "Preview scope" }).click();
+    await expect.poll(()=>idleReads).toBeGreaterThan(0);
+    await expect(panel.getByRole("button",{name:"Confirm and start"})).toBeEnabled();
     await panel.getByRole("button",{ name: "Confirm and start" }).click();
     const cancel = panel.getByRole("button",{ name: "Cancel research" });
     await expect(cancel).toBeVisible();

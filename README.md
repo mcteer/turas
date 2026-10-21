@@ -930,3 +930,9 @@ The v3 work-recovery verifier accepts one explicit project OIDC or store-bound
 Blob credential. V2 remains OIDC-only. Candidate store/project/native binding,
 actual private byte checks, disabled SDK retries and locked-target checks remain
 required. A store-token check does not establish hosted OIDC behavior.
+
+The synthetic research-cancellation UI check now supplies an exact idle native
+stream and denies native delivery, retaining the production busy guard. The local
+four-project WebKit matrix passes24 cases with four existing skips and no retries;
+this is controlled fixture coverage. Fresh committed catalog, CI and hosted
+verification remain required, and the original CI failure remains retained.

@@ -347,3 +347,11 @@ No hosted target may be locked for release before its measured reopen path exist
   conversation transaction-binding cases pass. Pilot typecheck, documentation
   checks and independent source review pass; fresh committed/hosted checks remain
   required and original failures are retained.
+
+- [X] T112 Give the synthetic research-cancellation UI fixture an exact idle
+  native stream and deny its native delivery without a provider call. Check that
+  the stream was read and the real start guard becomes enabled before exercising
+  keyboard cancellation. Preserve research, checked-finding and accessibility
+  assertions, all existing deadlines and the original CI failure. The corrected
+  four-project WebKit matrix passes24 cases with four existing skips and no
+  retries; refresh committed-source catalog, CI and hosted proof before release.
