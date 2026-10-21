@@ -965,3 +965,11 @@ union and requires all four successful jobs with matching source/run/attempt
 evidence. No missing, skipped, flaky or retried case can pass the aggregate.
 Focused integrity checks, expansion types and workflow syntax pass; fresh
 committed full catalog and CI verification remain required.
+
+Profile proposal confirmations are instructed to report the review state, claim
+text and steward-review next step. Record and revision identifiers are included
+only when requested and must exactly match the tool receipt. A live003 evaluation
+on the preceding checkpoint printed a fabricated revision identifier before
+correcting it; its citation hard gate correctly failed. The complete failed reply
+is retained. Fresh source-bound model verification remains required for this
+instruction correction.

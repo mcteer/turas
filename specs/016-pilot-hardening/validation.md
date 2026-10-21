@@ -6589,3 +6589,34 @@ job's minimal environment confirms all84 cases (21 per project), with no databas
 or provider credentials and no browser launch. Fresh committed full catalog/CI
 verification remains pending. The frozen545c3dc run does not validate this later
 CI change; no new hosted build or model call has been performed for it.
+
+### Actual f6036ab proof and proposal-identifier correction (2026-10-21)
+
+The complete f6036ab local catalog passed1013 cases across183 suites, with actual
+parent exit0, independent result/process digest review and verified owned-environment
+cleanup. Its single admitted Preview deployment became READY; authenticated
+application/recovery acceptance remains pending. Current-source CI was still
+running at this observation, with45 checks successful and13 in progress.
+
+The actual full quality batch used the original append-only ledger after reviewed
+existing-category funding and source-bound resumption. Stage002 completed and its
+12 independent semantic reviews and hard gates passed;23 generation identities
+matched their actual settled usage. Stage003 then failed its unchanged citation
+hard gate for `assistant-pending-proposal` run2. The tool saved exactly one Pending
+assistant proposal without changing accepted context. Its reply printed a fabricated
+revision UUID, then corrected it to the actual tool-returned UUID. The first UUID
+remains unsupported; independent review confirms a real failure, not a detector
+false positive. The full reply, tool evidence and failed batch remain retained.
+
+The batch parent actually exited1. Only002 completed. Actual cumulative charges
+are3,074,641microUSD, with the original16,000,000microUSD uncertainty hold intact,
+195 dispatches and194 settled requests. No new unresolved request was introduced.
+These financial observations do not approve another dispatch or establish full
+model quality. No unknown request may be retried or its hold released.
+
+The authored instruction correction confines profile confirmations to the
+tool-confirmed review state, claim text and steward next step. Requested technical
+identifiers must be copied exactly, with no guessed identifiers or corrections.
+The citation detector, dataset, model, runtime limits and case inventory remain
+unchanged. This content change requires fresh committed source proof and model
+verification; the earlier catalog, Preview and stage002 proof remain historical.

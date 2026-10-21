@@ -403,3 +403,12 @@ No hosted target may be locked for release before its measured reopen path exist
   regressions in both predecessor and pilot catalogs. Independent review, focused
   integrity checks, types and actual84-case discovery pass; fresh committed full
   catalog/CI remains required. Retain the original cancellation.
+
+- [X] T118 Correct profile proposal confirmation guidance after the actual003
+  `assistant-pending-proposal` run2 printed an unsupported revision UUID before
+  correcting it. Report the tool-confirmed review state, claim text and steward
+  next step; include identifiers only on request and copy them exactly. Preserve
+  the complete failed reply, unchanged citation hard gate, model, deadlines and
+  original cumulative financial holds. Independent diagnosis confirms a genuine
+  unsupported identifier. Fresh committed catalog, CI and complete model/hosted
+  acceptance remain required under T069/T073–T079; no retry of an uncertain call.
