@@ -6667,3 +6667,44 @@ Independent review, the existing three diagnostic privacy cases, pilot type
 checking, all243 authored-document checks and whitespace checks pass for this
 transport correction. No new-source complete catalog, CI or hosted pass is
 claimed by those focused checks.
+
+
+## Passive report-review failure diagnosis — 2026-10-21
+
+At23720dc, actual CI job119162237850 fails the mobile-light complete-detail report
+case while waiting for Confirm Report Review. A successful report-preview200 is
+observed, with no response-completion timing. The focused private instrumented
+case passes1/1 and the complete original six-file/four-project sequence passes
+88/88, with actual parent exits0, no skips, flaky cases or retries. Neither
+reproduces or erases the actual CI failure. The passing timeline also shows
+document-level submit counters before React successfully prevents the event;
+those counters cannot establish that the handler was absent.
+
+The test-only observer now retains bounded request/header/body-finished/failure
+elapsed times and report-form/preview/confirm presence transitions per document.
+It neither mutates React props/handlers nor intercepts fetch responses. Fixed
+allowlists exclude URLs, identifiers, bodies and review/customer text. It cannot
+prove an internal state update; cause and fresh exact-source acceptance remain
+pending. Independent review found no blocker. All eight existing coverage/privacy
+cases, Product Gaps types,243 authored-document checks and whitespace checks
+pass. A first governed run passed all88 cases but correctly exited1 because the
+parser was tightened during its run; that source-invalidated result is retained
+as nonacceptance. A fresh frozen-source governed run then exited0 with88/88
+cases across six files and four WebKit projects, no skips and original retry
+policy. Its012 source digest is
+`10d3f3da712ede51302e0164628d2f45db72edb47fbbd072bb8f90e0b62ee05a`.
+This proves the observed journeys with the passive observer; fresh committed
+complete pilot catalog, CI and hosted acceptance remain required.
+
+
+Before pushing the passive diagnostic, review identified that Playwright's
+framenavigated event also includes History API transitions within one document.
+The document ordinal now advances only on a fixed main-frame init-script marker;
+subframes return before emitting it. A private CLI WebKit mechanism check proves
+two document loads versus three main navigations, excluding both History API
+transition and iframe inflation. Independent review found no blocker. The
+corrected original six-file/four-project governed run exits0 with88/88 cases, no
+skips and source digest
+`0fa58d45bb599d3c7ac3fc84db4f09eecafe0a16b0bcec624bebba74eb668570`.
+Product Gaps types pass. Earlier diagnostic source/proofs remain separately
+attributed; the amendment requires its own full catalog, CI and hosted proof.

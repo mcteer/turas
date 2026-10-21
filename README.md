@@ -989,3 +989,11 @@ Automatic Vercel deployments are disabled for the recovery completion branch so
 its CI checks can run independently of a funded Preview build. Main remains
 enabled. Hosted acceptance still requires a separately admitted Preview of the
 exact tested commit before merge; a skipped deployment does not satisfy it.
+
+The current Product Gaps mobile WebKit failure receives a report-preview response
+but does not show confirmation before the existing assertion deadline. A focused
+case and complete88-case local diagnostic replay pass without reproducing it.
+Passive test-only diagnostics now retain bounded request/body-completion timing
+and report-control presence by document ordinal; they publish no URLs, identifiers,
+response bodies or review text. They do not establish the failure cause or replace
+fresh exact-source CI, complete catalog and hosted acceptance.

@@ -1,4 +1,5 @@
-import {test,type Page} from '@playwright/test';
+import {test,type Page,type Request} from '@playwright/test';
+const reportTimelines=new WeakMap<Page,unknown[]>();
 const expectedTitles=new WeakMap<Page,string>();
 const clients=new WeakMap<Page,{errors:string[];failedRequests:string[];mutationRequests:number;mainNavigations:number;commandPhases:Record<string,boolean>;commandDocumentChanged:boolean}>();
 export function expectGapUiTitle(page:Page,title:string){expectedTitles.set(page,title);}
@@ -6,7 +7,22 @@ const traces=new WeakMap<Page,Array<{route:string;method:string;status:number;de
 const projections=new WeakMap<Page,{working:string;reviewed:string;workingContent:boolean;reviewedContent:boolean;expectedTitleMatches?:boolean}>();
 const signals=['Product gaps are unavailable','Loading current product gaps','The view changed','Record changed','Content: withheld','Content: eligible','No reviewed revision yet.','Request unconfirmed','Preparation: prepared'] as const;
 function routeKind(path:string){if(path==='/api/auth/session')return 'session';if(path==='/api/auth/login')return 'login';if(!path.startsWith('/api/product-gaps'))return null;if(path.includes('/canonicalization/'))return 'canonicalization';if(path.includes('/reports/')){for(const suffix of ['handoffs','previews','decisions','cancel','exports'])if(path.includes('/'+suffix))return 'report-'+suffix;return 'report-detail';}if(path.endsWith('/reports'))return 'report-registry';if(path.includes('/requests/'))return 'request-status';if(path.endsWith('/workloads'))return 'customer-workloads';if(path.endsWith('/evidence'))return 'evidence';for(const suffix of ['impacts','revisions','previews','decisions'])if(path.includes('/'+suffix))return 'gap-'+suffix;return path==='/api/product-gaps'?'gap-registry':'gap-detail';}
-export function installGapUiDiagnostics(){test.beforeEach(async({page})=>{await page.addInitScript(()=>{
+export function installGapUiDiagnostics(){test.beforeEach(async({page})=>{
+ const timeline:unknown[]=[];reportTimelines.set(page,timeline);const started=Date.now();let documentOrdinal=0;
+ const record=(phase:string,details:Record<string,unknown>={})=>{if(timeline.length<60)timeline.push({phase,elapsedMs:Date.now()-started,documentOrdinal,...details});};
+ const previewRequests=new WeakSet<Request>();
+ page.on('request',request=>{if(request.method()==='POST'&&/^\/api\/product-gaps\/reports\/[^/]+\/previews$/.test(new URL(request.url()).pathname)){previewRequests.add(request);record('preview_request');}});
+ page.on('response',response=>{if(previewRequests.has(response.request()))record('preview_headers',{status:response.status()});});
+ page.on('requestfinished',request=>{if(previewRequests.has(request))record('preview_finished');});
+ page.on('requestfailed',request=>{if(previewRequests.has(request))record('preview_failed');});
+ page.on('console',message=>{if(message.text()==='GAP_REPORT_DOCUMENT'){documentOrdinal++;record('document');return;}const prefix='GAP_REPORT_LIFECYCLE ';if(!message.text().startsWith(prefix))return;try{const value=JSON.parse(message.text().slice(prefix.length));record('controls',{formPresent:value.formPresent===true,previewPresent:value.previewPresent===true,confirmPresent:value.confirmPresent===true});}catch{/* Diagnostics never change the journey outcome. */}});
+ await page.addInitScript(()=>{
+ if(window!==window.top)return;
+ console.info('GAP_REPORT_DOCUMENT');
+ // Passive DOM observations only; do not replace React handlers or fetch bodies.
+ let previous='';const observe=()=>{const form=Array.from(document.querySelectorAll<HTMLFormElement>('.gap-form')).find(form=>form.querySelector('h2')?.textContent==='Exact Report Review');const buttons=Array.from(form?.querySelectorAll('button')??[]);const state={formPresent:!!form,previewPresent:buttons.some(button=>button.textContent==='Preview Report Review'),confirmPresent:buttons.some(button=>button.textContent==='Confirm Report Review')};const encoded=JSON.stringify(state);if(encoded!==previous){previous=encoded;console.info('GAP_REPORT_LIFECYCLE '+encoded);}};
+ document.addEventListener('DOMContentLoaded',()=>{observe();new MutationObserver(observe).observe(document.documentElement,{childList:true,subtree:true,characterData:true});},{once:true});
+
  const counts={focus:0,blur:0,hidden:0,visible:0,submits:0,invalidEvents:0,gapSubmits:0,gapBubble:0,gapPreventedBubble:0,gapPreventedMicrotask:0,gapDisconnectedMicrotask:0,gapReactHandlerPresent:0};
  Object.defineProperty(window,'__turasGapUiLifecycle',{value:counts});
  window.addEventListener('focus',()=>counts.focus++);window.addEventListener('blur',()=>counts.blur++);
@@ -22,5 +38,5 @@ test.afterEach(async({page},info)=>{if(info.status===info.expectedStatus)return;
  const submits=Array.from(document.querySelectorAll<HTMLButtonElement>('.gap-form button[type=submit]'));const impact=submits.some(button=>button.form?.querySelector('[name=observedAt]'));const submit=submits[0];
  const alerts=Array.from(document.querySelectorAll('[role=alert]')).slice(0,5).map(element=>{const message=element.textContent??'';return message.includes('"code"')&&message.includes('"path"')?'schema_validation':message.includes('Critical original evidence required')?'known_domain_denial':'other';});
  return {counts:(window as unknown as {__turasGapUiLifecycle?:Record<string,number>}).__turasGapUiLifecycle,controls,impactFormPresent:impact,submitDisabled:submit?.disabled??false,alerts};
- }).catch(()=>undefined);console.log('GAP_UI_FIXED_DIAGNOSTIC '+JSON.stringify({interaction,responses:traces.get(page)??[],signals:signals.filter(signal=>text.includes(signal)),projection:projections.get(page),client:clients.get(page),...(expectedTitles.has(page)?{expectedHeadingPresent:await page.getByRole('heading',{name:expectedTitles.get(page),exact:true}).count().then(count=>count===1).catch(()=>false)}:{})}));});
+ }).catch(()=>undefined);console.log('GAP_UI_FIXED_DIAGNOSTIC '+JSON.stringify({reportTimeline:reportTimelines.get(page)??[],interaction,responses:traces.get(page)??[],signals:signals.filter(signal=>text.includes(signal)),projection:projections.get(page),client:clients.get(page),...(expectedTitles.has(page)?{expectedHeadingPresent:await page.getByRole('heading',{name:expectedTitles.get(page),exact:true}).count().then(count=>count===1).catch(()=>false)}:{})}));});
 }

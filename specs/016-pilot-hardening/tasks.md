@@ -433,3 +433,10 @@ No hosted target may be locked for release before its measured reopen path exist
   the startup cause, full changed-source catalog and CI acceptance unresolved
   until their actual source-bound checks complete. Preserve all readiness and
   timeout assertions.
+
+- [X] T122 Preserve passive report-preview network timing and report-control
+  lifecycle in fixed-shape Product Gaps UI failure diagnostics after the actual
+  mobile WebKit confirmation timeout. Retain the CI failure and88/88 local
+  diagnostic nonreproduction, verify privacy and original journeys, and preserve
+  handlers, responses, assertions, deadlines and retry policy. These observations
+  do not establish an internal state transition or product correction.
