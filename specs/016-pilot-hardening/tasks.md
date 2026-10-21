@@ -382,3 +382,12 @@ No hosted target may be locked for release before its measured reopen path exist
   fresh committed catalog/CI/hosted behavior without changing any clocks. The two
   focused cases, pilot types, docs and independent review pass; the fresh complete
   committed catalog, CI and hosted verification remain pending.
+
+
+- [X] T116 Remove the native execution cleanup test's worker-ownership race: retain
+  its manual cleanup tick but assert eventual exact-attempt payload removal,
+  retirement and completed-job provenance. Preserve immutable usage and all
+  history/reconnect/replay/provider-call assertions, retention and runtime clocks.
+  Independent source review, the focused native case and pilot types pass;
+  fresh committed complete catalog and CI checks remain required. Retain the
+  original CI assertion failure.

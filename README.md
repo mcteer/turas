@@ -951,3 +951,9 @@ lifecycle deadline remains unchanged; explicit120-second setup and30-second
 cleanup hooks fit a240-second outer file bound. The six health cases and six
 fixture/deadline unit cases pass locally; fresh full-source verification remains
 required. The original setup-hook failure is retained.
+
+The remote pilot checkpoint's execution CI exposed a cleanup test that assumes its
+manual tick wins against the background maintenance worker. The correction checks
+exact payload removal and retirement regardless of worker ownership. Independent
+review, the focused native case and pilot types pass. Fresh complete changed-source
+local and CI verification remain required.

@@ -6540,3 +6540,22 @@ passes locally against the final counter guard. Both overlap directions and
 finally cleanup are covered. Pilot types, documentation checks and independent
 review pass. The current1010-case complete catalog, fresh CI and hosted
 verification are still required for the correction.
+
+
+### Native execution cleanup worker ownership (2026-10-21, focused pass)
+
+Remote ae9b908 CI execution job119008742130 failed because the manual cleanup tick
+reported zero purges. The fixture also starts the background maintenance worker,
+which invokes the same cleanup implementation. Either worker may legitimately
+claim the overdue jobs first; the original log does not establish which worker
+won or exclude a real cleanup failure. Preserve that original failure.
+
+The corrected test retains the manual tick and uses a bounded10-second poll for
+the exact attempt's context, instruction and read payload absence, immutable
+retirement and completed cleanup-job provenance. Usage, denied history/reconnect/
+replay and provider-call assertions remain. No runtime code, retention clock,
+lease or original240-second case bound changes. Independent review found no
+blocker. The actual focused native case passes (one selected case, seven unselected;
+parent exit0); pilot types pass. Initial local wrapper attempts failed setup
+guards and are retained separately. Fresh exact-source full catalog and CI remain
+pending; the active frozen ae1342e run cannot validate this later test correction.
