@@ -1,9 +1,9 @@
 import {it,expect} from 'vitest';
 import type {ChildProcess} from 'node:child_process';
-import {withOwnedProcess,retireOwnedProcess,type OwnedProcessRetirement} from '../../../scripts/pilot-owned-process';
+import {withOwnedProcess,retireOwnedProcess,captureOwnedProcessDescendants,type OwnedProcessRetirement} from '../../../scripts/pilot-owned-process';
 
 const script=(exit:boolean)=>`const {spawn}=require('node:child_process');const c=spawn(process.execPath,['-e','setInterval(()=>{},1000)'],{stdio:'inherit'});console.log(c.pid);${exit?'setTimeout(()=>process.exit(0),20)':'setInterval(()=>{},1000)'}`;
-function ready(child:ChildProcess){return new Promise<void>((done,reject)=>{let text='';const timer=setTimeout(()=>reject(Error('Owned descendant did not start')),3000);child.stdout!.on('data',bytes=>{text+=bytes;if(/^\d+\n/.test(text)){clearTimeout(timer);done();}});});}
+function ready(child:ChildProcess){return new Promise<number>((done,reject)=>{let text='';const timer=setTimeout(()=>reject(Error('Owned descendant did not start')),3000);child.stdout!.on('data',bytes=>{text+=bytes;const match=/^(\d+)\n/.exec(text);if(match){clearTimeout(timer);done(Number(match[1]));}});});}
 function gone(pid:number){try{process.kill(-pid,0);return false;}catch(error){if((error as NodeJS.ErrnoException).code==='ESRCH')return true;throw error;}}
 function input(exit=false){return {command:process.execPath,args:['-e',script(exit)],cwd:process.cwd(),environment:{NODE_ENV:'test' as const},signal:AbortSignal.timeout(10000),deadline:Date.now()+10000};}
 it('retires the actual owned process group and its live descendant after success',async()=>{
@@ -37,3 +37,23 @@ it('refuses retirement when owned group probes remain denied',async()=>{
  }finally{process.kill=originalKill;}
  expect(gone(pid)).toBe(true);
 },15000);
+
+const detachedScript="const {spawn}=require('node:child_process');const c=spawn(process.execPath,['-e','setInterval(()=>{},1000)'],{detached:true,stdio:'inherit'});console.log(c.pid);process.on('SIGUSR1',()=>process.exit(0));setInterval(()=>{},1000)";
+function detachedInput(){return {...input(),args:['-e',detachedScript]};}
+it('retires a genuine detached descendant group before reporting closure',async()=>{
+ let descendant=0;await withOwnedProcess(detachedInput(),async child=>{descendant=await ready(child);expect(gone(descendant)).toBe(false);});expect(gone(descendant)).toBe(true);
+});
+it('retires a captured detached group after its parent has exited',async()=>{
+ let descendant=0,retirement:OwnedProcessRetirement|undefined;
+ await withOwnedProcess({...detachedInput(),onProcess:resource=>{retirement=resource;}},async child=>{
+  descendant=await ready(child);expect(()=>captureOwnedProcessDescendants(JSON.parse(JSON.stringify(retirement)))).toThrow('Actual owned');
+  captureOwnedProcessDescendants(retirement!);child.kill('SIGUSR1');if(child.exitCode===null)await new Promise(done=>child.once('exit',done));expect(gone(descendant)).toBe(false);
+ });expect(gone(descendant)).toBe(true);
+});
+it('leaves a separately owned sibling group alive while retiring detached descendants',async()=>{
+ await withOwnedProcess(input(),async sibling=>{
+  await ready(sibling);let descendant=0;
+  await withOwnedProcess(detachedInput(),async child=>{descendant=await ready(child);});
+  expect(gone(descendant)).toBe(true);expect(gone(sibling.pid!)).toBe(false);
+ });
+});

@@ -7016,3 +7016,20 @@ The same provenance predicate fails before expensive work if inconsistent and
 is rechecked when evidence is written. No cases, assertions or clocks change.
 Fresh exact-source CI execution, authenticated artifact retention and import
 remain required.
+
+### Detached native shutdown correction (verification pending)
+
+The private process-tree observation established a detached descendant group
+that survived its owning service. The first scanner experiment failed because
+macOS exposes a negative numeric system UID; the corrected scanner permits
+signed UID values while requiring exact current-UID ancestry for ownership.
+The focused eight-case process suite passed, including detached group retirement,
+cached ownership after parent exit, and sibling isolation. Pilot type checking
+also passed. The catalog now includes all three additional cases (1022 total).
+No original case, deadline or escalation clock was removed or extended.
+
+The fixture captures genuine descendants at readiness and shutdown, revalidates
+cached process identities before signals, bounds inventory and captured groups,
+and verifies temporary-root cwd/open-file absence before removal. Actual native
+preparation, a complete fresh catalog and exact-head CI remain required; these
+focused checks do not establish hosted or release readiness.

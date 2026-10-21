@@ -1667,13 +1667,16 @@
     },
     {
       "file": "tests/unit/pilot/owned-process.test.ts",
-      "expectedCases": 5,
+      "expectedCases": 8,
       "cases": [
         "retires the actual owned process group and its live descendant after success",
         "retires descendants after their direct parent has already exited",
         "cancels a pending callback and verifies complete group retirement",
         "waits through transient denied probes before verifying real group closure",
-        "refuses retirement when owned group probes remain denied"
+        "refuses retirement when owned group probes remain denied",
+        "retires a genuine detached descendant group before reporting closure",
+        "retires a captured detached group after its parent has exited",
+        "leaves a separately owned sibling group alive while retiring detached descendants"
       ]
     },
     {
