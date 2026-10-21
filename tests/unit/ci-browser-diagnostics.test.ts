@@ -1,7 +1,7 @@
 import {artifactAuthStartupPhases} from '../../scripts/artifact-eval-environment';
-import {processFailureMetadata,setupFailureMetadata} from '../../scripts/ci-process-diagnostics';
+import {processFailureMetadata,setupFailureMetadata,pilotRegressionFailureMetadata} from '../../scripts/ci-process-diagnostics';
 import {describe,expect,it} from 'vitest';
-import {browserFailureMetadata,fixedUtilizationMetadata} from '../../scripts/ci-browser-diagnostics';
+import {browserFailureMetadata,fixedUtilizationMetadata,pilotUiChildFailures} from '../../scripts/ci-browser-diagnostics';
 import {nativeQueryOperation,nativeQueryObservationSchema,nativeBlockerMetadata} from '../../scripts/ci-native-query-observer';
 const allowed=new Set(['mcp-accessibility.spec.ts']);
 describe('private browser failure diagnostics',()=>{
@@ -76,4 +76,22 @@ it('reports setup and child process failure classes without exposing private out
  const setup=setupFailureMetadata({stage:'integration-environment',code:1,signal:'SIGKILL',error:{message:'PRIVATE_PROSE Disposable scripts/db-migrate.ts failed: Migration digest mismatch postgresql://PRIVATE_TOKEN',stack:'PRIVATE_STACK at scripts/plan-eval-environment.ts:109:7'}});
  expect(setup).toMatchObject({stage:'integration-environment',operations:['scripts/db-migrate.ts'],setupSignatures:['Migration digest mismatch'],code:1,signal:'SIGKILL',locations:[{file:'scripts/plan-eval-environment.ts',line:109,column:7}]});expect(JSON.stringify(setup)).not.toContain('PRIVATE_');expect(JSON.stringify(setup)).not.toContain('postgresql:');
  expect(setupFailureMetadata({stage:'PRIVATE_STAGE',error:{message:'PRIVATE_MESSAGE',stack:'PRIVATE_PATH'}})).toEqual({stage:'unknown',operations:[],setupSignatures:[],code:null,signal:null,deadlineExpired:false,signatures:[],locations:[]});
+});
+
+it('reports fixed regression stages and current-schema counts without private process or test payloads',()=>{
+ const files=['tests/integration/foundation.test.ts'];
+ const report={success:false,numTotalTests:40,numPassedTests:39,numFailedTests:1,numPendingTests:0,PRIVATE_FIELD:'PRIVATE_PAYLOAD',testResults:[{name:'/private/customer/tests/integration/foundation.test.ts',status:'failed',assertionResults:[{status:'failed',title:'PRIVATE_TITLE',failureMessages:['PRIVATE_PROSE']}]}]};
+ const result=pilotRegressionFailureMetadata('current-schema-process',{status:1,error:true,stdout:'PRIVATE_STDOUT',stderr:'PRIVATE_STDERR'},report,files);
+ expect(result).toEqual({stage:'current-schema-process',processCode:1,processError:true,reportSuccess:false,counts:{numTotalTests:40,numPassedTests:39,numFailedTests:1,numPendingTests:0},failedFiles:files});
+ expect(JSON.stringify(result)).not.toContain('PRIVATE_');expect(JSON.stringify(result)).not.toContain('/private/customer');
+ expect(pilotRegressionFailureMetadata('PRIVATE_STAGE',{status:Infinity,error:'PRIVATE_ERROR'},{numTotalTests:-1,numPassedTests:Infinity,testResults:[{name:'PRIVATE_FILE',status:'failed'}]},files)).toEqual({stage:'unknown',processCode:null,processError:false,counts:{},failedFiles:[]});
+});
+it('revalidates captured pilot UI diagnostics and discards private or malformed child records',()=>{
+ const row={kind:'pilot_ui_failure',project:'webkit-mobile-dark',PRIVATE_FIELD:'PRIVATE_PAYLOAD',failedLocations:[{file:'/private/customer/pilot-uploads.spec.ts',line:9,column:2,status:'timedOut',durationMs:30000,signatures:['Timeout','PRIVATE_PROSE','Frame load interrupted'],title:'PRIVATE_TITLE',attachments:['PRIVATE_BYTES']},{file:'PRIVATE_FILE.spec.ts',status:'failed'}]};
+ const results=pilotUiChildFailures('PRIVATE_STDERR\n'+JSON.stringify(row)+'\n'+JSON.stringify({kind:'PRIVATE_KIND',failedLocations:row.failedLocations})+'\n{"kind":"pilot_ui_failure"');
+ expect(results).toHaveLength(1);expect(results[0]).toMatchObject({file:'pilot-uploads.spec.ts',line:9,column:2,status:'timedOut',project:'webkit-mobile-dark',signatures:['Timeout','Frame load interrupted']});
+ expect(JSON.stringify(results)).not.toContain('PRIVATE_');expect(JSON.stringify(results)).not.toContain('/private/customer');
+ expect(pilotUiChildFailures(null)).toEqual([]);
+ const malformed=pilotUiChildFailures(JSON.stringify({...row,project:'PRIVATE_PROJECT',failedLocations:[{file:'pilot-workspace.spec.ts',line:-1,column:Infinity,status:'failed',durationMs:Infinity,signatures:['PRIVATE_SIGNATURE']}]}));
+ expect(malformed[0]).toMatchObject({project:'unknown',line:0,column:0,durationMs:null,signatures:[]});expect(JSON.stringify(malformed)).not.toContain('PRIVATE_');
 });

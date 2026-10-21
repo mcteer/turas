@@ -121,7 +121,9 @@
         "unit.artifact-startup-probe.001",
         "unit.artifact-startup-probe.002",
         "unit.artifact-startup-probe.003",
-        "unit.session-admission-boundary.001"
+        "unit.session-admission-boundary.001",
+        "unit.ci-browser-diagnostics.004",
+        "unit.ci-browser-diagnostics.005"
       ]
     },
     {

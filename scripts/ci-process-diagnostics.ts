@@ -1,5 +1,21 @@
 /** Fixed signatures only. Child output can contain credentials and customer prose;
  * never copy messages, arbitrary paths or unmatched content into CI logs. */
+const pilotRegressionStages=new Set(['predecessor-process','predecessor-receipt','current-schema-setup','current-schema-process','current-schema-report','current-schema-cleanup','fresh-ui-process','fresh-ui-receipt','final-source','final-evidence']);
+/** Controller phases and numeric outcomes only. Private test prose is excluded. */
+export function pilotRegressionFailureMetadata(stage:unknown,process:unknown,report:unknown,allowedFiles:readonly string[]){
+ const raw=report&&typeof report==='object'?report as Record<string,unknown>:{};
+ const child=process&&typeof process==='object'?process as Record<string,unknown>:{};
+ const integer=(value:unknown,max=100000)=>typeof value==='number'&&Number.isSafeInteger(value)&&value>=0&&value<=max?value:null;
+ const counts=Object.fromEntries(['numTotalTests','numPassedTests','numFailedTests','numPendingTests'].filter(key=>integer(raw[key])!==null).map(key=>[key,integer(raw[key])]));
+ const failedFiles:string[]=[];
+ if(Array.isArray(raw.testResults))for(const suite of raw.testResults.slice(0,64)){
+  if(!suite||typeof suite!=='object'||typeof suite.name!=='string')continue;
+  const file=allowedFiles.find(file=>suite.name===file||suite.name.endsWith('/'+file));
+  if(file&&(suite.status==='failed'||Array.isArray(suite.assertionResults)&&suite.assertionResults.slice(0,1000).some((test:unknown)=>test&&typeof test==='object'&&(test as Record<string,unknown>).status==='failed')))failedFiles.push(file);
+ }
+ return {stage:typeof stage==='string'&&pilotRegressionStages.has(stage)?stage:'unknown',processCode:integer(child.status,255),processError:child.error===true,
+  ...(typeof raw.success==='boolean'?{reportSuccess:raw.success}:{}),counts,failedFiles:[...new Set(failedFiles)].slice(0,16)};
+}
 export function processFailureMetadata(value:unknown){
  const raw=value&&typeof value==='object'?value as Record<string,unknown>:{},parts=[raw.stdoutTail,raw.stderrTail,raw.message];
  const prose=parts.filter((v):v is string=>typeof v==='string').map(v=>v.slice(-131072)).join('\n');

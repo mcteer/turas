@@ -6891,3 +6891,33 @@ creation/denial, cross-module protected cancellation, and locked logout checks.
 The original three owned-source cases then passed3/3 with parent exit0, no
 failures or skips, and unchanged readiness/case clocks. No complete current-source
 catalog or CI acceptance follows from these focused results.
+
+### Diagnostic follow-up to two `5124987` CI failures
+
+The preceding learning results and current legacy result do not establish whole
+CI acceptance.
+The partner WebKit job passed12 desktop-light cases, then the desktop-dark absent-
+request/reload case timed out at its declaration line18. Mobile profiles were not
+reached; the exact inner phase is unknown. A reviewed single-use full-job rerun
+remains unexecuted and requires the whole workflow to complete with that sole
+failure, unchanged source/cases/clocks, and retained original evidence.
+
+The pilot regression job also failed. Its current-schema report was emitted
+only after complete predecessor process/receipt validation. The generic catch
+provided no later phase: current-schema report/cleanup, fresh UI execution/receipt,
+or final source/evidence verification remain distinct possibilities. No specific
+cause is inferred from the time between report emission and failure. The second
+failure makes the partner-only executor's sole-failure condition false.
+
+The follow-up draft adds fixed controller phases and numeric process/report
+outcomes, plus revalidated approved pilot UI source locations. It retains private
+raw reports and the original thrown error. All original suites, acceptance checks,
+retry settings, and case/suite/outer clocks are unchanged. Two privacy cases are
+added to the existing diagnostic suite, giving prospective1,019 cases across185
+suites. The ongoing clean `5124987` run remains scoped to its actual1,017/185
+inventory. New full-source catalog/CI/hosted acceptance is not claimed.
+
+The diagnostic draft passed all12 focused privacy and suite-result cases without
+failures or skips. Root project typechecking and documentation checks exited0.
+The checks were repeated against the final prospective inventory; actual new CI
+phase evidence and a complete current-source run remain pending.

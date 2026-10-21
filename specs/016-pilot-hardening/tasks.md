@@ -475,3 +475,11 @@ No hosted target may be locked for release before its measured reopen path exist
   root typechecking, fresh complete source-bound catalog and CI. Do not change
   readiness predicates, deadlines, model selection or release gates; no specific
   import is established as the CI cause until actual verification supports it.
+
+- [ ] T127 Preserve actual `5124987` partner WebKit and pilot regression failures,
+  and add fixed failure-only regression stage/process/current-schema-count and
+  approved browser-location observations. Retain every predecessor/current-schema/
+  four-profile case, predicate, timeout and retry setting; rethrow the original
+  error and keep arbitrary child/test/page content private. Verify focused privacy,
+  types and inventory checks; record actual new CI phase before selecting a fix.
+  The partner-only once executor must remain unexecuted while a second job fails.

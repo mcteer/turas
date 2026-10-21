@@ -62,3 +62,15 @@ export function browserFailureMetadata(raw:unknown,allowedFiles:ReadonlySet<stri
  }
  walk(raw,0);return failures;
 }
+
+/** Revalidate a captured child diagnostic instead of relaying its JSON or prose. */
+export function pilotUiChildFailures(raw:unknown){
+ if(typeof raw!=='string')return [];
+ const failures:BrowserFailure[]=[];
+ for(const line of raw.slice(-131072).split('\n').filter(line=>line.startsWith('{"kind":"pilot_ui_failure"')).slice(-4))try{
+  const row=JSON.parse(line);if(!Array.isArray(row.failedLocations))continue;
+  const report={specs:row.failedLocations.slice(0,10).map((value:any)=>({file:value?.file,line:value?.line,column:value?.column,tests:[{projectName:row.project,results:[{status:value?.status,duration:value?.durationMs,error:{message:Array.isArray(value?.signatures)?value.signatures.filter((s:unknown)=>typeof s==='string').slice(0,24).map((s:string)=>s.slice(0,128)).join(' '):''}}]}]}))};
+  failures.push(...browserFailureMetadata(report,new Set(['pilot-workspace.spec.ts','pilot-uploads.spec.ts'])));
+ }catch{/* An unavailable diagnostic cannot expose the child's private output. */}
+ return failures.slice(0,10);
+}

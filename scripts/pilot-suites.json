@@ -1435,11 +1435,13 @@
     },
     {
       "file": "tests/unit/ci-browser-diagnostics.test.ts",
-      "expectedCases": 3,
+      "expectedCases": 5,
       "cases": [
         "reports the failed source location and timeout class without private error or page content",
         "ignores unapproved files and bounds records, projects and numeric metadata",
-        "reports setup and child process failure classes without exposing private output"
+        "reports setup and child process failure classes without exposing private output",
+        "reports fixed regression stages and current-schema counts without private process or test payloads",
+        "revalidates captured pilot UI diagnostics and discards private or malformed child records"
       ]
     },
     {

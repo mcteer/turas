@@ -10,6 +10,8 @@ import { executionUiDiscovery,verifyExecutionUiReport } from './execution-ui-rep
 import {pilotImagePreparationSchema} from '../lib/contracts/pilot-images';
 import {verifyArtifactImage,assertFreshArtifactSignatures} from '../lib/server/artifacts/scan';
 import { pilotSource } from './pilot-source';
+import {browserFailureMetadata} from './ci-browser-diagnostics';
+import {processFailureMetadata} from './ci-process-diagnostics';
 export async function checkPilotUi(){
  if(process.argv.length!==2)throw Error('Pilot UI acceptance takes no filters or target overrides');
  process.umask(0o077);
@@ -43,7 +45,16 @@ export async function checkPilotUi(){
    if(cases.length!==10)throw Error('Pilot UI catalog must discover ten cases per project');caseIds.push(...cases.map(row=>'pilot.ui.'+project+'.'+row.id));
    const run=await capturePartnerProcess([...args,'--output='+resolve(directory,project)],300000,environment.signal);
    await writeFile(resolve(directory,project+'.json'),run.stdout,{mode:0o600});await writeFile(resolve(directory,project+'.log'),run.stderr,{mode:0o600});
-   if(run.status!==0||run.error)throw Error('Pilot UI failed; inspect '+directory);
+   if(run.status!==0||run.error){
+    const failure=Error('Pilot UI failed; inspect '+directory);
+    try{
+     let failedLocations:ReturnType<typeof browserFailureMetadata>=[];
+     try{failedLocations=browserFailureMetadata(JSON.parse(run.stdout),new Set(['pilot-workspace.spec.ts','pilot-uploads.spec.ts']));}catch{/* Keep malformed/private output private. */}
+     console.error(JSON.stringify({kind:'pilot_ui_failure',project:/^webkit-(desktop|mobile)-(light|dark)$/.test(project)?project:'unknown',failedLocations,
+      processError:run.error,...processFailureMetadata({code:run.status,stdoutTail:run.stdout,stderrTail:run.stderr})}));
+    }catch{/* Formatting or logging must not replace the original gate failure. */}
+    throw failure;
+   }
    passed+=verifyExecutionUiReport(JSON.parse(run.stdout),cases).expected;console.info(JSON.stringify({project,passed:cases.length,skipped:0}));
   }
  },{deadlineMs:1800000});
