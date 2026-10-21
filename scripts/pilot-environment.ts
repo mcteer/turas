@@ -59,7 +59,8 @@ async function requireUnusedPilotRoot(root:string,environment:NodeJS.ProcessEnv,
   if(cwd.error||cwd.status!==0||cwd.stderr.trim())throw Error('Owned pilot root process absence unverified',{cause:{probe:'cwd',status:cwd.status,signal:cwd.signal,probeError:Boolean(cwd.error),stderrPresent:Boolean(cwd.stderr.trim()),rootInUse:cwdInUse}});
   if(cwdInUse){if(Date.now()>=until)throw Error('Owned pilot root process absence unverified',{cause:{probe:'cwd',rootInUse:true}});await new Promise(done=>setTimeout(done,Math.min(100,until-Date.now())));continue;}
   const files=spawnSync('lsof',['+D',owned,'-Fp'],{env:environment,encoding:'utf8',timeout:Math.max(1,until-Date.now()),maxBuffer:4194304});
-  if(files.error||files.status!==1||files.stdout.trim()||files.stderr.trim())throw Error('Owned pilot root open-file absence unverified',{cause:{probe:'open-files',status:files.status,signal:files.signal,probeError:Boolean(files.error),stdoutPresent:Boolean(files.stdout.trim()),stderrPresent:Boolean(files.stderr.trim())}});
+  if(files.error||![0,1].includes(files.status??-1)||files.stderr.trim()||(!files.stdout.trim()&&files.status!==1))throw Error('Owned pilot root open-file absence unverified',{cause:{probe:'open-files',status:files.status,signal:files.signal,probeError:Boolean(files.error),stdoutPresent:Boolean(files.stdout.trim()),stderrPresent:Boolean(files.stderr.trim())}});
+  if(files.stdout.trim()){if(Date.now()>=until)throw Error('Owned pilot root open-file absence unverified',{cause:{probe:'open-files',rootInUse:true}});await new Promise(done=>setTimeout(done,Math.min(100,until-Date.now())));continue;}
   if(Date.now()>until)throw Error('Owned pilot root open-file absence unverified',{cause:{probe:'open-files',deadlineExpired:true}});
   return;
  }

@@ -1052,3 +1052,9 @@ process during shutdown. The isolated pilot fixture opts out of optional telemet
 up to five seconds for verified directory release;
 application tracing and strict cleanup verification remain enabled. Fresh native
 and complete catalog/CI verification are still pending.
+
+The full `55e9087` local run stopped at five nested provisioning cleanup failures
+after65 passing cases. A minimal fixture reproduced open-file interference,
+including a macOS indexer. The finite cleanup predicate now waits for both cwd
+and open-file absence within its existing window and original owned deadline.
+Fresh provisioning, native and complete catalog/CI checks are pending.

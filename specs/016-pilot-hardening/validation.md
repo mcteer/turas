@@ -7046,3 +7046,25 @@ actual cwd absence within one five-second window and still requires open-file
 absence before removal. Application tracing remains enabled. Fixed probe diagnostics
 retain status and booleans without arbitrary process or file content. Actual
 new-source native cleanup and complete catalog/CI remain pending.
+
+### Nested fixture cleanup follow-up
+
+The `55e9087` full local run failed closed after seven suites/65 passed cases:
+all five provisioning cases failed at nested fixture open-file cleanup. A minimal
+nested fixture reproduced the failure; typed lsof records showed regular-file
+handles, and a surviving matching process was identified as macOS Spotlight.
+The original fixture work has not been established as defective.
+
+The existing finite release predicate now rechecks both cwd and open-file use
+within the same five-second window, bounded by the original owned deadline.
+Nonempty output remains busy and cannot pass; errors, warnings or ambiguous
+empty successful output fail closed. Removal still requires actual empty output
+with lsof's no-match status. No process is signaled by filesystem access.
+Fresh nested provisioning, native cleanup and complete catalog/CI are pending.
+The unexecuted `55e9087` CI control retains its full admission hold.
+
+The focused original provisioning suite then passed5/5 with zero failures/skips,
+process exit0, no signal/deadline expiry, and successful surrounding fixture
+cleanup. This was a pre-commit working-tree check; fresh committed-source native,
+complete catalog and CI evidence are still required. Pilot types, docs and diff
+checks passed.
