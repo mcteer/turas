@@ -9,7 +9,8 @@ import {HttpFailure} from '../../contracts/http';
 import {z} from 'zod';
 import type {CurrentSession} from '../auth/sessions';
 import type {McpReadActor} from '../auth/read-actor';
-const cancellationActors=new WeakSet<object>();
+import {operationalControlUnderFence,hasProtectedCancellation,operationalAdmissionOpen} from './session-admission';
+export {operationalAdmissionOpen,protectedCancellationRequest,registerProtectedCancellation} from './session-admission';
 const recoveryReadActors=new WeakMap<object,{client:PoolClient;environmentId:string;recoveryId:string;revision:number;deadline:number}>();
 const readProbeScope=z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive(),deadline:z.number().int().positive()});
 /** Owner-only in-process capability. A serialized actor, header or healthy flag
@@ -92,19 +93,12 @@ export async function withRecoveryMcpHttpReadCapability<T>(db:PoolClient,request
   await lockWorkspaceActor(db,actor,undefined,true,2000);await authenticateRecoveryHttpRead(db,request,id,false);request.signal.throwIfAborted();if(Date.now()>=deadline)throw new HttpFailure(503,'unavailable','Recovery MCP deadline ended');return result;
  }finally{recoveryReadActors.delete(actor);}
 }
-const cancelledPaths=/^(?:\/api\/artifacts\/intents\/[a-f0-9-]{36}\/cancel|\/eve\/v1\/session\/wrun_[A-Za-z0-9_-]+\/cancel)$/;
-/** The exception is an in-process capability attached only to a verified session on a fixed cancellation handler. */
-export function protectedCancellationRequest(request:Request){return request.method==='POST'&&cancelledPaths.test(new URL(request.url).pathname);}
-export function registerProtectedCancellation(request:Request,actor:object){if(!protectedCancellationRequest(request))throw Error('Invalid protected operation');cancellationActors.add(actor);}
 export async function requireOperationalOpen(db:PoolClient,actor?:object,readOnly=false){
- const environmentId=getServerConfig().TURAS_ENVIRONMENT_ID;
- await db.query('SELECT pg_advisory_xact_lock_shared(hashtextextended($1,16017))',[environmentId]);
- const row=(await db.query('SELECT mode,revision,recovery_id FROM operations_control WHERE environment_id=$1',[environmentId])).rows[0];
+ const {environmentId,row}=await operationalControlUnderFence(db);
  const probe=actor?recoveryReadActors.get(actor):undefined;
  if(readOnly&&probe&&probe.client===db&&probe.environmentId===environmentId&&probe.deadline>Date.now()&&row?.mode==='locked'&&row.recovery_id===probe.recoveryId&&Number(row.revision)===probe.revision)return;
- if(!row||row.mode!=='open'&&(!actor||!cancellationActors.has(actor)))throw new HttpFailure(503,'recovery_locked','Service temporarily unavailable');
+ if(!row||row.mode!=='open'&&(!actor||!hasProtectedCancellation(actor)))throw new HttpFailure(503,'recovery_locked','Service temporarily unavailable');
 }
-export async function operationalAdmissionOpen(){try{return (await query("SELECT 1 FROM operations_control WHERE environment_id=$1 AND mode='open'",[getServerConfig().TURAS_ENVIRONMENT_ID])).rowCount===1;}catch{return false;}}
 /** Capture's exclusive fence waits for bounded private writes and cleanup IO.
  * Quiescing closes new writes without preventing already admitted IO from draining. */
 let ioClient:PoolClient|undefined,ioUsers=0,ioAcquireUnavailableUntil=0;

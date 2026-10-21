@@ -117,7 +117,11 @@
         "unit.feedback-evidence.003",
         "unit.owned-suite-lifecycle.001",
         "unit.owned-suite-lifecycle.002",
-        "unit.owned-suite-lifecycle.003"
+        "unit.owned-suite-lifecycle.003",
+        "unit.artifact-startup-probe.001",
+        "unit.artifact-startup-probe.002",
+        "unit.artifact-startup-probe.003",
+        "unit.session-admission-boundary.001"
       ]
     },
     {

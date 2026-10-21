@@ -458,7 +458,7 @@ No hosted target may be locked for release before its measured reopen path exist
   owned-source cases. Retain c5a733e failures and require new committed catalog,
   CI and hosted evidence without claiming a demonstrated TCP collision.
 
-- [ ] T125 Diagnose the repeated committed-source artifact readiness failure
+- [x] T125 Diagnose the repeated committed-source artifact readiness failure
   with failure-only static fetch and fresh-socket HTTP observations. Seed only
   an owned static sentinel; retain the original 60-second admission predicate,
   2-second readiness probes, cases, model limits and all outer clocks. Bound
@@ -466,3 +466,12 @@ No hosted target may be locked for release before its measured reopen path exist
   close connections on every exit, and publish only fixed transport metadata.
   Verify lifecycle/privacy checks and record actual Linux CI observations before
   claiming a failing phase or selecting a behavioral fix.
+
+- [ ] T126 Separate ordinary session admission from the full recovery/domain
+  runtime import graph after the `15468da` CI observation: preserve the existing
+  shared16017 SQL fence, OPEN-mode requirements, one cancellation WeakSet and all
+  connection/revision/deadline-bound recovery capabilities. Verify the import
+  boundary and existing real-database admission/logout/recovery/MCP regressions,
+  root typechecking, fresh complete source-bound catalog and CI. Do not change
+  readiness predicates, deadlines, model selection or release gates; no specific
+  import is established as the CI cause until actual verification supports it.

@@ -126,8 +126,9 @@ authorization can now be verified without promoting the original Preview envelop
 The composed workspace/upload WebKit matrix passes40cases. The ae9b908 local
 catalog passes1009 cases across182 suites; its hosted regional check failed at
 canonical MCP denial reconciliation and its owned credentials/executor were closed.
-The current1013-case/183-suite catalog includes a transaction-bound denial-preparation
-regression and requires fresh complete verification. Expired infrastructure/model approvals,
+The current1017-case/185-suite catalog includes transaction-bound denial-preparation
+and startup-transport lifecycle/privacy and ordinary-session import-boundary regressions
+and requires fresh complete verification. Expired infrastructure/model approvals,
 original charges and holds remain unchanged; no hosted pilot readiness is claimed.
 Authority readers now coexist with serialized writers; all16 support/grant
 concurrency checks and the actual unpaid native-operations/WebKit fixture pass

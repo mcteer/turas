@@ -2111,6 +2111,22 @@
         "rejects missing projects, case omissions, changed digests and extra or linked artifacts",
         "rejects forged successful counters, retry/skip/flaky results and discovery missing a checked-in case"
       ]
+    },
+    {
+      "file": "tests/unit/artifact-startup-probe.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "records fresh TCP and response headers while retiring a never-ending response without exposing its body",
+        "distinguishes a connected socket without headers and closes it at the fixed deadline",
+        "publishes only fixed transport metadata and rejects private or malformed nested values"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/session-admission-boundary.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "loads ordinary session authentication without recovery admission"
+      ]
     }
   ],
   "ui": {

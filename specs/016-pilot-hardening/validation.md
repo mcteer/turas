@@ -6826,3 +6826,68 @@ The diagnostic draft also passed all three original owned-source integration
 cases with process exit 0, no failures and no skips. These checks verify the
 sentinel preparation and ordinary successful fixture path; they do not
 reproduce the Linux failure or establish its cause.
+
+The startup transport regression suite is appended to the governing inventory,
+with its three exact G01 case IDs. The prospective catalog is 1,016 cases across
+184 suites; every prior suite position, including evaluation-source suite117,
+is preserved. Ten focused lifecycle/privacy and suite-result verification cases
+passed without skips. This registration is a follow-up draft while `15468da` CI
+runs; historical full results remain scoped to their actual 1,013/183 inventory.
+
+### Local Linux startup and process-reaping observations
+
+Private original-source `15468da` Linux diagnostics produced different startup
+outcomes under the unchanged 60-second readiness and 2-second probe clocks.
+One failed observation had static and public health timeouts even on fresh
+sockets; another had static and public health 200 responses but an auth timeout,
+with a recent heartbeat on the process owning the public listener. These
+post-failure observations do not establish responsiveness throughout the
+readiness window or reproduce the exact preceding CI catalog state. A successful
+startup trace did not attribute the failure to any route or import.
+
+An original-source local run admitted in 42,772 ms but subsequently failed strict
+plan-runtime retirement. A live, identity-checked process-group snapshot found
+two zombie members adopted by a Node PID1. Repeating the original three cases
+with Docker's init reaper passed 3/3 with parent exit0, no skips or expired
+clocks, admission in44,301 ms, and independently verified removal of the exact
+owned outer and nested containers. No application retirement guard changed.
+This validates the local harness correction; it does not resolve the separate
+CI startup failure or establish hosted acceptance.
+
+A private lazy-recovery-import prototype exited before eve printed its server
+URL and provided no successful admission or timing improvement. It was not
+adopted. The committed application source and model selection remain unchanged.
+
+### `15468da` CI auth-path observation and targeted guard separation
+
+The committed-source pilot catalog failed in its registered evaluation-source
+suite:25 readiness probes over60,561 ms, auth timeout with no module/handler/
+session/failure marker, public eve health200, correct printed port and live
+supervisor. Failure-only static fetch returned200 in21 ms, fresh-socket static
+HTTP200 in41 ms, and fresh-socket public health200 in55 ms. The independent
+connection found the database reachable/open, and internal eve health returned
+200. These post-failure observations narrow investigation toward auth-route
+initialization/compilation/imports; they do not prove continuous responsiveness
+or identify a specific import. The execution WebKit job was still running when
+this observation was recorded; full CI success is not claimed.
+
+Inspection found ordinary sessions importing the full recovery admission graph,
+including runtime cycles through recovery HTTP readers and sessions. The targeted
+follow-up moves ordinary OPEN admission and the single cancellation capability
+set into a small shared module. Session creation retains the same transaction
+fence and OPEN-only requirement; full domain admission retains its recovery
+capabilities and uses the same shared fence and cancellation set. A new import
+boundary case is appended to the catalog, giving a prospective1,017 cases across
+185 suites. Targeted checks and fresh complete verification remain pending.
+
+Root project typechecking exited0, and the ten transport/catalog checks passed.
+The initial authorization command omitted the required prepared renderer image:
+19/21 cases passed and two rendered-publication cases failed that explicit
+fixture precondition. The failed evidence is retained. Repeating both affected
+suites with the existing immutable prepared renderer passed all four cases,
+including actual restricted-runtime MCP HTTP and authenticated locked rendered
+publication reads. The original command also passed real-database session
+creation/denial, cross-module protected cancellation, and locked logout checks.
+The original three owned-source cases then passed3/3 with parent exit0, no
+failures or skips, and unchanged readiness/case clocks. No complete current-source
+catalog or CI acceptance follows from these focused results.

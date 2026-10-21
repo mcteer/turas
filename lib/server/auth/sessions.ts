@@ -1,4 +1,4 @@
-import {requireOperationalOpen,operationalAdmissionOpen,protectedCancellationRequest,registerProtectedCancellation} from '../operations/admission';
+import {requireSessionAdmissionOpen,operationalAdmissionOpen,protectedCancellationRequest,registerProtectedCancellation} from '../operations/session-admission';
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { getServerConfig, type ServerConfig } from "../config";
 import { query, withTransaction } from "../db/client";
@@ -52,7 +52,7 @@ export async function issueSession(identity: DemoIdentity): Promise<{ token: str
   const expiresAt = sessionExpiresAt(createdAt);
   const sessionId = randomUUID();
   await withTransaction(async (client) => {
-    await requireOperationalOpen(client);
+    await requireSessionAdmissionOpen(client);
     const eligible=await client.query(`SELECT m.id FROM memberships m JOIN principals p ON p.id=m.principal_id
       JOIN workspaces w ON w.id=m.workspace_id LEFT JOIN partner_organizations o ON o.id=m.partner_org_id AND o.workspace_id=m.workspace_id
       WHERE m.id=$1 AND m.principal_id=$2 AND m.workspace_id=$3 AND m.kind=$4 AND m.role=$5
