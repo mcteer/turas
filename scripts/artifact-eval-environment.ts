@@ -12,6 +12,13 @@ import { Client } from "pg";
 import { requireEvaluationSourceDatabase } from "./eval-source-database";
 import { getServerConfig, parseArtifactStoreConfig } from "../lib/server/config";
 
+/** Exact execution markers only: a compiler's quoted source is not execution. */
+export function artifactAuthStartupPhases(output:string) {
+  const lines=new Set(output.replace(/\x1b\[[0-9;]*[A-Za-z]/g,'').split(/\r?\n/));
+  return {authModuleObserved:lines.has('ARTIFACT_AUTH_MODULE'),authHandlerObserved:lines.has('ARTIFACT_AUTH_HANDLER'),
+    authSessionObserved:lines.has('ARTIFACT_AUTH_SESSION'),authFailureObserved:lines.has('ARTIFACT_AUTH_FAILURE')};
+}
+
 async function freePort(): Promise<number> {
   const server = createServer();
   await new Promise<void>((resolveReady,reject) => {
@@ -90,6 +97,20 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
     await symlink(resolve("node_modules"),join(app,"node_modules"));
     await symlink(resolve("packages/artifact-extractor/node_modules"),join(app,"packages/artifact-extractor/node_modules"));
     await configureOwnedNextDependencyRoot(app);
+    // Observe only the disposable route. No request, session or error data leaves it.
+    const authRoute = join(app,"app/api/auth/session/route.ts");
+    let authSource = await readFile(authRoute,"utf8");
+    for (const [before,after] of [
+      ['export const dynamic = "force-dynamic";', `process.stderr.write("ARTIFACT_AUTH_MODULE\\n");\nexport const dynamic = "force-dynamic";`],
+      ['export async function GET(request: Request): Promise<Response> {', `export async function GET(request: Request): Promise<Response> {\n  process.stderr.write("ARTIFACT_AUTH_HANDLER\\n");`],
+      ['const session = await getCurrentSession(request);', `const session = await getCurrentSession(request);\n    process.stderr.write("ARTIFACT_AUTH_SESSION\\n");`],
+      ['  } catch (error) {', `  } catch (error) {\n    process.stderr.write("ARTIFACT_AUTH_FAILURE\\n");`],
+    ]) {
+      if (authSource.split(before).length !== 2) throw Error('Owned artifact auth diagnostic shape changed');
+      authSource = authSource.replace(before,after);
+    }
+    await writeFile(authRoute,authSource);
+
     const dump = execFileSync("docker",["exec",container,"pg_dump","-U",username,
       "-d",database,"-Fc","--no-owner","--no-acl"],{ timeout: 60_000,maxBuffer: 100*1024*1024 });
     execFileSync("docker",["exec",container,"createdb","-U",username,cloneName],{
@@ -130,15 +151,45 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
       await new Promise((wait) => setTimeout(wait,500));
     }
     if (!ready) {
+      const readinessElapsedMs = Date.now()-started;
       await writeFile(resolve('local-artifacts/004/eval-startup-failure.log'),startupOutput,{mode:0o600});
       await writeFile(resolve('local-artifacts/004/eval-startup-failure.json'),JSON.stringify({lastAuthStatus,lastEveStatus}),{mode:0o600});
-      const signatures=['EADDRINUSE','ECONNREFUSED','Module not found','Cannot find module','Failed to compile','Error:'].filter(value=>startupOutput.includes(value));
+      // These observations run only after failure, cannot satisfy readiness, and
+      // have separate finite clocks inside the original owned-app deadline.
+      const plainOutput = startupOutput.replace(/\x1b\[[0-9;]*[A-Za-z]/g,'');
+      const publicAddress = /Local:\s+http:\/\/(?:localhost|127\.0\.0\.1):(\d{1,5})/.exec(plainOutput);
+      const internalAddress = /server listening at http:\/\/127\.0\.0\.1:(\d{1,5})\//.exec(plainOutput);
+      const internalHealth = async()=>{
+        if (!internalAddress || Number(internalAddress[1])<1 || Number(internalAddress[1])>65535) return {status:null,transport:'unavailable'};
+        try { const response = await fetch(`http://127.0.0.1:${internalAddress[1]}/eve/v1/health`,{signal:AbortSignal.timeout(1_000)});
+          await response.body?.cancel();return {status:response.status,transport:'none'};
+        } catch(error) { return {status:null,transport:error instanceof Error&&['TimeoutError','AbortError','TypeError'].includes(error.name)?error.name:'other'}; }
+      };
+      const databaseHealth = async()=>{
+        const db = new Client({connectionString:cloneUrl.toString(),connectionTimeoutMillis:1_000,query_timeout:1_000,statement_timeout:1_000});
+        db.on('error',()=>undefined);
+        let closed=false,timer:ReturnType<typeof setTimeout>|undefined;
+        const failed={reachable:false,admissionOpen:false};
+        const work=(async()=>{
+          try {await db.connect();if(closed)return failed;
+            const result=await db.query("SELECT EXISTS(SELECT 1 FROM operations_control WHERE environment_id=$1 AND mode='open') AS admission_open",[marker]);
+            return {reachable:true,admissionOpen:result.rows[0]?.admission_open===true};
+          } catch {return failed;}
+        })();
+        try {return await Promise.race([work,new Promise<typeof failed>(done=>{timer=setTimeout(()=>{closed=true;db.connection.stream.destroy();done(failed);},2_200);})]);}
+        finally {closed=true;clearTimeout(timer);db.connection.stream.destroy();void db.end().catch(()=>undefined);}
+      };
+      const [internal,db] = await Promise.all([internalHealth(),databaseHealth()]);
+      const signatures=['EADDRINUSE','ECONNREFUSED','Module not found','Cannot find module','Failed to compile','Error:','ENOSPC','EMFILE','ENOMEM','Turbopack panic'].filter(value=>plainOutput.includes(value));
       // This fixed record survives removal of the owned app. Arbitrary startup
       // output remains private; CI publishes only whitelisted phase metadata.
       // Vitest's JSON-only reporter intercepts console output; write directly.
-      process.stderr.write(JSON.stringify({kind:'artifact_eval_startup_failure',lastAuthStatus,lastEveStatus,authTransport,eveTransport,probeCount,elapsedMs:Date.now()-started,
+      process.stderr.write(JSON.stringify({kind:'artifact_eval_startup_failure',lastAuthStatus,lastEveStatus,authTransport,eveTransport,probeCount,elapsedMs:readinessElapsedMs,
         supervisorExited:dev.exitCode!==null,supervisorSignalled:dev.signalCode!==null,
-        nextReady:/Ready in/i.test(startupOutput),compiling:/Compiling/i.test(startupOutput),eveListening:/server listening at http:\/\/127\.0\.0\.1:\d+\//.test(startupOutput),signatures})+'\n');
+        nextReady:/Ready in/i.test(plainOutput),compiling:/Compiling/i.test(plainOutput),eveListening:internalAddress!==null,
+        nextAddressObserved:publicAddress!==null,nextPortMatches:publicAddress!==null&&Number(publicAddress[1])===port,
+        ...artifactAuthStartupPhases(startupOutput),
+        internalEveStatus:internal.status,internalEveTransport:internal.transport,databaseReachable:db.reachable,databaseAdmissionOpen:db.admissionOpen,signatures})+'\n');
       throw new Error('Isolated evaluation app did not become ready: '+JSON.stringify({lastAuthStatus,lastEveStatus,exitCode:dev.exitCode,signatures}));
     }
     return await run();

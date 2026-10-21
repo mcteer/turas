@@ -997,3 +997,10 @@ Passive test-only diagnostics now retain bounded request/body-completion timing
 and report-control presence by document ordinal; they publish no URLs, identifiers,
 response bodies or review text. They do not establish the failure cause or replace
 fresh exact-source CI, complete catalog and hosted acceptance.
+
+The latest committed CI still times out in the isolated artifact evaluation app;
+its Product Gaps WebKit job passes all88 cases. Additional disposable-app startup
+observations distinguish the printed Next port, exact auth-route execution phases,
+internal eve health and a bounded owned-database admission probe. The direct health probes
+run after readiness has already failed and cannot satisfy it. No startup cause,
+full CI success or hosted readiness is claimed.

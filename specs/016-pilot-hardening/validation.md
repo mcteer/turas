@@ -6708,3 +6708,35 @@ skips and source digest
 `0fa58d45bb599d3c7ac3fc84db4f09eecafe0a16b0bcec624bebba74eb668570`.
 Product Gaps types pass. Earlier diagnostic source/proofs remain separately
 attributed; the amendment requires its own full catalog, CI and hosted proof.
+
+### Artifact startup boundary observations after578b172
+
+The committed578b172 local catalog completed183 suites/1013 cases with actual
+exit0 and independent verification. Its CI Product Gaps WebKit job passed88/88,
+but deterministic suite117 again failed its first evaluation-source case: both
+public health probes timed out, while the supervisor remained running and Next
+and eve had printed startup banners. The complete failed CI log is retained
+privately. These banners do not establish usable service or a database failure.
+
+The disposable artifact app now emits fixed auth module/handler/session/failure
+markers. Only exact marker lines count; quoted compiler source cannot count as
+execution. After the original readiness failure, separate diagnostic-only probes
+observe internal eve health and the owned clone's database admission state. The
+HTTP probe is bounded to1 second and the database probe to2.2 seconds overall,
+including forced socket closure; no close operation is awaited without a bound.
+Printed Next-port comparison and fixed resource-error signatures complete the
+observation. No URLs, credentials, identifiers, SQL or arbitrary logs enter CI.
+The readiness predicate,60-second allowance,2-second probes and retry policy are
+unchanged; diagnostic results cannot make a failed startup pass.
+
+The initial diagnostic variant passed the original three evaluation-source
+integration cases. Independent review then required bounded diagnostic closure
+and exact-line markers; final privacy/marker tests pass3/3 and pilot types pass.
+Fresh committed full catalog, CI and hosted acceptance remain mandatory. No
+startup cause or complete pilot readiness is claimed.
+
+Authenticated Neon metadata reads now succeed for the dedicated recovery target.
+The actual endpoint was idle with min/max1CU and automatic suspension disabled.
+No SQL, configuration change or activation occurred. Recovery still requires
+explicit bounded configuration and an independently funded current admission;
+the superseded financial parent remains unusable.

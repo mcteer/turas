@@ -15,11 +15,12 @@ export function processFailureMetadata(value:unknown){
 function artifactStartupDiagnostic(value:unknown){
  if(!value||typeof value!=='object')return undefined;const row=value as Record<string,unknown>;if(row.kind!=='artifact_eval_startup_failure')return undefined;
  const status=(value:unknown)=>typeof value==='number'&&Number.isInteger(value)&&value>=100&&value<=599?value:null;
- const transport=(value:unknown)=>typeof value==='string'&&['none','TimeoutError','AbortError','TypeError'].includes(value)?value:'other';
+ const transport=(value:unknown)=>typeof value==='string'&&['none','unavailable','TimeoutError','AbortError','TypeError'].includes(value)?value:'other';
  const bounded=(value:unknown,max:number)=>typeof value==='number'&&Number.isSafeInteger(value)&&value>=0&&value<=max?value:null;
  return {lastAuthStatus:status(row.lastAuthStatus),lastEveStatus:status(row.lastEveStatus),authTransport:transport(row.authTransport),eveTransport:transport(row.eveTransport),probeCount:bounded(row.probeCount,1000),elapsedMs:bounded(row.elapsedMs,120000),
-  ...Object.fromEntries(['supervisorExited','supervisorSignalled','nextReady','compiling','eveListening'].filter(key=>typeof row[key]==='boolean').map(key=>[key,row[key]])),
-  signatures:Array.isArray(row.signatures)?row.signatures.filter(value=>typeof value==='string'&&['EADDRINUSE','ECONNREFUSED','Module not found','Cannot find module','Failed to compile','Error:'].includes(value)).slice(0,6):[]};
+  ...Object.fromEntries(['supervisorExited','supervisorSignalled','nextReady','compiling','eveListening','nextAddressObserved','nextPortMatches','authModuleObserved','authHandlerObserved','authSessionObserved','authFailureObserved','databaseReachable','databaseAdmissionOpen'].filter(key=>typeof row[key]==='boolean').map(key=>[key,row[key]])),
+  ...(Object.hasOwn(row,'internalEveStatus')?{internalEveStatus:status(row.internalEveStatus),internalEveTransport:transport(row.internalEveTransport)}:{}),
+  signatures:Array.isArray(row.signatures)?row.signatures.filter(value=>typeof value==='string'&&['EADDRINUSE','ECONNREFUSED','Module not found','Cannot find module','Failed to compile','Error:','ENOSPC','EMFILE','ENOMEM','Turbopack panic'].includes(value)).slice(0,10):[]};
 }
 
 /** Fixed ordinary native phases and state only. No IDs, messages, native

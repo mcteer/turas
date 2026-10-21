@@ -440,3 +440,12 @@ No hosted target may be locked for release before its measured reopen path exist
   diagnostic nonreproduction, verify privacy and original journeys, and preserve
   handlers, responses, assertions, deadlines and retry policy. These observations
   do not establish an internal state transition or product correction.
+
+- [X] T123 Distinguish disposable artifact-app port binding, actual auth-route
+  execution, internal eve health and owned-database availability after the latest
+  CI readiness timeout. Publish only bounded fixed fields, contain diagnostic
+  errors and close the diagnostic socket at its own deadline. Require exact
+  execution-marker lines rather than compiler excerpts. Preserve the original
+  readiness assertions,60-second allowance and2-second probes; retain the failed
+  CI and require fresh complete catalog, CI and hosted acceptance. The cause of
+  the startup failure remains unproved.
