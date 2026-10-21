@@ -412,3 +412,11 @@ No hosted target may be locked for release before its measured reopen path exist
   original cumulative financial holds. Independent diagnosis confirms a genuine
   unsupported identifier. Fresh committed catalog, CI and complete model/hosted
   acceptance remain required under T069/T073–T079; no retry of an uncertain call.
+
+- [X] T119 Preserve independent health-route outcomes and fixed startup phases
+  after the actual CI artifact evaluation readiness failure. Keep raw startup
+  output private, whitelist every published diagnostic field, retain the failed
+  run, and preserve the original readiness assertions and all time limits.
+  Independent review, privacy regressions and pilot types pass. This diagnostic
+  correction does not establish the startup cause or replace fresh complete
+  source-bound catalog, CI and hosted acceptance under T069/T073–T079.

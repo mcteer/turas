@@ -7,7 +7,19 @@ export function processFailureMetadata(value:unknown){
  const locations=[...new Set([...prose.matchAll(/(?:scripts|tests\/fixtures|tests\/integration\/pilot)\/([a-z][a-z0-9-]*\.(?:ts|mjs)):(\d{1,6}):(\d{1,6})/g)].filter(m=>['pilot-environment.ts','plan-eval-environment.ts','check-ordinary-operations-native.ts','ordinary-knowledge-native.ts','check-ordinary-native-files.ts','load-mcp.test.ts','environment.ts','consumer.ts','build-check.mjs'].includes(m[1])).map(m=>({file:m[0].split(':')[0],line:Number(m[2]),column:Number(m[3])})).map(x=>JSON.stringify(x)))].slice(0,5).map(x=>JSON.parse(x));
  const phases=[...new Set([...prose.matchAll(/\{"kind":"knowledge_native_failure","case":"(include|publish|apply|revoke|withdraw)","phase":"(create|bind|first-proposal|fresh-proposal|approve|receipt|reload|retire)"\}/g)].map(match=>JSON.stringify({case:match[1],phase:match[2]})))].slice(0,5).map(value=>JSON.parse(value));
  let nativeOperations:ReturnType<typeof ordinaryOperationsDiagnostic>;for(const line of prose.split('\n').filter(line=>line.startsWith('{"kind":"native_operations_fixture_failure"')).slice(-3))try{nativeOperations=ordinaryOperationsDiagnostic(JSON.parse(line));}catch{/* Keep unmatched private output private. */}
- return {...(nativeOperations?{nativeOperations}:{}),...(phases.length?{phases}:{}),code:typeof raw.code==='number'&&Number.isInteger(raw.code)&&raw.code>=0&&raw.code<=255?raw.code:null,signal:['SIGTERM','SIGKILL','SIGABRT','SIGSEGV'].includes(String(raw.signal))?raw.signal:null,deadlineExpired:raw.deadlineExpired===true,signatures,locations};
+ let artifactStartup:ReturnType<typeof artifactStartupDiagnostic>;for(const line of prose.split('\n').filter(line=>line.startsWith('{"kind":"artifact_eval_startup_failure"')).slice(-3))try{artifactStartup=artifactStartupDiagnostic(JSON.parse(line));}catch{/* Keep unmatched private output private. */}
+ return {...(artifactStartup?{artifactStartup}:{}),...(nativeOperations?{nativeOperations}:{}),...(phases.length?{phases}:{}),code:typeof raw.code==='number'&&Number.isInteger(raw.code)&&raw.code>=0&&raw.code<=255?raw.code:null,signal:['SIGTERM','SIGKILL','SIGABRT','SIGSEGV'].includes(String(raw.signal))?raw.signal:null,deadlineExpired:raw.deadlineExpired===true,signatures,locations};
+}
+
+/** Independent route outcomes and fixed startup phases only; never raw logs. */
+function artifactStartupDiagnostic(value:unknown){
+ if(!value||typeof value!=='object')return undefined;const row=value as Record<string,unknown>;if(row.kind!=='artifact_eval_startup_failure')return undefined;
+ const status=(value:unknown)=>typeof value==='number'&&Number.isInteger(value)&&value>=100&&value<=599?value:null;
+ const transport=(value:unknown)=>typeof value==='string'&&['none','TimeoutError','AbortError','TypeError'].includes(value)?value:'other';
+ const bounded=(value:unknown,max:number)=>typeof value==='number'&&Number.isSafeInteger(value)&&value>=0&&value<=max?value:null;
+ return {lastAuthStatus:status(row.lastAuthStatus),lastEveStatus:status(row.lastEveStatus),authTransport:transport(row.authTransport),eveTransport:transport(row.eveTransport),probeCount:bounded(row.probeCount,1000),elapsedMs:bounded(row.elapsedMs,120000),
+  ...Object.fromEntries(['supervisorExited','supervisorSignalled','nextReady','compiling','eveListening'].filter(key=>typeof row[key]==='boolean').map(key=>[key,row[key]])),
+  signatures:Array.isArray(row.signatures)?row.signatures.filter(value=>typeof value==='string'&&['EADDRINUSE','ECONNREFUSED','Module not found','Cannot find module','Failed to compile','Error:'].includes(value)).slice(0,6):[]};
 }
 
 /** Fixed ordinary native phases and state only. No IDs, messages, native

@@ -973,3 +973,10 @@ on the preceding checkpoint printed a fabricated revision identifier before
 correcting it; its citation hard gate correctly failed. The complete failed reply
 is retained. Fresh source-bound model verification remains required for this
 instruction correction.
+
+The preceding checkpoint's CI finished with58 successful checks and one failed
+pilot catalog check. Its nested artifact evaluation app did not become ready
+within the original60-second allowance. Independent route-status diagnostics now
+preserve which health probe failed and fixed startup phases after owned-app
+cleanup. This diagnostic correction preserves the readiness assertions and all
+deadlines; the original startup cause and fresh complete CI remain unresolved.

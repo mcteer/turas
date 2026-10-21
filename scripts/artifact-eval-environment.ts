@@ -115,23 +115,29 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
     const started = Date.now();
     let ready = false;
     let lastAuthStatus:number|null=null,lastEveStatus:number|null=null;
+    let authTransport='none',eveTransport='none',probeCount=0;
+    const probe=async(path:string)=>{
+      try{
+        const response=await fetch(`${origin}${path}`,{signal:AbortSignal.timeout(2_000)});
+        const status=response.status;await response.body?.cancel();return {status,transport:'none'};
+      }catch(error){const name=error instanceof Error?error.name:'';return {status:null,transport:['TimeoutError','AbortError','TypeError'].includes(name)?name:'other'};}
+    };
     while (Date.now()-started < 60_000) {
       if (dev.exitCode !== null) throw new Error(`Isolated evaluation app exited during startup: ${startupOutput}`);
-      try {
-        const [auth,eve] = await Promise.all([
-          fetch(`${origin}/api/auth/session`,{ signal: AbortSignal.timeout(2_000) }),
-          fetch(`${origin}/eve/v1/health`,{ signal: AbortSignal.timeout(2_000) }),
-        ]);
-        lastAuthStatus=auth.status;lastEveStatus=eve.status;
-        await Promise.all([auth.body?.cancel(),eve.body?.cancel()]);
-        if (auth.status === 401 && eve.ok) { ready = true; break; }
-      } catch { /* startup is still pending */ }
+      const [auth,eve]=await Promise.all([probe('/api/auth/session'),probe('/eve/v1/health')]);
+      probeCount++;lastAuthStatus=auth.status;lastEveStatus=eve.status;authTransport=auth.transport;eveTransport=eve.transport;
+      if(auth.status===401&&eve.status!==null&&eve.status>=200&&eve.status<300){ready=true;break;}
       await new Promise((wait) => setTimeout(wait,500));
     }
     if (!ready) {
       await writeFile(resolve('local-artifacts/004/eval-startup-failure.log'),startupOutput,{mode:0o600});
       await writeFile(resolve('local-artifacts/004/eval-startup-failure.json'),JSON.stringify({lastAuthStatus,lastEveStatus}),{mode:0o600});
       const signatures=['EADDRINUSE','ECONNREFUSED','Module not found','Cannot find module','Failed to compile','Error:'].filter(value=>startupOutput.includes(value));
+      // This fixed record survives removal of the owned app. Arbitrary startup
+      // output remains private; CI publishes only whitelisted phase metadata.
+      console.error(JSON.stringify({kind:'artifact_eval_startup_failure',lastAuthStatus,lastEveStatus,authTransport,eveTransport,probeCount,elapsedMs:Date.now()-started,
+        supervisorExited:dev.exitCode!==null,supervisorSignalled:dev.signalCode!==null,
+        nextReady:/Ready in/i.test(startupOutput),compiling:/Compiling/i.test(startupOutput),eveListening:/server listening at http:\/\/127\.0\.0\.1:\d+\//.test(startupOutput),signatures}));
       throw new Error('Isolated evaluation app did not become ready: '+JSON.stringify({lastAuthStatus,lastEveStatus,exitCode:dev.exitCode,signatures}));
     }
     return await run();

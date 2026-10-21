@@ -6620,3 +6620,21 @@ identifiers must be copied exactly, with no guessed identifiers or corrections.
 The citation detector, dataset, model, runtime limits and case inventory remain
 unchanged. This content change requires fresh committed source proof and model
 verification; the earlier catalog, Preview and stage002 proof remain historical.
+
+The actual preceding-checkpoint CI run39554646524 completed with58 successful
+checks and one failed deterministic pilot catalog check. The first case in
+`evaluation-source.test.ts` exhausted the nested artifact app's original60-second
+readiness allowance. Its parent suite process exited1 without a suite deadline
+expiration. Neither an authentication/domain failure nor a startup cause is
+established: the original concurrent probe discarded both statuses when either
+request failed, and owned-app cleanup removed its private startup log.
+
+The diagnostic correction records each route independently and publishes only
+whitelisted status, transport, elapsed/count and fixed startup phase metadata.
+Success still requires auth401 and Eve2xx in the same iteration. The60-second
+readiness loop,2-second request timeout,500ms polling interval and all parent
+limits remain unchanged. Independent review, the three privacy diagnostic unit
+cases and pilot types pass. The frozen instruction-only source's ongoing full
+catalog is unaffected and has passed this same unchanged integration suite;
+it has not yet established full acceptance. Fresh committed verification remains
+required for the diagnostic correction. No automatic CI retry was issued.
