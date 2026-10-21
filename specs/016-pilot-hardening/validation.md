@@ -6471,3 +6471,32 @@ query-statistics settings passed the legacy preparation and current079 migration
 sequence. An earlier diagnostic used an incompatible prior-schema setting and is
 retained separately. This setup check is not a passing full catalog. Paid model,
 hosted recovery and release gates remain pending.
+
+### Owned health fixture cancellation and setup hooks (2026-10-21)
+
+The69debff complete catalog stopped at health-samples after46 passing suites.
+Its15-second setup hook expired before any of the six assertions ran; the failed
+run is retained. An independent unchanged six-case reproduction passed, with
+owned setup taking approximately5.36seconds, so the original slow phase remains
+unattributed. No current-run container leak is claimed. Source inspection did
+identify a cleanup gap: initialization could finish after the hook abandoned its
+assignment, and the shared helper ignored the owned environment's abort signal.
+
+The helper now installs cancellation ownership before publishing its handle and
+drains its callback on abort. Health teardown retains the opening promise. Its
+explicit120-second setup hook matches the existing120-second ENTIRE owned
+lifecycle, which is not reset on readiness; a30-second teardown hook and six
+15-second cases fit the240-second outer file bound. The independent90-minute
+catalog bound and all production, recovery and credential clocks are unchanged.
+Three registered unit cases cover normal repeated close, abort after publication,
+and abort before publication with actual callback cleanup. Those cases, the three
+deadline cases and all six owned health cases pass in5.55seconds. Pilot types
+pass. These local observations do not establish hosted readiness; complete fresh
+committed-source catalog, CI and hosted checks remain required.
+
+Independent actual Postgres18 watchdog verification also passes: the existing
+10-second diagnostic lifecycle aborted and its exact newly owned container was
+removed in10.54seconds without calling close first. Calling close only after
+absence observed the original interruption. Existing containers were untouched.
+Independent source review found no correctness blocker; documentation and
+whitespace checks pass. This diagnostic is local and makes no provider call.

@@ -362,3 +362,11 @@ No hosted target may be locked for release before its measured reopen path exist
   Retain the original full-catalog failure, preserve production drain guards and
   all deadlines. All16 affected owned cases pass; require fresh committed
   catalog, CI and hosted checks.
+
+- [X] T114 Keep owned-suite cancellation connected to fixture cleanup before and
+  after publishing its handle, and retain the health suite's pending initialization
+  for teardown. Preserve the120-second complete owned lifecycle; declare120-second
+  setup and30-second cleanup hooks within a240-second outer file bound and the
+  existing90-minute catalog bound. Register three lifecycle unit cases and retain
+  the original setup-hook failure. The12 focused cases and pilot types pass; fresh
+  committed catalog, CI and hosted verification remain required.

@@ -1,9 +1,10 @@
 import catalog from './pilot-suites.json';
 /** Whole-file bounds cover the explicitly declared setup/case phases plus
- * startup and cleanup. Domain, hook, statement and per-case limits stay fixed.
+ * startup and cleanup. Domain, statement and per-case limits stay fixed.
+ * Health hooks explicitly align with its existing owned lifecycle and cleanup.
  * The complete catalog retains its independent ninety-minute batch orchestration deadline. */
 const longSuiteSeconds:Readonly<Record<string,number>>={
- 'access':180,'managed-workflow-batch':180,'research-io-fence':240,
+ 'health-samples':240,'access':180,'managed-workflow-batch':180,'research-io-fence':240,
  'maintenance-worker':240,'hosted-runtime-database':240,'evaluation-visible-identifiers':240,
  'native-postgres':300,'required-objects':300,'hosted-training-admission':300,
  'linked-http-reports':360,'linked-http-training':360,'linked-http-workforce':360,'hosted-browser':360,

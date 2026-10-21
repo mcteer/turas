@@ -2092,6 +2092,15 @@
         "rejects arbitrary correction bytes and unmanifested observation histories",
         "rejects changed original source and late or overdue independent dispositions"
       ]
+    },
+    {
+      "file": "tests/unit/pilot/owned-suite-lifecycle.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "closes a normally published owned suite exactly once",
+        "drains an interrupted published suite before close rejects",
+        "cleans an interrupted initialization without publishing an owned handle"
+      ]
     }
   ],
   "ui": {

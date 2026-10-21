@@ -6,6 +6,7 @@ it('allows the declared restore setup and cases inside a finite whole-file bound
  expect(pilotSuiteDeadlineMs('tests/integration/pilot/isolated-restore.test.ts')).toBeGreaterThanOrEqual(4*210000+15000);
  expect(pilotSuiteDeadlineMs('tests/integration/pilot/isolated-restore.test.ts')).toBeLessThanOrEqual(900000);
  expect(pilotSuiteDeadlineMs('tests/integration/pilot/released-safety-restore.test.ts')).toBeGreaterThanOrEqual(5*210000+15000);
+ expect(pilotSuiteDeadlineMs('tests/integration/pilot/health-samples.test.ts')).toBe(120000+6*15000+30000);
  const phases:Record<string,number>={'legacy-safety-restore':6*210000,'owned-database-restore':720000+420000,'work-isolated-restore':5*420000,'preview-safety-restore':420000,'database-safety-content':2*210000,'recovery-read-probe':3*210000,'recovery':9*210000,'recovery-credential-denials':16*210000,'hosted-sdk':240000+5*60000,'load-mcp':240000+660000};
  for(const [name,total] of Object.entries(phases))expect(pilotSuiteDeadlineMs('tests/integration/pilot/'+name+'.test.ts')).toBeGreaterThanOrEqual(total+15000);
 });

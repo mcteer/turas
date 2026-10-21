@@ -114,7 +114,10 @@
         "unit.release-bundle.012",
         "unit.feedback-evidence.001",
         "unit.feedback-evidence.002",
-        "unit.feedback-evidence.003"
+        "unit.feedback-evidence.003",
+        "unit.owned-suite-lifecycle.001",
+        "unit.owned-suite-lifecycle.002",
+        "unit.owned-suite-lifecycle.003"
       ]
     },
     {

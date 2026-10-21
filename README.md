@@ -123,7 +123,7 @@ Completion work now includes released main `f8d196f`. New pilot logins default
 off through `TURAS_PILOT_LOGIN_ENABLED`; explicit enablement still requires a
 current assigned membership. A separate exact-source Production infrastructure
 authorization can now be verified without promoting the original Preview envelope.
-The composed workspace/upload WebKit matrix passes40cases; the current1006-case/181-suite
+The composed workspace/upload WebKit matrix passes40cases; the current1009-case/182-suite
 catalog requires fresh complete verification. Expired infrastructure/model approvals,
 original charges and holds remain unchanged; no hosted pilot readiness is claimed.
 Authority readers now coexist with serialized writers; all16 support/grant
@@ -699,8 +699,8 @@ The 016 full 003 evaluation may use its separately authorized 32-step allowance;
 ordinary 003 evaluation retains 14 steps. This supplement preserves the original
 shared model/research budget and requires fresh committed deterministic proof.
 Capture and independent review both validate this allowance through the explicit
-private operator runtime. The current deterministic inventory is 1,006 cases in
-181 suites; fresh committed proof is required before further paid evaluation.
+private operator runtime. The current deterministic inventory is 1,009 cases in
+182 suites; fresh committed proof is required before further paid evaluation.
 
 Independent semantic evaluation may use the separately requested LLM judge with
 actual captures and governing rubrics. Actual automated operator/internal/partner
@@ -826,7 +826,7 @@ credential/call limits and unknown cost holds remain enforced. Full owned
 composition and separate-source capture/restart checks pass; regional scale and
 hosted release acceptance remain pending. Recovery-owned denial archive and Production peer clients now cancel their step on idle connection errors; a disconnected client cannot publish successful proof.
 
-The local deterministic inventory is 1,006 cases across 181 suites. The preceding
+The local deterministic inventory is 1,009 cases across 182 suites. The preceding
 6266f31 source passed all 997 cases and 181 suites; complete verification of the
 current source remains required. The actual47-category regional capacity run completed final canonical
 replay; all53 original probe journals were independently reconciled and its
@@ -941,3 +941,10 @@ The locked-target cancellation fixture now requires the deliberate undrained
 callback error alongside cancellation and verifies independent credential
 retirement. The original partial catalog failure remains retained. Fresh complete
 committed catalog, CI and hosted acceptance remain required.
+
+The health fixture retains ownership while initialization is pending and the shared
+owned-suite helper drains on environment cancellation. Its120-second whole
+lifecycle deadline remains unchanged; explicit120-second setup and30-second
+cleanup hooks fit a240-second outer file bound. The six health cases and six
+fixture/deadline unit cases pass locally; fresh full-source verification remains
+required. The original setup-hook failure is retained.

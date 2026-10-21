@@ -6,7 +6,18 @@ export async function openOwnedPilotSuite(options:Parameters<typeof withPilotEnv
  let ready!:(environment:PilotEnvironment)=>void,failed!:(error:unknown)=>void,stop!:()=>void;
  const initialized=new Promise<PilotEnvironment>((resolve,reject)=>{ready=resolve;failed=reject;});
  const stopped=new Promise<void>(resolve=>{stop=resolve;});
- const lifecycle=withPilotEnvironment(async environment=>{ready(environment);await stopped;},options);
+ const lifecycle=withPilotEnvironment(async environment=>{
+  let interrupt!:(error:unknown)=>void;
+  const interrupted=new Promise<never>((_,reject)=>{interrupt=reject;});
+  const abort=()=>interrupt(environment.signal.reason??Error('Owned pilot suite interrupted'));
+  environment.signal.addEventListener('abort',abort,{once:true});
+  try{
+   // Publish a handle only after cancellation ownership is installed.
+   environment.signal.throwIfAborted();
+   ready(environment);
+   await Promise.race([stopped,interrupted]);
+  }finally{environment.signal.removeEventListener('abort',abort);}
+ },options);
  void lifecycle.catch(failed);
  return {environment:await initialized,close:async()=>{stop();await lifecycle;}};
 }
