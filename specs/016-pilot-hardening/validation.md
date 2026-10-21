@@ -6638,3 +6638,14 @@ cases and pilot types pass. The frozen instruction-only source's ongoing full
 catalog is unaffected and has passed this same unchanged integration suite;
 it has not yet established full acceptance. Fresh committed verification remains
 required for the diagnostic correction. No automatic CI retry was issued.
+
+The existing Vercel Git deployment map now also disables automatic deployment
+for the exact `016-recovery-completion` branch. Main and every existing build,
+install and cron setting are preserved. This separates CI from a funded Preview
+build; it does not approve a deployment or establish actual hosted suppression.
+After push, an actual bounded deployment census remains required. Before merge,
+a separately admitted release branch may point at the same tested commit for
+its exact-source Preview, with its own target/environment/build review. The
+existing exact-head authenticated hosted, quality and review gates remain
+mandatory. The earlier instruction-only source's complete1013/183 local pass is
+retained as historical; final changed-source verification remains required.

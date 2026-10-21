@@ -980,3 +980,8 @@ within the original60-second allowance. Independent route-status diagnostics now
 preserve which health probe failed and fixed startup phases after owned-app
 cleanup. This diagnostic correction preserves the readiness assertions and all
 deadlines; the original startup cause and fresh complete CI remain unresolved.
+
+Automatic Vercel deployments are disabled for the recovery completion branch so
+its CI checks can run independently of a funded Preview build. Main remains
+enabled. Hosted acceptance still requires a separately admitted Preview of the
+exact tested commit before merge; a skipped deployment does not satisfy it.

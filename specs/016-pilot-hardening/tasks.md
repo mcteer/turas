@@ -420,3 +420,9 @@ No hosted target may be locked for release before its measured reopen path exist
   Independent review, privacy regressions and pilot types pass. This diagnostic
   correction does not establish the startup cause or replace fresh complete
   source-bound catalog, CI and hosted acceptance under T069/T073–T079.
+
+- [X] T120 Add the exact recovery completion branch to the existing Vercel Git
+  deployment suppression map, preserving main and all build/install/cron settings.
+  Allow source-bound CI without an automatic Preview build. Keep separately
+  funded exact-commit hosted acceptance mandatory before merge; confirm actual
+  suppression after push and retain any unexpected deployment as unresolved.
