@@ -449,3 +449,11 @@ No hosted target may be locked for release before its measured reopen path exist
   readiness assertions,60-second allowance and2-second probes; retain the failed
   CI and require fresh complete catalog, CI and hosted acceptance. The cause of
   the startup failure remains unproved.
+
+- [ ] T124 Apply the existing leased evaluation-port invariant to the artifact
+  fixture: preserve the lease during all asynchronous preparation, release just
+  before the original development supervisor starts, and release in cleanup even
+  if earlier cleanup fails. Preserve all cases, model limits, readiness checks
+  and deadlines. Verify existing lease/privacy regressions and the original three
+  owned-source cases. Retain c5a733e failures and require new committed catalog,
+  CI and hosted evidence without claiming a demonstrated TCP collision.

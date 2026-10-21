@@ -1004,3 +1004,12 @@ observations distinguish the printed Next port, exact auth-route execution phase
 internal eve health and a bounded owned-database admission probe. The direct health probes
 run after readiness has already failed and cannot satisfy it. No startup cause,
 full CI success or hosted readiness is claimed.
+
+The artifact evaluation fixture now applies the existing owned-port lease used
+by the other evaluation fixtures. It holds preparation ports outside the default
+client ephemeral range until immediately before startup, then releases ownership
+idempotently during cleanup. Runtime, readiness assertions and time limits stay
+unchanged. This corrects port ownership; it does not establish the cause of the
+CI startup timeout. The preceding c5a733e CI attempt ended with47 successful and
+3 failed jobs, and its local catalog remained incomplete after156 suites. Fresh
+committed checks and hosted release evidence remain required.

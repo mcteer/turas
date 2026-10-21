@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
 import { chmod, cp, mkdir, mkdtemp, rm, symlink, writeFile, readFile } from "node:fs/promises";
 import {copyOwnedEvalFiles} from './eval-owned-copy';
-import { createServer } from "node:net";
+import { reserveOwnedEvalPort } from "./eval-port";
 import { resolve, join } from "node:path";
 import { Client } from "pg";
 import { requireEvaluationSourceDatabase } from "./eval-source-database";
@@ -17,18 +17,6 @@ export function artifactAuthStartupPhases(output:string) {
   const lines=new Set(output.replace(/\x1b\[[0-9;]*[A-Za-z]/g,'').split(/\r?\n/));
   return {authModuleObserved:lines.has('ARTIFACT_AUTH_MODULE'),authHandlerObserved:lines.has('ARTIFACT_AUTH_HANDLER'),
     authSessionObserved:lines.has('ARTIFACT_AUTH_SESSION'),authFailureObserved:lines.has('ARTIFACT_AUTH_FAILURE')};
-}
-
-async function freePort(): Promise<number> {
-  const server = createServer();
-  await new Promise<void>((resolveReady,reject) => {
-    server.once("error",reject); server.listen(0,"127.0.0.1",resolveReady);
-  });
-  const address = server.address();
-  const port = typeof address === "object" && address ? address.port : 0;
-  await new Promise<void>((resolveClosed) => server.close(() => resolveClosed()));
-  if (!port) throw new Error("No isolated evaluation port available");
-  return port;
 }
 
 async function stop(child: ChildProcess | null): Promise<void> {
@@ -82,6 +70,7 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
     TURAS_ARTIFACT_STORE_ROOT: process.env.TURAS_ARTIFACT_STORE_ROOT };
   let created = false;
   let dev: ChildProcess | null = null;
+  let portLease: Awaited<ReturnType<typeof reserveOwnedEvalPort>> | null = null;
   let startupOutput = "";
   try {
     await cp(preparedStore,store,{ recursive: true });
@@ -119,7 +108,8 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
     execFileSync("docker",["exec","-i",container,"pg_restore","-U",username,
       "-d",cloneName,"--no-owner","--no-acl"],{
       input: dump,timeout: 60_000,maxBuffer: 10*1024*1024 });
-    const port = await freePort();
+    portLease = await reserveOwnedEvalPort();
+    const port = portLease.port;
     const origin = `http://127.0.0.1:${port}`;
     process.env.DATABASE_URL = cloneUrl.toString();
     process.env.DATABASE_URL_UNPOOLED = cloneUrl.toString();
@@ -128,8 +118,10 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
     process.env.TURAS_APP_ORIGIN = origin;
     process.env.TURAS_ARTIFACT_STORE_ROOT = store;
     if(process.env.TURAS_016_BEHAVIOR_CAPTURE_ROOT)await installBehaviorReviewCapture(app,process.env.TURAS_016_BEHAVIOR_CAPTURE_ROOT);
+    const devEnvironment = { ...process.env,NODE_ENV:"development",PORT: String(port),...await qualityChildEnvironment() };
+    await portLease.release();
     dev = spawn(process.execPath,["scripts/dev.mjs"],{
-      cwd: app,env: { ...process.env,NODE_ENV:"development",PORT: String(port),...await qualityChildEnvironment() },stdio: ["ignore","pipe","pipe"] });
+      cwd: app,env: devEnvironment,stdio: ["ignore","pipe","pipe"] });
     const capture = (chunk: Buffer) => { startupOutput =
       (startupOutput+chunk.toString("utf8")).slice(-100_000); };
     dev.stdout?.on("data",capture); dev.stderr?.on("data",capture);
@@ -194,6 +186,7 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
     }
     return await run();
   } finally {
+   try {
     await stop(dev);
     await stopOwnedAppProcesses(app);
     for (const [key,value] of Object.entries(old)) {
@@ -202,5 +195,6 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
     if (created) execFileSync("docker",["exec",container,"dropdb","-U",username,
       "--if-exists","--force",cloneName],{ timeout: 10_000,stdio: ["ignore","pipe","pipe"] });
     await rm(root,{ recursive: true,force: true });
+   } finally { await portLease?.release(); }
   }
 }

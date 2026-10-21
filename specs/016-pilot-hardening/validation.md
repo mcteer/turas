@@ -6740,3 +6740,42 @@ The actual endpoint was idle with min/max1CU and automatic suspension disabled.
 No SQL, configuration change or activation occurred. Recovery still requires
 explicit bounded configuration and an independently funded current admission;
 the superseded financial parent remains unusable.
+
+### Artifact evaluation port ownership after c5a733e
+
+The c5a733e CI attempt completed with47 successful and3 failed jobs. The failures
+were a pretest ClamAV registry502, a WebKit conversation-archive reload timeout,
+and evaluation-source suite117 readiness. At that readiness failure, the printed
+Next port matched; no auth execution marker was observed. Subsequent independent
+probes reached internal eve and the owned database. These observations do not
+establish the failing Next phase or exclude transient service problems.
+
+The local c5a733e catalog completed156 suite processes successfully, then stopped
+during work-recovery-decision without an active-suite result. Its timing and
+cancellation path support the original90-minute outer-watchdog explanation; no
+active-case assertion failure or complete pass is established. Exact parent and
+nested test containers were removed. A separate traced Linux diagnostic passed
+artifact readiness but later failed plan-runtime retirement, with2/3 cases passing.
+Its successful-startup trace does not explain the CI timeout. All failures and
+private diagnostics remain retained.
+
+Inspection found a concrete ownership inconsistency: artifact preparation still
+selected an ephemeral port with listen(0) and immediately closed its listener.
+The existing evaluation-port helper, introduced for the same Plan-fixture pattern,
+already leases preparation ports below the default client ephemeral range. The
+artifact fixture now uses that helper, resolves the child budget environment
+while the lease remains held, releases immediately before spawn, and releases
+idempotently in a nested cleanup finally. The socket handoff is not atomic, and
+OS ephemeral ranges can be configured differently. No TCP collision is claimed.
+
+The development runtime,401-plus-public-health readiness predicate,60-second
+allowance,2-second probes, original case and suite limits, model and per-call cap
+remain unchanged. Focused and committed-source checks are recorded separately;
+full current-source catalog, CI, model and hosted release evidence remain pending.
+
+The final implementation passed all seven focused cases with zero failures or
+skips: the existing port lease case, three privacy/diagnostic cases, and the
+original three owned-source integration cases. The test process exited0 and the
+artifact helper digest matched before and after this run. Pilot typechecking
+also exited0. T124 remains open until fresh committed-source catalog and CI
+evidence are available; these focused checks do not replace hosted acceptance.
