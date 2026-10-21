@@ -123,8 +123,11 @@ Completion work now includes released main `f8d196f`. New pilot logins default
 off through `TURAS_PILOT_LOGIN_ENABLED`; explicit enablement still requires a
 current assigned membership. A separate exact-source Production infrastructure
 authorization can now be verified without promoting the original Preview envelope.
-The composed workspace/upload WebKit matrix passes40cases; the current1009-case/182-suite
-catalog requires fresh complete verification. Expired infrastructure/model approvals,
+The composed workspace/upload WebKit matrix passes40cases. The ae9b908 local
+catalog passes1009 cases across182 suites; its hosted regional check failed at
+canonical MCP denial reconciliation and its owned credentials/executor were closed.
+The current1010-case/182-suite catalog includes a transaction-bound denial-preparation
+regression and requires fresh complete verification. Expired infrastructure/model approvals,
 original charges and holds remain unchanged; no hosted pilot readiness is claimed.
 Authority readers now coexist with serialized writers; all16 support/grant
 concurrency checks and the actual unpaid native-operations/WebKit fixture pass

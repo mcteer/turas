@@ -22,7 +22,7 @@ import {mcpBearerSchema,mcpCreateConnectionSchema,mcpConnectionScopeAllowed} fro
 const scopeSchema=z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive()});
 type Scope=z.infer<typeof scopeSchema>;
 export type LockedWorkRecoveryTarget=Readonly<{contract:'pilot-locked-work-recovery-target-v1';environmentId:string;recoveryId:string;controlRevision:number;projectId:string;teamId:string;sourceCommit:string;sourceDigest:string;catalogDigest:string;origin:string;deploymentId:string;databaseBindingDigest:string;deadline:number}>;
-type Binding={db:Client;scope:Scope;databaseName:string;ownerRole:string;runtimeConnection:string;signal:AbortSignal;decision:boolean;parallelReads:boolean;drains:Set<Promise<unknown>>;abort:(reason:unknown)=>void;lane:ReturnType<typeof claimRecoveryMeasurementLane>};
+type Binding={db:Client;scope:Scope;databaseName:string;ownerRole:string;runtimeConnection:string;signal:AbortSignal;decision:boolean;decisionTransaction?:string;preparedDenials?:RetainedWorkDenials;preparingDenials?:boolean;probeIssuances?:number;parallelReads:boolean;drains:Set<Promise<unknown>>;abort:(reason:unknown)=>void;lane:ReturnType<typeof claimRecoveryMeasurementLane>};
 const bindings=new WeakMap<object,Binding>();
 const decisionClients=new WeakMap<object,Binding>();
 /** Only a privately registered decision transport owns its aggregate timer. */
@@ -130,7 +130,7 @@ async function runWorkRecoveryTransport<T>(input:LockedWorkRecoveryInput,run:(db
   probe.on('error',error=>{connectionLost.abort(error);failRecoveryMeasurementLane(lane,error);});
   try{await probe.connect();const rows=(await probe.query('SELECT current_database() AS name,current_user AS role,session_user AS session_role,environment_id,schema_version FROM turas_environment')).rows;if(rows.length!==1||rows[0].name!==decodeURIComponent(owner.pathname.slice(1))||rows[0].role!=='turas_runtime_016'||rows[0].session_role!=='turas_runtime_016'||rows[0].environment_id!==scope.environmentId||Number(rows[0].schema_version)!==79)throw Error('Actual work recovery runtime differs');}finally{await probe.end();}
   await prepareRecoveryMeasurementLane(lane,exposed,target);
-  let decisionTransaction:string|undefined;if(decision){await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');await db.query("SELECT set_config('transaction_timeout',$1,true)",[Math.max(1,input.deadline-Date.now())+'ms']);await requireLockedWorkRecoveryConnection(exposed,target,scope);decisionTransaction=String((await db.query('SELECT pg_current_xact_id()::text AS id')).rows[0].id);}
+  let decisionTransaction:string|undefined;if(decision){await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');await db.query("SELECT set_config('transaction_timeout',$1,true)",[Math.max(1,input.deadline-Date.now())+'ms']);await requireLockedWorkRecoveryConnection(exposed,target,scope);decisionTransaction=String((await db.query('SELECT pg_current_xact_id()::text AS id')).rows[0].id);binding.decisionTransaction=decisionTransaction;}
   let abort:()=>void=()=>{};
   const cancellation=new Promise<never>((_,reject)=>{abort=()=>reject(signal.reason??Error('Work recovery cancelled'));signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort();});
   const callback=Promise.resolve().then(()=>run(exposed,target)),drain=callback.then(()=>undefined,()=>undefined);binding.drains.add(drain);void drain.then(()=>binding.drains.delete(drain));
@@ -177,6 +177,38 @@ export async function prepareBoundRecoveryMeasurementDenials(db:Client,target:Lo
  }catch(error){await db.query('ROLLBACK');throw error;}
 }
 
+/** Reconcile once inside the genuine owner's still-open decision transaction.
+ * Every later probe independently rechecks snapshot freshness and live policy;
+ * this only avoids repeating the same deny writes between canonical chunks. */
+export async function prepareWorkRecoveryDecisionDenials(db:Client,target:LockedWorkRecoveryTarget,retained:RetainedWorkDenials){
+ const binding=bindings.get(target);
+ if(!binding||binding.db!==db||!binding.decision||!binding.decisionTransaction||binding.parallelReads||binding.lane||binding.preparingDenials)throw Error('Actual recovery decision preparation owner required');
+ const prepared=binding.preparedDenials;
+ if(!prepared){if(binding.probeIssuances)throw Error('Recovery probe issuance is in progress');binding.preparingDenials=true;}
+ try{
+ await requireLockedWorkRecoveryConnection(db,target,binding.scope);
+ requireAuthenticatedRetainedDenials(retained,target.environmentId);
+ if(String((await db.query('SELECT pg_current_xact_id()::text AS id')).rows[0].id)!==binding.decisionTransaction)throw Error('Original recovery decision transaction required');
+ if(binding.preparedDenials){if(binding.preparedDenials!==retained)throw Error('Exact pre-reconciled decision denial authority required');return;}
+ const registered=pending.get(target)??[];
+ if(registered.length&&(await db.query('SELECT 1 FROM login_sessions WHERE id=ANY($1::uuid[]) AND revoked_at IS NULL LIMIT 1',[registered.map(intent=>intent.sessionId)])).rowCount)throw Error('Retire decision probes before denial preparation');
+ await reconcileAuthenticatedWorkCredentialDenialsInTransaction(db,retained,{...binding.scope,snapshotDigest:retained.contextDigest,backupCapturedAt:retained.backupCapturedAt});
+ binding.signal.throwIfAborted();
+ if(String((await db.query('SELECT pg_current_xact_id()::text AS id')).rows[0].id)!==binding.decisionTransaction)throw Error('Original recovery decision transaction required');
+ binding.preparedDenials=retained;
+ }finally{if(!prepared)binding.preparingDenials=false;}
+}
+
+/** Hold the private exclusion through session, MCP connection and admission
+ * insertion. Nested issuance helpers share the same owner counter. */
+export async function withWorkRecoveryProbeIssuance<T>(db:Client,target:LockedWorkRecoveryTarget,run:()=>Promise<T>){
+ const binding=bindings.get(target);
+ if(!binding||binding.db!==db)throw Error('Actual active locked work recovery target required');
+ if(binding.parallelReads||binding.preparingDenials)throw Error('Recovery denial preparation excludes probe issuance');
+ binding.signal.throwIfAborted();binding.probeIssuances=(binding.probeIssuances??0)+1;
+ try{return await run();}finally{binding.probeIssuances!--;}
+}
+
 const mcpProbeScopeSchema=z.strictObject({categories:mcpCreateConnectionSchema.shape.categories,customerIds:mcpCreateConnectionSchema.shape.customerIds,expiresAt:z.iso.datetime({offset:true})}).refine(mcpConnectionScopeAllowed,'Customer categories require selected customers');
 const mcpProbeIdentitySchema=z.strictObject({...mcpProbeScopeSchema.shape,connectionId:z.uuid(),scopeDigest:z.string().regex(/^[a-f0-9]{64}$/),createdAt:z.iso.datetime({offset:true}),denialDigest:z.string().regex(/^[a-f0-9]{64}$/)}).refine(mcpConnectionScopeAllowed,'Customer categories require selected customers');
 type McpProbeScope=z.infer<typeof mcpProbeScopeSchema>;
@@ -187,6 +219,7 @@ const secretHash=(value:string)=>createHash('sha256').update(value).digest('hex'
 /** Persist exact identities before either session/admission INSERT. Secrets stay
  * in a separate private credential file and never enter ordinary receipts. The enclosing target owns independent finally cleanup of these IDs. */
 export async function reserveWorkRecoveryProbe(db:Client,target:LockedWorkRecoveryTarget,input:{workspaceId:string;membershipId:string;journalDirectory:string;mcp?:McpProbeScope&{retained:RetainedWorkDenials}}){
+ return withWorkRecoveryProbeIssuance(db,target,async()=>{
  const workspaceId=z.uuid().parse(input.workspaceId),membershipId=z.uuid().parse(input.membershipId);
  await requireLockedWorkRecoveryConnection(db,target,{environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision});
  if((await db.query('SELECT 1 FROM operations_recovery_verifications WHERE environment_id=$1 AND recovery_id=$2 AND control_revision=$3 LIMIT 1',[target.environmentId,target.recoveryId,target.controlRevision])).rowCount)throw Error('Committed recovery verification requires read-only acknowledgement reconciliation before new probes');
@@ -199,6 +232,8 @@ export async function reserveWorkRecoveryProbe(db:Client,target:LockedWorkRecove
    // Repeating it here would revoke neighboring newly issued probe credentials.
    if(preparedRecoveryMeasurementDenials(lane)!==retained)throw Error('Exact pre-reconciled group denial authority required');
    requireAuthenticatedRetainedDenials(retained,target.environmentId);
+  }else if(bindings.get(target)!.preparedDenials){
+   await prepareWorkRecoveryDecisionDenials(db,target,retained);
   }else await reconcileAuthenticatedWorkCredentialDenialsInTransaction(db,retained,{environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision,snapshotDigest:retained.contextDigest,backupCapturedAt:retained.backupCapturedAt});
   const now=(await db.query('SELECT clock_timestamp() AS now')).rows[0].now as Date,expiry=Date.parse(scope.expiresAt);
   if(expiry<=now.getTime()||expiry>now.getTime()+59000||expiry>target.deadline)throw Error('Finite fresh work MCP probe lifetime required');
@@ -217,6 +252,7 @@ export async function reserveWorkRecoveryProbe(db:Client,target:LockedWorkRecove
  await writeEvidence(input.journalDirectory,'probe-'+intent.sessionId+'-intent.json',{...target,contract:mcp?'pilot-work-recovery-probe-intent-v3':'pilot-work-recovery-probe-intent-v2',credentialDigest,sessionId:intent.sessionId,admissionId:intent.admissionId,principalId:intent.principalId,workspaceId,membershipId,...(mcpIdentity?{mcp:mcpIdentity}:{}),recordedAt:new Date().toISOString(),serviceOpened:false});
  await requireLockedWorkRecoveryConnection(db,target,{environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision});return intent;
  }catch(error){const index=intents.indexOf(intent);if(index>=0)intents.splice(index,1);throw error;}
+ });
 }
 /** Internal target-finally cleanup. Reconnect independently after rollback or
  * cancellation; never reuse cancelled IO or assume a lost INSERT acknowledgement

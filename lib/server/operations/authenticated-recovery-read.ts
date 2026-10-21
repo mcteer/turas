@@ -7,7 +7,7 @@ import {HttpFailure} from '../../contracts/http';
 import {verifyConfiguredCredentials} from '../auth/credentials';
 import {createSessionToken,hashSessionToken,type CurrentSession} from '../auth/sessions';
 import {requireOwnedLockedRecoveryTarget} from './restored-work-integrity';
-import {requireLockedWorkRecoveryConnection,reserveWorkRecoveryProbe,type LockedWorkRecoveryTarget} from './locked-work-recovery-target';
+import {requireLockedWorkRecoveryConnection,reserveWorkRecoveryProbe,withWorkRecoveryProbeIssuance,type LockedWorkRecoveryTarget} from './locked-work-recovery-target';
 import {withAuthenticatedMcpRecoveryReadCapability,withParticipantRecoveryReadCapability,withOwnerRecoveryReadCapability} from './admission';
 
 const inputSchema=z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive(),workspaceId:z.uuid(),deadline:z.number().int().positive(),password:z.string().min(1).max(4096)});
@@ -75,11 +75,13 @@ export async function createAuthenticatedWorkMcpProbeSession(db:Client,target:Lo
  const {username,mcp,...scope}=raw;return createWorkRecoverySession(db,target,inputSchema.parse(scope),journalDirectory,z.enum(['mcteer','panel','partner']).parse(username),mcp);
 }
 async function createWorkRecoverySession(db:Client,target:LockedWorkRecoveryTarget,raw:z.infer<typeof inputSchema>,journalDirectory:string,username:'mcteer'|'panel'|'partner',mcp?:NonNullable<Parameters<typeof reserveWorkRecoveryProbe>[2]['mcp']>){
+ return withWorkRecoveryProbeIssuance(db,target,async()=>{
  const input=inputSchema.parse(raw);if(input.deadline>target.deadline||input.deadline>Date.now()+60000)throw new HttpFailure(403,'forbidden','Short-lived work recovery authentication required');
  let probe:Awaited<ReturnType<typeof reserveWorkRecoveryProbe>>|undefined;
  const actor=await createRecoverySession(db as unknown as PoolClient,input,async scope=>{await requireLockedWorkRecoveryConnection(db,target,{environmentId:scope.environmentId,recoveryId:scope.recoveryId,controlRevision:scope.controlRevision});},async owner=>{probe=await reserveWorkRecoveryProbe(db,target,{...owner,journalDirectory,...(mcp?{mcp}:{})});return {sessionId:probe.sessionId,token:probe.sessionToken};},username);
  if(!probe)throw Error('Registered work recovery credential required');
  return Object.freeze({actor,probe});
+ });
 }
 export async function withAuthenticatedWorkRecoveryRead<T>(db:Client,target:LockedWorkRecoveryTarget,raw:z.infer<typeof inputSchema>,journalDirectory:string,read:(actor:CurrentSession)=>Promise<T>):Promise<T>{
  const input=inputSchema.parse(raw),{actor}=await createAuthenticatedWorkRecoverySession(db,target,input,journalDirectory),client=db as unknown as PoolClient;

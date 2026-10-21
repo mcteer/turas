@@ -1179,3 +1179,38 @@ it('walks all1479 canonical selections with paginated bounded customer credentia
   const ids=Array.from({length:184-existing.length},()=>randomUUID());await owner.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) SELECT id,$2,'Synthetic bounded census',true FROM unnest($1::uuid[]) id",[ids,DEMO_IDS.workspace]);
  });
 },300000);
+
+it('prepares canonical decision denials once while rejecting copied authority and stale retained snapshots',async()=>{
+ await fixture(async input=>{
+  input={...input,signal:AbortSignal.timeout(290000),deadline:Date.now()+280000};
+  const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
+  try{await withRetainedDenialFixture(owner,input.scope.environmentId,dirname(input.sourceFile),{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async retained=>{
+   const {prepareWorkRecoveryDecisionDenials,withWorkRecoveryProbeIssuance,retireRegisteredWorkMcpProbe}=await import('../../../lib/server/operations/locked-work-recovery-target'),{issueWorkRecoveryMcpProbe}=await import('../../../lib/server/operations/recovery-mcp-probe-issuer'),denials=await import('../../../lib/server/operations/recovery-credential-denials');
+   const originalReconcile=denials.reconcileAuthenticatedWorkCredentialDenialsInTransaction,reconcile=vi.spyOn(denials,'reconcileAuthenticatedWorkCredentialDenialsInTransaction');
+   try{await withLockedWorkRecoveryDecision(input,async(db,target)=>{
+    await expect(prepareWorkRecoveryDecisionDenials(owner,target,retained)).rejects.toThrow('Actual recovery decision preparation owner required');
+    await expect(prepareWorkRecoveryDecisionDenials(db,{...target},retained)).rejects.toThrow('Actual recovery decision preparation owner required');
+    await expect(prepareWorkRecoveryDecisionDenials(db,target,{...retained})).rejects.toThrow('Actual independently retained current denials required');
+    let finishIssuance!:()=>void,issuanceEntered!:()=>void;const issuanceWait=new Promise<void>(done=>{finishIssuance=done;}),issuanceStarted=new Promise<void>(done=>{issuanceEntered=done;});
+    const heldIssuance=withWorkRecoveryProbeIssuance(db,target,async()=>{issuanceEntered();await issuanceWait;throw Error('Controlled issuance interruption');});await issuanceStarted;
+    try{await expect(prepareWorkRecoveryDecisionDenials(db,target,retained)).rejects.toThrow('Recovery probe issuance is in progress');}finally{finishIssuance();}
+    await expect(heldIssuance).rejects.toThrow('Controlled issuance interruption');
+    let release!:()=>void,entered!:()=>void;const waiting=new Promise<void>(done=>{release=done;}),started=new Promise<void>(done=>{entered=done;});
+    reconcile.mockImplementationOnce(async(...args)=>{entered();await waiting;return originalReconcile(...args);});
+    const preparation=prepareWorkRecoveryDecisionDenials(db,target,retained);await started;
+    try{const deadline=Math.min(target.deadline,Date.now()+59000);await expect(issueWorkRecoveryMcpProbe(db,target,{...input.scope,workspaceId:DEMO_IDS.workspace,username:'mcteer',password:process.env.TURAS_DEMO_PASSWORD!,deadline,mcp:{categories:['knowledge'],customerIds:[],expiresAt:new Date(deadline).toISOString(),retained}},dirname(input.sourceFile))).rejects.toThrow('Recovery denial preparation excludes probe issuance');}finally{release();}
+    await preparation;
+    await prepareWorkRecoveryDecisionDenials(db,target,retained);
+    for(let n=0;n<2;n++){
+     const deadline=Math.min(target.deadline,Date.now()+59000),issued=await issueWorkRecoveryMcpProbe(db,target,{...input.scope,workspaceId:DEMO_IDS.workspace,username:'mcteer',password:process.env.TURAS_DEMO_PASSWORD!,deadline,mcp:{categories:['knowledge'],customerIds:[],expiresAt:new Date(deadline).toISOString(),retained}},dirname(input.sourceFile));
+     await retireRegisteredWorkMcpProbe(db,target,issued.probe);
+    }
+    expect(reconcile).toHaveBeenCalledTimes(1);
+    await expect(prepareWorkRecoveryDecisionDenials(db,target,{...retained})).rejects.toThrow('Actual independently retained current denials required');
+    const actualNow=Date.now.bind(Date),clock=vi.spyOn(Date,'now').mockImplementation(()=>actualNow()+245000);
+    try{await expect(prepareWorkRecoveryDecisionDenials(db,target,retained)).rejects.toThrow('Fresh independent denial snapshot context required');}finally{clock.mockRestore();}
+    expect(reconcile).toHaveBeenCalledTimes(1);
+   });}finally{reconcile.mockRestore();}
+  },snapshot=>{snapshot.capturedAt=new Date(Date.now()-60000).toISOString();},new Date(Date.now()-120000).toISOString());}finally{await owner.end();}
+ });
+},210000);

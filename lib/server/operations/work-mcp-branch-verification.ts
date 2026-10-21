@@ -2,7 +2,7 @@ import type {Client} from 'pg';
 import {recoveryDigest} from '../../contracts/pilot-recovery';
 import {mcpCategorySchema} from '../../contracts/mcp';
 import {requireAuthenticatedRetainedDenials,requireRetainedWorkDenialContinuation,type RetainedWorkDenials} from '../../../scripts/pilot-denial-reader';
-import {withLockedWorkRecoveryDecision,requireLockedWorkRecoveryConnection,withWorkRecoveryReadGroup,retireRegisteredWorkMcpProbe,type LockedWorkRecoveryInput,type LockedWorkRecoveryTarget} from './locked-work-recovery-target';
+import {withLockedWorkRecoveryDecision,requireLockedWorkRecoveryConnection,prepareWorkRecoveryDecisionDenials,withWorkRecoveryReadGroup,retireRegisteredWorkMcpProbe,type LockedWorkRecoveryInput,type LockedWorkRecoveryTarget} from './locked-work-recovery-target';
 import {issueWorkRecoveryMcpProbe} from './recovery-mcp-probe-issuer';
 import {deriveWorkMcpScopeInTransaction,walkCategory,openCanonicalSdk,canonicalTool,transcriptEntry,projection,targetDigest,requireOriginalWorkMcpBranchMeasurements,type Selection,type WorkMcpCategoryMeasurement} from './work-mcp-verification';
 type Passwords=Record<Selection['username'],string>;
@@ -28,6 +28,7 @@ function branchShape(value:unknown,key=''):unknown{
 const participant=(s:Selection)=>recoveryDigest({workspaceId:s.workspaceId,username:s.username});
 const roleCategory=(s:Selection)=>recoveryDigest({workspaceId:s.workspaceId,username:s.username,category:s.category});
 async function inspect(db:Client,target:LockedWorkRecoveryTarget,passwords:Passwords,retained:RetainedWorkDenials,journalDirectory:string){
+ await prepareWorkRecoveryDecisionDenials(db,target,retained);
  const inventory=await deriveWorkMcpScopeInTransaction(db,target),groups=new Map<string,Selection[]>(),rows:Row[]=[];
  for(const selected of inventory.required){const key=participant(selected),group=groups.get(key)??[];group.push(selected);groups.set(key,group);}
  const chunks:{selected:Selection[];customers:string[]}[]=[];

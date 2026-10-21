@@ -6500,3 +6500,43 @@ removed in10.54seconds without calling close first. Calling close only after
 absence observed the original interruption. Existing containers were untouched.
 Independent source review found no correctness blocker; documentation and
 whitespace checks pass. This diagnostic is local and makes no provider call.
+
+
+### Complete local catalog and canonical MCP freshness failure (2026-10-21)
+
+Commit ae9b908 passes all1009 cases across182 suites in the actual complete local
+run. Its parent exited0; independent review verified all result/process digests,
+zero skipped/failed cases and removal of the exact owned database container. The
+runner's final protected-state checks also completed. This is local proof only.
+The single admitted exact-source Preview build reached READY in213672milliseconds
+from creation, with one fixed4CPU/8GB build and no retry. Production was unchanged.
+
+A fresh isolated successor restore then passed authenticated candidate content,
+ledger/schema79, all seven preserved/fresh database identities, all fourteen
+runtime/database access bindings and restricted verify-full TLS. The subsequent
+actual regional verifier failed at canonical-mcp with SQL23514, `Fresh model hold
+source required`. Its five-minute source window expired while repeated complete
+denial reconciliation ran between bounded canonical customer chunks. The BEFORE
+INSERT guard runs even when ON CONFLICT would discard an existing model hold.
+The original313-file journal export and failure remain retained; no verification
+row or readiness is claimed. Independent closure verified all20 owned intents,
+zero live owned session/MCP/read admissions, preserved historical credentials,
+actual executor404 and both owned snapshots deleted or404. The parent exited1.
+All original financial holds remain intact.
+
+The correction prepares the full denial reconciliation once within the same
+private genuine owner decision transaction. It binds the exact retained capability
+and original transaction identity, excludes overlap with credential issuance,
+and retains every current actor, grant, scope, snapshot freshness and credential
+expiry check. The final verification uses this preparation after checking for an
+already committed receipt. No trigger, model hold, source timestamp, deadline,
+probe allowance or SQL guard is relaxed.
+
+The new owned PostgreSQL regression passes with real encrypted retained-denial
+metadata, two genuinely issued/retired probes, one full reconciliation, copied
+capability rejection, expired-snapshot rejection and a controlled preparation/
+issuance overlap. The existing1479-selection exhaustive canonical case also
+passes locally against the final counter guard. Both overlap directions and
+finally cleanup are covered. Pilot types, documentation checks and independent
+review pass. The current1010-case complete catalog, fresh CI and hosted
+verification are still required for the correction.

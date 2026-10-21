@@ -370,3 +370,15 @@ No hosted target may be locked for release before its measured reopen path exist
   existing90-minute catalog bound. Register three lifecycle unit cases and retain
   the original setup-hook failure. The12 focused cases and pilot types pass; fresh
   committed catalog, CI and hosted verification remain required.
+
+
+- [X] T115 Prepare authenticated canonical MCP denials once per genuine owner
+  decision transaction, binding the original client, target, transaction and
+  retained capability. Exclude concurrent credential issuance during preparation;
+  keep every per-probe snapshot, authorization and59-second expiry check. Reuse
+  preparation in final verification only after its lost-COMMIT acknowledgement
+  check. Preserve the original hosted SQL23514 failure and all prior financial
+  holds; verify copied/expired capabilities, overlap, full canonical scope and
+  fresh committed catalog/CI/hosted behavior without changing any clocks. The two
+  focused cases, pilot types, docs and independent review pass; the fresh complete
+  committed catalog, CI and hosted verification remain pending.

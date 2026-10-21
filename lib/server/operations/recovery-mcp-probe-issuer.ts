@@ -3,11 +3,12 @@ import {createAuthenticatedWorkMcpProbeSession} from './authenticated-recovery-r
 import {withParticipantRecoveryReadCapability} from './admission';
 import {insertWorkRecoveryMcpConnection} from '../mcp/management';
 import {issueRegisteredWorkMcpHttpRead} from './recovery-http-read-issuer';
-import type {LockedWorkRecoveryTarget} from './locked-work-recovery-target';
+import {withWorkRecoveryProbeIssuance,type LockedWorkRecoveryTarget} from './locked-work-recovery-target';
 /** Caller owns the genuine exact-target READ COMMITTED transaction. Independently
  * retained current denials are applied before a new connection identity exists.
  * This does not restore captured credentials or enable ordinary management. */
 export async function issueWorkRecoveryMcpProbe(db:Client,target:LockedWorkRecoveryTarget,input:Parameters<typeof createAuthenticatedWorkMcpProbeSession>[2],journalDirectory:string){
+ return withWorkRecoveryProbeIssuance(db,target,async()=>{
  await db.query('SAVEPOINT issue_work_mcp_probe');
  try{
   const {actor,probe}=await createAuthenticatedWorkMcpProbeSession(db,target,input,journalDirectory);
@@ -15,4 +16,5 @@ export async function issueWorkRecoveryMcpProbe(db:Client,target:LockedWorkRecov
   const admission=await issueRegisteredWorkMcpHttpRead(db,target,actor,probe,10);
   await db.query('RELEASE SAVEPOINT issue_work_mcp_probe');return Object.freeze({...result,probe,admission});
  }catch(error){await db.query('ROLLBACK TO SAVEPOINT issue_work_mcp_probe');await db.query('RELEASE SAVEPOINT issue_work_mcp_probe');throw error;}
+ });
 }
