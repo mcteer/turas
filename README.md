@@ -132,6 +132,10 @@ journey also records eight approved browser steps on failure without changing it
 assertions or clocks. Catalog failures also retain fixed owned-cancellation and
 child-error classifications. The `4964417` local run passed all1019 cases across185
 suites, with independently verified source, indexed receipts and owned cleanup.
+Its CI run also passed the1019-case catalog and MCP build, but evidence upload
+failed: the owned fixture had removed the CI context before the evidence writer
+read it. The follow-up retains immutable parent provenance and pins pilot CI to
+the branch commit; exact-source artifact retention still needs a fresh CI run.
 Its partner WebKit48-case matrix and three pilot regression groups also passed in
 CI, while the mobile-dark public-research preview timed out waiting for Prepare
 refresh. The follow-up retains fixed failure-only phase, mocked-response and panel

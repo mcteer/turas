@@ -24,6 +24,10 @@ async function main(){
  if(process.argv.length!==2)throw new Error("Pilot catalog does not accept suite filters");
  if(suites.suites.some(suite=>suite.cases.length!==suite.expectedCases||new Set(suite.cases).size!==suite.cases.length))throw Error("Complete unique named pilot case inventory required");
  const source=await pilotSource(),runId=randomUUID(),root=path.resolve(`local-artifacts/016/run-${runId}`);
+ // The owned fixture deliberately removes CI variables from its environment.
+ // Retain only immutable parent provenance; never forward it to test children.
+ const ci=Object.freeze({active:process.env.GITHUB_ACTIONS==='true',runId:process.env.GITHUB_RUN_ID,commit:process.env.TURAS_PILOT_CI_COMMIT??process.env.GITHUB_SHA});
+ if(ci.active&&(!ci.runId||!/^\d{1,32}$/.test(ci.runId)||ci.commit!==source.sourceCommit))throw Error('Exact actual CI run and checkout required');
  await createEvidenceDirectory(root);failureRecord={root,runId,...source};
  const missing=[];for(const suite of suites.suites){try{await access(suite.file);}catch{missing.push(suite.file);}}
  if(missing.length){await writeEvidence(root,"execution.json",{version:"pilot-execution-v1",runId,...source,method:"local",state:"blocked",missingSuites:missing.length});process.stdout.write(JSON.stringify({state:"blocked",missingSuites:missing.length})+"\n");process.exitCode=1;return;}
@@ -85,8 +89,8 @@ async function main(){
   }
   await writeEvidence(root,"run.json",pilotRunSchema.parse({version:"pilot-readiness-v1",id:runId,createdAt:now,...source,environmentMarker:environment.environmentId,scopeDigest,attempts,selectedAttempts,receipts}));
   await writeEvidence(root,"execution.json",{version:"pilot-execution-v1",runId,...source,environmentMarker:environment.environmentId,method:"local",state:"pass",expectedCases:total,passedCases:total,suiteEvidenceContract:"pilot-catalog-evidence-index-v1",suiteEvidence});
-  if(process.env.GITHUB_ACTIONS==='true'){
-   const ciRunId=process.env.GITHUB_RUN_ID,commit=process.env.GITHUB_SHA;
+  if(ci.active){
+   const ciRunId=ci.runId,commit=ci.commit;
    if(!ciRunId||!/^\d{1,32}$/.test(ciRunId)||commit!==source.sourceCommit)throw Error('Exact actual CI run and checkout required');
    const binding={ciRunId,commit,runId,sourceDigest:source.sourceDigest},artifacts=[];
    for(const [index,suite] of suites.suites.entries()){

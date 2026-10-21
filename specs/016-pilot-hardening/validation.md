@@ -6996,3 +6996,23 @@ and10-second total retirement verification bounds are unchanged; no case or oute
 deadline is extended. Existing descendant/cancellation/group-probe checks pass5/5,
 and root typechecking exits0. Actual new source-bound native cleanup, full catalog
 and CI remain pending.
+
+### Completed CI run associated with branch `4964417`
+
+Main run39676664878 finished with48 successful jobs and2 failed jobs. The pilot
+deterministic step passed all1019 catalog cases and MCP build; the later required
+artifact upload failed because no `ci-*.json` evidence files had been emitted.
+Independent source/log review confirmed that the fixture's deliberate environment
+sanitization removed the GitHub variables read inside the CI evidence branch.
+The checkout log also identifies a commit different from branch head `4964417`;
+this is CI merge-checkout evidence, not an exact branch-commit artifact proof.
+The other failure was the previously retained mobile-dark research preview
+timeout. No whole-CI or hosted acceptance is established.
+
+The follow-up captures only immutable parent CI activity/run/commit provenance
+before entering the fixture, preserves child-environment sanitization, and pins
+the pilot job's checkout and expected commit to the GitHub branch-head context.
+The same provenance predicate fails before expensive work if inconsistent and
+is rechecked when evidence is written. No cases, assertions or clocks change.
+Fresh exact-source CI execution, authenticated artifact retention and import
+remain required.

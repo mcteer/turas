@@ -511,3 +511,11 @@ No hosted target may be locked for release before its measured reopen path exist
   actual native denial preparation with zero dispatch and exact cleanup, then fresh
   complete source-bound catalog/CI. Retain original traces and failure evidence;
   do not identify an exact trace writer without proof.
+
+- [ ] T131 Correct CI evidence publication after the actual `4964417` workflow
+  passed all1019 catalog cases and MCP build but failed required artifact upload.
+  Capture immutable parent CI provenance before owned-environment sanitization,
+  keep it out of test children, and pin the pilot checkout and expected commit
+  to the actual branch head. Preserve the complete catalog and original clocks.
+  Verify types and actual fresh authenticated CI artifact retention/import against
+  the exact source; a passing test command alone does not complete this task.
