@@ -1,5 +1,5 @@
 import {artifactAuthStartupPhases} from '../../scripts/artifact-eval-environment';
-import {processFailureMetadata,setupFailureMetadata,pilotRegressionFailureMetadata,pilotCatalogAbortMetadata,recoveryApplicationFailureMetadata} from '../../scripts/ci-process-diagnostics';
+import {processFailureMetadata,setupFailureMetadata,pilotRegressionFailureMetadata,pilotCatalogAbortMetadata,recoveryApplicationFailureMetadata,recoveryServerStartupPhases} from '../../scripts/ci-process-diagnostics';
 import {describe,expect,it} from 'vitest';
 import {browserFailureMetadata,fixedUtilizationMetadata,pilotUiChildFailures,partnerBrowserFailureMetadata} from '../../scripts/ci-browser-diagnostics';
 import {nativeQueryOperation,nativeQueryObservationSchema,nativeBlockerMetadata} from '../../scripts/ci-native-query-observer';
@@ -101,6 +101,10 @@ it('revalidates captured pilot UI diagnostics and discards private or malformed 
  expect(malformed[0]).toMatchObject({project:'unknown',line:0,column:0,durationMs:null,signatures:[]});expect(JSON.stringify(malformed)).not.toContain('PRIVATE_');
 });
 it('retains only approved recovery HTTP phases and passive process observations',()=>{
+ const markers=recoveryServerStartupPhases('\x1b[32mOWNED_RECOVERY_SERVER_MODULE\x1b[0m\nOWNED_RECOVERY_SERVER_PREPARE_START\nprocess.stderr.write("OWNED_RECOVERY_SERVER_PREPARE_END")\n> OWNED_RECOVERY_SERVER_LISTEN_START\nPRIVATE_LOG\n');
+ expect(markers).toEqual({serverModuleObserved:true,serverPrepareStartedObserved:true,serverPrepareCompletedObserved:false,serverListenStartedObserved:false,serverStopObserved:false,listenerTextObserved:false});
+ expect(recoveryApplicationFailureMetadata({phase:'listener',...markers,serverStopObserved:'PRIVATE_BOOLEAN'})).toMatchObject({serverModuleObserved:true,serverPrepareStartedObserved:true,serverPrepareCompletedObserved:false});
+ expect(recoveryApplicationFailureMetadata({serverStopObserved:'PRIVATE_BOOLEAN'})).not.toHaveProperty('serverStopObserved');
  const raw={kind:'owned_recovery_application_failure',phase:'auth-readiness',warming:true,errorName:'TimeoutError',elapsedMs:30001,remainingMs:20000,authStatus:null,listenerTextObserved:true,compilingTextObserved:true,childExited:false,childSignalled:false,childErrorObserved:false,callerSignalAborted:false,runtimeSignalAborted:false,ownedDeadlineExpired:false,origin:'PRIVATE_URL',tail:'PRIVATE_LOG',message:'PRIVATE_ERROR',database:'PRIVATE_DATABASE'};
  const result=recoveryApplicationFailureMetadata(raw);
  expect(result).toMatchObject({phase:'auth-readiness',warming:true,errorName:'TimeoutError',elapsedMs:30001,authStatus:null,childExited:false,callerSignalAborted:false});

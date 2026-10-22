@@ -5,6 +5,10 @@ export function pilotCatalogAbortMetadata(cause:unknown,error:unknown){
 }
 /** Fixed recovery HTTP phases only. Never include child logs, routes, keys,
  * database identities, response bytes or arbitrary exception messages. */
+export function recoveryServerStartupPhases(output:string){
+ const lines=new Set(output.replace(/\x1b\[[0-9;]*[A-Za-z]/g,'').split(/\r?\n/));
+ return {serverModuleObserved:lines.has('OWNED_RECOVERY_SERVER_MODULE'),serverPrepareStartedObserved:lines.has('OWNED_RECOVERY_SERVER_PREPARE_START'),serverPrepareCompletedObserved:lines.has('OWNED_RECOVERY_SERVER_PREPARE_END'),serverListenStartedObserved:lines.has('OWNED_RECOVERY_SERVER_LISTEN_START'),serverStopObserved:lines.has('OWNED_RECOVERY_SERVER_STOP'),listenerTextObserved:lines.has('Ready in owned recovery server')};
+}
 export function recoveryApplicationFailureMetadata(value:unknown){
  const row=value&&typeof value==='object'?value as Record<string,unknown>:{};
  const bounded=(v:unknown)=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=0&&v<=1200000?v:null;
@@ -14,7 +18,7 @@ export function recoveryApplicationFailureMetadata(value:unknown){
   errorName:typeof row.errorName==='string'&&['Error','TimeoutError','AbortError','OwnedProcessRetirementError'].includes(row.errorName)?row.errorName:'other',
   elapsedMs:bounded(row.elapsedMs),remainingMs:bounded(row.remainingMs),
   authStatus:typeof row.authStatus==='number'&&Number.isInteger(row.authStatus)&&row.authStatus>=100&&row.authStatus<=599?row.authStatus:null,
-  ...Object.fromEntries(['listenerTextObserved','compilingTextObserved','childExited','childSignalled','childErrorObserved','callerSignalAborted','runtimeSignalAborted','ownedDeadlineExpired'].filter(k=>typeof row[k]==='boolean').map(k=>[k,row[k]]))};
+  ...Object.fromEntries(['serverModuleObserved','serverPrepareStartedObserved','serverPrepareCompletedObserved','serverListenStartedObserved','serverStopObserved','listenerTextObserved','compilingTextObserved','childExited','childSignalled','childErrorObserved','callerSignalAborted','runtimeSignalAborted','ownedDeadlineExpired'].filter(k=>typeof row[k]==='boolean').map(k=>[k,row[k]]))};
 }
 /** Fixed signatures only. Child output can contain credentials and customer prose;
  * never copy messages, arbitrary paths or unmatched content into CI logs. */

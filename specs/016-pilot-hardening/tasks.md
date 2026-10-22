@@ -544,7 +544,9 @@ No hosted target may be locked for release before its measured reopen path exist
 
 - [ ] T134 Retain the failed `eb15b39` local catalog (591 passes before five
   isolated-restore failures) and add failure-only fixed recovery application
-  listener/auth/callback/protected-warmup observations before child retirement.
+  listener/auth/callback/protected-warmup observations before child retirement,
+  including exact module/Next-prepare/listen milestones after the actual narrowed
+  artifact failure was observed before listener readiness.
   Preserve every request, original error,401/release predicates,30/5-second auth
   probes,60-second restricted runtime lease and every owned/case/file/batch clock.
   Publish only approved phases/surfaces, passive process/signal booleans, statuses

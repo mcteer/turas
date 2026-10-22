@@ -1,5 +1,5 @@
 import {z} from 'zod';
-import {recoveryApplicationFailureMetadata} from './ci-process-diagnostics';
+import {recoveryApplicationFailureMetadata,recoveryServerStartupPhases} from './ci-process-diagnostics';
 import {withOwnedProcess,OwnedProcessRetirementError} from './pilot-owned-process';
 import {mkdir,mkdtemp,rm,symlink,writeFile} from 'node:fs/promises';
 import {resolve,join,dirname,basename} from 'node:path';
@@ -83,7 +83,7 @@ async function serve<T>(application:OwnedRecoveryApplication,runtime:Readonly<Re
   phase='callback';const result=await run();deadline.throwIfAborted();if(failure||child.exitCode!==null||child.signalCode!==null)throw Error('Owned recovery application lost');return result;
   }catch(error){
    // Capture before process retirement; later exit is not a startup failure.
-   try{process.stderr.write(JSON.stringify(recoveryApplicationFailureMetadata({phase,warming,authStatus,errorName:error instanceof Error?error.name:'other',elapsedMs:Date.now()-started,remainingMs:Math.max(0,state.deadline-Date.now()),listenerTextObserved:tail.replace(/\x1b\[[0-9;]*[A-Za-z]/g,'').split(/\r?\n/).includes('Ready in owned recovery server'),compilingTextObserved:/Compiling/i.test(tail),childExited:child.exitCode!==null,childSignalled:child.signalCode!==null,childErrorObserved:failure,callerSignalAborted:signal.aborted,runtimeSignalAborted:runtimeSignal.aborted,ownedDeadlineExpired:Date.now()>=state.deadline}))+'\n');}catch{/* Diagnostics cannot replace the original failure. */}
+   try{process.stderr.write(JSON.stringify(recoveryApplicationFailureMetadata({phase,warming,authStatus,errorName:error instanceof Error?error.name:'other',elapsedMs:Date.now()-started,remainingMs:Math.max(0,state.deadline-Date.now()),...recoveryServerStartupPhases(tail),compilingTextObserved:/Compiling/i.test(tail),childExited:child.exitCode!==null,childSignalled:child.signalCode!==null,childErrorObserved:failure,callerSignalAborted:signal.aborted,runtimeSignalAborted:runtimeSignal.aborted,ownedDeadlineExpired:Date.now()>=state.deadline}))+'\n');}catch{/* Diagnostics cannot replace the original failure. */}
    throw error;
   }
   }).then(value=>{retired=true;return value;},error=>{if(error instanceof OwnedProcessRetirementError){tail+='\n'+error.message+'; '+(error.cause instanceof Error?error.cause.message:'unknown retirement cause')+'\n';throw error;}retired=true;throw error;});

@@ -7183,3 +7183,25 @@ regression is registered in G01, bringing the current catalog to1,025 cases acro
 186 suites. Actual narrow restore reproduction and fresh complete source-bound
 validation remain pending; instrumentation alone resolves no startup or restore
 failure.
+
+The first committed `ffc0765` narrow reproduction completed all five original
+restore cases with4 passes and1 artifact failure, no pending/todo/retries and
+actual parent exit1. Fixed metadata places the unexpected artifact interruption
+in non-warming listener startup at59,763ms, with no listener text, child exit,
+signal or child error observed before retirement. Both runtime/caller signals were
+aborted; the application's own deadline had not expired. This supports a
+pre-listener phase, not a particular framework or operating-system cause.
+Thirteen bounded private child-log snapshots survive cleanup; the failed child's
+short log supplies no additional HTTP/compiler/module/port clue. Exact parent,
+root/cwd and outer-marker container absence and all three baseline container
+identities were independently verified. This failed diagnostic is not acceptance.
+
+The next T134 observation adds exact fixed child milestones at module entry,
+before/after the existing `app.prepare()`, before the existing socket bind, and
+on the existing stop path. Only exact complete marker lines count; quoted source
+or compiler excerpts cannot satisfy them. Existing privacy coverage is extended,
+without new cases or changed requests/assertions/clocks. The installed Next custom
+server guide was consulted; no framework API or serving mode changes. An
+artifact-only diagnostic will target the observed failure before another complete
+catalog is attempted. All original five restore cases remain mandatory in the
+full1,025-case/186-suite catalog and release gates.

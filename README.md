@@ -1,7 +1,8 @@
 Pilot validation is still in progress. The latest local catalog passed591 cases
 before five isolated-restore failures; the latest CI also exposed native startup
 failures. A readiness-probe cleanup correction has focused checks and independent
-review. Restore phase diagnostics are being validated before narrow reproduction;
+review. The five-case restore reproduction passed4 cases and failed artifact startup
+before listener readiness; finer fixed startup observations are being validated;
 complete current-source and hosted acceptance remain pending. See
 [016 validation](specs/016-pilot-hardening/validation.md).
 

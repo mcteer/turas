@@ -1,5 +1,7 @@
 import {createServer} from 'node:http';
 import next from 'next';
+const milestone=value=>{try{process.stderr.write(value+'\n');}catch{/* Preserve the server's original control flow. */}};
+milestone('OWNED_RECOVERY_SERVER_MODULE');
 
 // This private maintenance child uses Next's documented programmatic server.
 // Avoid the development CLI's extra server parent and detached shutdown telemetry.
@@ -11,6 +13,7 @@ const server=createServer((request,response)=>{Promise.resolve(handle(request,re
 let stopping=false;
 async function stop(){
  if(stopping)return;stopping=true;
+ milestone('OWNED_RECOVERY_SERVER_STOP');
  try{
   try{
    server.closeAllConnections();
@@ -20,8 +23,11 @@ async function stop(){
  }catch{process.exitCode=1;}
 }
 process.on('SIGTERM',()=>{void stop();});process.on('SIGINT',()=>{void stop();});
+milestone('OWNED_RECOVERY_SERVER_PREPARE_START');
 await app.prepare();
+milestone('OWNED_RECOVERY_SERVER_PREPARE_END');
 if(stopping){await app.close();}else{
+ milestone('OWNED_RECOVERY_SERVER_LISTEN_START');
  await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(Number(origin.port),origin.hostname,resolve);});
  console.log('Ready in owned recovery server');
 }
