@@ -541,3 +541,15 @@ No hosted target may be locked for release before its measured reopen path exist
   retirement, expired-budget denial and privacy, then exact committed full catalog,
   CI and owned cleanup. The response cleanup defect is demonstrated; its causal
   contribution to the original startup failures remains unproved.
+
+- [ ] T134 Retain the failed `eb15b39` local catalog (591 passes before five
+  isolated-restore failures) and add failure-only fixed recovery application
+  listener/auth/callback/protected-warmup observations before child retirement.
+  Preserve every request, original error,401/release predicates,30/5-second auth
+  probes,60-second restricted runtime lease and every owned/case/file/batch clock.
+  Publish only approved phases/surfaces, passive process/signal booleans, statuses
+  and bounded timings. Retain the exact synthetic outer environment marker in the
+  private catalog failure receipt for subsequent ownership/cleanup verification.
+  Verify privacy and diagnostic transport; reproduce all five original restore
+  cases before claiming an internal phase or selecting a behavioral fix, then
+  require complete committed-source catalog/CI/cleanup and hosted gates.

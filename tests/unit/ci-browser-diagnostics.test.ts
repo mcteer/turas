@@ -1,5 +1,5 @@
 import {artifactAuthStartupPhases} from '../../scripts/artifact-eval-environment';
-import {processFailureMetadata,setupFailureMetadata,pilotRegressionFailureMetadata,pilotCatalogAbortMetadata} from '../../scripts/ci-process-diagnostics';
+import {processFailureMetadata,setupFailureMetadata,pilotRegressionFailureMetadata,pilotCatalogAbortMetadata,recoveryApplicationFailureMetadata} from '../../scripts/ci-process-diagnostics';
 import {describe,expect,it} from 'vitest';
 import {browserFailureMetadata,fixedUtilizationMetadata,pilotUiChildFailures,partnerBrowserFailureMetadata} from '../../scripts/ci-browser-diagnostics';
 import {nativeQueryOperation,nativeQueryObservationSchema,nativeBlockerMetadata} from '../../scripts/ci-native-query-observer';
@@ -99,4 +99,16 @@ it('revalidates captured pilot UI diagnostics and discards private or malformed 
  expect(pilotUiChildFailures(null)).toEqual([]);
  const malformed=pilotUiChildFailures(JSON.stringify({...row,project:'PRIVATE_PROJECT',failedLocations:[{file:'pilot-workspace.spec.ts',line:-1,column:Infinity,status:'failed',durationMs:Infinity,signatures:['PRIVATE_SIGNATURE']}]}));
  expect(malformed[0]).toMatchObject({project:'unknown',line:0,column:0,durationMs:null,signatures:[]});expect(JSON.stringify(malformed)).not.toContain('PRIVATE_');
+});
+it('retains only approved recovery HTTP phases and passive process observations',()=>{
+ const raw={kind:'owned_recovery_application_failure',phase:'auth-readiness',warming:true,errorName:'TimeoutError',elapsedMs:30001,remainingMs:20000,authStatus:null,listenerTextObserved:true,compilingTextObserved:true,childExited:false,childSignalled:false,childErrorObserved:false,callerSignalAborted:false,runtimeSignalAborted:false,ownedDeadlineExpired:false,origin:'PRIVATE_URL',tail:'PRIVATE_LOG',message:'PRIVATE_ERROR',database:'PRIVATE_DATABASE'};
+ const result=recoveryApplicationFailureMetadata(raw);
+ expect(result).toMatchObject({phase:'auth-readiness',warming:true,errorName:'TimeoutError',elapsedMs:30001,authStatus:null,childExited:false,callerSignalAborted:false});
+ expect(processFailureMetadata({stderrTail:JSON.stringify(raw)}).recoveryApplication).toEqual([result]);
+ expect(JSON.stringify(result)).not.toContain('PRIVATE_');
+ const malformed=recoveryApplicationFailureMetadata({...raw,phase:'PRIVATE_PHASE',surface:'PRIVATE_SURFACE',warming:'PRIVATE_BOOLEAN',elapsedMs:Infinity,remainingMs:-1,authStatus:999,errorName:'PRIVATE_NAME',childExited:'PRIVATE_BOOLEAN'});
+ expect(malformed).toMatchObject({phase:'unknown',errorName:'other',elapsedMs:null,remainingMs:null,authStatus:null});
+ expect(malformed).not.toHaveProperty('warming');expect(malformed).not.toHaveProperty('surface');expect(malformed).not.toHaveProperty('childExited');expect(JSON.stringify(malformed)).not.toContain('PRIVATE_');
+ for(const surface of ['profile','artifact','report','workforce','gap','plan','execution'])expect(recoveryApplicationFailureMetadata({phase:'protected-warmup',surface,errorName:'AbortError'})).toMatchObject({phase:'protected-warmup',surface,errorName:'AbortError'});
+ expect(processFailureMetadata({stderrTail:Array.from({length:5},()=>JSON.stringify(raw)).join('\n')}).recoveryApplication).toHaveLength(3);
 });

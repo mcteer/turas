@@ -3,6 +3,19 @@ export function pilotCatalogAbortMetadata(cause:unknown,error:unknown){
  const row=error&&typeof error==='object'?error as Record<string,unknown>:{};
  return {cancellationCause:typeof cause==='string'&&['none','deadline','signal'].includes(cause)?cause:'unavailable',processErrorName:typeof row.name==='string'&&['AbortError','Error','TypeError','RangeError'].includes(row.name)?row.name:error?'other':null,processErrorCode:typeof row.code==='string'&&['ABORT_ERR','EAGAIN','ENOENT','EACCES','ENOMEM','EMFILE','ENFILE'].includes(row.code)?row.code:null};
 }
+/** Fixed recovery HTTP phases only. Never include child logs, routes, keys,
+ * database identities, response bytes or arbitrary exception messages. */
+export function recoveryApplicationFailureMetadata(value:unknown){
+ const row=value&&typeof value==='object'?value as Record<string,unknown>:{};
+ const bounded=(v:unknown)=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=0&&v<=1200000?v:null;
+ return {kind:'owned_recovery_application_failure',phase:typeof row.phase==='string'&&['listener','auth-readiness','callback','protected-warmup','retirement'].includes(row.phase)?row.phase:'unknown',
+  ...(typeof row.warming==='boolean'?{warming:row.warming}:{}),
+  ...(typeof row.surface==='string'&&['profile','artifact','report','workforce','gap','plan','execution'].includes(row.surface)?{surface:row.surface}:{}),
+  errorName:typeof row.errorName==='string'&&['Error','TimeoutError','AbortError','OwnedProcessRetirementError'].includes(row.errorName)?row.errorName:'other',
+  elapsedMs:bounded(row.elapsedMs),remainingMs:bounded(row.remainingMs),
+  authStatus:typeof row.authStatus==='number'&&Number.isInteger(row.authStatus)&&row.authStatus>=100&&row.authStatus<=599?row.authStatus:null,
+  ...Object.fromEntries(['listenerTextObserved','compilingTextObserved','childExited','childSignalled','childErrorObserved','callerSignalAborted','runtimeSignalAborted','ownedDeadlineExpired'].filter(k=>typeof row[k]==='boolean').map(k=>[k,row[k]]))};
+}
 /** Fixed signatures only. Child output can contain credentials and customer prose;
  * never copy messages, arbitrary paths or unmatched content into CI logs. */
 const pilotRegressionStages=new Set(['predecessor-process','predecessor-receipt','current-schema-setup','current-schema-process','current-schema-report','current-schema-cleanup','fresh-ui-process','fresh-ui-receipt','final-source','final-evidence']);
@@ -29,7 +42,8 @@ export function processFailureMetadata(value:unknown){
  const phases=[...new Set([...prose.matchAll(/\{"kind":"knowledge_native_failure","case":"(include|publish|apply|revoke|withdraw)","phase":"(create|bind|first-proposal|fresh-proposal|approve|receipt|reload|retire)"\}/g)].map(match=>JSON.stringify({case:match[1],phase:match[2]})))].slice(0,5).map(value=>JSON.parse(value));
  let nativeOperations:ReturnType<typeof ordinaryOperationsDiagnostic>;for(const line of prose.split('\n').filter(line=>line.startsWith('{"kind":"native_operations_fixture_failure"')).slice(-3))try{nativeOperations=ordinaryOperationsDiagnostic(JSON.parse(line));}catch{/* Keep unmatched private output private. */}
  let artifactStartup:ReturnType<typeof artifactStartupDiagnostic>;for(const line of prose.split('\n').filter(line=>line.startsWith('{"kind":"artifact_eval_startup_failure"')).slice(-3))try{artifactStartup=artifactStartupDiagnostic(JSON.parse(line));}catch{/* Keep unmatched private output private. */}
- return {...(artifactStartup?{artifactStartup}:{}),...(nativeOperations?{nativeOperations}:{}),...(phases.length?{phases}:{}),code:typeof raw.code==='number'&&Number.isInteger(raw.code)&&raw.code>=0&&raw.code<=255?raw.code:null,signal:['SIGTERM','SIGKILL','SIGABRT','SIGSEGV'].includes(String(raw.signal))?raw.signal:null,deadlineExpired:raw.deadlineExpired===true,signatures,locations};
+ const recoveryApplication=prose.split('\n').filter(line=>line.startsWith('{"kind":"owned_recovery_application_failure"')).slice(-3).flatMap(line=>{try{return [recoveryApplicationFailureMetadata(JSON.parse(line))];}catch{return [];}});
+ return {...(recoveryApplication.length?{recoveryApplication}:{}),...(artifactStartup?{artifactStartup}:{}),...(nativeOperations?{nativeOperations}:{}),...(phases.length?{phases}:{}),code:typeof raw.code==='number'&&Number.isInteger(raw.code)&&raw.code>=0&&raw.code<=255?raw.code:null,signal:['SIGTERM','SIGKILL','SIGABRT','SIGSEGV'].includes(String(raw.signal))?raw.signal:null,deadlineExpired:raw.deadlineExpired===true,signatures,locations};
 }
 
 /** Independent route outcomes and fixed startup phases only; never raw logs. */

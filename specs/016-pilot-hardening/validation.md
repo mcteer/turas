@@ -7151,3 +7151,35 @@ suites). The still-running frozen `eb15b39` catalog retains its original1,022/18
 scope; it cannot validate this uncommitted correction. Fresh committed complete
 validation and actual CI remain required. No claim is made that this correction
 resolves the observed startup failures.
+
+### 2026-10-22: complete local restore failure retained
+
+The frozen `eb15b39` catalog exited1 at03:16:57UTC. Independent audit verified
+94 passing suites/591 named cases and all corresponding result/process hashes,
+followed by five failures in `work-isolated-restore.test.ts`. That child exited1
+without signal or file deadline expiry, and catalog cancellation was `none`.
+Four cases retain only native AbortSignal timeout stacks; the command case points
+to the restored-runtime interruption listener, whose signal combines its caller
+and the existing60-second lease. These records do not identify the failed HTTP
+operation or an underlying cause. This is partial failed evidence, not a complete
+catalog pass. The prepared `037bfef` launchers stayed blocked and unexecuted.
+
+The parent PID and exact owned roots are absent; successful global cwd inventory
+found no owned matches. Complete named-container inventory found only three
+containers created before this run. Two required older identities are unchanged;
+the third also predates the run and was not attributed or modified. The failed
+receipt did not retain the outer token, so no exact-token Docker inspect absence
+is claimed. T134 retains that synthetic environment marker privately on future
+failures. No selected database, Production or provider resources were changed.
+
+T134 adds fixed failure-phase observations before recovery child retirement and
+at protected-route warmup failure. Original requests, response predicates,
+30/5-second auth limits,60-second runtime lease and all case/file/owned/batch clocks
+remain. Direct stderr carries only approved phases/surfaces, fixed error classes,
+bounded timings/statuses and passive process/signal/text observations. Arbitrary
+logs, database URLs, identifiers, credentials and response bodies remain private.
+The CI process parser revalidates and bounds these records. One additional privacy
+regression is registered in G01, bringing the current catalog to1,025 cases across
+186 suites. Actual narrow restore reproduction and fresh complete source-bound
+validation remain pending; instrumentation alone resolves no startup or restore
+failure.

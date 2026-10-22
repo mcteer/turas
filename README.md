@@ -1,7 +1,9 @@
-Pilot validation is still in progress. The latest CI run exposed five native
-startup-readiness failures before feature assertions. A readiness-probe response
-cleanup correction has two passing focused loopback checks; complete validation
-of that correction remains pending. See [016 validation](specs/016-pilot-hardening/validation.md).
+Pilot validation is still in progress. The latest local catalog passed591 cases
+before five isolated-restore failures; the latest CI also exposed native startup
+failures. A readiness-probe cleanup correction has focused checks and independent
+review. Restore phase diagnostics are being validated before narrow reproduction;
+complete current-source and hosted acceptance remain pending. See
+[016 validation](specs/016-pilot-hardening/validation.md).
 
 The profile/chat fixes released in [PR #45](https://github.com/mcteer/turas/pull/45)
 as `60f7a4c`. Customer selection is searchable across directory pages, Recent
@@ -136,7 +138,7 @@ authorization can now be verified without promoting the original Preview envelop
 The composed workspace/upload WebKit matrix passes40cases. The ae9b908 local
 catalog passes1009 cases across182 suites; its hosted regional check failed at
 canonical MCP denial reconciliation and its owned credentials/executor were closed.
-The current1024-case/186-suite catalog includes denial-preparation, startup transport,
+The current1025-case/186-suite catalog includes denial-preparation, startup transport,
 session import-boundary and fixed regression failure-phase checks. The partner absent-request
 journey also records eight approved browser steps on failure without changing its
 assertions or clocks. Catalog failures also retain fixed owned-cancellation and

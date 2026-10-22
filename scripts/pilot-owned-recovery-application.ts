@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {recoveryApplicationFailureMetadata} from './ci-process-diagnostics';
 import {withOwnedProcess,OwnedProcessRetirementError} from './pilot-owned-process';
 import {mkdir,mkdtemp,rm,symlink,writeFile} from 'node:fs/promises';
 import {resolve,join,dirname,basename} from 'node:path';
@@ -63,19 +64,28 @@ async function serve<T>(application:OwnedRecoveryApplication,runtime:Readonly<Re
   await state.port.release();deadline.throwIfAborted();
   return await withOwnedProcess({command:process.execPath,args:['scripts/pilot-owned-recovery-server.mjs'],cwd:state.root,environment:{...state.environment,...runtime},signal:deadline,deadline:state.deadline,onProcess:warming?undefined:process=>registerOwnedRestoredRuntimeProcess(state.target,state.scope,runtime,process)},async child=>{
   tail+='\nowned-child-pid='+child.pid+'\n';
+  const started=Date.now();let phase='listener',authStatus:number|null=null;
   let failure=false;child.on('error',()=>{failure=true;});
   for(const stream of [child.stdout,child.stderr])stream?.on('data',bytes=>{tail=(tail+bytes.toString()).slice(-65536);});
+  try{
   for(;;){
    deadline.throwIfAborted();if(failure||child.exitCode!==null||child.signalCode!==null)throw Error('Owned recovery application stopped before readiness');
    // Probe only once the owned child reports its actual listener. A different
    // process occupying the released port must not supply readiness.
    if(/Ready in/.test(tail)){
+    phase='auth-readiness';
     const response=await fetch(application.origin+'/api/auth/session',{redirect:'manual',signal:AbortSignal.any([deadline,AbortSignal.timeout(warming?30000:5000)])});
+    authStatus=response.status;
     await response.body?.cancel();if(response.status!==401||response.headers.get('x-turas-code-version')!==application.sourceCommit)throw Error('Owned recovery application release or readiness differs');break;
    }
    await new Promise<void>(done=>setTimeout(done,50));
   }
-  const result=await run();deadline.throwIfAborted();if(failure||child.exitCode!==null||child.signalCode!==null)throw Error('Owned recovery application lost');return result;
+  phase='callback';const result=await run();deadline.throwIfAborted();if(failure||child.exitCode!==null||child.signalCode!==null)throw Error('Owned recovery application lost');return result;
+  }catch(error){
+   // Capture before process retirement; later exit is not a startup failure.
+   try{process.stderr.write(JSON.stringify(recoveryApplicationFailureMetadata({phase,warming,authStatus,errorName:error instanceof Error?error.name:'other',elapsedMs:Date.now()-started,remainingMs:Math.max(0,state.deadline-Date.now()),listenerTextObserved:tail.replace(/\x1b\[[0-9;]*[A-Za-z]/g,'').split(/\r?\n/).includes('Ready in owned recovery server'),compilingTextObserved:/Compiling/i.test(tail),childExited:child.exitCode!==null,childSignalled:child.signalCode!==null,childErrorObserved:failure,callerSignalAborted:signal.aborted,runtimeSignalAborted:runtimeSignal.aborted,ownedDeadlineExpired:Date.now()>=state.deadline}))+'\n');}catch{/* Diagnostics cannot replace the original failure. */}
+   throw error;
+  }
   }).then(value=>{retired=true;return value;},error=>{if(error instanceof OwnedProcessRetirementError){tail+='\n'+error.message+'; '+(error.cause instanceof Error?error.cause.message:'unknown retirement cause')+'\n';throw error;}retired=true;throw error;});
  }finally{
   state.active=!retired;await writeFile(join(dirname(state.root),basename(state.root)+'-child-private.log'),tail,{mode:0o600});
@@ -93,8 +103,10 @@ export async function warmOwnedRecoveryApplication(application:OwnedRecoveryAppl
  const stores=join(state.root,'warm-stores');await mkdir(stores,{recursive:true,mode:0o700});
  await serve(application,{DATABASE_URL:runtime.toString(),DATABASE_URL_UNPOOLED:runtime.toString(),TURAS_ENVIRONMENT_ID:state.scope.environmentId,TURAS_PRIVATE_OBJECT_BACKEND:'local',TURAS_ARTIFACT_STORE_ROOT:stores,TURAS_WORKFORCE_STORE_ROOT:stores,TURAS_REPORT_STORE_ROOT:stores},signal,async()=>{
   for(const kind of ['profile','artifact','report','workforce','gap','plan','execution']){
+   const started=Date.now();try{
    const response=await fetch(application.origin+'/api/operations/recovery-read/'+randomUUID()+'/'+kind,{redirect:'manual',signal});await response.body?.cancel();
    if(![401,403,503].includes(response.status)||response.headers.get('x-turas-code-version')!==application.sourceCommit)throw Error('Recovery preparation admitted a protected read or release differs');
+   }catch(error){try{process.stderr.write(JSON.stringify(recoveryApplicationFailureMetadata({phase:'protected-warmup',warming:true,surface:kind,errorName:error instanceof Error?error.name:'other',elapsedMs:Date.now()-started,remainingMs:Math.max(0,state.deadline-Date.now()),callerSignalAborted:signal.aborted,ownedDeadlineExpired:Date.now()>=state.deadline}))+'\n');}catch{/* Preserve the original failure. */}throw error;}
   }
  },true);
 }

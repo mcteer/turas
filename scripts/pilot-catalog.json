@@ -125,7 +125,8 @@
         "unit.ci-browser-diagnostics.004",
         "unit.ci-browser-diagnostics.005",
         "unit.plan-readiness-probe.001",
-        "unit.plan-readiness-probe.002"
+        "unit.plan-readiness-probe.002",
+        "unit.ci-browser-diagnostics.006"
       ]
     },
     {

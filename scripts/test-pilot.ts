@@ -17,7 +17,7 @@ import { pilotCatalog } from "./pilot-catalog";
 import { pilotRunSchema } from "../lib/contracts/pilot-readiness";
 import { verifyPilotSuiteResult } from "./pilot-suite-results";
 
-let failureRecord:{root:string;runId:string;sourceCommit:string;sourceDigest:string;catalogDigest:string}|null=null;
+let failureRecord:{root:string;runId:string;sourceCommit:string;sourceDigest:string;catalogDigest:string;environmentMarker?:string}|null=null;
 let failureStage='setup',activeSuite:string|null=null;
 let cancellationCause:()=>unknown=()=> 'unavailable',childProcessError:unknown=null;
 async function main(){
@@ -44,6 +44,7 @@ async function main(){
  await writeEvidence(root,"image-preparation.json",preparation);
  const previousUmask=process.umask(0o077);
  try{await withPilotEnvironment(async environment=>{
+  if(failureRecord)failureRecord.environmentMarker=environment.environmentId;
   cancellationCause=environment.cancellationCause;
   process.env.TURAS_PILOT_UI_PREPARATION_FILE=path.resolve(preparationFile);process.env.TURAS_PILOT_RENDERER_IMAGE=preparation.images.find(image=>image.kind==='renderer')!.localImageId;process.env.TURAS_REPORTS_ENABLED='true';
   await preparePilotLegacySessions();await environment.upgradeToCurrent();
