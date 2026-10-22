@@ -57,18 +57,25 @@ function rootProbeDiagnostic(probe:'cwd'|'open-files',result:ReturnType<typeof s
 }
 async function requireUnusedPilotRoot(root:string,environment:NodeJS.ProcessEnv,deadline:number){
  const owned=await realpath(root),inside=(value:string)=>value===owned||value.startsWith(owned+'/'),until=Math.min(deadline,Date.now()+5000);
+ // Linux's ordinary UID may not see other users' open descriptors. Require a
+ // root-visible observation, with no weaker fallback if privilege is unavailable.
+ const elevated=process.platform==='linux'&&process.geteuid?.()!==0;
+ const probe=(args:string[],timeout:number)=>spawnSync(process.platform==='linux'?(elevated?'/usr/bin/sudo':'/usr/bin/lsof'):'lsof',
+  [...(elevated?['-n','--','/usr/bin/lsof']:[]),...args],{env:environment,encoding:'utf8',timeout,maxBuffer:4194304});
  // Shutdown hooks can start a short-lived detached vendor telemetry process.
  // Observe actual absence within one finite window; never remove an in-use root.
  for(;;){
   if(Date.now()>=until)throw Error('Owned pilot root process absence unverified',{cause:{probe:'cwd',deadlineExpired:true}});
   const timeout=Math.max(1,until-Date.now());
-  const cwd=spawnSync('lsof',['-a','-d','cwd','-Fp','-Fn'],{env:environment,encoding:'utf8',timeout,maxBuffer:4194304});
-  const cwdInUse=cwd.stdout.split('\n').some(line=>line.startsWith('n')&&inside(line.slice(1)));
-  if(cwd.error||cwd.status!==0||cwd.stderr.trim())throw Error(`Owned pilot root process absence unverified: ${rootProbeDiagnostic('cwd',cwd)}`,{cause:{probe:'cwd',status:cwd.status,signal:cwd.signal,probeError:Boolean(cwd.error),stderrPresent:Boolean(cwd.stderr.trim()),rootInUse:cwdInUse}});
+  const cwd=probe(['-a','-d','cwd','-Fp','-Fn'],timeout);
+  const cwdOutput=String(cwd.stdout??''),cwdError=String(cwd.stderr??'');
+  const cwdInUse=cwdOutput.split('\n').some(line=>line.startsWith('n')&&inside(line.slice(1)));
+  if(cwd.error||cwd.status!==0||cwdError.trim())throw Error(`Owned pilot root process absence unverified: ${rootProbeDiagnostic('cwd',cwd)}`,{cause:{probe:'cwd',status:cwd.status,signal:cwd.signal,probeError:Boolean(cwd.error),stderrPresent:Boolean(cwdError.trim()),rootInUse:cwdInUse}});
   if(cwdInUse){if(Date.now()>=until)throw Error('Owned pilot root process absence unverified',{cause:{probe:'cwd',rootInUse:true}});await new Promise(done=>setTimeout(done,Math.min(100,until-Date.now())));continue;}
-  const files=spawnSync('lsof',['+D',owned,'-Fp'],{env:environment,encoding:'utf8',timeout:Math.max(1,until-Date.now()),maxBuffer:4194304});
-  if(files.error||![0,1].includes(files.status??-1)||files.stderr.trim()||(!files.stdout.trim()&&files.status!==1))throw Error(`Owned pilot root open-file absence unverified: ${rootProbeDiagnostic('open-files',files)}`,{cause:{probe:'open-files',status:files.status,signal:files.signal,probeError:Boolean(files.error),stdoutPresent:Boolean(files.stdout.trim()),stderrPresent:Boolean(files.stderr.trim())}});
-  if(files.stdout.trim()){if(Date.now()>=until)throw Error('Owned pilot root open-file absence unverified',{cause:{probe:'open-files',rootInUse:true}});await new Promise(done=>setTimeout(done,Math.min(100,until-Date.now())));continue;}
+  const files=probe(['+D',owned,'-Fp'],Math.max(1,until-Date.now()));
+  const fileOutput=String(files.stdout??''),fileError=String(files.stderr??'');
+  if(files.error||![0,1].includes(files.status??-1)||fileError.trim()||(!fileOutput.trim()&&files.status!==1))throw Error(`Owned pilot root open-file absence unverified: ${rootProbeDiagnostic('open-files',files)}`,{cause:{probe:'open-files',status:files.status,signal:files.signal,probeError:Boolean(files.error),stdoutPresent:Boolean(fileOutput.trim()),stderrPresent:Boolean(fileError.trim())}});
+  if(fileOutput.trim()){if(Date.now()>=until)throw Error('Owned pilot root open-file absence unverified',{cause:{probe:'open-files',rootInUse:true}});await new Promise(done=>setTimeout(done,Math.min(100,until-Date.now())));continue;}
   if(Date.now()>until)throw Error('Owned pilot root open-file absence unverified',{cause:{probe:'open-files',deadlineExpired:true}});
   return;
  }

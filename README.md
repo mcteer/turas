@@ -418,6 +418,9 @@ uses Node.js 24 and npm. Versions are pinned in [`package-lock.json`](package-lo
 - PostgreSQL **17** with pgvector, a development database and a separate disposable
   test database.
 - Docker for isolated artifact scanning/extraction and report rendering.
+- Owned pilot cleanup requires `lsof`. On Linux, run as root or allow
+  noninteractive `/usr/bin/sudo -n -- /usr/bin/lsof`; an unavailable or denied
+  privileged query fails the check. macOS uses its ordinary `lsof` command.
 - An AI Gateway key for live Turi calls; deterministic tests do not require one.
 
 Database, runtime-role and recovery details are in the

@@ -7068,3 +7068,26 @@ process exit0, no signal/deadline expiry, and successful surrounding fixture
 cleanup. This was a pre-commit working-tree check; fresh committed-source native,
 complete catalog and CI evidence are still required. Pilot types, docs and diff
 checks passed.
+
+The exact `9ec0e4d` CI run39693425867 has five failed jobs while other jobs remain
+active. Its deterministic provisioning failure rejected the cwd probe's
+status/error/stderr contract; it did not establish a process using the root.
+Pilot regressions passed40 current-schema cases before cleanup failed. The
+Product Gaps mobile-light report-review assertion timed out separately. Two
+other failed job logs remain unavailable until workflow completion.
+
+The local `8d66a90` native preparation first failed with a retained root and an
+unproved cause. A diagnostic rerun passed with zero paid/Context dispatches and
+all seven recorded guard PIDs absent. The first failure remains unresolved.
+An isolated Linux diagnostic also passed all four user/root probes; this does
+not reproduce the CI failure or establish its cause.
+
+Probe failures now expose fixed status/signal/error and byte-count metadata
+without raw paths or stderr. Linux cleanup additionally requires root-visible
+`/usr/bin/lsof`, using `/usr/bin/sudo -n --` when needed, because an ordinary UID
+may lack other users' descriptor visibility. There is no unprivileged fallback.
+The original five-second shared window, outer deadlines, buffers and strict
+status/stderr predicates remain unchanged. Root access does not establish
+complete namespace visibility or guarantee a warning-free probe. macOS is
+unchanged. This visibility correction requires fresh committed-source Linux CI;
+it is not yet a verified CI fix, full catalog pass, hosted check or release.
