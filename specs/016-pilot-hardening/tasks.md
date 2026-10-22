@@ -519,3 +519,15 @@ No hosted target may be locked for release before its measured reopen path exist
   to the actual branch head. Preserve the complete catalog and original clocks.
   Verify types and actual fresh authenticated CI artifact retention/import against
   the exact source; a passing test command alone does not complete this task.
+
+
+- [ ] T132 Correct CI catalog orchestration after the actual `1c34d96` outer
+  watchdog abort at recovery MCP HTTP suite154. Explicitly amend only the CI
+  batch90-minute preservation in T114/T128/T130/T131 to a fixed120-minute
+  GitHub Actions controller; retain90 minutes locally, every case/file/domain/
+  model/readiness deadline, cleanup escalation, financial/provider limits and
+  all1,022 cases across185 suites. Keep the existing300-minute workflow ceiling.
+  Emit fixed suite timing/remaining owned budget without private output. Preserve
+  the original failed run. Verify focused controllers, types/docs and fresh
+  exact-source full local/CI, artifact retention and owned cleanup; the amendment
+  alone establishes no passing gate, model quality or hosted readiness.

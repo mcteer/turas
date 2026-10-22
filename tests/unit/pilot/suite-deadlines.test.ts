@@ -1,6 +1,6 @@
 import {it,expect} from 'vitest';
 import catalog from '../../../scripts/pilot-suites.json';
-import {pilotSuiteDeadlineMs} from '../../../scripts/pilot-suite-deadlines';
+import {pilotCatalogDeadlineMs,pilotSuiteDeadlineMs} from '../../../scripts/pilot-suite-deadlines';
 it('allows the declared restore setup and cases inside a finite whole-file bound',()=>{
  // Isolated restore has setup plus three cases; released restore now has four.
  expect(pilotSuiteDeadlineMs('tests/integration/pilot/isolated-restore.test.ts')).toBeGreaterThanOrEqual(4*210000+15000);
@@ -11,6 +11,8 @@ it('allows the declared restore setup and cases inside a finite whole-file bound
  for(const [name,total] of Object.entries(phases))expect(pilotSuiteDeadlineMs('tests/integration/pilot/'+name+'.test.ts')).toBeGreaterThanOrEqual(total+15000);
 });
 it('keeps every registered suite within a finite controller deadline',()=>{
+ expect(pilotCatalogDeadlineMs(false)).toBe(5_400_000);
+ expect(pilotCatalogDeadlineMs(true)).toBe(7_200_000);
  for(const suite of catalog.suites){
   const ms=pilotSuiteDeadlineMs(suite.file);expect(Number.isSafeInteger(ms)).toBe(true);expect(ms).toBeGreaterThan(0);
   // The decision suite declares twenty-one210s cases, one420s producer and one270s peer phase,

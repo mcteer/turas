@@ -1,5 +1,5 @@
 import {pilotCatalogAbortMetadata} from "./ci-process-diagnostics";
-import {pilotSuiteDeadlineMs} from './pilot-suite-deadlines';
+import {pilotCatalogDeadlineMs,pilotSuiteDeadlineMs} from './pilot-suite-deadlines';
 import {preparePilotAssetPermissions} from './pilot-asset-permissions';
 import {parsePilotImagePreparation} from "../lib/contracts/pilot-images";
 import { access,readFile,writeFile,cp } from "node:fs/promises";
@@ -28,6 +28,8 @@ async function main(){
  // Retain only immutable parent provenance; never forward it to test children.
  const ci=Object.freeze({active:process.env.GITHUB_ACTIONS==='true',runId:process.env.GITHUB_RUN_ID,commit:process.env.TURAS_PILOT_CI_COMMIT??process.env.GITHUB_SHA});
  if(ci.active&&(!ci.runId||!/^\d{1,32}$/.test(ci.runId)||ci.commit!==source.sourceCommit))throw Error('Exact actual CI run and checkout required');
+ const catalogDeadlineMs=pilotCatalogDeadlineMs(ci.active);
+ process.stdout.write(JSON.stringify({kind:'pilot_catalog_budget',runId,...source,executionClass:ci.active?'github-actions':'local',deadlineMs:catalogDeadlineMs})+'\n');
  await createEvidenceDirectory(root);failureRecord={root,runId,...source};
  const missing=[];for(const suite of suites.suites){try{await access(suite.file);}catch{missing.push(suite.file);}}
  if(missing.length){await writeEvidence(root,"execution.json",{version:"pilot-execution-v1",runId,...source,method:"local",state:"blocked",missingSuites:missing.length});process.stdout.write(JSON.stringify({state:"blocked",missingSuites:missing.length})+"\n");process.exitCode=1;return;}
@@ -50,6 +52,7 @@ async function main(){
   await cp(path.join(preparedStore,'assets'),path.join(process.env.TURAS_ARTIFACT_STORE_ROOT!,'assets'),{recursive:true});
   await preparePilotAssetPermissions(process.env.TURAS_ARTIFACT_STORE_ROOT!);
   let total=0;const suiteEvidence:{file:string;resultFile:string;resultDigest:string;processFile:string;processDigest:string}[]=[];const passedCaseIds=new Set<string>();const caseTimes=new Map<string,{start:string;end:string}>();
+  const progress=(phase:'start'|'complete',index:number,file:string,startedAt:string)=>process.stdout.write(JSON.stringify({kind:'pilot_catalog_suite',runId,...source,phase,index,file,elapsedMs:Date.now()-(environment.deadlineAt-catalogDeadlineMs),remainingMs:Math.max(0,environment.deadlineAt-Date.now()),durationMs:Date.now()-Date.parse(startedAt),passedCases:total})+'\n');
   for(const [index,suite] of suites.suites.entries()){
    activeSuite=suite.file;failureStage='suite-preparation';
    // Queue-only upload fixtures author a shape-only attestation. Restore the
@@ -57,6 +60,7 @@ async function main(){
    await writeFile(path.join(process.env.TURAS_ARTIFACT_STORE_ROOT!,'runtime-images.json'),JSON.stringify({contract:'artifact-intake-v1',parserImage:image('parser').localImageId,parserDigest:image('parser').localImageId.slice(7),scannerImage:image('scanner').localImageId,scannerDigest:image('scanner').localImageId.slice(7)}),{mode:0o600});
    environment.signal.throwIfAborted();const name=`suite-${index}.json`;
    const startedAt=new Date().toISOString();
+   progress('start',index,suite.file,startedAt);
    failureStage='suite-process';
    const child=spawn(process.execPath,["node_modules/vitest/vitest.mjs","run",suite.file,"--reporter=json",`--outputFile=${path.join(root,name)}`],{cwd:environment.appRoot,env:process.env,stdio:["ignore","pipe","pipe"],signal:environment.signal});
    let stdout='',stderr='',deadlineExpired=false;
@@ -71,6 +75,7 @@ async function main(){
    if(code!==0)throw new Error("Registered pilot suite failed");
    failureStage='suite-catalog-verification';
    const result=verifyPilotSuiteResult(suite.file,await readEvidence(root,name));suiteEvidence.push({file:suite.file,resultFile:name,resultDigest:createHash('sha256').update(await readFile(path.join(root,name))).digest('hex'),processFile:`suite-${index}-process.json`,processDigest:createHash('sha256').update(await readFile(path.join(root,`suite-${index}-process.json`))).digest('hex')});total+=result.passedCases;const prefix=suite.file.split("/")[1]+"."+path.basename(suite.file,".test.ts");for(let i=0;i<suite.expectedCases;i++){const id=`${prefix}.${String(i+1).padStart(3,"0")}`;passedCaseIds.add(id);caseTimes.set(id,{start:startedAt,end:new Date().toISOString()});}
+   progress('complete',index,suite.file,startedAt);
   }
   activeSuite=null;failureStage='source-and-receipt-verification';
   const current=await pilotSource();if(current.sourceDigest!==source.sourceDigest||current.sourceCommit!==source.sourceCommit)throw new Error("Source changed during pilot execution");
@@ -100,6 +105,6 @@ async function main(){
    await (await import('./pilot-ci-evidence')).aggregatePilotCiEvidence(root,artifacts,binding,'ci-completed.json');
   }
   process.stdout.write(JSON.stringify({state:"pass",passedCases:total,fullPilotReady:false})+"\n");
- },{priorSchema:55,queryStatistics:true,deadlineMs:5400000});}finally{process.umask(previousUmask);}
+ },{priorSchema:55,queryStatistics:true,deadlineMs:catalogDeadlineMs});}finally{process.umask(previousUmask);}
 }
 main().catch(async()=>{if(failureRecord){const {root,...binding}=failureRecord;await writeEvidence(root,`failure-${randomUUID()}.json`,{version:"pilot-execution-v1",...binding,method:"local",state:"fail",safeFailure:"incomplete_execution",stage:failureStage,suiteFile:activeSuite,...pilotCatalogAbortMetadata(cancellationCause(),childProcessError)}).catch(()=>undefined);}process.stderr.write(JSON.stringify({kind:"pilot_catalog_failure",stage:failureStage,suiteFile:activeSuite,...pilotCatalogAbortMetadata(cancellationCause(),childProcessError)})+"\n");process.stderr.write("Pilot catalog failed; no readiness established.\n");process.exitCode=1;});

@@ -57,12 +57,17 @@ checks do not establish full Production workflow readiness. See the
 [roadmap](ROADMAP.md) and feature validation records under [`specs/`](specs/).
 Feature 016 pilot hardening is in progress; its local checkpoints do not establish
 full hosted pilot readiness. [Draft PR 47](https://github.com/mcteer/turas/pull/47)
-is the implementation checkpoint. The complete local catalog passes all 1,006
-cases across 181 suites at `b134d69`. That commit's CI has 45 passing jobs and
-one timeout in the ten-MiB report test; the exact-byte assertion now uses native
-Buffer comparison to avoid deep-equality overhead. Fresh checks remain required.
-Current recovery, hosted processing and automated participant acceptance remain
-release blockers.
+is the implementation checkpoint. The independently audited `1c34d96` local
+catalog passed all 1,022 cases across 185 suites with parent exit 0 and verified
+owned cleanup. At `1c34d96`, 49 CI jobs passed
+and the full pilot catalog hit its outer 90-minute watchdog during recovery MCP
+HTTP; the log does not establish an MCP assertion failure. The GitHub Actions
+batch allowance is now explicitly 120 minutes, while local catalogs retain
+90 minutes and every individual suite, application and model limit is unchanged.
+Fixed suite timings expose elapsed and remaining batch time without private
+payloads. All 1,022 cases remain required; fresh complete source-bound catalog,
+CI, model-quality, recovery, hosted processing and automated participant
+acceptance remain release blockers.
 The latest recovery attempt retained complete journals and retired its test
 credentials, but stopped at an evidence-list eligibility scan. An isolated clone
 of the exact matched dump reproduced the `incomplete` result after 100 withheld

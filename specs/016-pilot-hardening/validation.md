@@ -7091,3 +7091,34 @@ status/stderr predicates remain unchanged. Root access does not establish
 complete namespace visibility or guarantee a warning-free probe. macOS is
 unchanged. This visibility correction requires fresh committed-source Linux CI;
 it is not yet a verified CI fix, full catalog pass, hosted check or release.
+
+
+### Actual 1c34d96 CI deadline and explicit batch amendment (2026-10-21)
+
+Authenticated run39699052251 attempt1 completed49 jobs successfully and failed
+only pilot deterministic job119563511323. Its complete401,953-byte private log
+has SHA-256 `8fbc73fd66e137f969fe508c7abdf58b9f0fd8fdb70a439cd482ad8f17fa6c92`.
+Fixed metadata reports `suite-process`,
+`tests/integration/pilot/recovery-mcp-http.test.ts`, cancellation `deadline`,
+and child `AbortError`/`ABORT_ERR`. The step ran90m05s. This confirms the outer
+watchdog abort, not an MCP assertion failure, deadlock, inner phase or cleanup.
+Failed-run hashes were not retained; source-inferred progress is not acceptance.
+Separate legacy workflow39699052287 passed all seven jobs.
+
+Independently audited `9ec0e4d` local results passed all1,022 cases/185 suites
+with actual parent exit0 and verified cleanup; recorded suite processes used
+5,243.665 seconds, leaving little batch margin. The independent `1c34d96` local
+run also completed all1,022 cases/185 suites with actual parent exit0. Its
+independent audit verified370 result/process hashes, zero failure/pending/todo/
+retry/signal/deadline flags, clean frozen source, parent/root/outer-container
+absence and unchanged older containers (audit SHA-256
+`628c3c014990ff1299542e6d62cf6c873275ba7b93650b4053fe3bbb6c6d8b4a`).
+This is local evidence only; its CI failure remains failed and actual model/hosted
+readiness is not established.
+
+T132/plan explicitly amend only the GitHub Actions batch to a fixed120 minutes;
+local remains90 minutes. All per-case/file/domain/model/cleanup/financial limits,
+the300-minute CI job ceiling and complete inventory remain unchanged. Fixed
+suite start/completion elapsed/remaining-budget metadata makes future timing
+auditable without private output. Fresh exact-source full catalog/CI, artifact
+and cleanup verification remains required. The original failure remains failed.
