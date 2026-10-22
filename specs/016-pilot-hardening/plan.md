@@ -435,3 +435,16 @@ budget and verified case counts without private paths, customer/credential IDs,
 child output or payloads.
 Require fresh exact-source complete catalog/CI, artifact and cleanup proof.
 No filters, retries, partial/historical acceptance or hosted/model waiver.
+
+
+## Ordinary unauthenticated fast-denial correction (T135)
+
+The actual eb15b39 CI artifact startup reached auth-handler entry without session
+completion; no precise SQL/transport cause is established. An ordinary request
+without a Cookie header or with an empty header cannot carry a session token.
+Return unauthenticated before consulting SQL admission for that exact case.
+Preserve purpose validation, all nonempty-cookie checks, special-purpose paths,
+the existing401 readiness predicate and every original clock. Verify the old-code
+negative regression, authenticated/revocation integration boundaries and fresh
+full committed-source catalog/CI. All original cases remain required; the two
+new regressions join the existing boundary suite (1,027 cases/186 suites).

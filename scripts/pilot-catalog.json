@@ -126,7 +126,9 @@
         "unit.ci-browser-diagnostics.005",
         "unit.plan-readiness-probe.001",
         "unit.plan-readiness-probe.002",
-        "unit.ci-browser-diagnostics.006"
+        "unit.ci-browser-diagnostics.006",
+        "unit.session-admission-boundary.002",
+        "unit.session-admission-boundary.003"
       ]
     },
     {

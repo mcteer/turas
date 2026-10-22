@@ -555,3 +555,15 @@ No hosted target may be locked for release before its measured reopen path exist
   Verify privacy and diagnostic transport; reproduce all five original restore
   cases before claiming an internal phase or selecting a behavioral fix, then
   require complete committed-source catalog/CI/cleanup and hosted gates.
+
+
+- [ ] T135 Preserve the actual `eb15b39` CI result (43 successful jobs and seven
+  failed jobs, with all seven full failed logs independently reviewed). Its pilot
+  catalog passed 721 cases including all five restore cases, then failed an
+  unauthenticated evaluation-source readiness request after auth-handler entry.
+  Deny ordinary missing/empty-Cookie requests before database admission because
+  they cannot carry a session token. Preserve purpose validation, every nonempty
+  cookie's admission/session checks, special-purpose paths, the existing401
+  predicate and all original clocks. Verify the old-code negative regression and
+  authenticated/revocation boundaries, then fresh exact-source full catalog/CI
+  and owned cleanup. Do not claim this explains every startup or browser failure.

@@ -1,9 +1,10 @@
-Pilot validation is still in progress. The latest local catalog passed591 cases
-before five isolated-restore failures; the latest CI also exposed native startup
-failures. A readiness-probe cleanup correction has focused checks and independent
-review. The five-case restore reproduction passed4 cases and failed artifact startup
-before listener readiness; finer fixed startup observations are being validated;
-complete current-source and hosted acceptance remain pending. See
+Pilot validation is still in progress. The latest pushed CI finished with43
+successful and seven failed jobs; its pilot catalog passed721 cases, including
+all five restore cases, before an unauthenticated readiness failure after auth
+handler entry. A narrow ordinary no-cookie rejection now avoids unnecessary
+SQL admission work; cookie-bearing and special-purpose authentication retain
+all existing checks. Focused checks pass; current-source complete and hosted
+acceptance remain pending. See
 [016 validation](specs/016-pilot-hardening/validation.md).
 
 The profile/chat fixes released in [PR #45](https://github.com/mcteer/turas/pull/45)
@@ -73,7 +74,7 @@ HTTP; the log does not establish an MCP assertion failure. The GitHub Actions
 batch allowance is now explicitly 120 minutes, while local catalogs retain
 90 minutes and every individual suite, application and model limit is unchanged.
 Fixed suite timings expose elapsed and remaining batch time without private
-payloads. All original 1,022 cases remain required, with two new readiness-probe regressions; fresh complete source-bound catalog,
+payloads. All original 1,022 cases remain required, with readiness-probe, failure-privacy and anonymous-session regressions; fresh complete source-bound catalog,
 CI, model-quality, recovery, hosted processing and automated participant
 acceptance remain release blockers.
 The latest recovery attempt retained complete journals and retired its test
@@ -139,7 +140,7 @@ authorization can now be verified without promoting the original Preview envelop
 The composed workspace/upload WebKit matrix passes40cases. The ae9b908 local
 catalog passes1009 cases across182 suites; its hosted regional check failed at
 canonical MCP denial reconciliation and its owned credentials/executor were closed.
-The current1025-case/186-suite catalog includes denial-preparation, startup transport,
+The current1027-case/186-suite catalog includes denial-preparation, startup transport,
 session import-boundary and fixed regression failure-phase checks. The partner absent-request
 journey also records eight approved browser steps on failure without changing its
 assertions or clocks. Catalog failures also retain fixed owned-cancellation and

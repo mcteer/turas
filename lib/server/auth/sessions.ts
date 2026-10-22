@@ -77,6 +77,9 @@ export async function getCurrentSession(request: Request, purpose:"ordinary"|"op
   const protectedCancel=purpose==='cancellation'&&protectedCancellationRequest(request);
   const protectedRevocation=purpose==='session-revocation'&&request.method==='POST'&&new URL(request.url).pathname==='/api/auth/logout';
   if(purpose!=='ordinary'&&!protectedStatus&&!protectedCancel&&!protectedRevocation)return null;
+  // An ordinary request without cookies cannot carry a session token. Requests
+  // carrying cookies still pass the existing admission and session checks.
+  if(purpose==='ordinary'&&!request.headers.get('cookie'))return null;
   if(!protectedStatus&&!protectedCancel&&!protectedRevocation&&!await operationalAdmissionOpen())return null;
   const token = tokenFromRequest(request);
   if (!token) return null;

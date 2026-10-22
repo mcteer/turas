@@ -7205,3 +7205,28 @@ server guide was consulted; no framework API or serving mode changes. An
 artifact-only diagnostic will target the observed failure before another complete
 catalog is attempted. All original five restore cases remain mandatory in the
 full1,025-case/186-suite catalog and release gates.
+
+
+### Ordinary no-cookie fast denial after actual eb15b39 CI failure
+
+Actual CI39711426710 completed43 successful and seven failed jobs. All seven
+full failed logs are retained and independently reviewed. The pilot job reported
+721 passing cases through index116. Its original index94 restore suite passed
+all five cases. Index117 evaluation-source failed its first case at the original
+60-second artifact readiness check: auth module and handler entry were observed,
+but session completion was not. Independent static/public/internal health and
+SQL admission observations succeeded. No outer/file deadline fired; the exact
+inner cause remains unproved. Other failures retain three native90-second startup
+failures, partner interruption, a research-input timeout and a nested regression
+failure with unavailable inner output. No common cause or flakiness is claimed.
+
+T135 denies only ordinary requests with no Cookie or an empty Cookie before
+consulting SQL admission. Such requests already return unauthenticated; valid or
+other nonempty cookies still take the original admission and session path.
+Purpose validation and all special-purpose behavior remain unchanged. The new
+negative regression fails on original code; all seven focused auth checks pass
+with the change. Two cases are added to the existing boundary suite:1,027 cases
+across186 suites, with every original case retained. Fresh committed-source
+full catalog, CI, authenticated boundaries and hosted acceptance remain pending.
+The separately running frozen7031cdc full catalog is evidence for that earlier
+source only; it cannot certify this follow-up.

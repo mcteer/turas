@@ -2129,9 +2129,11 @@
     },
     {
       "file": "tests/unit/pilot/session-admission-boundary.test.ts",
-      "expectedCases": 1,
+      "expectedCases": 3,
       "cases": [
-        "loads ordinary session authentication without recovery admission"
+        "loads ordinary session authentication without recovery admission",
+        "denies missing and empty ordinary cookies without consulting admission",
+        "still requires open admission for every nonempty ordinary cookie"
       ]
     },
     {
