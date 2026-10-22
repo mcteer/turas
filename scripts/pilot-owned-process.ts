@@ -18,8 +18,8 @@ function sameProcess(a:ProcessIdentity,b:ProcessIdentity){return a.pid===b.pid&&
 
 /** Own a new Unix process group, including descendants that outlive its parent.
  * Caller supplies an explicit environment; no credentials are inherited. */
-export function spawnOwnedProcess(input:{command:string;args:string[];cwd:string;environment:NodeJS.ProcessEnv}){
- const child=spawn(input.command,input.args,{cwd:input.cwd,env:input.environment,detached:true,stdio:['ignore','pipe','pipe']});
+export function spawnOwnedProcess(input:{command:string;args:string[];cwd:string;environment:NodeJS.ProcessEnv;controlPipes?:boolean}){
+ const child=spawn(input.command,input.args,{cwd:input.cwd,env:input.environment,detached:true,stdio:input.controlPipes?['ignore','pipe','pipe','pipe','pipe']:['ignore','pipe','pipe']});
  let closed=false;
  child.once('close',()=>{closed=true;});child.once('error',()=>{});
  // Drain both streams even if a caller only observes a bounded diagnostic tail.

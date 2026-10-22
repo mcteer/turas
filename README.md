@@ -1,12 +1,12 @@
-Pilot validation is still in progress. The `160c911` local catalog ended with
-457 passes and two failures after a cleanup-proof timeout exposed skipped pool
-closure and environment restoration. Cleanup now restores parent state on every
-path and retains errors/resources when absence is unverified; four fault-path
-regressions and the original role checks pass locally. Recursive root-use
-verification retains the same5-second strict proof. The APT mirror-list fix is
-verified on both affected CI jobs and all seven legacy CI jobs pass. Fresh
-complete1,035-case/188-suite catalog, CI, model, hosted recovery and Production
-release remain pending. Production remains `f8d196f`, schema077. See
+Pilot validation is still in progress. The frozen `f4737b9` catalog and CI
+remain active and do not establish current acceptance. Review found that a
+quality stage command ran in a detached group that its parent's interruption
+did not retire. Stage commands now propagate cancellation to their exact owned
+groups and await bounded retirement; five synthetic interruption/deadline
+regressions pass. All original stages, model selection, deadlines, budgets and
+unknown holds remain unchanged. Fresh complete1,040-case/189-suite catalog,
+CI, model, hosted recovery and Production release remain pending. Production
+remains `f8d196f`, schema077. See
 [016 validation](specs/016-pilot-hardening/validation.md).
 
 The profile/chat fixes released in [PR #45](https://github.com/mcteer/turas/pull/45)

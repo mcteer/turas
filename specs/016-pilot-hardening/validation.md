@@ -7420,3 +7420,63 @@ claimed. The total5-second window, strict output/error/status checks, Linux
 visibility and all domain clocks remain unchanged. Pilot types pass. The four
 new cases append to the unchanged original catalog:1,035 cases/188 suites.
 Fresh committed full/CI/model/hosted/Production acceptance remains pending.
+
+
+## 2026-10-22: quality stage supervision gap and working-tree correction
+
+Read-only inspection found that `pilot-quality-live.ts` spawned stage commands
+in detached groups but only their own stage timer killed those groups. The
+producer/fixture interrupt path did not explicitly retire that stage capability.
+No paid batch or concurrent-CI scheduling admission was started on this basis.
+The current frozen f4737b9 catalog/CI remains separate and is not a full pass.
+
+T143 routes commands through a genuine owned-process helper, registers parent
+signal/fixture-abort listeners before spawn, and awaits existing bounded group
+retirement on normal/error/interrupted completion. The unchanged absolute
+stage deadline marks expiry before bounded descendant capture and SIGKILL; output remains bounded and redacted
+before private persistence, including interruption failures. Five narrow
+synthetic tests pass with provider keys blank: detached-stage descendant abort,
+spawn-registration interruption, original deadline/pre-aborted refusal and
+success/spawn-error listener cleanup. This is working-tree local proof only.
+All1,035 previous catalog cases/suite positions are preserved; five cases append
+to1,040/189. Fresh committed full/CI/model/hosted/Production acceptance remains
+pending; no time authority, financial hold or model allowance changed.
+
+T143 working-tree root and pilot TypeScript checks, the243-file documentation
+check and whitespace check also exit0. The focused JSON retains five passing
+cases with no failures/pending; no live model/provider operation was performed.
+The separate independent process harness remains diagnostic until its actual
+results are reviewed; this record does not claim that future proof early.
+
+The independent normal-orphan negative exposed a further genuine gap: a stage
+could exit before ancestry capture while its detached descendant remained alive.
+The candidate now adds a direct-stage-only Node exit preload and two opt-in
+control pipes. The stage synchronously requests capture while still alive and
+waits at most5seconds for the parent nonce acknowledgement; the parent validates
+PID/nonce and captures genuine descendants before acknowledgement. Normal code0
+requires this capture. This adds no accepted stage time beyond the original
+absolute deadline. The fifth actual regression verifies explicit normal exit and
+detached-descendant absence. All five focused cases pass; independent expanded
+handshake proof and final source checks remain pending. Historical failed
+harness/normal-orphan evidence is retained.
+
+After the handshake candidate, root and pilot TypeScript checks both exit0;
+check:docs checks243files and exits0. No committed/full-catalog/CI acceptance is
+inferred from these focused results.
+
+T143 control-protocol fault scope is fail-closed command acceptance, not universal
+containment of a stage that deliberately removes its hook or closes its control
+pipes. Genuine natural and explicit Node exits retain the live-root capture
+handshake. Deliberately missing/closed control faults can leave unverified
+resources requiring explicit operator identity review and reconciliation; they
+must not be reported as verified cleanup, successful quality, settled unknown
+charges, or permission for automatic retry. Failed diagnostic harness artifacts
+and their exact manual cleanup observations remain retained.
+
+The first independent ACK-withheld check exposed that synchronous pipe read can
+block beyond a JavaScript clock check. That failed proof is retained. The exit
+preload now delegates the ACK read to a same-group Node reader with spawnSync's
+5second timeout, bounded256byte output, no inherited environment and only the
+ACK descriptor. The stage remains alive for capture; this adds no accepted
+command allowance. All five focused tests pass with the corrected reader.
+Independent withheld-ACK timeout verification remains pending.

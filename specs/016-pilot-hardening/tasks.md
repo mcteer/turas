@@ -643,3 +643,17 @@ No hosted target may be locked for release before its measured reopen path exist
   append four registered regressions, preserving all1,031 original cases. Require
   fresh1,035-case/188-suite validation and all release gates; no timeout cause
   or hosted acceptance is inferred.
+
+
+- [ ] T143 Supervise every actual-model stage command as its own genuine owned
+  process group. Propagate parent SIGTERM/SIGINT and the original fixture abort
+  signal even during spawn registration; await bounded group retirement and
+  retain interruption plus retirement/evidence failures. Preserve the original
+  absolute stage deadline, expired-at-deadline rejection and owned SIGKILL, output bound/redaction,
+  all11 stages/model/32 steps/caps/unknown holds and no automatic retry. Verify
+  actual detached-stage descendant interruption, registration race, pre-aborted
+  dispatch, deadline, success/error listener cleanup and normal-exit descendant
+  capture handshake; append five regressions
+  after all1,035 existing cases. Require fresh1,040-case/189-suite validation
+  and all release gates. Concurrent-CI monitor preparation is not operational
+  approval and current frozen validation must remain separately recorded.

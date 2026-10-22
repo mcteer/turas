@@ -136,7 +136,12 @@
         "unit.environment-cleanup.001",
         "unit.environment-cleanup.002",
         "unit.environment-cleanup.003",
-        "unit.environment-cleanup.004"
+        "unit.environment-cleanup.004",
+        "unit.quality-command.001",
+        "unit.quality-command.002",
+        "unit.quality-command.003",
+        "unit.quality-command.004",
+        "unit.quality-command.005"
       ]
     },
     {

@@ -1,7 +1,7 @@
+import {runPilotQualityCommand} from './pilot-quality-command';
 import {z} from 'zod';
 import {verifyQualityStepAuthorization} from './pilot-quality-step-authorization';
 import {randomUUID} from 'node:crypto';
-import {spawn} from 'node:child_process';
 import {readFile,mkdir,cp,writeFile,readdir,lstat} from 'node:fs/promises';
 import {resolve,join,dirname,basename} from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -50,17 +50,15 @@ function parse(args:string[]){
  return {mode,values};
 }
 async function privateReceipt(file:string){const absolute=resolve(file);return readEvidence(dirname(absolute),basename(absolute));}
-async function command(file:string[],cwd:string,root:string,name:string,deadline:number,live:boolean){
+async function command(file:string[],cwd:string,root:string,name:string,deadline:number,live:boolean,signal?:AbortSignal){
  const env:NodeJS.ProcessEnv={...process.env,...(live?await qualityChildEnvironment():{NODE_OPTIONS:'',TURAS_ALLOW_LIVE_MODEL_TESTS:'0',AI_GATEWAY_API_KEY:'',CONTEXT_API_KEY:''})};
  if(!live)delete env.TURAS_016_QUALITY_RUNTIME_FILE;
- const child=spawn(process.execPath,['--import','tsx',...file],{cwd,env,detached:true,stdio:['ignore','pipe','pipe']});let output='',expired=false;
- for(const stream of [child.stdout,child.stderr])stream.on('data',bytes=>{output=(output+bytes.toString()).slice(-4194304);});
- const stop=()=>{expired=true;try{process.kill(-child.pid!,'SIGKILL');}catch(error){if((error as NodeJS.ErrnoException).code!=='ESRCH')throw error;}};
- const timer=setTimeout(stop,Math.max(1,deadline-Date.now()));let code:number|null;
- try{code=await new Promise<number|null>((done,reject)=>{child.once('error',reject);child.once('close',done);});}finally{clearTimeout(timer);}
+ let output='',result:Awaited<ReturnType<typeof runPilotQualityCommand>>|undefined,failure:{error:unknown}|undefined;
+ try{result=await runPilotQualityCommand({command:process.execPath,args:['--import','tsx',...file],cwd,environment:env,deadline,signal,onOutput:bytes=>{output=(output+bytes.toString()).slice(-4194304);}});}catch(error){failure={error};}
  for(const [key,value] of Object.entries(env))if(value&&/KEY|SECRET|TOKEN|PASSWORD|URL/.test(key))output=output.replaceAll(value,'[redacted]');
- await writeFile(join(root,name+'.log'),output,{flag:'wx',mode:0o600});
- if(expired||code!==0)throw Error('Complete quality command failed');
+ try{await writeFile(join(root,name+'.log'),output,{flag:'wx',mode:0o600});}catch(error){throw failure?new AggregateError([failure.error,error],'Quality command and private evidence retention failed'):error;}
+ if(failure)throw failure.error;
+ if(!result||result.deadlineExpired||result.code!==0)throw Error('Complete quality command failed');
 }
 async function setupImages(preparationFile:string){
  const preparation=parsePilotImagePreparation(await readFile(preparationFile)),store=dirname(preparationFile);
@@ -153,13 +151,13 @@ export async function pilotQualityLive(args=process.argv.slice(2)){
    await withPilotEnvironment(async environment=>{
     process.env.TURAS_TEST_POSTGRES_CONTAINER=environment.databaseContainer;await setupImages(images);
     const deadline=Date.now()+stage.deadlineMs;
-    await command(qualitySeedCommand(stage),environment.appRoot,stageRoot,'seed',deadline,false);
-    await command(['tests/fixtures/artifacts/generate.ts'],workspace,stageRoot,'artifact-fixtures',deadline,false);
+    await command(qualitySeedCommand(stage),environment.appRoot,stageRoot,'seed',deadline,false,environment.signal);
+    await command(['tests/fixtures/artifacts/generate.ts'],workspace,stageRoot,'artifact-fixtures',deadline,false,environment.signal);
     process.env.AI_GATEWAY_API_KEY=key;process.env.CONTEXT_API_KEY=contextKey;process.env.TURAS_ALLOW_LIVE_MODEL_TESTS='1';process.env.TURAS_016_QUALITY_RUNTIME_FILE=join(root,'runtime.json');process.env.EVE_SKIP_SANDBOX_PREWARM='1';
     if(['002','003','004'].includes(stage.id))process.env.TURAS_016_BEHAVIOR_CAPTURE_ROOT=join(workspace,'local-artifacts/behavior-review');
     if(stage.native)await installBehaviorReviewCapture(environment.appRoot,process.env.TURAS_016_BEHAVIOR_CAPTURE_ROOT!);
     if(stage.native){await environment.startWorker();await environment.startNative();}
-    try{for(const [index,args] of stage.commands.entries()){await assertSource();await verifyQualityWorkspace(sourceRoot,workspace);await command(args,workspace,stageRoot,'command-'+index,deadline,true);await verifyQualityWorkspace(sourceRoot,workspace);if((await budget.status()).admissionHeld)throw Error('Provider accounting requires review');}}
+    try{for(const [index,args] of stage.commands.entries()){await assertSource();await verifyQualityWorkspace(sourceRoot,workspace);await command(args,workspace,stageRoot,'command-'+index,deadline,true,environment.signal);await verifyQualityWorkspace(sourceRoot,workspace);if((await budget.status()).admissionHeld)throw Error('Provider accounting requires review');}}
     finally{const local=join(workspace,'local-artifacts');await mkdir(local,{recursive:true,mode:0o700});const inventory=await capturedFiles(local);await cp(local,join(stageRoot,'captures'),{recursive:true,filter:path=>!path.split(/[\\/]/).some(part=>['node_modules','.eve'].includes(part)||part.startsWith('.env'))});await writeEvidence(stageRoot,'captures.json',{...source,stage:stage.id,reviewWorkspace:workspace,retainedForIndependentReview:true,files:inventory,actualModelQualityVerified:false});}
    },{postgresMajor:18,deadlineMs:stage.deadlineMs+300000});completed.push(stage.id);await writeEvidence(root,'stage-'+stage.id+'.json',{...source,stage:stage.id,state:'captured',accounting:await budget.status(),independentReviewComplete:false});
   }

@@ -534,3 +534,37 @@ and directory instances including cwd, crossing filesystems without following
 symlinks. Keep Linux root visibility, strict status/error/stderr checks and the
 shared5-second finite window. Direct tests cover cwd/hardlinks and empty final
 state; nested mounts are documented semantics, not an exercised claim.
+
+
+## Owned quality stage interruption (T143)
+
+Every quality command uses the existing genuine owned-process capability rather
+than an unsupervised detached child. Install parent signal and fixture abort
+listeners before spawn, recheck registration, and await the existing bounded
+retirement (SIGTERM, escalation after5 seconds, verification within10 seconds).
+The original absolute command deadline marks expiry first, captures genuine
+descendant groups through the existing1-second-bounded inventory while the
+root is alive, and always sends SIGKILL to the owned root group, even if capture
+fails. Cached descendant retirement is awaited; capture failure remains failure.
+This is cleanup proof, never extra accepted command allowance. Preserve bounded
+private output/redaction, original errors, all stage/case/model/financial limits
+and no automatic retry. Remove listeners/timers on every terminal path only
+after retirement is awaited. Failed retirement remains failure, with resources
+and unknown charges retained; a monitor's parent signal alone proves no closure.
+
+T143 normal stage completion uses a Node exit control handshake: only the directly
+spawned stage activates the preload, and its PID/nonce request holds the root
+alive for bounded genuine descendant capture before acknowledgement. Missing or
+invalid capture prevents successful command acceptance. Opt-in control pipes do
+not alter other owned-process callers. The original absolute deadline remains
+active during command execution and this handshake. Separate existing bounded
+retirement follows; it adds no accepted command allowance.
+
+T143 control-protocol fault scope is fail-closed command acceptance, not universal
+containment of a stage that deliberately removes its hook or closes its control
+pipes. Genuine natural and explicit Node exits retain the live-root capture
+handshake. Deliberately missing/closed control faults can leave unverified
+resources requiring explicit operator identity review and reconciliation; they
+must not be reported as verified cleanup, successful quality, settled unknown
+charges, or permission for automatic retry. Failed diagnostic harness artifacts
+and their exact manual cleanup observations remain retained.

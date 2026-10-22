@@ -2163,6 +2163,17 @@
         "removes verified owned resources only after pools close and the parent is restored",
         "resets both cached pools and attempts both closes when the first close rejects"
       ]
+    },
+    {
+      "file": "tests/unit/pilot/quality-command.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "retires the detached stage and its descendant when the environment aborts",
+        "handles interruption during spawn registration and removes its listeners",
+        "keeps the original absolute command deadline and refuses pre-aborted dispatch",
+        "cleans up successful and failed spawns without retaining signal listeners",
+        "captures a normally exiting stage before retiring its detached descendant"
+      ]
     }
   ],
   "ui": {
