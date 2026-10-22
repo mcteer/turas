@@ -61,7 +61,7 @@ async function requireUnusedPilotRoot(root:string,environment:NodeJS.ProcessEnv,
  // root-visible observation, with no weaker fallback if privilege is unavailable.
  const elevated=process.platform==='linux'&&process.geteuid?.()!==0;
  const probe=(args:string[],timeout:number)=>spawnSync(process.platform==='linux'?(elevated?'/usr/bin/sudo':'/usr/bin/lsof'):'lsof',
-  [...(elevated?['-n','--','/usr/bin/lsof']:[]),...args],{env:environment,encoding:'utf8',timeout,maxBuffer:4194304});
+  [...(elevated?['-n','--','/usr/bin/lsof']:[]),'-n','-P',...args],{env:environment,encoding:'utf8',timeout,maxBuffer:4194304});
  // Shutdown hooks can start a short-lived detached vendor telemetry process.
  // Observe actual absence within one finite window; never remove an in-use root.
  for(;;){

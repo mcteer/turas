@@ -499,3 +499,14 @@ The isolated image producer copies only static `infra/ci` source alongside its
 existing allowlist. Keep original CI interruptions and the unrelated candidate
 checkbox failure separate. A full88-case local WebKit pass is additional local
 proof, not a diagnosis or replacement for fresh CI and hosted acceptance.
+
+
+## Numeric-only owned-root observations (T140)
+
+Use `lsof -n -P` for both existing cwd and recursive open-file observations.
+Hostname and port-name resolution are unnecessary for PID/path proof. Preserve
+recursive inode-based `+D` selection (including alternate hardlinks), Linux
+root visibility, strict statuses/errors/stderr, the shared5-second finite window
+and all parent/domain clocks. Timeout remains unverified absence and must fail.
+The actual5a92d5c timeout cause is not established; require genuine open-file
+and hardlink refusal plus complete fresh-source execution before acceptance.

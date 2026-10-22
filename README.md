@@ -1,12 +1,14 @@
-Pilot validation is still in progress. The `6bd04d0` local catalog is running;
-its separate full WebKit check passed all88 cases. Current CI retains a Product
-Gaps candidate-checkbox failure and a legacy WebKit dependency-installation
-cancellation; neither is waived. Slow continuing downloads from Ubuntu's Azure
-mirror outlasted the new inactivity limits. CI and renderer preparation now use
-the existing primary HTTPS Ubuntu mirror selection with unchanged suites,
-signing keys, packages and deadlines. Fresh committed-source checks, model,
-hosted recovery and Production release remain pending. Production remains on
-`f8d196f`, schema077. See [016 validation](specs/016-pilot-hardening/validation.md).
+Pilot validation is still in progress. The `5a92d5c` local catalog ended with
+907 passing cases and one cleanup-proof failure;123 cases were not executed.
+The recursive open-file probe timed out without proving absence. Numeric-only
+lsof options now remove unnecessary name resolution while preserving recursive
+selection, strict proof and all deadlines; the historical cause is unproven.
+Its separate full WebKit check passed all88 cases, while CI retains a login
+failure that is not waived. CI and renderer preparation use the primary HTTPS
+Ubuntu mirror with unchanged suites, signing keys and packages. Fresh source
+checks, model evaluation, hosted recovery and Production release remain pending.
+Production remains on `f8d196f`, schema077. See
+[016 validation](specs/016-pilot-hardening/validation.md).
 
 The profile/chat fixes released in [PR #45](https://github.com/mcteer/turas/pull/45)
 as `60f7a4c`. Customer selection is searchable across directory pages, Recent

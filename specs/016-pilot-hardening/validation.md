@@ -7335,3 +7335,40 @@ three effective APT settings30/30/1, the old Azure URL absent, primary HTTPS URL
 present and exact owned-container absence. Independent diff review finds no
 blocker. These checks do not establish fresh committed catalog/CI or hosted
 behavior; original interruptions remain preserved.
+
+
+## 2026-10-22: actual5a92d5c cleanup-proof failure
+
+The current local catalog exits1 after157 suites:907 cases pass and one fails;
+30 suites/123 cases remain unexecuted. The failed conversation recovery case
+reports a recursive open-file lsof probe terminated at its remaining shared
+5-second cleanup window, with zero output. The other24 recovery-decision cases
+pass. This establishes missing cleanup proof, not an authorization assertion
+failure. The failed temporary root is no longer available for retrospective
+probe timing; the historical timeout cause remains unknown.
+
+T140 adds numeric-host/no-port-name options to both existing lsof probes. It
+preserves recursive inode-based selection, root-visible Linux observation,
+strict status/stderr/error handling, the shared5-second window and all other
+clocks. A separate numeric global read-only observation completes in119ms; it
+does not prove recursive performance or explain the historical failure. Full
+fresh source and release acceptance remain pending. Production is unchanged.
+
+T140 working-tree verification: the exact changed helper is extracted with
+Node24 type stripping and exercised against real lsof observations. Four
+checks pass: unused root accepted, outside alternate hardlink held open refused,
+owned-root working directory refused, and final closed root accepted. Each
+observation retains the original shared5-second window. The initial private
+harness attempted the removed TypeScript7 compiler API and failed before any
+fixture; switching its type stripping to Node24 permits the actual checks.
+Pilot type checking, documentation and whitespace checks exit0. These results
+do not explain the historical timeout or establish fresh full/CI acceptance.
+
+The first busy checks establish fail-closed refusal through the finite window,
+not positive detection by themselves. Complementary direct numeric snapshots
+then observe the actual open hardlink-holder PID/inode and the child PID/root
+cwd, followed by the same four helper checks: six checks pass. The first direct
+harness incorrectly required status0; lsof returned status1 with positive
+PID/inode output, which the existing helper already treats as in-use. Correcting
+that harness to the unchanged permitted0/1 statuses yields the retained actual
+positive observations. No production predicate or timeout was relaxed.

@@ -612,3 +612,13 @@ No hosted target may be locked for release before its measured reopen path exist
   and image setup, fresh exact-source catalog/CI and all applicable release gates
   per FR-016/FR-021/T092; preserve original failures without attribution to an
   unproven application cause.
+
+- [ ] T140 Preserve actual5a92d5c local catalog failure (907 passes, one
+  cleanup-proof failure;30 suites/123 cases unexecuted). The conversation
+  recovery case's recursive open-file probe timed out within its shared5-second
+  absence window; no authorization assertion failure is established. Disable
+  unnecessary hostname/port-name resolution in both lsof probes while retaining
+  recursive inode selection, strict error/stderr/status checks and every clock.
+  Verify genuine open-file/hardlink refusal and absence, ownership-check residual
+  resources, then require complete fresh-source catalog/CI/model/hosted gates.
+  Do not claim the historical timeout cause or accept timeout as absence.
