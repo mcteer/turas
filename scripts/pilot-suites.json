@@ -2132,6 +2132,14 @@
       "cases": [
         "loads ordinary session authentication without recovery admission"
       ]
+    },
+    {
+      "file": "tests/unit/plan-readiness-probe.test.ts",
+      "expectedCases": 2,
+      "cases": [
+        "retains and retires the completed response when the sibling readiness probe times out",
+        "requires both original same-iteration statuses and cannot admit an expired readiness probe"
+      ]
     }
   ],
   "ui": {

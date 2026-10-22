@@ -531,3 +531,13 @@ No hosted target may be locked for release before its measured reopen path exist
   the original failed run. Verify focused controllers, types/docs and fresh
   exact-source full local/CI, artifact retention and owned cleanup; the amendment
   alone establishes no passing gate, model quality or hosted readiness.
+
+- [ ] T133 Retain the five actual `eb15b39` native legacy startup failures and
+  correct the shared readiness probe cleanup/observation gap: independently
+  retain each same-iteration response status and cancel its body even when the
+  sibling probe fails. Preserve the original401/2xx predicate,2-second probes,
+  90-second readiness window and outer/model clocks. Publish only fixed transport
+  classes, counts and passive startup booleans. Verify sibling-timeout response
+  retirement, expired-budget denial and privacy, then exact committed full catalog,
+  CI and owned cleanup. The response cleanup defect is demonstrated; its causal
+  contribution to the original startup failures remains unproved.

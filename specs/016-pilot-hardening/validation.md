@@ -7122,3 +7122,32 @@ the300-minute CI job ceiling and complete inventory remain unchanged. Fixed
 suite start/completion elapsed/remaining-budget metadata makes future timing
 auditable without private output. Fresh exact-source full catalog/CI, artifact
 and cleanup verification remains required. The original failure remains failed.
+
+### 2026-10-22: retained native startup failures and readiness cleanup correction
+
+The `eb15b39` legacy workflow39711426688 completed with2 successful and5 failed
+jobs. All five full failed logs were downloaded and independently reviewed. Each
+failed development startup readiness at approximately90,002–90,003ms, before its
+feature assertions. The supervisor had no recorded exit; known startup error
+categories were empty. Both endpoint status fields were null, but the previous
+`Promise.all` assigned neither status when either request rejected. Consequently
+those fields do not establish that both endpoints failed or identify a compiler,
+network or database cause. The main CI workflow remains in progress with separate
+failures; no full-CI pass is claimed.
+
+T133 corrects a demonstrated response cleanup gap: each readiness request now
+records its own fixed outcome and requests body cancellation independently of its
+sibling. The original401/2xx same-iteration predicate,2-second request limit,
+90-second readiness window and all outer/model clocks remain. Failure diagnostics
+add only fixed transport classes, probe count and passive Next/compiler/Eve startup
+booleans; no extra requests, arbitrary log excerpts or credentials. Two real
+loopback tests pass for sibling timeout/response retirement and expired-window
+non-dispatch. Independent review strengthened the retirement check to require
+closure while the actual auth request signal remains un-aborted, before the
+sibling settles. Deliberately omitting body cancellation makes that regression
+fail; the reviewed implementation was restored and rechecked. Both new case IDs
+are registered in G01. The catalog adds these2 cases to the previous1,022 (1,024 across186
+suites). The still-running frozen `eb15b39` catalog retains its original1,022/185
+scope; it cannot validate this uncommitted correction. Fresh committed complete
+validation and actual CI remain required. No claim is made that this correction
+resolves the observed startup failures.

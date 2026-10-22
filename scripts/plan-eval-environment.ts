@@ -13,6 +13,7 @@ import { Client } from "pg";
 import { closeRuntimePool } from "../lib/server/db/client";
 import { requireEvaluationSourceDatabase } from "./eval-source-database";
 import { ownedEvalTimeout } from "./eval-deadline";
+import {probePlanReadiness} from './plan-readiness-probe';
 import { copyOwnedEvalFiles } from "./eval-owned-copy";
 
 export type PlanEvalEnvironment = {
@@ -325,17 +326,18 @@ export async function withPlanEvalEnvironment<T>(
       child.stderr?.on("data",capture);
       const readinessStarted=Date.now();
       let lastAuthStatus:number|null=null,lastEveStatus:number|null=null;
+      let authTransport='none',eveTransport='none',probeCount=0;
       const readinessDeadline = Date.now()+remaining(90_000);
       while (Date.now()<readinessDeadline) {
         if (child.exitCode !== null || productionEve&&productionEve.exitCode!==null) break;
         try {
           const [auth,eve] = await Promise.all([
-            fetch(`${origin}/api/auth/session`,{signal:AbortSignal.timeout(ownedEvalTimeout(readinessDeadline,2_000))}),
-            fetch(`${origin}/eve/v1/health`,{signal:AbortSignal.timeout(ownedEvalTimeout(readinessDeadline,2_000))}),
+            probePlanReadiness(origin,'/api/auth/session',readinessDeadline),
+            probePlanReadiness(origin,'/eve/v1/health',readinessDeadline),
           ]);
           lastAuthStatus=auth.status;lastEveStatus=eve.status;
-          const ready = auth.status === 401 && eve.ok;
-          await Promise.all([auth.body?.cancel(),eve.body?.cancel()]);
+          probeCount++;authTransport=auth.transport;eveTransport=eve.transport;
+          const ready = auth.status === 401 && eve.status!==null && eve.status>=200 && eve.status<300;
           if (ready) { remaining();return; }
         } catch { /* App is still starting. */ }
         if (Date.now()<readinessDeadline) await new Promise((done) => setTimeout(done,ownedEvalTimeout(readinessDeadline,500)));
@@ -351,7 +353,8 @@ export async function withPlanEvalEnvironment<T>(
         workerExitKinds.length?'worker_exit':null,
       ].filter(Boolean))];
       const diagnostic={kind:'owned_app_readiness_failure',mode:options.production?'production':'development',elapsedMs:Date.now()-readinessStarted,
-        nextExitCode:child.exitCode,nextExitSignal:child.signalCode,eveExitCode:productionEve?.exitCode??null,eveExitSignal:productionEve?.signalCode??null,lastAuthStatus,lastEveStatus,workerExitKinds,categories};
+        nextExitCode:child.exitCode,nextExitSignal:child.signalCode,eveExitCode:productionEve?.exitCode??null,eveExitSignal:productionEve?.signalCode??null,lastAuthStatus,lastEveStatus,authTransport,eveTransport,probeCount,
+        nextReadyTextObserved:/Ready in/i.test(startupTail),compilingTextObserved:/Compiling/i.test(startupTail),eveListeningTextObserved:/server listening at http:\/\/127\.0\.0\.1:\d{1,5}\//.test(startupTail),workerExitKinds,categories};
       await writeFile(resolve(`local-artifacts/${feature}/eval-startup-failure.json`),JSON.stringify(diagnostic),{mode:0o600});
       console.error(JSON.stringify(diagnostic));
       throw new Error("Disposable app failed readiness");

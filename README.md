@@ -1,3 +1,8 @@
+Pilot validation is still in progress. The latest CI run exposed five native
+startup-readiness failures before feature assertions. A readiness-probe response
+cleanup correction has two passing focused loopback checks; complete validation
+of that correction remains pending. See [016 validation](specs/016-pilot-hardening/validation.md).
+
 The profile/chat fixes released in [PR #45](https://github.com/mcteer/turas/pull/45)
 as `60f7a4c`. Customer selection is searchable across directory pages, Recent
 Conversations refreshes after creation/messages/navigation, and product projection
@@ -65,7 +70,7 @@ HTTP; the log does not establish an MCP assertion failure. The GitHub Actions
 batch allowance is now explicitly 120 minutes, while local catalogs retain
 90 minutes and every individual suite, application and model limit is unchanged.
 Fixed suite timings expose elapsed and remaining batch time without private
-payloads. All 1,022 cases remain required; fresh complete source-bound catalog,
+payloads. All original 1,022 cases remain required, with two new readiness-probe regressions; fresh complete source-bound catalog,
 CI, model-quality, recovery, hosted processing and automated participant
 acceptance remain release blockers.
 The latest recovery attempt retained complete journals and retired its test
@@ -131,7 +136,7 @@ authorization can now be verified without promoting the original Preview envelop
 The composed workspace/upload WebKit matrix passes40cases. The ae9b908 local
 catalog passes1009 cases across182 suites; its hosted regional check failed at
 canonical MCP denial reconciliation and its owned credentials/executor were closed.
-The current1022-case/185-suite catalog includes denial-preparation, startup transport,
+The current1024-case/186-suite catalog includes denial-preparation, startup transport,
 session import-boundary and fixed regression failure-phase checks. The partner absent-request
 journey also records eight approved browser steps on failure without changing its
 assertions or clocks. Catalog failures also retain fixed owned-cancellation and
