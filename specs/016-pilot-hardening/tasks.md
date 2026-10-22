@@ -631,3 +631,15 @@ No hosted target may be locked for release before its measured reopen path exist
   all14 host definitions and the renderer. Preserve packages, trust and every
   test/job/domain clock. Verify mirror-list input and actual APT selection, then
   require fresh-source complete validation; do not classify setup as a test pass.
+
+- [ ] T142 Preserve actual160c911 local failure (457 passes/two failures in
+  hosted-role reads). A cleanup proof timeout skipped pool closure/environment
+  restoration; cached pools could contaminate the following fixture. Always
+  attempt retirement/pool closure, restore parent state, retain original plus
+  cleanup errors and prohibit deletion without proof. Reset both cached pools
+  before attempting both closes. Consolidate redundant cwd/inode observations
+  into one recursive `+D -x f` observation with the same5-second/error contract.
+  Verify fault paths, actual cwd/hardlink selection and original role checks;
+  append four registered regressions, preserving all1,031 original cases. Require
+  fresh1,035-case/188-suite validation and all release gates; no timeout cause
+  or hosted acceptance is inferred.

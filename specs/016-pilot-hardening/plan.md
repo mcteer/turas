@@ -519,3 +519,18 @@ selecting Azure. Extend the existing exact replacement to this file when
 present, in addition to ordinary source files. Keep other mirrors/entries,
 packages, signing/TLS checks and all clocks unchanged; verify selected source
 URLs in actual fresh CI, not only the authored substitution command.
+
+
+## Fixture cleanup containment (T142)
+
+Retirement and pool closure must be attempted independently. Restore process
+environment even when retirement, absence proof or log writing fails; retain
+all errors, including an original domain error. Retain owned roots/containers
+without complete proof. Clear both cached pool references before attempting
+both closures so one failed close cannot preserve a stale database selection.
+
+One numeric recursive `lsof +D <root> -x f -Fp` observation covers file inodes
+and directory instances including cwd, crossing filesystems without following
+symlinks. Keep Linux root visibility, strict status/error/stderr checks and the
+shared5-second finite window. Direct tests cover cwd/hardlinks and empty final
+state; nested mounts are documented semantics, not an exercised claim.

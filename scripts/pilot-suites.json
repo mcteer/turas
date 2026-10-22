@@ -2153,6 +2153,16 @@
         "preserves a smaller artifact evaluation request",
         "imports the staged artifact evaluation agent with its request limiter"
       ]
+    },
+    {
+      "file": "tests/unit/pilot/environment-cleanup.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "closes pools and restores the parent after missing absence proof without deleting owned resources",
+        "retains domain retirement pool and log errors while still restoring the parent",
+        "removes verified owned resources only after pools close and the parent is restored",
+        "resets both cached pools and attempts both closes when the first close rejects"
+      ]
     }
   ],
   "ui": {

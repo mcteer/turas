@@ -12,6 +12,7 @@ import { Pool } from 'pg';
 import { copyOwnedEvalFiles } from './eval-owned-copy';
 import { reserveOwnedEvalPort } from './eval-port';
 import { closeRuntimePool } from '../lib/server/db/client';
+import {finishPilotEnvironment} from './pilot-environment-cleanup';
 
 export function requireOwnedPilotDatabase(env: NodeJS.ProcessEnv = process.env, owner = false) {
  const raw = env[owner ? 'DATABASE_URL_UNPOOLED' : 'DATABASE_URL'];
@@ -56,7 +57,7 @@ function rootProbeDiagnostic(probe:'cwd'|'open-files',result:ReturnType<typeof s
  return `probe=${probe} status=${result.status??'none'} signal=${result.signal??'none'} error=${error} stdoutBytes=${Buffer.byteLength(String(result.stdout??''))} stderrBytes=${Buffer.byteLength(stderr)} stderrClass=${warning}`;
 }
 async function requireUnusedPilotRoot(root:string,environment:NodeJS.ProcessEnv,deadline:number){
- const owned=await realpath(root),inside=(value:string)=>value===owned||value.startsWith(owned+'/'),until=Math.min(deadline,Date.now()+5000);
+ const owned=await realpath(root),until=Math.min(deadline,Date.now()+5000);
  // Linux's ordinary UID may not see other users' open descriptors. Require a
  // root-visible observation, with no weaker fallback if privilege is unavailable.
  const elevated=process.platform==='linux'&&process.geteuid?.()!==0;
@@ -65,14 +66,11 @@ async function requireUnusedPilotRoot(root:string,environment:NodeJS.ProcessEnv,
  // Shutdown hooks can start a short-lived detached vendor telemetry process.
  // Observe actual absence within one finite window; never remove an in-use root.
  for(;;){
-  if(Date.now()>=until)throw Error('Owned pilot root process absence unverified',{cause:{probe:'cwd',deadlineExpired:true}});
-  const timeout=Math.max(1,until-Date.now());
-  const cwd=probe(['-a','-d','cwd','-Fp','-Fn'],timeout);
-  const cwdOutput=String(cwd.stdout??''),cwdError=String(cwd.stderr??'');
-  const cwdInUse=cwdOutput.split('\n').some(line=>line.startsWith('n')&&inside(line.slice(1)));
-  if(cwd.error||cwd.status!==0||cwdError.trim())throw Error(`Owned pilot root process absence unverified: ${rootProbeDiagnostic('cwd',cwd)}`,{cause:{probe:'cwd',status:cwd.status,signal:cwd.signal,probeError:Boolean(cwd.error),stderrPresent:Boolean(cwdError.trim()),rootInUse:cwdInUse}});
-  if(cwdInUse){if(Date.now()>=until)throw Error('Owned pilot root process absence unverified',{cause:{probe:'cwd',rootInUse:true}});await new Promise(done=>setTimeout(done,Math.min(100,until-Date.now())));continue;}
-  const files=probe(['+D',owned,'-Fp'],Math.max(1,until-Date.now()));
+  if(Date.now()>=until)throw Error('Owned pilot root open-file absence unverified',{cause:{probe:'open-files',deadlineExpired:true}});
+  // +D selects directory instances (including cwd) and file device/inode pairs.
+  // Cross filesystems, preserving nested-mount coverage without following links.
+  // One observation avoids spending the same finite window on a redundant scan.
+  const files=probe(['+D',owned,'-x','f','-Fp'],Math.max(1,until-Date.now()));
   const fileOutput=String(files.stdout??''),fileError=String(files.stderr??'');
   if(files.error||![0,1].includes(files.status??-1)||fileError.trim()||(!fileOutput.trim()&&files.status!==1))throw Error(`Owned pilot root open-file absence unverified: ${rootProbeDiagnostic('open-files',files)}`,{cause:{probe:'open-files',status:files.status,signal:files.signal,probeError:Boolean(files.error),stdoutPresent:Boolean(fileOutput.trim()),stderrPresent:Boolean(fileError.trim())}});
   if(fileOutput.trim()){if(Date.now()>=until)throw Error('Owned pilot root open-file absence unverified',{cause:{probe:'open-files',rootInUse:true}});await new Promise(done=>setTimeout(done,Math.min(100,until-Date.now())));continue;}
@@ -115,6 +113,7 @@ export async function withPilotEnvironment<T>(run: (environment: PilotEnvironmen
  }
  let cancellationCause:'none'|'deadline'|'signal'='none';
  const interrupt=()=>{if(cancellationCause==='none')cancellationCause='signal';cancellation.abort(Error('Owned pilot check interrupted'));void stop().catch(()=>{/* Failed capabilities remain retained; finally awaits and rethrows retirement failure. */});};process.once('SIGINT',interrupt);process.once('SIGTERM',interrupt);const watchdog=setTimeout(()=>{if(cancellationCause==='none')cancellationCause='deadline';interrupt();},Math.max(1,deadline-Date.now()));
+ let runFailure:{error:unknown}|undefined;
  try {
   created=true;command('docker',['run','--detach','--name',container,'--label',`turas.016.owner=${token}`,'--publish','127.0.0.1::5432','--env',`POSTGRES_PASSWORD=${password}`,'--env',`POSTGRES_DB=${name}`,recoveryPostgresImage(options.postgresMajor??17),...(options.queryStatistics?['postgres','-c','shared_preload_libraries=pg_stat_statements','-c','pg_stat_statements.track=all','-c','pg_stat_statements.max=10000']:[])],safeEnv);created=true;
   const mapping=command('docker',['port',container,'5432/tcp'],safeEnv),match=/^127\.0\.0\.1:([1-9][0-9]{0,4})$/.exec(mapping);if(!match||Number(match[1])>65535)throw Error('Exact owned loopback database publication required');const port=match[1];
@@ -161,13 +160,23 @@ export async function withPilotEnvironment<T>(run: (environment: PilotEnvironmen
   const databaseReady=async()=>{const probe=new Pool({connectionString:ownerUrl,connectionTimeoutMillis:1000});try{for(;;){remaining();try{await probe.query("SELECT 1");return;}catch{await new Promise(r=>setTimeout(r,250));}}}finally{await probe.end();}};
   const databaseOwned=()=>{if(command('docker',['inspect','--format','{{index .Config.Labels "turas.016.owner"}}',container],safeEnv)!==token)throw Error('Owned database marker changed');};
   const result=await run({stopDatabase:async()=>{remaining();databaseOwned();await closeRuntimePool();command('docker',['stop','--time','5',container],safeEnv);},startDatabase:async()=>{remaining();databaseOwned();command('docker',['start',container],safeEnv);await databaseReady();},backupRestore:async()=>{remaining();if(child||worker)throw Error("Stop owned app before restore");await closeRuntimePool();command("docker",["exec",container,"pg_dump","--username=postgres","--dbname="+name,"--format=custom","--file=/tmp/pilot-owned.dump"],safeEnv);command("docker",["exec",container,"pg_restore","--username=postgres","--dbname="+name,"--clean","--if-exists","--exit-on-error","/tmp/pilot-owned.dump"],safeEnv);command("docker",["exec",container,"rm","/tmp/pilot-owned.dump"],safeEnv);},restartDatabase:async()=>{remaining();databaseOwned();await closeRuntimePool();command("docker",["restart",container],safeEnv);await databaseReady();},appRoot,storeRoot,workflowRoot,origin,databaseContainer:container,databaseOwnerLabel:token,appPid:()=>child?.pid??null,workerPid:()=>worker?.pid??null,databaseName:name,environmentId,signal:cancellation.signal,deadlineAt:deadline,cancellationCause:()=>cancellationCause,start:()=>start(),startNative:()=>start(false,false,true),startProduction:()=>start(false,true),startProductionNative:()=>start(false,true,true),startSupervisor:()=>start(true),crashWorker:async()=>{remaining();if(!worker)throw Error('Owned worker not running');const current=worker;current.kill('SIGKILL');if(current.exitCode===null)await new Promise<void>(done=>current.once('exit',()=>done()));await retireChild(current);if(worker===current)worker=undefined;},startWorker:async()=>{const epoch=stopEpoch;requireStartup(epoch);if(worker)throw Error('Owned pilot worker already started');worker=spawnOwned(['--import','tsx','scripts/maintenance-worker.ts'],{...process.env,...await qualityChildEnvironment()},epoch);const ready=new Pool({connectionString:ownerUrl,connectionTimeoutMillis:1000});try{const workerDeadline=Math.min(deadline,Date.now()+30000);for(;;){remaining();if(worker.exitCode!==null)throw Error('Owned pilot worker failed startup');const heartbeat=await ready.query("SELECT 1 FROM maintenance_workers WHERE environment_id=$1 AND last_seen_at>=clock_timestamp()-interval '15 seconds' LIMIT 1",[environmentId]);if(heartbeat.rowCount)break;if(Date.now()>=workerDeadline)throw Error('Owned pilot worker heartbeat unavailable');await new Promise(r=>setTimeout(r,100));}}finally{await ready.end();}},stop,upgradeToCurrent:async()=>{remaining();if(!future.length)throw Error('No owned prior-schema fixture');for(const file of future)await rename(join(appRoot,'future',file),join(appRoot,'migrations',file));future=[];await writeFile(manifestPath,full);script('scripts/db-migrate.ts');script('scripts/db-roles.ts');}});remaining();return result;
- } finally {
+ } catch(error) {runFailure={error};throw error;} finally {
   clearTimeout(watchdog);process.removeListener('SIGINT',interrupt);process.removeListener('SIGTERM',interrupt);
-  await portLease.release();await nativePortLease?.release();await stop();await requireUnusedPilotRoot(root,safeEnv,deadline);await closeRuntimePool();if(nativeLog)await writeFile(resolve('local-artifacts/016',`native-${token}.log`),nativeLog.replace(/(?:postgres(?:ql)?|https?):\/\/[^\s'"<>]+/g,'[redacted-url]'),{mode:0o600});if(appLog)await writeFile(resolve('local-artifacts/016',`runtime-${token}.log`),appLog.replace(/(?:postgres(?:ql)?|https?):\/\/[^\s'"<>]+/g,'[redacted-url]'),{mode:0o600});for(const key of Object.keys(process.env))delete process.env[key];Object.assign(process.env,previous);
-  if(created){const inspected=spawnSync('docker',['inspect','--format',`{{index .Config.Labels "turas.016.owner"}}`,container],{env:safeEnv,encoding:'utf8',timeout:30000});if(inspected.status===0){if(inspected.stdout.trim()!==token)throw Error('Owned pilot container marker changed; cleanup refused');command('docker',['rm','--force','--volumes',container],safeEnv);}else if(!/No such (?:object|container)/i.test(inspected.stderr??''))throw Error('Owned pilot resource cleanup could not be verified');}
-  await rm(root,{recursive:true,force:true,maxRetries:5,retryDelay:200});
-  if(await selectedHash()!==selectedBefore)throw Error('Selected configuration changed during pilot check');
-  if(await digest()!==agentDigest)throw Error('Root agent changed during pilot check');
-  if(JSON.stringify(await pilotProtectedSnapshot())!==JSON.stringify(protectedBefore))throw Error('Protected root state changed during pilot check');
+  await finishPilotEnvironment({runFailure,
+   retire:[()=>portLease.release(),async()=>{await nativePortLease?.release();},stop],
+   closePools:closeRuntimePool,
+   proveUnused:()=>requireUnusedPilotRoot(root,safeEnv,deadline),
+   saveLogs:[async()=>{if(nativeLog)await writeFile(resolve('local-artifacts/016',`native-${token}.log`),nativeLog.replace(/(?:postgres(?:ql)?|https?):\/\/[^\s'"<>]+/g,'[redacted-url]'),{mode:0o600});},async()=>{if(appLog)await writeFile(resolve('local-artifacts/016',`runtime-${token}.log`),appLog.replace(/(?:postgres(?:ql)?|https?):\/\/[^\s'"<>]+/g,'[redacted-url]'),{mode:0o600});}],
+   restoreParent:()=>{for(const key of Object.keys(process.env))delete process.env[key];Object.assign(process.env,previous);},
+   removeOwned:async()=>{
+    if(created){const inspected=spawnSync('docker',['inspect','--format',`{{index .Config.Labels "turas.016.owner"}}`,container],{env:safeEnv,encoding:'utf8',timeout:30000});if(inspected.status===0){if(inspected.stdout.trim()!==token)throw Error('Owned pilot container marker changed; cleanup refused');command('docker',['rm','--force','--volumes',container],safeEnv);}else if(!/No such (?:object|container)/i.test(inspected.stderr??''))throw Error('Owned pilot resource cleanup could not be verified');}
+    await rm(root,{recursive:true,force:true,maxRetries:5,retryDelay:200});
+   },
+   verifyProtected:async()=>{
+    if(await selectedHash()!==selectedBefore)throw Error('Selected configuration changed during pilot check');
+    if(await digest()!==agentDigest)throw Error('Root agent changed during pilot check');
+    if(JSON.stringify(await pilotProtectedSnapshot())!==JSON.stringify(protectedBefore))throw Error('Protected root state changed during pilot check');
+   },
+  });
  }
 }

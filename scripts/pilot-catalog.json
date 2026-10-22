@@ -132,7 +132,11 @@
         "unit.artifact-eval-output-limit.001",
         "unit.artifact-eval-output-limit.002",
         "unit.artifact-eval-output-limit.003",
-        "unit.artifact-eval-output-limit.004"
+        "unit.artifact-eval-output-limit.004",
+        "unit.environment-cleanup.001",
+        "unit.environment-cleanup.002",
+        "unit.environment-cleanup.003",
+        "unit.environment-cleanup.004"
       ]
     },
     {

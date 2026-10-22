@@ -7393,3 +7393,30 @@ workflows parse, docs and whitespace checks pass. The first YAML-check command
 used an unsupported host Ruby keyword and failed before parsing; rerunning the
 same parser without that keyword succeeds. This is narrow effective-source
 proof, not fresh full-source CI or hosted acceptance.
+
+
+## 2026-10-22: actual160c911 cleanup containment failure
+
+The local catalog exits1 after76 suites:457 pass/two fail;111 suites/572 cases
+remain unexecuted. In hosted-role reads, a cwd observation times out within the
+unchanged5-second window. The next changed-release case fails at login before
+its intended release predicate. The historical timeout cause and exact stale
+pool identity were not recorded. Source review demonstrates the containment
+defect: probe failure skips cached pool closure and environment restoration,
+so later login handlers can use the previous fixture database.
+
+The correction always attempts retirement and pool closure, restores parent
+state, preserves original/cleanup errors and blocks unproven deletion. Both
+pool references reset before attempting both closes. Four new fault-path
+regressions pass; a selected negative against the actual old pool implementation
+fails because the runtime pool's close is skipped after fence-pool rejection.
+All original hosted-role read cases pass in the focused working-tree run.
+
+Direct installed-lsof observations verify cwd and outside hardlink selection
+by one numeric recursive snapshot, both separately and together, followed by
+empty state. The redundant global cwd scan is removed; `-x f` retains documented
+filesystem crossover without symlink following. Actual mount behavior is not
+claimed. The total5-second window, strict output/error/status checks, Linux
+visibility and all domain clocks remain unchanged. Pilot types pass. The four
+new cases append to the unchanged original catalog:1,035 cases/188 suites.
+Fresh committed full/CI/model/hosted/Production acceptance remains pending.

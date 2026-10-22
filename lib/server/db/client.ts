@@ -70,14 +70,11 @@ export async function withTransaction<T>(run: (client: PoolClient) => Promise<T>
 }
 
 export async function closeRuntimePool(): Promise<void> {
-  if (operationalFencePool) {
-    const pool = operationalFencePool;
-    operationalFencePool = undefined;
-    await pool.end();
-  }
-  if (runtimePool) {
-    const pool = runtimePool;
-    runtimePool = undefined;
-    await pool.end();
-  }
+  const pools = [operationalFencePool, runtimePool].filter((pool): pool is Pool => pool !== undefined);
+  operationalFencePool = undefined;
+  runtimePool = undefined;
+  const results = await Promise.allSettled(pools.map(async pool => pool.end()));
+  const failures = results.flatMap(result => result.status === 'rejected' ? [result.reason] : []);
+  if (failures.length === 1) throw failures[0];
+  if (failures.length) throw new AggregateError(failures, 'Database pool closure failed');
 }

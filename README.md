@@ -1,12 +1,13 @@
-Pilot validation is still in progress. The `89121d6` local catalog remains
-active. Two CI jobs were cancelled during dependency installation: the runner
-selects mirrors through `/etc/apt/apt-mirrors.txt`, which the earlier mirror
-replacement omitted. The same exact primary-HTTPS substitution now covers that
-file as well, preserving packages, trust and all deadlines. The numeric-only
-cleanup probe change preserves recursive inode selection and strict absence
-proof. Original failures remain recorded. Fresh complete catalog/CI, model,
-hosted recovery and Production release remain pending. Production remains on
-`f8d196f`, schema077. See [016 validation](specs/016-pilot-hardening/validation.md).
+Pilot validation is still in progress. The `160c911` local catalog ended with
+457 passes and two failures after a cleanup-proof timeout exposed skipped pool
+closure and environment restoration. Cleanup now restores parent state on every
+path and retains errors/resources when absence is unverified; four fault-path
+regressions and the original role checks pass locally. Recursive root-use
+verification retains the same5-second strict proof. The APT mirror-list fix is
+verified on both affected CI jobs and all seven legacy CI jobs pass. Fresh
+complete1,035-case/188-suite catalog, CI, model, hosted recovery and Production
+release remain pending. Production remains `f8d196f`, schema077. See
+[016 validation](specs/016-pilot-hardening/validation.md).
 
 The profile/chat fixes released in [PR #45](https://github.com/mcteer/turas/pull/45)
 as `60f7a4c`. Customer selection is searchable across directory pages, Recent
