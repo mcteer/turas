@@ -140,7 +140,7 @@ authorization can now be verified without promoting the original Preview envelop
 The composed workspace/upload WebKit matrix passes40cases. The ae9b908 local
 catalog passes1009 cases across182 suites; its hosted regional check failed at
 canonical MCP denial reconciliation and its owned credentials/executor were closed.
-The current1027-case/186-suite catalog includes denial-preparation, startup transport,
+The current1031-case/187-suite catalog includes denial-preparation, startup transport,
 session import-boundary and fixed regression failure-phase checks. The partner absent-request
 journey also records eight approved browser steps on failure without changing its
 assertions or clocks. Catalog failures also retain fixed owned-cancellation and
@@ -356,6 +356,11 @@ disabled. See [learning operations](docs/learning-operations.md), the
 [handoff](specs/014-governed-adaptive-learning/handoff.md) for current local, actual-model, CI and hosted validation status.
 
 ### Pilot Hardening and Launch Readiness
+
+The artifact evaluation fixture enforces its intended1,000-token request maximum,
+including when its caller supplies a larger setting. Its1,200-token observed-output
+acceptance limit remains unchanged. The previous actual-model failure and current
+validation status are retained in the validation record below.
 
 Feature 016 has a [specification](specs/016-pilot-hardening/spec.md),
 [implementation plan](specs/016-pilot-hardening/plan.md) and

@@ -448,3 +448,16 @@ the existing401 readiness predicate and every original clock. Verify the old-cod
 negative regression, authenticated/revocation integration boundaries and fresh
 full committed-source catalog/CI. All original cases remain required; the two
 new regressions join the existing boundary suite (1,027 cases/186 suites).
+
+## Enforced artifact evaluation request limit (T136)
+
+The e83034f actual-model batch completed stages002/003, then failed stage004
+when one step reported1,205 output tokens against its unchanged1,200-token
+acceptance ceiling. Its evaluation fixture used a1,000-token SDK default, which
+defined caller parameters can override. Enforce that intended request maximum
+with a parameter transform that preserves a smaller caller limit and every other
+parameter. This fixes request enforcement; absent captured request parameters,
+it does not establish which limit the failed provider request received or promise
+provider compliance. Preserve the failed capture, charges, selected model, all
+cases and existing clocks. Three transport regressions and a staged-agent import check join the complete catalog
+(1,031 cases/187 suites). Fresh source-bound validation remains required.

@@ -7230,3 +7230,39 @@ across186 suites, with every original case retained. Fresh committed-source
 full catalog, CI, authenticated boundaries and hosted acceptance remain pending.
 The separately running frozen7031cdc full catalog is evidence for that earlier
 source only; it cannot certify this follow-up.
+
+### Current e83034f verification and artifact evaluation request cap
+
+The complete e83034f local catalog passed all1,027 named cases across186 suites,
+with all indexed result/process hashes and owned cleanup independently verified.
+Main PR CI39723559333 passed all50 jobs, including its complete retained catalog;
+legacy CI39723559465 passed all seven jobs. This is PR evidence, not the required
+post-merge main-push import or Production acceptance.
+
+The actual all-stage model run subsequently ended1 during stage004. Stages002
+and003 completed and a separately configured independent model reviewed all12
+case/runs in each against their original rubrics and retained tool/source evidence.
+The original stage002 verifier also passed12/12. These partial results do not
+establish the complete model gate. Stage004 retained six results/seven model
+steps before `partner-reviewed-excerpt` reported1,205 output tokens, exceeding
+the unchanged1,200 maximum. Its outer deadline did not fire. All67 new dispatches
+settled; cumulative accounting retains4,894,021 microdollars of known charges and
+the original16,000,000 unknown hold. No new uncertain call is inferred or erased.
+
+The fixture's intended1,000-token default did not enforce a maximum: the installed
+SDK forwards an explicit8,192-token caller setting unchanged. The new transport
+regression fails on that original behavior (one failure/two passes). A middleware
+transform now clamps requests to at most1,000 tokens while preserving smaller
+limits, prompt, temperature and cancellation; all three regressions pass. The
+original1,200-token observed-output assertion and selected model are unchanged.
+The failed request parameters were not captured, so this demonstrates an
+enforcement defect without proving the failed request's actual requested limit.
+Fresh complete source-bound catalog/CI and applicable actual-model/hosted
+verification remain required; Production is unchanged.
+
+Independent review caught the isolated fixture's relocation: its limiter must
+also be staged beside the copied agent. The environment now uses one staging
+function for both files. A fourth regression imports the actual staged agent
+through the installed runtime without provider credentials; all four focused
+checks pass. All four cases are registered in G01 and the complete1,031-case/
+187-suite inventory. This does not replace the fresh complete validation gates.

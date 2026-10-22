@@ -2143,6 +2143,16 @@
         "retains and retires the completed response when the sibling readiness probe times out",
         "requires both original same-iteration statuses and cannot admit an expired readiness probe"
       ]
+    },
+    {
+      "file": "tests/unit/pilot/artifact-eval-output-limit.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "caps an explicit larger artifact evaluation request",
+        "bounds an artifact evaluation request without a limit",
+        "preserves a smaller artifact evaluation request",
+        "imports the staged artifact evaluation agent with its request limiter"
+      ]
     }
   ],
   "ui": {

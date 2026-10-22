@@ -567,3 +567,14 @@ No hosted target may be locked for release before its measured reopen path exist
   predicate and all original clocks. Verify the old-code negative regression and
   authenticated/revocation boundaries, then fresh exact-source full catalog/CI
   and owned cleanup. Do not claim this explains every startup or browser failure.
+
+- [ ] T136 Preserve the actual e83034f partial-model failure: stages002/003
+  captured and independently reviewed, stage004 reports1,205 output tokens against
+  the original1,200 ceiling. Enforce the fixture's intended1,000-token request cap
+  instead of an overridable SDK default. Verify old-code override failure, absent
+  and smaller limits, and unchanged prompt/temperature/cancellation forwarding.
+  Preserve selected model, observed-output assertion, all cases/clocks, charges
+  and unknown holds. Include the three transport regressions and staged-agent import check in the complete catalog, obtain
+  fresh source-bound checks and actual applicable model/hosted acceptance per
+  FR-016/FR-017; do not claim the historical request limit or guaranteed provider
+  compliance without actual evidence.

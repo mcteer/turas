@@ -29,6 +29,11 @@ async function stop(child: ChildProcess | null): Promise<void> {
   });
 }
 
+export async function stageArtifactEvalAgent(app:string):Promise<void>{
+  await cp(resolve('scripts/fixtures/artifact-eval-agent.ts'),join(app,'agent/agent.ts'));
+  await cp(resolve('scripts/fixtures/artifact-eval-output-limit.ts'),join(app,'agent/artifact-eval-output-limit.ts'));
+}
+
 /** Clone only synthetic test state and run Eve with private workflow data. */
 export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Promise<T> {
   const testUrl = new URL(requireEvaluationSourceDatabase());
@@ -83,7 +88,7 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
       "next.config.ts","next-env.d.ts","tsconfig.json","package.json"]) {
       copyOwnedEvalFiles(resolve(name),join(app,name),{excludeRuntime:true});
     }
-    await cp(resolve("scripts/fixtures/artifact-eval-agent.ts"),join(app,"agent/agent.ts"));
+    await stageArtifactEvalAgent(app);
     await symlink(resolve("node_modules"),join(app,"node_modules"));
     await symlink(resolve("packages/artifact-extractor/node_modules"),join(app,"packages/artifact-extractor/node_modules"));
     await configureOwnedNextDependencyRoot(app);
