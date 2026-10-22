@@ -235,8 +235,12 @@ export async function reserveWorkRecoveryProbe(db:Client,target:LockedWorkRecove
   }else if(bindings.get(target)!.preparedDenials){
    await prepareWorkRecoveryDecisionDenials(db,target,retained);
   }else await reconcileAuthenticatedWorkCredentialDenialsInTransaction(db,retained,{environmentId:target.environmentId,recoveryId:target.recoveryId,controlRevision:target.controlRevision,snapshotDigest:retained.contextDigest,backupCapturedAt:retained.backupCapturedAt});
-  const now=(await db.query('SELECT clock_timestamp() AS now')).rows[0].now as Date,expiry=Date.parse(scope.expiresAt);
-  if(expiry<=now.getTime()||expiry>now.getTime()+59000||expiry>target.deadline)throw Error('Finite fresh work MCP probe lifetime required');
+  const now=(await db.query('SELECT clock_timestamp() AS now')).rows[0].now as Date,hostNow=Date.now(),requestedExpiry=Date.parse(scope.expiresAt);
+  if(requestedExpiry<=hostNow||requestedExpiry>hostNow+59000||requestedExpiry>target.deadline)throw Error('Finite fresh work MCP probe lifetime required');
+  // Different host/database clocks may only shorten the requested lifetime.
+  // Neither clock nor the original target can admit a longer credential.
+  const expiry=Math.min(requestedExpiry,now.getTime()+59000);
+  if(expiry<=Math.max(hostNow,now.getTime())||expiry>now.getTime()+59000||expiry>target.deadline)throw Error('Finite fresh work MCP probe lifetime required');
   Object.freeze(scope.categories);Object.freeze(scope.customerIds);const credential=newMcpCredential();mcp=Object.freeze({...scope,expiresAt:new Date(expiry).toISOString(),connectionId:credential.id,credential:credential.credential,scopeDigest:mcpCredentialScopeDigest(scope.categories,scope.customerIds),createdAt:now.toISOString(),denialDigest:retained.contextDigest});
  }
  const rows=(await db.query(`SELECT m.id,m.principal_id FROM memberships m JOIN principals p ON p.id=m.principal_id JOIN workspaces w ON w.id=m.workspace_id

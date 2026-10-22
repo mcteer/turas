@@ -362,6 +362,10 @@ including when its caller supplies a larger setting. Its1,200-token observed-out
 acceptance limit remains unchanged. The previous actual-model failure and current
 validation status are retained in the validation record below.
 
+Recovery MCP probes keep the caller's original deadline and a maximum59-second
+lifetime on both the app and database clocks. Clock differences can only shorten
+the issued credential. Fresh complete validation remains pending.
+
 Feature 016 has a [specification](specs/016-pilot-hardening/spec.md),
 [implementation plan](specs/016-pilot-hardening/plan.md) and
 [tracked tasks](specs/016-pilot-hardening/tasks.md) for a controlled internal and

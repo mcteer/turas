@@ -461,3 +461,25 @@ it does not establish which limit the failed provider request received or promis
 provider compliance. Preserve the failed capture, charges, selected model, all
 cases and existing clocks. Three transport regressions and a staged-agent import check join the complete catalog
 (1,031 cases/187 suites). Fresh source-bound validation remains required.
+
+## Clock-bounded recovery probes (T137)
+
+The19f7e5b catalog exited1 after906 passes and two probe-lifetime failures.
+The historical error combines three expiry checks, so its exact clock delta is
+unproven. A deterministic existing-case regression with the app clock1000ms
+ahead fails against old code at the database59-second upper bound. Validate the
+requested expiry against the unchanged app/target limits, then shorten it to
+`min(requestedExpiry, databaseNow + 59000)`. Require the issued expiry to remain
+future on both clocks. Never extend the request, target or any credential limit.
+The original two issuances and all1,031 cases/187 suites remain required.
+
+## Bounded CI package transport (T138)
+
+Actual19f7e5b host dependency installs stalled before tests, including a cancelled
+native-staged-4 job after roughly90 minutes. Install `infra/ci/apt.conf` into the
+ephemeral runner before Node/dependency setup:30-second HTTP/HTTPS connection/data
+inactivity and one failed-file retry. Existing package sources, authentication,
+test commands and all deadlines remain unchanged. Continuing slow transfers can
+still exceed30 seconds overall; unavailable dependencies fail normally. Renderer
+Docker image preparation uses an independent filesystem and retains its original
+20-minute bound and failed attempt. Fresh complete source CI remains required.

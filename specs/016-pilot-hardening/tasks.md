@@ -578,3 +578,24 @@ No hosted target may be locked for release before its measured reopen path exist
   fresh source-bound checks and actual applicable model/hosted acceptance per
   FR-016/FR-017; do not claim the historical request limit or guaranteed provider
   compliance without actual evidence.
+
+- [ ] T137 Preserve the actual19f7e5b full-catalog failure (906 passes, two
+  recovery MCP probe-lifetime failures;30 suites/123 cases unexecuted). Verify the
+  demonstrated mixed-clock enforcement defect with a deterministic+1000ms host
+  skew regression against old code. Validate the requested host/target bounds,
+  shorten actual expiry to the database's unchanged59-second bound, and require
+  it to remain future on both clocks. Preserve original issuance counts, scopes,
+  cases, all clocks and historical failures. Recheck the diagnostic report-binding
+  failure with the full catalog's explicit prepared renderer, then require fresh
+  committed-source complete catalog/CI, qualified cleanup and hosted acceptance
+  per FR-006/FR-007/FR-019. Do not invent the historical failed request's clock delta.
+
+- [ ] T138 Preserve the actual19f7e5b CI preparation interruptions, including
+  the legacy native-staged-4 cancellation after package index retrieval stalled.
+  Bound ephemeral runner APT HTTP/HTTPS connection/data inactivity to30 seconds
+  and failed-file retry count to1 before dependency installation. Preserve mirrors,
+  signatures/TLS validation, complete test commands and every job/domain deadline.
+  Verify syntax/effective configuration and fresh source CI; unavailable packages
+  must fail setup. These are inactivity limits, not a total install deadline.
+  Host settings do not alter the separately retained20-minute renderer Docker
+  timeout or establish its correction (FR-016/FR-021; T092).

@@ -7266,3 +7266,38 @@ function for both files. A fourth regression imports the actual staged agent
 through the installed runtime without provider credentials; all four focused
 checks pass. All four cases are registered in G01 and the complete1,031-case/
 187-suite inventory. This does not replace the fresh complete validation gates.
+
+## 2026-10-22: retained19f7e5b catalog and bounded-clock regression
+
+The full local run45799ced-67a2-4a46-8f4c-e5d930018467 exited1 after
+157 suite results:906 passes and two failures in work-recovery-decision.
+Thirty suites/123 cases were not executed. Both failures reported the finite MCP
+probe-lifetime guard before credential creation. Owned roots/processes and the
+exact outer container were absent afterward; the three original016 containers
+remain. Four unrelated global baseline containers were absent without established
+cause; no all12-container preservation claim is made. Production is unchanged.
+
+The exact two cases passed in isolation. A25-case instrumented diagnostic had
+24 passes and one separate report-render binding failure; it omitted the full
+catalog's explicit prepared renderer. A three-case clock-order diagnostic passed
+all three selected cases. Neither diagnostic completes the catalog.
+
+The new deterministic existing-case regression sets the app clock1000ms ahead.
+Old code failed that one selected case (24 unselected cases), with direct numeric
+proof: requested expiry59993ms after database time; only the database59-second
+upper-bound predicate was true. The original failed full run's exact delta remains
+unproven. The issuer now validates requested app/target bounds and can only
+shorten expiry to the database limit, requiring future expiry on both clocks.
+Original two issuances, scopes, cases and clocks are unchanged. Independent review
+found no blocker in the two-file implementation/regression. Root and pilot type
+checks pass. The complete25-case recovery-decision suite then passed with actual parent exit0, zero failures/skips and the full catalog's explicit prepared renderer. This does not complete the1,031-case catalog. The renderer-bound focused check passed all three selected cases (22 unselected), including the report-recipient case, the1479-selection traversal and the skew regression. Fresh complete source validation,
+actual model/hosted checks and Production release remain pending.
+
+The original19f7e5b legacy workflow39787731942 ended cancelled after six
+successful jobs; native-staged-4 stalled in Playwright dependency installation
+after package index reads, without executing its tests. The main workflow also
+retains its renderer build timeout and file-corrections dependency cancellation.
+These original outcomes are not successful CI. The new recovery fix supersedes
+the planned old-source diagnostic reruns; fresh-source CI is required. Ephemeral
+runner APT transport limits are authored under T138; both workflows parse and place setup before Node in13 main jobs/one legacy matrix job. Actual network-disabled read-only `apt-config` checks exit0 with all three effective values and owned container absence. The local amd64 image on an arm64 host emits a Docker platform warning; no silent-check claim is made. Actual fresh CI acceptance remains pending. No mirror/signature/test/deadline change
+or renderer Docker timeout correction is claimed.

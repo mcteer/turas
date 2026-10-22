@@ -1201,10 +1201,16 @@ it('prepares canonical decision denials once while rejecting copied authority an
     try{const deadline=Math.min(target.deadline,Date.now()+59000);await expect(issueWorkRecoveryMcpProbe(db,target,{...input.scope,workspaceId:DEMO_IDS.workspace,username:'mcteer',password:process.env.TURAS_DEMO_PASSWORD!,deadline,mcp:{categories:['knowledge'],customerIds:[],expiresAt:new Date(deadline).toISOString(),retained}},dirname(input.sourceFile))).rejects.toThrow('Recovery denial preparation excludes probe issuance');}finally{release();}
     await preparation;
     await prepareWorkRecoveryDecisionDenials(db,target,retained);
-    for(let n=0;n<2;n++){
+    const realNow=Date.now.bind(Date),aheadClock=vi.spyOn(Date,'now').mockImplementation(()=>realNow()+1000);
+    try{for(let n=0;n<2;n++){
      const deadline=Math.min(target.deadline,Date.now()+59000),issued=await issueWorkRecoveryMcpProbe(db,target,{...input.scope,workspaceId:DEMO_IDS.workspace,username:'mcteer',password:process.env.TURAS_DEMO_PASSWORD!,deadline,mcp:{categories:['knowledge'],customerIds:[],expiresAt:new Date(deadline).toISOString(),retained}},dirname(input.sourceFile));
+     const expiry=Date.parse(issued.probe.mcp!.expiresAt);
+     expect(expiry-Date.parse(issued.probe.mcp!.createdAt)).toBeLessThanOrEqual(59000);
+     expect(expiry).toBeLessThan(deadline);
+     expect(expiry).toBeLessThanOrEqual(target.deadline);
+     expect(expiry).toBeGreaterThan(Date.now());
      await retireRegisteredWorkMcpProbe(db,target,issued.probe);
-    }
+    }}finally{aheadClock.mockRestore();}
     expect(reconcile).toHaveBeenCalledTimes(1);
     await expect(prepareWorkRecoveryDecisionDenials(db,target,{...retained})).rejects.toThrow('Actual independently retained current denials required');
     const actualNow=Date.now.bind(Date),clock=vi.spyOn(Date,'now').mockImplementation(()=>actualNow()+245000);
