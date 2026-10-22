@@ -483,3 +483,19 @@ test commands and all deadlines remain unchanged. Continuing slow transfers can
 still exceed30 seconds overall; unavailable dependencies fail normally. Renderer
 Docker image preparation uses an independent filesystem and retains its original
 20-minute bound and failed attempt. Fresh complete source CI remains required.
+
+
+## Slow continuing CI package transfers (T139)
+
+Actual6bd04d0 file-preferences WebKit dependency installation was cancelled at
+its original job boundary while Azure mirror transfers continued slowly. The
+30-second inactivity bound cannot bound a transfer that keeps making progress.
+Reuse the repository's existing exact Azure URL replacement with Ubuntu's primary
+HTTPS archive in all14 host setup definitions. Apply the same selection and
+`infra/ci/apt.conf` inside the pinned renderer image: host configuration cannot
+configure Docker's filesystem. Preserve suites, components, signing keys, package
+list and every operation/job/test deadline; unavailable packages still fail.
+The isolated image producer copies only static `infra/ci` source alongside its
+existing allowlist. Keep original CI interruptions and the unrelated candidate
+checkbox failure separate. A full88-case local WebKit pass is additional local
+proof, not a diagnosis or replacement for fresh CI and hosted acceptance.

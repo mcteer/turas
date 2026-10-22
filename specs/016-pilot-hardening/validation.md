@@ -7301,3 +7301,37 @@ These original outcomes are not successful CI. The new recovery fix supersedes
 the planned old-source diagnostic reruns; fresh-source CI is required. Ephemeral
 runner APT transport limits are authored under T138; both workflows parse and place setup before Node in13 main jobs/one legacy matrix job. Actual network-disabled read-only `apt-config` checks exit0 with all three effective values and owned container absence. The local amd64 image on an arm64 host emits a Docker platform warning; no silent-check claim is made. Actual fresh CI acceptance remains pending. No mirror/signature/test/deadline change
 or renderer Docker timeout correction is claimed.
+
+
+## 2026-10-22: actual6bd04d0 browser and package-transport follow-up
+
+Main CI39804972198 remains unfinished and is not accepted. Product Gaps WebKit
+job119916072458 failed at candidate checkbox selection in the first merge case,
+before any canonicalization mutation. Eligible server projections/200 responses
+and two navigation observations do not establish the cause. The original full
+local `gaps:ui:check` producer subsequently exits0:22 cases in each of four
+WebKit profiles,88 total, zero failures/skips/retries. Independent review finds no
+established product defect and preserves the original failed attempt; it does
+not claim CI transience or authorize an assertion waiver.
+
+Legacy file-preferences job119916072475 was cancelled during dependency setup,
+before browser tests. Actual logs show continued slow Azure mirror downloads,
+including the13.6MB `libflite1` package before the original25-minute cancellation.
+Inactivity timeouts therefore do not solve this demonstrated throughput problem.
+T139 extends the repository's existing primary HTTPS Ubuntu mirror selection to
+all14 host definitions and the pinned renderer image, preserving packages,
+signing keys and all clocks. Current6bd04d0 frozen catalog continues unchanged;
+the new committed source will require its own complete gates. Current operator
+package preparation and independent36-file provenance review are local only:
+no deployment or scheduled capture. Production remainsf8d196f/schema077.
+
+
+T139 working-tree verification: both workflows parse with13 main/one legacy
+configured job definitions. Pilot type checking, documentation and whitespace
+checks exit0. The actual amd64 renderer build exits0 after fetching96.5MB from
+the primary HTTPS archive in5seconds (20.9MB/s in this local observation).
+The independently run, network-disabled/read-only container check confirms all
+three effective APT settings30/30/1, the old Azure URL absent, primary HTTPS URL
+present and exact owned-container absence. Independent diff review finds no
+blocker. These checks do not establish fresh committed catalog/CI or hosted
+behavior; original interruptions remain preserved.

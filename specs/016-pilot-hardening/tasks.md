@@ -599,3 +599,16 @@ No hosted target may be locked for release before its measured reopen path exist
   must fail setup. These are inactivity limits, not a total install deadline.
   Host settings do not alter the separately retained20-minute renderer Docker
   timeout or establish its correction (FR-016/FR-021; T092).
+
+
+- [ ] T139 Preserve the actual6bd04d0 Product Gaps WebKit candidate-selection
+  failure and legacy file-preferences setup cancellation. The unchanged complete
+  local WebKit producer passes88 cases; it does not establish CI transience.
+  Correct demonstrated slow Azure package transport by extending the existing
+  primary HTTPS Ubuntu mirror selection to all14 ephemeral host setup definitions
+  and the pinned renderer image before APT. Retain suites, components, signing
+  keys, packages, complete tests and all deadlines. Include only the static
+  `infra/ci` configuration in owned image build contexts. Verify effective host
+  and image setup, fresh exact-source catalog/CI and all applicable release gates
+  per FR-016/FR-021/T092; preserve original failures without attribution to an
+  unproven application cause.

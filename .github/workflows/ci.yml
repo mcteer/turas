@@ -33,7 +33,13 @@ jobs:
         with:
           fetch-depth: ${{ matrix.gate == 'recovery' && '0' || '1' }}
       - name: Bound package repository connection and data waits
-        run: sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -102,7 +108,13 @@ jobs:
         with:
           fetch-depth: ${{ matrix.gate == 'recovery' && '0' || '1' }}
       - name: Bound package repository connection and data waits
-        run: sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -186,7 +198,13 @@ jobs:
         with:
           fetch-depth: ${{ matrix.gate == 'regressions' && '0' || '1' }}
       - name: Bound package repository connection and data waits
-        run: sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -285,7 +303,13 @@ jobs:
         with:
           fetch-depth: 1
       - name: Bound package repository connection and data waits
-        run: sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -346,7 +370,13 @@ jobs:
         run: test "$EXPANSION_PROJECT_JOBS_RESULT" = success
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Bound package repository connection and data waits
-        run: sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -395,7 +425,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Bound package repository connection and data waits
-        run: sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -466,7 +502,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Bound package repository connection and data waits
-        run: sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -522,7 +564,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Bound package repository connection and data waits
-        run: sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -607,13 +655,6 @@ jobs:
         run: .specify/scripts/bash/check-prerequisites.sh --json --require-spec --require-tasks
       - name: Install WebKit
         run: |
-          # The Azure package mirror stalled at roughly 50 KB/s in review CI.
-          # Keep Ubuntu's suites and signing keys; use its primary HTTPS archive.
-          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
-            if [ -f "$apt_source" ]; then
-              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
-            fi
-          done
           npx playwright install --with-deps webkit
       - name: Exercise the local UI in WebKit
         env:
@@ -662,7 +703,13 @@ jobs:
         with:
           fetch-depth: ${{ matrix.gate == 'deterministic' && '0' || '1' }}
       - name: Bound package repository connection and data waits
-        run: sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -779,7 +826,13 @@ jobs:
         with:
           fetch-depth: ${{ matrix.gate == 'recovery' && '0' || '1' }}
       - name: Bound package repository connection and data waits
-        run: sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -840,7 +893,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Bound package repository connection and data waits
-        run: sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -910,7 +969,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Bound package repository connection and data waits
-        run: sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -946,7 +1011,13 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Bound package repository connection and data waits
-        run: sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version

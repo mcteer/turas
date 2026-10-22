@@ -1,11 +1,12 @@
-Pilot validation is still in progress. The latest pushed CI finished with43
-successful and seven failed jobs; its pilot catalog passed721 cases, including
-all five restore cases, before an unauthenticated readiness failure after auth
-handler entry. A narrow ordinary no-cookie rejection now avoids unnecessary
-SQL admission work; cookie-bearing and special-purpose authentication retain
-all existing checks. Focused checks pass; current-source complete and hosted
-acceptance remain pending. See
-[016 validation](specs/016-pilot-hardening/validation.md).
+Pilot validation is still in progress. The `6bd04d0` local catalog is running;
+its separate full WebKit check passed all88 cases. Current CI retains a Product
+Gaps candidate-checkbox failure and a legacy WebKit dependency-installation
+cancellation; neither is waived. Slow continuing downloads from Ubuntu's Azure
+mirror outlasted the new inactivity limits. CI and renderer preparation now use
+the existing primary HTTPS Ubuntu mirror selection with unchanged suites,
+signing keys, packages and deadlines. Fresh committed-source checks, model,
+hosted recovery and Production release remain pending. Production remains on
+`f8d196f`, schema077. See [016 validation](specs/016-pilot-hardening/validation.md).
 
 The profile/chat fixes released in [PR #45](https://github.com/mcteer/turas/pull/45)
 as `60f7a4c`. Customer selection is searchable across directory pages, Recent
