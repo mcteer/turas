@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/playwright@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
 ENV DEBIAN_FRONTEND=noninteractive
 COPY infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
-RUN for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do \
+RUN for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources /etc/apt/apt-mirrors.txt; do \
       if [ -f "$apt_source" ]; then \
         sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"; \
       fi; \

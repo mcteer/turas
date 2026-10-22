@@ -510,3 +510,12 @@ root visibility, strict statuses/errors/stderr, the shared5-second finite window
 and all parent/domain clocks. Timeout remains unverified absence and must fail.
 The actual5a92d5c timeout cause is not established; require genuine open-file
 and hardlink refusal plus complete fresh-source execution before acceptance.
+
+
+## APT mirror-list indirection (T141)
+
+The actual Ubuntu runner resolves `file:/etc/apt/apt-mirrors.txt` before
+selecting Azure. Extend the existing exact replacement to this file when
+present, in addition to ordinary source files. Keep other mirrors/entries,
+packages, signing/TLS checks and all clocks unchanged; verify selected source
+URLs in actual fresh CI, not only the authored substitution command.

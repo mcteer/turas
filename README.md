@@ -1,14 +1,12 @@
-Pilot validation is still in progress. The `5a92d5c` local catalog ended with
-907 passing cases and one cleanup-proof failure;123 cases were not executed.
-The recursive open-file probe timed out without proving absence. Numeric-only
-lsof options now remove unnecessary name resolution while preserving recursive
-selection, strict proof and all deadlines; the historical cause is unproven.
-Its separate full WebKit check passed all88 cases, while CI retains a login
-failure that is not waived. CI and renderer preparation use the primary HTTPS
-Ubuntu mirror with unchanged suites, signing keys and packages. Fresh source
-checks, model evaluation, hosted recovery and Production release remain pending.
-Production remains on `f8d196f`, schema077. See
-[016 validation](specs/016-pilot-hardening/validation.md).
+Pilot validation is still in progress. The `89121d6` local catalog remains
+active. Two CI jobs were cancelled during dependency installation: the runner
+selects mirrors through `/etc/apt/apt-mirrors.txt`, which the earlier mirror
+replacement omitted. The same exact primary-HTTPS substitution now covers that
+file as well, preserving packages, trust and all deadlines. The numeric-only
+cleanup probe change preserves recursive inode selection and strict absence
+proof. Original failures remain recorded. Fresh complete catalog/CI, model,
+hosted recovery and Production release remain pending. Production remains on
+`f8d196f`, schema077. See [016 validation](specs/016-pilot-hardening/validation.md).
 
 The profile/chat fixes released in [PR #45](https://github.com/mcteer/turas/pull/45)
 as `60f7a4c`. Customer selection is searchable across directory pages, Recent

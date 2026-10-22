@@ -32,7 +32,7 @@ jobs:
       - name: Bound package repository connection and data waits
         run: |
           sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
-          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources /etc/apt/apt-mirrors.txt; do
             if [ -f "$apt_source" ]; then
               sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
             fi

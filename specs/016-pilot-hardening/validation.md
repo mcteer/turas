@@ -7372,3 +7372,24 @@ harness incorrectly required status0; lsof returned status1 with positive
 PID/inode output, which the existing helper already treats as in-use. Correcting
 that harness to the unchanged permitted0/1 statuses yields the retained actual
 positive observations. No production predicate or timeout was relaxed.
+
+
+## 2026-10-22: actual89121d6 mirror-list omission
+
+CI jobs119983983658/119983983882 cancel after25minutes in Playwright dependency
+installation, before their tests. Both logs first read the144-byte
+`file:/etc/apt/apt-mirrors.txt`, then select Azure for indexes and continued
+package downloads. The earlier T139 loop ran but omitted this indirection.
+T141 adds the same exact replacement to that file in all14 host definitions
+and the renderer; no trust/package/test/deadline change is made. The active
+89121d6 local catalog remains separate and no full pass is claimed.
+
+T141 working-tree checks: a bounded owned container using the pinned renderer
+base reproduces the old loop leaving a synthetic mirror-list URI unchanged.
+The extended loop rewrites it; actual APT index retrieval through
+`mirror+file:` selects the official primaryHTTPS noble InRelease and no Azure
+index. Command exits0 and exact owned-container absence is verified. Both
+workflows parse, docs and whitespace checks pass. The first YAML-check command
+used an unsupported host Ruby keyword and failed before parsing; rerunning the
+same parser without that keyword succeeds. This is narrow effective-source
+proof, not fresh full-source CI or hosted acceptance.

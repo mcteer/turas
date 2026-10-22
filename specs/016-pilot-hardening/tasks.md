@@ -622,3 +622,12 @@ No hosted target may be locked for release before its measured reopen path exist
   Verify genuine open-file/hardlink refusal and absence, ownership-check residual
   resources, then require complete fresh-source catalog/CI/model/hosted gates.
   Do not claim the historical timeout cause or accept timeout as absence.
+
+- [ ] T141 Preserve actual89121d6 file-corrections/file-preferences CI
+  cancellations during dependency setup. Their APT logs read the144-byte
+  `file:/etc/apt/apt-mirrors.txt` indirection, then download from Azure; the
+  prior substitution omitted this file. Apply the same exact AzureHTTP-to-
+  official-primaryHTTPS replacement to this mirror list when present across
+  all14 host definitions and the renderer. Preserve packages, trust and every
+  test/job/domain clock. Verify mirror-list input and actual APT selection, then
+  require fresh-source complete validation; do not classify setup as a test pass.
