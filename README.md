@@ -1,12 +1,12 @@
-Pilot validation is still in progress. The frozen `f4737b9` catalog and CI
-remain active and do not establish current acceptance. Review found that a
-quality stage command ran in a detached group that its parent's interruption
-did not retire. Stage commands now propagate cancellation to their exact owned
-groups and await bounded retirement; five synthetic interruption/deadline
-regressions pass. All original stages, model selection, deadlines, budgets and
-unknown holds remain unchanged. Fresh complete1,040-case/189-suite catalog,
-CI, model, hosted recovery and Production release remain pending. Production
-remains `f8d196f`, schema077. See
+Pilot validation is still in progress. The `666aeec` local catalog stopped
+with69 passes and one cleanup inspection timeout; no current full pass is claimed.
+The strict open-file inspection now has up to20 seconds within the existing
+fixture deadline. Timeout still fails, and deletion still requires verified
+absence. Application, provider, stage and fixture limits remain unchanged.
+Quality commands also propagate interruption to owned descendants and await
+bounded retirement. Complete1,040-case/189-suite validation, CI, model evaluation,
+hosted recovery and Production release remain pending. Production remains
+`f8d196f`, schema077. See
 [016 validation](specs/016-pilot-hardening/validation.md).
 
 The profile/chat fixes released in [PR #45](https://github.com/mcteer/turas/pull/45)

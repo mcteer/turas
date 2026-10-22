@@ -7480,3 +7480,28 @@ preload now delegates the ACK read to a same-group Node reader with spawnSync's
 ACK descriptor. The stage remains alive for capture; this adds no accepted
 command allowance. All five focused tests pass with the corrected reader.
 Independent withheld-ACK timeout verification remains pending.
+
+
+### 2026-10-22: current666aeec cleanup observation failure
+
+The complete local catalog parent exited1: eight suites recorded69 passes and
+one failure, leaving181 suites unexecuted. The provisioning case `rejects unknown
+principals and primary overwrites` failed during cleanup because recursive
+open-file inspection exceeded its internal5-second allowance (SIGTERM, no stdout
+or stderr). No domain assertion failure or historical timeout cause is established.
+The outer fixture subsequently removed its owned root; no current full pass is claimed.
+
+Six representative-tree observations with original options or added numeric-UID
+selection finished246–254ms. One returned39 stdout bytes retained only by digest,
+so that observation cannot establish absence or be classified from unretained raw
+bytes. A later original-options observation with a20-second ceiling finished303ms
+with strict absence, permitting deletion of that exact synthetic tree. These are
+synthetic observations, not reproduction or diagnosis of the failed run.
+
+T144 allocates up to20 seconds of the existing fixture budget to the unchanged
+strict absence predicate. All five provisioning cases pass in a focused run with
+provider credentials absent. Root and pilot TypeScript checks, documentation checks
+(243 authored files) and whitespace checks pass. Independent static review confirms
+only the internal observation allowance changes. Focused absence fault controls and
+complete new-source checks remain pending. Product, fixture, stage and provider
+deadlines are unchanged.

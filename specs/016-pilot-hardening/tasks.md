@@ -657,3 +657,13 @@ No hosted target may be locked for release before its measured reopen path exist
   after all1,035 existing cases. Require fresh1,040-case/189-suite validation
   and all release gates. Concurrent-CI monitor preparation is not operational
   approval and current frozen validation must remain separately recorded.
+
+
+- [ ] T144 Preserve actual666aeec full-run failure (69 passes/one cleanup
+  failure in eight suites;181 suites unexecuted). Give the existing strict
+  open-file absence observation at most20 seconds within the unchanged absolute
+  fixture deadline, superseding only the internal5-second T140/T142 allowance.
+  Keep all safety predicates and other clocks; verify real cwd/outside-hardlink
+  refusal, successful absence, capped deadline and timeout rejection. Record
+  actual independent review and fresh complete-source validation. Do not infer
+  the historical cause or accept interrupted inspection as cleanup proof.

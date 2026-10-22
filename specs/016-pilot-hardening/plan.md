@@ -568,3 +568,22 @@ resources requiring explicit operator identity review and reconciliation; they
 must not be reported as verified cleanup, successful quality, settled unknown
 charges, or permission for automatic retry. Failed diagnostic harness artifacts
 and their exact manual cleanup observations remain retained.
+
+
+## Host absence observation allowance (T144)
+
+The current666aeec catalog stops after69 passes and one provisioning cleanup
+probe timeout; eight suites ran and181 were not executed. Its nested recursive
+open-file observation returned no output before the internal5-second limit.
+The historical cause is unproven. Representative original and numeric-UID
+observations finish around250ms; adding `-l` is not justified by those results.
+
+Superseding only the internal5-second allowance in T140/T142, allow up to20
+seconds for the same strict recursive inode/cwd/hardlink observation, capped by
+the unchanged absolute fixture deadline. Keep Linux visibility, status/error/
+stderr validation, post-observation deadline checks and refusal to delete without
+proof. Do not change any suite, fixture, application, provider, stage or process
+retirement limit. An interrupted observation remains failed/unverified, including
+when the existing outer process escalation interrupts cleanup. This allocation
+may reduce host-inspection timeouts; focused checks are not proof that it fixes
+the historical cause or substitutes for a complete fresh run.

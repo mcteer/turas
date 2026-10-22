@@ -57,7 +57,9 @@ function rootProbeDiagnostic(probe:'cwd'|'open-files',result:ReturnType<typeof s
  return `probe=${probe} status=${result.status??'none'} signal=${result.signal??'none'} error=${error} stdoutBytes=${Buffer.byteLength(String(result.stdout??''))} stderrBytes=${Buffer.byteLength(stderr)} stderrClass=${warning}`;
 }
 async function requireUnusedPilotRoot(root:string,environment:NodeJS.ProcessEnv,deadline:number){
- const owned=await realpath(root),until=Math.min(deadline,Date.now()+5000);
+ // Use more of the existing fixture allowance for host inspection. This does
+ // not extend the fixture deadline or turn an incomplete observation into proof.
+ const owned=await realpath(root),until=Math.min(deadline,Date.now()+20_000);
  // Linux's ordinary UID may not see other users' open descriptors. Require a
  // root-visible observation, with no weaker fallback if privilege is unavailable.
  const elevated=process.platform==='linux'&&process.geteuid?.()!==0;
