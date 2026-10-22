@@ -667,3 +667,16 @@ No hosted target may be locked for release before its measured reopen path exist
   refusal, successful absence, capped deadline and timeout rejection. Record
   actual independent review and fresh complete-source validation. Do not infer
   the historical cause or accept interrupted inspection as cleanup proof.
+
+- [ ] T145 Preserve actual5c7261e local1,040-case/189-suite pass and its
+  qualified unrelated-container inventory, plus actual CI48pass/two failures.
+  Move the existing single/category-window projection-tamper checks before long
+  replay work and verify both actual identity mutations and the intervening
+  untampered category. A window may legitimately return a completed prefix when
+  less than65 seconds remains; do not force continuation or renew any deadline
+  to make the negative case pass. Keep every existing case, denial, projection,
+  cleanup and clock. Verify the corrected fixture and fresh complete source/CI;
+  prove the legitimate completed-prefix behavior with a real64-second shortened
+  target, never a clock reset, and preserve the original late broad cleanup check;
+  neither historical failing assertion nor timing cause is inferred from its
+  shared error location, and the separate learning WebKit failure stays retained.

@@ -1,10 +1,16 @@
-Pilot validation is still in progress. The `666aeec` local catalog stopped
-with69 passes and one cleanup inspection timeout; no current full pass is claimed.
+Pilot validation is still in progress. The `5c7261e` local catalog passed all
+1,040 cases/189 suites; independent review verified owned cleanup while recording
+four unrelated container replacements. Its CI finished with 48 passing jobs and
+two failures: an MCP projection-tamper expectation and a learning WebKit
+regression. Both failures are retained. The tamper checks now run before the
+long replay work, with explicit proof that both intended injections occurred;
+the complete corrected 25-case file passes locally. Fresh complete-source
+validation is pending.
 The strict open-file inspection now has up to20 seconds within the existing
 fixture deadline. Timeout still fails, and deletion still requires verified
 absence. Application, provider, stage and fixture limits remain unchanged.
 Quality commands also propagate interruption to owned descendants and await
-bounded retirement. Complete1,040-case/189-suite validation, CI, model evaluation,
+bounded retirement. Complete new-source validation, CI, model evaluation,
 hosted recovery and Production release remain pending. Production remains
 `f8d196f`, schema077. See
 [016 validation](specs/016-pilot-hardening/validation.md).

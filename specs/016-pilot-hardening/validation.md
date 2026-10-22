@@ -7505,3 +7505,36 @@ provider credentials absent. Root and pilot TypeScript checks, documentation che
 only the internal observation allowance changes. Focused absence fault controls and
 complete new-source checks remain pending. Product, fixture, stage and provider
 deadlines are unchanged.
+
+### 2026-10-22: actual5c7261e local pass and CI tamper failure
+
+The frozen local parent exited0 with all1,040 named cases/189 suites passing,
+zero failures, skips or recorded retries. Independent readback checked all189
+result and189 process hashes, recomputed the source, verified owned cleanup and
+preservation of the original three Turas containers. Four unrelated baseline
+containers were absent and four unrelated replacements appeared; this is explicitly
+qualified, with no global preservation or causal attribution claim.
+
+CI run39851708500 attempt1 finished48pass/two failures. Job120080000779 failed
+in suite156, `work-recovery-decision.test.ts`, after883 prior passes. Its process
+exited1 without a signal, suite deadline expiry or catalog cancellation. The
+registered exhaustive MCP category case reported `network-tamper`: a promise
+resolved instead of rejecting. The shared wrapper location does not identify
+which of its two expectations failed. The original diagnostic review first missed
+the separate assertion row; the corrected review and original log are retained.
+No pilot catalog artifact was produced. The separate job120080001027 learning
+WebKit failure remains retained; a previously prepared49+1 rerun is ineligible
+and was never executed.
+
+The production window deliberately stops after a completed prefix when less
+than65 seconds remains. T145 moves both existing negatives before the long replay
+work and counts actual corrupt/untouched identities, without changing production
+behavior. It also exercises a real64-second shortened target returning only the
+completed profiles category, verifies profiles/plans mutation sequences and
+preserves the original late broad retirement assertion. These changes preserve
+all existing assertions and clocks. This removes the fixture's late-continuation
+assumption; it does not prove the historical timing cause. The corrected complete
+25-case file passes with parent exit0 in483,063ms, no skipped cases or recorded
+retries, the exact registered names and an unchanged test-file digest throughout.
+Root and pilot TypeScript checks pass. Independent final actual readback and
+new-source full/CI/model/hosted/Production checks remain pending.

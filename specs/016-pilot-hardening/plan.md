@@ -587,3 +587,26 @@ retirement limit. An interrupted observation remains failed/unverified, includin
 when the existing outer process escalation interrupts cleanup. This allocation
 may reduce host-inspection timeouts; focused checks are not proof that it fixes
 the historical cause or substitutes for a complete fresh run.
+
+## Deterministic MCP tamper window (T145)
+
+The actual5c7261e local catalog passes1,040 cases/189 suites with independently
+verified owned cleanup; four unrelated container replacements remain qualified.
+Its CI fails in the MCP category network-tamper phase and separately in learning
+WebKit. The category window intentionally returns completed selections when less
+than65 seconds remains before another category. A late negative test cannot
+assume that a second category will execute. The original shared failure location
+does not distinguish its single-category and two-category expectations.
+
+Run those existing negatives immediately after the initial positive category,
+before the long replay and coverage work. Count the actual tampered identity
+responses and the intervening untouched identity, require the projection mismatch
+and verify retirement. Reset injection state in finally. Preserve the original
+late broad all-read-admissions retirement assertion after the intervening work.
+A real64-second shortened target must return only the completed profiles category
+without attempting plans; this prefix remains explicitly not healthy/not ready
+and cannot substitute for exhaustive recovery coverage. Preserve the original
+absolute target deadline, signal, case/fixture/catalog limits, every existing
+assertion and the production window's bounded-prefix behavior. Require focused
+actual execution and a fresh complete committed-source catalog/CI; the prior local
+pass and failed CI remain historical evidence, not acceptance of the changed test.
