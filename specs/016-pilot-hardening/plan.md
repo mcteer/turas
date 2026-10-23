@@ -638,8 +638,8 @@ hard gates. Require a fresh affected evaluation; the old criterion conflict is
 retained and cannot be silently regraded as a version-1 pass.
 
 Keep the existing CI catalog artifact byte format and publish a separate artifact
-with the owned runner's original run, execution, image-preparation and individual
-suite/process receipts. Authenticate the producing run, attempt, source and bytes
+with all original JSON from the owned runner, including run, execution, image-
+preparation, individual suite/process and referenced per-gate proof receipts. Authenticate the producing run, attempt, source and bytes
 before use. This does not change either execution class: local remains 90 minutes
 and GitHub Actions remains 120 minutes. The three failed Mac catalogs remain
 failed; retaining original CI receipts is not a claim that those runs passed.
