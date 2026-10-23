@@ -7916,3 +7916,14 @@ It changes no payload, model, reasoning, retry, ceiling or accounting. The
 existing installed-SDK denial test checks actual serialization of 1,000 and
 absence of prompt text with zero provider calls. Fresh actual observation remains
 required; neither a provider defect nor a corrected output behavior is claimed.
+
+
+The d3325ca CI attempt exposed one missed companion assertion: the existing
+behavior-dataset unit test still pinned version 1 after the criterion was
+versioned to 2. Job 120703840929 failed that assertion with 696 other unit cases
+passing; Execution regression job 120703840989 reported the same assertion in
+its earlier-feature cohort. Both original logs are retained. Update the explicit
+version expectation to 2; preserve the six-case, unique-ID, three-role, rubric
+and case-content assertions and the complete regression cohorts. This repairs
+the fixture/test version mismatch, not an application behavior or token-limit
+failure. Whole new-source CI and actual retained proof closure remain required.

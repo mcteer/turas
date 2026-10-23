@@ -4,7 +4,7 @@ import artifactDataset from "../../evals/fixtures/004-artifact-governance.json";
 
 describe("002 capability behavior dataset", () => {
   it("contains six unique, reviewable cases across all three roles", () => {
-    expect(dataset.version).toBe(1);
+    expect(dataset.version).toBe(2);
     expect(dataset.rubric).toMatch(/Score 1 only/);
     expect(dataset.cases).toHaveLength(6);
     expect(new Set(dataset.cases.map((item) => item.id)).size).toBe(6);
