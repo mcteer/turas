@@ -7700,3 +7700,58 @@ were zero. The failed probe child retained exit 1 and the success-only probe
 exit 0 with no diagnostics. Private probe inputs/errors remain only in protected
 raw artifacts; public fixed observations exclude them. These are diagnostics
 checks, not a reproduction of the Expansion cause or full/CI/model/hosted proof.
+
+### Isolated app startup failure and same-route transport comparison (T151)
+
+`fe5eee0` main CI `39968556475` attempt 1 also failed deterministic producer
+job `120464795841` in `evaluation-source.test.ts`, suite 117. The owned app
+readiness window failed after 60,571 ms and 25 probes, with the last auth and
+public Eve requests both reporting `TimeoutError`; child exit was 1, no signal
+or suite deadline expiration. This is separate from the genuine Expansion
+failure and its derivative aggregate failure. Workforce recovery suite 94 had
+already passed in this invocation; neither result overwrites the older failure.
+
+Observed auth execution markers mean the no-cookie session lookup returned and
+the handler entered its catch block at least once. The catch normally constructs
+401 `authentication_required`; its marker is not evidence of an unexpected auth
+exception. Existing presence-only markers do not correlate with the last probe
+or prove response delivery. After the window failed, static fetch, static fresh
+HTTP, public-health fresh HTTP, internal Eve health and database observations
+succeeded. Those later probes cannot establish earlier readiness or its cause.
+
+The failure-only transport observer now also requests the same no-cookie session
+route once through fetch and once through a fresh HTTP socket. Both preserve the
+existing independent 1,000 ms observation deadlines and run concurrently with
+the previous failure probes. Only fixed status, elapsed time, transport errors,
+and TCP/header booleans pass the CI whitelist. No body, header, cookie, URL,
+credential or arbitrary error is published. These requests occur after readiness
+has failed and cannot admit the fixture or extend its original 60-second window.
+The application route source remains unchanged; only the disposable copied
+route records fixed execution phases. The last 128 relative module, handler,
+session-return, catch and failure-response-created times are compared with the
+last 64 original readiness-probe intervals and outcomes. Response creation is
+not network delivery, and intervals do not assign a request identity to a phase.
+Readiness requests, pass criteria and registered case names remain unchanged.
+
+Nine existing unit cases passed across the transport and CI diagnostic suites,
+including a real loopback server returning a never-ending private 401 response
+and exact five-path request inventory, with all observation sockets closing
+before the test server teardown. Fixed timeline parsing rejects compiler prose,
+private fields, invalid phases/times and invalid probe intervals. This verifies observation and privacy,
+not a reproduction or fix of the CI startup failure. Fresh current-source full,
+CI, paid model and hosted checks remain outstanding.
+
+The original whole `evaluation-source.test.ts` suite also passed all three cases
+with no skips and parent exit 0 on the initial T151 implementation. Its launch
+input hashes remained unchanged. This preceded the final probe-phase fields
+below; it is qualified local corroboration, not final-source acceptance.
+
+The original readiness probe awaits body cancellation after receiving headers.
+A cancellation rejection therefore previously erased its observed status in the
+catch result. The same probe now also retains `request`, `body-cancel` or
+`complete` plus the status and elapsed time observed at headers. Its fetch call,
+2,000 ms abort signal, awaited cancellation and returned acceptance status remain
+unchanged. Fixed diagnostic tests distinguish a synthetic request timeout from
+a synthetic cancellation timeout after 401 headers; neither demonstrates which
+occurred in the historical CI run. The later failure probes intentionally have
+separate teardown behavior and cannot replace these original probe outcomes.

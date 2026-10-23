@@ -17,7 +17,8 @@ WebKit corroborations passed 40 and 12 cases. Their historical causes remain
 unproved. At `923aa54`, the deterministic CI job failed in the workforce-original
 setup of a recovery case; the source was ineligible after its worker returned,
 but the worker state was not retained. The same five restore cases pass locally.
-A fresh local full run is still running after an earlier Docker-daemon outage.
+The `fe5eee0` local full run passed all 1,040 cases after an earlier
+Docker-daemon outage. The newer diagnostic revision still needs its own checks.
 Failure-only fixed workforce job and native-execution observations are being
 added alongside the bounded Execution browser observations. They preserve the
 original actions, assertions, deadlines and retries; neither establishes a
@@ -29,6 +30,11 @@ and timing were not retained. Shared failure-only browser step observations
 now preserve fixed action categories, source-location categories and timings
 without raw selectors, values, paths or errors. Original scenarios, time limits
 and retries remain unchanged; this is diagnostic coverage, not a runtime fix.
+
+The same CI later failed isolated evaluation-app startup: its readiness requests
+timed out although the no-cookie session handler reached the expected refusal
+path. Failure-only checks now compare fresh HTTP and fetch responses from that
+same route. They cannot satisfy readiness or establish the historical cause.
 
 Production remains `f8d196f`, schema077. Full current-source checks, model
 evaluation, hosted recovery and Production verification remain required.

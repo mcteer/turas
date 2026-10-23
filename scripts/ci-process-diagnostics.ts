@@ -82,13 +82,22 @@ function artifactStartupDiagnostic(value:unknown){
   const probe=value as Record<string,unknown>;
   return {...Object.fromEntries(['tcpConnected','headersReceived'].filter(name=>typeof probe[name]==='boolean').map(name=>[name,probe[name]])),status:status(probe.status),elapsedMs:bounded(probe.elapsedMs,120000),error:typeof probe.error==='string'&&['none','deadline','invalid-port','ECONNREFUSED','ECONNRESET','EPIPE','ETIMEDOUT','ENETUNREACH','EHOSTUNREACH','ABORT_ERR'].includes(probe.error)?probe.error:'other'};
  };
- const staticHttp=httpObservation(row.staticHttp),publicHealthHttp=httpObservation(row.publicHealthHttp);
+ const staticHttp=httpObservation(row.staticHttp),publicHealthHttp=httpObservation(row.publicHealthHttp),authHttp=httpObservation(row.authHttp);
  return {lastAuthStatus:status(row.lastAuthStatus),lastEveStatus:status(row.lastEveStatus),authTransport:transport(row.authTransport),eveTransport:transport(row.eveTransport),probeCount:bounded(row.probeCount,1000),elapsedMs:bounded(row.elapsedMs,120000),
   ...Object.fromEntries(['supervisorExited','supervisorSignalled','nextReady','compiling','eveListening','nextAddressObserved','nextPortMatches','authModuleObserved','authHandlerObserved','authSessionObserved','authFailureObserved','databaseReachable','databaseAdmissionOpen'].filter(key=>typeof row[key]==='boolean').map(key=>[key,row[key]])),
   ...(Object.hasOwn(row,'internalEveStatus')?{internalEveStatus:status(row.internalEveStatus),internalEveTransport:transport(row.internalEveTransport)}:{}),
-  ...(staticHttp?{staticHttp}:{}),...(publicHealthHttp?{publicHealthHttp}:{}),
+  ...(staticHttp?{staticHttp}:{}),...(publicHealthHttp?{publicHealthHttp}:{}),...(authHttp?{authHttp}:{}),
   ...(row.staticFetch&&typeof row.staticFetch==='object'&&!Array.isArray(row.staticFetch)?{staticFetch:{status:status((row.staticFetch as Record<string,unknown>).status),transport:transport((row.staticFetch as Record<string,unknown>).transport),elapsedMs:bounded((row.staticFetch as Record<string,unknown>).elapsedMs,120000)}}:{}),
+  ...(row.authFetch&&typeof row.authFetch==='object'&&!Array.isArray(row.authFetch)?{authFetch:{status:status((row.authFetch as Record<string,unknown>).status),transport:transport((row.authFetch as Record<string,unknown>).transport),elapsedMs:bounded((row.authFetch as Record<string,unknown>).elapsedMs,120000)}}:{}),
   ...(typeof row.transportDiagnosticUnavailable==='boolean'?{transportDiagnosticUnavailable:row.transportDiagnosticUnavailable}:{}),
+  ...(Array.isArray(row.authPhases)?{authPhases:row.authPhases.slice(-128).flatMap(value=>{
+   if(!value||typeof value!=='object'||Array.isArray(value))return [];const event=value as Record<string,unknown>,elapsedMs=bounded(event.elapsedMs,120000);
+   return typeof event.phase==='string'&&['module','handler','session','catch','response'].includes(event.phase)&&elapsedMs!==null?[{phase:event.phase,elapsedMs}]:[];
+  })}:{}),
+  ...(Array.isArray(row.readinessProbes)?{readinessProbes:row.readinessProbes.slice(-64).flatMap(value=>{
+   if(!value||typeof value!=='object'||Array.isArray(value))return [];const probe=value as Record<string,unknown>,ordinal=bounded(probe.ordinal,1000),startedMs=bounded(probe.startedMs,120000),completedMs=bounded(probe.completedMs,120000);
+   return ordinal!==null&&ordinal>0&&startedMs!==null&&completedMs!==null&&completedMs>=startedMs?[{ordinal,startedMs,completedMs,authStatus:status(probe.authStatus),eveStatus:status(probe.eveStatus),authTransport:transport(probe.authTransport),eveTransport:transport(probe.eveTransport),...Object.fromEntries(['authPhase','evePhase'].filter(key=>typeof probe[key]==='string'&&['request','body-cancel','complete'].includes(probe[key] as string)).map(key=>[key,probe[key]])),...Object.fromEntries(['authHeadersStatus','eveHeadersStatus'].filter(key=>Object.hasOwn(probe,key)).map(key=>[key,status(probe[key])])),...Object.fromEntries(['authHeadersElapsedMs','eveHeadersElapsedMs'].filter(key=>Object.hasOwn(probe,key)).map(key=>[key,bounded(probe[key],120000)]))}]:[];
+  })}:{}),
   signatures:Array.isArray(row.signatures)?row.signatures.filter(value=>typeof value==='string'&&['EADDRINUSE','ECONNREFUSED','Module not found','Cannot find module','Failed to compile','Error:','ENOSPC','EMFILE','ENOMEM','Turbopack panic'].includes(value)).slice(0,10):[]};
 }
 

@@ -1,8 +1,8 @@
 import BrowserStepReporter,{browserStepFailure,browserStepFailures,browserStepOperation} from '../../scripts/ci-browser-step-reporter';
 import {observedUiChildArguments} from '../../scripts/capture-ui-child';
-import {artifactAuthStartupPhases} from '../../scripts/artifact-eval-environment';
+import {artifactAuthStartupPhases,artifactAuthStartupTimeline,observeArtifactReadinessProbe} from '../../scripts/artifact-eval-environment';
 import {workMcpCaseFailureMetadata,processFailureMetadata,setupFailureMetadata,pilotRegressionFailureMetadata,pilotCatalogAbortMetadata,recoveryApplicationFailureMetadata,recoveryServerStartupPhases} from '../../scripts/ci-process-diagnostics';
-import {describe,expect,it} from 'vitest';
+import {describe,expect,it,vi} from 'vitest';
 import {browserFailureMetadata,fixedUtilizationMetadata,fixedExecutionChangesObservation,pilotUiChildFailures,partnerBrowserFailureMetadata} from '../../scripts/ci-browser-diagnostics';
 import {nativeQueryOperation,nativeQueryObservationSchema,nativeBlockerMetadata} from '../../scripts/ci-native-query-observer';
 const allowed=new Set(['mcp-accessibility.spec.ts']);
@@ -74,7 +74,7 @@ describe('private browser failure diagnostics',()=>{
  });
 });
 
-it('reports setup and child process failure classes without exposing private output',()=>{
+it('reports setup and child process failure classes without exposing private output',async()=>{
  const workforce=processFailureMetadata({stderrTail:JSON.stringify({kind:'workforce_recovery_failure',surface:'artifact',sourceState:'quarantined',jobState:'queued',errorCode:'parser_timeout',attemptNumber:1,currentVersionMatches:true,leaseActive:false,deadlineActive:true,native:[{kind:'artifact-scan',exitCode:124,durationMs:30000,safeFailure:'scan_unavailable',error:'none',scanClean:false,scanFound:false,stderr:'PRIVATE_NATIVE_OUTPUT'}],sourceId:'PRIVATE_ID',connection:'postgresql://PRIVATE_PASSWORD',filename:'PRIVATE_FILENAME'})});
  expect(workforce.workforceRecovery).toEqual([{kind:'workforce_recovery_failure',surface:'artifact',diagnosticUnavailable:false,sourceState:'quarantined',jobState:'queued',errorCode:'parser_timeout',attemptNumber:1,currentVersionMatches:true,leaseActive:false,deadlineActive:true,native:[{kind:'artifact-scan',exitCode:124,durationMs:30000,safeFailure:'scan_unavailable',error:'none',scanClean:false,scanFound:false}]}]);
  expect(JSON.stringify(workforce)).not.toContain('PRIVATE_');
@@ -104,6 +104,20 @@ it('reports setup and child process failure classes without exposing private out
  expect(startup.artifactStartup).toEqual({lastAuthStatus:401,lastEveStatus:null,authTransport:'none',eveTransport:'TimeoutError',probeCount:24,elapsedMs:60001,nextReady:true,compiling:true,eveListening:false,supervisorExited:false,supervisorSignalled:false,signatures:['ECONNREFUSED']});expect(JSON.stringify(startup)).not.toContain('PRIVATE_');
  expect(artifactAuthStartupPhases('  12 | process.stderr.write("ARTIFACT_AUTH_MODULE\\n");\nPRIVATE_TEXT ARTIFACT_AUTH_HANDLER\n')).toEqual({authModuleObserved:false,authHandlerObserved:false,authSessionObserved:false,authFailureObserved:false});
  expect(artifactAuthStartupPhases('\u001b[32mARTIFACT_AUTH_MODULE\u001b[0m\r\nARTIFACT_AUTH_HANDLER\nARTIFACT_AUTH_SESSION\nARTIFACT_AUTH_FAILURE\n')).toEqual({authModuleObserved:true,authHandlerObserved:true,authSessionObserved:true,authFailureObserved:true});
+ const fetchProbe=vi.spyOn(globalThis,'fetch');
+ try{
+  fetchProbe.mockResolvedValueOnce({status:401,body:{cancel:async()=>{throw new DOMException('PRIVATE_CANCEL','TimeoutError');}}} as unknown as Response);
+  expect(await observeArtifactReadinessProbe('http://127.0.0.1:1','/api/auth/session')).toMatchObject({status:null,transport:'TimeoutError',phase:'body-cancel',headersStatus:401,headersElapsedMs:expect.any(Number)});
+  fetchProbe.mockRejectedValueOnce(new DOMException('PRIVATE_FETCH','TimeoutError'));
+  expect(await observeArtifactReadinessProbe('http://127.0.0.1:1','/api/auth/session')).toEqual({status:null,transport:'TimeoutError',phase:'request',headersStatus:null,headersElapsedMs:null});
+  fetchProbe.mockResolvedValueOnce({status:401,body:{cancel:async()=>{}}} as unknown as Response);
+  expect(await observeArtifactReadinessProbe('http://127.0.0.1:1','/api/auth/session')).toMatchObject({status:401,transport:'none',phase:'complete',headersStatus:401});
+ }finally{fetchProbe.mockRestore();}
+ const phaseLine=(phase:unknown,at:unknown,extra={})=>JSON.stringify({kind:'artifact_auth_phase',phase,at,...extra});
+ expect(artifactAuthStartupTimeline([phaseLine('handler',1100,{private:'PRIVATE_TEXT'}),phaseLine('response',1200),phaseLine('PRIVATE_PHASE',1300),phaseLine('module','1000'),phaseLine('catch',999), '  12 | '+phaseLine('handler',1100)].join('\n'),1000)).toEqual([{phase:'handler',elapsedMs:100},{phase:'response',elapsedMs:200}]);
+ expect(artifactAuthStartupTimeline(Array.from({length:140},(_,i)=>phaseLine('handler',1000+i)).join('\n'),1000)).toHaveLength(128);
+ const timeline=processFailureMetadata({stderrTail:JSON.stringify({kind:'artifact_eval_startup_failure',authPhases:[{phase:'response',elapsedMs:2150,private:'PRIVATE_TEXT'},{phase:'PRIVATE_PHASE',elapsedMs:1},{phase:'handler',elapsedMs:'PRIVATE_TIME'}],readinessProbes:[{ordinal:1,startedMs:10,completedMs:2010,authStatus:null,eveStatus:200,authTransport:'TimeoutError',eveTransport:'none',authPhase:'body-cancel',authHeadersStatus:401,authHeadersElapsedMs:1980,evePhase:'PRIVATE_PHASE',url:'PRIVATE_URL'}, {ordinal:2,startedMs:3,completedMs:1},{ordinal:0,startedMs:1,completedMs:2}]})}).artifactStartup;
+ expect(timeline).toMatchObject({authPhases:[{phase:'response',elapsedMs:2150}],readinessProbes:[{ordinal:1,startedMs:10,completedMs:2010,authStatus:null,eveStatus:200,authTransport:'TimeoutError',eveTransport:'none',authPhase:'body-cancel',authHeadersStatus:401,authHeadersElapsedMs:1980}]});expect(JSON.stringify(timeline)).not.toContain('PRIVATE_');
  const detailedStartup=processFailureMetadata({stderrTail:JSON.stringify({kind:'artifact_eval_startup_failure',nextAddressObserved:true,nextPortMatches:false,authModuleObserved:true,authHandlerObserved:true,authSessionObserved:false,authFailureObserved:false,internalEveStatus:200,internalEveTransport:'none',databaseReachable:true,databaseAdmissionOpen:true,signatures:['ENOSPC','PRIVATE_SIGNATURE'],url:'http://PRIVATE_HOST',query:'PRIVATE_SQL',connection:'PRIVATE_PASSWORD'})});
  expect(detailedStartup.artifactStartup).toMatchObject({nextAddressObserved:true,nextPortMatches:false,authModuleObserved:true,authHandlerObserved:true,authSessionObserved:false,authFailureObserved:false,internalEveStatus:200,internalEveTransport:'none',databaseReachable:true,databaseAdmissionOpen:true,signatures:['ENOSPC']});expect(JSON.stringify(detailedStartup)).not.toContain('PRIVATE_');
  const invalidDetailedStartup=processFailureMetadata({stderrTail:JSON.stringify({kind:'artifact_eval_startup_failure',nextPortMatches:'PRIVATE_BOOLEAN',authHandlerObserved:1,databaseReachable:{private:'PRIVATE_DATA'},internalEveStatus:999,internalEveTransport:'PRIVATE_TRANSPORT'})});

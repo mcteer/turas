@@ -20,6 +20,31 @@ export function artifactAuthStartupPhases(output:string) {
     authSessionObserved:lines.has('ARTIFACT_AUTH_SESSION'),authFailureObserved:lines.has('ARTIFACT_AUTH_FAILURE')};
 }
 
+
+/** Relative fixed execution observations; never compiler prose or request data. */
+export function artifactAuthStartupTimeline(output:string,started:number){
+ const phases=['module','handler','session','catch','response'];
+ return output.replace(/\x1b\[[0-9;]*[A-Za-z]/g,'').split(/\r?\n/).filter(line=>line.startsWith('{"kind":"artifact_auth_phase"')).slice(-128).flatMap(line=>{
+  try{const row=JSON.parse(line),elapsedMs=row.at-started;
+   return row.kind==='artifact_auth_phase'&&typeof row.phase==='string'&&phases.includes(row.phase)&&typeof row.at==='number'&&Number.isSafeInteger(row.at)&&Number.isSafeInteger(elapsedMs)&&elapsedMs>=0&&elapsedMs<=120000?[{phase:row.phase as string,elapsedMs}]:[];
+  }catch{return [];}
+ });
+}
+
+
+/** Keep the original readiness outcome, including awaited body retirement. */
+export async function observeArtifactReadinessProbe(origin:string,path:'/api/auth/session'|'/eve/v1/health'){
+ const started=Date.now();let phase:'request'|'body-cancel'|'complete'='request',headersStatus:number|null=null,headersElapsedMs:number|null=null;
+ try{
+  const response=await fetch(`${origin}${path}`,{signal:AbortSignal.timeout(2_000)});
+  const status=response.status;headersStatus=status;headersElapsedMs=Date.now()-started;phase='body-cancel';
+  await response.body?.cancel();phase='complete';
+  return {status,transport:'none',phase,headersStatus,headersElapsedMs};
+ }catch(error){const name=error instanceof Error?error.name:'';
+  return {status:null,transport:['TimeoutError','AbortError','TypeError'].includes(name)?name:'other',phase,headersStatus,headersElapsedMs};
+ }
+}
+
 async function stop(child: ChildProcess | null): Promise<void> {
   if (!child || child.exitCode !== null) return;
   await new Promise<void>((done) => {
@@ -96,10 +121,11 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
     const authRoute = join(app,"app/api/auth/session/route.ts");
     let authSource = await readFile(authRoute,"utf8");
     for (const [before,after] of [
-      ['export const dynamic = "force-dynamic";', `process.stderr.write("ARTIFACT_AUTH_MODULE\\n");\nexport const dynamic = "force-dynamic";`],
-      ['export async function GET(request: Request): Promise<Response> {', `export async function GET(request: Request): Promise<Response> {\n  process.stderr.write("ARTIFACT_AUTH_HANDLER\\n");`],
-      ['const session = await getCurrentSession(request);', `const session = await getCurrentSession(request);\n    process.stderr.write("ARTIFACT_AUTH_SESSION\\n");`],
-      ['  } catch (error) {', `  } catch (error) {\n    process.stderr.write("ARTIFACT_AUTH_FAILURE\\n");`],
+      ['export const dynamic = "force-dynamic";', `function artifactAuthPhase(phase:string){try{process.stderr.write(JSON.stringify({kind:"artifact_auth_phase",phase,at:Date.now()})+"\\n");}catch{}}\nartifactAuthPhase("module");\nprocess.stderr.write("ARTIFACT_AUTH_MODULE\\n");\nexport const dynamic = "force-dynamic";`],
+      ['export async function GET(request: Request): Promise<Response> {', `export async function GET(request: Request): Promise<Response> {\n  artifactAuthPhase("handler");\n  process.stderr.write("ARTIFACT_AUTH_HANDLER\\n");`],
+      ['const session = await getCurrentSession(request);', `const session = await getCurrentSession(request);\n    artifactAuthPhase("session");\n  process.stderr.write("ARTIFACT_AUTH_SESSION\\n");`],
+      ['  } catch (error) {', `  } catch (error) {\n    artifactAuthPhase("catch");\n  process.stderr.write("ARTIFACT_AUTH_FAILURE\\n");`],
+      ['return failure(error);', 'const response = failure(error); artifactAuthPhase("response"); return response;'],
     ]) {
       if (authSource.split(before).length !== 2) throw Error('Owned artifact auth diagnostic shape changed');
       authSource = authSource.replace(before,after);
@@ -136,16 +162,14 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
     let ready = false;
     let lastAuthStatus:number|null=null,lastEveStatus:number|null=null;
     let authTransport='none',eveTransport='none',probeCount=0;
-    const probe=async(path:string)=>{
-      try{
-        const response=await fetch(`${origin}${path}`,{signal:AbortSignal.timeout(2_000)});
-        const status=response.status;await response.body?.cancel();return {status,transport:'none'};
-      }catch(error){const name=error instanceof Error?error.name:'';return {status:null,transport:['TimeoutError','AbortError','TypeError'].includes(name)?name:'other'};}
-    };
+    const readinessProbes:{ordinal:number;startedMs:number;completedMs:number;authStatus:number|null;eveStatus:number|null;authTransport:string;eveTransport:string;authPhase:string;evePhase:string;authHeadersStatus:number|null;eveHeadersStatus:number|null;authHeadersElapsedMs:number|null;eveHeadersElapsedMs:number|null}[]=[];
+    const probe=(path:'/api/auth/session'|'/eve/v1/health')=>observeArtifactReadinessProbe(origin,path);
     while (Date.now()-started < 60_000) {
       if (dev.exitCode !== null) throw new Error(`Isolated evaluation app exited during startup: ${startupOutput}`);
+      const probeStartedMs=Date.now()-started;
       const [auth,eve]=await Promise.all([probe('/api/auth/session'),probe('/eve/v1/health')]);
       probeCount++;lastAuthStatus=auth.status;lastEveStatus=eve.status;authTransport=auth.transport;eveTransport=eve.transport;
+      readinessProbes.push({ordinal:probeCount,startedMs:probeStartedMs,completedMs:Date.now()-started,authStatus:auth.status,eveStatus:eve.status,authTransport:auth.transport,eveTransport:eve.transport,authPhase:auth.phase,evePhase:eve.phase,authHeadersStatus:auth.headersStatus,eveHeadersStatus:eve.headersStatus,authHeadersElapsedMs:auth.headersElapsedMs,eveHeadersElapsedMs:eve.headersElapsedMs});
       if(auth.status===401&&eve.status!==null&&eve.status>=200&&eve.status<300){ready=true;break;}
       await new Promise((wait) => setTimeout(wait,500));
     }
@@ -188,6 +212,7 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
         nextReady:/Ready in/i.test(plainOutput),compiling:/Compiling/i.test(plainOutput),eveListening:internalAddress!==null,
         nextAddressObserved:publicAddress!==null,nextPortMatches:publicAddress!==null&&Number(publicAddress[1])===port,
         ...artifactAuthStartupPhases(startupOutput),
+        authPhases:artifactAuthStartupTimeline(startupOutput,started),readinessProbes:readinessProbes.slice(-64),
         ...transport,
         internalEveStatus:internal.status,internalEveTransport:internal.transport,databaseReachable:db.reachable,databaseAdmissionOpen:db.admissionOpen,signatures})+'\n');
       throw new Error('Isolated evaluation app did not become ready: '+JSON.stringify({lastAuthStatus,lastEveStatus,exitCode:dev.exitCode,signatures}));

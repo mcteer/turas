@@ -738,3 +738,13 @@ No hosted target may be locked for release before its measured reopen path exist
   real CLI WebKit success/error/timeout probes and privacy, then obtain fresh
   committed full/CI/model/hosted acceptance. Do not infer the old cause or adjust
   clocks from a timeout lacking internal action evidence.
+
+- [ ] T151 Retain the actual `fe5eee0` deterministic CI isolated-app startup
+  failure separately from the Expansion failure. Compare failure-only no-cookie
+  session responses through fresh HTTP sockets and fetch, with fixed status,
+  transport and timing fields only. Retain bounded relative auth-phase times and
+  readiness-probe intervals without claiming per-request correlation. Preserve
+  the original readiness window,
+  pass criteria, calls and test catalog; verify transport teardown and privacy.
+  Obtain fresh committed full/CI/model/hosted acceptance before release; these
+  observations do not prove a runtime cause or correction.
