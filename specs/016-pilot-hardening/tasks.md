@@ -748,3 +748,14 @@ No hosted target may be locked for release before its measured reopen path exist
   pass criteria, calls and test catalog; verify transport teardown and privacy.
   Obtain fresh committed full/CI/model/hosted acceptance before release; these
   observations do not prove a runtime cause or correction.
+
+- [ ] T152 Retain the actual `a15ca8e` Execution handoff mobile-dark failure and
+  the separately successful local/CI catalogs. Bound entire Execution overview
+  and delivery-record read refreshes, fail closed on expired eligibility, and
+  preserve confirmed receipts and no-write-replay semantics. Prove the old
+  stalled-read interlock and the fixed clear/recovery/submit behavior with real
+  owned WebKit and real command receipts; add a durable UI regression. Attach
+  fixed step/actionability and bounded passive write/read state to the custom
+  Execution runner without changing its process or original scenario clocks.
+  Revalidate privacy, original scenarios and fresh committed full/CI/model/hosted
+  acceptance; do not claim the missing historical CI state was reconstructed.

@@ -4,18 +4,36 @@ import type {Reporter,TestCase,TestResult,TestStep} from '@playwright/test/repor
 const projects=['webkit-desktop-light','webkit-desktop-dark','webkit-mobile-light','webkit-mobile-dark'];
 const operations=['navigation','fill','click','focus','press','select','check','uncheck','wait_url','wait_load','http_get','http_post','assert','other'];
 const sources=['case','expansion-fixture','common-ui-fixture','fixture','other'];
+const actionability=['hidden','disabled','detached','pointer_intercepted','unstable','navigation_wait','locator_wait'];
+/** Parse only fixed Playwright call-log prefixes; never echo locator/error text. */
+export function browserStepActionability(message:unknown){
+ if(typeof message!=='string')return [];
+ const rows=message.slice(0,65536).split('\n').slice(-128).map(line=>line.trimStart().replace(/^[-·]\s*/, '').replace(/^\d+\s*[×x]\s*/,''));
+ const found=new Set<string>();
+ for(const row of rows){
+  if(/^element is (?:not visible|hidden)\b/i.test(row))found.add('hidden');
+  if(/^element is (?:not enabled|disabled)\b/i.test(row))found.add('disabled');
+  if(/^(?:element was detached|element is not attached|element is not connected)\b/i.test(row))found.add('detached');
+  if(/^element is not stable\b/i.test(row))found.add('unstable');
+  if(/^(?:intercepts pointer events\b|<[^>]{0,1000}>.*\b(?:subtree )?intercepts pointer events\b)/i.test(row))found.add('pointer_intercepted');
+  if(/^waiting for (?:scheduled navigations|.*navigation to finish)\b/i.test(row))found.add('navigation_wait');
+  if(/^waiting for (?:locator\(|getByRole\(|getByLabel\()/i.test(row))found.add('locator_wait');
+ }
+ return [...found].slice(0,7);
+}
+
 const integer=(v:unknown,max=3600000)=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=0&&v<=max?v:null;
 const fixed=(v:unknown,allowed:readonly string[])=>typeof v==='string'&&allowed.includes(v)?v:'other';
 function stepMetadata(value:unknown){
  const row=value&&typeof value==='object'?value as Record<string,unknown>:{};
- return {operation:fixed(row.operation,operations),source:fixed(row.source,sources),line:integer(row.line,1000000),column:integer(row.column,1000000),elapsedMs:integer(row.elapsedMs),durationMs:integer(row.durationMs),ended:row.ended===true,failed:row.failed===true};
+ return {operation:fixed(row.operation,operations),source:fixed(row.source,sources),line:integer(row.line,1000000),column:integer(row.column,1000000),elapsedMs:integer(row.elapsedMs),durationMs:integer(row.durationMs),ended:row.ended===true,failed:row.failed===true,...(Array.isArray(row.actionability)?{actionability:[...new Set(row.actionability.filter(v=>typeof v==='string'&&actionability.includes(v)))].slice(0,7)}:{})};
 }
 /** Revalidate child output before public CI emission. No titles, selectors,
  * input values, URLs, file paths, error prose or arbitrary fields survive. */
 export function browserStepFailure(value:unknown){
  if(!value||typeof value!=='object')return;const row=value as Record<string,unknown>;
  if(row.kind!=='ci_browser_steps'||typeof row.project!=='string'||!projects.includes(row.project)||typeof row.status!=='string'||!['failed','timedOut','interrupted'].includes(row.status)||integer(row.caseLine,1000000)===null)return;
- return {kind:'ci_browser_steps',project:row.project as string,caseLine:row.caseLine as number,status:row.status as string,durationMs:integer(row.durationMs),retry:integer(row.retry,10),steps:Array.isArray(row.steps)?row.steps.slice(-64).map(stepMetadata):[]};
+ return {kind:'ci_browser_steps',project:row.project as string,caseLine:row.caseLine as number,status:row.status as string,durationMs:integer(row.durationMs),retry:integer(row.retry,10),...(Array.isArray(row.actionability)?{actionability:[...new Set(row.actionability.filter(v=>typeof v==='string'&&actionability.includes(v)))].slice(0,7)}:{}),steps:Array.isArray(row.steps)?row.steps.slice(-64).map(stepMetadata):[]};
 }
 export function browserStepFailures(stderr:string){
  return stderr.split('\n').filter(line=>line.startsWith('{"kind":"ci_browser_steps"')&&line.length<=32768).slice(-3).flatMap(line=>{try{const value=browserStepFailure(JSON.parse(line));return value?[value]:[];}catch{return [];}});
@@ -55,6 +73,6 @@ export default class BrowserStepReporter implements Reporter{
   state.rows.push(row);state.pending.set(step,row);
   if(state.rows.length>64){const old=state.rows.shift();for(const [key,value]of state.pending)if(value===old){state.pending.delete(key);break;}}
  }catch{/* Observation cannot change a test outcome. */}}
- onStepEnd(test:TestCase,_result:TestResult,step:TestStep){try{const state=this.states.get(test),row=state?.pending.get(step);if(row){row.durationMs=integer(step.duration);row.ended=true;row.failed=Boolean(step.error);state!.pending.delete(step);}}catch{/* Observation cannot change a test outcome. */}}
- onTestEnd(test:TestCase,result:TestResult){try{const state=this.states.get(test);if(!state)return;const value=browserStepFailure({kind:'ci_browser_steps',project:test.parent.project()?.name,caseLine:test.location.line,status:result.status,durationMs:result.duration,retry:result.retry,steps:state.rows});if(value)process.stderr.write(JSON.stringify(value)+'\n');}catch{/* Preserve the original outcome if diagnostics are unavailable. */}finally{this.states.delete(test);}}
+ onStepEnd(test:TestCase,_result:TestResult,step:TestStep){try{const state=this.states.get(test),row=state?.pending.get(step);if(row){row.durationMs=integer(step.duration);row.ended=true;row.failed=Boolean(step.error);const reasons=browserStepActionability(step.error?.message);if(reasons.length)row.actionability=reasons;state!.pending.delete(step);}}catch{/* Observation cannot change a test outcome. */}}
+ onTestEnd(test:TestCase,result:TestResult){try{const state=this.states.get(test);if(!state)return;const value=browserStepFailure({kind:'ci_browser_steps',project:test.parent.project()?.name,caseLine:test.location.line,status:result.status,durationMs:result.duration,retry:result.retry,actionability:[...new Set(result.errors.flatMap(error=>browserStepActionability(error.message)))],steps:state.rows});if(value)process.stderr.write(JSON.stringify(value)+'\n');}catch{/* Preserve the original outcome if diagnostics are unavailable. */}finally{this.states.delete(test);}}
 }

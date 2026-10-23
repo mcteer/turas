@@ -25,6 +25,27 @@ function executionChangesAttachment(raw:unknown):ExecutionChangesObservation|und
   try{const bytes=Buffer.from(value.body,'base64');if(bytes.length>8192||bytes.toString('base64')!==value.body)continue;const result=fixedExecutionChangesObservation(JSON.parse(bytes.toString('utf8')));if(result)return result;}catch{/* Never relay malformed/private attachment content. */}
  }
 }
+export const executionWriteObservationSchema=z.strictObject({
+ contract:z.literal('execution-write-observation-v1'),elapsedMs:z.number().int().min(0).max(300000),
+ collectionError:z.enum(['none','page_closed','collection_timeout','collection_failed']),
+ snapshot:z.strictObject({visibility:executionVisibility,focused:z.boolean(),pathCategory:executionPath,panelPresent:z.boolean(),panelHidden:z.boolean(),
+  save:executionControl,submit:executionControl,submitVisible:z.boolean(),uncertainVisible:z.boolean(),savedVisible:z.boolean(),refreshVisible:z.boolean(),writesDisabledVisible:z.boolean(),
+  invalidControlCount:z.number().int().min(0).max(64).optional(),invalidFields:z.array(z.enum(['title','context','event_date','timezone','owner_reason','work_package','minutes','as_of','other'])).max(8).optional(),commandDeniedVisible:z.boolean().optional(),recordStates:z.strictObject({draft:z.number().int().min(0).max(64),submitted:z.number().int().min(0).max(64),accepted:z.number().int().min(0).max(64),other:z.number().int().min(0).max(64)})}).nullable(),
+ events:z.array(z.strictObject({category:z.enum(['create','submit','command_other','session','overview','owners','activity','delivery','accepted','read_other']),phase:z.enum(['request','response','finished','failed']),elapsedMs:z.number().int().min(0).max(300000),status:z.number().int().min(100).max(599).nullable()})).max(16),
+ commands:z.array(z.strictObject({category:z.enum(['create','submit','command_other']),phase:z.enum(['request','response','finished','failed']),elapsedMs:z.number().int().min(0).max(300000),status:z.number().int().min(100).max(599).nullable()})).max(8).optional(),
+ actions:z.array(z.strictObject({kind:z.enum(['save_pointer','save_click','submit_pointer','submit_click','form_submit','invalid']),field:z.enum(['none','title','context','event_date','timezone','owner_reason','work_package','minutes','as_of','other']),elapsedMs:z.number().int().min(0).max(300000)})).max(8).optional(),
+ pageErrors:z.array(z.enum(['type','reference','syntax','chunk_load','hydration','other'])).max(4).optional(),
+ pending:z.array(z.strictObject({category:z.enum(['create','submit','command_other','session','overview','owners','activity','delivery','accepted','read_other']),elapsedMs:z.number().int().min(0).max(300000)})).max(8),
+});
+export type ExecutionWriteObservation=z.infer<typeof executionWriteObservationSchema>;
+export function fixedExecutionWriteObservation(raw:unknown):ExecutionWriteObservation|undefined{const result=executionWriteObservationSchema.safeParse(raw);return result.success?result.data:undefined;}
+function executionWriteAttachment(raw:unknown):ExecutionWriteObservation|undefined{
+ if(!Array.isArray(raw))return;
+ for(const value of raw.slice(-16)){
+  if(!value||typeof value!=='object'||value.name!=='execution-write-observation'||value.contentType!=='application/json'||typeof value.body!=='string'||value.body.length>10924)continue;
+  try{const bytes=Buffer.from(value.body,'base64');if(bytes.length>8192||bytes.toString('base64')!==value.body)continue;const result=fixedExecutionWriteObservation(JSON.parse(bytes.toString('utf8')));if(result)return result;}catch{/* No raw attachment data escapes. */}
+ }
+}
 type UtilizationMetadata={status:number;fromMatches:boolean;toMatches:boolean;resourceMatches:boolean;percentageIsExpected:boolean;state:string|null;errorCode:string|null};
 const utilizationStates=new Set(['complete','incomplete','not_applicable','other']);
 const utilizationCodes=new Set(['invalid_input','unauthenticated','unauthorized','forbidden','not_found','scope_too_large','unavailable','rate_limited','other']);
@@ -47,7 +68,7 @@ function utilizationAttachment(raw:unknown):UtilizationMetadata|undefined{
   }catch{/* Malformed or private attachment content is never a diagnostic. */}
  }
 }
-type BrowserFailure={file:string;line:number;column:number;project:string;status:string;durationMs:number|null;category:string;signatures:string[];mentionedAccessibilityRules:string[];phases?:string[];utilization?:UtilizationMetadata;executionChanges?:ExecutionChangesObservation};
+type BrowserFailure={file:string;line:number;column:number;project:string;status:string;durationMs:number|null;category:string;signatures:string[];mentionedAccessibilityRules:string[];phases?:string[];utilization?:UtilizationMetadata;executionChanges?:ExecutionChangesObservation;executionWrite?:ExecutionWriteObservation};
 const accessibilityRules=new Set(axe.getRules().map(rule=>rule.ruleId));
 const projects=new Set(['webkit-desktop-light','webkit-desktop-dark','webkit-mobile-light','webkit-mobile-dark']);
 const signatures=['Test timeout','Timeout','toBeVisible','toBeFocused','toHaveCount','toEqual','strict mode violation','navigation interrupted','ERR_ABORTED','ECONNREFUSED','Execution context was destroyed','page.reload','page.goto','Target page, context or browser has been closed','WebKit encountered an internal error','Frame load interrupted','Load failed','Fast Refresh','503','429'] as const;
@@ -80,7 +101,8 @@ export function browserFailureMetadata(raw:unknown,allowedFiles:ReadonlySet<stri
     const mentionedAccessibilityRules=[...new Set([...prose.matchAll(/"([a-z][a-z0-9-]{1,79})"/g)].map(match=>match[1]).filter(id=>accessibilityRules.has(id)))].slice(0,8);
     const utilization=file==='execution-handoff.spec.ts'?utilizationAttachment(result.attachments):undefined;
     const executionChanges=file==='execution-changes.spec.ts'?executionChangesAttachment(result.attachments):undefined;
-    failures.push({...location,...(phases.size?{phases:[...phases].sort()}:{}),...(utilization?{utilization}:{}),...(executionChanges?{executionChanges}:{}),project:projects.has(test.projectName)?test.projectName:'unknown',status:result.status,durationMs:typeof result.duration==='number'&&Number.isFinite(result.duration)&&result.duration>=0&&result.duration<=3600000?result.duration:null,category:/test timeout/i.test(prose)?'test_timeout':/timeout|timed out/i.test(prose)?'operation_timeout':/strict mode violation/i.test(prose)?'ambiguous_locator':/navigation|ERR_ABORTED/i.test(prose)?'navigation':/expect|AssertionError/i.test(prose)?'assertion':'case_failure',signatures:matched,mentionedAccessibilityRules});
+    const executionWrite=file==='execution-handoff.spec.ts'?executionWriteAttachment(result.attachments):undefined;
+    failures.push({...location,...(phases.size?{phases:[...phases].sort()}:{}),...(utilization?{utilization}:{}),...(executionChanges?{executionChanges}:{}),...(executionWrite?{executionWrite}:{}),project:projects.has(test.projectName)?test.projectName:'unknown',status:result.status,durationMs:typeof result.duration==='number'&&Number.isFinite(result.duration)&&result.duration>=0&&result.duration<=3600000?result.duration:null,category:/test timeout/i.test(prose)?'test_timeout':/timeout|timed out/i.test(prose)?'operation_timeout':/strict mode violation/i.test(prose)?'ambiguous_locator':/navigation|ERR_ABORTED/i.test(prose)?'navigation':/expect|AssertionError/i.test(prose)?'assertion':'case_failure',signatures:matched,mentionedAccessibilityRules});
    }
   }
   for(const key of ['suites','specs'])if(Array.isArray(row[key]))for(const child of row[key])walk(child,depth+1);

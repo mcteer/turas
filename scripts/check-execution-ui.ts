@@ -1,3 +1,5 @@
+import {observedUiChildArguments} from './capture-ui-child';
+import {browserStepFailures} from './ci-browser-step-reporter';
 import { spawn, spawnSync } from "node:child_process";
 import { supportUiGlobalDiagnostic, supportUiCaseDiagnostic } from "./support-ui-diagnostic";
 import { mkdir, mkdtemp, writeFile, chmod, readdir, lstat } from "node:fs/promises";
@@ -13,12 +15,12 @@ import { executionSourceDigest } from "./execution-source-digest";
 // A synchronous child blocks the app supervisor's pipe consumers.
 function captureExecutionUi(args:string[],env:NodeJS.ProcessEnv):Promise<{status:number|null;stdout:string;stderr:string;error:boolean}>{
   return new Promise(resolve=>{
-    const child=spawn(process.execPath,args,{env,stdio:["ignore","pipe","pipe"]});
+    const child=spawn(process.execPath,observedUiChildArguments(args),{env,stdio:["ignore","pipe","pipe"]});
     let stdout="",stderr="",error=false;const timer=setTimeout(()=>{error=true;child.kill("SIGKILL");},1_200_000);
     child.stdout.on("data",chunk=>{stdout+=chunk.toString();if(stdout.length>10_000_000){error=true;child.kill("SIGKILL");}});
     child.stderr.on("data",chunk=>{stderr=(stderr+chunk.toString()).slice(-1_000_000);});
     child.once("error",()=>{error=true;});
-    child.once("close",status=>{clearTimeout(timer);resolve({status,stdout,stderr,error});});
+    child.once("close",status=>{clearTimeout(timer);if(status!==0||error)try{for(const value of browserStepFailures(stderr))process.stderr.write(JSON.stringify(value)+"\n");}catch{/* Preserve the original child result. */}resolve({status,stdout,stderr,error});});
   });
 }
 async function privateCaptureTree(path:string):Promise<void>{

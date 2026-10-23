@@ -1,7 +1,7 @@
 "use client";
 import Link from 'next/link';
 import { useCallback,useEffect,useRef,useState } from 'react';
-import { useExecutionCommand,useExecutionRefresh } from './client';
+import { useExecutionCommand,useExecutionRefresh,executionReadDeadlineMs } from './client';
 import { ExecutionRecords } from './records';
 import { ExecutionMilestones } from './milestones';
 import { ExecutionReview } from './review';
@@ -20,7 +20,7 @@ export function ExecutionOverview({customerId,engagementId}:{customerId:string;e
   const flight=useRef<Promise<void>|null>(null),heading=useRef<HTMLHeadingElement|null>(null);
   const sequence=useRef(0),pageCursor=useRef<string|null>(null),scopeReady=useRef(false),reviewTrigger=useRef<HTMLElement|null>(null);
   const clear=useCallback(()=>{++sequence.current;readAbort.current?.abort();readAbort.current=null;flight.current=null;scopeReady.current=false;setShowContent(false);setView(null);setRecords([]);setOwners([]);setCandidate(null);setSession(null);setCursor(null);pageCursor.current=null;},[]);
-  const refresh=useCallback((force=false)=>{if(flight.current&&!force)return flight.current;if(force)readAbort.current?.abort();const controller=new AbortController();readAbort.current=controller;const run=async()=>{const ticket=++sequence.current;try{
+  const refresh=useCallback((force=false)=>{if(flight.current&&!force)return flight.current;if(force)readAbort.current?.abort();const controller=new AbortController();readAbort.current=controller;let timedOut=false;const timer=setTimeout(()=>{timedOut=true;controller.abort();},executionReadDeadlineMs);const run=async()=>{const ticket=++sequence.current;try{
     const [currentSession,currentView,currentOwners]=await Promise.all([get<Session>('/api/auth/session',controller.signal),get<Overview>(`/api/execution/engagements/${engagementId}`,controller.signal),get<{owners:Owner[]}>(`/api/execution/engagements/${engagementId}/owners`,controller.signal)]);
     if(ticket!==sequence.current)return;
     if(currentView.customerId!==customerId)throw Object.assign(new Error('Execution unavailable'),{status:404});
@@ -31,8 +31,8 @@ export function ExecutionOverview({customerId,engagementId}:{customerId:string;e
   }catch(error){if(ticket!==sequence.current)return;
     const status=error&&typeof error==='object'&&'status'in error?Number(error.status):503;
     if(status===409){pageCursor.current=null;setCursor(null);setRecords([]);setCandidate(null);setMessage('Execution changed. Refresh the current records.');return;}
-    clear();setMessage([401,403,404].includes(status)?'Current execution access unavailable. Sign in or refresh access.':error instanceof Error?error.message:'Execution unavailable');
-  }};const pending=run();flight.current=pending;void pending.finally(()=>{if(flight.current===pending)flight.current=null;if(readAbort.current===controller)readAbort.current=null;});return pending;},[engagementId,customerId,clear]);
+    clear();setMessage(timedOut?'Current execution read timed out. Refresh current execution access.':[401,403,404].includes(status)?'Current execution access unavailable. Sign in or refresh access.':error instanceof Error?error.message:'Execution unavailable');
+  }};const pending=run();flight.current=pending;void pending.finally(()=>{clearTimeout(timer);if(flight.current===pending)flight.current=null;if(readAbort.current===controller)readAbort.current=null;});return pending;},[engagementId,customerId,clear]);
   const commands=useExecutionCommand(session?.csrfToken??'',async()=>{pageCursor.current=null;await refresh(true);},clear);
   useExecutionRefresh(refresh);
   useEffect(()=>{clear();void refresh();return()=>{++sequence.current;};},[engagementId,customerId,clear,refresh]);
@@ -50,6 +50,7 @@ export function ExecutionOverview({customerId,engagementId}:{customerId:string;e
   return <main className="profile-page"><nav aria-label="Breadcrumb" className="profile-breadcrumb"><Link href="/customers">Customers</Link><span aria-hidden="true">/</span><Link href={`/customers/${customerId}`}>Profile</Link><span aria-hidden="true">/</span><Link href={`/customers/${customerId}/engagements/${engagementId}`}>Engagement</Link><span aria-hidden="true">/</span><span>Execution</span></nav>
     <header className="profile-header"><div><p className="profile-eyebrow">Engagement Delivery</p><h1 ref={heading} tabIndex={-1}>Execution Log</h1><p className="muted">Reviewed work and explicit delivery decisions.</p></div><Link className="secondary-button" href={`/customers/${customerId}/reports`}>Customer Reports</Link></header>
     {message&&<p role="alert">{message}</p>}{commands.message&&<p role="status">{commands.message}</p>}
+    {message&&!view&&<button type="button" className="secondary-button" disabled={switching||commands.busy} onClick={()=>void refresh(true)}>Refresh execution</button>}
     {commands.uncertainKey&&<button type="button" className="secondary-button" disabled={commands.busy} onClick={()=>void commands.reconcile()}>Check save receipt</button>}
     {!view&&!message&&<p role="status">Loading current execution eligibility…</p>}
     {view&&session&&<div hidden={!showContent}>

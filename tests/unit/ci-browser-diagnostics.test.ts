@@ -1,9 +1,9 @@
-import BrowserStepReporter,{browserStepFailure,browserStepFailures,browserStepOperation} from '../../scripts/ci-browser-step-reporter';
+import BrowserStepReporter,{browserStepFailure,browserStepFailures,browserStepOperation,browserStepActionability} from '../../scripts/ci-browser-step-reporter';
 import {observedUiChildArguments} from '../../scripts/capture-ui-child';
 import {artifactAuthStartupPhases,artifactAuthStartupTimeline,observeArtifactReadinessProbe} from '../../scripts/artifact-eval-environment';
 import {workMcpCaseFailureMetadata,processFailureMetadata,setupFailureMetadata,pilotRegressionFailureMetadata,pilotCatalogAbortMetadata,recoveryApplicationFailureMetadata,recoveryServerStartupPhases} from '../../scripts/ci-process-diagnostics';
 import {describe,expect,it,vi} from 'vitest';
-import {browserFailureMetadata,fixedUtilizationMetadata,fixedExecutionChangesObservation,pilotUiChildFailures,partnerBrowserFailureMetadata} from '../../scripts/ci-browser-diagnostics';
+import {browserFailureMetadata,fixedExecutionWriteObservation,fixedUtilizationMetadata,fixedExecutionChangesObservation,pilotUiChildFailures,partnerBrowserFailureMetadata} from '../../scripts/ci-browser-diagnostics';
 import {nativeQueryOperation,nativeQueryObservationSchema,nativeBlockerMetadata} from '../../scripts/ci-native-query-observer';
 const allowed=new Set(['mcp-accessibility.spec.ts']);
 describe('private browser failure diagnostics',()=>{
@@ -104,6 +104,16 @@ it('reports setup and child process failure classes without exposing private out
  expect(startup.artifactStartup).toEqual({lastAuthStatus:401,lastEveStatus:null,authTransport:'none',eveTransport:'TimeoutError',probeCount:24,elapsedMs:60001,nextReady:true,compiling:true,eveListening:false,supervisorExited:false,supervisorSignalled:false,signatures:['ECONNREFUSED']});expect(JSON.stringify(startup)).not.toContain('PRIVATE_');
  expect(artifactAuthStartupPhases('  12 | process.stderr.write("ARTIFACT_AUTH_MODULE\\n");\nPRIVATE_TEXT ARTIFACT_AUTH_HANDLER\n')).toEqual({authModuleObserved:false,authHandlerObserved:false,authSessionObserved:false,authFailureObserved:false});
  expect(artifactAuthStartupPhases('\u001b[32mARTIFACT_AUTH_MODULE\u001b[0m\r\nARTIFACT_AUTH_HANDLER\nARTIFACT_AUTH_SESSION\nARTIFACT_AUTH_FAILURE\n')).toEqual({authModuleObserved:true,authHandlerObserved:true,authSessionObserved:true,authFailureObserved:true});
+ expect(browserStepActionability('PRIVATE_ERROR\nCall log:\n - element is not enabled\n - element was detached from the DOM\n - waiting for locator(\"PRIVATE_SELECTOR\")\n 31 | PRIVATE_CODE_FRAME')).toEqual(['disabled','detached','locator_wait']);
+ expect(browserStepActionability(' - waiting for locator(\"element is disabled PRIVATE_LABEL\")\n 31 | element is not visible')).toEqual(['locator_wait']);
+ const actionable=browserStepFailure({kind:'ci_browser_steps',project:'webkit-mobile-dark',status:'failed',caseLine:14,durationMs:30001,retry:0,actionability:['disabled','PRIVATE_REASON',{secret:'PRIVATE_DATA'}],steps:[{operation:'click',source:'case',line:31,column:79,actionability:['hidden','PRIVATE_REASON']}]});
+ expect(actionable).toMatchObject({actionability:['disabled'],steps:[{actionability:['hidden']}]});expect(JSON.stringify(actionable)).not.toContain('PRIVATE_');
+ const write={contract:'execution-write-observation-v1',elapsedMs:1000,collectionError:'none',snapshot:{visibility:'visible',focused:true,pathCategory:'execution',panelPresent:true,panelHidden:false,save:{count:1,enabled:false},submit:{count:1,enabled:false},submitVisible:true,uncertainVisible:false,savedVisible:true,refreshVisible:false,writesDisabledVisible:false,recordStates:{draft:1,submitted:0,accepted:0,other:0}},events:[{category:'create',phase:'response',elapsedMs:10,status:200}],pending:[{category:'overview',elapsedMs:990}]};
+ const acted={...write,commands:[{category:'create',phase:'response',elapsedMs:20,status:200}],actions:[{kind:'save_click',field:'none',elapsedMs:10},{kind:'invalid',field:'event_date',elapsedMs:11}],pageErrors:['type'],snapshot:{...write.snapshot,invalidControlCount:1,invalidFields:['event_date'],commandDeniedVisible:false}};
+ expect(fixedExecutionWriteObservation(acted)).toEqual(acted);expect(fixedExecutionWriteObservation({...acted,actions:[{kind:'save_click',field:'PRIVATE_FIELD',elapsedMs:1}]})).toBeUndefined();expect(fixedExecutionWriteObservation({...acted,commands:[{...acted.commands[0],body:'PRIVATE_BODY'}]})).toBeUndefined();
+ expect(fixedExecutionWriteObservation(write)).toEqual(write);expect(fixedExecutionWriteObservation({...write,private:'PRIVATE_BODY'})).toBeUndefined();expect(fixedExecutionWriteObservation({...write,snapshot:{...write.snapshot,title:'PRIVATE_TITLE'}})).toBeUndefined();
+ const attached={suites:[{specs:[{file:'execution-handoff.spec.ts',line:14,column:1,tests:[{projectName:'webkit-mobile-dark',results:[{status:'failed',duration:30001,errors:[],attachments:[{name:'execution-write-observation',contentType:'application/json',body:Buffer.from(JSON.stringify(write)).toString('base64')}]}]}]}]}]};
+ expect(browserFailureMetadata(attached,new Set(['execution-handoff.spec.ts']))[0].executionWrite).toEqual(write);expect(JSON.stringify(browserFailureMetadata({...attached,private:'PRIVATE_DATA'},new Set(['execution-handoff.spec.ts'])))).not.toContain('PRIVATE_');
  const fetchProbe=vi.spyOn(globalThis,'fetch');
  try{
   fetchProbe.mockResolvedValueOnce({status:401,body:{cancel:async()=>{throw new DOMException('PRIVATE_CANCEL','TimeoutError');}}} as unknown as Response);

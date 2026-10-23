@@ -36,6 +36,17 @@ timed out although the no-cookie session handler reached the expected refusal
 path. Failure-only checks now compare fresh HTTP and fetch responses from that
 same route. They cannot satisfy readiness or establish the historical cause.
 
+The `a15ca8e` local run passed all 1,040 cases, and its CI catalog also passed;
+whole CI remains blocked by an Execution mobile-dark Submit-click timeout.
+A separate controlled browser test reproduced a confirmed-save refresh liveness
+bug: a stalled read can keep command controls disabled indefinitely. Execution
+read refreshes now have a bounded deadline and clear stale eligibility on failure,
+with an explicit refresh path. The original CI actionability state was not
+retained, so this reproduction does not establish its historical cause. The
+changed revision passed the original Forecast and new fault regression in all
+four WebKit profiles, including real create-receipt checks without postponing
+Submit. Fresh full, CI, model and hosted acceptance remain required.
+
 Production remains `f8d196f`, schema077. Full current-source checks, model
 evaluation, hosted recovery and Production verification remain required.
 

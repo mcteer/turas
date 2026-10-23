@@ -7755,3 +7755,122 @@ unchanged. Fixed diagnostic tests distinguish a synthetic request timeout from
 a synthetic cancellation timeout after 401 headers; neither demonstrates which
 occurred in the historical CI run. The later failure probes intentionally have
 separate teardown behavior and cannot replace these original probe outcomes.
+
+### Confirmed-write read-refresh liveness and Execution diagnostics (T152)
+
+Exact `a15ca8e` local validation passed 1,040 named cases/189 suites with zero
+skips or retries, original 90-minute limit, parent exit 0 and strict cleanup;
+all 387 referenced inputs were independently rehashed. Its CI finished with
+49 successful main jobs, one Execution WebKit failure and all seven legacy jobs
+successful. The original CI catalog ZIP was retained separately for forensic
+review: 191 safe members, 189 indexed suite hashes and 1,040 exact passing names.
+This does not make the failed whole CI eligible for release or model dispatch.
+
+Execution failed the forecast journey defined at `execution-handoff.spec.ts:14`
+in mobile-dark. The producer retained callsite `31:79`, at the Submit delivery
+record click, and a failed result duration of 52,511 ms. The case still had its
+240-second limit and 30-second action/expect limits. Three prior profiles passed
+all 13 cases; mobile-dark passed five cases before this failure, with seven later
+cases unexecuted. The checked-out PR merge tree exactly matched `a15ca8e`.
+No private failed report, step timeline or handoff actionability state was
+retained. Fixed prose signatures do not identify the actual click-blocking reason.
+
+Source review found a separate concrete liveness gap: after a valid committed
+receipt, `ExecutionCommandClient` awaits the overview refresh before releasing
+its busy interlock. The existing POST abort cannot cancel that independent read.
+The overview and delivery-record refresh flights had no read deadline, and
+visible polling joined a pending flight. A controlled old-source WebKit run
+performed exactly one real create, stalled an overview read, and observed Saved
+with Submit still disabled after 17,008 ms. This proves the controlled liveness
+defect, not the missing CI actionability cause.
+
+Overview refresh now bounds the complete parallel session/view/owners reads and
+subsequent activity read/body handling to 15 seconds. Expiration flows through
+existing eligibility clearing: private view, session, rows and scope readiness
+are removed before the command interlock releases. An explicit read-only Refresh
+execution action and visible polling can recover current authority. Delivery
+record refresh similarly bounds its page and accepted-evidence pagination;
+current failures clear derived content, while superseded requests retain their
+sequence/abort fences. Confirmed receipts, POST 30-second and reconcile 15-second
+limits, request identities and no-write-replay semantics remain unchanged.
+
+The custom Execution runner now installs and forwards the fixed browser reporter
+without replacing its own 1,200,000 ms process timer, stdout/stderr handling or
+scenario arguments. Bounded call-log actionability enums omit all prose. Passive
+handoff observations report only fixed control/state booleans and counts,
+request categories, status and elapsed time; they add no requests or interception.
+Their attachments are revalidated before CI publication. Current unit/privacy
+and type checks pass; controlled fixed-browser and durable regression validation
+are being completed before the next committed validation run.
+
+Controlled fixed attempt 4 passed with parent exit 0, one expected case and zero
+unexpected/skipped/flaky results. It cleared private view at the read deadline,
+enabled explicit Refresh, recovered the same committed estimate after selecting
+its record type, and submitted once. Releasing the aborted old overview response
+after submission could not restore the previous state. Observed counts were
+create 1, submit 1 and one held read; fixed observation elapsed 16,376 ms. Root
+rehashing verified all 76 retained controlled-proof inputs. Earlier private
+harness setup errors and a wrong record-type expectation are retained separately;
+they are not counted as product failures or passing proof. The interrupted setup
+root was ownership-verified and removed after confirming no owned processes and
+its outer container absent. All probe-owned resources are now retired.
+
+The exercised fixed flow is now a durable fourth handoff UI case, preserving its
+240-second case and 30-second action limits. It forwards the real create response
+unchanged only after checking committed state and the matching request key. It
+holds a real overview response to exercise timeout and stale-response recovery;
+there is no replacement application response, command replay or production data.
+Execution discovery includes all 14 cases per profile. A narrow eight-case run
+covers the original forecast and the new regression in all four WebKit profiles.
+Current real reporter probes also preserved deliberate error and timeout results,
+parseable JSON and success with no diagnostic emission. These diagnostic probes
+are separate from product acceptance. Fresh committed full/CI/model/hosted gates
+remain required for the changed revision.
+
+The eight real checked-in local cases completed with seven passes and one
+failure: the new read-deadline regression passed all four profiles, while the
+unchanged original Forecast mobile-dark case failed again at Submit click.
+The first fail-fast parent exited 1; only its previously unexecuted eighth case
+ran afterward, with parent exit 0. No failed case was retried in that batch.
+All nine runtime source pins remained unchanged, and all owned outer containers
+and eight inner app/workforce pairs were independently absent. Root verified all
+54 proof inputs and preserved the nine original source byte snapshots before
+subsequent diagnostic edits. This remains a validation blocker.
+
+The new failure snapshot distinguishes it from the controlled busy interlock:
+Save enabled, Submit absent, no saved or uncertain indicator, no pending request,
+and two accepted records without a new draft. Original write events could have
+been evicted by the shared 16-event polling ring. Commands are now retained in a
+separate bounded ring, with passive fixed Save/Submit pointer/click, form-submit,
+and native-invalid field categories. The snapshot also records validity counts
+and fixed field names without values. A separately named unchanged-scenario
+mobile-dark diagnostic invocation uses those observations; it is not a rerun
+being overlaid into a passing batch or evidence of a resolved CI cause.
+
+The additional diagnostic invocation and the bounded three-sample study all
+passed. They produced no failure-only state packets and do not resolve or
+reclassify the earlier genuine failure. Root rehashed 22 diagnostic and 30 study
+inputs and preserved their nine source-byte inputs before the next assertion
+change. The study stopped at its predeclared maximum; it was not a retry gate.
+
+The original Forecast case now observes the exact create-command response and
+checks HTTP 200, committed state and matching request key concurrently with the
+original immediate Submit action. The response observer starts before Save;
+Submit is not postponed until the acknowledgement. Original actions, assertions,
+240-second case/30-second action limits and retry zero remain. Thus each passing
+case also proves a real create acknowledgement, while a recurrence fails at the
+Save boundary or Submit with the fixed event packet available. This strengthens
+validation without substituting an unacknowledged synchronization fix. A fresh
+current-source eight-case matrix is required after this assertion change, then
+all exact committed full/CI/model/hosted gates remain required. Historical
+missing-draft cause remains unproved.
+
+The fresh current-source eight-case matrix passed all eight cases with parent
+exit 0, no skipped/retry/flaky results and original clocks. Both the original
+Forecast journey with concurrent real receipt checks and the checked-in fault
+regression passed in all four WebKit profiles. All nine pinned runtime sources
+were byte-identical through execution, and the owned outer PostgreSQL container
+and all eight inner app/workforce pairs were absent afterward. Root independently
+rehashed all 46 proof inputs. This is current narrow acceptance; earlier failure
+records and their unproven cause remain intact. Fresh exact-committed exhaustive
+local, whole first-attempt CI, model and hosted acceptance are still required.
