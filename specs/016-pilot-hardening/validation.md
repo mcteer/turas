@@ -7662,3 +7662,41 @@ filters job/source states, native exit categories and booleans before CI output.
 It does not log identifiers, paths, personnel bytes, native output, SQL or raw
 exception messages. Original scenarios, clocks, assertions and retries remain.
 Current committed full-source/CI, actual-model and hosted gates remain pending.
+
+
+### Expansion timeout and shared browser step observations (T150)
+
+Current `fe5eee0` main CI `39968556475` attempt 1 recorded a genuine mobile-dark
+Expansion timeout: `expansion-decisions.spec.ts:67`, 30,063 ms. The producer's
+fixed diagnostic reports `69:242`, the call to `fillExpansionDiscovery`, before
+Review Hypothesis, the dismissal request route or acknowledgement recovery.
+The Expansion aggregate failed because its project result was failure; this
+is not a second scenario defect. Other current jobs and the full local catalog
+remain separate, incomplete evidence until their actual outcomes are recorded.
+
+The earlier `ba99938` desktop-dark timeout has the same declaration/callsite and
+30,048 ms duration. The actual original scenario passed unchanged locally on all
+four profiles in 7.1–9.0 seconds; those passes do not prove the CI cause. The old
+stale-generation negative control expected 409 but received 200 and did not
+establish its hypothesis. No stale-race, reload, hydration or runtime correction
+is claimed. Failed raw JSON and traces were unavailable because the workflow
+retains only safe successful reports, so neither timeout identifies the internal
+helper action or distinguishes cumulative budget use from a blocked action.
+
+The shared supervised browser child now installs a passive reporter beside the
+original JSON reporter. It keeps at most 64 fixed step observations, emits only
+failed/timed-out/interrupted records to stderr, and revalidates at most three
+bounded records before outer public output. JSON stdout, original child status,
+flags, environment, deadlines and byte limits remain. Operation classification
+uses anchored API/action prefixes so words in selectors or labels cannot change
+the classification. No title, selector, input value, URL, filename/path or raw
+exception is emitted. Elapsed time uses the reporter receipt clock, which can
+include worker fixtures; original step and test durations remain separate.
+
+Real headless WebKit probes on the current reporter preserved a deliberate
+error, a blocked-fill timeout with its original 3,000 ms controlled-probe budget,
+and a successful case. Original JSON remained parseable and all actual retries
+were zero. The failed probe child retained exit 1 and the success-only probe
+exit 0 with no diagnostics. Private probe inputs/errors remain only in protected
+raw artifacts; public fixed observations exclude them. These are diagnostics
+checks, not a reproduction of the Expansion cause or full/CI/model/hosted proof.

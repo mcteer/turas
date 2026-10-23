@@ -728,3 +728,13 @@ No hosted target may be locked for release before its measured reopen path exist
   before CI output. Retain the 591-case CI failure and local Docker-setup failure
   separately from the fresh full local run. Obtain current committed full/CI,
   model and hosted acceptance; observability is not a demonstrated runtime fix.
+
+- [ ] T150 Retain the actual `fe5eee0` mobile-dark Expansion timeout and its
+  derivative aggregate failure separately. Add shared, passive failure-only
+  browser step observations to the existing supervised JSON-report child path,
+  preserving stdout, actions, assertions, timeouts, retries and original results.
+  Emit only revalidated fixed operations/source categories and bounded locations,
+  durations and booleans; omit selectors, values, paths and error prose. Verify
+  real CLI WebKit success/error/timeout probes and privacy, then obtain fresh
+  committed full/CI/model/hosted acceptance. Do not infer the old cause or adjust
+  clocks from a timeout lacking internal action evidence.

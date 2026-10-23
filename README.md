@@ -23,6 +23,13 @@ added alongside the bounded Execution browser observations. They preserve the
 original actions, assertions, deadlines and retries; neither establishes a
 runtime fix. Current-source acceptance and release remain pending.
 
+The `fe5eee0` CI also retained an Expansion mobile-dark journey timeout inside
+proposal preparation, before dismissal/recovery actions. Its internal action
+and timing were not retained. Shared failure-only browser step observations
+now preserve fixed action categories, source-location categories and timings
+without raw selectors, values, paths or errors. Original scenarios, time limits
+and retries remain unchanged; this is diagnostic coverage, not a runtime fix.
+
 Production remains `f8d196f`, schema077. Full current-source checks, model
 evaluation, hosted recovery and Production verification remain required.
 
