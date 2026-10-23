@@ -10,12 +10,14 @@ the unchanged case passes all four WebKit profiles locally without retries.
 The exact historical stalled action remains unknown. See
 [016 validation](specs/016-pilot-hardening/validation.md).
 
-The latest `e473d2c` CI completed with 49 passing jobs and one recovery-catalog
-failure. The work-MCP case timed out during final verification; an isolated local
-diagnostic passed without reproducing the timeout. Failure-only phase timings
-are being added while preserving its requests, assertions and original clocks.
-The full local runs were interrupted for requested host cleanup and are not
-complete acceptance. See the validation record above for retained results.
+At `65712fe`, two CI attempts retained distinct UI failures. Attempt 1 was
+cancelled after a pilot WebKit navigation error and a research-field timeout;
+separate unchanged-source local checks passed all 40 pilot and 12 research
+scenarios without retries. Attempt 2 passed pilot WebKit but failed an Execution
+assertion; its remaining jobs and the full local catalog are still running.
+These observations do not establish the historical causes. Bounded failure-only
+page, request and mapping observations are being added to make the Execution
+failure actionable. Current-source acceptance and release remain pending.
 
 Production remains `f8d196f`, schema077. Full current-source checks, model
 evaluation, hosted recovery and Production verification remain required.

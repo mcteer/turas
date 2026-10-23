@@ -5,8 +5,10 @@ import {requireOwnedExecutionClone} from "../../scripts/execution-eval-environme
 import {timeFixture,draftTime,submitTime,timeCandidate,decideTime} from "../fixtures/execution/time";
 import {registerFixture,replaceBaseline,saveRegister,registerBase} from "../fixtures/execution/registers";
 import {withTransaction} from "../../lib/server/db/client";
+import {installExecutionChangesDiagnostics} from "../fixtures/execution/ui-diagnostics";
 const expect=baseExpect.configure({timeout:30000});
 test.beforeEach(({page})=>{page.setDefaultTimeout(30000);requireOwnedExecutionClone();if(process.env.TURAS_EXECUTION_FIXTURE_READY!=="1")throw new Error("Use owned008 UI runner");});
+installExecutionChangesDiagnostics();
 test("reviewed RAID and scope replacement retain actuals and require explicit one-to-one mapping",async({page},testInfo)=>{
   test.setTimeout(180000);const f=await timeFixture();await decideTime(f,await timeCandidate(f,[await submitTime(f,await draftTime(f))]));
   const url=`/customers/${f.customerId}/engagements/${f.engagementId}/execution`;

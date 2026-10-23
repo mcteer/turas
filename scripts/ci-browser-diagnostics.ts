@@ -1,6 +1,30 @@
 export const knownBrowserPhases=new Set(['Reload retained failed history','Verify retained file after reload','Open learning draft','Prepare learning draft','Verify learning draft','Audit learning draft','Cancel learning draft','Verify learning partner denial','Prepare absent request assignment','Prepare absent request draft','Dispatch absent request draft','Verify unresolved absent request','Reload absent request assignment','Verify absent request after reload','Resolve absent request fence','Audit absent request outcome']);
 export function fixedBrowserPhases(raw:unknown){return Array.isArray(raw)?[...new Set(raw.filter((value):value is string=>typeof value==='string'&&knownBrowserPhases.has(value)))].slice(0,8):[];}
 import axe from 'axe-core';
+import {z} from 'zod';
+const executionElapsed=z.number().int().min(0).max(180000);
+const executionVisibility=z.enum(['visible','hidden','unknown']);
+const executionPath=z.enum(['execution','login','other']);
+const executionControl=z.strictObject({count:z.number().int().min(0).max(8),enabled:z.boolean()});
+const executionDocument=z.strictObject({category:z.enum(['document','focus','blur','visibility']),elapsedMs:executionElapsed,visibility:executionVisibility,focused:z.boolean(),pathCategory:executionPath});
+const executionOverview=z.strictObject({category:z.literal('overview'),elapsedMs:executionElapsed,status:z.number().int().min(100).max(599).nullable(),error:z.enum(['none','transport','http_denied','http_error','body_unavailable','body_invalid','oversized']),initialized:z.boolean().nullable(),reviewRequired:z.boolean().nullable(),reconciliation:z.boolean().nullable(),newEligible:z.boolean().nullable(),baselineMismatch:z.boolean().nullable()});
+export const executionChangesObservationSchema=z.strictObject({
+ contract:z.literal('execution-changes-observation-v1'),elapsedMs:executionElapsed,
+ collectionError:z.enum(['none','page_closed','collection_timeout','collection_failed']),
+ snapshot:z.strictObject({visibility:executionVisibility,focused:z.boolean(),pathCategory:executionPath,reconciliationCount:z.number().int().min(0).max(8),reconciliationVisible:z.boolean(),mappingSelectCount:z.number().int().min(0).max(64),controls:z.strictObject({workPackageProof:executionControl,workPackageReadiness:executionControl,milestoneProofDone:executionControl,milestoneReady:executionControl})}).nullable(),
+ events:z.array(z.union([executionDocument,executionOverview,z.strictObject({category:z.literal('page_error'),elapsedMs:executionElapsed,error:z.enum(['type','reference','syntax','chunk_load','hydration','other'])})])).max(16),
+});
+export type ExecutionChangesObservation=z.infer<typeof executionChangesObservationSchema>;
+export function fixedExecutionChangesObservation(raw:unknown):ExecutionChangesObservation|undefined{
+ const parsed=executionChangesObservationSchema.safeParse(raw);return parsed.success?parsed.data:undefined;
+}
+function executionChangesAttachment(raw:unknown):ExecutionChangesObservation|undefined{
+ if(!Array.isArray(raw))return;
+ for(const value of raw.slice(0,16)){
+  if(!value||typeof value!=='object'||value.name!=='execution-changes-observation'||value.contentType!=='application/json'||typeof value.body!=='string'||value.body.length>10924)continue;
+  try{const bytes=Buffer.from(value.body,'base64');if(bytes.length>8192||bytes.toString('base64')!==value.body)continue;const result=fixedExecutionChangesObservation(JSON.parse(bytes.toString('utf8')));if(result)return result;}catch{/* Never relay malformed/private attachment content. */}
+ }
+}
 type UtilizationMetadata={status:number;fromMatches:boolean;toMatches:boolean;resourceMatches:boolean;percentageIsExpected:boolean;state:string|null;errorCode:string|null};
 const utilizationStates=new Set(['complete','incomplete','not_applicable','other']);
 const utilizationCodes=new Set(['invalid_input','unauthenticated','unauthorized','forbidden','not_found','scope_too_large','unavailable','rate_limited','other']);
@@ -23,7 +47,7 @@ function utilizationAttachment(raw:unknown):UtilizationMetadata|undefined{
   }catch{/* Malformed or private attachment content is never a diagnostic. */}
  }
 }
-type BrowserFailure={file:string;line:number;column:number;project:string;status:string;durationMs:number|null;category:string;signatures:string[];mentionedAccessibilityRules:string[];phases?:string[];utilization?:UtilizationMetadata};
+type BrowserFailure={file:string;line:number;column:number;project:string;status:string;durationMs:number|null;category:string;signatures:string[];mentionedAccessibilityRules:string[];phases?:string[];utilization?:UtilizationMetadata;executionChanges?:ExecutionChangesObservation};
 const accessibilityRules=new Set(axe.getRules().map(rule=>rule.ruleId));
 const projects=new Set(['webkit-desktop-light','webkit-desktop-dark','webkit-mobile-light','webkit-mobile-dark']);
 const signatures=['Test timeout','Timeout','toBeVisible','toBeFocused','toHaveCount','toEqual','strict mode violation','navigation interrupted','ERR_ABORTED','ECONNREFUSED','Execution context was destroyed','page.reload','page.goto','Target page, context or browser has been closed','WebKit encountered an internal error','Frame load interrupted','Load failed','Fast Refresh','503','429'] as const;
@@ -55,7 +79,8 @@ export function browserFailureMetadata(raw:unknown,allowedFiles:ReadonlySet<stri
     const matched=signatures.filter(signature=>prose.toLowerCase().includes(signature.toLowerCase()));
     const mentionedAccessibilityRules=[...new Set([...prose.matchAll(/"([a-z][a-z0-9-]{1,79})"/g)].map(match=>match[1]).filter(id=>accessibilityRules.has(id)))].slice(0,8);
     const utilization=file==='execution-handoff.spec.ts'?utilizationAttachment(result.attachments):undefined;
-    failures.push({...location,...(phases.size?{phases:[...phases].sort()}:{}),...(utilization?{utilization}:{}),project:projects.has(test.projectName)?test.projectName:'unknown',status:result.status,durationMs:typeof result.duration==='number'&&Number.isFinite(result.duration)&&result.duration>=0&&result.duration<=3600000?result.duration:null,category:/test timeout/i.test(prose)?'test_timeout':/timeout|timed out/i.test(prose)?'operation_timeout':/strict mode violation/i.test(prose)?'ambiguous_locator':/navigation|ERR_ABORTED/i.test(prose)?'navigation':/expect|AssertionError/i.test(prose)?'assertion':'case_failure',signatures:matched,mentionedAccessibilityRules});
+    const executionChanges=file==='execution-changes.spec.ts'?executionChangesAttachment(result.attachments):undefined;
+    failures.push({...location,...(phases.size?{phases:[...phases].sort()}:{}),...(utilization?{utilization}:{}),...(executionChanges?{executionChanges}:{}),project:projects.has(test.projectName)?test.projectName:'unknown',status:result.status,durationMs:typeof result.duration==='number'&&Number.isFinite(result.duration)&&result.duration>=0&&result.duration<=3600000?result.duration:null,category:/test timeout/i.test(prose)?'test_timeout':/timeout|timed out/i.test(prose)?'operation_timeout':/strict mode violation/i.test(prose)?'ambiguous_locator':/navigation|ERR_ABORTED/i.test(prose)?'navigation':/expect|AssertionError/i.test(prose)?'assertion':'case_failure',signatures:matched,mentionedAccessibilityRules});
    }
   }
   for(const key of ['suites','specs'])if(Array.isArray(row[key]))for(const child of row[key])walk(child,depth+1);

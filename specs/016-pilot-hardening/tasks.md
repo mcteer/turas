@@ -710,3 +710,13 @@ No hosted target may be locked for release before its measured reopen path exist
   before CI output, verify privacy and the original case, then obtain fresh
   committed full-source/CI/model/hosted acceptance. Do not extend clocks or infer
   a product correction from a diagnostic-only change.
+
+- [ ] T148 Diagnose the retained `65712fe` Execution WebKit failure using bounded,
+  failure-only browser observations: visibility/focus, fixed request categories
+  and statuses, and fixed mapping-state booleans. Verify the actual PR merge
+  tree and test bytes match the intended source. Retain both earlier CI attempts
+  and the separate unchanged-source local corroborations without claiming their
+  causes. Reject unknown/private diagnostic fields before public CI output.
+  Preserve all original scenarios, assertions, time limits and retry policies;
+  obtain fresh source-bound full/CI/model/hosted acceptance. Observability alone
+  is not a demonstrated product correction.

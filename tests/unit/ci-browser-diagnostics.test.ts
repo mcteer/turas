@@ -1,7 +1,7 @@
 import {artifactAuthStartupPhases} from '../../scripts/artifact-eval-environment';
 import {workMcpCaseFailureMetadata,processFailureMetadata,setupFailureMetadata,pilotRegressionFailureMetadata,pilotCatalogAbortMetadata,recoveryApplicationFailureMetadata,recoveryServerStartupPhases} from '../../scripts/ci-process-diagnostics';
 import {describe,expect,it} from 'vitest';
-import {browserFailureMetadata,fixedUtilizationMetadata,pilotUiChildFailures,partnerBrowserFailureMetadata} from '../../scripts/ci-browser-diagnostics';
+import {browserFailureMetadata,fixedUtilizationMetadata,fixedExecutionChangesObservation,pilotUiChildFailures,partnerBrowserFailureMetadata} from '../../scripts/ci-browser-diagnostics';
 import {nativeQueryOperation,nativeQueryObservationSchema,nativeBlockerMetadata} from '../../scripts/ci-native-query-observer';
 const allowed=new Set(['mcp-accessibility.spec.ts']);
 describe('private browser failure diagnostics',()=>{
@@ -43,6 +43,32 @@ describe('private browser failure diagnostics',()=>{
   expect(browserFailureMetadata(report([attachment(scope)],'mcp-accessibility.spec.ts'),files)[0].utilization).toBeUndefined();
   expect(fixedUtilizationMetadata({...usage,state:{toString:()=> 'complete'}})).toBeUndefined();
   expect(fixedUtilizationMetadata({...usage,extra:'PRIVATE_TOKEN'})).toBeUndefined();
+  const control={count:1,enabled:true};
+  const observation={contract:'execution-changes-observation-v1',elapsedMs:97716,collectionError:'none',snapshot:{visibility:'visible',focused:true,pathCategory:'execution',reconciliationCount:0,reconciliationVisible:false,mappingSelectCount:0,controls:{workPackageProof:control,workPackageReadiness:control,milestoneProofDone:control,milestoneReady:control}},events:[{category:'focus',elapsedMs:67000,visibility:'visible',focused:true,pathCategory:'execution'},{category:'overview',elapsedMs:68000,status:200,error:'none',initialized:true,reviewRequired:true,reconciliation:true,newEligible:true,baselineMismatch:true}]};
+  const executionAttachment=(body:unknown)=>({name:'execution-changes-observation',contentType:'application/json',body:Buffer.from(JSON.stringify(body)).toString('base64')});
+  const executionFiles=new Set(['execution-changes.spec.ts','execution-handoff.spec.ts']);
+  const diagnostic=browserFailureMetadata(report([executionAttachment(observation)],'execution-changes.spec.ts'),executionFiles)[0].executionChanges;
+  expect(diagnostic).toEqual(observation);expect(fixedExecutionChangesObservation(diagnostic)).toEqual(observation);
+  const denied={...observation,events:[{category:'overview',elapsedMs:68000,status:403,error:'http_denied',initialized:null,reviewRequired:null,reconciliation:null,newEligible:null,baselineMismatch:null}]};
+  expect(browserFailureMetadata(report([executionAttachment(denied)],'execution-changes.spec.ts'),executionFiles)[0].executionChanges).toEqual(denied);
+  for(const rejected of [
+    {...observation,url:'https://PRIVATE_HOST/PRIVATE_ID'},
+    {...observation,elapsedMs:180001},
+    {...observation,elapsedMs:NaN},
+    {...observation,collectionError:'PRIVATE_ERROR'},
+    {...observation,snapshot:{...observation.snapshot,pathCategory:'/PRIVATE_CUSTOMER'}},
+    {...observation,snapshot:{...observation.snapshot,html:'PRIVATE_DOM'}},
+    {...observation,snapshot:{...observation.snapshot,controls:{...observation.snapshot.controls,workPackageProof:{...control,value:'PRIVATE_VALUE'}}}},
+    {...observation,events:[{...observation.events[1],status:999}]},
+    {...observation,events:[{...observation.events[1],body:'PRIVATE_RESPONSE'}]},
+    {...observation,events:[{...observation.events[1],reviewRequired:'PRIVATE_BOOL'}]},
+    {...observation,events:[{...observation.events[1],error:'PRIVATE_ERROR'}]},
+    {...observation,events:Array(17).fill(observation.events[0])},
+    {...observation,extra:'PRIVATE_TOKEN'.repeat(1024)},
+  ])expect(browserFailureMetadata(report([executionAttachment(rejected)],'execution-changes.spec.ts'),executionFiles)[0].executionChanges).toBeUndefined();
+  for(const rejected of [{name:'execution-changes-observation',contentType:'application/json',body:'PRIVATE_MALFORMED'},{...executionAttachment(observation),body:Buffer.from('PRIVATE_MALFORMED').toString('base64')},{...executionAttachment(observation),contentType:'text/plain'},{name:'execution-changes-observation',contentType:'application/json',path:'/PRIVATE_PATH'}])expect(browserFailureMetadata(report([rejected],'execution-changes.spec.ts'),executionFiles)[0].executionChanges).toBeUndefined();
+  expect(browserFailureMetadata(report([executionAttachment(observation)]),executionFiles)[0].executionChanges).toBeUndefined();
+  expect(JSON.stringify(diagnostic)).not.toContain('PRIVATE_');
  });
 });
 

@@ -7602,3 +7602,31 @@ in cleanup, diagnostics cannot replace the original failure, and CI revalidates
 all fields before publishing them. The complete catalog, source-bound CI,
 actual-model and hosted gates remain required; no runtime cause or repair is
 claimed by these observations.
+
+
+### Retained UI failures and bounded Execution observations (T148)
+
+At `65712fe`, main CI `39891357749` attempt 1 was explicitly cancelled after two
+original failures: pilot mobile-dark navigation reported a WebKit internal error,
+and research mobile-light exhausted its shared 30-second case budget while
+waiting for Product. Its terminal inventory is 36 successful jobs, two original
+failures, an aggregate failure caused by cancelled dependencies, and 11 cancelled
+jobs. No unfinished job is counted as passing. Separate unchanged-source local
+runs passed all 40 pilot and 12 research scenarios with zero retries; independent
+reviews verified their reports and qualified owned cleanup. These passes do not
+establish either CI cause.
+
+One complete main and legacy replacement was launched as attempt 2, with no
+attempt-1 success overlay. Pilot WebKit passed; Execution desktop-light failed
+an assertion in its scope-replacement journey. The actual checked PR merge tree
+and exact test bytes equal `65712fe`; the reported source-line offset remains
+unexplained. No page visibility, actual overview response or mapping DOM state
+was retained, so no runtime defect is established. The added failure-only
+observations must expose only fixed bounded metadata and cannot substitute for
+current full-source/CI, model-quality, hosted or Production acceptance.
+
+The current-source controlled fresh-restore composition also passes its single
+case: actual PostgreSQL 18.6 native restore, a distinct fresh cluster, restricted
+runtime authentication, six object namespaces, and external fixture cost records.
+Cloud placement, TLS/proxy, Blob and Sandbox boundaries remain controlled in
+that test; actual hosted recovery is still required.
