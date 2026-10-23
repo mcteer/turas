@@ -1127,3 +1127,13 @@ after65 passing cases. A minimal fixture reproduced open-file interference,
 including a macOS indexer. The finite cleanup predicate now waits for both cwd
 and open-file absence within its existing window and original owned deadline.
 Fresh provisioning, native and complete catalog/CI checks are pending.
+
+
+The 2026-10-23 pilot checkpoint at `1283807` passed all 57 CI jobs and its
+1,040-case CI catalog. Its live model batch remains incomplete: an artifact
+answer exceeded the unchanged 1,200-token limit, and an older capability-honesty
+criterion conflicts with the current Pending-proposal contract. The criterion
+is being versioned with fresh affected validation required. Original owned
+catalog receipts will also be retained separately in CI. Production remains on
+`f8d196f` / schema 077; hosted release, scheduled backup and recovery checks are
+still pending.

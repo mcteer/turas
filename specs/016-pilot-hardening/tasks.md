@@ -759,3 +759,22 @@ No hosted target may be locked for release before its measured reopen path exist
   Execution runner without changing its process or original scenario clocks.
   Revalidate privacy, original scenarios and fresh committed full/CI/model/hosted
   acceptance; do not claim the missing historical CI state was reconstructed.
+
+
+- [ ] T153 Correct the obsolete 002 save-profile criterion to the current
+  governed Pending-proposal contract, preserving all prompts, roles, run counts
+  and approval/privacy hard gates. Retain the actual 1283807 criterion conflict
+  and the separate 004 1,214-token failure against its unchanged 1,200-token
+  limit. Require fresh affected evaluation and independent semantic review;
+  never retag earlier source captures or count the obsolete criterion as passed.
+  Publish original owned catalog run, execution, image and suite/process receipts
+  in a separate CI artifact without changing the existing CI evidence artifact,
+  cases, clocks, retries or required checks. Verify actual retained bytes before
+  using them for readiness. Model, hosted, backup and recovery gates remain open.
+
+  Before changing the artifact cap, retain only fixed serialized model and
+  requested-output-limit metadata at the actual guarded Gateway boundary.
+  Preserve payloads and the existing 1,000-token fixture request, 1,200-token
+  observed-output assertion, model, reasoning and accounting. Verify the installed
+  SDK serialization with a denied synthetic call and no provider dispatch. This
+  observation does not itself establish the historical request or provider cause.

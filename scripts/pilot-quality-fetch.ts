@@ -21,7 +21,7 @@ function accounting(value:unknown,responseId?:string):Accounting{
 /** Install only in the explicitly owned evaluation process. This does not
  * authorize live work, select a model, change requests or infer missing charges.
  * The trusted operator supplies a fresh published ceiling, not the model. */
-export function budgetedGatewayFetch(input:{ledger:QualityBudgetLedger;attemptId?:string;fetch:typeof fetch;ceiling:(model:Model)=>Promise<Ceiling>;denied?:(ceiling:Ceiling)=>Promise<void>;failed?:(failure:QualityFailureEvidence)=>Promise<void>;observed?:(operation:{kind:'language'|'embedding'|'metadata'|'other';approvedModel:boolean})=>Promise<void>}):typeof fetch{
+export function budgetedGatewayFetch(input:{ledger:QualityBudgetLedger;attemptId?:string;fetch:typeof fetch;ceiling:(model:Model)=>Promise<Ceiling>;denied?:(ceiling:Ceiling)=>Promise<void>;failed?:(failure:QualityFailureEvidence)=>Promise<void>;observed?:(operation:{kind:'language'|'embedding'|'metadata'|'other';approvedModel:boolean})=>Promise<void>;parameters?:(parameters:{modelId:Model;maxOutputTokens:number|null})=>Promise<void>}):typeof fetch{
  return async(resource,init)=>{
   const url=new URL(resource instanceof Request?resource.url:String(resource));
   if(url.hostname!=='ai-gateway.vercel.sh')return input.fetch(resource,init);
@@ -40,6 +40,7 @@ export function budgetedGatewayFetch(input:{ledger:QualityBudgetLedger;attemptId
   const body=await request.clone().arrayBuffer();if(body.byteLength>4*1024*1024)throw Error('Evaluation request exceeds bound');
   const payload=JSON.parse(Buffer.from(body).toString('utf8'));
   if(embedding&&(!Array.isArray(payload.values)||!payload.values.length||payload.values.length>2048||payload.values.some((v:unknown)=>typeof v!=='string'||!v)))throw Error('Embedding batch identity differs');
+  if(language)await input.parameters?.({modelId:modelId as Model,maxOutputTokens:Number.isSafeInteger(payload.maxOutputTokens)&&payload.maxOutputTokens>0&&payload.maxOutputTokens<=32000?payload.maxOutputTokens:null});
   request.signal.throwIfAborted();
   if(Array.isArray(payload.tools)&&payload.tools.some((tool:unknown)=>typeof tool==='object'&&tool!==null&&'type' in tool&&tool.type==='provider-defined'))throw Error('Unpriced provider tool denied');
   const ceiling=await input.ceiling(modelId as Model);if(ceiling.modelId!==modelId)throw Error('Evaluation pricing model differs');

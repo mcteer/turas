@@ -43,10 +43,10 @@ it('does not claim a provider dispatch for an already aborted request',async()=>
  await expect(guard(endpoint,{...request,signal:abort.signal})).rejects.toThrow();expect(calls).toBe(0);expect(await budget.status()).toMatchObject({dispatches:0,admissionHeld:false});
 });
 it('enforces admission on the installed SDK request without contacting the provider',async()=>{
- const budget=await ledger(1);let denials=0;
- const guard=budgetedGatewayFetch({ledger:budget,ceiling,denied:async()=>{denials++;},fetch:async()=>{calls++;throw Error('Unexpected provider call');}});
- await expect(generateText({model:createGateway({apiKey:'synthetic-no-provider-credential',fetch:guard})(model),prompt:'Synthetic denial',maxRetries:0})).rejects.toThrow();
- expect(denials).toBe(1);expect(calls).toBe(0);expect(await budget.status()).toMatchObject({dispatches:0,admissionHeld:false});
+ const budget=await ledger(1);let denials=0;const parameters:unknown[]=[];
+ const guard=budgetedGatewayFetch({ledger:budget,ceiling,parameters:async value=>{parameters.push(value);},denied:async()=>{denials++;},fetch:async()=>{calls++;throw Error('Unexpected provider call');}});
+ await expect(generateText({model:createGateway({apiKey:'synthetic-no-provider-credential',fetch:guard})(model),prompt:'Synthetic private denial prompt',maxOutputTokens:1000,maxRetries:0})).rejects.toThrow();
+ expect(parameters).toEqual([{modelId:model,maxOutputTokens:1000}]);expect(JSON.stringify(parameters)).not.toContain('private');expect(denials).toBe(1);expect(calls).toBe(0);expect(await budget.status()).toMatchObject({dispatches:0,admissionHeld:false});
 });
 it('reads both public catalogs without sending a model credential',async()=>{
  const budget=await ledger(),guard=budgetedGatewayFetch({ledger:budget,ceiling,fetch:async resource=>{

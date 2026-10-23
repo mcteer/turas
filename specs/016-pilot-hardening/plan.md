@@ -628,3 +628,25 @@ verification checks its unchanged state, freshness and mapping before cold archi
 and destination reauthentication, without creating a configuration session.
 Immutable deployment identity must remain exact on every transport. No new cost,
 copy, unlock, provider or readiness authority comes from configuration JSON.
+
+
+## Current evaluation criteria and original CI receipt retention (T153)
+
+Version the 002 save-profile criterion for the current governed Pending-proposal
+contract. Preserve the prompts, roles, repetitions, rubric and approval/privacy
+hard gates. Require a fresh affected evaluation; the old criterion conflict is
+retained and cannot be silently regraded as a version-1 pass.
+
+Keep the existing CI catalog artifact byte format and publish a separate artifact
+with the owned runner's original run, execution, image-preparation and individual
+suite/process receipts. Authenticate the producing run, attempt, source and bytes
+before use. This does not change either execution class: local remains 90 minutes
+and GitHub Actions remains 120 minutes. The three failed Mac catalogs remain
+failed; retaining original CI receipts is not a claim that those runs passed.
+All live-model, hosted release, scheduled-backup and recovery gates remain required.
+
+The observed 004 output overrun requires actual request-boundary evidence before
+choosing a fix. Record only the fixed model identity and bounded numeric requested
+output limit before provider dispatch. Preserve the 1,000-token fixture request
+and 1,200-token observed assertion, complete cases, clocks and accounting. Never
+subtract unobserved reasoning tokens or infer a provider cause from the total.

@@ -1049,6 +1049,19 @@ jobs:
           if-no-files-found: error
           retention-days: 7
           compression-level: 6
+      - name: Retain original owned pilot catalog receipts
+        if: matrix.gate == 'deterministic' && success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pilot-owned-catalog-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            local-artifacts/016/run-*/run.json
+            local-artifacts/016/run-*/execution.json
+            local-artifacts/016/run-*/image-preparation.json
+            local-artifacts/016/run-*/suite-*.json
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 6
       - name: Complete four-project pilot browser journeys
         if: matrix.gate == 'webkit'
         run: npm run pilot:ui:check

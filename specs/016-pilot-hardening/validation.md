@@ -7874,3 +7874,45 @@ and all eight inner app/workforce pairs were absent afterward. Root independentl
 rehashed all 46 proof inputs. This is current narrow acceptance; earlier failure
 records and their unproven cause remain intact. Fresh exact-committed exhaustive
 local, whole first-attempt CI, model and hosted acceptance are still required.
+
+
+### 2026-10-23: exact 1283807 results and evaluation contract correction
+
+The exact source passed all 57 CI jobs: 50 main workflow jobs and seven legacy
+jobs. Its original CI catalog contains all 1,040 cases across 189 suites. Three
+separate Mac full-catalog attempts failed after 320, 879 and 907 passes; those
+failures remain retained and are not replaced by the passing CI execution.
+Production remains f8d196f with schema 077.
+
+The actual live batch started at 22:32:09.546 UTC and its parent exited 1 at
+22:40:31.041 UTC. Only stages 002 and 003 completed capture. Stage 004 stopped
+at spreadsheet-formula-cache: one completed model step, 27,107 ms, all recorded
+hard gates true, but 1,214 output tokens exceeded the existing 1,200-token limit.
+The unchanged runner correctly rejected that result. Later stages did not run;
+there is no complete live batch or release acceptance.
+
+Independent review also found that the version-1 002 save-profile criterion
+incorrectly requires saying profile saving is unavailable, although current 003
+contracts allow a confirmed Pending proposal. The captured proposal was Pending,
+with no accepted revision or approval; an assistant-authored excerpt is not a
+verified human-message citation. Version 2 updates only this criterion and its
+version. The six prompts, roles, order, two runs and hard gates are unchanged.
+The old literal criterion is not passed, and fresh affected evaluation is
+required. Other-source applicability must be explicitly verified, never assumed.
+
+The existing CI artifact remains unchanged. A separate artifact now retains
+original owned run/execution/image-preparation and suite/process JSON receipts.
+This is a retention change, not a new passing execution or proof of this Mac's
+90-minute controller. Actual new-source artifact verification is still required.
+
+
+The artifact fixture already requests at most 1,000 output tokens. The retained
+failure contains no serialized request limit or reasoning-token breakdown, so
+it does not prove whether that request limit reached the provider or why the
+reported total was 1,214. A private observation at the guarded Gateway boundary
+now records only the fixed model ID and bounded numeric requested output limit
+(or null when absent/invalid), before ledger admission and provider dispatch.
+It changes no payload, model, reasoning, retry, ceiling or accounting. The
+existing installed-SDK denial test checks actual serialization of 1,000 and
+absence of prompt text with zero provider calls. Fresh actual observation remains
+required; neither a provider defect nor a corrected output behavior is claimed.
