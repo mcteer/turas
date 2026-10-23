@@ -43,6 +43,7 @@ import {workCaptureCandidateSchema,type WorkCaptureCandidate} from '../../../lib
 import {LocalPrivateObjects} from '../../../lib/server/storage/local-objects';
 import {objectKey,environmentObjectId} from '../../../lib/server/storage/private-objects';
 import {activeObjectNamespaces} from '../../../lib/server/storage/inventory';
+import {observeWorkforceRecovery} from '../../fixtures/pilot/workforce-recovery-diagnostics';
 import {pilotPublishedKnowledgeFixture} from '../../fixtures/pilot/knowledge';
 
 it.each(['artifact','report','workforce','gap','command'] as const)('%s authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority',async surface=>{
@@ -81,7 +82,7 @@ it.each(['artifact','report','workforce','gap','command'] as const)('%s authenti
     await uploadImportOriginal(profile.actor,intent.importId!,(async function*(){yield personnel;})());
     const completed=await completeImport(profile.actor,intent.importId!,{requestKey:randomUUID(),contentDigest:personnelDigest,sourceGeneration:1}),claim=await claimWorkforceImport();
     if(!claim||claim.sourceVersionId!==completed.sourceVersionId)throw Error('Exact owned workforce recovery job required');
-    await runWorkforceImport(claim,environment.signal);expect((await readImportOriginal(profile.actor,intent.importId!)).bytes).toEqual(personnel);
+    await observeWorkforceRecovery(surface,claim,()=>runWorkforceImport(claim,environment.signal),async()=>{expect((await readImportOriginal(profile.actor,intent.importId!)).bytes).toEqual(personnel);});
     sourceWorkforce={importId:intent.importId!,sourceId:intent.sourceId!,versionId:completed.sourceVersionId!,workspaceId:profile.actor.workspaceId,digest:personnelDigest,bytes:personnel};
     const gap=await reviewedSyntheticGap(baseline.author,baseline.reviewer),gapReceipt=await prepareGapReport(baseline.author,{...gapEnvelope(),kind:'detail',gapIds:[gap.id],asOf:new Date().toISOString(),comparisonAt:null,audience:{team:'Synthetic engineering',recipients:['Synthetic reviewer'],purpose:'Verify controlled restored engineering export'}}),[gapJob]=await claimGapReportJobs();
     if(!gapJob||gapJob.id!==gapReceipt.resultId)throw Error('Exact normal recovery gap job required');await runGapReportJob(gapJob);

@@ -7630,3 +7630,35 @@ case: actual PostgreSQL 18.6 native restore, a distinct fresh cluster, restricte
 runtime authentication, six object namespaces, and external fixture cost records.
 Cloud placement, TLS/proxy, Blob and Sandbox boundaries remain controlled in
 that test; actual hosted recovery is still required.
+
+
+### Workforce recovery CI failure and fixed observations (T149)
+
+At `65712fe`, the actual exhaustive local run passed 1,040 cases in 189 suites,
+with zero skips or retries. Independent review verified source, indexed results,
+processes and owned cleanup while qualifying unrelated later container changes.
+Its second CI attempt completed with 48 main successes, two genuine failures
+(Execution WebKit and evaluation-app readiness), and seven legacy successes.
+
+At `923aa54`, CI run `39956033320` attempt 1 completed 591 cases before suite 94
+failed. The artifact recovery case called the original workforce worker, then
+`readImportOriginal` rejected at its current-version/source-state guard. The
+claim had passed the exact source-version check. The underlying job state,
+error code and native outcome were not retained, so parser, scanner, timeout or
+product causes are not established. The failed producer uploaded no successful
+catalog artifact. Its remaining UI jobs are retained independently.
+
+The first local run on that revision failed after 410 passes when Docker was
+unavailable during suite 66 setup; its one case did not execute. Exact owned
+resources were removed after ownership and process checks, and all failure
+records were retained. One fresh complete run on unchanged source is active;
+its five suite-94 restore cases have all passed. These observations do not erase
+either failed run or establish a CI cause.
+
+The next change observes only the original workforce scan/parse calls and emits
+fixed metadata after an original failure. It queries the exact owned claim with
+a separate bounded read-only connection, retains the original exception, and
+filters job/source states, native exit categories and booleans before CI output.
+It does not log identifiers, paths, personnel bytes, native output, SQL or raw
+exception messages. Original scenarios, clocks, assertions and retries remain.
+Current committed full-source/CI, actual-model and hosted gates remain pending.

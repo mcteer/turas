@@ -10,14 +10,18 @@ the unchanged case passes all four WebKit profiles locally without retries.
 The exact historical stalled action remains unknown. See
 [016 validation](specs/016-pilot-hardening/validation.md).
 
-At `65712fe`, two CI attempts retained distinct UI failures. Attempt 1 was
-cancelled after a pilot WebKit navigation error and a research-field timeout;
-separate unchanged-source local checks passed all 40 pilot and 12 research
-scenarios without retries. Attempt 2 passed pilot WebKit but failed an Execution
-assertion; its remaining jobs and the full local catalog are still running.
-These observations do not establish the historical causes. Bounded failure-only
-page, request and mapping observations are being added to make the Execution
-failure actionable. Current-source acceptance and release remain pending.
+At `65712fe`, the exhaustive local catalog passed all 1,040 cases across 189
+suites. CI attempt 2 finished with 48 passing jobs and two failures: Execution
+WebKit and isolated evaluation-app readiness. Separate pilot and research
+WebKit corroborations passed 40 and 12 cases. Their historical causes remain
+unproved. At `923aa54`, the deterministic CI job failed in the workforce-original
+setup of a recovery case; the source was ineligible after its worker returned,
+but the worker state was not retained. The same five restore cases pass locally.
+A fresh local full run is still running after an earlier Docker-daemon outage.
+Failure-only fixed workforce job and native-execution observations are being
+added alongside the bounded Execution browser observations. They preserve the
+original actions, assertions, deadlines and retries; neither establishes a
+runtime fix. Current-source acceptance and release remain pending.
 
 Production remains `f8d196f`, schema077. Full current-source checks, model
 evaluation, hosted recovery and Production verification remain required.

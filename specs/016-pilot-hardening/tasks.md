@@ -720,3 +720,11 @@ No hosted target may be locked for release before its measured reopen path exist
   Preserve all original scenarios, assertions, time limits and retry policies;
   obtain fresh source-bound full/CI/model/hosted acceptance. Observability alone
   is not a demonstrated product correction.
+
+- [ ] T149 Diagnose the actual `923aa54` CI workforce recovery failure at
+  `work-isolated-restore.test.ts` using failure-only fixed state for the exact
+  claimed import and passive scanner/parser outcomes. Preserve original native
+  calls, read assertions, clocks, case names and retries; filter all observations
+  before CI output. Retain the 591-case CI failure and local Docker-setup failure
+  separately from the fresh full local run. Obtain current committed full/CI,
+  model and hosted acceptance; observability is not a demonstrated runtime fix.

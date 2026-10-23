@@ -47,6 +47,16 @@ export function pilotRegressionFailureMetadata(stage:unknown,process:unknown,rep
  return {stage:typeof stage==='string'&&pilotRegressionStages.has(stage)?stage:'unknown',processCode:integer(child.status,255),processError:child.error===true,
   ...(typeof raw.success==='boolean'?{reportSuccess:raw.success}:{}),counts,failedFiles:[...new Set(failedFiles)].slice(0,16)};
 }
+/** Fixed workforce recovery failure state only. No identifiers, file contents,
+ * paths, native output, exception prose or arbitrary database values escape. */
+export function workforceRecoveryFailureMetadata(value:unknown){
+ const row=value&&typeof value==='object'?value as Record<string,unknown>:{};
+ const fixed=(v:unknown,allowed:readonly string[])=>typeof v==='string'&&allowed.includes(v)?v:'unknown';
+ const integer=(v:unknown,max:number)=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=0&&v<=max?v:null;
+ const failures=['unsafe_content','scan_unavailable','scan_stale','parser_timeout','parser_failed','limit_exceeded','source_changed','unsupported_format','encrypted','malformed','renderer_failed','renderer_browser_failed','renderer_validation_failed'];
+ const native=Array.isArray(row.native)?row.native.slice(-4).map(value=>{const n=value&&typeof value==='object'?value as Record<string,unknown>:{};return {kind:fixed(n.kind,['artifact-scan','workforce-parse']),exitCode:integer(n.exitCode,255),durationMs:integer(n.durationMs,300000),safeFailure:fixed(n.safeFailure,failures),error:fixed(n.error,['none','deadline','cleanup','unavailable','output_limit','source_changed','other']),scanClean:typeof n.scanClean==='boolean'?n.scanClean:null,scanFound:typeof n.scanFound==='boolean'?n.scanFound:null};}):[];
+ return {kind:'workforce_recovery_failure',surface:fixed(row.surface,['artifact','report','workforce','gap','command']),diagnosticUnavailable:row.diagnosticUnavailable===true,sourceState:fixed(row.sourceState,['quarantined','processing','ready','partial','reviewed','failed','withdrawn']),jobState:fixed(row.jobState,['queued','running','ready','partial','failed','cancelled']),errorCode:fixed(row.errorCode,failures),attemptNumber:integer(row.attemptNumber,4),currentVersionMatches:typeof row.currentVersionMatches==='boolean'?row.currentVersionMatches:null,leaseActive:typeof row.leaseActive==='boolean'?row.leaseActive:null,deadlineActive:typeof row.deadlineActive==='boolean'?row.deadlineActive:null,native};
+}
 export function processFailureMetadata(value:unknown){
  const raw=value&&typeof value==='object'?value as Record<string,unknown>:{},parts=[raw.stdoutTail,raw.stderrTail,raw.message];
  const prose=parts.filter((v):v is string=>typeof v==='string').map(v=>v.slice(-131072)).join('\n');
@@ -55,9 +65,10 @@ export function processFailureMetadata(value:unknown){
  const phases=[...new Set([...prose.matchAll(/\{"kind":"knowledge_native_failure","case":"(include|publish|apply|revoke|withdraw)","phase":"(create|bind|first-proposal|fresh-proposal|approve|receipt|reload|retire)"\}/g)].map(match=>JSON.stringify({case:match[1],phase:match[2]})))].slice(0,5).map(value=>JSON.parse(value));
  let nativeOperations:ReturnType<typeof ordinaryOperationsDiagnostic>;for(const line of prose.split('\n').filter(line=>line.startsWith('{"kind":"native_operations_fixture_failure"')).slice(-3))try{nativeOperations=ordinaryOperationsDiagnostic(JSON.parse(line));}catch{/* Keep unmatched private output private. */}
  let artifactStartup:ReturnType<typeof artifactStartupDiagnostic>;for(const line of prose.split('\n').filter(line=>line.startsWith('{"kind":"artifact_eval_startup_failure"')).slice(-3))try{artifactStartup=artifactStartupDiagnostic(JSON.parse(line));}catch{/* Keep unmatched private output private. */}
+ const workforceRecovery=prose.split('\n').filter(line=>line.startsWith('{"kind":"workforce_recovery_failure"')).slice(-3).flatMap(line=>{try{return [workforceRecoveryFailureMetadata(JSON.parse(line))];}catch{return [];}});
  const recoveryApplication=prose.split('\n').filter(line=>line.startsWith('{"kind":"owned_recovery_application_failure"')).slice(-3).flatMap(line=>{try{return [recoveryApplicationFailureMetadata(JSON.parse(line))];}catch{return [];}});
  const workMcpCases=prose.split('\n').filter(line=>line.startsWith('{"kind":"work_mcp_case_failure"')).slice(-3).flatMap(line=>{try{return [workMcpCaseFailureMetadata(JSON.parse(line))];}catch{return [];}});
- return {...(workMcpCases.length?{workMcpCases}:{}),...(recoveryApplication.length?{recoveryApplication}:{}),...(artifactStartup?{artifactStartup}:{}),...(nativeOperations?{nativeOperations}:{}),...(phases.length?{phases}:{}),code:typeof raw.code==='number'&&Number.isInteger(raw.code)&&raw.code>=0&&raw.code<=255?raw.code:null,signal:['SIGTERM','SIGKILL','SIGABRT','SIGSEGV'].includes(String(raw.signal))?raw.signal:null,deadlineExpired:raw.deadlineExpired===true,signatures,locations};
+ return {...(workforceRecovery.length?{workforceRecovery}:{}),...(workMcpCases.length?{workMcpCases}:{}),...(recoveryApplication.length?{recoveryApplication}:{}),...(artifactStartup?{artifactStartup}:{}),...(nativeOperations?{nativeOperations}:{}),...(phases.length?{phases}:{}),code:typeof raw.code==='number'&&Number.isInteger(raw.code)&&raw.code>=0&&raw.code<=255?raw.code:null,signal:['SIGTERM','SIGKILL','SIGABRT','SIGSEGV'].includes(String(raw.signal))?raw.signal:null,deadlineExpired:raw.deadlineExpired===true,signatures,locations};
 }
 
 /** Independent route outcomes and fixed startup phases only; never raw logs. */
