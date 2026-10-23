@@ -610,3 +610,21 @@ absolute target deadline, signal, case/fixture/catalog limits, every existing
 assertion and the production window's bounded-prefix behavior. Require focused
 actual execution and a fresh complete committed-source catalog/CI; the prior local
 pass and failed CI remain historical evidence, not acceptance of the changed test.
+
+
+## Isolated hosted private-object binding (T146)
+
+Use the existing admitted hosted storage copier for authenticated cold archive
+objects into a distinct private Blob destination. Original-store parity alone
+is supplementary preservation evidence. Verifier input v4 keeps the original
+candidate unchanged and supplies the original store ID only as the preimage of
+its authenticated configuration digest. The destination remains bound to actual
+Blob reads and the exact platform-verified serving deployment configuration.
+Physical capture content is measured before temporary configuration-read session
+writes. Final new verification requires genuine in-process configuration evidence
+and the exact measured material. Persist the canonical mapping in the existing
+scope digest; no mapping preserves the v2/v3 serialization. An existing committed
+verification checks its unchanged state, freshness and mapping before cold archive
+and destination reauthentication, without creating a configuration session.
+Immutable deployment identity must remain exact on every transport. No new cost,
+copy, unlock, provider or readiness authority comes from configuration JSON.

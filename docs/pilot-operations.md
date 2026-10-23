@@ -1581,3 +1581,32 @@ request ceiling. Further unknown usage or a higher observed exposure closes
 admission until another attributable review. Provider errors retain only bounded
 HTTP status, known code, body digest/size and separately typed Gateway/upstream
 identities; error bodies and credentials are not retained in these receipts.
+
+
+### Restored hosted object-store verification (input v4)
+
+Use `pilot-work-recovery-verification-input-v4` when a work capture's private
+objects have been restored into a distinct Blob store. Retain the original
+candidate and encrypted archive unchanged. Set `restoredStore.originalStoreId`
+to the captured store identity and `restoredStore.expectedConfiguration` to the
+complete, exact restored deployment configuration. The ordinary `storeId` must
+identify that configuration's distinct destination. Legacy v2/v3 inputs do not
+accept this mapping. Neither a configuration file nor a surviving original-store
+comparison establishes that a restoration occurred.
+
+Perform the actual authenticated archive-to-destination copy through the
+existing explicitly admitted hosted storage procedure, retaining its cost hold,
+write fence, cold parity, original inventory and deployment readbacks. Serve
+the isolated recovered application from that destination before verification.
+The verifier authenticates the original capture configuration, measures original
+SQL/content and live restored bytes before temporary session writes, then
+observes the locked serving configuration through a finite administrator session
+and retires it. Both final integrity checks require that genuine observation and
+the same measured material. No step opens service or releases cost holds.
+
+Committed-result recovery runs before any new configuration session or probe. It
+requires the exact durable storage mapping, immutable deployment, unchanged
+database state, fresh verification row, authenticated archive and current
+destination bytes. A changed mapping or stale existing result fails; it cannot
+fall through to new probes. Keep the existing explicit fresh-attempt, current
+denial, service, provider inventory and owner-unlock requirements.

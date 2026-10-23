@@ -7538,3 +7538,36 @@ assumption; it does not prove the historical timing cause. The corrected complet
 retries, the exact registered names and an unchanged test-file digest throughout.
 Root and pilot TypeScript checks pass. Independent final actual readback and
 new-source full/CI/model/hosted/Production checks remain pending.
+
+
+### Hosted nonempty private-object bridge under validation (T146)
+
+The prior managed restore utility required zero private objects. Comparing a cold
+archive with surviving original Blob bytes does not establish isolated object
+restoration. The existing cost-admitted storage copier supplies the real copy;
+the current change adds explicit original/destination binding to final recovery
+verification without relabeling the authenticated capture. New v4 verification
+requires actual destination bytes and genuine exact-deployment configuration
+observation; temporary sessions are retired before the final decision. Mapping
+identity is included in the durable scope digest so committed resume can recheck
+physical bytes without changing the state being resumed. Legacy v2/v3 remain.
+
+The first focused local integrity case passed with nonempty archived objects,
+a distinct controlled destination, rejected copied configuration evidence and
+changed bytes, and verified retirement after failed HTTP/configuration checks.
+Its 24 filtered cases are not full-file acceptance. The subsequent complete
+25-case file passed with zero failures, skipped or pending cases in 680.758
+seconds, including genuine v4 CLI verification and mutation-free committed
+resume. The parent exited 0 and all five runtime/test input hashes remained
+unchanged. Root and pilot TypeScript, documentation and diff checks pass. Complete final-source validation,
+CI, actual models, real hosted copy/recovery and Production acceptance remain
+pending; Production is still f8d196f/schema077.
+
+The ba99938 expansion desktop-dark WebKit job timed out at 30 seconds inside
+fillExpansionDiscovery, before dismissal recovery. The failed job skipped its
+artifact upload, so no exact stalled action is established. A proposed stale
+scope-version explanation was disproved by an actual save returning 200; its
+speculative reload change was reverted. The unchanged original case subsequently
+passed all four WebKit profiles without retries, skips or source drift. That
+corroboration does not erase or explain the original CI failure. Its expansion
+aggregate also fails; no clean ba99938 CI acceptance is claimed.

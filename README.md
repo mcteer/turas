@@ -1,19 +1,17 @@
-Pilot validation is still in progress. The `5c7261e` local catalog passed all
-1,040 cases/189 suites; independent review verified owned cleanup while recording
-four unrelated container replacements. Its CI finished with 48 passing jobs and
-two failures: an MCP projection-tamper expectation and a learning WebKit
-regression. Both failures are retained. The tamper checks now run before the
-long replay work, with explicit proof that both intended injections occurred;
-the complete corrected 25-case file passes locally. Fresh complete-source
-validation is pending.
-The strict open-file inspection now has up to20 seconds within the existing
-fixture deadline. Timeout still fails, and deletion still requires verified
-absence. Application, provider, stage and fixture limits remain unchanged.
-Quality commands also propagate interruption to owned descendants and await
-bounded retirement. Complete new-source validation, CI, model evaluation,
-hosted recovery and Production release remain pending. Production remains
-`f8d196f`, schema077. See
+Pilot validation and Production release remain in progress. The current recovery
+change adds explicit original-to-restored Blob store binding: the unchanged
+backup authenticates the original store, while live destination bytes and the
+exact deployment configuration establish the isolated restored backend.
+Interrupted verification must reproduce the committed mapping without creating
+new sessions or probes. Actual copying, hosted recovery and release remain
+separate requirements; a surviving original store is not restoration proof.
+The earlier `ba99938` CI has an expansion WebKit timeout and its failed aggregate;
+the unchanged case passes all four WebKit profiles locally without retries.
+The exact historical stalled action remains unknown. See
 [016 validation](specs/016-pilot-hardening/validation.md).
+
+Production remains `f8d196f`, schema077. Full current-source checks, model
+evaluation, hosted recovery and Production verification remain required.
 
 The profile/chat fixes released in [PR #45](https://github.com/mcteer/turas/pull/45)
 as `60f7a4c`. Customer selection is searchable across directory pages, Recent

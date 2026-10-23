@@ -680,3 +680,20 @@ No hosted target may be locked for release before its measured reopen path exist
   target, never a clock reset, and preserve the original late broad cleanup check;
   neither historical failing assertion nor timing cause is inferred from its
   shared error location, and the separate learning WebKit failure stays retained.
+
+
+- [ ] T146 Complete the hosted nonempty private-object recovery bridge. Reuse
+  the governed archive-to-distinct-Blob copier and its cost/write fence; preserve
+  original authenticated candidate provenance. Add strict verifier input v4
+  with original store identity and exact restored deployment configuration.
+  Measure original SQL/archive/destination integrity before temporary session
+  writes, then obtain genuine platform-bound configuration evidence and require
+  it for both final physical checks. Bind measured material and the canonical
+  storage mapping into the committed scope digest. Resume an existing exact
+  commit without creating sessions/probes; changed mappings, bytes, deployment,
+  state or stale proofs fail closed. Keep v2/v3 and their scope hashes unchanged.
+  Verify nonempty archive/destination bytes, copied or absent configuration
+  proofs, failed HTTP retirement and full v4 verification/read-only resume.
+  Record actual full-source/CI/model/hosted results before completion. Preserve
+  the ba99938 expansion timeout and its disproved stale-version hypothesis;
+  the unchanged four-profile pass does not establish the historical cause.

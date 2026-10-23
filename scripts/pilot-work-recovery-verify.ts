@@ -1,3 +1,4 @@
+import {restoredWorkStoreSchema,observeWorkRecoveryStore,type WorkRecoveryStoreObservation} from '../lib/server/operations/work-recovery-store-binding';
 import {measureWorkMcpCanonicalScope} from '../lib/server/operations/work-mcp-branch-verification';
 import {pilotDenialSnapshot,requireOriginalWorkDenialCapture,requireOriginalWorkDenialSource} from './pilot-denial-snapshot';
 import {beginRetainedWorkDenialHistory,advanceRetainedWorkDenialHistory} from './pilot-retained-denial-history';
@@ -25,7 +26,7 @@ import {measureWorkOldHttpAdmission} from '../lib/server/operations/work-old-htt
 import {measureWorkManagedTerminalInventory} from '../lib/server/operations/work-managed-terminal-inventory';
 import {measureWorkSandboxTerminalInventory} from '../lib/server/operations/work-sandbox-terminal-inventory';
 import {measureWorkLegacyProductionPool} from '../lib/server/operations/work-legacy-production-pool';
-const file=z.string().min(1).max(4096),configSchema=z.strictObject({contract:z.enum(['pilot-work-recovery-verification-input-v2','pilot-work-recovery-verification-input-v3']),sourceFile:file,hostedScope:pilotHostedScopeSchema,scope:z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive()}),runtimeFile:file,credentialsFile:file,candidateFile:file,bundle:file,keyFile:file,assetRoot:file,storeId:z.string().min(1).max(128),denialReceipt:file,denialDestination:file,denialSourceFile:file,backupCapturedAt:z.iso.datetime({offset:true}),hostJournalDirectory:file,approvedHosts:z.array(z.string().min(1).max(253)).min(1).max(256),productionSourceFile:file.optional(),output:file}).refine(value=>value.hostedScope.target!=='preview'||!!value.productionSourceFile,'Preview verification requires explicit distinct Production source');
+const file=z.string().min(1).max(4096),configSchema=z.strictObject({contract:z.enum(['pilot-work-recovery-verification-input-v2','pilot-work-recovery-verification-input-v3','pilot-work-recovery-verification-input-v4']),restoredStore:restoredWorkStoreSchema.optional(),sourceFile:file,hostedScope:pilotHostedScopeSchema,scope:z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive()}),runtimeFile:file,credentialsFile:file,candidateFile:file,bundle:file,keyFile:file,assetRoot:file,storeId:z.string().min(1).max(128),denialReceipt:file,denialDestination:file,denialSourceFile:file,backupCapturedAt:z.iso.datetime({offset:true}),hostJournalDirectory:file,approvedHosts:z.array(z.string().min(1).max(253)).min(1).max(256),productionSourceFile:file.optional(),output:file}).refine(value=>value.hostedScope.target!=='preview'||!!value.productionSourceFile,'Preview verification requires explicit distinct Production source').refine(value=>(value.contract==='pilot-work-recovery-verification-input-v4')===!!value.restoredStore,'Only v4 requires an explicit restored store mapping').refine(value=>!value.restoredStore||value.restoredStore.expectedConfiguration.storeId===value.storeId,'Exact restored destination required');
 const credentialsSchema=z.strictObject({token:z.string().min(1).max(16384),cronSecret:z.string().min(1).max(8192),protectionBypass:z.string().min(1).max(8192),oidcToken:z.string().min(1).max(16384).optional(),blobToken:z.string().min(1).max(8192).optional(),passwords:z.strictObject({mcteer:z.string().min(1).max(4096),panel:z.string().min(1).max(4096),partner:z.string().min(1).max(4096)})});
 const privateJson=(path:string)=>readEvidence(dirname(resolve(path)),basename(path));
 /** All measurements are produced here from actual fixed transports. Configuration
@@ -39,13 +40,19 @@ export async function pilotWorkRecoveryVerify(args:string[]){
  const commandDeadline=Date.now()+900000;
  return withRecoveryCancellation(900000,async signal=>{
   const target=():LockedWorkRecoveryInput=>({sourceFile:resolve(config.sourceFile),hostedScope:config.hostedScope,scope:config.scope,runtimeConnection:runtime.connection,signal,deadline:Math.min(Date.now()+290000,commandDeadline)});
-  const material=()=>({target:target(),candidate,bundle:resolve(config.bundle),keyFile:resolve(config.keyFile),assetRoot:resolve(config.assetRoot),storeId:config.storeId,...(credentials.blobToken?{blobToken:credentials.blobToken}:{oidcToken:credentials.oidcToken!})});
+  let storeObservation:WorkRecoveryStoreObservation|undefined;
+  const material=()=>({target:target(),candidate,...(config.restoredStore?{restoredStore:config.restoredStore,storeObservation}:{}),bundle:resolve(config.bundle),keyFile:resolve(config.keyFile),assetRoot:resolve(config.assetRoot),storeId:config.storeId,...(credentials.blobToken?{blobToken:credentials.blobToken}:{oidcToken:credentials.oidcToken!})});
   let staging:string|undefined,stage='resume',progressOrdinal=0;
   const progress=async(next:string,counts:Record<string,number>={})=>{stage=next;await writeEvidence(root,'progress-'+String(++progressOrdinal).padStart(4,'0')+'.json',{contract:'pilot-work-recovery-progress-v1',stage,at:new Date().toISOString(),remainingCommandMs:Math.max(0,commandDeadline-Date.now()),...counts,serviceOpened:false,restorationReady:false});};
   try{
    // This must precede physical baseline measurement, quarantine and all probes.
    const resumed=await resumeCommittedWorkRecoveryVerification(target(),material());if(resumed){await writeEvidence(root,'verification.json',resumed);console.info(JSON.stringify(resumed));return resumed;}
    await progress('integrity');const integrity=await measureWorkTargetIntegrity(material());
+   if(config.restoredStore){
+    await progress('restored-store-configuration');
+    storeObservation=await observeWorkRecoveryStore({target:target(),store:config.restoredStore,storeId:config.storeId,password:credentials.passwords.mcteer,protectionBypass:credentials.protectionBypass,journalDirectory:root});
+    await writeEvidence(root,'restored-store-configuration.json',storeObservation);
+   }
    staging=await mkdtemp(join(root,'private-denials-'));
    const baseline=await readHistoricalWorkDenialSnapshot({receipt:resolve(config.denialReceipt),destination:resolve(config.denialDestination),staging,environmentId:config.scope.environmentId,after:config.backupCapturedAt},signal);
    const source=databaseSafetyCaptureSourceSchema.parse(await privateJson(config.sourceFile)),original=databaseSafetyCaptureSourceSchema.parse(await privateJson(config.denialSourceFile));
