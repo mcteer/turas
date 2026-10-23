@@ -697,3 +697,16 @@ No hosted target may be locked for release before its measured reopen path exist
   Record actual full-source/CI/model/hosted results before completion. Preserve
   the ba99938 expansion timeout and its disproved stale-version hypothesis;
   the unchanged four-profile pass does not establish the historical cause.
+
+
+- [ ] T147 Retain the actual e473d2c CI outcome (49 passing jobs, one failed
+  deterministic catalog job after 883 passes). The exhaustive work-MCP case
+  reported a timeout during its producer phase; a 219-second instrumented local
+  run passes and does not establish the CI cause. Add failure-only, bounded
+  phase timings, target remaining time and signal state for the existing case,
+  distinguishing original effect measurements and genuine final verification
+  calls. Preserve every request, assertion, deadline, case and retry setting;
+  forward original results and restore all observers. Revalidate fixed metadata
+  before CI output, verify privacy and the original case, then obtain fresh
+  committed full-source/CI/model/hosted acceptance. Do not extend clocks or infer
+  a product correction from a diagnostic-only change.

@@ -3,6 +3,15 @@ export function pilotCatalogAbortMetadata(cause:unknown,error:unknown){
  const row=error&&typeof error==='object'?error as Record<string,unknown>:{};
  return {cancellationCause:typeof cause==='string'&&['none','deadline','signal'].includes(cause)?cause:'unavailable',processErrorName:typeof row.name==='string'&&['AbortError','Error','TypeError','RangeError'].includes(row.name)?row.name:error?'other':null,processErrorCode:typeof row.code==='string'&&['ABORT_ERR','EAGAIN','ENOENT','EACCES','ENOMEM','EMFILE','ENFILE'].includes(row.code)?row.code:null};
 }
+/** Recovery-case clocks and fixed phases only; no errors, URLs or row content. */
+export function workMcpCaseFailureMetadata(value:unknown){
+ const row=value&&typeof value==='object'?value as Record<string,unknown>:{};
+ const phases=new Set(['setup','initial-category','bounded-category-prefix','network-tamper-single','network-tamper-window','current-denial-refresh','negative-drift','paginated-knowledge','current-scope','remaining-categories','mixed-canonical-and-hosted-branches','service-http','parallel-final-drift','final-scope-replay','pre-producer-retirement','producer','producer-cron','producer-old-http','producer-native','producer-sandbox','producer-final','producer-service','producer-effects','producer-integrity','explicit-fresh-attempt']);
+ const phase=(value:unknown)=>typeof value==='string'&&/^remaining-categories-\d{1,4}$/.test(value)?'remaining-categories':typeof value==='string'&&phases.has(value)?value:'unknown';
+ const milliseconds=(value:unknown,minimum=0)=>typeof value==='number'&&Number.isSafeInteger(value)&&value>=minimum&&value<=450000?value:null;
+ const stages=Array.isArray(row.stages)?row.stages.slice(-32).map(value=>{const stage=value&&typeof value==='object'?value as Record<string,unknown>:{};return {phase:phase(stage.phase),elapsedMs:milliseconds(stage.elapsedMs),targetRemainingMs:milliseconds(stage.targetRemainingMs,-450000)};}):[];
+ return {phase:phase(row.phase),elapsedMs:milliseconds(row.elapsedMs),targetRemainingMs:milliseconds(row.targetRemainingMs,-450000),caseSignalAborted:row.caseSignalAborted===true,errorName:typeof row.errorName==='string'&&['Error','TimeoutError','AbortError','AggregateError'].includes(row.errorName)?row.errorName:'other',stages};
+}
 /** Fixed recovery HTTP phases only. Never include child logs, routes, keys,
  * database identities, response bytes or arbitrary exception messages. */
 export function recoveryServerStartupPhases(output:string){
@@ -47,7 +56,8 @@ export function processFailureMetadata(value:unknown){
  let nativeOperations:ReturnType<typeof ordinaryOperationsDiagnostic>;for(const line of prose.split('\n').filter(line=>line.startsWith('{"kind":"native_operations_fixture_failure"')).slice(-3))try{nativeOperations=ordinaryOperationsDiagnostic(JSON.parse(line));}catch{/* Keep unmatched private output private. */}
  let artifactStartup:ReturnType<typeof artifactStartupDiagnostic>;for(const line of prose.split('\n').filter(line=>line.startsWith('{"kind":"artifact_eval_startup_failure"')).slice(-3))try{artifactStartup=artifactStartupDiagnostic(JSON.parse(line));}catch{/* Keep unmatched private output private. */}
  const recoveryApplication=prose.split('\n').filter(line=>line.startsWith('{"kind":"owned_recovery_application_failure"')).slice(-3).flatMap(line=>{try{return [recoveryApplicationFailureMetadata(JSON.parse(line))];}catch{return [];}});
- return {...(recoveryApplication.length?{recoveryApplication}:{}),...(artifactStartup?{artifactStartup}:{}),...(nativeOperations?{nativeOperations}:{}),...(phases.length?{phases}:{}),code:typeof raw.code==='number'&&Number.isInteger(raw.code)&&raw.code>=0&&raw.code<=255?raw.code:null,signal:['SIGTERM','SIGKILL','SIGABRT','SIGSEGV'].includes(String(raw.signal))?raw.signal:null,deadlineExpired:raw.deadlineExpired===true,signatures,locations};
+ const workMcpCases=prose.split('\n').filter(line=>line.startsWith('{"kind":"work_mcp_case_failure"')).slice(-3).flatMap(line=>{try{return [workMcpCaseFailureMetadata(JSON.parse(line))];}catch{return [];}});
+ return {...(workMcpCases.length?{workMcpCases}:{}),...(recoveryApplication.length?{recoveryApplication}:{}),...(artifactStartup?{artifactStartup}:{}),...(nativeOperations?{nativeOperations}:{}),...(phases.length?{phases}:{}),code:typeof raw.code==='number'&&Number.isInteger(raw.code)&&raw.code>=0&&raw.code<=255?raw.code:null,signal:['SIGTERM','SIGKILL','SIGABRT','SIGSEGV'].includes(String(raw.signal))?raw.signal:null,deadlineExpired:raw.deadlineExpired===true,signatures,locations};
 }
 
 /** Independent route outcomes and fixed startup phases only; never raw logs. */

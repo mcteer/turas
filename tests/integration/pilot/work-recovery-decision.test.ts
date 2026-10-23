@@ -1,3 +1,4 @@
+import {workMcpCaseFailureMetadata} from '../../../scripts/ci-process-diagnostics';
 import {observeWorkRecoveryStore,restoredWorkStoreDigest} from '../../../lib/server/operations/work-recovery-store-binding';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
@@ -185,8 +186,13 @@ it('commits a pending recovery decision only after live checks and rolls back dr
 
 it('measures exhaustive fresh work MCP category pages through SDK and rejects changed projections or forged measurements',async()=>{
  let workspaceId='',customerId='',phase='setup';const conversationIds:string[]=[];
+ const diagnosticStart=performance.now(),stages:{phase:string;elapsedMs:number;targetRemainingMs:number|null}[]=[];
+ let diagnosticTarget:Parameters<typeof withLockedWorkRecoveryTarget>[0]|undefined;
+ const observe=(next:string)=>{phase=next;stages.push({phase:next,elapsedMs:Math.floor(performance.now()-diagnosticStart),targetRemainingMs:diagnosticTarget?diagnosticTarget.deadline-Date.now():null});if(stages.length>32)stages.shift();};
+ const restoreObservations:(()=>void)[]=[];
  await fixture(async input=>{
  input={...input,signal:AbortSignal.timeout(380000),deadline:Date.now()+290000};
+ diagnosticTarget=input;observe('setup');
  const token='controlled-effects-token',key='controlled_effects_automation_key',secret=randomBytes(32).toString('base64url'),previousCron=process.env.CRON_SECRET;process.env.CRON_SECRET=secret;
   const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
   try{const physical=await controlledPhysicalIntegrity(input);await withRetainedDenialFixture(owner,input.scope.environmentId,dirname(input.sourceFile),{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async (retained,refreshDenials,readHistoricalDenials)=>{
@@ -224,29 +230,29 @@ it('measures exhaustive fresh work MCP category pages through SDK and rejects ch
    });
    try{
     const args={target:input,selection:{workspaceId,username:'mcteer' as const,category:'profiles' as const,customerId},password:process.env.TURAS_DEMO_PASSWORD!,retained,journalDirectory:dirname(input.sourceFile)};
-    phase='initial-category';const proof=await measureWorkMcpCategory(args);expect(proof).toMatchObject({calls:5,boundaryCalls:2,actualSdkVerified:true,categoryCoverageVerified:true,probeRetirementVerified:true,requiredScopeHealthy:false,restorationReady:false});
+    observe('initial-category');const proof=await measureWorkMcpCategory(args);expect(proof).toMatchObject({calls:5,boundaryCalls:2,actualSdkVerified:true,categoryCoverageVerified:true,probeRetirementVerified:true,requiredScopeHealthy:false,restorationReady:false});
     await withLockedWorkRecoveryTarget(input,async(db,current)=>{await db.query('BEGIN');try{expect(await requireMeasuredWorkMcpCategory(db,current,proof)).toBe(proof);await expect(requireMeasuredWorkMcpCategory(db,current,{...proof})).rejects.toThrow('Actual fresh');const inventory=await deriveWorkMcpScopeInTransaction(db,current);expect(inventory.required).toContainEqual(proof.selection);await expect(requireMeasuredWorkMcpCoverage(db,current,[proof])).rejects.toThrow('Complete unique');await expect(requireMeasuredWorkMcpCoverage(db,current,[proof,proof])).rejects.toThrow('Complete unique');await db.query('COMMIT');}catch(error){await db.query('ROLLBACK');throw error;}});
     // Exercise both negative windows before the long coverage/replay work.
     // A window legitimately returns a completed prefix when less than65s
     // remains; that must not silently bypass the second-category injection.
     try{
-     phase='bounded-category-prefix';corrupt=true;uncorruptedIdentities=1;
+     observe('bounded-category-prefix');corrupt=true;uncorruptedIdentities=1;
      const prefix=await measureWorkMcpCategoryWindow({...args,target:{...input,deadline:Math.min(input.deadline,Date.now()+64000)},selections:[args.selection,{...args.selection,category:'plans'}]});
      expect(prefix).toHaveLength(1);expect(prefix[0].selection).toEqual(args.selection);
      expect(prefix[0]).toMatchObject({requiredScopeHealthy:false,restorationReady:false});
      expect(identityObservations).toEqual([{categories:['profiles'],mutated:false}]);
      expect(uncorruptedIdentities).toBe(0);identityObservations.length=0;
-     phase='network-tamper-single';
+     observe('network-tamper-single');
      await expect(measureWorkMcpCategory(args)).rejects.toThrow('HTTP and canonical projections differ');
      expect(identityObservations).toEqual([{categories:['profiles'],mutated:true}]);
-     phase='network-tamper-window';uncorruptedIdentities=1;identityObservations.length=0;
+     observe('network-tamper-window');uncorruptedIdentities=1;identityObservations.length=0;
      // A later category failure rejects the whole window after an earlier
      // actual measurement; no partial results escape, and both probes retire.
      await expect(measureWorkMcpCategoryWindow({...args,selections:[args.selection,{...args.selection,category:'plans'}]})).rejects.toThrow('HTTP and canonical projections differ');
      expect(identityObservations).toEqual([{categories:['profiles'],mutated:false},{categories:['plans'],mutated:true}]);expect(uncorruptedIdentities).toBe(0);
     }finally{corrupt=false;uncorruptedIdentities=0;}
     expect((await owner.query('SELECT 1 FROM operations_recovery_http_reads WHERE revoked_at IS NULL')).rowCount).toBe(0);
-    phase='current-denial-refresh';
+    observe('current-denial-refresh');
     expect(()=>refreshMeasuredWorkMcpDenials([{...proof}],retained)).toThrow('Actual fresh');
     expect(()=>refreshMeasuredWorkMcpDenials([proof],{...retained})).toThrow('genuine independent');
     expect(()=>refreshMeasuredWorkMcpDenials([proof,proof],retained)).toThrow('unique');
@@ -270,24 +276,24 @@ it('measures exhaustive fresh work MCP category pages through SDK and rejects ch
     await withLockedWorkRecoveryDecision(input,(db,current)=>requireMeasuredWorkMcpCategory(db,current,proof));
     // Later windows use this exact refreshed capability; no fresh JSON authority.
     retained=newerDenials;args.retained=retained;
-    phase='negative-drift';const originalAdmission=(await owner.query('SELECT id FROM operations_recovery_http_reads WHERE workspace_id=$1 AND mcp_probe_connection ORDER BY created_at,id LIMIT 1',[workspaceId])).rows[0].id;
+    observe('negative-drift');const originalAdmission=(await owner.query('SELECT id FROM operations_recovery_http_reads WHERE workspace_id=$1 AND mcp_probe_connection ORDER BY created_at,id LIMIT 1',[workspaceId])).rows[0].id;
     for(const drift of ['content','membership','probe'] as const)await withLockedWorkRecoveryTarget(input,async(db,current)=>{await db.query('BEGIN');try{
      if(drift==='content')await db.query('UPDATE customer_profile_state SET internal_generation=internal_generation+1 WHERE customer_id=$1',[customerId]);
      if(drift==='membership')await db.query('UPDATE memberships SET active=false WHERE workspace_id=$1 AND principal_id=$2',[workspaceId,DEMO_IDS.mcteer]);
      if(drift==='probe')await db.query('UPDATE operations_recovery_http_reads SET revoked_at=NULL WHERE id=$1',[originalAdmission]);
      await expect(requireMeasuredWorkMcpCategory(db,current,proof)).rejects.toThrow(drift==='content'?'category changed':drift==='probe'?'probe retirement changed':/authentication unavailable|membership|participant/i);
     }finally{await db.query('ROLLBACK');}});
-    phase='paginated-knowledge';const knowledge=await measureWorkMcpCategory({...args,selection:{...args.selection,category:'knowledge',customerId:null}});expect(knowledge.calls).toBe(16);
+    observe('paginated-knowledge');const knowledge=await measureWorkMcpCategory({...args,selection:{...args.selection,category:'knowledge',customerId:null}});expect(knowledge.calls).toBe(16);
     expect((await owner.query('SELECT count(*)::int AS count FROM operations_recovery_http_reads a JOIN mcp_connections mc ON mc.id=a.record_id WHERE a.workspace_id=$1 AND a.read_kind=\'mcp\' AND NOT a.mcp_probe_connection AND a.expires_at=mc.expires_at AND a.revoked_at IS NOT NULL',[workspaceId])).rows[0].count).toBeGreaterThan(0);
-    phase='current-scope';const needed=await withLockedWorkRecoveryTarget(input,async(db,current)=>{await db.query('BEGIN');try{const inventory=await deriveWorkMcpScopeInTransaction(db,current);await db.query('COMMIT');return inventory.required;}catch(error){await db.query('ROLLBACK');throw error;}});
+    observe('current-scope');const needed=await withLockedWorkRecoveryTarget(input,async(db,current)=>{await db.query('BEGIN');try{const inventory=await deriveWorkMcpScopeInTransaction(db,current);await db.query('COMMIT');return inventory.required;}catch(error){await db.query('ROLLBACK');throw error;}});
     expect(new Set(needed.map(value=>value.username))).toEqual(new Set(['mcteer','panel','partner']));expect(needed.length).toBeGreaterThan(32);
     const proofs=[proof,knowledge],missing=needed.filter(selected=>!proofs.some(value=>JSON.stringify(value.selection)===JSON.stringify(selected)));let partialWindow=false;
-    while(missing.length){phase='remaining-categories-'+missing.length;const first=missing[0],batch=missing.filter(value=>value.workspaceId===first.workspaceId&&value.username===first.username).slice(0,32);const password=first.username==='mcteer'?process.env.TURAS_DEMO_PASSWORD!:first.username==='panel'?process.env.PANEL_PASSWORD!:process.env.PARTNER_PASSWORD!;
+    while(missing.length){observe('remaining-categories-'+missing.length);const first=missing[0],batch=missing.filter(value=>value.workspaceId===first.workspaceId&&value.username===first.username).slice(0,32);const password=first.username==='mcteer'?process.env.TURAS_DEMO_PASSWORD!:first.username==='panel'?process.env.PANEL_PASSWORD!:process.env.PARTNER_PASSWORD!;
      const completed=await measureWorkMcpCategoryWindow({...args,selections:batch,password});expect(completed.length).toBeGreaterThan(0);expect(completed.length).toBeLessThanOrEqual(25);partialWindow||=completed.length<batch.length;
      for(const measured of completed){const index=missing.findIndex(selected=>JSON.stringify(selected)===JSON.stringify(measured.selection));expect(index).toBeGreaterThanOrEqual(0);missing.splice(index,1);}proofs.push(...completed);
     }expect(partialWindow).toBe(true);
 
-    phase='mixed-canonical-and-hosted-branches';
+    observe('mixed-canonical-and-hosted-branches');
     const {measureWorkMcpCanonicalScope,requireWorkMcpBranchCoverage}=await import('../../../lib/server/operations/work-mcp-branch-verification'),{recoveryDigest}=await import('../../../lib/contracts/pilot-recovery');
     const branchPasswords={mcteer:process.env.TURAS_DEMO_PASSWORD!,panel:process.env.PANEL_PASSWORD!,partner:process.env.PARTNER_PASSWORD!};
     const canonical=await measureWorkMcpCanonicalScope({target:input,passwords:branchPasswords,retained,journalDirectory:args.journalDirectory});
@@ -309,7 +315,7 @@ it('measures exhaustive fresh work MCP category pages through SDK and rejects ch
      })).rejects.toThrow();
     }
 
-    phase='service-http';const {measureWorkMaintenanceHttpBatch}=await import('../../../lib/server/operations/work-maintenance-verification'),{measureWorkConversationHttpBatch}=await import('../../../lib/server/operations/work-conversation-http'),{verifyWorkRecoveryService,requireVerifiedWorkRecoveryService}=await import('../../../lib/server/operations/work-recovery-service');
+    observe('service-http');const {measureWorkMaintenanceHttpBatch}=await import('../../../lib/server/operations/work-maintenance-verification'),{measureWorkConversationHttpBatch}=await import('../../../lib/server/operations/work-conversation-http'),{verifyWorkRecoveryService,requireVerifiedWorkRecoveryService}=await import('../../../lib/server/operations/work-recovery-service');
     const records=await withLockedWorkRecoveryDecision(input,async(db,current)=>(await deriveWorkMaintenanceInventoryInTransaction(db,current,input.signal)).records.map(({kind,recordId})=>({kind,recordId}))),maintenance:Awaited<ReturnType<typeof measureWorkMaintenanceHttpBatch>>[]=[];
     const passwords={mcteer:process.env.TURAS_DEMO_PASSWORD!,panel:process.env.PANEL_PASSWORD!,partner:process.env.PARTNER_PASSWORD!},conversations:Awaited<ReturnType<typeof measureWorkConversationHttpBatch>>[]=[],groupedMcp:typeof knowledge[]=[];
     const {withWorkRecoveryMeasurementGroup}=await import('../../../lib/server/operations/recovery-measurement-group');
@@ -335,26 +341,30 @@ it('measures exhaustive fresh work MCP category pages through SDK and rejects ch
      expect((await owner.query('SELECT revoked_at IS NOT NULL AS retired FROM login_sessions WHERE id=$1',[uncaptured])).rows[0].retired).toBe(true);
     }finally{reconciliation.mockRestore();}
     for(let offset=4;offset<records.length;offset+=4)maintenance.push(await measureWorkMaintenanceHttpBatch({target:input,records:records.slice(offset,offset+4),password:args.password,journalDirectory:args.journalDirectory}));
-    phase='parallel-final-drift';const originalGeneration=(await owner.query('SELECT internal_generation FROM customer_profile_state WHERE customer_id=$1',[customerId])).rows[0].internal_generation;let concurrentFailure:unknown;
+    observe('parallel-final-drift');const originalGeneration=(await owner.query('SELECT internal_generation FROM customer_profile_state WHERE customer_id=$1',[customerId])).rows[0].internal_generation;let concurrentFailure:unknown;
     try{await withLockedWorkRecoveryDecision(input,async(db,current)=>{await db.query('UPDATE customer_profile_state SET internal_generation=internal_generation+1 WHERE customer_id=$1',[customerId]);await requireMeasuredWorkMcpCoverage(db,current,proofs);});}catch(error){concurrentFailure=error;}
     const failureMessages=(error:unknown):string[]=>error instanceof AggregateError?[error.message,...error.errors.flatMap(failureMessages)]:error instanceof Error?[error.message]:[];
     expect(failureMessages(concurrentFailure)).toContain('Measured work MCP category changed');expect((await owner.query('SELECT internal_generation FROM customer_profile_state WHERE customer_id=$1',[customerId])).rows[0].internal_generation).toBe(originalGeneration);
     expect((await owner.query('SELECT 1 FROM operations_recovery_http_reads a JOIN login_sessions s ON s.id=a.session_id JOIN mcp_connections mc ON mc.id=a.record_id WHERE a.mcp_probe_connection AND (a.revoked_at IS NULL OR s.revoked_at IS NULL OR mc.revoked_at IS NULL OR mc.credential_hash IS NOT NULL)')).rowCount).toBe(0);
-    phase='final-scope-replay';await withLockedWorkRecoveryDecision(input,async(db,current)=>{
+    observe('final-scope-replay');await withLockedWorkRecoveryDecision(input,async(db,current)=>{
      await expect(verifyWorkRecoveryService(db,current,{maintenance:[],mcp:proofs,conversations},passwords,args.journalDirectory,input.signal)).rejects.toThrow('Finite actual work maintenance');
      const service=await verifyWorkRecoveryService(db,current,{maintenance,mcp:hostedBranches,canonicalMcp:canonical,conversations},passwords,args.journalDirectory,input.signal,retained);expect(service).toMatchObject({requiredScopeHealthy:true,privateConversationAuthorizationVerified:true,restorationReady:false});expect(await requireVerifiedWorkRecoveryService(db,current,service)).toBe(service);await expect(requireVerifiedWorkRecoveryService(db,current,{...service})).rejects.toThrow('Actual unchanged');
      await db.query('SAVEPOINT service_state_drift');try{await db.query('UPDATE customer_profile_state SET internal_generation=internal_generation+1 WHERE customer_id=$1',[customerId]);await expect(requireVerifiedWorkRecoveryService(db,current,service)).rejects.toThrow('Actual unchanged');}finally{await db.query('ROLLBACK TO SAVEPOINT service_state_drift');await db.query('RELEASE SAVEPOINT service_state_drift');}
      expect(await requireVerifiedWorkRecoveryService(db,current,service)).toBe(service);await db.query('SELECT pg_sleep(6)');await db.query('SELECT pg_sleep(6)');
     });
-    phase='pre-producer-retirement';expect((await owner.query('SELECT 1 FROM operations_recovery_http_reads WHERE revoked_at IS NULL')).rowCount).toBe(0);
-    phase='producer';const {measureWorkCronAdmission}=await import('../../../lib/server/operations/work-cron-admission'),{produceWorkRecoveryVerification,resumeCommittedWorkRecoveryVerification}=await import('../../../lib/server/operations/work-recovery-verification');
-    const journal=await PilotHostHttpJournal.create(join(dirname(input.sourceFile),'producer-http-journal'),{contract:'pilot-host-http-journal-plan-v1',id:randomUUID(),projectId:'prj_recovery',teamId:'team_recovery',sourceCommit:state.commit,maximumRequests:20,maximumCostMicroUsd:100000,expiresAt:new Date(Date.now()+3600000).toISOString(),authorityReference:'Controlled owned producer authority',previousJournalDigests:['b'.repeat(64)],historicalStrictFailureRetained:true,unknownCostHoldsRetained:true,automaticRetries:false}),effects={cron:await measureWorkCronAdmission({target:input,token,cronSecret:secret,protectionBypass:key}),oldHttp:await measureWorkOldHttpAdmission({target:input,token,approvedHosts:['recovery.vercel.app'],journal}),native:await measureWorkManagedTerminalInventory({target:input,token,retained}),sandbox:await measureWorkSandboxTerminalInventory({target:input,token,retained})};
+    observe('pre-producer-retirement');expect((await owner.query('SELECT 1 FROM operations_recovery_http_reads WHERE revoked_at IS NULL')).rowCount).toBe(0);
+    const serviceModule=await import('../../../lib/server/operations/work-recovery-service'),effectsModule=await import('../../../lib/server/operations/work-recovery-effects'),integrityModule=await import('../../../lib/server/operations/work-target-integrity');
+    const originalService=serviceModule.verifyWorkRecoveryService,originalEffects=effectsModule.verifyWorkRecoveryEffects,originalIntegrity=integrityModule.requireMeasuredWorkTargetIntegrity;
+    const serviceSpy=vi.spyOn(serviceModule,'verifyWorkRecoveryService').mockImplementation((...args)=>{observe('producer-service');return originalService(...args);}),effectsSpy=vi.spyOn(effectsModule,'verifyWorkRecoveryEffects').mockImplementation((...args)=>{observe('producer-effects');return originalEffects(...args);}),integritySpy=vi.spyOn(integrityModule,'requireMeasuredWorkTargetIntegrity').mockImplementation((...args)=>{observe('producer-integrity');return originalIntegrity(...args);});
+    restoreObservations.push(()=>serviceSpy.mockRestore(),()=>effectsSpy.mockRestore(),()=>integritySpy.mockRestore());
+    observe('producer');const {measureWorkCronAdmission}=await import('../../../lib/server/operations/work-cron-admission'),{produceWorkRecoveryVerification,resumeCommittedWorkRecoveryVerification}=await import('../../../lib/server/operations/work-recovery-verification');
+    const journal=await PilotHostHttpJournal.create(join(dirname(input.sourceFile),'producer-http-journal'),{contract:'pilot-host-http-journal-plan-v1',id:randomUUID(),projectId:'prj_recovery',teamId:'team_recovery',sourceCommit:state.commit,maximumRequests:20,maximumCostMicroUsd:100000,expiresAt:new Date(Date.now()+3600000).toISOString(),authorityReference:'Controlled owned producer authority',previousJournalDigests:['b'.repeat(64)],historicalStrictFailureRetained:true,unknownCostHoldsRetained:true,automaticRetries:false}),effects=await (async()=>{observe('producer-cron');const cron=await measureWorkCronAdmission({target:input,token,cronSecret:secret,protectionBypass:key});observe('producer-old-http');const oldHttp=await measureWorkOldHttpAdmission({target:input,token,approvedHosts:['recovery.vercel.app'],journal});observe('producer-native');const native=await measureWorkManagedTerminalInventory({target:input,token,retained});observe('producer-sandbox');const sandbox=await measureWorkSandboxTerminalInventory({target:input,token,retained});observe('producer-final');return {cron,oldHttp,native,sandbox};})();
     const produced=await produceWorkRecoveryVerification({target:input,integrity:physical.proof,integrityMaterial:physical.material,retained,denialHistory,service:{maintenance,mcp:hostedBranches,canonicalMcp:canonical,conversations},effects,passwords,journalDirectory:args.journalDirectory});expect(produced).toMatchObject({resumed:false,serviceOpened:false,restorationReady:false});expect((await owner.query('SELECT count(*)::int AS n FROM operations_recovery_verifications')).rows[0].n).toBe(1);
     const probesBefore=(await owner.query('SELECT count(*)::int AS n FROM operations_recovery_http_reads')).rows[0].n;expect(await resumeCommittedWorkRecoveryVerification(input,physical.material)).toMatchObject({verificationId:produced.verificationId,resumed:true});expect((await owner.query('SELECT count(*)::int AS n FROM operations_recovery_http_reads')).rows[0].n).toBe(probesBefore);
     await expect(measureWorkMcpCategory(args)).rejects.toThrow('Committed recovery verification requires read-only');expect((await owner.query('SELECT count(*)::int AS n FROM operations_recovery_http_reads')).rows[0].n).toBe(probesBefore);
     await owner.query('BEGIN');await owner.query('UPDATE customer_profile_state SET internal_generation=internal_generation+1 WHERE customer_id=$1',[customerId]);await owner.query('COMMIT');await expect(resumeCommittedWorkRecoveryVerification(input,physical.material)).rejects.toThrow('Existing recovery verification is stale or changed');
-    phase='explicit-fresh-attempt';const {transitionRecoveryControl}=await import('../../../lib/server/operations/control'),next=await transitionRecoveryControl(owner,{environmentId:input.scope.environmentId,recoveryId:input.scope.recoveryId,expectedRevision:input.scope.controlRevision,operationId:randomUUID(),mode:'locked',restartVerification:true});
-    const retry={...input,scope:{...input.scope,controlRevision:next.revision},deadline:Date.now()+170000},retryRoot=join(dirname(input.sourceFile),'fresh-attempt');await mkdir(retryRoot,{mode:0o700});
+    observe('explicit-fresh-attempt');const {transitionRecoveryControl}=await import('../../../lib/server/operations/control'),next=await transitionRecoveryControl(owner,{environmentId:input.scope.environmentId,recoveryId:input.scope.recoveryId,expectedRevision:input.scope.controlRevision,operationId:randomUUID(),mode:'locked',restartVerification:true});
+    const retry={...input,scope:{...input.scope,controlRevision:next.revision},deadline:Date.now()+170000},retryRoot=join(dirname(input.sourceFile),'fresh-attempt');await mkdir(retryRoot,{mode:0o700});diagnosticTarget=retry;
     const retryPhysical=await controlledPhysicalIntegrity(retry,'composition-integrity-fresh');
     await withRetainedDenialFixture(owner,retry.scope.environmentId,retryRoot,{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async freshRetained=>{
      const {pilotWorkRecoveryVerify}=await import('../../../scripts/pilot-work-recovery-verify'),candidateFile=join(retryRoot,'candidate.json'),runtimeFile=join(retryRoot,'runtime-private.json'),credentialsFile=join(retryRoot,'credentials-private.json'),configurationFile=join(retryRoot,'configuration-private.json');
@@ -381,12 +391,12 @@ it('measures exhaustive fresh work MCP category pages through SDK and rejects ch
     });
 
 
-   }finally{transport.mockRestore();}
+   }finally{for(const restore of restoreObservations)restore();transport.mockRestore();}
    expect((await owner.query('SELECT 1 FROM operations_recovery_http_reads a JOIN login_sessions s ON s.id=a.session_id JOIN mcp_connections mc ON mc.id=a.record_id WHERE a.mcp_probe_connection AND (a.revoked_at IS NULL OR s.revoked_at IS NULL OR mc.revoked_at IS NULL OR mc.credential_hash IS NOT NULL)')).rowCount).toBe(0);
   });}finally{state.retainedKey=null;if(previousCron===undefined)delete process.env.CRON_SECRET;else process.env.CRON_SECRET=previousCron;await owner.end();}
  },async owner=>{const f=await pilotPublishedKnowledgeFixture(owner as unknown as PoolClient,'primary');workspaceId=f.actor.workspaceId;customerId=f.customerId;for(let i=0;i<6;i++)await pilotPublishedKnowledgeFixture(owner as unknown as PoolClient,'primary',workspaceId);const organization=randomUUID(),partnerMembership=randomUUID();await owner.query("INSERT INTO partner_organizations(id,workspace_id,name) VALUES($1,$2,'Synthetic MCP category partner')",[organization,workspaceId]);await owner.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role,partner_org_id) VALUES($1,$2,$3,'internal','member',NULL),($4,$5,$3,'partner','member',$6)",[randomUUID(),DEMO_IDS.panel,workspaceId,partnerMembership,DEMO_IDS.partner,organization]);await owner.query("INSERT INTO customer_grants(id,membership_id,workspace_id,customer_id,state,revision,granted_by) VALUES($1,$2,$3,$4,'active',1,$5)",[randomUUID(),partnerMembership,workspaceId,customerId,DEMO_IDS.mcteer]);const {issueSession,getCurrentSession,sessionCookieName}=await import('../../../lib/server/auth/sessions');
   for(const username of ['mcteer','panel','partner'] as const){const member=(await owner.query('SELECT id,kind,role FROM memberships WHERE workspace_id=$1 AND principal_id=$2',[workspaceId,DEMO_IDS[username]])).rows[0],session=await issueSession({principalId:DEMO_IDS[username],loginName:username,displayName:username,membershipId:member.id,workspaceId,kind:member.kind,role:member.role}),actor=(await getCurrentSession(new Request(process.env.TURAS_APP_ORIGIN!,{headers:{cookie:sessionCookieName()+'='+session.token}})))!;conversationIds.push((await createOwnedConversation(actor,{customerId,requestKey:randomUUID()},owner as unknown as PoolClient)).conversation.id);}
-  await owner.query('UPDATE workspaces SET active=false WHERE id<>$1',[workspaceId]);},'production',450000).catch(error=>{throw new Error('Work MCP category regression failed during '+phase+': '+(error instanceof Error?error.message:'unknown'),{cause:error});});
+  await owner.query('UPDATE workspaces SET active=false WHERE id<>$1',[workspaceId]);},'production',450000).catch(error=>{try{process.stderr.write(JSON.stringify({kind:'work_mcp_case_failure',...workMcpCaseFailureMetadata({phase,elapsedMs:Math.floor(performance.now()-diagnosticStart),targetRemainingMs:diagnosticTarget?diagnosticTarget.deadline-Date.now():null,caseSignalAborted:diagnosticTarget?.signal.aborted??false,errorName:error instanceof Error?error.name:'other',stages})})+'\n');}catch{/* Diagnostics cannot replace the original failure. */}throw new Error('Work MCP category regression failed during '+phase+': '+(error instanceof Error?error.message:'unknown'),{cause:error});});
 },420000);
 
 it('cancels a pending owner transaction when a single read deadline ends and preserves independent cleanup',async()=>fixture(async input=>{

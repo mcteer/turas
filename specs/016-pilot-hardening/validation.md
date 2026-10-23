@@ -7571,3 +7571,34 @@ speculative reload change was reverted. The unchanged original case subsequently
 passed all four WebKit profiles without retries, skips or source drift. That
 corroboration does not erase or explain the original CI failure. Its expansion
 aggregate also fails; no clean ba99938 CI acceptance is claimed.
+
+
+### e473d2c CI recovery timeout and bounded observations (T147)
+
+Main CI attempt 1 completed with 49 successful jobs and one failed deterministic
+catalog job. All seven legacy jobs, the four Expansion profiles and aggregate,
+and the complete execution WebKit matrix pass. The catalog passed 883 cases,
+then the exhaustive work-MCP recovery case reported an operation timeout during
+its producer phase. The process exited 1 without a signal or suite deadline
+expiry; the exact inner phase and elapsed target budget were not retained.
+
+The original-source local full run reached 967 passes without failures before
+user-requested host cleanup interrupted it. A fresh local run was also interrupted
+for explicit OrbStack cleanup; neither is accepted as a complete pass. Old
+container preservation observations remain historical after that authorized
+cleanup, and future checks must capture a fresh actual baseline.
+
+A separate private diagnostic retained every original call/assertion/clock and
+passed the single original case in 219 seconds (24 intentionally filtered cases).
+Its first producer completed with about 136 seconds remaining on the original
+290-second target. All 73 timing events were retained, the parent exited 0, and
+the owned container/root were removed. This does not reproduce or explain the
+CI timeout and is not full-catalog, hosted or Production acceptance.
+
+The next change adds failure-only phase clocks and fixed metadata, with genuine
+forwarding observers for final service/effects/integrity calls. Its four initial
+effect measurements keep their original order and arguments. Observers restore
+in cleanup, diagnostics cannot replace the original failure, and CI revalidates
+all fields before publishing them. The complete catalog, source-bound CI,
+actual-model and hosted gates remain required; no runtime cause or repair is
+claimed by these observations.

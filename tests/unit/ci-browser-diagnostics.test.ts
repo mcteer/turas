@@ -1,5 +1,5 @@
 import {artifactAuthStartupPhases} from '../../scripts/artifact-eval-environment';
-import {processFailureMetadata,setupFailureMetadata,pilotRegressionFailureMetadata,pilotCatalogAbortMetadata,recoveryApplicationFailureMetadata,recoveryServerStartupPhases} from '../../scripts/ci-process-diagnostics';
+import {workMcpCaseFailureMetadata,processFailureMetadata,setupFailureMetadata,pilotRegressionFailureMetadata,pilotCatalogAbortMetadata,recoveryApplicationFailureMetadata,recoveryServerStartupPhases} from '../../scripts/ci-process-diagnostics';
 import {describe,expect,it} from 'vitest';
 import {browserFailureMetadata,fixedUtilizationMetadata,pilotUiChildFailures,partnerBrowserFailureMetadata} from '../../scripts/ci-browser-diagnostics';
 import {nativeQueryOperation,nativeQueryObservationSchema,nativeBlockerMetadata} from '../../scripts/ci-native-query-observer';
@@ -101,6 +101,15 @@ it('revalidates captured pilot UI diagnostics and discards private or malformed 
  expect(malformed[0]).toMatchObject({project:'unknown',line:0,column:0,durationMs:null,signatures:[]});expect(JSON.stringify(malformed)).not.toContain('PRIVATE_');
 });
 it('retains only approved recovery HTTP phases and passive process observations',()=>{
+ const mcp={kind:'work_mcp_case_failure',phase:'producer-effects',elapsedMs:290001,targetRemainingMs:-1,caseSignalAborted:false,errorName:'TimeoutError',stages:[{phase:'remaining-categories-61',elapsedMs:1000,targetRemainingMs:289000,private:'PRIVATE_STAGE'}],private:'PRIVATE_PAYLOAD',message:'PRIVATE_ERROR',url:'PRIVATE_URL'};
+ const mcpResult=workMcpCaseFailureMetadata(mcp);
+ expect(mcpResult).toEqual({phase:'producer-effects',elapsedMs:290001,targetRemainingMs:-1,caseSignalAborted:false,errorName:'TimeoutError',stages:[{phase:'remaining-categories',elapsedMs:1000,targetRemainingMs:289000}]});
+ expect(processFailureMetadata({stderrTail:JSON.stringify(mcp)}).workMcpCases).toEqual([mcpResult]);expect(JSON.stringify(mcpResult)).not.toContain('PRIVATE_');
+ const invalidMcp=workMcpCaseFailureMetadata({...mcp,phase:'PRIVATE_PHASE',elapsedMs:Infinity,targetRemainingMs:-450001,caseSignalAborted:'PRIVATE_BOOL',errorName:'PRIVATE_ERROR',stages:Array(40).fill({phase:'PRIVATE_PHASE',elapsedMs:-1,targetRemainingMs:Infinity})});
+ expect(invalidMcp).toMatchObject({phase:'unknown',elapsedMs:null,targetRemainingMs:null,caseSignalAborted:false,errorName:'other'});expect(invalidMcp.stages).toHaveLength(32);expect(invalidMcp.stages.every(stage=>stage.phase==='unknown'&&stage.elapsedMs===null&&stage.targetRemainingMs===null)).toBe(true);expect(JSON.stringify(invalidMcp)).not.toContain('PRIVATE_');
+ expect(processFailureMetadata({stderrTail:Array(5).fill(JSON.stringify(mcp)).join('\n')}).workMcpCases).toHaveLength(3);
+ expect(processFailureMetadata({stderrTail:'{"kind":"work_mcp_case_failure",PRIVATE_INVALID'})).not.toHaveProperty('workMcpCases');
+
  const markers=recoveryServerStartupPhases('\x1b[32mOWNED_RECOVERY_SERVER_MODULE\x1b[0m\nOWNED_RECOVERY_SERVER_PREPARE_START\nprocess.stderr.write("OWNED_RECOVERY_SERVER_PREPARE_END")\n> OWNED_RECOVERY_SERVER_LISTEN_START\nPRIVATE_LOG\n');
  expect(markers).toEqual({serverModuleObserved:true,serverPrepareStartedObserved:true,serverPrepareCompletedObserved:false,serverListenStartedObserved:false,serverStopObserved:false,listenerTextObserved:false});
  expect(recoveryApplicationFailureMetadata({phase:'listener',...markers,serverStopObserved:'PRIVATE_BOOLEAN'})).toMatchObject({serverModuleObserved:true,serverPrepareStartedObserved:true,serverPrepareCompletedObserved:false});
