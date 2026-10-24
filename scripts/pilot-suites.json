@@ -1133,7 +1133,7 @@
     },
     {
       "file": "tests/unit/pilot/work-backup.test.ts",
-      "expectedCases": 8,
+      "expectedCases": 9,
       "cases": [
         "accepts only explicitly bound independent work resources and object allowances",
         "rejects shared source placement pooled connections and missing certificate verification",
@@ -1142,7 +1142,8 @@
         "encrypts complete cold metadata with fresh nonces while preserving unverified recovery state",
         "rejects altered capsule bytes wrong keys and foreign archive contexts",
         "refuses capsule metadata that claims release approval or hides infrastructure calls as zero providers",
-        "builds the actual operator transport and rejects unauthorized disabled and nonproduction requests"
+        "builds the actual operator transport and rejects unauthorized disabled and nonproduction requests",
+        "paces scheduled capture from source time with one bounded abortable wait"
       ]
     },
     {

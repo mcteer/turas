@@ -750,3 +750,20 @@ fixture's low reasoning and 1,000-token limit at a denied SDK boundary. Retain a
 original assertions, cases, deadlines, costs and unknown holds. This corrects
 configuration fidelity; it does not guarantee provider output totals or replace
 fresh source-bound model, semantic and hosted verification.
+
+### Actual scheduled capture spacing (T160)
+
+Nominal twelve-hour cron slots do not guarantee twelve-hour spacing between
+actual snapshots: a slower first capture and faster second capture can shorten
+the interval. Read the latest owner-admitted archive receipt for the exact
+installation, project and environment, including earlier releases, and compare
+its timestamp with the source database clock. Wait once for at most sixty seconds
+without database connections or physical IO locks. Keep the existing caller and
+platform deadlines. A wait failure retains its issued reservation for explicit
+review when no connected archive client remains.
+
+Pass the resulting lower bound into the scheduled checkpoint and reject an
+actual exported snapshot before it. Do not rewrite timestamps, relax the original
+schedule assessor or substitute local tests for hosted cron observations. Keep
+the independent native cold-copy and scheduled-run fixtures in explicitly
+different synthetic project scopes, retaining the original cold-copy receipt.

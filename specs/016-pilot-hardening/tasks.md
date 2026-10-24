@@ -844,3 +844,12 @@ No hosted target may be locked for release before its measured reopen path exist
   denied SDK serialization without a provider call. Do not infer an enforced
   aggregate cap or count partial diagnostics as full acceptance; require fresh
   committed CI, complete model evaluation and independent semantic review.
+
+- [ ] T160 Pace scheduled backups from the latest authenticated capture receipt
+  and the source database clock. Permit one abortable wait of at most 60 seconds
+  within the existing caller deadline, with no open database connection,
+  transaction, lease or IO fence during that wait. Reject an exported snapshot
+  before the actual 12-hour lower bound; preserve original capture timestamps,
+  schedule assessments, cost reservations and failure accounting. Regress the
+  original checkpoint on owned PostgreSQL, retain all original cases and require
+  fresh committed CI, native capture and hosted scheduled-execution evidence.

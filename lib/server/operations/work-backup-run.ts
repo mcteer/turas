@@ -27,6 +27,31 @@ export function workBackupScopeDigest(value:{operatorProjectId:string;sourceProj
 }
 export const workBackupBuildSourceSchema=z.strictObject({sourceCommit:z.string().regex(/^[a-f0-9]{40}$/),sourceDigest:digest,catalogDigest:digest,ledgerDigest:digest});
 
+/** Receipt rows are read only after archive-owner admission. Use the source
+ * database clock, never the operator clock or a nominal cron slot. */
+export function planWorkBackupCadence(receipts:unknown,scope:{installationId:string;sourceProjectId:string;environmentId:string},sourceNow:Date){
+ const now=z.date().parse(sourceNow).getTime();
+ const rows=z.array(z.strictObject({archive_id:z.uuid(),installation_id:z.uuid(),source_project_id:project,environment_id:identity,source_commit:z.string().regex(/^[a-f0-9]{40}$/),source_digest:digest,catalog_digest:digest,candidate_digest:digest,captured_at:z.date(),archive_captured_at:z.date(),archive_environment_id:identity})).max(1).parse(receipts);
+ if(!rows.length)return {waitMilliseconds:0,notBeforeCapturedAt:undefined};
+ const prior=rows[0],captured=prior.captured_at.getTime();
+ if(prior.installation_id!==scope.installationId||prior.source_project_id!==scope.sourceProjectId||prior.environment_id!==scope.environmentId||prior.archive_environment_id!==scope.environmentId||prior.archive_captured_at.getTime()!==captured||captured>now)throw Error('Authenticated prior backup time differs');
+ const notBefore=captured+43200000,waitMilliseconds=Math.max(0,notBefore-now);
+ if(waitMilliseconds>60000)throw Error('Scheduled backup cadence exceeds bounded wait');
+ return {waitMilliseconds,notBeforeCapturedAt:new Date(notBefore).toISOString()};
+}
+/** One wait within the caller's existing deadline. No retry, SQL transaction,
+ * source IO fence, or recovery lease is held during this delay. */
+export async function waitForWorkBackupCadence(milliseconds:number,signal:AbortSignal){
+ if(!Number.isSafeInteger(milliseconds)||milliseconds<0||milliseconds>60000)throw Error('Bounded scheduled backup wait required');
+ signal.throwIfAborted();if(!milliseconds)return;
+ await new Promise<void>((resolve,reject)=>{
+  const aborted=()=>{clearTimeout(timer);signal.removeEventListener('abort',aborted);reject(signal.reason);};
+  const timer=setTimeout(()=>{signal.removeEventListener('abort',aborted);resolve();},milliseconds);
+  signal.addEventListener('abort',aborted,{once:true});if(signal.aborted)aborted();
+ });
+ signal.throwIfAborted();
+}
+
 /** Deterministic backup handler: no model, mail, customer-supplied operation or
  * source runtime credentials enter a processing job. No automatic retry.
  * Placement and actual cron invocation are separately collected platform proofs. */
@@ -49,10 +74,10 @@ async function runWorkBackup(input:Parameters<typeof runScheduledWorkBackup>[0],
  const source=workBackupBuildSourceSchema.parse(input.source),slot=new Date(Math.floor(Date.now()/43200000)*43200000).toISOString();
  input.signal.throwIfAborted();
  if(input.key.master.byteLength!==32||input.key.reference!==config.keyReference||input.key.version!==config.keyVersion)throw Error('Exact separate operator master key required');
- const archive=new Client({connectionString:config.archiveConnection,connectionTimeoutMillis:5000,statement_timeout:10000});
- let reservations:string[]|undefined,dispatched=false,root:string|undefined,key:Buffer|undefined,pricing:Awaited<ReturnType<typeof verifyWorkBackupPricing>>|undefined;
+ const archiveOptions={connectionString:config.archiveConnection,connectionTimeoutMillis:5000,statement_timeout:10000};let archive=new Client(archiveOptions);
+ let archiveConnected=false,reservations:string[]|undefined,dispatched=false,root:string|undefined,key:Buffer|undefined,pricing:Awaited<ReturnType<typeof verifyWorkBackupPricing>>|undefined;
  try{
-  await archive.connect();
+  await archive.connect();archiveConnected=true;
   reservations=await reserveWorkBackupCost(archive,config.cost,recoveryDigest({contract:'pilot-work-backup-slot-v1',installationId:config.installationId,environmentId:config.environmentId,slot}));
   if(verifyPrices){
    // The hosted Function is already consuming its reserved hosting allowance.
@@ -61,17 +86,21 @@ async function runWorkBackup(input:Parameters<typeof runScheduledWorkBackup>[0],
    pricing=await verifyWorkBackupPricing({...config.cost,maximumObjectBytes:config.maximumObjectBytes},input.signal);
   }
   // Source admission is read-only and precedes the actual bounded operation.
-  const primary=new Client({connectionString:config.sourceConnection,connectionTimeoutMillis:5000,statement_timeout:5000});let revision:number;
-  try{await primary.connect();const rows=(await primary.query('SELECT c.mode,c.revision,e.schema_version FROM operations_control c JOIN turas_environment e ON e.environment_id=c.environment_id WHERE c.environment_id=$1',[config.environmentId])).rows;
-   if(rows.length!==1||rows[0].mode!=='open'||Number(rows[0].schema_version)!==79)throw Error('Current open work backup source required');revision=Number(rows[0].revision);
+  if((await archive.query("SELECT current_user=pg_get_userbyid(relowner) AS owner FROM pg_class WHERE oid='turas_backup.capture_receipts'::regclass")).rows[0]?.owner!==true)throw Error('Explicit work capture receipt owner required');
+  const receipts=(await archive.query('SELECT r.archive_id,r.installation_id,r.source_project_id,r.environment_id,r.source_commit,r.source_digest,r.catalog_digest,r.candidate_digest,r.captured_at,a.captured_at AS archive_captured_at,a.environment_id AS archive_environment_id FROM turas_backup.capture_receipts r JOIN turas_backup.archives a ON a.id=r.archive_id WHERE r.installation_id=$1 AND r.source_project_id=$2 AND r.environment_id=$3 ORDER BY r.captured_at DESC,r.archive_id DESC LIMIT 1',[config.installationId,config.sourceProjectId,config.environmentId])).rows;
+  const primary=new Client({connectionString:config.sourceConnection,connectionTimeoutMillis:5000,statement_timeout:5000});let revision:number,cadence:ReturnType<typeof planWorkBackupCadence>;
+  try{await primary.connect();const rows=(await primary.query("SELECT c.mode,c.revision,e.environment_id,e.schema_version,clock_timestamp() AS source_now,current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='operations_control'::regclass)) AS owner FROM operations_control c JOIN turas_environment e ON e.environment_id=c.environment_id WHERE c.environment_id=$1",[config.environmentId])).rows;
+   if(rows.length!==1||rows[0].mode!=='open'||rows[0].environment_id!==config.environmentId||rows[0].owner!==true||Number(rows[0].schema_version)!==79)throw Error('Current open work backup source required');revision=Number(rows[0].revision);
+   cadence=planWorkBackupCadence(receipts,config,rows[0].source_now);
   }finally{await primary.end();}
+  if(cadence.waitMilliseconds){archiveConnected=false;await archive.end();await waitForWorkBackupCadence(cadence.waitMilliseconds,input.signal);archive=new Client(archiveOptions);await archive.connect();archiveConnected=true;}
   if(!dispatched){await transitionWorkBackupCost(archive,config.cost,reservations,'dispatched');dispatched=true;}
   const id=randomUUID();key=deriveWorkBackupKey(input.key.master,{installationId:config.installationId,environmentId:config.environmentId,archiveId:id});
   const retained={reference:config.keyReference+':'+id,version:config.keyVersion};
   root=await mkdtemp(join(await realpath(tmpdir()),'turas-work-backup-'));for(const name of ['capture','cold','keys'])await mkdir(join(root,name),{mode:0o700});
   const keyFile=join(root,'keys','separate.key');await writeFile(keyFile,key,{mode:0o600,flag:'wx'});
   await expireNeonManagedArchives(archive,config.installationId,input.signal);
-  const candidate=await captureWorkRecoveryCandidate({scope:{...source,environmentId:config.environmentId,recoveryId:id,controlRevision:revision,purpose:'scheduled-backup',sourceProjectId:config.sourceProjectId,storeId:config.storeId,keyReference:retained.reference,keyVersion:retained.version},connectionString:config.sourceConnection,assetRoot:input.assetRoot,output:join(root,'capture'),objects:input.objects,key,signal:input.signal,maximumObjects:config.maximumObjects,maximumObjectBytes:config.maximumObjectBytes,archiveId:id});
+  const candidate=await captureWorkRecoveryCandidate({scope:{...source,environmentId:config.environmentId,recoveryId:id,controlRevision:revision,purpose:'scheduled-backup',sourceProjectId:config.sourceProjectId,storeId:config.storeId,keyReference:retained.reference,keyVersion:retained.version},connectionString:config.sourceConnection,assetRoot:input.assetRoot,output:join(root,'capture'),objects:input.objects,key,signal:input.signal,maximumObjects:config.maximumObjects,maximumObjectBytes:config.maximumObjectBytes,archiveId:id,scheduledNotBeforeCapturedAt:cadence.notBeforeCapturedAt});
   const copy=await copyWorkCapture({candidate,sourceProjectId:config.sourceProjectId,installationId:config.installationId,connectionString:config.archiveConnection,maximumBytes:config.maximumArchiveBytes,bundle:join(root,'capture','candidate.encrypted'),keyFile,coldOutput:join(root,'cold'),signal:input.signal});
   input.signal.throwIfAborted();await rm(root,{recursive:true,force:true});root=undefined;
   await transitionWorkBackupCost(archive,config.cost,reservations,'settled');
@@ -80,7 +109,8 @@ async function runWorkBackup(input:Parameters<typeof runScheduledWorkBackup>[0],
   try{await observation.connect();await recordVerifiedBackup(observation,{archiveId:candidate.id,environmentId:config.environmentId,storeId:config.storeId,sourceCommit:source.sourceCommit,capturedAt:candidate.capturedAt,encryptedDigest:copy.encryptedDigest,candidateDigest:recoveryDigest(candidate),reservationIds:reservations});}finally{await observation.end();}
   return {...(pricing?{pricing}:{}),contract:'pilot-work-backup-run-v1' as const,archiveId:candidate.id,capturedAt:candidate.capturedAt,slot,...source,coldDownloadAuthenticated:copy.coldDownloadAuthenticated,completeCostCeilingsRetained:true,actualInvoiceVerified:false,temporaryBytesRemoved:true,independentPlacementVerified:false,separateKeyRetentionVerified:false,currentAuthorityVerified:false,scheduledInvocationVerified:false,restorationReady:false};
  }catch(error){
-  if(reservations)await transitionWorkBackupCost(archive,config.cost,reservations,dispatched?'unknown':'released').catch(()=>{});
+  // A disconnected wait failure retains the issued reservation for explicit review.
+  if(reservations&&archiveConnected)await transitionWorkBackupCost(archive,config.cost,reservations,dispatched?'unknown':'released').catch(()=>{});
   throw error;
  }finally{key?.fill(0);try{if(root)await rm(root,{recursive:true,force:true});}finally{await archive.end();}}
 }

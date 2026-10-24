@@ -8097,3 +8097,20 @@ the unchanged 1,000-token limit with zero network/provider dispatches. The root
 agent, selected model, 1,200-token observed ceiling, case inventory, deadlines and
 retry policy are unchanged. Fresh committed CI and complete model/semantic/hosted
 acceptance remain required; Production remains unchanged.
+
+### T160 working-tree checkpoint regression
+
+The real owned PostgreSQL regression rejects the old checkpoint implementation
+with the new future-bound assertion; the candidate passes all six original
+checkpoint cases. Eighteen focused unit cases pass, including a single bounded,
+abortable pacing wait and the unchanged schedule assessor. The native PostgreSQL
+probe passes all nine cases with the earlier cold-copy receipt retained in its
+separate synthetic project scope. These are local candidate results, not hosted
+scheduled-execution or release acceptance. Independent review identified an
+unconnected-client cleanup risk after wait cancellation; the candidate now
+retains the issued reservation instead of querying a disconnected client. The same new pacing case now drives the actual runner through synthetic SQL
+and pricing boundaries for both wait cancellation and reconnect failure. Both
+settle with the original error, no disconnected query or later transition, and
+the issued reservation retained. All nine cases in that suite pass; the pilot
+type check and catalog inventory (189 suites, 1,041 cases, 22 gates) pass. Fresh
+committed-source and hosted checks remain required.

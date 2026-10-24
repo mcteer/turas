@@ -1,4 +1,4 @@
-import {it,expect} from 'vitest';
+import {it,expect,vi} from 'vitest';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {createServer} from 'node:http';
 import {createRequire} from 'node:module';
@@ -7,7 +7,8 @@ import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {resolve,join} from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {workBackupConfigurationSchema,workBackupScopeDigest,deriveWorkBackupKey} from '../../../lib/server/operations/work-backup-run';
+import {workBackupConfigurationSchema,workBackupScopeDigest,deriveWorkBackupKey,planWorkBackupCadence,waitForWorkBackupCadence} from '../../../lib/server/operations/work-backup-run';
+import {assessBackupSchedule} from '../../../lib/server/operations/backup-schedule';
 import {preparePilotRecoveryOperator} from '../../../scripts/prepare-pilot-recovery-operator';
 import {sealWorkCandidate,unsealWorkCandidate} from '../../../lib/server/operations/work-candidate-capsule';
 import {workBackupPricingDigest} from '../../../lib/server/operations/work-backup-pricing';
@@ -81,3 +82,73 @@ it('builds the actual operator transport and rejects unauthorized disabled and n
   for(const key of Object.keys(process.env))delete process.env[key];Object.assign(process.env,previous);await rm(root,{recursive:true,force:true});
  }
 },60000);
+
+it('paces scheduled capture from source time with one bounded abortable wait',async()=>{
+ const scope=configuration(),capturedAt=new Date('2026-10-24T00:00:30Z'),sourceNow=new Date('2026-10-24T12:00:05Z');
+ const receipt={archive_id:randomUUID(),installation_id:scope.installationId,source_project_id:scope.sourceProjectId,environment_id:scope.environmentId,source_commit:'a'.repeat(40),source_digest:'b'.repeat(64),catalog_digest:'c'.repeat(64),candidate_digest:'d'.repeat(64),captured_at:capturedAt,archive_captured_at:capturedAt,archive_environment_id:scope.environmentId};
+ const plan=planWorkBackupCadence([receipt],scope,sourceNow);
+ expect(plan).toEqual({waitMilliseconds:25000,notBeforeCapturedAt:'2026-10-24T12:00:30.000Z'});
+ expect(planWorkBackupCadence([],scope,sourceNow)).toEqual({waitMilliseconds:0,notBeforeCapturedAt:undefined});
+ expect(planWorkBackupCadence([receipt],scope,new Date(plan.notBeforeCapturedAt!))).toEqual({...plan,waitMilliseconds:0});
+ // Previous releases still establish cadence; a deployment cannot reset it.
+ expect(planWorkBackupCadence([{...receipt,source_commit:'e'.repeat(40)}],scope,sourceNow)).toEqual(plan);
+ for(const change of [{installation_id:randomUUID()},{source_project_id:'prj_foreign'},{environment_id:'foreign'},{archive_environment_id:'foreign'},{archive_captured_at:new Date(capturedAt.getTime()+1)},{captured_at:'2026-10-24T00:00:30Z'},{source_digest:'invalid'}])expect(()=>planWorkBackupCadence([{...receipt,...change}],scope,sourceNow)).toThrow();
+ expect(()=>planWorkBackupCadence([receipt,receipt],scope,sourceNow)).toThrow();
+ expect(()=>planWorkBackupCadence([receipt],scope,new Date('2026-10-24T11:59:29.999Z'))).toThrow('bounded wait');
+ expect(()=>planWorkBackupCadence([receipt],scope,new Date('2026-10-23T23:59:00Z'))).toThrow();
+ expect(()=>planWorkBackupCadence([receipt],scope,new Date(NaN))).toThrow();
+ const schedule={contract:'pilot-backup-schedule-v1',intervalHours:12,maximumAgeHours:24,retentionDays:7,deleteOperatorArchives:false,deleteIndependentAuthority:false};
+ const entry=(at:Date)=>({id:randomUUID(),environmentId:scope.environmentId,ownership:'managed-016',capturedAt:at.toISOString(),expiresAt:new Date(at.getTime()+7*86400000).toISOString(),verifiedAt:at.toISOString()});
+ const assess=(at:Date)=>assessBackupSchedule({schedule,environmentId:scope.environmentId,entries:[entry(capturedAt),entry(at)],now:Date.parse('2026-10-24T12:01:00Z')});
+ expect(assess(sourceNow)).toMatchObject({fresh:true,observedCaptureSpacing:false,scheduleExecutionVerified:false});
+ expect(assess(new Date(plan.notBeforeCapturedAt!))).toMatchObject({fresh:true,observedCaptureSpacing:true,scheduleExecutionVerified:false});
+ vi.useFakeTimers();
+ try{
+  vi.setSystemTime(new Date('2099-01-01T00:00:00Z'));
+  expect(planWorkBackupCadence([receipt],scope,sourceNow)).toEqual(plan);
+  let finished=false;const controller=new AbortController(),waiting=waitForWorkBackupCadence(plan.waitMilliseconds,controller.signal).then(()=>{finished=true;});
+  expect(vi.getTimerCount()).toBe(1);await vi.advanceTimersByTimeAsync(24999);expect(finished).toBe(false);await vi.advanceTimersByTimeAsync(1);await waiting;expect(finished).toBe(true);expect(vi.getTimerCount()).toBe(0);
+  const deadline=new AbortController(),reason=Error('Existing caller deadline');setTimeout(()=>deadline.abort(reason),10);
+  const stopped=expect(waitForWorkBackupCadence(60000,deadline.signal)).rejects.toBe(reason);await vi.advanceTimersByTimeAsync(10);await stopped;expect(vi.getTimerCount()).toBe(0);
+  await expect(waitForWorkBackupCadence(0,deadline.signal)).rejects.toBe(reason);
+  await expect(waitForWorkBackupCadence(60001,new AbortController().signal)).rejects.toThrow('Bounded');expect(vi.getTimerCount()).toBe(0);
+ }finally{vi.useRealTimers();}
+ // Drive the real runner through its wait and reconnect failure paths. SQL and
+ // pricing boundaries are synthetic; no hosted operation is represented here.
+ const previousRetries=process.env.VERCEL_BLOB_RETRIES;
+ try{
+  process.env.VERCEL_BLOB_RETRIES='0';
+  for(const failure of ['abort','reconnect'] as const){
+   vi.resetModules();vi.useFakeTimers();
+   const clients:{connected:boolean;ended:boolean}[]=[],transitions:string[]=[],reserved:string[][]=[];
+   const reconnectError=Error('Synthetic reconnect failure'),deadlineError=Error('Original deadline');
+   class FakeClient{
+    connected=false;ended=false;
+    constructor(){clients.push(this);}
+    async connect(){if(clients.length===3)throw reconnectError;this.connected=true;}
+    async end(){this.connected=false;this.ended=true;}
+    async query(sql:string){
+     if(!this.connected)throw Error('Disconnected query attempted');
+     if(sql.includes('SELECT r.archive_id'))return {rows:[receipt]};
+     if(sql.includes('source_now'))return {rows:[{mode:'open',revision:1,environment_id:scope.environmentId,schema_version:79,source_now:sourceNow,owner:true}]};
+     if(sql.includes('current_user=pg_get_userbyid'))return {rows:[{owner:true}]};
+     throw Error('Unexpected SQL after cadence admission');
+    }
+   }
+   vi.doMock('pg',()=>({Client:FakeClient}));
+   vi.doMock('../../../lib/server/operations/work-backup-cost',async()=>({...await vi.importActual<object>('../../../lib/server/operations/work-backup-cost'),reserveWorkBackupCost:async()=>{const ids=[randomUUID(),randomUUID()];reserved.push(ids);return ids;},transitionWorkBackupCost:async(_db:unknown,_binding:unknown,_ids:unknown,state:string)=>{transitions.push(state);}}));
+   vi.doMock('../../../lib/server/operations/work-backup-pricing',async()=>({...await vi.importActual<object>('../../../lib/server/operations/work-backup-pricing'),verifyWorkBackupPricing:async()=>({synthetic:true})}));
+   const {runScheduledWorkBackup}=await import('../../../lib/server/operations/work-backup-run');
+   const controller=new AbortController(),master=randomBytes(32);
+   try{
+    const running=runScheduledWorkBackup({configuration:scope,source:{sourceCommit:'a'.repeat(40),sourceDigest:'b'.repeat(64),catalogDigest:'c'.repeat(64),ledgerDigest:'d'.repeat(64)},assetRoot:'/synthetic-unused',signal:controller.signal,objects:{} as never,key:{master,reference:scope.keyReference,version:scope.keyVersion}});
+    const rejected=expect(running).rejects.toBe(failure==='abort'?deadlineError:reconnectError);
+    for(let turn=0;turn<50&&vi.getTimerCount()===0;turn++)await Promise.resolve();
+    expect(vi.getTimerCount()).toBe(1);expect(clients).toHaveLength(2);expect(clients.every(client=>client.ended&&!client.connected)).toBe(true);
+    if(failure==='abort')controller.abort(deadlineError);else await vi.advanceTimersByTimeAsync(25000);
+    await rejected;
+    expect(clients).toHaveLength(failure==='abort'?2:3);expect(transitions).toEqual(['dispatched']);expect(reserved).toHaveLength(1);expect(vi.getTimerCount()).toBe(0);
+   }finally{master.fill(0);vi.useRealTimers();vi.doUnmock('pg');vi.doUnmock('../../../lib/server/operations/work-backup-cost');vi.doUnmock('../../../lib/server/operations/work-backup-pricing');vi.resetModules();}
+  }
+ }finally{if(previousRetries===undefined)delete process.env.VERCEL_BLOB_RETRIES;else process.env.VERCEL_BLOB_RETRIES=previousRetries;vi.useRealTimers();}
+});

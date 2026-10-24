@@ -100,7 +100,8 @@ try{
    try{await reserveWorkBackupCost(archiveDb,binding,'4'.repeat(64));}catch{capDenied=true;}
    const spent=Number((await archiveDb.query('SELECT sum(charged_micro_usd) AS n FROM turas_backup.cost_reservations')).rows[0].n);
    costAdmissionVerified=categoryDenied&&atomicRollback&&concurrentDenied&&unknownDenied&&replayDenied&&capDenied&&spent===2000;
-   const resources={operatorProjectId:'prj_syntheticOperator',sourceProjectId:'prj_synthetic',environmentId,installationId,storeId:'synthetic-owned-test-store',maximumArchiveBytes:104857600,maximumObjectBytes:25165824,maximumObjects:256};
+   // This runner exercises a separate declared project; the prior cold-copy fixture remains intact.
+   const resources={operatorProjectId:'prj_syntheticOperator',sourceProjectId:'prj_syntheticScheduledRunner',environmentId,installationId,storeId:'synthetic-owned-test-store',maximumArchiveBytes:104857600,maximumObjectBytes:25165824,maximumObjects:256};
    const runBinding={...binding,hostingBudgetId:randomUUID(),blobBudgetId:randomUUID(),scopeDigest:workBackupScopeDigest(resources)};
    const runAuthorization={...authorization,budgets:authorization.budgets.map(row=>({...row,id:row.category==='hosting'?runBinding.hostingBudgetId:runBinding.blobBudgetId,authorizationDigest:'9'.repeat(64),scopeDigest:runBinding.scopeDigest}))};
    await provisionWorkBackupCostAuthority(archiveDb,runAuthorization);
@@ -108,7 +109,8 @@ try{
    const backupObservation=(await writer.query('SELECT id,code_version,captured_at FROM operations_backup_observations WHERE id=$1',[run.archiveId])).rows;
    const afterRun=(await writer.query('SELECT mode,revision FROM operations_control WHERE environment_id=$1',[environmentId])).rows[0];
    const runCosts=(await archiveDb.query('SELECT state,charged_micro_usd,upper_bound_micro_usd,charge_kind FROM turas_backup.cost_reservations WHERE budget_id=ANY($1::uuid[])',[runAuthorization.budgets.map(row=>row.id)])).rows;
-   scheduledRunVerified=backupObservation.length===1&&backupObservation[0].code_version==='a'.repeat(40)&&backupObservation[0].captured_at.toISOString()===run.capturedAt&&run.coldDownloadAuthenticated&&run.temporaryBytesRemoved&&run.completeCostCeilingsRetained&&!run.scheduledInvocationVerified&&!run.restorationReady&&afterRun.mode==='open'&&Number(afterRun.revision)===openRevision&&runCosts.length===2&&runCosts.every(row=>row.state==='settled'&&row.charge_kind==='estimate'&&Number(row.charged_micro_usd)===Number(row.upper_bound_micro_usd));
+   const retainedPrior=(await archiveDb.query('SELECT captured_at FROM turas_backup.capture_receipts WHERE archive_id=$1 AND source_project_id=$2',[scheduled.id,'prj_synthetic'])).rows;
+   scheduledRunVerified=retainedPrior.length===1&&retainedPrior[0].captured_at.toISOString()===scheduled.capturedAt&&backupObservation.length===1&&backupObservation[0].code_version==='a'.repeat(40)&&backupObservation[0].captured_at.toISOString()===run.capturedAt&&run.coldDownloadAuthenticated&&run.temporaryBytesRemoved&&run.completeCostCeilingsRetained&&!run.scheduledInvocationVerified&&!run.restorationReady&&afterRun.mode==='open'&&Number(afterRun.revision)===openRevision&&runCosts.length===2&&runCosts.every(row=>row.state==='settled'&&row.charge_kind==='estimate'&&Number(row.charged_micro_usd)===Number(row.upper_bound_micro_usd));
   }finally{await archiveDb.end();}
  }finally{key.fill(0);master.fill(0);scheduledKey?.fill(0);}
  await writeFile('/output/result.json',JSON.stringify({dump,snapshotContentRestored,sourceContentRetained,cancellationDenied,cancelledOutputAbsent,matchedCaptureVerified,scheduledCaptureVerified,coldCopyVerified,costAdmissionVerified,coldReadVerified,costProvisionVerified,scheduledRunVerified,hostedVerified:false}),{mode:0o600,flag:'wx'});

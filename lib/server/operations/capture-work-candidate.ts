@@ -19,8 +19,9 @@ const schema=z.strictObject({environmentId:identity,recoveryId:z.uuid(),controlR
 /** Protected operator primitive, never a customer-facing capability. The
  * caller supplies fixed deployment provenance, separately retained key bytes,
  * and an authenticated store. This operation never unlocks or resumes work. */
-export async function captureWorkRecoveryCandidate(input:{scope:z.input<typeof schema>;connectionString:string;assetRoot:string;output:string;objects:PrivateObjects;key:Uint8Array;signal:AbortSignal;maximumObjectBytes?:number;maximumObjects?:number;archiveId?:string}){
+export async function captureWorkRecoveryCandidate(input:{scope:z.input<typeof schema>;connectionString:string;assetRoot:string;output:string;objects:PrivateObjects;key:Uint8Array;signal:AbortSignal;maximumObjectBytes?:number;maximumObjects?:number;archiveId?:string;scheduledNotBeforeCapturedAt?:string}){
  const scope=schema.parse(input.scope),output=resolve(input.output);input.signal.throwIfAborted();
+ if(input.scheduledNotBeforeCapturedAt!==undefined){z.iso.datetime({offset:true}).parse(input.scheduledNotBeforeCapturedAt);if(scope.purpose!=='scheduled-backup')throw Error('Scheduled capture time cannot alter recovery');}
  if(input.key.byteLength!==32)throw Error('Separate work recovery key required');
  if(input.archiveId!==undefined)z.uuid().parse(input.archiveId);
  const url=new URL(input.connectionString),local=url.hostname==='127.0.0.1';
@@ -36,7 +37,7 @@ export async function captureWorkRecoveryCandidate(input:{scope:z.input<typeof s
    if(roles.length!==2||roles[0].rolname!=='turas_runtime'||roles[0].rolcanlogin!==false||roles[1].rolname!=='turas_runtime_016'||roles[1].rolcanlogin!==true||roles.some(role=>role.rolsuper||role.rolcreatedb||role.rolcreaterole||role.rolreplication||role.rolbypassrls))throw Error('Retired legacy and restricted replacement runtime required');
   }
   const checkpoint=scope.purpose==='scheduled-backup'?withScheduledDatabaseCheckpoint:withRecoveryDatabaseCheckpoint;
-  const candidate=await checkpoint(db,{...scope,signal:input.signal},async boundary=>{
+  const candidate=await checkpoint(db,{...scope,signal:input.signal,scheduledNotBeforeCapturedAt:input.scheduledNotBeforeCapturedAt},async boundary=>{
    if(boundary.serverMajor!==18)throw Error('Hosted PostgreSQL 18 source required');
    const ledgerDigest=recoveryDigest((await db.query('SELECT name FROM turas_migrations ORDER BY name')).rows);
    if(ledgerDigest!==scope.ledgerDigest)throw Error('Work capture installed ledger differs');

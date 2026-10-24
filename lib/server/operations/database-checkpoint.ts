@@ -4,6 +4,7 @@ import {currentRecoveryStateDigest} from './recovery-state';
 import {recoveryLeasesOutstanding} from './recovery-drain';
 import {recoveryGrantCheckpoint} from './grant-checkpoint';
 import {recoveryContentDigest} from './recovery-content';
+import {z} from 'zod';
 /** Take the physical IO fence before establishing the repeatable-read snapshot.
  * Exported snapshots remain valid only while their transaction stays open. */
 export async function withRecoveryDatabaseCheckpoint<T>(db:Client|PoolClient,input:{environmentId:string;recoveryId:string;controlRevision:number;signal:AbortSignal},capture:(boundary:{snapshot:string;capturedAt:string;currentStateDigest:string;runtimeGrantsDigest:string;acceptedContentDigest:string;serverMajor:RecoveryPostgresMajor;signal:AbortSignal})=>Promise<T>):Promise<T>{
@@ -12,10 +13,12 @@ export async function withRecoveryDatabaseCheckpoint<T>(db:Client|PoolClient,inp
 /** Routine backups take the same exclusive IO fence and require drained leases.
  * They never transition recovery control or manufacture a recovery verification.
  * A busy source fails its bounded capture instead of resuming uncertain work. */
-export async function withScheduledDatabaseCheckpoint<T>(db:Client|PoolClient,input:{environmentId:string;recoveryId:string;controlRevision:number;signal:AbortSignal},capture:(boundary:{snapshot:string;capturedAt:string;currentStateDigest:string;runtimeGrantsDigest:string;acceptedContentDigest:string;serverMajor:RecoveryPostgresMajor;signal:AbortSignal})=>Promise<T>):Promise<T>{
+export async function withScheduledDatabaseCheckpoint<T>(db:Client|PoolClient,input:{environmentId:string;recoveryId:string;controlRevision:number;signal:AbortSignal;scheduledNotBeforeCapturedAt?:string},capture:(boundary:{snapshot:string;capturedAt:string;currentStateDigest:string;runtimeGrantsDigest:string;acceptedContentDigest:string;serverMajor:RecoveryPostgresMajor;signal:AbortSignal})=>Promise<T>):Promise<T>{
+ if(input.scheduledNotBeforeCapturedAt!==undefined)z.iso.datetime({offset:true}).parse(input.scheduledNotBeforeCapturedAt);
  return withDatabaseCheckpoint(db,input,'scheduled-backup',capture);
 }
-async function withDatabaseCheckpoint<T>(db:Client|PoolClient,input:{environmentId:string;recoveryId:string;controlRevision:number;signal:AbortSignal},purpose:'locked-recovery'|'scheduled-backup',capture:(boundary:{snapshot:string;capturedAt:string;currentStateDigest:string;runtimeGrantsDigest:string;acceptedContentDigest:string;serverMajor:RecoveryPostgresMajor;signal:AbortSignal})=>Promise<T>):Promise<T>{
+async function withDatabaseCheckpoint<T>(db:Client|PoolClient,input:{environmentId:string;recoveryId:string;controlRevision:number;signal:AbortSignal;scheduledNotBeforeCapturedAt?:string},purpose:'locked-recovery'|'scheduled-backup',capture:(boundary:{snapshot:string;capturedAt:string;currentStateDigest:string;runtimeGrantsDigest:string;acceptedContentDigest:string;serverMajor:RecoveryPostgresMajor;signal:AbortSignal})=>Promise<T>):Promise<T>{
+ if(purpose!=='scheduled-backup'&&input.scheduledNotBeforeCapturedAt!==undefined)throw Error('Scheduled capture time cannot alter recovery');
  input.signal.throwIfAborted();let held=false,transaction=false;
  try{
   // READ COMMITTED admission cannot freeze a view from before drained cleanup.
@@ -34,6 +37,7 @@ async function withDatabaseCheckpoint<T>(db:Client|PoolClient,input:{environment
   if(await recoveryLeasesOutstanding(db))throw Error('Capture lease drain remains incomplete');
   const currentStateDigest=await currentRecoveryStateDigest(db),runtimeGrantsDigest=await recoveryGrantCheckpoint(db),acceptedContentDigest=await recoveryContentDigest(db),row=(await db.query('SELECT pg_export_snapshot() AS snapshot,clock_timestamp() AS captured_at')).rows[0];
   if(!/^[a-fA-F0-9-]{1,128}$/.test(row.snapshot))throw Error('Database snapshot identity unavailable');
+  if(input.scheduledNotBeforeCapturedAt!==undefined&&row.captured_at.getTime()<Date.parse(input.scheduledNotBeforeCapturedAt))throw Error('Scheduled snapshot precedes authorized capture time');
   input.signal.throwIfAborted();const result=await capture({snapshot:row.snapshot,capturedAt:row.captured_at.toISOString(),currentStateDigest,runtimeGrantsDigest,acceptedContentDigest,serverMajor,signal:input.signal});input.signal.throwIfAborted();
   await db.query('COMMIT');transaction=false;return result;
  }finally{
