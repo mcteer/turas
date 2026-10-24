@@ -349,3 +349,8 @@ FR-003; automated observations do not approve release.
 The T163 catalog correction changes only the registered title of the existing
 strengthened artifact test. All 1,041 cases, 189 suites and acceptance criteria
 remain required; the `547322b` incomplete catalog is not a complete pass.
+
+The T164 test-harness correction preserves the automatic post-reload receipt
+scenario by preventing the preceding document from consuming that receipt.
+It changes no application behavior, authorization rule or acceptance threshold.
+The separately reproduced fixture race does not establish the original CI cause.

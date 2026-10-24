@@ -8178,3 +8178,41 @@ Node 24 runs, and the unmodified catalog verifier accepts all 13 cases with no
 skips or retries. This narrow result does not replace fresh complete committed
 CI, independent model evaluation or hosted release acceptance. The original
 catalog still contains 1,041 cases across 189 suites.
+
+### T164 partner reload fixture sequencing
+
+The `865a3d7` desktop-dark partner case failed after 8,191 ms inside the grouped
+receipt-reconciliation phase. Its retained fixed diagnostic packet does not
+identify the exact assertion, DOM or request state. A single unchanged-source
+desktop-dark diagnostic passed in 12,361 ms; neither result establishes the
+original CI cause.
+
+A separate controlled focus-before-reload run reproduced a fixture race using
+the real committed receipt. Before the target reload, the old document showed
+confirmation with zero pending storage entries. After reload, confirmation and
+pending state were absent, the initial assignment read was held, and no new
+receipt GET occurred. The original five-second confirmation assertion failed
+after 5,003 ms. Its final database audit was not reached and is not claimed.
+
+The candidate retains one receipt handler throughout setup, with the original
+unavailable response until the target main-frame reload commits. Its entry
+eligibility is captured before asynchronous work. No application code changes.
+The controlled fixed comparison preserves pending storage before reload, then
+passes every original assertion, including one command and one database attempt,
+in 12,055 ms with the original thirty-second case, five-second assertion and
+zero retries. Five fixed nested phases improve failure identification; all six
+existing diagnostic privacy cases and the strict catalog verifier pass.
+
+The first full matrix emitted 48 passing cases, but its parent recorder failed
+after child completion before retaining the child's exit code. That enclosing
+Python failure and unknown Node exit remain separate historical evidence.
+A separately authorized manual successor runs the complete original matrix
+again, with no result overlay: all 48 cases across four WebKit profiles pass,
+with zero skips, retries or flaky cases and actual parent exit 0. The corrected
+recorder durably saves the child exit before its additional hash checks.
+Its feature-013 source fingerprint is
+`9fa69d6296df389de49a4c41882ead8a9b139adc7144b9180abf2062b6fa9caf`.
+Exact owned cleanup is verified separately. Root, partner and pilot types pass.
+These are working-tree results; fresh committed CI, all model stages and hosted
+release acceptance remain required. The fixture gate is not a general proof of
+cross-document request identity, and the original CI cause remains unproved.

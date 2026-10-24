@@ -880,3 +880,13 @@ No hosted target may be locked for release before its measured reopen path exist
   to its strengthened T159 case, preserving all four cases and every assertion.
   Verify the original final three suites (13 cases) through the catalog verifier;
   require fresh complete CI, model and hosted acceptance without overlays.
+
+- [ ] T164 Preserve the `865a3d7` desktop-dark partner reconciliation failure
+  without claiming its exact cause. Reproduce the old-document receipt race
+  with a legitimate focus event and real committed receipt. Keep the test's
+  receipt unavailable until its target reload commits, using one persistent
+  handler and the original command, assertions, deadlines and zero retries.
+  Verify the controlled fixed comparison, direct single-outcome audit, all 48
+  partner browser cases and private-safe diagnostic phases. Retain the first
+  matrix recorder failure separately; require a complete fresh recorded run,
+  committed CI, model and hosted acceptance before release.

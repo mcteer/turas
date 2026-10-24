@@ -830,3 +830,12 @@ strengthened T159 test's new name. Retain all 1,041 cases and 189 suites, the
 original assertions and deadlines, and the failed source's actual results.
 Verify the final three original suites with the strict title verifier before
 fresh complete CI. No application, model or authorization behavior changes.
+
+T164 fixes the lost-acknowledgement test's receipt sequencing. One persistent
+handler returns the original unavailable response to the old document; a
+main-frame navigation event enables actual receipt forwarding for the target
+reload. Capture eligibility at handler entry and preserve the existing
+pre-fulfilment assignment barrier. Remove the event listener in cleanup.
+This is a scoped fixture sequence, not general document authentication. Keep
+every original assertion and clock, and use fixed nested phases to distinguish
+the grouped reconciliation operations without exposing private data.
