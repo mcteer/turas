@@ -799,3 +799,28 @@ view, then restores and reconciles the original request with one stored receipt.
 The earlier four-case matrix passed 92 cases; the final five-case canonicalization
 file increases the six-journey matrix to 96 cases without changing any original
 scenario or global clock. Final source-bound checks remain required.
+
+### Partner receipt settlement before protected reread (T162)
+
+The 52c647d CI partner-learning lost-acknowledgement case reached its unchanged
+thirty-second limit without an operation trace. One original-case production
+WebKit diagnostic passed in 2.7 seconds; this does not explain that CI timeout.
+A separate controlled fault did establish a defect: after the real committed
+receipt arrived, withholding only its subsequent real assignment response kept
+the request pending and disabled beyond the original five-second confirmation
+assertion. Releasing that response restored the original outcome.
+
+On a valid current-namespace receipt, invoke protected refresh to synchronously
+retire the old projection, then clear the pending intent and publish only request
+confirmation before awaiting the read. An acknowledgement does not make the
+protected content current. Bound response headers and body to ten seconds;
+preserve generation, endpoint and identity checks, fail closed on expiry, and
+leave an explicit read-only refresh available. Uncertain commands retain their
+existing fence, and no POST is replayed.
+
+Strengthen the original browser case with the actual read barrier, expiry and
+manual recovery while preserving its storage privacy, single-command and single
+DB-attempt assertions. Keep its original thirty-second case and other existing
+clocks/retries. Fixed phase names identify fixture forwarding, receipt loss and
+reconciliation without private values; reject the deferred fixture barrier if
+its forwarding fails rather than masking that failure as an unlabelled timeout.

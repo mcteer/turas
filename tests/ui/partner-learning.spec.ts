@@ -9,11 +9,43 @@ import {previewPartnerAssignment,decidePartnerAssignment,readPartnerAssignment} 
 async function session(page:Page,actor:CurrentSession){await page.context().addCookies([{name:"turas_session",value:actor.token,url:process.env.TURAS_UI_BASE_URL!,httpOnly:true,sameSite:"Lax"}]);}
 test.beforeEach(async()=>{if(process.env.TURAS_PARTNERS_UI_FIXTURE_READY!=="1")throw Error("Owned partner UI runner required");await withPartnerDatabase(db=>db.query("DELETE FROM partner_rate_windows WHERE environment_id=$1",[process.env.TURAS_ENVIRONMENT_ID]));});
 test("reconciles a committed draft after a lost acknowledgment without persisting or repeating its prose",async({page})=>{
- const f=await partnerGuideFixture(`Synthetic lost acknowledgment ${test.info().project.name}`,true),input={...partnerCommandEnvelope(),action:"assignment.create",guideId:f.guideId,revisionId:f.revisionId,membershipId:f.partner.membershipId,rationale:"Synthetic lost acknowledgment assignment",selfReview:false},preview=await previewPartnerAssignment(f.reviewer,input),assigned=await decidePartnerAssignment(f.reviewer,{...input,requestId:randomUUID(),previewId:preview.previewId});await session(page,f.partner);const initialResponse=await page.request.get(`/api/partners/assignments/${assigned.targetId}`);expect(initialResponse.ok()).toBe(true);const earlierProjection=await initialResponse.json();await page.goto(`/partners/assignments/${assigned.targetId}`);await page.getByRole("button",{name:"Record Demonstration",exact:true}).click();await page.getByLabel("What You Attempted",{exact:true}).fill("PRIVATE_SYNTHETIC_ATTEMPT_INPUT");await page.getByLabel("Observed Result",{exact:true}).fill("PRIVATE_SYNTHETIC_LOST_RECEIPT_RESULT");
- let committedLostAcknowledgment!:()=>void;const lostAcknowledgment=new Promise<void>(resolve=>{committedLostAcknowledgment=resolve;});let commands=0;await page.route("**/api/partners/requests/*",route=>route.fulfill({status:503,contentType:"application/json",body:JSON.stringify({error:{code:"unavailable"}})}));await page.route("**/api/partners/commands",async route=>{commands++;const response=await route.fetch();expect(response.ok()).toBe(true);await route.abort();committedLostAcknowledgment();});await page.getByRole("button",{name:"Save Checkpoint Draft",exact:true}).click();await lostAcknowledgment;await expect(page.getByRole("button",{name:"Resolve Old Request",exact:true})).toBeVisible();await expect(page.getByRole("button",{name:"Save Checkpoint Draft",exact:true})).toBeDisabled();
- const values=await page.evaluate(()=>Object.entries(sessionStorage).filter(([key])=>key.startsWith("turas.partner.pending:")).map(([,value])=>JSON.parse(value)));expect(values).toHaveLength(1);expect(Object.keys(values[0]).sort()).toEqual(["contractVersion","requestId","targetId"].sort());expect(JSON.stringify(values)).not.toContain("PRIVATE_SYNTHETIC");await page.unroute("**/api/partners/requests/*");let committedReceiptObserved=false;
+ const {f,assigned,earlierProjection}=await test.step("Prepare committed partner draft",async()=>{
+  const f=await partnerGuideFixture(`Synthetic lost acknowledgment ${test.info().project.name}`,true),input={...partnerCommandEnvelope(),action:"assignment.create",guideId:f.guideId,revisionId:f.revisionId,membershipId:f.partner.membershipId,rationale:"Synthetic lost acknowledgment assignment",selfReview:false},preview=await previewPartnerAssignment(f.reviewer,input),assigned=await decidePartnerAssignment(f.reviewer,{...input,requestId:randomUUID(),previewId:preview.previewId});
+  await session(page,f.partner);const response=await page.request.get(`/api/partners/assignments/${assigned.targetId}`);expect(response.ok()).toBe(true);return {f,assigned,earlierProjection:await response.json()};
+ });
+ await test.step("Open committed partner draft",async()=>{await page.goto(`/partners/assignments/${assigned.targetId}`);await page.getByRole("button",{name:"Record Demonstration",exact:true}).click();await page.getByLabel("What You Attempted",{exact:true}).fill("PRIVATE_SYNTHETIC_ATTEMPT_INPUT");await page.getByLabel("Observed Result",{exact:true}).fill("PRIVATE_SYNTHETIC_LOST_RECEIPT_RESULT");});
+ let resolveAcknowledgment!:()=>void,rejectAcknowledgment!:(reason:unknown)=>void;
+ const lostAcknowledgment=new Promise<void>((resolve,reject)=>{resolveAcknowledgment=resolve;rejectAcknowledgment=reject;});let commands=0;
+ await page.route("**/api/partners/requests/*",route=>route.fulfill({status:503,contentType:"application/json",body:JSON.stringify({error:{code:"unavailable"}})}));
+ await page.route("**/api/partners/commands",async route=>{
+  commands++;try{const response=await test.step("Forward committed partner command",()=>route.fetch());expect(response.ok()).toBe(true);await test.step("Abort committed partner acknowledgement",()=>route.abort());resolveAcknowledgment();}
+  catch(error){rejectAcknowledgment(error);await route.abort().catch(()=>{});}
+ });
+ await test.step("Lose committed partner acknowledgement",async()=>{await Promise.all([page.getByRole("button",{name:"Save Checkpoint Draft",exact:true}).click(),lostAcknowledgment]);});
+ await test.step("Verify unresolved partner receipt",async()=>{
+  await expect(page.getByRole("button",{name:"Resolve Old Request",exact:true})).toBeVisible();await expect(page.getByRole("button",{name:"Save Checkpoint Draft",exact:true})).toBeDisabled();
+  const values=await page.evaluate(()=>Object.entries(sessionStorage).filter(([key])=>key.startsWith("turas.partner.pending:")).map(([,value])=>JSON.parse(value)));expect(values).toHaveLength(1);expect(Object.keys(values[0]).sort()).toEqual(["contractVersion","requestId","targetId"].sort());expect(JSON.stringify(values)).not.toContain("PRIVATE_SYNTHETIC");
+ });
+ await page.unroute("**/api/partners/requests/*");let committedReceiptObserved=false;
  await page.route("**/api/partners/requests/*",async route=>{const response=await route.fetch();const envelope=await response.json();if(response.ok()&&envelope.data?.outcome==="committed")committedReceiptObserved=true;await route.fulfill({response});});
- await page.route(`**/api/partners/assignments/${assigned.targetId}`,route=>committedReceiptObserved?route.continue():route.fulfill({status:200,contentType:"application/json",body:JSON.stringify(earlierProjection)}));await page.reload();await expect(page.getByText("Request confirmed.",{exact:true})).toBeVisible();await expect(page.getByRole("button",{name:"Resolve Old Request",exact:true})).toHaveCount(0);await expect(page.getByTestId("partner-protected-body")).toContainText("PRIVATE_SYNTHETIC_LOST_RECEIPT_RESULT");expect(commands).toBe(1);await withPartnerDatabase(async db=>{expect((await db.query("SELECT count(*)::int AS n FROM partner_checkpoint_attempts WHERE assignment_id=$1",[assigned.targetId])).rows[0].n).toBe(1);});await page.unrouteAll({behavior:"wait"});
+ let release!:()=>void,released=false,heldReads=0;const barrier=new Promise<void>(resolve=>{release=resolve;});
+ await page.route(`**/api/partners/assignments/${assigned.targetId}`,async route=>{
+  if(!committedReceiptObserved){await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify(earlierProjection)});return;}
+  if(released){await route.continue();return;}
+  const response=await route.fetch();expect(response.ok()).toBe(true);heldReads++;await barrier;try{await route.fulfill({response});}catch(error){if(!route.request().failure())throw error;}
+ });
+ try{
+  await test.step("Reconcile committed partner receipt",async()=>{
+   await page.reload();await expect(page.getByText("Request confirmed.",{exact:true})).toBeVisible();await expect(page.getByRole("button",{name:"Resolve Old Request",exact:true})).toHaveCount(0);
+   await expect.poll(()=>heldReads).toBeGreaterThan(0);expect(committedReceiptObserved).toBe(true);await expect(page.getByTestId("partner-protected-body")).toHaveCount(0);
+  });
+  await test.step("Verify bounded partner refresh",async()=>{
+   await expect(page.getByText("Delivery work is unavailable. Retry to check current access.",{exact:true})).toBeVisible({timeout:12000});
+   const previousReads=heldReads;await page.getByRole("button",{name:"Refresh Learning",exact:true}).click();await expect.poll(()=>heldReads).toBeGreaterThan(previousReads);released=true;release();
+   await expect(page.getByTestId("partner-protected-body")).toContainText("PRIVATE_SYNTHETIC_LOST_RECEIPT_RESULT");
+  });
+  await test.step("Audit reconciled partner draft",async()=>{expect(commands).toBe(1);await withPartnerDatabase(async db=>{expect((await db.query("SELECT count(*)::int AS n FROM partner_checkpoint_attempts WHERE assignment_id=$1",[assigned.targetId])).rows[0].n).toBe(1);});});
+ }finally{released=true;release();await page.unrouteAll({behavior:"wait"});}
 });
 test("resolves an absent request after reload before allowing a new demonstration",async({page})=>{
  const {f,assigned}=await test.step("Prepare absent request assignment",async()=>{const f=await partnerGuideFixture(`Synthetic absent request ${test.info().project.name}`,true),input={...partnerCommandEnvelope(),action:"assignment.create",guideId:f.guideId,revisionId:f.revisionId,membershipId:f.partner.membershipId,rationale:"Synthetic absent request assignment",selfReview:false},preview=await previewPartnerAssignment(f.reviewer,input),assigned=await decidePartnerAssignment(f.reviewer,{...input,requestId:randomUUID(),previewId:preview.previewId});return {f,assigned};});await session(page,f.partner);

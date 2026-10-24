@@ -863,3 +863,14 @@ No hosted target may be locked for release before its measured reopen path exist
   durable WebKit coverage plus fixed, private-safe preview/decision lifecycle
   metadata; do not claim the separate preview failure's cause is established.
   Require all four browser profiles, complete fresh CI, model and hosted checks.
+
+- [ ] T162 Preserve the actual 52c647d partner-learning CI timeout and its
+  non-reproducing original-case production WebKit diagnostic. Independently
+  reproduce the confirmed-receipt/read-stall pending-fence defect with a real
+  single command and receipt. Retire protected content before settling the
+  confirmed request, bound follow-up protected reads, preserve unknown-command
+  intent and permit a read-only retry. Strengthen the original lost-acknowledgement
+  browser case without extending its thirty-second clock or adding retries.
+  Add fixed private-safe phase metadata and propagate route-fixture failures.
+  Do not claim the separate CI timeout cause is established; require complete
+  fresh browser, CI, model and hosted acceptance before release.

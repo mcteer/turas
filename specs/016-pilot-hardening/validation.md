@@ -8137,3 +8137,27 @@ or flaky cases and actual parent exit 0. This includes all original scenarios
 and both new real-write regressions. Root/Product Gaps/pilot types, documentation
 and diff checks pass; the original deterministic inventory remains 189 suites
 and 1,041 cases. Committed CI, model and hosted acceptance are still pending.
+
+### T162 partner reconciliation candidate
+
+The original production WebKit case passed once without reproducing the CI
+thirty-second timeout. A separate unchanged-source owned fault proof committed
+one command, observed its actual committed receipt, and held only the following
+assignment read. The original five-second confirmation assertion failed while
+the pending fence remained disabled; releasing the same response recovered it.
+These observations establish read-coupled pending liveness, not the CI cause.
+Root, partner and pilot types pass. The diagnostic privacy suite passes all six
+existing cases after correcting a new assertion's expected alphabetical phase
+ordering; its first failed result remains retained. Focused and full candidate
+browser checks, committed CI, model and hosted acceptance remain pending.
+
+The T162 focused production WebKit run passes all three partner-learning cases
+(17,959 ms total). The complete five-journey matrix passes 48 cases across all
+four WebKit profiles with zero skips, retries or flaky cases and actual parent
+exit 0. Its source fingerprint is retained with the raw per-profile reports.
+The strengthened first case retains the original thirty-second limit, validates
+request confirmation before releasing the protected read, observes bounded
+withholding, then retries only the read and verifies one command and DB attempt.
+Other learning scenarios and domain authorization remain unchanged. Five retained
+static checks pass. These are working-tree candidate results; fresh committed
+CI, model and hosted acceptance remain required.

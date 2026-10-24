@@ -1164,3 +1164,10 @@ and no replay. A separate lost-acknowledgement case restores a fresh authorized
 view before reconciling the original request. The three original canonicalization
 cases remain unchanged.
 Complete CI, model and hosted acceptance are tracked in [PR #47](https://github.com/mcteer/turas/pull/47); local results do not establish release completion.
+
+Partner request reconciliation in the current candidate likewise separates a
+validated committed receipt from its subsequent protected read. An unavailable
+read leaves protected content hidden and permits an explicit read-only retry;
+it does not replay the command. The strengthened lost-acknowledgement journey
+retains its original case limit and storage privacy assertions. Hosted acceptance
+remains tracked separately in PR #47.
