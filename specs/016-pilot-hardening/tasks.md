@@ -778,3 +778,15 @@ No hosted target may be locked for release before its measured reopen path exist
   observed-output assertion, model, reasoning and accounting. Verify the installed
   SDK serialization with a denied synthetic call and no provider dispatch. This
   observation does not itself establish the historical request or provider cause.
+
+
+- [ ] T154 Retain the actual b332596 Execution mapping selection assertion
+  failure and its limits. Reproduce first-input loss and stale mapping state at
+  a baseline-pair transition without claiming the historical CI ordering. Bind
+  mapping and added-item state structurally to the exact old/new baseline pair;
+  preserve same-pair refreshes, synchronous new-pair clearing, explicit human
+  review and server version fences. Add a durable owned CLI WebKit regression
+  using real governed baseline fixtures and adversarial first-input ordering.
+  Preserve all original cases, actions, clocks and retries. Verify original and
+  corrected behavior, all four projects and independent review, then fresh
+  committed complete CI/model/hosted acceptance before release.

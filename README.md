@@ -1137,3 +1137,12 @@ is being versioned with fresh affected validation required. Original owned
 catalog receipts will also be retained separately in CI. Production remains on
 `f8d196f` / schema 077; hosted release, scheduled backup and recovery checks are
 still pending.
+
+
+A further pilot check at `b332596` found a lost baseline-mapping selection in
+Execution. A focused WebKit probe reproduced a delayed-reset race and stale
+choices during a baseline-pair transition. The follow-up binds mapping state to
+that exact pair, preserving ordinary refreshes and clearing new-pair choices
+before interaction. All 12 owned Registers and Scope Changes cases now pass
+across four WebKit profiles, without skips or retries. Fresh complete CI, model
+and hosted release acceptance remain required; Production is unchanged.

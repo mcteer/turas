@@ -650,3 +650,22 @@ choosing a fix. Record only the fixed model identity and bounded numeric request
 output limit before provider dispatch. Preserve the 1,000-token fixture request
 and 1,200-token observed assertion, complete cases, clocks and accounting. Never
 subtract unobserved reasoning tokens or infer a provider cause from the total.
+
+
+## Baseline mapping state ownership (T154)
+
+The b332596 desktop-light Execution case completed its native selection action
+but failed the following value assertion after 30 seconds. Its retained fixed
+observations do not expose the selected value or baseline IDs. A separate CLI
+WebKit ordering probe reproduces a change to delivery followed by a passive reset
+under unchanged IDs, and transient stale mapping/Review eligibility at a new
+baseline pair. This establishes a state-ordering defect, not the exact CI cause.
+
+Give each exact old/new baseline pair its own mapping-state component identity.
+The first displayed controls then have their initial empty state, and replacing
+that pair clears both mapped and added choices before interaction. Refreshes of
+the same pair preserve choices. Keep every existing mapping constraint, human
+review payload and server expected-version check. The durable owned regression
+uses real baseline acceptance and an explicitly adversarial browser event order;
+it is automated evidence, not a human observation. Original cases and deadlines
+remain unchanged; fresh complete acceptance is still required.

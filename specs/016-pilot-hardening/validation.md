@@ -7927,3 +7927,49 @@ version expectation to 2; preserve the six-case, unique-ID, three-role, rubric
 and case-content assertions and the complete regression cohorts. This repairs
 the fixture/test version mismatch, not an application behavior or token-limit
 failure. Whole new-source CI and actual retained proof closure remain required.
+
+
+### b332596 Execution mapping failure and bounded ordering reproduction
+
+CI job 120709054452 failed the desktop-light first execution-changes case. Its
+line-41 selection completed in 29 ms; the next value assertion failed after
+30,005 ms. The reconciliation region and four enabled controls remained present,
+with eligible reconciliation responses. Those observations contain no actual
+selected-value or baseline-ID trace, so they do not establish stable IDs or the
+historical reset ordering.
+
+An isolated source-derived CLI WebKit probe adds passive private observers and
+an unused Link stub that throws if rendered. It dispatches an explicitly
+adversarial first change from a MutationObserver before paint. The original
+component records delivery in its change handler, then a reset under the same
+exact UUID pair, then an empty value. A same-pair refresh preserves a later
+selection. At a new pair's first commit it briefly shows the old selection and
+enabled Review before its passive reset. The keyed-child candidate preserves the
+first selection and same-pair refresh, and starts the new pair empty with Review
+disabled. Both actual probe processes exited 0, without providers or a database.
+The initial harness initialization failure is retained separately. These are
+isolated development-React ordering observations, not full application acceptance
+or proof of the historical CI cause. A real owned regression and original
+four-project cases remain required.
+
+
+The new real owned WebKit regression was then run against the unchanged b332596
+component. It reached the browser and failed the first delivery-value assertion
+with retry 0 after 37,559 ms total case time; parent exit was 1, with no deadline
+expiry. Its source and report are retained. Three earlier setup attempts did not
+reach a browser case: two refused a missing exact owned-container capability,
+and one lacked the legacy workforce scanner alias after cleanup. The diagnostic
+supplies the actual container capability and a required alias of the already
+verified scanner image; neither guard nor test clocks were weakened. The normal
+workforce preparation also built its required local parser image. Those setup
+failures are separate from the genuine first-input regression and isolated
+ordering probes. The candidate implementation now uses a component keyed by the
+exact old/new baseline IDs, keeping all mapping/review payload logic unchanged.
+The unfiltered governing US3 runner then passed all three cases in each of the
+four WebKit profiles: 12 passes, zero unexpected, skipped, flaky or retried cases,
+and four actual parent exits of 0. The two original cases remain unchanged.
+The root readback checked all reports and source identities, absent owned Node
+processes and Turas containers, and all seven unrelated container identities
+unchanged. These focused results cover the new first-input, same-pair refresh
+and new-pair reset regression; fresh committed full CI, actual-model and hosted
+release evidence remain required.
