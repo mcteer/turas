@@ -1,0 +1,2209 @@
+{
+  "version": "pilot-suites-v1",
+  "suites": [
+    {
+      "file": "tests/contracts/pilot/readiness.test.ts",
+      "expectedCases": 22,
+      "cases": [
+        "accepts an attributed partial run without claiming eligibility",
+        "rejects unknown fields including claimed owner approval",
+        "rejects duplicate selected gates",
+        "rejects foreign run receipts",
+        "rejects different source",
+        "rejects different environment",
+        "rejects incomplete inventories",
+        "rejects unstable passes",
+        "rejects unknown gates",
+        "requires hosted identity",
+        "rejects unsafe hosted origins",
+        "limits metadata before parsing",
+        "missing gates remain ineligible",
+        "selected failures are preserved",
+        "future proof does not pass",
+        "stale hosted proof remains unverified",
+        "a different method cannot replace required local proof",
+        "selecting an old pass cannot hide a later failed attempt",
+        "validates exact proof attribution and case counts",
+        "rejects a proof from another role",
+        "rejects duplicate proof case identities",
+        "rejects proof counts that disagree with the receipt"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/evidence.test.ts",
+      "expectedCases": 9,
+      "cases": [
+        "verifies exact private bytes",
+        "rejects overwrite",
+        "rejects traversal",
+        "rejects symlink files",
+        "rejects public modes",
+        "rejects an unsafe root",
+        "rejects altered bytes",
+        "rejects excessive metadata",
+        "summarizes unsafe input without customer credential or filename prose"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/suite-results.test.ts",
+      "expectedCases": 7,
+      "cases": [
+        "checks the complete named suite inventory",
+        "rejects an unknown registered suite",
+        "rejects a partial case list despite a successful exit",
+        "rejects duplicate case titles",
+        "rejects skipped cases despite successful summary counts",
+        "rejects a retried pass",
+        "aggregates the complete current CI catalog beyond 128 suites and rejects omissions duplicates and foreign source"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/resume.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "preserves failed attempts when selecting a complete later rerun",
+        "refuses resume after prior proof bytes change",
+        "refuses a partial replacement attempt"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/migrations.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "migrates the exact full ledger repeat-safely",
+        "binds unambiguous primary legacy sessions",
+        "revokes ambiguous legacy sessions",
+        "rejects a session bound to another principal",
+        "derives publication provenance from the actual contribution",
+        "runtime can observe control but cannot unlock or provision"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/sessions.test.ts",
+      "expectedCases": 9,
+      "cases": [
+        "defaults to the primary membership",
+        "binds an explicitly selected pilot membership",
+        "denies an unassigned workspace",
+        "revokes an inactive membership immediately",
+        "keeps a session stable after a second membership",
+        "rejects an unresolved legacy session",
+        "logout revokes only the exact session",
+        "does not transfer conversation ownership across workspaces",
+        "requires explicit pilot login enablement without changing primary login"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/isolation.test.ts",
+      "expectedCases": 9,
+      "cases": [
+        "denies pilot publications in primary reads",
+        "denies pilot publications in primary search",
+        "denies pilot citations in primary",
+        "excludes synthetic outcomes before metric grouping",
+        "denies pilot sources in primary native context",
+        "denies foreign workspace job publication",
+        "denies pilot content to primary MCP",
+        "permits eligible sanitized primary knowledge in pilot",
+        "keeps own pilot publication current, denies foreign workspace, and retires withdrawn publication"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/provisioning.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "provisions one explicitly scoped synthetic workspace",
+        "repeats without duplicating memberships or grants",
+        "rejects a mismatched environment",
+        "rejects unknown principals and primary overwrites",
+        "does not create accepted or published facts"
+      ]
+    },
+    {
+      "file": "tests/contracts/pilot/private-objects.test.ts",
+      "expectedCases": 9,
+      "cases": [
+        "writes immutable verified bytes",
+        "rejects incorrect size",
+        "rejects incorrect digest",
+        "rejects opaque key traversal",
+        "reconciles an identical immutable conflict",
+        "rejects different bytes at an existing key",
+        "streams private bytes without a public URL",
+        "deletes only the exact scoped object",
+        "propagates the caller capture deadline into a stalled Blob read"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/uploads.test.ts",
+      "expectedCases": 8,
+      "cases": [
+        "uploads the maximum supported original",
+        "reconciles exact-byte completion replay",
+        "denies foreign completion",
+        "denies expired capability callback",
+        "denies cancelled intent completion",
+        "rejects oversized content",
+        "halts a revoked read stream",
+        "does not treat a callback as accepted evidence"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/hosted-jobs.test.ts",
+      "expectedCases": 8,
+      "cases": [
+        "denies sandbox network and exposed ports",
+        "stops an execution at the original deadline",
+        "holds uncertain provider creation without retry",
+        "rejects a lost lease output",
+        "rejects stale source publication",
+        "rejects missing verified input bytes",
+        "isolates one failed maintenance class",
+        "finds and stops an owned orphan"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/maintenance.test.ts",
+      "expectedCases": 7,
+      "cases": [
+        "keeps missing required classes unconfigured",
+        "rejects duplicate or optional required bindings",
+        "records success only after the tick returns",
+        "records bounded failure without a success heartbeat",
+        "does not claim a pass after losing the lease",
+        "refuses to schedule a missing or disabled required class",
+        "keeps stalled and failed classes independent without overlapping their own ticks"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/health.test.ts",
+      "expectedCases": 9,
+      "cases": [
+        "public health returns only readiness and cannot write observation samples",
+        "canonical admin receives bounded safe per-class diagnostics",
+        "denies internal members partners bearer MCP and arbitrary admin headers",
+        "retains only exact canonical status access while recovery is locked",
+        "missing classes and failed starts cannot establish completed maintenance",
+        "actual completed maintenance never substitutes for unverified infrastructure and backups",
+        "requires exact supported schema and runtime restrictions before reporting database health",
+        "stalled queue age fails a fresh class without masking healthy independent classes",
+        "gap cleanup leaves queued preparation to the admitted dispatcher and cannot claim while locked"
+      ]
+    },
+    {
+      "file": "tests/contracts/pilot/recovery.test.ts",
+      "expectedCases": 8,
+      "cases": [
+        "requires a matched database and object inventory",
+        "requires explicit workflow capability",
+        "requires a separate available encryption key",
+        "rejects a wrong environment marker",
+        "rejects a partial object inventory",
+        "requires independently current denial authority",
+        "rejects an unverified outside-domain copy",
+        "rejects unsupported source ledger identity"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-authority.test.ts",
+      "expectedCases": 8,
+      "cases": [
+        "preserves a newer customer grant revocation",
+        "preserves a newer login session revocation",
+        "preserves a newer MCP revocation",
+        "preserves a newer source deletion",
+        "invalidates a newer publication withdrawal",
+        "preserves permanent replay receipts",
+        "denies an old deployment session bypass",
+        "quarantines absent current authority proof"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery.test.ts",
+      "expectedCases": 8,
+      "cases": [
+        "keeps an interrupted capture fenced",
+        "keeps an interrupted restore locked",
+        "denies unlock before complete verification",
+        "resumes interrupted exact cleanup",
+        "rejects a missing key or object",
+        "rejects a wrong marker or schema",
+        "holds uncertain paid and send attempts",
+        "denies locked UI native MCP and job admission"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/lifecycle.test.ts",
+      "expectedCases": 11,
+      "cases": [
+        "withholds withdrawn knowledge before deleting derived bytes",
+        "withholds withdrawn content from search before cleanup",
+        "denies an existing citation immediately after withdrawal",
+        "denies stale native dependencies before retirement completes",
+        "denies an existing MCP actor after source withdrawal",
+        "purges withdrawn projections while authoring is disabled",
+        "retains permanent withdrawal replay authority after payload cleanup",
+        "revokes MCP reads before cleanup and retains the management receipt",
+        "withholds every shared consumer after original retraction and preserves exact retraction replay",
+        "keeps deleted originals and native output closed through interrupted cleanup",
+        "withholds report streams during partial Blob expiry and retains permanent publication history"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/access.test.ts",
+      "expectedCases": 9,
+      "cases": [
+        "quarantines malicious originals",
+        "keeps untrusted claims out of accepted facts",
+        "rejects injected tool instructions",
+        "denies foreign customer access",
+        "denies foreign workspace access",
+        "denies another owners conversation",
+        "denies runtime owner operations",
+        "keeps credentials and payloads out of diagnostics",
+        "rejects normal parser output held past its original job deadline without publishing"
+      ]
+    },
+    {
+      "file": "tests/contracts/pilot/cost.test.ts",
+      "expectedCases": 8,
+      "cases": [
+        "admits only a finite authorized reservation",
+        "rejects a missing cost bound",
+        "rejects an insufficient remaining budget",
+        "retains in flight reservations",
+        "holds unknown provider charges",
+        "separates service and model cost categories",
+        "labels estimates separately from actual charges",
+        "never retries uncertain paid dispatch"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/executors.test.ts",
+      "expectedCases": 14,
+      "cases": [
+        "uses fixed programs and verifies bytes before provider admission",
+        "denies network ports persistence and credentials inside execution",
+        "refuses a provider whose isolation differs from admission",
+        "holds an uncertain creation without a second paid create",
+        "rejects lost lease output and still deletes owned compute",
+        "rejects a mismatched control-plane transfer",
+        "aborts an oversized log while the command is still waiting",
+        "preserves cleanup uncertainty as a hold",
+        "stops and deletes compute when the original deadline expires",
+        "attempts deletion even when the stop request fails",
+        "retains only an exact known diagnostic code without private text",
+        "filters provider diagnostics while retaining known parser failure classification",
+        "enforces the parser program deadline before its longer original domain deadline and verifies cleanup",
+        "keeps completed-command output retrieval under the original domain deadline"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/sandbox-provider.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "keeps partial provider enumeration incomplete",
+        "never resumes a stranded sandbox for cleanup",
+        "refuses to delete compute with mismatched ownership",
+        "requires a confirmed absence after deletion"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/hosted-reconciliation.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "does no provider lookup when there are no orphans",
+        "uses original cost authority for cleanup despite disabled authoring",
+        "holds changed project or image scope without provider access",
+        "bounds orphan work and reports incomplete inventory",
+        "rejects invalid bounds and cancelled execution before provider IO"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/hosted-dispatch.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "accepts only the fixed scheduler route with no command inputs",
+        "does not claim work when disabled, locked, or cost authority is unavailable",
+        "dispatches at most one fixed job with a cancellation signal",
+        "rejects a cancelled dispatcher before readiness or claiming",
+        "prepares deterministic gap exports in the admitted lane without invoking file executors"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/cost-authority.test.ts",
+      "expectedCases": 7,
+      "cases": [
+        "consumes owner authority once and denies runtime provisioning or settlement",
+        "serializes reservations and retains dispatched upper bounds",
+        "keeps estimates conservative and prevents release or replay after dispatch",
+        "denies mismatched category scope pricing and revoked authority",
+        "stops an original orphan after owner cost settlement without reopening its ledger",
+        "serializes the finite dispatch count and keeps settled calls in the allowance",
+        "releases only never dispatched count capacity and rejects nonfinite count limits"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/governed-execution.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "publishes a source-fenced domain result and records one reserved dispatch",
+        "holds an unknown creation and refuses another paid dispatch",
+        "withholds computed output after current source withdrawal",
+        "rejects changed provider or price scope before provider creation"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/maintenance-worker.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "records completed ticks for all classes after the owned worker starts and restarts"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/maintenance-bindings.test.ts",
+      "expectedCases": 15,
+      "cases": [
+        "completes the conversation maintenance binding under runtime grants",
+        "completes the artifacts maintenance binding under runtime grants",
+        "completes the workforce maintenance binding under runtime grants",
+        "completes the retrieval maintenance binding under runtime grants",
+        "completes the research-freshness maintenance binding under runtime grants",
+        "completes the knowledge maintenance binding under runtime grants",
+        "completes the plans maintenance binding under runtime grants",
+        "completes the execution maintenance binding under runtime grants",
+        "completes the support maintenance binding under runtime grants",
+        "completes the expansion maintenance binding under runtime grants",
+        "completes the reports maintenance binding under runtime grants",
+        "completes the gaps maintenance binding under runtime grants",
+        "completes the partners maintenance binding under runtime grants",
+        "completes the learning maintenance binding under runtime grants",
+        "completes the mcp maintenance binding under runtime grants"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/local-jobs.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "denies a third local heavy admission under runtime grants",
+        "shares the two-job bound between local and hosted execution",
+        "fences local publication and new admission after recovery locks the environment",
+        "withholds a local result when the current source changes",
+        "keeps local identity deadlines and terminal rows immutable"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/local-reconciliation.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "stops only exact owned local compute and confirms absence before releasing capacity",
+        "does not delete a container whose environment or owner differs",
+        "retains the capacity hold after unverified deletion",
+        "does no local engine IO when the durable reconciliation fence is lost"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/retrieval-maintenance.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "purges retired projections while authoring is disabled without claiming index work"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/control.test.ts",
+      "expectedCases": 12,
+      "cases": [
+        "requires owner authority and denies runtime control mutation",
+        "serializes exact revisions and rejects a direct open to locked transition",
+        "reconciles an exact operation replay without changing its receipt",
+        "keeps recovery locked without current complete verification",
+        "denies a changed recovery identity and a wrong environment",
+        "never unlocks a partial or stale owner verification",
+        "opens only the exact fresh complete owner verification and keeps it immutable",
+        "closes new heavy admission and refuses an undrained capture fence",
+        "rejects verification after current denial or accepted state changes",
+        "drains domain lease columns outside the new processing registries",
+        "rejects a fresh verification after function execution authority changes",
+        "denies delegated table writers owner recovery and capture authority"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/backup-crypto.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "restores exact private bytes with the separate key and bound capture context",
+        "withholds and removes plaintext when the key or authentication tag differs",
+        "refuses changed capture context and preserves an existing destination",
+        "rejects missing keys symlinks and interrupted capture before retaining output"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/admission.test.ts",
+      "expectedCases": 12,
+      "cases": [
+        "withholds normal sessions in quiescing and locked modes",
+        "denies issuing a new session while recovery is closed",
+        "denies existing domain actor reads after the fence changes",
+        "denies existing MCP credentials and direct MCP actors after locking",
+        "allows only an in-process exact protected cancellation capability",
+        "cancels an exact owned upload without opening ordinary reads",
+        "withholds customer and general conversation lists under a stale actor",
+        "keeps every finite cleanup class executable while locked",
+        "quiesces ongoing private IO and waits for its capture fence",
+        "shares one capture fence without starving concurrent cleanup queries",
+        "bounds concurrent IO admission failures behind an exclusive capture",
+        "denies unfenced legacy session inserts at the database boundary"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/legacy-report-classification.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "classifies exact report and gap identities from both ledgers",
+        "refuses cross-ledger collisions even for an identical object key",
+        "refuses repeated ledger identities and unknown classification fields",
+        "requires opaque UUID keys and explicit namespaces"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/storage-migrate.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "copies fenced legacy stores through the actual owner command and cold resume",
+        "retains content-free failure evidence and originals for unclassified legacy reports",
+        "denies a changed lock before copying legacy originals"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/recovery-timing.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "measures capture age and physical restore duration at exact objective boundaries",
+        "reports exceeded physical limits without manufacturing service recovery",
+        "never counts fast matched bytes as incident-to-verified-service proof",
+        "rejects future captures and backwards restore clocks",
+        "rejects malformed timestamps and claimed acceptance fields",
+        "normalizes offset timestamps using elapsed time rather than local clock text"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/storage-inventory.test.ts",
+      "expectedCases": 12,
+      "cases": [
+        "copies exact bytes and retains the original store",
+        "resumes only matching immutable destination objects",
+        "refuses unrelated destination objects",
+        "refuses changed destination content without overwrite",
+        "checks actual stream bytes rather than trusting object headers",
+        "rejects a foreign environment and backup scope",
+        "stops an unavailable destination without local fallback",
+        "rejects an interrupted or repeated-cursor inventory",
+        "refuses to count a disappeared listed object as an empty inventory",
+        "refuses empty parity when the matched ledger requires an original",
+        "rejects changed or duplicate required identities before copying",
+        "enforces caller byte and object ceilings through every parity pass"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/database-checkpoint.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "requires actual owner authority for exported checkpoints",
+        "refuses an unlocked or changed target before invoking capture",
+        "exports one live snapshot while preventing concurrent content writes",
+        "invalidates an exported snapshot after interrupted capture and retains the lock",
+        "dumps the actual exported snapshot with a pinned client and authenticates encrypted bytes",
+        "takes its database view after admitted cleanup has drained"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/recovery-key.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "probes the separate private key and zeroizes its callback buffer",
+        "zeroizes the key after interrupted verification",
+        "rejects a key in a captured root or with unsafe permissions",
+        "rejects symlinks, incomplete keys and an aborted operation"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/backup-archive.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "round trips the exact database object and workflow byte inventory",
+        "refuses changed source bytes and removes the partial archive",
+        "removes extracted plaintext when an indexed body digest fails",
+        "rejects a wrong marker header or existing restore target",
+        "rejects traversal duplicate inventories truncation and interruption"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/backup-verification.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "verifies authenticated matched bytes without asserting restore or current authority",
+        "rejects altered encrypted bytes before extraction",
+        "rejects a wrong key and removes temporary plaintext",
+        "rejects provenance or store metadata inconsistent with encrypted content",
+        "rejects a key in the archive directory and a claimed actor approval",
+        "records local integrity verification without approving restoration"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/backup-schedule.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "requires a verified capture and separately reports unproven schedule execution",
+        "enforces freshness and cadence boundaries independently",
+        "lists expired managed backups without deleting operator archives or authority",
+        "rejects mixed identity duplicate future and malformed retention records",
+        "rejects changed governance and claimed approval fields"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/backup-schedule-command.test.ts",
+      "expectedCases": 2,
+      "cases": [
+        "records a private schedule assessment without authorizing cleanup or cadence acceptance",
+        "preserves a failed foreign-scope attempt and rejects malformed command flags"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/legacy-local-objects.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "copies all legacy namespaces and hardlinked workforce bytes while retaining originals",
+        "refuses unknown report classification instead of omitting bytes",
+        "refuses missing foreign unsafe and indirect stores without creating them",
+        "rejects symlink originals invalid keys and changed byte expectations",
+        "cannot mutate originals or accept a foreign pagination cursor"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/object-checkpoint.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "stages exact archive entries without removing originals",
+        "removes partial staging if stream bytes differ",
+        "rejects a changed inventory after staging and removes owned partial files",
+        "refuses existing destinations without changing their contents",
+        "does not create staging for an already aborted capture",
+        "removes interrupted staging while preserving the source object"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/owned-database-restore.test.ts",
+      "expectedCases": 2,
+      "cases": [
+        "restores authenticated PostgreSQL bytes into a separate locked owned target with explicit runtime grants",
+        "restores an open work snapshot into a fresh cluster with both runtime roles denied"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/health-samples.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "records only bounded typed observations with server-owned ninety-day expiry",
+        "does not allow caller timestamps unknown prose or excessive counters",
+        "purges only expired samples in a bounded repeat-safe scope while preserving control receipts",
+        "rejects unbounded or foreign expiry and deletion of an unexpired sample",
+        "observes a stopped class without advancing success or blocking other observations",
+        "retains the actual oldest due timestamp without advancing or clearing the queue observation"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/storage-config.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "requires the exact store identity carried by the pinned SDK token",
+        "never selects an ephemeral local store for a hosted deployment",
+        "uses explicit project OIDC with the exact selected store and no read-write token",
+        "lets the pinned SDK obtain fresh hosted request identity without a static secret",
+        "accepts only an explicit store-bound operator Blob credential",
+        "refuses ambiguous or implicit operator Blob authorization"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/execution-config.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "requires explicit hosted processing without a local fallback"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/maintenance-health.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "requires an actual successful current-version tick for every maintenance class",
+        "detects each stopped class at its existing bound before five minutes",
+        "rejects failed missing future and incomplete success observations",
+        "bounds health output and rejects duplicate or foreign class inventories",
+        "a fresh tick cannot hide work overdue past its class freshness bound",
+        "rejects unknown future and inconsistent backlog ages"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/cost-command.test.ts",
+      "expectedCases": 9,
+      "cases": [
+        "records separately scoped immutable budgets for all eight service categories without provider calls",
+        "replays an exact budget without expanding cap or reviving revoked authority",
+        "requires the actual database owner and exact environment for cost records",
+        "holds unknown dispatch and retains the full upper bound for operator estimates",
+        "binds settlement replay to exact immutable charge evidence and review",
+        "refuses settlement without matching receipt budget operation and current state",
+        "accounts confirmed actual charges separately from conservative estimates",
+        "rejects missing finite bounds expired inputs and arbitrary accounting actions",
+        "denies new reservation and paid dispatch while locked but permits undispatched release"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/feedback.test.ts",
+      "expectedCases": 9,
+      "cases": [
+        "records named internal and assigned partner observations without approving release",
+        "rejects missing roles reused principal identities and duplicate scope",
+        "requires one existing journey participant severity and internal follow-up owner",
+        "appends exactly one transition while preserving observation and scope",
+        "rejects skipped reversed duplicate and terminal transitions",
+        "requires blocker correction and digest-bound recheck before resolution",
+        "permits explicit nonblocker deferral with future follow-up and retained owner",
+        "rejects future observations arbitrary fields and claimed release approval",
+        "binds automated role observations to immutable hosted capture provenance without human or release claims"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/feedback.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "binds current synthetic scope to distinct active internal and assigned partner identities",
+        "denies foreign environments primary workspaces and foreign customers",
+        "denies missing revoked and mismatched partner assignments",
+        "denies deactivated participants and partner organizations",
+        "never writes accepted facts grants conversations or release decisions"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/workflow-checkpoint.test.ts",
+      "expectedCases": 8,
+      "cases": [
+        "copies exact nested private workflow bytes without claiming stopped runtime or matched capture",
+        "verifies a genuinely empty workflow inventory rather than assuming a missing root is empty",
+        "rejects symlink entries and indirect source directories",
+        "rejects hard-linked files and writable foreign entry permissions",
+        "rejects unsupported names and handles filesystem case aliases without duplicate archive entries",
+        "refuses existing or nested destinations and retains operator files",
+        "does not stage an already interrupted capture",
+        "removes only owned partial copies when actual capture is interrupted"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/postgres-version.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "selects immutable clients from actual supported PostgreSQL server major metadata",
+        "refuses unsupported nonfinite and malformed server versions",
+        "checks the actual dump and restore process major without accepting another client"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/quality.test.ts",
+      "expectedCases": 7,
+      "cases": [
+        "requires fresh review for shared session or recovery changes",
+        "requires fresh review when the actual evaluation fixtures change",
+        "never accepts historical captures just because behavior appears unchanged",
+        "retains all governing boundaries and verifier commands",
+        "rejects malformed or excessive inventories",
+        "binds the 016 full-profile step supplement to its original unexpanded budget",
+        "verifies expanded profile review only under the exact approved pilot runtime"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/isolated-restore.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "restores complete captured content and four stores while retaining denied service",
+        "rejects a wrong key before replacing the owned target",
+        "rejects changed content despite valid encrypted bytes and revokes runtime grants"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/authority-quarantine.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "denies runtime authority quarantine even with a claimed scope",
+        "revokes restored sessions MCP credentials and partner grants before any unlock",
+        "rejects a wrong environment revision or recovery identity without revoking credentials",
+        "repeats quarantine without extending revisions expiries or retained denials",
+        "records an actual owner quarantine while retaining captured histories and replay receipts"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/recovery-content.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "hashes identical recovery inventories independently of object property order",
+        "reports permanently removed MCP credentials as revoked without inventing a human revoker",
+        "refuses non-JSON recovery identity and detects changed content"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/maintenance-backlog.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "queries all actual maintenance queue schemas with bounded anonymous metadata",
+        "excludes future cleanup and retry work while preserving the oldest actual due time",
+        "caps overdue counts after ordering without hiding the oldest due item",
+        "records actual knowledge inspection durably and does not keep healthy publications overdue"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/load-measurements.test.ts",
+      "expectedCases": 8,
+      "cases": [
+        "requires the complete fixed eighteen-class workload and all twenty-five actors",
+        "warmup and quota denials cannot replace one hundred completed measured samples",
+        "applies the strict failure-rate boundary to each class and the overall run",
+        "retains slow and unsuccessful captures in ordinary latency and query totals",
+        "separates admitted MCP latency from client transport overhead without losing either",
+        "rejects resets paid calls reduced fixtures and shortened or excessive timing",
+        "rejects missing MCP admission invalid durations and partner-only violations",
+        "reports quota waiting independently without silently extending the measurement window"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/load-fixture.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "prepares exactly twenty-five issued sessions two hundred fifty synthetic customers and ten thousand distinct reviewed passages with separate audience projections"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/load-delivery.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "prepares normally accepted plans reviewed execution and an actually rendered published report in the fixed load workspace"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/load-training.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "publishes a normally reviewed guide and verifies every assigned partner demonstration through mcteer"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/load-mcp.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "all twenty-five actual SDK consumers read five categories from normally reviewed load records without widening partner scope"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/load-internal.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "reviews support unknowns defers an owner-controlled hypothesis and accepts a suspected gap through normal commands"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/load-learning.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "approves an exact synthetic quarter measurement using normally accepted execution and explicit mcteer review"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/load-statistics.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "counts actual successful runtime queries without exposing SQL and rejects reset or eviction"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/storage-copy.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "copies all six namespaces under the exact owner fence and verifies cold parity without cutover",
+        "reconciles an idempotent owned copy without replacing existing matching objects",
+        "rejects changed control revision and open admission before copying bytes",
+        "retains originals and refuses a conflicting destination inventory",
+        "rejects incomplete source namespaces and never infers an empty-store rollback"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/capture-candidate.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "captures a real pinned database and stable workflow as an encrypted candidate without asserting readiness",
+        "refuses an incorrect lock revision and removes partial plaintext and encrypted outputs",
+        "refuses captured key placement and pre-interrupted capture without touching originals",
+        "settles interruption after an actual exported checkpoint and retains the lock"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/recovery-cancellation.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "settles recovery cleanup on an actual SIGINT",
+        "settles recovery cleanup on an actual SIGTERM",
+        "settles recovery cleanup at the bounded deadline",
+        "keeps cleanup protected across repeated termination signals"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-quarantine.test.ts",
+      "expectedCases": 11,
+      "cases": [
+        "persists every required quarantine without extending its timestamps on replay",
+        "denies unresolved quarantine unlock even with a fresh owner verification label",
+        "holds dispatched charges while preserving settled permanent cost receipts",
+        "holds interrupted native dispatch without altering completed attempts or extending replay",
+        "rejects foreign stale and runtime quarantine without leaving partial scope records",
+        "holds interrupted report sends and preserves exact accepted-provider receipts",
+        "retains restored learning reservation ceilings when a later dispatch may be missing",
+        "interrupts restored queued research without inventing dispatch or allowing the old request to remain admitted",
+        "holds prepared support and expansion advice without inventing a model dispatch or settling usage",
+        "revokes apparently unused restored service budgets and refuses automatic reservation release",
+        "allows explicit charge accounting after recovery without reopening the revoked authority"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/hosted-identity.test.ts",
+      "expectedCases": 7,
+      "cases": [
+        "binds the exact ready deployment project team commit and environment",
+        "rejects a deployment from another project or team",
+        "rejects unfinished deployments even when their source labels match",
+        "rejects conflicting missing and stale deployed commit metadata",
+        "never substitutes Production custom environments or Preview for the named target",
+        "rejects credentialed noncanonical and non HTTPS hosted origins",
+        "rejects command fragments credentials and unknown hosted scope fields"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/hosted-runtime-database.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "checks the explicitly supplied runtime without borrowing the selected connection or owner"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-logout.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "revokes a real session while locked and never revives it after reopening",
+        "rejects invalid origin and CSRF without revoking a locked session",
+        "does not transfer logout authority to ordinary reads mutations or cancellation",
+        "retains exact revocation time on repeated logout during recovery"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/hosted-role-reads.test.ts",
+      "expectedCases": 11,
+      "cases": [
+        "proves actual bound roles positive partner listing denied gaps and exact session cleanup",
+        "refuses missing role credentials before creating sessions or making HTTP calls",
+        "rejects cross workspace customer disclosure and revokes its exact test session on failure",
+        "rejects a changed serving release and revokes the exact session before failing",
+        "revokes a created session after a malformed login response without logging in again",
+        "revokes the exact newly created session when its parent run is cancelled",
+        "cleans its exact bound session when a trusted journey callback fails",
+        "exercises actual parked conversation replay ownership archive and restore without native dispatch",
+        "archives the original parked conversation after an uncertain creation response without replacement or native work",
+        "blocks journey writes on actual mismatched configuration and revokes the original session",
+        "refuses a raced unrelated session before scoped membership disable and preserves its access"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/http-code-version.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "binds successful and denied API responses to the exact serving version",
+        "does not expose unknown malformed or arbitrary operational version strings",
+        "uses actual Vercel release metadata before a local operator override"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/neon-archive.test.ts",
+      "expectedCases": 10,
+      "cases": [
+        "stores and cold verifies exact multi chunk encrypted bytes with immutable replay",
+        "rolls back tampered ciphertext and refuses a foreign archive installation",
+        "rejects missing cold chunks and never silently repairs conflicting archive identity",
+        "rejects expired captures capacity exhaustion and cancellation without retaining partial rows",
+        "expires only elapsed managed archives and preserves fresh encrypted bytes",
+        "migrates bounded capacity explicitly without changing encrypted archives or replaying policy history",
+        "permanently retains authentic authority snapshots without changing current authority claims",
+        "excludes independently retained authority from expiry while deleting ordinary elapsed backups",
+        "rejects missing damaged foreign and cancelled authority retention without inserting holds",
+        "enforces authority hold owner and authenticated context even after accidental runtime grants"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/neon-destination.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "accepts an explicit separate bounded Neon recovery destination",
+        "rejects an application project used as its own archive operator project",
+        "rejects non Neon insecure or missing explicit archive transport",
+        "rejects unbounded archive capacity and arbitrary command fields",
+        "preserves Free-only v1 and binds v2 to the actual inspected resource plan",
+        "rejects missing unknown or drifting v2 plans and retains resource attachment and capacity boundaries"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/database-safety-source.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "binds a database safety source to an explicit supported Production schema",
+        "rejects pooled insecure foreign and implicit database safety sources",
+        "rejects unknown safety flags alternate targets and unsupported schema claims",
+        "refuses unsafe external dump transport before opening a connection or process",
+        "admits explicit Preview capture without broadening Production or mutation source scopes",
+        "requires target-bound v3 context while retaining exact v2 Production context support"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/database-safety-content.test.ts",
+      "expectedCases": 2,
+      "cases": [
+        "keeps application content proof at the exported snapshot while later rows change",
+        "rejects writable or read committed transactions as database safety checkpoints"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/legacy-safety-restore.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "restores schema 055 content rehearses both forward migrations and leaves runtime and recovery closed",
+        "rejects altered legacy dump identity before fencing or replacing the target",
+        "holds the connection perimeter when restored legacy content fails verification",
+        "reapplies independently captured credential denials after 055 forward restoration while keeping full quarantine",
+        "rejects changed current denial context before touching the owned restore target"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/legacy-safety-context.test.ts",
+      "expectedCases": 7,
+      "cases": [
+        "accepts only the explicitly incomplete authenticated legacy database context",
+        "rejects old missing content proof unsupported schemas and readiness claims",
+        "rejects unsafe database names and oversized legacy dumps",
+        "binds independent key references to generated work key names without key bytes",
+        "binds current safety context to exact snapshot observations without claiming a service checkpoint",
+        "rejects supplied fencing byte integrity readiness and unbounded observation claims",
+        "stops snapshot boundary enumeration before another query after cancellation"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-denial-snapshot.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "captures minimized actual denial and replay metadata without source text or credential bytes",
+        "captures later MCP denial and permanent management receipt at a distinct current watermark",
+        "rejects runtime foreign cancelled stale and changed denial snapshots without granting recovery authority",
+        "refuses oversized current authority tables rather than retaining a truncated proof"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-credential-denials.test.ts",
+      "expectedCases": 16,
+      "cases": [
+        "reapplies newer session denial and leaves unaffected current credentials unchanged",
+        "reapplies newer MCP denial without manufacturing a human revocation or replaying management",
+        "reapplies newer partner grant denial and invalidates delivery generation without reviving grants",
+        "denies foreign stale runtime and changed credential reconciliation before any mutation",
+        "denies restored administrator credentials after a newer membership downgrade",
+        "denies post-proof unknown credentials without extending expiration or accepted history",
+        "retires restored projections and suspends newer withdrawn publications without changing accepted history",
+        "retires an old profile projection when current accepted-head proof denies it before cleanup",
+        "blocks a missing restored permanent request at the database while allowing a genuinely new key",
+        "adds an explicit owner research denial without reconstructing a human decision or changing accepted bytes",
+        "blocks runtime updates of recovered requests while allowing locked owner retirement and unfenced new work",
+        "preserves ordinary nullable unique identities while fencing concrete recovered request keys",
+        "prevents fresh sign-in through a restored principal disabled by current authority",
+        "prevents fresh administrator sign-in after restoring an older membership revision",
+        "prevents restored partner sign-in when independently current organization authority is disabled",
+        "denies restored partner authority after an organization is disabled and reenabled"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/runtime-retirement.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "retires old runtime credentials and active backends without unlocking or widening replacement grants",
+        "rejects stale runtime retirement before changing either login",
+        "rejects an escalated legacy permission role before creating the replacement login",
+        "rejects an existing replacement role without rotating its secret or reopening the retired login",
+        "runs the protected retirement command without retaining the replacement secret in its receipt"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-resolution.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "denies runtime and delegated resolution authority",
+        "refuses missing incomplete stale future and foreign verification",
+        "refuses resolution after verified state or control identity changes",
+        "retains immutable quarantine history and resolves repeatably before separate unlock",
+        "keeps resolved history closed when current state changes before unlock",
+        "rolls back interrupted resolution and retries only with fresh exact proof"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/quality-budget.test.ts",
+      "expectedCases": 17,
+      "cases": [
+        "admits at most one concurrent provider dispatch across independent ledger clients",
+        "refuses insufficient budget before recording a dispatch",
+        "retains prior charges and credits across corrected source attempts and blocks unresolved retries",
+        "serializes credit and dollar admissions while retaining their separate units",
+        "holds every provider after an unknown or invalid credit charge",
+        "requires explicit credit authority and never reuses the four-call allowance",
+        "retains uncertain dispatch holds across clients without permitting retries",
+        "holds overruns and invalid accounting instead of releasing their reservations",
+        "never steals an interrupted accounting lock or accepts a damaged journal",
+        "rejects reused provider generation identities before admitting further work",
+        "continues the exact expired journal without replacing original charges credits or authorization",
+        "rejects mismatched stale overlong or cap-expanding continuation records without appending them",
+        "keeps pending and unknown dollar or credit holds closed under a fresh continuation proposal",
+        "invalidates old attempts and runtimes when a separately approved continuation becomes current",
+        "preserves original bytes and full unknown exposure while admitting only reviewed new-source work",
+        "rejects stale authority, incomplete unknown sets, reduced holds and active unrelated calls",
+        "a higher genuine exposure blocks admission again without reducing the permanent reservation"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/quality-fetch.test.ts",
+      "expectedCases": 13,
+      "cases": [
+        "settles known Gateway charges while preserving the provider response",
+        "denies a paid request below its full published bound without calling the provider",
+        "blocks subsequent SDK retries when the first charge is unavailable",
+        "accounts split streamed frames only after complete final usage is received",
+        "holds cancellation of an incomplete response and denies another dispatch",
+        "rejects unapproved models endpoints and provider tools before dispatch",
+        "does not claim a provider dispatch for an already aborted request",
+        "enforces admission on the installed SDK request without contacting the provider",
+        "reads both public catalogs without sending a model credential",
+        "retains bounded safe provider failure metadata and the full unknown reservation",
+        "bounds failure-body retention without accepting an incomplete body as complete",
+        "retains an actual streamed generation identity when final accounting is lost",
+        "keeps Gateway generation authority distinct from an upstream gen-shaped response ID"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/quality-context.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "settles exact existing credit usage without converting it to dollars",
+        "denies absent credit authority and enabled automatic billing before search dispatch",
+        "holds missing credit receipts and blocks every later provider",
+        "rejects another credential changed pricing options and unapproved endpoints",
+        "checks the current synthetic source before reading account or dispatching research"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/native-postgres.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "verifies every licensed native client byte against the fixed inventory",
+        "rejects modified executable bytes before native execution",
+        "rejects unlisted libraries and writable library directories",
+        "rejects symbolic executable aliases and indirect client roots",
+        "rejects a manifest that substitutes another executable or drops license provenance"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/native-postgres.test.ts",
+      "expectedCases": 9,
+      "cases": [
+        "restores the exported snapshot with the real Linux client while retaining later source writes",
+        "denies cancelled native execution without leaving a partial dump",
+        "captures and authenticates all private namespaces with the locked native database checkpoint",
+        "fences routine backup IO without changing open service control or claiming cron execution",
+        "cold downloads and authenticates the matched archive with immutable idempotent capture audit",
+        "holds unknown backup costs and preserves atomic category budgets across retries and exhaustion",
+        "cold reads derived-key archives without source access and rejects a wrong retained master",
+        "provisions one bounded work authorization without expanding or resetting category budgets",
+        "runs complete bounded scheduled capture, cold copy, cleanup and cost accounting without changing service control"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/work-backup.test.ts",
+      "expectedCases": 9,
+      "cases": [
+        "accepts only explicitly bound independent work resources and object allowances",
+        "rejects shared source placement pooled connections and missing certificate verification",
+        "rejects allowance changes and foreign cost installation before backup admission",
+        "derives recoverable archive keys without reusing them across installations environments or archives",
+        "encrypts complete cold metadata with fresh nonces while preserving unverified recovery state",
+        "rejects altered capsule bytes wrong keys and foreign archive contexts",
+        "refuses capsule metadata that claims release approval or hides infrastructure calls as zero providers",
+        "builds the actual operator transport and rejects unauthorized disabled and nonproduction requests",
+        "paces scheduled capture from source time with one bounded abortable wait"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/object-restore.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "restores exact object identities and bytes while retaining the original archive",
+        "rejects corrupt archive bytes before creating any destination",
+        "preserves an existing destination without overwriting it",
+        "rejects indirect source objects before creating a destination",
+        "requires disposable ownership and refuses an already cancelled restore"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/work-isolated-restore.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "artifact authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority",
+        "report authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority",
+        "workforce authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority",
+        "gap authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority",
+        "command authenticates separate encrypted work bytes, restores accepted content and six stores, and quarantines authority"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/work-backup-objects.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "captures exact private bytes with metadata-first pages and five reads per object",
+        "rejects an oversized metadata page before its first object download",
+        "rejects excess object counts before downloading an otherwise valid first entry",
+        "bounds metadata requests even when a provider keeps returning empty pages",
+        "rejects changed known metadata before another download",
+        "denies unlisted reads excess reads invalid namespaces and every source write"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/work-backup-pricing.test.ts",
+      "expectedCases": 7,
+      "cases": [
+        "reserves on-demand CPU memory operations transfer and storage without subtracting free credits",
+        "binds all three independently downloaded official rate documents by exact bytes",
+        "stops on a changed published rate without a retry or later document request",
+        "refuses missing pricing and script-only rate claims",
+        "refuses under-reserved or foreign pricing before any HTTP request",
+        "bounds official response bytes before parsing and fails without retry",
+        "does not request pricing after cancellation"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/store-observations.test.ts",
+      "expectedCases": 8,
+      "cases": [
+        "requires actual adapter write/read verification in every namespace before store health passes",
+        "rejects invalid bytes without recording an observation",
+        "does not observe a provider conflict containing different private bytes",
+        "cannot reuse a store observation for another store code version or environment",
+        "runtime cannot forge observation times or change or delete retained proof",
+        "raw independent backup adapters never write application observation rows",
+        "expires only the bounded old observations and refuses stale proof as healthy",
+        "requires fresh observations after the latest recovery lock"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/image-health.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "pinned configuration without validated provider jobs remains unverified",
+        "requires every current image and invalidates previous deployment or recovery proof",
+        "a newer unvalidated job cannot borrow an earlier successful image result",
+        "image provenance and job code identity remain exact and immutable",
+        "public readiness passes only the combined observed infrastructure and maintenance gates"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/backup-health.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "requires a current exact-store owner observation and rejects other deployment or environment",
+        "runtime cannot record or alter owner backup observations",
+        "backup recording is idempotent and refuses changed replay evidence",
+        "restored old observations cannot prove health after a recovery lock",
+        "stale or future captured backup timestamps cannot be admitted"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/mcp-release-header.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "binds method denials to the exact serving release without changing the MCP body",
+        "prefers the actual deployment commit over a different local code version",
+        "preserves predecessor behavior without inventing a deployment identity"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/hosted-sdk.test.ts",
+      "expectedCases": 7,
+      "cases": [
+        "executes every category and citation through the actual pinned SDK and revokes its credential",
+        "fails on withdrawn current evidence and still cleans its exact credential",
+        "reconciles and revokes a created credential when its creation body is damaged",
+        "reviews, corrects and retracts a synthetic profile through ordinary HTTP commands",
+        "uses the original command receipt after an uncertain mutation response without repeating the mutation",
+        "rejects a customer outside the fixed synthetic workspace before any HTTP dispatch",
+        "withholds a normally revoked partner customer from an existing actual SDK connection and retires its credential"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-workflow-closure.test.ts",
+      "expectedCases": 11,
+      "cases": [
+        "reads an already completed run without creating an intent or dispatching cancellation",
+        "reads an already failed run without creating an intent or dispatching cancellation",
+        "reads an already cancelled run without creating an intent or dispatching cancellation",
+        "requires a fresh terminal read after cancellation with uncertain response false",
+        "requires a fresh terminal read after cancellation with uncertain response true",
+        "reconciles an existing intent with reads only and withholds a still running run",
+        "rejects a different deployment before cancellation",
+        "does not accept a cancellation response when the independent terminal read fails",
+        "rejects a different workflow definition before cancellation",
+        "retains an observed terminal legacy tool run without dispatch or retry authority",
+        "withholds an active legacy tool run before claiming a cancellation intent"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-workflow-provider.test.ts",
+      "expectedCases": 8,
+      "cases": [
+        "binds the actual work project and uses lazy metadata reads and a single exact cancellation request",
+        "rejects an invalid run identity without dispatching another request",
+        "rejects a different project before any run operation",
+        "does not retry an unavailable provider response",
+        "bounds the response body before accepting project metadata",
+        "returns only run metadata and discards native input and output bodies",
+        "lists unfiltered lazy metadata in the explicitly selected provider environment",
+        "checks actual deployment ownership and environment before issuing cancellation"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/managed-workflow-journal.test.ts",
+      "expectedCases": 14,
+      "cases": [
+        "admits exactly one durable cancellation intent across two concurrent owner connections",
+        "cold replays the existing exact intent without claiming another dispatch",
+        "rejects a changed control revision for an existing run intent",
+        "retains cancellation intents against deletion even under owner authority",
+        "retains the original cancellation scope against mutation",
+        "withholds cancellation replay records from the application runtime",
+        "refuses a different independent archive installation without adding a row",
+        "cold replays a terminal observation with the same immutable identity",
+        "refuses a running or unverified run as terminal evidence",
+        "rejects a different terminal outcome rather than changing the existing observation",
+        "retains terminal observations against owner deletion",
+        "withholds terminal observation payloads from application runtime",
+        "refuses an older source proof when code changed under the same Git head",
+        "refuses to invent provenance when upgrading an archive with an existing legacy closure observation"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/managed-workflow-batch.test.ts",
+      "expectedCases": 11,
+      "cases": [
+        "withholds provider reads and cancellation until legacy database admission is retired",
+        "cancels the exact bounded batch under a locked owner fence and retains independent terminal receipts",
+        "reconciles a repeated batch with reads and existing receipts without another cancellation",
+        "rejects a stale recovery control revision before any provider read",
+        "rejects duplicated run identities before touching the provider",
+        "stops provider reconciliation on actual owner connection loss and retains its uncertain independent intent",
+        "closes and resumes a complete 53-run inventory through bounded batches without cancelling twice",
+        "stops on provider identity drift without cancelling newly discovered runs",
+        "retains an uncertain inventory cancellation intent and refuses automatic retry on resume",
+        "rejects a foreign planned identity digest and unsupported workflow kind before cancellation",
+        "verifies an explicitly empty provider inventory and still requires the independent archive"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-workflow-command.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "requires the explicit closure mode before reading configuration",
+        "rejects unknown flags before reading any protected file or calling the platform",
+        "rejects more than fifty run bindings",
+        "rejects a workflow outside the installed eve definitions",
+        "rejects an input that tries to authorize cancellation retries"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/report-projection-sources.test.ts",
+      "expectedCases": 8,
+      "cases": [
+        "accepts the exact current projection digest carried by a cited plan",
+        "continues accepting the exact original profile digest for direct report inputs",
+        "rejects an invented digest despite a current accepted revision",
+        "rejects a different source generation",
+        "rejects the current citation under a different customer scope",
+        "does not admit commercial profile context through a retrieval projection",
+        "preserves delivery audience fences for internal profile projections",
+        "withholds both digest representations immediately after withdrawal before passage cleanup"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/report-release-header.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "binds report responses to the serving release while preserving their existing contract",
+        "binds report denials to the actual deployment and preserves their retry metadata",
+        "does not invent a report release identity when no valid operational version exists"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/linked-http-reports.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "reviews an uploaded source through cited planning and delivery and denies published report files after normal withdrawal"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/hosted-request.test.ts",
+      "expectedCases": 7,
+      "cases": [
+        "reads bounded JSON from the exact release without retrying or following redirects",
+        "rejects a release mismatch before reading domain content",
+        "rejects oversized streamed JSON before accumulating an unbounded body",
+        "does not retry an uncertain mutation body",
+        "rejects foreign and non-API paths before dispatch",
+        "honors cancellation before dispatch",
+        "binds expected denial codes to the serving release without retaining private error prose"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/linked-http-training.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "publishes and assigns a guide through normal HTTP, verifies the partner demonstration and removes credit after source withdrawal"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/owned-denial-command.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "applies current denials and verifies permanent fences through the owned command without opening service",
+        "rejects a changed owner lock before fetching independent denial bytes",
+        "retains committed denials and a resumable failure when the actual replay audit fails",
+        "withholds mutations for unavailable, older-schema or stale current proof"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/backup-container-cleanup.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "removes anonymous volumes only after actual backup ownership inspection",
+        "rejects foreign labels and container identities without removing resources",
+        "distinguishes already absent containers from failed ownership inspection",
+        "retains failed cleanup as an error rather than claiming resource removal"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/backup-container-cleanup.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "removes real PostgreSQL client anonymous volumes while retaining named volumes"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/evaluation-visible-identifiers.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "recognizes accepted audience-visible workload references while denying foreign pending and withheld identifiers"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/evaluation-source.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "preserves ordinary separated test database selection without inspecting containers",
+        "accepts only the actual owned pilot endpoint with a distinct runtime login",
+        "rejects hosted unmarked mismatched and owner-as-runtime sources before inspection",
+        "rejects missing containers foreign labels and mismatched actual port bindings",
+        "keeps nested owned Next copies within their actual linked dependency root"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/evaluation-source.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "admits actual owned sources and prepares artifact retrieval and plan clones without model dispatch",
+        "seeds the governing behavior demo separately from the judged retrieval walkthrough",
+        "installs the actual budget guard in the owned maintenance process before readiness"
+      ]
+    },
+    {
+      "file": "tests/unit/ci-browser-diagnostics.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "reports the failed source location and timeout class without private error or page content",
+        "ignores unapproved files and bounds records, projects and numeric metadata",
+        "reports setup and child process failure classes without exposing private output",
+        "reports fixed regression stages and current-schema counts without private process or test payloads",
+        "revalidates captured pilot UI diagnostics and discards private or malformed child records",
+        "retains only approved recovery HTTP phases and passive process observations"
+      ]
+    },
+    {
+      "file": "tests/unit/behavior-review-capture.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "rejects a changed sidecar or underlying event when verifying an actual review reference",
+        "retains actual event arguments/results privately, redacts credentials and rejects changed replay",
+        "rejects the selected app, changed environment and indirect attempt directories"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/hosted-browser.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "uses actual served role sessions and four CLI WebKit configurations for parked ownership and lifecycle boundaries"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/gap-release-header.test.ts",
+      "expectedCases": 2,
+      "cases": [
+        "binds actual streamed gap exports to the serving deployment while preserving review and integrity headers",
+        "withholds stream bytes on a changed release fence and invents no absent code identity"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/hosted-configuration.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "reports only explicit runtime identities and limits without credential material",
+        "withholds configuration on missing identities, local fallback, tags or malformed enablement",
+        "rejects cross-target, changed store, image, enablement and job limit readbacks",
+        "verifies exact configured readback while refusing extra provider health claims",
+        "refuses runtime descriptor options that override finite hosted operation bounds"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/required-objects.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "withholds copy and backup for a live database original absent from an otherwise empty store"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/preview-safety-restore.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "restores an explicit schema 38 Preview snapshot through 79 and keeps both runtime roles denied"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/hosted-paid-admission.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "checks actual current scoped authority without reserving or dispatching paid work",
+        "denies changed target budget expiry scope count workspace and admission before paid callbacks",
+        "requires distinct exact-source Production authority and its admitted budget digest"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/profile-projection-review.test.ts",
+      "expectedCases": 2,
+      "cases": [
+        "creates only exact accepted projections and retires corrections and retractions through normal commands",
+        "keeps internal acceptance private and honors the retrieval authoring rollback switch"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/hosted-training-admission.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "requires an active exact partner grant and an ordinarily accepted training source before role callbacks"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/linked-http-workforce.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "reviews six located personnel cells through ordinary HTTP and keeps the original outside customer retrieval"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-model-holds.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "retains missing post-backup token and dollar operations without refunding their original scopes",
+        "quarantines existing unknown model holds and denies runtime zero settlements",
+        "preserves known accounting alongside an earlier unknown hold and inherits both observations"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/storage-cutover.test.ts",
+      "expectedCases": 7,
+      "cases": [
+        "copies fenced originals with fresh clients and preserves the entire admitted ceiling for accounting",
+        "denies changed recovery scope before byte writes and never resets its paid hold",
+        "refuses stale cost authority without changing admission or original bytes",
+        "retains originals and the full hold when provider IO fails",
+        "keeps partial copied bytes and the full hold after cancellation during IO",
+        "rejects a concurrent copy of the same admitted operation",
+        "expires admitted authority during IO without releasing its ceiling"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-token-allowance.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "counts an existing operation and its recovery hold once and retains its unknown ceiling",
+        "counts post-backup missing operations against the same original allowance",
+        "rejects conflicting immutable baselines without allocating a fresh allowance"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-read-probe.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "bounds owner recovery reads to one live actor, connection, control revision and deadline",
+        "authenticates an owned post-quarantine read and retires its temporary session even after a SQL failure",
+        "reads a normally reviewed rendered publication through authenticated locked recovery"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-workflow-inventory.test.ts",
+      "expectedCases": 8,
+      "cases": [
+        "traverses every page twice and retains provider-only child runs without closure claims",
+        "rejects a missing application binding and duplicate expected identities",
+        "rejects repeated cursors and empty nonterminal pages",
+        "rejects duplicate provider identities rather than merging incomplete pages",
+        "requires explicit pagination completion and a cursor while more pages remain",
+        "fails finite page run and metadata bounds without claiming a truncated inventory",
+        "rejects changed run sets or metadata between complete traversals",
+        "stops on cancellation before metadata dispatch and rejects malformed run identities"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/retained-denial-proof.test.ts",
+      "expectedCases": 2,
+      "cases": [
+        "rejects serialized current snapshots and healthy labels without an actual retained-reader result",
+        "refuses caller-authored original-source capture receipts and current authority labels"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-current-grants.test.ts",
+      "expectedCases": 2,
+      "cases": [
+        "preserves an unchanged current grant while revoking newer denials and all restored credentials",
+        "rolls back grant-preserving quarantine when actual current-denial validation fails"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-runtime-binding.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "binds the database endpoint independently of passwords pooling and role overrides",
+        "verifies platform deployment and alias before reading the authenticated locked binding",
+        "rejects stale foreign or role-overridden database observations",
+        "withholds application cookies on foreign deployment metadata and never follows redirects"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/released-safety-restore.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "cold restores the released 077 ledger through 079 and reapplies newer denials behind both runtime perimeters",
+        "rejects tampered 077 archive bytes before changing the target perimeter",
+        "keeps both runtime roles closed when 077 accepted content verification fails",
+        "rejects altered snapshot object and lease observations while retaining the restored runtime fence"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-deployment-inventory.test.ts",
+      "expectedCases": 7,
+      "cases": [
+        "repeats every project deployment page without dropping provider-only or other-target identities",
+        "binds project and team but removes workflow target filtering for the deployment collection",
+        "rejects changed metadata between complete traversals",
+        "rejects duplicate identities and nonadvancing or empty continuation pages",
+        "bounds deployment counts pages and retained metadata bytes",
+        "rejects foreign malformed or future metadata and invalid input before further reads",
+        "honors cancellation before requests and after a metadata response"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/pilot-login-selection.test.ts",
+      "expectedCases": 2,
+      "cases": [
+        "keeps primary native login available without exposing disabled pilot selection",
+        "offers explicit primary and pilot choices only when enabled"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/hosted-authorization.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "preserves the original Preview authorization bytes and bounds",
+        "binds separate Production authority to the exact source and target",
+        "rejects changed project environment target or source identities",
+        "rejects widened jobs deadlines billing or unpartitioned caps",
+        "rejects expired future or extended authorization windows",
+        "cannot promote legacy Preview authority into Production"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/suite-deadlines.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "allows the declared restore setup and cases inside a finite whole-file bound",
+        "keeps every registered suite within a finite controller deadline",
+        "rejects unregistered suite names before process execution"
+      ]
+    },
+    {
+      "file": "tests/unit/ui-child.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "drains a supervised sibling under log pressure while the UI child awaits its response",
+        "enforces a finite UI deadline and terminates an unresponsive descendant process group",
+        "bounds combined UI stdout and stderr without retaining excess bytes"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/owned-process.test.ts",
+      "expectedCases": 8,
+      "cases": [
+        "retires the actual owned process group and its live descendant after success",
+        "retires descendants after their direct parent has already exited",
+        "cancels a pending callback and verifies complete group retirement",
+        "waits through transient denied probes before verifying real group closure",
+        "refuses retirement when owned group probes remain denied",
+        "retires a genuine detached descendant group before reporting closure",
+        "retires a captured detached group after its parent has exited",
+        "leaves a separately owned sibling group alive while retiring detached descendants"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/hosted-root-budget.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "binds actual synthetic attempts and retains unknown concurrent reservations without changing unrelated dispatch",
+        "settles successful Production-bound root generate and stream calls with immutable original provider identities",
+        "withholds adversarial generated tool calls and preserves their complete paid reservation",
+        "charges resumed root dispatches and rejects every tool stream before forwarding an auxiliary effect",
+        "retains a full unknown reservation when only an upstream response identity is available",
+        "captures the Gateway generation from an actual SDK failure before retaining its interrupted hold"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/hosted-root-reconcile.test.ts",
+      "expectedCases": 10,
+      "cases": [
+        "reconciles only the original Gateway identity and atomically preserves its actual charge across replay",
+        "retains unknown ceilings for mismatched nonterminal BYOK tool and invalid provider accounting",
+        "rolls back a receipt and refund together when settlement fails before commit",
+        "refuses lookup without a recorded Gateway identity and never substitutes the upstream response ID",
+        "records known accounting in a retired budget without refunding or reopening its original scope",
+        "records an actual provider overrun without increasing the original cap or admitting another dispatch",
+        "retains the original ceiling when provider completion follows a closed budget boundary",
+        "retains the original ceiling when provider completion follows a recovered budget boundary",
+        "commits authoritative charge discrepancies before refusing any further dispatch or replay refund",
+        "serializes concurrent provider completion and owner reconciliation without losing or repeating refunds"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/hosted-learning-admission.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "consumes one actual original-journal arm with immutable owner admission and separate early provider identities",
+        "refuses missing foreign expired or disabled hosted authority before any domain provider claim",
+        "serializes concurrent native release and rejects runtime minting and repeated consumption",
+        "rejects claimed journal reservations and replacement original budgets without changing either cap",
+        "retains both original holds and the genuine Gateway identity after an actual wrapped SDK failure",
+        "rolls back hosted consumption with a failed domain claim and never releases its original reservation"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/hosted-learning-preparation.test.ts",
+      "expectedCases": 2,
+      "cases": [
+        "prepares one actual HTTP feedback revision and independent review against the ordinarily published baseline without a model dispatch",
+        "submits exact reviewed paired captures over HTTP and preserves no-benefit rejection without another model call"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/hosted-learning-capture.test.ts",
+      "expectedCases": 7,
+      "cases": [
+        "orchestrates all sixteen fixed arms with one original held dispatch at a time and retains independent review and retirement requirements",
+        "stops on the first unresolved charge and preserves the original unknown hold without a paid retry",
+        "rejects an unaffordable next full provider step before any native binding or provider reservation",
+        "rejects a deployed database mismatch before preparing or sending any arm",
+        "retains original bind intent and readback after lost acknowledgement without creating another session or sending a model request",
+        "retains completed accounting and runs original evaluation cleanup after cancellation between arms",
+        "rejects a changed owner descriptor with the same claimed database marker before any paid or domain preparation"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/work-denial-reconciliation.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "reconciles current work denials with the actual locked owner and retains idempotent permanent fences",
+        "rejects serialized reader claims and mismatched retained scope before mutation",
+        "requires the selected owner and retired legacy login without terminating caller connections",
+        "rolls back current denials when the selected recovery revision or authenticated bytes change"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-plan-http.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "reads the canonical accepted plan through exact locked maintenance authority while ordinary ingress stays closed",
+        "rejects foreign credentials and wrong recovery read kinds without releasing plan content",
+        "withholds changed accepted bindings and retired maintenance credentials",
+        "retains the finite reservation after a successful canonical read"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/recovery-plan-projection.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "measures canonical readable accepted plan bytes with exact identity and generation",
+        "rejects withheld missing or unreviewed plan content as positive recovery coverage",
+        "rejects changed bytes invalid schema and forged derived sections even with matching hashes",
+        "rejects foreign plan customer revision accepted head and changed aggregate generation"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/locked-work-recovery-target.test.ts",
+      "expectedCases": 16,
+      "cases": [
+        "binds an actual locked owner and authenticated runtime for one work recovery lifetime",
+        "rejects serialized capabilities foreign clients and nontransactional use",
+        "refuses changed recovery control and releases its owned connection after failure",
+        "rejects changed platform or source and mismatched runtime endpoints without certifying recovery",
+        "durably registers exact probe identities and independently retires committed sessions after callback failure",
+        "retires registered credentials after cancellation using an independent uncancelled owner connection",
+        "reconciles genuine retained session preimages after restart and refuses forged journals or wrong operator credentials",
+        "reconciles original admission credentials idempotently after a lost commit acknowledgement without renewing authority",
+        "retains every concurrent reservation for cleanup and enforces the shared thirty-two probe bound",
+        "issues registered work sessions and canonical HTTP reads from the verified target while ordinary ingress stays locked",
+        "rejects forged work target credentials changed deployment and wrong operator password before issuing sessions",
+        "rechecks canonical work session expiry and revocation after the read while the target remains active",
+        "authenticates real participant credentials and preserves customer grants across locked canonical reads",
+        "uses the actual SDK and persisted bearer scope for locked recovery with customer pagination and revocation",
+        "measures actual selected work HTTP reads without granting full service and rejects forged or changed batch proofs",
+        "issues a fresh bounded MCP probe after genuine cold denial reconciliation and retires original identities through interruption and restart"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-execution-http.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "reads every accepted execution record and baseline without substituting an administrator-visible pending revision",
+        "rejects foreign cookies and a different fixed maintenance read kind",
+        "rejects changed execution generations and retired probe credentials",
+        "fails missing accepted payload coverage and retains the committed finite allowance after reader failure",
+        "inventories accepted older-baseline records instead of omitting them when current delivery needs reconciliation"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-mcp-http.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "serves actual SDK maintenance HTTP through the restricted runtime while ordinary MCP and retired credentials stay denied"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/recovery-decision-sql.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "keeps commit rollback and implicit transaction control out of decision callbacks",
+        "accepts canonical queries local deadlines and savepoint rollback without interpreting quoted payloads",
+        "rejects ambiguous parsing or attempts to change parser settings"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/work-recovery-decision.test.ts",
+      "expectedCases": 25,
+      "cases": [
+        "commits a pending recovery decision only after live checks and rolls back drift cancellation and callback commit attempts",
+        "measures exhaustive fresh work MCP category pages through SDK and rejects changed projections or forged measurements",
+        "cancels a pending owner transaction when a single read deadline ends and preserves independent cleanup",
+        "authenticates real work integrity bytes and rejects forged changed-object archive and grant proofs",
+        "rechecks exhaustive native provider and deployment inventories without claiming old-host or effect closure",
+        "repeats real-target old HTTP admission under owner fences and one exact cumulative journal without unlocking",
+        "audits installed immutable holds and effect admission guards and refuses disabled altered or writable enforcement",
+        "audits genuine retained and current typed model holds without settling unknowns or reopening budgets",
+        "retains original operational service cost ceilings unknown holds and provider job identities",
+        "retains genuine original learning reservations and rejects missing unknown cost holds",
+        "fences original native business identities after missing rows while allowing distinct messages and owner cleanup",
+        "fences an original publication recipient after outbox loss despite fresh delivery and provider keys",
+        "repeats actual Sandbox SDK metadata without resume and includes retained missing provider references",
+        "retires prepared plan drafting before reopening without changing original identities or dispatching work",
+        "rejects unaccounted current root model steps before provider selection while preserving legacy model selection",
+        "reads private conversations through genuine recovery actors while denying cross-owner and copied capabilities",
+        "serves exact private conversation recovery HTTP for each real role and refuses changed ownership grants and exhausted credentials",
+        "binds an unrelated released Production pool with durable owner nonces and refuses override URLs replayed phases and false routing",
+        "measures authenticated positive cron refusal under the real owner decision and rejects copied reused and false response proofs",
+        "preserves original provider journals including unknown embedding quota and rejects altered usage missing rows and copied retained authority",
+        "composes genuine current ingress terminal providers and original held effects on one unchanged owner transaction",
+        "fences recovered processing business intents after row loss while permitting new jobs with actual finite cost admission",
+        "fences original artifact processing beneath replacement job IDs while leaving denial-only cleanup unfenced",
+        "walks all1479 canonical selections with paginated bounded customer credentials and retires every original probe",
+        "prepares canonical decision denials once while rejecting copied authority and stale retained snapshots"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-alias-inventory.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "normalizes DNS spelling and default ports while rejecting ambiguous or credential-bearing hosts",
+        "exhausts both alias traversals including custom and branch hosts without granting closure",
+        "rejects foreign routing mismatched identities duplicate DNS and incomplete page counts",
+        "rejects cursor cycles overflow changed inventories and undocumented routing fields"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/work-host-deny-policy.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "validates only the exact first unconditional host deny without claiming provider or HTTP proof",
+        "rejects disabled draft foreign or unapproved policies",
+        "rejects skip paths extra conditions and unknown effective configuration",
+        "rejects wildcard duplicate noncanonical and inverted host predicates"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/work-host-inventory.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "includes immutable URLs and live aliases without granting HTTP closure",
+        "preserves live aliases and immutable hosts for deployments missing from the deployment list",
+        "rejects ambiguous routing conflicting bindings and duplicate identities",
+        "enforces the complete host bound and ignores only explicitly deleted aliases"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-host-policy-provider.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "reads exact current project policy and explicit unavailable diagnostics without granting HTTP closure",
+        "rejects foreign project and ineffective active policy before bypass observations",
+        "does not interpret arbitrary denial or a newly enabled conditional feature as an empty inventory",
+        "rejects nonempty or paginated system exceptions and honors original cancellation",
+        "binds secret enumeration to genuine fresh complete supported project registries"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-approved-host-bindings.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "binds each allowed host to the selected Preview or current Production baseline",
+        "rejects old foreign mismatched-source and changing Production bindings",
+        "requires an approved selected host and exact canonical unique hostnames",
+        "requires the selected Production deployment to be the actual current baseline and honors cancellation"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-protection-controls.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "verifies actual protected negative header query and provider-issued cookie controls with per-request admission",
+        "rejects unprotected hosts revoked tokens wrong releases and foreign bootstrap redirects",
+        "rejects cloned bindings and never dispatches after admission denial or cancellation",
+        "recognizes only fixed-provider challenges returning to the exact requested host and path"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-project-host-inventory.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "privately registers the complete repeated all-target deployment and alias host union",
+        "rejects copied foreign-scope and stale inventories before credential-bearing probes",
+        "rejects foreign project changed alias inventories and unsupported redirects",
+        "honors original cancellation without issuing metadata requests"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-edge-transport.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "mints an edge pin only from genuine version-bound authenticated provider transport",
+        "pins custom-domain connections without consulting moved DNS and retains exact host SNI and certificate checks",
+        "never flushes secrets when the TLS certificate authorization or actual pinned peer fails",
+        "rejects copied or expired pins cancellation during connection and oversized bodies",
+        "refuses unpinned custom hosts caller routing headers and nonfixed paths before creating a connection"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/managed-old-host-census.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "covers every immutable and custom excluded host and each current bypass form without reclassifying challenges",
+        "rejects forged inventories policies controls incomplete key coverage and insufficient original allowance before probes",
+        "refuses redirected header query cookie or foreign cookie-bootstrap outcomes instead of issuing partial proof",
+        "awaits all aborted workers and preserves finite request admission when a persistent journal refuses dispatch",
+        "requires distinct sequential genuine repeats and actual metadata rereads after the last HTTP response",
+        "uses one durable cumulative journal for actual controls and both complete census phases"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/host-http-journal.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "keeps one aggregate original cap across controls both censuses and restart with pending requests consumed",
+        "serializes concurrent reservations durably before returning distinct intent IDs and never exceeds the aggregate cap",
+        "binds immutable observations to exact phase host kind and intent with idempotent identical receipt writes",
+        "fails closed on concurrent stale instances missing chain entries tampered plans and unsafe evidence permissions",
+        "withholds the intent UUID and closes further dispatch when directory persistence fails"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/research-io-fence.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "drains admitted provider publication before recovery and rejects new cron cache and embedding work while locked"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/hosted-file-refusal.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "accepts only fixed bounded application refusals without protected payloads or outage substitutions"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/gate-verification.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "observes shared execution intervals after dependencies without changing original proof times",
+        "rejects changed original proof bytes before observing a gate",
+        "rejects a changed dependency digest and observation before dependency completion",
+        "does not renew stale hosted execution by rereading its evidence",
+        "requires authenticated observation files and keeps latest failed attempts authoritative",
+        "rejects forged original execution intervals and source bindings in observations"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/generated-files.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "retains original normal journey identities and verifies every generated byte after restart without rerendering",
+        "rejects changed original journey proof bytes before using a restart manifest",
+        "rejects changed artifact rows and a changed private-store configuration",
+        "rejects changed streamed bytes and serving code instead of accepting a successful HTTP status",
+        "rejects duplicate original identities and absent canonical paid worker receipts",
+        "rejects normal source withdrawal and rows created after the original preparation"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/report-boundary.test.ts",
+      "expectedCases": 2,
+      "cases": [
+        "reaches the normal forty-slide content boundary using legal review annotations without changing accepted facts",
+        "refuses weekly and already excessive normal layouts before any paid render"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/generated-byte-boundary.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "roundtrips the exact ten MiB boundary through the actual private report wrapper and common Blob adapter",
+        "refuses empty oversized changed and wrong-digest report bytes without accepting metadata as proof",
+        "keeps report writes immutable and refuses changed cleanup identities",
+        "preserves the separate ten MiB file and fifteen MiB pair serialization limits without sending mail"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/release-bundle.test.ts",
+      "expectedCases": 12,
+      "cases": [
+        "composes complete original local CI quality Preview and Production scopes without relabeling their executions or approving release",
+        "does not substitute Preview role checks for missing Production coverage",
+        "preserves the original one-scope receipt attribution guard",
+        "requires original typed workload and four-project UI evidence rather than arbitrary empty-inventory pass claims",
+        "retains stale original hosted times even if a new release bundle is created",
+        "rejects missing original scoped references and different source bundles",
+        "does not let an older success conceal the latest failed complete scoped attempt",
+        "requires the actual final release record to complete after the other original checks",
+        "retains an independently identified original Preview run without forcing its run ID into another scope",
+        "rejects forged auxiliary and CI summaries even when their cases and digest strings match",
+        "rejects duplicate reference identities and non-bijective input inventories",
+        "rejects retained CI archive tampering despite previously authenticated metadata"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/auxiliary-evidence.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "recomputes complete original workload metrics and binds the actual named class capture to its scoped proof",
+        "refuses a healthy metrics flag when an original measured class is missing",
+        "refuses differently attributed original metrics even when their counts pass",
+        "refuses changed original artifacts after their byte digests were bound",
+        "refuses a forty-case UI success summary without all four discovered and executed project captures"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/parser-suspension.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "executes the emitted observer against exact NUL-delimited proc identities without emitting the scan receipt",
+        "refuses ambiguous or changed process identities before issuing a signal",
+        "refuses self and differently pinned parser processes without a replacement execution"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/sdk-evidence.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "binds complete SDK role receipts to the original execution scope time and capture bytes while leaving other gates absent",
+        "refuses partial SDK case inventories even when a claimed positive count is unchanged",
+        "refuses a different actual serving deployment before producing role receipts",
+        "refuses changed original capture bytes and changed scoped receipt attribution"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/partner-evidence.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "retains complete original paired captures scored no-benefit rejection normal reviews retirement and role intervals in a partial partner gate",
+        "refuses a claimed publication success when the complete independent scores derive no benefit",
+        "refuses a completed arm whose original settled budget binding differs",
+        "refuses changed retained review bytes after binding the original evidence index"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/core-evidence.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "binds original core captures and current role intervals without promoting unmeasured outcomes or the composed byte boundary",
+        "refuses an original linked chain missing the separately reviewed time behavior",
+        "refuses a missing hosted root transport rather than substituting parked conversation checks",
+        "refuses changed original bytes and altered scoped receipt attribution after verification",
+        "refuses substituted retention byte identities despite positive restart flags"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/ci-import.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "requires the actual successful main workflow and complete uploaded catalog step for its exact attempt",
+        "refuses pull request merge checks or a different source as final main evidence",
+        "refuses a successful label with a skipped catalog or missing artifact step",
+        "refuses an expired or foreign-attempt artifact and incomplete job inventory"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/feedback-evidence.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "binds complete original automated observation histories and typed current rechecks without approving release",
+        "rejects arbitrary correction bytes and unmanifested observation histories",
+        "rejects changed original source and late or overdue independent dispositions"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/owned-suite-lifecycle.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "closes a normally published owned suite exactly once",
+        "drains an interrupted published suite before close rejects",
+        "cleans an interrupted initialization without publishing an owned handle"
+      ]
+    },
+    {
+      "file": "tests/unit/expansion-webkit-ci.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "requires all four actual project jobs and all current discovered cases, with safe uploaded fields only",
+        "rejects missing projects, case omissions, changed digests and extra or linked artifacts",
+        "rejects forged successful counters, retry/skip/flaky results and discovery missing a checked-in case"
+      ]
+    },
+    {
+      "file": "tests/unit/artifact-startup-probe.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "records fresh TCP and response headers while retiring a never-ending response without exposing its body",
+        "distinguishes a connected socket without headers and closes it at the fixed deadline",
+        "publishes only fixed transport metadata and rejects private or malformed nested values"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/session-admission-boundary.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "loads ordinary session authentication without recovery admission",
+        "denies missing and empty ordinary cookies without consulting admission",
+        "still requires open admission for every nonempty ordinary cookie"
+      ]
+    },
+    {
+      "file": "tests/unit/plan-readiness-probe.test.ts",
+      "expectedCases": 2,
+      "cases": [
+        "retains and retires the completed response when the sibling readiness probe times out",
+        "requires both original same-iteration statuses and cannot admit an expired readiness probe"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/artifact-eval-output-limit.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "caps an explicit larger artifact evaluation request",
+        "bounds an artifact evaluation request without a limit",
+        "preserves a smaller artifact evaluation request",
+        "imports the staged artifact evaluation agent with its request limiter"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/environment-cleanup.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "closes pools and restores the parent after missing absence proof without deleting owned resources",
+        "retains domain retirement pool and log errors while still restoring the parent",
+        "removes verified owned resources only after pools close and the parent is restored",
+        "resets both cached pools and attempts both closes when the first close rejects"
+      ]
+    },
+    {
+      "file": "tests/unit/pilot/quality-command.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "retires the detached stage and its descendant when the environment aborts",
+        "handles interruption during spawn registration and removes its listeners",
+        "keeps the original absolute command deadline and refuses pre-aborted dispatch",
+        "cleans up successful and failed spawns without retaining signal listeners",
+        "captures a normally exiting stage before retiring its detached descendant"
+      ]
+    }
+  ],
+  "ui": {
+    "files": [
+      "tests/ui/pilot-workspace.spec.ts",
+      "tests/ui/pilot-uploads.spec.ts"
+    ],
+    "projects": [
+      "webkit-desktop-light",
+      "webkit-desktop-dark",
+      "webkit-mobile-light",
+      "webkit-mobile-dark"
+    ],
+    "cases": {
+      "tests/ui/pilot-workspace.spec.ts": [
+        "selects an assigned synthetic workspace at login",
+        "shows persistent synthetic context without transferring conversations",
+        "supports keyboard focus and navigation",
+        "shows denied empty and error states",
+        "preserves primary workspace behavior"
+      ],
+      "tests/ui/pilot-uploads.spec.ts": [
+        "uploads the maximum permitted private original",
+        "shows cancelled and expired upload states",
+        "denies foreign upload completion",
+        "supports keyboard focus and responsive upload controls",
+        "passes serious and critical accessibility checks"
+      ]
+    },
+    "expectedCases": 40
+  }
+}

@@ -1,3 +1,4 @@
+import {insertBoundFixtureSession} from "../fixtures/bound-session";
 import { createHash, randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import type { CurrentSession } from "../../lib/server/auth/sessions";
@@ -92,9 +93,7 @@ describe("shared publication boundary", () => {
           async function actor(principalId: string,membershipId: string,workspaceId: string,
             role: "admin" | "member"): Promise<CurrentSession> {
             const sessionId = randomUUID();
-            await client.query(`INSERT INTO login_sessions(id,principal_id,token_hash,expires_at)
-              VALUES($1,$2,$3,now()+interval '1 hour')`,
-            [sessionId,principalId,sha(sessionId)]);
+            await insertBoundFixtureSession(client,{id:sessionId,principalId:principalId,membershipId:membershipId,workspaceId:workspaceId,tokenHash:sha(sessionId),expiresAt:new Date(Date.now()+3600000)});
             return { sessionId,principalId,membershipId,workspaceId,kind: "internal",role,
               loginName: "synthetic",displayName: "Synthetic",token: "synthetic",
               expiresAt: new Date(Date.now()+3_600_000) };

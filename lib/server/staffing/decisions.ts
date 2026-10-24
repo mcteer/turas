@@ -234,8 +234,8 @@ export async function decideAllocation(actor: StaffingActor, rawId: unknown, raw
       action: input.action, schedulableMinutes: "schedulable" in current ? current.schedulable : new Map(),
       requiredMinutes: "required" in current ? current.required : new Map() });
     await requireStaffingEnvironment(db, !removal);
-    if (!(await db.query(`SELECT id FROM login_sessions WHERE id=$1 AND principal_id=$2
-      AND revoked_at IS NULL AND expires_at>clock_timestamp()`, [actor.sessionId, actor.principalId])).rowCount) {
+    if (!(await db.query(`SELECT id FROM login_sessions WHERE id=$1 AND principal_id=$2 AND membership_id=$3 AND workspace_id=$4
+      AND revoked_at IS NULL AND expires_at>clock_timestamp()`, [actor.sessionId, actor.principalId,actor.membershipId,actor.workspaceId])).rowCount) {
       throw new HttpFailure(401, "authentication_required", "Sign in again");
     }
     const decisionId = randomUUID();

@@ -1,3 +1,4 @@
+import {requireOperationalOpen} from '../operations/admission';
 import type { PoolClient } from "pg";
 import type { CurrentSession } from "../auth/sessions";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
@@ -18,7 +19,8 @@ export function requireStaffingCapability(actor: StaffingActor, capability: Staf
  * Caller DTOs are never authority; current database rows must match them. */
 export async function lockStaffingActor(client: PoolClient, actor: StaffingActor,
   capability: StaffingCapability,
-  options: { customerId?: string; write?: boolean; allowDisabled?: boolean } = {}): Promise<void> {
+  options: { customerId?: string; write?: boolean; allowDisabled?: boolean; readOnly?: boolean } = {}): Promise<void> {
+  await requireOperationalOpen(client,actor,options.readOnly===true&&!options.write);
   await client.query("SET LOCAL lock_timeout='3000ms'");
   await client.query("SET LOCAL statement_timeout='5000ms'");
   const member = (await client.query<{ principal_id: string; workspace_id: string;
@@ -31,8 +33,8 @@ export async function lockStaffingActor(client: PoolClient, actor: StaffingActor
   const principal = (await client.query<{ active: boolean }>(
     "SELECT active FROM principals WHERE id=$1 FOR SHARE", [actor.principalId])).rows[0];
   const session = (await client.query<{ revoked_at: Date | null; expires_at: Date }>(
-    "SELECT revoked_at,expires_at FROM login_sessions WHERE id=$1 AND principal_id=$2 FOR SHARE",
-    [actor.sessionId, actor.principalId])).rows[0];
+    "SELECT revoked_at,expires_at FROM login_sessions WHERE id=$1 AND principal_id=$2 AND membership_id=$3 AND workspace_id=$4 FOR SHARE",
+    [actor.sessionId, actor.principalId,actor.membershipId,actor.workspaceId])).rows[0];
   const workspace = (await client.query<{ active: boolean }>(
     "SELECT active FROM workspaces WHERE id=$1 FOR SHARE", [actor.workspaceId])).rows[0];
   if (!principal?.active || !session || session.revoked_at || session.expires_at.getTime() <= Date.now() ||

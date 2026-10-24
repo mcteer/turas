@@ -6,7 +6,7 @@ export const embeddingSchema=z.array(z.number().finite()).length(1536)
 export function embeddingsConfigured() { return Boolean(process.env.AI_GATEWAY_API_KEY); }
 export async function embedQuery(query:string,signal?:AbortSignal) {
   signal?.throwIfAborted();
-  const vector=(await embedRetrievalTexts([query]))[0];
+  const vector=(await embedRetrievalTexts([query],{signal}))[0];
   signal?.throwIfAborted();
   return embeddingSchema.parse(vector);
 }

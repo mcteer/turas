@@ -1,9 +1,10 @@
 import type { PoolClient } from 'pg';
+import { supportedSchemaVersion } from '../db/readiness';
 import { HttpFailure } from '../../contracts/http';
 import { getServerConfig } from '../config';
 export async function assertLearningReady(db: PoolClient): Promise<void> {
   const marker = (await db.query('SELECT environment_id,schema_version FROM turas_environment LIMIT 1')).rows[0];
-  if (marker?.environment_id !== getServerConfig().TURAS_ENVIRONMENT_ID || Number(marker.schema_version) < 54)
+  if (marker?.environment_id !== getServerConfig().TURAS_ENVIRONMENT_ID || Number(marker.schema_version) < 54 || Number(marker.schema_version) > supportedSchemaVersion)
     throw new HttpFailure(503, 'unavailable', 'Learning is unavailable');
 }
 export async function learningWorkspaceState(db: PoolClient, workspaceId: string) {

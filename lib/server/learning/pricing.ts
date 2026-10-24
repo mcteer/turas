@@ -49,6 +49,11 @@ async function publicPriceEvidence(url:string,maximum:number):Promise<string>{
 /** Read public authoritative evidence before entering an admission transaction. */
 export async function resolveLearningPrice(at=new Date()):Promise<LearningPrice>{
  if(process.env.TURAS_014_PRICE_CONTRACT)return configuredLearningPrice(at);
+ return resolvePublishedLearningPrice(at);
+}
+/** Always retrieve authoritative public evidence; local fixture contracts cannot
+ * authorize another live evaluation catalog. */
+export async function resolvePublishedLearningPrice(at=new Date()):Promise<LearningPrice>{
  try{
   const [catalog,document]=await Promise.all([publicPriceEvidence('https://ai-gateway.vercel.sh/v1/models',4194304),publicPriceEvidence('https://vercel.com/ai-gateway/models/grok-4.7',8388608)]);
   const entry=JSON.parse(catalog).data?.find((model:{id?:unknown})=>model.id==='spacexai/grok-4.7');

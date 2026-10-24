@@ -1,3 +1,64 @@
+# Turas
+
+Current pilot release status and validation results are recorded in
+[PR #47](https://github.com/mcteer/turas/pull/47). The observations below are
+historical snapshots at their recorded source revisions; they do not replace
+current release evidence.
+
+## Recorded validation observations
+
+The current recovery
+change adds explicit original-to-restored Blob store binding: the unchanged
+backup authenticates the original store, while live destination bytes and the
+exact deployment configuration establish the isolated restored backend.
+Interrupted verification must reproduce the committed mapping without creating
+new sessions or probes. Actual copying, hosted recovery and release remain
+separate requirements; a surviving original store is not restoration proof.
+The earlier `ba99938` CI has an expansion WebKit timeout and its failed aggregate;
+the unchanged case passes all four WebKit profiles locally without retries.
+The exact historical stalled action remains unknown. See
+[016 validation](specs/016-pilot-hardening/validation.md).
+
+At `65712fe`, the exhaustive local catalog passed all 1,040 cases across 189
+suites. CI attempt 2 finished with 48 passing jobs and two failures: Execution
+WebKit and isolated evaluation-app readiness. Separate pilot and research
+WebKit corroborations passed 40 and 12 cases. Their historical causes remain
+unproved. At `923aa54`, the deterministic CI job failed in the workforce-original
+setup of a recovery case; the source was ineligible after its worker returned,
+but the worker state was not retained. The same five restore cases pass locally.
+The `fe5eee0` local full run passed all 1,040 cases after an earlier
+Docker-daemon outage. The newer diagnostic revision still needs its own checks.
+Failure-only fixed workforce job and native-execution observations are being
+added alongside the bounded Execution browser observations. They preserve the
+original actions, assertions, deadlines and retries; neither establishes a
+runtime fix. Current-source acceptance and release remain pending.
+
+The `fe5eee0` CI also retained an Expansion mobile-dark journey timeout inside
+proposal preparation, before dismissal/recovery actions. Its internal action
+and timing were not retained. Shared failure-only browser step observations
+now preserve fixed action categories, source-location categories and timings
+without raw selectors, values, paths or errors. Original scenarios, time limits
+and retries remain unchanged; this is diagnostic coverage, not a runtime fix.
+
+The same CI later failed isolated evaluation-app startup: its readiness requests
+timed out although the no-cookie session handler reached the expected refusal
+path. Failure-only checks now compare fresh HTTP and fetch responses from that
+same route. They cannot satisfy readiness or establish the historical cause.
+
+The `a15ca8e` local run passed all 1,040 cases, and its CI catalog also passed;
+whole CI remains blocked by an Execution mobile-dark Submit-click timeout.
+A separate controlled browser test reproduced a confirmed-save refresh liveness
+bug: a stalled read can keep command controls disabled indefinitely. Execution
+read refreshes now have a bounded deadline and clear stale eligibility on failure,
+with an explicit refresh path. The original CI actionability state was not
+retained, so this reproduction does not establish its historical cause. The
+changed revision passed the original Forecast and new fault regression in all
+four WebKit profiles, including real create-receipt checks without postponing
+Submit. Fresh full, CI, model and hosted acceptance remain required.
+
+Production remains `f8d196f`, schema077. Full current-source checks, model
+evaluation, hosted recovery and Production verification remain required.
+
 The profile/chat fixes released in [PR #45](https://github.com/mcteer/turas/pull/45)
 as `60f7a4c`. Customer selection is searchable across directory pages, Recent
 Conversations refreshes after creation/messages/navigation, and product projection
@@ -15,7 +76,7 @@ as `2f83dca`. The first-send/Thinking/research-handoff fix subsequently released
 Production login/display/read checks. Those read-only release checks made no
 paid model calls and did not rerun live research.
 
-# Turas
+## Application and development
 
 The complete legacy backend audit and restoration is tracked in
 [`018-legacy-backend-parity`](specs/018-legacy-backend-parity/spec.md).
@@ -55,9 +116,126 @@ their separate human review requirements.
 TAM/support guidance (010), product expansion (011), product gaps (012) and partner enablement (013) are implemented. Local validation and basic hosted smoke
 checks do not establish full Production workflow readiness. See the
 [roadmap](ROADMAP.md) and feature validation records under [`specs/`](specs/).
+Feature 016 pilot hardening is in progress; its local checkpoints do not establish
+full hosted pilot readiness. [Draft PR 47](https://github.com/mcteer/turas/pull/47)
+is the implementation checkpoint. The independently audited `1c34d96` local
+catalog passed all 1,022 cases across 185 suites with parent exit 0 and verified
+owned cleanup. At `1c34d96`, 49 CI jobs passed
+and the full pilot catalog hit its outer 90-minute watchdog during recovery MCP
+HTTP; the log does not establish an MCP assertion failure. The GitHub Actions
+batch allowance is now explicitly 120 minutes, while local catalogs retain
+90 minutes and every individual suite, application and model limit is unchanged.
+Fixed suite timings expose elapsed and remaining batch time without private
+payloads. All original 1,022 cases remain required, with readiness-probe, failure-privacy and anonymous-session regressions; fresh complete source-bound catalog,
+CI, model-quality, recovery, hosted processing and automated participant
+acceptance remain release blockers.
+The latest recovery attempt retained complete journals and retired its test
+credentials, but stopped at an evidence-list eligibility scan. An isolated clone
+of the exact matched dump reproduced the `incomplete` result after 100 withheld
+candidates. A bounded cursor continuation fix is undergoing fresh checks;
+eligibility and the per-request scan limit remain unchanged.
+Root transport admission now forwards the same effective output-token limit it
+uses for its reservation, including the existing 8,192-token default. Explicit
+limits and unrelated model dispatch remain unchanged. Six owned root-budget
+cases pass; this does not establish actual provider cost or hosted readiness.
+The owned recovery command now applies independently retained current denials and
+audits actual permanent request fences, preserving committed denials across failed
+audits. It remains an isolated recovery step; service recovery and hosted acceptance
+are pending.
+The locked maintenance reader also covers accepted plan content, requiring current
+accepted identity and canonical stored-byte hashes. Withheld or missing content
+cannot count as positive recovery coverage. Full service and unlock verification
+remain in progress. Work-target authentication and deny-only probe restart cleanup
+are implemented with private credential evidence; work session/HTTP issuers now use those exact bindings. Full service verification
+and the final unlock producer remain pending. Accepted delivery recovery now
+inventories every accepted execution record and current milestone; it does not
+substitute pending corrections or omit older-baseline records.
+The `56ed2e6` regional recovery run reached its 15-minute limit. Its complete
+original journals were salvaged, all 228 temporary probe identities were verified
+closed, and the stopped executor and both snapshots were deleted. Bounded
+parallel measurement passes focused owned SQL/HTTP/MCP and cancellation checks;
+fresh committed full checks and hosted recovery remain incomplete.
+
+The historical complete local checkpoint passed 703 cases across 129 suites at
+`d3e8f8b`. Further staffing/runtime and hosted-chain implementation requires
+fresh complete proof. The earlier actual-model batch failed 003's citation gate,
+and independent LLM review failed one 002 capability reply. Instruction corrections
+require fresh verification; the capped evaluation has spent $1.806543 and no
+Context credits. Hosted recovery and participant acceptance remain open.
+The unused recovery operator project was removed on 2026-10-14 at the user's
+direction; recovery keys and the archive were preserved. See the
+[operations record](docs/pilot-operations.md#work-controlled-neon-archive-destination).
+
+Current pilot integration preserves the released schema-077 ledger and authors
+078/079 for workspace sessions and operations. Focused owned recovery checks
+retain unknown model usage and original chat allowances; the current pilot
+WebKit catalog passes 40 cases. Fresh full CI/local verification and hosted
+recovery/cutover acceptance remain in progress; Production is unchanged.
+The complete local deterministic catalog passes **752/752 cases in 139 suites**
+at `152ecfa`, with cleanup complete. The same source passes the complete predecessor
+regression chain, all39 current-schema checks and all40 pilot WebKit cases across
+four projects. These are local results; full current pilot CI and hosted recovery
+remain pending. See the [checkpoint record](specs/016-pilot-hardening/validation.md#complete-152ecfa-local-catalog-and-predecessor-verification).
+The login form now follows legacy’s native POST and server-cookie redirect, with
+the current styling retained. All 16 owned built-app WebKit login checks pass;
+the earlier CI native intervening-turn failure remains preserved. Separate
+[PR43](https://github.com/mcteer/turas/pull/43) passes all seven focused legacy
+acceptance jobs on schema077; this does not establish final pilot CI or release.
+Composed engagement reads now follow execution’s plan-before-engagement lock
+order, verified with actual concurrent transactions and an old-order negative
+check. Terminal denied live chats stop polling; full current CI remains pending.
+
+Completion work now includes released main `f8d196f`. New pilot logins default
+off through `TURAS_PILOT_LOGIN_ENABLED`; explicit enablement still requires a
+current assigned membership. A separate exact-source Production infrastructure
+authorization can now be verified without promoting the original Preview envelope.
+The composed workspace/upload WebKit matrix passes40cases. The ae9b908 local
+catalog passes1009 cases across182 suites; its hosted regional check failed at
+canonical MCP denial reconciliation and its owned credentials/executor were closed.
+The current1031-case/187-suite catalog includes denial-preparation, startup transport,
+session import-boundary and fixed regression failure-phase checks. The partner absent-request
+journey also records eight approved browser steps on failure without changing its
+assertions or clocks. Catalog failures also retain fixed owned-cancellation and
+child-error classifications. The `4964417` local run passed all1019 cases across185
+suites, with independently verified source, indexed receipts and owned cleanup.
+Its CI run also passed the1019-case catalog and MCP build, but evidence upload
+failed: the owned fixture had removed the CI context before the evidence writer
+read it. The follow-up retains immutable parent provenance and pins pilot CI to
+the branch commit; exact-source artifact retention still needs a fresh CI run.
+Its partner WebKit48-case matrix and three pilot regression groups also passed in
+CI, while the mobile-dark public-research preview timed out waiting for Prepare
+refresh. The follow-up retains fixed failure-only phase, mocked-response and panel
+state observations; no specific cause or behavioral fix is established. The new
+draft requires fresh complete verification. Expired infrastructure/model approvals,
+original charges and holds remain unchanged; no hosted pilot readiness is claimed.
+The owned pilot fixture now uses the existing process-group retirement capability
+for its worker, app, native service and build. This closes the direct-parent-exit
+gap exposed by late trace files after an unpaid admission check; root removal
+requires verified group retirement. The exact trace writer was not identified.
+Authority readers now coexist with serialized writers; all16 support/grant
+concurrency checks and the actual unpaid native-operations/WebKit fixture pass
+locally. The partner guide journey now waits for completed command acknowledgments
+and exact review states before switching roles; its full48-case WebKit matrix passes
+locally. Current-source CI and hosted recovery remain pending.
+The forecast handoff journey waits for the rendered reporting period and verifies
+the actual utilization request's dates, resource and HTTP response. Its twelve
+handoff cases pass across four WebKit projects. CI diagnostics expose only fixed
+scope-match flags and allowlisted states; private response text stays private.
+Current Production remains released `f8d196f` on schema077. Its host firewall
+allows four exact current hosts; direct current-bypass probes against653 older
+hosts are denied, while protection redirects leave strict old-host closure
+unverified. Retain this fence and explicitly bind any future deployment host.
+Gap command errors now survive same-scope refreshes and are discarded after a
+newer denied refresh, scope change or route change.
+Expired evaluation authority can be continued only by an explicitly approved,
+source-bound record against the exact original journal. This extends time only:
+original dollar/credit caps, charges and unknown holds remain unchanged. No real
+evaluation authority has been renewed by implementing this path.
 
 Recent Conversations provides owner-private Archive and Restore controls. Archived
 chats remain available in Archived Conversations and retain their history.
+Pending questions and approval controls become available after the page initializes.
+
 Archive/restore requires migration 044. Apply the current migration manifest and
 runtime grants as part of each schema-dependent release.
 
@@ -229,9 +407,82 @@ disabled. See [learning operations](docs/learning-operations.md), the
 [validation record](specs/014-governed-adaptive-learning/validation.md) and
 [handoff](specs/014-governed-adaptive-learning/handoff.md) for current local, actual-model, CI and hosted validation status.
 
+### Pilot Hardening and Launch Readiness
+
+The artifact evaluation fixture enforces its intended1,000-token request maximum,
+including when its caller supplies a larger setting. Its1,200-token observed-output
+acceptance limit remains unchanged. The previous actual-model failure and current
+validation status are retained in the validation record below.
+
+Recovery MCP probes keep the caller's original deadline and a maximum59-second
+lifetime on both the app and database clocks. Clock differences can only shorten
+the issued credential. Fresh complete validation remains pending.
+
+Feature 016 has a [specification](specs/016-pilot-hardening/spec.md),
+[implementation plan](specs/016-pilot-hardening/plan.md) and
+[tracked tasks](specs/016-pilot-hardening/tasks.md) for a controlled internal and
+assigned-partner pilot. The plan covers a synthetic Production pilot workspace,
+workspace-bound sessions, durable private files and hosted processing, recovery,
+retention, access, operating limits and attributable user feedback. Implementation
+and operating acceptance remain in progress. The historical local catalog passed
+640/640 named cases and all 43 required CI jobs passed at `08ef152`; full
+predecessor composition, WebKit, recovery/lifecycle and build gates are green.
+Owned load, dependency-fault and encrypted capture checks are recorded in the
+[validation record](specs/016-pilot-hardening/validation.md). These checks do not
+finish the remaining storage/recovery/hosted journey implementation or authorize
+a pilot release.
+A separate work-controlled Neon archive contains an authenticated encrypted
+Production database safety copy. Its disposable restore verified content and the
+055→057 migrations while keeping runtime access locked; this is database-only
+proof, not a completed Production backup service. Minimized Production denial/
+replay metadata is separately encrypted and retained beyond backup expiry;
+restored-target reconciliation remains unfinished. A separate locked-owner audit
+now checks request fences against independently authenticated current archive
+bytes and actual replay functions, triggers, indexes and immutable protections;
+it does not clear recovery holds or settle unknown provider effects.
+The independent archive also retains governed native cancellation intents and
+terminal provenance; old hosted native work has not yet been retired. The current
+runner covers exact HTTP profile review and the pinned MCP consumer, while the
+remaining linked hosted journeys are still being implemented. A registered owned
+HTTP check now links reviewed profiles and cited plans to delivery activity and
+normal report publication, with actual PDF/PPTX rendering and authenticated file reads.
+The extended check reviews a located uploaded source and verifies that normal
+withdrawal blocks its citations and derived report files. Separate milestone review
+now exercises explicit start, review request and acceptance against reviewed activity.
+An additional normal HTTP check publishes and assigns a partner guide, records a
+partner demonstration and requires mcteer verification; withdrawing its source
+removes current learning credit. These are owned synthetic checks, with no real
+participant feedback or skills certification.
+Report source checks now reconcile a cited plan's current retrieval digest as
+well as direct profile digests, preserving audience and withdrawal fences.
+The work-restore path now measures actual database content and private files before
+quarantine, with atomic current-grant reconciliation from authenticated retained
+denials. Read-only managed-run inspection traverses all provider pages twice;
+terminal closure and retirement of old deployments remain unproved.
+Fresh read-only inspection separates Preview and Production Workflow inventories;
+completed legacy tool runs can be retained without cancellation or restart authority.
+A finite inventory command now automates the protected closure batches and
+refuses drift or uncertain cancellation retries; its hosted execution is pending.
+An owned recovery command now authenticates temporary mcteer probes, reads actual
+accepted profiles/plans/reports and retires its session even after SQL failure; this is a
+partial locked diagnostic and cannot grant recovery readiness.
+The fixed maintenance profile, artifact, report, workforce and gap-export endpoints now use an owner-issued session and a
+short-lived, database/deployment-bound secret through a direct restricted runtime
+login. Finite request reservations, current-scope rechecks and atomic teardown
+leave ordinary routes locked. The owned runtime now materializes and cold-verifies
+canonical local copies of all six restored file namespaces, verifies that every
+ledger-required original is present with its exact digest and size, then removes those
+copies after its probe; restored originals remain. The artifact path uses the
+canonical source reader with an exact version/digest/generation and a bounded
+fully checked buffer. Workspace-scoped workforce reads retain manager and original-owner authorization. Gap exports retain reviewer, current approval and audience checks, with bounded
+canonical export accounting. Complete recovery verification remains unfinished.
+Recovery authority, hosted services, scheduled backups and actual participant
+acceptance remain pending; local checks do not establish pilot readiness. See the
+[handoff](specs/016-pilot-hardening/handoff.md) for scope and execution gates.
+
 ## Technology
 
-TypeScript, Next.js 16, React 19, eve and PostgreSQL 17 with pgvector. Development
+TypeScript, Next.js 16, React 19, eve and PostgreSQL 17/18 with pgvector. Development
 uses Node.js 24 and npm. Versions are pinned in [`package-lock.json`](package-lock.json).
 
 ## Getting Started
@@ -242,6 +493,9 @@ uses Node.js 24 and npm. Versions are pinned in [`package-lock.json`](package-lo
 - PostgreSQL **17** with pgvector, a development database and a separate disposable
   test database.
 - Docker for isolated artifact scanning/extraction and report rendering.
+- Owned pilot cleanup requires `lsof`. On Linux, run as root or allow
+  noninteractive `/usr/bin/sudo -n -- /usr/bin/lsof`; an unavailable or denied
+  privileged query fails the check. macOS uses its ordinary `lsof` command.
 - An AI Gateway key for live Turi calls; deterministic tests do not require one.
 
 Database, runtime-role and recovery details are in the
@@ -539,6 +793,22 @@ selector keeps operator indexing within this public inventory; existing private
 source and synthetic-worker restrictions remain in place.
 This command neither approves private context nor publishes cross-customer learning.
 
+The 016 full 003 evaluation may use its separately authorized 32-step allowance;
+ordinary 003 evaluation retains 14 steps. This supplement preserves the original
+shared model/research budget and requires fresh committed deterministic proof.
+Capture and independent review both validate this allowance through the explicit
+private operator runtime. The current deterministic inventory is 1,009 cases in
+182 suites; fresh committed proof is required before further paid evaluation.
+
+Independent semantic evaluation may use the separately requested LLM judge with
+actual captures and governing rubrics. Actual automated operator/internal/partner
+exercises require independently reviewed captures and must be labeled automated;
+they cannot be recorded as human observations. Quality setup verifies actual 016 container ownership, native clone startup,
+fixture scope and worker budget-guard inheritance before further paid execution.
+Quality stages retain private source-bound workspaces and native captures until
+independent review, including retrieval query, citation and partner-scope evidence.
+Temporary containers and app processes still clean up after each stage.
+Evaluation clones initialize their evidence roots in clean owned environments.
 The legacy chat parity bug fix merged in PR #34 and is released to Production. Normal chat
 resolves accessible named customers without a picker and reads their dated account
 evidence inventory. Focused full-document search remains separate from that
@@ -596,3 +866,308 @@ with verified runtime grants and actual authenticated HTTP/CLI WebKit acceptance
 Automatic Git deployment of `main` is restored by the compatibility-safe release
 configuration. These checks do not establish the separate 016 hosted
 recovery/operator/pilot acceptance. See the [release record](docs/production-parity-release-2026-10-15.md).
+
+The isolated recovery owner can compose current-denial reconciliation and the
+permanent request-fence audit in one transaction; incomplete decisions roll back
+together. This does not establish hosted recovery readiness.
+
+The isolated work restore command verifies required ledger originals against restored bytes before emitting success. This physical coverage check does not establish service recovery or pilot readiness.
+
+Mobile navigation remains disabled until its click handler is ready. Pilot research UI fixtures use ordinary live customer context and verify generation changes without relaxing historical-chat restrictions. The785-case local pass at23e8b2c predates these follow-up checks; fresh final-source CI remains required.
+
+Owned recovery now supports optional command-level maintenance HTTP verification against its restored target. It derives the record inventory, verifies profiles and eligible artifact/report/workforce/gap originals, and retires probe sessions and supervised application processes. A consuming transaction rechecks inventory and runtime/probe closure; serialized receipts cannot authorize recovery. The current824-case/150-suite catalog requires fresh complete proof. Ordinary service, current-denial/Workflow reconciliation and full readiness remain incomplete.
+
+The optional hosted root transport exercise has a separate finite synthetic-conversation budget, with at most $2.50 per environment. Owner admission binds the actual ready deployment while retaining the original charges and uncertain reservations. This mode disables tools, preserves the selected model and records original provider identities. Four owned PostgreSQL checks pass; actual hosted streaming/resume/stop acceptance remains pending.
+
+Root-only hosted transport can optionally run desktop and mobile CLI WebKit
+stream/reload/Stop exercises with `pilot:hosted:check -- ... --root-binding <private-file>`.
+The two conversations must already belong to the deployed finite root budget.
+The runner compares the authenticated configuration, retains original attempt
+identities and deadlines across reload, and reconciles each actual Gateway
+generation through the provider lookup. `pilot:hosted:root:reconcile` can record
+an interrupted generation separately without another model call. Unknown costs
+retain their ceiling; closed/recovered budgets never refund or reopen. Conflicting
+actual charges retain an immutable receipt and block further dispatch. These
+runners are implemented; their existence does not establish hosted acceptance.
+
+Fresh private scan/parse/render images now bind signature version28156 and verified
+OCI/configuration digests. Actual bounded Sandbox scan, parse, render and Office
+checks pass, and all four owned executions are confirmed absent. The existing
+private Blob store passes six-namespace permission/cold-read/cleanup checks. These
+infrastructure results do not establish application storage cutover or hosted pilot
+acceptance; the recorded original holds and new cost ceilings remain retained.
+
+Reporting CI failures now expose fixed setup stages, approved script identities
+and bounded failure signatures when a controller stops before a test report exists.
+Full exception text and child output remain private. These diagnostics preserve
+all existing reporting assertions, rendering bindings and deadlines.
+Reporting CI installs both root and artifact-extractor lockfiles, as required by
+the shared disposable application setup.
+
+Work recovery now authenticates internal and assigned-partner reads, actual MCP
+SDK probes and finite maintenance HTTP batches. The owner-only producer composes
+physical target integrity, required-service coverage, current denials, terminal
+provider inventories and original financial/replay evidence before recording a
+locked verification. Commit acknowledgements are read-only; an explicit fresh
+verification retains original evidence and holds. Automated hosted observations
+have versioned provenance and cannot impersonate human participants.
+
+The scalable MCP path distinguishes exhaustive canonical customer/category reads
+from actual hosted SDK policy-branch observations. It replays all canonical
+pages, records and citations, requires every observed hosted branch plus recent
+role/category canaries, and retires every probe. Canonical batches contain at most
+20 customers within the unchanged 59-second credential lifetime and aggregate
+32-probe limit; a larger inventory fails closed. Fresh independently retained
+original-source captures preserve prior identities and financial/provider rows;
+historical evidence never authorizes a new credential. Original deadlines,
+credential/call limits and unknown cost holds remain enforced. Full owned
+composition and separate-source capture/restart checks pass; regional scale and
+hosted release acceptance remain pending. Recovery-owned denial archive and Production peer clients now cancel their step on idle connection errors; a disconnected client cannot publish successful proof.
+
+The local deterministic inventory is 1,009 cases across 182 suites. The preceding
+6266f31 source passed all 997 cases and 181 suites; complete verification of the
+current source remains required. The actual47-category regional capacity run completed final canonical
+replay; all53 original probe journals were independently reconciled and its
+executor deletion confirmed. That capacity evidence does not establish restored
+service, scheduled cadence or pilot readiness. Existing app schema cutover,
+actual scheduled backups and hosted automated role exercises remain pending in
+[Feature 016](specs/016-pilot-hardening/tasks.md).
+
+The Preview maintenance procedure verifies a distinct physical database cluster,
+retires the old runtime login before schema changes, applies explicit migrations
+and grants, then holds schema079 in locked mode while binding a separate restricted
+runtime credential. Provider-managed administrative roles remain untouched.
+The actual target observations and remaining release checks are recorded in the
+[validation record](specs/016-pilot-hardening/validation.md).
+
+Portable recovery-content verification batches at most16 table hashes per SQL
+statement while preserving the original digest format, table locks and deadlines.
+Actual locked Preview measurement produces the same digest with34 queries in3.3s,
+compared with469 queries in36.4s for the earlier per-table implementation.
+
+The separate backup operator package now explicitly allowlists deployment source
+files and excludes arbitrary environment, credential and private evidence files.
+An affected disabled operator deployment was removed after independent review
+found a protected environment file in its source upload. The operator CRON and
+archive access credentials were rotated while retaining historical recovery keys.
+The6b037e5 replacement passes actual source-inventory and four HTTP boundary
+checks with execution disabled; no scheduled backup is claimed.
+
+The disposable native CI check now samples its owned database with a bounded
+read-only observer. Fixed query/wait labels and timing counts help investigate
+intermittent timeouts without publishing SQL, parameters or customer content.
+This instrumentation does not establish a timeout fix or change application locks.
+
+Ordinary native receipt persistence handles a projected-input-before-HTTP-ACK
+race by matching the original delivery, conversation/session, input and turn.
+It preserves the saved receipt, deadline and allowance and never resends an
+accepted message. Four focused owned PostgreSQL checks cover text, selected
+passages and4/10MiB staged files. Fresh CI passes native operations and pilot
+WebKit; hosted verification remains pending. Actual local Production-mode SDK
+consumers also verify typed non-disclosing foreign-customer refusals, current
+content/citations and credential revocation.
+
+Pilot hardening also has explicit one-original hosted file boundary commands for
+antivirus, malformed input, running cancellation, controlled lease expiry and
+a fixed network refusal. An in-process normal-worker observation holds a real
+validated parser result through its original deadline; the ordinary publication
+continuation then refuses it. This is delayed-publication evidence, with no SQL
+publication attempt or late-generation claim. A separate explicit phase verifies normal withdrawal
+and owned cleanup of the two harmless maximum originals.
+These retain original mutation/provider/accounting identities and require actual
+provider absence; they do not establish complete file acceptance or clear unknown
+cost holds. See `docs/pilot-operations.md` for the bounded invocation and limits.
+
+The readiness verifier can observe immutable execution receipts in dependency
+order with `scripts/pilot-gate-verification.ts`. These observations retain the
+original test times, proof digests and hosted freshness; reading an old result
+does not make it current or replace required live checks.
+
+A generated-file preparation phase runs the normal reviewed linked chain once.
+After a separately created deployment of the identical code, `--generated-files`
+reuses the original chain and verifies all four PDF/PPTX streams and original
+worker receipts without repeating processing. Actual file sizes are recorded;
+this phase does not establish the maximum generated-byte boundary.
+
+The generated preparation uses normal author revisions to reach the renderer's
+40-slide limit before its two paid render admissions. The actual local HTTP
+journey passes with both 40-slide pairs, ordinary publication, complete reads and
+source-withdrawal denials. This verifies normal layout limits; exact generated
+byte-cap storage and hosted restart evidence remain separate requirements.
+
+Generated byte-boundary acceptance composes the actual maximum-layout report path
+with exact maximum originals through the shared Blob adapter in the same store
+and new deployment. Four exact report-wrapper boundary cases pass with controlled
+provider transport. The hosted composer requires those current full-catalog
+results and both actual hosted retention receipts; it records the inference and
+keeps `actualReportAt10MiB:false`. Hosted composition remains pending.
+
+The final release-bundle verifier retains separate owned-local, CI, quality,
+Preview and Production runs with their original scope, proofs and execution
+times. It aggregates exact role/method coverage without relabeling executions,
+requires actual typed workload/UI captures, and emits technical eligibility only.
+Current hosted release, complete current checks and the release decision remain
+pending; these tools do not grant runtime or spending authority.
+
+
+Recovery state checkpoints use bounded16-table queries while preserving the
+released complete state digest, locks and authority metadata. The actual locked
+Preview checkpoint passes in10.962s after the prior monolithic query exceeded its
+five-second statement limit. Preview denial capture accepts an explicitly bound
+Preview source as well as Production. Pilot service remains closed pending full
+hosted recovery and release acceptance; these checks do not establish readiness.
+
+Operator quality recovery uses an explicit reviewed resumption in the original
+append-only budget journal. It preserves every uncertain request and its full
+worst-case reservation; a separately authorized additive allowance never replaces
+the original authorization or permits retrying an uncertain request. Provider
+failure evidence distinguishes Gateway generation IDs from upstream response IDs
+and retains bounded status/code/digest metadata without response bodies.
+
+The v3 work-recovery verifier accepts one explicit project OIDC or store-bound
+Blob credential. V2 remains OIDC-only. Candidate store/project/native binding,
+actual private byte checks, disabled SDK retries and locked-target checks remain
+required. A store-token check does not establish hosted OIDC behavior.
+
+The synthetic research-cancellation UI check now supplies an exact idle native
+stream and denies native delivery, retaining the production busy guard. The local
+four-project WebKit matrix passes24 cases with four existing skips and no retries;
+this is controlled fixture coverage. Fresh committed catalog, CI and hosted
+verification remain required, and the original CI failure remains retained.
+
+The locked-target cancellation fixture now requires the deliberate undrained
+callback error alongside cancellation and verifies independent credential
+retirement. The original partial catalog failure remains retained. Fresh complete
+committed catalog, CI and hosted acceptance remain required.
+
+The health fixture retains ownership while initialization is pending and the shared
+owned-suite helper drains on environment cancellation. Its120-second whole
+lifecycle deadline remains unchanged; explicit120-second setup and30-second
+cleanup hooks fit a240-second outer file bound. The six health cases and six
+fixture/deadline unit cases pass locally; fresh full-source verification remains
+required. The original setup-hook failure is retained.
+
+The remote pilot checkpoint's execution CI exposed a cleanup test that assumes its
+manual tick wins against the background maintenance worker. The correction checks
+exact payload removal and retirement regardless of worker ownership. Independent
+review, the focused native case and pilot types pass. Fresh complete changed-source
+local and CI verification remain required.
+
+The older checkpoint's expansion WebKit job reached its120-minute CI limit.
+Its four complete projects now run in separate jobs with the original bounds.
+The required `expansion (webkit)` check independently discovers the complete case
+union and requires all four successful jobs with matching source/run/attempt
+evidence. No missing, skipped, flaky or retried case can pass the aggregate.
+Focused integrity checks, expansion types and workflow syntax pass; fresh
+committed full catalog and CI verification remain required.
+
+Profile proposal confirmations are instructed to report the review state, claim
+text and steward-review next step. Record and revision identifiers are included
+only when requested and must exactly match the tool receipt. A live003 evaluation
+on the preceding checkpoint printed a fabricated revision identifier before
+correcting it; its citation hard gate correctly failed. The complete failed reply
+is retained. Fresh source-bound model verification remains required for this
+instruction correction.
+
+The preceding checkpoint's CI finished with58 successful checks and one failed
+pilot catalog check. Its nested artifact evaluation app did not become ready
+within the original60-second allowance. Independent route-status diagnostics now
+preserve which health probe failed and fixed startup phases after owned-app
+cleanup. This diagnostic correction preserves the readiness assertions and all
+deadlines; the original startup cause and fresh complete CI remain unresolved.
+The later CI attempt failed at the same readiness check. A local reporter
+reproduction showed that JSON-only Vitest suppresses console diagnostics, so the
+fixed, whitelisted startup record now writes directly to stderr. Its transport
+is verified separately; the actual startup cause remains unproved.
+
+Automatic Vercel deployments are disabled for the recovery completion branch so
+its CI checks can run independently of a funded Preview build. Main remains
+enabled. Hosted acceptance still requires a separately admitted Preview of the
+exact tested commit before merge; a skipped deployment does not satisfy it.
+
+The current Product Gaps mobile WebKit failure receives a report-preview response
+but does not show confirmation before the existing assertion deadline. A focused
+case and complete88-case local diagnostic replay pass without reproducing it.
+Passive test-only diagnostics now retain bounded request/body-completion timing
+and report-control presence by document ordinal; they publish no URLs, identifiers,
+response bodies or review text. They do not establish the failure cause or replace
+fresh exact-source CI, complete catalog and hosted acceptance.
+
+The latest committed CI still times out in the isolated artifact evaluation app;
+its Product Gaps WebKit job passes all88 cases. Additional disposable-app startup
+observations distinguish the printed Next port, exact auth-route execution phases,
+internal eve health and a bounded owned-database admission probe. The direct health probes
+run after readiness has already failed and cannot satisfy it. No startup cause,
+full CI success or hosted readiness is claimed.
+
+The artifact evaluation fixture now applies the existing owned-port lease used
+by the other evaluation fixtures. It holds preparation ports outside the default
+client ephemeral range until immediately before startup, then releases ownership
+idempotently during cleanup. Runtime, readiness assertions and time limits stay
+unchanged. This corrects port ownership; it does not establish the cause of the
+CI startup timeout. The preceding c5a733e CI attempt ended with47 successful and
+3 failed jobs, and its local catalog remained incomplete after156 suites. Fresh
+committed checks and hosted release evidence remain required.
+
+The1359341 port-lease follow-up exposed a root-project environment type error in
+CI. The environment now has an explicit ProcessEnv annotation; full root
+typechecking passes locally. Its interrupted local catalog and failed CI remain
+retained, and fresh committed-source validation is still required.
+
+The `49021e7` CI attempt repeated the artifact readiness timeout, so the leased port
+is not presented as its cause or resolution. The fixture records failure-only static and fresh-socket
+HTTP observations while preserving the
+original admission checks and clocks. Current Linux diagnostic evidence and the
+behavioral resolution remain pending.
+
+The pending pilot shutdown correction passed eight focused process tests and
+pilot type checking. Three additional detached-process cases bring its catalog
+to 1022 cases; actual native cleanup and fresh complete CI evidence are pending.
+Production remains on the previously released build.
+
+The actual native cleanup recheck identified an additional Next.js usage-telemetry
+process during shutdown. The isolated pilot fixture opts out of optional telemetry transmission and waits
+up to five seconds for verified directory release;
+application tracing and strict cleanup verification remain enabled. Fresh native
+and complete catalog/CI verification are still pending.
+
+The full `55e9087` local run stopped at five nested provisioning cleanup failures
+after65 passing cases. A minimal fixture reproduced open-file interference,
+including a macOS indexer. The finite cleanup predicate now waits for both cwd
+and open-file absence within its existing window and original owned deadline.
+Fresh provisioning, native and complete catalog/CI checks are pending.
+
+
+The 2026-10-23 pilot checkpoint at `1283807` passed all 57 CI jobs and its
+1,040-case CI catalog. Its live model batch remains incomplete: an artifact
+answer exceeded the unchanged 1,200-token limit, and an older capability-honesty
+criterion conflicts with the current Pending-proposal contract. The criterion
+is being versioned with fresh affected validation required. Original owned
+catalog receipts will also be retained separately in CI. Production remains on
+`f8d196f` / schema 077; hosted release, scheduled backup and recovery checks are
+still pending.
+
+
+A further pilot check at `b332596` found a lost baseline-mapping selection in
+Execution. A focused WebKit probe reproduced a delayed-reset race and stale
+choices during a baseline-pair transition. The follow-up binds mapping state to
+that exact pair, preserving ordinary refreshes and clearing new-pair choices
+before interaction. All 12 owned Registers and Scope Changes cases now pass
+across four WebKit profiles, without skips or retries. Fresh complete CI, model
+and hosted release acceptance remain required; Production is unchanged.
+
+The current pilot candidate also retires stale canonicalization controls after a
+confirmed Product Gaps merge, bounds follow-up reads, and offers a read-only
+refresh after failure. An owned WebKit regression forwards the actual merge
+response and holds only its subsequent read; it verifies one committed write
+and no replay. A separate lost-acknowledgement case restores a fresh authorized
+view before reconciling the original request. The three original canonicalization
+cases remain unchanged.
+Complete CI, model and hosted acceptance are tracked in [PR #47](https://github.com/mcteer/turas/pull/47); local results do not establish release completion.
+
+Partner request reconciliation in the current candidate likewise separates a
+validated committed receipt from its subsequent protected read. An unavailable
+read leaves protected content hidden and permits an explicit read-only retry;
+it does not replay the command. The strengthened lost-acknowledgement journey
+retains its original case limit and storage privacy assertions. Hosted acceptance
+remains tracked separately in PR #47.

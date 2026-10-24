@@ -1,0 +1,21 @@
+import {beforeAll,afterAll,it,expect} from 'vitest';
+import {Pool,type PoolClient} from 'pg';
+import {requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
+import {pilotPublishedKnowledgeFixture} from '../../fixtures/pilot/knowledge';
+import {enqueueRetrievalJob} from '../../../lib/server/retrieval/jobs';
+import {runRetrievalLifecycleTick} from '../../../scripts/retrieval-worker';
+import {closeRuntimePool} from '../../../lib/server/db/client';
+const pool=new Pool({connectionString:requireOwnedPilotDatabase(process.env,true)});let db:PoolClient;
+const disabled=process.env.TURAS_005_DISABLED;
+beforeAll(async()=>{db=await pool.connect();});afterAll(async()=>{if(disabled===undefined)delete process.env.TURAS_005_DISABLED;else process.env.TURAS_005_DISABLED=disabled;db?.release();await pool.end();await closeRuntimePool();});
+it('purges retired projections while authoring is disabled without claiming index work',async()=>{
+ const fixture=await pilotPublishedKnowledgeFixture(db,'primary');const source=(await db.query('SELECT id FROM retrieval_sources WHERE source_revision_id=$1',[fixture.revisionId])).rows[0].id;
+ expect(Number((await db.query('SELECT count(*) AS n FROM retrieval_passages WHERE source_id=$1',[source])).rows[0].n)).toBeGreaterThan(0);
+ await db.query("UPDATE retrieval_sources SET lifecycle_state='retired' WHERE id=$1",[source]);process.env.TURAS_005_DISABLED='1';
+ const cleanup=await enqueueRetrievalJob(db,source,'cleanup');await expect(enqueueRetrievalJob(db,source,'index')).rejects.toThrow('Retrieval unavailable');
+ await runRetrievalLifecycleTick([source]);
+ expect((await db.query('SELECT state FROM retrieval_jobs WHERE id=$1',[cleanup])).rows[0].state).toBe('completed');
+ expect(Number((await db.query('SELECT count(*) AS n FROM retrieval_passages WHERE source_id=$1',[source])).rows[0].n)).toBe(0);
+ expect((await db.query("SELECT state FROM retrieval_jobs WHERE source_id=$1 AND kind='index'",[source])).rows.every(row=>row.state==='queued')).toBe(true);
+ expect(Number((await db.query('SELECT count(*) AS n FROM retrieval_embedding_operations')).rows[0].n)).toBe(0);
+});

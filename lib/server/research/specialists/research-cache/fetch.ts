@@ -1,3 +1,4 @@
+import {withOperationalProviderIo} from '../../../operations/admission';
 import { randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { z } from "zod";
@@ -9,7 +10,7 @@ const rowSchema = z.object({ value: z.unknown(), failed: z.boolean(), checked_at
 export class EvidenceBackoffError extends Error {
   constructor() { super("This source recently failed. Preserve the gap and retry after its backoff, rather than restarting research."); }
 }
-export async function cachedFetch<T>(
+async function cachedFetchWithinFence<T>(
   identity: Pick<AppIdentity, "environmentId" | "workspaceId">, key: string, schema: z.ZodType<T>,
   fetchValue: () => Promise<T>, signal: AbortSignal,
   options: { notBefore?: Date; ttl?: (value: T) => number } = {},
@@ -61,4 +62,12 @@ export async function cachedFetch<T>(
     }
   }
   throw new Error("Another request is retrieving this source. Retry shortly; do not duplicate the fetch.");
+}
+
+export async function cachedFetch<T>(
+  identity: Pick<AppIdentity, "environmentId" | "workspaceId">, key: string, schema: z.ZodType<T>,
+  fetchValue: () => Promise<T>, signal: AbortSignal,
+  options: { notBefore?: Date; ttl?: (value: T) => number } = {},
+) {
+ return withOperationalProviderIo(()=>cachedFetchWithinFence(identity,key,schema,fetchValue,signal,options),signal);
 }

@@ -58,7 +58,7 @@ export async function learningSupportingOriginals(db:PoolClient,actor:CurrentSes
  const refs=z.array(z.object({sourceKind:z.enum(['accepted_profile','verified_research','approved_excerpt']),sourceRevisionId:learningId}).strict()).min(1).max(20).parse(raw),at=new Date();
  const initial=await collect(db,actor,customerId,refs,at);for(const source of initial)await lockOriginalHeader(db,source.kind,source.revisionId);
  const originals=await collect(db,actor,customerId,refs,at);if(learningHash(initial)!==learningHash(originals))throw new HttpFailure(409,'source_changed','Original evidence changed');
- for(const source of originals)if(!await originalCurrent(db,{source_kind:source.kind,source_revision_id:source.revisionId,source_generation:String(source.generation),source_digest:source.digest}))throw hiddenRecord();
+ for(const source of originals)if(!await originalCurrent(db,{source_kind:source.kind,source_revision_id:source.revisionId,source_generation:String(source.generation),source_digest:source.digest},actor.workspaceId))throw hiddenRecord();
  if(await confirmedConflictAfterAny(db,originals.map(source=>({kind:source.kind,revisionId:source.revisionId})),new Date(0)))throw new HttpFailure(409,'source_conflict','Resolve original evidence conflicts before reuse');return originals;
 }
 export async function learningSourceClosure(db:PoolClient,actor:CurrentSession,customerId:string,raw:readonly unknown[]){
@@ -70,7 +70,7 @@ export async function learningSourceClosure(db:PoolClient,actor:CurrentSession,c
  for(const source of initial)await lockOriginalHeader(db,source.kind,source.revisionId);
  const originals=await collect(db,actor,customerId,refs,at);
  if(learningHash(initial)!==learningHash(originals))throw new HttpFailure(409,'source_changed','Original evidence changed');
- for(const source of originals)if(!await originalCurrent(db,{source_kind:source.kind,source_revision_id:source.revisionId,source_generation:String(source.generation),source_digest:source.digest}))throw hiddenRecord();
+ for(const source of originals)if(!await originalCurrent(db,{source_kind:source.kind,source_revision_id:source.revisionId,source_generation:String(source.generation),source_digest:source.digest},actor.workspaceId))throw hiddenRecord();
  if(await confirmedConflictAfterAny(db,originals.map(source=>({kind:source.kind,revisionId:source.revisionId})),new Date(0)))throw new HttpFailure(409,'source_conflict','Resolve original evidence conflicts before reuse');
  return {originals,lineage:refs,closureDigest:learningHash({customerId,originals}),rightsDigest:learningHash({customerId,lineage:refs,originals:originals.map(({kind,revisionId,rights})=>({kind,revisionId,rights}))})};
 }
@@ -95,7 +95,7 @@ export async function learningIndependentClosureCurrent(db:PoolClient,workspaceI
   const initial=await collect(db,scope,customerId,refs,at);for(const source of initial)await lockOriginalHeader(db,source.kind,source.revisionId);
   const originals=await collect(db,scope,customerId,refs,at);if(learningHash(initial)!==learningHash(originals))return false;
   if(learningHash({customerId,originals})!==closureDigest||learningHash({customerId,lineage:refs,originals:originals.map(({kind,revisionId,rights})=>({kind,revisionId,rights}))})!==rightsDigest)return false;
-  for(const source of originals)if(!await originalCurrent(db,{source_kind:source.kind,source_revision_id:source.revisionId,source_generation:String(source.generation),source_digest:source.digest}))return false;
+  for(const source of originals)if(!await originalCurrent(db,{source_kind:source.kind,source_revision_id:source.revisionId,source_generation:String(source.generation),source_digest:source.digest},workspaceId))return false;
   return !await confirmedConflictAfterAny(db,originals.map(s=>({kind:s.kind,revisionId:s.revisionId})),new Date(0));
  }catch(error){if(error instanceof HttpFailure&&error.status<500||error instanceof z.ZodError)return false;throw error;}
 }

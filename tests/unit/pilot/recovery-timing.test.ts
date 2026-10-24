@@ -1,0 +1,10 @@
+import {it,expect} from 'vitest';
+import {physicalRecoveryTiming} from '../../../lib/server/operations/recovery-timing';
+const capturedAt='2026-10-10T00:00:00.000Z',restoreStartedAt='2026-10-11T00:00:00.000Z',physicalRestoreFinishedAt='2026-10-11T04:00:00.000Z';
+const input={capturedAt,restoreStartedAt,physicalRestoreFinishedAt};
+it('measures capture age and physical restore duration at exact objective boundaries',()=>{expect(physicalRecoveryTiming(input)).toMatchObject({captureAgeAtRestoreStartMs:86400000,physicalRestoreDurationMs:14400000,captureWithin24Hours:true,physicalRestoreWithin4Hours:true});});
+it('reports exceeded physical limits without manufacturing service recovery',()=>{expect(physicalRecoveryTiming({...input,restoreStartedAt:'2026-10-11T00:00:00.001Z',physicalRestoreFinishedAt:'2026-10-11T04:00:00.002Z'})).toMatchObject({captureWithin24Hours:false,physicalRestoreWithin4Hours:false,rpoVerified:false,rtoVerified:false,fullRecoveryReady:false});});
+it('never counts fast matched bytes as incident-to-verified-service proof',()=>{expect(physicalRecoveryTiming({...input,restoreStartedAt:capturedAt,physicalRestoreFinishedAt:capturedAt})).toMatchObject({incidentStartedAt:null,verifiedServiceAt:null,rpoVerified:false,rtoVerified:false,fullRecoveryReady:false});});
+it('rejects future captures and backwards restore clocks',()=>{expect(()=>physicalRecoveryTiming({...input,restoreStartedAt:'2026-10-09T00:00:00.000Z'})).toThrow('timing order');expect(()=>physicalRecoveryTiming({...input,physicalRestoreFinishedAt:capturedAt})).toThrow('timing order');});
+it('rejects malformed timestamps and claimed acceptance fields',()=>{expect(()=>physicalRecoveryTiming({...input,capturedAt:'not a timestamp'})).toThrow();expect(()=>physicalRecoveryTiming({...input,rtoVerified:true})).toThrow();});
+it('normalizes offset timestamps using elapsed time rather than local clock text',()=>{expect(physicalRecoveryTiming({...input,restoreStartedAt:'2026-10-10T19:00:00.000-05:00'}).captureAgeAtRestoreStartMs).toBe(86400000);});

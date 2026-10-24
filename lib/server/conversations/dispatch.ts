@@ -40,11 +40,14 @@ async function requireWorkerHeartbeat(client: import("pg").PoolClient): Promise<
   if (!result.rowCount) throw new HttpFailure(503, "maintenance_unavailable", "Service unavailable");
 }
 
+export type PrepareAttemptBoundary='prepare-feature'|'prepare-environment'|'prepare-owner'|'prepare-admission'|'prepare-planning'|'prepare-context'|'prepare-artifacts'|'prepare-customer-reads'|'prepare-replay'|'prepare-active'|'prepare-heartbeat'|'prepare-quota'|'prepare-message'|'prepare-title'|'prepare-attempt';
 export async function prepareAttempt(
   session: CurrentSession, conversationId: string, nativeSessionId: string,
   requestKey: string, rawText: string|OrdinaryNativeMessage, selections: readonly DraftSelection[] = [],
   existingClient?: PoolClient,
+  boundary?:(stage:PrepareAttemptBoundary)=>void,
 ): Promise<{ attemptId: string; created: boolean; dispatchState: string; governed?: boolean }> {
+  boundary?.('prepare-feature');
   const feature = existingClient ? await conversationFeature(existingClient, conversationId) : await withTransaction(db => conversationFeature(db, conversationId));
   if(typeof rawText!=='string'&&feature.kind!=='normal')throw new HttpFailure(422,'native_files_scope','Use the governed source workflow for this conversation');
   const textInput=typeof rawText==='string'?rawText:'';
@@ -68,9 +71,9 @@ export async function prepareAttempt(
     if(nativeParts&&(Number((await client.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[environmentId])).rows[0]?.schema_version??0)<72||!ordinaryNativeFilesEnabled(conversationId)))throw new HttpFailure(503,'native_files_unavailable','Native file messages are not enabled');
     if(documentMessage && (Number((await client.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[environmentId])).rows[0]?.schema_version??0)<71 || process.env.TURAS_ORDINARY_ATTACHMENTS_DISABLED==='1'))
       throw new HttpFailure(503,'attachments_unavailable','Document messages are temporarily unavailable');
-    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [environmentId]);
-    const conversation = await lockOwnedBinding(client, session, conversationId);
-    await assertNativeConversationOpen(client,conversationId);
+    boundary?.('prepare-environment');await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [environmentId]);
+    boundary?.('prepare-owner');const conversation = await lockOwnedBinding(client, session, conversationId);
+    boundary?.('prepare-admission');await assertNativeConversationOpen(client,conversationId);
     assertNativeFileEvaluationOpen(conversationId);
     // A first feature binder can win after the metadata preflight. Never let
     // an ordinary send cross that committed scope under the conversation lock.
@@ -82,7 +85,7 @@ export async function prepareAttempt(
     if (conversation.binding_state !== "bound" || conversation.eve_session_id !== nativeSessionId) {
       throw hiddenRecord();
     }
-    const planning=await planningScopeForConversation(client,conversationId);
+    boundary?.('prepare-planning');const planning=await planningScopeForConversation(client,conversationId);
     if (planning) {
       if (selections.length) throw new HttpFailure(422,"planning_selections_denied",
         "Source selections are unavailable during drafting");
@@ -104,7 +107,7 @@ export async function prepareAttempt(
           "Plan drafting context changed");
       }
     }
-    const context = await client.query<{ context_snapshot_schema: string | null;
+    boundary?.('prepare-context');const context = await client.query<{ context_snapshot_schema: string | null;
       context_generation: string | null; context_valid_until: Date | null }>(
       "SELECT context_snapshot_schema,context_generation,context_valid_until FROM conversations WHERE id=$1",
       [conversationId]);
@@ -116,10 +119,10 @@ export async function prepareAttempt(
     if (!liveNormal && context.rows[0].context_valid_until && context.rows[0].context_valid_until.getTime() <= Date.now()) {
       throw new HttpFailure(409, "context_changed", "Start a new conversation for current customer context");
     }
-    await assertArtifactDependenciesCurrent(client, conversationId);
-    if(liveNormal)await assertCustomerQuestionReads(client,session,conversationId,undefined,false);
+    boundary?.('prepare-artifacts');await assertArtifactDependenciesCurrent(client, conversationId);
+    boundary?.('prepare-customer-reads');if(liveNormal)await assertCustomerQuestionReads(client,session,conversationId,undefined,false);
     else await assertRetrievalDependenciesCurrent(client, conversationId);
-    const existing = await client.query<{ id: string; body_digest: string; attempt_id: string; dispatch_state: string; native_parts:unknown }>(`
+    boundary?.('prepare-replay');const existing = await client.query<{ id: string; body_digest: string; attempt_id: string; dispatch_state: string; native_parts:unknown }>(`
       SELECT sm.id, sm.body_digest, a.id AS attempt_id, a.dispatch_state,to_jsonb(sm)->'ordinary_native_parts' AS native_parts
       FROM submitted_messages sm JOIN response_attempts a ON a.message_id = sm.id
       WHERE sm.conversation_id = $1 AND sm.request_key = $2
@@ -131,14 +134,14 @@ export async function prepareAttempt(
       return { attemptId: existing.rows[0].attempt_id, created: false,
         dispatchState: existing.rows[0].dispatch_state };
     }
-    const outstanding = await client.query(`SELECT 1 FROM response_attempts
+    boundary?.('prepare-active');const outstanding = await client.query(`SELECT 1 FROM response_attempts
       WHERE conversation_id = $1 AND response_state IN ('pending','running','stopping')
         AND dispatch_state <> 'rejected' LIMIT 1`, [conversationId]);
     if (outstanding.rowCount) {
       throw new HttpFailure(409, "conversation_busy", "Conversation has an active response");
     }
-    await requireWorkerHeartbeat(client);
-    const limits = await client.query<{
+    boundary?.('prepare-heartbeat');await requireWorkerHeartbeat(client);
+    boundary?.('prepare-quota');const limits = await client.query<{
       principal_active: string; environment_active: string; recent_sends: string; output_tokens: string;
     }>(`
       SELECT
@@ -160,15 +163,15 @@ export async function prepareAttempt(
     }
     const messageId = randomUUID();
     const attemptId = randomUUID();
-    if(nativeParts)await client.query(`INSERT INTO submitted_messages(id,conversation_id,request_key,body_digest,text,ordinary_native_parts) VALUES($1,$2,$3,$4,$5,$6)`,[messageId,conversationId,requestKey,digest,text,JSON.stringify(nativeParts)]);
+    boundary?.('prepare-message');if(nativeParts)await client.query(`INSERT INTO submitted_messages(id,conversation_id,request_key,body_digest,text,ordinary_native_parts) VALUES($1,$2,$3,$4,$5,$6)`,[messageId,conversationId,requestKey,digest,text,JSON.stringify(nativeParts)]);
     else await client.query(`INSERT INTO submitted_messages
       (id, conversation_id, request_key, body_digest, text)
       VALUES ($1,$2,$3,$4,$5)`, [messageId, conversationId, requestKey, digest, text]);
     if(nativeParts)await bindNativeUploads(client,session,conversationId,messageId,nativeParts);
-    await client.query(`UPDATE conversations SET title=$2 WHERE id=$1
+    boundary?.('prepare-title');await client.query(`UPDATE conversations SET title=$2 WHERE id=$1
       AND title='New conversation' AND NOT EXISTS(SELECT 1 FROM submitted_messages
         WHERE conversation_id=$1 AND id<>$3)`,[conversationId,titleFromMessage(documentMessage?(documentMessage.prompt||`Attachment: ${documentMessage.documents[0].filename}`):text),messageId]);
-    await client.query(`INSERT INTO response_attempts
+    boundary?.('prepare-attempt');await client.query(`INSERT INTO response_attempts
       (id, conversation_id, message_id, input_digest, dispatch_state, response_state)
       VALUES ($1,$2,$3,$4,'prepared','pending')`, [attemptId, conversationId, messageId, nativeParts?messageDigest(text):digest]);
     if (planning) {
@@ -295,16 +298,32 @@ export async function recordNativeReceipt(
   await withTransaction(async (client) => {
     if (prepared) await assertGovernedNativeRelease(client, prepared, session);
     else await lockOwnedBinding(client, session, conversationId);
-    if (prepared) {
-      const prior = (await client.query(`SELECT native_receipt,native_response_status,native_response_headers FROM response_attempts
-        WHERE id=$1 AND conversation_id=$2`, [attemptId, conversationId])).rows[0];
-      if (prior?.native_receipt !== null && prior?.native_receipt !== undefined) {
-        if (staffingSha256(prior.native_receipt) !== staffingSha256(receipt) || prior.native_response_status !== nativeResponse.status ||
-          staffingSha256(prior.native_response_headers) !== staffingSha256(headers)) {
-          throw new HttpFailure(409, "native_receipt_changed", "Native receipt differs from the saved result");
-        }
-        return;
+    const prior = (await client.query(`SELECT a.*,c.eve_session_id,sm.text AS original_text,sm.body_digest AS original_body_digest,to_jsonb(sm)->'ordinary_native_parts' AS original_parts,
+      e.native_session_id AS projected_session,e.turn_id AS projected_turn,e.visible_payload
+      FROM response_attempts a JOIN conversations c ON c.id=a.conversation_id
+      JOIN submitted_messages sm ON sm.id=a.message_id AND sm.conversation_id=a.conversation_id
+      LEFT JOIN event_projections e ON e.native_event_id=a.input_event_id AND e.conversation_id=a.conversation_id AND e.event_type='message.received'
+      WHERE a.id=$1 AND a.conversation_id=$2 FOR UPDATE OF a`,[attemptId,conversationId])).rows[0];
+    if (prior?.native_receipt !== null && prior?.native_receipt !== undefined) {
+      if (staffingSha256(prior.native_receipt) !== staffingSha256(receipt) || prior.native_response_status !== nativeResponse.status ||
+        staffingSha256(prior.native_response_headers) !== staffingSha256(headers)) {
+        throw new HttpFailure(409, "native_receipt_changed", "Native receipt differs from the saved result");
       }
+      return;
+    }
+    if(prior?.native_delivery_id && prior.native_delivery_id!==deliveryId)
+      throw new HttpFailure(409,'native_receipt_changed','Native delivery differs from the accepted input');
+    let projectedOrdinary=false;
+    if(!prepared && prior?.dispatch_state==='admitted' && (await conversationFeature(client,conversationId)).kind==='normal'){
+      const artifact=await artifactContextSchemaReady(client)?(await client.query('SELECT native_text_digest,canonical_request_digest FROM artifact_context_receipts WHERE attempt_id=$1',[attemptId])).rows[0]:undefined;
+      const originalBound=Array.isArray(prior.original_parts)
+        ? nativeMessageDigest(parseOrdinaryNativeMessage(prior.original_parts))===prior.original_body_digest &&
+          summarizeNativeMessage(prior.original_parts)===prior.original_text && messageDigest(prior.original_text)===prior.input_digest
+        : artifact ? artifact.canonical_request_digest===prior.original_body_digest && prior.original_body_digest===prior.input_digest
+        : typeof prior.original_text==='string' && messageDigest(prior.original_text)===prior.input_digest && prior.original_body_digest===prior.input_digest;
+      projectedOrdinary=originalBound && !!deliveryId && prior.native_delivery_id===deliveryId && !!prior.input_event_id && !!prior.native_turn_id &&
+        prior.projected_session===prior.eve_session_id && prior.projected_turn===prior.native_turn_id &&
+        typeof prior.visible_payload?.message==='string' && messageDigest(prior.visible_payload.message)===(artifact?.native_text_digest??prior.input_digest);
     }
     const result = await client.query(`UPDATE response_attempts SET
       dispatch_state = 'admitted', native_delivery_id = $2,
@@ -313,7 +332,7 @@ export async function recordNativeReceipt(
       WHERE id = $1 AND conversation_id = $6 AND (dispatch_state = 'dispatching' OR ($7 AND dispatch_state='admitted'))
         AND native_receipt IS NULL`,
     [attemptId, deliveryId, JSON.stringify(receipt), nativeResponse.status,
-      JSON.stringify(headers), conversationId, Boolean(prepared)]);
+      JSON.stringify(headers), conversationId, Boolean(prepared)||projectedOrdinary]);
     if (!result.rowCount) throw new HttpFailure(409, "dispatch_claimed", "Dispatch state changed");
   });
 }

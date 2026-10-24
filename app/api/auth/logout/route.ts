@@ -7,7 +7,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const config = getServerConfig();
     checkMutationOrigin(request, config);
-    const session = await getCurrentSession(request);
+    const session = await getCurrentSession(request, "session-revocation");
     if (session) {
       checkSessionCsrf(request, session, config);
       await revokeSession(session.sessionId);

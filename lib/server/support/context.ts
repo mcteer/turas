@@ -1,3 +1,4 @@
+import { sharedOriginSql } from "../access/policy";
 import type { PoolClient } from "pg";
 import { HttpFailure } from "../../contracts/http";
 import { supportContextCharge } from "../../support/advice";
@@ -42,8 +43,8 @@ export async function captureSupportAdviceContext(db: PoolClient, actor: Support
   const dependencies = await dependencyUnion(db, actor, scope.customerId, [...allRefs.values()]);
   const profile = (await db.query(`SELECT internal_generation,delivery_generation FROM customer_profile_state
     WHERE workspace_id=$1 AND customer_id=$2`, [actor.workspaceId, scope.customerId])).rows[0];
-  const publications = (await db.query(`SELECT revision_id,head_generation FROM knowledge_publications
-    WHERE environment_id=$1 ORDER BY revision_id`, [getServerConfig().TURAS_ENVIRONMENT_ID])).rows;
+  const publications = (await db.query(`SELECT revision_id,head_generation FROM knowledge_publications p
+    WHERE environment_id=$1 AND ${sharedOriginSql("p","$2")} ORDER BY revision_id`, [getServerConfig().TURAS_ENVIRONMENT_ID,actor.workspaceId])).rows;
   const engagements = await supportSelectedEngagements(db, actor, scope.customerId, scope.workloadId,
     scope.selectedEngagementIds, false, scope.audience);
   const fence = { sourceState, scopeGeneration: support?.generation ?? 0,

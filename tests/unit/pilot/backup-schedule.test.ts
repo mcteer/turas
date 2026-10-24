@@ -1,0 +1,13 @@
+import {it,expect} from 'vitest';
+import {randomUUID} from 'node:crypto';
+import {readFileSync} from 'node:fs';
+import {assessBackupSchedule} from '../../../lib/server/operations/backup-schedule';
+const hour=3600000,now=Date.parse('2026-10-10T12:00:00Z');
+const schedule=JSON.parse(readFileSync(new URL('../../../infra/pilot/backup-schedule.json',import.meta.url),'utf8'));
+const entry=(age:number,ownership='managed-016')=>({id:randomUUID(),environmentId:'owned-test',ownership,capturedAt:new Date(now-age*hour).toISOString(),expiresAt:new Date(now-age*hour+7*24*hour).toISOString(),verifiedAt:new Date(now-age*hour).toISOString()});
+const assess=(entries:unknown)=>assessBackupSchedule({schedule,environmentId:'owned-test',entries,now});
+it('requires a verified capture and separately reports unproven schedule execution',()=>{expect(assess([])).toMatchObject({fresh:false,scheduleDue:true,observedCaptureSpacing:false,scheduleExecutionVerified:false});expect(assess([{...entry(1),verifiedAt:null}]).fresh).toBe(false);expect(assess([entry(13),entry(1)])).toMatchObject({fresh:true,scheduleDue:false,observedCaptureSpacing:true,scheduleExecutionVerified:false,restorationReady:false});});
+it('enforces freshness and cadence boundaries independently',()=>{expect(assess([entry(24)])).toMatchObject({fresh:true,scheduleDue:true});expect(assess([entry(24.001)]).fresh).toBe(false);expect(assess([entry(12),entry(1)]).observedCaptureSpacing).toBe(false);expect(assess([entry(27),entry(1)]).observedCaptureSpacing).toBe(false);});
+it('lists expired managed backups without deleting operator archives or authority',()=>{const managed=entry(168),operator=entry(240,'operator');expect(assess([managed,operator])).toMatchObject({expiredManagedIds:[managed.id],retainedOperatorIds:[operator.id],independentAuthorityRetentionRequired:true,independentAuthorityRetained:false,deletionAuthorized:false});});
+it('rejects mixed identity duplicate future and malformed retention records',()=>{const record=entry(1);for(const entries of [[record,record],[{...record,environmentId:'foreign'}],[entry(-1)],[{...record,expiresAt:new Date(now+hour).toISOString()}],[{...record,verifiedAt:new Date(now+hour).toISOString()}]])expect(()=>assess(entries)).toThrow();});
+it('rejects changed governance and claimed approval fields',()=>{for(const altered of [{...schedule,intervalHours:6},{...schedule,deleteOperatorArchives:true},{...schedule,deleteIndependentAuthority:true},{...schedule,actor:'mcteer'}])expect(()=>assessBackupSchedule({schedule:altered,environmentId:'owned-test',entries:[],now})).toThrow();});

@@ -1,0 +1,21 @@
+import {beforeAll,beforeEach,afterAll,it,expect} from 'vitest';
+import {Client} from 'pg';import {randomUUID} from 'node:crypto';
+import {requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
+import {withTransaction,closeRuntimePool} from '../../../lib/server/db/client';
+import {admitLocalJob,fenceLocalJob,settleLocalJob} from '../../../lib/server/operations/local-jobs';
+import {admitHostedJob,type ServiceBudgetAuthority} from '../../../lib/server/operations/hosted-jobs';
+const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)}),environmentId=process.env.TURAS_ENVIRONMENT_ID!,digest='a'.repeat(64);
+beforeAll(()=>owner.connect());afterAll(async()=>{await owner.end();await closeRuntimePool();});
+beforeEach(async()=>{await owner.query("UPDATE operations_local_jobs SET state='reconciling' WHERE state='running'");await owner.query("UPDATE operations_local_jobs SET state='cancelled',finished_at=clock_timestamp() WHERE state='reconciling'");await owner.query("UPDATE operations_hosted_jobs SET state='cancelled',finished_at=clock_timestamp() WHERE state='admitted'");await owner.query("UPDATE operations_control SET mode='open' WHERE environment_id=$1",[environmentId]);});
+function input(){return {id:randomUUID(),domainKind:'report',domainJobId:randomUUID(),sourceGeneration:1,sourceDigest:digest,imageDigest:digest,deadlineAt:new Date(Date.now()+60000).toISOString()};}
+const budget:ServiceBudgetAuthority={verifyReserved:async()=>true,markDispatch:async()=>{},holdUnknown:async()=>{},releaseUndispatched:async()=>{},isSettled:async()=>true};
+it('denies a third local heavy admission under runtime grants',async()=>{await withTransaction(db=>admitLocalJob(db,input(),async()=>true));await withTransaction(db=>admitLocalJob(db,input(),async()=>true));await expect(withTransaction(db=>admitLocalJob(db,input(),async()=>true))).rejects.toThrow('capacity exhausted');});
+it('shares the two-job bound between local and hosted execution',async()=>{
+ const l=input();await withTransaction(db=>admitLocalJob(db,l,async()=>true));
+ await withTransaction(db=>admitHostedJob(db,{environmentId,domainKind:'artifact',domainJobId:randomUUID(),sourceGeneration:1,sourceDigest:digest,imageDigest:digest,inputDigest:digest,inputBytes:16,deadlineAt:l.deadlineAt,reservationId:randomUUID()},budget,async()=>true));
+ await expect(withTransaction(db=>admitLocalJob(db,input(),async()=>true))).rejects.toThrow('capacity exhausted');
+ await expect(withTransaction(db=>admitHostedJob(db,{environmentId,domainKind:'artifact',domainJobId:randomUUID(),sourceGeneration:1,sourceDigest:digest,imageDigest:digest,inputDigest:digest,inputBytes:16,deadlineAt:l.deadlineAt,reservationId:randomUUID()},budget,async()=>true))).rejects.toThrow('capacity exhausted');
+});
+it('fences local publication and new admission after recovery locks the environment',async()=>{const h=await withTransaction(db=>admitLocalJob(db,input(),async()=>true));await owner.query("UPDATE operations_control SET mode='locked' WHERE environment_id=$1",[environmentId]);expect(await withTransaction(db=>fenceLocalJob(db,h,async()=>true))).toBe(false);await expect(withTransaction(db=>admitLocalJob(db,input(),async()=>true))).rejects.toThrow('admission closed');await settleLocalJob(h,'failed');});
+it('withholds a local result when the current source changes',async()=>{await expect(withTransaction(db=>admitLocalJob(db,input(),async()=>false))).rejects.toThrow('source changed');const h=await withTransaction(db=>admitLocalJob(db,input(),async()=>true));expect(await withTransaction(db=>fenceLocalJob(db,h,async()=>false))).toBe(false);await settleLocalJob(h,'failed');});
+it('keeps local identity deadlines and terminal rows immutable',async()=>{const h=await withTransaction(db=>admitLocalJob(db,input(),async()=>true));await expect(withTransaction(db=>db.query("UPDATE operations_local_jobs SET deadline_at=deadline_at+interval '1 second' WHERE id=$1",[h.id]))).rejects.toThrow('identity is immutable');await expect(withTransaction(db=>db.query('DELETE FROM operations_local_jobs WHERE id=$1',[h.id]))).rejects.toMatchObject({code:'42501'});await settleLocalJob(h,'failed');await expect(withTransaction(db=>db.query("UPDATE operations_local_jobs SET state='running',finished_at=NULL WHERE id=$1",[h.id]))).rejects.toThrow('identity is immutable');});

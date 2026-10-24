@@ -10,7 +10,7 @@ import {previewReportBrand,submitReportBrandDecision} from '../../../lib/server/
 export async function publishedReportFixture(){
  const fixture=await reportsDeliveryFixture();
  process.env.TURAS_REPORTS_ENABLED='true';
- process.env.TURAS_REPORT_RENDERER_IMAGE=execFileSync('docker',['image','inspect','turas-report-renderer:009-executive-v1','--format','{{.Id}}'],{encoding:'utf8'}).trim();
+ process.env.TURAS_REPORT_RENDERER_IMAGE=process.env.TURAS_PILOT_RENDERER_IMAGE??execFileSync('docker',['image','inspect','turas-report-renderer:009-executive-v1','--format','{{.Id}}'],{encoding:'utf8'}).trim();
  const reports:any[]=[];
  for(const period of [{kind:'weekly',fromDate:'2026-09-21',toDate:'2026-09-27'},{kind:'monthly',fromDate:'2026-09-01',toDate:'2026-09-30'},{kind:'quarterly',fromDate:'2026-07-01',toDate:'2026-09-30'}]){
   const view=await submitReportCustomerCommand(fixture.author,fixture.customerId,{action:'prepare',requestKey:randomUUID(),expectedVersion:0,selection:{kind:period.kind,audience:'delivery',timezone:'UTC',engagementIds:[fixture.engagementId],workloadIds:[],includeCustomerLevel:true},fromDate:period.fromDate,toDate:period.toDate,partial:false}) as any;

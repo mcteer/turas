@@ -1,17 +1,12 @@
-import {processOrdinaryNativeRetirement} from './native-retirement-recovery';
 import {runRetrievalWorkerTick} from '../../../scripts/retrieval-worker';
-import {runRetrievalCleanupTick} from '../retrieval/cleanup';
-import {markDueResearch} from '../research/refresh';
-import {runMcpMaintenanceTick} from '../mcp/retention';
-import {runLearningMaintenanceTick} from '../learning/maintenance';
-import {learningOperationalMetric} from '../learning/observability';
-import { randomUUID, timingSafeEqual } from "node:crypto";
+import {startMaintenanceScheduler} from '../operations/maintenance';
+import {createMaintenanceBindings} from '../operations/maintenance-bindings';
+import {operationalCodeVersion} from '../operations/code-version';
+import { timingSafeEqual } from "node:crypto";
 import type { AttachSessionFn } from "eve/channels";
 import { HttpFailure } from "../../contracts/http";
 import { getServerConfig } from "../config";
-import { heartbeatWorker, claimDueJobs, finishDueJob } from "./watchdog";
-import { performMaintenance } from "./maintenance";
-import {cleanupNativeUploads} from './native-uploads';
+import {runHostedReconciliation} from '../operations/hosted-reconciliation';
 
 export function authorizeHostedWatchdog(request: Request, secret = process.env.CRON_SECRET): void {
   const supplied = request.headers.get("authorization") ?? "";
@@ -32,57 +27,25 @@ export function authorizeHostedWatchdog(request: Request, secret = process.env.C
   }
 }
 
-/** Minute cron invocations overlap by five seconds. Existing SKIP LOCKED job
- * leases fence duplicate cancellation; readiness expires if execution stops.
- * This performs no schema initialization or new research/model generation.
- * The existing retrieval lane processes bounded queued embeddings and cleanup. */
-export async function runHostedWatchdog(attachSession: AttachSessionFn, options: { preview?: boolean; ready?: () => void } = {}): Promise<void> {
-  const workerId = randomUUID();
-  const end = Date.now() + (options.preview ? 180_000 : 65_000);let nextLearningAt=0,stopping=false,mcpTick:Promise<unknown>|null=null,researchTick:Promise<unknown>|null=null;
-  const maintainMcp=()=>{if(stopping||mcpTick)return;mcpTick=runMcpMaintenanceTick().catch(()=>{console.warn(JSON.stringify({kind:'mcp_maintenance_failed'}));}).finally(()=>{mcpTick=null;});};
-  const mcpTimer=setInterval(maintainMcp,30000);maintainMcp();
-  const maintainResearch=()=>{
-    if(stopping||Date.now()>=end||researchTick)return;
-    let phase='index';
-    researchTick=(async()=>{await runRetrievalWorkerTick();phase='cleanup';await runRetrievalCleanupTick();await processOrdinaryNativeRetirement();await cleanupNativeUploads();phase='review-dates';await markDueResearch();})()
-      .catch(error=>{console.warn(JSON.stringify({kind:'research_maintenance_failed',phase,
-        code:typeof error==='object'&&error!==null&&'code' in error&&typeof error.code==='string'&&/^[A-Z0-9_]{1,40}$/.test(error.code)?error.code:null}));}).finally(()=>{researchTick=null;});
-  };
-  const researchTimer=setInterval(maintainResearch,5000);maintainResearch();
-  try{while (Date.now() < end) {
-    const started = Date.now();
-    const jobs = await claimDueJobs(workerId, 1);
-    await heartbeatWorker(workerId);
-    options.ready?.();
-    for (const job of jobs) {
-      try {
-        const result = await performMaintenance({ action: "cancel_due", attemptId: job.attemptId,
-          environmentId: getServerConfig().TURAS_ENVIRONMENT_ID }, attachSession);
-        await finishDueJob(workerId, job.attemptId, result);
-      } catch {
-        await finishDueJob(workerId, job.attemptId, "retry", "maintenance_call_failed");
-      }
-    }
-    if(Date.now()>=nextLearningAt){try{const result=await runLearningMaintenanceTick({attachSession});learningOperationalMetric('maintenance_duration_ms',Math.min(1000000,result.durationMs));learningOperationalMetric('maintenance_records',result.processed);}catch{learningOperationalMetric('maintenance_failed',1);}nextLearningAt=Date.now()+30000;}
-    const remaining = Math.min(end - Date.now(), Math.max(0, 5_000 - (Date.now() - started)));
-    if (remaining > 0) await new Promise(resolve => setTimeout(resolve, remaining));
-  }}finally{stopping=true;clearInterval(mcpTimer);clearInterval(researchTimer);await Promise.all([mcpTick,researchTick]);}
+/** Cleanup classes retain independent durable leases; already-admitted indexing
+ * stays outside cleanup authority. Preview keeps its original bounded lifetime. */
+export async function runHostedWatchdog(attachSession:AttachSessionFn,options:{preview?:boolean;ready?:()=>void;unavailable?:(error:unknown)=>void}={}):Promise<void>{
+ const scheduler=startMaintenanceScheduler(getServerConfig().TURAS_ENVIRONMENT_ID,operationalCodeVersion(),createMaintenanceBindings({attachSession}),(id,result)=>{
+  if(id==='conversation'){if(result.state==='pass')options.ready?.();else if(result.state==='fail')options.unavailable?.(Error('Conversation worker unavailable'));}
+ });
+ let stopping=false;const pending=new Map<string,Promise<unknown>>(),timers:ReturnType<typeof setInterval>[]=[];
+ const lane=(id:string,interval:number,run:()=>Promise<unknown>)=>{const tick=()=>{if(stopping||pending.has(id))return;const task=run().catch(()=>{console.warn(JSON.stringify({kind:'hosted_worker_lane_failed',lane:id}));}).finally(()=>pending.delete(id));pending.set(id,task);};timers.push(setInterval(tick,interval));tick();};
+ lane('reconciliation',30000,()=>runHostedReconciliation({limit:20,signal:AbortSignal.timeout(30000)}));
+ lane('retrieval-index',5000,()=>runRetrievalWorkerTick());
+ try{await new Promise(resolve=>setTimeout(resolve,options.preview?180000:65000));}
+ finally{stopping=true;for(const timer of timers)clearInterval(timer);await Promise.allSettled([scheduler.stop(),...pending.values()]);}
 }
 
-/** Preview has no platform cron. Start a real bounded worker before admitting
- * an authenticated send, and retain it past the 120-second response deadline.
- * The caller must already have checked ownership, CSRF and request shape. */
-export async function startPreviewChatWorker(
-  attachSession: AttachSessionFn, waitUntil: (task: Promise<unknown>) => void,
-): Promise<void> {
-  if (process.env.VERCEL_ENV !== "preview") return;
-  let ready!: () => void;
-  let failed!: (error: unknown) => void;
-  const admission = new Promise<void>((resolve, reject) => { ready = resolve; failed = reject; });
-  const running = runHostedWatchdog(attachSession, { preview: true, ready }).catch(error => {
-    failed(error);
-    console.warn(JSON.stringify({ kind: "preview_chat_worker_failed" }));
-  });
-  waitUntil(running);
-  await admission;
+/** A Preview send is admitted only after an actual cancellation claim/heartbeat. */
+export async function startPreviewChatWorker(attachSession:AttachSessionFn,waitUntil:(task:Promise<unknown>)=>void):Promise<void>{
+ if(process.env.VERCEL_ENV!=='preview')return;
+ let ready!:()=>void,failed!:(error:unknown)=>void;
+ const admission=new Promise<void>((resolve,reject)=>{ready=resolve;failed=reject;});
+ const running=runHostedWatchdog(attachSession,{preview:true,ready,unavailable:failed}).then(()=>{failed(Error('Preview worker ended before readiness'));}).catch(error=>{failed(error);console.warn(JSON.stringify({kind:'preview_chat_worker_failed'}));});
+ waitUntil(running);await admission;
 }

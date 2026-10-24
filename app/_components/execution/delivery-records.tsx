@@ -1,6 +1,6 @@
 "use client";
 import {useCallback,useEffect,useLayoutEffect,useRef,useState,type ReactNode} from "react";
-import {useExecutionRefresh,useExecutionPanelGuard} from "./client";
+import {useExecutionRefresh,useExecutionPanelGuard,executionReadDeadlineMs} from "./client";
 import type {Overview,RecordView,Session,Owner,Mutation,Candidate,ExecutionRecordContent,ExecutionSource} from "./types";
 export type DeliveryKind="effort_budget"|"estimate"|"handoff"|"closeout"|"outcome";
 export const deliveryNames:Record<DeliveryKind,string>={effort_budget:"Work Budgets",estimate:"Remaining Estimates",handoff:"Handoffs",closeout:"Closeouts",outcome:"Outcomes"};
@@ -24,7 +24,7 @@ export function DeliveryRecords({kinds,renderFields,renderContent,...props}:Deli
   const reset=()=>{setEditing(null);setDraft(blankDelivery(kind,view));dirty.current=0;baseline.current=view.baselineId;};
   const change=(patch:Partial<ExecutionRecordContent>)=>{dirty.current++;setDraft(d=>({...d,...patch} as ExecutionRecordContent));};
   const refresh=useCallback((force=false)=>{
-    if(flight.current&&!force)return flight.current;abort.current?.abort();const controller=new AbortController();abort.current=controller;const ticket=++sequence.current;
+    if(flight.current&&!force)return flight.current;abort.current?.abort();const controller=new AbortController();abort.current=controller;const ticket=++sequence.current;let timedOut=false;const timer=setTimeout(()=>{timedOut=true;controller.abort();},executionReadDeadlineMs);
     const run=(async()=>{try{
       const root=`/api/execution/engagements/${view.engagementId}/records?`,page=await read(root+new URLSearchParams({kind,limit:"50",...(cursor?{cursor}:{})}),controller.signal);
       const accepted:RecordView[]=[];let after:string|null=null;
@@ -38,12 +38,12 @@ export function DeliveryRecords({kinds,renderFields,renderContent,...props}:Deli
       if((current.editing&&!page.records.some(r=>r.id===current.editing!.id&&r.content&&!r.reviewRequired))||current.draft.references.some(ref=>ref.kind==="execution_record"&&!eligible.some(r=>r.revisionId===ref.sourceRevisionId))){
         setEditing(null);setDraft(blankDelivery(kind,view));dirty.current=0;setMessage("Supporting evidence changed. Private editor content was cleared.");
       }
-    }catch(error){if(ticket!==sequence.current||controller.signal.aborted)return;setRows([]);setCatalog([]);setHistory(null);setNext(null);
+    }catch(error){if(ticket!==sequence.current||controller.signal.aborted&&!timedOut)return;setRows([]);setCatalog([]);setHistory(null);setNext(null);
       // An evidence-backed editor must not retain derived private content after
       // an unsuccessful eligibility check. Unsaved source-free input can remain.
       if(local.current.editing||local.current.draft.references.length||[401,403,404].includes(Number((error as {status?:number}).status))){setEditing(null);setDraft(blankDelivery(kind,view));dirty.current=0;}
-      if((error as {status?:number}).status===409)setCursor(null);setMessage(error instanceof Error?error.message:"Records unavailable");
-    }})();flight.current=run;void run.finally(()=>{if(flight.current===run)flight.current=null;});return run;
+      if((error as {status?:number}).status===409)setCursor(null);setMessage(timedOut?"Current delivery records timed out. Refresh current execution access.":error instanceof Error?error.message:"Records unavailable");
+    }})();flight.current=run;void run.finally(()=>{clearTimeout(timer);if(flight.current===run)flight.current=null;});return run;
   },[view.engagementId,view.baselineId,kind,cursor]);
   useExecutionRefresh(refresh);useEffect(()=>{void refresh(true);},[refresh,view.generation]);
   useEffect(()=>()=>{++sequence.current;abort.current?.abort();},[]);

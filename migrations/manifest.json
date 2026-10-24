@@ -1,5 +1,5 @@
 {
-  "version": 77,
+  "version": 79,
   "migrations": [
     {
       "file": "001-identity-foundation.cjs",
@@ -308,6 +308,14 @@
     {
       "file": "077-ordinary-question-continuations.cjs",
       "sha256": "847c6eafee63f2fdeaf76d0f1f998df7e92b6592c80ad84445dbc74177f41583"
+    },
+    {
+      "file": "078-pilot-workspace-sessions.cjs",
+      "sha256": "c361ffa38367c50c1ea623ab42501b1512a7246abbba81d39c3ea8debcc517dd"
+    },
+    {
+      "file": "079-pilot-operations.cjs",
+      "sha256": "1c994e75ae2f7f4edd9dfd2a238b08a49849e5acd0153dc36b34b510f5b27bad"
     }
   ]
 }

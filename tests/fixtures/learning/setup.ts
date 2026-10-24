@@ -3,6 +3,14 @@ import type { PoolClient } from 'pg';
 import { createProfileTestSession } from '../profiles';
 import { hashSessionToken, type CurrentSession } from '../../../lib/server/auth/sessions';
 import { requireOwnedLearningDatabase } from '../../../scripts/learning-environment';
+/** Bind current sessions explicitly while retaining owned predecessor-schema checks. */
+export async function insertLearningFixtureSession(db:PoolClient,actor:Pick<CurrentSession,'sessionId'|'principalId'|'membershipId'|'workspaceId'|'token'>){
+ requireOwnedLearningDatabase(process.env,true);
+ const marker=(await db.query('SELECT schema_version FROM turas_environment')).rows;
+ if(marker.length!==1)throw Error('Owned learning schema marker required');
+ if(Number(marker[0].schema_version)>=78)await db.query("INSERT INTO login_sessions(id,principal_id,token_hash,expires_at,membership_id,workspace_id) VALUES($1,$2,$3,clock_timestamp()+interval '1 hour',$4,$5)",[actor.sessionId,actor.principalId,hashSessionToken(actor.token),actor.membershipId,actor.workspaceId]);
+ else await db.query("INSERT INTO login_sessions(id,principal_id,token_hash,expires_at) VALUES($1,$2,$3,clock_timestamp()+interval '1 hour')",[actor.sessionId,actor.principalId,hashSessionToken(actor.token)]);
+}
 /** Synthetic sessions are created only inside the runner's disposable database. */
 export async function learningTestActors(db:PoolClient):Promise<Record<'admin'|'member'|'partner',CurrentSession>>{
   requireOwnedLearningDatabase(process.env,true);
@@ -34,7 +42,7 @@ export async function learningPartnerPeer(db:PoolClient,customerId:string|null=D
  const principalId=randomUUID(),membershipId=randomUUID(),sessionId=randomUUID(),token=randomBytes(32).toString('base64url'),loginName=`synthetic-learning-partner-${principalId}`;
  await db.query("INSERT INTO principals(id,login_name,display_name) VALUES($1,$2,'Synthetic learning peer')",[principalId,loginName]);
  await db.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,partner_org_id,role) VALUES($1,$2,$3,'partner',$4,'member')",[membershipId,principalId,DEMO_IDS.workspace,DEMO_IDS.partnerOrganization]);
- await db.query("INSERT INTO login_sessions(id,principal_id,token_hash,expires_at) VALUES($1,$2,$3,now()+interval '1 hour')",[sessionId,principalId,hashSessionToken(token)]);
+ await insertLearningFixtureSession(db,{sessionId,principalId,token,membershipId,workspaceId:DEMO_IDS.workspace});
  if(customerId)await db.query("INSERT INTO customer_grants(id,membership_id,workspace_id,customer_id,state,revision,granted_by) VALUES($1,$2,$3,$4,'active',1,$5)",[randomUUID(),membershipId,DEMO_IDS.workspace,customerId,DEMO_IDS.mcteer]);
  return {sessionId,token,principalId,membershipId,workspaceId:DEMO_IDS.workspace,loginName,displayName:'Synthetic learning peer',kind:'partner',role:'member',expiresAt:new Date(Date.now()+3600000)};
 }
@@ -50,10 +58,11 @@ export async function seedLearningPublicPractice(db:PoolClient){
 }
 
 /** Independent workspace keeps irreversible activation and production quotas isolated between journeys. */
-export async function learningScopedFixture(db:PoolClient){
+export async function learningScopedFixture(db:PoolClient,existingWorkspaceId?:string){
  requireOwnedLearningDatabase(process.env,true);
- const workspaceId=randomUUID(),customerId=randomUUID(),organizationId=randomUUID();
- await db.query("INSERT INTO workspaces(id,name) VALUES($1,'Synthetic isolated learning workspace')",[workspaceId]);
+ const workspaceId=existingWorkspaceId??randomUUID(),customerId=randomUUID(),organizationId=randomUUID();
+ if(existingWorkspaceId){const workspace=(await db.query("SELECT id FROM workspaces WHERE id=$1 AND active AND classification='synthetic_pilot' AND pilot_environment_id=$2",[workspaceId,process.env.TURAS_ENVIRONMENT_ID])).rows;if(workspace.length!==1)throw Error('Existing owned pilot workspace required');}
+ else await db.query("INSERT INTO workspaces(id,name) VALUES($1,'Synthetic isolated learning workspace')",[workspaceId]);
  await db.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,'Synthetic isolated customer',true)",[customerId,workspaceId]);
  await db.query("INSERT INTO partner_organizations(id,workspace_id,name) VALUES($1,$2,'Synthetic isolated partner')",[organizationId,workspaceId]);
  await db.query('INSERT INTO learning_workspace_state(environment_id,workspace_id) VALUES($1,$2) ON CONFLICT DO NOTHING',[process.env.TURAS_ENVIRONMENT_ID,workspaceId]);
@@ -62,7 +71,7 @@ export async function learningScopedFixture(db:PoolClient){
   const principalId=randomUUID(),membershipId=randomUUID(),sessionId=randomUUID(),token=randomBytes(32).toString('base64url'),loginName=`synthetic-learning-${name}-${principalId}`;
   await db.query("INSERT INTO principals(id,login_name,display_name) VALUES($1,$2,'Synthetic isolated learning actor')",[principalId,loginName]);
   await db.query('INSERT INTO memberships(id,principal_id,workspace_id,kind,role,partner_org_id) VALUES($1,$2,$3,$4,$5,$6)',[membershipId,principalId,workspaceId,kind,role,kind==='partner'?organizationId:null]);
-  await db.query("INSERT INTO login_sessions(id,principal_id,token_hash,expires_at) VALUES($1,$2,$3,now()+interval '1 hour')",[sessionId,principalId,hashSessionToken(token)]);
+  await insertLearningFixtureSession(db,{sessionId,principalId,token,membershipId,workspaceId});
   actors[name]={principalId,membershipId,sessionId,token,workspaceId,kind,role,loginName,displayName:'Synthetic isolated learning actor',expiresAt:new Date(Date.now()+3600000)};
  }
  await db.query("INSERT INTO customer_grants(id,membership_id,workspace_id,customer_id,state,revision,granted_by) VALUES($1,$2,$3,$4,'active',1,$5)",[randomUUID(),actors.partner.membershipId,workspaceId,customerId,actors.admin.principalId]);

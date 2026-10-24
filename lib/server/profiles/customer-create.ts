@@ -41,8 +41,8 @@ export async function createCustomerAnchor(actor: CurrentSession, input: unknown
     }
     const principal = await client.query<{ active: boolean }>("SELECT active FROM principals WHERE id=$1 FOR UPDATE", [actor.principalId]);
     const session = await client.query<{ revoked_at: Date | null; expires_at: Date }>(
-      "SELECT revoked_at,expires_at FROM login_sessions WHERE id=$1 AND principal_id=$2 FOR UPDATE",
-      [actor.sessionId, actor.principalId]);
+      "SELECT revoked_at,expires_at FROM login_sessions WHERE id=$1 AND principal_id=$2 AND membership_id=$3 AND workspace_id=$4 FOR UPDATE",
+      [actor.sessionId, actor.principalId,actor.membershipId,actor.workspaceId]);
     const workspace = await client.query<{ active: boolean }>("SELECT active FROM workspaces WHERE id=$1 FOR UPDATE", [actor.workspaceId]);
     if (!principal.rows[0]?.active || !session.rows[0] || session.rows[0].revoked_at ||
         session.rows[0].expires_at.getTime() <= Date.now() || !workspace.rows[0]?.active) {

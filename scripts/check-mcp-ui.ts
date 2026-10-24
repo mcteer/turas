@@ -17,7 +17,8 @@ export async function checkMcpUi(){
     for(const project of mcpUiProjects){
       const args=['node_modules/@playwright/test/cli.js','test',...files,'--project='+project,'--reporter=json','--forbid-only','--retries=0'];
       const discovery=await capturePartnerProcess([...args,'--list'],60000,environment.signal);
-      if(discovery.status!==0||discovery.error)throw Error('MCP UI discovery failed');const cases=executionUiDiscovery(JSON.parse(discovery.stdout),files,project);
+      await writeFile(resolve(directory,project+'-discovery.json'),discovery.stdout,{mode:0o600,flag:'wx'});await writeFile(resolve(directory,project+'-discovery-stderr.log'),discovery.stderr,{mode:0o600,flag:'wx'});await writeFile(resolve(directory,project+'-discovery-process.json'),JSON.stringify({stage:'discovery',project,status:discovery.status,error:discovery.error,parentAborted:environment.signal.aborted,timeoutMs:60000}),{mode:0o600,flag:'wx'});
+      if(discovery.status!==0||discovery.error){console.error(JSON.stringify({gate:'mcp-ui-discovery-failure',project,status:discovery.status,error:discovery.error,parentAborted:environment.signal.aborted}));throw Error('MCP UI discovery failed');}const cases=executionUiDiscovery(JSON.parse(discovery.stdout),files,project);
       const run=await capturePartnerProcess([...args,'--output='+resolve(directory,project)],300000,environment.signal);
       await writeFile(resolve(directory,project+'.json'),run.stdout,{mode:0o600});await writeFile(resolve(directory,project+'.log'),run.stderr,{mode:0o600});
       if(run.status!==0||run.error)throw Error('MCP UI failed: '+project+'; inspect '+directory);

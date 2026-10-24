@@ -288,7 +288,7 @@ export async function savePlanDraft(actor:PlanActor,draftingAttemptId:string,raw
 
 /** Account for bytes once per exact tool result and retain every shown source. */
 async function consumedOriginal(client:PoolClient,
-  source:z.infer<typeof planDraftContentSchema>["sourceDependencies"][number]) {
+  source:z.infer<typeof planDraftContentSchema>["sourceDependencies"][number],workspaceId:string) {
   const kind=source.kind==="shared_knowledge" ? "published_shared":source.kind;
   const query=kind==="accepted_profile" ?
     "SELECT revision_number AS generation,content_digest AS digest FROM profile_revisions WHERE id=$1" :
@@ -305,7 +305,7 @@ async function consumedOriginal(client:PoolClient,
   const original={source_kind:kind,source_revision_id:source.sourceRevisionId,
     source_generation:row?.generation ?? "",source_digest:row?.digest ?? ""};
   if(!row || Number(row.generation)!==source.generation ||
-      !await originalCurrent(client,original)){
+      !await originalCurrent(client,original,workspaceId)){
     throw new HttpFailure(409,"plan_source_changed","Planning evidence changed");
   }
   return original;
@@ -353,7 +353,7 @@ export async function recordPlanRead(client:PoolClient,actor:PlanActor,
       "Planning context limit reached");
   }
   for (const source of sourceDependencies) {
-    const original=await consumedOriginal(client,source);
+    const original=await consumedOriginal(client,source,actor.workspaceId);
     await client.query(`INSERT INTO plan_drafting_source_dependencies
       (attempt_id,source_kind,source_revision_id,source_generation,
        source_digest,consumed_bytes)
@@ -435,7 +435,7 @@ export async function recordPlanSnapshotSources(client:PoolClient,actor:PlanActo
       FOR SHARE OF source`,
     [entry.citationId,actor.workspaceId,customerId,audience]);
     const source=found.rows[0];
-    if(!source || !await originalCurrent(client,source)) {
+    if(!source || !await originalCurrent(client,source,actor.workspaceId)) {
       throw new HttpFailure(409,"plan_source_changed",
         "Planning evidence changed");
     }

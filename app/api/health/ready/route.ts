@@ -1,20 +1,6 @@
-import { assertDatabaseEnvironment } from "../../../../lib/server/db/readiness";
-import { failure, success } from "../../../../lib/contracts/http";
-import { query } from "../../../../lib/server/db/client";
-import { getServerConfig } from "../../../../lib/server/config";
-import { artifactWorkerReady } from "../../../../lib/server/artifacts/worker-readiness";
-
-export const dynamic = "force-dynamic";
-
-export async function GET(): Promise<Response> {
-  try {
-    await assertDatabaseEnvironment(11);
-    const worker = await query(`SELECT 1 FROM maintenance_workers
-      WHERE environment_id = $1 AND last_seen_at >= now() - interval '15 seconds' LIMIT 1`,
-    [getServerConfig().TURAS_ENVIRONMENT_ID]);
-    if (!worker.rowCount) throw new Error("Maintenance unavailable");
-    return success({ ready: true, artifactsReady: await artifactWorkerReady() });
-  } catch {
-    return failure(new Error("unavailable"));
-  }
+import {readOperationalHealth} from '../../../../lib/server/operations/health';
+export const dynamic='force-dynamic';
+export async function GET():Promise<Response>{
+ let ready=false;try{ready=(await readOperationalHealth()).ready;}catch{}
+ return Response.json({ready},{status:ready?200:503,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 }

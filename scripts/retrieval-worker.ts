@@ -127,10 +127,16 @@ async function runLifecycle(claim: RetrievalJobClaim): Promise<void> {
       }
       await client.query(`DELETE FROM retrieval_passages p
         USING retrieval_sources s WHERE p.source_id=$1 AND s.id=p.source_id
-          AND s.lifecycle_state IN ('retired','tombstoned')`);
+          AND s.lifecycle_state IN ('retired','tombstoned')`,[claim.sourceId]);
     }
     await finishRetrievalJob(client,claim,"completed");
   });
+}
+
+/** Retirement/purge must run while indexing is disabled and cannot embed. */
+export async function runRetrievalLifecycleTick(sourceIds?:readonly string[]){
+ const claims=await claimRetrievalJobs(2,undefined,getServerConfig().TURAS_ENVIRONMENT_ID,sourceIds,['invalidate','cleanup']);
+ for(const claim of claims)await runLifecycle(claim);
 }
 
 /** One bounded lane in the existing maintenance process; research stays in eve. */

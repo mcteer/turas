@@ -1,3 +1,4 @@
+import {insertBoundFixtureSession} from "../tests/fixtures/bound-session";
 import { mkdir,writeFile } from "node:fs/promises";
 import { createHash,randomUUID } from "node:crypto";
 import { Client } from "pg";
@@ -550,9 +551,7 @@ await withRetrievalEvalEnvironment(async () => {
       await db.query(`INSERT INTO memberships(id,principal_id,workspace_id,kind,role)
         VALUES($1,$2,$3,'internal','member')`,
       [readerMember,readerPrincipal,otherWorkspace]);
-      await db.query(`INSERT INTO login_sessions(id,principal_id,token_hash,expires_at)
-        VALUES($1,$2,$3,now()+interval '1 hour')`,
-      [readerSession,readerPrincipal,createHash("sha256").update(readerSession).digest("hex")]);
+      await insertBoundFixtureSession(db,{id:readerSession,principalId:readerPrincipal,tokenHash:createHash("sha256").update(readerSession).digest("hex"),expiresAt:new Date(Date.now()+3600000),membershipId:readerMember,workspaceId:otherWorkspace});
       const reader: ResearchSession = { sessionId: readerSession,
         token: "synthetic",principalId: readerPrincipal,membershipId: readerMember,
         workspaceId: otherWorkspace,kind: "internal",role: "member",

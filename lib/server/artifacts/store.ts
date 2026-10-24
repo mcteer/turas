@@ -4,6 +4,7 @@ export type StagedArtifact = { key: string; digest: string; sizeBytes: number };
 export interface ArtifactStore {
   stage(bytes: AsyncIterable<Uint8Array>, expectedBytes: number): Promise<StagedArtifact>;
   finalize(stagedKey: string, expectedDigest: string): Promise<string>;
+  read(objectKey: string): Promise<AsyncIterable<Uint8Array>>;
   readPath(objectKey: string): Promise<string>;
   delete(objectKey: string): Promise<void>;
   deleteStaged(stagedKey: string): Promise<void>;

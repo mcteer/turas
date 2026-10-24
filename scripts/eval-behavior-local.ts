@@ -20,13 +20,14 @@ if (dataset.cases.length !== expectedCases || dataset.cases.some((item) => !item
 }
 const selectedCases = caseFilter ? dataset.cases.filter((item) => item.id === caseFilter) : dataset.cases;
 if (selectedCases.length !== (caseFilter ? 1 : expectedCases)) throw new Error("Unknown behavior case");
+const modelStepCap = await (await import('./pilot-quality-runtime')).qualityProfileModelStepCap(feature,caseFilter);
 const results: BehaviorResult[] = [];
 let completedSteps = 0;
 await mkdir("local-artifacts", { recursive: true });
 const path = `local-artifacts/behavior-eval-${feature}-${caseFilter ?? "full"}-${Date.now()}.json`;
 const persist = () => writeFile(path, JSON.stringify({ feature, caseFilter,
   datasetVersion: dataset.version,
-  rubric: dataset.rubric, results }, null, 2));
+  rubric: dataset.rubric, ...(feature === "003" ? {modelStepCap} : feature === "004" ? {modelStepCap:16} : {}), results }, null, 2));
 const evaluate = async () => {
 const evaluationStarted = Date.now();
 if (feature === "004" && selectedCases.some((item) => item.id === "partner-reviewed-excerpt")) {
@@ -35,7 +36,7 @@ if (feature === "004" && selectedCases.some((item) => item.id === "partner-revie
 for (const item of selectedCases as BehaviorCase[]) {
   for (const run of feature === "004" ? [1] : [1, 2]) {
     if (results.length >= (feature === "004" ? 8 : 14) ||
-        (feature === "003" && completedSteps >= 14) ||
+        (feature === "003" && completedSteps >= modelStepCap) ||
         (feature === "004" && (completedSteps >= 16 || Date.now()-evaluationStarted >= 20*60_000))) {
       throw new Error("Behavior evaluation model-step cap exceeded");
     }
@@ -48,8 +49,8 @@ for (const item of selectedCases as BehaviorCase[]) {
       staleHistoryStatus: result.staleHistoryStatus,staleSendStatus: result.staleSendStatus,
       modelSteps: result.modelSteps,
       completedSteps, durationMs: result.durationMs, hardGates: result.hardGates }));
-    if (feature === "003" && completedSteps > 14) {
-      throw new Error(`Behavior evaluation exceeded 14 completed model steps (${completedSteps})`);
+    if (feature === "003" && completedSteps > modelStepCap) {
+      throw new Error(`Behavior evaluation exceeded ${modelStepCap} completed model steps (${completedSteps})`);
     }
     if (feature === "004" && (completedSteps > 16 ||
         (result.maxStepOutputTokens ?? 1_201) > 1_200 ||

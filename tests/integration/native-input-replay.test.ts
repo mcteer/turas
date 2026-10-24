@@ -1,3 +1,7 @@
+import {createArtifactDatabaseFixture} from '../fixtures/artifact-database';
+import {createProfileTestSession} from '../fixtures/profiles';
+import {DEMO_IDS} from '../fixtures/identities';
+import {attachConversationArtifact} from '../../lib/server/artifacts/references';
 import {randomUUID} from 'node:crypto';
 import {Client} from 'pg';
 import {beforeAll,expect,it,vi} from 'vitest';
@@ -14,7 +18,7 @@ import {withTransaction,getRuntimePool} from '../../lib/server/db/client';
 import {reserveOrdinaryOutput} from '../../lib/server/conversations/token-allowance';
 const url=requireTestDatabaseUrl();
 beforeAll(()=>{const runtime=new URL(url);runtime.searchParams.set('options','-c role=turas_runtime');process.env.DATABASE_URL=runtime.href;process.env.TURAS_ENVIRONMENT_ID=process.env.TURAS_TEST_ENVIRONMENT_ID;});
-async function fixture(db:Client,expired=false,parts?:Record<string,unknown>[]){
+async function fixture(db:Client,expired=false,parts?:Record<string,unknown>[],receiptFirst=true){
  const actor=await isolatedChatActor(db,'internal','admin'),key=randomUUID();
  const {conversation}=await createOwnedConversation(actor,{requestKey:key});
  const binding=await claimBinding(actor,conversation.id,key);if(binding.state!=='claimed')throw Error('Binding not claimed');
@@ -23,7 +27,7 @@ async function fixture(db:Client,expired=false,parts?:Record<string,unknown>[]){
  const text='Exact original native input.',prepared=await prepareAttempt(actor,conversation.id,native,randomUUID(),text);
  if(expired){vi.useFakeTimers({toFake:['Date']});vi.setSystemTime(Date.now()-121000);}
  try{await claimDispatch(actor,conversation.id,prepared.attemptId,0);}finally{if(expired)vi.useRealTimers();}
- const delivery=randomUUID();await recordNativeReceipt(actor,conversation.id,prepared.attemptId,Response.json({deliveryId:delivery,status:'accepted'},{status:202}));
+ const delivery=randomUUID();if(receiptFirst)await recordNativeReceipt(actor,conversation.id,prepared.attemptId,Response.json({deliveryId:delivery,status:'accepted'},{status:202}));
  const event=(overrides:Partial<NativeEvent>={}):NativeEvent=>({type:'message.received',data:{message:text,turnId:'turn_0',sequence:0,...(parts?{parts}:{})},meta:{id:'evt_'+randomUUID(),at:new Date().toISOString(),deliveryIds:[delivery]},...overrides});
  const first=event();await projectNativeEvent(native,prepared.attemptId,first);
  const initial=(await db.query('SELECT input_event_id,deadline_at,input_digest,output_tokens FROM response_attempts WHERE id=$1',[prepared.attemptId])).rows[0];
@@ -100,4 +104,41 @@ it('binds the complete sanitized attachment envelope while allowing changed priv
  expect(await withTransaction(client=>savedNativeInputReplay(client,f.id,f.native,f.first.meta.id!,{...retry,data:{...retry.data,parts:[]}}))).toBe(false);
  const rows=(await db.query('SELECT visible_payload FROM event_projections WHERE conversation_id=$1',[f.id])).rows;
  expect(JSON.stringify(rows)).not.toContain('https:');expect(JSON.stringify(rows)).not.toContain('private representation');
+}));
+
+it('persists the exact original receipt when projected input wins the HTTP acknowledgement race without resending or renewing admission',()=>owned(async(db,ids)=>{
+ const f=await fixture(db,false,undefined,false);ids.push(f.id);
+ const before=(await db.query('SELECT input_event_id,native_turn_id,native_delivery_id,deadline_at,input_digest,output_tokens,dispatch_state,native_receipt FROM response_attempts WHERE id=$1',[f.attempt])).rows[0];
+ expect(before).toMatchObject({dispatch_state:'admitted',native_delivery_id:f.delivery,native_receipt:null});
+ const response=()=>Response.json({deliveryId:f.delivery,status:'accepted'},{status:202});
+ await expect(recordNativeReceipt(f.actor,f.id,f.attempt,Response.json({deliveryId:randomUUID(),status:'accepted'},{status:202}))).rejects.toMatchObject({code:'native_receipt_changed'});
+ await db.query("UPDATE event_projections SET turn_id='foreign_turn' WHERE native_event_id=$1",[before.input_event_id]);
+ await expect(recordNativeReceipt(f.actor,f.id,f.attempt,response())).rejects.toMatchObject({code:'dispatch_claimed'});
+ await db.query('UPDATE event_projections SET turn_id=$2 WHERE native_event_id=$1',[before.input_event_id,before.native_turn_id]);
+ await recordNativeReceipt(f.actor,f.id,f.attempt,response());await recordNativeReceipt(f.actor,f.id,f.attempt,response());
+ const after=(await db.query('SELECT input_event_id,native_turn_id,native_delivery_id,deadline_at,input_digest,output_tokens,dispatch_state,native_receipt FROM response_attempts WHERE id=$1',[f.attempt])).rows[0];
+ expect(after).toEqual({...before,native_receipt:{deliveryId:f.delivery,status:'accepted'}});
+ await expect(recordNativeReceipt(f.actor,f.id,f.attempt,Response.json({deliveryId:f.delivery,status:'changed'},{status:202}))).rejects.toMatchObject({code:'native_receipt_changed'});
+ expect(Number((await db.query('SELECT count(*) FROM submitted_messages WHERE conversation_id=$1',[f.id])).rows[0].count)).toBe(1);
+ expect(Number((await db.query('SELECT count(*) FROM ordinary_model_operations WHERE attempt_id=$1',[f.attempt])).rows[0].count)).toBe(0);
+}));
+
+it('persists the exact original receipt after a selected artifact input is projected first',()=>owned(async(db,ids)=>{
+ await db.query('BEGIN');
+ const actor=await createProfileTestSession(db as any,'panel'),source=await createArtifactDatabaseFixture(db as any,actor,DEMO_IDS.sharedCustomer);ids.push(source.conversationId);
+ await db.query(`UPDATE artifact_extraction_runs SET state='published',scan_receipt='{}',coverage='{"total":1,"visited":1,"omitted":[]}',manifest_digest=$2,published_at=now() WHERE id=$1`,[source.runId,source.originalDigest]);
+ await db.query("UPDATE artifact_versions SET state='processing' WHERE id=$1",[source.versionId]);await db.query("UPDATE artifact_versions SET state='ready' WHERE id=$1",[source.versionId]);
+ const unit=randomUUID(),excerpt='Synthetic selected passage';
+ await db.query(`INSERT INTO artifact_extraction_units(id,run_id,version_id,environment_id,workspace_id,customer_id,owner_principal_id,ordinal,locator,text,origin) VALUES($1,$2,$3,$4,$5,$6,$7,1,'{"kind":"txt","lineStart":1,"lineEnd":1}',$8,'native')`,[unit,source.runId,source.versionId,process.env.TURAS_TEST_ENVIRONMENT_ID,actor.workspaceId,DEMO_IDS.sharedCustomer,actor.principalId,excerpt]);
+ await db.query('COMMIT');
+ await attachConversationArtifact(actor,source.conversationId,source.versionId);
+ const key=(await db.query('SELECT creation_operation_id FROM conversations WHERE id=$1',[source.conversationId])).rows[0].creation_operation_id;
+ const binding=await claimBinding(actor,source.conversationId,key);if(binding.state!=='claimed')throw Error('Artifact binding unavailable');const native='wrun_'+randomUUID();await bindNativeSession(actor,source.conversationId,binding.claimToken,native);
+ await db.query("INSERT INTO maintenance_workers(environment_id,worker_id,last_seen_at) VALUES($1,$2,now())",[process.env.TURAS_TEST_ENVIRONMENT_ID,randomUUID()]);
+ const text='Read this selected passage.',attempt=await prepareAttempt(actor,source.conversationId,native,randomUUID(),text,[{versionId:source.versionId,runId:source.runId,lifecycleGeneration:1,ranges:[{unitId:unit,start:0,end:excerpt.length}]}]);
+ await claimDispatch(actor,source.conversationId,attempt.attemptId,0);const delivery=randomUUID();
+ await db.query("INSERT INTO artifact_context_injection_receipts(attempt_id,turn_id,injection_digest) SELECT attempt_id,'turn_0',injection_digest FROM artifact_context_receipts WHERE attempt_id=$1",[attempt.attemptId]);
+ await projectNativeEvent(native,attempt.attemptId,{type:'message.received',data:{message:text,turnId:'turn_0',sequence:0},meta:{id:'evt_'+randomUUID(),at:new Date().toISOString(),deliveryIds:[delivery]}});
+ await recordNativeReceipt(actor,source.conversationId,attempt.attemptId,Response.json({deliveryId:delivery,status:'accepted'},{status:202}));
+ expect((await db.query('SELECT native_receipt FROM response_attempts WHERE id=$1',[attempt.attemptId])).rows[0].native_receipt).toEqual({deliveryId:delivery,status:'accepted'});
 }));

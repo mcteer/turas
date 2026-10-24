@@ -21,6 +21,7 @@ export async function claimReportJobs(db:PoolClient,kind:ReportJobKind,limit=1){
  const active=Number((await db.query("SELECT count(*) AS n FROM report_jobs WHERE environment_id=$1 AND kind=$2 AND state='leased' AND lease_until>now()",[process.env.TURAS_ENVIRONMENT_ID,kind])).rows[0].n);
  const capacity=Math.max(0,Math.min(limit,concurrency-active));if(!capacity)return [];
  await db.query("UPDATE report_jobs SET state='failed',failure_code='attempts_exhausted',lease_token=NULL,lease_until=NULL WHERE environment_id=$1 AND kind=$2 AND state='leased' AND lease_until<=now() AND attempt_count>=3",[process.env.TURAS_ENVIRONMENT_ID,kind]);
+ if(kind==='render')await db.query("UPDATE report_jobs SET state='failed',failure_code='deadline_expired',lease_token=NULL,lease_until=NULL WHERE environment_id=$1 AND kind='render' AND state IN('queued','leased') AND deadline_at<=now()",[process.env.TURAS_ENVIRONMENT_ID]);
   const candidates=(await db.query(`WITH ranked AS (
    SELECT id,row_number() OVER(PARTITION BY customer_id ORDER BY attempt_count,available_at,id) AS customer_rank
    FROM report_jobs WHERE environment_id=$1 AND kind=$2 AND ((state='queued' AND available_at<=now()) OR (state='leased' AND lease_until<=now())) AND attempt_count<3
@@ -32,7 +33,7 @@ export async function claimReportJobs(db:PoolClient,kind:ReportJobKind,limit=1){
  const claimed=[];
  for(const row of candidates){
   try{await lockReportJobAuthority(db,authorityForReportJob(row),kind==='dispatch');}catch{await db.query("UPDATE report_jobs SET state='cancelled',failure_code='authority_changed',lease_token=NULL,lease_until=NULL WHERE id=$1",[row.id]);continue;}
-  const token=randomUUID();claimed.push((await db.query(`UPDATE report_jobs SET state='leased',lease_token=$2,lease_until=now()+interval '180 seconds',deadline_at=now()+($3*interval '1 second'),attempt_count=attempt_count+1 WHERE id=$1 RETURNING *`,[row.id,token,kind==='render'?120:30])).rows[0]);
+  const token=randomUUID();claimed.push((await db.query(`UPDATE report_jobs SET state='leased',lease_token=$2,lease_until=now()+interval '180 seconds',deadline_at=CASE WHEN kind='render' THEN COALESCE(deadline_at,now()+($3*interval '1 second')) ELSE now()+($3*interval '1 second') END,attempt_count=attempt_count+1 WHERE id=$1 RETURNING *`,[row.id,token,kind==='render'?120:30])).rows[0]);
  }
  return claimed;
 }
@@ -45,7 +46,7 @@ export async function completeReportJob(db:PoolClient,id:string,token:string,inp
 }
 export async function failReportJob(db:PoolClient,id:string,token:string,code:string){
  if(!/^[a-z][a-z0-9_]{0,79}$/.test(code))code='job_failed';
- return Boolean((await db.query(`UPDATE report_jobs SET state=CASE WHEN attempt_count>=3 THEN 'failed' ELSE 'queued' END,
+ return Boolean((await db.query(`UPDATE report_jobs SET state=CASE WHEN attempt_count>=3 OR kind='render' AND deadline_at<=now() THEN 'failed' ELSE 'queued' END,
  available_at=now()+CASE WHEN attempt_count=1 THEN interval '10 seconds' ELSE interval '60 seconds' END,
  failure_code=$4,lease_token=NULL,lease_until=NULL WHERE id=$1 AND environment_id=$2 AND state='leased' AND lease_token=$3 AND lease_until>now() RETURNING id`,[id,process.env.TURAS_ENVIRONMENT_ID,token,code])).rowCount);
 }

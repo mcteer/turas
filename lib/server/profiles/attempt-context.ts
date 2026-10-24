@@ -143,10 +143,10 @@ export async function readCurrentAttemptContext(client: PoolClient, attemptId: s
       c.context_snapshot_schema,s.revoked_at,s.expires_at,p.active AS principal_active,
       m.active AS member_active,m.kind AS member_kind,m.role AS member_role,
       w.active AS workspace_active,o.active AS organization_active,g.state AS grant_state
-    FROM context_snapshot_receipts r JOIN conversations c ON c.id=r.conversation_id
-    JOIN login_sessions s ON s.id=r.login_session_id
+    FROM context_snapshot_receipts r JOIN conversations c ON c.id=r.conversation_id AND c.workspace_id=r.workspace_id AND c.owner_principal_id=r.owner_principal_id AND c.context_membership_id=r.membership_id AND c.context_login_session_id=r.login_session_id
+    JOIN login_sessions s ON s.id=r.login_session_id AND s.principal_id=r.owner_principal_id AND s.membership_id=r.membership_id AND s.workspace_id=r.workspace_id
     JOIN principals p ON p.id=r.owner_principal_id
-    JOIN memberships m ON m.id=r.membership_id
+    JOIN memberships m ON m.id=r.membership_id AND m.principal_id=r.owner_principal_id AND m.workspace_id=r.workspace_id
     JOIN workspaces w ON w.id=r.workspace_id
     LEFT JOIN partner_organizations o ON o.id=m.partner_org_id
     LEFT JOIN customer_grants g ON g.customer_id=r.customer_id AND g.membership_id=m.id

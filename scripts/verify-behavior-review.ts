@@ -3,6 +3,7 @@ import dataset002 from "../evals/fixtures/002-capability-honesty.json";
 import dataset003 from "../evals/fixtures/003-context-governance.json";
 import dataset004 from "../evals/fixtures/004-artifact-governance.json";
 import type { BehaviorResult } from "../evals/driver";
+import {verifyBehaviorReviewEvidence} from './pilot-behavior-review-capture';
 
 const args = process.argv.slice(2);
 const feature = args.length === 3 && args[0] === "--feature" &&
@@ -14,7 +15,7 @@ if (!path || args.length !== (feature === "002" ? 1 : 3) ||
 }
 const dataset = feature === "003" ? dataset003 : feature === "004" ? dataset004 : dataset002;
 const review = JSON.parse(readFileSync(path, "utf8")) as {
-  feature?: string; datasetVersion: number; results: BehaviorResult[];
+  feature?: string; modelStepCap?: number; datasetVersion: number; results: BehaviorResult[];
 };
 const expectedResults = feature === "004" ? 8 : 12;
 if (review.datasetVersion !== dataset.version || review.results.length !== expectedResults ||
@@ -22,10 +23,12 @@ if (review.datasetVersion !== dataset.version || review.results.length !== expec
   throw new Error("Behavior review dataset or run count mismatch");
 }
 if (feature === "003") {
+  const modelStepCap = await (await import('./pilot-quality-runtime')).qualityProfileModelStepCap(feature,null);
+  if ((review.modelStepCap ?? 14) !== modelStepCap) throw new Error('Behavior review step allowance differs from the explicit operator runtime');
   const steps = review.results.map((result) => result.modelSteps);
   if (steps.some((value) => !Number.isInteger(value) || value < 1) ||
-      steps.reduce((total, value) => total + value, 0) > 14) {
-    throw new Error("Behavior review lacks a valid 14-model-step runtime count");
+      steps.reduce((total, value) => total + value, 0) > modelStepCap) {
+    throw new Error(`Behavior review lacks a valid ${modelStepCap}-model-step runtime count`);
   }
 }
 if (feature === "004") {
@@ -41,6 +44,7 @@ for (const item of dataset.cases) {
   for (const run of feature === "004" ? [1] : [1, 2]) {
     const matches = review.results.filter((result) => result.caseId === item.id && result.run === run);
     const result = matches[0];
+    if(result?.reviewEvidence)await verifyBehaviorReviewEvidence(result.reviewEvidence,result);
     const dimensions = result?.semanticDimensions;
     const validDimensions = feature !== "004" || !!dimensions &&
       Object.values(dimensions).length === 4 &&

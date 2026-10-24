@@ -59,6 +59,10 @@ export async function assertFreshArtifactSignatures(path: string): Promise<strin
   const header = buffer.toString("ascii");
   const match = /^ClamAV-VDB:[^:]*:([0-9]+):/.exec(header);
   if (!match) throw new Error("scan_unavailable");
+  const epoch=header.trim().split(":")[8];
+  if(!epoch||!/^\d{10}$/.test(epoch))throw new Error("scan_unavailable");
+  const builtAt=Number(epoch)*1000;
+  if(Date.now()-builtAt>7*86_400_000||builtAt>Date.now()+60_000)throw new Error("scan_stale");
   const info = await stat(`${path}/daily.cvd`);
   if (Date.now() - info.mtimeMs > 7 * 86_400_000 || info.mtimeMs > Date.now() + 60_000) {
     throw new Error("scan_stale");

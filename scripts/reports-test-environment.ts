@@ -45,7 +45,7 @@ export async function withReportsTestEnvironment<T>(
       const root=join(appRoot,'private-reports');
       await mkdir(root,{mode:0o700});
       await writeFile(join(root,'.turas-report-store.json'),JSON.stringify({environmentId}),{mode:0o600,flag:'wx'});
-      return {TURAS_REPORT_STORE_ROOT:root,TURAS_REPORTS_ENABLED:'false',TURAS_REPORT_TEST_MODE:'owned-fixture',
+      return {TURAS_REPORT_STORE_ROOT:root,TURAS_REPORTS_ENABLED:'false',TURAS_REPORT_TEST_MODE:'owned-fixture',TURAS_REPORTS_OWNED:'1',
         RESEND_API_KEY:'re_owned_fixture_invalid_key',RESEND_WEBHOOK_SECRET:'whsec_'+randomBytes(32).toString('base64'),
         TURAS_REPORT_SENDER_ADDRESS:'synthetic-sender@example.invalid',TURAS_REPORT_SENDER_ID:randomUUID(),TURAS_REPORT_SENDER_DOMAIN_ID:randomUUID(),
         TURAS_REPORT_RECIPIENT_HMAC_KEYS:JSON.stringify({'owned-v1':randomBytes(32).toString('base64')}),TURAS_REPORT_RECIPIENT_HMAC_KEY_ID:'owned-v1'};

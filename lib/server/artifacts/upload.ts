@@ -1,3 +1,4 @@
+import {withOperationalIo} from '../operations/admission';
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import type { CurrentSession } from "../auth/sessions";
@@ -6,7 +7,8 @@ import { withTransaction } from "../db/client";
 import { hiddenRecord, HttpFailure } from "../../contracts/http";
 import { artifactParserPolicyVersion, artifactUploadIntentReceiptSchema, type ArtifactUploadIntentReceipt } from "../../contracts/artifacts";
 import { lockOwnedBinding } from "../conversations/binding";
-import { LocalArtifactStore } from "./local-store";
+import { createArtifactStore } from "./store-factory";
+import type { ArtifactStore } from "./store";
 import { releaseArtifactIntentReservation } from "./intake";
 import { preparedArtifactImages } from "./prepared";
 import { requireArtifactDestructiveAuthority } from "./policy";
@@ -24,9 +26,7 @@ type Intent = {
   initiating_principal_id: string | null;
 };
 
-function store(): LocalArtifactStore {
-  return new LocalArtifactStore(parseArtifactStoreConfig(process.env));
-}
+function store(): ArtifactStore { return createArtifactStore(); }
 
 function receipt(row: Intent): ArtifactUploadIntentReceipt {
   return artifactUploadIntentReceiptSchema.parse({ id: row.id, state: row.state,
@@ -113,7 +113,7 @@ export async function stageArtifactUpload(actor: CurrentSession, intentId: strin
   });
   if (!row) throw expiredIntent();
   let staged;
-  try { staged = await store().stage(bytes, Number(row.expected_size_bytes)); }
+  try { staged = await withOperationalIo(()=>store().stage(bytes, Number(row.expected_size_bytes))); }
   catch (error) {
     if (error instanceof Error && /size|bytes exceed/i.test(error.message)) {
       throw new HttpFailure(413, "size_mismatch", "Upload size differs from declared size");
@@ -138,10 +138,10 @@ export async function stageArtifactUpload(actor: CurrentSession, intentId: strin
       return false;
     });
   } catch (error) {
-    await store().deleteStaged(staged.key);
+    await withOperationalIo(()=>store().deleteStaged(staged.key),true);
     throw error;
   }
-  if (!used) await store().deleteStaged(staged.key);
+  if (!used) await withOperationalIo(()=>store().deleteStaged(staged.key),true);
   if (expired) throw expiredIntent();
 }
 
@@ -167,7 +167,7 @@ export async function completeArtifactUpload(actor: CurrentSession, intentId: st
   });
   if (!initial) throw expiredIntent();
   if (initial.state === "completed") return receipt(initial);
-  const objectKey = await store().finalize(initial.staged_key!, initial.staged_sha256_digest!);
+  const objectKey = await withOperationalIo(()=>store().finalize(initial.staged_key!, initial.staged_sha256_digest!));
   const completed = await withTransaction(async (client) => {
     const row = await ownedIntent(client, actor, intentId, true);
     if (row.state === "completed") {
@@ -250,3 +250,6 @@ export async function cancelArtifactUpload(actor: CurrentSession, intentId: stri
   if (row.staged_key) await store().deleteStaged(row.staged_key);
   return receipt(row);
 }
+
+/** Current domain authority for a direct-upload capability; never accepts client claims. */
+export async function artifactUploadSnapshot(actor:CurrentSession,intentId:string){return withTransaction(async client=>{const row=await ownedIntent(client,actor,intentId,true);if(await expireIfNeeded(client,row)||!['uploading','staged'].includes(row.state))throw new HttpFailure(409,'source_changed','Upload changed or expired');return {sizeBytes:Number(row.expected_size_bytes),expiresAt:row.expires_at,generation:Number(row.replacement_expected_generation??1)};});}

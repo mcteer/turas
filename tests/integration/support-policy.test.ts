@@ -1,3 +1,4 @@
+import { lockWorkspaceActor } from "../../lib/server/profiles/policy";
 import { randomUUID, createHmac } from "node:crypto";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { withSupportDatabase } from "../fixtures/support/environment";
@@ -26,6 +27,49 @@ describe("support proposal authority and retry", () => {
     await withSupportDatabase(db => db.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,'Synthetic policy customer',true)", [id, DEMO_IDS.workspace]));
     return id;
   }
+  it("allows work beside a held authority reader while session revocation stays atomic", async () => {
+    const actor = await withSupportDatabase(db=>createProfileTestSession(db,"panel"));
+    await withSupportDatabase(async reader=>{
+      await reader.query("BEGIN");
+      try {
+        await lockWorkspaceActor(reader,actor,undefined,true);
+        await withSupportDatabase(async writer=>{
+          await writer.query("BEGIN");
+          try { await lockWorkspaceActor(writer,actor); await writer.query("COMMIT"); }
+          catch(error){await writer.query("ROLLBACK");throw error;}
+        });
+        await withSupportDatabase(async revoker=>{
+          await revoker.query("BEGIN");
+          try {
+            await revoker.query("SET LOCAL lock_timeout='100ms'");
+            await expect(revoker.query("UPDATE login_sessions SET revoked_at=now() WHERE id=$1",[actor.sessionId])).rejects.toMatchObject({code:"55P03"});
+          } finally {await revoker.query("ROLLBACK");}
+        });
+      } finally {await reader.query("ROLLBACK");}
+    });
+    await withSupportDatabase(db=>db.query("UPDATE login_sessions SET revoked_at=now() WHERE id=$1",[actor.sessionId]));
+    await expect(saveSupportProposal(actor,await customer(),command())).rejects.toMatchObject({status:401});
+  });
+  it("aborts a contended nested read-to-write transition and resets mode after rollback", async () => {
+    await withSupportDatabase(async reader=>{
+      await reader.query("BEGIN");
+      try {
+        await lockWorkspaceActor(reader,panel,undefined,true);
+        await withSupportDatabase(async writer=>{
+          await writer.query("BEGIN");
+          try {
+            await lockWorkspaceActor(writer,panel);
+            await expect(lockWorkspaceActor(reader,panel)).rejects.toMatchObject({code:"55P03"});
+            await expect(reader.query("SELECT 1")).rejects.toMatchObject({code:"25P02"});
+          } finally {await writer.query("ROLLBACK");}
+        });
+      } finally {await reader.query("ROLLBACK");}
+      expect((await reader.query("SELECT current_setting('turas.actor_lock_mode',true) AS mode")).rows[0].mode||null).toBeNull();
+      await reader.query("BEGIN");
+      try {await lockWorkspaceActor(reader,panel);}
+      finally {await reader.query("ROLLBACK");}
+    });
+  });
   it("saves only a proposal, and a same-key race creates one revision", async () => {
     const id = await customer(), input = command();
     const [first, replay] = await Promise.all([saveSupportProposal(panel, id, input), saveSupportProposal(panel, id, input)]);

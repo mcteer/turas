@@ -63,7 +63,12 @@ Common envelope: `contractVersion` = `turas-mcp-v1`, `status` = available/empty/
 unavailable, `requestId` UUID, `data` typed category DTO or null, `nextCursor` opaque
 string or null, and bounded fixed reason enum when unavailable. No total count.
 Valid empty list uses empty items/nextCursor null. Exhausted bounded eligibility
-scan returns unavailable/incomplete, never a false complete empty list. List item
+scan returns unavailable/incomplete, never a false complete empty list. Feature
+016 adds bounded evidence-list continuation: after scanning at most 100
+candidates, an `available` page may have no eligible items and a bound opaque
+`nextCursor`. Only an exhausted evidence list returns `empty` with no cursor;
+clients must follow continuation even when the current items array is empty.
+Other category scan limits retain their explicit incomplete result. List item
 order is immutable ID ascending; active head/generation changes invalidate bound
 continuation instead of combining incompatible revision pages.
 

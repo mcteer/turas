@@ -1,8 +1,8 @@
 import type {CurrentSession} from '../auth/sessions';import {hiddenRecord} from '../../contracts/http';
 import {reportTransaction} from './commands';import {reportHead} from './revisions';import {lockReportActor} from './policy';import {reportRevisionFence} from './release';import {readReportObject} from './store';import {reportId} from './schema';
-export async function downloadReportArtifact(actor:CurrentSession,reportIdValue:string,artifactId:string){
+export async function downloadReportArtifact(actor:CurrentSession,reportIdValue:string,artifactId:string,readTransaction:typeof reportTransaction=reportTransaction){
  reportId.parse(reportIdValue);reportId.parse(artifactId);
- return reportTransaction(async db=>{
+ return readTransaction(async db=>{
   const head=await reportHead(db,actor,reportIdValue);
   const metadata=(await db.query(`SELECT a.*,EXISTS(SELECT 1 FROM report_publications p WHERE p.revision_id=a.revision_id) AS published FROM report_artifacts a JOIN report_revisions v ON v.id=a.revision_id WHERE a.id=$1 AND v.report_id=$2 AND a.environment_id=$3 AND a.workspace_id=$4 AND a.validation_id IS NOT NULL`,[artifactId,reportIdValue,process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId])).rows[0];
   await lockReportActor(db,actor,head.customer_id,'read',head.audience,Boolean(metadata?.published));if(!metadata)throw hiddenRecord();
@@ -14,14 +14,15 @@ export async function downloadReportArtifact(actor:CurrentSession,reportIdValue:
   return {bytes,contentType:metadata.format==='pdf'?'application/pdf':'application/vnd.openxmlformats-officedocument.presentationml.presentation',filename:`executive-review.${metadata.format}`};
  });
 }
-/** Every chunk is released only after a new current-policy/source transaction. */
-export async function streamReportArtifact(actor:CurrentSession,reportIdValue:string,artifactId:string){
- const artifact=await downloadReportArtifact(actor,reportIdValue,artifactId);
+/** Every chunk rechecks current policy/sources. Ordinary reads use fresh
+ * transactions; explicit maintenance reads retain their authenticated snapshot. */
+export async function streamReportArtifact(actor:CurrentSession,reportIdValue:string,artifactId:string,readTransaction:typeof reportTransaction=reportTransaction){
+ const artifact=await downloadReportArtifact(actor,reportIdValue,artifactId,readTransaction);
  let offset=0;
  const stream=new ReadableStream<Uint8Array>({
   async pull(controller){
    try{
-    await reportTransaction(async db=>{
+    await readTransaction(async db=>{
      const head=await reportHead(db,actor,reportIdValue);
      const row=(await db.query(`SELECT a.revision_id,EXISTS(SELECT 1 FROM report_publications p WHERE p.revision_id=a.revision_id) AS published
       FROM report_artifacts a JOIN report_revisions r ON r.id=a.revision_id

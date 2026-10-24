@@ -27,11 +27,11 @@ describe('MCP real consumer context parity',()=>{
     const created=await createMcpConnection(browser,{requestKey:randomUUID(),name:'Synthetic context consumer',categories:['profiles','evidence','knowledge'],customerIds:[customerId],lifetimeDays:7});
     if(!created.secretAvailable)throw Error('No synthetic credential');
     await withMcpConsumer(process.env.TURAS_APP_ORIGIN!,created.credential,async client=>{
-      for(const arguments_ of [{customerId:randomUUID(),section:'summary'},{customerId,section:'invalid'}]){
-        const denied=await client.callTool({name:'turas_profile_read_v1',arguments:arguments_});
-        expect(denied.isError).toBe(true);
-        expect(denied.content).toEqual([{type:'text',text:'Request unavailable'}]);expect(denied.structuredContent).toBeUndefined();
-      }
+      const foreign=await mcpFixture(db);
+      const denied=mcpToolOutputs.turas_profile_read_v1.parse((await client.callTool({name:'turas_profile_read_v1',arguments:{customerId:foreign.customerId,section:'summary'}})).structuredContent);
+      expect(denied).toMatchObject({status:'unavailable',reason:'not_found',data:null,nextCursor:null});
+      const invalid=await client.callTool({name:'turas_profile_read_v1',arguments:{customerId,section:'invalid'}});
+      expect(invalid.isError).toBe(true);expect(invalid.content).toEqual([{type:'text',text:'Request unavailable'}]);expect(invalid.structuredContent).toBeUndefined();
       const customers=mcpToolOutputs.turas_customers_list_v1.parse((await client.callTool({name:'turas_customers_list_v1',arguments:{limit:20}})).structuredContent);
       expect(customers.status).toBe('available');if(customers.status==='available')expect(customers.data.items.map(item=>item.customerId)).toEqual([customerId]);
       const profile=mcpToolOutputs.turas_profile_read_v1.parse((await client.callTool({name:'turas_profile_read_v1',arguments:{customerId,section:'facts'}})).structuredContent);

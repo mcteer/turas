@@ -3,6 +3,7 @@ import {execFileSync,spawnSync} from 'node:child_process';
 import {Client} from 'pg';
 import {closeRuntimePool} from '../lib/server/db/client';
 import {mkdir,writeFile} from 'node:fs/promises';
+import {processFailureMetadata} from './ci-process-diagnostics';
 
 const image='pgvector/pgvector@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f';
 /** An owned local Postgres source removes network latency from deterministic gates.
@@ -26,7 +27,7 @@ export async function withReportsLocalEnvironment<T>(run:()=>Promise<T>):Promise
   const db=new Client({connectionString:url});await db.connect();try{await db.query('CREATE ROLE turas_runtime NOLOGIN');}finally{await db.end();}
   for(const [file,args]of [['scripts/db-migrate.ts',['--init']],['scripts/db-roles.ts',[]],['scripts/bootstrap-demo.ts',[]]] as const){
    const result=spawnSync(process.execPath,['--experimental-strip-types',file,...args],{env:process.env,encoding:'utf8',timeout:120000});
-   if(result.status!==0){await mkdir('local-artifacts/009',{recursive:true,mode:0o700});await writeFile('local-artifacts/009/local-environment-failure.log',result.stdout+result.stderr,{mode:0o600});throw new Error(`Owned local setup failed at ${file}`);}
+   if(result.status!==0){await mkdir('local-artifacts/009',{recursive:true,mode:0o700});await writeFile('local-artifacts/009/local-environment-failure.log',result.stdout+result.stderr,{mode:0o600});console.error(JSON.stringify({kind:'ci_reporting_local_setup_failure',file,...processFailureMetadata({code:result.status,signal:result.signal,stdoutTail:result.stdout,stderrTail:result.stderr})}));throw new Error(`Owned local setup failed at ${file}`);}
   }
   // Unscoped runtime access points at an absent owned-local application DB, never
   // the test source or the maintainer's configured application database.

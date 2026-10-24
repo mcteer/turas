@@ -1,3 +1,4 @@
+import { sharedOriginSql } from "../access/policy";
 import { createHash,randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import type { McpReadActor } from '../auth/read-actor';
@@ -21,7 +22,7 @@ export async function listMcpKnowledge(db:PoolClient,actor:McpReadActor,raw:unkn
   const cursor=input.cursor?await resolveMcpHandle(db,actor,input.cursor,{kind:'cursor',category:'knowledge',section:'publications',filterDigest}):undefined;
   const snapshot=(await db.query<{digest:string}>(`SELECT encode(sha256(convert_to(coalesce(string_agg(
     concat_ws(':',id,revision_id,head_generation,state,updated_at),'|' ORDER BY id),''),'UTF8')),'hex') AS digest
-    FROM knowledge_publications WHERE environment_id=$1`,[actor.environmentId])).rows[0].digest;
+    FROM knowledge_publications p WHERE environment_id=$1 AND ${sharedOriginSql("p","$2")}`,[actor.environmentId,actor.workspaceId])).rows[0].digest;
   if(cursor && cursor.contentDigest!==snapshot)return unavailableMcp('source_changed');
   const candidates=await currentKnowledgeHeaders(db,actor,cursor?.positionId),items=[];
   let last:string|undefined,more=false;

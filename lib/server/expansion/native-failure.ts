@@ -12,7 +12,7 @@ export async function failExpansionNativeAttempt(principal:FeaturePrincipal,code
  return withTransaction(async db=>{
   const row=(await db.query(`SELECT a.id,b.customer_id,c.owner_principal_id,c.context_login_session_id,c.workspace_id,c.context_membership_id,
    s.expires_at,p.login_name,p.display_name,m.kind,m.role FROM expansion_advice_attempts a JOIN expansion_advice_bindings b ON b.id=a.binding_id
-   JOIN conversations c ON c.id=a.conversation_id JOIN login_sessions s ON s.id=c.context_login_session_id
+   JOIN conversations c ON c.id=a.conversation_id JOIN login_sessions s ON s.id=c.context_login_session_id AND s.membership_id=c.context_membership_id AND s.workspace_id=c.workspace_id AND s.principal_id=c.owner_principal_id
    JOIN principals p ON p.id=c.owner_principal_id JOIN memberships m ON m.id=c.context_membership_id
    WHERE a.response_attempt_id=$1 AND a.environment_id=$2 AND c.owner_principal_id=$3`,[responseId,getServerConfig().TURAS_ENVIRONMENT_ID,principal!.principalId])).rows[0];
   if(!row)throw hiddenRecord();

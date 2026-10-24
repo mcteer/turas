@@ -53,7 +53,11 @@ export async function signIn(page: Page, account: DemoAccount): Promise<void> {
 }
 
 export async function signOut(page: Page): Promise<void> {
+  const logout = page.waitForResponse(response => new URL(response.url()).pathname === "/api/auth/logout" && response.request().method() === "POST", { timeout: 15_000 });
+  void logout.catch(() => undefined);
   await page.getByRole("button", { name: "Sign out" }).click();
+  const response = await logout;
+  if (response.status() !== 200) throw new Error(`UI sign-out HTTP ${response.status()}`);
   await page.waitForURL((url) => url.pathname === "/login", { waitUntil: "commit", timeout: 15_000 });
 }
 

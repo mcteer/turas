@@ -31,9 +31,10 @@ const privateJson = async (path: string, value: unknown) => {
 /** Every preflight runs here, with no model key. There is no CLI bypass or
  * externally supplied passing report. Logs stay private, including failures. */
 async function deterministicGate(directory: string, name: string, args: string[], inert = false) {
-  const env = { ...process.env, TURAS_ALLOW_LIVE_MODEL_TESTS: "0", AI_GATEWAY_API_KEY: "" };
+  const env = { ...process.env, TURAS_ALLOW_LIVE_MODEL_TESTS: "0", AI_GATEWAY_API_KEY: "", CONTEXT_API_KEY: "" };
   if (inert) for (const key of Object.keys(env)) if (key.includes("DATABASE") && key.endsWith("URL"))
     env[key as keyof typeof env] = "postgresql://127.0.0.1:9/turas_test_007_build";
+  delete env.TURAS_016_QUALITY_RUNTIME_FILE;env.NODE_OPTIONS="";
   const fd = openSync(join(directory, `${name}.log`), "wx", 0o600);
   try {
     await new Promise<void>((resolveGate, reject) => {

@@ -313,6 +313,78 @@ DO $$ BEGIN
  END IF;
 END $$;
 
+-- 016 control authority belongs exclusively to the migration/operator owner.
+DO $$ BEGIN
+ IF to_regclass('public.operations_control') IS NOT NULL THEN
+  REVOKE ALL ON operations_control,operations_control_transitions,operations_recovery_verifications FROM turas_runtime;
+  GRANT SELECT ON operations_control,operations_control_transitions,operations_recovery_verifications TO turas_runtime;
+  REVOKE ALL ON operations_recovery_http_reads FROM turas_runtime;
+  GRANT SELECT ON operations_recovery_http_reads TO turas_runtime;
+  GRANT UPDATE(used_requests) ON operations_recovery_http_reads TO turas_runtime;
+  REVOKE ALL ON operations_source_denials FROM turas_runtime;
+  GRANT SELECT ON operations_source_denials TO turas_runtime;
+  REVOKE ALL ON operations_replay_fences FROM turas_runtime;
+  GRANT SELECT ON operations_replay_fences TO turas_runtime;
+  REVOKE ALL ON operations_recovery_quarantines FROM turas_runtime;
+  GRANT SELECT ON operations_recovery_quarantines TO turas_runtime;
+  REVOKE ALL ON operations_recovery_paid_holds FROM turas_runtime;
+  GRANT SELECT ON operations_recovery_paid_holds TO turas_runtime;
+  REVOKE ALL ON operations_hosted_root_admissions,operations_hosted_root_provider_identities,operations_hosted_root_generation_receipts FROM turas_runtime;
+  GRANT SELECT ON operations_hosted_root_admissions TO turas_runtime;
+  GRANT SELECT,INSERT ON operations_hosted_root_provider_identities TO turas_runtime;
+  GRANT SELECT ON operations_hosted_root_generation_receipts TO turas_runtime;
+  REVOKE ALL ON operations_hosted_learning_admissions,operations_hosted_learning_consumptions,operations_hosted_learning_provider_identities FROM turas_runtime;
+  GRANT SELECT ON operations_hosted_learning_admissions TO turas_runtime;
+  GRANT SELECT,INSERT ON operations_hosted_learning_consumptions,operations_hosted_learning_provider_identities TO turas_runtime;
+  REVOKE ALL ON operations_recovery_model_holds,operations_recovery_model_observations FROM turas_runtime;
+  GRANT SELECT ON operations_recovery_model_holds,operations_recovery_model_observations TO turas_runtime;
+  GRANT EXECUTE ON FUNCTION turas_ordinary_output_used(uuid) TO turas_runtime;
+  REVOKE ALL ON operations_recovery_quarantine_resolutions FROM turas_runtime;
+  GRANT SELECT ON operations_recovery_quarantine_resolutions TO turas_runtime;
+  REVOKE ALL ON operations_maintenance_status,operations_hosted_jobs FROM turas_runtime;
+  GRANT SELECT,INSERT,UPDATE ON operations_maintenance_status,operations_hosted_jobs TO turas_runtime;
+  REVOKE ALL ON operations_health_samples FROM turas_runtime;
+  GRANT SELECT ON operations_health_samples TO turas_runtime;
+  GRANT INSERT(id,environment_id,kind,state,class_id,duration_ms,backlog_count,oldest_due_at,code_version) ON operations_health_samples TO turas_runtime;
+  GRANT EXECUTE ON FUNCTION turas_expire_health_samples(text,integer) TO turas_runtime;
+  REVOKE ALL ON operations_store_observations FROM turas_runtime;
+  GRANT SELECT ON operations_store_observations TO turas_runtime;
+  GRANT INSERT(id,environment_id,namespace,store_binding_digest,code_version,proof_digest) ON operations_store_observations TO turas_runtime;
+  GRANT EXECUTE ON FUNCTION turas_expire_store_observations(text,integer) TO turas_runtime;
+  REVOKE ALL ON operations_local_jobs FROM turas_runtime;
+  GRANT SELECT,INSERT,UPDATE ON operations_local_jobs TO turas_runtime;
+  GRANT UPDATE(id) ON artifacts,artifact_upload_batches TO turas_runtime;
+  REVOKE UPDATE ON workspaces FROM turas_runtime;
+  GRANT UPDATE(name,active) ON workspaces TO turas_runtime;
+  REVOKE INSERT,DELETE ON workspaces FROM turas_runtime;
+ END IF;
+END $$;
+
+-- Readiness compares the exact immutable ledger; runtime never writes it.
+GRANT SELECT ON turas_migrations TO turas_runtime;
+
+DO $$ BEGIN IF to_regclass('public.operations_upload_capabilities') IS NOT NULL THEN
+ REVOKE ALL ON operations_upload_capabilities FROM turas_runtime;
+ GRANT SELECT,INSERT,UPDATE ON operations_upload_capabilities TO turas_runtime;
+END IF; END $$;
+
+DO $$ BEGIN IF to_regclass('public.operations_cost_budgets') IS NOT NULL THEN
+ REVOKE ALL ON operations_cost_budgets,operations_cost_reservations,operations_cost_reconciliations FROM turas_runtime;
+ GRANT SELECT ON operations_cost_budgets,operations_cost_reservations,operations_cost_reconciliations TO turas_runtime;
+ -- Key-only lock privilege; the identity trigger rejects actual key updates.
+ GRANT UPDATE(id) ON operations_cost_budgets TO turas_runtime;
+ GRANT INSERT ON operations_cost_reservations TO turas_runtime;
+ GRANT UPDATE(job_id,state,dispatched_at) ON operations_cost_reservations TO turas_runtime;
+END IF; END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.operations_backup_observations') IS NOT NULL THEN
+  REVOKE ALL ON operations_backup_observations FROM turas_runtime;
+  GRANT SELECT ON operations_backup_observations TO turas_runtime;
+  GRANT EXECUTE ON FUNCTION turas_expire_backup_observations(text,integer) TO turas_runtime;
+ END IF;
+END $$;
+
 DO $$ BEGIN
  IF to_regclass('public.general_customer_read_scopes') IS NOT NULL THEN
   GRANT SELECT ON customer_reference_aliases TO turas_runtime;

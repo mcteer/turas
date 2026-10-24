@@ -74,6 +74,11 @@ export async function readExecutionOverview(actor:ExecutionActor,engagementId:st
     return readExecutionOverviewSnapshot(db,actor,engagementId,customerId);
   });
 }
+/** Governed shared projection for an already bounded maintenance transport. */
+export async function readExecutionOverviewShared(db:PoolClient,actor:ExecutionActor,engagementId:string){
+ const customerId=await readAuthority(db,actor,engagementId,false);
+ return readExecutionOverviewSnapshot(db,actor,engagementId,customerId,true);
+}
 /** Internal projection for callers that already hold live scope authority.
  * Read admission must precede plan/source locks; never acquire a rate row here. */
 export async function readExecutionOverviewSnapshot(db:PoolClient,actor:ExecutionActor,engagementId:string,customerId:string,sharedRead=false) {

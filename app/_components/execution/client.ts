@@ -1,6 +1,8 @@
 "use client";
 import { useEffect,useRef,useState,useSyncExternalStore } from "react";
 import type { ExecutionResult } from "../../../lib/server/execution/commands";
+// Bound read eligibility independently of the already-confirmed write.
+export const executionReadDeadlineMs=15_000;
 export type ExecutionClientSnapshot=Readonly<{busy:boolean;message:string;uncertainKey:string|null;denied:boolean}>;
 type Receipt=ExecutionResult&{requestKey:string};
 type Fetcher=(url:string,options?:RequestInit)=>Promise<Response>;

@@ -1,3 +1,4 @@
+import {insertBoundFixtureSession} from "../bound-session";
 import { randomBytes,randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { createProfileTestSession } from "../profiles";
@@ -23,7 +24,7 @@ export async function partnerAdditionalMember(db:PoolClient,grantCustomerId:stri
  requireOwnedPartnerDatabase();const principalId=randomUUID(),membershipId=randomUUID(),sessionId=randomUUID(),token=randomBytes(32).toString("base64url"),loginName=`synthetic-partner-${principalId}`;
  await db.query("INSERT INTO principals(id,login_name,display_name) VALUES($1,$2,'Synthetic Partner')",[principalId,loginName]);
  await db.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,partner_org_id,role) VALUES($1,$2,$3,'partner',$4,'member')",[membershipId,principalId,DEMO_IDS.workspace,organizationId]);
- await db.query("INSERT INTO login_sessions(id,principal_id,token_hash,expires_at) VALUES($1,$2,$3,now()+interval '1 hour')",[sessionId,principalId,hashSessionToken(token)]);
+ await insertBoundFixtureSession(db,{id:sessionId,principalId:principalId,membershipId:membershipId,workspaceId:DEMO_IDS.workspace,tokenHash:hashSessionToken(token),expiresAt:new Date(Date.now()+3600000)});
  if(grantCustomerId)await db.query("INSERT INTO customer_grants(id,membership_id,workspace_id,customer_id,state,revision,granted_by) VALUES($1,$2,$3,$4,'active',1,$5)",[randomUUID(),membershipId,DEMO_IDS.workspace,grantCustomerId,DEMO_IDS.mcteer]);
  return {sessionId,token,principalId,membershipId,workspaceId:DEMO_IDS.workspace,loginName,displayName:"Synthetic Partner",kind:"partner",role:"member",expiresAt:new Date(Date.now()+3600000)} as CurrentSession;
 }

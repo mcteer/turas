@@ -48,12 +48,14 @@ export async function reportSourceEligibility(db:PoolClient,scope:ReportSourceSc
    const event=(await db.query(`SELECT v.id,v.action,v.expected_version,v.evidence_revision_ids,m.milestone_key,m.baseline_id FROM execution_milestone_events v JOIN execution_milestone_heads m ON m.current_event_id=v.id JOIN engagements e ON e.id=v.engagement_id AND e.active_baseline_id=m.baseline_id JOIN delivery_plans p ON p.id=e.plan_id WHERE v.id=$1 AND v.environment_id=$2 AND v.workspace_id=$3 AND v.customer_id=$4 AND v.engagement_id=$5 AND m.state IN ('accepted','waived') AND (p.audience='delivery' OR $6='internal') FOR SHARE OF m,e,p`,[ref.revisionId,scope.environmentId,scope.workspaceId,scope.customerId,ref.engagementId,audience])).rows[0];
    current=Boolean(event && Number(event.expected_version)+1===ref.generation && ref.decisionId===event.id && reportMilestoneDecisionDigest(event)===ref.contentDigest);
   }
-  else if(kinds[ref.kind]){
+  // Plans retain the digest of their governed retrieval projection. Direct
+  // report profile inputs retain the original revision digest. Reconcile either
+  // representation against its current header and source eligibility.
+  if(kinds[ref.kind] && !current){
    if(ref.kind==='accepted_profile' || ref.kind==='approved_excerpt'){
     const permitted=(await db.query(ref.kind==='accepted_profile' ? "SELECT 1 FROM profile_revisions WHERE id=$1 AND data_category IN ('delivery_context','internal_operations')" : "SELECT 1 FROM artifact_evidence_selections WHERE id=$1 AND data_category IN ('delivery_context','internal_operations')",[ref.revisionId])).rowCount;
     if(!permitted){eligibility.set(key,false);continue;}
    }
-   if(current){eligibility.set(key,true);continue;}
    const candidates=(await db.query(`SELECT id,source_kind,source_revision_id,source_generation,audience,content_digest,projection_contract FROM retrieval_sources WHERE environment_id=$1 AND source_kind=$2 AND source_revision_id=$3 AND source_generation=$4 AND content_digest=$5 AND lifecycle_state='current' AND ((scope='shared' AND $2='published_shared') OR (scope='customer' AND workspace_id=$6 AND customer_id=$7 AND (audience='delivery' OR $8='internal')))`,[scope.environmentId,kinds[ref.kind],ref.revisionId,ref.generation,ref.contentDigest,scope.workspaceId,scope.customerId,audience])).rows;
    for(const source of candidates)if(await recheckRetrievalSource(db,{id:source.id,kind:source.source_kind,revisionId:source.source_revision_id,generation:Number(source.source_generation),audience:source.audience,contentDigest:source.content_digest,projectionContract:source.projection_contract},{environmentId:scope.environmentId,workspaceId:scope.workspaceId,customerId:scope.customerId,audience,includeShared:true})){current=true;break;}
   }

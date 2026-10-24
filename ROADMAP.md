@@ -1,5 +1,7 @@
 # Turas delivery roadmap
 
+Baseline: 2026-09-26; updated 2026-10-10. **001 merged in PR 1; 002 merged in
+[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 merged in [PR 11](https://github.com/mcteer/turas/pull/11) after local and CI validation, without a hosted release; 007 merged in [PR 13](https://github.com/mcteer/turas/pull/13) after local and CI validation, without a hosted release. 008 merged in [PR 16](https://github.com/mcteer/turas/pull/16) after passing CI; hosted execution acceptance remains separate. 009 merged in [PR 17](https://github.com/mcteer/turas/pull/17); live reporting delivery remains deferred. 010 implementation and acceptance are recorded in [PR 19](https://github.com/mcteer/turas/pull/19); 011 merged in [PR 22](https://github.com/mcteer/turas/pull/22) after local, actual-model independent review and passing CI; 012 merged in [PR 23](https://github.com/mcteer/turas/pull/23); 013 merged in [PR 24](https://github.com/mcteer/turas/pull/24); 014 merged in [PR 25](https://github.com/mcteer/turas/pull/25), with Production schema 054 and internal hosted read checks recorded; 015 merged in [PR 28](https://github.com/mcteer/turas/pull/28), with acceptance tracked in its validation record; Production is enabled on schema 055 with runtime grants and authenticated SDK/HTTP/CLI WebKit acceptance, including research passage/citation reads; 016 implementation is in progress for a controlled internal and assigned-partner pilot; local workspace, storage and governed execution checkpoints are recorded in its validation record. Full pilot acceptance remains pending.**
 The user-requested [019 chat interaction parity](specs/019-chat-interaction-parity/spec.md)
 preserves the current appearance while restoring legacy composer, activity and
 scrolling behavior and is released in [PR #41](https://github.com/mcteer/turas/pull/41). Its
@@ -28,13 +30,14 @@ with actual authenticated profile/search/chat checks. This repair and release do
 not complete 016 hosted recovery, operator or pilot acceptance.
 
 Baseline: 2026-09-26; updated 2026-10-15. **001 merged in PR 1; 002 merged in
-[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 merged in [PR 11](https://github.com/mcteer/turas/pull/11) after local and CI validation, without a hosted release; 007 merged in [PR 13](https://github.com/mcteer/turas/pull/13) after local and CI validation, without a hosted release. 008 merged in [PR 16](https://github.com/mcteer/turas/pull/16) after passing CI; hosted execution acceptance remains separate. 009 merged in [PR 17](https://github.com/mcteer/turas/pull/17); live reporting delivery remains deferred. 010 implementation and acceptance are recorded in [PR 19](https://github.com/mcteer/turas/pull/19); 011 merged in [PR 22](https://github.com/mcteer/turas/pull/22) after local, actual-model independent review and passing CI; 012 merged in [PR 23](https://github.com/mcteer/turas/pull/23); 013 merged in [PR 24](https://github.com/mcteer/turas/pull/24); 014 merged in [PR 25](https://github.com/mcteer/turas/pull/25), with Production schema 054 and internal hosted read checks recorded; 015 merged in [PR 28](https://github.com/mcteer/turas/pull/28), with acceptance tracked in its validation record; The initial Production activation used schema 055 with runtime grants and authenticated SDK/HTTP/CLI WebKit acceptance, including research passage/citation reads; 016 remains a roadmap proposal.**
+[PR 2](https://github.com/mcteer/turas/pull/2) after local and CI validation, without a hosted release. 003 merged in [PR 4](https://github.com/mcteer/turas/pull/4) after local and CI validation, without a hosted release. 004 merged in [PR 6](https://github.com/mcteer/turas/pull/6) after local and CI validation, without a hosted release; 005 merged in [PR 8](https://github.com/mcteer/turas/pull/8) after local and CI validation, without a hosted release. 006 merged in [PR 11](https://github.com/mcteer/turas/pull/11) after local and CI validation, without a hosted release; 007 merged in [PR 13](https://github.com/mcteer/turas/pull/13) after local and CI validation, without a hosted release. 008 merged in [PR 16](https://github.com/mcteer/turas/pull/16) after passing CI; hosted execution acceptance remains separate. 009 merged in [PR 17](https://github.com/mcteer/turas/pull/17); live reporting delivery remains deferred. 010 implementation and acceptance are recorded in [PR 19](https://github.com/mcteer/turas/pull/19); 011 merged in [PR 22](https://github.com/mcteer/turas/pull/22) after local, actual-model independent review and passing CI; 012 merged in [PR 23](https://github.com/mcteer/turas/pull/23); 013 merged in [PR 24](https://github.com/mcteer/turas/pull/24); 014 merged in [PR 25](https://github.com/mcteer/turas/pull/25), with Production schema 054 and internal hosted read checks recorded; 015 merged in [PR 28](https://github.com/mcteer/turas/pull/28), with acceptance tracked in its validation record; The initial Production activation used schema 055 with runtime grants and authenticated SDK/HTTP/CLI WebKit acceptance, including research passage/citation reads; 016 implementation is in progress; full pilot acceptance remains pending.**
 
 Owner-private chat archiving released in [PR 20](https://github.com/mcteer/turas/pull/20).
 The [public research remediation](https://github.com/mcteer/turas/pull/21) saved and
 indexed the authorized 184-entry public customer inventory in Production; its
 application release and hosted UI checks remain separate from the data proof.
-011 is merged with local/CI acceptance; hosted release remains separate. 012 is merged in PR 23; local and CI acceptance are tracked in its validation record. 013 merged in PR 24; 014 merged in PR 25, with schema 054 and internal Production read checks recorded; 015 merged in [PR 28](https://github.com/mcteer/turas/pull/28), with acceptance tracked in its validation record; The initial Production activation used schema 055 with runtime grants and authenticated SDK/HTTP/CLI WebKit acceptance, including research passage/citation reads; 016 remains a proposal.
+011 is merged with local/CI acceptance; hosted release remains separate. 012 is merged in PR 23; local and CI acceptance are tracked in its validation record. 013 merged in PR 24; 014 merged in PR 25, with schema 054 and internal Production read checks recorded; 015 merged in [PR 28](https://github.com/mcteer/turas/pull/28), with acceptance tracked in its validation record; Production is enabled on schema 055 with runtime grants and authenticated SDK/HTTP/CLI WebKit acceptance, including research passage/citation reads; 016 implementation is in progress in [draft PR32](https://github.com/mcteer/turas/pull/32), incorporating released main f8d196f/schema077. Historical complete local catalogs remain source-bound; the current820-case/149-suite catalog requires fresh complete acceptance after the remaining implementation. Owned snapshot/restore, restricted-runtime and fixed maintenance-profile checks are recorded in the [validation record](specs/016-pilot-hardening/validation.md). Hosted service/recovery, actual cadence, participant observations and the owner decision remain pending.
+011 is merged with local/CI acceptance; hosted release remains separate. 012 is merged in PR 23; local and CI acceptance are tracked in its validation record. 013 merged in PR 24; 014 merged in PR 25, with schema 054 and internal Production read checks recorded; 015 merged in [PR 28](https://github.com/mcteer/turas/pull/28), with acceptance tracked in its validation record; The initial Production activation used schema 055 with runtime grants and authenticated SDK/HTTP/CLI WebKit acceptance, including research passage/citation reads; 016 implementation is in progress; full pilot acceptance remains pending.
 
 005 now has [specification](specs/005-governed-rag-research/spec.md),
 [design](specs/005-governed-rag-research/plan.md) and
@@ -200,7 +203,7 @@ provides feature selection and acceptance requirements.
 | 013 | Partner delivery and enablement | 006, 008, 010 | Partner workspace for assigned-customer delivery data plus platform-wide published shared knowledge, same plan method plus what/how/why lessons and checkpoints; no internal margins or ungranted customer leakage |
 | 014 | Governed adaptive learning | 005, 009, 012, 013 | Extend the 005 shared-knowledge publication path: feedback → reviewed practice candidate → evaluated version → publication/rollback; refresh jobs, cohort privacy, lineage-based invalidation and quality dashboards |
 | 015 | [Read-only MCP service — released](specs/015-read-only-mcp/spec.md) | 003, 005, 006, 009 | Versioned profile/evidence/plan/report reads through shared policy; scopes, pagination, current authorization, rate limits and consumer contract tests |
-| 016 | Pilot hardening and launch readiness | 002–015 | Restore/recovery, retention/deletion, security/access review, scale/cost tests, operational runbooks, pilot feedback and approved release |
+| 016 | [Pilot hardening and launch readiness — in progress](specs/016-pilot-hardening/spec.md) | 002–015 | Controlled internal/assigned-partner pilot; isolated synthetic Production workspace, durable private storage/hosted processing, restore/recovery with distinct restored-store binding under validation, retention/deletion, access review, scale/cost, runbooks, actual feedback and scoped release; implementation in progress, full pilot acceptance pending |
 
 ## Milestones and review gates
 
@@ -305,6 +308,10 @@ WebKit and bounded agent evaluations, without a participant-count gate.
 
 ## Updating this roadmap
 
+016 now includes an owned isolated current-denial reconciliation command with
+resumable audit failure. Full recovery, hosted cadence and participant acceptance
+remain open; see its [operations walkthrough](docs/pilot-operations.md).
+
 Record a slice as in progress when its spec/plan exists, and complete only when
 its exit evidence and merged PR are linked. Distinguish local, CI, preview and
 production verification. Revise dependencies and scope when evidence changes.
@@ -333,3 +340,20 @@ HTTP/WebKit verifies the original missing product, discovery, four picker layout
 and12 login cases on schema077. The merged branch and five temporary Preview
 settings are removed. See [feature019 validation](specs/019-chat-interaction-parity/validation.md)
 for Preview proof, historical failures and hosted limits.
+
+Pilot recovery now includes a bounded command-level maintenance verifier with database-derived record coverage and transaction-bound inventory/retirement rechecks. Its partial proof cannot unlock service. The820-case/149-suite inventory still needs final-source local/CI proof; ordinary hosted recovery, current denials, Workflow reconciliation and pilot acceptance remain pending.
+
+Feature016's authorized operator/internal/partner acceptance now uses actual
+hosted automated role exercises, labeled automated and independently reviewed.
+The local catalog is917cases/167suites; complete current-source proof, composed
+real-work recovery verification, hosted exercises and release remain open.
+
+
+The016 recovery producer now composes genuine current service, admission,
+identity, accounting and terminal-provider measurements under the owner decision
+fences. Owned tests cover complete service/verification commit and read-only
+commit acknowledgement. Explicit re-verification advances a locked decision
+revision while retaining prior evidence and holds. The full CLI restart/quarantine/verification/resolution/open lifecycle passed on
+an owned target. Fresh complete-source validation and hosted release acceptance
+remain pending; this
+does not complete016 or activate the backup operator.

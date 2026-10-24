@@ -4,7 +4,7 @@ import {spawnSync} from 'node:child_process';
 import {mkdtemp,readFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {publishedReportFixture} from '../fixtures/reports/published';
-import {requireOwnedReportsDatabase} from '../fixtures/reports/environment';
+import {requireOwnedReportsDatabase,ownedReportFixtureTransaction} from '../fixtures/reports/environment';
 import {reportTransaction} from '../../lib/server/reports/commands';
 import {verifyConfiguredReportSender,registerVerifiedReportSender} from '../../lib/server/reports/senders';
 import {createReportRecipientPolicy,createReportPolicyPreview,decideReportPolicy} from '../../lib/server/reports/recipient-policy';
@@ -39,6 +39,8 @@ it('quarantines an actual process exit after provider acceptance and never resen
  await reportTransaction(async db=>{
   const interrupted=(await db.query('SELECT state,attempt_count FROM report_deliveries WHERE id=$1',[claims[1].id])).rows[0];expect(interrupted).toMatchObject({state:'dispatching',attempt_count:1});
   expect((await db.query('SELECT 1 FROM report_attempt_results WHERE attempt_id=$1',[claims[1].attemptId])).rowCount).toBe(0);
+ });
+ await ownedReportFixtureTransaction(async db=>{
   // Advance immutable first-dispatch time only in this explicitly owned fixture.
   await db.query('ALTER TABLE report_deliveries DISABLE TRIGGER report_delivery_identity');
   await db.query("UPDATE report_deliveries SET first_dispatch_at=now()-interval '24 hours',lease_until=now()-interval '1 second' WHERE id=$1",[claims[1].id]);
