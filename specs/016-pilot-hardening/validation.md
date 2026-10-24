@@ -8031,3 +8031,37 @@ five cases, while the introducing catalog entry incorrectly listed eleven.
 The incomplete G06 proof remains unaccepted; no model calls, resumption,
 Production migration, deployment or backup schedule was started. T157 corrects
 that registry mismatch and adds an import-time cross-inventory guard.
+
+
+### 2026-10-24: learning preparation navigation working-tree verification
+
+The 4deea5f main CI run 40066141601 had one genuine read-only MCP regression
+failure: learning-draft.spec.ts, desktop light, Prepare learning draft, 30,044ms.
+After retaining its original log, the already-failed run was cancelled to retire
+resource use. Its terminal inventory was 37 successes, that genuine failure, one
+derivative Expansion aggregate failure caused by cancelled project jobs, and
+eleven cancelled jobs. Legacy run 40066141603 passed all seven jobs. This run is
+not accepted for release.
+
+The unchanged original learning draft case passed locally in all four projects.
+A separate controlled old-source probe retained an actual committed draft.prepare
+receipt, one POST, a prepared database row and zero paid reservations. Holding
+read-only customer requests left navigation on the preparation page after
+30,016ms. This demonstrates the independent confirmed-navigation bug, not the
+historical CI cause.
+
+The candidate adds six durable adverse cases. The first local attempt exposed
+premature test observation before the real POST response; the next hit real
+shared-actor read quotas. Both failures remain retained. Tests now wait for the
+actual response and use separate existing governed fixtures, with no quota
+changes or counter resets. One complete subsequent run passed all 28 cases across
+four WebKit projects, with original clocks, no retries and no skipped cases.
+The complete five-file learning UI run subsequently passed all 56 cases across
+four projects with the unchanged 30-second case limit, no retries or skips, and
+working-tree UI acceptance. Final review, commit and fresh full CI/model/hosted
+acceptance remain pending. Production remains unchanged.
+
+Unknown-result handling retains its existing awaited refresh policy. A
+simultaneous unknown write result and refresh outage can still leave the action
+busy awaiting that refresh. The confirmed-navigation fix does not establish
+recovery from that separate outage combination.

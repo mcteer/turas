@@ -708,3 +708,29 @@ the existing inventory test with the historical invalid mapping and missing,
 duplicate and ambiguous inventory negatives. All 1,040 cases and 189 suites remain
 required, followed by fresh committed CI, complete original gate proofs, model
 evaluations and hosted release verification.
+
+
+### Confirmed learning preparation navigation (T158)
+
+The 4deea5f CI read-only MCP regression job timed out during learning draft
+preparation. The unchanged original case passed locally in all four projects;
+the historical CI action and cause remain unproved. A separate controlled owned
+WebKit probe confirmed one actual committed preparation and zero paid
+reservations, then held only customer-list reads: the browser remained on New
+Learning Draft after 30 seconds. The mutation hook awaited that unrelated read
+before returning the receipt to its navigation caller.
+
+Opt only draft preparation into navigation after validating the exact committed
+receipt's contract, action, request ID, positive version and governed target.
+Explicit status reconciliation uses the identical validation and never repeats
+the POST. Default callers, failure refreshes and abandoned/retired requests keep
+their existing refresh policy. The destination obtains fresh session and draft
+reads; navigation does not grant authority or start a paid draft. Invalid or
+missing acknowledgements remain pending.
+
+Keep the original browser case byte-identical. Add separate real owned cases for
+read-stall navigation, lost acknowledgements, invalid targets, foreign request
+IDs, noncommitted outcomes and authentication loss. Each added case creates its
+own governed synthetic workspace and actors using existing fixtures. Retain real
+read/write quotas, the original 30-second case limit and zero retries. Verify the
+complete learning UI suite and all fresh committed release gates.

@@ -819,3 +819,17 @@ No hosted target may be locked for release before its measured reopen path exist
   stale mapping and malformed inventories without reducing the 1,040-case catalog.
   Obtain fresh committed full CI, complete original G06 proof and independent
   review before model or release acceptance; retain the incomplete 3055 proof.
+
+
+- [ ] T158 Retain the genuine 4deea5f learning-draft preparation CI timeout
+  and unchanged-case local pass without claiming its historical cause. Reproduce
+  actual committed preparation blocked by a stalled read-only customer refresh.
+  Navigate only from the exact committed draft.prepare receipt, including current
+  request identity, contract, action, version and governed target; apply the same
+  binding to explicit reconciliation. Preserve all other mutation refreshes,
+  unknown-result pending state, authentication invalidation and fresh destination
+  authorization/source reads. Add durable owned WebKit coverage for read stalls,
+  lost/malformed acknowledgements, one-write reconciliation and authentication
+  loss, using separate governed synthetic fixtures and unchanged real quotas.
+  Preserve the original case, all clocks and retries; obtain complete local and
+  fresh committed CI/model/hosted acceptance before release.
