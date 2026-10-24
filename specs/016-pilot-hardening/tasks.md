@@ -853,3 +853,13 @@ No hosted target may be locked for release before its measured reopen path exist
   schedule assessments, cost reservations and failure accounting. Regress the
   original checkpoint on owned PostgreSQL, retain all original cases and require
   fresh committed CI, native capture and hosted scheduled-execution evidence.
+
+- [ ] T161 Retain the actual cd09e26 Product Gaps mobile WebKit failures and
+  independently reproduce confirmed-canonicalization/read-stall liveness with
+  an actual owned merge. Retire stale read eligibility only after validating its
+  receipt, bound total follow-up reads, suppress superseded/path-stale results,
+  and expose a read-only retry without replaying a write. Preserve uncertain
+  command accounting and all original scenarios, assertions and clocks. Add
+  durable WebKit coverage plus fixed, private-safe preview/decision lifecycle
+  metadata; do not claim the separate preview failure's cause is established.
+  Require all four browser profiles, complete fresh CI, model and hosted checks.

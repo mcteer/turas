@@ -767,3 +767,35 @@ actual exported snapshot before it. Do not rewrite timestamps, relax the origina
 schedule assessor or substitute local tests for hosted cron observations. Keep
 the independent native cold-copy and scheduled-run fixtures in explicitly
 different synthetic project scopes, retaining the original cold-copy receipt.
+
+### Confirmed canonicalization read retirement (T161)
+
+The cd09e26 CI mobile-dark canonicalization journey failed. A separate owned
+WebKit experiment proved one concrete defect: one real merge committed, but
+withholding only the following detail response kept stale mapping controls
+visible beyond the original five-second assertion. Releasing that same response
+restored the UI. This does not establish the other preview-visibility failure's
+internal cause.
+
+After receipt validation, invalidate the prior canonicalization view before
+awaiting a fresh read. Keep one current read, a ten-second total headers/body
+deadline, and sequence/path checks before publication. Expiry clears eligible
+content and leaves an explicit read-only refresh available. Preserve pending
+uncertain commands, reconciliation and write receipt validation; never replay a
+POST. WebKit may report a timed abort as AbortError, so distinguish timeout from
+ordinary supersession using the owned timer's flag.
+
+Preserve the three original browser cases unchanged and add one owned stalled-read
+case across all four profiles, with an actual server merge and one receipt.
+Passive diagnostics distinguish preview/decision transport phases and bounded
+control-state scalars, never IDs, values, URLs, response bodies or private errors.
+No existing request, test, fixture, stage or retry policy is extended.
+
+An absent-view read-only refresh remains available while an uncertain command
+is pending, once its transport has settled. It restores current authorization
+before receipt reconciliation; it does not enable or replay a POST. A second
+new owned browser case commits once, loses the acknowledgement, invalidates the
+view, then restores and reconciles the original request with one stored receipt.
+The earlier four-case matrix passed 92 cases; the final five-case canonicalization
+file increases the six-journey matrix to 96 cases without changing any original
+scenario or global clock. Final source-bound checks remain required.

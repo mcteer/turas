@@ -1155,3 +1155,12 @@ that exact pair, preserving ordinary refreshes and clearing new-pair choices
 before interaction. All 12 owned Registers and Scope Changes cases now pass
 across four WebKit profiles, without skips or retries. Fresh complete CI, model
 and hosted release acceptance remain required; Production is unchanged.
+
+The current pilot candidate also retires stale canonicalization controls after a
+confirmed Product Gaps merge, bounds follow-up reads, and offers a read-only
+refresh after failure. An owned WebKit regression forwards the actual merge
+response and holds only its subsequent read; it verifies one committed write
+and no replay. A separate lost-acknowledgement case restores a fresh authorized
+view before reconciling the original request. The three original canonicalization
+cases remain unchanged.
+Complete CI, model and hosted acceptance are tracked in [PR #47](https://github.com/mcteer/turas/pull/47); local results do not establish release completion.

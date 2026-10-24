@@ -8114,3 +8114,26 @@ settle with the original error, no disconnected query or later transition, and
 the issued reservation retained. All nine cases in that suite pass; the pilot
 type check and catalog inventory (189 suites, 1,041 cases, 22 gates) pass. Fresh
 committed-source and hosted checks remain required.
+
+### T161 owned canonicalization candidate
+
+The independent unchanged-source owned WebKit experiment committed one actual
+merge, held the following detail read, observed the original five-second mapping
+assertion fail, then recovered when the read was released. The separate CI preview
+visibility failure remains unclassified. The first candidate removed stale
+controls but failed its new expiry-status assertion because WebKit surfaced
+timed abort as AbortError. The corrected timeout flag passes all four focused
+mobile-dark cases, including the three byte-identical original scenarios and
+the new real-write/read-stall/retry regression (zero retries/skips/flaky cases).
+Root, Product Gaps and pilot types plus the fixed-diagnostic privacy unit suite
+pass. Full four-profile, committed CI, model and hosted verification remain
+required; these local observations do not establish release acceptance.
+
+The final candidate also permits an absent-view GET refresh while a command
+remains pending and verifies lost-acknowledgement reconciliation without replay.
+After fixing the new test's barrier ordering, the complete original six-journey
+matrix passes all 96 cases across four WebKit profiles, with zero retries, skips
+or flaky cases and actual parent exit 0. This includes all original scenarios
+and both new real-write regressions. Root/Product Gaps/pilot types, documentation
+and diff checks pass; the original deterministic inventory remains 189 suites
+and 1,041 cases. Committed CI, model and hosted acceptance are still pending.
