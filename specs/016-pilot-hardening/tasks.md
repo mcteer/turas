@@ -833,3 +833,14 @@ No hosted target may be locked for release before its measured reopen path exist
   loss, using separate governed synthetic fixtures and unchanged real quotas.
   Preserve the original case, all clocks and retries; obtain complete local and
   fresh committed CI/model/hosted acceptance before release.
+
+- [ ] T159 Retain the actual 5dbc51c full CI/original catalog pass and its
+  separate failed model batch: stages 002/003 captured, stage 004 stopped at
+  1,290 aggregate output tokens against the unchanged 1,200 ceiling. Restore the
+  root agent's configured low reasoning in the staged artifact evaluation agent,
+  which currently omits it. Preserve selected model, root configuration, 1,000
+  requested tokens, observed-output assertion, all cases, clocks and accounting.
+  Regress the lost configuration with the actual staged import and verify its
+  denied SDK serialization without a provider call. Do not infer an enforced
+  aggregate cap or count partial diagnostics as full acceptance; require fresh
+  committed CI, complete model evaluation and independent semantic review.

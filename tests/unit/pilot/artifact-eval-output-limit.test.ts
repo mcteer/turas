@@ -27,7 +27,7 @@ for(const [name,requested,expected] of [
  });
 }
 
-it('imports the staged artifact evaluation agent with its request limiter',async()=>{
+it('imports the staged artifact evaluation agent with its request limiter and root reasoning',async()=>{
  const base=resolve('local-artifacts/016');await mkdir(base,{recursive:true,mode:0o700});
  const app=await mkdtemp(join(base,'artifact-output-stage-'));
  try{
@@ -35,7 +35,7 @@ it('imports the staged artifact evaluation agent with its request limiter',async
   await stageArtifactEvalAgent(app);
   const env:NodeJS.ProcessEnv={NODE_ENV:'test',...Object.fromEntries(['PATH','HOME','TMPDIR','LANG','LC_ALL'].flatMap(key=>process.env[key]===undefined?[]:[[key,process.env[key]]]))};
   expect(execFileSync(process.execPath,['--import','tsx','--input-type=module','-e',
-   'const fixture=await import(process.argv[1]);if(!fixture.default)throw Error("Staged fixture missing");process.stdout.write("staged");',
-   pathToFileURL(join(app,'agent/agent.ts')).href],{cwd:app,env,encoding:'utf8',timeout:10000,maxBuffer:16384})).toBe('staged');
+   'const fixture=await import(process.argv[1]);const root=await import(process.argv[2]);if(!fixture.default)throw Error("Staged fixture missing");if(root.default.reasoning!=="low"||fixture.default.reasoning!==root.default.reasoning)throw Error("Staged fixture lost root reasoning");process.stdout.write("staged");',
+   pathToFileURL(join(app,'agent/agent.ts')).href,pathToFileURL(resolve('agent/agent.ts')).href],{cwd:app,env,encoding:'utf8',timeout:10000,maxBuffer:16384})).toBe('staged');
  }finally{await rm(app,{recursive:true,force:true});}
 });

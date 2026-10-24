@@ -8065,3 +8065,35 @@ Unknown-result handling retains its existing awaited refresh policy. A
 simultaneous unknown write result and refresh outage can still leave the action
 busy awaiting that refresh. The confirmed-navigation fix does not establish
 recovery from that separate outage combination.
+
+### 2026-10-24: complete 5dbc51c CI and artifact reasoning follow-up
+
+For commit `5dbc51c`, main CI `40071776664` and legacy CI `40071776858` passed all 57 jobs
+on their first attempts. Independent retained-artifact verification covered 189
+suites, 1,040 cases and 18 original gate-proof files, including complete G06.
+These results belong to `5dbc51c`; they do not certify its subsequent changes.
+
+The fresh eleven-stage model batch stopped during stage 004 after six of eight
+cases. Stages002/003 each captured 12 responses and passed independent semantic
+review. The partner-reviewed-excerpt case completed in 14,609 ms with one model
+step and all recorded access, approval, citation and mutation hard gates passing,
+but its 1,290 aggregate output tokens exceeded the unchanged 1,200 limit. The
+batch remains failed; later stages did not run. Its processes were retired and
+all settled charges and the original unknown-charge hold were retained.
+
+Actual guarded Gateway metadata recorded the intended 1,000-token request limit.
+A later authenticated lookup returned the exact generation ID with 61 completion
+and 1,229 reasoning tokens, matching the aggregate count, inputs and settled cost.
+That lookup failed its model-name predicate and did not complete the second
+lookup, so it is limited diagnostic evidence, not full diagnostic acceptance.
+No additional model call occurred during these lookups.
+
+The concrete configuration defect is independent of that qualification: the
+artifact fixture omitted the root agent's authored low reasoning. The expanded
+existing staged-import case failed against the old fixture (three other cases
+passed), then all four cases passed after restoring that setting. A denied,
+actual installed-SDK probe of the staged candidate serialized low reasoning and
+the unchanged 1,000-token limit with zero network/provider dispatches. The root
+agent, selected model, 1,200-token observed ceiling, case inventory, deadlines and
+retry policy are unchanged. Fresh committed CI and complete model/semantic/hosted
+acceptance remain required; Production remains unchanged.

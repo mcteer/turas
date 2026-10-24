@@ -734,3 +734,19 @@ IDs, noncommitted outcomes and authentication loss. Each added case creates its
 own governed synthetic workspace and actors using existing fixtures. Retain real
 read/write quotas, the original 30-second case limit and zero retries. Verify the
 complete learning UI suite and all fresh committed release gates.
+
+### Artifact evaluation reasoning fidelity (T159)
+
+The 5dbc51c model batch completed stages 002/003, then stopped after six of eight
+stage 004 cases when one step reported 1,290 output tokens against the existing
+1,200 ceiling. Its serialized Gateway request did contain the intended 1,000-token
+limit. The artifact fixture replaces the root agent configuration but omitted
+the root's authored `reasoning: "low"`. Preserve that setting in the fixture;
+the production agent, selected model and reasoning level remain unchanged.
+
+Extend the existing staged-import regression to compare the actual fixture with
+the root configuration. Demonstrate its old-code failure and verify the staged
+fixture's low reasoning and 1,000-token limit at a denied SDK boundary. Retain all
+original assertions, cases, deadlines, costs and unknown holds. This corrects
+configuration fidelity; it does not guarantee provider output totals or replace
+fresh source-bound model, semantic and hosted verification.
