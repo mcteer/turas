@@ -8017,3 +8017,17 @@ passed with the original clocks. No root cause or CI acceptance is claimed. T156
 adds bounded fixed failure classification and reporter counts only. Production
 remains f8d196f with schema 077; hosted, model and recovery release checks remain
 open. Private raw evidence is retained outside Git.
+
+
+### 2026-10-24: CI passed; incomplete G06 proof detected
+
+3055ac8 passed all 50 main jobs (40057625607) and seven legacy jobs (40057625498),
+with 189 suites and 1,040 cases verified from original CI evidence. Independent
+whole-CI readback passed. Original-owned extraction retained 589 JSON members,
+including 17 gate proofs; the subsequent proof verifier refused incomplete gate
+attempts. G06 referenced six nonexistent managed-edge transport case IDs. Git
+history confirms the original and current test bytes are identical and contain
+five cases, while the introducing catalog entry incorrectly listed eleven.
+The incomplete G06 proof remains unaccepted; no model calls, resumption,
+Production migration, deployment or backup schedule was started. T157 corrects
+that registry mismatch and adds an import-time cross-inventory guard.

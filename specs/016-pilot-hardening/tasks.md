@@ -809,3 +809,13 @@ No hosted target may be locked for release before its measured reopen path exist
   invalid and oversized reports. Emit no child prose, connection data or report
   payload. Preserve all assertions, process outcomes, deadlines and retries;
   independently review privacy and fresh complete CI before release.
+
+
+- [ ] T157 Correct G06's six nonexistent managed-edge case references introduced
+  with an unchanged five-case test file. Preserve all actual cases and assertions.
+  Validate every catalog case against the registered suite inventory before owned
+  setup, rejecting missing references, duplicate suites/titles and ambiguous IDs;
+  share canonical ID generation with receipt production. Regress the original
+  stale mapping and malformed inventories without reducing the 1,040-case catalog.
+  Obtain fresh committed full CI, complete original G06 proof and independent
+  review before model or release acceptance; retain the incomplete 3055 proof.

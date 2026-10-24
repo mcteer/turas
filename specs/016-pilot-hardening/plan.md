@@ -692,3 +692,19 @@ bounded failure summary with fixed connection/unhandled-error signatures and
 validated numeric reporter counts. Missing, invalid and oversized sibling reports
 remain explicit. No test, library, timing or retry behavior changes are justified
 by this observation. Fresh complete committed CI remains required.
+
+
+### Catalog-to-suite integrity (T157)
+
+All 57 CI jobs passed for 3055ac8, but original owned proof verification correctly
+refused G06. Its catalog referenced eleven managed-edge transport cases even
+though both the introducing commit and current unchanged file contain five.
+Remove only nonexistent IDs 006–011. No actual test or assertion is removed.
+At catalog import, validate every referenced ID against all registered suites,
+including contract suites, before any owned environment is created. Reject
+duplicate files/titles, ambiguous canonical IDs and duplicate gate references.
+Use the same ID generator in admission and original receipt production. Extend
+the existing inventory test with the historical invalid mapping and missing,
+duplicate and ambiguous inventory negatives. All 1,040 cases and 189 suites remain
+required, followed by fresh committed CI, complete original gate proofs, model
+evaluations and hosted release verification.

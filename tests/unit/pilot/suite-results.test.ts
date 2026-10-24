@@ -1,8 +1,25 @@
 import { expect,it } from "vitest";
 import { verifyPilotSuiteResult } from "../../../scripts/pilot-suite-results";
+import {assertPilotCatalogInventory,pilotCatalog} from "../../../scripts/pilot-catalog";
+import {pilotSuiteCaseIds} from "../../../scripts/pilot-suite-results";
 import suites from "../../../scripts/pilot-suites.json";
 function fixture(){const suite=suites.suites[0];return {file:suite.file,result:{success:true,numTotalTests:suite.expectedCases,numPassedTests:suite.expectedCases,numFailedTests:0,numPendingTests:0,testResults:[{assertionResults:suite.cases.map(title=>({title,status:"passed",retryReasons:[]}))}]}};}
-it("checks the complete named suite inventory",()=>{const {file,result}=fixture();expect(verifyPilotSuiteResult(file,result).passedCases).toBe(22);});
+it("checks the complete named suite inventory",()=>{
+ const {file,result}=fixture();expect(verifyPilotSuiteResult(file,result).passedCases).toBe(22);
+ expect(()=>assertPilotCatalogInventory(pilotCatalog)).not.toThrow();
+ const stale=structuredClone(pilotCatalog),gate=stale.gates.find(g=>g.id==='G06')!;
+ gate.localCaseIds.push(...Array.from({length:6},(_,i)=>'unit.managed-edge-transport.'+String(i+6).padStart(3,'0')));
+ expect(()=>assertPilotCatalogInventory(stale)).toThrow('unregistered case: G06');
+ const duplicate=structuredClone(pilotCatalog);duplicate.gates[0].localCaseIds.push(duplicate.gates[0].localCaseIds[0]);
+ expect(()=>assertPilotCatalogInventory(duplicate)).toThrow('Duplicate pilot catalog case ID');
+ const edge=suites.suites.find(s=>s.file==='tests/unit/pilot/managed-edge-transport.test.ts')!;
+ expect(pilotSuiteCaseIds(edge.file,edge.expectedCases)).toEqual(Array.from({length:5},(_,i)=>'unit.managed-edge-transport.'+String(i+1).padStart(3,'0')));
+ expect(()=>assertPilotCatalogInventory(pilotCatalog,{suites:suites.suites.filter(s=>s!==edge)})).toThrow('unregistered case: G06');
+ expect(()=>assertPilotCatalogInventory(pilotCatalog,{suites:[...suites.suites,edge]})).toThrow('Invalid pilot suite inventory');
+ const alias={...edge,file:'tests/unit/managed-edge-transport.test.ts'};
+ expect(()=>assertPilotCatalogInventory(pilotCatalog,{suites:[...suites.suites,alias]})).toThrow('Ambiguous pilot suite case ID');
+ expect(()=>assertPilotCatalogInventory(pilotCatalog,{suites:[{...edge,expectedCases:6}]})).toThrow('Invalid pilot suite inventory');
+});
 it("rejects an unknown registered suite",()=>{expect(()=>verifyPilotSuiteResult("tests/unit/foreign.test.ts",fixture().result)).toThrow("Unknown pilot suite");});
 it("rejects a partial case list despite a successful exit",()=>{const {file,result}=fixture();result.testResults[0].assertionResults.pop();expect(()=>verifyPilotSuiteResult(file,result)).toThrow("incomplete");});
 it("rejects duplicate case titles",()=>{const {file,result}=fixture();result.testResults[0].assertionResults[1].title=result.testResults[0].assertionResults[0].title;expect(()=>verifyPilotSuiteResult(file,result)).toThrow("incomplete");});

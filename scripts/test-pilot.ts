@@ -15,7 +15,7 @@ import { createEvidenceDirectory, readEvidence, writeEvidence } from "./pilot-ev
 import { pilotSource } from "./pilot-source";
 import { pilotCatalog } from "./pilot-catalog";
 import { pilotRunSchema } from "../lib/contracts/pilot-readiness";
-import { verifyPilotSuiteResult } from "./pilot-suite-results";
+import { verifyPilotSuiteResult,pilotSuiteCaseIds } from "./pilot-suite-results";
 
 let failureRecord:{root:string;runId:string;sourceCommit:string;sourceDigest:string;catalogDigest:string;environmentMarker?:string}|null=null;
 let failureStage='setup',activeSuite:string|null=null;
@@ -75,7 +75,7 @@ async function main(){
    const code=exit.code;
    if(code!==0)throw new Error("Registered pilot suite failed");
    failureStage='suite-catalog-verification';
-   const result=verifyPilotSuiteResult(suite.file,await readEvidence(root,name));suiteEvidence.push({file:suite.file,resultFile:name,resultDigest:createHash('sha256').update(await readFile(path.join(root,name))).digest('hex'),processFile:`suite-${index}-process.json`,processDigest:createHash('sha256').update(await readFile(path.join(root,`suite-${index}-process.json`))).digest('hex')});total+=result.passedCases;const prefix=suite.file.split("/")[1]+"."+path.basename(suite.file,".test.ts");for(let i=0;i<suite.expectedCases;i++){const id=`${prefix}.${String(i+1).padStart(3,"0")}`;passedCaseIds.add(id);caseTimes.set(id,{start:startedAt,end:new Date().toISOString()});}
+   const result=verifyPilotSuiteResult(suite.file,await readEvidence(root,name));suiteEvidence.push({file:suite.file,resultFile:name,resultDigest:createHash('sha256').update(await readFile(path.join(root,name))).digest('hex'),processFile:`suite-${index}-process.json`,processDigest:createHash('sha256').update(await readFile(path.join(root,`suite-${index}-process.json`))).digest('hex')});total+=result.passedCases;for(const id of pilotSuiteCaseIds(suite.file,suite.expectedCases)){passedCaseIds.add(id);caseTimes.set(id,{start:startedAt,end:new Date().toISOString()});}
    progress('complete',index,suite.file,startedAt);
   }
   activeSuite=null;failureStage='source-and-receipt-verification';

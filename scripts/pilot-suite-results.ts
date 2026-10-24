@@ -10,3 +10,10 @@ export function verifyPilotSuiteResult(file:string,input:unknown) {
    result.numTotalTests!==suite.expectedCases||result.numPassedTests!==suite.expectedCases||result.numFailedTests||result.numPendingTests||!result.success||assertions.some(a=>a.status!=="passed"||(a.retryReasons?.length??0)>0))throw new Error("Pilot suite incomplete or unstable");
  return {expectedCases:suite.expectedCases,passedCases:result.numPassedTests,failedCases:0,skippedCases:0,flakyCases:0};
 }
+
+/** Canonical IDs shared by catalog admission and original receipt production. */
+export function pilotSuiteCaseIds(file:string,expectedCases:number){
+ if(!/^tests\/(?:unit|integration|contracts)\/(?:[a-z0-9-]+\/)*[a-z0-9-]+\.test\.ts$/.test(file)||!Number.isSafeInteger(expectedCases)||expectedCases<1)throw Error('Invalid pilot suite inventory');
+ const prefix=file.split('/')[1]+'.'+file.split('/').at(-1)!.replace(/\.test\.ts$/,'');
+ return Array.from({length:expectedCases},(_,i)=>prefix+'.'+String(i+1).padStart(3,'0'));
+}
