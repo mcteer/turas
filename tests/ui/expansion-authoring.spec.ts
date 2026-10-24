@@ -1,3 +1,5 @@
+import {installExpansionEntryDiagnostics} from '../fixtures/expansion/ui-diagnostics';
+installExpansionEntryDiagnostics();
 import {test,expect} from '@playwright/test';
 import {randomUUID} from 'node:crypto';
 import {createReviewedPlanWorkload} from '../fixtures/plans/journey';

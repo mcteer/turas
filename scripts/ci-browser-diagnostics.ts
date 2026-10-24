@@ -2,6 +2,25 @@ export const knownBrowserPhases=new Set(['Reload retained failed history','Verif
 export function fixedBrowserPhases(raw:unknown){return Array.isArray(raw)?[...new Set(raw.filter((value):value is string=>typeof value==='string'&&knownBrowserPhases.has(value)))].slice(0,8):[];}
 import axe from 'axe-core';
 import {z} from 'zod';
+const expansionElapsed=z.number().int().min(0).max(300000);
+export const expansionEntryObservationSchema=z.strictObject({
+ contract:z.literal('expansion-entry-observation-v1'),elapsedMs:expansionElapsed,
+ collectionError:z.enum(['none','page_closed','collection_timeout','collection_failed']),
+ snapshot:z.strictObject({pathCategory:z.enum(['expansion','login','other']),visibility:z.enum(['visible','hidden','unknown']),focused:z.boolean(),newCount:z.number().int().min(0).max(8),newEnabled:z.boolean(),newVisible:z.boolean(),newWithinViewport:z.boolean(),newHitTarget:z.boolean(),loadingVisible:z.boolean(),unavailableVisible:z.boolean(),unconfirmedVisible:z.boolean()}).nullable(),
+ events:z.array(z.strictObject({category:z.enum(['session','overview','module_asset','document']),phase:z.enum(['request','headers','finished','failed']),elapsedMs:expansionElapsed,status:z.number().int().min(100).max(599).nullable()})).max(16),
+ pending:z.array(z.strictObject({category:z.enum(['session','overview','module_asset','document']),elapsedMs:expansionElapsed})).max(8),
+ actions:z.array(z.strictObject({kind:z.enum(['new_pointer','new_click']),elapsedMs:expansionElapsed})).max(8),
+ pageErrors:z.array(z.enum(['type','reference','syntax','chunk_load','hydration','other'])).max(4),
+});
+export type ExpansionEntryObservation=z.infer<typeof expansionEntryObservationSchema>;
+export function fixedExpansionEntryObservation(raw:unknown):ExpansionEntryObservation|undefined{const parsed=expansionEntryObservationSchema.safeParse(raw);return parsed.success?parsed.data:undefined;}
+function expansionEntryAttachment(raw:unknown):ExpansionEntryObservation|undefined{
+ if(!Array.isArray(raw))return;
+ for(const value of raw.slice(-16)){
+  if(!value||typeof value!=='object'||value.name!=='expansion-entry-observation'||value.contentType!=='application/json'||typeof value.body!=='string'||value.body.length>10924)continue;
+  try{const bytes=Buffer.from(value.body,'base64');if(bytes.length>8192||bytes.toString('base64')!==value.body)continue;const result=fixedExpansionEntryObservation(JSON.parse(bytes.toString('utf8')));if(result)return result;}catch{/* Never publish arbitrary attachment data. */}
+ }
+}
 const executionElapsed=z.number().int().min(0).max(180000);
 const executionVisibility=z.enum(['visible','hidden','unknown']);
 const executionPath=z.enum(['execution','login','other']);
@@ -68,7 +87,7 @@ function utilizationAttachment(raw:unknown):UtilizationMetadata|undefined{
   }catch{/* Malformed or private attachment content is never a diagnostic. */}
  }
 }
-type BrowserFailure={file:string;line:number;column:number;project:string;status:string;durationMs:number|null;category:string;signatures:string[];mentionedAccessibilityRules:string[];phases?:string[];utilization?:UtilizationMetadata;executionChanges?:ExecutionChangesObservation;executionWrite?:ExecutionWriteObservation};
+type BrowserFailure={file:string;line:number;column:number;project:string;status:string;durationMs:number|null;category:string;signatures:string[];mentionedAccessibilityRules:string[];phases?:string[];utilization?:UtilizationMetadata;executionChanges?:ExecutionChangesObservation;executionWrite?:ExecutionWriteObservation;expansionEntry?:ExpansionEntryObservation};
 const accessibilityRules=new Set(axe.getRules().map(rule=>rule.ruleId));
 const projects=new Set(['webkit-desktop-light','webkit-desktop-dark','webkit-mobile-light','webkit-mobile-dark']);
 const signatures=['Test timeout','Timeout','toBeVisible','toBeFocused','toHaveCount','toEqual','strict mode violation','navigation interrupted','ERR_ABORTED','ECONNREFUSED','Execution context was destroyed','page.reload','page.goto','Target page, context or browser has been closed','WebKit encountered an internal error','Frame load interrupted','Load failed','Fast Refresh','503','429'] as const;
@@ -102,7 +121,8 @@ export function browserFailureMetadata(raw:unknown,allowedFiles:ReadonlySet<stri
     const utilization=file==='execution-handoff.spec.ts'?utilizationAttachment(result.attachments):undefined;
     const executionChanges=file==='execution-changes.spec.ts'?executionChangesAttachment(result.attachments):undefined;
     const executionWrite=file==='execution-handoff.spec.ts'?executionWriteAttachment(result.attachments):undefined;
-    failures.push({...location,...(phases.size?{phases:[...phases].sort()}:{}),...(utilization?{utilization}:{}),...(executionChanges?{executionChanges}:{}),...(executionWrite?{executionWrite}:{}),project:projects.has(test.projectName)?test.projectName:'unknown',status:result.status,durationMs:typeof result.duration==='number'&&Number.isFinite(result.duration)&&result.duration>=0&&result.duration<=3600000?result.duration:null,category:/test timeout/i.test(prose)?'test_timeout':/timeout|timed out/i.test(prose)?'operation_timeout':/strict mode violation/i.test(prose)?'ambiguous_locator':/navigation|ERR_ABORTED/i.test(prose)?'navigation':/expect|AssertionError/i.test(prose)?'assertion':'case_failure',signatures:matched,mentionedAccessibilityRules});
+    const expansionEntry=/^expansion-(authoring|decisions|review-queue|advice)\.spec\.ts$/.test(file)?expansionEntryAttachment(result.attachments):undefined;
+    failures.push({...location,...(phases.size?{phases:[...phases].sort()}:{}),...(utilization?{utilization}:{}),...(executionChanges?{executionChanges}:{}),...(executionWrite?{executionWrite}:{}),...(expansionEntry?{expansionEntry}:{}),project:projects.has(test.projectName)?test.projectName:'unknown',status:result.status,durationMs:typeof result.duration==='number'&&Number.isFinite(result.duration)&&result.duration>=0&&result.duration<=3600000?result.duration:null,category:/test timeout/i.test(prose)?'test_timeout':/timeout|timed out/i.test(prose)?'operation_timeout':/strict mode violation/i.test(prose)?'ambiguous_locator':/navigation|ERR_ABORTED/i.test(prose)?'navigation':/expect|AssertionError/i.test(prose)?'assertion':'case_failure',signatures:matched,mentionedAccessibilityRules});
    }
   }
   for(const key of ['suites','specs'])if(Array.isArray(row[key]))for(const child of row[key])walk(child,depth+1);

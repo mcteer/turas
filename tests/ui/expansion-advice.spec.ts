@@ -1,3 +1,5 @@
+import {installExpansionEntryDiagnostics} from '../fixtures/expansion/ui-diagnostics';
+installExpansionEntryDiagnostics();
 import {test,expect} from '@playwright/test';
 import {assignExpansionOwner} from '../../lib/server/expansion/owners';
 import {createProfileTestSession} from '../fixtures/profiles';

@@ -1,4 +1,13 @@
-Pilot validation and Production release remain in progress. The current recovery
+# Turas
+
+Current pilot release status and validation results are recorded in
+[PR #47](https://github.com/mcteer/turas/pull/47). The observations below are
+historical snapshots at their recorded source revisions; they do not replace
+current release evidence.
+
+## Recorded validation observations
+
+The current recovery
 change adds explicit original-to-restored Blob store binding: the unchanged
 backup authenticates the original store, while live destination bytes and the
 exact deployment configuration establish the isolated restored backend.
@@ -67,7 +76,7 @@ as `2f83dca`. The first-send/Thinking/research-handoff fix subsequently released
 Production login/display/read checks. Those read-only release checks made no
 paid model calls and did not rerun live research.
 
-# Turas
+## Application and development
 
 The complete legacy backend audit and restoration is tracked in
 [`018-legacy-backend-parity`](specs/018-legacy-backend-parity/spec.md).

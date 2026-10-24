@@ -3,7 +3,7 @@ import {observedUiChildArguments} from '../../scripts/capture-ui-child';
 import {artifactAuthStartupPhases,artifactAuthStartupTimeline,observeArtifactReadinessProbe} from '../../scripts/artifact-eval-environment';
 import {workMcpCaseFailureMetadata,processFailureMetadata,setupFailureMetadata,pilotRegressionFailureMetadata,pilotCatalogAbortMetadata,recoveryApplicationFailureMetadata,recoveryServerStartupPhases} from '../../scripts/ci-process-diagnostics';
 import {describe,expect,it,vi} from 'vitest';
-import {browserFailureMetadata,fixedExecutionWriteObservation,fixedUtilizationMetadata,fixedExecutionChangesObservation,pilotUiChildFailures,partnerBrowserFailureMetadata} from '../../scripts/ci-browser-diagnostics';
+import {browserFailureMetadata,fixedExpansionEntryObservation,fixedExecutionWriteObservation,fixedUtilizationMetadata,fixedExecutionChangesObservation,pilotUiChildFailures,partnerBrowserFailureMetadata} from '../../scripts/ci-browser-diagnostics';
 import {nativeQueryOperation,nativeQueryObservationSchema,nativeBlockerMetadata} from '../../scripts/ci-native-query-observer';
 const allowed=new Set(['mcp-accessibility.spec.ts']);
 describe('private browser failure diagnostics',()=>{
@@ -18,6 +18,13 @@ describe('private browser failure diagnostics',()=>{
   expect(learning[0]).toMatchObject({category:'test_timeout',phases:['Prepare learning draft']});expect(JSON.stringify(learning)).not.toContain('PRIVATE_');
   const partner=partnerBrowserFailureMetadata({specs:[{file:'partner-learning.spec.ts',tests:[{projectName:'webkit-desktop-dark',results:[{status:'timedOut',error:{message:'Test timeout PRIVATE_PROSE'},steps:[{title:'Dispatch absent request draft',error:{message:'PRIVATE_REQUEST'}},{title:'PRIVATE_PHASE',error:{}}]}]}]}]});
   expect(partner[0]).toMatchObject({category:'test_timeout',phases:['Dispatch absent request draft']});expect(JSON.stringify(partner)).not.toContain('PRIVATE_');
+  const entry={contract:'expansion-entry-observation-v1',elapsedMs:30001,collectionError:'none',snapshot:{pathCategory:'expansion',visibility:'visible',focused:true,newCount:1,newEnabled:true,newVisible:true,newWithinViewport:false,newHitTarget:false,loadingVisible:false,unavailableVisible:false,unconfirmedVisible:false},events:[{category:'module_asset',phase:'request',elapsedMs:4000,status:null}],pending:[{category:'module_asset',elapsedMs:25000}],actions:[],pageErrors:[]};
+  const expansionReport=(body:unknown,file='expansion-decisions.spec.ts',status='timedOut')=>({specs:[{file,line:67,tests:[{projectName:'webkit-mobile-dark',results:[{status,duration:30089,error:{message:'Test timeout PRIVATE_PROSE'},attachments:[{name:'expansion-entry-observation',contentType:'application/json',body:Buffer.from(JSON.stringify(body)).toString('base64')}]}]}]}]});
+  const expansion=browserFailureMetadata(expansionReport(entry),new Set(['expansion-decisions.spec.ts']));expect(expansion[0].expansionEntry).toEqual(entry);expect(JSON.stringify(expansion)).not.toContain('PRIVATE_');
+  for(const invalid of [{...entry,private:'PRIVATE_PAYLOAD'},{...entry,snapshot:{...entry.snapshot,url:'PRIVATE_URL'}},{...entry,events:[{category:'PRIVATE_PATH',phase:'request',elapsedMs:0,status:null}]},{...entry,events:Array(17).fill(entry.events[0])},{...entry,elapsedMs:Infinity}]){
+   expect(fixedExpansionEntryObservation(invalid)).toBeUndefined();const rejected=browserFailureMetadata(expansionReport(invalid),new Set(['expansion-decisions.spec.ts']));expect(rejected[0].expansionEntry).toBeUndefined();expect(JSON.stringify(rejected)).not.toContain('PRIVATE_');
+  }
+  expect(browserFailureMetadata(expansionReport(entry,'mcp-accessibility.spec.ts'),allowed)[0].expansionEntry).toBeUndefined();expect(browserFailureMetadata(expansionReport(entry,'expansion-decisions.spec.ts','passed'),new Set(['expansion-decisions.spec.ts']))).toEqual([]);
   expect(results[0].mentionedAccessibilityRules).toEqual(['color-contrast']);expect(JSON.stringify(results)).not.toContain('private-customer-rule');
  });
  it('ignores unapproved files and bounds records, projects and numeric metadata',()=>{

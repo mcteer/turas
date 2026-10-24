@@ -7973,3 +7973,34 @@ processes and Turas containers, and all seven unrelated container identities
 unchanged. These focused results cover the new first-input, same-pair refresh
 and new-pair reset regression; fresh committed full CI, actual-model and hosted
 release evidence remain required.
+
+
+### 6d19583 Expansion initial-click timeout (T155)
+
+Main CI job 120732061975 failed the mobile-dark dismissal-recovery case at line67.
+Its first New Hypothesis click, in expansion/ui.ts:14, began at4,398ms and waited
+25,797ms until the original30-second case expired (30,089ms total, retry0).
+It never reached the dismissal or recovery actions. No actionability snapshot or
+initial-read/module transport was available; the cause remains unproved.
+
+The unchanged case then passed in an owned CLI WebKit mobile-dark environment,
+with actual parent0 and no provider calls permitted. Private passive diagnostics
+retained fixed network phases; its final DOM snapshot belongs to the later reload,
+so it cannot establish the first-click layout or explain the CI failure. This
+focused observation does not replace failed CI. New failure-only observations
+cover all four original specs and publish only strictly validated fixed metadata;
+original cases, actions, assertions and clocks remain unchanged. Fresh committed
+full CI and all model/hosted/Production acceptance remain required.
+
+The new hook was exercised in two separately owned CLI WebKit mobile-dark runs:
+the unchanged original scenario passed (parent0), and a deliberately failing
+private probe exited1 and produced the expected strictly validated attachment.
+The fixed extractor observed one visible, enabled, unobscured New Hypothesis
+button without publishing the probe's private error prose. All four original
+spec files remain byte-identical after the two installer lines. Both recorded
+Node processes and all Turas containers were absent afterward; all seven baseline
+container identities were unchanged. Six existing privacy tests (with expanded
+coverage), pilot typecheck and243 authored-document checks passed. Evidence rings
+are bounded and may omit older events; console markers are untrusted observation,
+never authorization or complete-history proof. These checks establish diagnostic
+plumbing only. Fresh committed full CI and release acceptance remain required.

@@ -790,3 +790,13 @@ No hosted target may be locked for release before its measured reopen path exist
   Preserve all original cases, actions, clocks and retries. Verify original and
   corrected behavior, all four projects and independent review, then fresh
   committed complete CI/model/hosted acceptance before release.
+
+
+- [ ] T155 Retain the actual 6d19583 Expansion mobile-dark initial New Hypothesis
+  click timeout and its unchanged-case local pass without claiming a root cause.
+  Add bounded failure-only fixed browser, initial-read and module-load observations
+  to all four original Expansion specs. Publish no paths, values, bodies, error
+  prose or selectors. Preserve every case, action, assertion, deadline and retry;
+  validate privacy rejection and actual browser attachment before fresh full CI.
+  Keep current release status in the PR record so recording final acceptance does
+  not silently change the frozen tested source. Original failed CI stays retained.

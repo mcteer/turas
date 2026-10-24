@@ -669,3 +669,14 @@ review payload and server expected-version check. The durable owned regression
 uses real baseline acceptance and an explicitly adversarial browser event order;
 it is automated evidence, not a human observation. Original cases and deadlines
 remain unchanged; fresh complete acceptance is still required.
+
+
+## Expansion entry failure observations (T155)
+
+Observe the original Expansion browser cases without changing their actions or
+clocks. On failure, retain fixed New Hypothesis visibility/enabled/hit-target
+flags, initial session/overview and JavaScript module transport phases, bounded
+pending ages and classified page errors. Strictly validate attachments before
+printing fixed CI metadata. A passing local case does not explain the earlier CI
+failure. Current release status lives in the PR record; README validation notes
+remain explicitly historical, preserving the final tested source during release.
