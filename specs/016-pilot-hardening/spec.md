@@ -359,3 +359,11 @@ The T165 CI orchestration correction runs all four execution WebKit projects in
 parallel, retaining all 60 cases and their original isolated environments and
 limits. The aggregate acceptance status requires every project and execution
 core gate to succeed. It does not turn the cancelled `a67cc81` run into a pass.
+
+### In-flight refresh deadline (2026-10-24)
+
+Background product-gap polling must preserve an active read's bounded deadline.
+A periodic poll cannot cancel that read and start its deadline again. Explicit
+user refresh and access-change events may supersede an older read. Confirmed
+commands remain retired while refreshed eligibility is unavailable; timeout
+recovery performs reads without replaying the committed command.

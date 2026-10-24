@@ -898,3 +898,13 @@ No hosted target may be locked for release before its measured reopen path exist
   every case, fresh fixture, assertion, quota, retry policy and original deadline.
   Validate workflow coverage and require fresh complete source-bound CI; the
   cancelled run and successful subsets cannot establish a complete pass.
+
+- [ ] T166 Preserve the actual `3008306` desktop-light Product Gaps WebKit
+  failure. Reproduce periodic polling renewing an in-flight confirmed-command
+  refresh deadline with real committed receipts. Skip background polling while
+  a read is active; preserve the original read, poll, assertion and case clocks,
+  zero retries, explicit refresh and authority-change invalidation. Keep the
+  original fault regression and verify the added controlled polling case across
+  all four WebKit profiles. Require fresh complete committed CI, model and hosted
+  acceptance; do not claim the controlled comparison proves the historical CI
+  cause or relabel earlier-source results.

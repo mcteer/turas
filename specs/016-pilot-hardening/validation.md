@@ -8241,3 +8241,26 @@ The expected inventory is 54 main jobs plus seven legacy jobs. The controller,
 60 browser cases, assertions, quotas, retries and per-case clocks are unchanged.
 Fresh committed all-61 CI, model validation and hosted release acceptance remain
 pending; the owned catalog still requires all 1,041 cases and 189 suites.
+
+### 2026-10-24: `3008306` Product Gaps browser failure and T166 investigation
+
+The original CI job `120973702171` failed the stalled canonicalization-refresh
+case on desktop-light, at its existing twelve-second unavailable-status
+assertion. The command returned HTTP 200 and controls were retired. The retained
+fixed diagnostics do not prove the historical timer cancellation cause.
+
+A separate owned real-browser fault activates repeated background polling only
+after the genuine canonicalization response. The unchanged old client fails
+that same unavailable-status assertion: one unexpected case, zero skips or
+retries, browser exit1, bounded controller exit0 after confirming the expected
+failure. Its owned copy matches the original client bytes. No model or hosted
+acceptance is claimed. The original test remains present; its assertions are
+shared with the additional fault case. The narrow fix skips background polling
+while a read is active, preserving ten-second read and fifteen-second production
+poll clocks. The fixed comparison passes both cases in all four WebKit profiles (eight
+checks, zero skips/retries), through the original report verifier; controller
+exit0 and owned fixture removal are observed. Product-gap TypeScript and
+documentation checks pass. An initial test-only browser timer-overload type
+error is retained separately; the added type assertion changes no callback
+logic. Complete fresh committed CI, model and hosted release evidence remain
+pending.

@@ -853,3 +853,19 @@ dependency failure and succeeds only when the entire execution matrix succeeds.
 Do not change the controller, case clocks, assertions, quotas or retries. The
 resulting workflow has 54 main jobs and seven legacy jobs; fresh all-61 evidence
 is required alongside the unchanged 1,041-case, 189-suite owned catalog.
+
+### T166: preserve the active product-gap read deadline
+
+The `3008306` CI Product Gaps WebKit job failed the existing stalled-refresh
+regression on desktop-light after an acknowledged canonicalization. Its retained
+observations do not establish the historical cancellation cause. A separate
+controlled real-browser comparison reproduces deadline renewal in the old client:
+periodic polling cancels an active read and creates a new ten-second timer.
+
+Skip background polls while a read controller is active. Keep the existing
+ten-second read deadline, fifteen-second polling interval, explicit refresh and
+authority-change behavior. Preserve the original regression and add a post-commit
+polling fault case that requires the same timeout, retired controls and exactly
+one committed decision. Require four-profile comparison, current-source CI,
+model evaluation and hosted verification; historical source passes are not
+substitutes.
