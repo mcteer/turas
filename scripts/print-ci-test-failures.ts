@@ -1,7 +1,7 @@
 import {readdir,lstat,readFile} from 'node:fs/promises';
 import {resolve,join,relative} from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {processFailureMetadata,setupFailureMetadata} from './ci-process-diagnostics';
+import {processFailureMetadata,setupFailureMetadata,vitestReportOutcome} from './ci-process-diagnostics';
 import {browserFailureMetadata} from './ci-browser-diagnostics';
 export function redactTestDiagnostic(value:string){
  return value.replace(/\x1b\[[0-9;]*[A-Za-z]/g,'')
@@ -50,7 +50,17 @@ export async function printCiTestFailures(){
      console.info(JSON.stringify({kind:'ci_suite_setup_failure',suite:redactTestDiagnostic(String(suite.name??'')),...processFailureMetadata({message:suite.message})}));printed++;
     }
    }
-   if(entry.name.endsWith('-process.json')&&(report?.deadlineExpired===true||report?.code!==0||report?.signal)&&typeof report.file==='string'&&printed<30){console.info(JSON.stringify({kind:'ci_test_process_failure',suite:redactTestDiagnostic(report.file),...processFailureMetadata(report)}));printed++;}
+   if(entry.name.endsWith('-process.json')&&(report?.deadlineExpired===true||report?.code!==0||report?.signal)&&typeof report.file==='string'&&printed<30){
+    let outcome:Record<string,unknown>={reportState:'missing'};
+    // Exact sibling only; never follow a path from the child report. Preserve
+    // the traversal byte bound and do not follow symlinks or emit raw JSON.
+    try{const companion=file.replace(/-process\.json$/,'.json'),stat=await lstat(companion);
+     if(!stat.isFile()||stat.isSymbolicLink())outcome={reportState:'invalid'};
+     else if(stat.size>1048576||bytes+stat.size>67108864)outcome={reportState:'oversize'};
+     else{bytes+=stat.size;outcome=vitestReportOutcome(JSON.parse(await readFile(companion,'utf8')));}
+    }catch(error){if(!(error&&typeof error==='object'&&'code' in error&&error.code==='ENOENT'))outcome={reportState:'invalid'};}
+    console.info(JSON.stringify({kind:'ci_test_process_failure',suite:redactTestDiagnostic(report.file),...processFailureMetadata(report),...outcome}));printed++;
+   }
   }
  }
  await walk(root,0);console.info(JSON.stringify({kind:'ci_test_diagnostics',visitedReports:visited,failuresPrinted:printed,bounded:true}));

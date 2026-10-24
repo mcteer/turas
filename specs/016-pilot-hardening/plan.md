@@ -680,3 +680,15 @@ pending ages and classified page errors. Strictly validate attachments before
 printing fixed CI metadata. A passing local case does not explain the earlier CI
 failure. Current release status lives in the PR record; README validation notes
 remain explicitly historical, preserving the final tested source during release.
+
+
+### Recovery child failure visibility (T156)
+
+The 15f87f3 full CI attempt ended with 49 main jobs passing, one deterministic
+pilot job failing and all seven legacy jobs passing. Its managed-workflow-batch
+child exited 1 without a signal or suite deadline. The unchanged local eleven
+cases passed; this does not establish the CI cause. Extend only the existing
+bounded failure summary with fixed connection/unhandled-error signatures and
+validated numeric reporter counts. Missing, invalid and oversized sibling reports
+remain explicit. No test, library, timing or retry behavior changes are justified
+by this observation. Fresh complete committed CI remains required.

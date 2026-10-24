@@ -8004,3 +8004,16 @@ coverage), pilot typecheck and243 authored-document checks passed. Evidence ring
 are bounded and may omit older events; console markers are untrusted observation,
 never authorization or complete-history proof. These checks establish diagnostic
 plumbing only. Fresh committed full CI and release acceptance remain required.
+
+
+### 2026-10-24: retained recovery-suite CI failure
+
+Commit 15f87f3's PR CI run 40051310405 finished with 49 passing jobs and one
+failed deterministic pilot job; legacy run 40051310433 passed all seven jobs.
+The managed-workflow-batch child exited 1 with no signal or suite deadline after
+670 earlier catalog cases passed. CI exposed neither a failed assertion nor
+unhandled-error classification. Its unchanged full eleven-case local reproduction
+passed with the original clocks. No root cause or CI acceptance is claimed. T156
+adds bounded fixed failure classification and reporter counts only. Production
+remains f8d196f with schema 077; hosted, model and recovery release checks remain
+open. Private raw evidence is retained outside Git.

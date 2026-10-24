@@ -800,3 +800,12 @@ No hosted target may be locked for release before its measured reopen path exist
   validate privacy rejection and actual browser attachment before fresh full CI.
   Keep current release status in the PR record so recording final acceptance does
   not silently change the frozen tested source. Original failed CI stays retained.
+
+
+- [ ] T156 Retain the actual 15f87f3 managed-workflow-batch child exit 1 and
+  unchanged eleven-case local pass without claiming a root cause. Extend bounded
+  CI failure diagnostics with fixed PostgreSQL/unhandled-error classes and the
+  failed child reporter's numeric outcome, explicitly distinguishing missing,
+  invalid and oversized reports. Emit no child prose, connection data or report
+  payload. Preserve all assertions, process outcomes, deadlines and retries;
+  independently review privacy and fresh complete CI before release.
