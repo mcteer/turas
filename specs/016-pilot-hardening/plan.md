@@ -839,3 +839,17 @@ pre-fulfilment assignment barrier. Remove the event listener in cleanup.
 This is a scoped fixture sequence, not general document authentication. Keep
 every original assertion and clock, and use fixed nested phases to distinguish
 the grouped reconciliation operations without exposing private data.
+
+T165 retains the `a67cc81` execution job's actual cancellation and 57 successful
+single-case summaries. Its two-hour duration strongly supports the configured
+120-minute job deadline as the cause; the log contains only a generic cancellation
+message and does not identify the next case. No assertion failure is established.
+
+Use the existing complete-project argument of `check-execution-ui.ts` in four
+matrix jobs, each retaining the 120-minute deadline and all 15 original cases.
+The existing deterministic and regression gates remain in that matrix. Preserve
+the required `execution (webkit)` status as an aggregate that runs even after a
+dependency failure and succeeds only when the entire execution matrix succeeds.
+Do not change the controller, case clocks, assertions, quotas or retries. The
+resulting workflow has 54 main jobs and seven legacy jobs; fresh all-61 evidence
+is required alongside the unchanged 1,041-case, 189-suite owned catalog.

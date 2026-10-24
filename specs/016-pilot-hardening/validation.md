@@ -8216,3 +8216,28 @@ Exact owned cleanup is verified separately. Root, partner and pilot types pass.
 These are working-tree results; fresh committed CI, all model stages and hosted
 release acceptance remain required. The fixture gate is not a general proof of
 cross-document request identity, and the original CI cause remains unproved.
+
+### T165 — execution CI cancellation and project scheduling
+
+The first `a67cc81` main run `40113554842` ended cancelled: 49 jobs
+succeeded and the execution WebKit job was cancelled. Legacy run `40113554843`
+passed all seven jobs. The execution log contains 57 successful single-case
+summaries: all 15 cases in both desktop profiles and mobile-light, then 12 in
+mobile-dark. It contains no failed assertion. Three cases remain uncompleted;
+the log does not establish the identity of the next case.
+
+The last successful case summary is at 18:56:55 UTC, followed by another owned
+fixture bootstrap. Cancellation appears at 18:58:24 UTC; the job started at
+16:58:04 UTC and had a 120-minute limit. Deadline exhaustion is a strong
+inference, not an explicit timeout annotation in the log. The terminal log and
+actual run metadata are retained separately; neither successful subsets nor the
+cancelled workflow establish complete CI acceptance.
+
+The correction uses the existing complete-project controller argument in four
+parallel CI jobs. Static YAML verification confirms all original fixture and
+diagnostic steps and the 120-minute limit remain unchanged. The aggregate
+`execution (webkit)` check requires the entire execution matrix to succeed.
+The expected inventory is 54 main jobs plus seven legacy jobs. The controller,
+60 browser cases, assertions, quotas, retries and per-case clocks are unchanged.
+Fresh committed all-61 CI, model validation and hosted release acceptance remain
+pending; the owned catalog still requires all 1,041 cases and 189 suites.

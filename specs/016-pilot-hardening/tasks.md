@@ -890,3 +890,11 @@ No hosted target may be locked for release before its measured reopen path exist
   partner browser cases and private-safe diagnostic phases. Retain the first
   matrix recorder failure separately; require a complete fresh recorded run,
   committed CI, model and hosted acceptance before release.
+
+- [ ] T165 Preserve the actual `a67cc81` CI cancellation after 57 successful
+  execution browser cases, with three cases uncompleted. Run the four complete
+  WebKit projects in separate CI jobs through the existing project argument;
+  require their aggregate status and the original execution core gates. Preserve
+  every case, fresh fixture, assertion, quota, retry policy and original deadline.
+  Validate workflow coverage and require fresh complete source-bound CI; the
+  cancelled run and successful subsets cannot establish a complete pass.

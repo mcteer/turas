@@ -354,3 +354,8 @@ The T164 test-harness correction preserves the automatic post-reload receipt
 scenario by preventing the preceding document from consuming that receipt.
 It changes no application behavior, authorization rule or acceptance threshold.
 The separately reproduced fixture race does not establish the original CI cause.
+
+The T165 CI orchestration correction runs all four execution WebKit projects in
+parallel, retaining all 60 cases and their original isolated environments and
+limits. The aggregate acceptance status requires every project and execution
+core gate to succeed. It does not turn the cancelled `a67cc81` run into a pass.
