@@ -2152,7 +2152,7 @@
         "caps an explicit larger artifact evaluation request",
         "bounds an artifact evaluation request without a limit",
         "preserves a smaller artifact evaluation request",
-        "imports the staged artifact evaluation agent with its request limiter"
+        "imports the staged artifact evaluation agent with its request limiter and root reasoning"
       ]
     },
     {

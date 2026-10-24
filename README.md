@@ -59,6 +59,11 @@ Submit. Fresh full, CI, model and hosted acceptance remain required.
 Production remains `f8d196f`, schema077. Full current-source checks, model
 evaluation, hosted recovery and Production verification remain required.
 
+At `547322b`, the pilot catalog accepted 1,028 cases across 186 suites before
+rejecting a stale registered test title. The registration now matches the
+strengthened artifact test; its four cases and the two remaining suites pass
+their original verifier (13 cases total). Fresh complete CI remains required.
+
 The profile/chat fixes released in [PR #45](https://github.com/mcteer/turas/pull/45)
 as `60f7a4c`. Customer selection is searchable across directory pages, Recent
 Conversations refreshes after creation/messages/navigation, and product projection

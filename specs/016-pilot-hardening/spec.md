@@ -345,3 +345,7 @@ human usability feedback. G20/G21 accept these attributable automated exercises
 with independent review of the actual captures. Local fixtures cannot substitute
 for hosted outcomes. The separate scoped release decision remains required under
 FR-003; automated observations do not approve release.
+
+The T163 catalog correction changes only the registered title of the existing
+strengthened artifact test. All 1,041 cases, 189 suites and acceptance criteria
+remain required; the `547322b` incomplete catalog is not a complete pass.

@@ -874,3 +874,9 @@ No hosted target may be locked for release before its measured reopen path exist
   Add fixed private-safe phase metadata and propagate route-fixture failures.
   Do not claim the separate CI timeout cause is established; require complete
   fresh browser, CI, model and hosted acceptance before release.
+
+- [ ] T163 Preserve the actual `547322b` catalog-registration failure after
+  1,028 accepted cases in 186 suites. Match the registered artifact test title
+  to its strengthened T159 case, preserving all four cases and every assertion.
+  Verify the original final three suites (13 cases) through the catalog verifier;
+  require fresh complete CI, model and hosted acceptance without overlays.

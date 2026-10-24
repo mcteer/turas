@@ -8161,3 +8161,20 @@ withholding, then retries only the read and verifies one command and DB attempt.
 Other learning scenarios and domain authorization remain unchanged. Five retained
 static checks pass. These are working-tree candidate results; fresh committed
 CI, model and hosted acceptance remain required.
+
+### T163 catalog registration correction
+
+The `547322b` first-attempt deterministic CI job accepted 1,028 cases in 186
+completed suites (zero-based indices 0–185), then rejected suite index 186 during
+strict catalog verification. Its fourth artifact test had been strengthened and
+renamed by T159, while the registry retained its old title. The job's phase proves
+it reached verification after the child exit check; the child's raw JSON was not
+retained here, so its successful exit is an inference, not an invented receipt.
+No timeout or application failure is established by this mismatch.
+
+The candidate updates that single registered title. All original four artifact
+cases, four cleanup cases and five quality-command cases pass in separate actual
+Node 24 runs, and the unmodified catalog verifier accepts all 13 cases with no
+skips or retries. This narrow result does not replace fresh complete committed
+CI, independent model evaluation or hosted release acceptance. The original
+catalog still contains 1,041 cases across 189 suites.

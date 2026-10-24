@@ -824,3 +824,9 @@ DB-attempt assertions. Keep its original thirty-second case and other existing
 clocks/retries. Fixed phase names identify fixture forwarding, receipt loss and
 reconciliation without private values; reject the deferred fixture barrier if
 its forwarding fails rather than masking that failure as an unlabelled timeout.
+
+T163 corrects one registered test title after the `547322b` catalog rejected the
+strengthened T159 test's new name. Retain all 1,041 cases and 189 suites, the
+original assertions and deadlines, and the failed source's actual results.
+Verify the final three original suites with the strict title verifier before
+fresh complete CI. No application, model or authorization behavior changes.
