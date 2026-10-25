@@ -8609,3 +8609,31 @@ actual process retirement. The original case, fixture and readiness deadlines ar
 unchanged, with no model dispatch or test retry. This local comparison does not
 relabel the cancelled `ffc67cc` CI or establish a new committed CI or hosted
 release pass.
+
+### 2026-10-25: Immutable renderer digest in brand approval (T180)
+
+The `5466387` Preview's original maximum-file preparation passes four real jobs
+and both fixed 10 MiB originals. Its original generated-file recipe then completes
+the next six real jobs, including both report renders and four actual PDF/PPTX
+artifacts. The recipe nevertheless exits 1 with HTTP 409 at the brand-review
+preview in `pilot-report-recipe.ts:42`, after the three sample validation checks.
+No completed generated-file manifest, brand approval or report publication is
+claimed from those rendered files. Current committed CI remains pending.
+
+The retained read-only comparison shows that all four artifact renderer digests
+equal the pinned VCR image's 64-character SHA-256 suffix. All four differ from
+the previous seven-character prefix slice; the brand and content-validation
+digest checks match. The raw comparison and original failed recipe remain
+unchanged. This is distinct from the earlier missing-resource failure: the actual
+hosted report rendering path now runs, while its later approval still refuses.
+
+The worker and brand reviewer now share a strict extractor for only complete
+local `sha256:<digest>` and VCR `@sha256:<digest>` references. Backend-specific
+image validation remains before extraction. Renderer mismatches, brand/content
+digests, object reads, source eligibility, leases, deadlines and cost admission
+remain enforced. The two existing brand-binding cases retain their assertions
+and add local/VCR equality, changed-image binding and malformed/mutable negative
+coverage; no registered case is added or removed. Both binding cases and four
+existing executive cases pass, followed by all fourteen existing executor cases.
+Fresh committed CI and actual hosted approval, publication, generated-file,
+retention and Production acceptance remain required.

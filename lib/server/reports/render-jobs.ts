@@ -1,7 +1,7 @@
 import {randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';import {z} from 'zod';
 import {HttpFailure} from '../../contracts/http';import {validateReportDocument} from '../../reports/document';
-import {reportTransaction,reportDigest} from './commands';import {reportRevisionFence} from './release';import {requireCurrentReportBrand,verifiedBundledBrand} from './brand';
+import {reportTransaction,reportDigest} from './commands';import {reportRevisionFence} from './release';import {requireCurrentReportBrand,verifiedBundledBrand,reportRendererImageDigest} from './brand';
 import {authorityForReportJob,enqueueReportJob,completeReportJob,heartbeatReportJob,failReportJob} from './jobs';import {lockReportJobAuthority} from './actor';
 import {writeReportObject} from './store';import {reportConfig} from './config';import {prepareReportMail} from './mail-content';import {reportDigestSchema,reportId} from './schema';
 import {runGovernedExecution,executionBackend} from '../jobs/governed';
@@ -63,7 +63,7 @@ export async function runReportRenderJob(claimed:{id:string;lease_token:string;i
  const prepared=await reportTransaction(async db=>{const fence=await renderFence(db,claimed);const document=validateReportDocument((await db.query('SELECT document FROM report_revision_payloads WHERE revision_id=$1',[fence.input.revisionId])).rows[0].document);if(reportDigest(document)!==fence.input.documentDigest)throw new HttpFailure(409,'source_changed','Render content changed');return {...fence,document};});
  const image=process.env.TURAS_PILOT_RENDERER_IMAGE??reportConfig().rendererImage;
  if(!image||!(executionBackend()==='local'?/^sha256:[a-f0-9]{64}$/:/^vcr\.vercel\.com\/[a-zA-Z0-9_/-]+@sha256:[a-f0-9]{64}$/).test(image))throw new HttpFailure(503,'unavailable','Pinned renderer image unavailable');
- const imageDigest=image.split('sha256:')[1],bytes=Buffer.from(JSON.stringify(prepared.document));
+ const imageDigest=reportRendererImageDigest(image),bytes=Buffer.from(JSON.stringify(prepared.document));
  parentSignal?.throwIfAborted();parentSignal?.addEventListener('abort',abort,{once:true});listenerRegistered=parentSignal!==undefined;
  const deadlineAt=new Date(prepared.row.deadline_at).toISOString(),remaining=()=>Math.max(0,Date.parse(deadlineAt)-Date.now());
  deadline=setTimeout(()=>controller.abort(),remaining());

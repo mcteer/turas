@@ -1023,3 +1023,13 @@ No hosted target may be locked for release before its measured reopen path exist
   duplicate exports and other shapes without rewriting them. Extend the existing
   unit case and rerun the original three-case owned-source integration file with
   all assertions and deadlines intact; require fresh committed CI (FR-021).
+
+- [ ] T180 Preserve the actual `5466387` ten-job result and subsequent 409 at
+  brand-review preview. Extract the renderer digest from only immutable local
+  and VCR image references in both the worker and brand approval, preserving
+  backend-specific image guards and every brand, content and source fence.
+  Extend the existing binding cases with both formats, changed digests and
+  malformed or mutable negatives without changing case counts. Require fresh
+  committed checks and actual brand approval, publication, generated-file,
+  retention and Production acceptance; do not relabel the failed recipe
+  (FR-016, FR-021).

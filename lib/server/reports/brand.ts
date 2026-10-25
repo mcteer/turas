@@ -8,6 +8,12 @@ import {reportDigest} from './commands';
 import {executionBackend} from '../jobs/backend';
 const assetSchema=z.strictObject({path:z.string().regex(/^report-templates\/(?:assets|fonts)\/[a-zA-Z0-9._-]+\.(?:svg|png|ttf|otf)$|^report-templates\/[a-zA-Z0-9._-]+\.ts$/),sha256:z.string().regex(/^[a-f0-9]{64}$/),source:z.string().min(1).max(1000)});
 export const brandManifestSchema=z.strictObject({schemaVersion:z.literal('report-brand-v1'),name:z.string().min(1).max(200),version:z.number().int().positive(),state:z.literal('draft'),officialCorporateMaster:z.literal(false),editingRequirement:z.string().min(1).max(500),guidelines:z.literal('https://vercel.com/geist/brands'),assets:z.array(assetSchema).min(4).max(20)});
+/** The same immutable image has a raw digest in both local and hosted execution. */
+export function reportRendererImageDigest(image:unknown){
+ const parsed=typeof image==='string'?/^(?:sha256:|vcr\.vercel\.com\/[a-zA-Z0-9_/-]+@sha256:)([a-f0-9]{64})$/.exec(image):null;
+ if(!parsed)throw new HttpFailure(503,'brand_unapproved','Immutable renderer image required');
+ return parsed[1];
+}
 export async function verifiedBundledBrand(){
  const parsed=brandManifestSchema.safeParse(JSON.parse(await readFile(resolve('report-templates/brand-manifest.json'),'utf8')));
  if(!parsed.success)throw new HttpFailure(503,'brand_unapproved','Brand manifest unavailable');

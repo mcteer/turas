@@ -7,6 +7,14 @@ current release evidence.
 
 ## Recorded validation observations
 
+The `5466387` Preview completed ten real scan, parse and render jobs. Its report
+recipe then returned 409 at brand-review preview: all four rendered artifacts
+contained the correct pinned renderer digest, while review extracted it as though
+every image used the local `sha256:` form. The follow-up uses strict local and
+VCR digest extraction in both rendering and review, retaining brand, content and
+source checks. Brand approval, publication, generated-file completion, retention
+and Production acceptance remain unproved; current CI is still pending.
+
 The `ffc67cc` CI exposed an owned-fixture configuration guard that recognized
 only the previous one-argument Eve export. The cancelled main run records six
 successful jobs, 32 failures and 16 cancellations; all seven legacy jobs fail.
