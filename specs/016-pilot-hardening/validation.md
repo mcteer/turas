@@ -8637,3 +8637,64 @@ coverage; no registered case is added or removed. Both binding cases and four
 existing executive cases pass, followed by all fourteen existing executor cases.
 Fresh committed CI and actual hosted approval, publication, generated-file,
 retention and Production acceptance remain required.
+
+## T181 — owned artifact production-fixture option
+
+The `e0ebdfa` main run finishes with 53 successful jobs and one failed
+pilot-hardening deterministic job; all seven legacy jobs succeed. In the failing
+owned-source case, the artifact development fixture reaches its first auth
+initialization observation at 60.324 seconds, beyond the original 60-second
+readiness deadline. The actual failure and diagnostic records are retained;
+this does not establish an underlying development-runtime defect or a flaky-test
+classification. No failed case is removed or retried as accepted evidence.
+
+The artifact fixture gains an explicit production option, selected only by the
+first existing owned-source admission case. It builds the actual owned source,
+serves Next with `next start`, and streams the real private Eve service using the
+same composition already used by the Plan fixture. Existing artifact callers
+continue using development startup. Its production copy includes the checked-in
+Playwright configuration required by the copied TypeScript inventory. The
+original 60-second readiness, 360-second owned fixture, 390-second first case and
+all three cases and assertions remain intact. Build descendants are captured and
+retired using the existing owned-process capability; runtime cleanup attempts
+all retirements and restores the original environment even when an earlier
+retirement fails, retaining the owned root when cleanup remains uncertain.
+
+The original three-case file passes all three cases in the bounded local
+comparison: 150,702.9 ms for the governing source-admission case, 30,753.3 ms for
+seeding and 7,898.4 ms for the maintenance guard. The parent exits zero after
+189,815 ms with no deadline expiry or interruption and verified owned-process
+retirement. Global type checking, the 243-file documentation check and diff
+whitespace validation pass. This is local fixture evidence; fresh committed CI
+and hosted release acceptance remain required.
+
+## T182 — distinguish retired empty history from retrieval backlog
+
+The current Preview inspection finds failed retrieval history for retired sources
+whose passages are already absent and which have no uncertain embedding work.
+The previous backlog query counts every failed job indefinitely, including those
+empty retired sources. Genuine current failed and queued index work also exists;
+its separately governed resolution is not evidence supplied by this source fix.
+
+The read-only backlog predicate excludes only a failed job with an existing
+same-environment retired/tombstoned source, zero remaining source passages and
+zero reserved, dispatched or unconfirmed embedding operations across any job for
+that source. It does not rely on exhausted attempts or matching historical
+projection generation: retired empty history can have fewer than three attempts.
+Queued, leased, unconfirmed and current failed work remains counted, as do missing
+or cross-environment source inconsistencies. No job/source state, attempt count,
+lease, receipt, audit history or monetary reservation is changed.
+
+The existing all-schema backlog integration case gains actual database contrasts
+for retired/tombstoned empty failures, current failures, retained passages,
+reserved/dispatched/unconfirmed operations on another job for the same source,
+and queued/leased/unconfirmed jobs. It also compares complete retained source,
+job, passage and operation rows before and after the backlog read. Registered
+case counts remain unchanged. The first four-case comparison retains three passes
+and one new-fixture SQL type-inference failure before the complete predicate
+assertion. Adding the explicit UUID cast corrects that fixture insert; the
+unchanged four-case file then passes all four cases in the original owned PG18
+fixture with no model/provider calls. The parent exits zero and its owned-process
+and database cleanup returns. Global types, the 243-file documentation check and
+diff whitespace validation pass. No hosted health acceptance is inferred; the
+separate genuine index backlog and fresh committed checks remain required.

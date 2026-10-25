@@ -7,6 +7,22 @@ current release evidence.
 
 ## Recorded validation observations
 
+Retrieval maintenance backlog excludes a failed historical job only when its
+same-environment source is retired or tombstoned, contains no passages, and has
+no reserved, dispatched or unconfirmed embedding operation. Active and uncertain
+work remains counted; no job state, history, attempt count or cost hold changes.
+The current eligible index backlog still requires its separate governed
+resolution; this correction does not establish hosted health.
+
+The `e0ebdfa` main CI records 53 successful jobs and one deterministic catalog
+failure; all seven legacy jobs pass. The owned artifact development fixture's
+first authenticated readiness observation arrived after its original 60-second
+limit. The governing source-admission case now opts into an owned production
+build and server for that artifact clone, matching its existing plan-clone mode.
+Ordinary artifact callers remain in development mode. Original cases, assertions,
+readiness and outer deadlines remain unchanged. The original three-case local
+comparison passes all three cases; fresh committed CI remains required.
+
 The `5466387` Preview completed ten real scan, parse and render jobs. Its report
 recipe then returned 409 at brand-review preview: all four rendered artifacts
 contained the correct pinned renderer digest, while review extracted it as though

@@ -1033,3 +1033,23 @@ No hosted target may be locked for release before its measured reopen path exist
   committed checks and actual brand approval, publication, generated-file,
   retention and Production acceptance; do not relabel the failed recipe
   (FR-016, FR-021).
+
+- [ ] T181 Preserve the actual `e0ebdfa` main CI's sole deterministic catalog
+  failure and its original 60-second artifact-development readiness limit. Add an
+  explicit production option to the owned artifact evaluation fixture and enable
+  it only for the first governing owned-source case, using the existing Plan
+  fixture's real Next/Eve composition. Keep ordinary callers in development,
+  preserve all three cases, assertions and 390/360/60-second limits, copy the
+  checked-in production typecheck configuration and retire owned build/runtime
+  processes without skipping restoration after a cleanup failure. Require the
+  original three-case comparison and fresh committed CI (FR-021).
+
+- [ ] T182 Correct retrieval maintenance backlog without rewriting queue or
+  spending history. Exclude a failed job only when its existing same-environment
+  source is retired/tombstoned, has no passages and has no reserved, dispatched or
+  unconfirmed embedding operation across any source job. Keep current failed,
+  queued, leased, unconfirmed, missing-source and cross-environment inconsistencies
+  counted. Extend an existing real-database backlog case with terminal-empty,
+  retained-payload and uncertain-operation contrasts plus unchanged-history
+  assertions; preserve registered case counts and require fresh committed and
+  hosted health validation (FR-016, FR-021).

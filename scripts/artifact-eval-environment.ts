@@ -3,6 +3,9 @@ import {configureOwnedNextDependencyRoot} from './owned-next-config';
 import {stopOwnedAppProcesses} from './plan-eval-environment';
 import {installBehaviorReviewCapture} from './pilot-behavior-review-capture';
 import {qualityChildEnvironment} from "./pilot-quality-runtime";
+import {createServer,request as httpRequest,type Server} from "node:http";
+import {spawnOwnedProcess,retireOwnedProcess,captureOwnedProcessDescendants,type OwnedProcessRetirement} from "./pilot-owned-process";
+import {ownedEvalTimeout} from "./eval-deadline";
 import { randomUUID } from "node:crypto";
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
 import { chmod, cp, mkdir, mkdtemp, rm, symlink, writeFile, readFile } from "node:fs/promises";
@@ -60,7 +63,7 @@ export async function stageArtifactEvalAgent(app:string):Promise<void>{
 }
 
 /** Clone only synthetic test state and run Eve with private workflow data. */
-export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Promise<T> {
+export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>, options: { production?: boolean; deadlineAt?: number } = {}): Promise<T> {
   const testUrl = new URL(requireEvaluationSourceDatabase());
   const database = decodeURIComponent(testUrl.pathname.slice(1));
   const adminUrl = new URL(getServerConfig().DATABASE_URL_UNPOOLED);
@@ -103,6 +106,14 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
   let dev: ChildProcess | null = null;
   let portLease: Awaited<ReturnType<typeof reserveOwnedEvalPort>> | null = null;
   let startupOutput = "";
+  let productionEve: ChildProcess | null = null,proxy: Server | null = null;
+  let evePortLease: Awaited<ReturnType<typeof reserveOwnedEvalPort>> | null = null;
+  let proxyPortLease: Awaited<ReturnType<typeof reserveOwnedEvalPort>> | null = null;
+  const owned = new Map<ChildProcess,OwnedProcessRetirement>();
+  const startOwned=(args:string[],env:NodeJS.ProcessEnv)=>{const value=spawnOwnedProcess({command:process.execPath,args,cwd:app,environment:env});owned.set(value.child,value.retirement);return value.child;};
+  const stopChild=async(child:ChildProcess|null)=>{if(!child)return;const resource=owned.get(child);if(resource)await retireOwnedProcess(resource);else await stop(child);};
+  const capture = (chunk: Buffer) => { startupOutput = (startupOutput+chunk.toString("utf8")).slice(-100_000); };
+  const observe=(child:ChildProcess)=>{child.stdout?.on("data",capture);child.stderr?.on("data",capture);};
   try {
     await cp(preparedStore,store,{ recursive: true });
     await writeFile(join(store,".turas-artifact-store.json"),JSON.stringify({ environmentId: marker }),
@@ -110,7 +121,7 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
     await chmod(join(store,".turas-artifact-store.json"),0o600);
     await mkdir(app,{ mode: 0o700 });
     for (const name of ["app","agent","lib","migrations","scripts","public","evals","infra","tests","packages","report-renderer","report-templates",
-      "next.config.ts","next-env.d.ts","tsconfig.json","package.json"]) {
+      "next.config.ts","next-env.d.ts","playwright.config.ts","tsconfig.json","package.json"]) {
       copyOwnedEvalFiles(resolve(name),join(app,name),{excludeRuntime:true});
     }
     await stageArtifactEvalAgent(app);
@@ -151,21 +162,50 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
     process.env.TURAS_ARTIFACT_STORE_ROOT = store;
     if(process.env.TURAS_016_BEHAVIOR_CAPTURE_ROOT)await installBehaviorReviewCapture(app,process.env.TURAS_016_BEHAVIOR_CAPTURE_ROOT);
     await writeFile(join(app,'public',artifactStartupSentinel),'owned-evaluation-startup-probe-v1\n',{mode:0o600,flag:'wx'});
-    const devEnvironment: NodeJS.ProcessEnv = { ...process.env,NODE_ENV:"development",PORT: String(port),...await qualityChildEnvironment() };
+    const productionEnvironment: Record<string,string> = {};
+    if(options.production){
+      evePortLease=await reserveOwnedEvalPort();proxyPortLease=await reserveOwnedEvalPort();
+      Object.assign(productionEnvironment,{EVE_NEXT_PRODUCTION_PORT:String(evePortLease.port),
+        EVE_NEXT_PRODUCTION_ORIGIN:`http://127.0.0.1:${proxyPortLease.port}`,EVE_PUBLIC_ROUTE_PREFIX:""});
+      const building=startOwned(["scripts/build-check.mjs"],{...process.env,...productionEnvironment,...await qualityChildEnvironment(),NODE_ENV:"production",PORT:String(port),NODE_OPTIONS:""});
+      observe(building);
+      let interrupted=false,onSignal:()=>void=()=>{},timer:ReturnType<typeof setTimeout>|undefined,discovery:ReturnType<typeof setInterval>|undefined;
+      const exited=new Promise<number|null>((done,reject)=>{building.once("error",reject);building.once("exit",done);});
+      try{
+        const cancelled=new Promise<never>((_,reject)=>{onSignal=()=>{interrupted=true;reject(Error("Owned artifact production build interrupted"));};process.on("SIGTERM",onSignal);process.on("SIGINT",onSignal);
+          timer=setTimeout(()=>reject(Error("Original owned artifact deadline reached")),ownedEvalTimeout(options.deadlineAt,360_000));
+          discovery=setInterval(()=>{try{captureOwnedProcessDescendants(owned.get(building)!);}catch(error){reject(error);}},100);});
+        const code=await Promise.race([exited,cancelled]);
+        if(code!==0)throw Error("Owned artifact production build failed");
+        ownedEvalTimeout(options.deadlineAt,60_000);
+      }catch(error){await writeFile(resolve("local-artifacts/004/eval-production-build-failure.log"),startupOutput,{mode:0o600});throw error;}
+      finally{clearTimeout(timer);clearInterval(discovery);try{await stopChild(building);}finally{process.off("SIGTERM",onSignal);process.off("SIGINT",onSignal);}}
+      if(interrupted)throw Error("Owned artifact production build interrupted");
+      await evePortLease.release();
+      productionEve=startOwned([join(app,".output/server/index.mjs")],{...process.env,...productionEnvironment,...await qualityChildEnvironment(),NODE_ENV:"production",NODE_OPTIONS:"",
+        HOST:"127.0.0.1",NITRO_HOST:"127.0.0.1",PORT:String(evePortLease.port),NITRO_PORT:String(evePortLease.port)});observe(productionEve);
+      // Stream the actual private Eve service; preserve its public route prefix.
+      proxy=createServer((incoming,outgoing)=>{
+        const prefix="/_eve_internal/eve";if(!incoming.url?.startsWith(prefix+"/")){outgoing.destroy();return;}
+        const upstream=httpRequest({hostname:"127.0.0.1",port:evePortLease!.port,method:incoming.method,path:incoming.url.slice(prefix.length),headers:incoming.headers},response=>{
+          if(!response.statusCode){outgoing.destroy();return;}outgoing.writeHead(response.statusCode,response.headers);response.pipe(outgoing);
+        });upstream.on("error",()=>outgoing.destroy());incoming.on("aborted",()=>upstream.destroy());outgoing.on("close",()=>upstream.destroy());incoming.pipe(upstream);
+      });
+      await proxyPortLease.release();await new Promise<void>((done,reject)=>{proxy!.once("error",reject);proxy!.listen(proxyPortLease!.port,"127.0.0.1",done);});
+    }
+    const devEnvironment: NodeJS.ProcessEnv = { ...process.env,...productionEnvironment,NODE_ENV:options.production?"production":"development",PORT: String(port),...await qualityChildEnvironment() };
     await portLease.release();
-    dev = spawn(process.execPath,["scripts/dev.mjs"],{
+    dev = options.production?startOwned(["node_modules/next/dist/bin/next","start","--hostname","127.0.0.1","--port",String(port)],devEnvironment):spawn(process.execPath,["scripts/dev.mjs"],{
       cwd: app,env: devEnvironment,stdio: ["ignore","pipe","pipe"] });
-    const capture = (chunk: Buffer) => { startupOutput =
-      (startupOutput+chunk.toString("utf8")).slice(-100_000); };
-    dev.stdout?.on("data",capture); dev.stderr?.on("data",capture);
-    const started = Date.now();
+    observe(dev);
+    const started = Date.now(),readinessMaximumMs=ownedEvalTimeout(options.deadlineAt,60_000);
     let ready = false;
     let lastAuthStatus:number|null=null,lastEveStatus:number|null=null;
     let authTransport='none',eveTransport='none',probeCount=0;
     const readinessProbes:{ordinal:number;startedMs:number;completedMs:number;authStatus:number|null;eveStatus:number|null;authTransport:string;eveTransport:string;authPhase:string;evePhase:string;authHeadersStatus:number|null;eveHeadersStatus:number|null;authHeadersElapsedMs:number|null;eveHeadersElapsedMs:number|null}[]=[];
     const probe=(path:'/api/auth/session'|'/eve/v1/health')=>observeArtifactReadinessProbe(origin,path);
-    while (Date.now()-started < 60_000) {
-      if (dev.exitCode !== null) throw new Error(`Isolated evaluation app exited during startup: ${startupOutput}`);
+    while (Date.now()-started < readinessMaximumMs) {
+      if (dev.exitCode !== null || productionEve&&productionEve.exitCode!==null) throw new Error(`Isolated evaluation app exited during startup: ${startupOutput}`);
       const probeStartedMs=Date.now()-started;
       const [auth,eve]=await Promise.all([probe('/api/auth/session'),probe('/eve/v1/health')]);
       probeCount++;lastAuthStatus=auth.status;lastEveStatus=eve.status;authTransport=auth.transport;eveTransport=eve.transport;
@@ -219,15 +259,19 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>): Pro
     }
     return await run();
   } finally {
-   try {
-    await stop(dev);
-    await stopOwnedAppProcesses(app);
-    for (const [key,value] of Object.entries(old)) {
-      if (value === undefined) delete process.env[key]; else process.env[key] = value;
-    }
-    if (created) execFileSync("docker",["exec",container,"dropdb","-U",username,
-      "--if-exists","--force",cloneName],{ timeout: 10_000,stdio: ["ignore","pipe","pipe"] });
-    await rm(root,{ recursive: true,force: true });
-   } finally { await portLease?.release(); }
+   const failures:unknown[]=[];
+   const attempt=async(work:()=>Promise<unknown>)=>{try{await work();}catch(error){failures.push(error);}};
+   await attempt(async()=>{const retired=await Promise.allSettled([stopChild(dev),stopChild(productionEve)]);for(const value of retired)if(value.status==='rejected')failures.push(value.reason);});
+   await attempt(async()=>{if(proxy){proxy.closeAllConnections();await new Promise<void>(done=>proxy!.close(()=>done()));}});
+   await attempt(()=>stopOwnedAppProcesses(app));
+   for (const [key,value] of Object.entries(old)) {
+     if (value === undefined) delete process.env[key]; else process.env[key] = value;
+   }
+   await attempt(async()=>{if(created)execFileSync("docker",["exec",container,"dropdb","-U",username,
+     "--if-exists","--force",cloneName],{timeout:10_000,stdio:["ignore","pipe","pipe"]});});
+   // Preserve the owned root for reconciliation when retirement was not verified.
+   if(!failures.length)await attempt(()=>rm(root,{recursive:true,force:true}));
+   for(const lease of [portLease,evePortLease,proxyPortLease])await attempt(async()=>lease?.release());
+   if(failures.length)throw new AggregateError(failures,'Owned artifact cleanup failed');
   }
 }

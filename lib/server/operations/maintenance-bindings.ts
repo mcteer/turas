@@ -37,7 +37,14 @@ const backlogSql:Record<string,string>={
  conversation:"SELECT greatest(j.deadline_at,j.next_attempt_at,coalesce(j.lease_expires_at,j.deadline_at)) AS due_at FROM watchdog_jobs j JOIN response_attempts a ON a.id=j.attempt_id JOIN conversations c ON c.id=a.conversation_id WHERE c.environment_id=$1 AND j.state IN ('pending','leased','cancel_requested')",
  artifacts:"SELECT greatest(next_attempt_at,coalesce(lease_expires_at,next_attempt_at)) AS due_at FROM artifact_cleanup_jobs WHERE environment_id=$1 AND state<>'done' UNION ALL SELECT CASE WHEN state='leased' THEN least(lease_expires_at,deadline_at) ELSE next_attempt_at END FROM artifact_extraction_runs WHERE environment_id=$1 AND state IN ('queued','leased') UNION ALL SELECT next_attempt_at FROM ordinary_native_retirements WHERE environment_id=$1 AND state='requested' UNION ALL SELECT CASE WHEN u.state IN('purged','expired','cancelled') THEN u.created_at ELSE u.expires_at END FROM ordinary_native_uploads u WHERE u.environment_id=$1 AND (u.state IN('uploading','ready') OR u.state IN('purged','expired','cancelled') AND EXISTS(SELECT 1 FROM ordinary_native_upload_chunks chunks WHERE chunks.upload_id=u.id))",
  workforce:"SELECT greatest(not_before,coalesce(lease_expires_at,not_before)) AS due_at FROM workforce_cleanup_jobs WHERE environment_id=$1 AND state<>'completed' UNION ALL SELECT CASE WHEN state='running' THEN least(lease_expires_at,deadline_at) ELSE created_at END FROM workforce_import_jobs WHERE environment_id=$1 AND state IN ('queued','running')",
- retrieval:"SELECT CASE WHEN state='leased' THEN lease_until ELSE created_at END AS due_at FROM retrieval_jobs WHERE environment_id=$1 AND state IN ('queued','leased','failed','unconfirmed')",
+ retrieval:`SELECT CASE WHEN j.state='leased' THEN j.lease_until ELSE j.created_at END AS due_at
+  FROM retrieval_jobs j WHERE j.environment_id=$1 AND j.state IN ('queued','leased','failed','unconfirmed')
+  AND NOT (j.state='failed' AND EXISTS (
+    SELECT 1 FROM retrieval_sources s WHERE s.id=j.source_id AND s.environment_id=j.environment_id
+      AND s.lifecycle_state IN ('retired','tombstoned')
+      AND NOT EXISTS (SELECT 1 FROM retrieval_passages p WHERE p.source_id=s.id)
+      AND NOT EXISTS (SELECT 1 FROM retrieval_embedding_operations o JOIN retrieval_jobs related ON related.id=o.job_id
+        WHERE related.source_id=s.id AND o.state IN ('reserved','dispatched','unconfirmed'))))`,
  'research-freshness':"SELECT due_at FROM research_review_due WHERE environment_id=$1 AND state='due'",
  knowledge:"SELECT coalesce(last_maintenance_checked_at+interval '1 minute',published_at) AS due_at FROM knowledge_publications WHERE environment_id=$1 AND state='published'",
  plans:"SELECT created_at AS due_at FROM plan_cleanup_jobs WHERE environment_id=$1 AND state<>'completed'",
