@@ -8,6 +8,11 @@ import type {PilotHostedScope} from '../lib/contracts/pilot-hosted';
 import {reportPrepareSchema,reportRevisionCommandSchema,reportPublicationDecisionSchema} from '../lib/server/reports/schema';
 const viewSchema=z.object({reportId:z.uuid(),revisionId:z.uuid(),customerId:z.uuid(),version:z.number().int().positive(),state:z.string(),artifacts:z.array(z.object({id:z.uuid(),format:z.enum(['pdf','pptx']),sizeBytes:z.number().int().positive().max(10485760),contentDigest:z.string().regex(/^[a-f0-9]{64}$/)}))});
 const previewSchema=z.object({previewId:z.uuid(),previewDigest:z.string().regex(/^[a-f0-9]{64}$/)});
+export function requireSyntheticReportSampleBrand(value:unknown){
+ const {brands}=z.object({brands:z.array(z.object({brandId:z.uuid(),version:z.number().int().positive(),state:z.string()}))}).parse(value);
+ if(brands.length!==1||!['draft','approved'].includes(brands[0].state))throw Error('Exact current synthetic sample brand required');
+ return brands[0];
+}
 export async function runSyntheticReportRecipe(input:{scope:PilotHostedScope;db:Client;customerId:string;engagementId:string;workloadId:string;signal:AbortSignal;maximumReportLayout?:boolean;request:(path:string,method:'GET'|'POST',body?:unknown)=>Promise<unknown>;authorRequest:(path:string,method:'GET'|'POST',body?:unknown)=>Promise<unknown>;runQueuedRender:(revisionId:string)=>Promise<void>;readArtifact:(artifact:z.infer<typeof viewSchema>['artifacts'][number])=>Promise<void>}){
  const {scope,db,customerId,engagementId,workloadId,signal,request}=input;
  const rows=(await db.query('SELECT c.synthetic FROM customer_references c JOIN engagements e ON e.customer_id=c.id AND e.workspace_id=c.workspace_id WHERE c.id=$1 AND c.workspace_id=$2 AND e.id=$3',[customerId,scope.workspaceId,engagementId])).rows;
@@ -36,9 +41,7 @@ export async function runSyntheticReportRecipe(input:{scope:PilotHostedScope;db:
   if(period.kind!=='weekly'&&(rendered.artifacts.length!==2||new Set(rendered.artifacts.map(x=>x.format)).size!==2))throw Error('Actual PDF and PPTX artifacts required');
   samples.push(rendered);
  }
- const brands=z.object({brands:z.array(z.object({brandId:z.uuid(),version:z.number().int().positive(),state:z.string()}))}).parse(unwrap(await request('/api/reports/brands','GET')));
- if(brands.brands.length!==1||brands.brands[0].state!=='draft')throw Error('Exact fresh synthetic sample brand required');
- const brand=brands.brands[0],body={customerId,action:'approve',expectedVersion:brand.version,sampleRevisionIds:samples.map(x=>x.revisionId)};
+ const brand=requireSyntheticReportSampleBrand(unwrap(await request('/api/reports/brands','GET'))),body={customerId,action:'approve',expectedVersion:brand.version,sampleRevisionIds:samples.map(x=>x.revisionId)};
  const preview=previewSchema.parse(unwrap(await request('/api/reports/brands/'+brand.brandId+'/preview','POST',body)));
  await command('/api/reports/brands/'+brand.brandId+'/decisions',{...body,...preview,requestKey:randomUUID(),rationale:'Operator review of actual validated synthetic weekly, monthly and quarterly samples'});
  let actualArtifactReads=0;

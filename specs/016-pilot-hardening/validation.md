@@ -8850,3 +8850,40 @@ action, a unique run/attempt/job name and one-day retention. Missing logs are
 ignored. No environment, store or workflow-data tree is uploaded. This improves
 failure evidence without changing recovery actions, assertions, deadlines or
 acceptance; it does not resolve the interrupted recovery result.
+
+## Repeatable report sample review (T187)
+
+The `4b538a5` Preview maximum-file preparation completes its original four jobs
+and two fixed 10 MiB originals. The subsequent generated-file attempt exits one
+without a deadline extension after its six additional jobs succeed. The original
+read-only provider verifier confirms all ten jobs; the new weekly, monthly and
+quarterly samples are review-ready, including both rendered PDF/PPTX pairs. The
+producer then rejects the workspace's single already approved brand because it
+unconditionally requires draft state. Its failed parent, completed work and full
+cost holds remain retained. No generated manifest, brand re-review, report
+publication or retention pass is inferred from that partial execution.
+
+The original producer now selects exactly one current draft or approved brand.
+It still generates and validates all three fresh samples, obtains a new brand
+preview and approval decision, performs every original publication preview and
+decision, and reads all four artifacts. Revoked, absent and ambiguous brands are
+denials. No brand state reset, private continuation, reconstructed journey or
+replacement passing receipt is used. The existing real-database brand case adds
+approved re-review with a distinct preview and approval decision, then normal
+revocation and both producer-selection and domain rejection. The server's normal
+approve command accepts draft or approved state; revoke still requires approved
+state. Exact version, reviewer, current-brand, validated sample, artifact digest
+and preview guards remain. Re-review must leave all report revision states and
+retained publications unchanged.
+
+The focused original report runner passes its existing one-case comparison with
+zero failures or skips, and its actual parent exits zero. The case takes 3,155 ms;
+its 120-second test and hook limits and 360-second child limit are unchanged. Fresh
+committed-source CI and admitted hosted execution remain required; all earlier
+Native, browser, load and profile observations retain their original source.
+The first local attempt stops during bootstrap before case execution because its
+selected environment omits required synthetic server configuration. A distinct
+attempt reaches the original case but lacks its required local renderer tag.
+Both failures remain retained. The unchanged CI renderer Dockerfile is then built
+locally with its original tag, without publishing an image or calling a provider;
+the next original comparison uses only synthetic owned-local credentials.

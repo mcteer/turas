@@ -7,6 +7,18 @@ current release evidence.
 
 ## Recorded validation observations
 
+The `4b538a5` Preview completed all ten original scan, parse and render jobs,
+but its generated-file producer stopped before brand review and publication:
+it required a draft brand although the workspace already had an approved brand.
+The producer now accepts one current draft or approved brand, while still
+requiring fresh weekly, monthly and quarterly samples, a new review preview and
+approval decision, every publication decision and all four artifact reads.
+The normal review command permits this audited renewal without changing existing
+report states or publications; reviewer, version, sample and byte checks remain.
+Revoked or ambiguous brands remain denied. Completed jobs and the failed original
+attempt remain historical; this correction does not establish generated-file,
+retention, CI or Production acceptance.
+
 The mobile Navigation dialog now makes only its background sibling branches
 inert and unavailable to assistive technology, retains keyboard focus inside the
 open dialog, and restores prior background attributes before returning focus to

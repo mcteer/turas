@@ -10,7 +10,8 @@ export async function reportBrandProjection(db:PoolClient,actor:CurrentSession,b
 async function brandBinding(db:PoolClient,actor:CurrentSession,brandId:string,command:z.infer<typeof brandPreviewSchema>){
  await lockReportActor(db,actor,command.customerId,'brand','delivery',false,command.action==='approve');
  const brand=await requireCurrentReportBrand(db,actor.workspaceId,brandId,false);
- if(Number(brand.version)!==command.expectedVersion || brand.state!==(command.action==='approve'?'draft':'approved'))throw new HttpFailure(409,'version_conflict','Brand state changed');
+ const currentState=command.action==='approve'?['draft','approved'].includes(brand.state):brand.state==='approved';
+ if(Number(brand.version)!==command.expectedVersion || !currentState)throw new HttpFailure(409,'version_conflict','Brand state changed');
  const samples:Array<{revisionId:string;reportId:string;kind:string;documentDigest:string;mailDigest:string;validationId:string;artifactDigests:Record<string,string>;checks:unknown}>=[];
  if(command.action==='approve'){
   if(command.sampleRevisionIds.length<3)throw new HttpFailure(409,'brand_unapproved','Inspect validated weekly, monthly and quarterly samples');

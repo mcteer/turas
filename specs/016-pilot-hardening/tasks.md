@@ -1093,3 +1093,15 @@ No hosted target may be locked for release before its measured reopen path exist
   pilot workspace context and background-heading assertions by closing the mobile
   dialog between them; require the original full 40-case, four-project comparison
   and fresh committed CI/hosted validation (FR-021).
+
+- [ ] T187 Make the original synthetic report producer repeatable against one
+  current draft or approved brand without resetting existing approval or skipping
+  fresh weekly, monthly and quarterly sample validation, review preview, approval
+  decision, publication decisions or artifact reads. Keep revoked and ambiguous
+  brands denied. Permit normal audited re-approval with unchanged reviewer,
+  version, current-brand, sample, byte and preview guards; preserve existing report
+  states and publications. Extend the existing real-database brand case with fresh
+  approved re-review and revoked-state rejection, preserving its inventory and deadlines.
+  Retain the failed original `4b538a5` attempt and all ten successful provider jobs;
+  require fresh admitted source-bound preparation, retention and hosted validation
+  rather than reconstructing a passing manifest (FR-016, FR-021).
