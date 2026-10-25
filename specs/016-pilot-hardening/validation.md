@@ -8388,3 +8388,131 @@ not replace the preserved CI timeout or establish its full historical cause.
 Separate Product Gaps and expansion failures remain under investigation; no
 historical application cause or flaky-test classification is established.
 Fresh candidate CI, native and hosted release acceptance remain pending.
+
+
+### 2026-10-25: Runtime report-template tracing (T172)
+
+The `e119a9d` Preview completed the two maximum-size originals and the next
+synthetic source/workforce pair: eight real Sandbox jobs succeeded, with their
+full original cost holds retained. The generated-report preparation then failed
+before any render job. A read-only deployment request log identifies the first
+weekly-report POST as HTTP 503. A separately reviewed normal diagnostic retained
+the generic `unavailable` response, no report scope and a `font_unavailable`
+readiness code; sender and worker readiness also remain unaccepted. It neither
+replays the linked chain nor establishes a complete hosted result.
+
+A fresh original Node 24 build of `e119a9d` passes, but all 20 report/Eve server
+traces omit `report-templates/weekly.ts`, one of ten files read by the unchanged
+runtime brand verifier. That verifier passes against the complete frozen source.
+Copying exactly the nine files present in the current trace into an owned private
+runtime directory reproduces `ENOENT` for the missing weekly template. Both
+checks use no network or SQL. Earlier local-trace observations and diagnostic
+working-directory mistakes remain retained separately; the current comparison
+uses the fresh committed-source build.
+
+The correction explicitly includes the ten checked-in brand/renderer runtime
+files plus the font license, font manifest and asset provenance in server traces,
+while retaining private-file exclusions and every hash and brand-integrity guard.
+The original Node 24 build passes in an owned T172-only checkout with no environment
+file and blank provider credentials. The incremental original web build also passes
+after adding the three license/provenance files. All 20 actual report/Eve traces
+contain all 13 required files and exclude private environment, workflow and
+local-artifact entries. The unchanged brand verifier then passes against the
+files copied from the fixed trace, preserving the original manifest, font,
+template and renderer digests. Typechecking and documentation hygiene pass.
+These are local build results against the uncommitted correction, not hosted
+acceptance. Fresh committed CI/native checks, hosted reports, same-source retention
+and Production validation remain required. Earlier successful jobs, costs and
+failed attempts are not relabeled as results of the new source.
+
+
+### 2026-10-25: Product Gaps production UI fixture (T173)
+
+The retained `e119a9d` Linux failure shows development-server compilation during
+its original five-second assertion, with the view still loading after the actual
+create returned 201. A controlled production-fixture comparison preserves all six
+files, four WebKit projects, 100 cases, original 5-second assertions, 30-second cases,
+43-minute outer limit and zero retries. All 100 cases pass without skips or flaky
+results. This comparison does not by itself establish every historical CI cause.
+
+The tracked fixture now offers an explicit production startup using the existing
+build check and `next start`, selected only by Product Gaps UI. Existing ordinary
+startup, supervision and recovery remain unchanged. The new production-build
+phase uses the existing owned-process helper to capture and retire descendants,
+including after the parent exits, while preserving its original deadline. Temporary
+SIGTERM/SIGINT handlers remain active through group retirement, and interruption
+during cleanup cannot become a successful build. The obsolete
+unauthenticated route warmup is removed. The existing eight runner-coverage and
+eight owned-process checks pass, as does Gaps typechecking; no test or catalog
+case is added or removed. A separate exact
+Linux/mobile-light research diagnostic passes once, while its original Main2
+failure and unproved cause remain retained. Fresh combined-source CI and hosted
+release acceptance remain required.
+
+### 2026-10-25: One explicit Production release producer (T174)
+
+Only `vercel.json`'s `git.deploymentEnabled.main` changes from true to false.
+Existing branch suppression, cron expressions, build and install commands remain
+unchanged. The supported public schema explicitly permits that mapping, and the
+local schema-fragment and diff checks pass. No provider setting, deployment,
+database or model operation is performed by this source edit.
+
+The release must check the retained Production baseline, fast-forward `main` to
+the exact reviewed source and verify that no unexpected Git deployment starts.
+The separately reviewed Eve deployment remains the sole intended Production
+producer after recovery backup, migrations/grants and compatibility checks.
+Actual deployed-source, authenticated HTTP and CLI WebKit acceptance remain
+required; file-based suppression alone establishes none of those outcomes.
+
+
+### 2026-10-25: Failure-only browser diagnostics (T175)
+
+The `e119a9d` CI browser failures remain preserved. The Gaps runner and original
+005 browser commands now retain traces only on failure; the owned 005 command also
+writes its exact JSON report and isolated test-results directory. Failure-only CI
+uploads select those reports, traces, error contexts and Gaps runner JSON/logs,
+with unique job/run identities and one-day retention. They do not upload an
+entire fixture tree, environment files, Eve state, stores or workflow data.
+
+Workflow parsing and the existing runner/process coverage pass. No case, action,
+assertion, timeout, retry, model or catalog count changes. The separate original
+Linux/mobile-light research case passes once with its original assertions and
+clocks; that diagnostic does not establish the historical failure's cause or a
+complete current CI pass. Fresh combined-source CI and hosted release acceptance
+remain required.
+
+
+The original `e119a9d` Main2 run finishes with 51 successful jobs and three
+failures. In addition to the preserved browser failures, its deterministic
+catalog fails `tests/integration/pilot/evaluation-source.test.ts` in the actual
+owned-source preparation case. Two of the three cases pass; the child exits 1
+without the outer deadline firing. Readiness authentication/eve attempts time out
+within their original 60-second boundary without response headers. The cause
+remains unresolved; no model dispatch, retry, clock change or source fix is
+inferred from this observation. The local research comparison and later-source
+checks cannot relabel that original failed run.
+
+
+### 2026-10-25: Owned-source production fixture (T176)
+
+The follow-up selects the existing `{production: true}` option for only the first
+owned-source integration case. The original artifact, retrieval and plan clone
+assertions remain, as do the 390-second case, 360-second owning fixture and
+60-second readiness bounds. The other two cases are unchanged. This is a fixture
+selection change, not an application, model, source-eligibility or deadline change.
+The first complete controlled production run passes two cases and fails the
+owned-source case before readiness: the copied fixture omits `playwright.config.ts`,
+which its copied test sources import, so the production typecheck refuses the
+incomplete fixture. That actual failure is retained separately from the original
+CI authentication/eve timeout. At that checkpoint no complete production-fixture pass or historical cause was
+claimed.
+
+The explicit follow-up includes the checked-in Playwright configuration in the
+existing owned Plan fixture copy; it does not remove the imported tests or skip
+typechecking. The complete original file then passes all three cases, with zero
+failures: the owned-source case takes 116,082 ms, seeding 27,924 ms and worker-guard
+installation 6,970 ms. Every assertion and original limit is retained, with no
+paid dispatch or test retry. The prior incomplete-fixture failure remains recorded.
+This local production-fixture comparison does not prove the historical development
+readiness timeout's cause or establish fresh committed CI; those gates remain
+required for the combined source.

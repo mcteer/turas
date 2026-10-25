@@ -14,7 +14,7 @@ it('admits actual owned sources and prepares artifact retrieval and plan clones 
   const probe=async()=>{const raw=process.env.DATABASE_URL_UNPOOLED!;expect(raw).not.toBe(source);expect(raw).toBe(process.env.TURAS_TEST_DATABASE_URL);expect(process.env.TURAS_ENVIRONMENT_ID).toBe(marker);const db=new Client({connectionString:raw});try{await db.connect();expect((await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows).toEqual([{environment_id:marker,schema_version:79}]);}finally{await db.end();}};
   await withArtifactEvalEnvironment(probe);expect(process.env.DATABASE_URL_UNPOOLED).toBe(source);
   await withRetrievalEvalEnvironment(probe);expect(process.env.DATABASE_URL_UNPOOLED).toBe(source);
-  await withPlanEvalEnvironment(async clone=>{await clone.start();await probe();});expect(process.env.DATABASE_URL_UNPOOLED).toBe(source);
+  await withPlanEvalEnvironment(async clone=>{await clone.start();await probe();},{production:true});expect(process.env.DATABASE_URL_UNPOOLED).toBe(source);
  },{postgresMajor:18,deadlineMs:360000});
 },390000);
 it('seeds the governing behavior demo separately from the judged retrieval walkthrough',async()=>{

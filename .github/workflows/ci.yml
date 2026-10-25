@@ -660,18 +660,32 @@ jobs:
         env:
           TURAS_UI_LEGACY_ONLY: '1'
           TURAS_UI_PRODUCTION: '1'
-        run: npm run test:ui
+        run: npm run test:ui -- --trace=retain-on-failure --output=test-results/owned-legacy
       - name: Exercise 005 UI on isolated disposable Postgres
         env:
           TURAS_UI_PRODUCTION: '1'
         run: |
+          mkdir -p local-artifacts/005/ui-owned
           DATABASE_URL="$TURAS_TEST_DATABASE_URL" \
           DATABASE_URL_UNPOOLED="$TURAS_TEST_DATABASE_URL" \
           TURAS_ENVIRONMENT_ID="$TURAS_TEST_ENVIRONMENT_ID" \
           TURAS_UI_FIXTURE_DATABASE_URL="$TURAS_TEST_DATABASE_URL" \
           TURAS_UI_BASE_URL="$TURAS_APP_ORIGIN" \
-          npm run test:ui -- tests/ui/knowledge.spec.ts tests/ui/research.spec.ts tests/ui/retrieval.spec.ts
+          npm run --silent test:ui -- tests/ui/knowledge.spec.ts tests/ui/research.spec.ts tests/ui/retrieval.spec.ts --trace=retain-on-failure --reporter=json --output=test-results/owned-005 > local-artifacts/005/ui-owned/report.json
 
+      - name: Retain failed owned 005 browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: owned-005-browser-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
+          retention-days: 1
+          if-no-files-found: ignore
+          path: |
+            local-artifacts/005/ui-owned/report.json
+            test-results/owned-005/**/trace.zip
+            test-results/owned-005/**/error-context.md
+            test-results/owned-legacy/**/trace.zip
+            test-results/owned-legacy/**/error-context.md
       - name: Bounded redacted failed-test diagnostics
         if: failure()
         run: node --import tsx scripts/print-ci-test-failures.ts
@@ -876,6 +890,21 @@ jobs:
         run: |
           npx playwright install --with-deps webkit
           npm run gaps:ui:check
+      - name: Retain failed owned Gaps browser diagnostics
+        if: failure() && matrix.gate == 'webkit'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: owned-gaps-browser-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}-${{ matrix.gate }}
+          retention-days: 1
+          if-no-files-found: ignore
+          path: |
+            local-artifacts/012/ui-*/*.json
+            local-artifacts/012/ui-*/*.log
+            local-artifacts/012/production-build-*.log
+            local-artifacts/012/startup-*.log
+            local-artifacts/012/failure-app-*.log
+            local-artifacts/012/ui-*/**/trace.zip
+            local-artifacts/012/ui-*/**/error-context.md
       - name: Empty and 047 forward recovery with real root supervisor
         if: matrix.gate == 'recovery'
         run: npm run gaps:recovery:check

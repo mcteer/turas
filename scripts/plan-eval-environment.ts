@@ -44,7 +44,7 @@ export type PlanEvalOptions = {
 };
 
 const sourceFiles = ["app","agent","lib","migrations","scripts","public","evals","tests",
-  "packages","infra","report-templates","report-renderer","next.config.ts","next-env.d.ts","tsconfig.json","package.json"] as const;
+  "packages","infra","report-templates","report-renderer","next.config.ts","next-env.d.ts","playwright.config.ts","tsconfig.json","package.json"] as const;
 
 const ownedChildren=new WeakMap<ChildProcess,OwnedProcessRetirement>();
 function spawnPlanChild(command:string,args:string[],options:{cwd:string;env:NodeJS.ProcessEnv}){

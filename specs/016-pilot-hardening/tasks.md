@@ -950,3 +950,47 @@ No hosted target may be locked for release before its measured reopen path exist
   the full fixture, original timeout and zero retries. Diagnose the separate
   Product Gaps and expansion CI failures from retained evidence before attributing
   a cause; complete fresh candidate validation and hosted release checks (FR-021).
+
+- [ ] T172 Preserve the actual `e119a9d` first weekly-report HTTP 503 after eight
+  successful scan/parse jobs and zero report renders. Include the manifest-listed
+  brand assets/templates and raw renderer files in every required server trace,
+  together with their font license, font manifest and asset provenance.
+  Verify the current-build missing-weekly-template counterexample and the fixed
+  trace-derived runtime with the unchanged brand verifier; preserve all integrity,
+  authorization, worker, output and cost guards. Require fresh committed checks,
+  actual hosted report preparation/render/publication, same-source file retention
+  and Production release acceptance (FR-016, FR-021).
+
+- [ ] T173 Preserve the actual `e119a9d` Linux Product Gaps five-second assertion
+  timeout and development rebuild/loading trace. Opt only its UI fixture into the
+  existing production build and `next start`; retain ordinary `start()`, supervisor
+  and recovery behavior. Retire production-build descendants through the existing
+  owned-process helper, preserve the original deadline and reject interrupted
+  cleanup as success. Remove the obsolete
+  unauthenticated route warmup. Keep all
+  cases, assertions, original 5-second/30-second/43-minute limits and zero retries;
+  verify the complete four-project comparison, existing runner coverage and fresh
+  committed CI without claiming the separate historical research cause (FR-021).
+
+- [ ] T174 Disable only Git-triggered Production deployment of `main` through the
+  supported file-based Vercel setting. Preserve branch suppression, crons and build
+  commands. Before the single explicit Eve Production deployment, verify the exact
+  fast-forwarded source, retained Production baseline and absence of an unexpected
+  Git deployment; complete backup/migration compatibility and actual hosted release
+  acceptance without treating the configuration edit as deployment proof (FR-021).
+
+- [ ] T175 Retain failure-only diagnostics for the original owned 005 and Product
+  Gaps browser runs: selected JSON reports, traces, error contexts and runner logs,
+  uniquely identified and limited to one day. Preserve the actual `e119a9d`
+  failures and the qualified research comparison. Exclude environment files, Eve
+  state, private stores and workflow data; keep all cases, actions, original
+  clocks, retries and acceptance gates unchanged. Validate workflow syntax and
+  the existing runner/process coverage, then require fresh complete CI (FR-021).
+
+- [ ] T176 Preserve the actual `e119a9d` Main2 owned-source catalog readiness
+  failure. Select the existing production option only for that governing plan
+  clone fixture and include the checked-in Playwright configuration required by
+  its copied test sources. Retain all three cases and assertions, the original 390-second
+  case, 360-second fixture and 60-second readiness limits, and zero paid dispatch
+  or retry. Verify the complete unchanged file and fresh committed catalog/CI;
+  distinguish a focused comparison from proof of the historical cause (FR-021).

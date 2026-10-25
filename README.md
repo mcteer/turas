@@ -7,6 +7,32 @@ current release evidence.
 
 ## Recorded validation observations
 
+The `e119a9d` Preview completed eight real scan/parse jobs, then its first weekly
+report preparation returned 503 before any report render. A fresh build omitted
+the raw weekly template required by the runtime brand check; the same original
+check passes with the complete source files and fails with that traced deployment
+file set. The follow-up explicitly includes the required brand and renderer files
+in server traces. Fresh source-bound and hosted report, retention and Production
+checks remain required; earlier jobs and failures retain their original source.
+
+The Product Gaps UI fixture now opts into the production build/server so development
+compilation cannot consume its unchanged assertion deadline. A controlled full
+comparison passed all 100 cases; it does not establish a later committed CI pass
+or resolve the separate historical research failure. Main2 records 51 successful
+jobs and three failures, including an unresolved model-free catalog readiness
+timeout. The governing owned-source plan-clone case also selects its existing
+production fixture; all three local cases pass, while fresh committed CI remains
+required. Ordinary
+fixture startup and recovery behavior remain unchanged.
+Failed browser runs retain only their selected owned JSON, logs, traces and error
+contexts for one day. Original failures remain recorded; diagnostic retention does
+not change assertions, clocks, retries or acceptance.
+
+Git-triggered deployment of `main` is intentionally disabled. The release must
+verify the exact fast-forwarded source and absence of an unexpected Git deployment
+before the single explicitly reviewed Eve Production deployment; database,
+backup and hosted acceptance checks remain required.
+
 The `259f8fb` CI private-object case reached its original 15-second timeout.
 Its follow-up preserves the complete 10 MiB stream check using native byte
 comparison plus explicit length and SHA-256 assertions. Separate Product Gaps and

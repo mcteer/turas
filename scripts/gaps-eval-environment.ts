@@ -6,6 +6,7 @@ import { Pool } from 'pg';
 import { copyOwnedEvalFiles } from './eval-owned-copy';
 import { reserveOwnedEvalPort } from './eval-port';
 import { closeRuntimePool } from '../lib/server/db/client';
+import { spawnOwnedProcess, retireOwnedProcess, captureOwnedProcessDescendants } from './pilot-owned-process';
 
 export function requireOwnedGapDatabase(env: NodeJS.ProcessEnv = process.env, owner = false) {
  const raw = env[owner ? 'DATABASE_URL_UNPOOLED' : 'DATABASE_URL'];
@@ -17,7 +18,7 @@ export function requireOwnedGapDatabase(env: NodeJS.ProcessEnv = process.env, ow
  return raw;
 }
 export type GapEnvironment = { appRoot: string; storeRoot: string; workflowRoot: string; origin: string;
- databaseName: string; environmentId: string; signal:AbortSignal; start: () => Promise<void>; startWorker: () => Promise<void>; crashWorker: () => Promise<void>; startSupervisor: () => Promise<void>; stop: () => Promise<void>;
+ databaseName: string; environmentId: string; signal:AbortSignal; start: () => Promise<void>; startProduction: () => Promise<void>; startWorker: () => Promise<void>; crashWorker: () => Promise<void>; startSupervisor: () => Promise<void>; stop: () => Promise<void>;
  upgradeToCurrent: () => Promise<void> };
 const safeParentKeys = ['PATH','HOME','TMPDIR','LANG','LC_ALL','SYSTEMROOT'] as const;
 function command(cmd: string, args: string[], env: NodeJS.ProcessEnv, cwd = process.cwd(), timeout = 120_000) {
@@ -70,10 +71,31 @@ export async function withGapEnvironment<T>(run: (environment: GapEnvironment) =
   const script=(file:string,args:string[]=[])=>command(process.execPath,['--experimental-strip-types',file,...args],process.env,appRoot,Math.min(remaining(),120_000));
   script('scripts/db-migrate.ts',['--init']);script('scripts/db-roles.ts');script('scripts/bootstrap-demo.ts');
   if(!options.priorSchema&&later.length){for(const entry of later)await rename(join(appRoot,'later',entry.file),join(appRoot,'migrations',entry.file));await writeFile(manifestPath,installed);script('scripts/db-migrate.ts');script('scripts/db-roles.ts');}
-  async function start(supervisor=false){if(child)throw Error('Owned gap app already started');await portLease.release();child=spawn(process.execPath,supervisor?['scripts/dev.mjs']:['node_modules/next/dist/bin/next','dev','--webpack','--port',String(portLease.port)],{cwd:appRoot,env:{...process.env,PORT:String(portLease.port),NODE_ENV:'development'},stdio:['ignore','pipe','pipe']});for(const stream of [child.stdout,child.stderr])stream?.on('data',b=>{appTail=(appTail+b.toString()).slice(-100000);});
+  let built=false;
+  async function buildProduction(){
+   remaining();
+   const owned=spawnOwnedProcess({command:process.execPath,args:['scripts/build-check.mjs'],cwd:appRoot,environment:{...process.env,NODE_ENV:'production'}});
+   for(const stream of [owned.child.stdout,owned.child.stderr])stream?.on('data',b=>{appTail=(appTail+b.toString()).slice(-100000);});
+   let timer:ReturnType<typeof setTimeout>|undefined,capture:ReturnType<typeof setInterval>|undefined,interrupted=false;
+   let onSignal:()=>void=()=>{};
+   try{
+    const cancelled=new Promise<never>((_,reject)=>{onSignal=()=>{interrupted=true;reject(Error('Owned production build interrupted'));};process.on('SIGTERM',onSignal);process.on('SIGINT',onSignal);timer=setTimeout(()=>reject(Error('Owned gap check deadline exceeded')),remaining());capture=setInterval(()=>{try{captureOwnedProcessDescendants(owned.retirement);}catch(error){reject(error);}},100);});
+    const code=await Promise.race([new Promise<number|null>((done,reject)=>{owned.child.once('error',reject);owned.child.once('exit',done);}),cancelled]);
+    remaining();if(code!==0)throw Error('Owned production build failed');
+   }finally{
+    clearTimeout(timer);clearInterval(capture);
+    try{
+     await retireOwnedProcess(owned.retirement);
+     await writeFile(resolve('local-artifacts/012',`production-build-${token}.log`),appTail,{mode:0o600});
+    }finally{process.removeListener('SIGTERM',onSignal);process.removeListener('SIGINT',onSignal);}
+   }
+   if(interrupted)throw Error('Owned production build interrupted');
+   remaining();built=true;
+  }
+  async function start(supervisor=false,production=false){if(child)throw Error('Owned gap app already started');if(production&&!built)await buildProduction();await portLease.release();child=spawn(process.execPath,supervisor?['scripts/dev.mjs']:['node_modules/next/dist/bin/next',production?'start':'dev',...(production?[]:['--webpack']),'--port',String(portLease.port)],{cwd:appRoot,env:{...process.env,PORT:String(portLease.port),NODE_ENV:production?'production':'development'},stdio:['ignore','pipe','pipe']});for(const stream of [child.stdout,child.stderr])stream?.on('data',b=>{appTail=(appTail+b.toString()).slice(-100000);});
    while(remaining()>0){if(child.exitCode!==null)break;try{const r=await fetch(`${origin}/api/auth/session`,{signal:AbortSignal.timeout(2000)});await r.body?.cancel();if(r.status===401)return;}catch{}await new Promise(r=>setTimeout(r,300));}
    await writeFile(resolve('local-artifacts/012',`startup-${token}.log`),appTail.replace(/(?:postgres(?:ql)?|https?):\/\/[^\s'"<>]+/g,'[redacted-url]'),{mode:0o600});throw Error('Owned gap app failed readiness; inspect synthetic startup evidence');}
-  return await run({appRoot,storeRoot,workflowRoot,origin,databaseName:name,environmentId,signal:AbortSignal.timeout(remaining()),start:()=>start(),startSupervisor:()=>start(true),crashWorker:async()=>{if(!worker)throw Error('Owned worker not running');const current=worker;worker=undefined;current.kill('SIGKILL');if(current.exitCode===null)await new Promise<void>(done=>current.once('exit',()=>done()));},startWorker:async()=>{if(worker)throw Error('Owned gap worker already started');worker=spawn(process.execPath,['--import','tsx','scripts/reports-worker.ts'],{cwd:appRoot,env:process.env,stdio:'ignore'});await new Promise(r=>setTimeout(r,250));if(worker.exitCode!==null)throw Error('Owned gap worker failed startup');},stop,upgradeToCurrent:async()=>{if(!future.length)throw Error('No owned prior-schema fixture');for(const file of future)await rename(join(appRoot,'future',file),join(appRoot,'migrations',file));future=[];for(const entry of later)await rename(join(appRoot,'later',entry.file),join(appRoot,'migrations',entry.file));await writeFile(manifestPath,installed);script('scripts/db-migrate.ts');script('scripts/db-roles.ts');}});
+  return await run({appRoot,storeRoot,workflowRoot,origin,databaseName:name,environmentId,signal:AbortSignal.timeout(remaining()),start:()=>start(),startProduction:()=>start(false,true),startSupervisor:()=>start(true),crashWorker:async()=>{if(!worker)throw Error('Owned worker not running');const current=worker;worker=undefined;current.kill('SIGKILL');if(current.exitCode===null)await new Promise<void>(done=>current.once('exit',()=>done()));},startWorker:async()=>{if(worker)throw Error('Owned gap worker already started');worker=spawn(process.execPath,['--import','tsx','scripts/reports-worker.ts'],{cwd:appRoot,env:process.env,stdio:'ignore'});await new Promise(r=>setTimeout(r,250));if(worker.exitCode!==null)throw Error('Owned gap worker failed startup');},stop,upgradeToCurrent:async()=>{if(!future.length)throw Error('No owned prior-schema fixture');for(const file of future)await rename(join(appRoot,'future',file),join(appRoot,'migrations',file));future=[];for(const entry of later)await rename(join(appRoot,'later',entry.file),join(appRoot,'migrations',entry.file));await writeFile(manifestPath,installed);script('scripts/db-migrate.ts');script('scripts/db-roles.ts');}});
  } catch(error) {
   await writeFile(resolve('local-artifacts/012',`failure-app-${token}.log`),appTail,{mode:0o600}).catch(()=>undefined);throw error;
  } finally {
