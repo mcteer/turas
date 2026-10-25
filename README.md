@@ -14,6 +14,10 @@ the trigger. The original mobile light and dark keyboard/theme/accessibility
 cases pass with their existing limits and assertions plus focus/isolation checks.
 The retained `ff68af4` mobile-dark failure remains historical; these local checks
 do not establish a fresh CI or hosted pass. Colors and layout are unchanged.
+The subsequent pilot UI scenario also closes the drawer after checking its workspace
+context and before checking the background heading, preserving both assertions.
+The original full 40-case, four-project controlled comparison passes; fresh source
+CI and hosted acceptance remain required.
 
 Shared retrieval maintenance now measures only its invalidation and cleanup lane,
 matching the work that its binding can execute. Separately admitted index jobs stay

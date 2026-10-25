@@ -8826,3 +8826,27 @@ full-page captures also include content below the viewport. The prior source's
 unchanged desktop shell capture was inspected as a historical layout reference,
 not a current desktop execution claim. Fresh committed CI and actual hosted
 acceptance remain required.
+
+### Full pilot UI assertion ordering
+
+The subsequent full `f501cd8` pilot UI run exposes an assertion-order incompatibility:
+the synthetic workspace context is correctly visible inside the open Navigation
+dialog, but the next assertion attempts to locate the now-hidden background page
+heading. The original scenario now closes Navigation after checking that context
+and before checking the same heading. Both assertions and all original cases and
+limits remain. The original failure is preserved. A distinct controlled full four-project,
+40-case comparison passes all 40 cases with zero failures or skips. The actual
+parent exits zero, confirmed by the terminal tool receipt. This comparison uses
+base `f501cd8` with only the uncommitted test-ordering change; it is not a fresh
+committed-source acceptance or a relabeling of the first failed run.
+
+Other `f501cd8` CI failures remain source-qualified. The separately interrupted
+learning recovery check has no established cause or passing result from this UI
+comparison. No complete CI, recovery or hosted acceptance is inferred.
+
+The learning recovery CI job now retains only its owned feature-014 startup and
+runtime log patterns on recovery failure, using the existing pinned artifact
+action, a unique run/attempt/job name and one-day retention. Missing logs are
+ignored. No environment, store or workflow-data tree is uploaded. This improves
+failure evidence without changing recovery actions, assertions, deadlines or
+acceptance; it does not resolve the interrupted recovery result.

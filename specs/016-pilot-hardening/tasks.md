@@ -1089,5 +1089,7 @@ No hosted target may be locked for release before its measured reopen path exist
   attributes, contain keyboard/programmatic focus and restore the trigger on
   close. Extend the existing keyboard case without removing theme, accessibility
   or focus assertions and retain its original limits/case count. Require original
-  light/dark WebKit observations, inspected synthetic captures and fresh committed
-  CI/hosted validation (FR-021).
+  light/dark WebKit observations and inspected synthetic captures. Preserve the
+  pilot workspace context and background-heading assertions by closing the mobile
+  dialog between them; require the original full 40-case, four-project comparison
+  and fresh committed CI/hosted validation (FR-021).
