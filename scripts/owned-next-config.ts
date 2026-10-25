@@ -9,8 +9,13 @@ export async function configureOwnedNextDependencyRoot(appRoot:string){
  let root=app;
  while(dependencies.some(path=>path!==root&&!path.startsWith(root+'/'))){const parent=dirname(root);if(parent===root)throw Error('Bounded owned dependency root required');root=parent;}
  if(root===resolve('/'))throw Error('Bounded owned dependency root required');
- const exported='export default withEve(nextConfig);',config=await readFile(configPath,'utf8');
- if(config.split(exported).length!==2)throw Error('Owned Next configuration shape changed');
+ const supportedExports=[
+  'export default withEve(nextConfig);',
+  'export default withEve(nextConfig, { eveBuildCommand: "npm run build:eve" });',
+ ];
+ const config=await readFile(configPath,'utf8'),matches=supportedExports.filter(value=>config.includes(value));
+ if(matches.length!==1||config.split(matches[0]).length!==2||(config.match(/^\s*export default\b/gm)??[]).length!==1)throw Error('Owned Next configuration shape changed');
+ const exported=matches[0];
  const clean=config.replace(/^nextConfig\.turbopack = .*\/\/ owned-(?:plan-turbopack-root|next-dependency-root)-v1\n/gm,'');
  await writeFile(configPath,clean.replace(exported,`nextConfig.turbopack = {...nextConfig.turbopack, root: ${JSON.stringify(root)}}; // owned-next-dependency-root-v1\n${exported}`));
  return root;

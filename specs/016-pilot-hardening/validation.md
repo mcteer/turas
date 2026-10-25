@@ -8578,3 +8578,34 @@ transition before any governed execution or Sandbox create, checks HTTP 409
 preservation and rejects forged diagnostic objects. All fourteen original executor
 unit cases pass with zero failures in 480 ms; no registered case was added or
 assertion removed. These local results do not establish a successful hosted render.
+
+
+### 2026-10-25: Owned Next configuration compatibility (T179)
+
+The committed `ffc67cc` follow-up exposes an owned-fixture integration guard that
+accepts only `export default withEve(nextConfig);`. The new documented Eve
+build-command option produces a different exact export, so the original adapter
+refuses it with “Owned Next configuration shape changed.” The retained CI jobs
+refuse source preflight; a pure reproduction reaches that same guard before any
+database, build or provider operation. The main workflow is cancelled rather than
+naturally completed: its 54 jobs record six successes, 32 failures and 16
+cancellations. All seven legacy jobs fail. Raw log ZIPs remain retained and no
+artifacts are available. The guard reproduction does not establish every failure's
+cause; none of those outcomes is reclassified as a pass.
+
+The adapter now recognizes only the previous literal export or the exact
+`withEve(nextConfig, { eveBuildCommand: "npm run build:eve" })` export. It requires
+one supported occurrence and one default export, then preserves that authored
+form while adding the same bounded owned dependency root. File/link checks,
+nested dependency resolution and idempotence remain unchanged. The existing unit
+case now covers both forms and rejects an arbitrary build command, duplicate
+exports and unsupported content without modifying refused files. All five
+original unit cases pass with zero failures in 180 ms, with no registered case
+added or assertion removed. The complete original three-case owned-source
+integration comparison then passes all three cases with zero failures. The first
+case takes 116,256 ms, the seeding case 27,243 ms and the worker-guard case 6,697 ms;
+the owning process completes in 150,607 ms without an abort and returns after
+actual process retirement. The original case, fixture and readiness deadlines are
+unchanged, with no model dispatch or test retry. This local comparison does not
+relabel the cancelled `ffc67cc` CI or establish a new committed CI or hosted
+release pass.

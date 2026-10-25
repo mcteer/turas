@@ -1014,3 +1014,12 @@ No hosted target may be locked for release before its measured reopen path exist
   existing executor case to prove early ENOENT/abort failure transition, unchanged
   HTTP status/code and no Sandbox admission; keep registered case counts intact
   and require fresh source-bound validation (FR-016, FR-021).
+
+
+- [ ] T179 Preserve the actual `ffc67cc` owned-fixture preflight failures. Extend
+  the dependency-root adapter to accept only the original Eve export and the exact
+  configured `build:eve` export, preserving the configured command and every
+  regular-file, bounded-root and idempotence guard. Reject unsupported commands,
+  duplicate exports and other shapes without rewriting them. Extend the existing
+  unit case and rerun the original three-case owned-source integration file with
+  all assertions and deadlines intact; require fresh committed CI (FR-021).

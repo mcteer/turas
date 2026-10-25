@@ -7,6 +7,14 @@ current release evidence.
 
 ## Recorded validation observations
 
+The `ffc67cc` CI exposed an owned-fixture configuration guard that recognized
+only the previous one-argument Eve export. The cancelled main run records six
+successful jobs, 32 failures and 16 cancellations; all seven legacy jobs fail.
+Its follow-up accepts that exact form and the exact configured Eve build-command form, preserving the command during
+owned dependency-root setup and rejecting other or duplicate exports. The
+original fixture assertions and timeouts remain unchanged; local comparisons do
+not replace fresh committed CI or hosted release acceptance.
+
 The `56f3c66` Preview comparison preserved all 184 real customer references and
 passed the original detailed profile checks. Its four maximum-file jobs passed;
 the next source/workforce jobs also passed, but the first report remained leased

@@ -28,6 +28,12 @@ it('keeps nested owned Next copies within their actual linked dependency root',a
  try{const app=join(root,'nested/app'),dependencies=join(root,'dependencies');await mkdir(join(app,'packages/artifact-extractor'),{recursive:true});await mkdir(dependencies);await symlink(dependencies,join(app,'node_modules'));await symlink(dependencies,join(app,'packages/artifact-extractor/node_modules'));
  const file=join(app,'next.config.ts'),authored="const nextConfig = {turbopack:{rules:{}},serverExternalPackages:['retained']};\nexport default withEve(nextConfig);\n";await writeFile(file,authored);
  expect(await configureOwnedNextDependencyRoot(app)).toBe(root);await configureOwnedNextDependencyRoot(app);const configured=await readFile(file,'utf8');expect(configured.match(/owned-next-dependency-root-v1/g)).toHaveLength(1);expect(configured).toContain("serverExternalPackages:['retained']");expect(configured).toContain('...nextConfig.turbopack');expect(configured).toContain(JSON.stringify(root));
- await writeFile(file,'unsupported config');await expect(configureOwnedNextDependencyRoot(app)).rejects.toThrow('shape changed');expect(await readFile(file,'utf8')).toBe('unsupported config');
+ const configuredExport='export default withEve(nextConfig, { eveBuildCommand: "npm run build:eve" });';
+ await writeFile(file,authored.replace('export default withEve(nextConfig);',configuredExport));
+ expect(await configureOwnedNextDependencyRoot(app)).toBe(root);await configureOwnedNextDependencyRoot(app);
+ const withBuild=await readFile(file,'utf8');expect(withBuild.match(/owned-next-dependency-root-v1/g)).toHaveLength(1);expect(withBuild).toContain("serverExternalPackages:['retained']");expect(withBuild).toContain('...nextConfig.turbopack');expect(withBuild).toContain(JSON.stringify(root));expect(withBuild.endsWith(configuredExport+'\n')).toBe(true);
+ for(const unsupported of ['unsupported config',authored+configuredExport+'\n',authored.replace('export default withEve(nextConfig);','export default withEve(nextConfig, { eveBuildCommand: "npm run arbitrary" });')]){
+  await writeFile(file,unsupported);await expect(configureOwnedNextDependencyRoot(app)).rejects.toThrow('shape changed');expect(await readFile(file,'utf8')).toBe(unsupported);
+ }
  }finally{await rm(root,{recursive:true,force:true});}
 });
