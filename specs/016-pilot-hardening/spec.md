@@ -367,3 +367,15 @@ A periodic poll cannot cancel that read and start its deadline again. Explicit
 user refresh and access-change events may supersede an older read. Confirmed
 commands remain retired while refreshed eligibility is unavailable; timeout
 recovery performs reads without replaying the committed command.
+
+
+### Release observation directive — 2026-10-24
+
+The user directed that release must not wait 12 or more hours for backup
+observations. Release still requires a fresh actual encrypted backup, an actual
+isolated restore with the governed checks, and an enabled stable recurring
+schedule. Two genuinely spaced scheduled captures remain unobserved until actual
+evidence exists. Preserve the original assessor result; do not fabricate or
+synthesize elapsed cadence. Runtime 12-hour minimum spacing, 24-hour freshness,
+seven-day retention, protected archives/keys, denial reconciliation and recovery
+objectives remain unchanged. This exception concerns release observation only.

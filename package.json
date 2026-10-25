@@ -181,6 +181,7 @@
     "@streamdown/mermaid": "1.0.2",
     "@vercel/analytics": "2.0.1",
     "@vercel/connect": "2.2.0",
+    "@vercel/oidc": "3.8.8",
     "ai": "^7.0.105",
     "eve": "^0.67.1",
     "ipaddr.js": "2.5.0",

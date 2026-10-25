@@ -631,6 +631,16 @@
       ]
     },
     {
+      "file": "tests/unit/pilot/execution-credentials.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "preserves explicit operator credentials without reading request authentication",
+        "reads a fresh project-bound platform token for each hosted operation",
+        "rejects missing, expired, malformed and foreign platform credentials without an environment fallback",
+        "calculates the admitted sandbox identity without reading or hashing credentials"
+      ]
+    },
+    {
       "file": "tests/unit/pilot/maintenance-health.test.ts",
       "expectedCases": 6,
       "cases": [
@@ -2174,6 +2184,19 @@
         "keeps the original absolute command deadline and refuses pre-aborted dispatch",
         "cleans up successful and failed spawns without retaining signal listeners",
         "captures a normally exiting stage before retiring its detached descendant"
+      ]
+    },
+    {
+      "file": "tests/unit/research-output-citations.test.ts",
+      "expectedCases": 7,
+      "cases": [
+        "recognizes both exact units from current consumed source-matching citations",
+        "keeps invented identifiers unknown while preserving customer and receipt identities",
+        "rejects unit identities from a different source selection",
+        "rejects unit identities from a citation that was not consumed",
+        "rejects unit identities when a citation no longer resolves as current",
+        "rejects unit identities from another source kind",
+        "rejects malformed or non-unit locator identities"
       ]
     }
   ],

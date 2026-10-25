@@ -11,16 +11,14 @@ import {admitHostedJob,startHostedJob,hostedSandboxLease,withHostedHeartbeat,pub
 import {reserveServiceCost,serviceBudgetAuthority,sandboxOperationDigest} from '../operations/cost';
 import {costOperationDigest} from '../../contracts/pilot-cost';
 import {admitLocalJob,fenceLocalJob,settleLocalJob,withLocalHeartbeat} from '../operations/local-jobs';
+import {hostedExecutionCredentials,hostedExecutionIdentity} from './credentials';
+export {hostedExecutionCredentials} from './credentials';
 
 const costConfig=z.strictObject({budgetId:z.uuid(),scopeDigest:z.string().regex(/^[a-f0-9]{64}$/),pricingDigest:z.string().regex(/^[a-f0-9]{64}$/),costSourceDigest:z.string().regex(/^[a-f0-9]{64}$/),maximumDispatches:z.number().int().min(1).max(100000).optional(),bounds:z.strictObject({
  'artifact-scan':z.number().int().min(0).max(1e12),'artifact-parse':z.number().int().min(0).max(1e12),'workforce-parse':z.number().int().min(0).max(1e12),'report-render':z.number().int().min(0).max(1e12),'report-office-check':z.number().int().min(0).max(1e12),
 })});
-export function hostedExecutionCredentials(env:NodeJS.ProcessEnv=process.env){
- const {VERCEL_TOKEN:token,VERCEL_PROJECT_ID:projectId,VERCEL_TEAM_ID:teamId}=env;
- if(!token||!projectId||!teamId)throw Error('Explicit hosted execution credentials required');return {token,projectId,teamId};
-}
 export function sandboxScopeDigest(env:NodeJS.ProcessEnv=process.env){
- const {projectId,teamId}=hostedExecutionCredentials(env),images=[env.TURAS_PILOT_SCANNER_IMAGE,env.TURAS_PILOT_PARSER_IMAGE,env.TURAS_PILOT_RENDERER_IMAGE];
+ const {projectId,teamId}=hostedExecutionIdentity(env),images=[env.TURAS_PILOT_SCANNER_IMAGE,env.TURAS_PILOT_PARSER_IMAGE,env.TURAS_PILOT_RENDERER_IMAGE];
  if(!env.TURAS_ENVIRONMENT_ID||images.some(image=>!image||!/^vcr\.vercel\.com\/[a-zA-Z0-9_/-]+@sha256:[a-f0-9]{64}$/.test(image)))throw Error('Exact hosted execution scope required');
  return costOperationDigest({contract:'pilot-sandbox-scope-v1',environmentId:env.TURAS_ENVIRONMENT_ID,projectId,teamId,images,maximumDeadlineMs:300000,maximumInputBytes:10485760,maximumOutputBytes:52428800,scannerVcpus:2,otherVcpus:1,persistent:false,networkPolicy:'deny-all',ports:[]});
 }

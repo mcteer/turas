@@ -920,6 +920,17 @@ runners enable this flag only inside their isolated generated environment.
 
 ### Exact-target hosted execution authority
 
+On Vercel Preview and Production, omit `VERCEL_TOKEN` to use the current
+platform request-context OIDC bearer. The server checks its project, team, issuer
+and remaining lifetime before admitting a job. It reads the context for each
+operation and does not persist or cache that bearer. Missing, expired or foreign
+context fails closed; an environment-only build token is not a fallback.
+Local/operator commands continue to require an explicit protected `VERCEL_TOKEN`
+and exact project/team IDs. An explicit token takes precedence when configured.
+The provider authenticates the bearer; local claim checks do not replace that
+authentication. Verify actual create, reconcile and cleanup in the target before
+claiming hosted readiness.
+
 The original `pilot-preview-infrastructure-user-authorization-v1` remains
 Preview-only with its original48-hour/$10/32-job envelope and digest. It cannot
 be promoted into Production or have its expiry reset. For a separately approved

@@ -127,7 +127,7 @@ participants supply feedback, blockers are corrected, and mcteer decides on exac
 - [ ] T074 [US5] Perform the authorized Production compatibility sequence from `docs/pilot-operations.md`: current-release snapshot-bound preservation/rehearsal under an external maintenance perimeter, 078/079/grants before dependent code, then079 matched-service backup/recovery acceptance before readiness, old-deployment protection, disabled adapters, verified exact target and explicit enablement; record actual versions in `specs/016-pilot-hardening/validation.md` (FR-006, FR-021, FR-022, FR-025).
 - [ ] T075 [US5] Execute the explicit Production pilot provisioner and ordinary J002–J015 proposals/reviews/assignments using `scripts/pilot-hosted.ts`; prove linked accepted profile/evidence/plan/delivery/report records, genuine file outputs, training verification and appropriate learning rejection/publication gates (FR-013, FR-014, FR-020, FR-025).
 - [ ] T076 [US5] Prove positive five-category actual SDK reads/citations, current-source denial and owner/admin revoke plus Product Gaps refresh and role/workspace browser boundaries after merge via `scripts/pilot-hosted.ts`; record exact deployed commit/schema in `specs/016-pilot-hardening/validation.md` (FR-010, FR-012, FR-013, FR-021).
-- [ ] T077 [US5] Observe two actual scheduled backups ≥12h apart, restore one ≤24h old and verify current denied-state reconciliation/RTO plus all hosted maintenance classes through `scripts/pilot-backup.ts`, `scripts/pilot-recovery.ts` and `scripts/pilot-health.ts`; record actual cadence separately from local accelerated tests (FR-005, FR-007, FR-008, FR-018).
+- [ ] T077 [US5] Verify a fresh actual backup and isolated restore ≤24h old, enable the stable recurring schedule, and verify current denied-state reconciliation/RTO plus all hosted maintenance classes; record two genuine scheduled captures ≥12h apart as an unobserved operational follow-up without blocking release under the explicit 2026-10-24 user directive through `scripts/pilot-backup.ts`, `scripts/pilot-recovery.ts` and `scripts/pilot-health.ts`; record actual cadence separately from local accelerated tests (FR-005, FR-007, FR-008, FR-018).
 - [ ] T078 [US5] Collect actual hosted automated internal/assigned-partner observations per the 2026-10-19 directive with `scripts/pilot-feedback.ts`, correct/recheck all blockers in the affected source/tests, assign every other disposition and record G21 in `specs/016-pilot-hardening/validation.md`; label observations automated and retain independent capture review; do not impersonate absent participants (FR-019, FR-020).
 - [ ] T079 [US5] Reconcile cost/quality/private evidence, run fresh `scripts/pilot-readiness.ts` and record the actual mcteer scoped decision in `specs/016-pilot-hardening/validation.md`; incomplete mandatory gates remain pending and JSON owner labels cannot approve (FR-002, FR-003, FR-016, FR-017, FR-020, FR-022).
 - [ ] T080 [US5] Revoke owned test credentials, stop owned compute and remove unnecessary owned OrbStack containers/volumes, unused owned images and temporary copied environments, lifecycle-retire approved pilot payloads after capture, preserve permanent receipts and selected local state, then record final identity/role/worker checks and exact cleanup inventory in `specs/016-pilot-hardening/validation.md` (FR-009, FR-011, FR-021, FR-022).
@@ -908,3 +908,22 @@ No hosted target may be locked for release before its measured reopen path exist
   all four WebKit profiles. Require fresh complete committed CI, model and hosted
   acceptance; do not claim the controlled comparison proves the historical CI
   cause or relabel earlier-source results.
+
+
+## Phase 12: Hosted authentication and citation-oracle corrections
+
+- [ ] T167 Replace the missing stable Sandbox-token prerequisite with fresh
+  platform request-context OIDC bound to the exact project/team, issuer and
+  original job plus cleanup lifetime. Preserve explicit operator tokens, budget
+  scope, leases, provider verification and deny-all execution. Verify malformed,
+  missing, expired and foreign context, fresh complete source-bound checks, and
+  actual Preview/Production create, reconciliation and cleanup before release
+  (FR-016, FR-021, FR-024). Retain the actual project-token API403 refusal without
+  using browser automation or broader credential fallback.
+- [ ] T168 Preserve the actual b1bbd58 research R02 exit1 and raw unknown-count2.
+  Correct only the oracle to recognize typed public artifact-unit IDs from current,
+  consumed citations of the exact approved source. Preserve prompts, datasets,
+  models, output/step/deadline limits and all other gates. Add invented, foreign,
+  unconsumed, stale and malformed-locator regressions; independently verify the
+  unchanged actual capture and complete the governing research suite. Record
+  original and corrected evidence separately (FR-004, FR-012, FR-017).

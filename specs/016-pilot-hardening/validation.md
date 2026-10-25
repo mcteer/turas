@@ -8264,3 +8264,53 @@ documentation checks pass. An initial test-only browser timer-overload type
 error is retained separately; the added type assertion changes no callback
 logic. Complete fresh committed CI, model and hosted release evidence remain
 pending.
+
+## 2026-10-25: Hosted credentials and research citation oracle
+
+The immutable `b1bbd58` candidate completed all 61 CI jobs and its retained
+1,041-case / 189-suite original catalog verification. These results remain tied
+to that candidate; they do not establish the following changed source as passing.
+Production remains on released `f8d196f`, schema 077. No 016 Production release or
+078–079 Production migration is claimed.
+
+The actual provider run retained completed 002–004 captures. Its manual remaining
+run completed retrieval and research R01, then exited 1 on R02. R02 returned both
+correct synthetic owners, the exact original line 3/27 locators and two consumed,
+source-matching citations within its original step, output and time limits. The
+oracle counted two public artifact-unit IDs as unknown despite their exact match
+to those citation locators. Original output, unknown-count 2 and exit 1 remain
+immutable. A separately reviewed derivative preserves the exact response and
+usage while correcting only this identifier classification; it is not a full
+12-case research pass. The tracked correction admits only valid typed units from
+current, consumed citations of the exact approved source; foreign, invented,
+unconsumed, stale and malformed identities remain failures. Model prompts,
+datasets, selected model and original execution limits are unchanged.
+
+A dedicated project-token API request was refused. The follow-up uses the public
+Vercel OIDC request context, checking project, team, issuer and sufficient remaining
+lifetime before a hosted job reservation. Explicit protected operator tokens keep
+their prior precedence. Configuration/pricing identity calculation contains no
+credential and does not assert authenticated provider health. No environment-only
+build token, CLI inference or broader account fallback is enabled.
+
+The earlier hosted scanner correctly failed the seven-day signature requirement.
+The existing fresh local image was published under a new immutable runtime image
+reference, without rebuilding or changing the application source. Authenticated
+SDK execution verifies its actual 28161 signature bytes, October 22 build time,
+October 29 expiry and owned stop/delete. Original publication-helper failures and
+the stale-image failure remain retained; publication alone does not prove hosted
+application processing. Parser and renderer references are unchanged.
+
+The updated deterministic inventory contains 1,052 cases in 191 suites. All 12 focused credential/configuration/oracle checks, typechecking,
+agent and web builds, documentation hygiene and catalog registration pass locally;
+fresh complete committed CI,
+actual-model applicability/review, Preview request-context OIDC jobs, full hosted
+journeys, matched recovery and Production release checks remain pending. No paid
+retry or source-digest relabeling is inferred from these corrections.
+
+The 2026-10-24 user directive removes the release wait for two scheduled captures
+12 hours apart. Fresh actual encrypted capture, isolated restore, current-denial
+reconciliation and an enabled stable recurring schedule remain pending requirements.
+The original elapsed-cadence assessor must retain its actual unobserved state;
+no changed runtime cadence, synthetic timestamps or claim of scheduled execution
+is authorized by this observation exception.

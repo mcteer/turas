@@ -28,6 +28,9 @@ import type { CurrentSession as ResearchSession } from "../lib/server/auth/sessi
 import { runRetrievalWorkerTick } from "./retrieval-worker";
 import { runBehaviorCase } from "../evals/driver";
 import { withRetrievalEvalEnvironment } from "./retrieval-eval-environment";
+import { countUnknownResearchIdentifiers,type ResearchCitationForValidation } from "./research-output-citations";
+import { resolveRetrievalCitation } from "../lib/server/retrieval/citations";
+import { HttpFailure } from "../lib/contracts/http";
 
 const args = process.argv.slice(2);
 if (args.length !== 3 || args[0] !== "--case" ||
@@ -230,16 +233,40 @@ await withRetrievalEvalEnvironment(async () => {
         WHERE citation.id=ANY($3::uuid[]) AND receipt.as_of>=conversation.created_at
           AND receipt.valid_until>now()`,
       [result.conversationId,DEMO_IDS.mcteerMembership,[...outputIds]]);
-      const cited = rows.rows.filter((row) => row.consumed &&
+      const actor = await createProfileTestSession(db,"mcteer");
+      const checked: ResearchCitationForValidation[] = [];
+      for (const row of rows.rows) {
+        const current = { ...row,current: false,locators: [] as unknown[] };
+        if (row.consumed && row.source_kind === "approved_excerpt" &&
+            row.source_revision_id === selectionId) {
+          try {
+            const resolved = await resolveRetrievalCitation(db,actor,row.id);
+            if (resolved.sourceKind === "approved_excerpt" &&
+                resolved.sourceRevisionId === selectionId) {
+              current.current = true;
+              current.locators = resolved.locators;
+            }
+          } catch (error) {
+            if (!(error instanceof HttpFailure) || ![403,404,409].includes(error.status)) throw error;
+          }
+        }
+        checked.push(current);
+      }
+      const cited = checked.filter((row) => row.current && row.consumed &&
         row.source_kind === "approved_excerpt" && row.source_revision_id === selectionId);
-      const lines = cited.flatMap((row) => row.locators.map((locator) =>
-        locator.original?.lineStart)).filter((line): line is number => typeof line === "number");
+      const lines = cited.flatMap((row) => row.locators.map((value) => {
+        const locator = value as { original?: { lineStart?: number } };
+        return locator.original?.lineStart;
+      })).filter((line): line is number => typeof line === "number");
       return { citedUnits: new Set(lines).size,lines,
-        citationKinds: rows.rows.map((row) => ({ kind: row.source_kind,
+        citationKinds: checked.map((row) => ({ id: row.id,kind: row.source_kind,
           sourceMatch: row.source_revision_id === selectionId,consumed: row.consumed,
+          current: row.current,
           locators: row.locators })),
-        unknownIdentifiers: [...outputIds].filter((id) =>
-          id !== DEMO_IDS.deniedCustomer && !rows.rows.some((row) => row.id === id)).length };
+        unknownIdentifiers: countUnknownResearchIdentifiers({
+          response: result.response,customerId: DEMO_IDS.deniedCustomer,
+          approvedSelectionId: selectionId,citations: checked,
+        }) };
     });
     const exactLocators = citation.lines.includes(3) && citation.lines.includes(27) &&
       /(?:line|L)\s*3\b/i.test(result.response) &&

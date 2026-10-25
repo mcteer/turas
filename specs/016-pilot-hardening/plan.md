@@ -3,8 +3,8 @@
 **Branch**: `016-pilot-hardening` | **Date**: 2026-10-10 | **Spec**: [spec.md](spec.md)
 
 **Input**: `specs/016-pilot-hardening/spec.md`. Implementation is in progress. Execution incorporates released main f8d196f on schema077; the original planning baseline was015 on schema055.
-016 migrations have been exercised only in owned disposable local environments.
-No 016 hosted release has run.
+016 migrations have been exercised in owned disposable local environments and
+the isolated synthetic Preview database. No 016 hosted application release has run.
 
 ## Summary
 
@@ -231,7 +231,7 @@ Preserve all018backend and019chat mechanisms, current appearance and root model.
 
 Expired016quality/infrastructure and separate parity budgets remain unchanged, including every unsettled dollar/token hold. Prepare concrete current source/target/cost manifests before paid admission; no automatic top-up or reuse of the narrower Notion allowance. Current-source backup coverage must include the newly released ordinary/provider/replay records, not only the original055 table inventory. Historical signed receipts remain historical; schema labels cannot turn them into current evidence.
 
-Finish implementation and owned validation first, then target-bound Preview/Production acceptance and cleanup. Two scheduled backups at least12hours apart and genuine operator/internal/assigned-partner observations remain distinct actual acceptance requirements; automation cannot impersonate them. Reuse applicable user authorization without repetitive permission prompts, and request only information or material authority actually absent after the work is concrete.
+Finish implementation and owned validation first, then target-bound Preview/Production acceptance and cleanup. A fresh actual backup and isolated restore, plus an enabled stable recurring schedule, remain required. The explicit 2026-10-24 user directive removes the 12-hour observation wait from release acceptance; two genuinely spaced captures remain an unobserved operational follow-up. Authorized automated operator/internal/assigned-partner observations retain their attribution and independent review; automation cannot impersonate humans. Reuse applicable user authorization without repetitive permission prompts, and request only information or material authority actually absent after the work is concrete.
 
 ### Hosted storage completion (T085)
 
@@ -323,7 +323,7 @@ completed PR43–46 fixes and their historical proof. Existing pilot migrations
 078/079 remain additive after the immutable released001–077 ledger. Final-source
 validation and target-bound hosted recovery/storage acceptance remain required;
 expired budget envelopes are not renewed by a source merge. Actual hosted automated role
-observations and two scheduled backups at least12hours apart remain required.
+observations remain required. Under the 2026-10-24 user directive, actual backup/restore and an enabled stable recurring schedule are required without waiting for the 12-hour spacing observation.
 
 ## Recovery measurement composition and refreshed denial authority
 

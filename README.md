@@ -414,6 +414,16 @@ disabled. See [learning operations](docs/learning-operations.md), the
 
 ### Pilot Hardening and Launch Readiness
 
+Hosted Sandbox execution now supports fresh Vercel request OIDC, bound to the
+configured project/team and the original job lifetime. Local operator commands
+retain explicit protected tokens. Runtime configuration and pricing identities
+contain no credentials. Actual hosted OIDC execution still requires release checks.
+
+The research evaluation recognizes public artifact-unit identifiers only when
+they belong to current, consumed citations for the exact approved source. Invented,
+foreign, stale and unconsumed unit identifiers remain failures. The original
+misclassified capture and its separately reviewed correction remain recorded.
+
 The artifact evaluation fixture enforces its intended1,000-token request maximum,
 including when its caller supplies a larger setting. Its1,200-token observed-output
 acceptance limit remains unchanged. The previous actual-model failure and current
@@ -802,8 +812,8 @@ The 016 full 003 evaluation may use its separately authorized 32-step allowance;
 ordinary 003 evaluation retains 14 steps. This supplement preserves the original
 shared model/research budget and requires fresh committed deterministic proof.
 Capture and independent review both validate this allowance through the explicit
-private operator runtime. The current deterministic inventory is 1,009 cases in
-182 suites; fresh committed proof is required before further paid evaluation.
+private operator runtime. The current deterministic inventory is 1,052 cases in
+191 suites; fresh committed proof is required before further paid evaluation.
 
 Independent semantic evaluation may use the separately requested LLM judge with
 actual captures and governing rubrics. Actual automated operator/internal/partner

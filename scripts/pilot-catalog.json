@@ -328,7 +328,11 @@
         "unit.report-boundary.002",
         "unit.parser-suspension.001",
         "unit.parser-suspension.002",
-        "unit.parser-suspension.003"
+        "unit.parser-suspension.003",
+        "unit.execution-credentials.001",
+        "unit.execution-credentials.002",
+        "unit.execution-credentials.003",
+        "unit.execution-credentials.004"
       ]
     },
     {
@@ -934,7 +938,14 @@
         "unit.behavior-review-capture.001",
         "unit.behavior-review-capture.002",
         "unit.behavior-review-capture.003",
-        "unit.evaluation-source.005"
+        "unit.evaluation-source.005",
+        "unit.research-output-citations.001",
+        "unit.research-output-citations.002",
+        "unit.research-output-citations.003",
+        "unit.research-output-citations.004",
+        "unit.research-output-citations.005",
+        "unit.research-output-citations.006",
+        "unit.research-output-citations.007"
       ]
     },
     {
