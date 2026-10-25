@@ -7,6 +7,22 @@ current release evidence.
 
 ## Recorded validation observations
 
+The `56f3c66` Preview comparison preserved all 184 real customer references and
+passed the original detailed profile checks. Its four maximum-file jobs passed;
+the next source/workforce jobs also passed, but the first report remained leased
+without a renderer reservation or provider call. That failed run is preserved.
+Its main CI records 53 successful jobs and one browser failure; no complete CI or
+Production pass is inferred.
+
+Eve and Next.js build separate services. A clean original Eve build omitted the
+13 raw report resources even though the Next.js traces contained them. The
+follow-up uses the documented Eve build-command override to run the original
+build and include those exact resources, licenses and provenance only in private
+Node functions. Early report preparation now uses the existing failure transition
+and logs only a typed safe stage, category and authored source location. Original
+leases, deadlines, retry rules and cost guards remain unchanged. Local checks and
+actual hosted rendering, retention and release acceptance remain distinct.
+
 The `e119a9d` Preview completed eight real scan/parse jobs, then its first weekly
 report preparation returned 503 before any report render. A fresh build omitted
 the raw weekly template required by the runtime brand check; the same original

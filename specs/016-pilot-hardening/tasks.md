@@ -994,3 +994,23 @@ No hosted target may be locked for release before its measured reopen path exist
   case, 360-second fixture and 60-second readiness limits, and zero paid dispatch
   or retry. Verify the complete unchanged file and fresh committed catalog/CI;
   distinguish a focused comparison from proof of the historical cause (FR-021).
+
+
+- [ ] T177 Preserve the `56f3c66` generated-file failure after eight successful
+  source-bound scan/parse jobs and no renderer admission. Verify the separate Eve
+  service's actual missing raw resources, then use the documented `eveBuildCommand`
+  hook and an original-CLI build wrapper to include exactly the thirteen report
+  runtime, license and provenance files in private Node functions. Check every
+  emitted alias, canonical function working directory, file digest and unchanged
+  non-resource bundle bytes; retain Next.js tracing and existing fixture build
+  commands. Require actual hosted report, retention and Production acceptance
+  without relabeling the original leased-job failure (FR-016, FR-021).
+
+- [ ] T178 Include report preparation and parent-abort checks in the existing
+  claimed-job failure boundary. Preserve the same job/token, original 120-second
+  deadline, 180-second lease, retries, source fences and cost admission. Emit only
+  a trusted typed preparation/execution stage, allowlisted category and authored
+  source location; never log arbitrary exception text or private paths. Extend the
+  existing executor case to prove early ENOENT/abort failure transition, unchanged
+  HTTP status/code and no Sandbox admission; keep registered case counts intact
+  and require fresh source-bound validation (FR-016, FR-021).

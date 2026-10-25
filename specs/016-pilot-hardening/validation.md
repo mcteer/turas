@@ -8516,3 +8516,65 @@ paid dispatch or test retry. The prior incomplete-fixture failure remains record
 This local production-fixture comparison does not prove the historical development
 readiness timeout's cause or establish fresh committed CI; those gates remain
 required for the combined source.
+
+
+### 2026-10-25: Separate Eve report resources (T177)
+
+The `56f3c66` Preview passes the original real-profile comparison: all 184 real
+customer references match Production, and the two detailed profiles retain their
+research and original WebKit assertions. Its original maximum-file preparation
+also passes with two 10 MiB originals, four distinct real provider jobs and two
+normal Preview dispatcher ticks. The later generated-file attempt completes four
+more source/workforce scan/parse jobs, then fails while polling the first report.
+That report was leased with an elapsed original deadline and lease, with no
+report hosted-job row or budget reservation. The exact hosted exception was not
+retained by the old generic asynchronous logger. No report render, retention or
+complete hosted-catalog success is claimed. The same source's main CI records 53
+successful jobs and one browser failure; a complete current CI pass remains absent.
+
+A clean original Eve build completes locally in 18.467 seconds. Its 22 emitted
+function aliases resolve to two canonical Node function roots, and every alias
+omits all thirteen required raw report resources. The original brand reader passes
+from the complete source working directory and fails from the actual jobs
+function working directory with ENOENT. This is a concrete separate-service
+packaging defect; the exact historical hosted exception remains qualified. The
+Next.js trace result alone does not prove Eve function membership.
+
+The follow-up adds `build:eve` and selects it through the documented `withEve`
+`eveBuildCommand` option. It runs the original Eve CLI, then copies only the fixed
+thirteen files into canonical private Node function roots, including font license,
+font manifest and asset provenance. It verifies every function alias and hash,
+rechecks source bytes and refuses changes to any other bundled file or link.
+It adds no public asset files or framework hooks. Existing `build`, raw
+`build:eve:check`, Next.js trace includes and Git deployment suppression remain
+unchanged, so unrelated production fixtures retain their existing build behavior.
+An isolated checkout of committed `56f3c66` with only the wrapper, package-script
+and Next.js build-command overlays executes the actual generated service command
+with the original local `--skip-sandbox-prewarm` flag. It completes in 18.231 seconds
+with parent exit zero. All 22 emitted function aliases contain all thirteen exact
+resources through their two canonical Node roots. The before/after non-resource
+bundle fingerprints match, no public resources are added, and all 3,156 input
+hashes remain unchanged. The original brand reader passes with identical results
+from the source, actual jobs-function and workflow-function working directories.
+This is a local integration result for that base-plus-three-file overlay, not
+acceptance of a future committed source, successful hosted report or Production
+release. The preparation-boundary unit comparison is recorded separately below.
+
+### 2026-10-25: Report preparation failure boundary (T178)
+
+Preparation fencing, document validation, renderer-image validation and an already
+aborted parent now enter the same existing failure path as execution. The failure
+transition still uses the exact claimed job ID and lease token; the original
+120-second deadline, 180-second lease and normal retry/backoff behavior are not
+renewed or weakened. Optional timers and listener registration are cleaned up even
+when preparation fails.
+
+The asynchronous channel emits structured report diagnostics only for the trusted
+internal failure type. Categories are allowlisted, source frames are restricted
+to authored modules, and arbitrary exception messages, private paths and payloads
+are excluded. HTTP failure status/code are retained. The existing diagnostic case
+now forces preparation ENOENT and a parent abort, verifies the normal failure
+transition before any governed execution or Sandbox create, checks HTTP 409
+preservation and rejects forged diagnostic objects. All fourteen original executor
+unit cases pass with zero failures in 480 ms; no registered case was added or
+assertion removed. These local results do not establish a successful hosted render.

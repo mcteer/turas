@@ -3,12 +3,13 @@ import { failure, success } from "../../lib/contracts/http";
 import { performMaintenance } from "../../lib/server/conversations/maintenance";
 import { verifyMaintenanceRequest } from "../../lib/server/conversations/watchdog";
 import { authorizeHostedWatchdog, runHostedWatchdog } from "../../lib/server/conversations/hosted-watchdog";
+import {reportRenderFailureDiagnostic} from '../../lib/server/reports/render-jobs';
 import {authorizeHeavyDispatch,assertHostedDispatchReady,runHostedHeavyDispatch} from '../../lib/server/operations/dispatch';
 
 export default defineChannel({
   routes: [
     GET('/eve/v1/turas/jobs',async(request,{waitUntil})=>{
-      try{authorizeHeavyDispatch(request);await assertHostedDispatchReady();waitUntil(runHostedHeavyDispatch().catch(()=>{console.error(JSON.stringify({kind:'turas_hosted_processing_failed'}));}));return success({status:'accepted'});}
+      try{authorizeHeavyDispatch(request);await assertHostedDispatchReady();waitUntil(runHostedHeavyDispatch().catch(error=>{console.error(JSON.stringify({kind:'turas_hosted_processing_failed',report:reportRenderFailureDiagnostic(error)}));}));return success({status:'accepted'});}
       catch(error){return failure(error);}
     }),
     GET("/eve/v1/turas/watchdog", async (request, { attachSession,waitUntil }) => {

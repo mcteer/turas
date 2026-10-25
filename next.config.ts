@@ -28,4 +28,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withEve(nextConfig);
+export default withEve(nextConfig, { eveBuildCommand: "npm run build:eve" });

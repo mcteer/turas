@@ -5,7 +5,11 @@ import {randomUUID} from 'node:crypto';
 import {Readable} from 'node:stream';
 const fixture=vi.hoisted(()=>({create:vi.fn(),failure:false}));
 vi.mock('@vercel/sandbox',()=>({Sandbox:{create:async(options:unknown)=>{if(fixture.failure){fixture.create(options);throw Error('private provider response');}const sandbox=await fixture.create(options);sandbox.tags=(options as {tags:Record<string,string>}).tags;return sandbox;}}}));
-import {reportRenderFailureMessage} from '../../../lib/server/reports/render-jobs';
+import {reportRenderFailureMessage,reportRenderFailureDiagnostic,runReportRenderJob} from '../../../lib/server/reports/render-jobs';
+import * as reportCommands from '../../../lib/server/reports/commands';
+import * as reportJobs from '../../../lib/server/reports/jobs';
+import * as governedJobs from '../../../lib/server/jobs/governed';
+import {HttpFailure} from '../../../lib/contracts/http';
 import {SandboxJobExecutor} from '../../../lib/server/jobs/sandbox-executor';
 import {executionFailure,fixedProgram,sha256,validateExecution,type ExecutionRequest} from '../../../lib/server/jobs/executor';
 const digest='a'.repeat(64);
@@ -26,7 +30,30 @@ it('stops and deletes compute when the original deadline expires',async()=>{vi.u
  const early=context(),before=request();before.deadlineAt=new Date(Date.now()+30).toISOString();let transferred!:()=>void,release!:()=>void;const transferring=new Promise<void>(resolve=>{transferred=resolve;}),gate=new Promise<void>(resolve=>{release=resolve;}),write=early.sandbox.writeFiles.getMockImplementation()!;early.sandbox.writeFiles.mockImplementation(async files=>{await write(files);transferred();await gate;});const earlyChecked=expect(early.executor.execute(before)).rejects.toMatchObject({name:'AbortError'});await transferring;await vi.advanceTimersByTimeAsync(30);release();await earlyChecked;expect(early.sandbox.runCommand).not.toHaveBeenCalled();expect(early.sandbox.stop).toHaveBeenCalledOnce();expect(early.sandbox.delete).toHaveBeenCalledOnce();});
 it('attempts deletion even when the stop request fails',async()=>{const c=context();c.sandbox.stop.mockRejectedValue(Error('controlled stop failure'));await expect(c.executor.execute(request())).rejects.toThrow('shutdown unverified');expect(c.sandbox.delete).toHaveBeenCalledOnce();expect(c.lease.stopFailed).toHaveBeenCalledOnce();});
 
-it('retains only an exact known diagnostic code without private text',()=>{expect(executionFailure(Buffer.from('malformed\n'))).toBe('malformed');expect(executionFailure(Buffer.from('malformed: Synthetic private payload'))).toBeUndefined();expect(executionFailure(Buffer.from('unknown failure'))).toBeUndefined();expect(executionFailure(Buffer.from('renderer_browser_failed\n'))).toBe('renderer_browser_failed');expect(executionFailure(Buffer.from('renderer_validation_failed\n'))).toBe('renderer_validation_failed');expect(executionFailure(Buffer.from('renderer_failed: private content'))).toBeUndefined();const privateError=Object.assign(new Error('PRIVATE_RENDER_INPUT'),{code:'ABORT_ERR',stack:'PRIVATE_STORAGE_PATH\n at /private/lib/server/jobs/local-executor.ts:17:22\nPRIVATE_RENDER_INPUT'});expect(reportRenderFailureMessage(privateError,'execute')).toBe('Executive rendering failed (execute: ABORT_ERR; lib/server/jobs/local-executor.ts:17:22)');privateError.code='PRIVATE_RENDER_INPUT';expect(reportRenderFailureMessage(privateError,'store_output')).not.toContain('PRIVATE_');expect(reportRenderFailureMessage(null,'publish_output')).toBe('Executive rendering failed (publish_output: renderer_failed; unlocated)');});
+it('retains only an exact known diagnostic code without private text',async()=>{expect(executionFailure(Buffer.from('malformed\n'))).toBe('malformed');expect(executionFailure(Buffer.from('malformed: Synthetic private payload'))).toBeUndefined();expect(executionFailure(Buffer.from('unknown failure'))).toBeUndefined();expect(executionFailure(Buffer.from('renderer_browser_failed\n'))).toBe('renderer_browser_failed');expect(executionFailure(Buffer.from('renderer_validation_failed\n'))).toBe('renderer_validation_failed');expect(executionFailure(Buffer.from('renderer_failed: private content'))).toBeUndefined();const privateError=Object.assign(new Error('PRIVATE_RENDER_INPUT'),{code:'ABORT_ERR',stack:'PRIVATE_STORAGE_PATH\n at /private/lib/server/jobs/local-executor.ts:17:22\nPRIVATE_RENDER_INPUT'});expect(reportRenderFailureMessage(privateError,'execute')).toBe('Executive rendering failed (execute: ABORT_ERR; lib/server/jobs/local-executor.ts:17:22)');privateError.code='PRIVATE_RENDER_INPUT';expect(reportRenderFailureMessage(privateError,'store_output')).not.toContain('PRIVATE_');expect(reportRenderFailureMessage(null,'publish_output')).toBe('Executive rendering failed (publish_output: renderer_failed; unlocated)');
+ // A preparation error must take the same claimed-job failure path before admission.
+ const claimed={id:randomUUID(),lease_token:randomUUID(),input_digest:digest};
+ const missing=Object.assign(new Error('PRIVATE_INPUT_PATH'),{code:'ENOENT',stack:'PRIVATE_INPUT_PATH\n at /private/lib/server/reports/brand.ts:21:9'});
+ const transaction=vi.spyOn(reportCommands,'reportTransaction').mockRejectedValueOnce(missing).mockImplementationOnce(async run=>run({} as never));
+ const failed=vi.spyOn(reportJobs,'failReportJob').mockResolvedValue(true),execute=vi.spyOn(governedJobs,'runGovernedExecution');
+ try{
+  const failure=await runReportRenderJob(claimed).then(()=>{throw Error('Expected rejection');},error=>error);
+  expect(failed).toHaveBeenCalledWith(expect.anything(),claimed.id,claimed.lease_token,'renderer_failed');
+  expect(execute).not.toHaveBeenCalled();expect(fixture.create).not.toHaveBeenCalled();
+  expect(reportRenderFailureDiagnostic(failure)).toEqual({stage:'prepare',category:'ENOENT',location:'lib/server/reports/brand.ts:21:9'});
+  expect(failure.message).not.toContain('PRIVATE_');expect(reportRenderFailureDiagnostic(missing)).toBeNull();
+  expect(reportRenderFailureDiagnostic({diagnostic:{stage:'prepare',category:'PRIVATE_INPUT'}})).toBeNull();
+  const cancelled=new AbortController();cancelled.abort(Object.assign(new Error('PRIVATE_ABORT'),{code:'ABORT_ERR'}));
+  transaction.mockReset().mockImplementation(async run=>run({} as never));failed.mockClear();
+  const aborted=await runReportRenderJob(claimed,cancelled.signal).then(()=>{throw Error('Expected rejection');},error=>error);
+  expect(transaction).toHaveBeenCalledOnce();expect(failed).toHaveBeenCalledWith(expect.anything(),claimed.id,claimed.lease_token,'renderer_failed');
+  expect(reportRenderFailureDiagnostic(aborted)).toEqual({stage:'prepare',category:'ABORT_ERR',location:'unlocated'});expect(aborted.message).not.toContain('PRIVATE_');
+  transaction.mockReset().mockRejectedValueOnce(new HttpFailure(409,'source_changed','PRIVATE_CONTENT')).mockImplementationOnce(async run=>run({} as never));failed.mockClear();
+  const changed=await runReportRenderJob(claimed).then(()=>{throw Error('Expected rejection');},error=>error);
+  expect(changed).toMatchObject({status:409,code:'source_changed'});expect(failed).toHaveBeenCalledWith(expect.anything(),claimed.id,claimed.lease_token,'source_changed');
+  expect(reportRenderFailureDiagnostic(changed)?.stage).toBe('prepare');expect(changed.message).not.toContain('PRIVATE_');expect(execute).not.toHaveBeenCalled();
+ }finally{transaction.mockRestore();failed.mockRestore();execute.mockRestore();}
+});
 
 it('filters provider diagnostics while retaining known parser failure classification',async()=>{const c=context();c.command.wait.mockResolvedValue({exitCode:2});c.command.logs.mockImplementation(()=>Object.assign((async function*(){yield {stream:'stderr',data:'encrypted\n'};})(),{close:vi.fn()}));const result=await c.executor.execute(request());expect(result.safeFailure).toBe('encrypted');expect(result).not.toHaveProperty('stderr');expect(c.sandbox.delete).toHaveBeenCalledOnce();});
 

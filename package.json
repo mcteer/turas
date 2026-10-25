@@ -16,6 +16,7 @@
     "support:ui:check": "node --env-file-if-exists=.env.local --import tsx scripts/check-support-ui.ts",
     "build": "eve build",
     "build:check": "node scripts/build-check.mjs",
+    "build:eve": "node scripts/build-eve-reports.mjs",
     "build:eve:check": "eve build --skip-sandbox-prewarm",
     "build:web:check": "next build --webpack",
     "check:docs": "node scripts/check-docs.mjs",
