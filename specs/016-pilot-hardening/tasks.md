@@ -943,3 +943,10 @@ No hosted target may be locked for release before its measured reopen path exist
   malformed/zero/mismatched declared lengths and over-limit streams. Retain the
   original Preview finish-upload 503 and complete fresh source-bound CI, native,
   hosted upload/job lifecycle, retention and Production acceptance (FR-016, FR-021).
+
+- [ ] T171 Preserve the actual `259f8fb` private-object contract's 15-second CI
+  timeout. Replace only the 10 MiB generic deep-equality assertion with native
+  byte equality plus explicit length and SHA-256 assertions. Keep all nine cases,
+  the full fixture, original timeout and zero retries. Diagnose the separate
+  Product Gaps and expansion CI failures from retained evidence before attributing
+  a cause; complete fresh candidate validation and hosted release checks (FR-021).

@@ -8373,3 +8373,18 @@ contract cases pass; no case, deadline, model selection or acceptance requiremen
 was removed. Fresh candidate CI, native preparation, hosted upload/job lifecycle,
 retention and Production validation remain required. Earlier source-bound results
 are preserved without being relabeled as results of this correction.
+
+
+### 2026-10-25: Large-buffer assertion overhead (T171)
+
+The `259f8fb` CI private-object contract reached its original 15-second timeout in
+`streams private bytes without a public URL`; the other eight cases passed. Its
+10 MiB fixture used Vitest's generic deep comparison. The test-only follow-up uses
+native `Buffer.equals` together with explicit length and SHA-256 equality for the
+same complete stream. It retains every negative assertion, all nine cases, the
+15-second limit and zero retries. The storage implementation is unchanged.
+The focused Node 24 run passes all nine cases in 195 ms; this local result does
+not replace the preserved CI timeout or establish its full historical cause.
+Separate Product Gaps and expansion failures remain under investigation; no
+historical application cause or flaky-test classification is established.
+Fresh candidate CI, native and hosted release acceptance remain pending.

@@ -27,7 +27,7 @@ it('streams private bytes without a public URL',async()=>{for(const store of sto
  const blob=new BlobPrivateObjects('test-contract','synthetic-test-token',maximum);
  mocked.objects.set(key,large);mocked.contentLength=null;
  const chunks=[];for await(const chunk of await blob.stream(key,largeExpected))chunks.push(chunk);
- expect(Buffer.concat(chunks)).toEqual(large);expect(await blob.stat(key)).toEqual({key,...largeExpected});
+ const actual=Buffer.concat(chunks);expect(actual.length).toBe(maximum);expect(createHash('sha256').update(actual).digest('hex')).toBe(largeExpected.digest);expect(actual.equals(large)).toBe(true);expect(await blob.stat(key)).toEqual({key,...largeExpected});
  await expect(blob.stream(key,{...largeExpected,digest:'b'.repeat(64)})).rejects.toThrow('integrity');
  await expect(blob.stream(key,{...largeExpected,sizeBytes:maximum-1})).rejects.toThrow('integrity');
  mocked.objects.set(key,Buffer.alloc(maximum+1));await expect(blob.stat(key)).rejects.toThrow('exceeds limit');

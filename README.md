@@ -7,6 +7,12 @@ current release evidence.
 
 ## Recorded validation observations
 
+The `259f8fb` CI private-object case reached its original 15-second timeout.
+Its follow-up preserves the complete 10 MiB stream check using native byte
+comparison plus explicit length and SHA-256 assertions. Separate Product Gaps and
+expansion CI failures remain unresolved; no application or race cause is claimed.
+The storage fix still requires fresh candidate and hosted release acceptance.
+
 The current follow-up corrects uncached private Blob reads when the SDK reports
 size zero for a response without `Content-Length`. A read-only Preview diagnostic
 confirmed the complete synthetic 10 MiB object and matching digest; the original
