@@ -8351,3 +8351,25 @@ successor, preserving the original credential configuration, target and allocati
 The first create-only Preview environment POST returned HTTP 400. Its actual
 failure remains retained, and no Preview build or successful environment creation
 is claimed; current state must be reconciled before another write.
+
+
+### 2026-10-25: Uncached Blob transport length (T170)
+
+The schema-079 compatible Preview at `0ddc6e7` reached the original maximum-file
+upload's finish step, which returned 503 before any Sandbox job or model dispatch.
+A single read-only diagnostic of the already uploaded synthetic object (receipt
+`5c24b2`) returned HTTP 200 with Brotli/chunked transport and no `Content-Length`.
+The SDK reported size zero, while the bounded decoded stream contained exactly
+10,485,760 bytes and matched the original synthetic PDF digest. This establishes
+the adapter's unconditional SDK-size comparison as the failure; the expired upload
+intent and both original failed attempts remain historical evidence.
+
+The correction distinguishes an absent declared length from a real zero. It still
+rejects malformed, unsafe, over-limit or mismatched declared lengths, caps actual
+stream bytes, and verifies callers' expected size and digest. The existing private
+object contract now exercises a real 10 MiB stream with the observed SDK response
+shape, declared-length failures and a one-byte-over-limit stream. All nine existing
+contract cases pass; no case, deadline, model selection or acceptance requirement
+was removed. Fresh candidate CI, native preparation, hosted upload/job lifecycle,
+retention and Production validation remain required. Earlier source-bound results
+are preserved without being relabeled as results of this correction.

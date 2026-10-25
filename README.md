@@ -7,6 +7,14 @@ current release evidence.
 
 ## Recorded validation observations
 
+The current follow-up corrects uncached private Blob reads when the SDK reports
+size zero for a response without `Content-Length`. A read-only Preview diagnostic
+confirmed the complete synthetic 10 MiB object and matching digest; the original
+finish-upload 503 occurred before Sandbox or model dispatch. The existing contract
+now covers that response and retains declared-length, byte-limit and digest guards.
+Fresh source-bound and hosted release checks remain pending; see
+[016 validation](specs/016-pilot-hardening/validation.md).
+
 The current recovery
 change adds explicit original-to-restored Blob store binding: the unchanged
 backup authenticates the original store, while live destination bytes and the

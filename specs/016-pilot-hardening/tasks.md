@@ -935,3 +935,11 @@ No hosted target may be locked for release before its measured reopen path exist
   the existing built-transport case with equal-character-length non-ASCII input;
   require 401 without capture/provider work. Complete fresh source-bound checks,
   hosted operator boundaries and release acceptance (FR-004, FR-021).
+
+- [ ] T170 Correct uncached private Blob reads when the SDK reports size zero
+  because the response omits `Content-Length`. Preserve exact object identity,
+  valid declared-length checks, the decoded stream ceiling and expected size/digest
+  verification. Extend the existing contract with the actual 10 MiB response shape,
+  malformed/zero/mismatched declared lengths and over-limit streams. Retain the
+  original Preview finish-upload 503 and complete fresh source-bound CI, native,
+  hosted upload/job lifecycle, retention and Production acceptance (FR-016, FR-021).
