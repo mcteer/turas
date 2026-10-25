@@ -8698,3 +8698,39 @@ fixture with no model/provider calls. The parent exits zero and its owned-proces
 and database cleanup returns. Global types, the 243-file documentation check and
 diff whitespace validation pass. No hosted health acceptance is inferred; the
 separate genuine index backlog and fresh committed checks remain required.
+
+## T183 — canonical verified-research index intake
+
+Read-only reconciliation of 56 current index candidates finds that the original
+worker admits 50 and refuses six legitimate initial public-research sources.
+The unchanged canonical projection reader accepts those six: their independent
+origin, checked revision, HTTPS location and retained scope are valid, and they
+have no later observation links or batch records. The separately prepared
+embedding allocation remains unexecuted; no paid indexing or health pass is
+inferred from this diagnosis. The completed `2a6b84f` local native, browser and
+load observations remain tied to that historical source.
+
+The worker reuses `readVerifiedResearchProjectionRows` for verified research and
+requires its returned workspace and customer to equal the actual retrieval
+source, with that source's internal/delivery audience. Original current revision,
+lease, generation and contract fences remain. Any observation link or batch
+record—including malformed or mismatched lineage—keeps the original lineage
+checks mandatory. A proof declaring modern observation/batch intake also requires
+that lineage even when its link is absent. There is no special source-ID or
+legacy-identity allowlist, and other source-kind intake guards stay unchanged.
+
+The existing research-projection case retains its missing-check rejection and
+adds non-synthetic initial-proof indexing in both audiences, missing modern
+observation linkage, customer-scope, withdrawal and stale-lease negatives. The
+workspace-scope mutation is rejected earlier by the original schema79 provenance
+trigger; the customer mismatch directly returns no index passages. The original
+research-workflow case retains the submitted-observation origin mutation
+rejection. The first focused comparison preserves two passes and one new-fixture
+failure
+when its workspace mutation correctly hits that database trigger. Correcting the
+fixture to assert the original denial yields all three original cases passing in
+the owned PG18 fixture; the existing submitted-observation rejection also passes.
+The parent exits zero without deadline expiry, and owned cleanup returns. Global
+types, the 243-file documentation check and diff validation pass. Original limits,
+assertions and registered case counts remain unchanged. Fresh committed and
+governed hosted validation remain required.

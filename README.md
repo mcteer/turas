@@ -7,6 +7,15 @@ current release evidence.
 
 ## Recorded validation observations
 
+A read-only Preview comparison found six valid initial public-research sources
+that the canonical projection builder accepts while the index worker rejects
+because they lack later optional observation or batch records. The worker now
+uses that same canonical eligibility for verified research, checks the exact
+workspace, customer and audience, and preserves stricter lineage checks whenever
+such lineage exists or the proof declares it. Missing modern lineage, withdrawal,
+stale leases and scope mismatches remain denials. No paid indexing or hosted
+health pass is established by this source correction.
+
 Retrieval maintenance backlog excludes a failed historical job only when its
 same-environment source is retired or tombstoned, contains no passages, and has
 no reserved, dispatched or unconfirmed embedding operation. Active and uncertain

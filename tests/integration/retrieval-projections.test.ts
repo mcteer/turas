@@ -1,3 +1,5 @@
+import {currentIndexPassages} from "../../scripts/retrieval-worker";
+import {claimRetrievalJobs} from "../../lib/server/retrieval/jobs";
 import {insertBoundFixtureSession} from "../fixtures/bound-session";
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
@@ -113,10 +115,10 @@ describe("retrieval source projection", () => {
         const passage = "Synthetic public product documentation explains a cache setting.";
         await client.query("INSERT INTO workspaces(id,name) VALUES($1,'Synthetic projection')",[workspaceId]);
         await client.query(`INSERT INTO customer_references(id,workspace_id,display_name,synthetic)
-          VALUES($1,$2,'Synthetic projection customer',true)`,[customerId,workspaceId]);
+          VALUES($1,$2,'Synthetic projection customer',false)`,[customerId,workspaceId]);
         await client.query(`INSERT INTO evidence_sources(id,workspace_id,customer_id,origin,
           canonical_location,trusted_ingest_identity)
-          VALUES($1,$2,$3,'independent_research','https://vercel.com/docs/synthetic','test-ingest')`,
+          VALUES($1,$2,$3,'independent_research','https://vercel.com/docs/synthetic','public-fetch-v1')`,
         [sourceId,workspaceId,customerId]);
         await client.query(`INSERT INTO evidence_source_revisions
           (id,source_id,workspace_id,customer_id,version,location,title,passage,supported_claim,
@@ -129,8 +131,10 @@ describe("retrieval source projection", () => {
         await client.query(`INSERT INTO research_checks
           (source_revision_id,trusted_ingest_identity,check_version,identity_result,
            scope_result,integrity_result,content_result,rationale)
-          VALUES($1,'test-ingest','test-v1',true,true,true,true,'Exact synthetic receipt')`,
+          VALUES($1,'public-fetch-v1','initial-public-profile-v1',true,true,true,true,'Exact synthetic receipt')`,
         [revisionId]);
+        // Canonical initial public proof has no later observation or batch row.
+        expect((await client.query('SELECT count(*)::int AS n FROM research_evidence_links WHERE source_revision_id=$1',[revisionId])).rows[0].n).toBe(0);
         const delivery = await materializeCurrentProjection(client,"verified_research",
           revisionId,"delivery",environmentId);
         const internal = await materializeCurrentProjection(client,"verified_research",
@@ -146,6 +150,44 @@ describe("retrieval source projection", () => {
           { audience: "delivery",passage_text: passage },
           { audience: "internal",passage_text: passage },
         ]);
+        const claims=await claimRetrievalJobs(2,client,environmentId,[delivery!,internal!]);
+        expect(claims).toHaveLength(2);
+        for(const claim of claims)expect(await currentIndexPassages(claim,client)).toHaveLength(1);
+        // Declared observation intake cannot fall back when its required link is absent.
+        const danglingRevision=randomUUID();
+        await client.query(`INSERT INTO evidence_source_revisions(id,source_id,workspace_id,customer_id,version,location,title,passage,supported_claim,passage_digest,retrieval_at,rights,audience,quality_input)
+          SELECT $1,source_id,workspace_id,customer_id,version+1,location,title,passage,supported_claim,passage_digest,retrieval_at,rights,audience,quality_input FROM evidence_source_revisions WHERE id=$2`,[danglingRevision,revisionId]);
+        await client.query(`INSERT INTO research_checks(source_revision_id,trusted_ingest_identity,check_version,identity_result,scope_result,integrity_result,content_result,rationale)
+          VALUES($1,$2,'research-check-v3',true,true,true,true,'Synthetic missing observation linkage')`,[danglingRevision,'public-fetch-v1:observation:'+randomUUID()]);
+        const dangling=await materializeCurrentProjection(client,'verified_research',danglingRevision,'delivery',environmentId);
+        expect(dangling).toBeTruthy();
+        const danglingClaims=await claimRetrievalJobs(2,client,environmentId,[dangling!]);
+        expect(danglingClaims).toHaveLength(1);
+        expect(await currentIndexPassages(danglingClaims[0],client)).toBeNull();
+        const deliveryClaim=claims.find(claim=>claim.sourceId===delivery)!;
+        // A mismatched retained projection never inherits the original's scope.
+        const otherCustomer=randomUUID(),otherWorkspace=randomUUID();
+        await client.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,'Different synthetic scope',false)",[otherCustomer,workspaceId]);
+        await client.query('SAVEPOINT research_projection_scope');
+        await client.query('UPDATE retrieval_sources SET customer_id=$2 WHERE id=$1',[delivery,otherCustomer]);
+        expect(await currentIndexPassages(deliveryClaim,client)).toBeNull();
+        await client.query('ROLLBACK TO SAVEPOINT research_projection_scope');
+        await client.query('RELEASE SAVEPOINT research_projection_scope');
+        await client.query("INSERT INTO workspaces(id,name) VALUES($1,'Different synthetic workspace')",[otherWorkspace]);
+        const workspaceCustomer=randomUUID();
+        await client.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,'Different workspace scope',false)",[workspaceCustomer,otherWorkspace]);
+        await client.query('SAVEPOINT research_projection_workspace');
+        await expect(client.query('UPDATE retrieval_sources SET workspace_id=$2,customer_id=$3 WHERE id=$1',[delivery,otherWorkspace,workspaceCustomer])).rejects.toThrow('Retrieval provenance mismatch');
+        await client.query('ROLLBACK TO SAVEPOINT research_projection_workspace');
+        await client.query('RELEASE SAVEPOINT research_projection_workspace');
+        await client.query('SAVEPOINT research_projection_withdrawal');
+        await client.query("INSERT INTO evidence_source_events(id,source_revision_id,lifecycle_version,event_type,rationale) VALUES($1,$2,1,'withdraw','Synthetic current-fence negative')",[randomUUID(),revisionId]);
+        for(const claim of claims)expect(await currentIndexPassages(claim,client)).toBeNull();
+        await client.query('ROLLBACK TO SAVEPOINT research_projection_withdrawal');
+        await client.query('RELEASE SAVEPOINT research_projection_withdrawal');
+        for(const claim of claims)expect(await currentIndexPassages({...claim,leaseToken:randomUUID()},client)).toBeNull();
+        for(const claim of claims)expect(await currentIndexPassages(claim,client)).toHaveLength(1);
+
       } finally { await client.query("ROLLBACK"); }
     });
   });

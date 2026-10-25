@@ -1053,3 +1053,14 @@ No hosted target may be locked for release before its measured reopen path exist
   retained-payload and uncertain-operation contrasts plus unchanged-history
   assertions; preserve registered case counts and require fresh committed and
   hosted health validation (FR-016, FR-021).
+
+- [ ] T183 Align verified-research index intake with the canonical projection
+  eligibility already used to build its passages. Require exact workspace,
+  customer, audience and original current/lease/generation/contract fences;
+  preserve original modern observation/batch validation whenever any such lineage
+  exists or its proof declares it, including missing or malformed lineage.
+  Preserve all other source-kind guards. Extend the existing real-database case
+  with non-synthetic initial-proof positives in both audiences and checked,
+  missing-modern-lineage, scope, withdrawal and stale-lease negatives; retain the
+  existing submitted-origin rejection, case counts and original limits. Require
+  fresh committed and governed hosted indexing/health validation (FR-016, FR-021).

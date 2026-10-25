@@ -5,6 +5,7 @@ import { claimRetrievalJobs, finishRetrievalJob, renewRetrievalLease,
 import { embedRetrievalTexts } from "../lib/server/retrieval/embeddings";
 import { recordRetrievalMetric } from "../lib/server/retrieval/telemetry";
 import { exactRetrievalOriginalCurrent } from "../lib/server/retrieval/fences";
+import {readVerifiedResearchProjectionRows} from "../lib/server/retrieval/research-projection";
 import { retrievalIntakeEnabled } from "../lib/server/retrieval/policy";
 import type { PoolClient } from "pg";
 
@@ -33,8 +34,13 @@ export async function currentIndexPassages(claim: RetrievalJobClaim,
       WHERE link.source_revision_id=s.source_revision_id AND link.linkage_state='attributed'
         AND run.environment_id=s.environment_id AND run.workspace_id=s.workspace_id AND run.customer_id=s.customer_id)`: "false";
     const source = await client.query<{ synthetic: boolean | null; scope: string; public_batch:boolean; checked_research:boolean;
-      source_kind: string; source_revision_id: string; source_generation: string }>(`
-      SELECT c.synthetic,s.scope,s.source_kind,s.source_revision_id,s.source_generation,
+      source_kind: string; source_revision_id: string; source_generation: string; workspace_id:string|null; customer_id:string|null; audience:string; research_lineage_required:boolean }>(`
+      SELECT c.synthetic,s.scope,s.source_kind,s.source_revision_id,s.source_generation,s.workspace_id,s.customer_id,s.audience,
+        (EXISTS(SELECT 1 FROM research_checks proof WHERE proof.source_revision_id=s.source_revision_id
+          AND (proof.check_version='research-check-v3' OR proof.trusted_ingest_identity LIKE 'public-fetch-v1:observation:%'
+            OR proof.trusted_ingest_identity='public-batch-fetch-v1'))
+          OR ${marker?.schema_version>=26?`EXISTS(SELECT 1 FROM research_evidence_links link WHERE link.source_revision_id=s.source_revision_id)`:false}
+          OR ${marker?.schema_version>=45?`EXISTS(SELECT 1 FROM public_customer_research_results result WHERE s.source_revision_id=ANY(result.source_revision_ids))`:false}) AS research_lineage_required,
         CASE WHEN s.source_kind='verified_research' THEN ${publicBatchProof} ELSE false END AS public_batch,
         CASE WHEN s.source_kind='verified_research' THEN ${checkedResearchProof} ELSE false END AS checked_research
       FROM retrieval_jobs j
@@ -44,9 +50,17 @@ export async function currentIndexPassages(claim: RetrievalJobClaim,
       WHERE j.id=$1 AND j.lease_token=$2 AND j.lease_until>now()
         AND j.state='leased' AND j.kind='index'`, [claim.id,claim.leaseToken]);
     const row = source.rows[0];
-    if (!row || !(row.synthetic || row.scope === "shared" || row.public_batch || row.checked_research) ||
-        !await exactRetrievalOriginalCurrent(client,row.source_kind,
-          row.source_revision_id,row.source_generation)) return null;
+    if (!row || !await exactRetrievalOriginalCurrent(client,row.source_kind,
+        row.source_revision_id,row.source_generation)) return null;
+    if(row.source_kind==='verified_research'){
+      if(row.audience!=='internal'&&row.audience!=='delivery')return null;
+      const verified=(await readVerifiedResearchProjectionRows(client,[row.source_revision_id],row.audience,
+        getServerConfig().TURAS_ENVIRONMENT_ID)).get(row.source_revision_id);
+      if(!verified||verified.workspace_id!==row.workspace_id||verified.customer_id!==row.customer_id)return null;
+      // Optional observation/batch lineage retains its original current checks.
+      // Initial checked public evidence need not have either later intake record.
+      if(row.research_lineage_required&&!row.public_batch&&!row.checked_research)return null;
+    }else if(!(row.synthetic||row.scope==='shared'||row.public_batch||row.checked_research))return null;
     const passages = await client.query<IndexPassage>(`
       SELECT p.id,p.passage_text,p.passage_digest
       FROM retrieval_passages p WHERE p.source_id=$1 ORDER BY p.ordinal`, [claim.sourceId]);
