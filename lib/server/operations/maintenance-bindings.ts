@@ -15,7 +15,7 @@ import {expireStaffingReservations} from '../staffing/reservations';
 import {settleDueStaffingAdvisories} from '../staffing/advisory-maintenance';
 import {runRetrievalCleanupTick} from '../retrieval/cleanup';
 import {runRetrievalLifecycleTick} from '../../../scripts/retrieval-worker';
-import {markDueResearch} from '../research/refresh';
+import {markDueResearch,researchReviewMarkingFromSql} from '../research/refresh';
 import {suspendStaleKnowledge} from '../knowledge/suspension';
 import {runPlanCleanupTick} from '../plans/cleanup';
 import {settleDueExecutionAdvisories,runExecutionCleanupTick} from '../execution/maintenance';
@@ -46,7 +46,10 @@ const backlogSql:Record<string,string>={
       AND NOT EXISTS (SELECT 1 FROM retrieval_passages p WHERE p.source_id=s.id)
       AND NOT EXISTS (SELECT 1 FROM retrieval_embedding_operations o JOIN retrieval_jobs related ON related.id=o.job_id
         WHERE related.source_id=s.id AND o.state IN ('reserved','dispatched','unconfirmed'))))`,
- 'research-freshness':"SELECT due_at FROM research_review_due WHERE environment_id=$1 AND state='due'",
+ // This lane schedules review notices; it does not perform the operator's external recheck.
+ 'research-freshness':`SELECT coalesce(due.updated_at+interval '1 hour',v.created_at) AS due_at
+  ${researchReviewMarkingFromSql}
+    AND EXISTS(SELECT 1 FROM turas_environment marker WHERE marker.environment_id=$1 AND marker.schema_version>=26)`,
  knowledge:"SELECT coalesce(last_maintenance_checked_at+interval '1 minute',published_at) AS due_at FROM knowledge_publications WHERE environment_id=$1 AND state='published'",
  plans:"SELECT created_at AS due_at FROM plan_cleanup_jobs WHERE environment_id=$1 AND state<>'completed'",
  execution:"SELECT greatest(due_at,coalesce(lease_until,due_at)) AS due_at FROM execution_cleanup_jobs WHERE environment_id=$1 AND state IN ('pending','leased')",

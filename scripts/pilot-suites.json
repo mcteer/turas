@@ -2198,6 +2198,13 @@
         "rejects unit identities from another source kind",
         "rejects malformed or non-unit locator identities"
       ]
+    },
+    {
+      "file": "tests/integration/pilot/hosted-root-browser-header.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "sends the owned conversation header to native creation without mutating caller authentication"
+      ]
     }
   ],
   "ui": {

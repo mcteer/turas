@@ -8887,3 +8887,35 @@ attempt reaches the original case but lacks its required local renderer tag.
 Both failures remain retained. The unchanged CI renderer Dockerfile is then built
 locally with its original tag, without publishing an image or calling a provider;
 the next original comparison uses only synthetic owned-local credentials.
+
+## T188/T189 — Root native request binding and research scheduling health
+
+The retained `786f891` hosted core stopped at the first native session creation:
+the exact deployment log window contains one POST to `/eve/v1/session` returning
+422. Read-only reconciliation found both exact conversations unbound with null
+native session IDs, no submitted messages or response attempts, and zero Root
+ledger operations, reserved spend, actual spend or unsettled operations. One
+conversation was archived by cleanup. The helper omitted the required conversation
+header; the route rejects that request before binding. No native or model retry
+was used to diagnose it. This remains a failed hosted attempt.
+
+T188 clones caller headers and sets the validated owned conversation ID for native
+commands. The operation body, authentication, browser sends/reload/Stop, cleanup
+and clocks remain unchanged. Its new intercepted-request regression passes and
+checks exact endpoint/header/body, authentication preservation and unchanged
+caller headers. The focused header, suite-result and readiness checks pass all
+30 cases. The suite inventory and G11 case registration now contain 192 suites
+and 1,053 cases; previous 191-suite/1,052-case CI acceptance remains historical.
+
+T189 shares the original research worker's unchanged checked/current-source and
+hourly rescheduling selector with maintenance backlog measurement. Existing
+marked due notices remain operator work and are not deleted or changed by health
+reads. The existing isolated database suite passes all four original cases,
+including retained notice equality, stale scheduling, absent notice and repeated
+marking checks. Original worker and health batch limits remain unchanged. The
+prior hosted unhealthy observation remains retained; local success does not prove
+new hosted health.
+
+Combined typechecking and whitespace checks pass. Fresh committed full Main and
+Legacy CI, source-bound hosted Root behavior and actual maintenance observations
+remain required. No current release or benefit acceptance is asserted here.

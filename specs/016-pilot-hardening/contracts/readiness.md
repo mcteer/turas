@@ -151,3 +151,11 @@ role proofs bind that complete artifact root and their original intervals. Typed
 verification and private immutable provenance are required by the release bundle.
 The combined `hosted-run.json` may contain G18/G19 while all other gates remain
 absent. It neither establishes complete hosted readiness nor records approval.
+
+The Root native-creation regression is registered as
+`integration.hosted-root-browser-header.001` in G11 and in the deterministic
+suite inventory. It exercises the original helper's request construction with a
+synthetic intercepted endpoint; it does not establish hosted transport success.
+The current local inventory is 192 suites and 1,053 cases. Immutable CI indexes
+must contain this complete registered inventory; previous 191-suite/1,052-case
+results remain historical source evidence.

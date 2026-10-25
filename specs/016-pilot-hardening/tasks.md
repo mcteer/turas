@@ -1105,3 +1105,19 @@ No hosted target may be locked for release before its measured reopen path exist
   Retain the failed original `4b538a5` attempt and all ten successful provider jobs;
   require fresh admitted source-bound preparation, retention and hosted validation
   rather than reconstructing a passing manifest (FR-016, FR-021).
+
+- [ ] T188 Bind the original hosted Root browser's native commands to the exact
+  owned conversation header by cloning caller headers and setting the validated
+  conversation ID. Preserve authentication, operation body, original browser
+  sends/reload/Stop, cleanup and all clocks. Register a no-network regression
+  proving the actual helper forwards the header without mutating caller headers;
+  retain the previous hosted HTTP422 and zero-dispatch evidence. Require fresh
+  committed CI and hosted behavior before release acceptance (FR-021).
+
+- [ ] T189 Align research-freshness health backlog with the original notice-
+  scheduling worker's eligible checked-source and hourly refresh selection. Keep
+  existing due notices and their external operator review requirement intact.
+  Extend the existing isolated database case with retained current notices, stale
+  scheduling and missing-notice work; preserve all four cases and original limits.
+  Require fresh committed CI and actual maintenance observations before claiming
+  hosted health (FR-016, FR-021).

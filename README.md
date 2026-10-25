@@ -7,6 +7,20 @@ current release evidence.
 
 ## Recorded validation observations
 
+The original hosted Root browser helper now sends the validated owned conversation
+ID on native commands, preserving caller authentication and leaving caller headers
+unchanged. The prior hosted attempt returned HTTP 422 before binding or any model
+dispatch; its zero-spend ledger and failure remain retained. A focused intercepted
+request regression passes, but fresh committed CI and hosted transport remain
+required. The deterministic inventory now contains 192 suites and 1,053 cases;
+the earlier complete 61-job CI result belongs to `786f891`.
+
+Research-freshness maintenance now reports the scheduling work its worker can
+perform: eligible sources without a notice or whose notice needs hourly refresh.
+Already marked review notices remain stored for the operator's external recheck;
+they no longer appear as unfinished scheduling work. This changes neither notice
+state nor the external review requirement and does not establish hosted health.
+
 The `4b538a5` Preview completed all ten original scan, parse and render jobs,
 but its generated-file producer stopped before brand review and publication:
 it required a draft brand although the workspace already had an approved brand.

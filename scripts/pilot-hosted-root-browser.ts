@@ -12,7 +12,8 @@ import {reconcileHostedRootGeneration} from './pilot-hosted-root-reconcile';
  * authority must already exist. Browser observations cannot settle a charge. */
 export async function runHostedRootBrowser(input:{scope:PilotHostedScope;db:Client;ownerDb:Client;headers:Headers;binding:unknown;conversationId:string;signal:AbortSignal;mobile:boolean;evidenceDirectory:string}){
  const startedAt=new Date().toISOString();
- const {scope,db,ownerDb,headers,signal}=input,binding=hostedRootBudgetSchema.parse(input.binding),id=z.uuid().parse(input.conversationId),origin=new URL(scope.origin).origin;
+ const {scope,db,ownerDb,signal}=input,binding=hostedRootBudgetSchema.parse(input.binding),id=z.uuid().parse(input.conversationId),origin=new URL(scope.origin).origin;
+ const headers=new Headers(input.headers);headers.set('x-turas-conversation-id',id);
  if(!binding.conversationIds.includes(id)||binding.sourceCommit!==scope.sourceCommit||binding.target!==scope.target||binding.projectId!==scope.projectId||binding.workspaceId!==scope.workspaceId||binding.environmentMarker!==scope.environmentMarker)throw Error('Exact original root browser authority required');
  const cookie=/(?:^|;\s*)((?:__Host-)?turas_session)=([A-Za-z0-9_-]{43})(?:;|$)/.exec(headers.get('cookie')??'');
  if(!cookie||!headers.get('x-csrf-token'))throw Error('Authenticated root owner and CSRF required');
