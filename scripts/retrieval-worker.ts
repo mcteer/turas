@@ -34,8 +34,8 @@ export async function currentIndexPassages(claim: RetrievalJobClaim,
       WHERE link.source_revision_id=s.source_revision_id AND link.linkage_state='attributed'
         AND run.environment_id=s.environment_id AND run.workspace_id=s.workspace_id AND run.customer_id=s.customer_id)`: "false";
     const source = await client.query<{ synthetic: boolean | null; scope: string; public_batch:boolean; checked_research:boolean;
-      source_kind: string; source_revision_id: string; source_generation: string; workspace_id:string|null; customer_id:string|null; audience:string; research_lineage_required:boolean }>(`
-      SELECT c.synthetic,s.scope,s.source_kind,s.source_revision_id,s.source_generation,s.workspace_id,s.customer_id,s.audience,
+      source_kind: string; source_revision_id: string; source_generation: string; origin_workspace_id:string|null; workspace_id:string|null; customer_id:string|null; audience:string; research_lineage_required:boolean }>(`
+      SELECT c.synthetic,s.scope,s.source_kind,s.source_revision_id,s.source_generation,s.origin_workspace_id,s.workspace_id,s.customer_id,s.audience,
         (EXISTS(SELECT 1 FROM research_checks proof WHERE proof.source_revision_id=s.source_revision_id
           AND (proof.check_version='research-check-v3' OR proof.trusted_ingest_identity LIKE 'public-fetch-v1:observation:%'
             OR proof.trusted_ingest_identity='public-batch-fetch-v1'))
@@ -51,7 +51,7 @@ export async function currentIndexPassages(claim: RetrievalJobClaim,
         AND j.state='leased' AND j.kind='index'`, [claim.id,claim.leaseToken]);
     const row = source.rows[0];
     if (!row || !await exactRetrievalOriginalCurrent(client,row.source_kind,
-        row.source_revision_id,row.source_generation)) return null;
+        row.source_revision_id,row.source_generation,row.origin_workspace_id??undefined)) return null;
     if(row.source_kind==='verified_research'){
       if(row.audience!=='internal'&&row.audience!=='delivery')return null;
       const verified=(await readVerifiedResearchProjectionRows(client,[row.source_revision_id],row.audience,
@@ -86,8 +86,8 @@ async function runIndex(claim: RetrievalJobClaim): Promise<void> {
       });
       const committed = await withTransaction(async (client) => {
         const current = await client.query<{ source_kind: string;
-          source_revision_id: string; source_generation: string }>(`
-          SELECT s.source_kind,s.source_revision_id,s.source_generation FROM retrieval_jobs j
+          source_revision_id: string; source_generation: string; origin_workspace_id:string|null }>(`
+          SELECT s.source_kind,s.source_revision_id,s.source_generation,s.origin_workspace_id FROM retrieval_jobs j
           JOIN retrieval_sources s ON s.id=j.source_id
           WHERE j.id=$1 AND j.lease_token=$2 AND j.lease_until>now()
             AND j.state='leased' AND s.source_generation=$3 AND s.contract_digest=$4
@@ -95,7 +95,7 @@ async function runIndex(claim: RetrievalJobClaim): Promise<void> {
         [claim.id,claim.leaseToken,claim.generation,claim.contractDigest]);
         const row = current.rows[0];
         if (!row || !await exactRetrievalOriginalCurrent(client,row.source_kind,
-          row.source_revision_id,row.source_generation)) return false;
+          row.source_revision_id,row.source_generation,row.origin_workspace_id??undefined)) return false;
         for (const [index,passage] of batch.entries()) {
           const updated = await client.query(`UPDATE retrieval_passages
             SET embedding=$4::public.vector,embedding_state='ready',

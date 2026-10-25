@@ -8734,3 +8734,29 @@ The parent exits zero without deadline expiry, and owned cleanup returns. Global
 types, the 243-file documentation check and diff validation pass. Original limits,
 assertions and registered case counts remain unchanged. Fresh committed and
 governed hosted validation remain required.
+
+## T184 — preserve shared-source origin in index fences
+
+The complete read-only original-worker intake comparison exposes a separate
+shared-source failure: the caller omits the actual origin workspace argument
+required by the existing synthetic shared-origin policy. Canonical eligibility
+already passes that scope. The worker now selects the immutable database origin
+workspace and supplies it to the same source fence at both initial intake and
+final vector publication. No origin override, global synthetic-sharing permission,
+lease, generation, contract, cost limit or publication rule is introduced.
+
+The existing shared-publication case adds a separate governed synthetic
+publication under an owned database savepoint. It proves same-origin indexing,
+fence and read eligibility, foreign-origin fence/read denial, and preserves all
+original primary cross-workspace read assertions. The original shared-publication,
+research-projection and research-workflow files pass all four existing cases in
+an owned PG18 fixture; the T183 initial-public, missing-modern-lineage and
+submitted-origin negatives remain covered. No cases are added or removed.
+
+The read-only pre-lease comparison executes the actual modified worker intake
+against all 56 current index candidates, omitting only the lease/state predicates that
+cannot hold before a claim. It accepts all 56 and matches all 202 passage metadata
+records to the original quote; job states remain unchanged, with zero claims,
+provider calls or model operations. This proves the source-level preflight,
+not a deployed worker, real embedding or hosted health result. Fresh committed
+checks and separately governed actual indexing remain required.

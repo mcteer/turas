@@ -1064,3 +1064,12 @@ No hosted target may be locked for release before its measured reopen path exist
   missing-modern-lineage, scope, withdrawal and stale-lease negatives; retain the
   existing submitted-origin rejection, case counts and original limits. Require
   fresh committed and governed hosted indexing/health validation (FR-016, FR-021).
+
+- [ ] T184 Pass actual shared-source origin workspace to the existing original
+  source fence at both index intake and final vector publication. Preserve
+  primary-origin sharing and synthetic same-origin isolation without adding scope
+  overrides. Extend the existing shared-publication case with a governed synthetic
+  publication, same-origin intake/read positives and foreign-origin fence/read
+  denials. Require complete read-only pre-lease intake comparison for all 56 current index
+  candidates and 202 passage metadata records plus the original focused cases;
+  do not infer claim, provider or hosted-health success (FR-016, FR-021).

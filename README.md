@@ -7,6 +7,14 @@ current release evidence.
 
 ## Recorded validation observations
 
+Shared-source indexing now carries the actual origin workspace into both the
+intake fence and the final vector-publication fence. The existing shared-knowledge
+case covers a synthetic origin, same-origin indexing and foreign-workspace denial,
+while primary-origin cross-workspace reads remain covered. A read-only preflight
+accepts all 56 current index candidates and matches all 202 passage metadata records
+without claiming jobs or calling a provider; actual indexing and hosted health
+remain separate required checks.
+
 A read-only Preview comparison found six valid initial public-research sources
 that the canonical projection builder accepts while the index worker rejects
 because they lack later optional observation or batch records. The worker now
