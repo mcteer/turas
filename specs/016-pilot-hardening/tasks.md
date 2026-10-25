@@ -1073,3 +1073,21 @@ No hosted target may be locked for release before its measured reopen path exist
   denials. Require complete read-only pre-lease intake comparison for all 56 current index
   candidates and 202 passage metadata records plus the original focused cases;
   do not infer claim, provider or hosted-health success (FR-016, FR-021).
+
+- [ ] T185 Align retrieval cleanup health with its original lifecycle-only binding,
+  retaining invalidation and cleanup backlog, terminal-history qualification,
+  freshness and bounded metadata. Keep separately admitted index work unchanged
+  and expose its state counts independently in the existing retrieval status
+  command. Extend the existing real-database backlog case with queued, leased,
+  failed and uncertain current index rows plus unchanged-history assertions;
+  preserve all four cases and limits. Do not bypass copied-request protection,
+  retire valid sources or infer actual indexing or hosted health (FR-016, FR-021).
+
+- [ ] T186 Correct the actual mobile Navigation dialog background-isolation
+  failure without masking contrast or changing the layout. Make sibling branches
+  inert and hidden to assistive technology only while open, preserve prior
+  attributes, contain keyboard/programmatic focus and restore the trigger on
+  close. Extend the existing keyboard case without removing theme, accessibility
+  or focus assertions and retain its original limits/case count. Require original
+  light/dark WebKit observations, inspected synthetic captures and fresh committed
+  CI/hosted validation (FR-021).

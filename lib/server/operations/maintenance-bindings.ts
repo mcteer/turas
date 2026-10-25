@@ -38,7 +38,8 @@ const backlogSql:Record<string,string>={
  artifacts:"SELECT greatest(next_attempt_at,coalesce(lease_expires_at,next_attempt_at)) AS due_at FROM artifact_cleanup_jobs WHERE environment_id=$1 AND state<>'done' UNION ALL SELECT CASE WHEN state='leased' THEN least(lease_expires_at,deadline_at) ELSE next_attempt_at END FROM artifact_extraction_runs WHERE environment_id=$1 AND state IN ('queued','leased') UNION ALL SELECT next_attempt_at FROM ordinary_native_retirements WHERE environment_id=$1 AND state='requested' UNION ALL SELECT CASE WHEN u.state IN('purged','expired','cancelled') THEN u.created_at ELSE u.expires_at END FROM ordinary_native_uploads u WHERE u.environment_id=$1 AND (u.state IN('uploading','ready') OR u.state IN('purged','expired','cancelled') AND EXISTS(SELECT 1 FROM ordinary_native_upload_chunks chunks WHERE chunks.upload_id=u.id))",
  workforce:"SELECT greatest(not_before,coalesce(lease_expires_at,not_before)) AS due_at FROM workforce_cleanup_jobs WHERE environment_id=$1 AND state<>'completed' UNION ALL SELECT CASE WHEN state='running' THEN least(lease_expires_at,deadline_at) ELSE created_at END FROM workforce_import_jobs WHERE environment_id=$1 AND state IN ('queued','running')",
  retrieval:`SELECT CASE WHEN j.state='leased' THEN j.lease_until ELSE j.created_at END AS due_at
-  FROM retrieval_jobs j WHERE j.environment_id=$1 AND j.state IN ('queued','leased','failed','unconfirmed')
+  FROM retrieval_jobs j WHERE j.environment_id=$1 AND j.kind IN ('invalidate','cleanup')
+    AND j.state IN ('queued','leased','failed','unconfirmed')
   AND NOT (j.state='failed' AND EXISTS (
     SELECT 1 FROM retrieval_sources s WHERE s.id=j.source_id AND s.environment_id=j.environment_id
       AND s.lifecycle_state IN ('retired','tombstoned')

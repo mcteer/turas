@@ -11,7 +11,7 @@ beforeAll(async()=>{db=await pool.connect();});afterAll(async()=>{db.release();a
 it('queries all actual maintenance queue schemas with bounded anonymous metadata',async()=>{for(const id of ['conversation','artifacts','workforce','retrieval','research-freshness','knowledge','plans','execution','support','expansion','reports','gaps','partners','learning','mcp']){const result=await maintenanceBacklog(id);expect(result.backlog).toBeGreaterThanOrEqual(0);expect(result.backlog).toBeLessThanOrEqual(1000);expect(Object.keys(result).sort()).toEqual(['backlog','oldestDueAt','truncated']);}
  const fixture=await pilotPublishedKnowledgeFixture(db,'primary');
  const before=await maintenanceBacklog('retrieval');
- const cases=[
+ const cases:Array<{lifecycle:string;state:string;attempts:number;counted:boolean;passage?:boolean;operation?:string;kind?:string}>=[
   {lifecycle:'retired',state:'failed',attempts:3,counted:false},
   {lifecycle:'tombstoned',state:'failed',attempts:3,counted:false},
   {lifecycle:'current',state:'failed',attempts:3,counted:true},
@@ -23,6 +23,7 @@ it('queries all actual maintenance queue schemas with bounded anonymous metadata
   {lifecycle:'retired',state:'unconfirmed',attempts:3,counted:true},
   {lifecycle:'retired',state:'failed',attempts:1,counted:false},
   {lifecycle:'retired',state:'failed',attempts:3,counted:true,operation:'reserved'},
+  ...['queued','leased','failed','unconfirmed'].map(state=>({lifecycle:'current',state,attempts:state==='queued'?0:1,counted:false,kind:'index'})),
  ];
  const sources:string[]=[],jobs:string[]=[];
  for(const item of cases){
@@ -30,7 +31,7 @@ it('queries all actual maintenance queue schemas with bounded anonymous metadata
   await db.query(`INSERT INTO retrieval_sources(id,environment_id,scope,source_kind,source_revision_id,audience,projection_contract,contract_digest,source_generation,content_digest,lifecycle_state)
    VALUES($1,$2,'shared','published_shared',$3,'shared','retrieval-v1',$4,$5,$4,$6)`,[source,environment,fixture.revisionId,digest,fixture.generation,item.lifecycle]);
   await db.query(`INSERT INTO retrieval_jobs(id,environment_id,source_id,source_generation,contract_digest,kind,state,attempts,lease_token,lease_started_at,lease_until)
-   VALUES($1,$2,$3,$4,$5,'cleanup',$6,$7,CASE WHEN $6='leased' THEN $1::uuid END,CASE WHEN $6='leased' THEN clock_timestamp()-interval '20 seconds' END,CASE WHEN $6='leased' THEN clock_timestamp()-interval '1 second' END)`,[job,environment,source,fixture.generation,digest,item.state,item.attempts]);
+   VALUES($1,$2,$3,$4,$5,$8,$6,$7,CASE WHEN $6='leased' THEN $1::uuid END,CASE WHEN $6='leased' THEN clock_timestamp()-interval '20 seconds' END,CASE WHEN $6='leased' THEN clock_timestamp()-interval '1 second' END)`,[job,environment,source,fixture.generation,digest,item.state,item.attempts,'kind' in item?item.kind:'cleanup']);
   if(item.passage)await db.query(`INSERT INTO retrieval_passages(id,source_id,ordinal,passage_digest,passage_text,locators) VALUES($1,$2,1,$3,'Synthetic retained projection','[{"kind":"synthetic"}]')`,[randomUUID(),source,digest]);
   if(item.operation){const operationJob=randomUUID();jobs.push(operationJob);
    await db.query(`INSERT INTO retrieval_jobs(id,environment_id,source_id,source_generation,contract_digest,kind,state) VALUES($1,$2,$3,$4,$5,'index','completed')`,[operationJob,environment,source,fixture.generation,digest]);
@@ -43,6 +44,8 @@ it('queries all actual maintenance queue schemas with bounded anonymous metadata
   operations:(await db.query('SELECT * FROM retrieval_embedding_operations WHERE job_id=ANY($1::uuid[]) ORDER BY id',[jobs])).rows});
  const retained=await snapshot();
  expect((await maintenanceBacklog('retrieval')).backlog).toBe(before.backlog+cases.filter(item=>item.counted).length);
+ const indexRows=(await db.query("SELECT state FROM retrieval_jobs WHERE id=ANY($1::uuid[]) AND kind='index' AND state IN ('queued','leased','failed','unconfirmed') ORDER BY state",[jobs])).rows;
+ expect(indexRows.map(row=>row.state)).toEqual(['failed','leased','queued','unconfirmed']);
  expect(await snapshot()).toEqual(retained);
 });
 it('excludes future cleanup and retry work while preserving the oldest actual due time',async()=>{const workspace=(await db.query('SELECT id FROM workspaces ORDER BY id LIMIT 1')).rows[0].id;await db.query('INSERT INTO learning_workspace_state(environment_id,workspace_id) VALUES($1,$2) ON CONFLICT DO NOTHING',[environment,workspace]);const before=await maintenanceBacklog('learning');const ids=[randomUUID(),randomUUID(),randomUUID()];for(let i=0;i<3;i++)await db.query("INSERT INTO learning_cleanup_jobs(id,environment_id,workspace_id,owner_kind,owner_id,due_at,next_attempt_at) VALUES($1,$2,$3,'synthetic_health',$4,clock_timestamp()+($5::int*interval '1 hour'),clock_timestamp()+($6::int*interval '1 hour'))",[ids[i],environment,workspace,randomUUID(),i===0?1:-3,i===1?1:-2]);const result=await maintenanceBacklog('learning');expect(result.backlog).toBe(before.backlog+1);expect(result.oldestDueAt!.getTime()).toBeLessThan(Date.now()-3600000);await db.query("UPDATE learning_cleanup_jobs SET state='completed',completed_at=clock_timestamp() WHERE id=ANY($1::uuid[])",[ids]);expect((await maintenanceBacklog('learning')).backlog).toBe(before.backlog);});

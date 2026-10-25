@@ -69,11 +69,21 @@ test("workspace navigation and theme controls work with the keyboard", async ({ 
   await page.keyboard.press("Enter");
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe(before);
   if (mobile) {
+    await expect(page.locator(".workspace-main")).toHaveJSProperty("inert", true);
+    await expect(page.locator(".workspace-main")).toHaveAttribute("aria-hidden", "true");
+    const navigation = page.getByRole("dialog", { name: "Navigation" });
+    await navigation.getByRole("button", { name: "Close navigation" }).focus();
+    await page.keyboard.press("Shift+Tab");
+    await expect(navigation.getByRole("button", { name: "Sign out" })).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(navigation.getByRole("button", { name: "Close navigation" })).toBeFocused();
     const history = page.getByRole("region", { name: "Recent chats" }).filter({ visible: true });
     await history.focus();
     await expect(history).toBeFocused();
     await reviewScreen(page, info, "navigation");
     await page.keyboard.press("Escape");
     await expect(page.getByRole("button", { name: "Open navigation" })).toBeFocused();
+    await expect(page.locator(".workspace-main")).toHaveJSProperty("inert", false);
+    await expect(page.locator(".workspace-main")).not.toHaveAttribute("aria-hidden");
   }
 });

@@ -8760,3 +8760,69 @@ records to the original quote; job states remain unchanged, with zero claims,
 provider calls or model operations. This proves the source-level preflight,
 not a deployed worker, real embedding or hosted health result. Fresh committed
 checks and separately governed actual indexing remain required.
+
+## T185 — scope retrieval maintenance health to its served cleanup lane
+
+The plan's authorized resumption separates shared maintenance from paid embedding
+admission. The original retrieval binding executes only lifecycle and cleanup
+workers, and its existing integration case proves that cleanup leaves queued index
+work untouched while intake is disabled. Its backlog query nevertheless counts
+all retrieval job kinds. The correction filters that maintenance backlog to
+`invalidate` and `cleanup`; the existing T182 terminal-history predicate and all
+freshness, uncertainty, due-time and cap checks remain intact. The existing
+retrieval status command retains its total job and embedding-operation counts and
+adds anonymous index-state counts. No job, passage, source, attempt, cost hold or
+copied-request guard changes.
+
+The original backlog integration file still contains four cases. Its existing
+real-database comparison now also retains current queued, leased, failed and
+unconfirmed index rows, proves they do not contribute to cleanup backlog, and
+compares the complete source/job/passage/operation snapshots unchanged. All four
+cases pass in an original owned PG18 fixture in 9,129 ms, without deadline expiry
+or model calls; owned retirement returns. This controlled comparison overlays only
+the three candidate source files into the fixture's owned application copy, keeping
+the active checkout clean for a pending historical-source profile comparison.
+The first private runner-author attempt used the wrong working-directory prefix
+and failed before creating a runner, database or test resource; it is retained.
+
+The completed `ff68af4` native, browser and local load observations remain qualified
+to that source. Its separately authorized normal indexing attempt stops at the
+copied-request protection before the first embedding operation; the 56 original
+jobs remain unchanged and its separate parity budget closes without reservations.
+No bypass, automatic retry, source retirement or healthy-state claim is introduced.
+Fresh committed and governed hosted checks remain required.
+
+## T186 — isolate the mobile Navigation dialog background
+
+The retained `ff68af4` legacy keyboard/accessibility trace reports serious contrast
+failures on three obscured background staffing controls while mobile Navigation is
+open. The dialog declares itself modal but leaves the workspace interactive and
+visible to assistive technology. This is a background-isolation defect; the change
+retains the existing CSS, palette, layout and original accessibility assertions.
+
+When opened, the component focuses its first enabled visible control and makes
+only sibling branches up to the document body inert and `aria-hidden`. It never
+hides an ancestor containing the dialog. Cleanup restores each prior inert value
+and exact `aria-hidden` attribute before returning focus to the trigger. Tab and
+Shift+Tab remain inside visible enabled controls, escaped focus is returned to the
+dialog, and Escape uses the same close path. The existing keyboard case adds
+background on/off and focus-wrap assertions while retaining every original
+navigation, theme, recent-history, axe and focus-return assertion. Case counts and
+original timeouts are unchanged.
+
+The first controlled runner completed setup but selected zero tests because its
+anchored grep did not match Playwright's composite title; its parent-one, empty
+suite and cleanup receipts are preserved. A distinct manual successor selects the
+same original keyboard title without those anchors. Both mobile light and mobile
+dark cases pass, with zero failures, skips, flaky cases or retries. The original
+60-second case limits remain; the original owned PG18 production/native fixture
+finishes in 85,833 ms with parent zero, no deadline expiry, no model calls and owned
+retirement returned. An initial TypeScript nullable-closure diagnostic was fixed
+before this run; global types then pass.
+
+Both actual synthetic mobile navigation captures were inspected. The drawer,
+backdrop and visible recent-history focus ring remain readable in both themes;
+full-page captures also include content below the viewport. The prior source's
+unchanged desktop shell capture was inspected as a historical layout reference,
+not a current desktop execution claim. Fresh committed CI and actual hosted
+acceptance remain required.

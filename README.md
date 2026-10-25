@@ -7,6 +7,23 @@ current release evidence.
 
 ## Recorded validation observations
 
+The mobile Navigation dialog now makes only its background sibling branches
+inert and unavailable to assistive technology, retains keyboard focus inside the
+open dialog, and restores prior background attributes before returning focus to
+the trigger. The original mobile light and dark keyboard/theme/accessibility
+cases pass with their existing limits and assertions plus focus/isolation checks.
+The retained `ff68af4` mobile-dark failure remains historical; these local checks
+do not establish a fresh CI or hosted pass. Colors and layout are unchanged.
+
+Shared retrieval maintenance now measures only its invalidation and cleanup lane,
+matching the work that its binding can execute. Separately admitted index jobs stay
+unchanged and remain visible in the retrieval status command, including explicit
+index-state counts. The original four-case backlog comparison passes with queued,
+leased, failed and uncertain current index work excluded from cleanup health and
+preserved in the database. The earlier Preview indexing attempt stopped at the
+copied-request guard before any embedding operation; this correction neither
+bypasses that guard nor establishes a hosted health or indexing pass.
+
 Shared-source indexing now carries the actual origin workspace into both the
 intake fence and the final vector-publication fence. The existing shared-knowledge
 case covers a synthetic origin, same-origin indexing and foreign-workspace denial,
