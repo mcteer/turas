@@ -814,6 +814,8 @@ shared model/research budget and requires fresh committed deterministic proof.
 Capture and independent review both validate this allowance through the explicit
 private operator runtime. The current deterministic inventory is 1,052 cases in
 191 suites; fresh committed proof is required before further paid evaluation.
+The backup operator rejects malformed non-ASCII bearer credentials with 401 before
+any capture work; hosted activation and recovery acceptance remain pending.
 
 Independent semantic evaluation may use the separately requested LLM judge with
 actual captures and governing rubrics. Actual automated operator/internal/partner

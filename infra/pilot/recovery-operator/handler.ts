@@ -12,7 +12,12 @@ export default async function backup(request:IncomingMessage,response:ServerResp
  if(request.url!=='/api/backup'){reply(404,{error:'not_found'});return;}
  if(request.method!=='GET'){reply(405,{error:'method_not_allowed'});return;}
  const secret=process.env.CRON_SECRET,authorization=request.headers.authorization;
- if(!secret||!/^[A-Za-z0-9_-]{43,128}$/.test(secret)||typeof authorization!=='string'||authorization.length!==secret.length+7||!timingSafeEqual(Buffer.from(authorization),Buffer.from('Bearer '+secret))){reply(401,{error:'unauthorized'});return;}
+ const authorized=()=>{
+  if(!secret||!/^[A-Za-z0-9_-]{43,128}$/.test(secret)||typeof authorization!=='string'||authorization.length!==secret.length+7)return false;
+  const actual=Buffer.from(authorization),expected=Buffer.from('Bearer '+secret);
+  return actual.byteLength===expected.byteLength&&timingSafeEqual(actual,expected);
+ };
+ if(!authorized()){reply(401,{error:'unauthorized'});return;}
  if(process.env.TURAS_WORK_BACKUP_ENABLED!=='1'){reply(503,{error:'backup_disabled',restorationReady:false});return;}
  let master:Buffer|undefined;
  try{

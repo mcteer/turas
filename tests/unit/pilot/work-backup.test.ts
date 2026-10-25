@@ -71,6 +71,13 @@ it('builds the actual operator transport and rejects unauthorized disabled and n
   server=createServer((request,response)=>{void loaded(request,response);});await new Promise<void>((done,reject)=>{server!.once('error',reject);server!.listen(0,'127.0.0.1',done);});
   const address=server.address();if(!address||typeof address==='string')throw Error('Owned transport listener unavailable');const origin='http://127.0.0.1:'+address.port;
   process.env.CRON_SECRET='synthetic-operator-secret-'.padEnd(64,'x');process.env.TURAS_WORK_BACKUP_ENABLED='1';process.env.TURAS_WORK_BACKUP_CONFIG='invalid-protected-config';delete process.env.VERCEL;
+  // Equal character counts do not imply equal UTF-8 byte counts. Exercise the
+  // actual built handler directly so the former rejected promise cannot leave
+  // an HTTP request hanging or become an unhandled server rejection.
+  let malformedStatus=0,malformedBody='';
+  const malformedResponse={setHeader:()=>{},set statusCode(value:number){malformedStatus=value;},end:(body:string)=>{malformedBody=body;}};
+  await expect(loaded({url:'/api/backup',method:'GET',headers:{authorization:'Bearer '+process.env.CRON_SECRET.slice(0,-1)+'é'}},malformedResponse)).resolves.toBeUndefined();
+  expect(malformedStatus).toBe(401);expect(JSON.parse(malformedBody)).toEqual({error:'unauthorized'});
   expect((await fetch(origin+'/api/backup')).status).toBe(401);
   expect((await fetch(origin+'/api/backup?source=foreign')).status).toBe(404);
   expect((await fetch(origin+'/api/backup',{method:'POST'})).status).toBe(405);

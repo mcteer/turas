@@ -927,3 +927,11 @@ No hosted target may be locked for release before its measured reopen path exist
   unconsumed, stale and malformed-locator regressions; independently verify the
   unchanged actual capture and complete the governing research suite. Record
   original and corrected evidence separately (FR-004, FR-012, FR-017).
+
+- [ ] T169 Preserve the actual `6180b6a` CI Product Gaps handoff and learning
+  withdrawal failures and the qualified focused diagnostic results. Correct the
+  backup operator authorization comparison to reject unequal UTF-8 byte lengths
+  before constant-time comparison, retaining the original character bound. Extend
+  the existing built-transport case with equal-character-length non-ASCII input;
+  require 401 without capture/provider work. Complete fresh source-bound checks,
+  hosted operator boundaries and release acceptance (FR-004, FR-021).

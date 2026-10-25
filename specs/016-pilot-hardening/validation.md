@@ -8314,3 +8314,40 @@ reconciliation and an enabled stable recurring schedule remain pending requireme
 The original elapsed-cadence assessor must retain its actual unobserved state;
 no changed runtime cadence, synthetic timestamps or claim of scheduled execution
 is authorized by this observation exception.
+
+
+### 2026-10-25: Native preparation and backup authorization follow-up
+
+The first `6180b6a` native preparation exited 1 because its parent PATH omitted
+`/usr/sbin`, so the fail-closed cleanup probe could not execute `lsof`. Its exact
+owned container and temporary directory were reconciled and retired after recorded
+process/group and open-file checks; unrelated baseline containers were preserved.
+A separate manual attempt with the complete PATH exited 0 within the original
+outer deadline. Independent review verifies 203 input bindings, nine guards,
+three observed requests, one denied request, zero paid dispatches and native
+cleanup. These results belong to `6180b6a`; they do not establish a later source.
+
+Committed `6180b6a` CI failed Product Gaps handoff visibility on desktop-light and
+learning publication withdrawal on desktop-dark. Each original browser case passed
+once in a focused local diagnostic with original assertions, limits and zero
+retries. The learning runner subsequently refused final source acceptance because
+parallel backup-handler edits changed its source digest. That qualified browser
+result is not a source-bound runner pass, and neither local result proves the
+historical CI cause. Original failures remain retained; no UI or timeout change is
+justified by this evidence.
+
+Independent review found a separate backup operator boundary error: equal JavaScript
+character counts can have unequal UTF-8 byte lengths, causing constant-time
+comparison to throw before the handler's recovery block. The follow-up retains
+the character bound and checks byte lengths before comparison. The existing built
+transport test passes with the actual handler, a non-ASCII malformed header and
+required 401. Pilot typechecking and diff hygiene pass; the catalog count is
+unchanged. No runtime model, schedule or capture requirement changes. Fresh
+source-bound CI and hosted acceptance remain pending; Production remains
+`f8d196f` on schema 077.
+
+The Preview owner budget command succeeded against a separate verify-full TLS
+successor, preserving the original credential configuration, target and allocation.
+The first create-only Preview environment POST returned HTTP 400. Its actual
+failure remains retained, and no Preview build or successful environment creation
+is claimed; current state must be reconciled before another write.
