@@ -7,6 +7,14 @@ current release evidence.
 
 ## Recorded validation observations
 
+The `cba3c03` CI catalog failed twice at the same source-admission test's
+390-second limit; its other two cases passed and the catalog artifacts were not
+published. The unchanged three-case local diagnostic passed. The follow-up keeps
+the original limits and assertions, propagates the existing outer deadline into
+the final plan clone, and records fixed stage timings to identify the CI wait.
+The updated three-case local comparison also passes all three cases; fresh
+committed CI remains required and no Production acceptance is claimed.
+
 The original hosted Root browser helper now sends the validated owned conversation
 ID on native commands, preserving caller authentication and leaving caller headers
 unchanged. The prior hosted attempt returned HTTP 422 before binding or any model

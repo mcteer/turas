@@ -1084,6 +1084,10 @@ jobs:
         run: node --import tsx scripts/prepare-pilot-images.ts --output "${{ github.workspace }}/local-artifacts/016/ci-images"
       - name: Install CLI WebKit dependencies
         run: npx playwright install --with-deps webkit
+      - name: Diagnose original evaluation-source cases before the complete catalog
+        if: matrix.gate == 'deterministic'
+        # This is diagnostic coverage only; the complete catalog still runs all cases.
+        run: node --import tsx scripts/check-evaluation-source-preflight.ts
       - name: Complete registered pilot catalog and exact CI evidence
         if: matrix.gate == 'deterministic'
         run: |

@@ -1121,3 +1121,11 @@ No hosted target may be locked for release before its measured reopen path exist
   scheduling and missing-notice work; preserve all four cases and original limits.
   Require fresh committed CI and actual maintenance observations before claiming
   hosted health (FR-016, FR-021).
+
+- [ ] T190 Preserve the original source-admission fixture deadline when starting
+  its final Production-style plan clone. Retain all three cases, assertions and
+  360/390-second outer limits. Emit only fixed clone-stage/state and elapsed
+  metadata through bounded CI diagnostics, and run the original file early for
+  fast feedback without replacing or filtering the full deterministic catalog.
+  Retain both `cba3c03` timeouts and the passing local comparison; require actual
+  fresh CI before claiming the wait is resolved (FR-021).

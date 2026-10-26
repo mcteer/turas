@@ -6,15 +6,20 @@ import {withArtifactEvalEnvironment} from '../../../scripts/artifact-eval-enviro
 import {withRetrievalEvalEnvironment} from '../../../scripts/retrieval-eval-environment';
 import {withPlanEvalEnvironment} from '../../../scripts/plan-eval-environment';
 it('admits actual owned sources and prepares artifact retrieval and plan clones without model dispatch',async()=>{
+ const started=performance.now();
+ const observe=(phase:'artifact'|'retrieval'|'plan',state:'start'|'complete')=>{
+  try{process.stderr.write(JSON.stringify({kind:'evaluation_source_stage',phase,state,elapsedMs:Math.floor(performance.now()-started)})+'\n');}
+  catch{/* Diagnostic output cannot replace the original check. */}
+ };
  await withPilotEnvironment(async environment=>{
   process.env.TURAS_TEST_POSTGRES_CONTAINER=environment.databaseContainer;
   expect(requireEvaluationSourceDatabase()).toBe(process.env.DATABASE_URL_UNPOOLED);
   expect(process.env.AI_GATEWAY_API_KEY).toBeUndefined();expect(process.env.CONTEXT_API_KEY).toBeUndefined();
   const source=process.env.DATABASE_URL_UNPOOLED,marker=process.env.TURAS_ENVIRONMENT_ID;
   const probe=async()=>{const raw=process.env.DATABASE_URL_UNPOOLED!;expect(raw).not.toBe(source);expect(raw).toBe(process.env.TURAS_TEST_DATABASE_URL);expect(process.env.TURAS_ENVIRONMENT_ID).toBe(marker);const db=new Client({connectionString:raw});try{await db.connect();expect((await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows).toEqual([{environment_id:marker,schema_version:79}]);}finally{await db.end();}};
-  await withArtifactEvalEnvironment(probe,{production:true,deadlineAt:environment.deadlineAt});expect(process.env.DATABASE_URL_UNPOOLED).toBe(source);
-  await withRetrievalEvalEnvironment(probe);expect(process.env.DATABASE_URL_UNPOOLED).toBe(source);
-  await withPlanEvalEnvironment(async clone=>{await clone.start();await probe();},{production:true});expect(process.env.DATABASE_URL_UNPOOLED).toBe(source);
+  observe('artifact','start');await withArtifactEvalEnvironment(probe,{production:true,deadlineAt:environment.deadlineAt});observe('artifact','complete');expect(process.env.DATABASE_URL_UNPOOLED).toBe(source);
+  observe('retrieval','start');await withRetrievalEvalEnvironment(probe);observe('retrieval','complete');expect(process.env.DATABASE_URL_UNPOOLED).toBe(source);
+  observe('plan','start');await withPlanEvalEnvironment(async clone=>{await clone.start();await probe();},{production:true,deadlineAt:environment.deadlineAt});observe('plan','complete');expect(process.env.DATABASE_URL_UNPOOLED).toBe(source);
  },{postgresMajor:18,deadlineMs:360000});
 },390000);
 it('seeds the governing behavior demo separately from the judged retrieval walkthrough',async()=>{
