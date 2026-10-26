@@ -20,8 +20,8 @@ it('admits actual owned sources and prepares artifact retrieval and plan clones 
   observe('artifact','start');await withArtifactEvalEnvironment(probe,{production:true,deadlineAt:environment.deadlineAt});observe('artifact','complete');expect(process.env.DATABASE_URL_UNPOOLED).toBe(source);
   observe('retrieval','start');await withRetrievalEvalEnvironment(probe);observe('retrieval','complete');expect(process.env.DATABASE_URL_UNPOOLED).toBe(source);
   observe('plan','start');await withPlanEvalEnvironment(async clone=>{await clone.start();await probe();},{production:true,deadlineAt:environment.deadlineAt});observe('plan','complete');expect(process.env.DATABASE_URL_UNPOOLED).toBe(source);
- },{postgresMajor:18,deadlineMs:360000});
-},390000);
+ },{postgresMajor:18,deadlineMs:600000});
+},630000);
 it('seeds the governing behavior demo separately from the judged retrieval walkthrough',async()=>{
  const {qualityStages,qualitySeedCommand}=await import('../../../scripts/pilot-quality-live');
  const {execFile}=await import('node:child_process'),{promisify}=await import('node:util');

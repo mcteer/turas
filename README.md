@@ -7,6 +7,15 @@ current release evidence.
 
 ## Recorded validation observations
 
+The `8a9373c` early CI check localized the source-admission failure: artifact
+setup completed at 183 seconds, retrieval at 247 seconds, then the shared
+360-second fixture allowance expired during the second Production build. The
+follow-up allocates 600 seconds to this build/setup fixture, 630 seconds to its
+first case, and 1,020 seconds to the complete three-case process including
+retirement. It preserves all assertions, application readiness and response-time
+limits, model/provider limits and the full catalog's two-hour limit. This replaces
+the earlier fixture-only allowance; actual fresh CI remains required.
+
 The `cba3c03` CI catalog failed twice at the same source-admission test's
 390-second limit; its other two cases passed and the catalog artifacts were not
 published. The unchanged three-case local diagnostic passed. The follow-up keeps

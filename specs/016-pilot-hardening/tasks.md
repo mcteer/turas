@@ -1129,3 +1129,14 @@ No hosted target may be locked for release before its measured reopen path exist
   fast feedback without replacing or filtering the full deterministic catalog.
   Retain both `cba3c03` timeouts and the passing local comparison; require actual
   fresh CI before claiming the wait is resolved (FR-021).
+
+- [ ] T191 Correct the source-admission build/setup allocation using actual
+  `8a9373c` CI stage observations: artifact completes at 183 seconds, retrieval
+  at 247 seconds and the original shared allowance expires in the second
+  Production build. Supersede only the fixture-limit preservation in T176/T190:
+  allocate 600 seconds to setup, 630 to its first case and 1,020 to its full
+  three-case suite/preflight including retirement. Extend only the corresponding
+  safe elapsed-metadata bound. Preserve all three cases, assertions, other case
+  clocks, 60/90-second readiness, two-second product read limit, model/provider
+  limits, cleanup policy and 7,200-second catalog. Retain all historical failures
+  and require actual new CI before claiming resolution (FR-021).

@@ -157,7 +157,7 @@ it('reports setup and child process failure classes without exposing private out
  const stageLines=evaluationStages.map(row=>JSON.stringify(row));
  const stageMetadata=processFailureMetadata({stdoutTail:stageLines.slice(0,2).join('\n'),stderrTail:stageLines.slice(2,4).join('\n'),message:stageLines.slice(4).join('\n')});
  expect(stageMetadata.evaluationSourceStages).toEqual(evaluationStages.map(({phase,state,elapsedMs})=>({phase,state,elapsedMs})));expect(JSON.stringify(stageMetadata)).not.toContain('PRIVATE_');
- const invalidStages=[{phase:'PRIVATE_PHASE'},{state:'PRIVATE_STATE'},{elapsedMs:-1},{elapsedMs:0.5},{elapsedMs:390001},{elapsedMs:'PRIVATE_TIME'},{elapsedMs:Infinity},{kind:'PRIVATE_KIND'}].map(delta=>JSON.stringify({...evaluationStages[0],...delta}));
+ const invalidStages=[{phase:'PRIVATE_PHASE'},{state:'PRIVATE_STATE'},{elapsedMs:-1},{elapsedMs:0.5},{elapsedMs:630001},{elapsedMs:'PRIVATE_TIME'},{elapsedMs:Infinity},{kind:'PRIVATE_KIND'}].map(delta=>JSON.stringify({...evaluationStages[0],...delta}));
  expect(processFailureMetadata({stderrTail:[...invalidStages,'{"kind":"evaluation_source_stage"'].join('\n')})).not.toHaveProperty('evaluationSourceStages');
  expect(processFailureMetadata({stderrTail:[...stageLines,...stageLines,...invalidStages].join('\n')}).evaluationSourceStages).toEqual(stageMetadata.evaluationSourceStages);
  expect(processFailureMetadata({code:'private',signal:'PRIVATE_SIGNAL',message:'PRIVATE_PROSE'})).toEqual({code:null,signal:null,deadlineExpired:false,signatures:[],locations:[]});
