@@ -1,4 +1,5 @@
 import { sharedOriginSql } from "../access/policy";
+import { sanitizedKnowledgeSchema } from "../../contracts/knowledge";
 import { createHmac, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { HttpFailure } from "../../contracts/http";
@@ -96,10 +97,26 @@ export async function rankPassages(client: PoolClient, sources: readonly Source[
       FROM eligible WHERE $3::text IS NOT NULL AND embedding_state='ready'
         AND embedding_contract='embedding-v1' AND embedding IS NOT NULL
       ORDER BY embedding <=> $3::public.vector,passage_id LIMIT 30
+    ), shared_field_metadata AS (
+      SELECT passage_id,row_number() OVER (ORDER BY passage_id) AS rank
+      FROM eligible
+      WHERE source_kind='published_shared'
+        AND NOT (search_vector @@ websearch_to_tsquery('english',$2))
+        AND EXISTS (
+          SELECT 1 FROM jsonb_array_elements(
+            CASE WHEN jsonb_typeof(locators)='array' THEN locators ELSE '[]'::jsonb END
+          ) AS locator
+          WHERE locator->>'kind'='shared_field'
+            AND locator->>'fieldPath'=ANY($4::text[])
+            AND to_tsvector('english',passage_text || ' ' || (locator->>'fieldPath'))
+              @@ websearch_to_tsquery('english',$2)
+        )
+      ORDER BY passage_id LIMIT 30
     ), scored AS (
       SELECT passage_id,sum(1.0/(60+rank)) AS score FROM (
         SELECT passage_id,rank FROM lexical UNION ALL
-        SELECT passage_id,rank FROM semantic
+        SELECT passage_id,rank FROM semantic UNION ALL
+        SELECT passage_id,rank FROM shared_field_metadata
       ) branches GROUP BY passage_id
     )
     SELECT e.passage_id,e.passage_digest,e.passage_text,e.locators,e.extraction_warnings,
@@ -107,7 +124,7 @@ export async function rankPassages(client: PoolClient, sources: readonly Source[
       e.audience,e.content_digest,e.projection_contract,scored.score
     FROM scored JOIN eligible e ON e.passage_id=scored.passage_id
     ORDER BY scored.score DESC,e.passage_id LIMIT 60`,
-  [sources.map((source) => source.id),query,queryVector]);
+  [sources.map((source) => source.id),query,queryVector,sanitizedKnowledgeSchema.keyof().options]);
   return ranked.rows;
 }
 

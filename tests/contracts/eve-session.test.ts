@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { eveChannel } from "eve/channels/eve";
 import type { EveChannel } from "eve/channels/eve";
 import channel from "../../agent/channels/eve";
@@ -10,6 +10,8 @@ import { GET as readConversation } from "../../app/api/conversations/[id]/route"
 import { GET as readAttempt } from "../../app/api/conversations/[id]/attempts/[requestKey]/route";
 import { composeEveRoutes } from "../../lib/server/conversations/eve-routes";
 import { projectNativeEvent } from "../../lib/server/conversations/projection";
+import { getCurrentSession } from "../../lib/server/auth/sessions";
+import { claimBinding, markBindingUncertain } from "../../lib/server/conversations/binding";
 
 const origin = "http://127.0.0.1:3000";
 const createdIds: string[] = [];
@@ -120,15 +122,22 @@ describe("eve session boundary", () => {
     let tailReads = 0;
     let tailCaptures = 0;
     let cancelled = 0;
-    const native = eveChannel({ auth: [] });
+    // Exercise the installed Eve create handler, including its operation token
+    // and accepted-before-owner-active response. Only its durable workflow
+    // adapter is local; no model or remote workflow is invoked by this check.
+    const native = eveChannel({ auth: [async () => ({ authenticator: "contract",
+      principalType: "user", principalId: "owned-contract-principal", attributes: {} })] });
+    const createArgs = { ...args,
+      resolveSession: async () => undefined,
+      __eveRouteSessionCreator: async (input: { continuationToken?: string; input: { message?: unknown } }) => {
+        delegated += 1;
+        expect(input.continuationToken).toMatch(/^eve:op:[a-f0-9]{32}$/);
+        expect(input.input.message).toBeUndefined();
+        return { sessionId: nativeId };
+      },
+    } as unknown as typeof args;
     const mocked = { ...native, routes: native.routes.map((entry) =>
-      entry.method === "POST" && entry.path === "/eve/v1/session"
-        ? { ...entry, handler: async (request: Request) => {
-          delegated += 1;
-          expect(await request.json()).toEqual({ operationId: key });
-          return Response.json({ ok: true, sessionId: nativeId, status: "accepted" });
-        } }
-        : entry.method === "POST" && entry.path === "/eve/v1/session/:sessionId"
+      entry.method === "POST" && entry.path === "/eve/v1/session/:sessionId"
           ? { ...entry, handler: async (request: Request) => {
             sent += 1;
             expect(await request.json()).toEqual({ message: "Hello" });
@@ -160,13 +169,78 @@ describe("eve session boundary", () => {
         "x-turas-conversation-id": conversation.data.id },
       body: JSON.stringify({ operationId: key }),
     });
-    expect((await route(guarded, "POST", "/eve/v1/session").handler(request(), args)).status).toBe(200);
-    expect(delegated).toBeGreaterThanOrEqual(1);
+    expect((await route(guarded, "POST", "/eve/v1/session").handler(request(), createArgs)).status).toBe(202);
+    expect(delegated).toBe(1);
     const visible = await readConversation(new Request(`${origin}/api/conversations/${conversation.data.id}`,
       { headers: { cookie } }), { params: Promise.resolve({ id: conversation.data.id }) });
     expect((await visible.json() as { data: { eveSessionId: string } }).data.eveSessionId).toBe(nativeId);
     const duplicate = await route(guarded, "POST", "/eve/v1/session").handler(request(), args);
     expect((await duplicate.json() as { sessionId: string }).sessionId).toBe(nativeId);
+    expect(delegated).toBe(1);
+
+    // A lost create receipt has no trustworthy candidate to bind. Exercise the
+    // installed handler's canonical lookup separately from its startup candidates.
+    const actor = await getCurrentSession(new Request(origin, { headers: { cookie } }));
+    if (!actor) throw new Error("Owned session unavailable");
+    const backoffs: number[] = [];
+    const realSetTimeout = globalThis.setTimeout;
+    const timer = vi.spyOn(globalThis, "setTimeout").mockImplementation(((...parameters: Parameters<typeof setTimeout>) => {
+      const [callback, delay, ...rest] = parameters;
+      if (delay === 4_000) backoffs.push(delay);
+      return realSetTimeout(callback, delay === 4_000 ? 0 : delay, ...rest);
+    }) as typeof setTimeout);
+    try {
+      for (const canonical of [true, false]) {
+        const operationId = randomUUID();
+        const extra = await createConversation(new Request(`${origin}/api/conversations`, {
+          method: "POST", headers: { origin, cookie, "content-type": "application/json",
+            "x-csrf-token": payload.data.csrfToken },
+          body: JSON.stringify({ customerId: DEMO_IDS.sharedCustomer, requestKey: operationId }),
+        }));
+        expect(extra.status).toBe(201);
+        const id = (await extra.json()).data.id as string;
+        createdIds.push(id);
+        const firstClaim = await claimBinding(actor, id, operationId);
+        if (firstClaim.state !== "claimed") throw new Error("Fresh claim unavailable");
+        await markBindingUncertain(actor, id, firstClaim.claimToken);
+        const winner = `wrun_${randomUUID()}`;
+        let lookups = 0;
+        let starts = 0;
+        const reconciliationArgs = { ...args,
+          resolveSession: async () => {
+            lookups += 1;
+            return canonical && lookups > 1 ? { id: winner } : undefined;
+          },
+          __eveRouteSessionCreator: async () => {
+            starts += 1;
+            return { sessionId: `wrun_${randomUUID()}` };
+          },
+        } as unknown as typeof args;
+        const response = await route(composeEveRoutes(native), "POST", "/eve/v1/session")
+          .handler(new Request(`${origin}/eve/v1/session`, { method: "POST",
+            headers: { origin, cookie, "content-type": "application/json",
+              "x-csrf-token": payload.data.csrfToken, "x-turas-conversation-id": id },
+            body: JSON.stringify({ operationId }) }), reconciliationArgs);
+        const current = await readConversation(new Request(`${origin}/api/conversations/${id}`,
+          { headers: { cookie } }), { params: Promise.resolve({ id }) });
+        const state = (await current.json()).data;
+        if (canonical) {
+          expect(response.status).toBe(202);
+          expect((await response.json()).sessionId).toBe(winner);
+          expect(lookups).toBe(3);
+          expect(starts).toBe(1);
+          expect(state.eveSessionId).toBe(winner);
+        } else {
+          expect(response.status).toBe(409);
+          expect((await response.json()).code).toBe("turas_binding_pending");
+          expect(lookups).toBe(5);
+          expect(starts).toBe(5);
+          expect(state.bindingState).toBe("reconciling");
+          expect(state.eveSessionId).toBeNull();
+        }
+      }
+      expect(backoffs).toEqual(Array(6).fill(4_000));
+    } finally { timer.mockRestore(); }
     const ownedStream = await route(guarded, "GET", "/eve/v1/session/:sessionId/stream")
       .handler(new Request(`${origin}/eve/v1/session/${nativeId}/stream`, { headers: { cookie } }),
         { params: { sessionId: nativeId } } as unknown as typeof args);
@@ -183,6 +257,13 @@ describe("eve session boundary", () => {
     }));
     const otherCookie = (otherLogin.headers.get("set-cookie") ?? "").split(";")[0];
     const otherCsrf = (await otherLogin.json() as { data: { csrfToken: string } }).data.csrfToken;
+    const foreignCreate = await route(guarded, "POST", "/eve/v1/session").handler(
+      new Request(`${origin}/eve/v1/session`, { method: "POST", headers: {
+        origin, cookie: otherCookie, "content-type": "application/json",
+        "x-csrf-token": otherCsrf, "x-turas-conversation-id": conversation.data.id },
+      body: JSON.stringify({ operationId: key }) }), createArgs);
+    expect(foreignCreate.status).toBe(404);
+    expect(delegated).toBe(1);
     const otherStream = await route(guarded, "GET", "/eve/v1/session/:sessionId/stream")
       .handler(new Request(`${origin}/eve/v1/session/${nativeId}/stream`, {
         headers: { cookie: otherCookie },

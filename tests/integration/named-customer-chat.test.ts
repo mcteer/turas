@@ -1,3 +1,4 @@
+import {rankPassages} from '../../lib/server/retrieval/search';
 import {authoredTool as sharedEvidenceTool} from '../../agent/tools/search_evidence';
 import {createKnowledgeCandidate,submitKnowledgeCandidate,decideKnowledgeCandidate} from '../../lib/server/knowledge/service';
 import {requireResearchAccount} from '../../lib/server/research/specialists/account';
@@ -131,6 +132,16 @@ it("resolves named customers inside private chat and rechecks grants and owner i
       const principal={principalId:session.principalId,attributes:{turasAttemptId:attempt.attemptId}};
       return{conversationId:created.conversation.id,principal,context:{session:{id:native,auth:{current:principal}},abortSignal:new AbortController().signal}};
     }
+    // Adding trusted field labels must not add a second lexical vote to old hits.
+    const cacheRanking=await withTransaction(async db=>{
+      const sources=(await db.query<Parameters<typeof rankPassages>[1][number]>(`
+        SELECT id,source_kind,source_revision_id,source_generation,audience,
+          content_digest,projection_contract FROM retrieval_sources
+        WHERE source_kind='published_shared' AND source_revision_id=$1`,[publication.revisionId])).rows;
+      return rankPassages(db,sources,'cache',null);
+    });
+    expect(cacheRanking).toHaveLength(2);
+    cacheRanking.forEach((row,index)=>expect(Number(row.score)).toBeCloseTo(1/(61+index),12));
     for(const legacy of[false,true]){
       const turn=await sharedTurn(sharedAdmin,syntheticCustomer,legacy);
       if(!legacy)await withTransaction(db=>readCustomerAccountEvidence(db,turn.principal,syntheticCustomer));
@@ -138,6 +149,27 @@ it("resolves named customers inside private chat and rechecks grants and owner i
       const shared=result.customerEvidence.results.find(row=>row.sourceKind==='published_shared'&&row.sourceRevisionId===publication.revisionId);
       expect(shared?.citationId).toBeTruthy();
       expect((await owner.query(`SELECT 1 FROM session_evidence_dependencies dependency JOIN retrieval_receipt_sources source ON source.source_kind=dependency.source_kind AND source.source_revision_id=dependency.source_revision_id AND source.source_generation=dependency.source_generation WHERE dependency.conversation_id=$1 AND source.id=$2 AND source.source_kind='published_shared'`,[turn.conversationId,shared!.citationId])).rowCount).toBeGreaterThan(0);
+      // A named public field must be discoverable without knowing its hidden value.
+      for(const query of['limitations','validate limitations']){
+        const fieldResult=await sharedEvidenceTool.execute!({...sharedInput,query},turn.context as never) as {
+          customerEvidence:{mode:string;results:Array<{sourceKind:string;sourceRevisionId:string;
+            citationId:string;text:string;locators:Array<{kind:string;fieldPath?:string}>}>}};
+        expect(fieldResult.customerEvidence.mode).toBe('lexical_degraded');
+        const fields=fieldResult.customerEvidence.results.filter(row=>row.sourceRevisionId===publication.revisionId);
+        expect(fields).toHaveLength(1);
+        const limitation=fields[0];
+        expect(limitation.sourceKind).toBe('published_shared');
+        expect(limitation.text).toBe('Validate for each workload');
+        expect(limitation.locators).toEqual([expect.objectContaining({kind:'shared_field',fieldPath:'limitations'})]);
+        expect(limitation.citationId).not.toBe(publication.revisionId);
+        expect((await owner.query(`SELECT 1 FROM session_evidence_dependencies dependency
+          JOIN retrieval_receipt_sources source ON source.source_kind=dependency.source_kind
+            AND source.source_revision_id=dependency.source_revision_id
+            AND source.source_generation=dependency.source_generation
+          WHERE dependency.conversation_id=$1 AND source.id=$2
+            AND source.source_kind='published_shared' AND source.source_revision_id=$3`,
+        [turn.conversationId,limitation.citationId,publication.revisionId])).rowCount).toBeGreaterThan(0);
+      }
       // Explicit and implicit selections must use the same current grant checks.
       await expect(sharedEvidenceTool.execute!({...sharedInput,accountId:syntheticCustomer},turn.context as never)).resolves.toBeTruthy();
     }

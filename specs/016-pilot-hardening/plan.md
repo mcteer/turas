@@ -4,7 +4,9 @@
 
 **Input**: `specs/016-pilot-hardening/spec.md`. Implementation is in progress. Execution incorporates released main f8d196f on schema077; the original planning baseline was015 on schema055.
 016 migrations have been exercised in owned disposable local environments and
-the isolated synthetic Preview database. No 016 hosted application release has run.
+the isolated synthetic Preview database. Synthetic Preview deployments and partial
+hosted checks have run; full acceptance remains incomplete. Production remains
+on f8d196f/schema077 with no 016 release.
 
 ## Summary
 

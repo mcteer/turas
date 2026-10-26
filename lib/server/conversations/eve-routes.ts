@@ -115,13 +115,26 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
                 return candidateResponse;
               }
               const parsedNative = nativeSessionSchema.safeParse(await candidateResponse.clone().json());
-              if (!parsedNative.success) throw new HttpFailure(503, "invalid_native_response", "Service unavailable");
-              if (parsedNative.data.sessionId === previousId) {
+              if (candidateResponse.status !== 202 || !parsedNative.success) {
+                throw new HttpFailure(503, "invalid_native_response", "Service unavailable");
+              }
+              // A fresh exclusive domain claim makes exactly one native create.
+              // Eve returns an accepted candidate before its operation owner is
+              // active; requiring a second identical receipt here starts more
+              // candidates during normal durable-workflow startup.
+              // After an ambiguous earlier create, only a repeated canonical ID
+              // is safe to adopt. The original claim token still fences either
+              // path against a concurrent domain reclaim.
+              if (claim.firstAttempt || parsedNative.data.sessionId === previousId) {
                 await bindNativeSession(session, conversationId!, claimToken, parsedNative.data.sessionId);
                 return candidateResponse;
               }
               previousId = parsedNative.data.sessionId;
-              await new Promise((resolve) => setTimeout(resolve, 50));
+              if (attempt + 1 < 5) {
+                const remaining = 20_000 - (Date.now() - started);
+                if (remaining > 0) await new Promise((resolve) =>
+                  setTimeout(resolve, Math.min(4_000, remaining)));
+              }
             }
             throw new HttpFailure(409, "turas_binding_pending", "Session binding pending");
           } catch (error) {

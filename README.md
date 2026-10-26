@@ -595,6 +595,15 @@ disabled. See [learning operations](docs/learning-operations.md), the
 
 ### Pilot Hardening and Launch Readiness
 
+Current acceptance: Production remains at `f8d196f` / schema 077. Candidate
+`5c8c45f` passed all 61 CI jobs and its 1,053-case deterministic catalog,
+with the original failures and unchanged-source reruns retained separately.
+Its hosted preflight and retained-file reads passed, but Root session creation
+returned HTTP 409 before any response attempt or model charge. A model evaluation
+also failed its original citation and step limits. The pending corrections are
+tracked as T193/T194; fresh committed checks, hosted recovery and Production
+release acceptance remain required. See [PR #47](https://github.com/mcteer/turas/pull/47).
+
 Hosted Sandbox execution now supports fresh Vercel request OIDC, bound to the
 configured project/team and the original job lifetime. Local operator commands
 retain explicit protected tokens. Runtime configuration and pricing identities

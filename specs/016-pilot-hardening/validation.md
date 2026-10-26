@@ -12,9 +12,28 @@ state, private evidence/configuration and credentials.
 
 ## Current acceptance
 
-Implementation in progress. No 016 runtime acceptance, hosted provisioning, paid
-execution, participant feedback, pilot readiness or release is claimed by this record.
-Results will be appended with exact source/environment and truthful gate states.
+Implementation and release acceptance remain in progress. The dated checkpoints
+below retain their original source and gate states. At `5c8c45f`, all 61 CI jobs
+and the 1,053-case deterministic catalog passed, including separately retained
+unchanged-source reruns. Synthetic Preview provisioning, real provider jobs,
+retained-file reads and partial model evaluations have run; these do not establish
+whole-pilot or Production acceptance.
+
+The 2026-10-26 hosted core attempt passed exact deployment/schema/grant preflight
+and retained-file checks, then failed with HTTP 409 during native Root creation.
+Its scoped budget snapshot showed zero response attempts, operations, reservations
+and charges. The failed receipt remains failed; an unbound database identity does
+not establish remote native-session absence. Installed eve documentation and
+source distinguish an accepted prewarmed candidate from a later canonical
+operation owner. T193 tracks the bounded binding correction and fresh acceptance.
+
+The current R04 output used a revision identifier instead of a consumed citation
+and exceeded the original five-step limit. Unpaid real-tool probes found that
+field-label queries could not discover a shared field whose value omitted that
+label. T194 tracks lexical metadata discovery and explicit citation guidance.
+The failed model calls are not relabeled as passes, and their actual query history
+was not retained. Production remains f8d196f/schema077; backup/restore, complete
+model and hosted workflow acceptance, merge and Production release are pending.
 
 ## Initial implementation checkpoint
 
@@ -8966,3 +8985,36 @@ pending.
 
 Production remains at `f8d196f` on schema 077. No 016 Production release,
 backup/restore acceptance or complete pilot readiness is claimed.
+
+## 2026-10-26: native startup and shared-field discovery corrections
+
+The T193 candidate distinguishes the first locked binding claim from an uncertain
+or reclaimed creation. A fresh claim binds one valid HTTP 202 native candidate
+through the existing claim-token fence. Reconciliation still requires consecutive
+canonical receipts, within the original five-call, 20-second bound. Authentication,
+operation identity, message dispatch and stale-token rejection remain unchanged.
+
+The two original native contract/persistence files passed all eight existing cases
+with the real installed eve create handler and a local durable-workflow adapter.
+They cover one accepted fresh create, bound replay without another create,
+canonical reconciliation, rejection of unstable candidates, foreign-owner denial
+and stale claim-token rejection. The first runner failed four login assertions
+because its random origin mismatched the direct-handler fixtures; that failure is
+retained. The origin-corrected run passed with no model or remote workflow calls
+and original owned cleanup. This does not establish actual hosted browser behavior.
+
+The T194 candidate searches trusted shared-field labels alongside unchanged
+published passage values. Existing lexical matches cannot receive a duplicate
+lexical vote. Eligibility, result limits, citation consumption and source rechecks
+remain unchanged. Ordinary-chat instructions distinguish consumed `citationId`
+from `sourceRevisionId` and direct reuse of returned evidence.
+
+The original named-customer integration passed its single case in 1,596 ms.
+The actual authored tool finds the exact limitations passage for `limitations`
+and `validate limitations` in live and legacy synthetic context, with the expected
+locator and a consumed citation distinct from the revision ID. Prior cache
+rankings, unassigned-partner denial and synthetic-account research restrictions
+remain enforced. No model/provider call was made. Root typechecking and the
+243-file documentation check pass; no case was added, filtered or skipped.
+Fresh committed CI, actual-model citation/step compliance and hosted/Production
+release acceptance remain required. T193/T194 stay open.

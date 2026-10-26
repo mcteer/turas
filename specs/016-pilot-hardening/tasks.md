@@ -1149,3 +1149,29 @@ No hosted target may be locked for release before its measured reopen path exist
   eligibility, partner denial and new-research restrictions. Add an actual-tool
   regression with published shared knowledge, and require fresh committed CI,
   model citation and hosted acceptance before release (FR-004, FR-010, FR-021).
+
+
+- [ ] T193 Preserve the actual `5c8c45f` hosted Root HTTP 409 and failed core
+  run. Align ordinary native session binding with eve's accepted prewarmed
+  candidate contract: distinguish the first locked application binding claim
+  from a reclaimed or uncertain create. Bind a definite first accepted candidate
+  through the existing claim-token fence; retain canonical-only reconciliation
+  for ambiguous prior creates. Preserve authorization, operation identity,
+  duplicate-send denial, original bounded startup limits and retirement checks.
+  Extend the existing native-route regression with fresh accepted creation,
+  idempotent bound replay, stale-claim rejection and ambiguous-candidate denial.
+  Require fresh committed CI and actual hosted stream/reload/Stop acceptance
+  before release (FR-004, FR-021).
+
+- [ ] T194 Preserve the actual `5c8c45f` R04 citation/step-limit failure and
+  unpaid shared-field search observations. Make trusted canonical shared-field
+  labels searchable alongside their unchanged published passage values in
+  lexical fallback. Apply the same eligibility, finite ranking limits,
+  consumption and source rechecks; do not add a second lexical vote to an
+  already matching passage or expose private lineage. Clarify ordinary-chat
+  instructions that `citationId` cites a consumed passage and
+  `sourceRevisionId` identifies its revision. Extend the existing actual-tool
+  integration with field-label and label/value searches in live and legacy
+  context, exact text/locator/citation consumption and existing denials.
+  Preserve the original model rubric and five-step limit. Require fresh
+  committed CI, actual-model and hosted acceptance (FR-010, FR-021).
