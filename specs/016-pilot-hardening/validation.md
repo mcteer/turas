@@ -9073,3 +9073,32 @@ whole-case deadline and preserves the existing case signal. Production's
 300-second target bound, transaction/read limits and all original assertions
 remain unchanged. Fresh local and complete committed CI results remain required.
 The original failed run is retained; Production remains `f8d196f` / schema 077.
+
+## 2026-10-26: native correction fixture lifetime
+
+Candidate `3366e88` passed the complete 192-suite, 1,053-case deterministic CI
+catalog. Its separate native file-correction job failed twice, both with the
+simulated generation's 30-second timer and the browser's response wait expiring.
+Those CI logs contain no request timeline; they do not establish their exact
+historical ordering. No further retry was issued.
+
+A separate unpaid, controlled probe retained all original assertions and added
+a declared 31-second delay after provider startup, before preparing a correction.
+The original simulated response was already failed before correction preparation,
+with one provider call and no corrections. The subsequent actual native POST
+returned 202 in 185 ms. This establishes the fixture lifetime race without
+claiming to reconstruct the earlier CI executions.
+
+T198 shares the original absolute 420-second owned-fixture deadline with the
+paused simulated generation. The deadline includes setup already elapsed;
+generation cancellation, the real response timeout and all original byte,
+history and replay checks are preserved. Three local cases verify preparation
+past 30 seconds, absolute expiry, invalid deadlines, cancellation and timer
+cleanup; root and pilot typechecking pass. The corrected full check with the same
+31-second delay passes every original assertion: the simulated response remains
+running after preparation, the native POST returns 202 in 88 ms, and correction,
+bytes, canonical customer resolution, reload history, single allowance and native
+retirement checks pass with zero paid calls. Independent source review found no
+blocker. The new three-case ordinary unit file runs in the general unit job;
+the registered pilot inventory remains 192 suites and 1,053 cases. Fresh committed
+CI remains required. Production code, passwords and schema are unchanged.

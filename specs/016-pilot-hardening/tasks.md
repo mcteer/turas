@@ -1207,3 +1207,12 @@ No hosted target may be locked for release before its measured reopen path exist
   assertion and all production target, transaction and read limits. Retain the
   actual `2067919` CI timeout; run the exact regression and fresh complete CI
   before acceptance (FR-002, FR-014, FR-021).
+
+- [ ] T198 Preserve both actual `3366e88` native file-correction CI failures and
+  the separately attributed controlled preparation-delay probe. Bind the paused
+  unpaid provider to the owning fixture's original absolute 420-second deadline,
+  including time already spent preparing. Preserve the real correction response
+  timeout, generation cancellation, byte/history/replay assertions, production
+  behavior and model selection. Verify finite-deadline and abort cleanup cases,
+  then the complete original correction check with the same 31-second delay and
+  fresh complete CI before release (FR-002, FR-014, FR-021).

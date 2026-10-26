@@ -608,6 +608,9 @@ rates conservatively while preserving the original cost and token limits.
 Candidate `2067919` passed the preview file and redeployment checks; its full CI
 catalog timed out in the exhaustive recovery test. T197 separates that test's
 independent producer lifetime within the existing whole-case bounds.
+Candidate `3366e88` passed all 1,053 deterministic CI cases. Its native file
+correction job failed twice; T198 aligns the simulated waiting generation with
+the original owned fixture deadline and preserves the real request timeout.
 Fresh committed checks, hosted recovery and Production release acceptance
 remain required. See [PR #47](https://github.com/mcteer/turas/pull/47).
 
