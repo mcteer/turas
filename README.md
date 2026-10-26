@@ -7,6 +7,18 @@ current release evidence.
 
 ## Recorded validation observations
 
+At `971e5fb`, Main and Legacy CI finished green across all 61 jobs after the
+original failing WebKit and native-task jobs were rerun. The actual Preview
+file checks also read back both 10 MiB originals and all four generated artifacts
+after a distinct deployment. Those results remain specific to that source.
+The subsequent R04 evaluation failed: a valid shared-learning search was discarded
+when its supplemental public-reference read rejected a synthetic customer.
+An unpaid reproduction confirmed the failure in both live customer context after
+a profile read and legacy customer-bound context. The correction retains current
+account authorization for cached reference reads while leaving new-research
+restrictions unchanged. Fresh corrected-source checks and Production release
+remain pending; the failed R04 result is not accepted as a citation pass.
+
 The `8a9373c` early CI check localized the source-admission failure: artifact
 setup completed at 183 seconds, retrieval at 247 seconds, then the shared
 360-second fixture allowance expired during the second Production build. The

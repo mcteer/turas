@@ -1140,3 +1140,12 @@ No hosted target may be locked for release before its measured reopen path exist
   clocks, 60/90-second readiness, two-second product read limit, model/provider
   limits, cleanup policy and 7,200-second catalog. Retain all historical failures
   and require actual new CI before claiming resolution (FR-021).
+
+- [ ] T192 Preserve the actual `971e5fb` R04 missing-shared-citation failure and
+  the unpaid authored-tool reproductions in live and legacy synthetic customer
+  context. Use the existing current account grant check for reading retained
+  public practice references, without applying the unrelated synthetic-account
+  restriction for starting new research. Preserve session, conversation, source
+  eligibility, partner denial and new-research restrictions. Add an actual-tool
+  regression with published shared knowledge, and require fresh committed CI,
+  model citation and hosted acceptance before release (FR-004, FR-010, FR-021).

@@ -8919,3 +8919,50 @@ new hosted health.
 Combined typechecking and whitespace checks pass. Fresh committed full Main and
 Legacy CI, source-bound hosted Root behavior and actual maintenance observations
 remain required. No current release or benefit acceptance is asserted here.
+
+## 2026-10-26: green 971e5fb checks and shared-search failure
+
+Main run 40258406292 and Legacy run 40258406291 finished with all 54 and seven
+jobs successful. Only the original failing partner WebKit and native-task-state
+jobs were rerun; copied native job histories retain their original timestamps.
+The original complete catalog passed all 1,053 cases across 192 suites. These
+are pre-merge results, not the later main/push G14 requirement.
+
+The actual source-971 Preview deployment and distinct retention deployment
+completed. Original uncached checks verified both 10 MiB uploads and four normal
+generated artifacts after the latter deployment, with no new provider jobs or
+model calls. Final Root metadata admission used the original two conversations
+and unchanged allowance; it did not establish Root transport or full hosted
+workflow acceptance. No paid core journey or gap job followed it.
+
+The model evaluation retained all 32 original 002/003/004 responses and their
+passing independent semantic and original evidence checks. Retrieval and R01
+completed. After a settled local-transport failure in R02, the explicit
+same-attempt continuation completed R02 and R03. R04 then completed a reply but
+failed its original `citedShared` objective: it reported unavailable shared
+search and supplied no shared citation. Both failed parent runs and original
+outputs remain failures; neither is relabeled as a complete model evaluation.
+
+Unpaid execution of the actual `search_evidence` tool reproduced HTTP 404 in a
+legacy synthetic customer-bound conversation and in live synthetic context after
+a current-turn profile read. Direct governed shared search succeeded in those
+same scopes. A general shared query with no selected account succeeded. The
+supplemental retained-practice read applied `requireResearchAccount`, whose
+synthetic-account restriction is appropriate for starting new research, and
+discarded the otherwise valid governed result. The correction uses the same
+current `lockProfileActor` account authorization for this retained-reference
+read. New research keeps its canonical-account restriction; conversation,
+session and current-source checks are unchanged.
+
+The original whole named-customer integration file passed its single case in
+1,102 ms with the new assertions: actual published shared results and consumed
+citations in live and legacy synthetic context, explicit selection, unassigned
+partner denial, and unchanged synthetic-account denial for new research. Two
+earlier runner configuration refusals are retained; neither reached these
+assertions. No case was added, filtered or skipped, and no model/provider call
+was made. Root and pilot typechecking and the 243-file documentation check pass.
+Fresh committed CI, actual model citation and hosted release results remain
+pending.
+
+Production remains at `f8d196f` on schema 077. No 016 Production release,
+backup/restore acceptance or complete pilot readiness is claimed.

@@ -1,7 +1,6 @@
 import {hiddenRecord} from '../../contracts/http';
 import {withTransaction} from '../db/client';
 import {researchIdentity} from '../research/specialists/identity';
-import {requireResearchAccount} from '../research/specialists/account';
 import {searchVercelPracticeSourceReceipts} from '../research/specialists/research-cache/practice-library';
 import {customerQuestionActor,assertCustomerQuestionReads} from './customer-accounts';
 import {conversationFeature} from './feature';
@@ -26,7 +25,11 @@ export async function ordinaryPracticeAccount(principal:Principal){
  * product/topic metadata or treating documentation as customer adoption. */
 export async function readOrdinaryPracticeEvidence(principal:Principal,accountId:string|undefined,query:string,signal:AbortSignal,maximumBytes=24576){
  if(!Number.isSafeInteger(maximumBytes)||maximumBytes<1024||maximumBytes>24576)throw Error('Bounded practice response required');
- const identity=await researchIdentity(principal);if(accountId)await requireResearchAccount(identity,accountId);signal.throwIfAborted();
+ const identity=await researchIdentity(principal);
+ // Reading retained public references also supports authorized synthetic pilot
+ // context. Starting new research still requires a canonical research account.
+ if(accountId)await withTransaction(db=>lockProfileActor(db,identity,accountId,undefined,true));
+ signal.throwIfAborted();
  // Public product references use the original workspace-public library. Even
  // without a customer, authorize the ordinary owner/session before embedding.
  await withTransaction(async db=>{
