@@ -1216,3 +1216,11 @@ No hosted target may be locked for release before its measured reopen path exist
   behavior and model selection. Verify finite-deadline and abort cleanup cases,
   then the complete original correction check with the same 31-second delay and
   fresh complete CI before release (FR-002, FR-014, FR-021).
+
+- [ ] T199 Preserve the actual `6ae4e39` staged 4 MiB correction timeout and its
+  independently attributed preparation-delay reproduction. Observe the exact
+  native correction request before starting the existing 30-second response
+  bound; retain cached fast responses, the original absolute 420-second fixture
+  deadline and every upload, byte, history and retirement assertion. Verify
+  missing-request and late-response bounds, both complete original file variants
+  and fresh complete committed CI before release (FR-002, FR-014, FR-021).

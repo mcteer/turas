@@ -9,7 +9,7 @@ import {withPlanEvalEnvironment} from './plan-eval-environment';
 import {DEMO_IDS} from '../lib/server/bootstrap-ids';
 import {query,closeRuntimePool} from '../lib/server/db/client';
 import {assertDeterministicTestMode} from '../tests/fixtures/runtime';
-import {ordinaryNativeFileFixtureMaximumMs} from '../tests/fixtures/ordinary-native-file-steering';
+import {ordinaryNativeFileFixtureMaximumMs,waitForNativeFileFixtureResponse} from '../tests/fixtures/ordinary-native-file-steering';
 assertDeterministicTestMode();
 if(process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN||process.env.CONTEXT_API_KEY||process.env.CONTEXT_DEV_API_KEY)throw Error('Unpaid native file check requires empty provider credentials');
 const authored=resolve('agent/agent.ts'),authoredDigest=createHash('sha256').update(await readFile(authored)).digest('hex');
@@ -153,8 +153,9 @@ try{await withPlanEvalEnvironment(async environment=>{
     await page.getByLabel('Message Turi').fill('Correct this using the attached file.');
     await page.getByLabel('Chat document files',{exact:true}).setInputFiles({name:'corrected.png',mimeType:'image/png',buffer:bytes});
     await page.getByRole('button',{name:'Remove corrected.png'}).waitFor({timeout:10000});
-    const [delivery]=await Promise.all([page.waitForResponse(response=>response.request().method()==='POST'&&response.url()===environment.origin+'/eve/v1/session/'+native),boundaryMiB?submitWhileUploadPaused('corrected.png'):page.getByRole('button',{name:'Send message',exact:true}).click()]);
-    if(!delivery.ok())throw Error('Composer file correction rejected');
+    const correctionRequest=page.waitForRequest(request=>request.method()==='POST'&&request.url()===environment.origin+'/eve/v1/session/'+native,{timeout:Math.max(1,fixtureDeadlineAt-Date.now())});
+    const [delivery]=await Promise.all([waitForNativeFileFixtureResponse(correctionRequest,fixtureDeadlineAt),boundaryMiB?submitWhileUploadPaused('corrected.png'):page.getByRole('button',{name:'Send message',exact:true}).click()]);
+    if(!delivery||!delivery.ok())throw Error('Composer file correction rejected');
     await page.getByLabel('Message Turi').fill('Keep this next unsent draft.');
    }else{
    const correction=await context.request.post('/eve/v1/session/'+native,{headers:{...headers,'x-turas-conversation-id':id,'x-turas-request-key':randomUUID()},data:{turnPolicy:'steer',message:[{type:'text',text:'Correct this using the attached file.'},{type:'file',filename:'corrected.png',mediaType:'image/png',data:'data:image/png;base64,'+bytes.toString('base64')}]}});

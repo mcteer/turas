@@ -9102,3 +9102,26 @@ retirement checks pass with zero paid calls. Independent source review found no
 blocker. The new three-case ordinary unit file runs in the general unit job;
 the registered pilot inventory remains 192 suites and 1,053 cases. Fresh committed
 CI remains required. Production code, passwords and schema are unchanged.
+
+
+## 2026-10-26: correction response clock
+
+Candidate `6ae4e39` passed the native file-correction CI job. Its separate staged
+4 MiB variant failed the browser response wait. The historical log has no request
+timeline and does not establish the exact ordering. A separate controlled probe
+added 31 seconds before correction upload preparation: the original response
+wait expired before any correction request, while the simulated generation was
+still running. This is a controlled reproduction, not reconstructed CI timing.
+
+T199 observes the exact native POST before starting the unchanged 30-second
+response bound, using the observed request's cached response to retain fast
+responses. Preparation and response remain bounded by the original absolute
+420-second fixture deadline. Six unit cases pass, covering cancellation, expiry,
+preparation delay, fast response, missing request and late response with timer
+cleanup. Both complete original local variants pass sequentially. The 4 MiB
+variant retains the same declared 31-second preparation delay, returns 202 in
+199 ms after its actual request, and passes all original byte, upload-state,
+customer, history, quota and retirement assertions. The tiny variant has no
+added delay and passes its original assertions. Both retire the native session
+with HTTP 200 and make zero paid calls. Fresh complete committed CI and hosted
+release acceptance remain required; these local results do not establish them.
