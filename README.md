@@ -605,6 +605,9 @@ tracked as T193/T194, with reviewed source-only allowance handover in T195.
 The subsequent `f132777` candidate passed all 61 CI jobs; its native preflight
 correctly stopped on newly published regional pricing. T196 accounts for those
 rates conservatively while preserving the original cost and token limits.
+Candidate `2067919` passed the preview file and redeployment checks; its full CI
+catalog timed out in the exhaustive recovery test. T197 separates that test's
+independent producer lifetime within the existing whole-case bounds.
 Fresh committed checks, hosted recovery and Production release acceptance
 remain required. See [PR #47](https://github.com/mcteer/turas/pull/47).
 

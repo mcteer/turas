@@ -1200,3 +1200,10 @@ No hosted target may be locked for release before its measured reopen path exist
   checks. Extend the existing pricing regression without removing original
   assertions; require fresh committed native, CI and hosted acceptance before
   release (FR-002, FR-016, FR-019, FR-021).
+
+- [ ] T197 Give the independent recovery-verification producer in the exhaustive
+  MCP regression its own finite target lifetime after the preceding SDK and
+  drift checks. Preserve the original whole-case signal and deadline, every
+  assertion and all production target, transaction and read limits. Retain the
+  actual `2067919` CI timeout; run the exact regression and fresh complete CI
+  before acceptance (FR-002, FR-014, FR-021).

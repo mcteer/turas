@@ -9056,3 +9056,20 @@ step ceiling. The replay made no network or model calls and does not establish
 fresh native or hosted acceptance. T196 remains open pending those release
 checks. Production remains `f8d196f` / schema 077 with the restored original
 three login passwords preserved.
+
+## 2026-10-26: independent producer fixture lifetime
+
+Candidate `2067919` passed fresh unpaid native preparation, local workload and
+WebKit checks, ten actual Preview provider jobs, profile comparison and uncached
+file reads after a distinct deployment. These are scoped results, not full pilot
+acceptance. Its complete CI catalog stopped in suite 157: 912 cases passed and
+one failed, leaving 140 registered cases unexecuted. The exhaustive MCP case
+consumed its original 290-second target across earlier SDK, tamper, service and
+drift regressions before the independent producer's final integrity replay.
+The outer case signal and catalog deadline had not expired.
+
+T197 gives that independent producer a fresh target capped by the original
+whole-case deadline and preserves the existing case signal. Production's
+300-second target bound, transaction/read limits and all original assertions
+remain unchanged. Fresh local and complete committed CI results remain required.
+The original failed run is retained; Production remains `f8d196f` / schema 077.
