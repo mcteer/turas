@@ -9018,3 +9018,21 @@ remain enforced. No model/provider call was made. Root typechecking and the
 243-file documentation check pass; no case was added, filtered or skipped.
 Fresh committed CI, actual-model citation/step compliance and hosted/Production
 release acceptance remain required. T193/T194 stay open.
+
+## 2026-10-26: reviewed source-only quality allowance handover
+
+T195 allows an empty unknown-disposition list only when the actual ledger has no
+unknown dispatches and the independently reviewed resumption adds zero allowance.
+The original exact-head, authorization, expiry, unsettled request/credit and
+complete actual-unknown-set checks remain unchanged in both admission and replay.
+No unknown disposition is invented, no prior event is rewritten and no allowance,
+charge, hold, credit limit or expiry is reset.
+
+The original quality-budget file passed all 17 existing cases in 3,759 ms. The
+extended existing case exercises a clean, already continued ledger with settled
+charges and research credit, adopts a reviewed source and replays the journal
+with the same allowance, status, expiry and all prior bytes. Empty-list top-ups,
+actual omitted unknowns, stale authority/head, expired authority and unsettled
+dispatches remain denied. Root and pilot typechecking pass. These are local
+contract results; actual hosted same-ledger adoption and final committed release
+checks remain pending. T195 stays open.

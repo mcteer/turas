@@ -1585,6 +1585,13 @@ independent review digest and the separately admitted additive allowance. It can
 raise research credits, extend time, settle unknown cost or retry the uncertain
 request. Original authorization/event bytes remain unchanged.
 
+A journal with no actual unknown dispatches may use an empty `unknownDispatches`
+list only with `additionalAllowanceMicroUsd: 0` for a reviewed source change.
+The exact head, current authority, expiry and settled-work checks still apply.
+An actual unknown dispatch cannot be omitted, and an empty list cannot authorize
+additional money. This path preserves the original allowance, charges, holds,
+credits and expiry; it cannot manufacture a fresh budget for a corrected build.
+
 The operator must obtain applicable authority and independent review before calling
 this path. The command never creates an automatic allowance. New work consumes
 known charges plus permanent uncertainty reservations plus its complete published

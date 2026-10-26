@@ -1175,3 +1175,16 @@ No hosted target may be locked for release before its measured reopen path exist
   context, exact text/locator/citation consumption and existing denials.
   Preserve the original model rubric and five-step limit. Require fresh
   committed CI, actual-model and hosted acceptance (FR-010, FR-021).
+
+
+- [ ] T195 Permit an independently reviewed source-only resumption when a
+  quality ledger has no actual unknown dispatches and requests zero additional
+  allowance. Preserve exact current-head, authorization, expiry, unsettled-work
+  and complete actual-unknown-set checks. An empty disposition list must remain
+  invalid for any actual unknown dispatch or any requested additional allowance.
+  Preserve every prior event, charge, hold, original authorization and allowance;
+  do not invent unknown dispatches or wait for expiry to change an otherwise
+  unused ledger's accepted source. Extend the existing ledger regression with
+  the clean source-adoption path and monetary/unknown/stale-head denials. Require
+  fresh committed verification and actual same-ledger hosted admission before
+  release (FR-002, FR-016, FR-019, FR-021).

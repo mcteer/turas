@@ -23,10 +23,13 @@ export const qualityResumptionSchema=z.strictObject({
  contract:z.literal('pilot-quality-reviewed-resumption-v1'),id:z.uuid(),budgetId:z.uuid(),ledgerRoot:z.string().min(1).max(4096),
  originalAuthorizationDigest:digest,previousAuthorityDigest:digest,journalHeadDigest:digest,
  sourceCommit:z.string().regex(/^[a-f0-9]{40}$/),sourceDigest:digest,catalogDigest:digest,
- unknownDispatches:z.array(z.strictObject({id:z.uuid(),dispatchDigest:digest,unknownDigest:digest,permanentHoldMicroUsd:micro.positive()})).min(1).max(1000),
+ unknownDispatches:z.array(z.strictObject({id:z.uuid(),dispatchDigest:digest,unknownDigest:digest,permanentHoldMicroUsd:micro.positive()})).max(1000),
  additionalAllowanceMicroUsd:micro.max(25000000),taskAdmissionDigest:digest,independentReviewDigest:digest,
  userInstructionReference:z.string().trim().min(1).max(512),recordedAt:z.iso.datetime({offset:true}),
  uncertainRequestsMayRetry:z.literal(false),unknownChargeSettled:z.literal(false),automaticTopUp:z.literal(false),
+}).superRefine((value,ctx)=>{
+ if(value.unknownDispatches.length===0&&value.additionalAllowanceMicroUsd!==0)
+  ctx.addIssue({code:'custom',path:['additionalAllowanceMicroUsd'],message:'A source-only review cannot add allowance'});
 });
 const event=z.discriminatedUnion('kind',[
  z.strictObject({kind:z.literal('reviewed-resumption'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,approval:qualityResumptionSchema,observedAt:z.iso.datetime({offset:true})}),
@@ -115,7 +118,8 @@ export class QualityBudgetLedger{
   return {authorizationDigest:evidenceDigest(JSON.stringify(approval)),expiresAt:approval.expiresAt,budgetId:s.originalAuthority.id,originalAuthorizationUnchanged:true,capMicroUsd:s.originalAuthority.capMicroUsd,chargedMicroUsd:s.chargedMicroUsd,contextDispatches:s.creditDispatches.size};
  });}
  /** Manual, independently reviewed disposition and additive allowance only.
-  * Original unknown entries and their entire exposure remain in this journal. */
+  * Original unknown entries and their entire exposure remain in this journal.
+ * A clean journal may adopt a reviewed source only with zero added allowance. */
  async reviewResumption(raw:unknown){return this.lock(async()=>{const a=qualityResumptionSchema.parse(raw),s=await this.read(),now=Date.now();
   if(a.budgetId!==s.originalAuthority.id||a.ledgerRoot!==resolve(this.root)||a.originalAuthorizationDigest!==s.originalAuthority.authorizationDigest||a.previousAuthorityDigest!==s.authority.authorizationDigest||a.journalHeadDigest!==s.previousDigest||Date.parse(a.recordedAt)>now||now>=Date.parse(s.authority.expiresAt)||JSON.stringify(a.unknownDispatches.map(d=>d.id).sort())!==JSON.stringify([...s.unknown].sort())||new Set(a.unknownDispatches.map(d=>d.id)).size!==a.unknownDispatches.length||[...s.dispatches.keys()].some(id=>!s.settled.has(id)&&!s.unknown.has(id))||[...s.creditDispatches].some(id=>!s.creditSettled.has(id)))throw Error('Exact reviewed original-journal resumption required');
   for(const p of a.unknownDispatches){const d=s.dispatches.get(p.id)!,u=s.unknownEvents.get(p.id)!;if(!d||!u||p.dispatchDigest!==evidenceDigest(JSON.stringify(d))||p.unknownDigest!==evidenceDigest(JSON.stringify(u))||p.permanentHoldMicroUsd!==Math.max(d.ceilingMicroUsd,s.observedUnknownCharges.get(p.id)??0)||Date.parse(a.recordedAt)<Date.parse(u.observedAt))throw Error('Permanent original uncertainty hold differs');}
