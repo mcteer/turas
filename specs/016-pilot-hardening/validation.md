@@ -9036,3 +9036,23 @@ actual omitted unknowns, stale authority/head, expired authority and unsettled
 dispatches remain denied. Root and pilot typechecking pass. These are local
 contract results; actual hosted same-ledger adoption and final committed release
 checks remain pending. T195 stays open.
+
+
+## 2026-10-26: regional published pricing compatibility
+
+Candidate `f132777` passed all 61 CI jobs. Its fresh native preflight stopped
+before model/provider effects because authoritative pricing now contains
+regional overrides. The original refusal remains retained. T196 includes all
+supported regional token, service and long-context rates, conservatively treating
+cache-read rates as input rates, while retaining global fallback and rejecting
+unknown or malformed data. Provider limits and budget authority are unchanged.
+
+All eight original pricing cases pass, with the existing case extended to cover
+regional partial overrides, higher tiers/cache prices and malformed inputs.
+Root typechecking passes; an independent source review found no blocker. An
+unpaid replay of retained authoritative responses produces the original finite
+500,000-token input/output bounds and unchanged 16,000,000-microUSD worst-case
+step ceiling. The replay made no network or model calls and does not establish
+fresh native or hosted acceptance. T196 remains open pending those release
+checks. Production remains `f8d196f` / schema 077 with the restored original
+three login passwords preserved.

@@ -871,3 +871,15 @@ polling fault case that requires the same timeout, retired controls and exactly
 one committed decision. Require four-profile comparison, current-source CI,
 model evaluation and hosted verification; historical source passes are not
 substitutes.
+
+
+### T196: account for published regional inference pricing
+
+The `f132777` native preflight rejected the provider's newly published `regional`
+pricing field before any model dispatch. Parse documented absolute partial
+overrides for us/eu/au/jp and retain the maximum of every global/regional token,
+service, long-context and cache-read rate. Missing regional fields retain global
+coverage. Unknown categories and malformed rates or tier bounds fail closed.
+Preserve all original provider/token limits and budget controls. Verify the
+existing pricing cases, typechecking and fresh committed native/hosted checks;
+retained evidence replay establishes parsing behavior only.

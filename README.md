@@ -601,9 +601,12 @@ with the original failures and unchanged-source reruns retained separately.
 Its hosted preflight and retained-file reads passed, but Root session creation
 returned HTTP 409 before any response attempt or model charge. A model evaluation
 also failed its original citation and step limits. The pending corrections are
-tracked as T193/T194, with reviewed source-only allowance handover in T195;
-fresh committed checks, hosted recovery and Production
-release acceptance remain required. See [PR #47](https://github.com/mcteer/turas/pull/47).
+tracked as T193/T194, with reviewed source-only allowance handover in T195.
+The subsequent `f132777` candidate passed all 61 CI jobs; its native preflight
+correctly stopped on newly published regional pricing. T196 accounts for those
+rates conservatively while preserving the original cost and token limits.
+Fresh committed checks, hosted recovery and Production release acceptance
+remain required. See [PR #47](https://github.com/mcteer/turas/pull/47).
 
 Hosted Sandbox execution now supports fresh Vercel request OIDC, bound to the
 configured project/team and the original job lifetime. Local operator commands

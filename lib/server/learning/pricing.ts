@@ -60,18 +60,29 @@ export async function resolvePublishedLearningPrice(at=new Date()):Promise<Learn
   if(!entry||!Number.isSafeInteger(entry.context_window)||!Number.isSafeInteger(entry.max_tokens)||!entry.supported_parameters?.includes('max_tokens'))throw Error('Finite provider limits unavailable');
   const prose=document.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,' ').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ');
   if(!/hard cap on generated tokens/i.test(prose)||!prose.includes('Reasoning tokens count toward this limit.')||!prose.includes(entry.max_tokens.toLocaleString('en-US')))throw Error('Reasoning-inclusive hard cap evidence unavailable');
-  const pricing=entry.pricing;
-  if(!pricing||Object.keys(pricing).some(key=>!['input','output','input_tiers','output_tiers','input_cache_read','input_cache_read_tiers','web_search','service_tiers'].includes(key)))throw Error('Unaccounted price category');
-  const rates=(kind:'input'|'output')=>{
-   const values=[pricing[kind],...(pricing[`${kind}_tiers`]??[]).map((tier:{cost:unknown})=>tier.cost)];
-   for(const tier of Object.values(pricing.service_tiers??{}) as Array<Record<string,unknown>>){
-    if(Object.keys(tier).some(key=>!['input','output','input_cache_read','long_context'].includes(key)))throw Error('Unaccounted service tier');
-    if(tier[kind]!==undefined)values.push(tier[kind]);
-    const long=tier.long_context as Record<string,unknown>|undefined;
-    if(long){if(Object.keys(long).some(key=>!['threshold','input','output','input_cache_read'].includes(key)))throw Error('Unaccounted long-context tier');if(long[kind]!==undefined)values.push(long[kind]);}
+  const record=(value:unknown):Record<string,unknown>=>{if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Malformed published price record');return value as Record<string,unknown>;};
+  const categories=['input','output','input_tiers','output_tiers','input_cache_read','input_cache_read_tiers','web_search','service_tiers'];
+  const pricing=record(entry.pricing);
+  if(Object.keys(pricing).some(key=>![...categories,'regional'].includes(key)))throw Error('Unaccounted price category');
+  const regional=pricing.regional===undefined?{}:record(pricing.regional);
+  if(Object.keys(regional).some(key=>!['us','eu','au','jp'].includes(key)))throw Error('Unknown pricing region');
+  const groups=[pricing,...Object.values(regional).map(value=>{const row=record(value);if(Object.keys(row).some(key=>!categories.includes(key)))throw Error('Unaccounted regional price category');return row;})];
+  const rates:{input:bigint[];output:bigint[]}={input:[ratePerMillion(pricing.input)],output:[ratePerMillion(pricing.output)]};
+  const fields=['input','output','input_cache_read'] as const;
+  const add=(row:Record<string,unknown>,field:typeof fields[number])=>{if(row[field]!==undefined)rates[field==='output'?'output':'input'].push(ratePerMillion(row[field]));};
+  for(const group of groups){
+   for(const field of fields){
+    add(group,field);const tiers=group[`${field}_tiers`];
+    if(tiers!==undefined){if(!Array.isArray(tiers))throw Error('Malformed token price tiers');for(const value of tiers){const tier=record(value);if(Object.keys(tier).some(key=>!['cost','min','max'].includes(key))||typeof tier.min!=='number'||!Number.isSafeInteger(tier.min)||tier.min<0||tier.max!==undefined&&(typeof tier.max!=='number'||!Number.isSafeInteger(tier.max)||tier.max<=tier.min))throw Error('Malformed token price tier');rates[field==='output'?'output':'input'].push(ratePerMillion(tier.cost));}}
    }
-   const parsed=values.map(ratePerMillion);return parsed.reduce((a,b)=>a>b?a:b).toString();
-  };
-  return assertLearningPrice({version:'learning-price-v1',modelId:entry.id,inputMicroUsdPerMillion:rates('input'),outputMicroUsdPerMillion:rates('output'),providerInputLimit:entry.context_window,providerOutputLimit:entry.max_tokens,hardOutputCapIncludesReasoning:true,pricingSource:'https://ai-gateway.vercel.sh/v1/models',outputContractSource:'https://vercel.com/ai-gateway/models/grok-4.7',pricingCaptureDigest:learningHash(entry),outputContractCaptureDigest:learningHash(prose),verifiedAt:at.toISOString(),expiresAt:new Date(at.getTime()+86400000).toISOString()},at);
+   const services=group.service_tiers===undefined?{}:record(group.service_tiers);
+   for(const value of Object.values(services)){
+    const tier=record(value);if(Object.keys(tier).some(key=>!['input','output','input_cache_read','long_context'].includes(key)))throw Error('Unaccounted service tier');
+    for(const field of fields)add(tier,field);
+    if(tier.long_context!==undefined){const long=record(tier.long_context);if(Object.keys(long).some(key=>!['threshold','input','output','input_cache_read'].includes(key))||typeof long.threshold!=='number'||!Number.isSafeInteger(long.threshold)||long.threshold<0)throw Error('Malformed long-context tier');for(const field of fields)add(long,field);}
+   }
+  }
+  const maximum=(kind:'input'|'output')=>rates[kind].reduce((a,b)=>a>b?a:b).toString();
+  return assertLearningPrice({version:'learning-price-v1',modelId:entry.id,inputMicroUsdPerMillion:maximum('input'),outputMicroUsdPerMillion:maximum('output'),providerInputLimit:entry.context_window,providerOutputLimit:entry.max_tokens,hardOutputCapIncludesReasoning:true,pricingSource:'https://ai-gateway.vercel.sh/v1/models',outputContractSource:'https://vercel.com/ai-gateway/models/grok-4.7',pricingCaptureDigest:learningHash(entry),outputContractCaptureDigest:learningHash(prose),verifiedAt:at.toISOString(),expiresAt:new Date(at.getTime()+86400000).toISOString()},at);
  }catch(error){if(error instanceof HttpFailure)throw error;throw new HttpFailure(503,'pricing_unavailable','Verified provider pricing and reasoning-inclusive limits unavailable');}
 }

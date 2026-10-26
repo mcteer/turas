@@ -1188,3 +1188,15 @@ No hosted target may be locked for release before its measured reopen path exist
   the clean source-adoption path and monetary/unknown/stale-head denials. Require
   fresh committed verification and actual same-ledger hosted admission before
   release (FR-002, FR-016, FR-019, FR-021).
+
+
+- [ ] T196 Preserve the actual `f132777` native pricing refusal and all 61
+  successful CI checks. Account for documented absolute regional price overrides
+  across supported regions, including token tiers, service/long-context tiers
+  and cache-read rates. Reserve the conservative maximum across global and
+  regional rates, inheriting missing regional fields from global prices. Reject
+  malformed or unknown categories. Preserve finite provider limits, reasoning
+  inclusion, model selection, existing allowances and authorization/expiry
+  checks. Extend the existing pricing regression without removing original
+  assertions; require fresh committed native, CI and hosted acceptance before
+  release (FR-002, FR-016, FR-019, FR-021).
