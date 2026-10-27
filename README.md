@@ -1411,3 +1411,11 @@ denials at the independent producer boundary and rebinds the original measured
 transcripts without renewing their completion times. Product freshness and
 case deadlines remain unchanged. Fresh complete CI, model and hosted acceptance
 are still required.
+
+The `0790d39` pilot candidate passed all1,053 original local cases. CI then
+exposed a second recovery scenario sharing a spent whole-case deadline; live
+model checks exposed inaccurate Pending-proposal guidance and an accounting
+cancellation race. The follow-up gives the fresh CLI lifecycle its own owned
+case (1,054 cases total), corrects guidance and persists complete known charges
+before propagating cancellation. Unknown charges remain reserved. Fresh complete
+CI, model, hosted and Production release checks remain required.

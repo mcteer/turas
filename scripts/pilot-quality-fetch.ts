@@ -48,7 +48,18 @@ export function budgetedGatewayFetch(input:{ledger:QualityBudgetLedger;attemptId
   let id:string;
   try{id=await input.ledger.dispatchWhenAvailable(ceiling,input.attemptId,signal);}catch(error){if(error instanceof Error&&error.message==='Evaluation budget prevents dispatch')await input.denied?.(ceiling);throw error;}
   const aborted=()=>{void input.ledger.hold(id,'aborted').catch(()=>undefined);};signal.addEventListener('abort',aborted,{once:true});
-  const held=async(reason:'provider_error'|'incomplete_stream'|'invalid_accounting')=>{await input.ledger.hold(id,reason);signal.removeEventListener('abort',aborted);};
+  let accountingComplete=false,settled=false,terminalSettlement:Promise<void>|undefined;
+  const held=async(reason:'provider_error'|'incomplete_stream'|'invalid_accounting')=>{if(!settled)await input.ledger.hold(id,reason);signal.removeEventListener('abort',aborted);};
+  const settleKnown=(receipt:Accounting)=>{
+   // A complete terminal receipt ends transport uncertainty before the durable
+   // journal write. An earlier queued hold still wins; failed writes still hold.
+   accountingComplete=true;signal.removeEventListener('abort',aborted);
+   return terminalSettlement=(async()=>{
+    try{await input.ledger.settle(id,receipt);settled=true;}catch(error){await held('invalid_accounting');throw error;}
+    // Persist the known charge without turning caller cancellation into success.
+    signal.throwIfAborted();
+   })();
+  };
   let phase:QualityFailureEvidence['phase']='transport',status:number|undefined,metadataId:string|undefined,gatewayGenerationId:string|undefined,failureCaptured=false;const failed=async(extra:Partial<QualityFailureEvidence>={})=>{if(failureCaptured)return;failureCaptured=true;await input.failed?.({dispatchId:id,phase,...(status!==undefined?{status}:{}),...(gatewayGenerationId?{gatewayGenerationId}:{}),...(metadataId&&/^[A-Za-z0-9_:-]{1,256}$/.test(metadataId)?{upstreamResponseId:metadataId}:{}),...extra});};
   try{
    signal.throwIfAborted();const response=await input.fetch(resource,{...init,signal});
@@ -63,15 +74,15 @@ export function budgetedGatewayFetch(input:{ledger:QualityBudgetLedger;attemptId
     const observedGatewayId=raw.providerMetadata?.gateway?.generationId;
     if(typeof observedGatewayId==='string'&&/^[A-Za-z0-9_:-]{1,256}$/.test(observedGatewayId))gatewayGenerationId=observedGatewayId;
     if(typeof raw.response?.id==='string')metadataId=raw.response.id;
-    await input.ledger.settle(id,accounting(raw,raw.response?.id));signal.removeEventListener('abort',aborted);
+    await settleKnown(accounting(raw,raw.response?.id));
     return new Response(bytes,{status:response.status,statusText:response.statusText,headers:response.headers});
    }
    if(!response.headers.get('content-type')?.includes('text/event-stream')){await held('invalid_accounting');throw Error('Gateway response accounting unsupported');}
    const reader=response.body.getReader(),decoder=new TextDecoder();let pending='',size=0,finish:unknown,finished=false;phase='stream';
    const observe=(text:string)=>{pending+=text;if(pending.length>4*1024*1024)throw Error('Evaluation stream frame exceeds bound');const lines=pending.split('\n');pending=lines.pop()!;for(const line of lines){if(!line.startsWith('data:'))continue;const data=line.slice(5).trim();if(!data||data==='[DONE]')continue;const part=JSON.parse(data);const observedGatewayId=part.providerMetadata?.gateway?.generationId??part.error?.providerMetadata?.gateway?.generationId;if(typeof observedGatewayId==='string'&&/^[A-Za-z0-9_:-]{1,256}$/.test(observedGatewayId))gatewayGenerationId=observedGatewayId;if(part.type==='response-metadata')metadataId=part.id;if(part.type==='finish'){if(finish)throw Error('Repeated Gateway accounting');finish=part;}if(part.type==='error')throw Error('Gateway stream failed');}};
    const stream=new ReadableStream<Uint8Array>({
-    async pull(controller){try{const part=await reader.read();if(part.done){observe(decoder.decode()+'\n');if(!finish)throw Error('Gateway stream lacks final accounting');await input.ledger.settle(id,accounting(finish,metadataId));finished=true;signal.removeEventListener('abort',aborted);controller.close();return;}size+=part.value.byteLength;if(size>20*1024*1024)throw Error('Evaluation response exceeds bound');observe(decoder.decode(part.value,{stream:true}));controller.enqueue(part.value);}catch(error){await held('incomplete_stream');await failed();await reader.cancel().catch(()=>undefined);controller.error(error);}},
-    async cancel(){if(!finished){await held('incomplete_stream');await failed();}await reader.cancel();},
+    async pull(controller){try{const part=await reader.read();if(part.done){observe(decoder.decode()+'\n');if(!finish)throw Error('Gateway stream lacks final accounting');await settleKnown(accounting(finish,metadataId));finished=true;controller.close();return;}size+=part.value.byteLength;if(size>20*1024*1024)throw Error('Evaluation response exceeds bound');observe(decoder.decode(part.value,{stream:true}));controller.enqueue(part.value);}catch(error){await held('incomplete_stream');await failed();await reader.cancel().catch(()=>undefined);controller.error(error);}},
+    async cancel(){if(accountingComplete)await terminalSettlement?.catch(()=>undefined);if(!finished&&!accountingComplete){await held('incomplete_stream');await failed();}await reader.cancel();},
    });
    return new Response(stream,{status:response.status,statusText:response.statusText,headers:response.headers});
   }catch(error){await held('provider_error');await failed();throw error;}

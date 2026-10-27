@@ -9242,3 +9242,49 @@ typechecks pass, as does the243-file documentation check. Fresh complete
 committed catalog, CI, model and hosted gates remain pending; earlier
 Preview/native/UI/load results retain their exact `2b5e11c` scope. Production
 remains on the restored credential release.
+
+### Successor of0790d39: three demonstrated blockers — 2026-10-27
+
+The original0790d39 no-filter local catalog passed all1,053 cases/192 suites.
+Main CI finished51 successful/three failed jobs; Legacy7 succeeded. Two unchanged
+014 feedback wrappers exceeded their original30-second mobile WebKit case; an
+isolated original-job rerun is diagnostic, not complete successor acceptance.
+The recovery producer passed T203, but the second explicit CLI scenario started
+after343.691s and exhausted the original420-second whole case.
+
+T204 separates the latter scenario into an independent420-second test with its
+own380-second signal and450-second owned-resource lifecycle, retaining170-second
+physical-target setup, original public CLI clocks, explicit locked restart,
+separate cold original-source database copies, distinct committed verification
+identities, probe-free resume, changed-mapping refusal and final resolution/open.
+Its new case026 is appended; earlier case IDs remain unchanged. The original
+exhaustive SDK/drift/producer scenario retains its assertions and clocks.
+
+The live original23-command attempt stopped after00211/12,00312/12 and the first
+004 embedding. The save-profile run2 refusal incorrectly required a message-span
+citation for the already-permitted uncited Pending agent_proposal path. T205
+changes authored guidance only; it does not accept facts or change approval.
+A separate unpaid probe reproduced abort racing valid accounting settlement;
+it does not establish the exact cause of the historical embedding exception.
+T206 ends abort-to-hold only after complete valid terminal JSON/SSE accounting,
+then persists the charge and propagates cancellation. Failed settlement and
+pre-existing uncertainty remain held. All30 targeted ledger/fetch cases pass,
+including complete-receipt abort/cancel, pre-receipt abort, queued unknown and
+settlement-failure cases. Independent source review found no blocker.
+
+The Main ledger retains both actual unknowns:16,000,000 and6,000 microUSD.
+Their conservative disposition preserves the entire16.006-dollar hold,
+20.403794-dollar settled total and56.125-dollar cap, with no provider lookup,
+refund, retry or new model request. These are bookkeeping results, not receipt
+settlement. Fresh committed complete validation, all61 CI jobs, full model
+evaluation, hosted recovery and Production acceptance remain pending.
+
+The original exhaustive coverage case passes in150.053s after extraction. The
+first split invocation retained that pass but failed the new case because its
+compiled version lacked the required owned host journal. That failure remains
+retained. With a fresh bounded journal per attempt, the new original CLI case
+passes in77.764s (one selected/25 not selected). The full26-case suite and1,054
+catalog have not yet been claimed. The final37 targeted fetch/ledger/instruction
+cases pass, and root/pilot typechecks and243-file documentation checks pass.
+SSE cancellation additionally waits for the terminal settlement or completed
+failure hold before returning, so teardown cannot leave that write unjoined.

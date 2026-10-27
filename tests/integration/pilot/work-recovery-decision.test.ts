@@ -120,6 +120,35 @@ async function controlledPhysicalIntegrity(input:Parameters<typeof withLockedWor
   process.env.VERCEL_BLOB_RETRIES='0';return {material,proof:await measureWorkTargetIntegrity(material)};
  }finally{key.fill(0);}
 }
+
+function workCategoryTransport(input:Parameters<typeof withLockedWorkRecoveryTarget>[0],target:Parameters<typeof requireLockedWorkRecoveryConnection>[1],configuration:()=>ReturnType<typeof syntheticRestoredConfiguration>|undefined,transform:(response:Response)=>Promise<Response>=async response=>response):typeof fetch{
+ return async(url,options)=>{
+    const incoming=new Request(url,options),address=new URL(incoming.url),headers=new Headers(incoming.headers);headers.set('host',address.host);
+    const platform=controlledEffectsPlatform(incoming);if(platform)return platform;
+    if(address.pathname==='/api/auth/session'){
+     const original=address.origin+'/api/auth/session',header=incoming.headers.has('x-vercel-protection-bypass'),query=address.searchParams.has('x-vercel-protection-bypass'),cookie=incoming.headers.has('cookie');
+     if(!header&&!query&&!cookie)return new Response(null,{status:302,headers:{location:'https://vercel.com/sso-api?url='+encodeURIComponent(original)}});
+     if(incoming.headers.has('x-vercel-set-bypass-cookie'))return new Response(null,{status:307,headers:{location:original,'set-cookie':'_vercel_jwt=controlled_effects_cookie; Path=/; Secure; HttpOnly; SameSite=Lax'}});
+     return Response.json({error:{code:'authentication_required'}},{status:401,headers:{'x-turas-code-version':state.commit}});
+    }
+    if(['/api/internal/research-maintenance','/eve/v1/turas/jobs'].includes(address.pathname))return withTargetRuntime(input,target,async()=>{if(address.pathname==='/api/internal/research-maintenance'){const {GET}=await import('../../../app/api/internal/research-maintenance/route');return GET(incoming);}const {authorizeHeavyDispatch,assertHostedDispatchReady}=await import('../../../lib/server/operations/dispatch'),{failure,success}=await import('../../../lib/contracts/http');try{authorizeHeavyDispatch(incoming);await assertHostedDispatchReady();return success({status:'accepted'});}catch(error){return failure(error);}});
+    if(address.origin!==target.origin)throw Error('Controlled MCP category transport left target');
+    if(incoming.method==='GET')return withTargetRuntime(input,target,async()=>{
+     const request=new Request(incoming,{headers}),id=address.pathname.split('/')[4];
+     if(address.pathname==='/api/operations/status'&&configuration())return withSyntheticRestoredConfiguration(configuration()!,async()=>{const {GET}=await import('../../../app/api/operations/status/route');const response=await GET(request);response.headers.set('x-turas-code-version',state.commit);return response;});
+     if(address.pathname.startsWith('/api/customers/')){const {GET}=await import('../../../app/api/customers/[customerId]/profile/route');return GET(request,{params:Promise.resolve({customerId:address.pathname.split('/')[3]})});}
+     if(address.pathname.startsWith('/api/conversations/')){const {GET}=await import('../../../app/api/conversations/[id]/route');return GET(request,{params:Promise.resolve({id:address.pathname.split('/')[3]})});}
+     if(address.pathname.endsWith('/profile')){const {GET}=await import('../../../app/api/operations/recovery-read/[admissionId]/profile/route');return GET(request,{params:Promise.resolve({admissionId:id})});}
+     if(address.pathname.endsWith('/conversation')){const {GET}=await import('../../../app/api/operations/recovery-read/[admissionId]/conversation/route');return GET(request,{params:Promise.resolve({admissionId:id})});}
+     if(address.pathname.endsWith('/artifact')){const {GET}=await import('../../../app/api/operations/recovery-read/[admissionId]/artifact/route');return GET(request,{params:Promise.resolve({admissionId:id})});}
+     throw Error('Controlled service GET unavailable');
+    });
+    if(!address.pathname.endsWith('/mcp')&&address.pathname!=='/api/mcp/v1')throw Error('Controlled MCP category transport left target');
+    if(address.pathname==='/api/mcp/v1')return withTargetRuntime(input,target,()=>handleMcpRequest(new Request(incoming,{headers})));
+    const response=await withTargetRuntime(input,target,()=>maintenanceMcp(new Request(incoming,{headers}),{params:Promise.resolve({admissionId:address.pathname.split('/')[4]})}));
+    return transform(response);
+ };
+}
 it('commits a pending recovery decision only after live checks and rolls back drift cancellation and callback commit attempts',async()=>fixture(async input=>{
  const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
  try{
@@ -203,32 +232,9 @@ it('measures exhaustive fresh work MCP category pages through SDK and rejects ch
    let selectedTarget:Parameters<typeof requireLockedWorkRecoveryConnection>[1]|undefined;
    await withLockedWorkRecoveryTarget(input,async(_db,target)=>{selectedTarget=target;});const target=selectedTarget!;let corrupt=false,uncorruptedIdentities=0;let restoredConfiguration:ReturnType<typeof syntheticRestoredConfiguration>|undefined;
    const identityObservations:{categories:unknown;mutated:boolean}[]=[];
-   const transport=vi.spyOn(globalThis,'fetch').mockImplementation(async(url,options)=>{
-    const incoming=new Request(url,options),address=new URL(incoming.url),headers=new Headers(incoming.headers);headers.set('host',address.host);
-    const platform=controlledEffectsPlatform(incoming);if(platform)return platform;
-    if(address.pathname==='/api/auth/session'){
-     const original=address.origin+'/api/auth/session',header=incoming.headers.has('x-vercel-protection-bypass'),query=address.searchParams.has('x-vercel-protection-bypass'),cookie=incoming.headers.has('cookie');
-     if(!header&&!query&&!cookie)return new Response(null,{status:302,headers:{location:'https://vercel.com/sso-api?url='+encodeURIComponent(original)}});
-     if(incoming.headers.has('x-vercel-set-bypass-cookie'))return new Response(null,{status:307,headers:{location:original,'set-cookie':'_vercel_jwt=controlled_effects_cookie; Path=/; Secure; HttpOnly; SameSite=Lax'}});
-     return Response.json({error:{code:'authentication_required'}},{status:401,headers:{'x-turas-code-version':state.commit}});
-    }
-    if(['/api/internal/research-maintenance','/eve/v1/turas/jobs'].includes(address.pathname))return withTargetRuntime(input,target,async()=>{if(address.pathname==='/api/internal/research-maintenance'){const {GET}=await import('../../../app/api/internal/research-maintenance/route');return GET(incoming);}const {authorizeHeavyDispatch,assertHostedDispatchReady}=await import('../../../lib/server/operations/dispatch'),{failure,success}=await import('../../../lib/contracts/http');try{authorizeHeavyDispatch(incoming);await assertHostedDispatchReady();return success({status:'accepted'});}catch(error){return failure(error);}});
-    if(address.origin!==target.origin)throw Error('Controlled MCP category transport left target');
-    if(incoming.method==='GET')return withTargetRuntime(input,target,async()=>{
-     const request=new Request(incoming,{headers}),id=address.pathname.split('/')[4];
-     if(address.pathname==='/api/operations/status'&&restoredConfiguration)return withSyntheticRestoredConfiguration(restoredConfiguration,async()=>{const {GET}=await import('../../../app/api/operations/status/route');const response=await GET(request);response.headers.set('x-turas-code-version',state.commit);return response;});
-     if(address.pathname.startsWith('/api/customers/')){const {GET}=await import('../../../app/api/customers/[customerId]/profile/route');return GET(request,{params:Promise.resolve({customerId:address.pathname.split('/')[3]})});}
-     if(address.pathname.startsWith('/api/conversations/')){const {GET}=await import('../../../app/api/conversations/[id]/route');return GET(request,{params:Promise.resolve({id:address.pathname.split('/')[3]})});}
-     if(address.pathname.endsWith('/profile')){const {GET}=await import('../../../app/api/operations/recovery-read/[admissionId]/profile/route');return GET(request,{params:Promise.resolve({admissionId:id})});}
-     if(address.pathname.endsWith('/conversation')){const {GET}=await import('../../../app/api/operations/recovery-read/[admissionId]/conversation/route');return GET(request,{params:Promise.resolve({admissionId:id})});}
-     if(address.pathname.endsWith('/artifact')){const {GET}=await import('../../../app/api/operations/recovery-read/[admissionId]/artifact/route');return GET(request,{params:Promise.resolve({admissionId:id})});}
-     throw Error('Controlled service GET unavailable');
-    });
-    if(!address.pathname.endsWith('/mcp')&&address.pathname!=='/api/mcp/v1')throw Error('Controlled MCP category transport left target');
-    if(address.pathname==='/api/mcp/v1')return withTargetRuntime(input,target,()=>handleMcpRequest(new Request(incoming,{headers})));
-    const response=await withTargetRuntime(input,target,()=>maintenanceMcp(new Request(incoming,{headers}),{params:Promise.resolve({admissionId:address.pathname.split('/')[4]})}));
+   const transport=vi.spyOn(globalThis,'fetch').mockImplementation(workCategoryTransport(input,target,()=>restoredConfiguration,async response=>{
     if(corrupt&&response.status===200){const rpc=await response.json();if(rpc.result?.structuredContent?.data?.workspaceId){const original=rpc.result.structuredContent.data.workspaceId;if(uncorruptedIdentities>0)uncorruptedIdentities--;else rpc.result.structuredContent.data.workspaceId=randomUUID();identityObservations.push({categories:rpc.result.structuredContent.data.categories,mutated:rpc.result.structuredContent.data.workspaceId!==original});}return Response.json(rpc,{headers:response.headers});}return response;
-   });
+   }));
    try{
     const args={target:input,selection:{workspaceId,username:'mcteer' as const,category:'profiles' as const,customerId},password:process.env.TURAS_DEMO_PASSWORD!,retained,journalDirectory:dirname(input.sourceFile)};
     observe('initial-category');const proof=await measureWorkMcpCategory(args);expect(proof).toMatchObject({calls:5,boundaryCalls:2,actualSdkVerified:true,categoryCoverageVerified:true,probeRetirementVerified:true,requiredScopeHealthy:false,restorationReady:false});
@@ -376,32 +382,7 @@ it('measures exhaustive fresh work MCP category pages through SDK and rejects ch
     const probesBefore=(await owner.query('SELECT count(*)::int AS n FROM operations_recovery_http_reads')).rows[0].n;expect(await resumeCommittedWorkRecoveryVerification(input,physical.material)).toMatchObject({verificationId:produced.verificationId,resumed:true});expect((await owner.query('SELECT count(*)::int AS n FROM operations_recovery_http_reads')).rows[0].n).toBe(probesBefore);
     await expect(measureWorkMcpCategory({...args,target:input})).rejects.toThrow('Committed recovery verification requires read-only');expect((await owner.query('SELECT count(*)::int AS n FROM operations_recovery_http_reads')).rows[0].n).toBe(probesBefore);
     await owner.query('BEGIN');await owner.query('UPDATE customer_profile_state SET internal_generation=internal_generation+1 WHERE customer_id=$1',[customerId]);await owner.query('COMMIT');await expect(resumeCommittedWorkRecoveryVerification(input,physical.material)).rejects.toThrow('Existing recovery verification is stale or changed');
-    observe('explicit-fresh-attempt');const {transitionRecoveryControl}=await import('../../../lib/server/operations/control'),next=await transitionRecoveryControl(owner,{environmentId:input.scope.environmentId,recoveryId:input.scope.recoveryId,expectedRevision:input.scope.controlRevision,operationId:randomUUID(),mode:'locked',restartVerification:true});
-    const retry={...input,scope:{...input.scope,controlRevision:next.revision},deadline:Date.now()+170000},retryRoot=join(dirname(input.sourceFile),'fresh-attempt');await mkdir(retryRoot,{mode:0o700});diagnosticTarget=retry;
-    const retryPhysical=await controlledPhysicalIntegrity(retry,'composition-integrity-fresh');
-    await withRetainedDenialFixture(owner,retry.scope.environmentId,retryRoot,{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async freshRetained=>{
-     const {pilotWorkRecoveryVerify}=await import('../../../scripts/pilot-work-recovery-verify'),candidateFile=join(retryRoot,'candidate.json'),runtimeFile=join(retryRoot,'runtime-private.json'),credentialsFile=join(retryRoot,'credentials-private.json'),configurationFile=join(retryRoot,'configuration-private.json');
-     for(const [path,value] of [[candidateFile,retryPhysical.material.candidate],[runtimeFile,{connection:retry.runtimeConnection}],[credentialsFile,{token,cronSecret:secret,protectionBypass:key,oidcToken:retryPhysical.material.oidcToken,passwords}]] as const)await writeFile(path,JSON.stringify(value),{mode:0o600,flag:'wx'});
-     // Real separate source database: provider/DNS/key placement alone are
-     // controlled. Refresh must cold-retain actual original-source SQL bytes.
-     const execute=promisify(execFile),cloneName='turas_original_'+randomUUID().replaceAll('-',''),dump='/tmp/'+cloneName+'.dump',actualSource=new URL(requireOwnedPilotDatabase(process.env,true));actualSource.pathname='/'+cloneName;
-     const label=(await execute('docker',['inspect','--format','{{index .Config.Labels "turas.016.owner"}}',state.container])).stdout.trim();
-     if(label!==state.containerOwner)throw Error('Exact owned original-copy container required');
-     await owner.query('CREATE DATABASE "'+cloneName+'"');
-     try{
-      await execute('docker',['exec',state.container,'pg_dump','--username=postgres','--dbname='+new URL(requireOwnedPilotDatabase(process.env,true)).pathname.slice(1),'--format=custom','--file='+dump],{timeout:30000});
-      await execute('docker',['exec',state.container,'pg_restore','--username=postgres','--dbname='+cloneName,'--exit-on-error',dump],{timeout:30000});
-      const descriptor=JSON.parse(await readFile(retry.sourceFile,'utf8')),selectedSource=new URL(descriptor.databaseUrl);selectedSource.hostname='original.fixture.neon.tech';selectedSource.pathname='/'+cloneName;state.connections.set(selectedSource.href,actualSource.href);
-      const denialSourceFile=join(retryRoot,'original-source.json');await writeFile(denialSourceFile,JSON.stringify({...descriptor,databaseUrl:selectedSource.href}),{mode:0o600,flag:'wx'});state.allowCapture=true;
-     restoredConfiguration=syntheticRestoredConfiguration(retry);
-     const configuration={contract:'pilot-work-recovery-verification-input-v4',restoredStore:{originalStoreId:retryPhysical.material.storeId,expectedConfiguration:restoredConfiguration},sourceFile:retry.sourceFile,hostedScope:{...retry.hostedScope,workspaceId},scope:retry.scope,runtimeFile,credentialsFile,candidateFile,bundle:retryPhysical.material.bundle,keyFile:retryPhysical.material.keyFile,assetRoot:retryPhysical.material.assetRoot,storeId:restoredConfiguration.storeId,denialSourceFile,denialReceipt:join(retryRoot,'retained-receipt-private.json'),denialDestination:join(retryRoot,'retained-destination-private.json'),backupCapturedAt:freshRetained.backupCapturedAt,hostJournalDirectory:join(dirname(input.sourceFile),'producer-http-journal'),approvedHosts:['recovery.vercel.app'],output:join(retryRoot,'cli-verification')};await writeFile(configurationFile,JSON.stringify(configuration),{mode:0o600,flag:'wx'});
-     const fresh=await pilotWorkRecoveryVerify(['--verify-work-recovery','--configuration',configurationFile]);
-     const beforeResume=(await owner.query('SELECT count(*)::int AS n FROM operations_recovery_http_reads')).rows[0].n,beforeResumeSessions=(await owner.query('SELECT count(*)::int AS n FROM login_sessions')).rows[0].n,beforeResumeIntents=(await readdir(join(retryRoot,'cli-verification'))).filter(name=>/^probe-.*-intent\.json$/.test(name)).length,resumeConfiguration=join(retryRoot,'resume-configuration-private.json');await writeFile(resumeConfiguration,JSON.stringify({...configuration,output:join(retryRoot,'cli-resume')}),{mode:0o600,flag:'wx'});expect(await pilotWorkRecoveryVerify(['--verify-work-recovery','--configuration',resumeConfiguration])).toMatchObject({verificationId:fresh.verificationId,resumed:true});expect((await owner.query('SELECT count(*)::int AS n FROM operations_recovery_http_reads')).rows[0].n).toBe(beforeResume);expect((await owner.query('SELECT count(*)::int AS n FROM login_sessions')).rows[0].n).toBe(beforeResumeSessions);expect((await readdir(join(retryRoot,'cli-verification'))).filter(name=>/^probe-.*-intent\.json$/.test(name)).length).toBe(beforeResumeIntents);expect((await readdir(join(retryRoot,'cli-resume'))).filter(name=>/^probe-.*-intent\.json$/.test(name))).toEqual([]);
-     const changedMapping=join(retryRoot,'changed-mapping-private.json');await writeFile(changedMapping,JSON.stringify({...configuration,restoredStore:{...configuration.restoredStore,expectedConfiguration:{...restoredConfiguration,maximumSandboxDispatches:2}},output:join(retryRoot,'cli-changed-mapping')}),{mode:0o600,flag:'wx'});await expect(pilotWorkRecoveryVerify(['--verify-work-recovery','--configuration',changedMapping])).rejects.toThrow('Existing recovery verification is stale or changed');expect((await owner.query('SELECT count(*)::int AS n FROM login_sessions')).rows[0].n).toBe(beforeResumeSessions);expect((await readdir(join(retryRoot,'cli-verification'))).filter(name=>/^probe-.*-intent\.json$/.test(name)).length).toBe(beforeResumeIntents);expect((await readdir(join(retryRoot,'cli-changed-mapping'))).filter(name=>/^probe-.*-intent\.json$/.test(name))).toEqual([]);
-     expect(fresh).toMatchObject({resumed:false,serviceOpened:false});expect(fresh.verificationId).not.toBe(produced.verificationId);expect((await owner.query('SELECT count(*)::int AS n FROM operations_recovery_verifications')).rows[0].n).toBe(2);
-     const {resolveRecoveryQuarantines}=await import('../../../lib/server/operations/recovery-resolution');await resolveRecoveryQuarantines(owner,{...retry.scope,verificationId:fresh.verificationId});expect(await transitionRecoveryControl(owner,{environmentId:retry.scope.environmentId,recoveryId:retry.scope.recoveryId,expectedRevision:retry.scope.controlRevision,operationId:randomUUID(),mode:'open',verifiedBundleDigest:fresh.bundleDigest})).toMatchObject({mode:'open'});
-     }finally{state.allowCapture=false;await execute('docker',['exec',state.container,'rm','-f',dump],{timeout:10000});await owner.query('DROP DATABASE "'+cloneName+'" WITH(FORCE)');}
-    });
+
 
 
    }finally{for(const restore of restoreObservations)restore();transport.mockRestore();}
@@ -1305,3 +1286,52 @@ it('prepares canonical decision denials once while rejecting copied authority an
   },snapshot=>{snapshot.capturedAt=new Date(Date.now()-60000).toISOString();},new Date(Date.now()-120000).toISOString());}finally{await owner.end();}
  });
 },210000);
+
+
+it('verifies an explicit fresh recovery CLI attempt, resumes without probes and rejects changed restored mappings',async()=>{
+ let workspaceId='',customerId='';const conversationIds:string[]=[];
+ await fixture(async input=>{
+  const caseDeadline=Date.now()+380000;input={...input,signal:AbortSignal.timeout(380000),deadline:Date.now()+290000};
+  const token='controlled-effects-token',key='controlled_effects_automation_key',secret=randomBytes(32).toString('base64url'),previousCron=process.env.CRON_SECRET;process.env.CRON_SECRET=secret;
+  const passwords={mcteer:process.env.TURAS_DEMO_PASSWORD!,panel:process.env.PANEL_PASSWORD!,partner:process.env.PARTNER_PASSWORD!};
+  const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
+  let restoredConfiguration:ReturnType<typeof syntheticRestoredConfiguration>|undefined,previousVerificationId:string|undefined;
+  try{
+   let selectedTarget:Parameters<typeof requireLockedWorkRecoveryConnection>[1]|undefined;
+   await withLockedWorkRecoveryTarget(input,async(_db,target)=>{selectedTarget=target;});
+   const transport=vi.spyOn(globalThis,'fetch').mockImplementation(workCategoryTransport(input,selectedTarget!,()=>restoredConfiguration));
+   try{for(let attempt=0;attempt<2;attempt++){
+    if(attempt===1){const {transitionRecoveryControl}=await import('../../../lib/server/operations/control'),next=await transitionRecoveryControl(owner,{environmentId:input.scope.environmentId,recoveryId:input.scope.recoveryId,expectedRevision:input.scope.controlRevision,operationId:randomUUID(),mode:'locked',restartVerification:true});input={...input,scope:{...input.scope,controlRevision:next.revision}};}
+    const retry={...input,deadline:Math.min(Date.now()+170000,caseDeadline)},retryRoot=join(dirname(input.sourceFile),'fresh-attempt-'+attempt);await mkdir(retryRoot,{mode:0o700});
+    const retryPhysical=await controlledPhysicalIntegrity(retry,'composition-integrity-fresh-'+attempt);
+    await PilotHostHttpJournal.create(join(retryRoot,'producer-http-journal'),{contract:'pilot-host-http-journal-plan-v1',id:randomUUID(),projectId:'prj_recovery',teamId:'team_recovery',sourceCommit:state.commit,maximumRequests:20,maximumCostMicroUsd:100000,expiresAt:new Date(Date.now()+3600000).toISOString(),authorityReference:'Controlled owned fresh CLI authority',previousJournalDigests:['b'.repeat(64)],historicalStrictFailureRetained:true,unknownCostHoldsRetained:true,automaticRetries:false});
+    await withRetainedDenialFixture(owner,retry.scope.environmentId,retryRoot,{mapConnection:(selected,actual)=>state.connections.set(selected,actual),selectKey:key=>{state.retainedKey=key;}},async freshRetained=>{
+     const {pilotWorkRecoveryVerify}=await import('../../../scripts/pilot-work-recovery-verify'),candidateFile=join(retryRoot,'candidate.json'),runtimeFile=join(retryRoot,'runtime-private.json'),credentialsFile=join(retryRoot,'credentials-private.json'),configurationFile=join(retryRoot,'configuration-private.json');
+     for(const [path,value] of [[candidateFile,retryPhysical.material.candidate],[runtimeFile,{connection:retry.runtimeConnection}],[credentialsFile,{token,cronSecret:secret,protectionBypass:key,oidcToken:retryPhysical.material.oidcToken,passwords}]] as const)await writeFile(path,JSON.stringify(value),{mode:0o600,flag:'wx'});
+     // Real separate source database: provider/DNS/key placement alone are
+     // controlled. Refresh must cold-retain actual original-source SQL bytes.
+     const execute=promisify(execFile),cloneName='turas_original_'+randomUUID().replaceAll('-',''),dump='/tmp/'+cloneName+'.dump',actualSource=new URL(requireOwnedPilotDatabase(process.env,true));actualSource.pathname='/'+cloneName;
+     const label=(await execute('docker',['inspect','--format','{{index .Config.Labels "turas.016.owner"}}',state.container])).stdout.trim();
+     if(label!==state.containerOwner)throw Error('Exact owned original-copy container required');
+     await owner.query('CREATE DATABASE "'+cloneName+'"');
+     try{
+      await execute('docker',['exec',state.container,'pg_dump','--username=postgres','--dbname='+new URL(requireOwnedPilotDatabase(process.env,true)).pathname.slice(1),'--format=custom','--file='+dump],{timeout:30000});
+      await execute('docker',['exec',state.container,'pg_restore','--username=postgres','--dbname='+cloneName,'--exit-on-error',dump],{timeout:30000});
+      const descriptor=JSON.parse(await readFile(retry.sourceFile,'utf8')),selectedSource=new URL(descriptor.databaseUrl);selectedSource.hostname='original.fixture.neon.tech';selectedSource.pathname='/'+cloneName;state.connections.set(selectedSource.href,actualSource.href);
+      const denialSourceFile=join(retryRoot,'original-source.json');await writeFile(denialSourceFile,JSON.stringify({...descriptor,databaseUrl:selectedSource.href}),{mode:0o600,flag:'wx'});state.allowCapture=true;
+     restoredConfiguration=syntheticRestoredConfiguration(retry);
+     const configuration={contract:'pilot-work-recovery-verification-input-v4',restoredStore:{originalStoreId:retryPhysical.material.storeId,expectedConfiguration:restoredConfiguration},sourceFile:retry.sourceFile,hostedScope:{...retry.hostedScope,workspaceId},scope:retry.scope,runtimeFile,credentialsFile,candidateFile,bundle:retryPhysical.material.bundle,keyFile:retryPhysical.material.keyFile,assetRoot:retryPhysical.material.assetRoot,storeId:restoredConfiguration.storeId,denialSourceFile,denialReceipt:join(retryRoot,'retained-receipt-private.json'),denialDestination:join(retryRoot,'retained-destination-private.json'),backupCapturedAt:freshRetained.backupCapturedAt,hostJournalDirectory:join(retryRoot,'producer-http-journal'),approvedHosts:['recovery.vercel.app'],output:join(retryRoot,'cli-verification')};await writeFile(configurationFile,JSON.stringify(configuration),{mode:0o600,flag:'wx'});
+     const fresh=await pilotWorkRecoveryVerify(['--verify-work-recovery','--configuration',configurationFile]);
+     const beforeResume=(await owner.query('SELECT count(*)::int AS n FROM operations_recovery_http_reads')).rows[0].n,beforeResumeSessions=(await owner.query('SELECT count(*)::int AS n FROM login_sessions')).rows[0].n,beforeResumeIntents=(await readdir(join(retryRoot,'cli-verification'))).filter(name=>/^probe-.*-intent\.json$/.test(name)).length,resumeConfiguration=join(retryRoot,'resume-configuration-private.json');await writeFile(resumeConfiguration,JSON.stringify({...configuration,output:join(retryRoot,'cli-resume')}),{mode:0o600,flag:'wx'});expect(await pilotWorkRecoveryVerify(['--verify-work-recovery','--configuration',resumeConfiguration])).toMatchObject({verificationId:fresh.verificationId,resumed:true});expect((await owner.query('SELECT count(*)::int AS n FROM operations_recovery_http_reads')).rows[0].n).toBe(beforeResume);expect((await owner.query('SELECT count(*)::int AS n FROM login_sessions')).rows[0].n).toBe(beforeResumeSessions);expect((await readdir(join(retryRoot,'cli-verification'))).filter(name=>/^probe-.*-intent\.json$/.test(name)).length).toBe(beforeResumeIntents);expect((await readdir(join(retryRoot,'cli-resume'))).filter(name=>/^probe-.*-intent\.json$/.test(name))).toEqual([]);
+     const changedMapping=join(retryRoot,'changed-mapping-private.json');await writeFile(changedMapping,JSON.stringify({...configuration,restoredStore:{...configuration.restoredStore,expectedConfiguration:{...restoredConfiguration,maximumSandboxDispatches:2}},output:join(retryRoot,'cli-changed-mapping')}),{mode:0o600,flag:'wx'});await expect(pilotWorkRecoveryVerify(['--verify-work-recovery','--configuration',changedMapping])).rejects.toThrow('Existing recovery verification is stale or changed');expect((await owner.query('SELECT count(*)::int AS n FROM login_sessions')).rows[0].n).toBe(beforeResumeSessions);expect((await readdir(join(retryRoot,'cli-verification'))).filter(name=>/^probe-.*-intent\.json$/.test(name)).length).toBe(beforeResumeIntents);expect((await readdir(join(retryRoot,'cli-changed-mapping'))).filter(name=>/^probe-.*-intent\.json$/.test(name))).toEqual([]);
+     expect(fresh).toMatchObject({resumed:false,serviceOpened:false});if(previousVerificationId)expect(fresh.verificationId).not.toBe(previousVerificationId);previousVerificationId=fresh.verificationId;expect((await owner.query('SELECT count(*)::int AS n FROM operations_recovery_verifications')).rows[0].n).toBe(attempt+1);
+     if(attempt===1){const {transitionRecoveryControl}=await import('../../../lib/server/operations/control'),{resolveRecoveryQuarantines}=await import('../../../lib/server/operations/recovery-resolution');await resolveRecoveryQuarantines(owner,{...retry.scope,verificationId:fresh.verificationId});expect(await transitionRecoveryControl(owner,{environmentId:retry.scope.environmentId,recoveryId:retry.scope.recoveryId,expectedRevision:retry.scope.controlRevision,operationId:randomUUID(),mode:'open',verifiedBundleDigest:fresh.bundleDigest})).toMatchObject({mode:'open'});}
+     }finally{state.allowCapture=false;await execute('docker',['exec',state.container,'rm','-f',dump],{timeout:10000});await owner.query('DROP DATABASE "'+cloneName+'" WITH(FORCE)');}
+    });
+   }}finally{transport.mockRestore();}
+   expect((await owner.query('SELECT 1 FROM operations_recovery_http_reads a JOIN login_sessions s ON s.id=a.session_id JOIN mcp_connections mc ON mc.id=a.record_id WHERE a.mcp_probe_connection AND (a.revoked_at IS NULL OR s.revoked_at IS NULL OR mc.revoked_at IS NULL OR mc.credential_hash IS NOT NULL)')).rowCount).toBe(0);
+  }finally{state.retainedKey=null;if(previousCron===undefined)delete process.env.CRON_SECRET;else process.env.CRON_SECRET=previousCron;await owner.end();}
+ },async owner=>{const f=await pilotPublishedKnowledgeFixture(owner as unknown as PoolClient,'primary');workspaceId=f.actor.workspaceId;customerId=f.customerId;const organization=randomUUID(),partnerMembership=randomUUID();await owner.query("INSERT INTO partner_organizations(id,workspace_id,name) VALUES($1,$2,'Synthetic MCP category partner')",[organization,workspaceId]);await owner.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role,partner_org_id) VALUES($1,$2,$3,'internal','member',NULL),($4,$5,$3,'partner','member',$6)",[randomUUID(),DEMO_IDS.panel,workspaceId,partnerMembership,DEMO_IDS.partner,organization]);await owner.query("INSERT INTO customer_grants(id,membership_id,workspace_id,customer_id,state,revision,granted_by) VALUES($1,$2,$3,$4,'active',1,$5)",[randomUUID(),partnerMembership,workspaceId,customerId,DEMO_IDS.mcteer]);const {issueSession,getCurrentSession,sessionCookieName}=await import('../../../lib/server/auth/sessions');
+  for(const username of ['mcteer','panel','partner'] as const){const member=(await owner.query('SELECT id,kind,role FROM memberships WHERE workspace_id=$1 AND principal_id=$2',[workspaceId,DEMO_IDS[username]])).rows[0],session=await issueSession({principalId:DEMO_IDS[username],loginName:username,displayName:username,membershipId:member.id,workspaceId,kind:member.kind,role:member.role}),actor=(await getCurrentSession(new Request(process.env.TURAS_APP_ORIGIN!,{headers:{cookie:sessionCookieName()+'='+session.token}})))!;conversationIds.push((await createOwnedConversation(actor,{customerId,requestKey:randomUUID()},owner as unknown as PoolClient)).conversation.id);}
+  await owner.query('UPDATE workspaces SET active=false WHERE id<>$1',[workspaceId]);},'production',450000);
+},420000);

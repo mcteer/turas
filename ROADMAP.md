@@ -357,3 +357,9 @@ revision while retaining prior evidence and holds. The full CLI restart/quaranti
 an owned target. Fresh complete-source validation and hosted release acceptance
 remain pending; this
 does not complete016 or activate the backup operator.
+
+The016 `0790d39` local catalog passed1,053 cases; its CI and partial model
+evaluation found further recovery-fixture, proposal-guidance and accounting
+cancellation issues. The successor inventory has1,054 cases in192 suites.
+These fixes and their release checks remain in progress; Production remains
+on the restored-login release `f8d196f`/schema077.

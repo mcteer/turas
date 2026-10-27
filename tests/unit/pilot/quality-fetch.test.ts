@@ -1,4 +1,4 @@
-import {beforeEach,afterEach,it,expect} from 'vitest';
+import {beforeEach,afterEach,it,expect,vi} from 'vitest';
 import {mkdtemp,rm,mkdir} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {randomUUID} from 'node:crypto';
@@ -15,6 +15,24 @@ afterEach(()=>rm(root,{recursive:true,force:true}));
 it('settles known Gateway charges while preserving the provider response',async()=>{
  const budget=await ledger(),guard=budgetedGatewayFetch({ledger:budget,ceiling,fetch:async()=>{calls++;return Response.json(metadata);}});
  expect(await (await guard(endpoint,request)).json()).toEqual(metadata);expect(calls).toBe(1);expect(await budget.status()).toMatchObject({chargedMicroUsd:1000,admissionHeld:false});
+ // Once a complete receipt exists, cancellation must not race a durable
+ // settlement into an unknown hold. Cancellation still reaches the caller.
+ for(const failure of [false,true]){
+  const budget=await ledger(),abort=new AbortController();let entered!:()=>void,release!:()=>void;
+  const reached=new Promise<void>(resolve=>{entered=resolve;}),blocked=new Promise<void>(resolve=>{release=resolve;}),original=budget.settle.bind(budget);
+  const spy=vi.spyOn(budget,'settle').mockImplementation(async(...args)=>{entered();await blocked;if(failure)throw Error('Synthetic settlement failure');return original(...args);});
+  const pending=budgetedGatewayFetch({ledger:budget,ceiling,fetch:async()=>Response.json(metadata)})(endpoint,{...request,signal:abort.signal});
+  const outcome=Promise.allSettled([pending]);await reached;abort.abort();release();
+  expect((await outcome)[0].status).toBe('rejected');spy.mockRestore();
+  expect(await budget.status()).toMatchObject(failure?{chargedMicroUsd:0,unknown:1,heldMicroUsd:16000000}:{chargedMicroUsd:1000,unknown:0,heldMicroUsd:0,admissionHeld:false});
+ }
+ // A hold already queued before settlement must never be erased.
+ {
+  const budget=await ledger(),original=budget.settle.bind(budget);
+  const spy=vi.spyOn(budget,'settle').mockImplementation(async(id,receipt)=>{await budget.hold(id,'aborted');return original(id,receipt);});
+  await expect(budgetedGatewayFetch({ledger:budget,ceiling,fetch:async()=>Response.json(metadata)})(endpoint,request)).rejects.toThrow();spy.mockRestore();
+  expect(await budget.status()).toMatchObject({chargedMicroUsd:0,unknown:1,heldMicroUsd:16000000});
+ }
  // Independent evaluator processes share one reservation at a time. A second
  // request waits before its first provider call instead of becoming unconfirmed.
  const shared=await ledger();let release!:()=>void,entered!:()=>void,active=0,peak=0,number=0;
@@ -52,10 +70,28 @@ it('accounts split streamed frames only after complete final usage is received',
  const budget=await ledger(),bytes=Buffer.from('data: '+JSON.stringify({type:'finish',...metadata})+'\n\n');
  const guard=budgetedGatewayFetch({ledger:budget,ceiling,fetch:async()=>{calls++;return new Response(new ReadableStream({start(c){c.enqueue(bytes.subarray(0,13));c.enqueue(bytes.subarray(13));c.close();}}),{headers:{'content-type':'text/event-stream'}});}});
  expect(await (await guard(endpoint,request)).text()).toBe(bytes.toString());expect(await budget.status()).toMatchObject({chargedMicroUsd:1000,admissionHeld:false});
+ for(const [cancel,failure] of [[false,false],[true,false],[false,true]] as const){
+  const budget=await ledger(),abort=new AbortController();let entered!:()=>void,release!:()=>void;
+  const reached=new Promise<void>(resolve=>{entered=resolve;}),blocked=new Promise<void>(resolve=>{release=resolve;}),original=budget.settle.bind(budget);
+  const spy=vi.spyOn(budget,'settle').mockImplementation(async(...args)=>{entered();await blocked;if(failure)throw Error('Synthetic stream settlement failure');return original(...args);});
+  const response=await budgetedGatewayFetch({ledger:budget,ceiling,fetch:async()=>new Response(bytes,{headers:{'content-type':'text/event-stream'}})})(endpoint,{...request,signal:abort.signal});
+  const reader=response.body!.getReader();await reader.read();const pending=reader.read(),outcome=Promise.allSettled([pending]);
+  await reached;let cancellationComplete=false;const cancellation=cancel?reader.cancel().then(()=>{cancellationComplete=true;}):Promise.resolve();if(cancel){await new Promise(resolve=>setImmediate(resolve));expect(cancellationComplete).toBe(false);}abort.abort();release();await cancellation;
+  const result=(await outcome)[0];if(!cancel)expect(result.status).toBe('rejected');spy.mockRestore();
+  expect(await budget.status()).toMatchObject(failure?{chargedMicroUsd:0,unknown:1,heldMicroUsd:16000000}:{chargedMicroUsd:1000,unknown:0,heldMicroUsd:0,admissionHeld:false});
+ }
+
 });
 it('holds cancellation of an incomplete response and denies another dispatch',async()=>{
  const budget=await ledger(),guard=budgetedGatewayFetch({ledger:budget,ceiling,fetch:async()=>{calls++;return new Response(new ReadableStream({start(c){c.enqueue(Buffer.from('data: {"type":"text-delta","delta":"Synthetic"}\n\n'));}}),{headers:{'content-type':'text/event-stream'}});}});
  const response=await guard(endpoint,request);await response.body!.cancel();await expect(guard(endpoint,request)).rejects.toThrow('holds admission');expect(calls).toBe(1);expect(await budget.status()).toMatchObject({admissionHeld:true});
+ const aborted=await ledger(),abort=new AbortController();let controller!:ReadableStreamDefaultController<Uint8Array>;
+ const pending=budgetedGatewayFetch({ledger:aborted,ceiling,fetch:async()=>new Response(new ReadableStream({start(c){controller=c;c.enqueue(Buffer.from('{'));}}),{headers:{'content-type':'application/json'}})})(endpoint,{...request,signal:abort.signal});
+ const outcome=Promise.allSettled([pending]);
+ // Wait for the actual provider body before aborting; this is pre-receipt.
+ while(!controller)await new Promise(resolve=>setTimeout(resolve,1));abort.abort();controller.error(abort.signal.reason);
+ expect((await outcome)[0].status).toBe('rejected');expect(await aborted.status()).toMatchObject({unknown:1,chargedMicroUsd:0,heldMicroUsd:16000000});
+
 });
 it('rejects unapproved models endpoints and provider tools before dispatch',async()=>{
  const guard=budgetedGatewayFetch({ledger:await ledger(),ceiling,fetch:async()=>{calls++;return Response.json(metadata);}});

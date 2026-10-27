@@ -1263,3 +1263,20 @@ No hosted target may be locked for release before its measured reopen path exist
   target and owned-resource deadlines. Verify the original changed case,
   independent source review and fresh complete committed CI/model/hosted
   acceptance (FR-002, FR-007, FR-021).
+
+- [ ] T204 Retain the actual `0790d39` CI whole-case timeout. Move the explicit
+  fresh CLI/restart/resume/mapping scenario into its own owned bounded fixture,
+  retain all original assertions and clocks, append its case ID without
+  renumbering existing IDs, and verify both scenarios and complete CI (FR-014, FR-021).
+
+- [ ] T205 Correct the actual save-profile run2 refusal: document the existing
+  uncited assistant Pending-proposal path while preserving exact requested
+  citation rules, server authorization, unverified origin and human review.
+  Require the original actual-model evaluation and hosted acceptance (FR-010, FR-021).
+
+- [ ] T206 Prevent abort/cancel from adding uncertainty after a complete valid
+  terminal charge receipt while durable settlement awaits the journal lock.
+  Preserve pre-receipt and already-queued holds, settlement-failure uncertainty,
+  caller cancellation, original deadlines and every historic unknown charge.
+  Verify JSON and SSE races, complete model evaluation and hosted acceptance
+  without retrying uncertain provider requests (FR-002, FR-021).

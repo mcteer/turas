@@ -1833,7 +1833,7 @@
     },
     {
       "file": "tests/integration/pilot/work-recovery-decision.test.ts",
-      "expectedCases": 25,
+      "expectedCases": 26,
       "cases": [
         "commits a pending recovery decision only after live checks and rolls back drift cancellation and callback commit attempts",
         "measures exhaustive fresh work MCP category pages through SDK and rejects changed projections or forged measurements",
@@ -1859,7 +1859,8 @@
         "fences recovered processing business intents after row loss while permitting new jobs with actual finite cost admission",
         "fences original artifact processing beneath replacement job IDs while leaving denial-only cleanup unfenced",
         "walks all1479 canonical selections with paginated bounded customer credentials and retires every original probe",
-        "prepares canonical decision denials once while rejecting copied authority and stale retained snapshots"
+        "prepares canonical decision denials once while rejecting copied authority and stale retained snapshots",
+        "verifies an explicit fresh recovery CLI attempt, resumes without probes and rejects changed restored mappings"
       ]
     },
     {
