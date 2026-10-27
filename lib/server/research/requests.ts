@@ -257,7 +257,15 @@ export async function startResearch(client: PoolClient,actor: CurrentSession,
   const admittedInput = researchPreviewInputSchema.parse({
     idempotencyKey: row.idempotency_key,customerId: row.customer_id,
     conversationId: row.conversation_id,mode: row.mode,
-    ...row.public_fields,
+    // Persisted recon metadata also carries the authored execution policy. It
+    // is not a user request field; keep the strict wire schema unchanged.
+    ...(row.mode === "recon" ? {
+      publicName: row.public_fields.publicName,publicDomain: row.public_fields.publicDomain,
+      identityConfirmed: row.public_fields.identityConfirmed,
+      submittedUrls: row.public_fields.submittedUrls,
+      ...(row.public_fields.refreshSourceRevisionId ?
+        { refreshSourceRevisionId: row.public_fields.refreshSourceRevisionId } : {}),
+    } : row.public_fields),
   });
   await assertRefreshTarget(client,actor,row.customer_id,admittedInput);
   if (row.mode !== "fit" && !process.env.CONTEXT_API_KEY?.trim()) {

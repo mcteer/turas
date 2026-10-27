@@ -52,7 +52,7 @@ export async function runHostedRootBrowser(input:{scope:PilotHostedScope;db:Clie
   page.on('response',response=>{if(new URL(response.url()).pathname.startsWith('/api/')&&response.headers()['x-turas-code-version']!==scope.sourceCommit)releaseMismatch=true;});
   await page.goto(origin+'/s/'+id,{waitUntil:'domcontentloaded'});
   const composer=page.getByRole('textbox',{name:'Message Turi'});
-  await composer.fill('Synthetic transport exercise. Write 180 numbered lines, each saying: This is synthetic test data. Do not use tools.');
+  await composer.fill('Clearly hypothetical training sample only. Begin exactly: This is synthetic test data. Without using tools or customer-specific facts, write an approximately 600-word delivery runbook for a fictional Vercel adoption engagement. Use practical numbered steps covering scope, assumptions, stakeholder responsibilities, a deployment rehearsal, validation, rollback, and handover. Keep all examples explicitly hypothetical; do not claim any customer action or outcome occurred.');
   await page.getByRole('button',{name:'Send message',exact:true}).click();
   await until(async()=> (await attempts()).length===1&&(await operations()).length===1&&await page.locator('.chat-message-assistant').last().innerText().then(text=>text.length>20).catch(()=>false));
   const before=(await attempts())[0];if(before.response_state!=='running')throw Error('Response ended before actual streaming reload');
@@ -62,7 +62,7 @@ export async function runHostedRootBrowser(input:{scope:PilotHostedScope;db:Clie
   if(after.length!==1||after[0].id!==before.id||after[0].deadline_at.getTime()!==before.deadline_at.getTime()||(await operations()).length!==1||posts!==1)throw Error('Reload changed original attempt, deadline or provider dispatch');
   await expect(page.locator('.chat-message-assistant').last()).toContainText('synthetic test data');
   await page.screenshot({path:join(input.evidenceDirectory,'root-'+(input.mobile?'mobile':'desktop')+'-reloaded-private.png'),fullPage:true});
-  await composer.fill('Synthetic cancellation exercise. Write 240 numbered lines, each saying: This is synthetic test data. Do not use tools.');
+  await composer.fill('Clearly hypothetical training sample only. Begin exactly: This is synthetic test data. Without using tools or customer-specific facts, write an approximately 600-word contingency and handover runbook for a fictional Vercel adoption engagement. Use practical numbered steps covering readiness checks, a deployment incident, communication, evidence collection, rollback decisions, recovery validation, and follow-up ownership. Keep all examples explicitly hypothetical; do not claim any customer action or outcome occurred.');
   await page.getByRole('button',{name:'Send message',exact:true}).click();
   await until(async()=> (await attempts()).length===2&&(await operations()).length===2&&Number((await db.query("SELECT count(*)::int AS n FROM operations_hosted_root_provider_identities i JOIN parity_evaluation_operations o ON o.id=i.operation_id WHERE o.budget_id=$1 AND i.identity_kind='gateway_generation' AND o.provider::jsonb->>'attemptId' IN(SELECT id::text FROM response_attempts WHERE conversation_id=$2)",[binding.budgetId,id])).rows[0].n)===2);
   const second=(await attempts())[1];if(second.response_state!=='running')throw Error('Response ended before actual UI Stop');

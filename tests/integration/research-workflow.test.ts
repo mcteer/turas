@@ -68,6 +68,28 @@ describe("owned bounded research admission", () => {
             workspaceId: workspace,kind: "internal",role: "member",token: "synthetic",
             loginName: "synthetic",displayName: "Researcher",
             expiresAt: new Date(Date.now()+3_600_000) };
+          await client.query("SAVEPOINT recon_admission");
+          const reconInput = { idempotencyKey: "recon-preview",customerId: customer,
+            conversationId: conversation,mode: "recon",publicName: "Vercel",
+            publicDomain: "vercel.com",identityConfirmed: true,submittedUrls: [] };
+          await expect(createResearchPreview(client,actor,{
+            ...reconInput,sourcePolicy: "public-subject-v2" }))
+            .rejects.toMatchObject({ status: 422 });
+          const reconPreview = await createResearchPreview(client,actor,reconInput);
+          expect(reconPreview.publicFields).toMatchObject({
+            sourcePolicy: "public-subject-v2",identityConfirmed: true });
+          const reconCommand = { idempotencyKey: "recon-start",
+            expectedRevision: reconPreview.revision,expectedDigest: reconPreview.digest };
+          const reconStart = await startResearch(client,actor,reconPreview.id,reconCommand);
+          expect(reconStart.replayed).toBe(false);
+          expect((await startResearch(client,actor,reconPreview.id,reconCommand)).replayed).toBe(true);
+          expect((await readResearchPreview(client,actor,reconPreview.id)).publicFields)
+            .toMatchObject({ sourcePolicy: "public-subject-v2",identityConfirmed: true });
+          expect((await consumeResearchRun(client,actor,reconStart.attemptId)).mode).toBe("recon");
+          expect((await client.query("SELECT 1 FROM research_operations WHERE run_id=$1",
+            [reconStart.runId])).rowCount).toBe(0);
+          await client.query("ROLLBACK TO SAVEPOINT recon_admission");
+          await client.query("RELEASE SAVEPOINT recon_admission");
           await client.query("SAVEPOINT local_fit_mode");
           const fitReceipt = randomUUID();
           await client.query(`INSERT INTO retrieval_receipts

@@ -883,3 +883,21 @@ coverage. Unknown categories and malformed rates or tier bounds fail closed.
 Preserve all original provider/token limits and budget controls. Verify the
 existing pricing cases, typechecking and fresh committed native/hosted checks;
 retained evidence replay establishes parsing behavior only.
+
+### T207–T209: complete result reads and valid request boundaries
+
+The staffing acceptance probe must paginate the original matching snapshot,
+without refreshing its expiry or creating another result. Bound it to ten pages
+of fifty unique resources and reject identity drift, duplicate cursors and lack
+of progress. Seed the existing large synthetic fixture through its owned database
+setup; keep actual matching reads and allocation denials on HTTP.
+
+Research start reconstructs only the public input represented by its saved
+preview. Internal source-policy metadata stays persisted for execution and must
+remain forbidden in client input. Exercise the actual recon lifecycle rather
+than accepting a schema-only comparison as hosted proof.
+
+Root transport exercises use meaningful hypothetical delivery requests. Their
+purpose remains observing a real active response across reload and cancellation;
+a completed short refusal cannot satisfy those assertions. Preserve every failed
+attempt and charge and use a separately admitted fresh exercise for later proof.

@@ -9,6 +9,7 @@ import {staffingCreateDemandSchema,staffingQualifyDemandSchema} from '../lib/con
 import {staffingProposeAllocationSchema,staffingAllocationPreviewSchema} from '../lib/contracts/staffing-allocations';
 import {PilotHostedResponseError} from './pilot-hosted-request';
 import type {HostedJourneyRequest} from './pilot-hosted-baseline';
+import {readHostedStaffingMatchPages} from './pilot-hosted-staffing-match-pages';
 
 export async function runHostedStaffingBoundaries(input:{scope:PilotHostedScope;db:Client;resourceId:string;skillId:string;demandId:string;allocationId:string;allocationRevisionId:string;serviceDate:string;request:HostedJourneyRequest;signal:AbortSignal}){
  const {scope,db,request,signal}=input,unwrap=(raw:unknown)=>z.object({data:z.unknown()}).parse(raw).data;
@@ -36,10 +37,10 @@ export async function runHostedStaffingBoundaries(input:{scope:PilotHostedScope;
  await command('/api/staffing/competency-decisions',workforceReviewSchema.parse({requestKey:randomUUID(),rows:[{competencyId:candidate.competencyId,candidateRevisionId:candidate.revisionId,candidateDigest:candidate.contentDigest,expectedAggregateVersion:candidate.aggregateVersion,sourceGeneration:1,action:'accept',rationale:'Review exact historical assessment without treating its expired review date as current'}]}));
  await command('/api/staffing/resources/'+staleResource.resourceId+'/calendar',staffingCreateCalendarSchema.parse({requestKey:randomUUID(),rationale,calendar:{timezone:'UTC',observedAt:new Date(Date.now()-1000).toISOString(),nextReviewAt:new Date(Date.now()+14*86400000).toISOString(),fromDate:input.serviceDate,toDate:input.serviceDate,days:[{date:input.serviceDate,contracted:[{date:input.serviceDate,from:input.serviceDate+'T09:00',to:input.serviceDate+'T17:00',fromOffset:null,toOffset:null}],holidays:[],leave:[],protected:[]}]}}));
  const stale=await propose(staleResource.resourceId,input.demandId,demand,60);await deniedPreview(stale,'source_changed');
- const match=z.object({entityId:z.uuid(),demandId:z.uuid()}).parse(await command('/api/staffing/demands/'+input.demandId+'/matches',{...exact(demand),requestKey:randomUUID(),rationale}));
+ const match=z.object({entityId:z.uuid(),demandId:z.uuid(),revisionId:z.uuid(),contentDigest:z.string().regex(/^[a-f0-9]{64}$/),expiresAt:z.iso.datetime({offset:true})}).parse(await command('/api/staffing/demands/'+input.demandId+'/matches',{...exact(demand),requestKey:randomUUID(),rationale}));
  if(match.demandId!==input.demandId)throw Error('Exact staffing comparison differs');
- const comparison=z.object({items:z.array(z.object({resourceId:z.uuid(),status:z.string(),constraints:z.array(z.object({kind:z.string(),outcome:z.string(),reason:z.string(),skillId:z.uuid().optional()}))}))}).parse(unwrap(await request('/api/staffing/demands/'+input.demandId+'/matches?resultId='+match.entityId,'GET')));
- const staleMatch=comparison.items.find(row=>row.resourceId===staleResource.resourceId);
+ const comparison=await readHostedStaffingMatchPages({request,signal,expected:{resultId:match.entityId,demandId:match.demandId,demandRevisionId:match.revisionId,inputDigest:match.contentDigest,expiresAt:match.expiresAt}});
+ const staleMatch=comparison.find(row=>row.resourceId===staleResource.resourceId);
  if(!staleMatch||staleMatch.status==='eligible'||!staleMatch.constraints.some(row=>row.kind==='required_skill'&&row.skillId===input.skillId&&row.outcome==='unknown'&&row.reason==='stale'))throw Error('Stale competency treated as eligible');
  const original=(await db.query('SELECT state,confirmed_revision_id FROM staffing_allocations WHERE id=$1 AND workspace_id=$2',[input.allocationId,scope.workspaceId])).rows;
  if(original.length!==1||original[0].state!=='confirmed'||original[0].confirmed_revision_id!==input.allocationRevisionId)throw Error('Feasibility boundary changed original commitment');

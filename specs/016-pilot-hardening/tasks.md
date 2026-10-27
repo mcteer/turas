@@ -1280,3 +1280,24 @@ No hosted target may be locked for release before its measured reopen path exist
   caller cancellation, original deadlines and every historic unknown charge.
   Verify JSON and SSE races, complete model evaluation and hosted acceptance
   without retrying uncertain provider requests (FR-002, FR-021).
+
+- [ ] T207 Preserve the failed generated-file staffing probe and its completed
+  jobs. Read every page of the same bounded matching result before checking the
+  stale competency, preserving actor, revision, input digest, expiry and original
+  allocation denials. Reject duplicate, stalled, changed and overflowing cursors.
+  Extend the existing linked HTTP case with two real pages without weakening rate
+  limits or assertions; require fresh CI and hosted acceptance (FR-010, FR-021).
+
+- [ ] T208 Preserve the actual `9c7e33f` R07 HTTP 503 and unpaid reproduction.
+  Keep recon's persisted internal source policy out of strict user-input
+  reconstruction at start. Retain that policy for execution and reject submitted
+  internal metadata. Verify recon preview/start/replay alongside existing
+  practices/fit admission, then fresh CI, complete model and hosted checks
+  (FR-010, FR-021).
+
+- [ ] T209 Preserve the actual `9c7e33f` short transport refusal and completed,
+  settled attempt. Replace repetitive synthetic prompts with clearly hypothetical
+  delivery exercises while retaining actual active streaming reload, Stop,
+  same-attempt/deadline, no-resend, accounting and retirement assertions. Require
+  fresh source-bound desktop/mobile hosted evidence; never replay or reopen the
+  original archived conversation or erase its charge (FR-002, FR-021).

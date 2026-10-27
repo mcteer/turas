@@ -9288,3 +9288,31 @@ catalog have not yet been claimed. The final37 targeted fetch/ledger/instruction
 cases pass, and root/pilot typechecks and243-file documentation checks pass.
 SSE cancellation additionally waits for the terminal settlement or completed
 failure hold before returning, so teardown cannot leave that write unjoined.
+
+### Actual `9c7e33f` results and remaining boundary failures — 2026-10-27
+
+All 61 committed CI jobs pass. The original unfiltered local catalog passes all
+1,054 cases across 192 suites. Preview reads back both complete 10 MiB originals
+and all four generated reports after distinct deployment Ret30; the original
+184-customer/two-detailed-profile HTTP and WebKit comparison also exits zero.
+These results belong to `9c7e33f`, not its successor or Production.
+
+The full live-agent batch passes independent review for 002 (12/12), 003 (12/12),
+004 (8/8) and research R01–R06, then fails R07 at research start with HTTP 503.
+The unpaid original-boundary reproduction retains both provider-presence
+booleans and a live maintenance heartbeat, and identifies a Zod rejection of
+the saved `sourcePolicy` field. The original strict public schema reproduces
+that rejection. No R07 answer, later stage or complete batch is accepted.
+
+Hosted Core separately fails before reload because its repetition prompt elicits
+a short refusal. A scoped read-only census confirms one normally completed
+attempt, one settled 45,988-microUSD operation and no Learning dispatch. This
+does not establish a product streaming failure or reload/Stop acceptance. The
+original failed Core result and immutable admission remain retained.
+
+The staffing follow-up's original linked HTTP case passes with two actual pages
+in an isolated source copy. An earlier rate-limited setup attempt remains failed;
+the corrected setup inserts only its synthetic roster fixtures directly and
+keeps matching and allocation checks on authenticated HTTP. Fresh successor CI,
+complete live-agent evaluation, hosted recovery and Production acceptance remain
+required. Production remains `f8d196f`, schema 077.

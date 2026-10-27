@@ -5,6 +5,17 @@ Current pilot release status and validation results are recorded in
 historical snapshots at their recorded source revisions; they do not replace
 current release evidence.
 
+At `9c7e33f`, all 61 CI jobs and the original 1,054-case local catalog pass.
+Preview also verifies both 10 MiB originals and four generated reports after a
+distinct deployment, plus the original 184-customer profile comparison. Full
+pilot acceptance remains incomplete. The research evaluation exposed recon's
+start operation rejecting its own saved internal policy field; the follow-up
+preserves strict user input while separating that metadata. It also completes
+the staffing test's paginated reads and replaces repetitive transport prompts
+with hypothetical delivery exercises. Fresh corrected-source CI, live-agent,
+hosted recovery and Production verification remain required. Production is
+still `f8d196f`, schema 077.
+
 ## Recorded validation observations
 
 At `971e5fb`, Main and Legacy CI finished green across all 61 jobs after the
