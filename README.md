@@ -615,8 +615,14 @@ Candidate `6ae4e39` passed that correction job, while its 4 MiB variant exposed
 a second test-clock issue. T199 starts the unchanged 30-second response bound
 when the correction request is observed; upload preparation remains inside the
 original 420-second fixture deadline. Both complete local variants pass.
-Fresh committed checks, hosted recovery and Production release acceptance
-remain required. See [PR #47](https://github.com/mcteer/turas/pull/47).
+Candidate `e31862e` passed all 61 CI checks, retaining the original browser failure
+and one complete unchanged-source job rerun. Its actual model evaluation passed
+the completed 002–004 semantic checks and retrieval checks, then stopped at
+research R01: the answer quoted the source but printed an allowed reference that
+was not a consumed retrieval citation. T200 clarifies the exact-quotation
+route while preserving legitimate inventory references and the original rubric.
+Fresh committed checks, full model evaluation, hosted recovery and Production
+release acceptance remain required. See [PR #47](https://github.com/mcteer/turas/pull/47).
 
 Hosted Sandbox execution now supports fresh Vercel request OIDC, bound to the
 configured project/team and the original job lifetime. Local operator commands

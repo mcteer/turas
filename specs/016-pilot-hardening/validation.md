@@ -9125,3 +9125,36 @@ customer, history, quota and retirement assertions. The tiny variant has no
 added delay and passes its original assertions. Both retire the native session
 with HTTP 200 and make zero paid calls. Fresh complete committed CI and hosted
 release acceptance remain required; these local results do not establish them.
+
+
+## 2026-10-27 UTC: exact quotation citation routing
+
+Candidate `e31862e` passed all 61 CI checks after one complete unchanged-source
+rerun of the desktop execution job and its dependent summary. Its authenticated
+deterministic component independently verified 192 suites, 1,053 cases and all
+599 original files. The original browser failure and unavailable exact exception
+remain recorded separately; the local four-case handoff regression passed without
+retries. No historical browser cause is asserted.
+
+The original full 23-command actual model run then stopped at research R01.
+Original semantic verifiers passed all 32 replies for 002–004; retrieval passed
+40 queries with 200 exact resolved citations. R01 quoted the exact accepted
+checklist claim, but printed an allowed UUID that was not a consumed retrieval
+citation: zero valid citations and no receipt-bound exact support. It completed
+in three steps within the original limits. The retained capture does not contain
+the tool sequence or enough data to identify that UUID's category. No fabricated
+quotation, unauthorized source, or absent tool call is inferred.
+
+Source inspection found the contract ambiguity: profile snapshots and account
+inventories expose profile/source revision references as `citationId`, while
+exact-passage research validation requires consumed governed retrieval citations.
+Ordinary guidance specified that distinction only for search results, leaving
+the exact-quotation route ambiguous. T200 requires
+an eligible passage retrieved for the current turn, or one focused governed
+search, when exact supporting quotations or claim-level passage verification are
+requested.
+Current claims use current-fact eligibility; dated evidence retains its date.
+Other legitimate profile/inventory references remain supported. No context
+schema, evaluator prompt/rubric, model selection, step/token limit or evidence
+authorization/consumption gate changes. Fresh complete CI and actual model and
+hosted release checks remain required; the failed full run is not accepted.

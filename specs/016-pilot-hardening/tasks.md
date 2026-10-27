@@ -1224,3 +1224,13 @@ No hosted target may be locked for release before its measured reopen path exist
   deadline and every upload, byte, history and retirement assertion. Verify
   missing-request and late-response bounds, both complete original file variants
   and fresh complete committed CI before release (FR-002, FR-014, FR-021).
+
+- [ ] T200 Preserve the actual `e31862e` research R01 failure and successful
+  partial model checks. Route exact supporting quotations and claim-level passage
+  verification through an eligible governed retrieval passage, including when an
+  accepted profile snapshot already contains the claim. Distinguish existing
+  profile/source revision references from consumed passage citation IDs without
+  changing context contracts or legitimate account-inventory citations. Preserve
+  the original research prompt, rubric, authorization, consumption fences, model,
+  step and token limits. Verify ordinary instruction scope, fresh committed CI,
+  the complete actual model evaluation and hosted acceptance (FR-010, FR-021).
