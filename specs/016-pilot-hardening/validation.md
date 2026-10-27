@@ -9209,3 +9209,36 @@ No historical CI cause is asserted and no retry is spent on this superseded
 candidate. Thirty-seven targeted instruction/ledger/fetch checks and the pilot
 typecheck pass. Fresh committed CI, complete actual model evaluation, recovery
 and Production deployment/acceptance remain required.
+
+
+### Recovery producer denial-authority lifecycle — 2026-10-27 (T203)
+
+Candidate `2b5e11c` finished with Main50 successful/four failed jobs and
+Legacy7 successful jobs. The previously failed Gaps benchmark, native file
+correction and014 feedback checks each passed an unchanged original local
+comparison; those comparisons do not explain or replace their CI failures.
+The complete1053 catalog failed in its exhaustive recovery MCP case with
+`Fresh independent denial snapshot context required`; both archive steps were
+skipped, and no complete authenticated catalog or full23 model acceptance is
+claimed.
+
+The retained timeline captures the reused denial object during26.162–31.538s,
+then reaches producer effects at328.881s with57.084s remaining and an unaborted
+case signal. The raw capturedAt was not uploaded, so the exact rejected
+disjunct/age is unproven. This identifies a fixture lifecycle hazard; it does
+not justify a longer product freshness bound.
+
+T203 takes a new genuine encrypted, archived and cold-read denial capture at
+the independent producer boundary, advances the same original history and
+rebinds the existing MCP proof objects. An assertion retains all original
+completion times, transcript digests and boundary digests. The same refreshed
+retained object is used for the producer's native/Sandbox/service/effect checks
+and the postcommit denial probe. Earlier drift, forged/partial and retirement
+checks remain in place. Product300s freshness, measurement/canary freshness,
+290/380/420/450-second fixture clocks, signals, model selection and authorization
+are unchanged. The original changed420-second case passed locally (one
+selected case; the other24 suite cases were not selected). Root and pilot
+typechecks pass, as does the243-file documentation check. Fresh complete
+committed catalog, CI, model and hosted gates remain pending; earlier
+Preview/native/UI/load results retain their exact `2b5e11c` scope. Production
+remains on the restored credential release.

@@ -1253,3 +1253,13 @@ No hosted target may be locked for release before its measured reopen path exist
   ranking, evaluator prompts/rubric and five-step limit unchanged. Retain the
   unpaid governed-tool comparison and require fresh committed, complete actual
   model and hosted acceptance (FR-010, FR-021).
+
+- [ ] T203 Preserve the actual `2b5e11c` complete-catalog failure at the
+  exhaustive MCP recovery case's independent denial-context guard. Cold-retain
+  fresh authenticated denials at the independent producer boundary, advance
+  the original history and rebind the same measured MCP objects without
+  changing completion times or transcript/boundary digests. Keep all preceding
+  drift/forgery/partial-result checks, product300s freshness and original case,
+  target and owned-resource deadlines. Verify the original changed case,
+  independent source review and fresh complete committed CI/model/hosted
+  acceptance (FR-002, FR-007, FR-021).

@@ -1404,3 +1404,10 @@ read leaves protected content hidden and permits an explicit read-only retry;
 it does not replay the command. The strengthened lost-acknowledgement journey
 retains its original case limit and storage privacy assertions. Hosted acceptance
 remains tracked separately in PR #47.
+
+The `2b5e11c` catalog stopped in the exhaustive recovery MCP case at its
+fresh independent denial-snapshot check. T203 refreshes genuinely retained
+denials at the independent producer boundary and rebinds the original measured
+transcripts without renewing their completion times. Product freshness and
+case deadlines remain unchanged. Fresh complete CI, model and hosted acceptance
+are still required.
