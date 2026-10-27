@@ -9316,3 +9316,26 @@ the corrected setup inserts only its synthetic roster fixtures directly and
 keeps matching and allocation checks on authenticated HTTP. Fresh successor CI,
 complete live-agent evaluation, hosted recovery and Production acceptance remain
 required. Production remains `f8d196f`, schema 077.
+
+### Actual `17494d2` results and accounting compatibility — 2026-10-27
+
+All 61 CI jobs pass (Main 54, Legacy 7). The original unfiltered local catalog
+passes 1,054 cases across 192 suites. Local native preparation, all 40 browser
+checks, the original 4,050-sample load benchmark and the isolated network-free
+Linux package smoke also pass. These are source-specific local/CI results;
+none establishes hosted recovery or Production acceptance.
+
+The full live-agent batch stops after two independently accepted replies when
+its next public-URL exercise receives Gateway HTTP 503. Its exact single
+read-only generation lookup returns accounting model `xai/grok-4.7`, provider
+`xai`, finish reason `error` and zero reported cost; the parser rejects the model
+identifier. No further lookup, retry or settlement is performed. The Main ledger
+retains four unknowns and its complete 32,012,000-microUSD hold; settled charges
+are 25,902,011 microUSD. The accounting response does not refund that hold.
+
+The correction accepts only the exact accounting alias/provider pair, keeps raw
+identity and preserves the selected dispatch model. The extended existing case
+fails with the original parser and passes with the correction; the full original
+ten-case reconciliation file passes without skipped cases. Its zero-cost receipt
+is a disposable mocked fixture only. Fresh committed checks, full live-agent,
+fresh source-bound hosted acceptance and Production release remain pending.

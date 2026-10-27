@@ -4,7 +4,7 @@ import {Client} from 'pg';
 import {requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
 import {withHostedRootBudgetFixture as fixture} from '../../fixtures/pilot/hosted-root';
 import {wrapHostedRootBudget,reserveHostedRoot,settleHostedRoot} from '../../../lib/server/conversations/hosted-root-budget';
-import {reconcileHostedRootGeneration} from '../../../scripts/pilot-hosted-root-reconcile';
+import {reconcileHostedRootGeneration,lookupPilotGatewayGeneration} from '../../../scripts/pilot-hosted-root-reconcile';
 import type {PilotHostedScope} from '../../../lib/contracts/pilot-hosted';
 const provider=vi.hoisted(()=>({response:undefined as unknown,calls:0}));
 vi.mock('ai',async original=>({...await original<typeof import('ai')>(),createGateway:()=>({getGenerationInfo:async()=>{provider.calls++;return provider.response;}})}));
@@ -35,7 +35,20 @@ it('reconciles only the original Gateway identity and atomically preserves its a
  await f.db.query('RESET ROLE');expect(provider.calls).toBe(1);
 }),210000);
 
-it('retains unknown ceilings for mismatched nonterminal BYOK tool and invalid provider accounting',async()=>fixture(async f=>{
+it('retains unknown ceilings for mismatched nonterminal BYOK tool and invalid provider accounting',async()=>{
+ // Gateway's accounting identifier differs from the selected dispatch model.
+ // Preserve that returned identity, including an error generation's zero receipt.
+ process.env.AI_GATEWAY_API_KEY='synthetic-no-provider-credential';
+ const returned={id:'gen_synthetic_xai_error',model:'xai/grok-4.7',totalCost:0,usage:0,upstreamInferenceCost:0,isByok:false,
+  createdAt:'2026-10-27T20:25:28.000Z',streamed:true,finishReason:'error',promptTokens:0,completionTokens:0,reasoningTokens:0,cachedTokens:0,cacheCreationTokens:0,
+  billableWebSearchCalls:0,latency:0,generationTime:152,providerName:'xai'};
+ provider.response=returned;
+ await expect(lookupPilotGatewayGeneration(returned.id,AbortSignal.timeout(30000))).resolves.toEqual(returned);
+ for(const changed of [{model:'xai/grok-4.7-other'},{model:'other/model'},{providerName:'other-provider'},{providerName:'XAI'}]){
+  provider.response={...returned,...changed};
+  await expect(lookupPilotGatewayGeneration(returned.id,AbortSignal.timeout(30000))).rejects.toThrow();
+ }
+ await fixture(async f=>{
  const a=await accounting(f);
  for(const changed of [{id:'gen_other'},{model:'other/model'},{createdAt:new Date(0).toISOString()},{streamed:true},{finishReason:'unknown'},{isByok:true},{billableWebSearchCalls:1},{totalCost:-1},{totalCost:Infinity},{usage:0},{completionTokens:-1}]){
   provider.response={...a.response,...changed};await expect(a.run()).rejects.toThrow();
@@ -43,7 +56,10 @@ it('retains unknown ceilings for mismatched nonterminal BYOK tool and invalid pr
   expect((await f.db.query('SELECT actual_micro_usd,settled_at FROM parity_evaluation_operations WHERE id=$1',[a.operation.id])).rows[0]).toEqual({actual_micro_usd:null,settled_at:null});
  }
  expect((await f.db.query('SELECT reserved_micro_usd FROM parity_evaluation_budgets WHERE id=$1',[f.binding.budgetId])).rows[0].reserved_micro_usd).toBe('700');
-}),210000);
+ provider.response={...a.response,model:'xai/grok-4.7',providerName:'xai',finishReason:'error',totalCost:0,usage:0,promptTokens:0,completionTokens:0};
+ expect(await a.run()).toMatchObject({actualMicroUsd:0,releasedExcessMicroUsd:700,modelCalls:0});
+ });
+},210000);
 
 it('rolls back a receipt and refund together when settlement fails before commit',async()=>fixture(async f=>{
  const a=await accounting(f);

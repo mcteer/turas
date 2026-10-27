@@ -901,3 +901,14 @@ Root transport exercises use meaningful hypothetical delivery requests. Their
 purpose remains observing a real active response across reload and cancellation;
 a completed short refusal cannot satisfy those assertions. Preserve every failed
 attempt and charge and use a separately admitted fresh exercise for later proof.
+
+### T210: exact Gateway accounting identity compatibility
+
+The failed `17494d2` batch returned HTTP 503. One bounded read-only generation
+lookup returned its exact generation with accounting model `xai/grok-4.7` and
+provider `xai`; the existing parser rejected only the model name. Accept that
+exact pair while retaining the raw returned identity and the original selected
+model for dispatch. Reject alternative versions and providers; preserve all
+identity, cost, timing, token and settlement guards. Keep the failed run and its
+full unknown hold. A mocked zero-cost fixture is not settlement of that hold.
+Fresh candidate checks and actual complete hosted acceptance remain required.

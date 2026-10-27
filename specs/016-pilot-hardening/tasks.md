@@ -1301,3 +1301,12 @@ No hosted target may be locked for release before its measured reopen path exist
   same-attempt/deadline, no-resend, accounting and retirement assertions. Require
   fresh source-bound desktop/mobile hosted evidence; never replay or reopen the
   original archived conversation or erase its charge (FR-002, FR-021).
+
+- [ ] T210 Preserve the actual `17494d2` Gateway HTTP 503 and all four unknown
+  cost holds. Accept the exact `xai/grok-4.7` accounting identifier only with
+  provider `xai`, retaining raw identity and every other receipt guard. Preserve
+  dispatch selection `spacexai/grok-4.7`; extend the existing mismatch case with
+  accepted accounting and rejected model/provider variants. Require complete
+  fresh CI, live-agent and hosted release validation; this compatibility fix
+  does not establish provider recovery or settle historical unknowns
+  (FR-002, FR-021).
