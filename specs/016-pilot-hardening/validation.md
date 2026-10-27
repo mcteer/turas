@@ -9158,3 +9158,54 @@ Other legitimate profile/inventory references remain supported. No context
 schema, evaluator prompt/rubric, model selection, step/token limit or evidence
 authorization/consumption gate changes. Fresh complete CI and actual model and
 hosted release checks remain required; the failed full run is not accepted.
+
+
+## 2026-10-27 UTC: evaluation admission and shared-field findings
+
+Candidate `d308518` passed its focused live R01 diagnostic with a consumed exact
+passage citation. The subsequent original research diagnostics are not complete
+acceptance. R02's original twenty-second setup loop failed before an evaluated
+answer. A separate private, failure-only diagnostic retained the correct selected
+excerpt, two pending passages, an unconfirmed index job and linked embedding
+operation. Two embedding POST observations were seven milliseconds apart, while
+only one new financial dispatch settled. This does not establish an upstream
+provider failure or identify the exact rejected dispatch.
+
+R06's retained server log reports the local accounting-admission refusal before
+its answer, followed by the existing one-call retry fence. Its language and
+embedding observations overlap, and its second accepted projection is queued
+immediately before the evaluated turn. The indexing worker intentionally executes
+two claimed jobs concurrently, whereas the evaluation ledger permits one
+unsettled provider dispatch. All observed new financial dispatches settled; the
+original permanent uncertainty remains preserved. No uncertain operation was
+replayed or relabeled as successful.
+
+T201 waits only for definitely active dollar work before a request's first
+dispatch, outside the journal lock and inside the unchanged 120-second Gateway
+bound. Unknown outcomes and credit holds still refuse admission immediately;
+source/attempt, expiry and total-cap checks remain enforced before each new
+dispatch append.
+Abort while waiting creates no dispatch. R06 separately requires both accepted
+conflict sources ready before its original five-step, 1,000-token, 120-second
+evaluated turn; its setup readiness check is bounded to twenty seconds within
+the existing whole-stage allowance. T201 changes neither the ordinary one-call
+fence nor Production budget admission.
+
+R03 and R05 independently scored 7/8 and 8/8. R04's objective flags passed, but
+independent review scored 6/8: it cited guidance while omitting the distinct
+requested limitations passage. Its narrated searches are not an authenticated
+tool trace. A separate unpaid governed-tool comparison preserved all assertions
+in the existing named-customer integration case: bare `limitations` and
+`validate limitations` retrieved the separately cited field, while the combined
+title/topic/limitations query returned no result. T202 clarifies the actual
+`scope: shared`, `use: discovery` contract and separate canonical field queries.
+It changes no ranking, source eligibility, evaluator prompt, rubric, model or
+step limit. It is not proof of the historical query sequence or hosted success.
+
+The two current CI browser failures retain their original diagnostics. Complete
+unchanged local comparisons passed all twelve partner-guides cases and all
+twenty-four active owned-005 cases with the original four declared fixture skips.
+No historical CI cause is asserted and no retry is spent on this superseded
+candidate. Thirty-seven targeted instruction/ledger/fetch checks and the pilot
+typecheck pass. Fresh committed CI, complete actual model evaluation, recovery
+and Production deployment/acceptance remain required.

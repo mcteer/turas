@@ -2,6 +2,7 @@ import {constants} from 'node:fs';
 import {lstat,mkdir,open,readdir,realpath,rmdir} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {randomUUID} from 'node:crypto';
+import {setTimeout as delay} from 'node:timers/promises';
 import {z} from 'zod';
 import {hostedLearningDispatchSchema} from '../lib/contracts/pilot-hosted-learning';
 import {createEvidenceDirectory,readEvidence,writeEvidence,evidenceDigest} from './pilot-evidence';
@@ -44,6 +45,7 @@ const event=z.discriminatedUnion('kind',[
  z.strictObject({kind:z.literal('credit-unknown'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,observedCreditsConsumed:micro.optional(),observedAt:z.iso.datetime({offset:true})}),
 ]);
 type Event=z.infer<typeof event>;
+type QualityDispatch={modelId:'spacexai/grok-4.7'|'openai/text-embedding-3-small';ceilingMicroUsd:number;pricingDigest:string;hostedLearning?:z.infer<typeof hostedLearningDispatchSchema>};
 
 /** Evaluation-only shared accounting outside disposable application copies.
  * An uncertain dispatch blocks admission until an explicit independent operator
@@ -55,10 +57,10 @@ export class QualityBudgetLedger{
   const parsed=authorization.parse(input);if(Date.parse(parsed.expiresAt)<=Date.now())throw Error('Fresh evaluation authorization required');
   await createEvidenceDirectory(resolve(root));await writeEvidence(resolve(root),'authorization.json',parsed);return new QualityBudgetLedger(resolve(root));
  }
- private async lock<T>(run:()=>Promise<T>):Promise<T>{
+ private async lock<T>(run:()=>Promise<T>,signal?:AbortSignal):Promise<T>{
   const root=resolve(this.root),info=await lstat(root);
   if(!info.isDirectory()||info.isSymbolicLink()||(info.mode&511)!==448||info.uid!==process.getuid?.()||await realpath(root)!==root)throw Error('Unsafe shared evaluation ledger');
-  const lock=join(root,'lock'),until=Date.now()+3000;for(;;){try{await mkdir(lock,{mode:448});break;}catch(e){if((e as NodeJS.ErrnoException).code!=='EEXIST'||Date.now()>=until)throw Error('Evaluation accounting lock unavailable');await new Promise(r=>setTimeout(r,50));}}
+  const lock=join(root,'lock'),until=Date.now()+3000;for(;;){signal?.throwIfAborted();try{await mkdir(lock,{mode:448});break;}catch(e){if((e as NodeJS.ErrnoException).code!=='EEXIST'||Date.now()>=until)throw Error('Evaluation accounting lock unavailable');await delay(50,undefined,{signal});}}
   try{return await run();}finally{await rmdir(lock);}
  }
  private async read(){
@@ -132,15 +134,31 @@ export class QualityBudgetLedger{
   * allowance. Prior charges and unknown holds never disappear or reset. */
  async beginAttempt(source:{sourceCommit:string;sourceDigest:string;catalogDigest:string}){return this.lock(async()=>{const s=await this.read();if(Date.parse(s.authority.expiresAt)<=Date.now()||s.unresolvedDollarIds.size>0||[...s.creditDispatches].some(id=>!s.creditSettled.has(id)))throw Error('Unresolved provider prevents a fresh attempt');if((s.reviewedSource??s.continuation)&&(['sourceCommit','sourceDigest','catalogDigest'] as const).some(key=>source[key]!==(s.reviewedSource??s.continuation)![key]))throw Error('Continuation source differs');const id=randomUUID();await this.append({kind:'attempt',id,...source,ordinal:s.ordinal,previousDigest:s.previousDigest,observedAt:new Date().toISOString()});return id;});}
  async currentSource(){return this.lock(async()=>(await this.read()).currentSource);}
- async dispatch(raw:{modelId:'spacexai/grok-4.7'|'openai/text-embedding-3-small';ceilingMicroUsd:number;pricingDigest:string;hostedLearning?:z.infer<typeof hostedLearningDispatchSchema>},attemptId?:string){
+ async dispatch(raw:QualityDispatch,attemptId?:string){return (await this.dispatchOnce(raw,attemptId))!;}
+ /** Wait only for definitely in-flight dollar work, before this request's first
+  * dispatch. Unknown outcomes and every other admission denial still fail closed.
+  * Never retain the journal lock while waiting for the other call to settle. */
+ async dispatchWhenAvailable(raw:QualityDispatch,attemptId:string|undefined,signal:AbortSignal){
+  const bounded=AbortSignal.any([signal,AbortSignal.timeout(120000)]);
+  for(;;){
+   bounded.throwIfAborted();
+   const id=await this.dispatchOnce(raw,attemptId,true,bounded);
+   if(id)return id;
+   await delay(100,undefined,{signal:bounded});
+  }
+ }
+ private async dispatchOnce(raw:QualityDispatch,attemptId?:string,waitForActive=false,signal?:AbortSignal){
   return this.lock(async()=>{const state=await this.read();
+   signal?.throwIfAborted();
    if(state.currentSource.attemptId!==attemptId||(state.continuation||state.reviewedSource)&&!attemptId)throw Error('Prior quality attempt cannot dispatch');
-   if(Date.parse(state.authority.expiresAt)<=Date.now()||state.unresolvedDollarIds.size||state.unresolvedDollarIds.size>0||[...state.creditDispatches].some(id=>!state.creditSettled.has(id)))throw Error('Unknown or active evaluation charge holds admission');
+   if(Date.parse(state.authority.expiresAt)<=Date.now()||[...state.unresolvedDollarIds].some(id=>state.unknown.has(id))||[...state.creditDispatches].some(id=>!state.creditSettled.has(id)))throw Error('Unknown or active evaluation charge holds admission');
+   if(state.unresolvedDollarIds.size){if(waitForActive)return null;throw Error('Unknown or active evaluation charge holds admission');}
    if(raw.hostedLearning&&(raw.modelId!=='spacexai/grok-4.7'||raw.hostedLearning.scope.sourceCommit!==state.currentSource.sourceCommit||raw.hostedLearning.scope.sourceDigest!==state.currentSource.sourceDigest||raw.hostedLearning.scope.catalogDigest!==state.currentSource.catalogDigest||raw.hostedLearning.priceDigest!==raw.pricingDigest))throw Error('Hosted dispatch differs from original source-pinned authority');
    const id=randomUUID(),value=event.parse({kind:'dispatch',id,...raw,ordinal:state.ordinal,previousDigest:state.previousDigest,observedAt:new Date().toISOString()});
    if(value.kind!=='dispatch'||state.chargedMicroUsd+state.heldMicroUsd+value.ceilingMicroUsd>state.authority.capMicroUsd)throw Error('Evaluation budget prevents dispatch');
+   signal?.throwIfAborted();
    await this.append(value);return id;
-  });
+  },signal);
  }
  /** Read an actual unresolved, pre-reserved hosted arm from this original journal.
   * No caller-provided receipt can replace its append-only dispatch event. */

@@ -804,6 +804,23 @@ await withRetrievalEvalEnvironment(async () => {
         DEMO_IDS.deniedCustomer,sourceRevisionId,secondRevisionId,
         DEMO_IDS.mcteerMembership]);
     });
+    // Both sides must be retrievable before assessing the model's treatment of
+    // the conflict. The second projection otherwise races the ordinary worker.
+    const conflictIndexStarted=Date.now();
+    let conflictIndexed=false;
+    while(Date.now()-conflictIndexStarted<20_000){
+      await runRetrievalWorkerTick();
+      conflictIndexed=await withTransaction(async db=>{
+        const found=await db.query<{count:number}>(`SELECT count(DISTINCT source.source_revision_id)::int AS count
+          FROM retrieval_sources source JOIN retrieval_passages passage ON passage.source_id=source.id
+          WHERE source.source_kind='accepted_profile' AND source.source_revision_id=ANY($1::uuid[])
+            AND passage.embedding_state='ready'`,[[sourceRevisionId,secondRevisionId]]);
+        return found.rows[0].count===2;
+      });
+      if(conflictIndexed)break;
+      await new Promise(wait=>setTimeout(wait,500));
+    }
+    if(!conflictIndexed)throw Error('Both conflicting accepted sources did not index');
     const result = await runBehaviorCase({
       id: "R06",role: "mcteer",customerId: DEMO_IDS.deniedCustomer,
       prompt: "In two short sentences, summarize both conflicting accepted claims about the checklist owner, cite each source, and state that the issue is unresolved.",

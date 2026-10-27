@@ -15,14 +15,38 @@ afterEach(()=>rm(root,{recursive:true,force:true}));
 it('settles known Gateway charges while preserving the provider response',async()=>{
  const budget=await ledger(),guard=budgetedGatewayFetch({ledger:budget,ceiling,fetch:async()=>{calls++;return Response.json(metadata);}});
  expect(await (await guard(endpoint,request)).json()).toEqual(metadata);expect(calls).toBe(1);expect(await budget.status()).toMatchObject({chargedMicroUsd:1000,admissionHeld:false});
+ // Independent evaluator processes share one reservation at a time. A second
+ // request waits before its first provider call instead of becoming unconfirmed.
+ const shared=await ledger();let release!:()=>void,entered!:()=>void,active=0,peak=0,number=0;
+ const firstEntered=new Promise<void>(resolve=>{entered=resolve;}),blocked=new Promise<void>(resolve=>{release=resolve;});
+ const provider:typeof fetch=async()=>{const id=++number;peak=Math.max(peak,++active);if(id===1){entered();await blocked;}active--;return Response.json({...metadata,providerMetadata:{gateway:{cost:'0.001',generationId:'synthetic-serial-'+id}}});};
+ const first=budgetedGatewayFetch({ledger:shared,ceiling,fetch:provider})(endpoint,request);
+ await firstEntered;
+ const second=budgetedGatewayFetch({ledger:new QualityBudgetLedger(shared.root),ceiling,fetch:provider})(endpoint,request);
+ const results=Promise.all([first,second]);
+ expect(await shared.status()).toMatchObject({dispatches:1,chargedMicroUsd:0});expect(number).toBe(1);
+ release();await results;
+ expect(number).toBe(2);expect(peak).toBe(1);expect(await shared.status()).toMatchObject({dispatches:2,chargedMicroUsd:2000,admissionHeld:false,unknown:0});
 });
 it('denies a paid request below its full published bound without calling the provider',async()=>{
  const guard=budgetedGatewayFetch({ledger:await ledger(15000000),ceiling,fetch:async()=>{calls++;return Response.json(metadata);}});
  await expect(guard(endpoint,request)).rejects.toThrow('prevents dispatch');expect(calls).toBe(0);
+ const occupied=await ledger(16000500),id=await occupied.dispatch(await ceiling());let observed!:()=>void;
+ const seen=new Promise<void>(resolve=>{observed=resolve;});
+ const pending=budgetedGatewayFetch({ledger:new QualityBudgetLedger(occupied.root),ceiling,observed:async()=>{observed();},fetch:async()=>{calls++;return Response.json(metadata);}})(endpoint,request);
+ const outcome=Promise.allSettled([pending]);await seen;
+ await occupied.settle(id,{chargedMicroUsd:1000,inputTokens:1,outputTokens:1,generationId:'synthetic-cap-after-wait'});
+ const result=(await outcome)[0];expect(result.status).toBe('rejected');if(result.status==='rejected')expect(result.reason.message).toContain('prevents dispatch');
+ expect(calls).toBe(0);expect(await occupied.status()).toMatchObject({dispatches:1,chargedMicroUsd:1000,admissionHeld:false});
 });
 it('blocks subsequent SDK retries when the first charge is unavailable',async()=>{
  const budget=await ledger(),observations:any[]=[],guard=budgetedGatewayFetch({ledger:budget,ceiling,failed:async value=>{observations.push(value);},fetch:async()=>{calls++;return Response.json({usage:metadata.usage,providerMetadata:{gateway:{generationId:'gateway_jsonActual'}},response:{id:'gen_upstreamJson'}});}});
  await expect(guard(endpoint,request)).rejects.toThrow('charge unavailable');await expect(guard(endpoint,request)).rejects.toThrow('holds admission');expect(calls).toBe(1);expect(await budget.status()).toMatchObject({admissionHeld:true,unknown:1,heldMicroUsd:16000000});expect(observations).toHaveLength(1);expect(observations[0]).toMatchObject({phase:'accounting',status:200,gatewayGenerationId:'gateway_jsonActual',upstreamResponseId:'gen_upstreamJson'});
+ const pending=await ledger(),id=await pending.dispatch(await ceiling());let observed!:()=>void;
+ const seen=new Promise<void>(resolve=>{observed=resolve;});
+ const waiting=budgetedGatewayFetch({ledger:new QualityBudgetLedger(pending.root),ceiling,observed:async()=>{observed();},fetch:async()=>{throw Error('Must not dispatch after unknown');}})(endpoint,request);
+ const outcome=Promise.allSettled([waiting]);await seen;await pending.hold(id,'provider_error');
+ expect((await outcome)[0].status).toBe('rejected');expect(await pending.status()).toMatchObject({dispatches:1,chargedMicroUsd:0,unknown:1,heldMicroUsd:16000000});
 });
 it('accounts split streamed frames only after complete final usage is received',async()=>{
  const budget=await ledger(),bytes=Buffer.from('data: '+JSON.stringify({type:'finish',...metadata})+'\n\n');
@@ -41,6 +65,13 @@ it('rejects unapproved models endpoints and provider tools before dispatch',asyn
 it('does not claim a provider dispatch for an already aborted request',async()=>{
  const budget=await ledger(),abort=new AbortController();abort.abort();const guard=budgetedGatewayFetch({ledger:budget,ceiling,fetch:async()=>{calls++;return Response.json(metadata);}});
  await expect(guard(endpoint,{...request,signal:abort.signal})).rejects.toThrow();expect(calls).toBe(0);expect(await budget.status()).toMatchObject({dispatches:0,admissionHeld:false});
+ const occupied=await ledger(),id=await occupied.dispatch(await ceiling()),cancel=new AbortController();let observed!:()=>void;
+ const seen=new Promise<void>(resolve=>{observed=resolve;});
+ const waiting=budgetedGatewayFetch({ledger:new QualityBudgetLedger(occupied.root),ceiling,observed:async()=>{observed();},fetch:async()=>{calls++;return Response.json(metadata);}})(endpoint,{...request,signal:cancel.signal});
+ const outcome=Promise.allSettled([waiting]);await seen;cancel.abort();
+ expect((await outcome)[0].status).toBe('rejected');expect(calls).toBe(0);expect(await occupied.status()).toMatchObject({dispatches:1,chargedMicroUsd:0,heldMicroUsd:16000000});
+ await occupied.settle(id,{chargedMicroUsd:1000,inputTokens:1,outputTokens:1,generationId:'synthetic-aborted-wait-predecessor'});
+ expect(await occupied.status()).toMatchObject({dispatches:1,chargedMicroUsd:1000,admissionHeld:false});
 });
 it('enforces admission on the installed SDK request without contacting the provider',async()=>{
  const budget=await ledger(1);let denials=0;const parameters:unknown[]=[];

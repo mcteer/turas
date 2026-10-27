@@ -621,6 +621,12 @@ the completed 002–004 semantic checks and retrieval checks, then stopped at
 research R01: the answer quoted the source but printed an allowed reference that
 was not a consumed retrieval citation. T200 clarifies the exact-quotation
 route while preserving legitimate inventory references and the original rubric.
+Candidate `d308518` passed the focused R01 diagnostic. Subsequent research checks
+found an indexing/admission overlap and a separately scored missing shared-field
+citation. T201 queues known active evaluation work before a first provider
+dispatch, retaining uncertain-charge refusal and the original request deadline;
+the conflict fixture waits for both required indexed sources. T202 clarifies
+separate shared-field searches without changing retrieval ranking or the rubric.
 Fresh committed checks, full model evaluation, hosted recovery and Production
 release acceptance remain required. See [PR #47](https://github.com/mcteer/turas/pull/47).
 

@@ -1234,3 +1234,22 @@ No hosted target may be locked for release before its measured reopen path exist
   the original research prompt, rubric, authorization, consumption fences, model,
   step and token limits. Verify ordinary instruction scope, fresh committed CI,
   the complete actual model evaluation and hosted acceptance (FR-010, FR-021).
+
+- [ ] T201 Preserve the `d308518` R02 indexing failure and R06 pre-answer
+  admission failure. Serialize known active dollar work before each request's
+  first evaluation-provider dispatch, releasing the journal lock while waiting.
+  Keep unknown outcomes, credit holds, stale attempts, expiry and insufficient
+  funds denied; include waiting within the original request bound and cancel
+  before dispatch without creating a reservation. Require both conflict sources
+  indexed before R06's original evaluated turn. Extend existing concurrency,
+  abort, uncertainty, cap and authority cases without changing their count;
+  retain every charge/hold and require fresh full model, CI and hosted checks
+  (FR-002, FR-010, FR-021).
+
+- [ ] T202 Preserve R04's original passing objective flags and independently
+  scored 6/8 semantic miss. Use the existing shared/discovery tool contract and
+  short canonical field-label searches for separately requested guidance fields.
+  Keep source matching, each passage's exact citation, honest gaps, authorization,
+  ranking, evaluator prompts/rubric and five-step limit unchanged. Retain the
+  unpaid governed-tool comparison and require fresh committed, complete actual
+  model and hosted acceptance (FR-010, FR-021).

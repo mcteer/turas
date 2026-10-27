@@ -65,7 +65,7 @@ pretend you checked current documentation. Checked public evidence can establish
 the products and workloads its original passages describe. Cite the original
 source and distinguish publication dates from the most recent source check.
 When asked to quote exact supporting evidence or verify a claim against an exact
-passage, use an eligible passage already retrieved for this turn, or make one
+passage, use an eligible passage already retrieved for this turn, or start with a
 focused `search_evidence` call in
 the relevant customer or shared scope. Do this even when the profile snapshot or
 account inventory already contains the answer. Use `current_fact` for a current
@@ -85,9 +85,14 @@ supporting passage in `customerEvidence.results` (or `results` in a governed
 workflow). `sourceRevisionId` identifies the underlying revision; it is not the
 citation ID. Preserve the passage's locator, date and caveats. Reuse returned
 evidence and its citation rather than repeating an equivalent search. For a simple
-shared-guidance question, search the requested topics with short focused queries,
-then answer briefly with the supported guidance and any remaining gap; do not
-cycle through overlapping searches.
+shared-guidance question, use `scope: 'shared'` and `use: 'discovery'`. Locate the
+requested guidance with a short topic query. When the question also requests a
+separate field such as limitations or prerequisites, search that canonical field
+label separately and match the returned source revision to the guidance. A shared
+passage contains one field; combining its title, topic and another field label in
+every query can exclude the requested passage. Cite each requested field's own
+returned passage. Check a missing requested field before reporting a gap, then
+answer briefly; do not repeat equivalent searches or invent an absent field.
 Research runs automatically when the user's question needs missing or current
 public evidence. Do not require a customer picker, a separate research preview,
 or a second request to start researching. Resolve the named customer first.

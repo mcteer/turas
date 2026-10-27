@@ -33,6 +33,7 @@ it('retains prior charges and credits across corrected source attempts and block
  expect(second).not.toBe(first);expect(await ledger.currentSource()).toMatchObject({attemptId:second,sourceDigest:'f'.repeat(64)});
  expect(await ledger.status()).toMatchObject({chargedMicroUsd:10000000,contextCreditsConsumed:1,contextDispatches:1});
  await expect(ledger.dispatch(call,first)).rejects.toThrow('Prior quality attempt');
+ await expect(ledger.dispatchWhenAvailable(call,first,new AbortController().signal)).rejects.toThrow('Prior quality attempt');
  await expect(ledger.reserveCredit('d'.repeat(64),first)).rejects.toThrow('Prior quality attempt');
  await expect(ledger.dispatch(call,second)).rejects.toThrow('prevents dispatch');
  const unknown=await ledger.reserveCredit('d'.repeat(64),second);await ledger.holdCredit(unknown);
@@ -41,6 +42,7 @@ it('retains prior charges and credits across corrected source attempts and block
 it('serializes credit and dollar admissions while retaining their separate units',async()=>{
  const budget=await QualityBudgetLedger.create(join(root,'budget'),{...authorization(),contextCreditCap:4});
  const id=await budget.reserveCredit('d'.repeat(64));await expect(budget.dispatch(call)).rejects.toThrow('holds admission');
+ await expect(budget.dispatchWhenAvailable(call,undefined,new AbortController().signal)).rejects.toThrow('holds admission');
  await budget.settleCredit(id,1,'synthetic-search','e'.repeat(64));
  expect(await budget.status()).toMatchObject({chargedMicroUsd:0,contextCreditsConsumed:1,contextDispatches:1,admissionHeld:false});
  await budget.dispatch(call);await expect(budget.reserveCredit('d'.repeat(64))).rejects.toThrow('holds admission');
@@ -73,6 +75,10 @@ it('holds overruns and invalid accounting instead of releasing their reservation
 it('never steals an interrupted accounting lock or accepts a damaged journal',async()=>{
  const ledger=await QualityBudgetLedger.create(join(root,'locked'),authorization());await mkdir(join(ledger.root,'lock'),{mode:0o700});
  await expect(ledger.status()).rejects.toThrow('lock unavailable');
+ const abort=new AbortController(),waiting=Promise.allSettled([ledger.dispatchWhenAvailable(call,undefined,abort.signal)]);
+ await new Promise(resolve=>setTimeout(resolve,10));abort.abort();
+ const cancelled=(await waiting)[0];expect(cancelled.status).toBe('rejected');if(cancelled.status==='rejected')expect(cancelled.reason.name).toBe('AbortError');
+ expect((await readdir(ledger.root)).sort()).toEqual(['authorization.json','lock']);
  const damaged=await QualityBudgetLedger.create(join(root,'damaged'),authorization());await writeFile(join(damaged.root,'event-000001.json'),'partial',{mode:0o600});
  await expect(damaged.dispatch(call)).rejects.toThrow();
 });
@@ -96,6 +102,7 @@ it('continues the exact expired journal without replacing original charges credi
  const credit=await ledger.reserveCredit('d'.repeat(64));await ledger.settleCredit(credit,1,'synthetic-prior-credit','e'.repeat(64));
  const originals=new Map(await Promise.all((await readdir(ledger.root)).map(async name=>[name,await readFile(join(ledger.root,name),'utf8')] as const)));
  expire();expect((await ledger.status()).admissionHeld).toBe(true);
+ await expect(ledger.dispatchWhenAvailable(call,undefined,new AbortController().signal)).rejects.toThrow('holds admission');
  const approved=await continuation(ledger),receipt=await ledger.continueAuthorization(approved);
  expect(receipt).toMatchObject({originalAuthorizationUnchanged:true,capMicroUsd:25000000,chargedMicroUsd:10000000,contextDispatches:1});
  for(const [name,bytes] of originals)expect(await readFile(join(ledger.root,name),'utf8')).toBe(bytes);

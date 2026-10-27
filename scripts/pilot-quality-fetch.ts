@@ -44,9 +44,9 @@ export function budgetedGatewayFetch(input:{ledger:QualityBudgetLedger;attemptId
   request.signal.throwIfAborted();
   if(Array.isArray(payload.tools)&&payload.tools.some((tool:unknown)=>typeof tool==='object'&&tool!==null&&'type' in tool&&tool.type==='provider-defined'))throw Error('Unpriced provider tool denied');
   const ceiling=await input.ceiling(modelId as Model);if(ceiling.modelId!==modelId)throw Error('Evaluation pricing model differs');
-  let id:string;
-  try{id=await input.ledger.dispatch(ceiling,input.attemptId);}catch(error){if(error instanceof Error&&error.message==='Evaluation budget prevents dispatch')await input.denied?.(ceiling);throw error;}
   const signal=AbortSignal.any([request.signal,AbortSignal.timeout(120000)]);
+  let id:string;
+  try{id=await input.ledger.dispatchWhenAvailable(ceiling,input.attemptId,signal);}catch(error){if(error instanceof Error&&error.message==='Evaluation budget prevents dispatch')await input.denied?.(ceiling);throw error;}
   const aborted=()=>{void input.ledger.hold(id,'aborted').catch(()=>undefined);};signal.addEventListener('abort',aborted,{once:true});
   const held=async(reason:'provider_error'|'incomplete_stream'|'invalid_accounting')=>{await input.ledger.hold(id,reason);signal.removeEventListener('abort',aborted);};
   let phase:QualityFailureEvidence['phase']='transport',status:number|undefined,metadataId:string|undefined,gatewayGenerationId:string|undefined,failureCaptured=false;const failed=async(extra:Partial<QualityFailureEvidence>={})=>{if(failureCaptured)return;failureCaptured=true;await input.failed?.({dispatchId:id,phase,...(status!==undefined?{status}:{}),...(gatewayGenerationId?{gatewayGenerationId}:{}),...(metadataId&&/^[A-Za-z0-9_:-]{1,256}$/.test(metadataId)?{upstreamResponseId:metadataId}:{}),...extra});};
