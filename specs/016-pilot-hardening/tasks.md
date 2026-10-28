@@ -1379,3 +1379,11 @@ No hosted target may be locked for release before its measured reopen path exist
   whole-case deadline and signal. Preserve measured identity, both intentional
   sleeps, every assertion, product limits and the producer's independent target.
   Require independent review, original regression and fresh full CI (FR-017).
+
+- [ ] T219 Preserve the actual `17b3457` support CI mixed-stdout JSON failure.
+  Read discovery and execution reports from protected reporter-owned files with
+  the existing combined output bound; retain stdout diagnostics separately.
+  Disable optional Playwright Git commit/diff enrichment in the shared config;
+  preserve Turas source manifests, original cases, verifiers and process limits.
+  Verify real noisy CLI discovery, unsafe-file refusals and the complete original
+  support browser gate, then require fresh committed validation and CI (FR-017).

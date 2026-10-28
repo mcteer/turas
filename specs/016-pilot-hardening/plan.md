@@ -956,3 +956,14 @@ the existing whole-case deadline and signal. Target identity excludes deadline;
 measurements and their timestamps remain unchanged. Preserve all sleeps,
 assertions, product limits and the producer's separate target. Local reproduction
 and fresh full CI are required; the failed CI attempt remains historical evidence.
+
+At `17b3457`, support CI fails parsing Playwright's optional Git metadata
+diagnostic as JSON. The installed Git plugin writes warnings to stdout in CI.
+Use the support reporter's own JSON file for discovery and execution, retaining
+stdout separately and enforcing the existing combined 10 MB output ceiling and
+protected-file checks. Disable optional Git commit/diff capture in the shared
+Playwright config to remove this known emitter from other browser gates. Turas's
+source commit/digest/catalog and named-case verifiers remain authoritative;
+none consume Playwright's optional Git metadata. Preserve all cases, assertions,
+retries and timeouts. Test noisy real CLI discovery and file refusals, then run
+the complete original support gate and fresh committed validation.

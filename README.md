@@ -5,6 +5,16 @@ Current pilot release status and validation results are recorded in
 historical snapshots at their recorded source revisions; they do not replace
 current release evidence.
 
+At `17b3457`, the focused research-scope and recovery replay regressions pass,
+as do native admission preparation and all 40 local browser cases. CI exposes
+a support-runner JSON parse failure caused by Playwright's optional Git metadata
+diagnostic on stdout. Read the support reporter's owned JSON file and retain
+stdout separately. Disable optional Playwright Git enrichment across the shared
+configuration; Turas's verified source manifests remain authoritative. Preserve
+all browser cases and limits. The local catalog and load runs were retired for
+this source correction and do not count as passes. Fresh full validation and
+Production release remain pending.
+
 At `11a0011`, all 1,056 local catalog cases, load checks and four-profile browser
 checks pass. The live batch completes four stages; R07 fetches and checks five
 sources but omits their source-revision citations. Its ordinary conversation did

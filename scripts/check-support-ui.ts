@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import {captureUiChild} from './capture-ui-child';
-import { mkdir, mkdtemp, writeFile, readdir, lstat, chmod } from "node:fs/promises";
+import { mkdir, mkdtemp, writeFile, readdir, lstat, chmod, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { withSupportEvalEnvironment } from "./support-eval-environment";
 import { createSupportActors } from "../tests/fixtures/support/seed";
@@ -16,6 +16,19 @@ async function privateCaptures(path: string): Promise<void> {
   if (stat.isDirectory()) for (const entry of await readdir(path)) await privateCaptures(resolve(path, entry));
 }
 
+/** Read only the reporter-owned file; stdout can contain runner diagnostics. */
+async function readReporterJson(path: string, diagnosticBytes: number): Promise<string> {
+  const stat = await lstat(path);
+  if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 ||
+      stat.uid !== process.getuid?.() || stat.size + diagnosticBytes > 10_000_000) {
+    throw new Error("Support JSON report exceeds private file bounds");
+  }
+  const raw = await readFile(path);
+  if (raw.length !== stat.size) throw new Error("Support JSON report changed while reading");
+  await chmod(path, 0o600);
+  return raw.toString("utf8");
+}
+
 async function main() {
   const projects = ["webkit-desktop-light", "webkit-desktop-dark", "webkit-mobile-light", "webkit-mobile-dark"];
   const smoke = process.argv[2] === "--smoke";
@@ -29,11 +42,12 @@ async function main() {
   let passed = 0;
   for (const project of projects) {
     const args = ["node_modules/@playwright/test/cli.js", "test", ...specs, `--project=${project}`, "--reporter=json", "--forbid-only", "--retries=0"];
-    const discovery = spawnSync(process.execPath, [...args, "--list"], { env: process.env, encoding: "utf8", timeout: 60000, maxBuffer: 10000000 });
-    await writeFile(resolve(directory, `${project}-discovery.json`), discovery.stdout, { mode: 0o600 });
+    const discoveryPath = resolve(directory, `${project}-discovery.json`);
+    const discovery = spawnSync(process.execPath, [...args, "--list"], { env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_FILE: discoveryPath }, encoding: "utf8", timeout: 60000, maxBuffer: 10000000 });
+    await writeFile(resolve(directory, `${project}-discovery.stdout.log`), discovery.stdout, { mode: 0o600 });
     await writeFile(resolve(directory, `${project}-discovery.log`), discovery.stderr, { mode: 0o600 });
     if (discovery.status !== 0) throw new Error("Support UI discovery failed");
-    const discoveryReport = JSON.parse(discovery.stdout);
+    const discoveryReport = JSON.parse(await readReporterJson(discoveryPath, Buffer.byteLength(discovery.stdout) + Buffer.byteLength(discovery.stderr)));
     const discoveryDiagnostic = supportUiGlobalDiagnostic(discoveryReport);
     if (discoveryDiagnostic.globalErrors) console.error(JSON.stringify({ gate: "support-ui-runner", phase: "discovery", project, ...discoveryDiagnostic }));
     const cases = executionUiDiscovery(discoveryReport, specs, project);
@@ -46,16 +60,17 @@ async function main() {
       try {
         await environment.start();
         const output = resolve(directory, `${project}-${index}`);
+        const reportPath = resolve(directory, `${project}-${index}.json`);
         const run = await captureUiChild(["node_modules/@playwright/test/cli.js", "test", `${current.file}:${current.line}`, `--project=${project}`,
           "--reporter=json", "--forbid-only", "--retries=0", `--output=${output}`], {
-          env: { ...process.env, TURAS_UI_BASE_URL: environment.origin, TURAS_SUPPORT_UI_FIXTURE_READY: "1" },
+          env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_FILE: reportPath, TURAS_UI_BASE_URL: environment.origin, TURAS_SUPPORT_UI_FIXTURE_READY: "1" },
           timeout: 240000, maximumBytes: 10000000,
         });
-        await writeFile(resolve(directory, `${project}-${index}.json`), run.stdout, { mode: 0o600 });
+        await writeFile(resolve(directory, `${project}-${index}.stdout.log`), run.stdout, { mode: 0o600 });
         await writeFile(resolve(directory, `${project}-${index}.log`), run.stderr + environment.privateLogTail(), { mode: 0o600 });
         if(run.error)throw new Error("Support UI runner did not complete within bounds");
         await privateCaptures(output);
-        const report = JSON.parse(run.stdout), diagnostic = supportUiGlobalDiagnostic(report);
+        const report = JSON.parse(await readReporterJson(reportPath, Buffer.byteLength(run.stdout) + Buffer.byteLength(run.stderr))), diagnostic = supportUiGlobalDiagnostic(report);
         if (diagnostic.globalErrors) console.error(JSON.stringify({ gate: "support-ui-runner", phase: "execution", project, file: current.file, ...diagnostic }));
         const caseDiagnostic = supportUiCaseDiagnostic(report);
         if (caseDiagnostic.failedResults) console.error(JSON.stringify({ gate: "support-ui-case", project,
