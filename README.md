@@ -5,6 +5,17 @@ Current pilot release status and validation results are recorded in
 historical snapshots at their recorded source revisions; they do not replace
 current release evidence.
 
+At `6f14882`, the full 1,056-case local catalog, four-profile browser suite,
+native admission preparation and load benchmark pass. The live batch captures
+four complete stages before the first Context search exposes a consumed-request
+bug in its evaluation wrapper. The correction forwards the validated request,
+keeps the conservative credit hold, and requires an explicit allowance for all
+seven original research searches. Existing authorizations remain unchanged;
+subscriptions and automatic top-ups remain prohibited. The browser producer also writes
+Playwright JSON to its dedicated report file so stdout diagnostics cannot corrupt
+it. Tests, assertions, retries and deadlines retain their original bounds.
+Fresh committed validation and Production release remain pending.
+
 At `695985f`, all 61 CI jobs and the unfiltered 1,054-case local catalog
 pass. Preview also verifies ten actual file-processing jobs, both 10 MiB originals
 and all four generated artifacts after a distinct deployment. The hosted run

@@ -3,6 +3,7 @@ import {mkdtemp,rm,mkdir,writeFile,readFile,readdir,cp} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {QualityBudgetLedger,qualityContinuationSchema} from '../../../scripts/pilot-quality-budget-ledger';
+import {qualityOperatorAuthorization} from '../../../scripts/pilot-quality-step-authorization';
 import {qualityChildEnvironment} from '../../../scripts/pilot-quality-runtime';
 import {writeEvidence,evidenceDigest,readEvidence} from '../../../scripts/pilot-evidence';
 let root:string;
@@ -53,11 +54,21 @@ it('holds every provider after an unknown or invalid credit charge',async()=>{
  await expect(budget.dispatch(call)).rejects.toThrow('holds admission');await expect(budget.reserveCredit('d'.repeat(64))).rejects.toThrow('holds admission');
  expect(await budget.status()).toMatchObject({unknown:1,admissionHeld:true});
 });
-it('requires explicit credit authority and never reuses the four-call allowance',async()=>{
+it('requires explicit credit authority and never reuses the approved allowance',async()=>{
+ const operator={contract:'pilot-quality-operator-v1',id:randomUUID(),feature:'016',category:'model-evaluation',modelId:'spacexai/grok-4.7',capMicroUsd:25000000,automaticBillingAllowed:false,independentReviewAuthorized:true,userInstructionReference:'Synthetic bounded credit approval',recordedAt:new Date().toISOString(),expiresAt:new Date(Date.now()+60000).toISOString()};
+ for(const cap of [0,3,4,7])expect(qualityOperatorAuthorization.parse({...operator,contextCreditCap:cap}).contextCreditCap).toBe(cap);
+ for(const cap of [-1,1.5,8])expect(qualityOperatorAuthorization.safeParse({...operator,contextCreditCap:cap}).success).toBe(false);
+ expect(qualityOperatorAuthorization.safeParse({...operator,contextCreditCap:7,automaticBillingAllowed:true}).success).toBe(false);
+ await expect(QualityBudgetLedger.create(join(root,'over-credit-cap'),{...authorization(),contextCreditCap:8})).rejects.toThrow();
  const denied=await QualityBudgetLedger.create(join(root,'unapproved'),authorization());await expect(denied.reserveCredit('d'.repeat(64))).rejects.toThrow('Explicit research credit budget required');
- const budget=await QualityBudgetLedger.create(join(root,'budget'),{...authorization(),contextCreditCap:4});
- for(let i=0;i<4;i++){const id=await budget.reserveCredit('d'.repeat(64));await budget.settleCredit(id,0,'synthetic-search-'+i,'e'.repeat(64));}
- await expect(budget.reserveCredit('d'.repeat(64))).rejects.toThrow('Explicit research credit budget required');expect(await budget.status()).toMatchObject({contextCreditsConsumed:0,contextDispatches:4});
+ for(const contextCreditCap of [3,4,7]){
+  const budget=await QualityBudgetLedger.create(join(root,'budget-'+contextCreditCap),{...authorization(),contextCreditCap});
+  for(let i=0;i<contextCreditCap-1;i++){const id=await budget.reserveCredit('d'.repeat(64));await budget.settleCredit(id,0,'synthetic-search-'+i,'e'.repeat(64));}
+  const contenders=await Promise.allSettled([budget.reserveCredit('d'.repeat(64)),new QualityBudgetLedger(budget.root).reserveCredit('d'.repeat(64))]);
+  expect(contenders.filter(result=>result.status==='fulfilled')).toHaveLength(1);
+  const last=contenders.find(result=>result.status==='fulfilled') as PromiseFulfilledResult<string>;await budget.settleCredit(last.value,0,'synthetic-search-last','e'.repeat(64));
+  await expect(budget.reserveCredit('d'.repeat(64))).rejects.toThrow('Explicit research credit budget required');expect(await budget.status()).toMatchObject({contextCreditsConsumed:0,contextDispatches:contextCreditCap});
+ }
 });
 it('retains uncertain dispatch holds across clients without permitting retries',async()=>{
  const ledger=await QualityBudgetLedger.create(join(root,'budget'),authorization()),id=await ledger.dispatch(call);
@@ -138,12 +149,14 @@ it('keeps pending and unknown dollar or credit holds closed under a fresh contin
 });
 
 it('invalidates old attempts and runtimes when a separately approved continuation becomes current',async()=>{
- const ledger=await QualityBudgetLedger.create(join(root,'budget'),authorization()),oldAttempt=await ledger.beginAttempt(continuedSource),original=await ledger.currentAuthority();
+ const ledger=await QualityBudgetLedger.create(join(root,'budget'),{...authorization(),contextCreditCap:7}),oldAttempt=await ledger.beginAttempt(continuedSource),original=await ledger.currentAuthority();
  const runtimeFile=join(root,'runtime.json'),previous=process.env.TURAS_016_QUALITY_RUNTIME_FILE;
  try{
-  const runtime={contract:'pilot-quality-runtime-v1',id:original.id,attemptId:oldAttempt,sourceRoot:process.cwd(),ledgerRoot:ledger.root,...continuedSource,authorizationDigest:original.authorizationDigest,capMicroUsd:original.capMicroUsd,expiresAt:original.expiresAt};
+  const runtime={contract:'pilot-quality-runtime-v1',id:original.id,attemptId:oldAttempt,sourceRoot:process.cwd(),ledgerRoot:ledger.root,...continuedSource,authorizationDigest:original.authorizationDigest,capMicroUsd:original.capMicroUsd,contextCreditCap:7,expiresAt:original.expiresAt};
   await writeEvidence(root,'runtime.json',runtime);process.env.TURAS_016_QUALITY_RUNTIME_FILE=runtimeFile;
   expect((await qualityChildEnvironment()).TURAS_ALLOW_LIVE_MODEL_TESTS).toBe('1');
+  for(const contextCreditCap of [4,8]){await writeEvidence(root,`mismatched-runtime-${contextCreditCap}.json`,{...runtime,contextCreditCap});process.env.TURAS_016_QUALITY_RUNTIME_FILE=join(root,`mismatched-runtime-${contextCreditCap}.json`);await expect(qualityChildEnvironment()).rejects.toThrow();}
+  process.env.TURAS_016_QUALITY_RUNTIME_FILE=runtimeFile;
   expire();await ledger.continueAuthorization(await continuation(ledger));
   await expect(ledger.dispatch(call,oldAttempt)).rejects.toThrow('Prior quality attempt');
   await expect(ledger.reserveCredit('d'.repeat(64),oldAttempt)).rejects.toThrow('Prior quality attempt');

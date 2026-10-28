@@ -39,7 +39,7 @@ export function budgetedQualityContextFetch(input:{ledger:QualityBudgetLedger;at
   const id=await input.ledger.reserveCredit(evidenceDigest(JSON.stringify(before)),input.attemptId);
   const signal=AbortSignal.any([request.signal,AbortSignal.timeout(15000)]),aborted=()=>{void input.ledger.holdCredit(id).catch(()=>undefined);};signal.addEventListener('abort',aborted,{once:true});
   try{
-   signal.throwIfAborted();const response=await input.fetch(resource,{...init,signal});
+   signal.throwIfAborted();const response=await input.fetch(request,{signal});
    if(!response.ok)throw Error('Research dispatch requires review');
    const payload=await bytes(response),raw=z.object({request_id:z.string().min(1).max(256),key_metadata:z.object({credits_consumed:units,credits_remaining:units})}).parse(JSON.parse(payload.toString('utf8')));
    const header=response.headers.get('x-credits-used');if(header!==null&&String(raw.key_metadata.credits_consumed)!==header)throw Error('Research credit receipts differ');

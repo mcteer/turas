@@ -1,3 +1,4 @@
+import {qualityContextCreditCap} from './pilot-quality-step-authorization';
 import {constants} from 'node:fs';
 import {lstat,mkdir,open,readdir,realpath,rmdir} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
@@ -8,7 +9,7 @@ import {hostedLearningDispatchSchema} from '../lib/contracts/pilot-hosted-learni
 import {createEvidenceDirectory,readEvidence,writeEvidence,evidenceDigest} from './pilot-evidence';
 
 const digest=z.string().regex(/^[a-f0-9]{64}$/),micro=z.number().int().nonnegative().safe();
-const authorization=z.strictObject({contract:z.literal('pilot-quality-budget-v1'),id:z.uuid(),capMicroUsd:micro.positive(),contextCreditCap:z.number().int().min(0).max(4).optional(),authorizationDigest:digest,sourceDigest:digest,catalogDigest:digest,modelId:z.literal('spacexai/grok-4.7'),expiresAt:z.iso.datetime({offset:true})});
+const authorization=z.strictObject({contract:z.literal('pilot-quality-budget-v1'),id:z.uuid(),capMicroUsd:micro.positive(),contextCreditCap:qualityContextCreditCap.optional(),authorizationDigest:digest,sourceDigest:digest,catalogDigest:digest,modelId:z.literal('spacexai/grok-4.7'),expiresAt:z.iso.datetime({offset:true})});
 /** A separately approved continuation extends time only. No cap, charge,
  * reservation, model or original authorization can be replaced by this input. */
 export const qualityContinuationSchema=z.strictObject({

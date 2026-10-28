@@ -9380,3 +9380,62 @@ numeric/string amounts. The full 13-case accounting file and three Root-browser
 cases pass, with no skipped cases; the 1,056-case catalog count is unchanged.
 Historical settlements and unknown holds are untouched. Fresh committed CI,
 complete local/model and hosted/Production release checks remain required.
+
+
+### Context Request forwarding and bounded operator credits — 2026-10-28 UTC
+
+At `6f14882`, the unfiltered local catalog passes 1,056 cases in 192 suites,
+all 40 browser cases pass, native preparation dispatches no paid providers, and
+all 18 load classes pass from 4,050 samples. Independent actual-result reviews
+retain their local limits. The full model batch captures stages 002, 003, 004
+and 005-retrieval, then fails research case R07. Its journal retains 161 settled
+Gateway calls, recorded charges of 2,627,897 micro-USD and one unresolved Context
+credit. This is a failed whole batch, not full model acceptance.
+
+The Context wrapper constructs a Request for validation, consuming the original
+Request body's stream, then forwards that original. Native Request construction
+reproduces the TypeError without network access and before the simulated search
+transport. A bounded read of the provider's request log returns no matching
+search in the original interval. Neither observation clears the existing
+conservative credit hold or authorizes replay.
+
+The existing credit test now covers both URL/init and Request overloads using
+native Request construction. It fails against the original wrapper and passes
+when the validated Request is forwarded unchanged. The original full research catalog requires seven searches: four identity
+recon queries, two practices queries and one cancelled-run query. The original
+four-credit operator, ledger and runtime ceilings cannot complete that catalog.
+Their shared schema permits an explicit cap from zero through seven; existing
+authorizations and holds remain unchanged. Boundary cases cover smaller and
+seven-credit allowances, reject amounts above seven and prevent reuse even for
+zero-credit receipts. Runtime validation retains exact ledger matching. This
+changes no subscription, automatic top-up or existing financial authority.
+The case catalog remains 1,056. Fresh committed full validation is required.
+
+### Playwright report transport — 2026-10-28 UTC
+
+Original Main CI retains the mobile-dark JSON parse failure caused by a
+Playwright GitCommitInfo stdout diagnostic, its aggregate failure, and the
+separate recovery/MCP case failure. That case's original target is expired at
+the final replay; the precise assertion cause is not retained. One unchanged
+whole Main rerun was requested with every original case and bound intact.
+
+The corrected expansion producer uses the installed reporter's dedicated JSON
+output file, retains stdout diagnostics separately, and preserves the original
+aggregate ten-MB bound, strict JSON/discovery/case checks, process exit checks,
+zero retries and all four same-attempt reports. The complete actual mobile-dark
+project and fresh committed CI remain required; no prior failure is relabeled
+as a pass.
+
+The corrected aggregate-credit cases pass 22/22 focused tests with zero skips.
+They cover seven accepted and eight rejected credits, concurrent admission for
+the final slot, zero-charge non-reuse, exact runtime/ledger matching and disabled
+automatic billing. The three TypeScript checks and authored-document check pass.
+These are local checks of the candidate; complete committed validation and
+release remain required.
+
+The mobile-dark transport probe produced all 21 passing original journey
+reports, each retaining the diagnostic on stdout with valid separate JSON.
+The complete process nevertheless failed its final source-integrity check
+because candidate files changed during execution. It is not accepted as a
+passing gate; a fresh committed execution is required. No journey failed,
+and none was retried or omitted.

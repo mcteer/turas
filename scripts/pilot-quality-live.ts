@@ -1,6 +1,5 @@
 import {runPilotQualityCommand} from './pilot-quality-command';
-import {z} from 'zod';
-import {verifyQualityStepAuthorization} from './pilot-quality-step-authorization';
+import {verifyQualityStepAuthorization,qualityOperatorAuthorization} from './pilot-quality-step-authorization';
 import {randomUUID} from 'node:crypto';
 import {readFile,mkdir,cp,writeFile,readdir,lstat} from 'node:fs/promises';
 import {resolve,join,dirname,basename} from 'node:path';
@@ -21,7 +20,6 @@ import {verifyPilotSuiteResult} from './pilot-suite-results';
 import {prepareQualityWorkspace,verifyQualityWorkspace} from './pilot-quality-workspace';
 import {installBehaviorReviewCapture} from './pilot-behavior-review-capture';
 
-const authorization=z.strictObject({contract:z.literal('pilot-quality-operator-v1'),id:z.uuid(),feature:z.literal('016'),category:z.literal('model-evaluation'),modelId:z.literal('spacexai/grok-4.7'),capMicroUsd:z.number().int().positive().max(100000000),contextCreditCap:z.literal(4),automaticBillingAllowed:z.literal(false),independentReviewAuthorized:z.literal(true),userInstructionReference:z.string().trim().min(1).max(512),recordedAt:z.iso.datetime({offset:true}),expiresAt:z.iso.datetime({offset:true})});
 type Stage={id:string;commands:string[][];native?:boolean;profileSeed?:'demo';deadlineMs:number};
 /** Governing full commands only. No case omission, paid retry, fixture-model
  * replacement, historical review reuse, or self-issued semantic acceptance. */
@@ -106,7 +104,7 @@ export async function pilotQualityLive(args=process.argv.slice(2)){
   const receipt={contract:'pilot-quality-preparation-v1',...source,preparedAt:new Date().toISOString(),nativeAdmissionVerified:true,realProviderCredential:false,paidDispatches:0,imagesDigest:evidenceDigest(await readFile(images)),catalogs:qualityCatalog,stages:qualityStages,actualModelQualityVerified:false,independentReviewComplete:false};
   await writeEvidence(root,'preparation.json',receipt);console.info(JSON.stringify({gate:'pilot-quality-preparation',state:'pass',paidDispatches:0,catalogs:qualityCatalog.length,actualModelQualityVerified:false}));return receipt;
  }
- const approval=authorization.parse(await privateReceipt(values.authorization)),approvedAt=Date.parse(approval.recordedAt),expiresAt=Date.parse(approval.expiresAt);
+ const approval=qualityOperatorAuthorization.parse(await privateReceipt(values.authorization)),approvedAt=Date.parse(approval.recordedAt),expiresAt=Date.parse(approval.expiresAt);
  if(approvedAt>Date.now()||expiresAt<=approvedAt||(!values.continuation&&!values.resumption&&expiresAt<=Date.now())||expiresAt-approvedAt>86400000||String(approval.capMicroUsd/1000000)!==values['budget-usd'])throw Error('Fresh applicable operator budget required');
  await verifyCompleteDeterministic(values['deterministic-proof'],source);
  const prepared=await privateReceipt(values.preparation) as Record<string,unknown>;

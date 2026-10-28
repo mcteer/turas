@@ -19,6 +19,15 @@ async function privateCaptures(path: string): Promise<void> {
   if (stat.isDirectory()) for (const entry of await readdir(path)) await privateCaptures(resolve(path, entry));
 }
 
+/** The reporter owns this file; runner diagnostics may also use stdout. */
+async function readReporterJson(path:string,diagnosticBytes=0):Promise<string>{
+ const stat=await lstat(path);
+ if(!stat.isFile()||stat.isSymbolicLink()||stat.nlink!==1||stat.uid!==process.getuid?.()||stat.size+diagnosticBytes>10000000)throw Error('Expansion JSON report exceeds private file bounds');
+ const raw=await readFile(path);
+ if(raw.length!==stat.size)throw Error('Expansion JSON report changed while reading');
+ await chmod(path,0o600);return raw.toString('utf8');
+}
+
 async function main() {
   const selectedProject=process.argv[2]==='--project'?process.argv[3]:undefined;
   if(selectedProject&&!expansionWebkitProjects.includes(selectedProject as typeof expansionWebkitProjects[number]))throw Error('Exact WebKit project required');
@@ -44,11 +53,12 @@ async function main() {
   let passed = 0;
   for (const project of projects) {
     const args = ["node_modules/@playwright/test/cli.js", "test", ...specs, `--project=${project}`, "--reporter=json", "--forbid-only", "--retries=0", "--repeat-each=1"];
-    const discovery = spawnSync(process.execPath, [...args, "--list"], { env: process.env, encoding: "utf8", timeout: 60000, maxBuffer: 10000000 });
-    await writeFile(resolve(directory, `${project}-discovery.json`), discovery.stdout, { mode: 0o600 });
+    const discoveryPath=resolve(directory, `${project}-discovery.json`);
+    const discovery = spawnSync(process.execPath, [...args, "--list"], { env: {...process.env,PLAYWRIGHT_JSON_OUTPUT_FILE:discoveryPath}, encoding: "utf8", timeout: 60000, maxBuffer: 10000000 });
+    await writeFile(resolve(directory, `${project}-discovery.stdout.log`), discovery.stdout, { mode: 0o600 });
     await writeFile(resolve(directory, `${project}-discovery.log`), discovery.stderr, { mode: 0o600 });
     if (discovery.status !== 0) throw new Error("Expansion UI discovery failed");
-    const discoveryReport = JSON.parse(discovery.stdout);
+    const discoveryReport = JSON.parse(await readReporterJson(discoveryPath,Buffer.byteLength(discovery.stdout)+Buffer.byteLength(discovery.stderr)));
     const discoveryDiagnostic = expansionUiGlobalDiagnostic(discoveryReport);
     if (discoveryDiagnostic.globalErrors) console.error(JSON.stringify({ gate: "expansion-ui-runner", phase: "discovery", project, ...discoveryDiagnostic }));
     const cases = executionUiDiscovery(discoveryReport, specs, project),ciReports:unknown[]=[];
@@ -65,17 +75,17 @@ async function main() {
         await environment.start();
         const preparation=await prepareOwnedExpansionUi(environment.origin,fixtureDeadline);
         await writeFile(resolve(directory, `${project}-${index}-preparation.json`),JSON.stringify(preparation),{mode:0o600});
-        const output = resolve(directory, `${project}-${index}`);
+        const output = resolve(directory, `${project}-${index}`),reportPath=resolve(directory,`${project}-${index}.json`);
         const run = await captureUiChild(["node_modules/@playwright/test/cli.js", "test", `${current.file}:${current.line}`, `--project=${project}`,
           "--reporter=json", "--forbid-only", "--retries=0", "--repeat-each=1", "--trace=retain-on-failure", `--output=${output}`], {
-          env: { ...process.env, TURAS_UI_BASE_URL: environment.origin, TURAS_EXPANSION_UI_FIXTURE_READY: "1" },
+          env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_FILE:reportPath, TURAS_UI_BASE_URL: environment.origin, TURAS_EXPANSION_UI_FIXTURE_READY: "1" },
           timeout: 240000, maximumBytes: 10000000,
         });
-        await writeFile(resolve(directory, `${project}-${index}.json`), run.stdout, { mode: 0o600 });
+        await writeFile(resolve(directory, `${project}-${index}.stdout.log`), run.stdout, { mode: 0o600 });
         await writeFile(resolve(directory, `${project}-${index}.log`), run.stderr + environment.privateLogTail(), { mode: 0o600 });
         if(run.error)throw new Error("Expansion UI runner did not complete within bounds");
         await privateCaptures(output);
-        const report = JSON.parse(run.stdout), diagnostic = expansionUiGlobalDiagnostic(report);
+        const report = JSON.parse(await readReporterJson(reportPath,Buffer.byteLength(run.stdout)+Buffer.byteLength(run.stderr))), diagnostic = expansionUiGlobalDiagnostic(report);
         if (diagnostic.globalErrors) console.error(JSON.stringify({ gate: "expansion-ui-runner", phase: "execution", project, file: current.file, ...diagnostic }));
         const caseDiagnostic = expansionUiCaseDiagnostic(report,"expansion");
         if (caseDiagnostic.failedResults) console.error(JSON.stringify({ gate: "expansion-ui-case", project,

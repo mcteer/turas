@@ -1326,3 +1326,21 @@ No hosted target may be locked for release before its measured reopen path exist
   Extend the existing JSON/SSE accounting cases without changing the catalog
   count; preserve all historic settlements/holds and require fresh committed
   validation before release (FR-021).
+
+
+- [ ] T213 Preserve the actual `6f14882` research R07 refusal and conservative
+  credit hold. Forward the already validated Context Request instead of its
+  consumed original; verify URL/init and Request overloads with native Request
+  construction before any simulated forwarding. Require an explicit existing-credit allowance for
+  all seven original research searches: four recon, two practices and one
+  cancelled-run search. Preserve every earlier charge and credit hold; do not
+  expand an existing authorization. Keep original payloads, per-request deadlines,
+  billing prohibition, cases, stages and model limits; require fresh complete
+  validation and hosted release (FR-021).
+
+- [ ] T214 Preserve the original `6f14882` Playwright stdout-contamination
+  failure. Read the runner's bounded, owned JSON report file and retain stdout
+  diagnostics separately. Keep all original discovery, source, case, retry,
+  global-error, process-exit and same-attempt aggregation checks; verify the
+  actual full mobile-dark project with a diagnostic on runner stdout before
+  fresh CI and release (FR-017, FR-021).
