@@ -15,6 +15,11 @@ and its actual provider identity before reloading. It preserves the quiet UI,
 Stop, attempt/deadline and dispatch-count checks. Its catalog adds two regression
 cases (1,056 total). Fresh source-bound validation and Production release remain
 pending; the failed hosted run remains failed.
+Independent release review also found that evaluation accounting could prefer
+`cost` over a contradictory `totalCost`. The follow-up rejects conflicting or
+malformed supplied aliases, retains the full unknown reservation and blocks a
+second dispatch. Equivalent values and single-field receipts remain valid.
+This is a validation-code correction, not a finding about a historical charge.
 
 At `17494d2`, all 61 CI jobs, the original 1,054-case local catalog,
 40 browser checks and the bounded local load benchmark pass. Full pilot

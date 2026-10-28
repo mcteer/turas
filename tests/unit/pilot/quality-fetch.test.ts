@@ -15,6 +15,14 @@ afterEach(()=>rm(root,{recursive:true,force:true}));
 it('settles known Gateway charges while preserving the provider response',async()=>{
  const budget=await ledger(),guard=budgetedGatewayFetch({ledger:budget,ceiling,fetch:async()=>{calls++;return Response.json(metadata);}});
  expect(await (await guard(endpoint,request)).json()).toEqual(metadata);expect(calls).toBe(1);expect(await budget.status()).toMatchObject({chargedMicroUsd:1000,admissionHeld:false});
+ // Aliases must agree on one amount, including numeric/string equivalents.
+ for(const gateway of [{cost:'0.001'},{totalCost:'0.001'},{cost:'0.0010',totalCost:0.001},{cost:0,totalCost:'0'}]){
+  const budget=await ledger(),receipt={...metadata,providerMetadata:{gateway:{...gateway,generationId:'synthetic-alias'}}};
+  const fetch=budgetedGatewayFetch({ledger:budget,ceiling,fetch:async()=>Response.json(receipt)});
+  expect(await(await fetch(endpoint,request)).json()).toEqual(receipt);
+  expect(await budget.status()).toMatchObject({chargedMicroUsd:Number(gateway.cost??gateway.totalCost)*1000000,unknown:0,heldMicroUsd:0});
+ }
+
  // Once a complete receipt exists, cancellation must not race a durable
  // settlement into an unknown hold. Cancellation still reaches the caller.
  for(const failure of [false,true]){
@@ -58,6 +66,15 @@ it('denies a paid request below its full published bound without calling the pro
  expect(calls).toBe(0);expect(await occupied.status()).toMatchObject({dispatches:1,chargedMicroUsd:1000,admissionHeld:false});
 });
 it('blocks subsequent SDK retries when the first charge is unavailable',async()=>{
+ // A conflicting or malformed supplied alias cannot silently select zero.
+ for(const streamed of [false,true])for(const gateway of [{cost:0,totalCost:'0.1'},{cost:'0.1',totalCost:0},{cost:'0',totalCost:''},{cost:'invalid',totalCost:0}]){
+  const budget=await ledger(),receipt={...metadata,providerMetadata:{gateway:{...gateway,generationId:'synthetic-conflicting-alias'}}};let forwards=0;
+  const guarded=budgetedGatewayFetch({ledger:budget,ceiling,fetch:async()=>{forwards++;return streamed?new Response('data: '+JSON.stringify({type:'finish',...receipt})+'\n\n',{headers:{'content-type':'text/event-stream'}}):Response.json(receipt);}});
+  if(streamed)await expect((await guarded(endpoint,request)).text()).rejects.toThrow();else await expect(guarded(endpoint,request)).rejects.toThrow();
+  expect(await budget.status()).toMatchObject({chargedMicroUsd:0,heldMicroUsd:16000000,unknown:1,admissionHeld:true});
+  await expect(guarded(endpoint,request)).rejects.toThrow('holds admission');expect(forwards).toBe(1);
+ }
+
  const budget=await ledger(),observations:any[]=[],guard=budgetedGatewayFetch({ledger:budget,ceiling,failed:async value=>{observations.push(value);},fetch:async()=>{calls++;return Response.json({usage:metadata.usage,providerMetadata:{gateway:{generationId:'gateway_jsonActual'}},response:{id:'gen_upstreamJson'}});}});
  await expect(guard(endpoint,request)).rejects.toThrow('charge unavailable');await expect(guard(endpoint,request)).rejects.toThrow('holds admission');expect(calls).toBe(1);expect(await budget.status()).toMatchObject({admissionHeld:true,unknown:1,heldMicroUsd:16000000});expect(observations).toHaveLength(1);expect(observations[0]).toMatchObject({phase:'accounting',status:200,gatewayGenerationId:'gateway_jsonActual',upstreamResponseId:'gen_upstreamJson'});
  const pending=await ledger(),id=await pending.dispatch(await ceiling());let observed!:()=>void;

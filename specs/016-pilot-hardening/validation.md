@@ -9364,3 +9364,19 @@ provider identity and visible Stop control. It retains every subsequent reload,
 deadline, dispatch-count, Stop, accounting and retirement assertion. Two bounded
 regressions cover quiet presentation and a running provider reservation without
 streamed text. Fresh committed validation remains pending.
+
+### Evaluation cost-alias review correction — 2026-10-28 UTC
+
+Independent release review at `97096c4` identifies a static accounting gap:
+when both `cost` and `totalCost` are supplied, the evaluation producer selects
+`cost` even if the other field disagrees. No historical receipt is asserted to
+have this defect. The added rejection matrix fails against that parser, which
+accepts the conflicting zero-cost JSON receipt instead of holding it unknown.
+
+The correction validates every supplied amount and requires equivalent values
+before settlement. Existing JSON and SSE cases now exercise disagreement in
+both directions, malformed aliases, valid single aliases and equivalent
+numeric/string amounts. The full 13-case accounting file and three Root-browser
+cases pass, with no skipped cases; the 1,056-case catalog count is unchanged.
+Historical settlements and unknown holds are untouched. Fresh committed CI,
+complete local/model and hosted/Production release checks remain required.

@@ -9,8 +9,10 @@ type Accounting={chargedMicroUsd:number;inputTokens:number;outputTokens:number;g
 function accounting(value:unknown,responseId?:string):Accounting{
  const token=z.number().int().nonnegative().safe();
  const raw=z.object({providerMetadata:z.object({gateway:z.object({cost:z.union([z.number(),z.string()]).optional(),totalCost:z.union([z.number(),z.string()]).optional(),generationId:z.string().optional(),responseId:z.string().optional()}).optional()}).optional(),usage:z.object({inputTokens:z.object({total:token}).optional(),outputTokens:z.object({total:token}).optional(),tokens:token.optional()})}).parse(value);
- const gateway=raw.providerMetadata?.gateway,cost=gateway?.cost??gateway?.totalCost;
- if(!(typeof cost==='number'||typeof cost==='string'&&/^\d+(?:\.\d+)?$/.test(cost))||!Number.isFinite(Number(cost))||Number(cost)<0)throw Error('Gateway charge unavailable');
+ const gateway=raw.providerMetadata?.gateway,costs=[gateway?.cost,gateway?.totalCost].filter(cost=>cost!==undefined);
+ if(!costs.length||costs.some(cost=>!(typeof cost==='number'||typeof cost==='string'&&/^\d+(?:\.\d+)?$/.test(cost))||!Number.isFinite(Number(cost))||Number(cost)<0))throw Error('Gateway charge unavailable');
+ const cost=Number(costs[0]);
+ if(costs.some(value=>Number(value)!==cost))throw Error('Gateway charge fields disagree');
  const inputTokens=raw?.usage?.inputTokens?.total??raw?.usage?.tokens,outputTokens=raw?.usage?.outputTokens?.total??(raw?.usage?.tokens!==undefined?0:undefined),generationId=gateway?.generationId??gateway?.responseId??responseId;
  if(typeof inputTokens!=='number'||!Number.isSafeInteger(inputTokens)||inputTokens<0||typeof outputTokens!=='number'||!Number.isSafeInteger(outputTokens)||outputTokens<0||typeof generationId!=='string'||!generationId||generationId.length>256)throw Error('Gateway accounting identity unavailable');
  // generationId is the historical deduplication receipt ID. A response-ID

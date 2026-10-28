@@ -1319,3 +1319,10 @@ No hosted target may be locked for release before its measured reopen path exist
   accounting and retirement assertions. Add regressions for quiet presentation
   and running-but-not-yet-streamed responses; require fresh committed CI, full
   model and desktop/mobile hosted acceptance (FR-002, FR-021).
+
+- [ ] T212 Reject contradictory or malformed supplied Gateway cost aliases in
+  evaluation accounting. Preserve valid single-field/equivalent receipts, the
+  original response, full unknown reservation and denial of a second dispatch.
+  Extend the existing JSON/SSE accounting cases without changing the catalog
+  count; preserve all historic settlements/holds and require fresh committed
+  validation before release (FR-021).
