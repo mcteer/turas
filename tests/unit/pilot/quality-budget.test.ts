@@ -54,7 +54,7 @@ it('holds every provider after an unknown or invalid credit charge',async()=>{
  await expect(budget.dispatch(call)).rejects.toThrow('holds admission');await expect(budget.reserveCredit('d'.repeat(64))).rejects.toThrow('holds admission');
  expect(await budget.status()).toMatchObject({unknown:1,admissionHeld:true});
 });
-it('requires explicit credit authority and never reuses the approved allowance',async()=>{
+it('requires explicit credit authority and never reuses the four-call allowance',async()=>{
  const operator={contract:'pilot-quality-operator-v1',id:randomUUID(),feature:'016',category:'model-evaluation',modelId:'spacexai/grok-4.7',capMicroUsd:25000000,automaticBillingAllowed:false,independentReviewAuthorized:true,userInstructionReference:'Synthetic bounded credit approval',recordedAt:new Date().toISOString(),expiresAt:new Date(Date.now()+60000).toISOString()};
  for(const cap of [0,3,4,7])expect(qualityOperatorAuthorization.parse({...operator,contextCreditCap:cap}).contextCreditCap).toBe(cap);
  for(const cap of [-1,1.5,8])expect(qualityOperatorAuthorization.safeParse({...operator,contextCreditCap:cap}).success).toBe(false);

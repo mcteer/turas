@@ -9439,3 +9439,14 @@ The complete process nevertheless failed its final source-integrity check
 because candidate files changed during execution. It is not accepted as a
 passing gate; a fresh committed execution is required. No journey failed,
 and none was retried or omitted.
+
+### Registered budget-test name — 2026-10-28 UTC
+
+The `f968648` complete local catalog passed 533 cases, then rejected the
+quality-budget suite during catalog verification. All 17 assertions passed with
+zero skips, retries or process deadline failures; one renamed test title did not
+match the registered inventory. The correction restores the original registered
+name while retaining the stronger three-, four- and seven-credit assertions.
+The focused 17-case run and the original `verifyPilotSuiteResult` validator pass.
+The failed whole run remains failed; complete validation must run on the next
+committed source. No paid model batch started on `f968648`.
