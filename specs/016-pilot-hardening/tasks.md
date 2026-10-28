@@ -1310,3 +1310,12 @@ No hosted target may be locked for release before its measured reopen path exist
   fresh CI, live-agent and hosted release validation; this compatibility fix
   does not establish provider recovery or settle historical unknowns
   (FR-002, FR-021).
+
+- [ ] T211 Preserve the actual `695985f` failed hosted Root reload exercise and
+  its completed, settled response. Respect the established quiet final-answer
+  UI: observe a nonempty native text delta tied to the exact running attempt,
+  native session and actual provider identity before reloading, with a visible
+  Stop control. Retain running-state, same-attempt/deadline, no-resend, Stop,
+  accounting and retirement assertions. Add regressions for quiet presentation
+  and running-but-not-yet-streamed responses; require fresh committed CI, full
+  model and desktop/mobile hosted acceptance (FR-002, FR-021).

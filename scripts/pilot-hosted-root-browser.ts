@@ -54,7 +54,24 @@ export async function runHostedRootBrowser(input:{scope:PilotHostedScope;db:Clie
   const composer=page.getByRole('textbox',{name:'Message Turi'});
   await composer.fill('Clearly hypothetical training sample only. Begin exactly: This is synthetic test data. Without using tools or customer-specific facts, write an approximately 600-word delivery runbook for a fictional Vercel adoption engagement. Use practical numbered steps covering scope, assumptions, stakeholder responsibilities, a deployment rehearsal, validation, rollback, and handover. Keep all examples explicitly hypothetical; do not claim any customer action or outcome occurred.');
   await page.getByRole('button',{name:'Send message',exact:true}).click();
-  await until(async()=> (await attempts()).length===1&&(await operations()).length===1&&await page.locator('.chat-message-assistant').last().innerText().then(text=>text.length>20).catch(()=>false));
+  // Quiet final-answer presentation deliberately hides in-progress prose. The
+  // persisted native delta proves real streaming without changing that UX.
+  await until(async()=> {
+   const rows=await attempts();
+   if(rows.length!==1||rows[0].response_state!=='running'||(await operations()).length!==1)return false;
+   const streaming=(await db.query(`SELECT EXISTS(
+    SELECT 1 FROM response_attempts a JOIN event_projections e
+      ON e.conversation_id=a.conversation_id AND e.turn_id=a.native_turn_id
+    WHERE a.id=$1 AND a.conversation_id=$2 AND a.response_state='running'
+      AND e.native_session_id=$3 AND e.event_type='message.appended'
+      AND length(btrim(COALESCE(e.visible_payload->>'messageDelta','')))>0
+      AND (SELECT count(*) FROM operations_hosted_root_provider_identities i
+        JOIN parity_evaluation_operations o ON o.id=i.operation_id
+        WHERE o.budget_id=$4 AND i.identity_kind='gateway_generation'
+          AND o.provider::jsonb->>'attemptId'=a.id::text)=1
+   ) AS streaming`,[rows[0].id,id,native,binding.budgetId])).rows[0]?.streaming;
+   return streaming===true&&await page.getByRole('button',{name:'Stop response',exact:true}).isVisible();
+  });
   const before=(await attempts())[0];if(before.response_state!=='running')throw Error('Response ended before actual streaming reload');
   await page.reload({waitUntil:'domcontentloaded'});
   await until(async()=> (await attempts())[0]?.response_state==='completed');

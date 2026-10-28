@@ -9339,3 +9339,28 @@ fails with the original parser and passes with the correction; the full original
 ten-case reconciliation file passes without skipped cases. Its zero-cost receipt
 is a disposable mocked fixture only. Fresh committed checks, full live-agent,
 fresh source-bound hosted acceptance and Production release remain pending.
+
+### Actual `695985f` hosted streaming observation failure — 2026-10-28 UTC
+
+All 61 current-source CI jobs pass after the unchanged failing WebKit job is
+rerun; the original failure remains retained. The unfiltered local catalog
+passes 1,054 cases across 192 suites. The original load, 40 browser checks,
+native preparation and isolated Linux runtime smoke also pass. Preview's four
+maximum-file jobs and six generated-file jobs succeed; distinct-deployment
+uncached reads verify both 10 MiB originals and four complete generated outputs
+with their layout assertions. These do not establish full hosted acceptance.
+
+The full hosted run fails at the first Root streaming reload. Its actual
+response completes with 862 output tokens; 25 persisted text-append events span
+about 13 seconds before completion. The UI intentionally suppresses unfinished
+answer prose, so the producer's visible-text predicate cannot succeed while the
+attempt is running. No Learning batch or new Gap job is reached. The response's
+actual charge is settled, its conversation is archived, and the failed run is
+not accepted as a reload or Stop pass.
+
+The correction preserves the quiet UI and observes actual nonempty streamed
+text in the exact native turn, session and running attempt, with its real
+provider identity and visible Stop control. It retains every subsequent reload,
+deadline, dispatch-count, Stop, accounting and retirement assertion. Two bounded
+regressions cover quiet presentation and a running provider reservation without
+streamed text. Fresh committed validation remains pending.

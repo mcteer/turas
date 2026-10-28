@@ -5,6 +5,17 @@ Current pilot release status and validation results are recorded in
 historical snapshots at their recorded source revisions; they do not replace
 current release evidence.
 
+At `695985f`, all 61 CI jobs and the unfiltered 1,054-case local catalog
+pass. Preview also verifies ten actual file-processing jobs, both 10 MiB originals
+and all four generated artifacts after a distinct deployment. The hosted run
+then exposes a producer contradiction: it waits for visible answer text during
+streaming, while the established quiet UI displays only the final answer.
+The follow-up observes a nonempty native text delta for the same running attempt
+and its actual provider identity before reloading. It preserves the quiet UI,
+Stop, attempt/deadline and dispatch-count checks. Its catalog adds two regression
+cases (1,056 total). Fresh source-bound validation and Production release remain
+pending; the failed hosted run remains failed.
+
 At `17494d2`, all 61 CI jobs, the original 1,054-case local catalog,
 40 browser checks and the bounded local load benchmark pass. Full pilot
 acceptance remains incomplete: the live-agent batch stopped after two passing
