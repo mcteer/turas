@@ -17,10 +17,10 @@ function rate(value:unknown){
 }
 /** Public evidence only. Fixture prices and requested output caps cannot admit
  * live calls. Embedding uses its separately published whole-request bound. */
-export async function publishedQualityCeiling(modelId:'spacexai/grok-4.7'|'openai/text-embedding-3-small'){
- if(modelId==='spacexai/grok-4.7'){
+export async function publishedQualityCeiling(modelId:'anthropic/claude-sonnet-5.5'|'openai/text-embedding-3-small'){
+ if(modelId==='anthropic/claude-sonnet-5.5'){
   const price=await resolvePublishedLearningPrice();
-  if(price.providerInputLimit>500000||price.providerOutputLimit>500000)throw Error('Evaluation model exceeds ledger usage bounds');
+  if(price.providerInputLimit>1000000||price.providerOutputLimit>128000)throw Error('Evaluation model exceeds ledger usage bounds');
   const bound=learningStepCeiling(price,4096);
   return {modelId,ceilingMicroUsd:Number(bound.ceilingMicroUsd),pricingDigest:bound.priceDigest};
  }

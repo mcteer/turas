@@ -3,7 +3,7 @@ import {z} from 'zod';
 import {QualityBudgetLedger} from './pilot-quality-budget-ledger';
 
 export type QualityFailureEvidence={dispatchId:string;phase:'transport'|'http'|'accounting'|'stream';status?:number;responseBodyDigest?:string;responseBodyBytes?:number;responseBodyComplete?:boolean;gatewayGenerationId?:string;upstreamResponseId?:string;providerCode?:string};
-type Model='spacexai/grok-4.7'|'openai/text-embedding-3-small';
+type Model='anthropic/claude-sonnet-5.5'|'openai/text-embedding-3-small';
 type Ceiling={modelId:Model;ceilingMicroUsd:number;pricingDigest:string};
 type Accounting={chargedMicroUsd:number;inputTokens:number;outputTokens:number;generationId:string};
 function accounting(value:unknown,responseId?:string):Accounting{
@@ -36,7 +36,7 @@ export function budgetedGatewayFetch(input:{ledger:QualityBudgetLedger;attemptId
   const modelId=request.headers.get(url.pathname==='/v4/ai/language-model'?'ai-language-model-id':'ai-model-id');
   const alternate=request.headers.get(url.pathname==='/v4/ai/language-model'?'ai-model-id':'ai-language-model-id');
   if(alternate&&alternate!==modelId)throw Error('Conflicting Gateway model identity');
-  const language=url.pathname==='/v4/ai/language-model'&&modelId==='spacexai/grok-4.7',embedding=url.pathname==='/v4/ai/embedding-model'&&modelId==='openai/text-embedding-3-small';
+  const language=url.pathname==='/v4/ai/language-model'&&modelId==='anthropic/claude-sonnet-5.5',embedding=url.pathname==='/v4/ai/embedding-model'&&modelId==='openai/text-embedding-3-small';
   if(request.method==='POST')await input.observed?.({kind:url.pathname==='/v4/ai/language-model'?'language':url.pathname==='/v4/ai/embedding-model'?'embedding':'other',approvedModel:language||embedding});
   if(request.method!=='POST'||url.search||!language&&!embedding)throw Error('Unbudgeted Gateway operation denied');
   const body=await request.clone().arrayBuffer();if(body.byteLength>4*1024*1024)throw Error('Evaluation request exceeds bound');

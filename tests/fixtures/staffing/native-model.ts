@@ -13,7 +13,7 @@ export function createStaffingNativeFixtureModel(principal: unknown, identity: {
   requireOwnedStaffingClone(); assertDeterministicTestMode();
   if (!principal || process.env.TURAS_ENVIRONMENT_ID !== process.env.TURAS_TEST_ENVIRONMENT_ID) throw new Error("Owned native fixture required");
   let abortSignal: AbortSignal | undefined;
-  const model = mockModel({ provider: "turas-owned-native-fixture", modelId: "spacexai/grok-4.7", respond: async ({ tools, toolResults }) => {
+  const model = mockModel({ provider: "turas-owned-native-fixture", modelId: "anthropic/claude-sonnet-5.5", respond: async ({ tools, toolResults }) => {
     await query("UPDATE staffing_native_fixture_calls SET responded_at=clock_timestamp() WHERE response_attempt_id=$1 AND step_index=$2",
       [identity.responseAttemptId, identity.stepIndex]);
     const barrier = () => query(`SELECT b.released FROM staffing_native_fixture_barriers b JOIN staffing_advisory_attempts a ON a.id=b.advisory_attempt_id

@@ -13,7 +13,7 @@ function fakeProvider() {
       warnings:[]};
   });
   const model={specificationVersion:"v4",provider:"synthetic",
-    modelId:"spacexai/grok-4.7",supportedUrls:{},doGenerate,
+    modelId:"anthropic/claude-sonnet-5.5",supportedUrls:{},doGenerate,
     doStream:vi.fn()} as unknown as Model;
   return {model,doGenerate,observed};
 }

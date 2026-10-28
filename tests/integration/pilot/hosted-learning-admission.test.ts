@@ -14,13 +14,13 @@ import {admitHostedLearningDispatch} from '../../../scripts/pilot-hosted-learnin
 it('consumes one actual original-journal arm with immutable owner admission and separate early provider identities',async()=>fixture(async f=>{
  expect(await f.admit()).toMatchObject({alreadyAdmitted:false,originalHoldRetained:true,ceilingMicroUsd:f.ceiling});
  expect(await f.admit()).toMatchObject({alreadyAdmitted:true});const a=await f.prepare(),generation='gen_'+randomUUID(),upstream='synthetic-upstream-'+randomUUID();
- const model={specificationVersion:'v4',provider:'synthetic-no-provider',modelId:'spacexai/grok-4.7',supportedUrls:{},doGenerate:async()=>({content:[{type:'text',text:'Synthetic accounting output'}],response:{id:upstream},usage:{inputTokens:{total:10},outputTokens:{total:10}},providerMetadata:{gateway:{generationId:generation,cost:'0.001'}}})} as unknown as Parameters<typeof wrapLanguageModel>[0]['model'];
+ const model={specificationVersion:'v4',provider:'synthetic-no-provider',modelId:'anthropic/claude-sonnet-5.5',supportedUrls:{},doGenerate:async()=>({content:[{type:'text',text:'Synthetic accounting output'}],response:{id:upstream},usage:{inputTokens:{total:10},outputTokens:{total:10}},providerMetadata:{gateway:{generationId:generation,cost:'0.001'}}})} as unknown as Parameters<typeof wrapLanguageModel>[0]['model'];
  await wrapStaffingModel(model,a.admitted.mode,{deadlineAt:a.admitted.deadlineAt,beforeProvider:a.release}).doGenerate({prompt:[]});
  expect((await f.db.query('SELECT count(*)::int AS n FROM operations_hosted_learning_consumptions')).rows[0].n).toBe(1);
  expect((await f.db.query('SELECT identity_kind,provider_key FROM operations_hosted_learning_provider_identities ORDER BY identity_kind')).rows).toEqual([{identity_kind:'gateway_generation',provider_key:generation},{identity_kind:'provider_response',provider_key:upstream}]);
  expect(await f.ledger.status()).toMatchObject({heldMicroUsd:f.ceiling,chargedMicroUsd:0,dispatches:1});
  process.env.AI_GATEWAY_API_KEY='synthetic-no-provider-credential';provider.calls=0;
- const observed={id:generation,model:'spacexai/grok-4.7',totalCost:0.001,usage:0.001,upstreamInferenceCost:0,isByok:false,createdAt:new Date().toISOString(),streamed:true,finishReason:'stop',promptTokens:10,completionTokens:10,reasoningTokens:0,cachedTokens:0,cacheCreationTokens:0,billableWebSearchCalls:0,latency:1,generationTime:1,providerName:'synthetic-no-provider'};
+ const observed={id:generation,model:'anthropic/claude-sonnet-5.5',totalCost:0.001,usage:0.001,upstreamInferenceCost:0,isByok:false,createdAt:new Date().toISOString(),streamed:true,finishReason:'stop',promptTokens:10,completionTokens:10,reasoningTokens:0,cachedTokens:0,cacheCreationTokens:0,billableWebSearchCalls:0,latency:1,generationTime:1,providerName:'synthetic-no-provider'};
  const reconcile=()=>reconcileHostedLearningDispatch({db:f.db,ledger:f.ledger,dispatchId:f.dispatch,binding:f.binding,signal:f.environment.signal});
  for(const changed of [{id:'gen_foreign'},{streamed:false},{usage:0},{model:'other/model'},{isByok:true},{totalCost:Infinity},{billableWebSearchCalls:1},{createdAt:new Date(0).toISOString()}]){provider.response={...observed,...changed};await expect(reconcile()).rejects.toThrow();expect(await f.ledger.status()).toMatchObject({heldMicroUsd:f.ceiling,chargedMicroUsd:0});}
  provider.response={...observed,totalCost:0.002,usage:0.002};expect(await reconcile()).toMatchObject({reconciliationSuccessful:false,originalHoldRetained:true});
@@ -80,7 +80,7 @@ it('rejects claimed journal reservations and replacement original budgets withou
  const a=await f.prepare();await a.release();const generation='gen_'+randomUUID();
  await f.db.query("INSERT INTO operations_hosted_learning_provider_identities(reservation_id,identity_kind,provider_key) SELECT reservation_id,'gateway_generation',$1 FROM operations_hosted_learning_consumptions",[generation]);
  process.env.AI_GATEWAY_API_KEY='synthetic-no-provider-credential';const cost=(f.ceiling+1)/1000000;
- provider.response={id:generation,model:'spacexai/grok-4.7',totalCost:cost,usage:cost,upstreamInferenceCost:0,isByok:false,createdAt:new Date().toISOString(),streamed:true,finishReason:'stop',promptTokens:10,completionTokens:10,reasoningTokens:0,cachedTokens:0,cacheCreationTokens:0,billableWebSearchCalls:0,latency:1,generationTime:1,providerName:'synthetic-no-provider'};
+ provider.response={id:generation,model:'anthropic/claude-sonnet-5.5',totalCost:cost,usage:cost,upstreamInferenceCost:0,isByok:false,createdAt:new Date().toISOString(),streamed:true,finishReason:'stop',promptTokens:10,completionTokens:10,reasoningTokens:0,cachedTokens:0,cacheCreationTokens:0,billableWebSearchCalls:0,latency:1,generationTime:1,providerName:'synthetic-no-provider'};
  await expect(reconcileHostedLearningDispatch({db:f.db,ledger:f.ledger,dispatchId:f.dispatch,binding:f.binding,signal:f.environment.signal})).rejects.toThrow('operator review');
  expect(await f.ledger.status()).toMatchObject({capMicroUsd:25000000,heldMicroUsd:Math.ceil(cost*1000000),chargedMicroUsd:0,unknown:1,admissionHeld:true});
  expect((await f.db.query('SELECT count(*)::int AS n FROM learning_budget_settlements')).rows[0].n).toBe(0);
@@ -88,7 +88,7 @@ it('rejects claimed journal reservations and replacement original budgets withou
 
 it('retains both original holds and the genuine Gateway identity after an actual wrapped SDK failure',async()=>fixture(async f=>{
  await f.admit();const a=await f.prepare(),generation='gen_'+randomUUID();let calls=0;
- const model={specificationVersion:'v4',provider:'synthetic-no-provider',modelId:'spacexai/grok-4.7',supportedUrls:{},doGenerate:async()=>{calls++;throw Object.assign(new Error('Synthetic SDK failure'),{generationId:generation});}} as unknown as Parameters<typeof wrapLanguageModel>[0]['model'];
+ const model={specificationVersion:'v4',provider:'synthetic-no-provider',modelId:'anthropic/claude-sonnet-5.5',supportedUrls:{},doGenerate:async()=>{calls++;throw Object.assign(new Error('Synthetic SDK failure'),{generationId:generation});}} as unknown as Parameters<typeof wrapLanguageModel>[0]['model'];
  const wrapped=wrapStaffingModel(model,a.admitted.mode,{deadlineAt:a.admitted.deadlineAt,beforeProvider:a.release});await expect(wrapped.doGenerate({prompt:[]})).rejects.toThrow('Synthetic SDK failure');await expect(wrapped.doGenerate({prompt:[]})).rejects.toThrow();expect(calls).toBe(1);
  expect((await f.db.query("SELECT provider_key FROM operations_hosted_learning_provider_identities WHERE identity_kind='gateway_generation'")).rows[0].provider_key).toBe(generation);
  expect((await f.db.query('SELECT state FROM learning_attempts WHERE id=$1',[f.meta.id])).rows[0].state).toBe('unconfirmed');

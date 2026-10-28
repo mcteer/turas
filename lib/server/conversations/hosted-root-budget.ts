@@ -81,13 +81,13 @@ export async function reserveHostedRoot(principal:Principal,nativeSessionId:stri
    ||(await db.query(`SELECT 1 FROM parity_evaluation_operations o LEFT JOIN operations_hosted_root_generation_receipts r ON r.operation_id=o.id
     WHERE o.budget_id=$1 AND (o.settled_at IS NULL OR o.actual_micro_usd>o.ceiling_micro_usd
      OR r.actual_micro_usd>o.ceiling_micro_usd OR r.actual_micro_usd IS NOT NULL AND r.actual_micro_usd IS DISTINCT FROM o.actual_micro_usd) LIMIT 1`,[configured.budgetId])).rowCount)throw denied();
-  const price=pricingSchema.parse(budget.pricing)['spacexai/grok-4.7'];if(!price)throw denied();
+  const price=pricingSchema.parse(budget.pricing)['anthropic/claude-sonnet-5.5'];if(!price)throw denied();
   const amount=modelCostCeiling(inputBytes,outputTokens,price.input,price.output);
   if(!Number.isSafeInteger(amount)||BigInt(budget.reserved_micro_usd)+BigInt(amount)>BigInt(budget.cap_micro_usd))throw denied();
   const id=randomUUID();
   await db.query('UPDATE parity_evaluation_budgets SET reserved_micro_usd=reserved_micro_usd+$2 WHERE id=$1',[configured.budgetId,amount]);
   await db.query('INSERT INTO parity_evaluation_operations(id,budget_id,provider,ceiling_micro_usd) VALUES($1,$2,$3,$4)',
-   [id,configured.budgetId,JSON.stringify({contract:'pilot-root-dispatch-v2',model:'spacexai/grok-4.7',attemptId:scope.attemptId,nativeSessionId,turnId,sourceCommit:configured.sourceCommit,deploymentId:process.env.VERCEL_DEPLOYMENT_ID,projectId:configured.projectId,target:configured.target,providerPath}),amount]);
+   [id,configured.budgetId,JSON.stringify({contract:'pilot-root-dispatch-v2',model:'anthropic/claude-sonnet-5.5',attemptId:scope.attemptId,nativeSessionId,turnId,sourceCommit:configured.sourceCommit,deploymentId:process.env.VERCEL_DEPLOYMENT_ID,projectId:configured.projectId,target:configured.target,providerPath}),amount]);
   return {id,budgetId:configured.budgetId,amount};
  });
 }

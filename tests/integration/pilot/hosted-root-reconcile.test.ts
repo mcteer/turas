@@ -12,12 +12,12 @@ vi.mock('ai',async original=>({...await original<typeof import('ai')>(),createGa
 async function accounting(f:Parameters<Parameters<typeof fixture>[0]>[0],identity=true){
  provider.calls=0;process.env.AI_GATEWAY_API_KEY='synthetic-no-provider-credential';
  const generationId='gen_'+randomUUID(),upstreamId='synthetic-upstream-'+randomUUID();
- const model={specificationVersion:'v4',provider:'synthetic-no-provider',modelId:'spacexai/grok-4.7',supportedUrls:{},
+ const model={specificationVersion:'v4',provider:'synthetic-no-provider',modelId:'anthropic/claude-sonnet-5.5',supportedUrls:{},
   async doGenerate(){return {content:[{type:'text',text:'Synthetic interrupted accounting'}],response:{id:upstreamId},providerMetadata:{gateway:identity?{generationId}:{}}};},async doStream(){throw Error('Unused');}} as unknown as Parameters<typeof wrapHostedRootBudget>[0];
  await wrapHostedRootBudget(model,f.principal,f.native,'synthetic-turn').doGenerate({prompt:[],maxOutputTokens:700});
  const operation=(await f.db.query('SELECT * FROM parity_evaluation_operations WHERE budget_id=$1 ORDER BY created_at DESC,id DESC LIMIT 1',[f.binding.budgetId])).rows[0];
  const scope:PilotHostedScope={contract:'pilot-hosted-scope-v1',runId:randomUUID(),projectId:f.binding.projectId,teamId:'team_synthetic',deploymentId:'dpl_synthetic',origin:'https://synthetic.example',environmentMarker:f.binding.environmentMarker,workspaceId:f.binding.workspaceId,target:f.binding.target,sourceCommit:f.binding.sourceCommit,sourceDigest:'a'.repeat(64),catalogDigest:'b'.repeat(64)};
- const response={id:generationId,model:'spacexai/grok-4.7',totalCost:0.0001,usage:0.0001,upstreamInferenceCost:0,isByok:false,createdAt:operation.created_at.toISOString(),streamed:false,finishReason:'stop',promptTokens:10,completionTokens:10,reasoningTokens:0,cachedTokens:0,cacheCreationTokens:0,billableWebSearchCalls:0,latency:1,generationTime:1,providerName:'synthetic-no-provider'};
+ const response={id:generationId,model:'anthropic/claude-sonnet-5.5',totalCost:0.0001,usage:0.0001,upstreamInferenceCost:0,isByok:false,createdAt:operation.created_at.toISOString(),streamed:false,finishReason:'stop',promptTokens:10,completionTokens:10,reasoningTokens:0,cachedTokens:0,cacheCreationTokens:0,billableWebSearchCalls:0,latency:1,generationTime:1,providerName:'synthetic-no-provider'};
  provider.response=response;
  return {scope,operation,response,generationId,upstreamId,run:()=>reconcileHostedRootGeneration({db:f.db,scope,operationId:operation.id,signal:AbortSignal.timeout(30000)})};
 }
@@ -50,12 +50,15 @@ it('retains unknown ceilings for mismatched nonterminal BYOK tool and invalid pr
  }
  await fixture(async f=>{
  const a=await accounting(f);
- for(const changed of [{id:'gen_other'},{model:'other/model'},{createdAt:new Date(0).toISOString()},{streamed:true},{finishReason:'unknown'},{isByok:true},{billableWebSearchCalls:1},{totalCost:-1},{totalCost:Infinity},{usage:0},{completionTokens:-1}]){
+ for(const changed of [{id:'gen_other'},{model:'spacexai/grok-4.7'},{model:'xai/grok-4.7',providerName:'xai'},{model:'other/model'},{createdAt:new Date(0).toISOString()},{streamed:true},{finishReason:'unknown'},{isByok:true},{billableWebSearchCalls:1},{totalCost:-1},{totalCost:Infinity},{usage:0},{completionTokens:-1}]){
   provider.response={...a.response,...changed};await expect(a.run()).rejects.toThrow();
   expect((await f.db.query('SELECT count(*)::int AS n FROM operations_hosted_root_generation_receipts')).rows[0].n).toBe(0);
   expect((await f.db.query('SELECT actual_micro_usd,settled_at FROM parity_evaluation_operations WHERE id=$1',[a.operation.id])).rows[0]).toEqual({actual_micro_usd:null,settled_at:null});
  }
  expect((await f.db.query('SELECT reserved_micro_usd FROM parity_evaluation_budgets WHERE id=$1',[f.binding.budgetId])).rows[0].reserved_micro_usd).toBe('700');
+ // Exercise reconciliation of a retained historical dispatch without sending it.
+ await f.db.query("UPDATE parity_evaluation_operations SET provider=jsonb_set(provider::jsonb,'{model}',to_jsonb('spacexai/grok-4.7'::text))::text WHERE id=$1",[a.operation.id]);
+ provider.response={...a.response};await expect(a.run()).rejects.toThrow('Exact terminal');
  provider.response={...a.response,model:'xai/grok-4.7',providerName:'xai',finishReason:'error',totalCost:0,usage:0,promptTokens:0,completionTokens:0};
  expect(await a.run()).toMatchObject({actualMicroUsd:0,releasedExcessMicroUsd:700,modelCalls:0});
  });

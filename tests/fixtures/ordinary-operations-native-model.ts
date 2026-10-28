@@ -6,7 +6,7 @@ import {assertDeterministicTestMode} from './runtime';
 export function createOrdinaryOperationsNativeModel(attemptId:string,turnId:string,stepIndex:number,messages:readonly ModelMessage[]){
  assertDeterministicTestMode();
  if(process.env.TURAS_OPERATIONS_NATIVE_FIXTURE!=='1'||process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN||!/^\/turas_test_010_eval_[a-f0-9]{12}$/.test(new URL(process.env.DATABASE_URL!).pathname)||!process.env.TURAS_ENVIRONMENT_ID?.startsWith('test-')||process.env.TURAS_ENVIRONMENT_ID!==process.env.TURAS_TEST_ENVIRONMENT_ID||new URL(process.env.DATABASE_URL!).pathname!==new URL(process.env.TURAS_TEST_DATABASE_URL!).pathname)throw Error('Owned unpaid operations fixture required');
- return mockModel({provider:'turas-owned-operations-fixture',modelId:'spacexai/grok-4.7',respond:async(request)=>{
+ return mockModel({provider:'turas-owned-operations-fixture',modelId:'anthropic/claude-sonnet-5.5',respond:async(request)=>{
   // Tool results include prior turns. Bind decisions to this actual submitted
   // attempt, so an older parked approval cannot select the intervening reply.
   const toolResults=request.toolResults.filter(result=>result.id.startsWith(`operations-${attemptId}-`));

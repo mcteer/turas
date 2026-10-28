@@ -84,10 +84,10 @@ export async function pilotQualityLive(args=process.argv.slice(2)){
  const {mode,values}=parse(args),root=resolve(values.output),sourceRoot=process.cwd(),source=await pilotSource(),images=resolve(values.images);
  await createEvidenceDirectory(root);
  const assertSource=async()=>{if(JSON.stringify(await pilotSource(sourceRoot))!==JSON.stringify(source))throw Error('Quality source changed');};
- if(!(await readFile('agent/agent.ts','utf8')).includes('const selectedModel = "spacexai/grok-4.7";'))throw Error('Configured model differs');
+ if(!(await readFile('agent/agent.ts','utf8')).includes('const selectedModel = "anthropic/claude-sonnet-5.5";'))throw Error('Configured model differs');
  if(mode==='--prepare'){
   const id=randomUUID(),expiresAt=new Date(Date.now()+1800000).toISOString(),authorizationDigest=evidenceDigest('synthetic-pre-provider-denial-only');
-  const budget=await QualityBudgetLedger.create(join(root,'budget'),{contract:'pilot-quality-budget-v1',id,capMicroUsd:1,authorizationDigest,sourceDigest:source.sourceDigest,catalogDigest:source.catalogDigest,modelId:'spacexai/grok-4.7',expiresAt});
+  const budget=await QualityBudgetLedger.create(join(root,'budget'),{contract:'pilot-quality-budget-v1',id,capMicroUsd:1,authorizationDigest,sourceDigest:source.sourceDigest,catalogDigest:source.catalogDigest,modelId:'anthropic/claude-sonnet-5.5',expiresAt});
   await writeEvidence(root,'runtime.json',{contract:'pilot-quality-runtime-v1',id,sourceRoot,ledgerRoot:budget.root,...source,authorizationDigest,capMicroUsd:1,expiresAt});
   await withPilotEnvironment(async environment=>{
    process.env.TURAS_016_QUALITY_RUNTIME_FILE=join(root,'runtime.json');process.env.TURAS_ALLOW_LIVE_MODEL_TESTS='1';process.env.AI_GATEWAY_API_KEY='synthetic-no-provider-credential';

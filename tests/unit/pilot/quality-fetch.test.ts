@@ -6,7 +6,7 @@ import {QualityBudgetLedger} from '../../../scripts/pilot-quality-budget-ledger'
 import {budgetedGatewayFetch} from '../../../scripts/pilot-quality-fetch';
 import {createGateway,generateText} from 'ai';
 let root:string,calls:number;
-const model='spacexai/grok-4.7' as const,endpoint='https://ai-gateway.vercel.sh/v4/ai/language-model',request={method:'POST',headers:{'ai-language-model-id':model,'content-type':'application/json'},body:JSON.stringify({prompt:[]})};
+const model='anthropic/claude-sonnet-5.5' as const,endpoint='https://ai-gateway.vercel.sh/v4/ai/language-model',request={method:'POST',headers:{'ai-language-model-id':model,'content-type':'application/json'},body:JSON.stringify({prompt:[]})};
 const metadata={providerMetadata:{gateway:{cost:'0.001',generationId:'synthetic-generation'}},usage:{inputTokens:{total:10},outputTokens:{total:10}}};
 const ceiling=async()=>({modelId:model,ceilingMicroUsd:16000000,pricingDigest:'d'.repeat(64)});
 async function ledger(capMicroUsd=25000000){return QualityBudgetLedger.create(join(root,randomUUID()),{contract:'pilot-quality-budget-v1',id:randomUUID(),capMicroUsd,authorizationDigest:'a'.repeat(64),sourceDigest:'b'.repeat(64),catalogDigest:'c'.repeat(64),modelId:model,expiresAt:new Date(Date.now()+60000).toISOString()});}

@@ -13,7 +13,7 @@ function requireFixture(){
 }
 export function createOrdinaryNativeFixtureModel(attemptId:string){
  requireFixture();let signal:AbortSignal|undefined;
- const model=mockModel({provider:'turas-owned-ordinary-fixture',modelId:'spacexai/grok-4.7',respond:async({lastUserMessage})=>{
+ const model=mockModel({provider:'turas-owned-ordinary-fixture',modelId:'anthropic/claude-sonnet-5.5',respond:async({lastUserMessage})=>{
   if(!lastUserMessage)throw Error('Owned fixture has no user message');
   if(lastUserMessage.startsWith('Hold this synthetic response')){
    const deadline=Date.now()+80000;

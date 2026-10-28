@@ -11,7 +11,7 @@ export async function admitHostedLearningDispatch(input:{db:Client;ledger:Qualit
  const {db,ledger,signal}=input,binding=hostedLearningBindingSchema.parse(input.binding);
  signal.throwIfAborted();const held=await ledger.hostedDispatch(z.uuid().parse(input.dispatchId)),dispatch=held.dispatch,arm=dispatch.hostedLearning!;
  const scope=arm.scope;
- if(dispatch.modelId!=='spacexai/grok-4.7'||held.originalBudgetId!==binding.budgetId||held.originalAuthorizationDigest!==binding.originalAuthorizationDigest
+ if(dispatch.modelId!=='anthropic/claude-sonnet-5.5'||held.originalBudgetId!==binding.budgetId||held.originalAuthorizationDigest!==binding.originalAuthorizationDigest
   ||held.capMicroUsd!==binding.capMicroUsd||!held.source.attemptId||held.source.sourceCommit!==scope.sourceCommit
   ||held.source.sourceDigest!==scope.sourceDigest||held.source.catalogDigest!==scope.catalogDigest||scope.sourceCommit!==binding.sourceCommit
   ||scope.sourceDigest!==binding.sourceDigest||scope.catalogDigest!==binding.catalogDigest||scope.environmentMarker!==binding.environmentMarker

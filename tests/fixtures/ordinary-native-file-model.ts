@@ -8,7 +8,7 @@ export function createOrdinaryNativeFileFixtureModel(attemptId:string){
  assertDeterministicTestMode();
  if(process.env.TURAS_ORDINARY_NATIVE_FILE_FIXTURE!=='1'||process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN||!/^\/turas_test_010_eval_[a-f0-9]{12}$/.test(new URL(process.env.DATABASE_URL!).pathname))throw Error('Owned unpaid native-file fixture required');
  let generationSignal:AbortSignal|undefined;
- const model=mockModel({provider:'owned-native-file-fixture',modelId:'spacexai/grok-4.7',respond:async({toolResults,lastUserMessage:runtimeLastUserMessage,messages})=>{
+ const model=mockModel({provider:'owned-native-file-fixture',modelId:'anthropic/claude-sonnet-5.5',respond:async({toolResults,lastUserMessage:runtimeLastUserMessage,messages})=>{
   // Provider middleware may append an attributed file/context packet. Match
   // the actual synthetic user delivery rather than mistaking that packet for
   // a correction, memory request or checklist action.

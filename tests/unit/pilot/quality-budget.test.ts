@@ -7,8 +7,8 @@ import {qualityOperatorAuthorization} from '../../../scripts/pilot-quality-step-
 import {qualityChildEnvironment} from '../../../scripts/pilot-quality-runtime';
 import {writeEvidence,evidenceDigest,readEvidence} from '../../../scripts/pilot-evidence';
 let root:string;
-const call={modelId:'spacexai/grok-4.7' as const,ceilingMicroUsd:16000000,pricingDigest:'d'.repeat(64)};
-const authorization=()=>({contract:'pilot-quality-budget-v1' as const,id:randomUUID(),capMicroUsd:25000000,authorizationDigest:'a'.repeat(64),sourceDigest:'b'.repeat(64),catalogDigest:'c'.repeat(64),modelId:'spacexai/grok-4.7' as const,expiresAt:new Date(Date.now()+60000).toISOString()});
+const call={modelId:'anthropic/claude-sonnet-5.5' as const,ceilingMicroUsd:16000000,pricingDigest:'d'.repeat(64)};
+const authorization=()=>({contract:'pilot-quality-budget-v1' as const,id:randomUUID(),capMicroUsd:25000000,authorizationDigest:'a'.repeat(64),sourceDigest:'b'.repeat(64),catalogDigest:'c'.repeat(64),modelId:'anthropic/claude-sonnet-5.5' as const,expiresAt:new Date(Date.now()+60000).toISOString()});
 beforeEach(async()=>{await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});root=await mkdtemp(resolve('local-artifacts/016/quality-budget-test-'));});
 afterEach(()=>{vi.useRealTimers();return rm(root,{recursive:true,force:true});});
 it('admits at most one concurrent provider dispatch across independent ledger clients',async()=>{
@@ -20,6 +20,13 @@ it('admits at most one concurrent provider dispatch across independent ledger cl
  expect(await ledger.status()).toMatchObject({chargedMicroUsd:1000,dispatches:1,admissionHeld:false});
 });
 it('refuses insufficient budget before recording a dispatch',async()=>{
+ const retired={...authorization(),modelId:'spacexai/grok-4.7' as const};
+ await expect(QualityBudgetLedger.create(join(root,'retired-create'),retired)).rejects.toThrow('Retired model');
+ const historical=join(root,'historical');await mkdir(historical,{mode:0o700});await writeEvidence(historical,'authorization.json',retired);
+ const oldLedger=new QualityBudgetLedger(historical);expect(await oldLedger.status()).toMatchObject({dispatches:0,chargedMicroUsd:0});
+ await expect(oldLedger.dispatch(call)).rejects.toThrow('Retired model');
+ await expect(oldLedger.dispatch({...call,modelId:'openai/text-embedding-3-small'})).rejects.toThrow('Retired model');
+ expect(await readdir(historical)).toEqual(['authorization.json']);
  const ledger=await QualityBudgetLedger.create(join(root,'budget'),{...authorization(),capMicroUsd:15000000});
  await expect(ledger.dispatch(call)).rejects.toThrow('prevents dispatch');expect(await ledger.status()).toMatchObject({dispatches:0,chargedMicroUsd:0});
 });
@@ -55,7 +62,7 @@ it('holds every provider after an unknown or invalid credit charge',async()=>{
  expect(await budget.status()).toMatchObject({unknown:1,admissionHeld:true});
 });
 it('requires explicit credit authority and never reuses the four-call allowance',async()=>{
- const operator={contract:'pilot-quality-operator-v1',id:randomUUID(),feature:'016',category:'model-evaluation',modelId:'spacexai/grok-4.7',capMicroUsd:25000000,automaticBillingAllowed:false,independentReviewAuthorized:true,userInstructionReference:'Synthetic bounded credit approval',recordedAt:new Date().toISOString(),expiresAt:new Date(Date.now()+60000).toISOString()};
+ const operator={contract:'pilot-quality-operator-v1',id:randomUUID(),feature:'016',category:'model-evaluation',modelId:'anthropic/claude-sonnet-5.5',capMicroUsd:25000000,automaticBillingAllowed:false,independentReviewAuthorized:true,userInstructionReference:'Synthetic bounded credit approval',recordedAt:new Date().toISOString(),expiresAt:new Date(Date.now()+60000).toISOString()};
  for(const cap of [0,3,4,7,47])expect(qualityOperatorAuthorization.parse({...operator,contextCreditCap:cap}).contextCreditCap).toBe(cap);
  for(const cap of [-1,1.5,48])expect(qualityOperatorAuthorization.safeParse({...operator,contextCreditCap:cap}).success).toBe(false);
  expect(qualityOperatorAuthorization.safeParse({...operator,contextCreditCap:7,automaticBillingAllowed:true}).success).toBe(false);
@@ -77,7 +84,7 @@ it('retains uncertain dispatch holds across clients without permitting retries',
  expect(await ledger.status()).toMatchObject({unknown:1,admissionHeld:true});
 });
 it('holds overruns and invalid accounting instead of releasing their reservations',async()=>{
- for(const [name,cost,tokens] of [['overrun',16000001,1],['usage',1,500001]] as const){
+ for(const [name,cost,tokens] of [['overrun',16000001,1],['usage',1,1000001]] as const){
   const ledger=await QualityBudgetLedger.create(join(root,name),authorization()),id=await ledger.dispatch(call);
   await expect(ledger.settle(id,{chargedMicroUsd:cost,inputTokens:tokens,outputTokens:1,generationId:'synthetic-'+name})).rejects.toThrow('operator review');
   expect(await ledger.status()).toMatchObject({unknown:1,admissionHeld:true});

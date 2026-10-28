@@ -17,7 +17,7 @@ const reviewSchema = z.object({ version: z.literal("007-staffing-cases-v1"), fix
     rationale: z.string().trim().min(1).max(2000), scores: z.object({ source_fidelity: score, calculation_agreement: score,
       uncertainty_and_decision_rights: score, scope_and_privacy: score }).strict(), hardGates }).strict()).length(8) }).strict();
 const actualSchema = z.object({ version: z.literal("007-staffing-cases-v1"), runId: z.uuid(), caseId: z.enum(ids),
-  provenance: z.literal("native-eve-stream"), model: z.literal("spacexai/grok-4.7"), reasoning: z.literal("low"),
+  provenance: z.literal("native-eve-stream"), model: z.literal("anthropic/claude-sonnet-5.5"), reasoning: z.literal("low"),
   role: z.enum(["panel", "mcteer"]), mode: z.enum(["operational", "finance"]),
   attemptId: z.uuid(), conversationId: z.uuid(), nativeSessionId: z.string().min(1).max(200), turnId: z.string().min(1).max(200),
   startedAt: timestamp, finishedAt: timestamp, initialDispatches: z.literal(1), automaticPaidRetries: z.literal(0),

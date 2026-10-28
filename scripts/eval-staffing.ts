@@ -214,7 +214,7 @@ async function main() {
         const outputPath = join(directory, `${id}-actual.json`);
         // Semantic claims stay null until actual-output review. This record
         // intentionally cannot pass eval:staffing:verify by itself.
-        const actual = { version: fixture.version, runId, caseId: id, provenance: "native-eve-stream", model: "spacexai/grok-4.7", reasoning: "low",
+        const actual = { version: fixture.version, runId, caseId: id, provenance: "native-eve-stream", model: "anthropic/claude-sonnet-5.5", reasoning: "low",
           role: definition.role, mode: definition.mode, attemptId: prepared.attemptId, conversationId: prepared.conversationId, nativeSessionId, turnId,
           startedAt: new Date(started).toISOString(), finishedAt: new Date(finished).toISOString(), initialDispatches: 1, automaticPaidRetries: 0,
           state: cancellationOutcome?.state ?? final.state, terminalSource: cancellationOutcome?.terminalSource ??

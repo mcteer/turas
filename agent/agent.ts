@@ -15,7 +15,7 @@ import { wrapStaffingModel } from "../lib/server/staffing/model-budget";
 import { budgetedResearchModel,parityBudgetModel,parityEvaluationBudgetId } from "../lib/server/research/specialists/evaluation-budget";
 import {hostedRootAttempt} from "../lib/server/conversations/hosted-root-budget";
 
-const selectedModel = "spacexai/grok-4.7";
+const selectedModel = "anthropic/claude-sonnet-5.5";
 const currentModel=()=>parityEvaluationBudgetId()?budgetedResearchModel(selectedModel):selectedModel;
 
 export default defineAgent({

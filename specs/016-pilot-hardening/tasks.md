@@ -1394,3 +1394,8 @@ No hosted target may be locked for release before its measured reopen path exist
   and no-restart protocol. Preserve its schema, ownership, eligibility and
   execution, all evaluation criteria and model bounds. Do not claim an unobserved
   R11 failure; require fresh full model validation and release (FR-021).
+
+
+### Authorized provider migration (2026-10-28)
+
+- [ ] T221 Replace xAI generation with suitable OpenAI/Anthropic models through Vercel AI Gateway; verify pricing and token guards, preserve historical accounting, run fresh model quality and hosted checks, and verify the deployed provider. Selected candidate: Claude Sonnet 5.5.

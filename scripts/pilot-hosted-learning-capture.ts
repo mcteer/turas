@@ -106,7 +106,7 @@ export async function captureHostedLearningEvaluation(input:AuthorityInput&{eval
    const price=assertLearningPrice(meta.price_contract),ceiling=learningStepCeiling(price,4096);
    if(learningHash(price)!==meta.price_digest)throw Error('Actual frozen learning price differs');
    const hostedLearning=hostedLearningDispatchSchema.parse({contract:'pilot-hosted-learning-dispatch-v1',scope,evaluationId:id,learningAttemptId:meta.id,actorMembershipId:meta.actor_membership_id,caseId,purpose,nativeSessionId:native,nativeRequestId:meta.native_request_id,priceDigest:meta.price_digest});
-   dispatch=await ledger.dispatch({modelId:'spacexai/grok-4.7',ceilingMicroUsd:Number(ceiling.ceilingMicroUsd),pricingDigest:meta.price_digest,hostedLearning},journalAttemptId);
+   dispatch=await ledger.dispatch({modelId:'anthropic/claude-sonnet-5.5',ceilingMicroUsd:Number(ceiling.ceilingMicroUsd),pricingDigest:meta.price_digest,hostedLearning},journalAttemptId);
    const admission=await admitHostedLearningDispatch({db,ledger,dispatchId:dispatch,binding,signal});
    await writeEvidence(input.evidenceDirectory,'learning-'+label+'-admission.json',{...admission,platformVerificationRequired:false,actualPlatformVerified:true,modelCalls:0});
    await writeEvidence(input.evidenceDirectory,'learning-'+label+'-send-intent.json',{scope,evaluationId:id,learningAttemptId:meta.id,conversationId:meta.conversation_id,nativeSessionId:native,nativeRequestId:meta.native_request_id,journalDispatchId:dispatch,caseId,purpose});

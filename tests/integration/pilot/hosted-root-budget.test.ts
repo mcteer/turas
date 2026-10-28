@@ -26,7 +26,7 @@ it('binds actual synthetic attempts and retains unknown concurrent reservations 
 
 it('settles successful Production-bound root generate and stream calls with immutable original provider identities',async()=>fixture(async({db,principal,native,binding})=>{
  let calls=0;const forwardedLimits:(number|undefined)[]=[];const generated='synthetic-generated-'+randomUUID(),streamed='synthetic-streamed-'+randomUUID(),generatedGateway='gen_'+randomUUID(),streamedGateway='gen_'+randomUUID();
- const model={specificationVersion:'v4',provider:'synthetic-no-provider',modelId:'spacexai/grok-4.7',supportedUrls:{},
+ const model={specificationVersion:'v4',provider:'synthetic-no-provider',modelId:'anthropic/claude-sonnet-5.5',supportedUrls:{},
   async doGenerate(params:{maxOutputTokens?:number}){calls++;forwardedLimits.push(params.maxOutputTokens);return {content:[{type:'text',text:'Synthetic root response'}],response:{id:generated},providerMetadata:{gateway:{cost:'0.0001',generationId:generatedGateway}}};},
   async doStream(params:{maxOutputTokens?:number}){calls++;forwardedLimits.push(params.maxOutputTokens);return {stream:new ReadableStream({start(controller){controller.enqueue({type:'response-metadata',id:streamed});controller.enqueue({type:'text-start',id:'synthetic-text',providerMetadata:{gateway:{generationId:streamedGateway}}});controller.enqueue({type:'finish',providerMetadata:{gateway:{cost:'0.0001'}}});controller.close();}})};}} as unknown as Parameters<typeof wrapHostedRootBudget>[0];
  expect((await wrapHostedRootBudget(model,principal,native,'original-turn').doGenerate({prompt:[]})).content).toHaveLength(1);
@@ -57,7 +57,7 @@ it('settles successful Production-bound root generate and stream calls with immu
 
 it('withholds adversarial generated tool calls and preserves their complete paid reservation',async()=>fixture(async({db,principal,native,binding})=>{
  let calls=0;
- const model={specificationVersion:'v4',provider:'synthetic-no-provider',modelId:'spacexai/grok-4.7',supportedUrls:{},
+ const model={specificationVersion:'v4',provider:'synthetic-no-provider',modelId:'anthropic/claude-sonnet-5.5',supportedUrls:{},
   async doGenerate(params:{tools:unknown[];toolChoice:unknown}){calls++;expect(params.tools).toEqual([]);expect(params.toolChoice).toEqual({type:'none'});return {content:[{type:'tool-call',toolCallId:'synthetic-tool',toolName:'research',input:'{}',providerExecuted:true}],providerMetadata:{gateway:{cost:'0.0001',generationId:'gen_synthetic_tool_rejection'}}};},
   async doStream(){throw Error('Unused');}} as unknown as Parameters<typeof wrapHostedRootBudget>[0];
  const wrapped=wrapHostedRootBudget(model,principal,native,'synthetic-turn');
@@ -72,7 +72,7 @@ it('charges resumed root dispatches and rejects every tool stream before forward
  const first=await reserveHostedRoot(principal,native,'original-turn',100,700);expect(first).not.toBeNull();
  await settleHostedRoot(first,{gateway:{cost:'0.0001'}});
  let calls=0,forwarded=0;
- const model={specificationVersion:'v4',provider:'synthetic-no-provider',modelId:'spacexai/grok-4.7',supportedUrls:{},async doGenerate(){throw Error('Unused');},
+ const model={specificationVersion:'v4',provider:'synthetic-no-provider',modelId:'anthropic/claude-sonnet-5.5',supportedUrls:{},async doGenerate(){throw Error('Unused');},
   async doStream(params:{tools:unknown[];toolChoice:unknown}){calls++;expect(params.tools).toEqual([]);expect(params.toolChoice).toEqual({type:'none'});return {stream:new ReadableStream({start(controller){controller.enqueue({type:'tool-input-start',id:'synthetic-tool',toolName:'research',providerExecuted:true,providerMetadata:{gateway:{generationId:'gen_synthetic_stream_tool_rejection'}}});controller.close();}})};}} as unknown as Parameters<typeof wrapHostedRootBudget>[0];
  const result=await wrapHostedRootBudget(model,principal,native,'resumed-turn').doStream({prompt:[],maxOutputTokens:700});
  const reader=result.stream.getReader();await expect(reader.read().then(value=>{if(!value.done)forwarded++;})).rejects.toMatchObject({code:'hosted_root_tool_denied'});
@@ -86,7 +86,7 @@ it('charges resumed root dispatches and rejects every tool stream before forward
 }),210000);
 
 it('retains a full unknown reservation when only an upstream response identity is available',async()=>fixture(async({db,principal,native,binding})=>{
- const model={specificationVersion:'v4',provider:'synthetic-no-provider',modelId:'spacexai/grok-4.7',supportedUrls:{},
+ const model={specificationVersion:'v4',provider:'synthetic-no-provider',modelId:'anthropic/claude-sonnet-5.5',supportedUrls:{},
   async doGenerate(){return {content:[{type:'text',text:'Synthetic response without Gateway identity'}],response:{id:'synthetic-upstream-only'},providerMetadata:{gateway:{cost:'0.0001'}}};},async doStream(){throw Error('Unused');}} as unknown as Parameters<typeof wrapHostedRootBudget>[0];
  await wrapHostedRootBudget(model,principal,native,'synthetic-turn').doGenerate({prompt:[],maxOutputTokens:700});
  expect((await db.query('SELECT identity_kind,provider_key FROM operations_hosted_root_provider_identities')).rows).toContainEqual({identity_kind:'provider_response',provider_key:'synthetic-upstream-only'});
@@ -95,7 +95,7 @@ it('retains a full unknown reservation when only an upstream response identity i
 }),210000);
 
 it('captures the Gateway generation from an actual SDK failure before retaining its interrupted hold',async()=>fixture(async({db,principal,native,binding})=>{
- const model={specificationVersion:'v4',provider:'synthetic-no-provider',modelId:'spacexai/grok-4.7',supportedUrls:{},async doGenerate(){throw Error('Unused');},
+ const model={specificationVersion:'v4',provider:'synthetic-no-provider',modelId:'anthropic/claude-sonnet-5.5',supportedUrls:{},async doGenerate(){throw Error('Unused');},
   async doStream(){throw Object.assign(Error('Synthetic interrupted SDK response'),{generationId:'gen_synthetic_interrupted_sdk'});}} as unknown as Parameters<typeof wrapHostedRootBudget>[0];
  await expect(wrapHostedRootBudget(model,principal,native,'synthetic-turn').doStream({prompt:[],maxOutputTokens:700})).rejects.toThrow('Synthetic interrupted SDK response');
  expect((await db.query("SELECT provider_key FROM operations_hosted_root_provider_identities WHERE identity_kind='gateway_generation'")).rows.map(row=>row.provider_key)).toContain('gen_synthetic_interrupted_sdk');

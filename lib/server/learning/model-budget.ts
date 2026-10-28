@@ -32,7 +32,7 @@ export function wrapLearningModel(model:Model,governance?:{deadlineAt:Date;befor
   transformParams:async({params})=>{
    if(!governance||!bound)throw new HttpFailure(403,'learning_step_unadmitted','Durable learning admission required');
    if(invoked)throw new HttpFailure(409,'learning_step_uncertain','A paid model step cannot be retried');invoked=true;
-   if(model.modelId!=='spacexai/grok-4.7')throw new HttpFailure(409,'learning_model_changed','Learning model contract changed');
+   if(model.modelId!=='anthropic/claude-sonnet-5.5')throw new HttpFailure(409,'learning_model_changed','Learning model contract changed');
    const allowed=bound.purpose==='draft'?new Set(Object.keys(learningReadSchemas)):new Set<string>();
    const tools=(params.tools??[]).filter(t=>t.type==='function'&&allowed.has(t.name)).map(t=>t.type==='function'?{...t,inputSchema:z.toJSONSchema(learningReadSchemas[t.name as keyof typeof learningReadSchemas])}:t);
    if(params.toolChoice?.type==='tool'&&!allowed.has(params.toolChoice.toolName))throw new HttpFailure(403,'learning_tool_denied','Forbidden forced tool');

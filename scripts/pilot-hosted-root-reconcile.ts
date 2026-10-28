@@ -10,18 +10,18 @@ import {readEvidence,createEvidenceDirectory,writeEvidence} from './pilot-eviden
 import {pilotSource} from './pilot-source';
 import {lockHostedRootAccounting,settleLockedHostedRoot} from '../lib/server/conversations/hosted-root-settlement';
 
-const dispatchSchema=z.strictObject({contract:z.literal('pilot-root-dispatch-v2'),model:z.literal('spacexai/grok-4.7'),
+const dispatchSchema=z.strictObject({contract:z.literal('pilot-root-dispatch-v2'),model:z.enum(['spacexai/grok-4.7','anthropic/claude-sonnet-5.5']),
  attemptId:z.uuid(),nativeSessionId:z.string().min(1).max(256),turnId:z.string().min(1).max(256),
  sourceCommit:z.string().regex(/^[a-f0-9]{40}$/),deploymentId:z.string().regex(/^dpl_[A-Za-z0-9]+$/),
  projectId:z.string().regex(/^prj_[A-Za-z0-9]+$/),target:z.enum(['preview','production']),providerPath:z.enum(['generate','stream'])});
-const tokens=z.number().int().min(0).max(500000),dollars=z.number().finite().nonnegative();
-const generationSchema=z.object({id:z.string().regex(/^gen_[A-Za-z0-9_-]{1,240}$/),model:z.enum(['spacexai/grok-4.7','xai/grok-4.7']),
+const tokens=z.number().int().min(0).max(1000000),dollars=z.number().finite().nonnegative();
+const generationSchema=z.object({id:z.string().regex(/^gen_[A-Za-z0-9_-]{1,240}$/),model:z.enum(['spacexai/grok-4.7','xai/grok-4.7','anthropic/claude-sonnet-5.5']),
  totalCost:dollars,usage:dollars,upstreamInferenceCost:dollars,isByok:z.literal(false),
  createdAt:z.iso.datetime({offset:true}),streamed:z.boolean(),finishReason:z.enum(['stop','length','cancelled','canceled','abort','error','content-filter','tool-calls']),
  promptTokens:tokens,completionTokens:tokens,reasoningTokens:tokens,cachedTokens:tokens,cacheCreationTokens:tokens,
  billableWebSearchCalls:z.literal(0),latency:z.number().finite().min(0).max(3600000),generationTime:z.number().finite().min(0).max(3600000),providerName:z.string().min(1).max(128)})
  // Accounting returns xai's provider identifier; keep it raw and require its
- // exact provider. Dispatch selection remains spacexai/grok-4.7.
+ // exact provider. New dispatches select Sonnet; old identities remain immutable.
  .refine(value=>value.model!=='xai/grok-4.7'||value.providerName==='xai',{path:['model'],message:'Exact xai accounting provider required'});
 const digest=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
@@ -68,7 +68,7 @@ export async function reconcileHostedRootGeneration(input:{db:Client;scope:Pilot
  signal.throwIfAborted();const original=await readOperation(db,scope,id);
  const existing=(await db.query('SELECT * FROM operations_hosted_root_generation_receipts WHERE operation_id=$1',[id])).rows[0];
  const generation=existing?null:await lookupPilotGatewayGeneration(original.row.provider_key,signal);
- if(generation&&(generation.id!==original.row.provider_key||generation.streamed!==(original.dispatch.providerPath==='stream')
+ if(generation&&((generation.model!==original.dispatch.model&&!(original.dispatch.model==='spacexai/grok-4.7'&&generation.model==='xai/grok-4.7'&&generation.providerName==='xai'))||generation.id!==original.row.provider_key||generation.streamed!==(original.dispatch.providerPath==='stream')
   ||generation.usage!==generation.totalCost||Date.parse(generation.createdAt)<original.row.created_at.getTime()-30000
   ||Date.parse(generation.createdAt)>original.row.created_at.getTime()+300000||Date.parse(generation.createdAt)>Date.now()+30000))throw Error('Exact terminal Gateway accounting unavailable');
  const actual=existing?Number(existing.actual_micro_usd):Math.ceil(generation!.totalCost*1000000);

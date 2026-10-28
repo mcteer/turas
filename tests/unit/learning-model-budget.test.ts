@@ -5,7 +5,7 @@ type Model=Parameters<typeof wrapLanguageModel>[0]['model'];
 function fixture(purpose:'draft'|'evaluation_candidate'='draft'){
  const generate=vi.fn(async()=>({content:[{type:'text',text:'Synthetic output'}],finishReason:'stop',usage:{inputTokens:{total:10},outputTokens:{total:20}},providerMetadata:{gateway:{cost:'0.001',generationId:'synthetic-generation'}},warnings:[]}));
  const stream=vi.fn(async()=>({stream:new ReadableStream({start(c){c.enqueue({type:'response-metadata',id:'synthetic-upstream-response'} as never);c.enqueue({type:'text-delta',id:'synthetic',delta:'Synthetic output',providerMetadata:{gateway:{generationId:'synthetic-generation'}}} as never);c.enqueue({type:'finish',finishReason:'stop',usage:{inputTokens:{total:10},outputTokens:{total:20}},providerMetadata:{gateway:{cost:'0.001'}}});c.close();}})}));
- const model={specificationVersion:'v4',provider:'synthetic',modelId:'spacexai/grok-4.7',supportedUrls:{},doGenerate:generate,doStream:stream} as unknown as Model;
+ const model={specificationVersion:'v4',provider:'synthetic',modelId:'anthropic/claude-sonnet-5.5',supportedUrls:{},doGenerate:generate,doStream:stream} as unknown as Model;
  const deadlineAt=new Date(Date.now()+10000),beforeProvider=vi.fn(async()=>{}),chargeInput=vi.fn(async()=>{}),settle=vi.fn(async()=>{}),fail=vi.fn(async()=>{}),rememberIdentity=vi.fn(async(_kind:'provider_response'|'gateway_generation',_value:string)=>{});
  registerLearningModelCallbacks(deadlineAt,{purpose,chargeInput,settle,fail,rememberIdentity});
  return {wrapped:wrapLearningModel(model,{deadlineAt,beforeProvider}),model,generate,stream,beforeProvider,chargeInput,settle,fail,rememberIdentity};

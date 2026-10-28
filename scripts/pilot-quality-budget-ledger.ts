@@ -9,7 +9,7 @@ import {hostedLearningDispatchSchema} from '../lib/contracts/pilot-hosted-learni
 import {createEvidenceDirectory,readEvidence,writeEvidence,evidenceDigest} from './pilot-evidence';
 
 const digest=z.string().regex(/^[a-f0-9]{64}$/),micro=z.number().int().nonnegative().safe();
-const authorization=z.strictObject({contract:z.literal('pilot-quality-budget-v1'),id:z.uuid(),capMicroUsd:micro.positive(),contextCreditCap:qualityContextCreditCap.optional(),authorizationDigest:digest,sourceDigest:digest,catalogDigest:digest,modelId:z.literal('spacexai/grok-4.7'),expiresAt:z.iso.datetime({offset:true})});
+const authorization=z.strictObject({contract:z.literal('pilot-quality-budget-v1'),id:z.uuid(),capMicroUsd:micro.positive(),contextCreditCap:qualityContextCreditCap.optional(),authorizationDigest:digest,sourceDigest:digest,catalogDigest:digest,modelId:z.enum(['spacexai/grok-4.7','anthropic/claude-sonnet-5.5']),expiresAt:z.iso.datetime({offset:true})});
 /** A separately approved continuation extends time only. No cap, charge,
  * reservation, model or original authorization can be replaced by this input. */
 export const qualityContinuationSchema=z.strictObject({
@@ -38,7 +38,7 @@ const event=z.discriminatedUnion('kind',[
  z.strictObject({kind:z.literal('unknown-exposure'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,observedChargeMicroUsd:micro,providerProofDigest:digest,observedAt:z.iso.datetime({offset:true})}),
  z.strictObject({kind:z.literal('continuation'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,approval:qualityContinuationSchema,observedAt:z.iso.datetime({offset:true})}),
  z.strictObject({kind:z.literal('attempt'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,sourceCommit:z.string().regex(/^[a-f0-9]{40}$/),sourceDigest:digest,catalogDigest:digest,observedAt:z.iso.datetime({offset:true})}),
- z.strictObject({kind:z.literal('dispatch'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,modelId:z.enum(['spacexai/grok-4.7','openai/text-embedding-3-small']),ceilingMicroUsd:micro.positive(),pricingDigest:digest,hostedLearning:hostedLearningDispatchSchema.optional(),observedAt:z.iso.datetime({offset:true})}),
+ z.strictObject({kind:z.literal('dispatch'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,modelId:z.enum(['spacexai/grok-4.7','anthropic/claude-sonnet-5.5','openai/text-embedding-3-small']),ceilingMicroUsd:micro.positive(),pricingDigest:digest,hostedLearning:hostedLearningDispatchSchema.optional(),observedAt:z.iso.datetime({offset:true})}),
  z.strictObject({kind:z.literal('settlement'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,chargedMicroUsd:micro,inputTokens:micro,outputTokens:micro,generationId:z.string().min(1).max(256),observedAt:z.iso.datetime({offset:true})}),
  z.strictObject({kind:z.literal('unknown'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,reason:z.enum(['provider_error','incomplete_stream','invalid_accounting','overrun','aborted']),observedChargeMicroUsd:micro.optional(),observedAt:z.iso.datetime({offset:true})}),
  z.strictObject({kind:z.literal('credit-dispatch'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,ceilingCredits:z.literal(1),accountProofDigest:digest,observedAt:z.iso.datetime({offset:true})}),
@@ -46,7 +46,7 @@ const event=z.discriminatedUnion('kind',[
  z.strictObject({kind:z.literal('credit-unknown'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,observedCreditsConsumed:micro.optional(),observedAt:z.iso.datetime({offset:true})}),
 ]);
 type Event=z.infer<typeof event>;
-type QualityDispatch={modelId:'spacexai/grok-4.7'|'openai/text-embedding-3-small';ceilingMicroUsd:number;pricingDigest:string;hostedLearning?:z.infer<typeof hostedLearningDispatchSchema>};
+type QualityDispatch={modelId:'anthropic/claude-sonnet-5.5'|'openai/text-embedding-3-small';ceilingMicroUsd:number;pricingDigest:string;hostedLearning?:z.infer<typeof hostedLearningDispatchSchema>};
 
 /** Evaluation-only shared accounting outside disposable application copies.
  * An uncertain dispatch blocks admission until an explicit independent operator
@@ -55,7 +55,7 @@ type QualityDispatch={modelId:'spacexai/grok-4.7'|'openai/text-embedding-3-small
 export class QualityBudgetLedger{
  constructor(readonly root:string){}
  static async create(root:string,input:z.infer<typeof authorization>){
-  const parsed=authorization.parse(input);if(Date.parse(parsed.expiresAt)<=Date.now())throw Error('Fresh evaluation authorization required');
+  const parsed=authorization.parse(input);if(parsed.modelId!=='anthropic/claude-sonnet-5.5')throw Error('Retired model cannot receive fresh authorization');if(Date.parse(parsed.expiresAt)<=Date.now())throw Error('Fresh evaluation authorization required');
   await createEvidenceDirectory(resolve(root));await writeEvidence(resolve(root),'authorization.json',parsed);return new QualityBudgetLedger(resolve(root));
  }
  private async lock<T>(run:()=>Promise<T>,signal?:AbortSignal):Promise<T>{
@@ -151,10 +151,11 @@ export class QualityBudgetLedger{
  private async dispatchOnce(raw:QualityDispatch,attemptId?:string,waitForActive=false,signal?:AbortSignal){
   return this.lock(async()=>{const state=await this.read();
    signal?.throwIfAborted();
+   if(state.authority.modelId!=='anthropic/claude-sonnet-5.5'||(raw.modelId!=='anthropic/claude-sonnet-5.5'&&raw.modelId!=='openai/text-embedding-3-small'))throw Error('Retired model cannot dispatch');
    if(state.currentSource.attemptId!==attemptId||(state.continuation||state.reviewedSource)&&!attemptId)throw Error('Prior quality attempt cannot dispatch');
    if(Date.parse(state.authority.expiresAt)<=Date.now()||[...state.unresolvedDollarIds].some(id=>state.unknown.has(id))||[...state.creditDispatches].some(id=>!state.creditSettled.has(id)))throw Error('Unknown or active evaluation charge holds admission');
    if(state.unresolvedDollarIds.size){if(waitForActive)return null;throw Error('Unknown or active evaluation charge holds admission');}
-   if(raw.hostedLearning&&(raw.modelId!=='spacexai/grok-4.7'||raw.hostedLearning.scope.sourceCommit!==state.currentSource.sourceCommit||raw.hostedLearning.scope.sourceDigest!==state.currentSource.sourceDigest||raw.hostedLearning.scope.catalogDigest!==state.currentSource.catalogDigest||raw.hostedLearning.priceDigest!==raw.pricingDigest))throw Error('Hosted dispatch differs from original source-pinned authority');
+   if(raw.hostedLearning&&(raw.modelId!=='anthropic/claude-sonnet-5.5'||raw.hostedLearning.scope.sourceCommit!==state.currentSource.sourceCommit||raw.hostedLearning.scope.sourceDigest!==state.currentSource.sourceDigest||raw.hostedLearning.scope.catalogDigest!==state.currentSource.catalogDigest||raw.hostedLearning.priceDigest!==raw.pricingDigest))throw Error('Hosted dispatch differs from original source-pinned authority');
    const id=randomUUID(),value=event.parse({kind:'dispatch',id,...raw,ordinal:state.ordinal,previousDigest:state.previousDigest,observedAt:new Date().toISOString()});
    if(value.kind!=='dispatch'||state.chargedMicroUsd+state.heldMicroUsd+value.ceilingMicroUsd>state.authority.capMicroUsd)throw Error('Evaluation budget prevents dispatch');
    signal?.throwIfAborted();
@@ -178,7 +179,7 @@ export class QualityBudgetLedger{
   return this.lock(async()=>{const state=await this.read(),d=state.dispatches.get(id);
    if(!d||state.settled.has(id)||state.unknown.has(id))throw Error('Evaluation dispatch cannot settle');
    const parsed=event.safeParse({kind:'settlement',id,...raw,ordinal:state.ordinal,previousDigest:state.previousDigest,observedAt:new Date().toISOString()});
-   if(!parsed.success||state.generationIds.has(raw.generationId)||raw.chargedMicroUsd>d.ceilingMicroUsd||raw.inputTokens>(d.modelId==='openai/text-embedding-3-small'?300000:500000)||raw.outputTokens>(d.modelId==='openai/text-embedding-3-small'?0:500000)){await this.append({kind:'unknown',id,reason:raw.chargedMicroUsd>d.ceilingMicroUsd?'overrun':'invalid_accounting',observedChargeMicroUsd:micro.safeParse(raw.chargedMicroUsd).success?raw.chargedMicroUsd:undefined,ordinal:state.ordinal,previousDigest:state.previousDigest,observedAt:new Date().toISOString()});throw Error('Evaluation charge requires operator review');}
+   if(!parsed.success||state.generationIds.has(raw.generationId)||raw.chargedMicroUsd>d.ceilingMicroUsd||raw.inputTokens>(d.modelId==='openai/text-embedding-3-small'?300000:d.modelId==='anthropic/claude-sonnet-5.5'?1000000:500000)||raw.outputTokens>(d.modelId==='openai/text-embedding-3-small'?0:d.modelId==='anthropic/claude-sonnet-5.5'?128000:500000)){await this.append({kind:'unknown',id,reason:raw.chargedMicroUsd>d.ceilingMicroUsd?'overrun':'invalid_accounting',observedChargeMicroUsd:micro.safeParse(raw.chargedMicroUsd).success?raw.chargedMicroUsd:undefined,ordinal:state.ordinal,previousDigest:state.previousDigest,observedAt:new Date().toISOString()});throw Error('Evaluation charge requires operator review');}
    await this.append(parsed.data);
   });
  }

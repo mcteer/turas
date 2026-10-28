@@ -9,7 +9,7 @@ const endpoint='https://api.context.dev/v1/web/search',request={method:'POST',he
 const result={request_id:'synthetic-search',query:'Synthetic public query',results:[],key_metadata:{credits_consumed:1,credits_remaining:9}};
 beforeEach(async()=>{await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});root=await mkdtemp(resolve('local-artifacts/016/quality-context-test-'));searchCalls=accountCalls=0;previousKey=process.env.CONTEXT_API_KEY;process.env.CONTEXT_API_KEY='synthetic-context-key';});
 afterEach(async()=>{if(previousKey===undefined)delete process.env.CONTEXT_API_KEY;else process.env.CONTEXT_API_KEY=previousKey;await rm(root,{recursive:true,force:true});});
-async function ledger(contextCreditCap=4){return QualityBudgetLedger.create(join(root,randomUUID()),{contract:'pilot-quality-budget-v1',id:randomUUID(),capMicroUsd:25000000,contextCreditCap,authorizationDigest:'a'.repeat(64),sourceDigest:'b'.repeat(64),catalogDigest:'c'.repeat(64),modelId:'spacexai/grok-4.7',expiresAt:new Date(Date.now()+60000).toISOString()});}
+async function ledger(contextCreditCap=4){return QualityBudgetLedger.create(join(root,randomUUID()),{contract:'pilot-quality-budget-v1',id:randomUUID(),capMicroUsd:25000000,contextCreditCap,authorizationDigest:'a'.repeat(64),sourceDigest:'b'.repeat(64),catalogDigest:'c'.repeat(64),modelId:'anthropic/claude-sonnet-5.5',expiresAt:new Date(Date.now()+60000).toISOString()});}
 function transport(options:{topup?:boolean;payload?:unknown}={}):typeof fetch{return async(resource,init)=>{
  const forwarded=new Request(resource,init),url=new URL(forwarded.url);
  if(url.pathname==='/v1/org/usage'){accountCalls++;return Response.json({credits_remaining:10,auto_topup:{enabled:options.topup??false},key_metadata:{credits_consumed:0},request_id:'synthetic-account-'+accountCalls});}
@@ -37,7 +37,7 @@ it('denies absent credit authority and enabled automatic billing before search d
 it('holds missing credit receipts and blocks every later provider',async()=>{
  const budget=await ledger(),guarded=budgetedQualityContextFetch({ledger:budget,fetch:transport({payload:{request_id:'synthetic-search'}}),scope:async()=>{},evidence:async()=>{}});
  await expect(guarded(endpoint,request)).rejects.toThrow();expect(searchCalls).toBe(1);expect(await budget.status()).toMatchObject({unknown:1,admissionHeld:true});
- await expect(budget.dispatch({modelId:'spacexai/grok-4.7',ceilingMicroUsd:16000000,pricingDigest:'d'.repeat(64)})).rejects.toThrow('holds admission');
+ await expect(budget.dispatch({modelId:'anthropic/claude-sonnet-5.5',ceilingMicroUsd:16000000,pricingDigest:'d'.repeat(64)})).rejects.toThrow('holds admission');
 });
 it('rejects another credential changed pricing options and unapproved endpoints',async()=>{
  const guarded=budgetedQualityContextFetch({ledger:await ledger(),fetch:transport(),scope:async()=>{},evidence:async()=>{}});

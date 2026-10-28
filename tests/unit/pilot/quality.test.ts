@@ -57,7 +57,7 @@ it('verifies expanded profile review only under the exact approved pilot runtime
  const root=await mkdtemp(resolve('local-artifacts/016/step-review-test-'));
  try{
   const id=randomUUID(),expiresAt=new Date(Date.now()+60000).toISOString(),authorizationDigest='a'.repeat(64),source={sourceCommit:'a'.repeat(40),sourceDigest:'b'.repeat(64),catalogDigest:'c'.repeat(64)};
-  const ledger=await QualityBudgetLedger.create(join(root,'budget'),{contract:'pilot-quality-budget-v1',id,authorizationDigest,sourceDigest:source.sourceDigest,catalogDigest:source.catalogDigest,capMicroUsd:25000000,contextCreditCap:4,modelId:'spacexai/grok-4.7',expiresAt});
+  const ledger=await QualityBudgetLedger.create(join(root,'budget'),{contract:'pilot-quality-budget-v1',id,authorizationDigest,sourceDigest:source.sourceDigest,catalogDigest:source.catalogDigest,capMicroUsd:25000000,contextCreditCap:4,modelId:'anthropic/claude-sonnet-5.5',expiresAt});
   const attemptId=await ledger.beginAttempt(source);
   const stepAuthorization={contract:'pilot-quality-step-authorization-v1',feature:'016',catalog:'003',budgetId:id,authorizationDigest,modelStepCap:32,userInstructionReference:'Synthetic operator approval fixture',recordedAt:new Date().toISOString(),expiresAt};
   await writeEvidence(root,'runtime.json',{contract:'pilot-quality-runtime-v1',id,attemptId,sourceRoot:process.cwd(),ledgerRoot:ledger.root,...source,authorizationDigest,capMicroUsd:25000000,contextCreditCap:4,expiresAt,stepAuthorization});

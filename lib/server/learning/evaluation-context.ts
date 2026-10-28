@@ -17,7 +17,7 @@ import {learningEvaluationPrompt} from '../../contracts/learning';
 export {learningEvaluationPrompt} from '../../contracts/learning';
 export const learningEvaluationCatalogDigest=()=>learningHash({version:learningCatalogVersion,cases:learningEvaluationCases});
 export const learningEvaluationRubricDigest=()=>learningHash({rubric:learningRubric,expected:learningExpectedBehaviors});
-export const learningEvaluationModelIdentity=JSON.stringify({model:'spacexai/grok-4.7',reasoningEffort:'low',requestedOutputTokens:4096,tools:0});
+export const learningEvaluationModelIdentity=JSON.stringify({model:'anthropic/claude-sonnet-5.5',reasoningEffort:'low',requestedOutputTokens:4096,tools:0});
 export const learningEvaluationSourceDigest=()=>learningHash({commit:process.env.VERCEL_GIT_COMMIT_SHA??null,contract:'learning-evaluation-v1',catalog:learningEvaluationCatalogDigest(),rubric:learningEvaluationRubricDigest(),prompt:learningEvaluationPrompt,model:learningEvaluationModelIdentity});
 export async function captureLearningEvaluationScope(db:PoolClient,actor:CurrentSession,reviewId:string){
  await lockLearningPublisher(db,actor);

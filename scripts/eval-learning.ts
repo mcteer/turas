@@ -19,7 +19,7 @@ import type {z} from 'zod';
 async function main(){
  const fixture=process.argv.length===3&&process.argv[2]==='--fixture';
  if(!fixture&&(process.argv.length!==5||process.argv[2]!=='--live'||process.argv[3]!=='--budget-usd'||process.env.TURAS_ALLOW_LIVE_MODEL_TESTS!=='1'))throw Error('Fresh explicit --live --budget-usd authorization and TURAS_ALLOW_LIVE_MODEL_TESTS=1 required');
- const budgetUsd=microUsdSchema.parse(fixture?'25':process.argv[4]),budgetMicroUsd=decimalMicro(budgetUsd).toString(),agent=await readFile('agent/agent.ts'),rootAgentDigest=createHash('sha256').update(agent).digest('hex');assert.ok(agent.toString().includes('const selectedModel = "spacexai/grok-4.7";')&&agent.toString().includes('reasoning: "low"'),'Configured Grok model changed');
+ const budgetUsd=microUsdSchema.parse(fixture?'25':process.argv[4]),budgetMicroUsd=decimalMicro(budgetUsd).toString(),agent=await readFile('agent/agent.ts'),rootAgentDigest=createHash('sha256').update(agent).digest('hex');assert.ok(agent.toString().includes('const selectedModel = "anthropic/claude-sonnet-5.5";')&&agent.toString().includes('reasoning: "low"'),'Configured Grok model changed');
  const apiKey=fixture?undefined:process.env.AI_GATEWAY_API_KEY??parseEnv(await readFile('.env.local','utf8')).AI_GATEWAY_API_KEY;if(!fixture&&!apiKey)throw Error('Configured AI Gateway credential unavailable');
  if(process.env.TURAS_014_PRICE_CONTRACT||process.env.TURAS_LEARNING_NATIVE_FIXTURE_READY)throw Error('Actual capture cannot use a fixture price/provider');
  const priceContract=await resolveLearningPrice(),ceiling=learningStepCeiling(priceContract,4096);assert.ok(BigInt(budgetMicroUsd)>=ceiling.ceilingMicroUsd,'Budget is below the full published provider bound');

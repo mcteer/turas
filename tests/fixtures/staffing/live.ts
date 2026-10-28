@@ -13,7 +13,7 @@ export async function installStaffingLiveObservation(environment: StaffingEvalEn
     new URL(process.env.DATABASE_URL!).pathname !== `/${environment.databaseName}`) throw new Error("Owned live app required");
   const path = join(root, "agent/agent.ts"), source = await readFile(path, "utf8");
   const target = "wrapStaffingModel(parityBudgetModel(gateway(selectedModel),selectedModel), admitted.mode";
-  if (source.split(target).length !== 2 || !source.includes('const selectedModel = "spacexai/grok-4.7";') ||
+  if (source.split(target).length !== 2 || !source.includes('const selectedModel = "anthropic/claude-sonnet-5.5";') ||
     !source.includes('reasoning: "low"') || source.includes("createStaffingNativeFixtureModel")) throw new Error("Live model observation shape changed");
   await query(`CREATE TABLE staffing_live_provider_observations(id uuid PRIMARY KEY,
     attempt_id uuid NOT NULL REFERENCES staffing_advisory_attempts(id),response_attempt_id uuid NOT NULL REFERENCES response_attempts(id),

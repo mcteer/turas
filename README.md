@@ -5,6 +5,12 @@ Current pilot release status and validation results are recorded in
 historical snapshots at their recorded source revisions; they do not replace
 current release evidence.
 
+The current model migration selects `anthropic/claude-sonnet-5.5` through
+Vercel AI Gateway, following the request to stop xAI. New evaluation admission
+rejects the retired model while historical accounting and uncertain holds remain
+unchanged. Fresh model validation and deployment are pending; this is not a
+claim that Production has switched providers.
+
 At `01c5802`, the complete support browser gate passes all 44 cases across four
 profiles, along with the original load benchmark, native admission preparation
 and all 40 pilot browser cases. Review identifies a remaining citation-guidance

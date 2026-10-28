@@ -558,7 +558,7 @@ await withPlanEvalEnvironment(async(environment)=>{
       settledSteps.every((step)=>step.input_tokens!==null &&
         step.output_tokens!==null);
     const actual={version:fixture.version,caseId:item.id,
-      provenance:"native-eve-stream",model:"spacexai/grok-4.7",reasoning:"low",
+      provenance:"native-eve-stream",model:"anthropic/claude-sonnet-5.5",reasoning:"low",
       terminal:streamedTerminal ?? projectedTerminal ?? "unconfirmed",
       terminalSource:streamedTerminal ? "stream":projectedTerminal ?
         "native-projection":"absent",

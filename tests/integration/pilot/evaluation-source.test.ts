@@ -42,7 +42,7 @@ it('installs the actual budget guard in the owned maintenance process before rea
  const root=await mkdtemp(resolve('local-artifacts/016/worker-budget-test-'));
  try{
   const source=await pilotSource(),id=randomUUID(),authorizationDigest='a'.repeat(64),expiresAt=new Date(Date.now()+300000).toISOString();
-  const ledger=await QualityBudgetLedger.create(join(root,'budget'),{contract:'pilot-quality-budget-v1',id,sourceDigest:source.sourceDigest,catalogDigest:source.catalogDigest,authorizationDigest,capMicroUsd:1,modelId:'spacexai/grok-4.7',expiresAt});
+  const ledger=await QualityBudgetLedger.create(join(root,'budget'),{contract:'pilot-quality-budget-v1',id,sourceDigest:source.sourceDigest,catalogDigest:source.catalogDigest,authorizationDigest,capMicroUsd:1,modelId:'anthropic/claude-sonnet-5.5',expiresAt});
   await writeEvidence(root,'runtime.json',{contract:'pilot-quality-runtime-v1',id,sourceRoot:process.cwd(),ledgerRoot:ledger.root,...source,authorizationDigest,capMicroUsd:1,expiresAt});
   await withPilotEnvironment(async environment=>{
    process.env.TURAS_016_QUALITY_RUNTIME_FILE=join(root,'runtime.json');process.env.TURAS_ALLOW_LIVE_MODEL_TESTS='1';process.env.AI_GATEWAY_API_KEY='synthetic-no-provider-credential';
