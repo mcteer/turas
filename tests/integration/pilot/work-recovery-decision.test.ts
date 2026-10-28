@@ -353,6 +353,9 @@ it('measures exhaustive fresh work MCP category pages through SDK and rejects ch
     const failureMessages=(error:unknown):string[]=>error instanceof AggregateError?[error.message,...error.errors.flatMap(failureMessages)]:error instanceof Error?[error.message]:[];
     expect(failureMessages(concurrentFailure)).toContain('Measured work MCP category changed');expect((await owner.query('SELECT internal_generation FROM customer_profile_state WHERE customer_id=$1',[customerId])).rows[0].internal_generation).toBe(originalGeneration);
     expect((await owner.query('SELECT 1 FROM operations_recovery_http_reads a JOIN login_sessions s ON s.id=a.session_id JOIN mcp_connections mc ON mc.id=a.record_id WHERE a.mcp_probe_connection AND (a.revoked_at IS NULL OR s.revoked_at IS NULL OR mc.revoked_at IS NULL OR mc.credential_hash IS NOT NULL)')).rowCount).toBe(0);
+    // Replay is an independent read target after the preceding SDK measurements.
+    // Its deadline remains clipped by the original whole-case signal/deadline.
+    input={...input,deadline:Math.min(Date.now()+290000,caseDeadline)};diagnosticTarget=input;
     observe('final-scope-replay');await withLockedWorkRecoveryDecision(input,async(db,current)=>{
      await expect(verifyWorkRecoveryService(db,current,{maintenance:[],mcp:proofs,conversations},passwords,args.journalDirectory,input.signal)).rejects.toThrow('Finite actual work maintenance');
      const service=await verifyWorkRecoveryService(db,current,{maintenance,mcp:hostedBranches,canonicalMcp:canonical,conversations},passwords,args.journalDirectory,input.signal,retained);expect(service).toMatchObject({requiredScopeHealthy:true,privateConversationAuthorizationVerified:true,restorationReady:false});expect(await requireVerifiedWorkRecoveryService(db,current,service)).toBe(service);await expect(requireVerifiedWorkRecoveryService(db,current,{...service})).rejects.toThrow('Actual unchanged');

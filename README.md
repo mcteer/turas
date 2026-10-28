@@ -5,6 +5,16 @@ Current pilot release status and validation results are recorded in
 historical snapshots at their recorded source revisions; they do not replace
 current release evidence.
 
+At `11a0011`, all 1,056 local catalog cases, load checks and four-profile browser
+checks pass. The live batch completes four stages; R07 fetches and checks five
+sources but omits their source-revision citations. Its ordinary conversation did
+not receive the planning-only admitted-research instructions. The correction
+selects those instructions for the exact owned research attempt as well.
+CI also exposes final replay exhausting a target deadline consumed by earlier
+recovery measurements. Give that independent replay a fresh target clipped by
+the original whole-case deadline. Preserve all assertions, product limits and
+historical failures. Fresh complete validation and Production release are pending.
+
 At `5c90b10`, all 61 CI jobs and all 1,056 local catalog cases pass. The
 live model batch passes its first four stages, then research R07 reports a
 partial run with no attributed citations. The evaluation guard allowed searches

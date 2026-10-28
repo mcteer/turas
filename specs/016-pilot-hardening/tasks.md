@@ -1365,3 +1365,17 @@ No hosted target may be locked for release before its measured reopen path exist
   authorization or treat page fetches as free. Keep all cases, source eligibility,
   model limits and product deadlines; require fresh committed full validation
   and hosted release (FR-021).
+
+- [ ] T217 Preserve the actual `11a0011` R07 citation failure after successful
+  checked page fetches. Select admitted-research instructions for a normal turn
+  only when its exact attempt, owner, environment and conversation match a bound
+  research run. Preserve ordinary automatic research for other turns, original
+  tool authorization, retained source citations, model limits and accounting.
+  Verify routing and real database scope/state negatives, then require fresh
+  committed full validation and hosted release (FR-021).
+
+- [ ] T218 Preserve the actual `11a0011` CI final-scope-replay target exhaustion.
+  Give that independent replay its own finite target clipped by the existing
+  whole-case deadline and signal. Preserve measured identity, both intentional
+  sleeps, every assertion, product limits and the producer's independent target.
+  Require independent review, original regression and fresh full CI (FR-017).

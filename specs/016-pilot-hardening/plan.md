@@ -940,3 +940,19 @@ new approvals, not an increase to any existing authorization. Keep original
 per-call one-credit holds, conservative unknown settlement and every older ledger.
 Context's published standard scrape price is one credit; nonstandard or missing
 receipts still fail closed. Fresh full validation is required before release.
+
+At `11a0011`, checked fetching succeeds but R07 omits retained source-revision
+citations. The ordinary conversation route does not select the planning-only
+research instructions. Select them additionally for an exact owned normal
+research attempt, with current environment and matching conversation, request
+and run. Other ordinary turns retain automatic specialist research. This is
+instruction selection; server authorization remains independently enforced.
+Keep the original citation verifier and require fresh live validation.
+
+The same revision's CI final-scope replay starts with 17.347 seconds remaining
+on a target used by preceding SDK measurements, then performs two required
+six-second reads. Give the independent replay a fresh finite deadline clipped by
+the existing whole-case deadline and signal. Target identity excludes deadline;
+measurements and their timestamps remain unchanged. Preserve all sleeps,
+assertions, product limits and the producer's separate target. Local reproduction
+and fresh full CI are required; the failed CI attempt remains historical evidence.

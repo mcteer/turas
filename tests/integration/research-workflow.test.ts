@@ -10,6 +10,7 @@ import { consumeResearchRun, reserveResearchOperation,
   dispatchResearchOperation,finishResearchRun,hasSubmittedContentOrigin } from
   "../../lib/server/research/execution";
 import { assertResearchAttemptCurrent } from "../../lib/server/research/fences";
+import { hasBoundResearchAttemptInTransaction } from "../../lib/server/research/instruction-scope";
 import { ownResearchGenerationIsCurrent } from "../../lib/server/research/context-generation";
 import { captureAttemptContext } from "../../lib/server/profiles/attempt-context";
 import { ingestCheckedObservation } from "../../lib/server/research/ingest";
@@ -82,6 +83,25 @@ describe("owned bounded research admission", () => {
             expectedRevision: reconPreview.revision,expectedDigest: reconPreview.digest };
           const reconStart = await startResearch(client,actor,reconPreview.id,reconCommand);
           expect(reconStart.replayed).toBe(false);
+          const researchPrincipal = { principalId: principal,
+            attributes: { turasAttemptId: reconStart.attemptId } };
+          expect(await hasBoundResearchAttemptInTransaction(client,researchPrincipal)).toBe(true);
+          expect(await hasBoundResearchAttemptInTransaction(client,{
+            ...researchPrincipal,principalId: randomUUID() })).toBe(false);
+          expect(await hasBoundResearchAttemptInTransaction(client,{
+            principalId: principal,attributes: { turasAttemptId: randomUUID() } })).toBe(false);
+          expect(await hasBoundResearchAttemptInTransaction(client,null)).toBe(false);
+          vi.stubEnv('TURAS_ENVIRONMENT_ID',environment+'-other');
+          try { expect(await hasBoundResearchAttemptInTransaction(client,researchPrincipal)).toBe(false); }
+          finally { vi.stubEnv('TURAS_ENVIRONMENT_ID',environment); }
+          await client.query('SAVEPOINT research_instruction_states');
+          for (const state of ['running','completed','partial','failed','cancelled','unconfirmed']) {
+            await client.query('UPDATE research_runs SET state=$2 WHERE id=$1',[reconStart.runId,state]);
+            expect(await hasBoundResearchAttemptInTransaction(client,researchPrincipal))
+              .toBe(['running','completed','partial'].includes(state));
+          }
+          await client.query('ROLLBACK TO SAVEPOINT research_instruction_states');
+          await client.query('RELEASE SAVEPOINT research_instruction_states');
           expect((await startResearch(client,actor,reconPreview.id,reconCommand)).replayed).toBe(true);
           expect((await readResearchPreview(client,actor,reconPreview.id)).publicFields)
             .toMatchObject({ sourcePolicy: "public-subject-v2",identityConfirmed: true });
