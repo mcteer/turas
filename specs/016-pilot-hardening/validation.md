@@ -9450,3 +9450,17 @@ name while retaining the stronger three-, four- and seven-credit assertions.
 The focused 17-case run and the original `verifyPilotSuiteResult` validator pass.
 The failed whole run remains failed; complete validation must run on the next
 committed source. No paid model batch started on `f968648`.
+
+
+### Whole CI catalog deadline — 2026-10-28 UTC
+
+Main run 40640494356 at `a8eadbc` passes 53 jobs but fails the deterministic
+catalog at its original 7,200-second deadline, after 888 completed cases while
+`work-recovery-decision.test.ts` is active. No individual assertion failure is
+established by that abort. Legacy passes all seven jobs. The separate complete
+local run passes all 1,056 cases in about 78 minutes. Matched completed-suite
+timings are 6,455 seconds in CI and 4,087 locally; the 598 seconds of remaining
+local suites project a full CI duration near 7,400 seconds. T215 raises only the
+CI batch controller to 9,000 seconds, preserving every narrower bound and the
+failed historical result. Fresh committed CI is required. No new live-model
+batch or Production change occurred in this diagnosis.

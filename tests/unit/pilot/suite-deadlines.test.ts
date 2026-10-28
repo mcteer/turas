@@ -12,7 +12,7 @@ it('allows the declared restore setup and cases inside a finite whole-file bound
 });
 it('keeps every registered suite within a finite controller deadline',()=>{
  expect(pilotCatalogDeadlineMs(false)).toBe(5_400_000);
- expect(pilotCatalogDeadlineMs(true)).toBe(7_200_000);
+ expect(pilotCatalogDeadlineMs(true)).toBe(9_000_000);
  for(const suite of catalog.suites){
   const ms=pilotSuiteDeadlineMs(suite.file);expect(Number.isSafeInteger(ms)).toBe(true);expect(ms).toBeGreaterThan(0);
   // The decision suite declares twenty-one210s cases, one420s producer and one270s peer phase,

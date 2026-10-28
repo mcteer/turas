@@ -1344,3 +1344,12 @@ No hosted target may be locked for release before its measured reopen path exist
   global-error, process-exit and same-attempt aggregation checks; verify the
   actual full mobile-dark project with a diagnostic on runner stdout before
   fresh CI and release (FR-017, FR-021).
+
+
+- [ ] T215 Preserve the actual `a8eadbc` whole-CI-catalog deadline failure after
+  888 completed cases and the independently passing complete local run. Use the
+  measured matching-suite timings to size the CI-only batch controller at 150
+  minutes. Keep the local 90-minute controller, all suite/case/application and
+  provider bounds, all 192 suites and 1,056 cases, cleanup and the workflow ceiling.
+  Require independent review and fresh complete committed CI and release; never
+  count the aborted suite as passed (FR-017, FR-021).

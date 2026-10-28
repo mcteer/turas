@@ -2,10 +2,11 @@ import catalog from './pilot-suites.json';
 /** Whole-file bounds cover the explicitly declared setup/case phases plus
  * startup and cleanup. Domain, statement and per-case limits stay fixed.
  * Health hooks explicitly align with its existing owned lifecycle and cleanup.
- * The separate catalog controller allows ninety minutes locally and two hours
- * on GitHub Actions; neither allowance changes an individual suite deadline. */
+ * The separate catalog controller allows ninety minutes locally and 150 minutes
+ * on GitHub Actions. The measured serial CI catalog exceeds two hours even when
+ * each completed suite passes; neither allowance changes a suite deadline. */
 export function pilotCatalogDeadlineMs(githubActions:boolean){
- return githubActions===true?7_200_000:5_400_000;
+ return githubActions===true?9_000_000:5_400_000;
 }
 const longSuiteSeconds:Readonly<Record<string,number>>={
  'health-samples':240,'access':180,'managed-workflow-batch':180,'research-io-fence':240,

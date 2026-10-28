@@ -5,6 +5,13 @@ Current pilot release status and validation results are recorded in
 historical snapshots at their recorded source revisions; they do not replace
 current release evidence.
 
+At `a8eadbc`, all 1,056 local catalog cases pass, as do the four-profile browser
+and load checks. Main CI passes 53 jobs but the deterministic catalog reaches its
+two-hour batch deadline after 888 cases. Its first 157 suites take 108 minutes
+versus 68 minutes locally. The CI-only batch allowance is now 150 minutes;
+individual tests, application performance limits and the local 90-minute allowance
+remain unchanged. Fresh complete CI and Production release remain pending.
+
 At `6f14882`, the full 1,056-case local catalog, four-profile browser suite,
 native admission preparation and load benchmark pass. The live batch captures
 four complete stages before the first Context search exposes a consumed-request

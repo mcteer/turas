@@ -912,3 +912,20 @@ model for dispatch. Reject alternative versions and providers; preserve all
 identity, cost, timing, token and settlement guards. Keep the failed run and its
 full unknown hold. A mocked zero-cost fixture is not settlement of that hold.
 Fresh candidate checks and actual complete hosted acceptance remain required.
+
+
+## Measured complete CI catalog allowance (2026-10-28)
+
+T215 supersedes the 120-minute CI catalog controller only. At `a8eadbc`,
+the complete local catalog passes all 1,056 cases in 4,690 seconds. CI run
+40640494356 passes 53 other Main jobs but aborts the catalog after 888 cases,
+while suite 157 is active. The first 157 completed CI suites take 6,455 seconds
+versus 4,087 seconds for the same local suites. The remaining local suites take
+598 seconds; applying the observed weighted ratio projects about 7,400 seconds
+for the full CI catalog, exceeding its 7,200-second controller. This supports a
+fixed 150-minute CI batch allowance with finite setup/retirement margin. Preserve
+the 90-minute local controller, every suite/case/application/provider deadline,
+all 192 suites and 1,056 assertions, original cleanup and the 300-minute workflow
+ceiling. The separate hosted two-hour catalog remains unchanged. Preserve the
+failed CI result and require fresh complete committed CI; projection is not proof
+that an unfinished suite passed.
