@@ -17,11 +17,15 @@ function transport(options:{topup?:boolean;payload?:unknown}={}):typeof fetch{re
  searchCalls++;return Response.json(options.payload??result,{headers:{'x-credits-used':'1'}});
 };}
 it('settles exact existing credit usage without converting it to dollars',async()=>{
- for(const [index,inputKind]of ['url','request'].entries()){
+ for(const [index,inputKind]of ['url','request','page-url','page-request'].entries()){
   const budget=await ledger(),receipts:unknown[]=[];
-  const guarded=budgetedQualityContextFetch({ledger:budget,fetch:transport(),scope:async()=>{},evidence:async receipt=>{receipts.push(receipt);}});
-  const response=inputKind==='request'?await guarded(new Request(endpoint,request)):await guarded(endpoint,request);
-  expect(await response.json()).toEqual(result);expect(searchCalls).toBe(index+1);expect(accountCalls).toBe((index+1)*2);
+  const pagePayload={success:true,url:'https://vercel.com/docs/builds',markdown:'x'.repeat(70000),request_id:'synthetic-page',key_metadata:{credits_consumed:1,credits_remaining:9}};
+  const page=inputKind.startsWith('page-'),pageEndpoint='https://api.context.dev/v1/web/scrape/markdown?'+new URLSearchParams({url:'https://vercel.com/docs/builds',useMainContentOnly:'true',includeHTML:'false',includeImages:'false',maxAgeMs:'0'});
+  const pageTransport:typeof fetch=async(resource,init)=>{const actual=new Request(resource,init);if(new URL(actual.url).pathname==='/v1/org/usage')return transport()(resource,init);expect(actual.method).toBe('GET');expect(actual.url).toBe(pageEndpoint);expect(actual.headers.get('authorization')).toBe('Bearer synthetic-context-key');searchCalls++;return Response.json(pagePayload,{headers:{'x-credits-used':'1'}});};
+  const guarded=budgetedQualityContextFetch({ledger:budget,fetch:page?pageTransport:transport(),scope:async()=>{},evidence:async receipt=>{receipts.push(receipt);}});
+  const selected=page?pageEndpoint:endpoint,options=page?{headers:request.headers}:request;
+  const response=inputKind.endsWith('request')?await guarded(new Request(selected,options)):await guarded(selected,options);
+  expect(await response.json()).toEqual(page?pagePayload:result);expect(searchCalls).toBe(index+1);expect(accountCalls).toBe((index+1)*2);
   expect(await budget.status()).toMatchObject({chargedMicroUsd:0,contextCreditsConsumed:1,contextDispatches:1,unknown:0,admissionHeld:false});
   expect(receipts).toHaveLength(1);expect(receipts[0]).toMatchObject({creditsConsumed:1,dollarConversion:'not_performed',automaticBillingEnabled:false});
  }
@@ -38,6 +42,9 @@ it('holds missing credit receipts and blocks every later provider',async()=>{
 it('rejects another credential changed pricing options and unapproved endpoints',async()=>{
  const guarded=budgetedQualityContextFetch({ledger:await ledger(),fetch:transport(),scope:async()=>{},evidence:async()=>{}});
  for(const [url,init] of [[endpoint,{...request,headers:{authorization:'Bearer another-key'}}],[endpoint,{...request,body:JSON.stringify({...JSON.parse(request.body),highlightsOptions:{enabled:true}})}],['https://api.context.dev/v1/web/answers',request]] as const)await expect(guarded(url,init)).rejects.toThrow();
+ const page='https://api.context.dev/v1/web/scrape/markdown?'+new URLSearchParams({url:'https://vercel.com/docs/builds',useMainContentOnly:'true',includeHTML:'false',includeImages:'false',maxAgeMs:'0'});
+ for(const url of [page+'&includeImages=true',page+'&actions=click',page.replace('https%3A%2F%2Fvercel.com','http%3A%2F%2Fvercel.com'),page.replace('maxAgeMs=0','maxAgeMs=1')])await expect(guarded(url,{headers:request.headers})).rejects.toThrow();
+ for(const target of ['https://127.0.0.1/path','https://localhost/path','https://service.internal/path','https://vercel.com/docs?x=1','https://vercel.com/docs#part']){const url=new URL(page);url.searchParams.set('url',target);await expect(guarded(url,{headers:request.headers})).rejects.toThrow();}
  expect(searchCalls).toBe(0);expect(accountCalls).toBe(0);
 });
 it('checks the current synthetic source before reading account or dispatching research',async()=>{

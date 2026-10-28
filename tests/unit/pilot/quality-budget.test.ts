@@ -56,12 +56,12 @@ it('holds every provider after an unknown or invalid credit charge',async()=>{
 });
 it('requires explicit credit authority and never reuses the four-call allowance',async()=>{
  const operator={contract:'pilot-quality-operator-v1',id:randomUUID(),feature:'016',category:'model-evaluation',modelId:'spacexai/grok-4.7',capMicroUsd:25000000,automaticBillingAllowed:false,independentReviewAuthorized:true,userInstructionReference:'Synthetic bounded credit approval',recordedAt:new Date().toISOString(),expiresAt:new Date(Date.now()+60000).toISOString()};
- for(const cap of [0,3,4,7])expect(qualityOperatorAuthorization.parse({...operator,contextCreditCap:cap}).contextCreditCap).toBe(cap);
- for(const cap of [-1,1.5,8])expect(qualityOperatorAuthorization.safeParse({...operator,contextCreditCap:cap}).success).toBe(false);
+ for(const cap of [0,3,4,7,47])expect(qualityOperatorAuthorization.parse({...operator,contextCreditCap:cap}).contextCreditCap).toBe(cap);
+ for(const cap of [-1,1.5,48])expect(qualityOperatorAuthorization.safeParse({...operator,contextCreditCap:cap}).success).toBe(false);
  expect(qualityOperatorAuthorization.safeParse({...operator,contextCreditCap:7,automaticBillingAllowed:true}).success).toBe(false);
- await expect(QualityBudgetLedger.create(join(root,'over-credit-cap'),{...authorization(),contextCreditCap:8})).rejects.toThrow();
+ await expect(QualityBudgetLedger.create(join(root,'over-credit-cap'),{...authorization(),contextCreditCap:48})).rejects.toThrow();
  const denied=await QualityBudgetLedger.create(join(root,'unapproved'),authorization());await expect(denied.reserveCredit('d'.repeat(64))).rejects.toThrow('Explicit research credit budget required');
- for(const contextCreditCap of [3,4,7]){
+ for(const contextCreditCap of [3,4,7,47]){
   const budget=await QualityBudgetLedger.create(join(root,'budget-'+contextCreditCap),{...authorization(),contextCreditCap});
   for(let i=0;i<contextCreditCap-1;i++){const id=await budget.reserveCredit('d'.repeat(64));await budget.settleCredit(id,0,'synthetic-search-'+i,'e'.repeat(64));}
   const contenders=await Promise.allSettled([budget.reserveCredit('d'.repeat(64)),new QualityBudgetLedger(budget.root).reserveCredit('d'.repeat(64))]);

@@ -1,6 +1,6 @@
 import {z} from 'zod';
 /** Full original research: recon four, practices two, cancelled-run one. */
-export const qualityContextCreditCap=z.number().int().min(0).max(7);
+export const qualityContextCreditCap=z.number().int().min(0).max(47);
 export const qualityOperatorAuthorization=z.strictObject({contract:z.literal('pilot-quality-operator-v1'),id:z.uuid(),feature:z.literal('016'),category:z.literal('model-evaluation'),modelId:z.literal('spacexai/grok-4.7'),capMicroUsd:z.number().int().positive().max(100000000),contextCreditCap:qualityContextCreditCap,automaticBillingAllowed:z.literal(false),independentReviewAuthorized:z.literal(true),userInstructionReference:z.string().trim().min(1).max(512),recordedAt:z.iso.datetime({offset:true}),expiresAt:z.iso.datetime({offset:true})});
 export const qualityStepAuthorization=z.strictObject({
  contract:z.literal('pilot-quality-step-authorization-v1'),feature:z.literal('016'),catalog:z.literal('003'),

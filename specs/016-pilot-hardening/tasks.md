@@ -1353,3 +1353,15 @@ No hosted target may be locked for release before its measured reopen path exist
   provider bounds, all 192 suites and 1,056 cases, cleanup and the workflow ceiling.
   Require independent review and fresh complete committed CI and release; never
   count the aborted suite as passed (FR-017, FR-021).
+
+
+- [ ] T216 Preserve the actual `5c90b10` R07 partial/no-citation failure and
+  settled accounting. Admit only the application's fixed GET Markdown scrape
+  options through the evaluation credit guard; meter each request and retain
+  unknown-outcome holds, receipt validation and disabled automatic billing.
+  Require a separate explicit allowance for at most 47 calls: seven searches,
+  eight R07 fetches, eight R08 fetches, one R10 fetch and three R11 fetches,
+  with the existing at-most-two attempts per page. Never expand an existing
+  authorization or treat page fetches as free. Keep all cases, source eligibility,
+  model limits and product deadlines; require fresh committed full validation
+  and hosted release (FR-021).

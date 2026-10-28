@@ -929,3 +929,14 @@ all 192 suites and 1,056 assertions, original cleanup and the 300-minute workflo
 ceiling. The separate hosted two-hour catalog remains unchanged. Preserve the
 failed CI result and require fresh complete committed CI; projection is not proof
 that an unfinished suite passed.
+
+
+The `5c90b10` full live run stops at R07 because its evaluation guard denies the
+GET Markdown scraper used by the application. Admit only its existing five query
+options, with ordinary per-call credit reservation and settlement. The complete
+original research sequence needs an explicit maximum of 47 credit dispatches
+(7 searches + 2 × (8 + 8 + 1 + 3) page attempts); this is a schema ceiling for
+new approvals, not an increase to any existing authorization. Keep original
+per-call one-credit holds, conservative unknown settlement and every older ledger.
+Context's published standard scrape price is one credit; nonstandard or missing
+receipts still fail closed. Fresh full validation is required before release.

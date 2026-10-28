@@ -5,6 +5,16 @@ Current pilot release status and validation results are recorded in
 historical snapshots at their recorded source revisions; they do not replace
 current release evidence.
 
+At `5c90b10`, all 61 CI jobs and all 1,056 local catalog cases pass. The
+live model batch passes its first four stages, then research R07 reports a
+partial run with no attributed citations. The evaluation guard allowed searches
+but rejected the application's Markdown page-fetch endpoint before dispatch.
+The correction meters that exact page request with the same credit receipts,
+unknown-outcome holds and billing prohibition. A fresh explicit allowance must
+cover up to 47 calls: seven searches plus twenty page fetches with at most one
+existing retry each. Previous seven-credit authorizations and all historical
+usage remain unchanged. Fresh validation and Production release remain pending.
+
 At `a8eadbc`, all 1,056 local catalog cases pass, as do the four-profile browser
 and load checks. Main CI passes 53 jobs but the deterministic catalog reaches its
 two-hour batch deadline after 888 cases. Its first 157 suites take 108 minutes

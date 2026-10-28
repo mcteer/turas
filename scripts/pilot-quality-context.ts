@@ -1,6 +1,7 @@
 import {z} from 'zod';
 import {QualityBudgetLedger} from './pilot-quality-budget-ledger';
 import {evidenceDigest} from './pilot-evidence';
+import {publicResearchUrl} from '../lib/server/research/public-evidence';
 
 const units=z.number().int().nonnegative().safe();
 const usage=z.object({credits_remaining:units,auto_topup:z.object({enabled:z.literal(false)}),key_metadata:z.object({credits_consumed:z.literal(0)}).optional(),request_id:z.string().min(1).max(256)});
@@ -14,6 +15,7 @@ async function bytes(response:Response,maximum=65536){
 }
 
 /** Context is admitted in its actual credit unit, separately from Gateway USD.
+ * Search and the application's fixed Markdown page request are metered alike.
  * Only existing credits with Auto-Topup disabled qualify. No subscription,
  * top-up, estimated dollar conversion, or other Context operation is allowed. */
 export function budgetedQualityContextFetch(input:{ledger:QualityBudgetLedger;attemptId?:string;fetch:typeof fetch;scope:()=>Promise<void>;evidence:(receipt:unknown)=>Promise<void>}):typeof fetch{
@@ -21,14 +23,22 @@ export function budgetedQualityContextFetch(input:{ledger:QualityBudgetLedger;at
   const url=new URL(resource instanceof Request?resource.url:String(resource));
   if(url.hostname!=='api.context.dev')return input.fetch(resource,init);
   const request=new Request(resource,init);
-  if(url.protocol!=='https:'||url.port||url.username||url.password||url.search)throw Error('Unexpected research provider endpoint');
-  if(request.method==='GET'&&url.pathname==='/v1/org/usage')return input.fetch(resource,init);
-  if(request.method!=='POST'||url.pathname!=='/v1/web/search')throw Error('Unbudgeted research operation denied');
+  if(url.protocol!=='https:'||url.port||url.username||url.password||url.hash)throw Error('Unexpected research provider endpoint');
+  if(request.method==='GET'&&url.pathname==='/v1/org/usage'&&!url.search)return input.fetch(resource,init);
+  const isSearch=request.method==='POST'&&url.pathname==='/v1/web/search'&&!url.search;
+  const isPage=request.method==='GET'&&url.pathname==='/v1/web/scrape/markdown';
+  if(!isSearch&&!isPage)throw Error('Unbudgeted research operation denied');
+  if(isPage){
+   const entries=[...url.searchParams.entries()];
+   const options=z.strictObject({url:z.string().max(2048).refine(publicResearchUrl),useMainContentOnly:z.literal('true'),includeHTML:z.literal('false'),includeImages:z.literal('false'),maxAgeMs:z.literal('0')});
+   if(new Set(entries.map(([key])=>key)).size!==entries.length)throw Error('Duplicate research page option');
+   options.parse(Object.fromEntries(entries));
+  }
   if((await input.ledger.status()).contextCreditCap<1)throw Error('Explicit research credit budget required');
   const key=process.env.CONTEXT_API_KEY;
   if(!key||request.headers.get('authorization')!=='Bearer '+key)throw Error('Selected research credential required');
   const body=await request.clone().arrayBuffer();if(body.byteLength>32768)throw Error('Research request exceeds bound');
-  search.parse(JSON.parse(Buffer.from(body).toString('utf8')));request.signal.throwIfAborted();await input.scope();
+  if(isSearch)search.parse(JSON.parse(Buffer.from(body).toString('utf8')));else if(body.byteLength)throw Error('Research page body denied');request.signal.throwIfAborted();await input.scope();
   const account=async()=>{
    const response=await input.fetch('https://api.context.dev/v1/org/usage',{headers:{authorization:'Bearer '+key},redirect:'error',signal:AbortSignal.timeout(8000)});
    if(!response.ok)throw Error('Existing-credit authority unavailable');
@@ -41,7 +51,7 @@ export function budgetedQualityContextFetch(input:{ledger:QualityBudgetLedger;at
   try{
    signal.throwIfAborted();const response=await input.fetch(request,{signal});
    if(!response.ok)throw Error('Research dispatch requires review');
-   const payload=await bytes(response),raw=z.object({request_id:z.string().min(1).max(256),key_metadata:z.object({credits_consumed:units,credits_remaining:units})}).parse(JSON.parse(payload.toString('utf8')));
+   const payload=await bytes(response,isPage?1_000_000:65536),raw=z.object({request_id:z.string().min(1).max(256),key_metadata:z.object({credits_consumed:units,credits_remaining:units})}).parse(JSON.parse(payload.toString('utf8')));
    const header=response.headers.get('x-credits-used');if(header!==null&&String(raw.key_metadata.credits_consumed)!==header)throw Error('Research credit receipts differ');
    const after=await account();await input.evidence({contract:'pilot-quality-context-v1',operationId:id,providerRequestId:raw.request_id,before,after,creditsConsumed:raw.key_metadata.credits_consumed,dollarConversion:'not_performed',automaticBillingEnabled:false});
    await input.ledger.settleCredit(id,raw.key_metadata.credits_consumed,raw.request_id,evidenceDigest(JSON.stringify(after)));signal.removeEventListener('abort',aborted);
