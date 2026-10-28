@@ -9,7 +9,7 @@ import { readResearchFindings } from "../../lib/server/research/read";
 import { hiddenRecord } from "../../lib/contracts/http";
 
 export const authoredTool = defineTool({
-  description: "Read the current state and retained checked findings of a research run owned by the bound actor. A cancelled or partial run stays labelled as such. Only completed, currently eligible attributed findings are returned.",
+  description: "Read the current state and retained checked findings of a research run owned by the bound actor. A cancelled or partial run stays labelled as such. Only completed, currently eligible attributed findings are returned. Cite a retained finding with its exact sourceRevisionId and a short verbatim excerpt; observationId and run IDs are workflow receipts, not source citations. Preserve the source dates and caveats. Summarize the state, one checked citation and remaining gap in at most 80 words. Do not restart research to summarize an earlier run.",
   inputSchema: z.object({ runId: z.uuid() }).strict(),
   async execute({ runId },ctx) {
     return withTransaction(async (client) => {

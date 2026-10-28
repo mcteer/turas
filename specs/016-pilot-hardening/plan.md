@@ -967,3 +967,14 @@ source commit/digest/catalog and named-case verifiers remain authoritative;
 none consume Playwright's optional Git metadata. Preserve all cases, assertions,
 retries and timeouts. Test noisy real CLI discovery and file refusals, then run
 the complete original support gate and fresh committed validation.
+
+Review at `01c5802` identifies the corresponding prior-run citation coverage gap.
+A fresh turn reading an earlier run does not satisfy the exact-current-attempt
+admitted-research instruction selector. The read tool returns sourceRevisionId
+but does not describe its citation protocol, while ordinary retrieval guidance
+uses a different citationId field. Clarify only the authored `read_research`
+description: cite the exact retained source revision and checked excerpt, preserve
+state/dates/caveats, summarize briefly and do not restart research. Preserve tool
+availability, input schema, ownership and eligibility checks and execution.
+This is a protocol coverage finding, not proof of a future R11 failure. Keep
+the original evaluation criteria and require fresh full model validation.

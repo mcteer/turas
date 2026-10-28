@@ -1387,3 +1387,10 @@ No hosted target may be locked for release before its measured reopen path exist
   preserve Turas source manifests, original cases, verifiers and process limits.
   Verify real noisy CLI discovery, unsafe-file refusals and the complete original
   support browser gate, then require fresh committed validation and CI (FR-017).
+
+- [ ] T220 Close the prior-run citation instruction gap identified at `01c5802`.
+  A new turn reading an earlier run has no admitted request. Clarify the
+  `read_research` tool's exact sourceRevisionId citation, checked excerpt, state
+  and no-restart protocol. Preserve its schema, ownership, eligibility and
+  execution, all evaluation criteria and model bounds. Do not claim an unobserved
+  R11 failure; require fresh full model validation and release (FR-021).

@@ -5,6 +5,15 @@ Current pilot release status and validation results are recorded in
 historical snapshots at their recorded source revisions; they do not replace
 current release evidence.
 
+At `01c5802`, the complete support browser gate passes all 44 cases across four
+profiles, along with the original load benchmark, native admission preparation
+and all 40 pilot browser cases. Review identifies a remaining citation-guidance
+gap for reading an earlier research run: that new turn has no admitted request
+and receives no admitted-run instructions. Clarify the read tool's exact retained
+source identifier, excerpt and run-state guidance. This is a coverage finding,
+not a claimed R11 failure. The local catalog was retired for this correction and
+does not count as passed. Fresh validation and Production release remain pending.
+
 At `17b3457`, the focused research-scope and recovery replay regressions pass,
 as do native admission preparation and all 40 local browser cases. CI exposes
 a support-runner JSON parse failure caused by Playwright's optional Git metadata
