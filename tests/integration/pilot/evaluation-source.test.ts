@@ -26,9 +26,13 @@ it('seeds the governing behavior demo separately from the judged retrieval walkt
  const {qualityStages,qualitySeedCommand}=await import('../../../scripts/pilot-quality-live');
  const {execFile}=await import('node:child_process'),{promisify}=await import('node:util');
  await withPilotEnvironment(async environment=>{
-  const seed=async(id:string)=>{const stage=qualityStages.find(s=>s.id===id)!;await promisify(execFile)(process.execPath,['--import','tsx',...qualitySeedCommand(stage)],{cwd:environment.appRoot,env:process.env,timeout:90000,maxBuffer:1048576});};
+  const seed=async(id:string)=>{const stage=qualityStages.find(s=>s.id===id)!,args=qualitySeedCommand(stage);if(args)await promisify(execFile)(process.execPath,['--import','tsx',...args],{cwd:environment.appRoot,env:process.env,timeout:90000,maxBuffer:1048576});};
   const db=new Client({connectionString:process.env.DATABASE_URL_UNPOOLED});await db.connect();
   try{
+   expect(qualityStages.flatMap(stage=>stage.commands)).toHaveLength(23);
+   expect(qualitySeedCommand(qualityStages.find(stage=>stage.id==='007')!)).toBeNull();
+   expect(qualitySeedCommand(qualityStages.find(stage=>stage.id==='008')!)).toBeNull();
+   await seed('007');await seed('008');expect((await db.query('SELECT count(*)::int AS n FROM profile_records')).rows[0].n).toBe(0);
    await seed('003');
    const counts=async()=>(await db.query(`SELECT count(*)::int AS accepted,count(*) FILTER(WHERE v.payload->>'kind'='product_use')::int AS product_uses FROM profile_records r JOIN profile_revisions v ON v.id=r.current_accepted_revision_id`)).rows[0];
    expect(await counts()).toEqual({accepted:3,product_uses:1});

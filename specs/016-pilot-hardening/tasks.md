@@ -1484,3 +1484,11 @@ No hosted target may be locked for release before its measured reopen path exist
   preserve the default-image path, and verify the original import contracts
   including real clean scans and the EICAR canary before the live preflight
   (FR-002, FR-021).
+
+- [ ] T235 Honor immutable parser/scanner selections in artifact preparation and
+  retain signed CVD output through FreshClam updates without changing runtime
+  signature validation. Let staffing and execution build their own governed
+  fixtures without the unrelated walkthrough seed. Preserve all 23 original
+  quality commands, cases, assertions and finite budgets. Verify original
+  regression gates, remaining live evaluations and hosted release (FR-002,
+  FR-017, FR-021).

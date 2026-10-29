@@ -1555,3 +1555,10 @@ cancellation race. The follow-up gives the fresh CLI lifecycle its own owned
 case (1,054 cases total), corrects guidance and persists complete known charges
 before propagating cancellation. Unknown charges remain reserved. Fresh complete
 CI, model, hosted and Production release checks remain required.
+
+The pilot evaluation preparers honor explicitly selected immutable artifact
+images and retain signed CVD scanner databases when FreshClam updates them.
+Staffing and execution evaluations start from their own governed fixtures without
+adding the unrelated profile walkthrough. Their original commands, cases and
+assertions remain unchanged. Complete model, CI and Production acceptance remain
+required under PRs #47 and #48.

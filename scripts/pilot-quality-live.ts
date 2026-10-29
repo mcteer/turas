@@ -20,7 +20,7 @@ import {verifyPilotSuiteResult} from './pilot-suite-results';
 import {prepareQualityWorkspace,verifyQualityWorkspace} from './pilot-quality-workspace';
 import {installBehaviorReviewCapture} from './pilot-behavior-review-capture';
 
-type Stage={id:string;commands:string[][];native?:boolean;profileSeed?:'demo';deadlineMs:number};
+type Stage={id:string;commands:string[][];native?:boolean;profileSeed?:'demo'|'self';deadlineMs:number};
 /** Governing full commands only. No case omission, paid retry, fixture-model
  * replacement, historical review reuse, or self-issued semantic acceptance. */
 export const qualityStages:readonly Stage[]=[
@@ -30,14 +30,14 @@ export const qualityStages:readonly Stage[]=[
  {id:'005-retrieval',commands:[['scripts/eval-retrieval.ts','--live','--max-embedding-calls','64','--max-input-characters','1000000']],deadlineMs:1800000},
  {id:'005-research',commands:Array.from({length:12},(_,i)=>['scripts/eval-research.ts','--case','R'+String(i+1).padStart(2,'0'),'--live']),deadlineMs:3600000},
  {id:'006',commands:[['scripts/eval-plans.ts','--live','--disposable']],deadlineMs:3600000},
- {id:'007',commands:[['scripts/eval-staffing.ts','--live']],deadlineMs:14400000},
- {id:'008',commands:[['scripts/check-execution-release.ts'],['scripts/eval-execution.ts','--live']],deadlineMs:14400000},
+ {id:'007',profileSeed:'self',commands:[['scripts/eval-staffing.ts','--live']],deadlineMs:14400000},
+ {id:'008',profileSeed:'self',commands:[['scripts/check-execution-release.ts'],['scripts/eval-execution.ts','--live']],deadlineMs:14400000},
  {id:'010',commands:[['scripts/eval-support.ts','--live']],deadlineMs:3600000},
  {id:'011',commands:[['scripts/eval-expansion.ts','--live','--budget-usd','25']],deadlineMs:3600000},
  {id:'014',commands:[['scripts/eval-learning.ts','--live','--budget-usd','25']],deadlineMs:3600000},
 ];
 
-export function qualitySeedCommand(stage:Stage){return ['scripts/seed-profile-demo.ts',...(stage.profileSeed==='demo'?[]:['--walkthrough'])];}
+export function qualitySeedCommand(stage:Stage){return stage.profileSeed==='self'?null:['scripts/seed-profile-demo.ts',...(stage.profileSeed==='demo'?[]:['--walkthrough'])];}
 
 function parse(args:string[]){
  const mode=args[0];if(!['--prepare','--live'].includes(mode))throw Error('Explicit quality mode required');
@@ -149,7 +149,7 @@ export async function pilotQualityLive(args=process.argv.slice(2)){
    await withPilotEnvironment(async environment=>{
     process.env.TURAS_TEST_POSTGRES_CONTAINER=environment.databaseContainer;await setupImages(images);
     const deadline=Date.now()+stage.deadlineMs;
-    await command(qualitySeedCommand(stage),environment.appRoot,stageRoot,'seed',deadline,false,environment.signal);
+    const seed=qualitySeedCommand(stage);if(seed)await command(seed,environment.appRoot,stageRoot,'seed',deadline,false,environment.signal);
     await command(['tests/fixtures/artifacts/generate.ts'],workspace,stageRoot,'artifact-fixtures',deadline,false,environment.signal);
     process.env.AI_GATEWAY_API_KEY=key;process.env.CONTEXT_API_KEY=contextKey;process.env.TURAS_ALLOW_LIVE_MODEL_TESTS='1';process.env.TURAS_016_QUALITY_RUNTIME_FILE=join(root,'runtime.json');process.env.EVE_SKIP_SANDBOX_PREWARM='1';
     if(['002','003','004'].includes(stage.id))process.env.TURAS_016_BEHAVIOR_CAPTURE_ROOT=join(workspace,'local-artifacts/behavior-review');
