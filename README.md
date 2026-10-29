@@ -5,6 +5,20 @@ Current pilot release status and validation results are recorded in
 historical snapshots at their recorded source revisions; they do not replace
 current release evidence.
 
+The report operator must select the current brand bound to all three rendered
+samples while retaining earlier brand versions. A scoped post-render continuation
+uses the ordinary approval and publication APIs for those existing samples; it
+does not prepare or render replacement reports. This operator correction has no
+application, agent, migration or image change. The Preview continuation published
+the three existing samples and verified four complete artifact streams without
+new jobs or changes to the checked state and cost columns of the ten retained reservations. The original
+`cffe534` failure remains retained; overall pilot release acceptance is pending.
+
+Two evaluation fixture corrections are under validation: recovery HTTP probes
+reuse a pool only within their exact controlled target, and research app startup
+requires a real fresh maintenance heartbeat. Existing deadlines and assertions
+remain enforced. These corrections do not change the deployed application.
+
 The `0076c6a` checks exposed missing citations when summarizing earlier research
 and ordinary-chat history that remained readable after evidence withdrawal.
 The follow-up supplies prior-run citation guidance and records historical named

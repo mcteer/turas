@@ -2208,6 +2208,17 @@
         "reloads a real streamed attempt while quiet final-answer presentation hides its in-progress prose",
         "does not reload on a running provider reservation and visible Stop before actual streamed text exists"
       ]
+    },
+    {
+      "file": "tests/unit/pilot/report-recipe.test.ts",
+      "expectedCases": 5,
+      "cases": [
+        "selects the unique latest brand only when all captured sample revisions bind it",
+        "reads all three current samples before normal brand and publication decisions, without rendering again",
+        "refuses stale, foreign, wrong-state or mismatched samples before any write",
+        "requires the retained forty-slide layout when continuing the maximum layout exercise",
+        "refuses duplicate sample identities and a cancelled continuation before reads or writes"
+      ]
     }
   ],
   "ui": {

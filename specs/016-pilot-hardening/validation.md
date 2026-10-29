@@ -9464,3 +9464,50 @@ local suites project a full CI duration near 7,400 seconds. T215 raises only the
 CI batch controller to 9,000 seconds, preserving every narrower bound and the
 failed historical result. Fresh committed CI is required. No new live-model
 batch or Production change occurred in this diagnosis.
+
+### Report operator brand history — source correction pending hosted validation
+
+The retained `cffe534` generated report samples use the current draft brand,
+while the brand-list API also returns its earlier approved version. The operator
+previously required exactly one total brand row. The correction selects only the
+unique highest version matching all three captured current report revisions and
+rejects ambiguous heads, stale revisions, mismatched brands and invalid states.
+A separate post-render entry rechecks the synthetic customer/workspace, all three
+current sample identities and API readbacks before any approval write. It uses
+the original preview/decision APIs and exact-key receipt GET reconciliation and
+has no prepare, revise, render or queue callback. Original forty-slide and artifact
+verification remain. Focused source checks are recorded separately; no hosted
+continuation, publication, release readiness or new provider job is claimed here.
+The deployed application/agent/renderer and retained `cffe534` evidence are not
+retagged to this operator-only change.
+
+The actual Preview continuation subsequently published all three existing
+samples, read all four complete PDF/PPTX streams with their original byte counts
+and SHA-256 digests, and verified the same ten cost-reservation identities, states and upper-bound/charged
+cost columns before and after. It created no reports, renders or provider jobs. This is a scoped component
+result; it does not establish a fresh uninterrupted linked journey or overall
+hosted acceptance. Five focused operator tests and pilot type checking passed.
+
+The `cffe534` CI run 40925339836 attempt 1 failed one recovery category case
+during `service-http` when its original 290-second target expired. Its other 25
+cases passed; the complete local catalog had separately passed 1,056 cases.
+The controlled fixture was closing both database pools for every HTTP request.
+Opt-in pool reuse now binds the exact database, origin, deployment and source,
+preserves serialized request scopes, and closes the pools on exit. The original
+exhaustive case passed locally in 153,118 ms with unchanged assertions and
+deadlines. That focused run skipped the other 25 cases and does not replace CI.
+
+The original-budget model continuation completed R10, then failed R11's setup
+send with a captured `maintenance_unavailable` response. Its quiescent ledger
+has 153 settled dollar dispatches, 18 settled Context dispatches, zero unresolved
+or held dispatches, and no additional allowance. The cloned evaluation app
+previously declared readiness after HTTP and Native health checks alone; the
+fixture now also requires an actual maintenance heartbeat newer than that app
+start, within the original 90-second startup window. Fresh fixture and remaining
+model results are required; no production availability claim follows from this
+diagnosis.
+
+The cold-start readiness rehearsal started an actual isolated PostgreSQL 18 clone
+and supervised Next/eve app, observed one real fresh maintenance worker, and
+closed the owned environment successfully with zero provider calls. This proves
+fixture startup readiness only; the failed R11 sample remains failed.

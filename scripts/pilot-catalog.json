@@ -332,7 +332,12 @@
         "unit.execution-credentials.001",
         "unit.execution-credentials.002",
         "unit.execution-credentials.003",
-        "unit.execution-credentials.004"
+        "unit.execution-credentials.004",
+        "unit.report-recipe.001",
+        "unit.report-recipe.002",
+        "unit.report-recipe.003",
+        "unit.report-recipe.004",
+        "unit.report-recipe.005"
       ]
     },
     {

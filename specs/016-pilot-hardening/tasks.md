@@ -1454,3 +1454,21 @@ No hosted target may be locked for release before its measured reopen path exist
   Node options before adding the explicitly validated quality-budget preload to
   every nested build/runtime child. Verify actual child propagation, then run
   fresh provider-accounted evaluation under a distinct finite allowance (FR-021).
+
+- [x] T231 Select the unique current report brand from its retained version
+  history only when all three current synthetic sample revisions bind that exact
+  brand ID/version. Continue the existing weekly/monthly/quarterly samples through
+  ordinary brand and publication previews/decisions without preparing, revising
+  or rendering replacements. Preserve forty-slide checks, artifact reads,
+  governed receipts and all earlier financial holds. Verify the operator-only
+  source correction, then separately review actual hosted continuation; retain
+  the original `cffe534` failure without relabelling its runtime evidence
+  (FR-002, FR-021).
+
+- [ ] T232 Keep the recovery category regression's real HTTP/database checks
+  within its existing deadline by reusing pools only for its exact controlled
+  target and closing them on fixture exit. Require a real post-start maintenance
+  heartbeat before the cloned research evaluation app admits a native send.
+  Preserve production readiness enforcement, all evaluation assertions, source
+  attribution and financial histories; verify the fixtures and fresh CI
+  (FR-002, FR-021).
