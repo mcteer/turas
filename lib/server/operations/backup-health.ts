@@ -8,7 +8,7 @@ import {privateStoreBinding} from './store-observations';
 export async function recordVerifiedBackup(db:Client,input:{archiveId:string;environmentId:string;storeId:string;sourceCommit:string;capturedAt:string;encryptedDigest:string;candidateDigest:string;reservationIds:string[]}){
  if((await db.query("SELECT current_user=pg_get_userbyid(relowner) AS owner FROM pg_class WHERE oid='operations_backup_observations'::regclass")).rows[0]?.owner!==true)throw Error('Backup observation requires source owner');
  const marker=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;
- if(marker.length!==1||marker[0].environment_id!==input.environmentId||Number(marker[0].schema_version)!==79)throw Error('Backup observation source differs');
+ if(marker.length!==1||marker[0].environment_id!==input.environmentId||Number(marker[0].schema_version)!==80)throw Error('Backup observation source differs');
  const proof=recoveryDigest({contract:'pilot-cold-backup-observation-v1',encryptedDigest:input.encryptedDigest,candidateDigest:input.candidateDigest,reservationIds:input.reservationIds});
  const values=[input.archiveId,input.environmentId,privateStoreBinding(input.environmentId,input.storeId),input.sourceCommit,proof,input.capturedAt];
  await db.query('INSERT INTO operations_backup_observations(id,environment_id,store_binding_digest,code_version,proof_digest,captured_at) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(id) DO NOTHING',values);

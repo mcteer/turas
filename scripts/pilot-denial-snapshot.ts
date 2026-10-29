@@ -20,7 +20,7 @@ function sourceIdentity(source:{databaseUrl:string;projectId:string;target:strin
 }
 export function requireOriginalWorkDenialSource(original:Parameters<typeof sourceIdentity>[0],restored:Parameters<typeof sourceIdentity>[0]){
  const a=new URL(original.databaseUrl),b=new URL(restored.databaseUrl);
- if(original.environmentId!==restored.environmentId||original.schemaVersion!==79||restored.schemaVersion!==79)throw Error('Exact original denial source environment and schema required');
+ if(original.environmentId!==restored.environmentId||original.schemaVersion!==80||restored.schemaVersion!==80)throw Error('Exact original denial source environment and schema required');
  if(a.hostname.replace('-pooler.','.')===b.hostname.replace('-pooler.','.') && decodeURIComponent(a.pathname)===decodeURIComponent(b.pathname))throw Error('Original denial source must differ from restored target');
 }
 /** Only an actual in-process independently retained capture can bind refreshed

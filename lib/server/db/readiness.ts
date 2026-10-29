@@ -1,3 +1,4 @@
+import { CURRENT_SCHEMA_VERSION } from "../../contracts/current-schema";
 import { getServerConfig } from "../config";
 import { query } from "./client";
 
@@ -11,7 +12,7 @@ export class DatabaseUnavailableError extends Error {
 type EnvironmentRow = { environment_id: string; schema_version: number };
 const environmentSql = "SELECT environment_id, schema_version FROM turas_environment LIMIT 1";
 export const requiredSchemaVersion = 13;
-export const supportedSchemaVersion = 79;
+export const supportedSchemaVersion = CURRENT_SCHEMA_VERSION;
 
 export async function assertDatabaseEnvironment(
   minimumSchemaVersion = requiredSchemaVersion,
@@ -40,6 +41,7 @@ export async function assertPilotDatabaseOnConnection(expectedEnvironment: strin
   try {
     await assertDatabaseEnvironment(supportedSchemaVersion, expectedEnvironment, () => read<EnvironmentRow>(environmentSql));
     const { default: manifest } = await import("../../../migrations/manifest.json");
+    if (manifest.version !== CURRENT_SCHEMA_VERSION || manifest.migrations.length !== CURRENT_SCHEMA_VERSION) throw new DatabaseUnavailableError();
     const ledger = await read<{name:string}>("SELECT name FROM turas_migrations ORDER BY name");
     const expected = manifest.migrations.map(entry=>entry.file.replace(/\.cjs$/, "")).sort();
     if (ledger.rowCount !== expected.length || ledger.rows.some((row,index)=>row.name!==expected[index])) throw new DatabaseUnavailableError();
@@ -93,6 +95,18 @@ export async function assertPilotDatabaseOnConnection(expectedEnvironment: strin
       AND NOT has_table_privilege(current_user,'operations_cost_reconciliations','INSERT')
       AND NOT has_table_privilege(current_user,'operations_cost_reconciliations','UPDATE')
       AND NOT has_table_privilege(current_user,'operations_cost_reconciliations','DELETE')
+      AND has_table_privilege(current_user,'ordinary_named_content_dependencies','SELECT')
+      AND NOT has_table_privilege(current_user,'ordinary_named_content_dependencies','INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+      AND NOT has_any_column_privilege(current_user,'ordinary_named_content_dependencies','INSERT,UPDATE,REFERENCES')
+      AND has_table_privilege(current_user,'ordinary_named_content_coverage','SELECT')
+      AND NOT has_table_privilege(current_user,'ordinary_named_content_coverage','INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+      AND NOT has_any_column_privilege(current_user,'ordinary_named_content_coverage','INSERT,UPDATE,REFERENCES')
+      AND has_function_privilege(current_user,'public.turas_record_workspace_practice_content(uuid,uuid,uuid,text[])','EXECUTE')
+      AND has_function_privilege(current_user,'public.turas_record_customer_practice_support(uuid,uuid,uuid,uuid,text[])','EXECUTE')
+      AND NOT has_function_privilege(current_user,'public.turas_capture_named_content()','EXECUTE')
+      AND NOT has_function_privilege(current_user,'public.turas_initialize_named_coverage()','EXECUTE')
+      AND NOT has_function_privilege(current_user,'public.turas_named_content_append_only()','EXECUTE')
+      AND NOT has_function_privilege(current_user,'public.turas_named_content_capacity()','EXECUTE')
       AND NOT has_schema_privilege(current_user,'public','CREATE')
       AND NOT has_database_privilege(current_user,current_database(),'CREATE')
       AND NOT EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND pg_has_role(current_user,c.relowner,'MEMBER'))

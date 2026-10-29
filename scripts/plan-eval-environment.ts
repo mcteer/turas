@@ -113,6 +113,28 @@ function runGuardedScript(file: string,cwd: string,env: NodeJS.ProcessEnv,
 }
 
 /** Owns only a clone of the guarded, separately marked test database. */
+type OwnedNestedCloneProof={feature:string;created:boolean;databaseName:string;
+ cloneUrl:string;sourceUrl:string;environmentId:string;ownership:string;
+ readback:{database_name:string;owner_marker:string|null;environment_id:string;schema_version:number}};
+/** Clear outer016 identity only for the fresh006/007 clone just read back by its owner. */
+export async function withOwnedNestedCloneCallback<T>(proof:OwnedNestedCloneProof,
+ run:()=>Promise<T>,environment:Record<string,string|undefined>=process.env):Promise<T>{
+ const clone=new URL(proof.cloneUrl),source=new URL(proof.sourceUrl),row=proof.readback;
+ const valid=proof.created&&['006','007'].includes(proof.feature)&&
+  new RegExp('^turas_test_'+proof.feature+'_eval_[a-f0-9]{12}$').test(proof.databaseName)&&
+  ['postgres:','postgresql:'].includes(clone.protocol)&&clone.protocol===source.protocol&&
+  clone.hostname===source.hostname&&clone.port===source.port&&clone.username===source.username&&clone.password===source.password&&
+  clone.pathname==='/'+proof.databaseName&&clone.pathname!==source.pathname&&
+  proof.ownership.startsWith('turas-owned-'+proof.feature+'-')&&
+  row.database_name===proof.databaseName&&row.owner_marker===proof.ownership&&
+  row.environment_id===proof.environmentId&&row.schema_version>=28&&
+  environment.DATABASE_URL===proof.cloneUrl&&environment.DATABASE_URL_UNPOOLED===proof.cloneUrl&&environment.TURAS_TEST_DATABASE_URL===proof.cloneUrl&&
+  environment.TURAS_TEST_SOURCE_DATABASE_URL===proof.sourceUrl&&environment.TURAS_ENVIRONMENT_ID===proof.environmentId&&environment.TURAS_TEST_ENVIRONMENT_ID===proof.environmentId;
+ if(!valid)throw Object.assign(new Error('Fresh owned nested evaluation identity required'),{code:'OWNED_NESTED_CLONE_IDENTITY'});
+ const previous=environment.TURAS_PILOT_OWNED;delete environment.TURAS_PILOT_OWNED;
+ try{return await run();}finally{if(previous===undefined)delete environment.TURAS_PILOT_OWNED;else environment.TURAS_PILOT_OWNED=previous;}
+}
+
 export async function withPlanEvalEnvironment<T>(
   run: (environment: PlanEvalEnvironment) => Promise<T>,
   options: PlanEvalOptions = {},
@@ -278,7 +300,7 @@ export async function withPlanEvalEnvironment<T>(
       if(options.production&&!productionBuilt){
         const buildDeadline=Date.now()+remaining(600_000);
         const building=spawnPlanChild(process.execPath,["scripts/build-check.mjs"],{
-          cwd:appRoot,env:{...process.env,...productionEnv,...await qualityChildEnvironment(),NODE_ENV:"production",PORT:port,NODE_OPTIONS:""},
+          cwd:appRoot,env:{...process.env,NODE_OPTIONS:"",...productionEnv,NODE_ENV:"production",PORT:port,...await qualityChildEnvironment()},
         });
         child=building;building.stdout?.on("data",capture);building.stderr?.on("data",capture);
         let timedOut=false;
@@ -297,8 +319,8 @@ export async function withPlanEvalEnvironment<T>(
       if(options.production){
         await evePortLease!.release();
         productionEve=spawnPlanChild(process.execPath,[join(appRoot,".output/server/index.mjs")],{
-          cwd:appRoot,env:{...process.env,...productionEnv,...await qualityChildEnvironment(),NODE_ENV:"production",NODE_OPTIONS:"",
-            HOST:"127.0.0.1",NITRO_HOST:"127.0.0.1",PORT:String(evePortLease!.port),NITRO_PORT:String(evePortLease!.port)},
+          cwd:appRoot,env:{...process.env,NODE_OPTIONS:"",...productionEnv,NODE_ENV:"production",
+            HOST:"127.0.0.1",NITRO_HOST:"127.0.0.1",PORT:String(evePortLease!.port),NITRO_PORT:String(evePortLease!.port),...await qualityChildEnvironment()},
         });
         productionEve.stdout?.on("data",capture);productionEve.stderr?.on("data",capture);
         // Documented non-Vercel composition: stream the actual service response
@@ -320,7 +342,7 @@ export async function withPlanEvalEnvironment<T>(
       await portLease.release();
       child = spawnPlanChild(process.execPath,options.production?
         ["node_modules/next/dist/bin/next","start","--hostname","127.0.0.1","--port",port]:["scripts/dev.mjs"],{
-        cwd:appRoot,env:{...process.env,...productionEnv,...await qualityChildEnvironment(),NODE_ENV:options.production?"production":"development",PORT:port,NODE_OPTIONS:""},
+        cwd:appRoot,env:{...process.env,NODE_OPTIONS:"",...productionEnv,NODE_ENV:options.production?"production":"development",PORT:port,...await qualityChildEnvironment()},
       });
       child.stdout?.on("data",capture);
       child.stderr?.on("data",capture);
@@ -361,7 +383,7 @@ export async function withPlanEvalEnvironment<T>(
     }
 
     remaining();
-    return await run({databaseName:name,appRoot,storeRoot,origin,bootstrapDemo:()=>runGuardedScript("scripts/bootstrap-demo.ts",appRoot,process.env,[],options.deadlineAt),start,stop:stopRuntime,
+    const callback=()=>run({databaseName:name,appRoot,storeRoot,origin,bootstrapDemo:()=>runGuardedScript("scripts/bootstrap-demo.ts",appRoot,process.env,[],options.deadlineAt),start,stop:stopRuntime,
       restart:async () => { await stopRuntime();await start(); },
       diagnosticLines:()=>startupTail.split("\n").filter((line)=>
         line.includes("PLAN_DIAGNOSTIC")),
@@ -374,6 +396,18 @@ export async function withPlanEvalEnvironment<T>(
         "overloaded","fetch failed","quota"]
         .filter((value)=>startupTail.toLowerCase().includes(value.toLowerCase())),
       privateLogTail:()=>startupTail});
+    if(feature==='006'||feature==='007'){
+      // Read the new clone itself; source/caller URLs cannot establish ownership.
+      const owned=new Client({connectionString:cloneUrl.toString(),connectionTimeoutMillis:remaining(),statement_timeout:remaining(),query_timeout:remaining()});
+      await owned.connect();
+      try{
+        const readback=await owned.query<{database_name:string;owner_marker:string|null;environment_id:string;schema_version:number}>(
+          "SELECT current_database() AS database_name,shobj_description((SELECT oid FROM pg_database WHERE datname=current_database()),'pg_database') AS owner_marker,environment_id,schema_version FROM turas_environment");
+        if(readback.rowCount!==1)throw Object.assign(new Error('Fresh owned nested evaluation marker required'),{code:'OWNED_NESTED_CLONE_IDENTITY'});
+        return await withOwnedNestedCloneCallback({feature,created,databaseName:name,cloneUrl:cloneUrl.toString(),sourceUrl:sourceUrl.toString(),environmentId:testMarker,ownership,readback:readback.rows[0]},callback);
+      }finally{await owned.end();}
+    }
+    return await callback();
   } catch(error){bodyFailed=true;bodyFailure=error;throw error;} finally {
    try{
     const retirement=await Promise.allSettled([portLease.release(),evePortLease?.release(),eveProxyLease?.release(),stopRuntime(),closeRuntimePool()]);

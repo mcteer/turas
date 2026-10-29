@@ -1,8 +1,11 @@
+import {getOwnedConversationDetail} from '../../lib/server/conversations/repository';
+import {assertNativeContextCurrent} from '../../lib/server/conversations/context-fence';
+import {retireRetrievalProjection} from '../../lib/server/retrieval/projections';
 import {isolatedChatActor} from '../fixtures/isolated-chat-actor';
 import {settleSyntheticConversationAttempts} from '../fixtures/ordinary-attempt-cleanup';
 import {ownedInputResponseAttempt,authorizeOwnedInputResponse} from "../../lib/server/conversations/input-responses";
 import {refreshOrdinaryKnowledge} from '../../lib/server/conversations/current-knowledge';
-import {randomUUID} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import {Client} from 'pg';
 import {beforeAll,expect,it} from 'vitest';
 import {requireTestDatabaseUrl} from '../fixtures/database';
@@ -110,6 +113,46 @@ it('uses customer selection as initial context, continues after new knowledge an
   await settleInactiveOwnedCancellation(fresh,native);
   expect((await db.query('SELECT response_state FROM response_attempts WHERE id=$1',[cancelled.attemptId])).rows[0].response_state).toBe('cancelled');
   expect((await db.query('SELECT state FROM watchdog_jobs WHERE attempt_id=$1',[cancelled.attemptId])).rows[0].state).toBe('settled');
+  // Named reads have no retrieval dependency: retain exact consumed IDs across
+  // ordinary refreshes and historical turns, and recheck them on every release.
+  const reviewer=await isolatedChatActor(db,'internal','admin',fresh.workspaceId);
+  async function acceptedNamedFact(label:string){
+    const recordId=randomUUID(),revisionId=randomUUID(),body='Synthetic '+label+' has an assigned owner.';
+    await db.query(`INSERT INTO profile_records(id,workspace_id,customer_id,kind,canonical_key,created_by)
+      VALUES($1,$2,$3,'product_use',$4,$5)`,[recordId,fresh.workspaceId,b,'withdrawal-'+recordId,fresh.membershipId]);
+    await db.query(`INSERT INTO profile_revisions(id,record_id,workspace_id,customer_id,revision_number,payload_schema_version,payload,quality_input,author_membership_id,origin,audience,data_category,content_digest)
+      VALUES($1,$2,$3,$4,1,'profile-v1',$5,$6,$7,'manual','delivery','delivery_context',$8)`,
+    [revisionId,recordId,fresh.workspaceId,b,JSON.stringify({kind:'product_use',productKey:recordId,displayName:label,state:'actual',usageDescription:body,observedAt:new Date().toISOString(),evidenceRevisionIds:[]}),
+      JSON.stringify({rubricVersion:'evidence-quality-v1',R:4,D:4,C:0,reliabilityRationale:'Synthetic direct observation',directnessRationale:'Exact fixture statement',corroborationRationale:'No independent corroboration',informationType:'account_status',dateBasis:'observation'}),fresh.membershipId,createHash('sha256').update(body).digest('hex')]);
+    await db.query(`INSERT INTO profile_review_decisions(revision_id,decision,reviewer_membership_id,rationale,command_receipt_id)
+      VALUES($1,'accept',$2,'Synthetic source review',$3)`,[revisionId,reviewer.membershipId,randomUUID()]);
+    await db.query('UPDATE profile_records SET current_accepted_revision_id=$2 WHERE id=$1',[recordId,revisionId]);
+    return{recordId,revisionId};
+  }
+  const consumed=await acceptedNamedFact('release readiness');
+  const normalKey=randomUUID(),normal=await createOwnedConversation(fresh,{requestKey:normalKey,customerId:b});ownedConversationIds.push(normal.conversation.id);
+  const normalBinding=await claimBinding(fresh,normal.conversation.id,normalKey);if(normalBinding.state!=='claimed')throw Error('Normal source fixture binding unavailable');
+  const normalNative=`wrun_${randomUUID()}`;await bindNativeSession(fresh,normal.conversation.id,normalBinding.claimToken,normalNative);
+  const normalAttempt=await prepareAttempt(fresh,normal.conversation.id,normalNative,randomUUID(),'Read the accepted release readiness fact');await claimDispatch(fresh,normal.conversation.id,normalAttempt.attemptId,0);
+  const normalPrincipal={principalId:fresh.principalId,attributes:{turasAttemptId:normalAttempt.attemptId}};
+  await withTransaction(client=>readCustomerAccountEvidence(client,normalPrincipal,b));
+  const namedIds=async()=>((await db.query('SELECT citation_ids FROM general_customer_read_scopes WHERE attempt_id=$1 AND customer_id=$2',[normalAttempt.attemptId,b])).rows[0].citation_ids as string[]);
+  expect((await db.query('SELECT citation_id FROM ordinary_named_content_dependencies WHERE first_attempt_id=$1',[normalAttempt.attemptId])).rows.map(row=>row.citation_id)).toContain('accepted_manual:'+consumed.revisionId);
+  await acceptedNamedFact('independent deployment inventory');
+  await withTransaction(client=>readCustomerAccountEvidence(client,normalPrincipal,b));
+  await withTransaction(client=>refreshOrdinaryKnowledge(client,fresh,normalPrincipal,normal.conversation.id,normalAttempt.attemptId));
+  expect((await db.query('SELECT citation_id FROM ordinary_named_content_dependencies WHERE first_attempt_id=$1',[normalAttempt.attemptId])).rows.map(row=>row.citation_id)).toContain('accepted_manual:'+consumed.revisionId);
+  expect(await getOwnedConversationDetail(fresh,normal.conversation.id)).toMatchObject({contextStatus:'current'});
+  expect((await db.query('SELECT count(*)::int AS n FROM session_evidence_dependencies WHERE conversation_id=$1',[normal.conversation.id])).rows[0].n).toBe(0);
+  await settleSyntheticConversationAttempts(db,[normal.conversation.id]);
+  const later=await prepareAttempt(fresh,normal.conversation.id,normalNative,randomUUID(),'A later independent question');await claimDispatch(fresh,normal.conversation.id,later.attemptId,2);
+  await db.query(`INSERT INTO general_customer_read_scopes(attempt_id,customer_id,audience,generation,citation_ids)
+    VALUES($1,$2,'delivery',(SELECT delivery_generation FROM customer_profile_state WHERE customer_id=$2),'{}')`,[later.attemptId,b]);
+  await db.query('UPDATE profile_records SET current_accepted_revision_id=NULL WHERE id=$1',[consumed.recordId]);
+  await withTransaction(client=>retireRetrievalProjection(client,'accepted_profile',consumed.revisionId));
+  await expect(getOwnedConversationDetail(fresh,normal.conversation.id)).rejects.toMatchObject({status:404});
+  await expect(assertNativeContextCurrent(fresh,normalNative,false)).rejects.toMatchObject({status:404});
+  await expect(prepareAttempt(fresh,normal.conversation.id,normalNative,randomUUID(),'Continue the withdrawn content')).rejects.toMatchObject({status:404});
   await db.query("UPDATE customer_grants SET state='revoked' WHERE customer_id=$1 AND membership_id=$2",[b,fresh.membershipId]);
   await expect(getOwnedConversation(fresh,conversation.id)).rejects.toMatchObject({status:404});
  }finally{try{await settleSyntheticConversationAttempts(db,ownedConversationIds);}finally{await db.end();}}

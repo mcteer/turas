@@ -4,6 +4,34 @@ No customer business entity is replaced. Add explicit operational metadata and
 session/workspace isolation; keep file bytes in the selected private backend.
 Implementation validates every boundary with strict schemas and database constraints.
 
+## Ordinary source history (schema080)
+
+`ordinary_named_content_dependencies` retains payload-free source identifiers for
+each conversation and customer or workspace scope. Its observed attempt and
+recording metadata do not reconstruct an earlier first use. References survive
+active-scope deletion and refresh; conversation removal may cascade them under
+native-context retention. The cumulative conversation bound is 1,000 references.
+Database capture covers named customer reads, and governed registration covers
+workspace practice reads. A practice read retains its consumed canonical support,
+rather than looking up a future source head when checking withdrawal.
+
+`ordinary_named_content_coverage` distinguishes complete capture from
+`legacy_gap`. Existing conversations receive conservative legacy coverage even
+when no active read rows survive. A bounded backfill records only known
+references; it cannot certify missing history. Refresh cannot promote a legacy
+gap to complete coverage. Unverifiable generated history stays withheld while
+authorized owner messages remain available; continuation requires a fresh
+conversation. Requested native retirement is separate from confirmed retirement.
+
+These append-only metadata tables are part of C05 retention, capture and recovery
+denial inventories. Runtime roles receive SELECT access and only the required
+guarded registration capability. Ordinary active citation arrays keep their
+existing selection and injection behavior. Historical checks distinguish explicit
+withdrawal or content removal from routine checked supersession and preserve
+independent shared-publication reuse rights. Recovery may append authenticated
+later deny-only metadata, but cannot invent source IDs, restore fact bodies, or
+upgrade legacy coverage.
+
 ## Fixed constraints
 
 These exact constraints are referenced and repeated in implementation tasks.

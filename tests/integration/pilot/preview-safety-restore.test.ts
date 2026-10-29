@@ -31,7 +31,7 @@ it('restores an explicit schema 38 Preview snapshot through 79 and keeps both ru
     await expect(restoreOwnedLegacySafetyCopy({...captured,sourceTarget:'production'},environment.signal)).rejects.toThrow('explicit Preview');
     expect((await owner.query('SELECT environment_id,schema_version FROM turas_environment')).rows[0]).toMatchObject({environment_id:environment.environmentId,schema_version:38});
     const result=await restoreOwnedLegacySafetyCopy(captured,environment.signal);
-    expect(result).toMatchObject({sourceTarget:'preview',sourceSchema:38,targetSchema:79,applicationContentVerified:true,sourceLedgerVerified:true,forwardMigrationsVerified:true,mode:'locked',runtimeConnectionDenied:true,restorationReady:false});
+    expect(result).toMatchObject({sourceTarget:'preview',sourceSchema:38,targetSchema:80,applicationContentVerified:true,sourceLedgerVerified:true,forwardMigrationsVerified:true,mode:'locked',runtimeConnectionDenied:true,restorationReady:false});
     expect((await owner.query('SELECT count(*)::int AS n FROM turas_migrations')).rows[0].n).toBe(79);
     for(const connectionString of [requireOwnedPilotDatabase(),secondUrl.href]){const runtime=new Client({connectionString});try{await expect(runtime.connect()).rejects.toMatchObject({code:'42501'});}finally{await runtime.end();}}
     await expect(owner.query("UPDATE operations_control SET mode='open'")).rejects.toThrow('quarantined');

@@ -51,7 +51,7 @@ async function readOperation(db:Client,scope:PilotHostedScope,id:string){
   JOIN response_attempts a ON a.id=(o.provider::jsonb->>'attemptId')::uuid
   JOIN conversations c ON c.id=a.conversation_id JOIN turas_environment e ON e.environment_id=b.environment_id
   WHERE o.id=$1`,[id])).rows[0];
- if(!row||row.owner!==true||row.schema_version!==79||row.environment_id!==scope.environmentMarker
+ if(!row||row.owner!==true||row.schema_version!==80||row.environment_id!==scope.environmentMarker
   ||row.workspace_id!==scope.workspaceId||row.actual_workspace!==scope.workspaceId||row.owner_principal_id!==row.actual_owner
   ||BigInt(row.cap_micro_usd)>2500000n)throw Error('Exact original owner model accounting required');
  const dispatch=dispatchSchema.parse(JSON.parse(row.provider));

@@ -19,7 +19,7 @@ export async function reconcileHostedLearningDispatch(input:{db:Client;ledger:Qu
   JOIN operations_hosted_learning_provider_identities i ON i.reservation_id=c.reservation_id AND i.identity_kind='gateway_generation'
   JOIN learning_budget_reservations r ON r.id=c.reservation_id JOIN turas_environment t ON t.environment_id=h.environment_id
   LEFT JOIN learning_budget_settlements s ON s.reservation_id=c.reservation_id WHERE h.journal_dispatch_id=$1`,[id])).rows[0];
- if(!row||!row.owner||row.schema_version!==79||row.journal_budget_id!==held.originalBudgetId||row.journal_dispatch_digest!==held.dispatchDigest
+ if(!row||!row.owner||row.schema_version!==80||row.journal_budget_id!==held.originalBudgetId||row.journal_dispatch_digest!==held.dispatchDigest
   ||row.original_authorization_digest!==held.originalAuthorizationDigest||Number(row.cap_micro_usd)!==held.capMicroUsd
   ||row.learning_attempt_id!==arm.learningAttemptId||row.evaluation_id!==arm.evaluationId||row.case_id!==arm.caseId||row.purpose!==arm.purpose
   ||row.environment_id!==binding.environmentMarker||row.workspace_id!==binding.workspaceId||row.owner_principal_id!==binding.ownerPrincipalId

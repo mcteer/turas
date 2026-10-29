@@ -20,7 +20,7 @@ export async function provisionPilotWorkspace(db:PoolClient,input:unknown){
  await db.query("SET LOCAL transaction_timeout='30s'");await db.query("SET LOCAL lock_timeout='2s'");
  const marker=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;
  const owner=(await db.query("SELECT current_user=pg_get_userbyid(relowner) AS owner FROM pg_class WHERE oid='workspaces'::regclass")).rows[0];
- if(!owner?.owner||marker.length!==1||marker[0].environment_id!==v.environmentId||Number(marker[0].schema_version)!==79)throw Error('Exact owner/schema/environment required');
+ if(!owner?.owner||marker.length!==1||marker[0].environment_id!==v.environmentId||Number(marker[0].schema_version)!==80)throw Error('Exact owner/schema/environment required');
  await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',['pilot-provision:'+v.environmentId]);
  const existing=(await db.query("SELECT id,classification,pilot_environment_id,pilot_provisioning_id,active FROM workspaces WHERE id=$1 OR (classification='synthetic_pilot' AND pilot_environment_id=$2 AND active) FOR UPDATE",[v.workspaceId,v.environmentId])).rows;
  if(existing.some(w=>w.id!==v.workspaceId||w.classification!=='synthetic_pilot'||w.pilot_environment_id!==v.environmentId||w.pilot_provisioning_id!==v.provisioningId||!w.active))throw Error('Workspace provisioning conflict');

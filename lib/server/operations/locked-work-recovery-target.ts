@@ -88,7 +88,7 @@ export async function requireLockedWorkRecoveryConnection(db:Client,target:Locke
  const rows=(await db.query(`SELECT current_database() AS name,current_user AS role,e.environment_id,e.schema_version,c.mode,c.recovery_id,c.revision,
  current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='operations_control'::regclass)) AS owner
  FROM turas_environment e JOIN operations_control c USING(environment_id) FOR SHARE OF e,c`)).rows,row=rows[0];
- if(rows.length!==1||row.name!==binding.databaseName||row.role!==binding.ownerRole||row.owner!==true||row.environment_id!==scope.environmentId||Number(row.schema_version)!==79||row.mode!=='locked'||row.recovery_id!==scope.recoveryId||Number(row.revision)!==scope.controlRevision)throw Error('Exact locked work recovery owner required');
+ if(rows.length!==1||row.name!==binding.databaseName||row.role!==binding.ownerRole||row.owner!==true||row.environment_id!==scope.environmentId||Number(row.schema_version)!==80||row.mode!=='locked'||row.recovery_id!==scope.recoveryId||Number(row.revision)!==scope.controlRevision)throw Error('Exact locked work recovery owner required');
  await requireRetiredLegacyWorkRuntime(db);binding.signal.throwIfAborted();
  return target;
 }
@@ -109,7 +109,7 @@ async function runWorkRecoveryTransport<T>(input:LockedWorkRecoveryInput,run:(db
  if(!Number.isSafeInteger(input.deadline)||input.deadline<=Date.now()||input.deadline>Date.now()+300000||hosted.environmentMarker!==scope.environmentId)throw Error('Finite exact work recovery scope required');
  const connectionLost=new AbortController(),signal=AbortSignal.any([input.signal,AbortSignal.timeout(input.deadline-Date.now()),connectionLost.signal]);signal.throwIfAborted();
  const source=databaseSafetyCaptureSourceSchema.parse(await readEvidence(dirname(file),basename(file))),owner=directConnection(source.databaseUrl),runtime=directConnection(input.runtimeConnection,'turas_runtime_016');
- if(source.schemaVersion!==79||source.projectId!==hosted.projectId||source.target!==hosted.target||source.environmentId!==scope.environmentId||databaseTargetDigest(owner.href,scope.environmentId)!==databaseTargetDigest(runtime.href,scope.environmentId))throw Error('Work recovery platform and runtime target differ');
+ if(source.schemaVersion!==80||source.projectId!==hosted.projectId||source.target!==hosted.target||source.environmentId!==scope.environmentId||databaseTargetDigest(owner.href,scope.environmentId)!==databaseTargetDigest(runtime.href,scope.environmentId))throw Error('Work recovery platform and runtime target differ');
  await requireSource(hosted);const platform=await verifyDatabaseSafetySourceBinding(source,hosted.teamId,signal),deployed=await deployment(hosted,signal,false);
  if(JSON.stringify(await deployment(hosted,signal,true))!==JSON.stringify(deployed))throw Error('Work recovery serving deployment differs');
  const db=new Client({connectionString:owner.href,connectionTimeoutMillis:5000,statement_timeout:10000,query_timeout:11000,pipeline:true});
@@ -128,7 +128,7 @@ async function runWorkRecoveryTransport<T>(input:LockedWorkRecoveryInput,run:(db
   // Authenticate the exact runtime credential without invoking domain work.
   const probe=new Client({connectionString:runtime.href,connectionTimeoutMillis:5000,statement_timeout:5000,query_timeout:6000});
   probe.on('error',error=>{connectionLost.abort(error);failRecoveryMeasurementLane(lane,error);});
-  try{await probe.connect();const rows=(await probe.query('SELECT current_database() AS name,current_user AS role,session_user AS session_role,environment_id,schema_version FROM turas_environment')).rows;if(rows.length!==1||rows[0].name!==decodeURIComponent(owner.pathname.slice(1))||rows[0].role!=='turas_runtime_016'||rows[0].session_role!=='turas_runtime_016'||rows[0].environment_id!==scope.environmentId||Number(rows[0].schema_version)!==79)throw Error('Actual work recovery runtime differs');}finally{await probe.end();}
+  try{await probe.connect();const rows=(await probe.query('SELECT current_database() AS name,current_user AS role,session_user AS session_role,environment_id,schema_version FROM turas_environment')).rows;if(rows.length!==1||rows[0].name!==decodeURIComponent(owner.pathname.slice(1))||rows[0].role!=='turas_runtime_016'||rows[0].session_role!=='turas_runtime_016'||rows[0].environment_id!==scope.environmentId||Number(rows[0].schema_version)!==80)throw Error('Actual work recovery runtime differs');}finally{await probe.end();}
   await prepareRecoveryMeasurementLane(lane,exposed,target);
   let decisionTransaction:string|undefined;if(decision){await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');await db.query("SELECT set_config('transaction_timeout',$1,true)",[Math.max(1,input.deadline-Date.now())+'ms']);await requireLockedWorkRecoveryConnection(exposed,target,scope);decisionTransaction=String((await db.query('SELECT pg_current_xact_id()::text AS id')).rows[0].id);binding.decisionTransaction=decisionTransaction;}
   let abort:()=>void=()=>{};
@@ -270,7 +270,7 @@ async function retireWorkRecoveryProbes(target:LockedWorkRecoveryTarget,connect:
    await db.query("SET LOCAL lock_timeout='3000ms'; SET LOCAL statement_timeout='5000ms'; SET LOCAL transaction_timeout='20s'");
    await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16020))',[target.environmentId]);await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[target.environmentId]);
    const marker=(await db.query("SELECT e.environment_id,e.schema_version,current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='operations_control'::regclass)) AS owner FROM turas_environment e")).rows;
-   if(marker.length!==1||marker[0].environment_id!==target.environmentId||Number(marker[0].schema_version)!==79||marker[0].owner!==true)throw Error('Exact work probe cleanup owner required');
+   if(marker.length!==1||marker[0].environment_id!==target.environmentId||Number(marker[0].schema_version)!==80||marker[0].owner!==true)throw Error('Exact work probe cleanup owner required');
    await revokeWorkRecoveryProbeIdentities(db,target,intents);
    await db.query('COMMIT');
   }catch(error){await db.query('ROLLBACK');throw error;}

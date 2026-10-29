@@ -8,6 +8,20 @@ the isolated synthetic Preview database. Synthetic Preview deployments and parti
 hosted checks have run; full acceptance remains incomplete. Production remains
 on f8d196f/schema077 with no 016 release.
 
+### Withdrawal history correction (2026-10-29)
+
+Schema080 separates immutable named-source consumption from the mutable active
+context selection. Database capture covers customer-scoped reads; governed
+registration covers workspace practice reads. The shared server guard checks
+withdrawal and content revocation across the retained dependency union, including
+sources retired by an ordinary context refresh. Routine checked supersession,
+receipt age and unrelated inventory changes retain their existing refresh behavior.
+Legacy coverage cannot reconstruct already-pruned references: legacy conversations
+must withhold unverifiable generated history and require a fresh conversation.
+Both metadata tables belong to native-context retention and recovery inventories.
+Release includes explicit migrations/grants and fresh schema080 backup, restore,
+denial and hosted admission evidence; earlier077/079 receipts remain historical.
+
 ## Summary
 
 Make the existing product operable for a controlled internal/assigned-partner pilot.

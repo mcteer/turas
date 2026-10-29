@@ -1,4 +1,6 @@
-import {seedReleasedRecoveryFixture} from '../../scripts/recovery-legacy-seed';
+import {seedReleasedRecoveryFixture,archiveReleasedRecoveryCode,verifyReleasedSeedArchiveMembers} from '../../scripts/recovery-legacy-seed';
+import {mkdtemp,mkdir,rm} from 'node:fs/promises';
+import {resolve} from 'node:path';
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { createExecutionBaseline } from "../fixtures/execution/baseline";
@@ -23,6 +25,18 @@ export const executionTables = ["execution_workspaces", "execution_baseline_bind
 describe("008 schema and grants", () => {
   it.each([34,35] as const)("upgrades an explicit schema %i fixture without rewriting its migration history", async (initialSchemaVersion) => {
     requireOwnedExecutionClone();
+    if(initialSchemaVersion===34){
+      // Same registered seed case: reproduce the ignored-cwd Git prefix without DB/model work.
+      const directory=resolve('local-artifacts/008');await mkdir(directory,{recursive:true,mode:0o700});
+      const ignored=await mkdtemp(resolve(directory,'ignored-legacy-git-'));
+      try{
+        const broken=spawnSync('git',['archive','--format=tar','699f6f4a89911b1ba33bc2d90ed51ac1ba2ee530'],{cwd:ignored,timeout:30000,maxBuffer:64*1024*1024});expect(broken.status).toBe(0);
+        expect(()=>verifyReleasedSeedArchiveMembers(broken.stdout,'008')).toThrow();
+        const archive=await archiveReleasedRecoveryCode('008',ignored),members=verifyReleasedSeedArchiveMembers(archive,'008');
+        expect(members).toContain('lib/server/bootstrap-ids.ts');expect(members).toContain('tests/fixtures/execution/baseline.ts');
+        await expect(archiveReleasedRecoveryCode('008',resolve(ignored,'absent'))).rejects.toThrow();
+      }finally{await rm(ignored,{recursive:true,force:true});}
+    }
     await withExecutionEvalEnvironment(async environment => {
       const client = new Client({ connectionString: requireOwnedExecutionClone() }); await client.connect();
       try {

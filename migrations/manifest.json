@@ -1,5 +1,5 @@
 {
-  "version": 79,
+  "version": 80,
   "migrations": [
     {
       "file": "001-identity-foundation.cjs",
@@ -316,6 +316,10 @@
     {
       "file": "079-pilot-operations.cjs",
       "sha256": "1c994e75ae2f7f4edd9dfd2a238b08a49849e5acd0153dc36b34b510f5b27bad"
+    },
+    {
+      "file": "080-ordinary-named-content-retention.cjs",
+      "sha256": "ca71ac47233f9796e54c900e362ac7639d0e76c09fe65d88ccb14258de354603"
     }
   ]
 }

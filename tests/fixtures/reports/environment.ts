@@ -4,7 +4,7 @@ import {requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
 export async function requireOwnedReportsDatabase(): Promise<void> {
  if(process.env.TURAS_PILOT_OWNED==='1'){
   const raw=requireOwnedPilotDatabase(process.env,true);if(raw!==process.env.TURAS_TEST_DATABASE_URL||raw===process.env.DATABASE_URL)throw Error('Owned pilot runtime/owner separation required');
-  const client=new Client({connectionString:raw,connectionTimeoutMillis:5000});await client.connect();try{const row=(await client.query('SELECT environment_id,schema_version FROM turas_environment')).rows[0];if(row?.environment_id!==process.env.TURAS_ENVIRONMENT_ID||row?.schema_version!==79)throw Error('Owned pilot environment required');}finally{await client.end();}return;
+  const client=new Client({connectionString:raw,connectionTimeoutMillis:5000});await client.connect();try{const row=(await client.query('SELECT environment_id,schema_version FROM turas_environment')).rows[0];if(row?.environment_id!==process.env.TURAS_ENVIRONMENT_ID||row?.schema_version!==80)throw Error('Owned pilot environment required');}finally{await client.end();}return;
  }
   const raw=process.env.TURAS_TEST_DATABASE_URL;
   if (!raw || raw!==process.env.DATABASE_URL || raw!==process.env.DATABASE_URL_UNPOOLED ||

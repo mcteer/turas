@@ -1,3 +1,4 @@
+import {historicalContentWithdrawn} from './content-withdrawal';
 import { sharedOriginSql } from "../access/policy";
 import { ownResearchGenerationIsCurrent } from "../research/context-generation";
 import { randomUUID } from "node:crypto";
@@ -139,6 +140,17 @@ async function ownCheckedReplacement(client:PoolClient,conversationId:string,dep
       AND EXISTS(SELECT 1 FROM evidence_source_events e WHERE e.source_revision_id=original.id AND e.event_type='supersede')
       AND NOT EXISTS(SELECT 1 FROM evidence_source_events e WHERE e.source_revision_id=original.id AND e.event_type='withdraw')
       AND latest.version=(SELECT max(v.version) FROM evidence_source_revisions v WHERE v.source_id=original.source_id)`,[dependency.source_revision_id,dependency.source_generation,dependency.source_digest,bound.attempt_id])).rowCount);
+}
+
+/** Refresh retires receipt freshness only, never historical source withdrawal. */
+export async function assertRetrievalContentRetained(client:PoolClient,conversationId:string){
+ if(!await schemaReady(client))return;
+ const rows=(await client.query<{source_kind:string;source_revision_id:string;source_generation:string;workspace_id:string;customer_id:string|null}>(`SELECT dependency.source_kind,dependency.source_revision_id,dependency.source_generation,conversation.workspace_id,receipt.customer_id
+  FROM session_evidence_dependencies dependency JOIN conversations conversation ON conversation.id=dependency.conversation_id
+  LEFT JOIN retrieval_receipts receipt ON receipt.id=dependency.receipt_id
+  WHERE dependency.conversation_id=$1 ORDER BY dependency.consumed_at,dependency.id LIMIT 1001`,[conversationId])).rows;
+ if(await historicalContentWithdrawn(client,rows.map(row=>({kind:row.source_kind,id:row.source_revision_id,workspaceId:row.workspace_id,customerId:row.customer_id,generation:row.source_generation}))))
+  throw new HttpFailure(409,'retrieval_context_changed','Start a new conversation for current evidence');
 }
 
 /** Revalidate the append-only union before every model/output/history release. */

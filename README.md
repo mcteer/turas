@@ -5,6 +5,16 @@ Current pilot release status and validation results are recorded in
 historical snapshots at their recorded source revisions; they do not replace
 current release evidence.
 
+The `0076c6a` checks exposed missing citations when summarizing earlier research
+and ordinary-chat history that remained readable after evidence withdrawal.
+The follow-up supplies prior-run citation guidance and records historical named
+source dependencies separately from active context. Schema080 adds the durable
+reference history and conservative coverage for legacy conversations. Ordinary
+checked source updates remain refreshable; withdrawn content must be withheld.
+The accompanying test fixes preserve exact original write keys during receipt
+reconciliation, isolate nested test database identities, and read released seed
+code from its verified Git root. Fresh complete validation and release are pending.
+
 At development revision `bd2cac0`, the model migration selects `anthropic/claude-sonnet-5.5` through
 Vercel AI Gateway, following the request to stop xAI. New evaluation admission
 rejects the retired model while historical accounting and uncertain holds remain
@@ -1065,6 +1075,9 @@ Hosted Preview verification uses real customer data, not browser response replac
 `npm run profiles:preview:check -- --origin <Preview origin> --commit <PR SHA> --output local-artifacts/customer-profile-fixes/preview-check`
 checks the exact deployment, compares the real customer directory and checked
 1Password/Notion research with Production, and captures desktop/mobile WebKit views.
+Supply the Preview credential as `TURAS_DEMO_PASSWORD` and the existing Production
+credential as `TURAS_PRODUCTION_DEMO_PASSWORD` through protected local inputs;
+the check does not rotate either login.
 It verifies name navigation, overview placement, researched products, source detail
 and Sandbox evidence search. Review the captures before merge.
 

@@ -1,5 +1,6 @@
 import {it,expect} from 'vitest';
 import {pilotHostedRequest,PilotHostedResponseError} from '../../../scripts/pilot-hosted-request';
+import {reconcileOriginalAcceptedProfileReceipt} from '../../../scripts/pilot-source-recipe';
 import type {PilotHostedScope} from '../../../lib/contracts/pilot-hosted';
 const scope={origin:'https://synthetic.example',sourceCommit:'a'.repeat(40)} as PilotHostedScope;
 const response=(body:string,version=scope.sourceCommit,status=200)=>new Response(body,{status,headers:{'content-type':'application/json','x-turas-code-version':version}});
@@ -16,6 +17,17 @@ it('rejects oversized streamed JSON before accumulating an unbounded body',async
 });
 it('does not retry an uncertain mutation body',async()=>{
  let calls=0;const transport:typeof fetch=async()=>{calls++;return response('{');};await expect(pilotHostedRequest(input(transport))('/api/synthetic','POST',{})).rejects.toThrow();expect(calls).toBe(1);
+ // A read of the original exact receipt may recover a committed timeout;
+ // neither the transport nor reconciliation may repeat the mutation.
+ const first=new Error('synthetic original write timeout'),path='/api/customers/synthetic/commands/exact-original-key';
+ let reads=0;const methods:string[]=[];
+ const request=pilotHostedRequest(input(async(_url,init)=>{methods.push(init?.method??'GET');reads++;return reads===1?response('{"error":{"code":"unavailable"}}',scope.sourceCommit,503):response('{"data":{"action":"accept_revision","status":200,"result":{"recordId":"synthetic"}}}');}));
+ await expect(reconcileOriginalAcceptedProfileReceipt({request,path,signal:new AbortController().signal,firstPostFailure:first})).resolves.toEqual({recordId:'synthetic'});expect(methods).toEqual(['GET','GET']);expect(calls).toBe(1);
+ const exhausted:string[]=[];let failed:unknown;try{await reconcileOriginalAcceptedProfileReceipt({path,signal:new AbortController().signal,firstPostFailure:first,request:async(p,m)=>{exhausted.push(p+':'+m);throw new PilotHostedResponseError(503,true,null);}});}catch(error){failed=error;}
+ expect(exhausted).toEqual(Array(3).fill(path+':GET'));expect(failed).toBeInstanceOf(AggregateError);expect((failed as AggregateError).cause).toBe(first);expect((failed as AggregateError).errors[0]).toBe(first);
+ for(const error of[new PilotHostedResponseError(403,true,null),new PilotHostedResponseError(503,false,null),new TypeError('uncertain read')]){let count=0;try{await reconcileOriginalAcceptedProfileReceipt({path,signal:new AbortController().signal,firstPostFailure:first,request:async()=>{count++;throw error;}});}catch(value){expect(value).toBeInstanceOf(AggregateError);expect((value as AggregateError).cause).toBe(first);}expect(count).toBe(1);}
+ const abort=new AbortController();abort.abort();let abortedCalls=0;await expect(reconcileOriginalAcceptedProfileReceipt({path,signal:abort.signal,firstPostFailure:first,request:async()=>{abortedCalls++;return{};}})).rejects.toBeInstanceOf(AggregateError);expect(abortedCalls).toBe(0);
+
 });
 it('rejects foreign and non-API paths before dispatch',async()=>{
  let calls=0;const transport:typeof fetch=async()=>{calls++;return response('{}');};const request=pilotHostedRequest(input(transport));for(const path of ['//foreign.example/api/x','/other','/api/../other','/api/\\foreign'])await expect(request(path,'GET')).rejects.toThrow('same-origin');expect(calls).toBe(0);

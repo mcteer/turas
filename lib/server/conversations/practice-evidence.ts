@@ -65,6 +65,8 @@ export async function readOrdinaryPracticeEvidence(principal:Principal,accountId
    FROM customer_profile_state WHERE customer_id=$2 AND workspace_id=$5
    ON CONFLICT(attempt_id,customer_id) DO UPDATE SET citation_ids=ARRAY(SELECT DISTINCT unnest(general_customer_read_scopes.citation_ids||EXCLUDED.citation_ids)),checked_at=clock_timestamp()`,
    [scope.attemptId,accountId,scope.actor.kind==='internal'?'internal':'delivery',returned.map(row=>practiceCitationPrefix+row.snapshotId),scope.actor.workspaceId]);
+  if(!accountId&&returned.length)await db.query('SELECT turas_record_workspace_practice_content($1,$2,$3,$4)',[scope.attemptId,scope.actor.principalId,scope.actor.sessionId,returned.map(row=>row.snapshotId)]);
+  if(accountId&&returned.length)await db.query('SELECT turas_record_customer_practice_support($1,$2,$3,$4,$5)',[scope.attemptId,scope.actor.principalId,scope.actor.sessionId,accountId,returned.map(row=>row.snapshotId)]);
   return result;
  });
 }

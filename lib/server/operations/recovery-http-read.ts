@@ -36,7 +36,7 @@ export async function authenticateRecoveryHttpRead(db:PoolClient,request:Request
  AND a.database_binding_digest=$8 AND current_database()=$9
  AND a.deployment_id IS NOT DISTINCT FROM $7::text AND a.workspace_id=s.workspace_id
  AND a.revoked_at IS NULL AND a.expires_at>clock_timestamp() AND s.revoked_at IS NULL AND s.expires_at>clock_timestamp()
- AND c.mode='locked' AND c.recovery_id=a.recovery_id AND c.revision=a.control_revision AND e.schema_version=79
+ AND c.mode='locked' AND c.recovery_id=a.recovery_id AND c.revision=a.control_revision AND e.schema_version=80
  AND current_user='turas_runtime_016' AND session_user='turas_runtime_016'
  AND m.active AND p.active AND w.active AND
  ((p.id=$10 AND p.login_name='mcteer' AND m.kind='internal' AND m.role='admin')

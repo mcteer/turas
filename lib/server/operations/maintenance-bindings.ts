@@ -87,7 +87,7 @@ export function createMaintenanceBindings(options:{attachSession?:AttachSessionF
  return maintenanceClasses.map(definition=>({id:definition.id,enabled:true,optional:false,intervalMs:definition.intervalMs,tick:async input=>{
   input.signal.throwIfAborted();
   const marker=(await query('SELECT environment_id,schema_version FROM turas_environment')).rows;
-  if(marker.length!==1||marker[0].environment_id!==getServerConfig().TURAS_ENVIRONMENT_ID||Number(marker[0].schema_version)!==79)throw Error('Exact maintenance schema required');
+  if(marker.length!==1||marker[0].environment_id!==getServerConfig().TURAS_ENVIRONMENT_ID||Number(marker[0].schema_version)!==80)throw Error('Exact maintenance schema required');
   const operations=steps[definition.id];if(!operations)throw Error('Missing required maintenance binding');
   for(const operation of operations){input.signal.throwIfAborted();await operation(input);}
   input.signal.throwIfAborted();return maintenanceBacklog(definition.id);

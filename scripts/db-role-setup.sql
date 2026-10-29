@@ -477,3 +477,17 @@ DO $$ BEGIN
   GRANT UPDATE(state,confirmed_at,next_attempt_at,attempts,safe_error_code) ON ordinary_native_retirements TO turas_runtime;
  END IF;
 END $$;
+
+-- Schema080 C05 named-content history is trigger-owned metadata. Keep this
+-- restriction AFTER broad table/default runtime grants above.
+DO $$ BEGIN
+ IF to_regclass('public.ordinary_named_content_dependencies') IS NOT NULL THEN
+  REVOKE ALL ON ordinary_named_content_dependencies,ordinary_named_content_coverage FROM PUBLIC,turas_runtime;
+  GRANT SELECT ON ordinary_named_content_dependencies,ordinary_named_content_coverage TO turas_runtime;
+  REVOKE ALL ON FUNCTION turas_capture_named_content(),turas_initialize_named_coverage(),turas_named_content_append_only(),turas_named_content_capacity() FROM PUBLIC,turas_runtime;
+  REVOKE ALL ON FUNCTION turas_record_workspace_practice_content(uuid,uuid,uuid,text[]) FROM PUBLIC;
+  GRANT EXECUTE ON FUNCTION turas_record_workspace_practice_content(uuid,uuid,uuid,text[]) TO turas_runtime;
+  REVOKE ALL ON FUNCTION turas_record_customer_practice_support(uuid,uuid,uuid,uuid,text[]) FROM PUBLIC;
+  GRANT EXECUTE ON FUNCTION turas_record_customer_practice_support(uuid,uuid,uuid,uuid,text[]) TO turas_runtime;
+ END IF;
+END $$;

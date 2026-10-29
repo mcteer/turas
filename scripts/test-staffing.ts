@@ -153,7 +153,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   main().catch(error => {
     const code = error && typeof error === "object" && "code" in error && typeof error.code === "string"
       && ["ENOTFOUND", "EAI_AGAIN", "EPERM", "ECONNREFUSED", "ETIMEDOUT"].includes(error.code) ? error.code : "gate_failed";
-    console.error(JSON.stringify({ gate: "owned-staffing", errorCode: code }));
+    const exceptionClass=error instanceof Error&&/^[A-Za-z_][A-Za-z0-9_]{0,63}$/.test(error.name)?error.name:'Error';
+    const allowedCodes=new Set(['OWNED_NESTED_CLONE_IDENTITY','ERR_MODULE_NOT_FOUND','ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX','ENOTFOUND','EAI_AGAIN','EPERM','EACCES','ENOENT','ECONNREFUSED','ETIMEDOUT','55006','42501','42P01']);
+    const exceptionCode=typeof error==='object'&&error!==null&&'code'in error&&typeof error.code==='string'&&allowedCodes.has(error.code)?error.code:null;
+    console.error(JSON.stringify({ gate: "owned-staffing", errorCode: code,exceptionClass,exceptionCode }));
     console.error("007 staffing checks failed; verify suite coverage and owned test configuration");
     process.exitCode = 1;
   });

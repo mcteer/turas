@@ -11,7 +11,7 @@ export async function runHostedPrimaryExclusion(input:{scope:PilotHostedScope;db
  const gaps=z.array(z.uuid()).min(1).max(5).parse(input.gapIds),reportId=z.uuid().parse(input.reportId),query=z.string().regex(/^[a-f0-9]{8}$/).parse(input.query);
  if(new Set(gaps).size!==gaps.length||!env.TURAS_PILOT_HOSTED_ADMIN_PASSWORD)throw Error('Exact primary read probe and credential required');
  const marker=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;
- if(marker.length!==1||marker[0].environment_id!==scope.environmentMarker||Number(marker[0].schema_version)!==79)throw Error('Exact primary probe database required');
+ if(marker.length!==1||marker[0].environment_id!==scope.environmentMarker||Number(marker[0].schema_version)!==80)throw Error('Exact primary probe database required');
  const rows=(await db.query(`SELECT w.id AS workspace_id,m.id AS membership_id,m.principal_id FROM workspaces w
   JOIN memberships m ON m.workspace_id=w.id AND m.active AND m.kind='internal' AND m.role='admin'
   JOIN principals p ON p.id=m.principal_id AND p.active AND p.login_name='mcteer'

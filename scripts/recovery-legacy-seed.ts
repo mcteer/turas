@@ -1,10 +1,34 @@
 import {execFileSync,spawn} from 'node:child_process';
-import {mkdtemp,writeFile,readFile,rm,mkdir} from 'node:fs/promises';
+import {mkdtemp,writeFile,readFile,rm,mkdir,lstat,realpath} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {Client} from 'pg';
 import {z} from 'zod';
 const releasedBase='699f6f4a89911b1ba33bc2d90ed51ac1ba2ee530';
 const schemas={'012':47,'013':49,'014':51} as const;
+const requiredReleasedSeedMembers={
+ '008':['tests/fixtures/execution/environment.ts','tests/fixtures/execution/baseline.ts','lib/server/staffing/resources.ts','tests/fixtures/staffing/seed.ts'],
+ '012':['tests/fixtures/gaps/seed.ts','tests/fixtures/gaps/evidence.ts'],
+ '013':['tests/fixtures/partners/environment.ts','tests/fixtures/partners/seed.ts','tests/fixtures/partners/originals.ts','lib/server/conversations/repository.ts','lib/server/execution/service.ts','tests/fixtures/execution/registers.ts'],
+ '014':['tests/fixtures/learning/environment.ts','tests/fixtures/learning/setup.ts'],
+} as const;
+export function verifyReleasedSeedArchiveMembers(archive:Buffer,feature:keyof typeof requiredReleasedSeedMembers){
+ const members=execFileSync('tar',['-tf','-'],{input:archive,timeout:30000,maxBuffer:4*1024*1024,encoding:'utf8'}).split('\n').filter(Boolean);
+ if(!members.length||members.length>10000||members.some(path=>path.startsWith('/')||path.includes('\\')||path.split('/').includes('..')||path.length>4096))throw Error('Released fixture archive has no safe members');
+ const required=['lib/server/bootstrap-ids.ts','lib/server/db/client.ts',...requiredReleasedSeedMembers[feature]];
+ if(required.some(path=>members.filter(member=>member===path).length!==1))throw Error('Released fixture archive lacks required original modules');
+ return members;
+}
+/** Read the same released tree from its actual canonical Git root, never a cwd prefix. */
+export async function archiveReleasedRecoveryCode(feature:keyof typeof requiredReleasedSeedMembers,workingDirectory=process.cwd()){
+ const uid=process.getuid?.(),cwd=resolve(workingDirectory),selected=await lstat(cwd);
+ if(uid===undefined||!selected.isDirectory()||selected.isSymbolicLink()||await realpath(cwd)!==cwd||selected.uid!==uid)throw Error('Canonical direct fixture working directory required');
+ const repositoryRoot=execFileSync('git',['rev-parse','--show-toplevel'],{cwd,encoding:'utf8',timeout:5000}).trim(),stat=await lstat(repositoryRoot);
+ if(resolve(repositoryRoot)!==repositoryRoot||await realpath(repositoryRoot)!==repositoryRoot||!stat.isDirectory()||stat.isSymbolicLink()||stat.uid!==uid)throw Error('Canonical direct fixture repository root required');
+ execFileSync('git',['-C',repositoryRoot,'merge-base','--is-ancestor',releasedBase,'HEAD'],{timeout:5000});
+ const archive=execFileSync('git',['-C',repositoryRoot,'archive','--format=tar',releasedBase],{timeout:30000,maxBuffer:64*1024*1024});
+ verifyReleasedSeedArchiveMembers(archive,feature);return archive;
+}
+
 /** Seed controlled predecessor records using the exact previously released
  * domain code, then terminate its writer before current forward migrations.
  * Current operation guards are never disabled to execute against older schemas. */
@@ -29,10 +53,9 @@ export async function seedReleasedRecoveryFixture<T>(input:{feature:keyof typeof
   if(rows.length!==1||rows[0].owner!==true||rows[0].environment_id!==process.env.TURAS_ENVIRONMENT_ID||Number(rows[0].schema_version)!==priorSchema)throw Error('Exact prior schema and actual seed owner required');
   if(feature==='008'){const marker=(await db.query("SELECT shobj_description(oid,'pg_database') AS marker FROM pg_database WHERE datname=current_database() AND pg_get_userbyid(datdba)=current_user")).rows[0]?.marker;if(typeof marker!=='string'||!/^turas-owned-008-[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(marker))throw Error('Actual owned execution database marker required');}
  }finally{await db.end();}
- execFileSync('git',['merge-base','--is-ancestor',releasedBase,'HEAD'],{timeout:5000});
+ const archive=await archiveReleasedRecoveryCode(feature);
  const root=await mkdtemp(join(resolve(input.appRoot),'released-seed-'));
  try{
-  const archive=execFileSync('git',['archive','--format=tar',releasedBase],{timeout:30000,maxBuffer:64*1024*1024});
   const archivePath=join(root,'released.tar');await writeFile(archivePath,archive,{flag:'wx',mode:0o600});
   execFileSync('tar',['-xf',archivePath,'-C',root],{timeout:30000,maxBuffer:65536});await rm(archivePath);
   const script=join(root,'seed-recovery.ts'),output=join(root,'seed-result.json');

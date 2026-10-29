@@ -28,7 +28,7 @@ export async function observeMaintenanceHealth(){
   await db.query("SET LOCAL statement_timeout='5000ms'");
   await db.query("SET LOCAL transaction_timeout='15s'");
   const marker=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;
-  if(marker.length!==1||marker[0].environment_id!==environmentId||marker[0].schema_version!==79)throw Error('Exact health environment required');
+  if(marker.length!==1||marker[0].environment_id!==environmentId||marker[0].schema_version!==80)throw Error('Exact health environment required');
   const rows=(await db.query<MaintenanceObservation>('SELECT class_id,last_success_at,last_completed_at,safe_failure,code_version,duration_ms,backlog_count,backlog_truncated,oldest_due_at FROM operations_maintenance_status WHERE environment_id=$1',[environmentId])).rows;
   // Sample the clock after reading ticks: a concurrent legitimate completion
   // must not look like a future success relative to an earlier query's clock.

@@ -31,7 +31,7 @@ async function withDatabaseCheckpoint<T>(db:Client|PoolClient,input:{environment
   await db.query("SET LOCAL lock_timeout='3000ms'");await db.query("SET LOCAL statement_timeout='5000ms'");
   const marker=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;
   const serverVersion=Number((await db.query("SELECT current_setting('server_version_num')::int AS version")).rows[0].version);const serverMajor=recoveryPostgresMajor(serverVersion);
-  if(marker.length!==1||marker[0].environment_id!==input.environmentId||Number(marker[0].schema_version)!==79)throw Error('Capture target differs');
+  if(marker.length!==1||marker[0].environment_id!==input.environmentId||Number(marker[0].schema_version)!==80)throw Error('Capture target differs');
   const control=(await db.query('SELECT mode,revision,recovery_id FROM operations_control WHERE environment_id=$1 FOR UPDATE',[input.environmentId])).rows[0];
   if(purpose==='locked-recovery'?(control?.mode!=='locked'||Number(control.revision)!==input.controlRevision||control.recovery_id!==input.recoveryId):(control?.mode!=='open'||Number(control.revision)!==input.controlRevision))throw Error(purpose==='locked-recovery'?'Exact locked capture boundary required':'Exact open scheduled capture boundary required');
   if(await recoveryLeasesOutstanding(db))throw Error('Capture lease drain remains incomplete');

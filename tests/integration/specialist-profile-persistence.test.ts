@@ -1,3 +1,5 @@
+import {captureGeneralContext} from '../../lib/server/conversations/general-context';
+import {materializeCurrentProjection} from '../../lib/server/retrieval/projections';
 import {readPublicCustomerInventory} from '../../lib/server/profiles/public-inventory';
 import {projectNativeEvent} from '../../lib/server/conversations/projection';
 import {readOrdinaryPracticeEvidence,ordinaryPracticeAccount} from '../../lib/server/conversations/practice-evidence';
@@ -173,6 +175,12 @@ it('retains new public research for an assigned partner, preserves curated claim
    VALUES($1,$2,'private-product','private-topic',$3,$4,'Other customer identifier','customer_engineering','product_capability',now(),now()+interval '6 hours')`,[process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,customerDocumentId,customerDocumentUrl]);
   const genericPublic=await readOrdinaryPracticeEvidence(generic.principal,undefined,'DNS CIDR exfiltrated',new AbortController().signal);
   expect(genericPublic.sources).toHaveLength(1);
+  expect((await db.query(`SELECT citation_id,customer_id,scope_key FROM ordinary_named_content_dependencies WHERE first_attempt_id=$1`,[generic.principal.attributes.turasAttemptId])).rows).toContainEqual({citation_id:'public_practice:'+practiceId,customer_id:null,scope_key:'workspace'});
+  await db.query('BEGIN');try{
+   await db.query('DELETE FROM turas_vercel_practice_sources WHERE snapshot_id=$1',[practiceId]);
+   await expect(assertCustomerQuestionReads(db as unknown as PoolClient,unassignedPartner,generic.conversation.id,generic.principal.attributes.turasAttemptId,false)).rejects.toMatchObject({status:404});
+  }finally{await db.query('ROLLBACK');}
+
   expect((await db.query('SELECT count(*)::int AS count FROM general_customer_read_scopes WHERE attempt_id=$1',[generic.principal.attributes.turasAttemptId])).rows[0].count).toBe(0);
   expect(JSON.stringify(genericPublic)).not.toContain('private-question-marker');
   expect(JSON.stringify(genericPublic)).not.toContain('Other customer identifier');
@@ -190,6 +198,8 @@ it('retains new public research for an assigned partner, preserves curated claim
   try{
    await db.query('DELETE FROM turas_vercel_practice_sources WHERE snapshot_id=$1',[practiceId]);
    await expect(assertCustomerQuestionReads(db as unknown as PoolClient,actor,fresh.conversation.id,searchPrincipal.attributes.turasAttemptId)).rejects.toMatchObject({status:404});
+   await db.query('DELETE FROM general_customer_read_scopes WHERE attempt_id=$1',[searchPrincipal.attributes.turasAttemptId]);
+   await expect(assertCustomerQuestionReads(db as unknown as PoolClient,actor,fresh.conversation.id,searchPrincipal.attributes.turasAttemptId,false)).rejects.toMatchObject({status:404});
   }finally{await db.query('ROLLBACK');}
   // Two already-authorized reads must not upgrade shared membership locks
   // while recording consumption for distinct owner-private conversations.
@@ -325,6 +335,32 @@ it('admits an owned research handoff after its public refresh, then fences outpu
   await expect(projectNativeEvent(native,attempt.attemptId,event('message.completed',{turnId:background,message:'Unrefreshed response'}))).rejects.toMatchObject({status:404});
   const refreshed=await withRuntime(client=>refreshOrdinaryKnowledge(client,actor,principal,conversation.id,attempt.attemptId));
   expect(JSON.stringify(refreshed)).toContain(after);expect(refreshed?.retiredNamedCitations).toContain('attributed_research:'+oldCitation);
+  expect((await db.query('SELECT citation_id FROM ordinary_named_content_dependencies WHERE conversation_id=$1',[conversation.id])).rows.map(row=>row.citation_id)).toContain('attributed_research:'+oldCitation);
+  expect((await db.query('SELECT count(*)::int AS n FROM session_evidence_dependencies WHERE conversation_id=$1',[conversation.id])).rows[0].n).toBe(0);
+  await db.query('BEGIN');try{
+   const head=(await db.query(`SELECT revision.id FROM evidence_source_revisions revision JOIN evidence_sources source ON source.id=revision.source_id WHERE source.customer_id=$1 AND source.canonical_location=$2 ORDER BY revision.version DESC LIMIT 1`,[customerId,url])).rows[0].id;
+   await db.query(`INSERT INTO evidence_source_events(id,source_revision_id,lifecycle_version,event_type,rationale)
+    VALUES($1,$2,(SELECT COALESCE(MAX(lifecycle_version),0)+1 FROM evidence_source_events WHERE source_revision_id=$2),'withdraw','Synthetic named-only withdrawal after refresh')`,[randomUUID(),head]);
+   await db.query('DELETE FROM general_customer_read_scopes WHERE attempt_id=$1',[attempt.attemptId]);
+   await expect(assertCustomerQuestionReads(db as unknown as PoolClient,actor,conversation.id,attempt.attemptId,false)).rejects.toMatchObject({status:404});
+   // Explicitly checked replacement is a NEW revision, not silent revival of
+   // the consumed withdrawn revision or a permanent canonical-URL ban.
+   const replacement=randomUUID();await db.query(`INSERT INTO evidence_source_revisions(id,source_id,workspace_id,customer_id,version,location,title,passage,supported_claim,passage_digest,publication_at,retrieval_at,rights,audience,quality_input,observation_at,event_at)
+     SELECT $1,source_id,workspace_id,customer_id,version+1,location,title,passage,supported_claim,passage_digest,publication_at,clock_timestamp(),rights,audience,quality_input,observation_at,event_at FROM evidence_source_revisions WHERE id=$2`,[replacement,head]);
+   await db.query(`INSERT INTO research_checks(source_revision_id,trusted_ingest_identity,check_version,identity_result,scope_result,integrity_result,content_result,rationale)
+     SELECT $1,trusted_ingest_identity,check_version,identity_result,scope_result,integrity_result,content_result,rationale FROM research_checks WHERE source_revision_id=$2`,[replacement,head]);
+   await materializeCurrentProjection(db as unknown as PoolClient,'verified_research',replacement,'delivery');
+   const next=(await createOwnedConversation(actor,{requestKey:randomUUID()},db as unknown as PoolClient)).conversation.id,nextNative='wrun_'+randomUUID();
+   await db.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2 WHERE id=$1",[next,nextNative]);
+   const nextAttempt=await prepareAttempt(actor,next,nextNative,randomUUID(),'Read the new checked replacement',[],db as unknown as PoolClient);
+   await captureGeneralContext(db as unknown as PoolClient,actor,next,nextAttempt.attemptId);
+   const nextPrincipal={principalId:actor.principalId,attributes:{turasAttemptId:nextAttempt.attemptId}};
+   expect((await readCustomerAccountEvidence(db as unknown as PoolClient,nextPrincipal,customerId)).entries.map(entry=>entry.citationId)).toContain(replacement);
+   await expect(assertCustomerQuestionReads(db as unknown as PoolClient,actor,next,nextAttempt.attemptId)).resolves.toBeUndefined();
+   await expect(assertCustomerQuestionReads(db as unknown as PoolClient,actor,conversation.id,attempt.attemptId,false)).rejects.toMatchObject({status:404});
+
+  }finally{await db.query('ROLLBACK');}
+
   await projectNativeEvent(native,attempt.attemptId,event('message.completed',{turnId:background,message:'The current checked source documents Next.js.'}));
   // Handoff remains owner/attempt/grant-bound; access-only admission cannot
   // allow an unassociated continuation or revive a revoked customer grant.

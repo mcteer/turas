@@ -15,8 +15,8 @@ import {recoveryDigest} from '../../contracts/pilot-recovery';
 import {quarantineRestoredAuthority} from './recovery-quarantine';
 import {databaseSafetyBoundarySchema,readDatabaseSafetyBoundary} from './database-safety-boundary';
 const digest=z.string().regex(/^[a-f0-9]{64}$/);
-const scopeSchema=z.strictObject({dump:z.string().min(1),digest,sizeBytes:z.number().int().positive().max(67108864),sourceEnvironmentId:z.string().min(1).max(256).regex(/^[A-Za-z0-9_.:-]+$/),sourceDatabaseName:z.string().regex(/^[A-Za-z_][A-Za-z0-9_]{0,62}$/),sourceSchema:z.union([z.literal(38),z.literal(55),z.literal(57),z.literal(77),z.literal(79)]),sourceTarget:z.enum(['preview','production']).default('production'),serverMajor:z.union([z.literal(17),z.literal(18)]),applicationContentDigest:digest,ledgerDigest:digest,databaseBoundary:databaseSafetyBoundarySchema.optional()}).superRefine((value,ctx)=>{
- if(value.databaseBoundary&&![77,79].includes(value.sourceSchema))ctx.addIssue({code:'custom',message:'Current source required for safety boundary'});
+const scopeSchema=z.strictObject({dump:z.string().min(1),digest,sizeBytes:z.number().int().positive().max(67108864),sourceEnvironmentId:z.string().min(1).max(256).regex(/^[A-Za-z0-9_.:-]+$/),sourceDatabaseName:z.string().regex(/^[A-Za-z_][A-Za-z0-9_]{0,62}$/),sourceSchema:z.union([z.literal(38),z.literal(55),z.literal(57),z.literal(77),z.literal(79),z.literal(80)]),sourceTarget:z.enum(['preview','production']).default('production'),serverMajor:z.union([z.literal(17),z.literal(18)]),applicationContentDigest:digest,ledgerDigest:digest,databaseBoundary:databaseSafetyBoundarySchema.optional()}).superRefine((value,ctx)=>{
+ if(value.databaseBoundary&&![77,79,80].includes(value.sourceSchema))ctx.addIssue({code:'custom',message:'Current source required for safety boundary'});
  if(value.sourceSchema===38&&value.sourceTarget!=='preview')ctx.addIssue({code:'custom',message:'Schema 38 rehearsal requires explicit Preview source'});
 });
 const quote=(name:string)=>'"'+name.replaceAll('"','""')+'"';
@@ -39,7 +39,7 @@ export async function restoreOwnedLegacySafetyCopy(raw:z.input<typeof scopeSchem
  const image=recoveryPostgresImage(input.serverMajor),prepared=spawnSync('docker',['image','inspect','--format','{{.Id}}',image],{encoding:'utf8',timeout:5000});if(prepared.status!==0||!/^sha256:[a-f0-9]{64}\s*$/.test(prepared.stdout))throw Error('Prepared matched legacy restore client required');
  const owner=new Client({connectionString:url.href,connectionTimeoutMillis:5000,statement_timeout:10000});let fenced=false;let runtimeRoles=['turas_runtime'];
  const token=randomUUID(),container='turas-016-legacy-restore-'+token;
- const clientEnv={PATH:process.env.PATH,HOME:process.env.HOME,PGHOST:process.platform==='linux'?url.hostname:'host.docker.internal',PGPORT:url.port||'5432',PGDATABASE:target,PGUSER:decodeURIComponent(url.username),PGPASSWORD:decodeURIComponent(url.password),PGSSLMODE:'disable',PGCONNECT_TIMEOUT:'5'};
+ const clientEnv={PATH:process.env.PATH,HOME:process.env.HOME,PGHOST:process.platform==='linux'?url.hostname:'host.docker.internal',PGPORT:url.port||'5432',PGDATABASE:target,PGUSER:decodeURIComponent(url.username),PGPASSWORD:decodeURIComponent(url.password),PGSSLMODE:'disable',PGCONNECT_TIMEOUT:'5',PGOPTIONS:'-c turas.restore_loading=on'};
  try{
   await owner.connect();
   const marker=(await owner.query("SELECT e.environment_id,e.schema_version,current_setting('server_version_num')::int AS version,current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='turas_environment'::regclass)) AS owner FROM turas_environment e")).rows;
@@ -79,18 +79,18 @@ export async function restoreOwnedLegacySafetyCopy(raw:z.input<typeof scopeSchem
   }
   // Verify every checked-in migration before explicit forward rehearsal. This is
   // confined to the owned target; source URLs/credentials never reach this client.
-  if(manifest.version!==79||manifest.migrations.length!==79)throw Error('Exact forward migration catalog required');
+  if(manifest.version!==80||manifest.migrations.length!==80)throw Error('Exact forward migration catalog required');
   for(const entry of manifest.migrations){if(createHash('sha256').update(await readFile(resolve('migrations',entry.file))).digest('hex')!==entry.sha256)throw Error('Forward migration checksum differs');}
   signal.throwIfAborted();
   await runner({dbClient:owner,dir:resolve('migrations'),migrationsTable:'turas_migrations',ignorePattern:'manifest\\.json',direction:'up',singleTransaction:true,advisoryLockMode:'wait',logger:{info:()=>undefined,warn:()=>undefined,error:()=>undefined}});
-  await owner.query('UPDATE turas_environment SET schema_version=79 WHERE environment_id=$1',[input.sourceEnvironmentId]);
+  await owner.query('UPDATE turas_environment SET schema_version=80 WHERE environment_id=$1',[input.sourceEnvironmentId]);
   const recoveryId=randomUUID(),control=(await owner.query("UPDATE operations_control SET mode='locked',revision=revision+1,recovery_id=$2 WHERE environment_id=$1 RETURNING revision",[input.sourceEnvironmentId,recoveryId])).rows;
   if(control.length!==1)throw Error('Forward recovery fence missing');
   const credentialReconciliation=denials?await reconcileOwnedCredentialDenials(owner,denials.snapshot,{environmentId:input.sourceEnvironmentId,recoveryId,controlRevision:Number(control[0].revision),snapshotDigest:denials.contextDigest,backupCapturedAt:denials.backupCapturedAt}):null;
   await quarantineRestoredAuthority(owner,{environmentId:input.sourceEnvironmentId,recoveryId,controlRevision:Number(control[0].revision)});
   const current=(await owner.query('SELECT e.schema_version,c.mode FROM turas_environment e JOIN operations_control c USING(environment_id)')).rows;
-  if(current.length!==1||current[0].schema_version!==79||current[0].mode!=='locked'||(await owner.query('SELECT count(*)::int AS n FROM turas_migrations')).rows[0].n!==79)throw Error('Forward rehearsal lock/ledger differs');
-  return {contract:denials?'pilot-owned-legacy-restore-v2' as const:'pilot-owned-legacy-restore-v1' as const,targetDatabaseName:target,sourceEnvironmentId:input.sourceEnvironmentId,sourceTarget:input.sourceTarget,sourceSchema:input.sourceSchema,targetSchema:79,applicationContentVerified:true,sourceLedgerVerified:true,...(input.databaseBoundary?{snapshotBoundaryVerified:true}:{}),forwardMigrationsVerified:true,mode:'locked' as const,runtimeConnectionDenied:true,credentialDenialsReapplied:denials!==undefined,credentialReconciliation,currentAuthorityVerified:false,workflowResumed:false,restorationReady:false};
+  if(current.length!==1||current[0].schema_version!==80||current[0].mode!=='locked'||(await owner.query('SELECT count(*)::int AS n FROM turas_migrations')).rows[0].n!==80)throw Error('Forward rehearsal lock/ledger differs');
+  return {contract:denials?'pilot-owned-legacy-restore-v2' as const:'pilot-owned-legacy-restore-v1' as const,targetDatabaseName:target,sourceEnvironmentId:input.sourceEnvironmentId,sourceTarget:input.sourceTarget,sourceSchema:input.sourceSchema,targetSchema:80,applicationContentVerified:true,sourceLedgerVerified:true,...(input.databaseBoundary?{snapshotBoundaryVerified:true}:{}),forwardMigrationsVerified:true,mode:'locked' as const,runtimeConnectionDenied:true,credentialDenialsReapplied:denials!==undefined,credentialReconciliation,currentAuthorityVerified:false,workflowResumed:false,restorationReady:false};
  }finally{
   // Stop the exact owned restore client before maintaining the final perimeter.
   try{

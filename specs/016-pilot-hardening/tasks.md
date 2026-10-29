@@ -1421,3 +1421,36 @@ No hosted target may be locked for release before its measured reopen path exist
   claiming an observed R12 failure or changing its withdrawal checks.
   Preserve every original oracle, source eligibility and model/case limit.
   Complete fresh committed-source validation and Production release under T221.
+
+- [ ] T226 Preserve the actual R11 missing-citation response. Supply generic
+  prior-run read instructions and bounded exact source citation markers, retaining
+  fit citation semantics and server eligibility. Keep the original R11 criteria;
+  try only the remaining original candidates after exact expected source rejection.
+  Verify real bound reads, original model quality and release (FR-010, FR-021).
+
+- [ ] T227 Preserve the successful but timed-out original acceptance and failed
+  receipt read. Reconcile only the same original key with at most three bounded
+  read-only requests on current-release503; never repeat the write or paid work.
+  Preserve both targets' existing profile-check credentials and all actual-data
+  assertions. Verify original hosted journeys and release (FR-002, FR-021).
+
+- [ ] T228 Isolate the outer pilot identity from a freshly verified nested
+  evaluation database and restore its exact prior environment afterward. Archive
+  the same released seed from its verified Git root and validate required members.
+  Preserve database ownership, source, deadlines and all original evaluation cases;
+  complete the staffing and execution evaluations (FR-017, FR-021).
+
+- [ ] T229 Correct actual ordinary-chat withdrawal leakage. Add migration080,
+  append-only named dependencies and conservative legacy coverage; include
+  workspace practice reads and dependencies retired by refresh. Preserve active
+  context and checked supersession semantics, authorization and independent shared
+  reuse rights. Withhold withdrawn generated content before cleanup and block
+  continuation; include grants, retention/recovery inventories and fresh full
+  validation, restore rehearsal and Production verification (FR-007, FR-010, FR-021).
+
+- [ ] T230 Preserve the nested native evaluation provider observations and
+  cancelled step with unresolved cost. Keep the entire original financial hold;
+  do not fabricate ledger settlements or replay the request. Sanitize inherited
+  Node options before adding the explicitly validated quality-budget preload to
+  every nested build/runtime child. Verify actual child propagation, then run
+  fresh provider-accounted evaluation under a distinct finite allowance (FR-021).

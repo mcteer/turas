@@ -20,11 +20,11 @@ import {readDatabaseSafetyBoundary} from '../lib/server/operations/database-safe
 const execute=promisify(execFile);
 export const databaseSafetySourceSchema=z.strictObject({
  contract:z.literal('pilot-database-safety-source-v1'),projectId:z.string().regex(/^prj_[A-Za-z0-9]+$/),
- environmentId:z.string().min(1).max(256).regex(/^[A-Za-z0-9_.:-]+$/),target:z.literal('production'),schemaVersion:z.union([z.literal(55),z.literal(57),z.literal(77),z.literal(79)]),
+ environmentId:z.string().min(1).max(256).regex(/^[A-Za-z0-9_.:-]+$/),target:z.literal('production'),schemaVersion:z.union([z.literal(55),z.literal(57),z.literal(77),z.literal(79),z.literal(80)]),
  connectionBinding:z.enum(['platform-readable','protected-operator-connection']),
  databaseUrl:z.string().max(4096).refine(raw=>{try{const url=new URL(raw);return ['postgres:','postgresql:'].includes(url.protocol)&&url.hostname.endsWith('.neon.tech')&&!url.hostname.includes('-pooler.')&&url.searchParams.get('sslmode')==='verify-full';}catch{return false;}},'Explicit unpooled verified Neon source required'),
 });
-export const previewDatabaseSafetySourceSchema=databaseSafetySourceSchema.extend({target:z.literal('preview'),schemaVersion:z.union([z.literal(38),z.literal(55),z.literal(57),z.literal(77),z.literal(79)])});
+export const previewDatabaseSafetySourceSchema=databaseSafetySourceSchema.extend({target:z.literal('preview'),schemaVersion:z.union([z.literal(38),z.literal(55),z.literal(57),z.literal(77),z.literal(79),z.literal(80)])});
 export const databaseSafetyCaptureSourceSchema=z.union([databaseSafetySourceSchema,previewDatabaseSafetySourceSchema]);
 async function api(endpoint:string,signal:AbortSignal,input?:string){
  const result=await execute('vercel',['api',endpoint,'--raw',...(input?['--method','POST','--input',input]:[])],{signal,timeout:30000,maxBuffer:1048576,env:{NODE_ENV:process.env.NODE_ENV??'production',...Object.fromEntries(['PATH','HOME','TMPDIR','LANG','LC_ALL'].flatMap(key=>process.env[key]===undefined?[]:[[key,process.env[key]]]))}});
@@ -66,7 +66,7 @@ export async function pilotDatabaseSafetyCopy(args:string[]){
     const ledger=(await db.query('SELECT name FROM turas_migrations ORDER BY name')).rows;
     if(JSON.stringify(ledger)!==JSON.stringify(installed))throw Error('Exact source ledger differs');
     stage='snapshot_content';const applicationContentDigest=await readOnlyDatabaseSafetyDigest(db);
-    if(scope.schemaVersion===77||scope.schemaVersion===79){stage='snapshot_boundary';databaseBoundary=await readDatabaseSafetyBoundary(db,scope.environmentId,marker[0].captured_at,signal);}
+    if([77,79,80].includes(scope.schemaVersion)){stage='snapshot_boundary';databaseBoundary=await readDatabaseSafetyBoundary(db,scope.environmentId,marker[0].captured_at,signal);}
     const boundary=(await db.query('SELECT pg_export_snapshot() AS snapshot,current_database() AS database_name')).rows[0],serverMajor=recoveryPostgresMajor(Number(marker[0].version));
     snapshot={environmentId:scope.environmentId,schemaVersion:scope.schemaVersion,capturedAt:marker[0].captured_at.toISOString(),ledgerDigest:recoveryDigest(ledger),applicationContentDigest,sourceDatabaseName:boundary.database_name,serverMajor};
     stage='snapshot_dump';dump=await runNeonSafetyPgDump({environmentId:scope.environmentId,serverMajor,snapshot:boundary.snapshot,output:join(staging,'database.dump'),signal,connectionString:scope.databaseUrl});

@@ -13,7 +13,7 @@ import { hiddenRecord, HttpFailure } from "../../contracts/http";
 import type { ConversationReference } from "../../contracts/conversations";
 import {updateConversationSchema} from '../../contracts/conversations';
 import { lockProfileActor, lockWorkspaceActor } from "../profiles/policy";
-import { assertRetrievalDependenciesCurrent } from "../retrieval/fences";
+import { assertRetrievalContentRetained, assertRetrievalDependenciesCurrent } from "../retrieval/fences";
 import { assertPlanConversationFence } from "../plans/fences";
 import { staffingScopeForConversation } from "../staffing/context";
 import { prepareGovernedNativeRelease, assertGovernedNativeRelease } from "./native-release";
@@ -77,7 +77,7 @@ const scopedGeneralAuthorization = `c.customer_id IS NULL AND c.context_snapshot
 const scopedGeneral = `EXISTS(SELECT 1 FROM operations_control oc WHERE oc.environment_id=c.environment_id AND oc.mode='open') AND ${scopedGeneralAuthorization}`;
 
 function contextStatus(row: ConversationRow, session: CurrentSession): "current" | "changed" | "historical" {
-  if (row.customer_id === null && row.context_snapshot_schema === "general-context-v1") return "current";
+  if (row.customer_id === null && row.context_snapshot_schema === "general-context-v1") return row.artifact_context_stale||row.retrieval_context_stale?"changed":"current";
   if (row.context_snapshot_schema !== "customer-context-v1") return "historical";
   const audience = row.planning_audience ?? (session.kind === "internal" ? "internal" : "delivery");
   const generation = audience === "internal" ? row.internal_generation : row.delivery_generation;
@@ -166,12 +166,12 @@ async function staleRetrievalConversations(ids: readonly string[], client?:PoolC
   const used = await read<{ conversation_id: string }>(`
     SELECT DISTINCT d.conversation_id FROM session_evidence_dependencies d JOIN conversations c ON c.id=d.conversation_id
     WHERE d.conversation_id=ANY($1::uuid[])`,[ids]);
-  const stale = new Set<string>();
+  const stale = new Set<string>((marker.rows[0]?.schema_version??0)>=80?(await read<{id:string}>(`SELECT conversation.id FROM conversations conversation LEFT JOIN ordinary_named_content_coverage coverage ON coverage.conversation_id=conversation.id WHERE conversation.id=ANY($1::uuid[]) AND(coverage.coverage IS NULL OR coverage.coverage='legacy_gap')`,[ids])).rows.map(row=>row.id):[]);
   for (const row of used.rows) {
     try {
       const validate=async(client:PoolClient)=>{
-        if((await conversationFeature(client,row.conversation_id)).kind!=='normal')
-          await assertRetrievalDependenciesCurrent(client,row.conversation_id);
+        if((await conversationFeature(client,row.conversation_id)).kind==='normal')await assertRetrievalContentRetained(client,row.conversation_id);
+        else await assertRetrievalDependenciesCurrent(client,row.conversation_id);
       };
       if(client)await validate(client);else await withTransaction(validate);
     } catch (error) {
@@ -264,10 +264,12 @@ export async function getOwnedConversation(
   `, [...values(session), id, getServerConfig().TURAS_ENVIRONMENT_ID]);
   if (!result.rows[0]) throw hiddenRecord();
   await annotatePlanning(result.rows,client);
-  if(result.rows[0].normal_live_context || result.rows[0].customer_id===null)
-    await assertCustomerQuestionReads(client,session,id,undefined,false);
+  if(result.rows[0].normal_live_context || result.rows[0].customer_id===null){
+    try{await assertCustomerQuestionReads(client,session,id,undefined,false);}
+    catch(error){if(error instanceof HttpFailure&&error.code==='named_content_legacy_gap')result.rows[0].retrieval_context_stale=true;else throw error;}
+  }
   result.rows[0].artifact_context_stale = (await staleArtifactConversations([id],client)).has(id);
-  result.rows[0].retrieval_context_stale = (await staleRetrievalConversations([id],client)).has(id);
+  result.rows[0].retrieval_context_stale ||= (await staleRetrievalConversations([id],client)).has(id);
   await lockWorkspaceActor(client,session,undefined,true);
   return toReference(result.rows[0], session);
  };

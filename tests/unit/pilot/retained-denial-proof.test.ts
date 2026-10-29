@@ -6,7 +6,7 @@ it('rejects serialized current snapshots and healthy labels without an actual re
 });
 
 it('refuses caller-authored original-source capture receipts and current authority labels',()=>{
- const original={databaseUrl:'postgresql://owner:synthetic@original.neon.tech/source?sslmode=verify-full',projectId:'prj_source',target:'production',environmentId:'synthetic',schemaVersion:79};
+ const original={databaseUrl:'postgresql://owner:synthetic@original.neon.tech/source?sslmode=verify-full',projectId:'prj_source',target:'production',environmentId:'synthetic',schemaVersion:80};
  const restored={...original,databaseUrl:'postgresql://owner:synthetic@restored.neon.tech/target?sslmode=verify-full'};
  expect(()=>requireOriginalWorkDenialSource(original,{...original,databaseUrl:'postgresql://owner:synthetic@original-pooler.neon.tech/source?sslmode=verify-full'})).toThrow('must differ');
  expect(()=>requireOriginalWorkDenialCapture({independentRetentionVerified:true},original,restored,{contextDigest:'a'.repeat(64),backupCapturedAt:new Date().toISOString(),snapshot:{} as any})).toThrow('Actual independently retained');

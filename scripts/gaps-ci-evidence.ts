@@ -4,7 +4,7 @@ import {join} from 'node:path';
 import {featureSourceDigest} from './execution-source-digest';
 const gate=process.argv[2],expected=process.env.TURAS_012_EXPECTED_SOURCE_DIGEST;
 const schemaVersion=JSON.parse(await readFile('migrations/manifest.json','utf8')).version;
-if(schemaVersion!==79)throw Error('Unsupported gap recovery schema');
+if(schemaVersion!==80)throw Error('Unsupported gap recovery schema');
 if(process.argv.length!==3||!['deterministic','webkit','recovery','benchmark','regressions'].includes(gate)||!expected||!/^[a-f0-9]{64}$/.test(expected))throw Error('Owned CI evidence gate identity required');
 if(await featureSourceDigest('012')!==expected)throw Error('CI source changed');
 const records:Array<{path:string;data:Record<string,unknown>}>=[];

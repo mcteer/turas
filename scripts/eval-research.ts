@@ -73,12 +73,25 @@ await withRetrievalEvalEnvironment(async () => {
     let completedFetches = 0;
     let attributed = false;
     for (const [index,url] of urls.slice(0,3).entries()) {
-      const observationId = await executeResearchFetch(prepared.actor,prepared.runId,index,url);
+      let observationId: string | undefined;
+      try {
+        observationId = await executeResearchFetch(prepared.actor,prepared.runId,index,url);
+      } catch (error) {
+        if (error instanceof HttpFailure && error.status === 422 &&
+            error.code === "source_unverified") continue;
+        throw error;
+      }
       if (!observationId) continue;
       completedFetches += 1;
-      const checked = await withTransaction((db) =>
-        ingestCheckedObservation(db,prepared.actor,observationId));
-      if (checked.attributed) { attributed = true; break; }
+      try {
+        const checked = await withTransaction((db) =>
+          ingestCheckedObservation(db,prepared.actor,observationId));
+        if (checked.attributed) { attributed = true; break; }
+      } catch (error) {
+        if (error instanceof HttpFailure && error.status === 409 &&
+            error.code === "research_source_unverified") continue;
+        throw error;
+      }
     }
     if (!attributed) throw new Error("R11 had no checked retained public finding");
     const cancelled = await withTransaction((db) =>

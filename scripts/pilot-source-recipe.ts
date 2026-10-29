@@ -1,4 +1,6 @@
 import {randomUUID,createHash} from 'node:crypto';
+import {setTimeout as delay} from 'node:timers/promises';
+import {PilotHostedResponseError} from './pilot-hosted-request';
 import {z} from 'zod';
 import type {Client} from 'pg';
 import type {PilotHostedScope} from '../lib/contracts/pilot-hosted';
@@ -6,6 +8,30 @@ import {artifactIntentBatchSchema,artifactVersionDtoSchema,artifactLifecycleActi
 import {profileCommandSchema} from '../lib/contracts/profiles';
 const unwrap=(value:unknown)=>z.object({data:z.unknown()}).parse(value).data;
 const proposalSchema=z.object({recordId:z.uuid(),revisionId:z.uuid(),reviewState:z.literal('pending'),selectionId:z.uuid()});
+export async function reconcileOriginalAcceptedProfileReceipt(input:{
+ request:(path:string,method:'GET')=>Promise<unknown>;path:string;
+ signal:AbortSignal;firstPostFailure:unknown;
+}){
+ const failures:unknown[]=[];
+ for(let attempt=0;attempt<3;attempt++){
+  try{input.signal.throwIfAborted();}catch(error){throw new AggregateError([input.firstPostFailure,...failures,error],'Original acceptance receipt aborted; POST was not replayed',{cause:input.firstPostFailure});}
+  let receipt:{action:'accept_revision';status:number;result:unknown};
+  try{receipt=z.object({action:z.literal('accept_revision'),status:z.number().int(),result:z.unknown()}).parse(unwrap(await input.request(input.path,'GET')));}
+  catch(error){
+   failures.push(error);
+   if(error instanceof PilotHostedResponseError&&error.status===503&&error.releaseMatches&&attempt<2){
+    try{await delay(100,undefined,{signal:input.signal});}catch(abort){throw new AggregateError([input.firstPostFailure,...failures,abort],'Original acceptance receipt aborted; POST was not replayed',{cause:input.firstPostFailure});}continue;
+   }
+   throw new AggregateError([input.firstPostFailure,...failures],'Original acceptance receipt unresolved; POST was not replayed',{cause:input.firstPostFailure});
+  }
+  if(receipt.status<200||receipt.status>=300)throw input.firstPostFailure;
+  // Safe metadata only. Private harness logs retain the first POST failure even
+  // when its original committed receipt is later confirmed; logging cannot fail reconciliation.
+  try{console.warn(JSON.stringify({event:'pilot.original_acceptance_receipt_confirmed',postFailureName:input.firstPostFailure instanceof Error&&/^[A-Za-z_][A-Za-z0-9_]{0,63}$/.test(input.firstPostFailure.name)?input.firstPostFailure.name:'Error',postFailureStatus:input.firstPostFailure instanceof PilotHostedResponseError?input.firstPostFailure.status:null,receiptStatus:receipt.status,receiptReadAttempts:attempt+1,postReplayCount:0}));}catch{/* Passive metadata cannot change the confirmed receipt. */}
+  return receipt.result;
+ }
+ throw new AggregateError([input.firstPostFailure,...failures],'Original acceptance receipt unresolved; POST was not replayed',{cause:input.firstPostFailure});
+}
 /** Shared normal synthetic recipe. The caller must separately admit its
  * actual executor and financial scope; this function grants no provider authority. */
 export async function runSyntheticSourceRecipe(input:{scope:PilotHostedScope;db:Client;customerId:string;workloadId:string;signal:AbortSignal;request:(path:string,method:'GET'|'POST',body?:unknown)=>Promise<unknown>;uploadBytes:(intentId:string,bytes:Buffer)=>Promise<void>;runQueuedExtraction:(versionId:string)=>Promise<void>;readOriginal:(versionId:string,expected:Buffer)=>Promise<void>}){
@@ -36,7 +62,7 @@ export async function runSyntheticSourceRecipe(input:{scope:PilotHostedScope;db:
  const candidate=queue.pending.find(row=>row.id===proposal.revisionId);
  if(!candidate||candidate.recordId!==proposal.recordId||candidate.currentAcceptedRevisionId!==null)throw Error('Exact pending uploaded source review required');
  const reviewKey=randomUUID();const decision=profileCommandSchema.parse({action:'accept_revision',requestKey:reviewKey,revisionId:candidate.id,digest:candidate.contentDigest,expectedRecordVersion:candidate.recordVersion,expectedAcceptedRevisionId:null,rationale:'Operator review of exact located synthetic uploaded source',partnerSafeReason:'Controlled synthetic delivery source',partnerSafeAttestation:'Only synthetic data; no real customer fact',acknowledgeOlderObservation:false});
- let reviewed:unknown;try{reviewed=unwrap(await request('/api/customers/'+customerId+'/commands','POST',decision));}catch(error){const receipt=z.object({action:z.literal('accept_revision'),status:z.number().int(),result:z.unknown()}).parse(unwrap(await request('/api/customers/'+customerId+'/commands/'+reviewKey,'GET')));if(receipt.status<200||receipt.status>=300)throw error;reviewed=receipt.result;}
+ let reviewed:unknown;try{reviewed=unwrap(await request('/api/customers/'+customerId+'/commands','POST',decision));}catch(error){reviewed=await reconcileOriginalAcceptedProfileReceipt({request,path:'/api/customers/'+customerId+'/commands/'+reviewKey,signal,firstPostFailure:error});}
  const accepted=z.object({recordId:z.uuid(),revisionId:z.uuid(),reviewState:z.literal('accepted')}).parse(reviewed);
  if(accepted.recordId!==proposal.recordId||accepted.revisionId!==proposal.revisionId)throw Error('Exact accepted uploaded source identity differs');
  return {contract:'pilot-synthetic-source-recipe-v1',journey:'J004',versionId:view.id,extractionRunId:view.publishedRunId,lifecycleGeneration:view.lifecycleGeneration,profileRevisionId:proposal.revisionId,profileRecordId:proposal.recordId,selectionId:proposal.selectionId,sourceBytes:original.length,actualOriginalVerified:true,normalCommands:5,fullSourceJourneyVerified:false};

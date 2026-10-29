@@ -5,7 +5,7 @@ import {verifyManagedRuntimeBinding} from '../../../scripts/pilot-managed-runtim
 const connection='postgres://owner:private-database-key@ep-synthetic.neon.tech/neondb?sslmode=verify-full';
 const scope={contract:'pilot-hosted-scope-v1' as const,runId:randomUUID(),projectId:'prj_synthetic',teamId:'team_synthetic',deploymentId:'dpl_synthetic',origin:'https://synthetic.vercel.app',environmentMarker:'synthetic-preview',workspaceId:randomUUID(),target:'production' as const,sourceCommit:'a'.repeat(40),sourceDigest:'b'.repeat(64),catalogDigest:'c'.repeat(64)};
 const recoveryId=randomUUID(),controlRevision=2,token='synthetic-platform-token',session={contract:'pilot-hosted-operations-session-v1' as const,origin:scope.origin,cookie:'__Host-turas_session='+'s'.repeat(43)};
-function observation(){return {contract:'pilot-operational-database-binding-v1',databaseBindingDigest:databaseTargetDigest(connection,scope.environmentMarker),environmentId:scope.environmentMarker,schemaVersion:79,codeVersion:scope.sourceCommit,mode:'locked',controlRevision,recoveryId,measuredAt:new Date().toISOString(),effectiveRuntimeRole:true,directRuntimeLogin:true};}
+function observation(){return {contract:'pilot-operational-database-binding-v1',databaseBindingDigest:databaseTargetDigest(connection,scope.environmentMarker),environmentId:scope.environmentMarker,schemaVersion:80,codeVersion:scope.sourceCommit,mode:'locked',controlRevision,recoveryId,measuredAt:new Date().toISOString(),effectiveRuntimeRole:true,directRuntimeLogin:true};}
 function fixture(patch:Record<string,unknown>={},deploymentPatch:Record<string,unknown>={}){
  const calls:{url:string;method:string}[]=[];let appCalls=0;
  const transport:typeof fetch=async(url,options)=>{
