@@ -337,8 +337,17 @@ await withRetrievalEvalEnvironment(async () => {
         }
         return false;
       });
+      // Retain both inputs for review before the owned fixture is removed.
+      // These diagnostics do not change the observation-based assertions above.
+      const revisions = await db.query<{ id: string;passage: string }>(`
+        SELECT id,passage FROM evidence_source_revisions WHERE id=ANY($1::uuid[])`,
+      [sources.rows.map((row) => row.source_revision_id)]);
       return { ...found.rows[0],attributed: Number(attributed.rows[0]?.count ?? 0),
-        validCitations,unknownIdentifiers,exactExcerpt };
+        validCitations,unknownIdentifiers,exactExcerpt,
+        sourceEvidence: sources.rows.map((row) => ({ ...row,
+          checkedRevisionPassage: revisions.rows.find((revision) =>
+            revision.id === row.source_revision_id)?.passage ?? null,
+        })) };
     });
     const exactPublicScope = Array.isArray(run.rendered_queries) &&
       run.rendered_queries.length > 0 && run.rendered_queries.every((query) =>

@@ -4,7 +4,8 @@ import { ZodError, z } from "zod";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
 import { researchPreviewInputSchema, researchRevisionSchema,
   researchStartSchema, researchCancelSchema, researchLimits,
-  researchRunReceiptSchema, type ResearchPreviewInput } from "../../contracts/research";
+  researchRunReceiptSchema,researchPublicSubjectSchema,
+  type ResearchPreviewInput } from "../../contracts/research";
 import { governedIdSchema } from "../../contracts/retrieval";
 import type { CurrentSession } from "../auth/sessions";
 import { getServerConfig } from "../config";
@@ -319,10 +320,10 @@ export async function readResearchRun(client: PoolClient,actor: CurrentSession,i
     mode: string; started_at: Date | null; run_deadline: Date | null;
     admission_deadline: Date | null;
     searches_used: number; fetches_used: number; safe_reason_code: string | null;
-    customer_id: string; conversation_id: string }>(`
+    customer_id: string; conversation_id: string; public_fields: Record<string,unknown> }>(`
     SELECT run.id,run.request_id,run.state,run.mode,run.started_at,
       run.run_deadline,req.admission_deadline,run.searches_used,run.fetches_used,run.safe_reason_code,
-      run.customer_id,req.conversation_id
+      run.customer_id,req.conversation_id,req.public_fields
     FROM research_runs run JOIN research_requests req ON req.id=run.request_id
     WHERE run.id=$1 AND run.environment_id=$2 AND run.workspace_id=$3
       AND run.actor_membership_id=$4 AND req.actor_principal_id=$5`,
@@ -332,13 +333,21 @@ export async function readResearchRun(client: PoolClient,actor: CurrentSession,i
   if (!row) throw hiddenRecord();
   await authorizeRetrievalScope(client,actor,"customer",row.customer_id,effectiveAudience);
   const findings = await readResearchFindings(client,actor,id,effectiveAudience);
+  const subject = { version: "public-research-subject-v1",basis: "user_confirmed_scope",
+    mode: row.mode,...(row.mode === "recon" ? {
+      publicName: row.public_fields.publicName,publicDomain: row.public_fields.publicDomain,
+    } : row.mode === "practices" ? {
+      product: row.public_fields.product,versionLabel: row.public_fields.version,
+      topic: row.public_fields.topic,
+    } : {}) };
   return researchRunReceiptSchema.parse({ version: "research-v1",id: row.id,
     requestId: row.request_id,state: row.state,mode: row.mode,
     startedAt: row.started_at?.toISOString() ?? null,
     deadline: (row.run_deadline ?? row.admission_deadline ?? new Date())
       .toISOString(),safeReasonCode: row.safe_reason_code,
     searchesUsed: row.searches_used,fetchesUsed: row.fetches_used,
-    retainedCitationIds: findings.map((item) => item.observationId) });
+    retainedCitationIds: findings.map((item) => item.observationId),
+    publicSubject: researchPublicSubjectSchema.parse(subject) });
 }
 
 export async function cancelResearchRun(client: PoolClient,actor: CurrentSession,

@@ -16,6 +16,12 @@ Fresh research evaluation also identified a missing ordinary-chat route for
 comparing confirmed conflicts. Ordinary conflict questions now request discovery
 retrieval of both relevant passages and their receipt citation IDs; factual
 eligibility rules remain unchanged. Fresh validation and release remain required.
+The subsequent R07 check returned a completed answer with an undersized quote
+and confused the requested public subject with the conversation's customer label.
+Research receipts now carry a versioned, user-confirmed public subject, separate
+from customer facts. Eligible findings supply an exact bounded checked excerpt,
+or null when no suitable quote exists. Existing source checks and the original
+evaluation criteria remain in force; fresh validation and release are pending.
 
 At `01c5802`, the complete support browser gate passes all 44 cases across four
 profiles, along with the original load benchmark, native admission preparation

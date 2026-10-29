@@ -4,6 +4,7 @@ import type { CurrentSession } from "../auth/sessions";
 import { getServerConfig } from "../config";
 import { retrievalQuality } from "../retrieval/context";
 import { authorizeRetrievalScope, recheckRetrievalSource } from "../retrieval/policy";
+import { checkedResearchExcerpt } from "./excerpt";
 
 export async function readResearchFindings(client: PoolClient,actor: CurrentSession,
   runId: string,effectiveAudience?:"internal"|"delivery") {
@@ -51,6 +52,7 @@ export async function readResearchFindings(client: PoolClient,actor: CurrentSess
       origin: "independent_discovery" as const,canonicalUrl: item.canonical_url,
       acceptanceState: "accepted" as const, acceptanceBasis: "independent_research" as const,
       title: item.title,verbatimPassage: item.passage_text,
+      checkedExcerpt: checkedResearchExcerpt(item.passage_text),
       passageDigest: item.passage_digest,quality,
       caveats: quality.R < 2 ? ["Limited source authority; retain attribution and scope"] : [] });
   }

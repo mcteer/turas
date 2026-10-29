@@ -1403,3 +1403,11 @@ No hosted target may be locked for release before its measured reopen path exist
 - [x] T222 Expose provider-compatible object input schemas for solution evaluation, task tracking and research proposals while preserving existing reference, signed-receipt and mode validation; add valid and invalid branch regressions. Full native quality and deployment remain part of T221.
 
 - [x] T223 Supply ordinary-chat conflict-comparison guidance using discovery retrieval and exact receipt citations, preserving factual eligibility exclusions and governed-workflow instruction isolation. Require fresh original model and release validation under T221.
+
+- [ ] T224 Preserve the actual completed R07 response with an undersized excerpt
+  and missing explicit public-subject context. Return the server-bound public
+  subject as a versioned user-confirmed scope, and an exact 40–100 character
+  checked excerpt from each currently eligible finding, or null. Preserve full
+  passages, attribution, all authorization/rechecks and original evaluation
+  criteria. Verify the original real case with retained tool/source evidence;
+  complete fresh current-source validation and release under T221.
