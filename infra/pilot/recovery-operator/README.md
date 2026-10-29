@@ -65,7 +65,7 @@ alone does not prove durable key retention.
 
 Install archive migrations 004, 005 and 006 explicitly with the independent owner;
 handlers cannot initialize schemas or grant budgets. The source requires schema
-079 and retirement of its old runtime login. Routine captures hold the exclusive
+080 and retirement of its old runtime login. Routine captures hold the exclusive
 IO fence and require drained leases while keeping open service control unchanged.
 Busy sources fail within the deadline. There is one admitted operation at a time,
 no automatic retry of a twelve-hour slot, and unknown work costs hold admission.

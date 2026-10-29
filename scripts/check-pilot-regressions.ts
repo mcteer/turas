@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../lib/contracts/current-schema';
 import {fixedBrowserPhases,pilotUiChildFailures} from './ci-browser-diagnostics';
 import {pilotRegressionFailureMetadata} from './ci-process-diagnostics';
 import {readFile,writeFile} from 'node:fs/promises';
@@ -49,14 +50,14 @@ export async function checkPilotRegressions(){
   await withPilotEnvironment(async environment=>{
    const owner=new URL(process.env.TURAS_TEST_DATABASE_URL!);owner.searchParams.set('application_name','pilot-regressions');process.env.TURAS_TEST_DATABASE_URL=owner.toString();
    process.env.TURAS_APP_ORIGIN='http://127.0.0.1:3000';
-   const report=join(root,'schema-079-postgres18.json');
+   const report=join(root,`schema-${String(CURRENT_SCHEMA_VERSION).padStart(3,'0')}-postgres18.json`);
    stage='current-schema-process';
    await runPartnerProcess(['node_modules/vitest/vitest.mjs','run',...currentFiles,'--reporter=json','--outputFile='+report],{cwd:environment.appRoot,timeoutMs:300000,signal:environment.signal});
    stage='current-schema-report';
    const parsed=JSON.parse(await readFile(report,'utf8'));currentReport=parsed;
    const passed=verifyPartnerTestReport(parsed,currentFiles);
    if(passed!==40||parsed.numTotalTests!==40||parsed.numPassedTests!==40||parsed.testResults.some((suite:any)=>suite.assertionResults.some((test:any)=>(test.retryReasons?.length??0)>0)))throw Error('Exact current-schema regressions incomplete or unstable');
-   results.push({gate:'current-079-postgres18',files:currentFiles,passed,failed:0,skipped:0,flaky:0});
+   results.push({gate:`current-${String(CURRENT_SCHEMA_VERSION).padStart(3,'0')}-postgres18`,files:currentFiles,passed,failed:0,skipped:0,flaky:0});
    stage='current-schema-cleanup';
   },{postgresMajor:18,deadlineMs:360000});
   stage='fresh-ui-process';
@@ -79,7 +80,7 @@ export async function checkPilotRegressions(){
   await writeEvidence(root,'completed.json',receipt);console.info(JSON.stringify({gate:'pilot-regressions',state:'pass',groups:results.length,paidCalls:0,hostedProof:false}));return receipt;
  }catch(error){
   try{
-   if(!currentReport&&stage.startsWith('current-schema-'))try{currentReport=await readBoundedEvidence(root,'schema-079-postgres18.json',4194304);}catch{/* Best effort after owned cleanup. */}
+   if(!currentReport&&stage.startsWith('current-schema-'))try{currentReport=await readBoundedEvidence(root,`schema-${String(CURRENT_SCHEMA_VERSION).padStart(3,'0')}-postgres18.json`,4194304);}catch{/* Best effort after owned cleanup. */}
    const diagnostics={...pilotRegressionFailureMetadata(stage,lastProcess,currentReport,currentFiles),uiFailures};
    await writeEvidence(root,'failure.json',{version:'pilot-regressions-v1',runId,...source,state:'fail',safeFailure:'incomplete_regression_composition',diagnostics}).catch(()=>undefined);
    console.error(JSON.stringify({kind:'pilot_regression_failure',...diagnostics}));
