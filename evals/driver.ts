@@ -5,17 +5,19 @@ import {readBehaviorReviewEvents,privateBehaviorJson} from '../scripts/pilot-beh
 import { Client, Pool } from "pg";
 import { getServerConfig } from "../lib/server/config";
 import { DEMO_IDS } from "../lib/server/bootstrap-ids";
+import { assertFitEvidenceCoverage, type FitEvidenceSource } from "./fit-evidence";
 
 export type BehaviorCase = { id: string; role: "mcteer" | "panel" | "partner";
   prompt: string; required: string; customerId?: string; allowPendingProposal?: boolean;
   sourceFixture?: string; sourceText?: string; unitTextContains?: string;
-  fitQueries?: string[];
+  fitQueries?: string[]; requiredFitSourceRevisionIds?: string[];
   researchPreview?: { mode: "recon";publicName: string;publicDomain: string;
     submittedUrls?: string[] } | { mode: "practices";product: string;
     version: string;topic: string;submittedUrls?: string[] } |
     { mode: "fit";evidenceReceiptIds: string[];submittedUrls?: [] } };
 export type BehaviorResult = { caseId: string; run: number; role: string; conversationId: string;
   researchRunId?: string;
+  fitInputEvidence?: { receiptIds: string[]; selectedSources: FitEvidenceSource[] };
   reviewEvidence?: {path:string;digest:string};
   response: string; outputTokens: number; maxStepOutputTokens?: number;
   staleHistoryStatus?: number; staleSendStatus?: number;
@@ -302,10 +304,11 @@ export async function runBehaviorCase(item: BehaviorCase, run: number,
   let requestKey: string = randomUUID();
   let outgoingMessage = item.prompt;
   let researchRunId: string | undefined;
+  let fitInputEvidence: BehaviorResult["fitInputEvidence"];
   if (item.researchPreview) {
     let fitReceiptIds: string[] = [];
     if (item.researchPreview.mode === "fit" && item.fitQueries?.length) {
-      const kinds = new Set<string>();
+      const selectedSources: FitEvidenceSource[] = [];
       for (const query of item.fitQueries) {
         const searched = await fetch(new URL("/api/retrieval/search",origin),{
           method: "POST",headers: common,
@@ -313,13 +316,15 @@ export async function runBehaviorCase(item: BehaviorCase, run: number,
             use: "discovery",limit: 5 }),signal: AbortSignal.timeout(15_000) });
         if (!searched.ok) throw new Error(`${item.id}: fit evidence search failed (${searched.status})`);
         const receipt = (await searched.json() as { data: { receiptId: string;
-          results: Array<{ sourceKind: string }> } }).data;
+          results: FitEvidenceSource[] } }).data;
         fitReceiptIds.push(receipt.receiptId);
-        for (const result of receipt.results) kinds.add(result.sourceKind);
+        for (const result of receipt.results) selectedSources.push({
+          citationId: result.citationId,sourceKind: result.sourceKind,
+          sourceRevisionId: result.sourceRevisionId,
+        });
       }
-      if (!kinds.has("accepted_profile") || !kinds.has("verified_research")) {
-        throw new Error(`${item.id}: fit evidence classes missing`);
-      }
+      assertFitEvidenceCoverage(selectedSources,item.requiredFitSourceRevisionIds);
+      fitInputEvidence = { receiptIds: [...fitReceiptIds],selectedSources };
     }
     const previewResponse = await fetch(new URL("/api/research/requests",origin),{
       method: "POST",headers: common,
@@ -454,6 +459,7 @@ export async function runBehaviorCase(item: BehaviorCase, run: number,
     const path=join(reviewRoot,`${item.id}-${run}.json`);await writeFile(path,content,{flag:'wx',mode:0o600});reviewEvidence={path,digest:createHash('sha256').update(content).digest('hex')};
   }
   return { caseId: item.id, run, role: item.role, conversationId, response, outputTokens,
+    ...(fitInputEvidence ? { fitInputEvidence } : {}),
     ...(reviewEvidence?{reviewEvidence}:{}),
     ...(researchRunId ? { researchRunId } : {}),
     ...(staleHistoryStatus !== undefined ? { staleHistoryStatus,staleSendStatus } : {}),

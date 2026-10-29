@@ -1411,3 +1411,13 @@ No hosted target may be locked for release before its measured reopen path exist
   passages, attribution, all authorization/rechecks and original evaluation
   criteria. Verify the original real case with retained tool/source evidence;
   complete fresh current-source validation and release under T221.
+
+- [ ] T225 Preserve the actual R09 completed response's citation failure and
+  ambiguous identical accepted fixtures. Scope fit guidance to exact selected
+  retrieval citation IDs while retaining recon/practices source-revision quotes.
+  Give R09 a unique accepted fact and assert both exact expected source revisions
+  are selected before model invocation; retain selected rows and expected IDs.
+  Isolate the R12 withdrawal fact from the same shared-fixture duplicates without
+  claiming an observed R12 failure or changing its withdrawal checks.
+  Preserve every original oracle, source eligibility and model/case limit.
+  Complete fresh committed-source validation and Production release under T221.

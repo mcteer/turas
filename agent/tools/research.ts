@@ -88,7 +88,7 @@ async function stepFinish(principal: Principal,runId: string,plannedFetches: num
 }
 
 export default defineWorkflowTool({
-  description: "Complete the public research request already admitted for this exact owned turn. The server loads mode and outbound scope; model arguments cannot change them. The returned receipt's publicSubject names that admitted question, not an accepted customer fact. Recon researches a confirmed public identity, practices researches public product guidance, and fit uses governed evidence only. Cite the eligible finding's sourceRevisionId with its checkedExcerpt copied verbatim without shortening; a null excerpt is not a usable quote. User-submitted links stay Pending.",
+  description: "Complete the public research request already admitted for this exact owned turn. The server loads mode and outbound scope; model arguments cannot change them. The returned receipt's publicSubject names that admitted question, not an accepted customer fact. Recon researches a confirmed public identity and practices researches public product guidance: cite the eligible finding's sourceRevisionId with its checkedExcerpt copied verbatim without shortening; a null excerpt is not a usable quote. Fit uses governed evidence only: compare the specific returned evidence and cite its exact evidence[].citationId, not sourceRevisionId or an older similar claim from another context. User-submitted links stay Pending.",
   inputSchema: z.object({}).strict(),
   async execute(_input,ctx) {
     "use workflow";

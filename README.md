@@ -22,6 +22,13 @@ Research receipts now carry a versioned, user-confirmed public subject, separate
 from customer facts. Eligible findings supply an exact bounded checked excerpt,
 or null when no suitable quote exists. Existing source checks and the original
 evaluation criteria remain in force; fresh validation and release are pending.
+The R09 fit check exposed conflicting citation guidance and duplicate synthetic
+facts. Fit comparisons now request exact retrieval citations from their selected
+evidence; recon and practices retain source-revision citations. R09 uses a unique
+accepted fact, checks both exact source revisions before model invocation, and
+retains its selected citation rows. The withdrawal fixture uses a distinct
+emergency-readiness fact for the same isolation reason. Strict citation and
+withdrawal checks are unchanged.
 
 At `01c5802`, the complete support browser gate passes all 44 cases across four
 profiles, along with the original load benchmark, native admission preparation

@@ -3,6 +3,7 @@ import { researchPreviewInputSchema,researchPublicSubjectSchema,
   researchRunReceiptSchema } from "../../lib/contracts/research";
 import { renderResearchQueries } from "../../lib/server/research/policy";
 import { discoverContext, discoveryInScope } from "../../lib/server/research/discovery";
+import { assertFitEvidenceCoverage } from "../../evals/fit-evidence";
 
 const customerId = "00000000-0000-4000-8000-000000000001";
 const conversationId = "00000000-0000-4000-8000-000000000002";
@@ -40,6 +41,18 @@ describe("bounded public research preview", () => {
   });
 
   it("rejects likely secret or private egress terms and limits fit to no network queries", () => {
+    const older = { citationId: "older-citation",sourceKind: "accepted_profile",
+      sourceRevisionId: "older-identical-claim" };
+    const practice = { citationId: "practice-citation",sourceKind: "verified_research",
+      sourceRevisionId: "required-practice" };
+    expect(() => assertFitEvidenceCoverage([older,practice],
+      ["required-customer-fact","required-practice"])).toThrow("exact required source revision");
+    const current = { ...older,citationId: "current-citation",
+      sourceRevisionId: "required-customer-fact" };
+    expect(() => assertFitEvidenceCoverage([older,current,practice],
+      ["required-customer-fact","required-practice"])).not.toThrow();
+    expect(() => assertFitEvidenceCoverage([current],["required-customer-fact"]))
+      .toThrow("classes missing");
     const unsafe = researchPreviewInputSchema.parse({ ...common,mode: "practices",
       product: "Vercel",version: "2026",topic: "api_key=hidden-value" });
     expect(() => renderResearchQueries(unsafe)).toThrow();

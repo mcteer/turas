@@ -503,7 +503,12 @@ await withRetrievalEvalEnvironment(async () => {
     }
     return;
   }
-  const sourceText = "Public web release checklist has an assigned owner.";
+  const sourceText = caseId === "R09" ?
+    "Production canary release checklist has an assigned rollback owner." :
+    caseId === "R12" ? "Emergency release readiness checklist has an assigned owner." :
+    "Public web release checklist has an assigned owner.";
+  const sourceKey = caseId === "R09" ? "production-canary-release" :
+    caseId === "R12" ? "emergency-release-readiness" : "public-web-release";
   const sourceRevisionId = randomUUID();
   await withTransaction(async (client) => {
     const recordId = randomUUID();
@@ -512,7 +517,7 @@ await withRetrievalEvalEnvironment(async () => {
       VALUES($1,$2,$3,$5,$6,$4)`,
     [recordId,DEMO_IDS.workspace,DEMO_IDS.deniedCustomer,DEMO_IDS.mcteerMembership,
       caseId === "R05" ? "claim" : "product_use",
-      caseId === "R05" ? null : "public-web-release"]);
+      caseId === "R05" ? null : sourceKey]);
     await client.query(`INSERT INTO profile_revisions
       (id,record_id,workspace_id,customer_id,revision_number,payload_schema_version,
        payload,quality_input,author_membership_id,origin,audience,data_category,content_digest)
@@ -521,8 +526,10 @@ await withRetrievalEvalEnvironment(async () => {
     [sourceRevisionId,recordId,DEMO_IDS.workspace,DEMO_IDS.deniedCustomer,
       JSON.stringify(caseId === "R05" ?
         { kind: "claim",text: sourceText,sourceType: "manual" } :
-        { kind: "product_use",productKey: "public-web-release",
-        displayName: "Public web release checklist",state: "actual",
+        { kind: "product_use",productKey: sourceKey,
+        displayName: caseId === "R09" ? "Production canary release checklist" :
+          caseId === "R12" ? "Emergency release readiness checklist" :
+          "Public web release checklist",state: "actual",
         usageDescription: sourceText,observedAt: new Date().toISOString(),
         evidenceRevisionIds: [] }),
       JSON.stringify({ rubricVersion: "evidence-quality-v1",R: 4,D: 4,C: 0,
@@ -721,10 +728,11 @@ await withRetrievalEvalEnvironment(async () => {
     });
     const result = await runBehaviorCase({
       id: "R09",role: "mcteer",customerId: DEMO_IDS.deniedCustomer,
-      prompt: "Compare the accepted public web release checklist owner fact with the attributed synthetic Vercel build cache practice. Separate the customer fact from the public practice, cite each, and give one validation step for whether the practice fits this customer.",
+      prompt: "Compare the accepted production canary release checklist rollback-owner fact with the attributed synthetic Vercel build cache practice. Separate the customer fact from the public practice, cite each, and give one validation step for whether the practice fits this customer.",
       required: "Accepted customer fact, attributed public practice and explicit fit gap",
       researchPreview: { mode: "fit",evidenceReceiptIds: [] },
       fitQueries: [sourceText,practice],
+      requiredFitSourceRevisionIds: [sourceRevisionId,attributed],
     },1,"004");
     const validation = await withTransaction(async (db) => {
       const run = await db.query<{ mode: string;state: string;searches_used: number;
@@ -744,6 +752,9 @@ await withRetrievalEvalEnvironment(async () => {
       const allowed = new Set([DEMO_IDS.deniedCustomer,
         ...citations.rows.map((row) => row.id)]);
       return { run: run.rows[0],citedAccepted: kinds[0],citedPractice: kinds[1],
+        expectedAcceptedSourceRevisionId: sourceRevisionId,
+        expectedPracticeSourceRevisionId: attributed,
+        selectedFitCitationSources: citations.rows,
         unknownIdentifiers: [...outputIds].filter((id) => !allowed.has(id)).length };
     });
     const separated = /customer|accepted/i.test(result.response) &&
@@ -935,7 +946,9 @@ await withRetrievalEvalEnvironment(async () => {
   }
   const result = await runBehaviorCase({
     id: caseId,role: "mcteer",customerId: DEMO_IDS.deniedCustomer,
-    prompt: "For this synthetic customer, is an owner assigned to the public web release checklist? Answer briefly using current authorized evidence, quote the exact supporting passage and give its source citation. If no current source supports that answer, say so.",
+    prompt: caseId === "R12" ?
+      "For this synthetic customer, is an owner assigned to the emergency release readiness checklist? Answer briefly using current authorized evidence, quote the exact supporting passage and give its source citation. If no current source supports that answer, say so." :
+      "For this synthetic customer, is an owner assigned to the public web release checklist? Answer briefly using current authorized evidence, quote the exact supporting passage and give its source citation. If no current source supports that answer, say so.",
     required: "Exact authorized semantic citation to the accepted checklist claim",
   },1,"004");
   const client = new Client({ connectionString: getServerConfig().DATABASE_URL });
@@ -964,8 +977,7 @@ await withRetrievalEvalEnvironment(async () => {
     validCitations = [...outputIds].filter((id) => citationIds.has(id)).length;
     unknownIdentifiers = [...outputIds].filter((id) => !allowed.has(id)).length;
     exactSupport = receipts.rows.some((row) =>
-      row.passage_text.includes("Public web release checklist has an assigned owner.") &&
-      result.response.includes("Public web release checklist has an assigned owner."));
+      row.passage_text.includes(sourceText) && result.response.includes(sourceText));
   } finally { await client.end(); }
   let withdrawal: { consumed: boolean;fenceDenied: boolean;
     historySafe: boolean;followupDenied: boolean } | null = null;
