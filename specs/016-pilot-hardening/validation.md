@@ -9511,3 +9511,12 @@ The cold-start readiness rehearsal started an actual isolated PostgreSQL 18 clon
 and supervised Next/eve app, observed one real fresh maintenance worker, and
 closed the owned environment successfully with zero provider calls. This proves
 fixture startup readiness only; the failed R11 sample remains failed.
+
+The separate operator branch initially triggered an automatic Preview build
+because the checked-in deployment exclusions named only earlier branches. That
+Preview is READY at its own `54f8688` revision, remains outside the firewall
+allowlist, and is not used as `cffe534` release evidence. Its separate conservative
+$1.30 exposure remains reserved without a charge/refund claim. The branch now
+has an explicit Git deployment exclusion. The controlled retention build remains
+manual ordinal 38 / manual Preview sequence 33, with this additional automatic
+build recorded separately. Production remained unchanged.

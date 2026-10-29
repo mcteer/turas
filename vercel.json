@@ -21,7 +21,8 @@
       "main": false,
       "fix/customer-profiles": false,
       "016-pilot-hardening": false,
-      "016-recovery-completion": false
+      "016-recovery-completion": false,
+      "016-report-brand-selection": false
     }
   }
 }
