@@ -1399,3 +1399,5 @@ No hosted target may be locked for release before its measured reopen path exist
 ### Authorized provider migration (2026-10-28)
 
 - [ ] T221 Replace xAI generation with suitable OpenAI/Anthropic models through Vercel AI Gateway; verify pricing and token guards, preserve historical accounting, run fresh model quality and hosted checks, and verify the deployed provider. Selected candidate: Claude Sonnet 5.5.
+
+- [x] T222 Expose provider-compatible object input schemas for solution evaluation, task tracking and research proposals while preserving existing reference, signed-receipt and mode validation; add valid and invalid branch regressions. Full native quality and deployment remain part of T221.

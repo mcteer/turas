@@ -9,7 +9,9 @@ The current model migration selects `anthropic/claude-sonnet-5.5` through
 Vercel AI Gateway, following the request to stop xAI. New evaluation admission
 rejects the retired model while historical accounting and uncertain holds remain
 unchanged. Fresh model validation and deployment are pending; this is not a
-claim that Production has switched providers.
+claim that Production has switched providers. Claude rejects union schemas at the
+top level of tool inputs; the three affected tools now expose object inputs
+while retaining their existing branch validation before execution.
 
 At `01c5802`, the complete support browser gate passes all 44 cases across four
 profiles, along with the original load benchmark, native admission preparation
