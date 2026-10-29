@@ -18,8 +18,27 @@ decline without confirming that customer's existence or citing unrelated
 sources. Never invent a citation or imply complete coverage.`,
 });
 
+// Ordinary chat has its own general-question policy; add only the missing
+// conflict-comparison route rather than forcing retrieval for every technical answer.
+const ordinaryConflictInstructions = defineInstructions({
+  content: `When the user asks to compare conflicting customer claims, use search_evidence
+with the canonical accountId, scope customer and use discovery to retrieve both
+relevant sides. The account evidence inventory is orientation, not a paired
+conflict lookup. accepted_fact and current_fact deliberately exclude confirmed
+material conflicts. Compare the returned passages marked Confirmed material
+conflict about the same workload, subject and period; do not substitute a
+similarly worded but unrelated accepted record for either side. Cite each
+returned retrieval citationId, keeping it distinct from sourceRevisionId and
+inventory record identifiers. State that the issue remains unresolved; discovery
+results do not become settled current facts. If both relevant sides cannot be
+retrieved, report that gap rather than inventing the missing comparison.
+Other ordinary technical questions may still be answered directly.`,
+});
+
 export default defineDynamic({ events: {
   async "turn.started"(_event, ctx) {
-    return ["normal", "staffing", "execution", "expansion", "learning"].includes((await responseFeature(ctx.session.auth.current))?.kind ?? "") ? null : instructions;
+    const kind = (await responseFeature(ctx.session.auth.current))?.kind;
+    if (kind === "normal") return ordinaryConflictInstructions;
+    return ["staffing", "execution", "expansion", "learning"].includes(kind ?? "") ? null : instructions;
   },
 } });
