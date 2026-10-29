@@ -10,7 +10,7 @@ import {workRecoveryKeyReferenceSchema,readWorkRecoveryKey} from './pilot-databa
 import {neonArchiveScopeSchema,downloadNeonEncryptedArchive} from '../lib/server/operations/neon-archive';
 import {decryptRecoveryFile} from '../lib/server/operations/backup-crypto';
 import {verifyRecoveryDenialSnapshot,recoveryDenialSnapshotSchema} from '../lib/server/operations/recovery-denial-snapshot';
-const receiptSchema=z.strictObject({contract:z.literal('pilot-work-denial-snapshot-v1'),archive:neonArchiveScopeSchema,keyReference:workRecoveryKeyReferenceSchema,snapshotId:z.uuid(),snapshotDigest:z.string().regex(/^[a-f0-9]{64}$/),capturedAt:z.iso.datetime({offset:true}),sourceEnvironmentId:z.string().min(1).max(256),sourceSchema:z.union([z.literal(55),z.literal(57),z.literal(77),z.literal(80)]),minimizedBytes:z.number().int().positive().max(8388608)});
+const receiptSchema=z.strictObject({contract:z.literal('pilot-work-denial-snapshot-v1'),archive:neonArchiveScopeSchema,keyReference:workRecoveryKeyReferenceSchema,snapshotId:z.uuid(),snapshotDigest:z.string().regex(/^[a-f0-9]{64}$/),capturedAt:z.iso.datetime({offset:true}),sourceEnvironmentId:z.string().min(1).max(256),sourceSchema:z.union([z.literal(55),z.literal(57),z.literal(77),z.literal(79),z.literal(80)]),minimizedBytes:z.number().int().positive().max(8388608)});
 const authenticated=new WeakMap<object,{environmentId:string;contextDigest:string;backupCapturedAt:string;lineageDigest:string;authority:boolean}>();
 export type RetainedWorkDenials={snapshot:z.infer<typeof recoveryDenialSnapshotSchema>;contextDigest:string;backupCapturedAt:string};
 /** A serialized receipt cannot replace the actual cold-reader result. Recheck

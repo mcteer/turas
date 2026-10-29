@@ -40,7 +40,7 @@ it('cold restores the released 077 ledger through 079 and reapplies newer denial
     await owner.query("CREATE ROLE turas_runtime_016 LOGIN PASSWORD 'SyntheticRuntime16Only'");
     const result=await restoreOwnedLegacySafetyCopy(captured,environment.signal,current);
     expect(result).toMatchObject({contract:'pilot-owned-legacy-restore-v2',sourceSchema:77,targetSchema:80,applicationContentVerified:true,sourceLedgerVerified:true,snapshotBoundaryVerified:true,forwardMigrationsVerified:true,credentialDenialsReapplied:true,mode:'locked',runtimeConnectionDenied:true,currentAuthorityVerified:false,workflowResumed:false,restorationReady:false});
-    expect((await owner.query('SELECT count(*)::int AS n FROM turas_migrations')).rows[0].n).toBe(79);
+    expect((await owner.query('SELECT count(*)::int AS n FROM turas_migrations')).rows[0].n).toBe(80);
     expect((await owner.query('SELECT count(*)::int AS n FROM operations_recovery_quarantines')).rows[0].n).toBe(7);
     expect((await owner.query('SELECT count(*)::int AS n FROM login_sessions WHERE revoked_at IS NULL')).rows[0].n).toBe(0);
     for(const connectionString of [requireOwnedPilotDatabase(),second.href]){const runtime=new Client({connectionString});try{await expect(runtime.connect()).rejects.toMatchObject({code:'42501'});}finally{await runtime.end();}}
