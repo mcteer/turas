@@ -1562,3 +1562,8 @@ Staffing and execution evaluations start from their own governed fixtures withou
 adding the unrelated profile walkthrough. Their original commands, cases and
 assertions remain unchanged. Complete model, CI and Production acceptance remain
 required under PRs #47 and #48.
+
+The staffing browser gate uses the current canonical title-case accessible labels
+for work-package selection and confirmation review. Its keyboard, confirmation,
+withdrawal, receipt and accessibility checks remain required; no application
+behavior or authorization changes accompany this selector correction.

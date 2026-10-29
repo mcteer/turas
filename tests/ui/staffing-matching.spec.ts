@@ -66,7 +66,7 @@ test("operational keyboard demand creation and exact qualification retain accept
   await signIn(page, "panel"); await page.goto(`/customers/${f.demand.customerId}/engagements/${f.demand.engagementId}/staffing`);
   await page.getByRole("button", { name: "Create demand", exact: true }).focus(); await page.keyboard.press("Enter");
   const form = page.locator("form").filter({ has: page.getByRole("heading", { name: "Create Demand", exact: true }) });
-  await form.getByLabel("Work package", { exact: true }).selectOption(f.demand.workPackageKey);
+  await form.getByLabel("Work Package", { exact: true }).selectOption(f.demand.workPackageKey);
   await form.getByLabel("Demand title", { exact: true }).fill("Synthetic keyboard staffing request");
   await form.getByLabel("Delivery role", { exact: true }).fill("Synthetic delivery lead");
   await form.getByLabel("First resource-local service date").fill("2026-10-01");

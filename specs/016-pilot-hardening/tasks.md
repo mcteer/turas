@@ -1492,3 +1492,9 @@ No hosted target may be locked for release before its measured reopen path exist
   quality commands, cases, assertions and finite budgets. Verify original
   regression gates, remaining live evaluations and hosted release (FR-002,
   FR-017, FR-021).
+
+- [ ] T236 Align the staffing browser gate's exact selectors with the current
+  canonical title-case heading and accessible work-package label. Preserve every
+  case, confirmation, withdrawal, receipt, keyboard and accessibility assertion;
+  rerun the full browser gate before the remaining live evaluation (FR-002,
+  FR-017, FR-021).

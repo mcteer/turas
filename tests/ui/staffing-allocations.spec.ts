@@ -28,7 +28,7 @@ test("manager reviews daily effects and reconciles a genuinely committed confirm
   await page.getByLabel("Allocation action", { exact: true }).selectOption("confirm");
   await page.getByLabel("Allocation rationale", { exact: true }).fill("Synthetic UI exact review");
   await page.getByRole("button", { name: "Prepare or save exact action" }).focus(); await page.keyboard.press("Enter");
-  await expect(page.getByRole("heading", { name: "Review confirm", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Review Confirm", exact: true })).toBeVisible();
   await expect(page.getByText(`${f.date}: 240 total confirmed resource minutes after approval`, { exact: true })).toBeVisible();
   await page.getByLabel("Decision rationale", { exact: true }).fill("Synthetic UI human confirmation");
   let applied = false;
@@ -102,7 +102,7 @@ test("a delayed eligible review preview cannot return after current source withd
   await page.getByLabel("Allocation action", { exact: true }).selectOption("confirm");
   await page.getByLabel("Allocation rationale", { exact: true }).fill("Synthetic exact review before source withdrawal");
   await page.getByRole("button", { name: "Prepare or save exact action", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Review confirm", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Review Confirm", exact: true })).toBeVisible();
   let release!: () => void, captured!: () => void;
   const released = new Promise<void>(resolve => { release = resolve; });
   const ready = new Promise<void>(resolve => { captured = resolve; });
@@ -118,11 +118,11 @@ test("a delayed eligible review preview cannot return after current source withd
       rationale: "Synthetic current competency original withdrawal" });
     const denied = page.waitForResponse(response => response.url().includes(`/allocations/${f.allocation.allocationId}/review-preview?`) && response.status() === 409);
     await page.clock.runFor(10_000); await denied;
-    await expect(page.getByRole("heading", { name: "Review confirm", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Review Confirm", exact: true })).toHaveCount(0);
     const delivered = page.waitForResponse(response => response.url().includes(`/allocations/${f.allocation.allocationId}/review-preview?`) && response.status() === 200);
     release(); await delivered;
     await page.clock.runFor(50);
-    await expect(page.getByRole("heading", { name: "Review confirm", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Review Confirm", exact: true })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Approve confirm", exact: true })).toHaveCount(0);
     expect((await query("SELECT count(*)::int AS n FROM staffing_decisions WHERE allocation_id=$1", [f.allocation.allocationId])).rows[0].n).toBe(0);
   } finally { release(); }
