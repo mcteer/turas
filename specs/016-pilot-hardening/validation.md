@@ -9527,3 +9527,23 @@ Vercel hosts differ. The correction preserves all shared project/team/environmen
 workspace/source/configuration checks and independently resolves both old and new
 hosts to their exact READY deployment IDs. Actual post-restart file checks remain
 required; original manifests and their deployment origins remain unchanged.
+
+The 007 live runner stopped in its unpaid staffing preflight: the image
+preparer wrote default-tag attestations despite inherited immutable selectors.
+The preparer now validates default-or-immutable selectors, inspects the exact
+selected Docker images, verifies selected SHA identities and writes their real
+attestation. The original six import contract cases passed against the selected
+images, including real clean scans and EICAR refusal, with zero provider calls.
+The initial diagnostic rehearsal copied runtime assets to the report store
+instead of the artifact store; that rehearsal failed and was corrected without
+changing the runtime or the assertions. No extra asset-permission fixture change
+was retained.
+
+The immutable-origin correction also applies to the denial and byte-composition
+operators. Both keep the same project, team, environment, workspace, source and
+configuration requirements. Current and, when different, original immutable
+hosts remain bound to actual deployment IDs. Stable aliases retain their earlier
+behavior. The actual current cffe byte-component inventory is explicitly bound
+when composing cffe evidence; a newer operator checkout inventory cannot replace
+it. The actual post-restart byte composition passed with zero new jobs/models
+and retains the explicit `actualReportAt10MiB: false` qualification.

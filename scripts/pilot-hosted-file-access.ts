@@ -1,12 +1,15 @@
 import {z} from 'zod';
 import type {PilotHostedScope} from '../lib/contracts/pilot-hosted';
-import {hostedMaximumFilesManifestSchema} from './pilot-hosted-maximum-files';
+import {hostedMaximumFilesManifestSchema,assertHostedFileTarget} from './pilot-hosted-maximum-files';
+import {platformDeployment} from './pilot-hosted';
 import {writeEvidence} from './pilot-evidence';
 /** Current actual HTTP refusals. Neither provider protection pages nor outages
  * qualify, and response bodies are bounded before parsing or retaining metadata. */
 export async function verifyHostedMaximumFileDenials(input:{scope:PilotHostedScope;headers:Headers;role:'internal-admin'|'internal-member'|'assigned-partner';manifest:unknown;signal:AbortSignal;evidenceDirectory:string}){
  const manifest=hostedMaximumFilesManifestSchema.parse(input.manifest);
- for(const key of ['projectId','teamId','target','origin','environmentMarker','workspaceId','sourceCommit','sourceDigest','catalogDigest'] as const)if(manifest.scope[key]!==input.scope[key])throw Error('Exact original file denial scope required');
+ for(const key of ['projectId','teamId','target','environmentMarker','workspaceId','sourceCommit','sourceDigest','catalogDigest'] as const)if(manifest.scope[key]!==input.scope[key])throw Error('Exact original file denial scope required');
+ await assertHostedFileTarget(input);
+ if(manifest.scope.origin!==input.scope.origin&&JSON.stringify(await platformDeployment(manifest.scope,false,input.signal))!==JSON.stringify(await platformDeployment(manifest.scope,true,input.signal)))throw Error('Original file denial deployment and origin differ');
  const reads=[];
  for(const entry of manifest.originals){
   const path=entry.kind==='artifact'?'/api/artifacts/'+entry.id+'/original':'/api/staffing/imports/'+entry.id+'/content';

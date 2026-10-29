@@ -73,7 +73,8 @@ export async function verifyHostedFileRestart(input:Pick<Context,'scope'|'signal
  await assertHostedFileTarget(input);
  // Immutable Preview hosts change on restart. Verify both old host and ID
  // independently, as assertHostedFileTarget already does for the new pair.
- if(JSON.stringify(await platformDeployment(previous,false,input.signal))!==JSON.stringify(await platformDeployment(previous,true,input.signal)))throw Error('Original file deployment and origin differ');
+ const prior=await platformDeployment(previous,false,input.signal);
+ if(previous.origin!==input.scope.origin&&JSON.stringify(prior)!==JSON.stringify(await platformDeployment(previous,true,input.signal)))throw Error('Original file deployment and origin differ');
  const {hostedDeploymentLookupPath,verifyHostedDeployment}=await import('../lib/contracts/pilot-hosted'),raw=JSON.parse(execFileSync('vercel',['api',hostedDeploymentLookupPath(input.scope),'--raw'],{encoding:'utf8',timeout:30000,maxBuffer:1048576,env:{NODE_ENV:'production',...Object.fromEntries(['PATH','HOME','TMPDIR','LANG','LC_ALL'].flatMap(key=>process.env[key]===undefined?[]:[[key,process.env[key]]]))}}));verifyHostedDeployment(raw,input.scope);const created=Number(raw.createdAt);
  if(!Number.isSafeInteger(created)||created<=Date.parse(preparedAt)||created>Date.now())throw Error('Actual new serving deployment must follow original preparation');return created;
 }
