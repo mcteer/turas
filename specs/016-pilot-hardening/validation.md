@@ -9520,3 +9520,10 @@ $1.30 exposure remains reserved without a charge/refund claim. The branch now
 has an explicit Git deployment exclusion. The controlled retention build remains
 manual ordinal 38 / manual Preview sequence 33, with this additional automatic
 build recorded separately. Production remained unchanged.
+
+The immutable-host retention preflight exposed an operator assumption: it
+required both distinct deployments to share one origin, although their immutable
+Vercel hosts differ. The correction preserves all shared project/team/environment/
+workspace/source/configuration checks and independently resolves both old and new
+hosts to their exact READY deployment IDs. Actual post-restart file checks remain
+required; original manifests and their deployment origins remain unchanged.
